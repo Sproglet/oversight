@@ -1,0 +1,203 @@
+<html>
+    <head>
+        <style>
+            body { font-family:arial; background-color:#f2f2f2; font-weight:bold; }
+            td { font-family:arial; background-color:#f2f2f2; font-weight:bold; }
+            h1 { font-size:x-large; }
+            h2 { font-size:large; }
+            .banner { background-color:#FF9955; }
+        </style>
+        <title>oversight</title>
+    </head>
+<body>
+<div class=banner>
+    <p>&nbsp;
+    <h1>Oversight (nmt jukebox) &amp; unpak.sh post processor for nzbget</h1>
+    <p>&nbsp;
+</div>
+
+<h2>1 May 2009: Note the current <a href="#fixes">beta</a> has some fixes </h2>
+( Get the cross platform nzbget  <a href="#unpak">post processing scripts only</a> )
+
+    <p>This is another jukebox but I think it is significantly different from other current offerings and it was born out of necessity for me.
+    <p>Main Goals and features:
+    <ul>
+       <li>quicky find whatever has recently downloaded with <b>no searching or browsing at all</b>.</li>
+       <li>Give me a an overview of what content I have <b>without too many page draws</b> (NMT is slow for non-video processing)</li>
+       <li><b>Hands free, zero-touch indexing</b>, - no manual renaming of files to help the application do its work</li>
+       <li>No dependency on a PC for indexing or generation of html etc.</li>
+       <li>Load and go. Default configuration will index internal HD</li>
+       <li>Looks good on SD. I have a 36 CRT, so the main overview is mostly text to save space. Some basic artwork is displayed on drill down. This is unlikely to change. Other video juke boxes are pretty, but not on SD. The NMT is not a fast platform for scrolling many pages of large DVD artwork on an SD screen.
+       I have added some HighDef detection for a better layout in Flat Panel tvs. </li>
+        <li>make as few assumptions as possible about the physical layout of folders, no moving files around to help the application work.</li>
+        <li>Although there is now a full file renaming capability in unpak.sh/catalog.sh, it is not really needed anymore if using OverSight,
+          I would only use it to change folder names. File names provide useful information if you have to ever rebuild from scratch.</li>
+       </ul>
+         <br><img src=os-tv1.png>
+    <p><a href="#screenshots">More Screenshots</a>
+    <p>Usage notes:
+       <ul>
+       <li>You need an internet connection to your PCH</li>
+       <li>You should not have to change anything if indexing your internal HD - famous last words. Indexing other drives doesnt work at present. Probably will work with a single line edit.</li>
+       <li>There will be some mis-identified files. Main culprits are
+       <ul>
+           <li>ISOs of TV box sets (I havent added any specific detection for that)</li>
+           <li>Programs showning in multiple countries , The Office, Kath and Kim</li>
+           <li>Any file with an odd naming convention</li>
+       </ul>
+       The best solution is to provide a manual fix up but low priority for now.
+       <li>Colour buttons change sort order and TV/Film filtering</li>
+       <li>[Blue] stuff is TV, [Green] is Film , [Red] is - not sure</li>
+       <li>The [Remove] option just removes files from the index - they are not deleted</li>
+       <li>The [Delete] option will delete files.</li>
+       <li>There is a text message filter that works by selecting the number keys. When you see it it should make sense! There is room for improvement.</li>
+   </ul>
+   <hr>
+
+     <a name="fixes"/>
+    <p>The application has three parts:
+        <ul>
+            <li>unpak.sh - Only does &quot;intelligent&quot; unpacking.</li>
+            <li>catalog.sh - Indexes video files and also has rename capability. Used by unpak.sh</li>
+            <li>oversight 'WebService' - This is specific to the NMT platform and provides a web gui for the index built by catalog.sh</li>
+        </ul>
+         <p> You can get oversight in a number of ways:
+         <table border=1>
+         <tr>
+             <td align=center width=25%>Communtiy Software Installer</td>
+             <td align=center width=25%>Mini NMT Installer</td>
+             <td align=center width=25%>Manual NMT Install</td>
+             <td align=center width=25%>Cross Platform nzbget Post-processing scripts only</td>
+         </tr>
+         <tr valign=top>
+             <td>use <a href="http://www.nmtinstaller.com/">Ger Teunis NMT Installer</td> to get the latest public release. (Currently version 20090112)</td>
+             <td>Try my mini <a href=../installer/index.html>installer</a>. The latest beta versions can be obtained this way. At present the beta version is the recommended version. Especially for the unpak/catalog scripts.</td>
+             <td>
+                 <ul>
+                     <li>Download 
+                     <a href="./oversight-BETA.zip">V2 BETA version zip</a> (recommended)</li>
+                     OR 
+                     <a href="./oversight.zip">current V1 zip file</a>
+                     <li>unpack to folder /share/Apps/oversight/ </li>
+                     <li>go to PCH TV file browser</li>
+                     <li>locate the folder</li>
+                     <li>press the blue button on the remote</li>
+                     <li>and select the oversight-installer.html file.</li>
+                     <li>The select [install]. On my PCH 400G of content is cataloged in about 12 minutes</li>
+                 </ul>
+             </td>
+            <td>
+             <a name="unpak"/>
+                 Alternatively select the following links to just download the unpak and catalog scripts (these can run on other platforms besides NMT):
+                 <ol>
+                 <li><a href="../unpak/unpak-BETA.zip">unpak-BETA.zip</a> Latest beta - recommended</li>
+                 <li><a href="../unpak/unpak.zip">unpak.zip</a> Older unpak scripts</a> please try th beta before reporting any bugs </li>
+             </ol>
+             The unpak script is especially designed for platforms with low powered cpus. It will avoid par repairs if they will take too long, and it can react to unrar errors before the unrar command completes. 
+         </td>
+         </tr>
+ </table>
+
+    <h2>V2 Beta - 1st May 2009</h2>
+    <ul>
+        <li>Split file detection fix - caused missing episodes if series had format name-s0ne0m.avi with no additional tags</li>
+        <li>unpak. Another path bug fix. Unpaking was accidentally disabled in 20090430-1BETA</li>
+        <li>Some cross platform fixes for catalog.sh</li>
+    </ul>
+    <h2>V2 Beta - 24rd April 2009</h2>
+    <ul>
+        <li>unpak: Automatically gets par2 and unrar from same location as nzbget</li>
+    </ul>
+    <h2>V2 Beta - 23rd April 2009</h2>
+    <ul>
+        <li>unpak: Automatically gets nzbget binary and config file from running nzb process</li>
+    </ul>
+    <h2>V2 Beta</h2>
+    <ul>
+        <li>oversight: CrossPlay. Iterface shows contents of two NMTs at once.</li>
+        <li>oversight: TVID search (use remote number keys like text messaging)</li>
+        <li>oversight: Click through to IMDB on PC browser</li>
+        <li>oversight: Auto-Update when new version comes out : todo</li>
+        <li>oversight: VIDEO_TS support.</li>
+        <li>oversight: Configurable display for any size / resolution</li>
+        <li>oversight: Configuration screens for unpak and catalog functions</li>
+        <li>catalog: Write xmbc format nfo files</li>
+        <li>catalog: Exlcude paths and names when scanning</li>
+        <li>catalog: Look inside ISO files to determin film names.</li>
+        <li>catalog: Enhanced search algorithms</li>
+        <li>catalog: Centralised poster storage</li>
+        <li>catalog: lots of bug fixes and tweaks.</li>
+        <li>unpak: Configures optimal nzbget.conf settings for NMT platform</li>
+    </ul>
+    <h2>20090112-1</h2>
+    Limit plot length for SD screen.
+    <br>Slight improvement to categorisation when including folder name.
+    <br>Fix again for Istar which doesnt give timestamps in ls -l !  For Istar users, everything will appear highlighted (yellow) when first built, this will go after one day.
+     <h3>Known Issues</h3>
+         When deleting from the gui - the files are deleted but the posters and nfo left behind. Introduced in this version. Will be fixed in next release.
+    <h2>20090111-1</h2>
+    Removed F from ls command for Istar compatability. A few gui improvements.
+    <br>Cleaner changes to nzbget.conf during install/uninstall
+    <h2>20090110-3</h2>
+    Allow for TV/Lost/Season 4/02-hello.avi etc.
+    <h2>20090110-2</h2>
+    Use nmt crontab instead of roots which seems to get reset periodically - fixed. 
+    <br>Delete operation was not deleting - fixed.
+    <h2>20090110-1</h2>
+    Better layout.
+    <br>Fix to renaming function.
+    <br>Option to use folder names as titles.
+    <h2>18:54</h2>
+    Creating initial script for virgin users.
+    <br>Unpak temp file location fixed.
+    <h2>18:22</h2>
+    <p>Fixed Writing to nzbget.conf.
+    <hr>
+     Feedback is welcome.
+    <h2>200901??-1</h2>
+    Coming soon ... see end of page to help keep me going...
+    <ul>
+        <li>Faster - Fixed caching. </li>
+        <li>Added 2 and 3 digit keypad search (tvid codes).</li>
+        <li>Gui navigation improvements. Some navigation fixes</li>
+        <li>Parental Controls</li>
+        <li>Check for latest version on admin page</li>
+        <li>Change category TV/ Film</li>
+        <li>Big Brother format understood!</li>
+        <li>Rescan entire HD from admin page</li>
+        <li>Deep Google Seach to identify obscure files</li>
+        <li>Master/Slave. Browse manage , remote repository</li>
+        <li>Unpak can run standalone for torrents etc</li>
+    </ul>
+
+     <hr>
+     <a name="screenshots">
+         <br><img src=os-tv.png>
+         <br><img src=os-films.png>
+         <br><img src=os-film1.png>
+         <hr>
+The index is built by searching English Language sites imdb,google and epguides. If you would prefer to use 
+the folder titles in the index run the following commands : (once only)
+ <pre>
+su -s /bin/sh nmt
+cd /share/Apps/oversight
+echo "FOLDERTITLES=1" >> catalog.cfg
+
+#Rebuild index
+rm index.db index.db.idx
+./catalog.sh FORCE IGNORENFO /share/
+</pre>
+<table width=100%><tr><td>
+</td><td width=20% align=right>
+If you find anything useful, donations are welcome however small, to spur me on through the dark nights...
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+    <input type="hidden" name="cmd" value="_s-xclick">
+    <input type="hidden" name="hosted_button_id" value="2496882">
+    <input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="">
+    <img alt="" border="0" src="https://www.paypal.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+</form>
+</td></tr></table>
+
+         
+</body>
+</html>

@@ -1,0 +1,55 @@
+net use a: '\\192.168.88.11\share' 1234  /user:nmt
+net use b: '\\192.168.88.6\share' 1234  /user:nmt
+
+PUSH() {
+    echo updating drives : "$@"
+
+    echo compacting script
+    ./squeeze
+    chmod 775 *cgi *.sh
+
+
+    for i in "$@" ; do
+	case "$i" in
+	all|q)
+		mode=$i
+		;;
+	*)
+
+            echo Drive $i
+            root=/cygdrive/$i/Apps/oversight/.
+
+            ls -l $root/oversight.cgi
+
+            echo scripts ...
+            case "$mode" in
+
+            q)
+                cp -a *.full *.cgi *.css *.sh $root/.
+                ;;
+
+            all)
+                cp -a *.full *.cfg *.cgi *.css *.sh help *.example *.php $root/.
+                echo images...
+                cp -a images/ $root/.
+                ;;
+
+            *)
+                cp -a *.full *.cfg *.cgi *.css *.sh help *.example *.php $root/.
+                ;;
+            esac
+
+            echo clear cache ...
+            rm -f $root/tmp/cache/*
+            ls -l $root/oversight.cgi
+
+        esac
+    done
+}
+
+if [ -z "$*" ] ;then
+    echo "usage $0 [all] drive drive..."
+else
+    PUSH "$@"
+fi
+

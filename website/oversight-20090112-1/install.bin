@@ -1,0 +1,389 @@
+#!/bin/sh --
+true # MSDOS FIX Keep next blank line.
+
+##################################
+if [ $? != 0 ]; then             #
+    set -e                       #
+    sed 's/$//' "$0" > /tmp/$$ #
+    cat /tmp/$$ > "$0"           #
+    rm /tmp/$$                   #
+    exec /bin/sh "$0" "$@"       #
+    exit                         #
+fi                               #
+##################################
+#--------------------------------------------------------------------------
+# INSTALL SCRIPTS FOR SYABAS NMT PLATFORM (eg PopcornHour)
+# (C) Alord 2008 GPL 2 License
+#--------------------------------------------------------------------------
+set -eu
+VERSION=20090111-1
+
+NMT_INSTALL_HELP() {
+    cat <<HERE
+This provides some functions to aid installing/uninstalling.
+
+ -------------------------------------------------------------------
+
+ NMT_INSTALL keyword command
+
+       Add a line command to the community agreed startup file.
+       Note that the comment characters ' #{keyword} is added to the command to simplify removal
+       Example:
+               ./INSTALL.sh NMT_INSTALL myapp "/share/Apps/myhome/myapp.sh &"
+
+       Or to be slightly more efficient:
+
+       if grep -q '#{myapp}' /share/start_app.sh ; then 
+           ./INSTALL.sh INSTALL myapp "/share/Apps/myhome/myapp.sh &"
+       fi
+
+ -------------------------------------------------------------------
+
+ NMT_UNINSTALL keyword
+
+   Remove all lines matching keyword from the community startup file.
+   The file is searched for '#{keyword}'
+       Example:
+               ./INSTALL.sh NMT_UNINSTALL myapp
+
+ -------------------------------------------------------------------
+
+ NMT_INSTALL_WITHOUT_LABEL keyword command
+
+       Add a line command to the community agreed startup file.
+       No additional text is added, this may produce false positives when uninstalling.
+
+ -------------------------------------------------------------------
+
+ NMT_UNINSTALL_WITHOUT_LABEL text
+
+   Remove all lines matching keyword from the community startup file.
+   The file is searched for 'text', so ensure the text is unique.
+   This is to allow removal of lines that were not added with the keyword comment.
+       Example:
+               ./INSTALL.sh NMT_UNINSTALL_BY_TEXT myoldapp.sh
+
+ -------------------------------------------------------------------
+
+ NMT_LINE_REMOVE text file
+
+    Remove any lines from file that match 'text', creating a backup.
+
+ -------------------------------------------------------------------
+
+NMT_INSTALL_WS name url
+
+    Add/Change a web service.
+    If the name already exists the url will be updated otherwise added.
+    If the url is blank it will be deleted.
+
+ -------------------------------------------------------------------
+
+NMT_UNINSTALL_WS name
+
+    Remove named webservice.
+
+ -------------------------------------------------------------------
+
+ NMT_INSTALL_WS_SET n name url
+
+ Set details of the 'n'th web service. A blank URL will clear it.
+
+ -------------------------------------------------------------------
+
+ NMT_CRON_ADD user id line
+ NMT_CRON_DEL user id
+
+ -------------------------------------------------------------------
+
+ 
+HERE
+}
+
+
+NMT_INSTALL_STARTSH="/opt/sybhttpd/localhost.drives/HARD_DISK/start_app.sh"
+NMT_INSTALL_MARKER="#M_A_R_K_E_R_do_not_remove_me"
+
+#This is the standard NMT script which will be modified to launch the community install script.
+#Dont change this otherwise the community script may get launched twice.
+NMT_INSTALL_STANDARD_SCRIPT="/mnt/syb8634/etc/ftpserver.sh"
+
+#--------------------------------------------------------------------------
+#
+# Create the startup script
+#
+NMT_INSTALL_CREATE_STARTFILE() {
+
+    if [ ! -f "$NMT_INSTALL_STARTSH" ] ; then
+        cat <<HERE > "$NMT_INSTALL_STARTSH"
+#!/bin/sh
+#
+$NMT_INSTALL_MARKER
+
+exit 0
+HERE
+        chmod ugo+x "$NMT_INSTALL_STARTSH"
+    fi
+    NMT_LINE_APPEND start_app.sh "$NMT_INSTALL_STANDARD_SCRIPT" "^start\(\)" "\t$NMT_INSTALL_STARTSH &"
+}
+
+#--------------------------------------------------------------------------
+#
+#
+# Add a line to a script.
+#
+# $1=keyword to check if line is present.
+# $2=path to script
+# $3=Marker below which line is added.
+# $4=line of text to add (note the comment #{keyword} is added to the line.)
+
+NMT_LINE_SET() {
+    NMT_LINE_REMOVE "$1" "$2" && NMT_LINE_APPEND "$1" "$2" "$3" "$4"
+}
+
+# $1=keyword to check if line is present.
+# $2=path to script
+# $3=Marker below which line is added.
+# $4=line of text to add (note the comment #{keyword} is added to the line.)
+NMT_LINE_APPEND() {
+    if [ -f "$2" ] ; then
+        if ! fgrep -ql "$1" "$2" ; then
+            if awk '
+BEGIN {
+    keyword="'"$1"'";
+    file="'"$2"'";
+    marker="'"$3"'";
+    new_line="'"$4"'";
+}
+
+{ print } 
+        
+marker != "" && match($0,marker) {
+    printf "%s\n",new_line,keyword;
+}
+
+END {
+    #If there is no keyword add at the end
+    if (marker == "") {
+        printf "%s\n",new_line,keyword;
+    }
+}
+' "$2" > "$2.new" ; then
+                cp "$2" "$2.bak"
+                cat "$2.new" > "$2" && rm -f "$2.new" #cat keeps perms of original
+            fi
+        fi
+    fi
+}
+
+#--------------------------------------------------------------------------
+#
+# Install a new startup line into start_app.sh. This does not add a label to the line.
+#$1=keyword.
+#$2=line to be added.
+NMT_INSTALL_WITHOUT_LABEL() {
+    if [ ! -f "$NMT_INSTALL_STARTSH" ] ; then
+        NMT_INSTALL_CREATE_STARTFILE
+    fi
+    NMT_LINE_APPEND "$1" "$NMT_INSTALL_STARTSH" "$NMT_INSTALL_MARKER" "$2"
+}
+#--------------------------------------------------------------------------
+#
+# Install a new startup line into start_app.sh. This adds a label for easy removal
+#$1=keyword.
+#$2=line to be added.
+NMT_INSTALL() {
+    if [ ! -f "$NMT_INSTALL_STARTSH" ] ; then
+        NMT_INSTALL_CREATE_STARTFILE
+    fi
+    NMT_LINE_APPEND "$1" "$NMT_INSTALL_STARTSH" "$NMT_INSTALL_MARKER" "$2 #{$1}"
+}
+
+#--------------------------------------------------------------------------
+#
+#Perform an uninstall by looking for the keyword.
+#$1=keyword
+NMT_UNINSTALL() {
+    NMT_LINE_REMOVE "#{$1}" "$NMT_INSTALL_STARTSH"
+}
+
+#--------------------------------------------------------------------------
+#
+#Perform an uninstall by looking for raw text. Use this for apps that were added using other code.
+#$1=text
+NMT_UNINSTALL_WITHOUT_LABEL() {
+    NMT_LINE_REMOVE "$1" "$NMT_INSTALL_STARTSH"
+}
+
+#$1=keyword $2=file
+NMT_LINE_REMOVE() {
+    if grep -ql "$1" "$2" ; then
+        grep -v "$1" "$2" > "$2.new" 
+        cat "$2.new" > "$2" && rm -f "$2.new" #cat keeps perms of original
+    fi
+}
+
+#--------------------------------------------------------------------------
+#
+# Get the defined Web service links as WS_name1="<value>" . WS_url1="value"
+NMT_INSTALL_WS_GET() {
+    #Search the webservices_edit*.html pages and build up the name="value" text.
+    #Note the html names all start with a <del>character.
+    #The sed output is WS_namenn="value". This is then passed to 'eval'
+    eval $( sed -rn '
+/(name|url)[0-9]/ {
+    s/[?]/%3F/g
+    s/\&/%26/g
+#    s/\:/%3A/g
+#    s/\//%2F/g
+    s/.*name=".((name|url)[0-9]+).*value="([^"]*).*/WS_\1="\3"/p
+}' /opt/sybhttpd/default/webservices*_edit*.html )
+#set | grep WS_
+}
+
+#--------------------------------------------------------------------------
+#
+# We could split this out into 3 functions , NMT_INSTALL_WS_GET_INDEX , NMT_INSTALL_WS_NEXT_BLANK etc.
+# Add/Change a web service
+#$1=Name $2=url
+NMT_INSTALL_WS() {
+
+    #Get the web service in variables WS_namenn and WS_urlnn
+    NMT_INSTALL_WS_GET
+
+    #If a web service has the same name update it.
+    #Note we ignore web service number 10 as it doesnt appear in the overview list.
+    for i in 1 2 3 4 5 6 7 8 9 ; do
+        eval name=\"\$WS_name$i\"
+        eval url=\"\$WS_url$i\"
+        if [ "$name" = "$1" ] ; then
+            NMT_INSTALL_WS_SET "$i" "$1" "$2"
+            return
+        fi
+    done
+
+    if [ -z "$2" ] ; then return ; fi
+
+    #If a web service is blank update it
+    for i in 1 2 3 4 5 6 7 8 9 ; do
+        eval name=\"\$WS_name$i\"
+        eval url=\"\$WS_url$i\"
+        if [ -z "$name" ] ; then
+            NMT_INSTALL_WS_SET "$i" "$1" "$2"
+            return
+        fi
+    done
+    return 1
+}
+
+#--------------------------------------------------------------------------
+#
+#Remove a WebService
+# $1=Name
+NMT_UNINSTALL_WS() {
+    NMT_INSTALL_WS "$1" ""
+}
+
+URL_ESCAPE() {
+    #sed -r 's/[?]/%3F/g;s/\&/%26/g;s/\:/%3A/g;s/\//%2F/g'
+    sed -r 's/[?]/%3F/g;s/\&/%26/g'
+}
+#--------------------------------------------------------------------------
+#
+#$1=web service number , $2 =web service name , $3=web service url
+#a blank URL will clear
+#Each HTML name is preceded by chr(127) <del>
+NMT_INSTALL_WS_SET() {
+
+    if [ -z "$3" ] ; then
+        eval WS_name$1=\"\"
+    else
+        eval WS_name$1=\"$2\"
+    fi
+
+    u=`echo "$3" | URL_ESCAPE`
+
+    eval WS_url$1=\"$u\"
+
+    p=$(( ( $1 + 2 ) / 3 ))
+    url="http://127.0.0.1:8883/webservices.cgi?Save=save&hiDe=1&pg=$p"
+
+    p=$(( $p * 3 ))
+    eval url=\"\$url\&\name$p=\$WS_name$p\&\url$p=\$WS_url$p\" 
+    p=$(( $p - 1 ))
+    eval url=\"\$url\&\name$p=\$WS_name$p\&\url$p=\$WS_url$p\" 
+    p=$(( $p - 1 ))
+    eval url=\"\$url\&\name$p=\$WS_name$p\&\url$p=\$WS_url$p\" 
+    #echo "URL=$url"
+    #wget -O - "$url" > /dev/null
+    wget -q -O - "$url" > /dev/null
+}
+
+#Show a simply install complete banner. This could be changed to a div
+#$1 title
+#$2 message
+NMT_INSTALL_WS_BANNER() {
+
+    cat <<HERE
+<body bgcolor="#000022" text="white" link="white"><center>
+$1
+<hr>
+$2
+         <br><a href="http://127.0.0.1:8883/setups.cgi?%7FhiDe=9">Restart Nzbget</a>
+         <br><a href="http://127.0.0.1:8883/webservices_list.html">Show Webservice List</a>
+
+</center></body>
+HERE
+
+}
+
+cronclean() {
+    rm -f /tmp/crontab.$$ /tmp/crontab.$$.new
+}
+#Add Crontab line with a id comment 
+# $1=user
+# $2=id 
+# $3=full line
+NMT_CRON_ADD() {
+    crontab -u $1 -l > /tmp/crontab.$$
+    if awk '
+/#'"$2"'$/ { print "'"$3"' #'"$2"'" ; f=1; next } 
+1 
+END { if(!f) print "'"$3"' #'"$2"'"; }' /tmp/crontab.$$ > /tmp/crontab.$$.new ; then
+    crontab /tmp/crontab.$$.new -u $1 && cronclean
+    fi
+}
+
+#Remove Crontab line with a id comment 
+# $1=user 
+# $2=id 
+NMT_CRON_DEL() {
+    crontab -u $1 -l > /tmp/crontab.$$
+    grep -v "#$2$" /tmp/crontab.$$ > /tmp/crontab.$$.new || true
+    crontab /tmp/crontab.$$.new -u $1 && cronclean
+}
+
+TEST1() {
+    NMT_INSTALL google "#Google "
+    NMT_INSTALL_WS google "http://m.google.com/?dc=gbackstop"
+}
+
+TEST2() {
+    NMT_UNINSTALL google
+    NMT_INSTALL_WS google ""
+}
+
+NMT_INSTALL_TEST() {
+    TEST1
+    echo press
+    read x
+    TEST2
+}
+
+case "${1:-}" in
+    NMT_*) "$@" ;;
+    TEST) NMT_INSTALL_TEST ;;
+    *) NMT_INSTALL_HELP;;
+esac
+
+# vi:shiftwidth=4:tabstop=4:expandtab

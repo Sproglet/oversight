@@ -1,0 +1,2 @@
+FILES="unpak.sh unpak.cfg.example catalog.sh catalog.cfg.example"
+../common/publish unpak $FILES

@@ -1,0 +1,160 @@
+<html>
+    <head>
+        <style>
+            body { font-family:arial; background-color:lightgrey; font-weight:bold; }
+            td { font-family:arial; background-color:lightgrey; font-weight:bold; }
+            h1 { font-size:x-large; }
+            h2 { font-size:large; }
+        </style>
+        <title>oversight</title>
+    </head>
+<body>
+    <h1>Oversight video index + new unpak.sh post processor for nzbget</h1>
+
+    <h2>Some <a href=#fixes>fixes and enhancements</a> have been applied in a new version - 20090112-1</h2>
+
+    <p>This is another jukebox but I think it is significantly different from other current offerings and it was born out of necessity for me.
+    <p>Main Goals and features:
+    <ul>
+       <li>quicky find whatever has recently downloaded with <b>no searching or browsing at all</b>.</li>
+       <li>Give me a an overview of what content I have <b>without too many page draws</b> (NMT is slow for non-video processing)</li>
+       <li><b>Hands free, zero-touch indexing</b>, - no manual renaming of files to help the application do its work</li>
+       <li>No dependency on a PC for indexing or generation of html etc.</li>
+       <li>Load and go. Default configuration will index internal HD</li>
+       <li>Looks good on SD. I have a 36 CRT, so the main overview is mostly text to save space. Some basic artwork is displayed on drill down. This is unlikely to change. Other video juke boxes are pretty, but not on SD. The NMT is not a fast platform for scrolling many pages of large DVD artwork on an SD screen.
+       I have added some HighDef detection for a better layout in Flat Panel tvs. </li>
+        <li>make as few assumptions as possible about the physical layout of folders, no moving files around to help the application work.</li>
+        <li>Although there is now a full file renaming capability in unpak.sh/catalog.sh, it is not really needed anymore if using OverSight,
+          I would only use it to change folder names. File names provide useful information if you have to ever rebuild from scratch.</li>
+       </ul>
+         <br><img src=os-tv1.png>
+    <p><a href="#screenshots">More Screenshots</a>
+    <p>Usage notes:
+       <ul>
+       <li>You need an internet connection to your PCH</li>
+       <li>You should not have to change anything if indexing your internal HD - famous last words. Indexing other drives doesnt work at present. Probably will work with a single line edit.</li>
+       <li>There will be some mis-identified files. Main culprits are
+       <ul>
+           <li>ISOs of TV box sets (I havent added any specific detection for that)</li>
+           <li>Programs showning in multiple countries , The Office, Kath and Kim</li>
+           <li>Any file with an odd naming convention</li>
+       </ul>
+       The best solution is to provide a manual fix up but low priority for now.
+       <li>Colour buttons change sort order and TV/Film filtering</li>
+       <li>[Blue] stuff is TV, [Green] is Film , [Red] is - not sure</li>
+       <li>The [Remove] option just removes files from the index - they are not deleted</li>
+       <li>The [Delete] option will delete files.</li>
+       <li>There is a text message filter that works by selecting the number keys. When you see it it should make sense! There is room for improvement.</li>
+   </ul>
+   <hr>
+
+    <p>The application has three parts:
+        <ul>
+            <li>unpak.sh - Only does &quot;intelligent&quot; unpacking.</li>
+            <li>catalog.sh - Indexes video files and also has rename capability. Used by unpak.sh</li>
+            <li>oversight 'WebService' - This is specific to the NMT platform and provides a web gui for the index built by catalog.sh</li>
+        </ul>
+     <a name="fixes">
+     <p> The latest version is here. To install:
+     <table border=1><tr>
+             <td>The new way</td>
+             <td>The old way</td>
+             <td>The Beta</td>
+         </tr>
+         <tr valign=top>
+ <td>Try my mini <a href=../installer/index.html>installer</a></td>
+ <td>
+     <ul>
+         <li>Download the <a href="#fixes">Oversight.7z archive</a></li>
+         <li>unpack to folder /share/Apps/oversight/ </li>
+         <li>go to PCH TV file browser</li>
+         <li>locate the folder</li>
+         <li>press the blue button on the remote</li>
+         <li>and select the oversight-installer.html file.</li>
+         <li>The select [install]. On my PCH 200G of content is cataloged in about 12 minutes</li>
+     </ul>
+ </td>
+ <td>
+     A beta version is also available with all of the latest features in experimental mode. Too many to mention.
+     <p>You can obtain the beta using the mini-installer. Or download it and install the haed way from 
+     <a href="./oversight-BETA.zip?">here</a>.
+ </td>
+ </tr></table>
+     <hr>
+
+
+         <p>Download <a href="./oversight-20090112-1.7z">Oversight.7z archive</a> If upgrading just click on the version link on the main sceen.
+         <br>If you want to force a re-scan of your machine then delete your index.db and index.db.idx files before re-installing.
+
+    <h2>20090112-1</h2>
+    Limit plot length for SD screen.
+    <br>Slight improvement to categorisation when including folder name.
+    <br>Fix again for Istar which doesnt give timestamps in ls -l !  For Istar users, everything will appear highlighted (yellow) when first built, this will go after one day.
+     <h3>Known Issues</h3>
+         When deleting from the gui - the files are deleted but the posters and nfo left behind. Introduced in this version. Will be fixed in next release.
+    <h2>20090111-1</h2>
+    Removed F from ls command for Istar compatability. A few gui improvements.
+    <br>Cleaner changes to nzbget.conf during install/uninstall
+    <h2>20090110-3</h2>
+    Allow for TV/Lost/Season 4/02-hello.avi etc.
+    <h2>20090110-2</h2>
+    Use nmt crontab instead of roots which seems to get reset periodically - fixed. 
+    <br>Delete operation was not deleting - fixed.
+    <h2>20090110-1</h2>
+    Better layout.
+    <br>Fix to renaming function.
+    <br>Option to use folder names as titles.
+    <h2>18:54</h2>
+    Creating initial script for virgin users.
+    <br>Unpak temp file location fixed.
+    <h2>18:22</h2>
+    <p>Fixed Writing to nzbget.conf.
+    <hr>
+     Feedback is welcome.
+    <h2>200901??-1</h2>
+    Coming soon ... see end of page to help keep me going...
+    <ul>
+        <li>Faster - Fixed caching. </li>
+        <li>Added 2 and 3 digit keypad search (tvid codes).</li>
+        <li>Gui navigation improvements. Some navigation fixes</li>
+        <li>Parental Controls</li>
+        <li>Check for latest version on admin page</li>
+        <li>Change category TV/ Film</li>
+        <li>Big Brother format understood!</li>
+        <li>Rescan entire HD from admin page</li>
+        <li>Deep Google Seach to identify obscure files</li>
+        <li>Master/Slave. Browse manage , remote repository</li>
+        <li>Unpak can run standalone for torrents etc</li>
+    </ul>
+
+     <hr>
+     <a name="screenshots">
+         <br><img src=os-tv.png>
+         <br><img src=os-films.png>
+         <br><img src=os-film1.png>
+         <hr>
+The index is built by searching English Language sites imdb,google and epguides. If you would prefer to use 
+the folder titles in the index run the following commands : (once only)
+ <pre>
+su -s /bin/sh nmt
+cd /share/Apps/oversight
+echo "FOLDERTITLES=1" >> catalog.cfg
+
+#Rebuild index
+rm index.db index.db.idx
+./catalog.sh FORCE IGNORENFO /share/
+</pre>
+<table width=100%><tr><td>
+</td><td width=20% align=right>
+If you find anything useful, donations are welcome however small, to spur me on through the dark nights...
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+    <input type="hidden" name="cmd" value="_s-xclick">
+    <input type="hidden" name="hosted_button_id" value="2496882">
+    <input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="">
+    <img alt="" border="0" src="https://www.paypal.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+</form>
+</td></tr></table>
+
+         
+</body>
+</html>

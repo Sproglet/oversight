@@ -1,0 +1,60 @@
+ID     Done       Have  ETA           Up    Down  Ratio  Status       Name
+   1     0%   417.2 KB  10 min       0.0   123.1   0.00  Downloading  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]
+Sum:          417.2 KB               0.0   123.1
+# /share/Apps/Transmission/bin/transmission-remote -l
+ID     Done       Have  ETA           Up    Down  Ratio  Status       Name
+   1    20%    15.3 MB  2 min       24.0   391.7   0.06  Up & Down    Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]
+Sum:           15.3 MB              24.0   391.7
+# /share/Apps/Transmission/bin/transmission-remote -l
+ID     Done       Have  ETA           Up    Down  Ratio  Status       Name
+   1   100%    73.6 MB  Done         0.0     0.0   0.03  Seeding      Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]
+Sum:           73.6 MB               0.0     0.0
+
+# /share/Apps/Transmission/bin/transmission-remote -t 1 -i
+NAME
+  Id: 1
+  Name: Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]
+  Hash: cc909587f702f0fd945855b99b9b4107d78607aa
+
+TRANSFER
+  State: Seeding
+  Location: /share/Download
+  Percent Done: 100%
+  ETA: Unknown
+  Download Speed: 0.0 KB/s
+  Upload Speed: 0.0 KB/s
+  Have: 73.6 MB (73.6 MB verified)
+  Total size: 73.6 MB (73.6 MB wanted)
+  Downloaded: 73.7 MB
+  Uploaded: 4.7 MB
+  Ratio: 0.06
+  Corrupt DL: 224.0 KB
+  Peers: connected to 2, uploading to 1, downloading from 0
+
+# /share/Apps/Transmission/bin/transmission-remote -t 1 -f
+Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0] (13 files):
+  #  Done Priority Get      Size  Name
+  0: 100% Normal   Yes 799 bytes  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/00. Michael Jackson - Off The Wall.m3u
+  1: 100% Normal   Yes    1.6 KB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/00. Michael Jackson - Off The Wall.nfo
+  2: 100% Normal   Yes   10.9 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/01 - Don't Stop 'Til You Get Enough.mp3
+  3: 100% Normal   Yes    6.2 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/02 - Rock With You.mp3
+  4: 100% Normal   Yes    9.8 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/03 - Working Day And Night.mp3
+  5: 100% Normal   Yes    8.5 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/04 - Get On The Floor.mp3
+  6: 100% Normal   Yes    6.9 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/05 - Off The Wall.mp3
+  7: 100% Normal   Yes    5.0 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/06 - Girlfriend.mp3
+  8: 100% Normal   Yes    5.6 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/07 - She's Out Of My Life.mp3
+  9: 100% Normal   Yes    7.5 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/08 - I Can't Help It.mp3
+ 10: 100% Normal   Yes    6.4 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/09 - It's The Falling In Love.mp3
+ 11: 100% Normal   Yes    6.6 MB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/10 - Burn This Disco Out.mp3
+ 12: 100% Normal   Yes  113.2 KB  Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]/Dingo_RG.jpg
+
+# /share/Apps/Transmission/bin/transmission-remote -t 1 --move /share/Complete/
+localhost:9091 responded: "success"
+
+# Rename ------------
+# /share/Apps/Transmission/bin/transmission-remote -l
+ID     Done       Have  ETA           Up    Down  Ratio  Status       Name
+   1   100%    73.6 MB  Done         0.0     0.0   0.07  Stopped      Michael Jackson - Off The Wall {Original} (1979) [EAC - Lame V0]
+Sum:           73.6 MB               0.0     0.0
+
+

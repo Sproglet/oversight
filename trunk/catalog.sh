@@ -12,7 +12,9 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090605-2BETA
+VERSION=20090707-1BETA
+
+
 
 
 
@@ -3160,8 +3162,37 @@ tmp,possibleTitle,f,names,links,i,ltitle) {
  if (tmp != "" && ltitle == tmp) {
  alternateTitles[possibleTitle]=1;
  }
+
+
+
+
+
+
  possibleTitle="";
  }
+}
+
+
+
+
+
+
+
+
+#
+
+#
+
+#
+
+
+
+
+#
+
+#
+
+ } 
 }
 
 

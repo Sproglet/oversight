@@ -24,7 +24,9 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #TODO Cope with par,zip combos. Currently it will try to repair rather than unzip-repair
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
-VERSION=20090605-1BETA
+VERSION=20090707-1BETA
+# Fixed reference to NZBOP_APPBIN
+#VERSION=20090605-1BETA
 #   Fixed temp file location
 #VERSION=20081207-BETA07
 #   Test _brokenlog.txt and get pars right away if present.
@@ -180,7 +182,7 @@ DETAIL() { LOG DETAIL "$@"; }
 #Get all lines with / = / remove spaces around '=' , prefix with NZBOP_ , upper case , replace x.y=z with x_y=z
 load_nzbget_settings_pre_v7() {
     #eg ParCheck will become NZBOP_PARCHECK
-    if [ -z "{$NZBOP_APPBIN:-}" ] ; then
+    if [ -z "${NZBOP_APPBIN:-}" ] ; then
     nzbget_cmd -p | awk '
 / = / {
     $0 = "NZBOP_"$0;

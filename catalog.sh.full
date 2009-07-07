@@ -3191,9 +3191,9 @@ tmp,possibleTitle,f,names,links,i,ltitle) {
 #
 #    if (i > length(possibleTitle)) return 1;
 #
-
-    } 
-}
+#
+#    } 
+#}
 
 #If a title has exactly two words and the first word is longest return initial of word1 followed by word2
 # eg fguy for family guy

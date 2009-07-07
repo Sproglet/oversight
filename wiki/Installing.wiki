@@ -1,0 +1,28 @@
+#labels Phase-Deploy
+#How to install Oversight
+
+= Introduction =
+
+There are four ways to install Oversight on your [http://www.networkedmediatank.com/wiki/index.php/Products Netowrked Media Tank]. 
+
+All methods assume your NMT is connected to your home network.
+
+== Install Using the Community Software Installer (CSI) ==
+
+  * Install the [http://www.nmtinstaller.com/ CSI] Program on your PC. Then select the Oversight Package.
+  * Configure It with the IP Address of your NMT
+  * Select the Oversight Package 
+  * Install
+
+== Install Using the Mini Installer == 
+
+  * Install the mini-installer scripts on your PC. 
+  * Run the Oversight Batch file or Shell script.
+
+== Manual Install ==
+
+  * TBC 
+
+== Manual Install with telnet activation ==
+
+  * TBC

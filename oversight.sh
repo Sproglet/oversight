@@ -1,5 +1,7 @@
 #!/bin/sh
-VERSION=20090605-1BETA
+VERSION=20090707-1BETA
+# Fixed reference to NZBOP_APPBIN
+#VERSION=20090605-1BETA
 #Cant use named pipes due to blocking at script level
 EXE=$0
 while [ -L "$EXE" ] ; do

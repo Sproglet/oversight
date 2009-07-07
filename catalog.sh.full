@@ -12,7 +12,9 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090605-2BETA
+VERSION=20090707-1BETA
+# Fixed reference to NZBOP_APPBIN
+#VERSION=20090605-1BETA
 # Added more checking around nfo name
 
 # TV AWK INTERFACE

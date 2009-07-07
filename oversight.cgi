@@ -47,7 +47,8 @@ esac
 
 
 DEBUG=1 #Debug also disables the cache
-VERSION=20090605-2BETA
+VERSION=20090707-1BETA
+
 HOSTNAME=`hostname`
 
 APPDIR=/share/Apps/oversight

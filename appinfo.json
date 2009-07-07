@@ -1,7 +1,7 @@
 {
     appinfo_format="1";
     name="oversight";
-    version="20090605-2BETA";
+    version="20090707-1BETA";
     enabled="1";
     //daemon_script:
     //crontab:

@@ -1,6 +1,0 @@
-#!/bin/sh
-set -e
-if [ -f unpak.txt ] ; then
-    eval "$(grep ARG unpak.txt  | head -1 | sed 's/.*ARGS://' )"
-fi
-

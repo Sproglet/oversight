@@ -15,7 +15,9 @@ Changelog
 
 ==20090605-1BETA==
 
-  * catalog
+  * oversight (gui)
+    * Border on posters of new content
+  * catalog (scanner)
     * Fix bug for YAMJ multi-part naming convention
     * Display scan progress.
     * Get Season Posters and episode information from thetvdb.com then imdb

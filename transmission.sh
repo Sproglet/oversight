@@ -1,4 +1,5 @@
 #!/bin/sh -x
+# $Id$ 
 
 download_dir=/share/Download
 seed_dir=/share/Complete

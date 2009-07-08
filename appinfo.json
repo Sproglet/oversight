@@ -1,7 +1,8 @@
+// $Author$ $Id$ $Date$ 
 {
     appinfo_format="1";
     name="oversight";
-    version="20090707-1BETA";
+    version="20090707-2BETA";
     enabled="1";
     //daemon_script:
     //crontab:

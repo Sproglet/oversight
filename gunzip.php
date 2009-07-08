@@ -1,5 +1,6 @@
 #!/mnt/syb8634/server/php
 <?php
+# $Id$ 
 #
 # For platforms without gunzip 
 # Using redirection may add an extra blank line.

@@ -296,20 +296,33 @@ unqualified = one has year or country
 ---------------------------------------------------------------------
 Pre  Release TESTS
 ---------------------------------------------------------------------
-Unpak.sh
-        S00E00      S00.D12e (BB)   00x00   101
-        Movie       Mp3 
-        EXE         XXX         OldCfg 
-        Par-Fetch   All-Pars    No-Pars 
-        Standalone
-Catalog.sh
-        Cache update.
-oversight.cgi - 
-    Install             ReInstall
-    Mark/Unmark         Remove
-    Play Unsorted       Play Movie
-    Play TV             Delete 1 inside , 
-    Delete all inside,  Delete from overview. 
+== Unpak.sh ==
+    * Par-Fetch   
+    * All-Pars
+    * No-Pars 
+== Catalog.sh ==
+  * Tv formats
+    * S00E00
+    * S00.D12e (BB)
+    * 00x00
+    * 101
+    * Abbreviated Names
+        * initials | word-letter | letter-word | no vowels
+  * Movie
+  * Mp3 
+  * exe
+  * xxx
+== oversight.cgi == 
+  * Install
+  * ReInstall
+  * Mark/Unmark
+  * Remove
+  * Play Unsorted
+  * Play Movie
+  * Play TV
+  * Delete 1 inside , 
+  * Delete all inside,
+  * Delete from overview. 
 
 Parental Controls , TV/Film flip / Master/Slave 
 

@@ -1,3 +1,4 @@
-../nmt-scripts/publish oversight oversight.cgi *.sh *.css *.cgi *.full *.example images help/*.help \
+#!/bin/sh
+../nmt-scripts/publish `basename "$PWD"` "$@" oversight.cgi *.sh *.css *.cgi *.full *.example images help/*.help \
 	logs/.keep tmp/.keep install.sh *.html 
 #./bundle.unpak

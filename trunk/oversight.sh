@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=20090707-1BETA
+# $Id$ 
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 #Cant use named pipes due to blocking at script level

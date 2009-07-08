@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=20090605-1BETA
+# $Id$ 
 #Cant use named pipes due to blocking at script level
 EXE=$0
 while [ -L "$EXE" ] ; do

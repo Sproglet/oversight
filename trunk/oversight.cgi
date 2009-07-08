@@ -1,4 +1,8 @@
 #!/bin/sh
+VERSION=20090707-2BETA
+
+
+
 #!This is a compacted file. If looking at the source see oversight.cgi.full
 #!Compressed with
 #!sed -r 's/^[  ]+/ /;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' oversight.cgi.full > oversight.cgi
@@ -47,7 +51,6 @@ esac
 
 
 DEBUG=1 #Debug also disables the cache
-VERSION=20090707-1BETA
 
 HOSTNAME=`hostname`
 

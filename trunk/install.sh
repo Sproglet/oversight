@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$ 
 #--------------------------------------------------------------------------
 # INSTALL SCRIPTS FOR SYABAS NMT PLATFORM (eg PopcornHour)
 # (C) Alord 2008 GPL 2 License

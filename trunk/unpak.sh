@@ -190,6 +190,7 @@ load_nzbget_settings_pre_v7() {
     $1=toupper($1);
     gsub(/\./,"_",$1);
     sub(/ = /,"=");
+    print $0;
 }' > "$gTmpFile.nzb_cfg"
         #nzbget_cmd -p | grep ' = ' | sed 's/^/NZBOP_/;s/ = /=/;s/\.\([^=]*\)=/_\1=/' | grep -v 'nzbget_server' > "$gTmpFile.nzb_cfg"
         . "$gTmpFile.nzb_cfg"

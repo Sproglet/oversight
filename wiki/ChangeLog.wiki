@@ -1,0 +1,62 @@
+Changelog
+
+= Oversight Change Log =
+
+==20090707-2BETA==
+
+  * Fix typo in catalog.sh
+
+==20090605-2BETA==
+
+  * Minor bug fix to tvscanning when mapping imdbid to tvdbid
+
+==20090706-1BETA==
+   unpak      Fix reference to NZBOP_APPBIN for older nzbget
+
+==20090605-1BETA==
+
+  * catalog
+    * Fix bug for YAMJ multi-part naming convention
+    * Display scan progress.
+    * Get Season Posters and episode information from thetvdb.com then imdb
+    * Get Movie Posters from themoviedb.com / motechposters.com / imdb
+    * Search for imdblinks in online usenet nfo files.
+    * Removed deep search - not accurate enough
+    * Abbreviation Detection - eg ttscc , Grk , dh501 combined with usenet file search.
+    * Parsing and grouping of Big Brother UK format 
+    * Better Grouping of Daily Shows and Unknown shows
+    * Can use locally stored posters.
+
+Known Issues :    Sample Deletions not working for some.
+                  Reduce false positives further.
+==20090314-1BETA==
+                  
+  * unpak
+    * Fix to delete sample files.
+  * catalog
+    * Fix for quoted files. Should solve some scanning issues people are having.
+    * Fix multipart detection. CD01 
+    * Detect when Epguides links to pilot episode on IMDB rather than series e.g "Ugly Betty". 
+
+==20090507-1BETA==
+  * catalog
+    * Fix for short imdb ids (5 digit eg Simpsons)
+
+==20090507-1BETA==
+Mar05: oversight: Added Poster View
+
+==20090507-1BETA==
+  * oversight
+    * Update tool / unrolled db read loop
+  * unpak
+    * cross platform fix to awk regex
+
+==20090307-1BETA==
+  * catalog
+    * Split file detection fixed. 
+  * unpak
+    * Cross platform unpak fixes. Another path bug fixed.
+
+==20090307-1BETA==
+Apr30: catalog  : Better matching C.S.I to CSI ,aaf-sp.s13e07 
+                   unpak:Removed &quot;which&quot; command

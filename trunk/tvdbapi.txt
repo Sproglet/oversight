@@ -1,2 +1,0 @@
-http://www.thetvdb.com/api/1D62F2F90030C444/series/75897/all/en.zip
-    http://thetvdb.com/api/4144331619000000/series/73141/all/en.zip

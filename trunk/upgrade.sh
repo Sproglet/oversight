@@ -1,6 +1,18 @@
 #!/bin/sh
 # $Id$ 
 #Cant use named pipes due to blocking at script level
+
+#######################################################
+# THIS IS ALL BROKEN For a number of reasons.
+# Main one - hdx has no de-compression tools.
+# no unzip or gunzip - only common tool is unrar
+# but I dont want to create rar files as they 
+# are not free.
+####################################################
+# Now csi uses tar wrapped in zip so we should
+# standardise on zip for simplicity.
+# but it means hdx/egreat users must instally a newer busybox
+# #################################################
 EXE=$0
 while [ -L "$EXE" ] ; do
     EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
@@ -22,12 +34,14 @@ HTML() {
 
 
 site="http://prodynamic.co.uk/nmt/"
+site="http://$appnname.googlecode.com/svn/trunk/packages/"
+
 backupdir="$APPDIR.backup_undo"
 
 # $1 = remove version file
 get_new_version() {
     rm -f $$.v
-    if wget -q -O $$.v "$site/$appname/$1" ; then
+    if wget -q -O $$.v "$site/$1" ; then
         cat $$.v
     else
         echo ""
@@ -148,11 +162,14 @@ UPGRADE() {
 
 }
 
-logdir="$APPDIR/logs"
-
-mkdir -p "$logdir"
-
-UPGRADE "$@" > $logdir/upgrade.$$.log 2>&1
-
-chown -R $OWNER:$GROUP $logdir
-
+#
+# DISABLED UNTIL DONE PROPERLY
+#
+#logdir="$APPDIR/logs"
+#
+#mkdir -p "$logdir"
+#
+#UPGRADE "$@" > $logdir/upgrade.$$.log 2>&1
+#
+#chown -R $OWNER:$GROUP $logdir
+#

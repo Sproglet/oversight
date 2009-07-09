@@ -106,9 +106,11 @@ fi
 
 # Have to do fix endings because of WordPad. Also not all platforms have sed -i
 #cat preserves dest permissions
-if grep -q '$' "$APPDIR/catalog.cfg" ; then
+# note replace ^M with ^L-^N to avoid eol issues with subervsion
+# eol-style not doing as expected via cygwin/windows.
+if grep -q '[-]' "$APPDIR/catalog.cfg" ; then
     tmpFile="$tmp_dir/catalog.cfg.$$"
-    sed 's/$//' "$APPDIR/catalog.cfg" > "$tmpFile"
+    sed 's/[-]$//' "$APPDIR/catalog.cfg" > "$tmpFile"
     cat "$tmpFile" > "$APPDIR/catalog.cfg"
     rm -f "$tmpFile"
 fi

@@ -17,7 +17,8 @@ All methods assume your NMT is connected to your home network.
 == Install Using the Mini Installer == 
 
   * Download and unzip the [http://code.google.com/p/nmt-mini-installer/ mini-installer scripts] on your PC. 
-  * Run the Oversight Batch file or Shell script.
+  * [windows only] Run the windows/GET_OVERSIGHT Batch file
+  * [Linux/Mac] Run the linux_mac/get_oversight.sh Shell script.
 
 == Manual Install ==
 

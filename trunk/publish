@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/sh -x
 ./squeeze
 chmod 775 *cgi *.sh
-../nmt-scripts/publish `basename "$PWD"` "$@" oversight.cgi *.sh *.css *.cgi *.full *.example images help/*.help \
-	logs/.keep tmp/.keep install.sh *.html 
+../nmt-scripts/publish `basename "$PWD"` "$@" oversight.cgi \
+	*.sh *.css *.cgi *.full *.example images help/*.help \
+	logs/.keep tmp/.keep *.html
 #./bundle.unpak

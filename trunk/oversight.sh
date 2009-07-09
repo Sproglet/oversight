@@ -297,9 +297,14 @@ HERE
             SWITCHUSER "$OWNER" "$@"
             LISTEN >> "$log" 2>&1 || rm -f "$LOCK"
         fi
-        if [ `date '+%H%M'` = 0000 ] ; then
+        d="`date '+%H%M'`"
+        if [ "$d" = 0000 ] ; then
             check_for_upgrades
         fi
+        #Check torrents every 30 mins - make configurable
+        case "$d" in
+            *10|*40) $APPDIR/bin/torrent.sh transmission unpak_all ;;
+        esac
         exit;;
     UNINSTALL)
         "$NMT" NMT_CRON_DEL nmt "$appname" 

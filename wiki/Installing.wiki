@@ -3,7 +3,7 @@ How to install Oversight
 
 = Introduction =
 
-There are four ways to install Oversight on your [http://www.networkedmediatank.com/wiki/index.php/Products Netowrked Media Tank]. 
+There are four ways to install Oversight on your [http://www.networkedmediatank.com/wiki/index.php/Products Networked Media Tank]. 
 
 All methods assume your NMT is connected to your home network.
 

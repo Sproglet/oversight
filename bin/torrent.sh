@@ -12,30 +12,39 @@ unpak_index_torrent() {
     # for it when it is moved (see get_outer_seeding_path )
     # so when the new_inner_path is computed after moving it can 
     # be passed directly to unpak.sh
+    
+    name="`get_name "$1"`"
+    outer_path="`get_outer_path "$1"`"
     dest="`get_outer_seeding_path "$1"`"
     
-    # Very unlikely but check the seeding path doesnt already exist
-    # if we are breating a new folder 
-    if [ -n "`get_inner_folder_name "$1"`" ] ; then
-    	if [ -e "$dest" ] ; then
-    	    dest="${dest}`date +%u`"
-    	fi
-        mkdir -p "$dest"
+    if [ "$outer_path" -ef "$dest" ] ; then
+    	echo "[$1:$name] Already moved"
+    else
+    
+        # Very unlikely but check the seeding path doesnt already exist
+        # if we are breating a new folder 
+        if [ -n "`get_inner_folder_name "$1"`" ] ; then
+    	    if [ -e "$dest" ] ; then
+    	        dest="${dest}`date +%u`"
+    	    fi
+            mkdir -p "$dest"
+        fi
+        
+        echo "$1:$name :"
+        echo "   DEST is [$dest]"
+        echo "   PARENT is [$outer_path]"
+        echo "   ROOT is [`get_inner_path "$1"`]"
+
+        move_torrent "$1" "$dest"
+
+        echo Moved
     fi
-
-    echo "DEST is [$dest]"
-    echo "PARENT is [`get_outer_path "$1"`]"
-    echo "ROOT is [`get_inner_path "$1"`]"
-
-    move_torrent "$1" "$dest"
-
-    echo Moved
 
     new_inner_path="`get_inner_path "$1"`" 
 
-    echo "DEST is [$dest]"
-    echo "PARENT is [`get_outer_path "$1"`]"
-    echo "ROOT is [$new_inner_path]"
+    echo "   DEST is [$dest]"
+    echo "   PARENT is [`get_outer_path "$1"`]"
+    echo "   ROOT is [$new_inner_path]"
 
     completed_files "$1" > "$new_inner_path/unpak_files.txt"
     $unpak torrent_seeding "$new_inner_path" "$new_inner_path/unpak_files.txt"
@@ -160,10 +169,13 @@ transmission_move_torrent() {
 }
 transmission_get_name() {
     "$tr_remote" -l | awk '
+NR == 1 {
+    namePos=index($0,"Name");
+    next;
+}
+
 $1 == "'$1'" {
-    $1=$2=$3=$4=$5=$6=$7=$8=$9="";
-    sub(/^ +/,"",$0);
-    print $0;
+    print substr($0,namePos);
 }'
 }
 #==========================================================================

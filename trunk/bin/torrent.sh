@@ -13,8 +13,15 @@ unpak_index_torrent() {
     # so when the new_inner_path is computed after moving it can 
     # be passed directly to unpak.sh
     dest="`get_outer_seeding_path "$1"`"
-    mkdir -p "$dest"
-    echo "torrent $1 dest = $dest"
+    
+    # Very unlikely but check the seeding path doesnt already exist
+    # if we are breating a new folder 
+    if [ -n "`get_inner_folder_name "$1"`" ] ; then
+    	if [ -e "$dest" ] ; then
+    	    dest="${dest}`date +%u`"
+    	fi
+        mkdir -p "$dest"
+    fi
 
     echo "DEST is [$dest]"
     echo "PARENT is [`get_outer_path "$1"`]"
@@ -64,7 +71,7 @@ get_outer_seeding_path() {
 
 # Get full path to torrent inner folder
 get_inner_path() {
-    echo "`get_outer_path $1`/`get_inner_folder_name $1`"
+    echo "`get_outer_path "$1"`/`get_inner_folder_name "$1"`"
 }
 
 count_lines() {
@@ -85,7 +92,7 @@ transmission_completed_torrents() {
 # This is not part of the torrent structure
 transmission_get_location_path() {
     "$tr_remote" -t $1 -i |\
-    awk '$1 == "Location:" { print $2; }'
+    awk '$1 == "Location:" { sub(/^[^\/]+/,"") ; print $0; }'
 }
 
 # Return the name of the root folder *within* the torrent.
@@ -100,7 +107,11 @@ $1 ~ "^[0-9]+:$" {
     # Get the path to the file
     $1 = $2 = $3 = $4 = $5 = $6 = "";
     sub(/^ +/,"",$0) ;  # Trim
-    sub(/\/.*/,"",$0) ; # Remove sub path and filename
+    
+    # Remove sub path and filename
+    if (sub(/\/.*/,"",$0) == 0) {
+    	$0="";
+    }
     path=$0;
 
     if (path == "" ) {
@@ -270,6 +281,9 @@ transmission_get_name() { ...}
 
     $0 $clients unpak_index_torrent <id>
         # unpak and index a torrent - calls unpak/catalog
+        
+    $0 $clients get_outer_seeding_path <id>
+        # Get folder where torrent should be seeded from
 
 HERE
 exit 1;

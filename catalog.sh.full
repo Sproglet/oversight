@@ -390,12 +390,6 @@ END{
 
     g_tk = fix1(g_tk);
 
-    #For caps function
-    ABC_STR="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    abc_str=tolower(ABC_STR);
-    split(ABC_STR,ABC,"");
-    split(abc_str,abc,"");
-    
     if ( g_settings["catalog_tv_file_fmt"] == "" ) RENAME_TV=0;
     if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0;
 
@@ -567,19 +561,12 @@ function set_permissions(shellArg) {
     }
 }
 
-function caps(text,\
-i,j,abc_str,abc,ABC) {
-    #First letter
-    if ((j=index(abc_str,substr(text,1,1))) > 0) {
-        text = ABC[j] substr(text,2);
+function capitalise(text) {
+    text=" "text;
+    while (match(text," [a-z]") > 0) {
+        text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2);
     }
-    #Other letters.
-    for(i in ABC) {
-        while ((j=index(text," " abc[i] )) > 0) {
-            text=substr(text,1,j) ABC[i] substr(text,j+2);
-        }
-    }
-    return text;
+    return substr(text,2);
 }
 
 function set_db_fields() {
@@ -2480,7 +2467,7 @@ function firstDatum(inHash,i) {
 function bestScores(inHash,outHash,textMode,\
 i,bestScore,count,tmp,isHigher) {
     
-    dump(2,"pre best",inHash);
+    dump(1,"pre best",inHash);
     count = 0;
     for(i in inHash) {
         if (textMode) {
@@ -2501,7 +2488,7 @@ i,bestScore,count,tmp,isHigher) {
         outHash[i] = tmp[i];
         count++;
     }
-    dump(1,"post best",outHash);
+    dump(0,"post best",outHash);
     return count;
 }
 
@@ -2548,7 +2535,7 @@ tvDbSeriesPage,alternateTitles) {
 
     if (tvDbSeriesPage == "" ) {
         g_search_total["thetvdb"]++;
-        DEBUG("Checking TvDvTitles for ["title"]");
+        DEBUG("Checking TvDbTitles for ["title"]");
 
         tvDbSeriesPage = searchTvDbTitles(idx,title);
         DEBUG("getAllInfoFromTvDbAndImdbLink: bytitles="tvDbSeriesPage);
@@ -2640,6 +2627,7 @@ closeTitles,best) {
 
     searchTvDb(title,"FirstAired,Overview",closeTitles);
 
+    dump(0,"searchTvDb out",closeTitles);
 
     best = selectBestOfBestTitle(idx,closeTitles);
     return best;
@@ -2752,12 +2740,12 @@ id,xml) {
 function selectBestOfBestTitle(idx,titles,\
 id,bestId,bestFirstAired,firstAired,ages,count) {
     INFO("TODO:Refine selection rules here. May user should choose");
+    dump(0,"closely matched titles",titles);
     for(id in titles) count++;
 
     if (count = 1) {
         bestId = id;
     } else {
-        dump(1,"closely matched titles",titles);
 
         INFO("For now just getting the most recent first aired for "idx" "g_category[idx]);
         bestFirstAired="";
@@ -2866,8 +2854,16 @@ allTitles,f,line,info,bestId,currentId,currentName,requiredTagNames,add,i) {
 }
 
 function dump(lvl,label,array,\
-i) {
-    if (DBG-lvl >= 0) for(i in array) DEBUG(label":"i"=["array[i]"]");
+i,c) {
+    if (DBG-lvl >= 0)   {
+        for(i in array) {
+            DEBUG(label":"i"=["array[i]"]");
+            c++;
+        }
+        if (c == 0 ) {
+            DEBUG(label":<empty>");
+        }
+    }
 }
 
 # IN imdb id tt0000000
@@ -3420,7 +3416,7 @@ function cleanTitle(t) {
 
     gsub(/[^A-Za-z0-9]+/," ",t);
     gsub(/ +/," ",t);
-    t=trim(caps(tolower(t)));
+    t=trim(capitalise(tolower(t)));
     return t;
 }
 
@@ -3797,7 +3793,7 @@ f,newTitle,imdbLink,imdbLinkAndText,i,j,line,text2,hyp2,episodeTextHyphen,episod
                     imdbLink=extractImdbLink(imdbLinkAndText);
 
                     #Refine the title.
-                    newTitle=trim(caps(extractTagText(imdbLinkAndText,"a")));
+                    newTitle=trim(capitalise(extractTagText(imdbLinkAndText,"a")));
                     adjustTitle(idx,newTitle,"epguides");
 
 
@@ -5510,7 +5506,7 @@ main() {
 
     clean_tmp
     set +e
-    echo "[INFO] catalog version $VERSION"
+    echo '[INFO] catalog version '$VERSION' $Id$'
     sed 's/^/\[INFO\] os version /' /proc/version
     if [ -f /mnt/syb8634/VERSION ] ; then
         sed -rn '/./ s/^/\[INFO\] nmt version /p' /mnt/syb8634/VERSION

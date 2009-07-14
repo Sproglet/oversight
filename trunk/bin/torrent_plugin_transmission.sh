@@ -30,9 +30,28 @@ $1 ~ "^[0-9]+$" {
 ';
 }
 
+bt_set_global_seed_ratio() {
+    #"$tr_remote" --global-seedratio "$1"
+    bt_set_option "ratio-limit" "$1"
+    bt_set_option "ratio-limit-enabled" true
+}
+
+bt_list_active_seeding_torrents() {
+    "$tr_remote" -l | awk '$1 ~ /^[0-9]+$/ && $2 == "100%" && index($0,"Seeding") { print $1 }';
+}
+
+bt_list_incomplete_stopped_torrents() {
+    "$tr_remote" -l | awk '$1 ~ /^[0-9]+$/ && $2 != "100%" && index($0,"Stopped") { print $1 }';
+}
+
+bt_list_incomplete_torrents() {
+    "$tr_remote" -l | awk '$1 ~ /^[0-9]+$/ && $2 != "100%" { print $1 }';
+}
+
+
 # return the location folder that contains the torrent.
 # This is not part of the torrent structure
-bt_get_location_path() {
+bt_get_outer_path() {
     "$tr_remote" -t $1 -i |\
     awk '$1 == "Location:" { sub(/^[^\/]+/,"") ; print $0; }'
 }
@@ -79,8 +98,8 @@ END {
 #
 # The file names listed must be relative to the inner root folder
 # of of the #torrent
-bt_completed_files() {
-    inner_root="`get_inner_folder_name $1`";
+bt_list_completed_files() {
+    inner_root="`bt_get_inner_folder_name $1`";
 
     "$tr_remote" -t $1 -f | awk '
 BEGIN {
@@ -118,9 +137,6 @@ $1 == "'$1'" {
 
 # $1=option (unquoted) $2=value (including quotes if a string )
 bt_set_option() {
-    echo "setting $1=$2"
-    bt_stop
-    sleep 5
     cp "$bt_config" "$bt_config.old" 
     awk '
 BEGIN {
@@ -153,21 +169,34 @@ index($0,key) {
 
 1 # print the current line
 ' "$bt_config.old" > "$bt_config"
-    bt_start
 }
 
 bt_set_upload_slots_per_torrent() {
     bt_set_option "upload-slots-per-torrent" "$1";
 }
+bt_set_peers_per_torrent() {
+    bt_set_option "peer-limit-per-torrent" "$1";
+}
+bt_set_peers_global() {
+    bt_set_option "peer-limit-global" "$1";
+}
 
-bt_start() {
+bt_startup() {
     TRANSMISSION_WEB_HOME=/share/Apps/Transmission/webui \
     /share/Apps/Transmission/bin/transmission-daemon \
     -g /share/Apps/Transmission/.transmission -T -w /share/Download
 }
 
-bt_stop() {
+bt_shutdown() {
     kill `ps | awk '/[t]ransmission-daemon/ {print $1}'` || true
 }
 
+bt_stop_torrent() {
+    echo "Stopping torrent $1"
+    $tr_remote -t "$1" --stop | grep success
+}
+bt_start_torrent() {
+    echo "Starting torrent $1"
+    $tr_remote -t "$1" --start | grep success
+}
 

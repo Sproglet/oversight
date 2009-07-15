@@ -116,7 +116,6 @@ MAIN_PAGE() {
         VERSION_DISPLAY=1
     fi
 
-        date > /tmp/d1
         awk '
 #BEGINAWK
 # This is read if query["view"] == movie or tv
@@ -566,30 +565,47 @@ i,ids,id,istart,q,s_re) {
 
 function removeSelectedRecords(idlist,\
 f,src,id,ids) {
-    for(src in idlist) {
-        if (idlist[src] != "") {
-
-            f=sourceHome(src)"index.db";
-
-            exec(sprintf("sed -ir \"/\t"ID"\t(%s)\t/ d\" \"%s\"",idlist[src],f));
-        }
-    }
+    change_ids_with_sed(idlist,"d");
+#    for(src in idlist) {
+#        if (idlist[src] != "") {
+#
+#            f=sourceHome(src)"index.db";
+#
+#            #exec("sed -ir \"/\t"ID"\t("idlist[src]")\t/ d\" \""f"\"");
+#        }
+#    }
 }
 
 # 0 = success
 function setSelectRecordFields(idlist,fieldName,fieldValue,\
-f,src) {
+f,src,sed_action) {
     
+    #replace ... in fieldName<tab>...<tab> with fieldValue
+    sed_action="s/(\t"fieldName"\t)[^\t]+\t/\\1"fieldValue"\t/";
+    change_ids_with_sed(idlist,sed_action);
+
+#    for(src in idlist) {
+#        if (idlist[src] != "") {
+#            # remove select ids from the idlist
+#
+#            f=sourceHome(src)"index.db";
+#            #exec("sed -ir \"/\t"ID"\t("idlist[src]")\t/ s/(\t"fieldName"\t)[^\t]+\t/\\1"fieldValue"\t/\" \""f"\"");
+#        }
+#    }
+}
+
+#IN idlist= hash index=oversight src (local="*" otherwise share name ) values=id1|id2|id3
+#IN sedAction = action to perform on lines with matching ids in the file
+function change_ids_with_sed(idlist,sedAction,\
+src,f) {
     for(src in idlist) {
         if (idlist[src] != "") {
-            # remove select ids from the idlist
-
             f=sourceHome(src)"index.db";
-
-            exec("sed -ir \"/\t"ID"\t("idlist[src]")\t/ s/(\t"fieldName"\t)[^\t]+\t/\\1"fieldValue"\t/\" \""f"\"");
+            exec("sed -ir \"/\t"ID"\t("idlist[src]")\t/ "sedAction"\" "quoteFile(f)" && "chown_cmd(f));
         }
     }
 }
+
 function rebuildSources(source_list,\
 s,h) {
     for(src in source_list) {
@@ -597,6 +613,7 @@ s,h) {
         if (source_list[src] != "") {
             h=sourceHome(src);
 
+            exec("ls -l /share/Apps/oversight/index* > /tmp/$$"); #TODO
             #Run lightweight synchronous update so gui is correct.
             exec("su nmt -s /bin/sh -c \""h"/catalog.sh REBUILD NOACTIONS\" ");
             exec(CLEAR_CACHE_CMD);
@@ -2323,9 +2340,6 @@ BEGIN {
 
     g_quote="'"'"'";
 
-    print startTime % 60 > "/tmp/d2"; # TODO remove
-
-
     g_remote_addr=ENVIRON["REMOTE_ADDR"];
     g_query_string=ENVIRON["QUERY_STRING"];
     g_has_post_data=0;
@@ -2549,10 +2563,18 @@ function readFormData2(query,
     }
 }
 
+function chown(f) {
+    system(chown_cmd(f));
+}
+
+function chown_cmd(f) {
+   return "chown nmt:nmt "quoteFile(f);
+}
+
 function touch(f) {
    printf "" >> f;
    close(f);
-   system("chown nmt:nmt "quoteFile(f));
+   chown(f);
 }
 
 #Return single quoted file name. Inner quotes are backslash escaped.
@@ -2934,7 +2956,7 @@ get_cached_page() {
     cp "$cachedList" "$PLAYLIST"
 }
 
-chown $OWNER "$APPDIR/index.db"* "$APPDIR/"*.cfg*
+chown $OWNER "$APPDIR/index.db"* "$APPDIR/"*.cfg
 
 err_page=$TMPDIR/oversight.$$.err
 

@@ -416,13 +416,10 @@ END{
         unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
     }
 
-    if (1 in FOLDER_ARR) {
+    status("Scanning");
+    scan_folder_for_new_media(FOLDER_ARR);
 
-        status("Scanning");
-        scan_folder_for_new_media(FOLDER_ARR);
-
-        process_scanned_files(20);
-    }
+    process_scanned_files(20);
 
     clean_capture_files();
 
@@ -448,25 +445,25 @@ END{
 }
 
 #IN indexHash - hash whose indexes are for scanned items ready to be processed.
-function merge_subset_of_scanned_files(indexHash,\
-file_to_db,overview_db,ov_count,deleteCount) {
+function merge_files_and_do_actions(indexHash,\
+file_to_db,overview_db,ov_count) {
     if (g_opt_dry_run) {
         INFO("Database update skipped - dry run");
         return;
     }
     DB_SIZE = loadDatabase(INDEX_DB,DB_ARR,file_to_db);
     if (lockdb()) {
-        if (g_pruned || g_opt_no_actions) {
+        if (g_absent_files_removed || g_opt_no_actions) {
             #Just copy the file if no actions requested. In this case
             #all we want to do are minimal updates so the gui can re-read the
             #database index quickly. Eg when marking a file.
             exec("cp "quoteFile(INDEX_DB)" "quoteFile(INDEX_DB_NEW));
         } else {
             remove_absent_files_from_new_db(DB_SIZE,DB_ARR,INDEX_DB_NEW); 
-            g_pruned=1;
-        }
+            g_absent_files_removed=1;
 
-        deleteCount = remove_files_with_delete_actions(DB_ARR,DB_SIZE);
+            remove_files_with_delete_actions(DB_ARR,DB_SIZE);
+        }
 
         add_new_scanned_files_to_database(indexHash,INDEX_DB_NEW,DB_ARR,file_to_db);
 
@@ -654,12 +651,14 @@ temp,f) {
     gLS_FILE_POS=0;
     gLS_TIME_POS=0; 
 
+    if (1 in folderArray) {
     temp=NEW_CAPTURE_FILE("MOVIEFILES")
 
     findLSFormat(temp);
 
-    for(f in folderArray) {
-        scan_contents(folderArray[f],temp);
+        for(f in folderArray) {
+            scan_contents(folderArray[f],temp);
+        }
     }
 }
 
@@ -1098,7 +1097,7 @@ function add_overview_index(overview_db,ov_count,name,
     for(row = 0 ; row - ov_count < 0 ; row++ ) {
         ord[row]=row;
     }
-    dump("Overview pre sort "ov_count":",ord);
+    dump(2,"Overview pre sort "ov_count":",ord);
 
     sortField=OVERVIEW_FIELDS[name];
     if (substr(sortField,1,1) == ".") {
@@ -1106,7 +1105,7 @@ function add_overview_index(overview_db,ov_count,name,
     }
     DEBUG("Creating index for "name" using "sortField" on "ov_count" items");
     heapsort(ov_count, OVERVIEW_FIELDS[name],1,ord,overview_db);
-    dump("Overview post sort "ov_count":",ord);
+    dump(1,"Overview post sort "ov_count":",ord);
 
     #Note ord[] maps a sort position to a record index
     #When storing against a record we need to store the sort position
@@ -1299,6 +1298,7 @@ bestUrl,keywords) {
 # Try all of the array indexs(not values) in deep web search for imdb link.
 # Deep search = just search without imdb to get titles from results then find common substring and 
 # use this substring for imdb search.
+# TODO:obsoleted
 function deepSearchArrayForIMDB(idx,k,titleThreshold,linkThreshold,triedTitles,\
 bestUrl,keywords,text) {
 
@@ -1324,6 +1324,7 @@ bestUrl,keywords,text) {
    DEBUG("Deep search result = ["bestUrl"]");
    return bestUrl;
 }
+# TODO:obsoleted
 function deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles,\
 bestUrl) {
     if (text != "" ) {
@@ -1366,6 +1367,7 @@ function basename(f) {
 }
 
 #Given a list of page titles determine the most frquently occuring substring
+# TODO:obsoleted
 function get_frequent_substring(titles,threshold,\
 cleaned_titles,i,j,k,substring_count,substring_words,txt) {
     for(i in titles) {
@@ -1405,6 +1407,7 @@ cleaned_titles,i,j,k,substring_count,substring_words,txt) {
 
 # Count all substrings in text. eg.
 # "And So say all of us" gives "and" "and so" and so say" ... "so" "so say" etc.
+# TODO:obsoleted
 function merge_substring_count(title,substring_count,substring_words,\
 txt,first_word_pos,e,s,w,start,i,j,sep,current_title_substrings) {
 
@@ -1539,9 +1542,14 @@ f,imdbid,imdb,newPosterUrl,line) {
 function parseDbRow(row,arr,file_count,\
 fields,f,i,fileRe) {
     split(row,fields,"\t");
-    for(i=2 ; (i in fields) ; i += 2 ) {
-        arr[fields[i],file_count] = fields[i+1];
+    for(i in fields) {
+        if (i%2 == 0) {
+            arr[fields[i],file_count] = fields[i+1];
+        }
     }
+#    for(i=2 ; (i in fields) ; i += 2 ) {
+#        arr[fields[i],file_count] = fields[i+1];
+#    }
     f=arr[FILE,file_count];
     if (index(f,"//")) {
         gsub(/\/\/+/,"/",f);
@@ -1597,7 +1605,7 @@ arr_size,f,record_action) {
         } else {
             #DEBUG("Got file ["f"]");
             if (g_opt_no_actions && record_action != ACTION_NONE) {
-                INFO("noactions:Temporarily including item "db[ID,arr_size]" with action "record_action);
+                INFO("noactions:Temporarily allowing item "db[ID,arr_size]" with delayed action "record_action);
             }
             file_to_db[f]=arr_size;
 
@@ -1687,7 +1695,7 @@ function remove_files_with_delete_actions(db,file_count,\
 # mode=d delete media only, D=delete all related files.
 function deleteFiles(db,idx,mode,\
     p,parts,i,d,rmList) {
-    INFO("Deleting "db[FILE,idx]);
+    INFO("Deleting "db[FILE,idx]" mode = "mode);
     split(db[PARTS,idx],parts,"/");
     d=db[DIR,idx];
 
@@ -2157,12 +2165,13 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 function process_scanned_files(ready_to_merge_batch_size,\
 first_tv_db_entry,\
 idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,msg,\
-ready_to_merge,ready_to_merge_count,bestUrl2,itemStartTime,name,name2) {
+ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name2) {
 
     INFO("process_scanned_files");
 
     startTime = systime();
     numFiles=0;
+    total_merge_cycles=0;
     for ( idx in gMovieFiles) {
         numFiles++;
     }
@@ -2321,22 +2330,24 @@ ready_to_merge,ready_to_merge_count,bestUrl2,itemStartTime,name,name2) {
         }
         DEBUG("processed in "thisTime"s | processed "(idx+1)" items in "(elapsedTime)"s av time per item " (elapsedTime/(idx+1)) "s");
 
-        #Batch updates
+        #Batch updates so that user sees some progress
         ready_to_merge[idx]=1;
-
         ready_to_merge_count++
         DEBUG("ready_to_merge_batch_size = "ready_to_merge_batch_size);
         DEBUG("ready_to_merge_count = "ready_to_merge_count);
         if (ready_to_merge_batch_size != 0 ) {
             if ( ready_to_merge_count - ready_to_merge_batch_size > 0 ) {
-                merge_subset_of_scanned_files(ready_to_merge);
+                merge_files_and_do_actions(ready_to_merge);
                 delete ready_to_merge;
                 ready_to_merge_count=0;
+                total_merge_cycles++;
             }
         }
     }
-    if (ready_to_merge_count) {
-        merge_subset_of_scanned_files(ready_to_merge);
+    # At the end we always make sure merge_files_and_do_actions has been called
+    # at least once as this loads the database and carries out any file actions
+    if (total_merge_cycles == 0 || ready_to_merge_count) {
+        merge_files_and_do_actions(ready_to_merge);
         delete ready_to_merge;
         ready_to_merge_count=0;
     }
@@ -3420,6 +3431,7 @@ function cleanTitle(t) {
     return t;
 }
 
+# TODO:obsoleted
 function searchForBestTitleSubstring(query,threshold,\
 titles) {
     getTitlesFromGoogle(query,titles);
@@ -3434,6 +3446,7 @@ function de_emphasise(html) {
 
 # Search google for a filename and examine titles of search results.
 #Both google and yahoo have the main title inside <h3><a..>Title</a></h3>
+# TODO:obsoleted
 function getTitlesFromGoogle(query,titles,\
 f,h3pos,i,pos,html,h3txt ) {
     i=0;

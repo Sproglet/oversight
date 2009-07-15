@@ -1097,7 +1097,7 @@ function add_overview_index(overview_db,ov_count,name,
     for(row = 0 ; row - ov_count < 0 ; row++ ) {
         ord[row]=row;
     }
-    dump(2,"Overview pre sort "ov_count":",ord);
+    dump(4,"Overview pre sort "ov_count":",ord);
 
     sortField=OVERVIEW_FIELDS[name];
     if (substr(sortField,1,1) == ".") {
@@ -1105,7 +1105,7 @@ function add_overview_index(overview_db,ov_count,name,
     }
     DEBUG("Creating index for "name" using "sortField" on "ov_count" items");
     heapsort(ov_count, OVERVIEW_FIELDS[name],1,ord,overview_db);
-    dump(1,"Overview post sort "ov_count":",ord);
+    dump(4,"Overview post sort "ov_count":",ord);
 
     #Note ord[] maps a sort position to a record index
     #When storing against a record we need to store the sort position
@@ -1602,7 +1602,19 @@ arr_size,f,record_action) {
         } else if (f in file_to_db ) {
             WARNING("Duplicate detected for "f". Ignoring");
             deleteCurrentEntry(db,arr_size);
+
+        } else if ( db[DIR,arr_size] ~ g_settings["catalog_ignore_paths"] ) {
+
+            INFO("Removing Ignored Path ["db[DIR,arr_size]"]/"db[NAME,arr_size]);
+            deleteCurrentEntry(db,arr_size);
+
+        } else if ( db[NAME,arr_size] ~ g_settings["catalog_ignore_names"] ) {
+
+            INFO("Removing Ignored Name "db[DIR,arr_size]"/["db[NAME,arr_size]"]");
+            deleteCurrentEntry(db,arr_size);
+
         } else {
+
             #DEBUG("Got file ["f"]");
             if (g_opt_no_actions && record_action != ACTION_NONE) {
                 INFO("noactions:Temporarily allowing item "db[ID,arr_size]" with delayed action "record_action);

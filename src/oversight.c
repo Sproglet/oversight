@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "hashtable.h"
 #include "util.h"
 #include "gaya_cgi.h"
@@ -10,14 +11,16 @@ int main(int argc,char **argv) {
 
     int result=0;
 
+    printf("Content-Type: text/html\n\n");
+
     //array_unittest();
     util_unittest();
 
     struct hashtable *query=parse_query_string(getenv("QUERY_STRING"),NULL);
-/*
 
     struct hashtable *post=get_post_data();
 
+/*
     merge_hash(query,post);
 
     hashtable_destroy(post,1);
@@ -32,4 +35,6 @@ int main(int argc,char **argv) {
     return result;
     
 }
+
+
 

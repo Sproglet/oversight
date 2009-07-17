@@ -8,7 +8,8 @@ ifeq ($(OUT),nmt)
 	CFLAGS=-g -Wall -O -DOUT=$(OUT)
 endif
 
-OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o gaya_cgi.o array.o
+OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o config.o
+
 OBJECTS=hashtable.o hashtable_itr.o tester.o
 
 

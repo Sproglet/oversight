@@ -8,7 +8,6 @@
 #include "hashtable.h"
 #include "hashtable_itr.h"
 #include "hashtable_utility.h"
-#include "array.h"
 
 
 /*
@@ -97,7 +96,6 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
     int outlen = 0;
     int replace_len = strlen(replace);
 
-    array *a = array_new();
 
     if (s_in == NULL) {
         return NULL;
@@ -126,6 +124,7 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
 
     }
 
+    array *a = array_new(free);
 
     int eflag = 0;
     // Repeatedly add the bit before each regex match
@@ -174,48 +173,120 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
         s+=strlen(a->array[i]);
     }
 
-    array_free(a,free,0);
+    array_free(a);
     return s_out;
+}
+
+#define BUFSIZE 256
+/* return position of regex in a string. -1 if no match  */
+int regpos(char *s,char *pattern) {
+    assert(s);
+    assert(pattern);
+
+    int status;
+    regmatch_t pmatch[1];
+    regex_t re;
+
+    if ((status = regcomp(&re,pattern,REG_EXTENDED)) != 0) {
+
+        char buf[BUFSIZE];
+        regerror(status,&re,buf,BUFSIZE);
+        fprintf(stderr,"%s\n",buf);
+        assert(1);
+        return -1;
+    }
+
+    int pos = -1;
+
+    if (regexec(&re,s,1,pmatch,0) == 0) {
+        pos = pmatch[0].rm_so;
+    }
+
+    regfree(&re);
+    return pos;
+}
+
+/*
+ * Extract a single regex submatch
+ */
+char *regextract1(char *s,char *pattern,int submatch) {
+
+    array *a = regextract(s,pattern);
+    char *segment = NULL;
+
+    if (a == NULL) {
+        return NULL;
+    } else {
+        segment = a->array[submatch];
+        a->array[submatch] = NULL;
+        array_free(a);
+    }
+    return segment;
 }
 
 /*
  * Match a regular expression and return the submatch'ed braketed pair 0=the entire match
  */
-char *regextract(char *s,char *pattern,int submatch) {
+array *regextract(char *s,char *pattern) {
+
+    int submatch = 1;
+    // count number of submatch brackets
+    char *br;
+    for(br=pattern ; *br ; br ++ ) {
+        if (*br == '(') {
+            submatch++;
+        }
+    }
+
     assert(s);
     assert(pattern);
     int status;
-    regmatch_t pmatch[5];
-    char *result = NULL;
+    array *result = NULL;
 
 
-#define BUFSIZE 256
-    char buf[BUFSIZE];
     regex_t re;
 
     if ((status = regcomp(&re,pattern,REG_EXTENDED)) != 0) {
 
+        char buf[BUFSIZE];
         regerror(status,&re,buf,BUFSIZE);
         fprintf(stderr,"%s\n",buf);
         assert(1);
         return NULL;
     }
 
-    if (regexec(&re,s,2,pmatch,0) == 0) {
+    regmatch_t *pmatch = calloc(submatch+1,sizeof(regmatch_t));
 
-        int match_start = pmatch[submatch].rm_so;
-        int match_end = pmatch[submatch].rm_eo;
-        if (match_start == -1 ) {
-            result = NULL;
-        } else {
-            result = substring(s,match_start,match_end);
+    if (regexec(&re,s,submatch,pmatch,0) == 0) {
+
+        result = array_new(free);
+        int i;
+        for(i = 0 ; i < submatch ; i++ ) {
+
+            int match_start = pmatch[i].rm_so;
+            int match_end = pmatch[i].rm_eo;
+
+            if (match_start == -1 ) {
+
+                array_add(result,NULL);
+
+            } else {
+
+                array_add(result,substring(s,match_start,match_end));
+            }
         }
     }
+    free(pmatch);
 
     regfree(&re);
 
     return result;
 
+}
+
+// Free results of regextract
+void regextract_free(array *submatches) {
+    array_free(submatches);
 }
 
 /*
@@ -236,9 +307,13 @@ char *substring(char *s,int start_pos, int end_pos) {
  * if copy==0 then hash table h2 will be destroyed as values have moved to h1
  */
 void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
+
     if (hashtable_count(h2) > 0 ) {
-        struct hashtable_itr *itr = hashtable_iterator(h2);
-        do {
+
+       struct hashtable_itr *itr ;
+
+       for (itr = hashtable_iterator(h2) ; hashtable_iterator_advance(itr) ; ) {
+
             void *k = hashtable_iterator_key(itr);
             void *v = hashtable_iterator_value(itr);
             if (copy) {
@@ -249,7 +324,7 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
             if ( !hashtable_change(h1,k,v) ) {
                 hashtable_insert(h1,k,v);
             }
-        }
+        } 
     }
 
     // As h1 has h2 values we destroy h2 to avoid double memory frees.
@@ -259,42 +334,76 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
 }
 
 void util_unittest() {
+
+    printf("strings...\n");
+    // string functions
     char *hello = substring("XXhelloYY",2,7);
-    printf("%s\n",hello);
+    //printf("%s\n",hello);
     assert(strcmp(hello,"hello") == 0);
 
-    char *there = regextract("over there!","([a-z]+)!",1);
-    printf("%s\n",there);
+    //regex functions
+    //
+    printf("regextract...\n");
+    array *a = regextract("over there!","([a-z]+)!");
+    char *there = strdup(a->array[1]);
+    array_free(a);
+
     assert(strcmp(there,"there") == 0);
 
-    hello=join_str_fmt_free("%s %s",hello,there);
-    printf("%s\n",hello);
-    assert(strcmp(hello,"hello there") == 0);
 
+    hello=join_str_fmt_free("%s %s",hello,there);
+
+    printf("replaceall...\n");
     char *x=replace_all(hello,"e","E");
     printf("%s\n",x);
     assert(strcmp(x,"hEllo thErE") == 0);
 
+    printf("regpos...\n");
+    assert(regpos("hello","e") == 1);
+
+    printf("regmatch...\n");
+    array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)");
+    assert(matches);
+    assert(matches->size == 5);
+    assert(strcmp(matches->array[0],"a=b helllo d:ef") ==0);
+    assert(strcmp(matches->array[1],"a") ==0);
+    assert(strcmp(matches->array[2],"b") ==0);
+    assert(strcmp(matches->array[3],"d") ==0);
+    assert(strcmp(matches->array[4],"ef") ==0);
+    printf("regmatch4...\n");
+    array_free(matches);
+    printf("regmatch5...\n");
+
+    //printf("%s\n",hello);
+    assert(strcmp(hello,"hello there") == 0);
+
+    // hashtables
+    //
     struct hashtable *h = string_string_hashtable();
 
-    printf("insert %s = %s\n",hello,x);
     assert(hashtable_insert(h,hello,x));
 
-    assert(hashtable_search(h,hello) != NULL);
+    assert(hashtable_search(h,hello) == x);
     assert(hashtable_search(h,x) == NULL);
-    assert(hashtable_search(h,hello) != NULL);
-    assert(hashtable_search(h,x) == NULL);
-
-    printf("search = %s\n",(char *)hashtable_search(h,hello));
-    assert(hashtable_search(h,hello) != NULL);
 
     printf("free x\n");
     free(x);
 
     printf("destroy\n");
     hashtable_destroy(h,0);
-    //this may cause error
+    //this may cause error after a destroy?
     // free(hello);
-
 }
+
+void chomp(char *str) {
+    if (str) {
+        char *p = str + strlen(str) -1 ; 
+        while ( p > str  && strchr("\n\r",*p )) {
+            *p = '\0';
+            p--;
+        }
+    }
+}
+
+
 

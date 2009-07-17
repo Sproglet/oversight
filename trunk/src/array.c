@@ -4,14 +4,16 @@
 #include <regex.h>
 
 #include "array.h"
+#include "assert.h"
 
 
-array *array_new() {
+array *array_new(void(*free_fn)(void *)) {
 
     array *a = (array *)malloc(sizeof(array));
     a->array = NULL;
     a->size = 0;
     a->mem_size = 0;
+    a->free_fn = free_fn;
     return a;
 }
 
@@ -20,21 +22,17 @@ array *array_new() {
  * (*fr)=free function
  * free_by_address = if 1 then the address of the variable , rather then the memory is passed so that it can be set to NULL
  */
-void array_FREE(array **a_ptr, void(*fr)(void *) , int free_by_address ) {
-    array_free(*a_ptr,fr,free_by_address);
-    *a_ptr=NULL;
-}
-void array_free(array *a, void(*fr)(void *) , int free_by_address ) {
+void array_free(array *a) {
     int i;
 
-    if (fr != NULL) {
+    void(*free_fn)(void *);
+
+    free_fn = a->free_fn;
+
+    if (free_fn != NULL) {
         for(i = 0 ; i < a->size ; i++ ) {
             if (a->array[i]) {
-                if (free_by_address) {
-                    (*fr)(a->array+i);
-                } else {
-                    (*fr)(a->array[i]);
-                }
+                (*free_fn)(a->array[i]);
             }
         }
     }
@@ -98,7 +96,7 @@ void array_print(char *label,array *a) {
 
 void array_unittest() {
 
-    array *a = array_new();
+    array *a = array_new(free);
 
     array_add(a,"hello");
     array_add(a,"goodbye");
@@ -112,26 +110,37 @@ void array_unittest() {
     array_set(a,15,"fifteen of twenty");
     array_print("hello-world",a);
 
-    array_FREE(&a,NULL,0);
+    array_free(a);
 
     char *s="oneXXtwoXXthree\tfour";
 
     a = split(s,"XX");
 
-    array_print(s,a);
-    array_FREE(&a,NULL,0);
+    assert(a->size == 3);
+    assert(strcmp(a->array[0],"one") == 0);
+    assert(strcmp(a->array[1],"two") == 0);
+    assert(strcmp(a->array[2],"three\tfour") == 0);
+    array_free(a);
 
     a = split(s,"X");
-    array_print(s,a);
-    array_FREE(&a,NULL,0);
+    assert(a->size == 5);
+    assert(strcmp(a->array[0],"one") == 0);
+    assert(strcmp(a->array[1],"") == 0);
+    assert(strcmp(a->array[2],"two") == 0);
+    assert(strcmp(a->array[3],"") == 0);
+    assert(strcmp(a->array[4],"three\tfour") == 0);
+    array_free(a);
 
     a = split(s,"X+");
-    array_print(s,a);
-    array_FREE(&a,NULL,0);
+    assert(a->size == 3);
+    assert(strcmp(a->array[0],"one") == 0);
+    assert(strcmp(a->array[1],"two") == 0);
+    assert(strcmp(a->array[2],"three\tfour") == 0);
+    array_free(a);
 
     a = split(s,"X*");
     array_print(s,a);
-    array_FREE(&a,NULL,0);
+    array_free(a);
 
 
 }
@@ -141,7 +150,7 @@ void array_unittest() {
  * Split a strin s_in into an array using character ch.
  */
 array *splitch(char *s_in,char ch) {
-    array *a = array_new();
+    array *a = array_new(free);
     char *s = s_in;
     char *p;
     printf("split ch [%s] by [%c]\n",s,ch);
@@ -178,7 +187,7 @@ array *splitch(char *s_in,char ch) {
  */
 array *split(char *s_in,char *pattern) {
 
-    array *a = array_new();
+    array *a = array_new(free);
 
     if (s_in == NULL) {
         return a;

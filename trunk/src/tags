@@ -4,11 +4,13 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.7	//
-ARRAY_EXPAND	.\array.c	60;"	d	file:
+ARRAY_EXPAND	.\array.c	58;"	d	file:
 ARRAY_H_ALORD	.\array.h	2;"	d
-BUFSIZE	.\array.c	202;"	d	file:
+BUFSIZE	.\array.c	211;"	d	file:
 BUFSIZE	.\util.c	114;"	d	file:
-BUFSIZE	.\util.c	190;"	d	file:
+BUFSIZE	.\util.c	180;"	d	file:
+CFG_BUFSIZ	.\config.c	54;"	d	file:
+CONFIG_H_ALORD	.\config.h	2;"	d
 DEFINE_HASHTABLE_INSERT	.\hashtable.h	101;"	d
 DEFINE_HASHTABLE_ITERATOR_SEARCH	.\hashtable_itr.h	71;"	d
 DEFINE_HASHTABLE_REMOVE	.\hashtable.h	137;"	d
@@ -19,19 +21,24 @@ ITEM_COUNT	.\tester.c	/^static const int ITEM_COUNT = 4000;$/;"	v	file:
 POST_BUF	.\gaya_cgi.c	49;"	d	file:
 UTIL_H_ALORD	.\util.h	2;"	d
 __HASHTABLE_CWC22_H__	.\hashtable.h	4;"	d
-__HASHTABLE_CWC22_UTILITY_H__	.\hashtable_utility.h	4;"	d
 __HASHTABLE_ITR_CWC22__	.\hashtable_itr.h	4;"	d
 __HASHTABLE_PRIVATE_CWC22_H__	.\hashtable_private.h	4;"	d
+__XHASHTABLE_CWC22_UTILITY_H__	.\hashtable_utility.h	4;"	d
 array	.\array.h	/^    void **array;$/;"	m	struct:array_str
 array	.\array.h	/^typedef struct array_str array;$/;"	t	typeref:struct:array_str
-array_FREE	.\array.c	/^void array_FREE(array **a_ptr, void(*fr)(void *) , int free_by_address ) {$/;"	f
 array_add	.\array.c	/^void array_add(array *a,void *ptr) {$/;"	f
-array_free	.\array.c	/^void array_free(array *a, void(*fr)(void *) , int free_by_address ) {$/;"	f
-array_new	.\array.c	/^array *array_new() {$/;"	f
+array_free	.\array.c	/^void array_free(array *a) {$/;"	f
+array_new	.\array.c	/^array *array_new(void(*free_fn)(void *)) {$/;"	f
 array_print	.\array.c	/^void array_print(char *label,array *a) {$/;"	f
 array_set	.\array.c	/^void array_set(array *a,int idx,void *ptr) {$/;"	f
 array_str	.\array.h	/^struct array_str {$/;"	s
 array_unittest	.\array.c	/^void array_unittest() {$/;"	f
+chomp	.\util.c	/^void chomp(char *l) {$/;"	f
+config_load	.\config.c	/^struct hashtable *config_load(char *filename) {$/;"	f
+config_load_fp	.\config.c	/^struct hashtable *config_load_fp(FILE *fp) {$/;"	f
+config_unittest	.\config.c	/^void config_unittest() {$/;"	f
+config_write	.\config.c	/^void config_write(struct hashtable *cfg,char *filename) {$/;"	f
+config_write_fp	.\config.c	/^void config_write_fp(struct hashtable *cfg,FILE *fp) {$/;"	f
 create_hashtable	.\hashtable.c	/^create_hashtable(unsigned int minsize,$/;"	f
 e	.\hashtable_itr.h	/^    struct entry *e;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::entry
 entry	.\hashtable_private.h	/^struct entry$/;"	s
@@ -39,6 +46,7 @@ entrycount	.\hashtable_private.h	/^    unsigned int entrycount;$/;"	m	struct:has
 eqfn	.\hashtable_private.h	/^    int (*eqfn) (void *k1, void *k2);$/;"	m	struct:hashtable
 equalkeys	.\tester.c	/^equalkeys(void *k1, void *k2)$/;"	f	file:
 freeDbField	.\field.c	/^void freeDbField(DbField **f) {$/;"	f
+free_fn	.\array.h	/^    void (*free_fn)(void *);$/;"	m	struct:array_str
 freekey	.\hashtable_private.h	46;"	d
 from_hex	.\gaya_cgi.c	/^char from_hex(char ch) {$/;"	f
 from_hex	.\urlcode.c	/^char from_hex(char ch) {$/;"	f
@@ -76,6 +84,7 @@ main	.\oversight.c	/^int main(int argc,char **argv) {$/;"	f
 main	.\tester.c	/^main(int argc, char **argv)$/;"	f
 max_load_factor	.\hashtable.c	/^const float max_load_factor = 0.65;$/;"	v
 mem_size	.\array.h	/^    int mem_size;$/;"	m	struct:array_str
+merge_hashtables	.\util.c	/^void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {$/;"	f
 newDbField	.\field.c	/^DbField *newDbField(char *id,char *v) {$/;"	f
 next	.\hashtable_private.h	/^    struct entry *next;$/;"	m	struct:entry	typeref:struct:entry::entry
 one_ip	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
@@ -86,7 +95,10 @@ prime_table_length	.\hashtable.c	/^const unsigned int prime_table_length = sizeo
 primeindex	.\hashtable_private.h	/^    unsigned int primeindex;$/;"	m	struct:hashtable
 primes	.\hashtable.c	/^static const unsigned int primes[] = {$/;"	v	file:
 read_post_data	.\gaya_cgi.c	/^struct hashtable *read_post_data(char *post_filename) {$/;"	f
-regextract	.\util.c	/^char *regextract(char *s,char *pattern,int submatch) {$/;"	f
+regextract	.\util.c	/^array *regextract(char *s,char *pattern) {$/;"	f
+regextract1	.\util.c	/^char *regextract1(char *s,char *pattern,int submatch) {$/;"	f
+regextract_free	.\util.c	/^void regextract_free(array *submatches) {$/;"	f
+regpos	.\util.c	/^int regpos(char *s,char *pattern) {$/;"	f
 replace_all	.\util.c	/^char *replace_all(char *s_in,char *pattern,char *replace) {$/;"	f
 size	.\array.h	/^    int size;$/;"	m	struct:array_str
 split	.\array.c	/^array *split(char *s_in,char *pattern) {$/;"	f
@@ -103,6 +115,7 @@ two_ip	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uin
 two_port	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 uint16_t	.\tester.c	/^typedef unsigned short uint16_t;$/;"	t	file:
 uint32_t	.\tester.c	/^typedef unsigned int uint32_t;$/;"	t	file:
+url	.\oversight2.html	/^function url(args) {$/;"	f
 url_decode	.\gaya_cgi.c	/^char *url_decode(char *str) {$/;"	f
 url_decode	.\urlcode.c	/^char *url_decode(char *str) {$/;"	f
 url_encode	.\gaya_cgi.c	/^char *url_encode(char *str) {$/;"	f

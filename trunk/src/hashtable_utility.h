@@ -1,7 +1,7 @@
 /* Copyright (C) 2002 Christopher Clark <firstname.lastname@cl.cam.ac.uk> */
 
-#ifndef __HASHTABLE_CWC22_UTILITY_H__
-#define __HASHTABLE_CWC22_UTILITY_H__
+#ifndef __XHASHTABLE_CWC22_UTILITY_H__
+#define __XHASHTABLE_CWC22_UTILITY_H__
 
 /*****************************************************************************
  * hashtable_change

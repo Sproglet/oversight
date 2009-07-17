@@ -1,5 +1,5 @@
-#ifndef GAYA_CGI_H
-#define GAYA_CGI_H
+#ifndef __GAYA_CGI_H__
+#define __GAYA_CGI_H__
 #include "hashtable.h"
 
 struct hashtable *parse_query_string(char *q,struct hashtable *);

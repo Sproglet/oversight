@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <regex.h>
 #include <assert.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "util.h"
 #include "hashtable.h"
@@ -402,6 +405,39 @@ void chomp(char *str) {
             *p = '\0';
             p--;
         }
+    }
+}
+
+int exists(char *path) {
+       return access(path,F_OK);
+}
+
+int is_writeable(char *path) {
+       return access(path,W_OK);
+}
+
+int is_readable(char *path) {
+       return access(path,R_OK);
+}
+int is_executable(char *path) {
+       return access(path,X_OK);
+}
+
+int is_file(char *path) {
+    struct stat s;
+    if (stat(path,&s) == 0) {
+        return S_ISREG(s.st_mode);
+    } else {
+        return 0;
+    }
+}
+
+int is_dir(char *path) {
+    struct stat s;
+    if (stat(path,&s) == 0) {
+        return S_ISDIR(s.st_mode);
+    } else {
+        return 0;
     }
 }
 

@@ -25,17 +25,17 @@ PUSH() {
             case "$mode" in
 
             q)
-                cp -a *.full *.cgi *.css *.sh $root/.
+                cp -a *.full *.cgi *.css *.sh bin $root/.
                 ;;
 
             all)
-                cp -a *.full *.cfg *.cgi *.css *.sh help *.example *.php $root/.
+                cp -a *.full *.cfg *.cgi *.css *.sh bin help *.example *.php $root/.
                 echo images...
                 cp -a images/ $root/.
                 ;;
 
             *)
-                cp -a *.full *.cfg *.cgi *.css *.sh help *.example *.php $root/.
+                cp -a *.full *.cfg *.cgi *.css *.sh bin help *.example *.php $root/.
                 ;;
             esac
 

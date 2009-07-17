@@ -48,13 +48,17 @@ unpak_index_torrent() {
 
     bt_list_completed_files "$1" > "$new_inner_path/unpak_files.txt"
 
-    ( cd "$new_outer_path" && \
-    "$unpak torrent_seeding "$new_inner_path" "$new_inner_path/unpak_files.txt" )
+    ( cd "$new_outer_path" && "$unpak" torrent_seeding "$new_inner_path" "$new_inner_path/unpak_files.txt" )
 
 }
 
 unpak_all() {
-    advance_queue 2
+    max_downloading_count=2
+    max_seeding_count=1
+    seed_ratio=1.0
+
+    manage_queue "$max_downloading_count" "$max_seeding_count" "$seed_ratio"
+
     for i in `list_newly_completed_torrents` ; do
         unpak_index_torrent "$i"
     done
@@ -91,37 +95,65 @@ count_lines() {
     awk 'END { print NR; }'
 }
 
-active_torrent_count() {
-    bt_list_active_torrents | count_lines
+active_seeding_count() {
+    bt_list_active_seeding_torrents | count_lines
 }
 
-# $1 = queue size
-advance_queue() {
+downloading_count() {
+    bt_list_downloading_torrents | count_lines
+}
+
+active_torrent_count() {
+    $(( `active_seeding_count` + `downloading_count` ))
+}
+
+# $1 = downloding count
+# $2 = seeding count
+# $3 = global seed ratio
+manage_queue() {
+
     incomplete_torrents="`bt_list_incomplete_stopped_torrents`"
+
     start_torrent_id=`echo $incomplete_torrents | awk '{ print $1}'`
 
-    if [ -z "$incomplete_torrents" ] ; then
-        echo "advance_queue: No waiting torrents"
-    else
+    #Set ratio
+    if [ -n "$3" ] ; then
+        bt_set_global_seed_ratio_live "$3"
+    fi
 
-        #Check if the queue is full
-        while [ "`active_torrent_count`" -ge "$1" ] ; do
-
-            # queue is full - look for first seeding torrent and stop it
-            #this can be more intelligent later
-            stop_torrent_id="`bt_list_active_seeding_torrents | head -1`"
-            if [ -n "$stop_torrent_id" ] ; then
-                bt_stop_torrent "$stop_torrent_id" || true
+    #Check seeding count
+    seeding="`active_seeding_count`"
+    if [ "$seeding" -gt "$2" ] ; then
+        # queue is full - look for first seeding torrent and stop it
+        #this can be more intelligent later
+        for tid in `bt_list_active_seeding_torrents` ; do
+            if [ "$seeding" -gt "$2" ] ; then
+                bt_stop_torrent "$tid" || true
+                seeding=$(( $seeding - 1 ))
             fi
         done
-        #Check if the queue is still full
-        if [ "`active_torrent_count`" -ge "$1" ] ; then
-            echo "queue full: unable to start $start_torrent_id `bt_get_name "$start_torrent_id"`"
-        else
-            bt_start_torrent "$start_torrent_id" || true
-        fi
     fi
-    # TODO loop for more that one active torrent
+
+    #Stop excess downloading torrents
+    downloading=`downloading_count`
+    if [ "$downloading" -gt "$1" ] ; then
+        for tid in `bt_list_downloading_torrents` ; do
+            if [ "$downloading" -gt "$1" ] ; then
+                bt_stop_torrent "$tid" || true
+                downloading=$(( $downloading - 1 ))
+            fi
+        done
+    fi
+
+    # Start up any stopped torrents
+    if [ "$downloading" -lt "$1" ] ; then
+        for tid in `bt_list_incomplete_stopped_torrents` ; do
+            if [ "$downloading" -lt "$1" ] ; then
+                bt_start_torrent "$tid" || true
+                downloading=$(( $downloading + 1 ))
+            fi
+        done
+    fi
 }
 
 # $1 = total bandwidth available kbytes
@@ -181,6 +213,8 @@ $0 $clients bt_get_inner_folder_name <id> | Get the name of the root folder INSI
 $0 $clients bt_move_torrent <id>          | move a torrent but keep seeding it.
 $0 $clients bt_completed_files <id>       | list all completed files relative to inner path
 $0 $clients bt_list_incomplete_stopped_torrents 
+$0 $clients bt_list_downloading_torrents 
+$0 $clients bt_list_active_seeding_torrents 
 $0 $clients bt_list_incomplete_torrents  
 $0 $clients bt_startup  
 $0 $clients bt_shutdown  
@@ -198,10 +232,10 @@ $0 $clients get_inner_path <id>        | Get the path to the folder that contain
 $0 $clients list_newly_completed_torrents | get ids of torrents that are completed but still in download folder
 $0 $clients unpak_index_torrent <id>      | unpak and index a torrent - calls unpak/catalog
 $0 $clients get_outer_seeding_path <id>   | Get folder where torrent should be seeded from
-$0 $clients active_torrent_count
+$0 $clients downloading_count
 $0 $clients calc_upload_slots_standard totalkbytes | Set slot bw using azureus formula
 $0 $clients calc_upload_slots_kbytes totalkbytes slotkbytes | Set slot bw using absolute formula
-$0 $clients advance_queue <num active>    | Cant believe transmission doesnt have a queue
+$0 $clients manage_queue <max downloading> <max seeding> <seed ratio>    | Cant believe transmission doesnt have a queue
 
 HERE
 exit 1;

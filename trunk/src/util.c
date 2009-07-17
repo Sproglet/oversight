@@ -6,6 +6,8 @@
 
 #include "util.h"
 #include "hashtable.h"
+#include "hashtable_itr.h"
+#include "hashtable_utility.h"
 #include "array.h"
 
 
@@ -226,6 +228,34 @@ char *substring(char *s,int start_pos, int end_pos) {
     strncpy(p,s+start_pos,len);
     p[len]='\0';
     return p;
+}
+
+/*
+ * Merge one hash table into another.
+ * if allocate then values are copied using strdup.
+ * if copy==0 then hash table h2 will be destroyed as values have moved to h1
+ */
+void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
+    if (hashtable_count(h2) > 0 ) {
+        struct hashtable_itr *itr = hashtable_iterator(h2);
+        do {
+            void *k = hashtable_iterator_key(itr);
+            void *v = hashtable_iterator_value(itr);
+            if (copy) {
+                v = strdup((char *)v);
+                assert(v);
+            }
+
+            if ( !hashtable_change(h1,k,v) ) {
+                hashtable_insert(h1,k,v);
+            }
+        }
+    }
+
+    // As h1 has h2 values we destroy h2 to avoid double memory frees.
+    if (!copy) {
+        hashtable_destroy(h2,0);
+    }
 }
 
 void util_unittest() {

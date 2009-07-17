@@ -18,4 +18,13 @@ int regpos(char *s,char *pattern);
 void util_unittest();
 void chomp(char *line);
 
+int exists(char *path);
+
+int is_writeable(char *path);
+int is_readable(char *path);
+int is_executable(char *path);
+int is_file(char *path);
+int is_dir(char *path);
+
+
 #endif

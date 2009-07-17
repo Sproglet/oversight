@@ -311,7 +311,7 @@ HERE
             check_for_upgrades
         fi
 
-        torrent_check "$d"
+        #torrent_check "$d"
 
         exit;;
     UNINSTALL)

@@ -2,18 +2,25 @@ Changelog
 
 = Oversight Change Log =
 
-==20090707-2BETA==
+20090717-1BETA
+
+  * Fixed case of titles. [http://code.google.com/p/oversight/issues/detail?id=11&can=7 Issue 11]
+  * Fixed file deletions [http://code.google.com/p/oversight/issues/detail?id=1&can=7 Issue 1]
+  * unpak: fixed error with original nzbget 0.5.1 [http://code.google.com/p/oversight/issues/detail?id=10&can=7 Issue 10]
+  * catalog: Made sure folders/files are removed from index if they may ignore patterns. [http://code.google.com/p/oversight/issues/detail?id=2&can=7 Issue 2]
+
+20090707-2BETA
 
   * Fix typo in catalog.sh
 
-==20090605-2BETA==
+20090605-2BETA
 
   * Minor bug fix to tvscanning when mapping imdbid to tvdbid
 
-==20090706-1BETA==
+20090706-1BETA
    unpak      Fix reference to NZBOP_APPBIN for older nzbget
 
-==20090605-1BETA==
+20090605-1BETA
 
   * oversight (gui)
     * Border on posters of new content
@@ -31,7 +38,7 @@ Changelog
 
 Known Issues :    Sample Deletions not working for some.
                   Reduce false positives further.
-==20090314-1BETA==
+20090314-1BETA
                   
   * unpak
     * Fix to delete sample files.
@@ -40,25 +47,25 @@ Known Issues :    Sample Deletions not working for some.
     * Fix multipart detection. CD01 
     * Detect when Epguides links to pilot episode on IMDB rather than series e.g "Ugly Betty". 
 
-==20090507-1BETA==
+20090507-1BETA
   * catalog
     * Fix for short imdb ids (5 digit eg Simpsons)
 
-==20090507-1BETA==
+20090507-1BETA
 Mar05: oversight: Added Poster View
 
-==20090507-1BETA==
+20090507-1BETA
   * oversight
     * Update tool / unrolled db read loop
   * unpak
     * cross platform fix to awk regex
 
-==20090307-1BETA==
+20090307-1BETA
   * catalog
     * Split file detection fixed. 
   * unpak
     * Cross platform unpak fixes. Another path bug fixed.
 
-==20090307-1BETA==
+20090307-1BETA
 Apr30: catalog  : Better matching C.S.I to CSI ,aaf-sp.s13e07 
                    unpak:Removed &quot;which&quot; command

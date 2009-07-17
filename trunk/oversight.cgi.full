@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=20090714-1BETA
+VERSION=20090717-1BETA
 # $Id$
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
@@ -566,14 +566,6 @@ i,ids,id,istart,q,s_re) {
 function removeSelectedRecords(idlist,\
 f,src,id,ids) {
     change_ids_with_sed(idlist,"d");
-#    for(src in idlist) {
-#        if (idlist[src] != "") {
-#
-#            f=sourceHome(src)"index.db";
-#
-#            #exec("sed -ir \"/\t"ID"\t("idlist[src]")\t/ d\" \""f"\"");
-#        }
-#    }
 }
 
 # 0 = success
@@ -583,15 +575,6 @@ f,src,sed_action) {
     #replace ... in fieldName<tab>...<tab> with fieldValue
     sed_action="s/(\t"fieldName"\t)[^\t]+\t/\\1"fieldValue"\t/";
     change_ids_with_sed(idlist,sed_action);
-
-#    for(src in idlist) {
-#        if (idlist[src] != "") {
-#            # remove select ids from the idlist
-#
-#            f=sourceHome(src)"index.db";
-#            #exec("sed -ir \"/\t"ID"\t("idlist[src]")\t/ s/(\t"fieldName"\t)[^\t]+\t/\\1"fieldValue"\t/\" \""f"\"");
-#        }
-#    }
 }
 
 #IN idlist= hash index=oversight src (local="*" otherwise share name ) values=id1|id2|id3

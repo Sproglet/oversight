@@ -19,7 +19,7 @@ LDFLAGS=-g -Wall -O $(LIBS)
 
 
 oversight:  $(OVS_OBJS)
-	$(CC) $(LDFLAGS) -o oversight $(OVS_OBJS)
+	$(CC) $(LDFLAGS) -o oversight2.cgi $(OVS_OBJS)
 
 tester: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(OBJECTS)

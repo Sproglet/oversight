@@ -268,6 +268,15 @@ FIND_REMOTE() {
     echo "</pre>"
 }
 
+# Check for completed torrents every 30 minutes.
+torrent_check()  {
+    #Check torrents every 30 mins - make configurable 
+    case "$1" in
+        *10|*40) $APPDIR/bin/torrent.sh transmission unpak_all ;;
+    esac
+}
+
+
 case "$1" in 
     REBOOTFIX)
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
@@ -301,10 +310,9 @@ HERE
         if [ "$d" = 0000 ] ; then
             check_for_upgrades
         fi
-        #Check torrents every 30 mins - make configurable
-        case "$d" in
-            *10|*40) $APPDIR/bin/torrent.sh transmission unpak_all ;;
-        esac
+
+        torrent_check "$d"
+
         exit;;
     UNINSTALL)
         "$NMT" NMT_CRON_DEL nmt "$appname" 

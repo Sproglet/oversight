@@ -7,11 +7,40 @@ bt_config=/share/Apps/Transmission/.transmission/settings.json
 
 
 bt_list_completed_torrents() {
-    "$tr_remote" -l | awk '$2 == "100%" { print $1 }';
+    private_list_by_status '== "100%"' ""
 }
 
 #Return new-line separated list of active torrent ids.
-bt_list_active_torrents() {
+bt_list_downloading_torrents() {
+    private_list_by_status '!= "100%"' "Down"
+}
+
+bt_list_active_seeding_torrents() {
+    private_list_by_status '== "100%"' "Seeding"
+}
+
+bt_list_incomplete_stopped_torrents() {
+    private_list_by_status '!= "100%"' "Stopped"
+}
+
+bt_list_incomplete_torrents() {
+    private_list_by_status '!= "100%"' ""
+}
+
+
+private_list_by_status() {
+
+    percentage="$1"
+    status="$2"
+
+    if [ -n "$percentage" ] ; then
+        percentage=' && $2 '"$percentage"
+    fi
+
+    if [ -z "$status" ] ; then
+        status='.'
+    fi
+
     "$tr_remote" -l | awk '
 #Cant use word variables due to spaces in  ETA and Status Up & Down
 #So compute column position
@@ -21,32 +50,27 @@ NR == 1 {
     statusLen=namePos-statusPos;
     next;
 }
-$1 ~ "^[0-9]+$" {
+$1 ~ "^[0-9]+$" '"$percentage"' {
     status=substr($0,statusPos,statusLen);
-    if (index(status,"Seeding") || index(status,"Up")) {
+    if (status ~ "'"$status"'") {
         print $1;
     }
 }
 ';
 }
 
+#Transmission overwriting config file is a PITA 
+
+# Change while torrents are running
+bt_set_global_seed_ratio_live() {
+    "$tr_remote" --global-seedratio "$1"
+}
+
 bt_set_global_seed_ratio() {
-    #"$tr_remote" --global-seedratio "$1"
     bt_set_option "ratio-limit" "$1"
     bt_set_option "ratio-limit-enabled" true
 }
 
-bt_list_active_seeding_torrents() {
-    "$tr_remote" -l | awk '$1 ~ /^[0-9]+$/ && $2 == "100%" && index($0,"Seeding") { print $1 }';
-}
-
-bt_list_incomplete_stopped_torrents() {
-    "$tr_remote" -l | awk '$1 ~ /^[0-9]+$/ && $2 != "100%" && index($0,"Stopped") { print $1 }';
-}
-
-bt_list_incomplete_torrents() {
-    "$tr_remote" -l | awk '$1 ~ /^[0-9]+$/ && $2 != "100%" { print $1 }';
-}
 
 
 # return the location folder that contains the torrent.

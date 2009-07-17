@@ -15,16 +15,15 @@ int main(int argc,char **argv) {
 
     //array_unittest();
     util_unittest();
+    config_unittest();
 
     struct hashtable *query=parse_query_string(getenv("QUERY_STRING"),NULL);
 
-    struct hashtable *post=get_post_data();
+    struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
+
+    merge_hashtables(query,post,0); // post is destroyed
 
 /*
-    merge_hash(query,post);
-
-    hashtable_destroy(post,1);
-
     doActions(query);
 
     hashtable database_list= open_databases(query);

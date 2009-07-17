@@ -38,7 +38,7 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 
     }
 
-    array_free(qarr,free,0);
+    array_free(qarr);
 
     return hashtable_in;
 }
@@ -68,7 +68,7 @@ struct hashtable *read_post_data(char *post_filename) {
     int in_data = -1;
     int start_data = -2;
 
-    int format;
+    int format=cr_lf;
 
     //Used for file content
     char *upload_dir = getenv("UPLOAD_DIR");
@@ -133,7 +133,7 @@ struct hashtable *read_post_data(char *post_filename) {
 
         } else if (phase > 0 && strstr(post_line,"Content-Disposition: form-data; name=") == post_line) {
 
-            name=regextract(post_line,"name=\"([^\"]+)\"",1);
+            name=regextract1(post_line,"name=\"([^\"]+)\"",1);
             value=NULL;
             format=cr_lf;
 
@@ -141,7 +141,7 @@ struct hashtable *read_post_data(char *post_filename) {
                 //
                 //Start writing to a file
                 //
-                char *filename=regextract(post_line,"filename=\"([^\"]+)\"",1);
+                char *filename=regextract1(post_line,"filename=\"([^\"]+)\"",1);
 
                 if (filename != NULL) {
                     char *filepath = strdup(upload_dir);

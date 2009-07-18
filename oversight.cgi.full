@@ -78,8 +78,6 @@ CACHE_DIR="$TMPDIR/cache"
 
 appname=oversight
 
-unpak_bin="$APPDIR/$appname.sh"
-
 METHOD=POST
 UPLOAD_DIR=/share/
 

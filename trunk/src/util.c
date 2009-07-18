@@ -5,7 +5,9 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <pwd.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "util.h"
 #include "hashtable.h"
@@ -315,19 +317,23 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
 
        struct hashtable_itr *itr ;
 
-       for (itr = hashtable_iterator(h2) ; hashtable_iterator_advance(itr) ; ) {
+       itr = hashtable_iterator(h2);
+       do {
 
-            void *k = hashtable_iterator_key(itr);
-            void *v = hashtable_iterator_value(itr);
+            char *k = hashtable_iterator_key(itr);
+            char *v = hashtable_iterator_value(itr);
             if (copy) {
                 v = strdup((char *)v);
                 assert(v);
             }
 
-            if ( !hashtable_change(h1,k,v) ) {
+            if ( hashtable_change(h1,k,v) ) {
+                fprintf(stderr,"Changed [ %s ] = [ %s ]\n",k,v);
+            } else {
                 hashtable_insert(h1,k,v);
+                fprintf(stderr,"Added [ %s ] = [ %s ]\n",k,v);
             }
-        } 
+        } while(hashtable_iterator_advance(itr));
     }
 
     // As h1 has h2 values we destroy h2 to avoid double memory frees.
@@ -441,5 +447,97 @@ int is_dir(char *path) {
     }
 }
 
+
+char *appDir() {
+    char *d="/share/Apps/oversight";
+    if (!is_dir(d)) {
+        d=".";
+    }
+    return d;
+}
+
+char *tmpDir() {
+    static char *d=NULL;
+    
+    if (d == NULL ) {
+
+        d = nmt_subdir(appDir(),"tmp");
+    }
+    return d;
+}
+        
+//return new directory - name must be freed
+char *nmt_subdir(char *root,char *name) {
+
+    char *d = malloc(strlen(root)+strlen(name)+3);
+
+    sprintf(d,"%s/%s",root,name);
+
+    if (!is_dir(d)) {
+        nmt_mkdir(d);
+    }
+    return d;
+}
+
+void nmt_chown(char *d) {
+    if (nmt_uid() >= 0 && nmt_gid() >= 0) {
+        chown(d,nmt_uid(),nmt_gid());
+    }
+}
+
+int nmt_mkdir(char *d) {
+
+    int err;
+
+    if ((err=mkdir(d,0775)) != 0) {
+        fprintf(stderr,"unable to create [%s] : %d\n",d,errno);
+    } else {
+        nmt_chown(d);
+    }
+    return err;
+}
+
+static struct passwd *nmt_passwd = NULL;
+
+int nmt_uid() {
+
+    if (nmt_passwd == NULL ) {
+        nmt_passwd = getpwnam("nmt");
+    }
+    if (nmt_passwd != NULL ) {
+        return nmt_passwd->pw_uid;
+    } else {
+        return getuid();
+    }
+}
+
+int nmt_gid() {
+
+    if (nmt_passwd == NULL ) {
+        nmt_passwd = getpwnam("nmt");
+    }
+    if (nmt_passwd != NULL ) {
+        return nmt_passwd->pw_gid;
+    } else {
+        return getgid();
+    }
+}
+
+void hashtable_dump(char *label,struct hashtable *h) {
+
+    struct hashtable_itr *itr;
+    if (hashtable_count(h)) {
+       itr=hashtable_iterator(h);
+       do {
+
+            char *k = hashtable_iterator_key(itr);
+            char *v = hashtable_iterator_value(itr);
+
+            fprintf(stderr,"%s : %s=%s\n",label,k,v);
+        } while(hashtable_iterator_advance(itr));
+    } else {
+        fprintf(stderr,"%s : EMPTY HASH\n",label);
+    }
+}
 
 

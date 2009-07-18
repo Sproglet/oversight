@@ -4,6 +4,7 @@
 
 struct hashtable *string_string_hashtable();
 void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy);
+void hashtable_dump(char *label,struct hashtable *h);
 
 char *join_str_fmt_free(char *fmt,char *s1,char *s2);
 char *substring(char *s,int start_pos, int end_pos);
@@ -26,5 +27,15 @@ int is_executable(char *path);
 int is_file(char *path);
 int is_dir(char *path);
 
+char *appDir();
+char *tmpDir();
+
+int nmt_mkdir(char *d);
+char *nmt_subdir(char *root,char *name);
+
+void nmt_chown(char *d);
+
+int nmt_uid();
+int nmt_gid();
 
 #endif

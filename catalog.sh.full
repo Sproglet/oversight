@@ -13,7 +13,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090707-1BETA
+VERSION=20090718-1BETA
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 # Added more checking around nfo name
@@ -320,7 +320,7 @@ BEGIN {
     get_folders_from_args(FOLDER_ARR);
 }
 
-function status(msg) {
+function report_status(msg) {
     if (msg == "") {
         rm(g_status_file,1);
     } else {
@@ -332,6 +332,9 @@ function status(msg) {
 }
 
 END{
+
+    g_item_count = 0;
+
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
 
     for(i in g_settings) {
@@ -409,17 +412,14 @@ END{
     }
     gMovieFileCount = 0;
     gMaxDatabaseId = 0;
-    # DB_SIZE = loadDatabase(INDEX_DB,DB_ARR,file_to_db);
     
     if (!g_opt_no_actions) {
         load_settings("'$UNPAK_CFG'");
         unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
     }
 
-    status("Scanning");
     scan_folder_for_new_media(FOLDER_ARR);
 
-    process_scanned_files(20);
 
     clean_capture_files();
 
@@ -529,7 +529,7 @@ attempts,sleep,backoff) {
 function unlockdb() {
     INFO("Unlocked Database");
     rm(g_lock_file);
-    status("");
+    report_status("");
 }
 
 function monthHash(nameList,hash,\
@@ -645,31 +645,40 @@ function db_field(key,name,tag,overview) {
 }
 
 function scan_folder_for_new_media(folderArray,\
-temp,f) {
+temp,f,fmax) {
 
     #Need to make sure the ls format is as "standard"
     gLS_FILE_POS=0;
     gLS_TIME_POS=0; 
 
     if (1 in folderArray) {
-    temp=NEW_CAPTURE_FILE("MOVIEFILES")
+        fmax = 0 ; 
+        for(f in folderArray) fmax++;
 
-    findLSFormat(temp);
 
-        for(f in folderArray) {
-            scan_contents(folderArray[f],temp);
+        findLSFormat();
+
+        for(f=1 ; f <= fmax ; f++ ) {
+
+            g_progress[1]="folder "f"/"fmax;
+
+            report_status("Scan "g_progress[1]);
+            scan_contents(folderArray[f]);
         }
     }
 }
 
-function findLSFormat(temp,\
-folderNameNext,i,currentFolder) {
+function findLSFormat(\
+tempFile,folderNameNext,i,currentFolder) {
+
     DEBUG("Finding LS Format");
-    exec(LS" -Rl /proc/"JOBID" > "temp );
+
+    tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
+    exec(LS" -Rl /proc/"JOBID" > "tempFile );
     FS=" ";
     folderNameNext=1;
     
-    while((getline < temp) > 0 ) {
+    while((getline < tempFile) > 0 ) {
         if (folderNameNext) {
            currentFolder = $0;
            sub(/\/*:/,"",currentFolder);
@@ -685,23 +694,25 @@ folderNameNext,i,currentFolder) {
                         if ($i == "fd") gLS_FILE_POS=i;
                         if (index($i,":")) gLS_TIME_POS=i;
                     }
-                    DEBUG("File Position at "gLS_FILE_POS);
-                    DEBUG("Time Position at "gLS_TIME_POS);
+                    DEBUG("File position at "gLS_FILE_POS);
+                    DEBUG("Time position at "gLS_TIME_POS);
                     break;
                 } 
             }
         }
     }
-    close(temp);
+    close(tempFile);
 }
 
 # Input is ls -lR or ls -l
-function scan_contents(root,temp,
-currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
+function scan_contents(root,\
+tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) {
 
     DEBUG("PreScanning "root);
     if (root == "") return;
+
+    tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
 
     #Remove trailing slash. This ensures all folder paths end without trailing slash
     if (root != "/" ) {
@@ -720,26 +731,29 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
     # We want to list a file which may be a file, folder or symlink.
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
-    exec("( "LS" -Rl "quotedRoot"/ || "LS" -Rl "quotedRoot" ) > "temp );
-    FS=" ";
+    exec("( "LS" -Rl "quotedRoot"/ || "LS" -Rl "quotedRoot" ) > "tempFile );
     currentFolder = root;
     skipFolder=0;
     folderNameNext=1;
-    while((getline < temp) > 0 ) {
+
+    while((getline scan_line < tempFile) > 0 ) {
 
 
-        DEBUG( "ls: ["$0"]"); 
+        DEBUG( "ls: ["scan_line"]"); 
 
         store=0;
-        perms=$1;
 
-        if ($0 == "") continue;
+        if (scan_line == "") continue;
 
-        if (match($0,"^total [0-9]+$")) continue;
+        if (match(scan_line,"^total [0-9]+$")) continue;
+
+        split(scan_line,scan_words," +");
+
+        perms=scan_words[1];
 
         if (!match(substr(perms,2,9),"^[-rwxsSt]+$") ) {
             #Just entered a folder
-           currentFolder = $0;
+           currentFolder = scan_line;
            sub(/\/*:/,"",currentFolder);
            DEBUG("Folder = "currentFolder);
            folderNameNext=0;
@@ -765,33 +779,33 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
 
         } else if (!skipFolder) {
 
-            lc=tolower($0);
+            lc=tolower(scan_line);
 
             if ( lc ~ g_settings["catalog_ignore_names"] ) {
-                INFO("Ignore name "$0);
+                INFO("Ignore name "scan_line);
                 continue;
             }
 
             w5=lsMonth=lsDate=lsTimeOrYear="";
 
             # ls -l format. Extract file time...
-            w5=$5;
+            w5=scan_words[5];
 
             if ( gLS_TIME_POS ) {
-                lsMonth=$(gLS_TIME_POS-2);
-                lsDate=$(gLS_TIME_POS-1);
-                lsTimeOrYear=$(gLS_TIME_POS);
+                lsMonth=scan_words[gLS_TIME_POS-2];
+                lsDate=scan_words[gLS_TIME_POS-1];
+                lsTimeOrYear=scan_words[gLS_TIME_POS];
             }
 
             #Get Position of word at gLS_FILE_POS.
-            #(not cannot change $n variables as they cause corruption of $0.eg 
+            #(not cannot change $n variables as they cause corruption of scan_line.eg 
             #double spaces collapsed.
-            pos=index($0,$2);
+            pos=index(scan_line,scan_words[2]);
             for(i=3 ; i - gLS_FILE_POS <= 0 ; i++ ) {
-                pos=indexFrom($0,$i,pos+length($(i-1)));
+                pos=indexFrom(scan_line,scan_words[i],pos+length(scan_words[i-1]));
             }
-            $0=substr($0,pos);
-            lc=tolower($0);
+            scan_line=substr(scan_line,pos);
+            lc=tolower(scan_line);
 
             #Check for VIDEO_TS
             if (substr(perms,1,1) != "-") {
@@ -801,9 +815,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
                         gFolderCount[currentFolder]++;
                     }
 
-                    DEBUG("Folder ["$0"]");
+                    DEBUG("Folder ["scan_line"]");
 
-                    if ($0 == "VIDEO_TS") {
+                    if (scan_line == "VIDEO_TS") {
 
                         if (match(currentFolder,"/[^/]+$")) {
                             f = substr(currentFolder,RSTART+1);
@@ -829,16 +843,16 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
                     store=1;
                 }
 
-            } else if (match($0,"unpak.???$")) {
+            } else if (match(scan_line,"unpak.???$")) {
                 
-                gDate[currentFolder"/"$0] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
+                gDate[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
             } else if (match(lc,gExtRegEx1)) {
 
                 DEBUG("gFolderMediaCount[currentFolder]="gFolderMediaCount[currentFolder]);
                 #Only add it if previous one is not part of same file.
                 if (gFolderMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
-                  if ( checkMultiPart($0,gMovieFileCount) ) {
+                  if ( checkMultiPart(scan_line,gMovieFileCount) ) {
                       #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                       #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
                       if ( !setNfo(gMovieFileCount-1,".(|cd|disk|disc|part)[1-9]" extRe,".nfo") ) {
@@ -854,7 +868,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
 
             } else if (match(lc,"\\.nfo$")) {
 
-                nfo=currentFolder"/"$0;
+                nfo=currentFolder"/"scan_line;
                 gFolderInfoCount[currentFolder]++;
                 gFolderInfoName[currentFolder]=nfo;
                 gDate[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
@@ -862,14 +876,18 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot) {
 
             if (store) {
 
-                storeMovie(gMovieFileCount,$0,currentFolder,calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW));
+                storeMovie(gMovieFileCount,scan_line,currentFolder,calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW));
                 setNfo(gMovieFileCount,"\\.[^.]+$",".nfo");
                 gMovieFileCount++;
             }
         }
     }
-    close(temp);
-    DEBUG("Found "gMovieFileCount" items to add");
+
+    close(tempFile);
+
+    identify_and_catalog_scanned_files(20);
+
+    DEBUG("Finished Scanning "root);
 }
 
 # Convert a glob pattern to a regular exp.
@@ -890,6 +908,14 @@ function csv2re(text) {
 }
 
 function storeMovie(idx,file,folder,timeStamp) {
+
+    # If the folder has changed and we have more than 100 items then process them
+    # this is to save memory.
+    if (folder != g_last_stored_folder && idx > 100 ) {
+        g_last_stored_folder = folder;
+        identify_and_catalog_scanned_files(20);
+        idx = 0;
+    }
 
     gFolderMediaCount[folder]++;
 
@@ -1120,7 +1146,7 @@ function add_overview_index(overview_db,ov_count,name,
 function write_overview(arr,outFile,\
     line,r,f,dim,sep,fld,idx,count) {
 
-    status("Writing overview");
+    report_status("Writing overview");
     for(f in arr) {
 #        split(f,dim,SUBSEP);
 #        if (substr(dim[1],1,1) != ".") {
@@ -1295,61 +1321,63 @@ bestUrl,keywords) {
     return "";
 }
 
-# Try all of the array indexs(not values) in deep web search for imdb link.
-# Deep search = just search without imdb to get titles from results then find common substring and 
-# use this substring for imdb search.
-# TODO:obsoleted
-function deepSearchArrayForIMDB(idx,k,titleThreshold,linkThreshold,triedTitles,\
-bestUrl,keywords,text) {
+## Try all of the array indexs(not values) in deep web search for imdb link.
+## Deep search = just search without imdb to get titles from results then find common substring and 
+## use this substring for imdb search.
+## TODO:obsoleted
+#function deepSearchArrayForIMDB(idx,k,titleThreshold,linkThreshold,triedTitles,\
+#bestUrl,keywords,text) {
+#
+#    g_search_total["deep"]++;
+#    #Try deep searches.
+#    for(keywords in k) {
+#        #text=searchForBestTitleSubstring(keywords "+nfo+download" ,titleThreshold);
+#        text=searchForBestTitleSubstring(keywords ,titleThreshold);
+#        bestUrl = deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles);
+#        if (bestUrl == "" ) {
+#            # search without episode tag
+#            if (sub(/ *s?[0-9][0-9][ex]?[0-9][0-9].*/,"",text)) {
+#                bestUrl = deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles);
+#            }
+#        }  
+#        if (bestUrl != "" ) {
+#            break;
+#        }
+#   }
+#   if (bestUrl != "") {
+#       g_search_hits["deep"]++;
+#   }
+#   DEBUG("Deep search result = ["bestUrl"]");
+#   return bestUrl;
+#}
 
-    g_search_total["deep"]++;
-    #Try deep searches.
-    for(keywords in k) {
-        #text=searchForBestTitleSubstring(keywords "+nfo+download" ,titleThreshold);
-        text=searchForBestTitleSubstring(keywords ,titleThreshold);
-        bestUrl = deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles);
-        if (bestUrl == "" ) {
-            # search without episode tag
-            if (sub(/ *s?[0-9][0-9][ex]?[0-9][0-9].*/,"",text)) {
-                bestUrl = deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles);
-            }
-        }  
-        if (bestUrl != "" ) {
-            break;
-        }
-   }
-   if (bestUrl != "") {
-       g_search_hits["deep"]++;
-   }
-   DEBUG("Deep search result = ["bestUrl"]");
-   return bestUrl;
-}
-# TODO:obsoleted
-function deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles,\
-bestUrl) {
-    if (text != "" ) {
-
-        if (text in triedTitles) {
-            INFO("Already tried ["text"]");
-        } else {
-            DEBUG("deep search ["keywords"] => ["text"]");
-            triedTitles[text]++;
-
-            if (0 && g_category[idx] == "T") {
-                bestUrl=getAllTvInfoAndImdbLink(idx,text);
-            }
-            if (bestUrl == "") {
-
-                #Now search this common title string together with imdb links.
-                bestUrl = searchForIMDB(text,linkThreshold);
-            }
-            if (bestUrl != "") {
-                INFO("Found with deep search ["keywords"]=>["text"]");
-            }
-        }
-    }
-    return bestUrl;
-}
+## TODO:obsoleted
+#function deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles,\
+#bestUrl) {
+#    if (text != "" ) {
+#
+#        if (text in triedTitles) {
+#            INFO("Already tried ["text"]");
+#        } else {
+#            DEBUG("deep search ["keywords"] => ["text"]");
+#            triedTitles[text]++;
+#
+#            if (0 && g_category[idx] == "T") {
+#                bestUrl=getAllTvInfoAndImdbLink(idx,text);
+#            }
+#            if (bestUrl == "") {
+#
+#                #Now search this common title string together with imdb links.
+#                bestUrl = searchForIMDB(text,linkThreshold);
+#            }
+#            if (bestUrl != "") {
+#                INFO("Found with deep search ["keywords"]=>["text"]");
+#            }
+#        }
+#    }
+#    return bestUrl;
+#}
+#
 
 # Extract the filename from the path. Note if the file ends in / then the folder is the filename
 function basename(f) {
@@ -1669,7 +1697,7 @@ function queueFileForDeletion(name,field) {
 function remove_files_with_delete_actions(db,file_count,\
     f,field,i,deleteFile,count) {
 
-    status("Deleting");
+    report_status("Deleting");
 
     count = 0;
 
@@ -1701,6 +1729,7 @@ function remove_files_with_delete_actions(db,file_count,\
             exec(rmdir(f,"",1));
         }
     }
+    delete gFileToDelete;
     return count;
 }
 
@@ -1750,18 +1779,17 @@ function deleteFiles(db,idx,mode,\
 #Check all the links
 #To quickly find out if a set of files exist use ls
 function remove_absent_files_from_new_db(dbSize,db,newDbFile,   i,\
-    list,f,q,maxCommandLength) {
+    list,q,maxCommandLength) {
     list="";
     maxCommandLength=3999;
 
-    status("Pruning");
+    report_status("Pruning");
 
     print "#Index" > newDbFile;
 
     kept_file_count=0;
     absent_file_count=0;
     updated_file_count=0;
-    f=NEW_CAPTURE_FILE("PROBEMISSING");
 
     for(i=0 ; i - dbSize < 0 ; i++ ) {
 
@@ -1777,13 +1805,13 @@ function remove_absent_files_from_new_db(dbSize,db,newDbFile,   i,\
             if (length(list)+length(q) - maxCommandLength < 0 ) {
                 list=list " "q;
             } else {
-                determineFileStatus(f,list,newDbFile);
+                determineFileStatus(list,newDbFile);
                 list=q
             }
         }
     }
     if ( list != "" ) {
-        determineFileStatus(f,list,newDbFile);
+        determineFileStatus(list,newDbFile);
     }
     close(newDbFile);
     INFO("UNCHANGED:"kept_file_count);
@@ -1798,9 +1826,10 @@ function quoteFile(f) {
     return g_quote f g_quote;
 }
 
-function determineFileStatus(f,list,newDbFile,\
-cmd,i,line) {
+function determineFileStatus(list,newDbFile,\
+f,cmd,i,line) {
     INFO("Checking batch");
+    f=NEW_CAPTURE_FILE("PROBEMISSING");
     cmd="ls -d -- " list " > " f " 2>&1" 
    #DEBUG("######### "cmd" #############");
     system(cmd);
@@ -1810,12 +1839,18 @@ cmd,i,line) {
         if (line == "" ) continue;
 
         if ((i=index(line,": No such file or directory")) > 0 || (i=index(line,": Not a directory")) > 0) {
+
            line = substr(line,1,i-1);
            i = index(line,"/");
            line = substr(line,i);
 
-            INFO("de-listing ["line"]");
-            absent_file_count++;
+           if (grandparent_folder_exists(line)) {
+                INFO("de-listing ["line"]");
+                absent_file_count++;
+            } else {
+                INFO("Grandparent folder absent - media removed - ["line"] - keeping file");
+                kept_file_count++;
+            }
 
         } else if (gMovieFilePresent[line] == 0) {
 
@@ -1835,6 +1870,20 @@ cmd,i,line) {
     }
     close(f);
 }
+
+function grandparent_folder_exists(line) {
+
+    sub(/\/[^\/]+\/[^\/]+$/,"/",line); # /a/b/c/d to /a/b
+
+    gsub(/\/+/,"/",line); #remove /a//b/c
+
+    if (!(line in g_folder_exists) ) {
+        g_folder_exists[line] = isDirectory(line);
+    }
+
+    return g_folder_exists[line];
+}
+
 
 function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
     val,y,m,d,h,min) {
@@ -2174,12 +2223,11 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 
 ############### GET IMDB URL FROM NFO ########################################
 
-function process_scanned_files(ready_to_merge_batch_size,\
+function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 first_tv_db_entry,\
 idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,msg,\
 ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name2) {
 
-    INFO("process_scanned_files");
 
     startTime = systime();
     numFiles=0;
@@ -2187,19 +2235,15 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
     for ( idx in gMovieFiles) {
         numFiles++;
     }
+    INFO("Processing "numFiles" items in batches of "ready_to_merge_batch_size);
 
     eta="";
    
     for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
 
-        msg="Indexing "(idx+1)"/"numFiles;
         itemStartTime = systime();
 
-        if (idx - 1 > 0 ) {
-            eta = int( (itemStartTime-startTime) * (numFiles-idx) / idx / 60 ) "m" ;
-            msg = msg " " eta;
-        }
-        status(msg);
+        report_status(g_progress[1]" item "(g_item_count++));
 
         bestUrl="";
 
@@ -2328,7 +2372,6 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
         get_best_episode_title(idx);
 
         if (g_poster[idx] != "") {
-            #Get the poster from the url and convert to a reference to its location within oversight.
             g_poster[idx] = download_poster(g_poster[idx],idx);
         }
 
@@ -2363,6 +2406,58 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
         delete ready_to_merge;
         ready_to_merge_count=0;
     }
+
+    clean_globals();
+}
+
+# This is a temporary measure. The long term goal is to get
+# scanner to write all info to a new file then merge this file
+# with the main index.db. Then the following arrays should 
+# become scalar.
+# Its messy because the scanner started out as a single file
+# incremental scanner. so everything was loaded into memory for speed
+# however this is bead when doing the initial scan of a NAS etc.
+function clean_globals() {
+    delete gMovieFiles;
+    delete gNfoDefault;
+    delete gFolderMediaCount;
+    delete gFolderInfoCount;
+    delete gFolderInfoName;
+    delete gFolderCount;
+    delete gFolder;
+    delete gParts;
+    delete gCertRating;
+    delete gCertCountry;
+    delete g_poster;
+    delete g_genre;
+    delete gProdCode;
+    delete gTitle;
+    delete gOriginalTitle;
+    delete gAdditionalInfo;
+    delete g_imdb_poster_url;
+    delete g_file;
+    delete g_file_time;
+    delete g_episode;
+    delete g_seasion;
+    delete gEpGuides;
+    delete gExternalSourceUrl;
+    delete g_year;
+    delete gAirDate;
+    delete gAirDateImdb;
+    delete gEpTitleImdb;
+    delete gTvCom;
+    delete gEpTitle;
+    delete g_plot;
+    delete g_genre;
+    delete gCertRating;
+    delete g_rating;
+    delete g_category;
+    delete gDate;
+    delete g_title_source;
+
+    gMovieFileCount = 0;
+    INFO("Reset scanned files store");
+    delete gMovieFilePresent;
 }
 
 function cleanSuffix(idx,\
@@ -2549,7 +2644,7 @@ tvDbSeriesPage,alternateTitles) {
     DEBUG("Checking existing mapping for ["title"]");
     tvDbSeriesPage = g_tvDbIndex[title];
 
-    DEBUG("getAllInfoFromTvDbAndImdbLink: intial="tvDbSeriesPage);
+    DEBUG("getAllInfoFromTvDbAndImdbLink: initial="tvDbSeriesPage);
 
     if (tvDbSeriesPage == "" && index(gExternalSourceUrl[idx],"imdb")  ) {
         tvDbSeriesPage = getTvdbSeriesUrl(searchTvDbByImdbId(extractImdbId(gExternalSourceUrl[idx])));
@@ -3315,47 +3410,47 @@ function getAllTvInfoAndImdbLink(idx,title) {
     return getAllInfoFromTvDbAndImdbLink(idx,title);
 }
 
-function getAllInfoFromEpguidesAndImdbLink(idx,title,\
-epguideSeriesPage,url,alternateTitles,i) {
-
-    if (title == "") {
-        title=gTitle[idx];
-    }
-    epguideSeriesPage = gEpguideIndex[title];
-
-    if (epguideSeriesPage != "" ) {
-        DEBUG("Using existing mapping for ["title"]="epguideSeriesPage);
-    } else {
-
-        epguideSeriesPage = searchEpguideTitles(idx,title,1);
-    }
-
-    if (epguideSeriesPage == "" ) {
-        searchAbbreviationAgainstTitles(title,alternateTitles);
-
-        #THIS IS NOW BROKEN AND NEEDS REWRTING OR ABANDONING
-        #See TVDB Abbreviation Code.
-
-        for(i = 1 ; epguideSeriesPage == "" && (i in alternateTitles) ; i++ ) {
-            DEBUG("Checking possible abbreviation "alternateTitles[i]);
-            epguideSeriesPage = searchEpguideTitles(idx,alternateTitles[i],1);
-            if (epguideSeriesPage != "") {
-                gEpguideIndex[alternateTitles[i]] = epguideSeriesPage;
-            }
-
-        }
-    }
-
-    if (epguideSeriesPage == "" ) {
-        WARNING("getAllInfoFromEpguidesAndImdbLink could not find series page");
-        return "";
-    } else {
-
-        gEpguideIndex[title] = epguideSeriesPage;
-
-        return getEpguideInfo(idx,epguideSeriesPage);
-    }
-}
+#function getAllInfoFromEpguidesAndImdbLink(idx,title,\
+#epguideSeriesPage,url,alternateTitles,i) {
+#
+#    if (title == "") {
+#        title=gTitle[idx];
+#    }
+#    epguideSeriesPage = gEpguideIndex[title];
+#
+#    if (epguideSeriesPage != "" ) {
+#        DEBUG("Using existing mapping for ["title"]="epguideSeriesPage);
+#    } else {
+#
+#        epguideSeriesPage = searchEpguideTitles(idx,title,1);
+#    }
+#
+#    if (epguideSeriesPage == "" ) {
+#        searchAbbreviationAgainstTitles(title,alternateTitles);
+#
+#        #THIS IS NOW BROKEN AND NEEDS REWRTING OR ABANDONING
+#        #See TVDB Abbreviation Code.
+#
+#        for(i = 1 ; epguideSeriesPage == "" && (i in alternateTitles) ; i++ ) {
+#            DEBUG("Checking possible abbreviation "alternateTitles[i]);
+#            epguideSeriesPage = searchEpguideTitles(idx,alternateTitles[i],1);
+#            if (epguideSeriesPage != "") {
+#                gEpguideIndex[alternateTitles[i]] = epguideSeriesPage;
+#            }
+#
+#        }
+#    }
+#
+#    if (epguideSeriesPage == "" ) {
+#        WARNING("getAllInfoFromEpguidesAndImdbLink could not find series page");
+#        return "";
+#    } else {
+#
+#        gEpguideIndex[title] = epguideSeriesPage;
+#
+#        return getEpguideInfo(idx,epguideSeriesPage);
+#    }
+#}
 
 function epguideInitial(title,\
 letter) {
@@ -3443,12 +3538,12 @@ function cleanTitle(t) {
     return t;
 }
 
-# TODO:obsoleted
-function searchForBestTitleSubstring(query,threshold,\
-titles) {
-    getTitlesFromGoogle(query,titles);
-    return get_frequent_substring(titles,threshold);
-}
+## TODO:obsoleted
+#function searchForBestTitleSubstring(query,threshold,\
+#titles) {
+#    getTitlesFromGoogle(query,titles);
+#    return get_frequent_substring(titles,threshold);
+#}
 
 function de_emphasise(html) {
     gsub(/<(\/|)(b|em|strong|wbr)>/,"",html); #remove emphasis tags
@@ -3456,52 +3551,52 @@ function de_emphasise(html) {
     return html;
 }
 
-# Search google for a filename and examine titles of search results.
-#Both google and yahoo have the main title inside <h3><a..>Title</a></h3>
-# TODO:obsoleted
-function getTitlesFromGoogle(query,titles,\
-f,h3pos,i,pos,html,h3txt ) {
-    i=0;
-    split("",titles,""); #clear
-
-    f = web_search_to_file(g_title_search_engines,query,"","search4words",1);
-    if (f != "") {
-
-        FS="\n";
-        while((getline html < f) > 0 ) {
-
-            html = de_emphasise(html);
-
-
-            #if "Results for:" occurs then ignore everything processed so far. 
-            #This was output of "Did you mean"
-            if ((pos=index(html,">Results for:")) > 0 ) {
-                delete titles;
-                html = substr(html,pos);
-            }
-
-            #INFO("check h3");
-
-            while((pos=index(html,"<h3")) > 0) {
-                html=substr(html,pos);
-                h3pos=index(html,"</h3>");
-                h3txt=substr(html,1,h3pos);
-                html=substr(html,h3pos+4);
-
-                #INFO("1.h3txt=["h3txt"] pos="pos);
-                h3txt = tolower(extractTagText(h3txt,"a"));
-                #INFO("2.h3txt=["h3txt"]");
-                h3txt = remove_format_tags(h3txt);
-                #INFO("h3txt=["h3txt"]");
-                if (h3txt != "" ) {
-                    titles[i++] = h3txt;
-                }
-            }
-        }
-        close(f);
-        rm(f,1);
-    }
-}
+## Search google for a filename and examine titles of search results.
+##Both google and yahoo have the main title inside <h3><a..>Title</a></h3>
+## TODO:obsoleted
+#function getTitlesFromGoogle(query,titles,\
+#f,h3pos,i,pos,html,h3txt ) {
+#    i=0;
+#    split("",titles,""); #clear
+#
+#    f = web_search_to_file(g_title_search_engines,query,"","search4words",1);
+#    if (f != "") {
+#
+#        FS="\n";
+#        while((getline html < f) > 0 ) {
+#
+#            html = de_emphasise(html);
+#
+#
+#            #if "Results for:" occurs then ignore everything processed so far. 
+#            #This was output of "Did you mean"
+#            if ((pos=index(html,">Results for:")) > 0 ) {
+#                delete titles;
+#                html = substr(html,pos);
+#            }
+#
+#            #INFO("check h3");
+#
+#            while((pos=index(html,"<h3")) > 0) {
+#                html=substr(html,pos);
+#                h3pos=index(html,"</h3>");
+#                h3txt=substr(html,1,h3pos);
+#                html=substr(html,h3pos+4);
+#
+#                #INFO("1.h3txt=["h3txt"] pos="pos);
+#                h3txt = tolower(extractTagText(h3txt,"a"));
+#                #INFO("2.h3txt=["h3txt"]");
+#                h3txt = remove_format_tags(h3txt);
+#                #INFO("h3txt=["h3txt"]");
+#                if (h3txt != "" ) {
+#                    titles[i++] = h3txt;
+#                }
+#            }
+#        }
+#        close(f);
+#        rm(f,1);
+#    }
+#}
 
 # This finds the item with the most votes and returns it if it is > threshold.
 # Special case: If threshold = -1 then the votes must exceed the square of the 
@@ -3790,101 +3885,103 @@ f,line,url,xml) {
     return url;
 }
 
-# Scrape epguides series page, populate arrays and return imdb link
-function getEpguideInfo(idx,epguideSeriesUrl,\
-f,newTitle,imdbLink,imdbLinkAndText,i,j,line,text2,hyp2,episodeTextHyphen,episodeText,dirName) {
+## Scrape epguides series page, populate arrays and return imdb link
+#function getEpguideInfo(idx,epguideSeriesUrl,\
+#f,newTitle,imdbLink,imdbLinkAndText,i,j,line,text2,hyp2,episodeTextHyphen,episodeText,dirName) {
+#
+#    #The url for this link
+#    gEpGuides[idx]=epguideSeriesUrl;
+#
+#    episodeText=sprintf(" %d-%2d ",g_season[idx],(g_episode[idx]+0));
+#    episodeTextHyphen=index(episodeText,"-");
+#
+#    f=getUrl(epguideSeriesUrl,"epguide_nfo",1);
+#
+#    if (f != "" ) {
+#
+#        FS="\n";
+#        while((getline line < f) > 0 ) {
+#
+#            #DEBUG("epguide:" line);
+#
+#            if (gExternalSourceUrl[idx]=="" ) {
+#
+#                if (imdbLinkAndText=="" && index(line,"imdb") && match(line,"<a[^<]+imdb[^<]+</a>")) {
+#
+#                    imdbLinkAndText=substr(line,RSTART,RLENGTH);
+#
+#                    imdbLink=extractImdbLink(imdbLinkAndText);
+#
+#                    #Refine the title.
+#                    newTitle=trim(capitalise(extractTagText(imdbLinkAndText,"a")));
+#                    adjustTitle(idx,newTitle,"epguides");
+#
+#
+#                    #Also get episode info from IMDB. This is to help decide when episode titles in epguides.com are wrong.
+#                    #It may change the link if the original was to the pilot episode rather than the series.
+#                    imdbLink = extractImdbEpisode(idx,imdbLink,0);
+#                }
+#
+#            }
+#
+#            #Sometimes there is more than one entry per episode. So store the links in an array.
+#            #The correct one will be chosen via IMDB episode title.
+#            hyp2=index(line,"-");
+#            if (hyp2 - 20 < 0 && ( hyp2 - episodeTextHyphen >= 0 ) ) {
+#                text2=substr(line,hyp2-episodeTextHyphen+1,length(episodeText));
+#                #DEBUG("episodeText["episodeText"] text2["text2"] all=["line"]");
+#
+#                if (episodeText == text2) {
+#
+#                    gProdCode[idx]=trim(substr(line,14,9));
+#
+#                    g_year[idx]=1900+substr(line,35,2);
+#                    if (g_year[idx] - 1920 < 0 ) { g_year[idx] += 100; } 
+#
+#                    gAirDate[idx]=formatDate(substr(line,28,9));
+#
+#                    gTvCom[idx]=extractAttribute(line,"a","href");
+#
+#                    gEpTitle[idx]=extractTagText(line,"a");
+#
+#                    DEBUG("Found Episode title ["gEpTitle[idx]"]");
+#                }
+#            }
+#
+#            #We may have ariived by Google Feeling Lucky so get the real url name
+#
+#            ## TODO review
+#
+#            if (index(gEpGuides[idx],".search.") && (i=index(line,"DirName"))>0) {
+#
+#                i += 8;
+#                line = substr(line,i);
+#                j=index(line,"\"");
+#                dirName=substr(line,1,j-1);
+#
+#                gEpGuides[idx]="http://epguides.com/"dirName;
+#
+#            }
+#            if ( g_poster[idx] == "" && g_settings["catalog_tv_poster_source"] == "epguides" ) {
+#                if (match(line,"<img[^<]+([Cc]ast|[Ss]how)[^<]+>")) {
+#                    g_poster[idx] = gEpGuides[idx]"/"extractAttribute(substr(line,RSTART,RLENGTH),"img","src");
+#                }
+#            }
+#            if (index(line,"botnavbar")) {
+#                break;
+#            }
+#        }
+#        close(f);
+#    }
+#    if (imdbLink == "" ) {
+#        WARNING("getEpguideInfo returns blank imdb url");
+#    } else {
+#        DEBUG("getEpguideInfo returns imdb url ["imdbLink"]");
+#    }
+#    return imdbLink;
+#}
+#
 
-    #The url for this link
-    gEpGuides[idx]=epguideSeriesUrl;
-
-    episodeText=sprintf(" %d-%2d ",g_season[idx],(g_episode[idx]+0));
-    episodeTextHyphen=index(episodeText,"-");
-
-    f=getUrl(epguideSeriesUrl,"epguide_nfo",1);
-
-    if (f != "" ) {
-
-        FS="\n";
-        while((getline line < f) > 0 ) {
-
-            #DEBUG("epguide:" line);
-
-            if (gExternalSourceUrl[idx]=="" ) {
-
-                if (imdbLinkAndText=="" && index(line,"imdb") && match(line,"<a[^<]+imdb[^<]+</a>")) {
-
-                    imdbLinkAndText=substr(line,RSTART,RLENGTH);
-
-                    imdbLink=extractImdbLink(imdbLinkAndText);
-
-                    #Refine the title.
-                    newTitle=trim(capitalise(extractTagText(imdbLinkAndText,"a")));
-                    adjustTitle(idx,newTitle,"epguides");
-
-
-                    #Also get episode info from IMDB. This is to help decide when episode titles in epguides.com are wrong.
-                    #It may change the link if the original was to the pilot episode rather than the series.
-                    imdbLink = extractImdbEpisode(idx,imdbLink,0);
-                }
-
-            }
-
-            #Sometimes there is more than one entry per episode. So store the links in an array.
-            #The correct one will be chosen via IMDB episode title.
-            hyp2=index(line,"-");
-            if (hyp2 - 20 < 0 && ( hyp2 - episodeTextHyphen >= 0 ) ) {
-                text2=substr(line,hyp2-episodeTextHyphen+1,length(episodeText));
-                #DEBUG("episodeText["episodeText"] text2["text2"] all=["line"]");
-
-                if (episodeText == text2) {
-
-                    gProdCode[idx]=trim(substr(line,14,9));
-
-                    g_year[idx]=1900+substr(line,35,2);
-                    if (g_year[idx] - 1920 < 0 ) { g_year[idx] += 100; } 
-
-                    gAirDate[idx]=formatDate(substr(line,28,9));
-
-                    gTvCom[idx]=extractAttribute(line,"a","href");
-
-                    gEpTitle[idx]=extractTagText(line,"a");
-
-                    DEBUG("Found Episode title ["gEpTitle[idx]"]");
-                }
-            }
-
-            #We may have ariived by Google Feeling Lucky so get the real url name
-
-            ## TODO review
-
-            if (index(gEpGuides[idx],".search.") && (i=index(line,"DirName"))>0) {
-
-                i += 8;
-                line = substr(line,i);
-                j=index(line,"\"");
-                dirName=substr(line,1,j-1);
-
-                gEpGuides[idx]="http://epguides.com/"dirName;
-
-            }
-            if ( g_poster[idx] == "" && g_settings["catalog_tv_poster_source"] == "epguides" ) {
-                if (match(line,"<img[^<]+([Cc]ast|[Ss]how)[^<]+>")) {
-                    g_poster[idx] = gEpGuides[idx]"/"extractAttribute(substr(line,RSTART,RLENGTH),"img","src");
-                }
-            }
-            if (index(line,"botnavbar")) {
-                break;
-            }
-        }
-        close(f);
-    }
-    if (imdbLink == "" ) {
-        WARNING("getEpguideInfo returns blank imdb url");
-    } else {
-        DEBUG("getEpguideInfo returns imdb url ["imdbLink"]");
-    }
-    return imdbLink;
-}
 
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
@@ -3906,17 +4003,17 @@ function adjustTitle(idx,newTitle,source) {
         return;
     }
 
-    if (gTitlePriority[source] - gTitlePriority[gTitleSource[idx]] > 0) {
+    if (gTitle[idx] == "" || gTitlePriority[source] - gTitlePriority[g_title_source[idx]] > 0) {
         if (newTitle != gTitle[idx] ) {
-            DEBUG("title changed from "gTitleSource[idx]":["gTitle[idx]"] to "source":["newTitle"]");
+            DEBUG("title changed from "g_title_source[idx]":["gTitle[idx]"] to "source":["newTitle"]");
         } else {
-            DEBUG("title "gTitleSource[idx]":["gTitle[idx]"] matches "source":["newTitle"]");
+            DEBUG("title "g_title_source[idx]":["gTitle[idx]"] matches "source":["newTitle"]");
         }
         gTitle[idx] = newTitle;
-        gTitleSource[idx] = source;
+        g_title_source[idx] = source;
         return 1;
     } else {
-        DEBUG("title kept as "gTitleSource[idx]":["gTitle[idx]"] instead of "source":["newTitle"]");
+        DEBUG("title kept as "g_title_source[idx]":["gTitle[idx]"] instead of "source":["newTitle"]");
         return 0;
     }
 }
@@ -4371,18 +4468,10 @@ function download_poster(url,idx,\
             }
             args = args " -U \""g_user_agent"\" ";
 
+            g_already_fetched_poster[internal_path] = 1;
 
-            if (exec(WGET args quoteFile(url)) == 0 ) {
+            exec(WGET args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );
 
-                #check file has content and does not containt <html
-                if (hasContent(internal_path) && system("grep -q \"<html\" "quoteFile(internal_path)) != 0) {
-                    g_already_fetched_poster[internal_path] = 1;
-
-                    set_permissions(quoteFile(internal_path));
-                }
-            } else {
-                poster_ref = "";
-            }
         }
 
     }
@@ -4706,6 +4795,10 @@ l) {
     sub(/ +more */,"",l);
     DEBUG("IMDB: Got genre = ["l"]");
     return l;
+}
+
+function relocating_files(i) {
+    return (RENAME_TV == 1 && g_category[i] == "T") ||(RENAME_FILM==1 && g_category[i] == "M");
 }
 
 function relocate_files(i,\
@@ -5248,7 +5341,7 @@ row,estimate,nfo,dbIdx) {
     }
     row=row"\t"DOWNLOADTIME"\t"estimate;
     #row=row"\t"SEARCH"\t"g_search[i];
-    row=row"\t"PROD"\t"gProdCode[i];
+    row=row"\t"PROD"\t"gProdCode[i]; #todo remove without affecting load loop in oversight.cgi
     row=row"\t"AIRDATE"\t"gAirDate[i];
     row=row"\t"EPTITLEIMDB"\t"gEpTitleImdb[i];
     row=row"\t"AIRDATEIMDB"\t"gAirDateImdb[i];
@@ -5275,7 +5368,7 @@ function add_new_scanned_files_to_database(indexHash,output_file,db_arr,file_to_
 i,row,fields,f,\
 minIdx,maxIdx,inf) {
 
-    status("Merging");
+    report_status("Merging");
     gMaxDatabaseId++;
 
 #    #TODO this should just be for i in indexHash - troubleshooting.

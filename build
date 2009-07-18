@@ -2,6 +2,6 @@
 ./squeeze
 chmod 775 *cgi *.sh
 ../nmt-scripts/build `basename "$PWD"` "$@" oversight.cgi \
-	*.sh *.css *.cgi *.full *.example images help/*.help \
+	*.sh *.css *.cgi *.full *.php *.example images help/*.help \
 	logs/.keep tmp/.keep *.html bin/*.sh 
 #./bundle.unpak

@@ -1,2 +1,0 @@
-FILES="unpak.sh unpak.cfg.example catalog.sh catalog.cfg.example"
-../nmt-scripts/publish unpak "$@" $FILES

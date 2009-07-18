@@ -1682,12 +1682,19 @@ v) {
 
 
     if (g_catalog_message != "" ) {
-        print "Status : "g_catalog_message;
+
+        print "[ "g_catalog_message" ]";
+
     } else if (g_catalog_pending == 1 ) {
-        print "Catalog update pending...";
+
+        print "[ Catalog update pending ]";
+
     } else if (gLocalCount == 0) {
+
         print "Video index is empty. Select setup Icon and scan the internal Hard Drive.";
+
     } else if (ovs_new_version_check=="1" && v != "" && v > g_version ) {
+
         #Only show updates if no other status messages are shown to avoid update when busy.
         print selfLinkMulti("view=admin&idlist=&action=showinstall","","Version "v" released.");
     }

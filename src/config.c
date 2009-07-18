@@ -22,19 +22,55 @@ void config_write(struct hashtable *cfg,char *filename) {
 
 void config_write_fp(struct hashtable *cfg,FILE *fp) {
 
-    struct hashtable_itr *itr;
 
-    for(itr = hashtable_iterator(cfg) ; hashtable_iterator_advance(itr) ; ) {
+    if (hashtable_count(cfg)) {
+        struct hashtable_itr *itr = hashtable_iterator(cfg) ;
+        do {
 
-        char *key = hashtable_iterator_key(itr);
-        char *val = hashtable_iterator_value(itr);
+            char *key = hashtable_iterator_key(itr);
+            char *val = hashtable_iterator_value(itr);
 
-        if (val) {
-            fprintf(fp,"%s:%s\n",key,val);
-        }
+            if (val) {
+                fprintf(fp,"%s:%s\n",key,val);
+            }
+        } while(hashtable_iterator_advance(itr));
     }
 }
 
+struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file) {
+
+    char *f;
+    struct hashtable *out = NULL;
+    struct hashtable *new = NULL;
+   
+    // load the default settings
+    f = malloc(strlen(d)+strlen(defaults_file)+3);
+    sprintf(f,"%s/%s",d,defaults_file);
+    if (is_file(f)) {
+        printf(stderr,"loading [%s]\n",f);
+        out = config_load(f);
+    } else {
+        out = string_string_hashtable();
+    }
+    free(f);
+
+    // load the main settings
+    f = malloc(strlen(d)+strlen(main_file)+3);
+    sprintf(f,"%s/%s",d,main_file);
+
+    if (is_file(f)) {
+        printf(stderr,"loading [%s]\n",f);
+        new = config_load(f);
+    } else {
+        new = string_string_hashtable();
+    }
+    free(f);
+
+    merge_hashtables(out,new,1);
+
+    return out;
+
+}
 
 struct hashtable *config_load(char *filename) {
 
@@ -88,6 +124,7 @@ struct hashtable *config_load_fp(FILE *fp) {
             }
 
             if (key && val ) {
+                fprintf(stderr,"cfg add [ %s ] = [ %s ]\n",key,val);
                 hashtable_insert(result,key,val);
             }
 
@@ -100,15 +137,19 @@ void config_unittest() {
     struct hashtable *cfg = config_load("test.cfg");
     config_write(cfg,"delete.cfg");
     struct hashtable *cfg2 = config_load("delete.cfg");
-    struct hashtable_itr *itr;
-    for(itr = hashtable_iterator(cfg) ; hashtable_iterator_advance(itr) ; ) {
-        char *k = hashtable_iterator_key(itr);
-        char *v = hashtable_iterator_value(itr);
-        char *v2 = hashtable_search(cfg2,k);
-        assert(v2);
-        assert(strcmp(v,v2) == 0);
-        printf("%s:%s\n",k,v);
+    if (hashtable_count(cfg)) {
+        struct hashtable_itr *itr = hashtable_iterator(cfg);
+        do {
+            char *k = hashtable_iterator_key(itr);
+            char *v = hashtable_iterator_value(itr);
+            char *v2 = hashtable_search(cfg2,k);
+            assert(v2);
+            assert(strcmp(v,v2) == 0);
+            printf("%s:%s\n",k,v);
+        } while(hashtable_iterator_advance(itr));
     }
 }
+
+
 
 

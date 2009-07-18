@@ -6,6 +6,10 @@
 #include "hashtable.h"
 #include "util.h"
 #include "gaya_cgi.h"
+#include "config.h"
+
+struct hashtable *oversight_config = NULL;
+struct hashtable *catalog_config = NULL;
 
 int main(int argc,char **argv) {
 
@@ -13,15 +17,26 @@ int main(int argc,char **argv) {
 
     printf("Content-Type: text/html\n\n");
 
+    printf("Appdir=%s\n",appDir());
+
     //array_unittest();
-    util_unittest();
-    config_unittest();
+    //util_unittest();
+    //config_unittest();
 
     struct hashtable *query=parse_query_string(getenv("QUERY_STRING"),NULL);
 
     struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
 
     merge_hashtables(query,post,0); // post is destroyed
+
+    oversight_config =
+        config_load_wth_defaults(appDir(),"oversight.cfg.example","oversight.cfg");
+
+    catalog_config =
+        config_load_wth_defaults(appDir(),"catalog.cfg.example","catalog.cfg");
+
+    hashtable_dump("catalog cfg",catalog_config);
+    hashtable_dump("ovs cfg",oversight_config);
 
 /*
     doActions(query);
@@ -30,10 +45,14 @@ int main(int argc,char **argv) {
 
     display_page(query,database_list);
 */
+    hashtable_destroy(oversight_config,1);
+    hashtable_destroy(catalog_config,1);
     hashtable_destroy(query,0);
     return result;
     
 }
+
+
 
 
 

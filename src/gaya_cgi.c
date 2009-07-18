@@ -244,3 +244,22 @@ char *url_decode(char *str) {
   *pbuf = '\0';
   return buf;
 }
+
+int is_local_browser() {
+    char *addr;
+    if ((addr=getenv("REMOTE_ADDR")) != NULL) {
+        return (strcmp(addr,"127.0.0.1") == 0);
+    } else {
+        return 0;
+    }
+}
+
+int is_pc_browser() {
+    char *addr;
+    if ((addr=getenv("REMOTE_ADDR")) != NULL) {
+        return (strcmp(addr,"127.0.0.1") != 0);
+    } else {
+        return 0;
+    }
+}
+

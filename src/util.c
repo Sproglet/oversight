@@ -11,7 +11,7 @@
 
 #include "util.h"
 #include "hashtable.h"
-#include "hashtable_itr.h"
+#include "hashtable_loop.h"
 #include "hashtable_utility.h"
 
 
@@ -315,13 +315,11 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
 
     if (hashtable_count(h2) > 0 ) {
 
+       char *k,*v;
        struct hashtable_itr *itr ;
 
-       itr = hashtable_iterator(h2);
-       do {
+       for(itr = hashtable_loop_init(h2); hashtable_loop_more(itr,&k,&v) ; ) {
 
-            char *k = hashtable_iterator_key(itr);
-            char *v = hashtable_iterator_value(itr);
             if (copy) {
                 v = strdup((char *)v);
                 assert(v);
@@ -333,7 +331,7 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
                 hashtable_insert(h1,k,v);
                 fprintf(stderr,"Added [ %s ] = [ %s ]\n",k,v);
             }
-        } while(hashtable_iterator_advance(itr));
+        }
     }
 
     // As h1 has h2 values we destroy h2 to avoid double memory frees.
@@ -525,18 +523,19 @@ int nmt_gid() {
 
 void hashtable_dump(char *label,struct hashtable *h) {
 
-    struct hashtable_itr *itr;
+
     if (hashtable_count(h)) {
-       itr=hashtable_iterator(h);
-       do {
 
-            char *k = hashtable_iterator_key(itr);
-            char *v = hashtable_iterator_value(itr);
+       char *k,*v;
+       struct hashtable_itr *itr ;
 
-            fprintf(stderr,"%s : %s=%s\n",label,k,v);
-        } while(hashtable_iterator_advance(itr));
+       for(itr = hashtable_loop_init(h); hashtable_loop_more(itr,&k,&v) ; ) {
+
+            fprintf(stderr,"<!-- %s : [ %s ] = [ %s ] -->\n",label,k,v);
+        }
+
     } else {
-        fprintf(stderr,"%s : EMPTY HASH\n",label);
+        fprintf(stderr,"<!-- %s : EMPTY HASH -->\n",label);
     }
 }
 

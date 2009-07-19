@@ -8,19 +8,20 @@ ARRAY_EXPAND	.\array.c	58;"	d	file:
 BUFSIZE	.\array.c	211;"	d	file:
 BUFSIZE	.\util.c	119;"	d	file:
 BUFSIZE	.\util.c	185;"	d	file:
-CFG_BUFSIZ	.\config.c	86;"	d	file:
+CFG_BUFSIZ	.\config.c	88;"	d	file:
 DEFINE_HASHTABLE_INSERT	.\hashtable.h	101;"	d
 DEFINE_HASHTABLE_ITERATOR_SEARCH	.\hashtable_itr.h	71;"	d
 DEFINE_HASHTABLE_REMOVE	.\hashtable.h	137;"	d
 DEFINE_HASHTABLE_SEARCH	.\hashtable.h	119;"	d
 DbField	.\field.c	/^} DbField;$/;"	t	typeref:struct:__anon1	file:
 ITEM_COUNT	.\tester.c	/^static const int ITEM_COUNT = 4000;$/;"	v	file:
-POST_BUF	.\gaya_cgi.c	49;"	d	file:
+POST_BUF	.\gaya_cgi.c	51;"	d	file:
 __ARRAY_H_ALORD__	.\array.h	2;"	d
 __CONFIG_H_ALORD__	.\config.h	2;"	d
 __GAYA_CGI_H__	.\gaya_cgi.h	2;"	d
 __HASHTABLE_CWC22_H__	.\hashtable.h	4;"	d
 __HASHTABLE_ITR_CWC22__	.\hashtable_itr.h	4;"	d
+__HASHTABLE_LOOP_ALORD__	.\hashtable_loop.h	5;"	d
 __HASHTABLE_PRIVATE_CWC22_H__	.\hashtable_private.h	4;"	d
 __UTIL_H_ALORD__	.\util.h	2;"	d
 __XHASHTABLE_CWC22_UTILITY_H__	.\hashtable_utility.h	4;"	d
@@ -36,6 +37,10 @@ array_str	.\array.h	/^struct array_str {$/;"	s
 array_unittest	.\array.c	/^void array_unittest() {$/;"	f
 catalog_config	.\oversight.c	/^struct hashtable *catalog_config = NULL;$/;"	v	typeref:struct:hashtable
 chomp	.\util.c	/^void chomp(char *str) {$/;"	f
+config_get_int	.\config.c	/^int config_get_int(struct hashtable *h,char *key,long **out) {$/;"	f
+config_get_int_indexed	.\config.c	/^int config_get_int_indexed(struct hashtable *h,char *k,char *index,char **out) {$/;"	f
+config_get_str	.\config.c	/^int config_get_str(struct hashtable *h,char *key,char **out) {$/;"	f
+config_get_str_indexed	.\config.c	/^int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out) {$/;"	f
 config_load	.\config.c	/^struct hashtable *config_load(char *filename) {$/;"	f
 config_load_fp	.\config.c	/^struct hashtable *config_load_fp(FILE *fp) {$/;"	f
 config_load_wth_defaults	.\config.c	/^struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file) {$/;"	f
@@ -54,6 +59,8 @@ free_fn	.\array.h	/^    void (*free_fn)(void *);$/;"	m	struct:array_str
 freekey	.\hashtable_private.h	46;"	d
 from_hex	.\gaya_cgi.c	/^char from_hex(char ch) {$/;"	f
 from_hex	.\urlcode.c	/^char from_hex(char ch) {$/;"	f
+g_scanlines	.\oversight.c	/^char *g_scanlines="0";$/;"	v
+get_scanlines	.\oversight.c	/^char *get_scanlines(struct hashtable *nmt_settings) {$/;"	f
 h	.\hashtable_itr.h	/^    struct hashtable *h;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::hashtable
 h	.\hashtable_private.h	/^    unsigned int h;$/;"	m	struct:entry
 hash	.\hashtable.c	/^hash(struct hashtable *h, void *k)$/;"	f
@@ -75,8 +82,17 @@ hashtable_iterator_search	.\hashtable_itr.c	/^hashtable_iterator_search(struct h
 hashtable_iterator_value	.\hashtable_itr.c	/^hashtable_iterator_value(struct hashtable_itr *i)$/;"	f
 hashtable_iterator_value	.\hashtable_itr.h	/^hashtable_iterator_value(struct hashtable_itr *i)$/;"	f
 hashtable_itr	.\hashtable_itr.h	/^struct hashtable_itr$/;"	s
+hashtable_loop_init	.\hashtable_loop.c	/^struct hashtable_itr * hashtable_loop_init(struct hashtable *h) {$/;"	f
+hashtable_loop_more	.\hashtable_loop.c	/^int hashtable_loop_more(struct hashtable_itr *itr,void *k,void *v) {$/;"	f
 hashtable_remove	.\hashtable.c	/^hashtable_remove(struct hashtable *h, void *k)$/;"	f
 hashtable_search	.\hashtable.c	/^hashtable_search(struct hashtable *h, void *k)$/;"	f
+html_comment	.\gaya_cgi.c	/^void html_comment(char *format,...) {$/;"	f
+html_encode	.\gaya_cgi.c	/^char *html_encode(char *s) {$/;"	f
+html_hashtable_dump	.\gaya_cgi.c	/^void html_hashtable_dump(char *label,struct hashtable *h) {$/;"	f
+html_log	.\gaya_cgi.c	/^void html_log(int level,char *format,...) {$/;"	f
+html_log_level	.\gaya_cgi.c	/^int html_log_level = 0;$/;"	v
+html_log_level_set	.\gaya_cgi.c	/^void html_log_level_set(int level) {$/;"	f
+html_vacomment	.\gaya_cgi.c	/^void html_vacomment(char *format,va_list ap) {$/;"	f
 id	.\field.c	/^	char *id;$/;"	m	struct:__anon1	file:
 id	.\tester.c	/^    char *id;$/;"	m	struct:value	file:
 index	.\hashtable_itr.h	/^    unsigned int index;$/;"	m	struct:hashtable_itr
@@ -103,6 +119,7 @@ nmt_chown	.\util.c	/^void nmt_chown(char *d) {$/;"	f
 nmt_gid	.\util.c	/^int nmt_gid() {$/;"	f
 nmt_mkdir	.\util.c	/^int nmt_mkdir(char *d) {$/;"	f
 nmt_passwd	.\util.c	/^static struct passwd *nmt_passwd = NULL;$/;"	v	typeref:struct:passwd	file:
+nmt_settings	.\oversight.c	/^struct hashtable *nmt_settings = NULL;$/;"	v	typeref:struct:hashtable
 nmt_subdir	.\util.c	/^char *nmt_subdir(char *root,char *name) {$/;"	f
 nmt_uid	.\util.c	/^int nmt_uid() {$/;"	f
 one_ip	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:

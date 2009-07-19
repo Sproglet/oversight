@@ -13,25 +13,12 @@
 #include "hashtable.h"
 #include "hashtable_loop.h"
 #include "hashtable_utility.h"
-
-
-/*
-char *strdup(char *s) {
-
-	char *s2 = NULL;
-	if (s != NULL) {
-		*s2 = malloc(strlen(s)+1);
-		assert(s2);
-		strcpy(s2,s);
-	}
-	return s2;
-}
-
-*/
+#include "gaya_cgi.h"
+#include "vasprintf.h"
 
 
 
-// String hashfunction
+// String hashfunction - used by string_string_hashtable()
 // http://www.cse.yorku.ca/~oz/hash.html
 unsigned int stringhash(void *vptr) {
     unsigned long hash = 5381;
@@ -63,26 +50,8 @@ struct hashtable *string_string_hashtable() {
  */
 char *join_str_fmt_free(char *fmt,char *s1,char *s2) {
 
-    assert(fmt);
     char *s;
-    int sz1=0;
-    int sz2=0;
-    char *s1cp = "";
-    char *s2cp = "";
-
-    if (s1) {
-        sz1 = strlen(s1);
-        s1cp = s1;
-    }
-    
-    if (s2) {
-        sz2 = strlen(s2);
-        s2cp = s2;
-    }
-    
-    s=malloc(sz1 + sz2 + strlen(fmt)+3);
-    assert(s);
-    sprintf(s,fmt,s1cp,s2cp);
+    ovs_asprintf(&s,fmt,s1,s2);
     if (s1) free(s1);
     if (s2 && (s2 != s1)) free(s2);
     return s;
@@ -326,10 +295,10 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
             }
 
             if ( hashtable_change(h1,k,v) ) {
-                fprintf(stderr,"Changed [ %s ] = [ %s ]\n",k,v);
+                html_log(1,"Changed [ %s ] = [ %s ]\n",k,v);
             } else {
                 hashtable_insert(h1,k,v);
-                fprintf(stderr,"Added [ %s ] = [ %s ]\n",k,v);
+                html_log(4,"Added [ %s ] = [ %s ]\n",k,v);
             }
         }
     }

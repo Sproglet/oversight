@@ -7,6 +7,7 @@
 #include "assert.h"
 #include "hashtable_loop.h"
 #include "gaya_cgi.h"
+#include "vasprintf.h"
 
 void config_write(struct hashtable *cfg,char *filename) {
 
@@ -156,7 +157,7 @@ int config_get_str(struct hashtable *h,char *key,char **out) {
 }
 
 //gets  integer config value via out : returns 1 if found 0 if not
-int config_get_int(struct hashtable *h,char *key,long **out) {
+int config_get_int(struct hashtable *h,char *key,long *out) {
     char *s,*end;
     long val;
     if (config_get_str(h,key,&s) == 0) {
@@ -175,7 +176,7 @@ int config_get_int(struct hashtable *h,char *key,long **out) {
 int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out) {
     char *s ;
     int result=0;
-    if (asprintf(&s,"%s[%s]",k,index) >= 0 ) {
+    if (ovs_asprintf(&s,"%s[%s]",k,index) >= 0 ) {
         result = config_get_str(h,s,out);
         free(s);
     }
@@ -183,10 +184,10 @@ int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out) {
 }
 
 /* read array variable from config - eg key[index]=value */
-int config_get_int_indexed(struct hashtable *h,char *k,char *index,char **out) {
+int config_get_int_indexed(struct hashtable *h,char *k,char *index,long *out) {
     char *s ;
     int result=0;
-    if (asprintf(&s,"%s[%s]",k,index) >= 0 ) {
+    if (ovs_asprintf(&s,"%s[%s]",k,index) >= 0 ) {
         result = config_get_int(h,s,out);
         free(s);
     }

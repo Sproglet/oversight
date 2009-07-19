@@ -11,9 +11,9 @@ void config_unittest();
 struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file);
 
 int config_get_str(struct hashtable *h,char *key,char **out);
-int config_get_int(struct hashtable *h,char *key,long **out);
+int config_get_int(struct hashtable *h,char *key,long *out);
 
-int config_get_int_indexed(struct hashtable *h,char *k,char *index,char **out);
+int config_get_int_indexed(struct hashtable *h,char *k,char *index,long *out);
 int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out);
 
 #endif

@@ -88,7 +88,8 @@ hashtable_remove	.\hashtable.c	/^hashtable_remove(struct hashtable *h, void *k)$
 hashtable_search	.\hashtable.c	/^hashtable_search(struct hashtable *h, void *k)$/;"	f
 html_comment	.\gaya_cgi.c	/^void html_comment(char *format,...) {$/;"	f
 html_encode	.\gaya_cgi.c	/^char *html_encode(char *s) {$/;"	f
-html_hashtable_dump	.\gaya_cgi.c	/^void html_hashtable_dump(char *label,struct hashtable *h) {$/;"	f
+html_hashtable_dump	.\gaya_cgi.c	/^void html_hashtable_dump(int level,char *label,struct hashtable *h) {$/;"	f
+html_hashtable_dump2	.\gaya_cgi.c	/^void html_hashtable_dump2(int level,char *label,struct hashtable *h) {$/;"	f
 html_log	.\gaya_cgi.c	/^void html_log(int level,char *format,...) {$/;"	f
 html_log_level	.\gaya_cgi.c	/^int html_log_level = 0;$/;"	v
 html_log_level_set	.\gaya_cgi.c	/^void html_log_level_set(int level) {$/;"	f

@@ -36,7 +36,7 @@ int main(int argc,char **argv) {
 
     //array_unittest();
     //util_unittest();
-    config_unittest();
+    //config_unittest();
 
     struct hashtable *query=parse_query_string(getenv("QUERY_STRING"),NULL);
 
@@ -60,8 +60,8 @@ int main(int argc,char **argv) {
     html_comment("done config");
 
 
-    g_scanlines = get_scanlines(nmt_settings);
-    html_comment("scanlines=[%s]",g_scanlines);
+     g_scanlines = get_scanlines(nmt_settings);
+     html_comment("scanlines=[%s]",g_scanlines);
 
 /*
     doActions(query);

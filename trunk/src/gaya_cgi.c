@@ -3,10 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <assert.h>
+
 #include "gaya_cgi.h"
 #include "util.h"
 #include "array.h"
 #include "hashtable_loop.h"
+#include "vasprintf.h"
 
 /*
 * Parse the query string into a hashtable
@@ -54,6 +57,7 @@ struct hashtable *read_post_data(char *post_filename) {
     struct hashtable *result = string_string_hashtable();
 
     if (post_filename == NULL) {
+        html_log(1,"no post data");
         return result;
     }
 
@@ -209,6 +213,7 @@ char to_hex(char code) {
 /* Returns a url-encoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_encode(char *str) {
+    assert(str);
   char *pstr = str, *buf = malloc(strlen(str) * 3 + 1), *pbuf = buf;
   while (*pstr) {
     if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
@@ -229,6 +234,7 @@ char *url_encode(char *str) {
 /* Returns a url-decoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_decode(char *str) {
+    assert(str);
   char *pstr = str, *buf = malloc(strlen(str) + 1), *pbuf = buf;
   while (*pstr) {
     if (*pstr == '%') {
@@ -266,6 +272,7 @@ int is_pc_browser() {
 }
 
 char *html_encode(char *s) {
+    assert(s);
     unsigned char *p,*q,*result;
 
     int size=0;
@@ -279,7 +286,9 @@ char *html_encode(char *s) {
             size ++;
         }
     }
-    result = q = malloc(size);
+    printf("size [%s] = %d\n",s,size);
+    result = q = malloc(size+1);
+    assert(q);
     for (p = s ; *p ; p++) {
         if (*p == '<' ) {
            sprintf(q,"&lt;"); q+= 4;
@@ -316,9 +325,8 @@ void html_vacomment(char *format,va_list ap) {
     int len;
     char *s1,*s2;
 
-    if ((len=vasprintf(&s1,format,ap)) >= 0) {
+    if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
         s2=html_encode(s1);
-        printf("<!-- %s -->\n",s2);
         free(s2);
         free(s1);
     }
@@ -339,7 +347,7 @@ void html_log(int level,char *format,...) {
 }
 
 
-void html_hashtable_dump2(int level,char *label,struct hashtable *h) {
+void html_hashtable_dump(int level,char *label,struct hashtable *h) {
 
 
     if (level <= html_log_level) {
@@ -351,9 +359,6 @@ void html_hashtable_dump2(int level,char *label,struct hashtable *h) {
 
            for(itr = hashtable_loop_init(h); hashtable_loop_more(itr,&k,&v) ; ) {
 
-                html_comment(k);
-                printf("%s\n",k);
-                printf("%s\n",v);
                 html_comment("%s : [ %s ] = [ %s ]",label,k,v);
             }
 
@@ -363,7 +368,7 @@ void html_hashtable_dump2(int level,char *label,struct hashtable *h) {
     }
 }
 
-void html_hashtable_dump(int level,char *label,struct hashtable *h) {
+void html_hashtable_dump2(int level,char *label,struct hashtable *h) {
 
 
     if (level <= html_log_level) {
@@ -378,9 +383,6 @@ void html_hashtable_dump(int level,char *label,struct hashtable *h) {
                k = hashtable_iterator_key(itr);
                v = hashtable_iterator_value(itr);
 
-                html_comment(k);
-                printf("%s\n",k);
-                printf("%s\n",v);
                 html_comment("%s : [ %s ] = [ %s ]",label,k,v);
 
             } while (hashtable_iterator_advance(itr));

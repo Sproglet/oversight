@@ -2255,17 +2255,13 @@ function setDisplayParams(tvmode) {
     #########################################################
     # Set rows, cols and font size according to your TV code.
 
-
-    SD_TV = 0;
     if (!g_local_browser || tvmode == 6 || tvmode == 10 || tvmode == 13 ) {
         scanlines=720;
     } else if (tvmode <= 5 || (tvmode >= 7 && tvmode <= 9 ) || (tvmode >= 30 && tvmode <= 31) ) {
         scanlines=0;
-        SD_TV=1;
     } else {
         scanlines=1080;
     }
-    HD_TV = !SD_TV;
 
     gFontSize=ovs_font_size[scanlines]+0;
     gTitleSize=ovs_title_size[scanlines]+0;

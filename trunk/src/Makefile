@@ -1,6 +1,6 @@
 CC=gcc
 
-CFLAGS=-g -Wall -O
+CFLAGS=-g -Wall 
 
 ifeq ($(OUT),nmt)
 	CC=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
@@ -8,7 +8,7 @@ ifeq ($(OUT),nmt)
 	CFLAGS=-g -Wall -O -DOUT=$(OUT)
 endif
 
-OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o config.o
+OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o config.o hashtable_loop.o
 
 OBJECTS=hashtable.o hashtable_itr.o tester.o
 

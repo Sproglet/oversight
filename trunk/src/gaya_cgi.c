@@ -2,9 +2,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "gaya_cgi.h"
 #include "util.h"
 #include "array.h"
+#include "hashtable_loop.h"
 
 /*
 * Parse the query string into a hashtable
@@ -260,6 +262,132 @@ int is_pc_browser() {
         return (strcmp(addr,"127.0.0.1") != 0);
     } else {
         return 0;
+    }
+}
+
+char *html_encode(char *s) {
+    unsigned char *p,*q,*result;
+
+    int size=0;
+
+    for (p = s ; *p ; p++) {
+        if (*p == '<' || *p == '>'  || *p == '&' ) {
+            size += 5;
+        } else if (*p > 127) {
+            size += 7;
+        } else {
+            size ++;
+        }
+    }
+    result = q = malloc(size);
+    for (p = s ; *p ; p++) {
+        if (*p == '<' ) {
+           sprintf(q,"&lt;"); q+= 4;
+        } else if (*p == '>' ) {
+           sprintf(q,"&gt;"); q+= 4;
+        } else if (*p == '&' ) {
+           sprintf(q,"&amp;"); q+= 5;
+        } else if (*p > 127 ) {
+           sprintf(q,"&#x%x;",(int)*p); q+= strlen(q);
+        } else {
+            *q = *p; q++;
+        }
+    }
+    *q = '\0';
+    return result;
+}
+
+/*
+void html_comment(char *s) {
+    s = html_encode(s);
+    printf("<!-- %s -->\n",s);
+    free(s);
+}
+*/
+void html_comment(char *format,...) {
+    va_list ap;
+
+    va_start(ap,format);
+    html_vacomment(format,ap);
+    va_end(ap);
+}
+
+void html_vacomment(char *format,va_list ap) {
+    int len;
+    char *s1,*s2;
+
+    if ((len=vasprintf(&s1,format,ap)) >= 0) {
+        s2=html_encode(s1);
+        printf("<!-- %s -->\n",s2);
+        free(s2);
+        free(s1);
+    }
+}
+
+int html_log_level = 0;
+
+void html_log_level_set(int level) {
+    html_log_level = level;
+}
+
+void html_log(int level,char *format,...) {
+    va_list ap;
+    if (level <= html_log_level ) {
+        html_vacomment(format,ap);
+    }
+    va_end(ap);
+}
+
+
+void html_hashtable_dump2(int level,char *label,struct hashtable *h) {
+
+
+    if (level <= html_log_level) {
+
+        if (hashtable_count(h)) {
+
+           char *k,*v;
+           struct hashtable_itr *itr ;
+
+           for(itr = hashtable_loop_init(h); hashtable_loop_more(itr,&k,&v) ; ) {
+
+                html_comment(k);
+                printf("%s\n",k);
+                printf("%s\n",v);
+                html_comment("%s : [ %s ] = [ %s ]",label,k,v);
+            }
+
+        } else {
+            html_comment("%s : EMPTY HASH",label);
+        }
+    }
+}
+
+void html_hashtable_dump(int level,char *label,struct hashtable *h) {
+
+
+    if (level <= html_log_level) {
+
+        if (hashtable_count(h)) {
+
+           char *k,*v;
+           struct hashtable_itr *itr = hashtable_iterator(h); ;
+
+           do {
+
+               k = hashtable_iterator_key(itr);
+               v = hashtable_iterator_value(itr);
+
+                html_comment(k);
+                printf("%s\n",k);
+                printf("%s\n",v);
+                html_comment("%s : [ %s ] = [ %s ]",label,k,v);
+
+            } while (hashtable_iterator_advance(itr));
+
+        } else {
+            html_comment("%s : EMPTY HASH",label);
+        }
     }
 }
 

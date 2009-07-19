@@ -5,7 +5,8 @@
 #include "util.h"
 #include "config.h"
 #include "assert.h"
-#include "hashtable_itr.h"
+#include "hashtable_loop.h"
+#include "gaya_cgi.h"
 
 void config_write(struct hashtable *cfg,char *filename) {
 
@@ -23,17 +24,14 @@ void config_write(struct hashtable *cfg,char *filename) {
 void config_write_fp(struct hashtable *cfg,FILE *fp) {
 
 
-    if (hashtable_count(cfg)) {
-        struct hashtable_itr *itr = hashtable_iterator(cfg) ;
-        do {
+    char *k,*v;
+    struct hashtable_itr *itr = hashtable_loop_init(cfg) ;
 
-            char *key = hashtable_iterator_key(itr);
-            char *val = hashtable_iterator_value(itr);
+    while (hashtable_loop_more(itr,&k,&v)) {
 
-            if (val) {
-                fprintf(fp,"%s:%s\n",key,val);
-            }
-        } while(hashtable_iterator_advance(itr));
+        if (v) {
+            fprintf(fp,"%s:%s\n",k,v);
+        }
     }
 }
 
@@ -47,7 +45,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     f = malloc(strlen(d)+strlen(defaults_file)+3);
     sprintf(f,"%s/%s",d,defaults_file);
     if (is_file(f)) {
-        printf(stderr,"loading [%s]\n",f);
+        fprintf(stderr,"loading [%s]\n",f);
         out = config_load(f);
     } else {
         out = string_string_hashtable();
@@ -59,7 +57,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     sprintf(f,"%s/%s",d,main_file);
 
     if (is_file(f)) {
-        printf(stderr,"loading [%s]\n",f);
+        fprintf(stderr,"loading [%s]\n",f);
         new = config_load(f);
     } else {
         new = string_string_hashtable();
@@ -124,7 +122,7 @@ struct hashtable *config_load_fp(FILE *fp) {
             }
 
             if (key && val ) {
-                fprintf(stderr,"cfg add [ %s ] = [ %s ]\n",key,val);
+                //fprintf(stderr,"cfg add [ %s ] = [ %s ]\n",key,val);
                 hashtable_insert(result,key,val);
             }
 
@@ -137,19 +135,63 @@ void config_unittest() {
     struct hashtable *cfg = config_load("test.cfg");
     config_write(cfg,"delete.cfg");
     struct hashtable *cfg2 = config_load("delete.cfg");
-    if (hashtable_count(cfg)) {
-        struct hashtable_itr *itr = hashtable_iterator(cfg);
-        do {
-            char *k = hashtable_iterator_key(itr);
-            char *v = hashtable_iterator_value(itr);
-            char *v2 = hashtable_search(cfg2,k);
-            assert(v2);
-            assert(strcmp(v,v2) == 0);
-            printf("%s:%s\n",k,v);
-        } while(hashtable_iterator_advance(itr));
+
+    char *k,*v;
+    struct hashtable_itr *itr = hashtable_loop_init(cfg) ;
+
+    while(hashtable_loop_more(itr,&k,&v)) {
+
+        char *v2 = hashtable_search(cfg2,k);
+        assert(v2);
+        assert(strcmp(v,v2) == 0);
+        printf("%s:%s\n",k,v);
+
     }
 }
 
+//gets  string config value via out : returns 1 if found 0 if not
+int config_get_str(struct hashtable *h,char *key,char **out) {
+    *out =  hashtable_search(h,key);
+    return (*out != NULL);
+}
+
+//gets  integer config value via out : returns 1 if found 0 if not
+int config_get_int(struct hashtable *h,char *key,long **out) {
+    char *s,*end;
+    long val;
+    if (config_get_str(h,key,&s) == 0) {
+        return 0;
+    }
+    val=strtol(s,&end,10);
+    if (*s != '\0' && *end == '\0') {
+        html_comment("ERROR: Integer conversion error for [%s] = [%s]",s);
+        return 0;
+    }
+    return 1;
+}
+
+
+/* read array variable from config - eg key[index]=value */
+int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out) {
+    char *s ;
+    int result=0;
+    if (asprintf(&s,"%s[%s]",k,index) >= 0 ) {
+        result = config_get_str(h,s,out);
+        free(s);
+    }
+    return result;
+}
+
+/* read array variable from config - eg key[index]=value */
+int config_get_int_indexed(struct hashtable *h,char *k,char *index,char **out) {
+    char *s ;
+    int result=0;
+    if (asprintf(&s,"%s[%s]",k,index) >= 0 ) {
+        result = config_get_int(h,s,out);
+        free(s);
+    }
+    return result;
+}
 
 
 

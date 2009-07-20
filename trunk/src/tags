@@ -6,16 +6,17 @@
 !_TAG_PROGRAM_VERSION	5.7	//
 ARRAY_EXPAND	.\array.c	58;"	d	file:
 BUFSIZE	.\array.c	211;"	d	file:
-BUFSIZE	.\util.c	119;"	d	file:
-BUFSIZE	.\util.c	185;"	d	file:
-CFG_BUFSIZ	.\config.c	88;"	d	file:
+BUFSIZE	.\util.c	154;"	d	file:
+BUFSIZE	.\util.c	88;"	d	file:
+CFG_BUFSIZ	.\config.c	89;"	d	file:
 DEFINE_HASHTABLE_INSERT	.\hashtable.h	101;"	d
 DEFINE_HASHTABLE_ITERATOR_SEARCH	.\hashtable_itr.h	71;"	d
 DEFINE_HASHTABLE_REMOVE	.\hashtable.h	137;"	d
 DEFINE_HASHTABLE_SEARCH	.\hashtable.h	119;"	d
 DbField	.\field.c	/^} DbField;$/;"	t	typeref:struct:__anon1	file:
+Dimensions	.\config.h	/^} Dimensions ;$/;"	t	typeref:struct:dimension_str
 ITEM_COUNT	.\tester.c	/^static const int ITEM_COUNT = 4000;$/;"	v	file:
-POST_BUF	.\gaya_cgi.c	51;"	d	file:
+POST_BUF	.\gaya_cgi.c	54;"	d	file:
 __ARRAY_H_ALORD__	.\array.h	2;"	d
 __CONFIG_H_ALORD__	.\config.h	2;"	d
 __GAYA_CGI_H__	.\gaya_cgi.h	2;"	d
@@ -23,6 +24,7 @@ __HASHTABLE_CWC22_H__	.\hashtable.h	4;"	d
 __HASHTABLE_ITR_CWC22__	.\hashtable_itr.h	4;"	d
 __HASHTABLE_LOOP_ALORD__	.\hashtable_loop.h	5;"	d
 __HASHTABLE_PRIVATE_CWC22_H__	.\hashtable_private.h	4;"	d
+__OVS_VASPRINTF__GNU__	.\vasprintf.h	2;"	d
 __UTIL_H_ALORD__	.\util.h	2;"	d
 __XHASHTABLE_CWC22_UTILITY_H__	.\hashtable_utility.h	4;"	d
 appDir	.\util.c	/^char *appDir() {$/;"	f
@@ -35,32 +37,41 @@ array_print	.\array.c	/^void array_print(char *label,array *a) {$/;"	f
 array_set	.\array.c	/^void array_set(array *a,int idx,void *ptr) {$/;"	f
 array_str	.\array.h	/^struct array_str {$/;"	s
 array_unittest	.\array.c	/^void array_unittest() {$/;"	f
+button_size	.\config.h	/^    long button_size;$/;"	m	struct:dimension_str
 catalog_config	.\oversight.c	/^struct hashtable *catalog_config = NULL;$/;"	v	typeref:struct:hashtable
+certificate_size	.\config.h	/^    long certificate_size;$/;"	m	struct:dimension_str
 chomp	.\util.c	/^void chomp(char *str) {$/;"	f
-config_get_int	.\config.c	/^int config_get_int(struct hashtable *h,char *key,long **out) {$/;"	f
-config_get_int_indexed	.\config.c	/^int config_get_int_indexed(struct hashtable *h,char *k,char *index,char **out) {$/;"	f
+cols	.\config.h	/^    long cols;$/;"	m	struct:dimension_str
+config_check_long	.\config.c	/^int config_check_long(struct hashtable *h,char *key,long *out) {$/;"	f
+config_check_long_indexed	.\config.c	/^int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out) {$/;"	f
+config_check_str	.\config.c	/^int config_check_str(struct hashtable *h,char *key,char **out) {$/;"	f
+config_check_str_indexed	.\config.c	/^int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out) {$/;"	f
+config_get_long	.\config.c	/^int config_get_long(struct hashtable *h,char *key,long *out) {$/;"	f
+config_get_long_indexed	.\config.c	/^int config_get_long_indexed(struct hashtable *h,char *k,char *index,long *out) {$/;"	f
 config_get_str	.\config.c	/^int config_get_str(struct hashtable *h,char *key,char **out) {$/;"	f
 config_get_str_indexed	.\config.c	/^int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out) {$/;"	f
 config_load	.\config.c	/^struct hashtable *config_load(char *filename) {$/;"	f
 config_load_fp	.\config.c	/^struct hashtable *config_load_fp(FILE *fp) {$/;"	f
 config_load_wth_defaults	.\config.c	/^struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file) {$/;"	f
+config_read_dimensions	.\config.c	/^void config_read_dimensions(struct hashtable *ovs_cfg,struct hashtable *nmt_cfg,Dimensions *dim) {$/;"	f
 config_unittest	.\config.c	/^void config_unittest() {$/;"	f
 config_write	.\config.c	/^void config_write(struct hashtable *cfg,char *filename) {$/;"	f
 config_write_fp	.\config.c	/^void config_write_fp(struct hashtable *cfg,FILE *fp) {$/;"	f
 create_hashtable	.\hashtable.c	/^create_hashtable(unsigned int minsize,$/;"	f
+dimension_str	.\config.h	/^typedef struct dimension_str {$/;"	s
 e	.\hashtable_itr.h	/^    struct entry *e;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::entry
 entry	.\hashtable_private.h	/^struct entry$/;"	s
 entrycount	.\hashtable_private.h	/^    unsigned int entrycount;$/;"	m	struct:hashtable
 eqfn	.\hashtable_private.h	/^    int (*eqfn) (void *k1, void *k2);$/;"	m	struct:hashtable
 equalkeys	.\tester.c	/^equalkeys(void *k1, void *k2)$/;"	f	file:
 exists	.\util.c	/^int exists(char *path) {$/;"	f
+font_size	.\config.h	/^    long font_size;$/;"	m	struct:dimension_str
 freeDbField	.\field.c	/^void freeDbField(DbField **f) {$/;"	f
 free_fn	.\array.h	/^    void (*free_fn)(void *);$/;"	m	struct:array_str
 freekey	.\hashtable_private.h	46;"	d
 from_hex	.\gaya_cgi.c	/^char from_hex(char ch) {$/;"	f
 from_hex	.\urlcode.c	/^char from_hex(char ch) {$/;"	f
-g_scanlines	.\oversight.c	/^char *g_scanlines="0";$/;"	v
-get_scanlines	.\oversight.c	/^char *get_scanlines(struct hashtable *nmt_settings) {$/;"	f
+get_scanlines	.\config.c	/^long get_scanlines(struct hashtable *nmt_settings,int *is_pal) {$/;"	f
 h	.\hashtable_itr.h	/^    struct hashtable *h;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::hashtable
 h	.\hashtable_private.h	/^    unsigned int h;$/;"	m	struct:entry
 hash	.\hashtable.c	/^hash(struct hashtable *h, void *k)$/;"	f
@@ -112,8 +123,10 @@ loadlimit	.\hashtable_private.h	/^    unsigned int loadlimit;$/;"	m	struct:hasht
 main	.\oversight.c	/^int main(int argc,char **argv) {$/;"	f
 main	.\tester.c	/^main(int argc, char **argv)$/;"	f
 max_load_factor	.\hashtable.c	/^const float max_load_factor = 0.65;$/;"	v
+max_plot_length	.\config.h	/^    long max_plot_length;$/;"	m	struct:dimension_str
 mem_size	.\array.h	/^    int mem_size;$/;"	m	struct:array_str
 merge_hashtables	.\util.c	/^void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {$/;"	f
+movie_img_width	.\config.h	/^    long movie_img_width;$/;"	m	struct:dimension_str
 newDbField	.\field.c	/^DbField *newDbField(char *id,char *v) {$/;"	f
 next	.\hashtable_private.h	/^    struct entry *next;$/;"	m	struct:entry	typeref:struct:entry::entry
 nmt_chown	.\util.c	/^void nmt_chown(char *d) {$/;"	f
@@ -126,8 +139,12 @@ nmt_uid	.\util.c	/^int nmt_uid() {$/;"	f
 one_ip	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 one_port	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 oversight_config	.\oversight.c	/^struct hashtable *oversight_config = NULL;$/;"	v	typeref:struct:hashtable
+ovs_asprintf	.\vasprintf.c	/^int ovs_asprintf (char **result, char *format, ...)$/;"	f
+ovs_vasprintf	.\vasprintf.c	/^int ovs_vasprintf (char **result, char *format, va_list args) {$/;"	f
 parent	.\hashtable_itr.h	/^    struct entry *parent;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::entry
 parse_query_string	.\gaya_cgi.c	/^struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {$/;"	f
+poster_menu_img_height	.\config.h	/^    long poster_menu_img_height;$/;"	m	struct:dimension_str
+poster_menu_img_width	.\config.h	/^    long poster_menu_img_width;$/;"	m	struct:dimension_str
 prime_table_length	.\hashtable.c	/^const unsigned int prime_table_length = sizeof(primes)\/sizeof(primes[0]);$/;"	v
 primeindex	.\hashtable_private.h	/^    unsigned int primeindex;$/;"	m	struct:hashtable
 primes	.\hashtable.c	/^static const unsigned int primes[] = {$/;"	v	file:
@@ -137,6 +154,7 @@ regextract1	.\util.c	/^char *regextract1(char *s,char *pattern,int submatch) {$/
 regextract_free	.\util.c	/^void regextract_free(array *submatches) {$/;"	f
 regpos	.\util.c	/^int regpos(char *s,char *pattern) {$/;"	f
 replace_all	.\util.c	/^char *replace_all(char *s_in,char *pattern,char *replace) {$/;"	f
+rows	.\config.h	/^    long rows;$/;"	m	struct:dimension_str
 size	.\array.h	/^    int size;$/;"	m	struct:array_str
 split	.\array.c	/^array *split(char *s_in,char *pattern) {$/;"	f
 splitch	.\array.c	/^array *splitch(char *s_in,char ch) {$/;"	f
@@ -146,9 +164,11 @@ stringhash	.\util.c	/^unsigned int stringhash(void *vptr) {$/;"	f
 substring	.\util.c	/^char *substring(char *s,int start_pos, int end_pos) {$/;"	f
 table	.\hashtable_private.h	/^    struct entry **table;$/;"	m	struct:hashtable	typeref:struct:hashtable::entry
 tablelength	.\hashtable_private.h	/^    unsigned int tablelength;$/;"	m	struct:hashtable
+title_size	.\config.h	/^    long title_size;$/;"	m	struct:dimension_str
 tmpDir	.\util.c	/^char *tmpDir() {$/;"	f
 to_hex	.\gaya_cgi.c	/^char to_hex(char code) {$/;"	f
 to_hex	.\urlcode.c	/^char to_hex(char code) {$/;"	f
+tv_img_width	.\config.h	/^    long tv_img_width;$/;"	m	struct:dimension_str
 two_ip	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 two_port	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 uint16_t	.\tester.c	/^typedef unsigned short uint16_t;$/;"	t	file:

@@ -12,23 +12,11 @@ struct hashtable *oversight_config = NULL;
 struct hashtable *catalog_config = NULL;
 struct hashtable *nmt_settings = NULL;
 
-char *g_scanlines="0";
-char *get_scanlines(struct hashtable *nmt_settings) {
-    char *tv_mode = hashtable_search(nmt_settings,"video_output");
-    int tv_mode_int = atoi(tv_mode);
-
-    if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 ) {
-        return "720";
-    } else if (tv_mode_int <= 5 || ( tv_mode_int >= 7 && tv_mode_int <= 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
-        return "0";
-    } else {
-        return "1080";
-    }
-}
-
 int main(int argc,char **argv) {
 
     int result=0;
+
+    html_log_level_set(3);
 
     printf("Content-Type: text/html\n\n");
 
@@ -42,17 +30,25 @@ int main(int argc,char **argv) {
 
     struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
 
+    html_comment("merge query and post data");
     merge_hashtables(query,post,0); // post is destroyed
 
+    html_comment("load ovs config");
     oversight_config =
         config_load_wth_defaults(appDir(),"oversight.cfg.example","oversight.cfg");
 
+    html_comment("load catalog config");
     catalog_config =
         config_load_wth_defaults(appDir(),"catalog.cfg.example","catalog.cfg");
 
+    html_comment("load nmt settings");
     nmt_settings = config_load("/tmp/setting.txt");
 
-    html_log_level_set(3);
+    Dimensions dimensions;
+    html_comment("read dimensions");
+    config_read_dimensions(oversight_config,nmt_settings,&dimensions);
+
+    html_comment("dump shit");
     html_hashtable_dump(3,"ovs cfg",oversight_config);
     html_hashtable_dump(3,"catalog cfg",catalog_config);
     html_hashtable_dump(3,"settings",nmt_settings);
@@ -60,8 +56,6 @@ int main(int argc,char **argv) {
     html_comment("done config");
 
 
-     g_scanlines = get_scanlines(nmt_settings);
-     html_comment("scanlines=[%s]",g_scanlines);
 
 /*
     doActions(query);

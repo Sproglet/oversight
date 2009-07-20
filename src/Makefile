@@ -11,6 +11,10 @@ endif
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o
 
+SRC=$(OVS_OBJS:.o=.c)
+
+HEADERS=$(SRC:.c=.h)
+
 OBJECTS=hashtable.o hashtable_itr.o tester.o
 
 

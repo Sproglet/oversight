@@ -3,6 +3,23 @@
 
 #include "hashtable.h"
 
+typedef struct dimension_str {
+    long scanlines;
+    long poster_mode;
+    long rows;
+    long cols;
+    long font_size;
+    long title_size;
+    long movie_img_width;
+    long tv_img_width;
+    long max_plot_length;
+    long button_size;
+    long certificate_size;
+    long poster_menu_img_width;
+    long poster_menu_img_height;
+
+} Dimensions ;
+
 struct hashtable *config_load(char *filename);
 struct hashtable *config_load_fp(FILE *fp);
 void config_write(struct hashtable *cfg,char *filename);
@@ -11,9 +28,15 @@ void config_unittest();
 struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file);
 
 int config_get_str(struct hashtable *h,char *key,char **out);
-int config_get_int(struct hashtable *h,char *key,long *out);
+int config_check_str(struct hashtable *h,char *key,char **out);
+int config_get_long(struct hashtable *h,char *key,long *out);
+int config_check_long(struct hashtable *h,char *key,long *out);
 
-int config_get_int_indexed(struct hashtable *h,char *k,char *index,long *out);
+int config_get_long_indexed(struct hashtable *h,char *k,char *index,long *out);
+int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out);
 int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out);
+int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out);
+
+void config_read_dimensions(struct hashtable *ovs_cfg,struct hashtable *nmt_cfg,Dimensions *dim);
 
 #endif

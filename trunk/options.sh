@@ -10,13 +10,13 @@ APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 #$2 = variable
 #$3=value
 OPTION_SET() {
-    vPatt=`echo "$2" | sed -r 's/([][])/\\\\\1/g'`
+    vPatt=`echo "$2" | sed -r 's/([][])/\\\\\1/g'` #escape square brackets a[b] to a\[b\]
     if grep -q "^$vPatt=" "$1" ; then
         cp "$1" "$1.old"
 
-        sed "s^$vPatt=.*$2="'"'"$3"'"'"" "$1.old" > "$1"
+        sed "s^$vPatt=.*$2="'"'"$3"'"' "$1.old" > "$1"
     else
-        echo "$2='$3'" >> "$1"
+        echo "$2="'"'"$3"'"' >> "$1"
     fi
 }
 

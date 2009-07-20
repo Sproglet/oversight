@@ -62,23 +62,12 @@ if [ ! -x "$AWK" ] ; then
 fi
 AWK=awk
 
-#If your platform does not have gunzip and has PHP (like some NMT I know)
-#then the following lines should activate.
-set +e
-echo | gunzip 2>/dev/null
-gunzip_error=$?
-set -e
-gunzip_cmd=
-GUNZIP_SCRIPT="$APPDIR/gunzip.php"
-if [ "$gunzip_error" = 127 ] ; then
-    # gunzip not found
-    php_path=/mnt/syb8634/server/php 
-    if [ -x "$php_path" ] ; then
-        gunzip_cmd="$GUNZIP_SCRIPT"
-    fi
-else
-    gunzip_cmd=gunzip
+#Get newer gzip and wget
+if [ -d "$APPDIR/bin" ] ; then
+    export PATH="$APPDIR/bin:$PATH"
 fi
+
+set +e
 
 PERMS() {
     chown -R $uid:$gid "$@" || true
@@ -313,9 +302,6 @@ BEGIN {
     g_imdb_regex="\\<tt[0-9]+\\>";
 
     ELAPSED_TIME=systime();
-    if (gunzip != "") {
-        INFO("using gunzip="gunzip);
-    }
     get_folders_from_args(FOLDER_ARR);
 }
 
@@ -4265,7 +4251,7 @@ function getUrl(url,capture_label,cache,referer,\
 function wget(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) {
 
-    args=" --no-check-certificate -q -U \""g_user_agent"\" --waitretry=5 -t 4 ";
+    args=" --no-check-certificate -q -U \""g_user_agent"\" --waitretry=1 -t 2 ";
     if (referer != "") {
         DEBUG("Referer = "referer);
         args=args" --referer=\""referer"\" ";
@@ -4274,18 +4260,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
     targetFile=quoteFile(file);
     htmlFile=targetFile;
 
-    if(gunzip == "") {
-        downloadedFile=htmlFile;
-        unzip_cmd="";
-    } else {
-        args=args" --header=\"Accept-Encoding: gzip,deflate\" "
-        downloadedFile=quoteFile(file".gz");
-        if (index(gunzip,"'"$GUNZIP_SCRIPT"'")) {
-            unzip_cmd="&& \""gunzip"\" "downloadedFile" "htmlFile;
-        } else { 
-            unzip_cmd=" && ( gunzip "downloadedFile" 2>/dev/null || mv "downloadedFile" "htmlFile" ) ";
-        }
-    }
+    args=args" --header=\"Accept-Encoding: gzip,deflate\" "
+    downloadedFile=quoteFile(file".gz");
+    unzip_cmd=" && gzip -d -c -f "downloadedFile" > "htmlFile" && rm "downloadedFile;
 
     gsub(/ /,"+",url);
 
@@ -4305,7 +4282,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
         }
     }
 
-    cmd = WGET" -O "downloadedFile" "args" "url" "unzip_cmd  ;
+    cmd = "wget -O "downloadedFile" "args" "url" "unzip_cmd  ;
     #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
     # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
 
@@ -4470,7 +4447,7 @@ function download_poster(url,idx,\
 
             g_already_fetched_poster[internal_path] = 1;
 
-            exec(WGET args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );
+            exec("wget " args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );
 
         }
 
@@ -5611,10 +5588,8 @@ function load_catalog_settings(file_name) {
 #ENDAWK
 
 ' JOBID=$JOBID PID=$$ NOW=`date +%Y%m%d%H%M%S` \
-    "WGET=/bin/wget" \
     "LS=$LS" \
     "APPDIR=$APPDIR" \
-    "gunzip=$gunzip_cmd" \
     "INDEX_DB=$INDEX_DB" "$@"
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"

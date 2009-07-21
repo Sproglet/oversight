@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> /* for memcmp */
+#include "util.h" //for MALLOC
 
 static const int ITEM_COUNT = 4000;
 
@@ -65,7 +66,7 @@ main(int argc, char **argv)
 /* Insertion */
     for (i = 0; i < ITEM_COUNT; i++)
     {
-        k = (struct key *)malloc(sizeof(struct key));
+        k = (struct key *)MALLOC(sizeof(struct key));
         if (NULL == k) {
             printf("ran out of memory allocating a key\n");
             return 1;
@@ -75,7 +76,7 @@ main(int argc, char **argv)
         k->one_port = 22 + (7 * i);
         k->two_port = 5522 - (3 * i);
         
-        v = (struct value *)malloc(sizeof(struct value));
+        v = (struct value *)MALLOC(sizeof(struct value));
         v->id = "a value";
         
         if (!insert_some(h,k,v)) exit(-1); /*oom*/
@@ -85,7 +86,7 @@ main(int argc, char **argv)
 
 /*****************************************************************************/
 /* Hashtable search */
-    k = (struct key *)malloc(sizeof(struct key));
+    k = (struct key *)MALLOC(sizeof(struct key));
     if (NULL == k) {
         printf("ran out of memory allocating a key\n");
         return 1;
@@ -176,13 +177,13 @@ main(int argc, char **argv)
 
     for (i = 0; i < ITEM_COUNT; i++)
     {
-        k = (struct key *)malloc(sizeof(struct key));
+        k = (struct key *)MALLOC(sizeof(struct key));
         k->one_ip = 0xcfccee40 + i;
         k->two_ip = 0xcf0cee67 - (5 * i);
         k->one_port = 22 + (7 * i);
         k->two_port = 5522 - (3 * i);
         
-        v = (struct value *)malloc(sizeof(struct value));
+        v = (struct value *)MALLOC(sizeof(struct value));
         v->id = "a value";
         
         if (!insert_some(h,k,v))
@@ -197,7 +198,7 @@ main(int argc, char **argv)
 /*****************************************************************************/
 /* Hashtable iterator search and iterator remove */
 
-    k = (struct key *)malloc(sizeof(struct key));
+    k = (struct key *)MALLOC(sizeof(struct key));
     if (NULL == k) {
         printf("ran out of memory allocating a key\n");
         return 1;

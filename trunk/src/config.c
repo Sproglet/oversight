@@ -43,8 +43,8 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     struct hashtable *new = NULL;
    
     // load the default settings
-    f = malloc(strlen(d)+strlen(defaults_file)+3);
-    sprintf(f,"%s/%s",d,defaults_file);
+    ovs_asprintf(&f,"%s/%s",d,defaults_file);
+
     if (is_file(f)) {
         fprintf(stderr,"loading [%s]\n",f);
         out = config_load(f);
@@ -54,7 +54,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     free(f);
 
     // load the main settings
-    f = malloc(strlen(d)+strlen(main_file)+3);
+    f = MALLOC(strlen(d)+strlen(main_file)+3);
     sprintf(f,"%s/%s",d,main_file);
 
     if (is_file(f)) {

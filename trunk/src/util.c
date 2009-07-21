@@ -98,7 +98,7 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
 
     }
 
-    array *a = array_new(free);
+    Array *a = array_new(free);
 
     int eflag = 0;
     // Repeatedly add the bit before each regex match
@@ -110,7 +110,7 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
 
         // printf("split3 match found at [%*.s][%*.s]\n",match_start,s,(match_end-match_start),s+match_start);
 
-        char *part = malloc(match_start+1);
+        char *part = MALLOC(match_start+1);
 
         strncpy(part,s,match_start);
         part[match_start]='\0';
@@ -136,7 +136,7 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
 
     regfree(&re);
 
-    char *s_out = malloc(outlen+1);
+    char *s_out = MALLOC(outlen+1);
     assert(s_out);
     s = s_out;
 
@@ -185,7 +185,7 @@ int regpos(char *s,char *pattern) {
  */
 char *regextract1(char *s,char *pattern,int submatch) {
 
-    array *a = regextract(s,pattern);
+    Array *a = regextract(s,pattern);
     char *segment = NULL;
 
     if (a == NULL) {
@@ -201,7 +201,7 @@ char *regextract1(char *s,char *pattern,int submatch) {
 /*
  * Match a regular expression and return the submatch'ed braketed pair 0=the entire match
  */
-array *regextract(char *s,char *pattern) {
+Array *regextract(char *s,char *pattern) {
 
     int submatch = 1;
     // count number of submatch brackets
@@ -215,7 +215,7 @@ array *regextract(char *s,char *pattern) {
     assert(s);
     assert(pattern);
     int status;
-    array *result = NULL;
+    Array *result = NULL;
 
 
     regex_t re;
@@ -259,7 +259,7 @@ array *regextract(char *s,char *pattern) {
 }
 
 // Free results of regextract
-void regextract_free(array *submatches) {
+void regextract_free(Array *submatches) {
     array_free(submatches);
 }
 
@@ -269,7 +269,7 @@ void regextract_free(array *submatches) {
 char *substring(char *s,int start_pos, int end_pos) {
 
     int len=end_pos-start_pos;
-    char *p = malloc(len+1);
+    char *p = MALLOC(len+1);
     strncpy(p,s+start_pos,len);
     p[len]='\0';
     return p;
@@ -320,7 +320,7 @@ void util_unittest() {
     //regex functions
     //
     printf("regextract...\n");
-    array *a = regextract("over there!","([a-z]+)!");
+    Array *a = regextract("over there!","([a-z]+)!");
     char *there = strdup(a->array[1]);
     array_free(a);
 
@@ -338,7 +338,7 @@ void util_unittest() {
     assert(regpos("hello","e") == 1);
 
     printf("regmatch...\n");
-    array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)");
+    Array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)");
     assert(matches);
     assert(matches->size == 5);
     assert(strcmp(matches->array[0],"a=b helllo d:ef") ==0);
@@ -372,13 +372,16 @@ void util_unittest() {
 }
 
 void chomp(char *str) {
+    int i=0;
     if (str) {
         char *p = str + strlen(str) -1 ; 
         while ( p > str  && strchr("\n\r",*p )) {
             *p = '\0';
             p--;
+            i++;
         }
     }
+    return i;
 }
 
 int exists(char *path) {
@@ -436,9 +439,8 @@ char *tmpDir() {
 //return new directory - name must be freed
 char *nmt_subdir(char *root,char *name) {
 
-    char *d = malloc(strlen(root)+strlen(name)+3);
-
-    sprintf(d,"%s/%s",root,name);
+    char *d;
+    ovs_asprintf(&d,"%s/%s",root,name);
 
     if (!is_dir(d)) {
         nmt_mkdir(d);
@@ -508,4 +510,35 @@ void hashtable_dump(char *label,struct hashtable *h) {
     }
 }
 
+void *MALLOC(unsigned long bytes) {
+    void *p = NULL;
+
+    if (bytes) {
+    
+        p = malloc(bytes);
+        if (p == NULL) {
+            fprintf(stderr,"Memory exhausted on malloc\n");
+            printf("Memory exhausted on malloc\n");
+            exit(1);
+        }
+
+    }
+    return p;
+}
+
+char *STRDUP(char *s) {
+    char *p = NULL;
+
+    if (s) {
+    
+        p = strdup(s);
+        if (p == NULL) {
+            fprintf(stderr,"Memory exhausted on strdup\n");
+            printf("Memory exhausted on strdup\n");
+            exit(1);
+        }
+
+    }
+    return p;
+}
 

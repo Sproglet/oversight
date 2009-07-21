@@ -4,21 +4,37 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.7	//
-ARRAY_EXPAND	.\array.c	58;"	d	file:
-BUFSIZE	.\array.c	211;"	d	file:
+ARRAY_EXPAND	.\array.c	59;"	d	file:
+Array	.\array.h	/^typedef struct array_str Array;$/;"	t	typeref:struct:array_str
+BUFSIZE	.\array.c	212;"	d	file:
+BUFSIZE	.\db.c	61;"	d	file:
 BUFSIZE	.\util.c	154;"	d	file:
 BUFSIZE	.\util.c	88;"	d	file:
 CFG_BUFSIZ	.\config.c	89;"	d	file:
+DB_MEDIA_TYPE_ANY	.\db.h	15;"	d
+DB_MEDIA_TYPE_FILM	.\db.h	14;"	d
+DB_MEDIA_TYPE_TV	.\db.h	13;"	d
+DB_WATCHED_FILTER_ANY	.\db.h	19;"	d
+DB_WATCHED_FILTER_NO	.\db.h	18;"	d
+DB_WATCHED_FILTER_YES	.\db.h	17;"	d
 DEFINE_HASHTABLE_INSERT	.\hashtable.h	101;"	d
 DEFINE_HASHTABLE_ITERATOR_SEARCH	.\hashtable_itr.h	71;"	d
 DEFINE_HASHTABLE_REMOVE	.\hashtable.h	137;"	d
 DEFINE_HASHTABLE_SEARCH	.\hashtable.h	119;"	d
+Db	.\db.h	/^} Db;$/;"	t	typeref:struct:Db_struct
 DbField	.\field.c	/^} DbField;$/;"	t	typeref:struct:__anon1	file:
+DbResults_struct	.\db.h	/^typedef struct DbResults_struct {$/;"	s
+DbRowId	.\db.h	/^} DbRowId;$/;"	t	typeref:struct:Dbrowid_struct
+Db_struct	.\db.h	/^typedef struct Db_struct {$/;"	s
+Dbrowid_struct	.\db.h	/^typedef struct Dbrowid_struct {$/;"	s
 Dimensions	.\config.h	/^} Dimensions ;$/;"	t	typeref:struct:dimension_str
 ITEM_COUNT	.\tester.c	/^static const int ITEM_COUNT = 4000;$/;"	v	file:
+MALLOC	.\util.c	/^void *MALLOC(unsigned long bytes) {$/;"	f
 POST_BUF	.\gaya_cgi.c	54;"	d	file:
+STRDUP	.\util.c	/^char *STRDUP(char *s) {$/;"	f
 __ARRAY_H_ALORD__	.\array.h	2;"	d
 __CONFIG_H_ALORD__	.\config.h	2;"	d
+__DB_ALORD__	.\db.h	2;"	d
 __GAYA_CGI_H__	.\gaya_cgi.h	2;"	d
 __HASHTABLE_CWC22_H__	.\hashtable.h	4;"	d
 __HASHTABLE_ITR_CWC22__	.\hashtable_itr.h	4;"	d
@@ -29,12 +45,11 @@ __UTIL_H_ALORD__	.\util.h	2;"	d
 __XHASHTABLE_CWC22_UTILITY_H__	.\hashtable_utility.h	4;"	d
 appDir	.\util.c	/^char *appDir() {$/;"	f
 array	.\array.h	/^    void **array;$/;"	m	struct:array_str
-array	.\array.h	/^typedef struct array_str array;$/;"	t	typeref:struct:array_str
-array_add	.\array.c	/^void array_add(array *a,void *ptr) {$/;"	f
-array_free	.\array.c	/^void array_free(array *a) {$/;"	f
-array_new	.\array.c	/^array *array_new(void(*free_fn)(void *)) {$/;"	f
-array_print	.\array.c	/^void array_print(char *label,array *a) {$/;"	f
-array_set	.\array.c	/^void array_set(array *a,int idx,void *ptr) {$/;"	f
+array_add	.\array.c	/^void array_add(Array *a,void *ptr) {$/;"	f
+array_free	.\array.c	/^void array_free(Array *a) {$/;"	f
+array_new	.\array.c	/^Array *array_new(void(*free_fn)(void *)) {$/;"	f
+array_print	.\array.c	/^void array_print(char *label,Array *a) {$/;"	f
+array_set	.\array.c	/^void array_set(Array *a,int idx,void *ptr) {$/;"	f
 array_str	.\array.h	/^struct array_str {$/;"	s
 array_unittest	.\array.c	/^void array_unittest() {$/;"	f
 button_size	.\config.h	/^    long button_size;$/;"	m	struct:dimension_str
@@ -58,6 +73,14 @@ config_unittest	.\config.c	/^void config_unittest() {$/;"	f
 config_write	.\config.c	/^void config_write(struct hashtable *cfg,char *filename) {$/;"	f
 config_write_fp	.\config.c	/^void config_write_fp(struct hashtable *cfg,FILE *fp) {$/;"	f
 create_hashtable	.\hashtable.c	/^create_hashtable(unsigned int minsize,$/;"	f
+db	.\db.h	/^    Db *db;$/;"	m	struct:DbResults_struct
+db_create_hashtable	.\db.c	/^struct hashtable *db_create_hashtable() {$/;"	f
+db_init	.\db.c	/^Db *db_init(char *filename, \/\/ path to the file$/;"	f
+db_lock	.\db.c	/^int db_lock() {$/;"	f
+db_row_equalf	.\db.c	/^unsigned int db_row_equalf(DbRow *r1,DbRow *r2) {$/;"	f
+db_row_hashf	.\db.c	/^unsigned int db_row_hashf(DbRow *row) {$/;"	f
+db_scan_titles	.\db.c	/^void db_scan_titles($/;"	f
+db_unlock	.\db.c	/^int db_unlock() {$/;"	f
 dimension_str	.\config.h	/^typedef struct dimension_str {$/;"	s
 e	.\hashtable_itr.h	/^    struct entry *e;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::entry
 entry	.\hashtable_private.h	/^struct entry$/;"	s
@@ -99,12 +122,14 @@ hashtable_remove	.\hashtable.c	/^hashtable_remove(struct hashtable *h, void *k)$
 hashtable_search	.\hashtable.c	/^hashtable_search(struct hashtable *h, void *k)$/;"	f
 html_comment	.\gaya_cgi.c	/^void html_comment(char *format,...) {$/;"	f
 html_encode	.\gaya_cgi.c	/^char *html_encode(char *s) {$/;"	f
+html_error	.\gaya_cgi.c	/^void html_error(char *format,...) {$/;"	f
 html_hashtable_dump	.\gaya_cgi.c	/^void html_hashtable_dump(int level,char *label,struct hashtable *h) {$/;"	f
 html_hashtable_dump2	.\gaya_cgi.c	/^void html_hashtable_dump2(int level,char *label,struct hashtable *h) {$/;"	f
 html_log	.\gaya_cgi.c	/^void html_log(int level,char *format,...) {$/;"	f
 html_log_level	.\gaya_cgi.c	/^int html_log_level = 0;$/;"	v
 html_log_level_set	.\gaya_cgi.c	/^void html_log_level_set(int level) {$/;"	f
 html_vacomment	.\gaya_cgi.c	/^void html_vacomment(char *format,va_list ap) {$/;"	f
+id	.\db.h	/^    long id;$/;"	m	struct:Dbrowid_struct
 id	.\field.c	/^	char *id;$/;"	m	struct:__anon1	file:
 id	.\tester.c	/^    char *id;$/;"	m	struct:value	file:
 index	.\hashtable_itr.h	/^    unsigned int index;$/;"	m	struct:hashtable_itr
@@ -136,6 +161,7 @@ nmt_passwd	.\util.c	/^static struct passwd *nmt_passwd = NULL;$/;"	v	typeref:str
 nmt_settings	.\oversight.c	/^struct hashtable *nmt_settings = NULL;$/;"	v	typeref:struct:hashtable
 nmt_subdir	.\util.c	/^char *nmt_subdir(char *root,char *name) {$/;"	f
 nmt_uid	.\util.c	/^int nmt_uid() {$/;"	f
+offset	.\db.h	/^    long offset;$/;"	m	struct:Dbrowid_struct
 one_ip	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 one_port	.\tester.c	/^    uint32_t one_ip; uint32_t two_ip; uint16_t one_port; uint16_t two_port;$/;"	m	struct:key	file:
 oversight_config	.\oversight.c	/^struct hashtable *oversight_config = NULL;$/;"	v	typeref:struct:hashtable
@@ -143,21 +169,26 @@ ovs_asprintf	.\vasprintf.c	/^int ovs_asprintf (char **result, char *format, ...)
 ovs_vasprintf	.\vasprintf.c	/^int ovs_vasprintf (char **result, char *format, va_list args) {$/;"	f
 parent	.\hashtable_itr.h	/^    struct entry *parent;$/;"	m	struct:hashtable_itr	typeref:struct:hashtable_itr::entry
 parse_query_string	.\gaya_cgi.c	/^struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {$/;"	f
+path	.\db.h	/^    char *path;$/;"	m	struct:Db_struct
 poster_menu_img_height	.\config.h	/^    long poster_menu_img_height;$/;"	m	struct:dimension_str
 poster_menu_img_width	.\config.h	/^    long poster_menu_img_width;$/;"	m	struct:dimension_str
+poster_mode	.\config.h	/^    long poster_mode;$/;"	m	struct:dimension_str
 prime_table_length	.\hashtable.c	/^const unsigned int prime_table_length = sizeof(primes)\/sizeof(primes[0]);$/;"	v
 primeindex	.\hashtable_private.h	/^    unsigned int primeindex;$/;"	m	struct:hashtable
 primes	.\hashtable.c	/^static const unsigned int primes[] = {$/;"	v	file:
 read_post_data	.\gaya_cgi.c	/^struct hashtable *read_post_data(char *post_filename) {$/;"	f
-regextract	.\util.c	/^array *regextract(char *s,char *pattern) {$/;"	f
+regextract	.\util.c	/^Array *regextract(char *s,char *pattern) {$/;"	f
 regextract1	.\util.c	/^char *regextract1(char *s,char *pattern,int submatch) {$/;"	f
-regextract_free	.\util.c	/^void regextract_free(array *submatches) {$/;"	f
+regextract_free	.\util.c	/^void regextract_free(Array *submatches) {$/;"	f
 regpos	.\util.c	/^int regpos(char *s,char *pattern) {$/;"	f
 replace_all	.\util.c	/^char *replace_all(char *s_in,char *pattern,char *replace) {$/;"	f
 rows	.\config.h	/^    long rows;$/;"	m	struct:dimension_str
+rows	.\db.h	/^    struct hashtable *rows; \/\/ This is a hash of RowIds$/;"	m	struct:DbResults_struct	typeref:struct:DbResults_struct::hashtable
+scanlines	.\config.h	/^    long scanlines;$/;"	m	struct:dimension_str
 size	.\array.h	/^    int size;$/;"	m	struct:array_str
-split	.\array.c	/^array *split(char *s_in,char *pattern) {$/;"	f
-splitch	.\array.c	/^array *splitch(char *s_in,char ch) {$/;"	f
+source	.\db.h	/^    char *source;$/;"	m	struct:Db_struct
+split	.\array.c	/^Array *split(char *s_in,char *pattern) {$/;"	f
+splitch	.\array.c	/^Array *splitch(char *s_in,char ch) {$/;"	f
 string_string_hashtable	.\util.c	/^struct hashtable *string_string_hashtable() {$/;"	f
 stringcmp	.\util.c	/^int stringcmp(void *a,void *b) {$/;"	f
 stringhash	.\util.c	/^unsigned int stringhash(void *vptr) {$/;"	f

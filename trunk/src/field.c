@@ -15,7 +15,7 @@ typedef struct {
 
 DbField *newDbField(char *id,char *v) {
 
-	DbField *f = (DbField *) malloc(sizeof(DbField));
+	DbField *f = (DbField *) MALLOC(sizeof(DbField));
 	assert(f);
 
 	f->id = strdup(id);

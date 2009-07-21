@@ -10,6 +10,7 @@
   * Fixed Donate button removal - God knows why! :)
   * Fixed Duplicate Movies during incremental scanning (due to memory usage fix)
   * avoid tv match for hd1080
+  * Work around for Gaya PAL a/r bug.
 
 20090719-1BETA
 

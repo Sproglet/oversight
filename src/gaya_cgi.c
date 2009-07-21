@@ -18,7 +18,7 @@
 struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 
     int i;
-    array *qarr = split(q,"&");
+    Array *qarr = split(q,"&");
 
     if (hashtable_in == NULL) {
         hashtable_in = string_string_hashtable();
@@ -214,7 +214,7 @@ char to_hex(char code) {
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_encode(char *str) {
     assert(str);
-  char *pstr = str, *buf = malloc(strlen(str) * 3 + 1), *pbuf = buf;
+  char *pstr = str, *buf = MALLOC(strlen(str) * 3 + 1), *pbuf = buf;
   while (*pstr) {
     if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
       *pbuf++ = *pstr;
@@ -235,7 +235,7 @@ char *url_encode(char *str) {
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_decode(char *str) {
     assert(str);
-  char *pstr = str, *buf = malloc(strlen(str) + 1), *pbuf = buf;
+  char *pstr = str, *buf = MALLOC(strlen(str) + 1), *pbuf = buf;
   while (*pstr) {
     if (*pstr == '%') {
       if (pstr[1] && pstr[2]) {
@@ -286,7 +286,7 @@ char *html_encode(char *s) {
             size ++;
         }
     }
-    result = q = malloc(size+1);
+    result = q = MALLOC(size+1);
     assert(q);
     for (p = s ; *p ; p++) {
         if (*p == '<' ) {

@@ -1,4 +1,4 @@
-/* Like vsprintf but provides a pointer to malloc'd storage, which must
+/* Like vsprintf but provides a pointer to MALLOC'd storage, which must
    be freed by the caller.
    Copyright (C) 1994 Free Software Foundation, Inc.
 
@@ -26,10 +26,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #include <stdarg.h>
 
 #include "vasprintf.h"
+#include "util.h" //for MALLOC
 
 int ovs_vasprintf (char **result, char *format, va_list args) {
   char *p = format;
-  /* Add one to make sure that it is never zero, which might cause malloc
+  /* Add one to make sure that it is never zero, which might cause MALLOC
      to return NULL.  */
   int total_width = strlen (format) + 1;
   va_list ap = args;
@@ -90,7 +91,7 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
             }
         }
     }
-  *result = malloc (total_width);
+  *result = MALLOC (total_width);
   if (*result != NULL)
     return vsprintf (*result, format, args);
   else

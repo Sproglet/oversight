@@ -5,11 +5,12 @@
 
 #include "array.h"
 #include "assert.h"
+#include "util.h"
 
 
-array *array_new(void(*free_fn)(void *)) {
+Array *array_new(void(*free_fn)(void *)) {
 
-    array *a = (array *)malloc(sizeof(array));
+    Array *a = (Array *)MALLOC(sizeof(Array));
     a->array = NULL;
     a->size = 0;
     a->mem_size = 0;
@@ -22,7 +23,7 @@ array *array_new(void(*free_fn)(void *)) {
  * (*fr)=free function
  * free_by_address = if 1 then the address of the variable , rather then the memory is passed so that it can be set to NULL
  */
-void array_free(array *a) {
+void array_free(Array *a) {
     int i;
 
     void(*free_fn)(void *);
@@ -45,7 +46,7 @@ void array_free(array *a) {
  * array[array->size++]=ptr
  * The array is NOT sparse. Use hastable for sparse arrays.
  */
-void array_add(array *a,void *ptr) {
+void array_add(Array *a,void *ptr) {
     array_set(a,a->size,ptr);
 }
 
@@ -53,7 +54,7 @@ void array_add(array *a,void *ptr) {
  * array[idx]=ptr
  * The array is NOT sparse. Use hastable for sparse arrays.
  */
-void array_set(array *a,int idx,void *ptr) {
+void array_set(Array *a,int idx,void *ptr) {
 
 #define ARRAY_EXPAND 10
     //extend memory
@@ -79,7 +80,7 @@ void array_set(array *a,int idx,void *ptr) {
     }
 }
 
-void array_print(char *label,array *a) {
+void array_print(char *label,Array *a) {
 
     int i;
 
@@ -96,7 +97,7 @@ void array_print(char *label,array *a) {
 
 void array_unittest() {
 
-    array *a = array_new(free);
+    Array *a = array_new(free);
 
     array_add(a,"hello");
     array_add(a,"goodbye");
@@ -149,8 +150,8 @@ void array_unittest() {
 /*
  * Split a strin s_in into an array using character ch.
  */
-array *splitch(char *s_in,char ch) {
-    array *a = array_new(free);
+Array *splitch(char *s_in,char ch) {
+    Array *a = array_new(free);
     char *s = s_in;
     char *p;
     printf("split ch [%s] by [%c]\n",s,ch);
@@ -162,7 +163,7 @@ array *splitch(char *s_in,char ch) {
 
     while ((p=strchr(s,ch)) != NULL ) {
 
-        char *part = malloc(p-s+1);
+        char *part = MALLOC(p-s+1);
 
         strncpy(part,s,p-s);
 
@@ -185,9 +186,9 @@ array *splitch(char *s_in,char ch) {
  * If pattern is one character long then a simple
  * character split is used.
  */
-array *split(char *s_in,char *pattern) {
+Array *split(char *s_in,char *pattern) {
 
-    array *a = array_new(free);
+    Array *a = array_new(free);
 
     if (s_in == NULL) {
         return a;
@@ -232,7 +233,7 @@ array *split(char *s_in,char *pattern) {
 
         // printf("split3 match found at [%*.s][%*.s]\n",match_start,s,(match_end-match_start),s+match_start);
 
-        char *part = malloc(match_start+1);
+        char *part = MALLOC(match_start+1);
 
         strncpy(part,s,match_start);
         part[match_start]='\0';

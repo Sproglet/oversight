@@ -1907,6 +1907,7 @@ details,line,dirs,d,dirCount,ePos) {
     #First get season and episode information
 
    #DEBUG("CHECK TV "line);
+   line = remove_format_tags(line);
 
     if (extractEpisode(line,idx,details)) {
        INFO("Found TV info in file name:"line);
@@ -1971,10 +1972,10 @@ function extractEpisodeByPatterns(line,details,idx) {
         if (!extractEpisodeByPattern(line,0,"\\<","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
             if (!extractEpisodeByPattern(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode)[^a-z0-9]*[0-9][0-9]?",details,idx)) { #00x00 
 
-                #remove 264 before trying pure numeric detection
-                if (index(line,"x264")) {
-                    gsub(/\<x264\>/,"x-264",line);
-                }
+                ##remove 264 before trying pure numeric detection
+                #if (index(line,"x264")) {
+                    #gsub(/\<x264\>/,"x-264",line);
+                #}
                 if (!extractEpisodeByPattern(line,1,"[^-0-9]","([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details,idx)) { # ...name101...
 
                     return 0;
@@ -2186,6 +2187,12 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
     #Match the episode first to handle 3453 and 456
     match(line,episodeRe "$" );
     tmpDetails[EPISODE] = substr(line,RSTART,RLENGTH); 
+
+    if (tmpDetails[EPISODE] - 40 > 0 ) {
+        #Reject this could be 64(x264) or 80(hd1080)
+        return 0;
+    }
+
     tmpDetails[SEASON] = substr(line,1,RSTART-1);
 
     #gsub(/[^0-9]+/,"",tmpDetails[EPISODE]); #BB

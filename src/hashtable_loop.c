@@ -43,13 +43,14 @@
 #include "hashtable_private.h"
 #include "hashtable_loop.h"
 #include <stdlib.h> /* defines NULL */
-#include <assert.h> /* defines NULL */
+#include <assert.h>
+#include "util.h" //for MALLOC
 
 /*****************************************************************************/
 
 struct hashtable_itr * hashtable_loop_init(struct hashtable *h) {
 
-    struct hashtable_itr *itr =  malloc(sizeof(struct hashtable_itr));
+    struct hashtable_itr *itr =  MALLOC(sizeof(struct hashtable_itr));
 
     if (itr) {
 

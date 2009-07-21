@@ -1,6 +1,7 @@
 #ifndef __UTIL_H_ALORD__
 #define __UTIL_H_ALORD__
 #include "array.h"
+#include "hashtable.h"
 
 struct hashtable *string_string_hashtable();
 void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy);
@@ -11,9 +12,9 @@ char *substring(char *s,int start_pos, int end_pos);
 
 char *replace_all(char *s_in,char *pattern,char *replace);
 
-array *regextract(char *s,char *pattern);
+Array *regextract(char *s,char *pattern);
 char *regextract1(char *s,char *pattern,int submatch);
-void regextract_free(array *submatches);
+void regextract_free(Array *submatches);
 int regpos(char *s,char *pattern);
 
 void util_unittest();
@@ -37,5 +38,8 @@ void nmt_chown(char *d);
 
 int nmt_uid();
 int nmt_gid();
+
+void *MALLOC(unsigned long bytes);
+char *STRDUP(char *s);
 
 #endif

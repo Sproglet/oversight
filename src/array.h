@@ -8,17 +8,17 @@ struct array_str {
     void (*free_fn)(void *);
 };
 
-typedef struct array_str array;
+typedef struct array_str Array;
 
-void array_print(char *label,array *a);
-array *array_new(void(*fr)(void *) );
-void array_add(array *a,void *ptr);
-void array_set(array *a,int idx,void *ptr);
+void array_print(char *label,Array *a);
+Array *array_new(void(*fr)(void *) );
+void array_add(Array *a,void *ptr);
+void array_set(Array *a,int idx,void *ptr);
 
-void array_free(array *a );
+void array_free(Array *a );
 
 
-array *split(char *s,char *pattern);
-array *splitc(char *s,char c);
+Array *split(char *s,char *pattern);
+Array *splitc(char *s,char c);
 
 #endif

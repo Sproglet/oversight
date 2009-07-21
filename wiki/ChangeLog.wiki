@@ -3,6 +3,7 @@
 20090721-1BETA
   * Better Abbreviation detection 'law and order svu' 'fguy' grk' 'desperateh' 'ttscc'
   * bundled gzip binary for non-telnet HDX/eGreat
+  * Better info displayed for "daily" shows. 
   * Display tvmode code in setup screen.
   * Seatch tvdbcom for 'and' or '&'
   * remove redundant epguides code.

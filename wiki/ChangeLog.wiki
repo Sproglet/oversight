@@ -1,12 +1,20 @@
-Changelog
-
 = Oversight Change Log =
+
+20090721-1BETA
+  * Better Abbreviation detection 'law and order svu' 'fguy' grk' 'desperateh' 'ttscc'
+  * bundled gzip binary for non-telnet HDX/eGreat
+  * Display tvmode code in setup screen.
+  * Seatch tvdbcom for 'and' or '&'
+  * remove redundant epguides code.
+  * Fixed Donate button removal - God knows why! :)
+  * Fixed Duplicate Movies during incremental scanning (due to memory usage fix)
+  * avoid tv match for hd1080
 
 20090719-1BETA
 
-    * Fixed unzipping on HDX/eGreat that do not have telnet installed.
-    * Better Memory Usage
-    * Simple NAS/USB support - files are not de-listed if grandparent folder missing
+  * Fixed unzipping on HDX/eGreat that do not have telnet installed.
+  * Better Memory Usage
+  * Simple NAS/USB support - files are not de-listed if grandparent folder missing
 
 20090717-1BETA
 

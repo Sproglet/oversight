@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=20090721-1BETA
+VERSION=20090721-2BETA
 # $Id$
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
@@ -2258,9 +2258,9 @@ function setDisplayParams(tvmode) {
     if (!g_local_browser) {
         tvmode = 6;
         scanlines=720;
-    } else if (!g_local_browser || tvmode == 6 || tvmode == 10 || tvmode == 13 ) {
+    } else if (tvmode ~ "^(6|10|13)$" ) {
         scanlines=720;
-    } else if (tvmode <= 5 || (tvmode >= 7 && tvmode <= 9 ) || (tvmode >= 30 && tvmode <= 31) ) {
+    } else if (tvmode ~ "^(1|2|3|4|5|7|8|9|30|31)$" ) {
         scanlines=0;
     } else {
         scanlines=1080;

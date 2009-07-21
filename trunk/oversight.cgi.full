@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=20090719-2BETA
+VERSION=20090721-1BETA
 # $Id$
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
@@ -2255,7 +2255,10 @@ function setDisplayParams(tvmode) {
     #########################################################
     # Set rows, cols and font size according to your TV code.
 
-    if (!g_local_browser || tvmode == 6 || tvmode == 10 || tvmode == 13 ) {
+    if (!g_local_browser) {
+        tvmode = 6;
+        scanlines=720;
+    } else if (!g_local_browser || tvmode == 6 || tvmode == 10 || tvmode == 13 ) {
         scanlines=720;
     } else if (tvmode <= 5 || (tvmode >= 7 && tvmode <= 9 ) || (tvmode >= 30 && tvmode <= 31) ) {
         scanlines=0;
@@ -2282,6 +2285,9 @@ function setDisplayParams(tvmode) {
         gPosterModeWidth=gPosterModeHeight*24/35;
         gPosterModeWidth=gPosterModeHeight*30/35;
     }
+    if(is_pal(tvmode)) {
+        gPosterModeHeight *= 576/480;
+    }
 
     gPosterMode = ovs_poster_mode[scanlines];
     if (gPosterMode == 1) {
@@ -2295,11 +2301,29 @@ function setDisplayParams(tvmode) {
 
     gPosterModeAttr = "width="gPosterModeWidth" height="gPosterModeHeight;
 
-    gMoviePosterAttr="height="ovs_movie_poster_height[scanlines];
-    gTvPosterAttr="height="ovs_tv_poster_height[scanlines];
+    gMoviePosterAttr = dvd_poster_attr(tvmode,ovs_movie_poster_height[scanlines]);
+
+    gTvPosterAttr = dvd_poster_attr(tvmode,ovs_tv_poster_height[scanlines]);
+
     gPlotLength=ovs_max_plot_length[scanlines];
     gButtonAttr="width="ovs_button_size[scanlines]" height="ovs_button_size[scanlines];
     gCertAttr="width="ovs_certificate_size[scanlines]" height="ovs_certificate_size[scanlines];
+}
+
+function dvd_poster_attr(tvmode,height,\
+w) {
+
+    w = height/1.5;
+    if (is_pal(tvmode)) {
+        #Pal aspect ratio is wrong on NMT for GAYA html
+        h *= 576/480;
+    }
+   return " height="height" width="int(w)" ";
+ }
+
+function is_pal(tvmode) {
+
+    return (tvmode == 30 || tvmode == 2 || tvmode == 4 );
 }
 
 function initMonthHash() {
@@ -2329,9 +2353,6 @@ BEGIN {
     g_has_post_data=0;
     g_local_browser=(g_remote_addr == "127.0.0.1" )
     loadConfig();
-
-    getline < "/tmp/tvmode" ;
-    tvmode=$0;
 
     g_icon_set="nav/set1";
 
@@ -2409,7 +2430,8 @@ BEGIN {
 
    readFormData(query);
 
-   setDisplayParams(tvmode);
+   readFlash();
+   setDisplayParams(gSetting["video_output"]);
 
     APPDIR_URL=SELF"?";
 
@@ -2730,6 +2752,7 @@ cfg,cancelText,backText) {
         print "<hr>";
 
         print "<table width=100%><tr><td width=50%>";
+        print "Tv Mode:"gSetting["video_output"];
         df_file="/tmp/df.out";
         system("df /share/. > "df_file);
         getline < df_file;
@@ -2744,6 +2767,7 @@ cfg,cancelText,backText) {
         getline < "/proc/loadavg";
         print "<br>Load Average : <b>"$1"</b>/1m | <b>"$2"</b>/5m | <b>"$3"</b>/15m";
         print "</td>";
+
         if (!g_local_browser && ovs_remove_donate_msg == 0) {
             print paypal();
         }

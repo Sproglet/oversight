@@ -25,7 +25,7 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #TODO Cope with par,zip combos. Currently it will try to repair rather than unzip-repair
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
-VERSION=20090707-1BETA
+VERSION=20090721-1BETA
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 #   Fixed temp file location
@@ -383,6 +383,7 @@ merge_unpak_settings() {
                     tmpFile="$TMP/unpak.cfg.$$"
                     sed -r 's/$//' "$unpak_load_settings" > "$tmpFile"
                     cat "$tmpFile" > "$unpak_load_settings" 
+                    rm -f "$tmpFile"
                 fi
                 . "$unpak_load_settings"
             else

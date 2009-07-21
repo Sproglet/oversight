@@ -13,7 +13,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090719-2BETA
+VERSION=20090721-1BETA
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 # Added more checking around nfo name
@@ -30,6 +30,8 @@ VERSION=20090719-2BETA
 #
 # TODO: Catalog now stores all posters within oversight. Non-NMT users may need an explicit
 #switch to export these back out to the filesystem.
+
+# TODO move away from expecting gExternalSourceUrl[x] to be IMDB url. It is now sometimes thetvdb.
 
 
 # (c) Andy Lord andy@lordy.org.uk #License GPLv3
@@ -234,13 +236,21 @@ function pad_episode(e) {
     }
 }
 
+function timestamp(label,x) {
+
+    if (index(x,g_tk) ) sub(g_tk,"",x);
+
+    if (systime() != g_last_ts) {
+        g_last_ts=systime();
+        g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
+    }
+    print label" '$LOG_TAG' "g_last_ts_str x;
+}
+
 function DEBUG(x) {
         
     if ( DBG ) {
-
-        if (index(x,g_tk) ) sub(g_tk,"",x);
-
-        print "[DEBUG] '$LOG_TAG' " (systime()-ELAPSED_TIME)" : " x;
+        timestamp("[DEBUG]",x);
     }
 
 }
@@ -249,9 +259,7 @@ function DEBUG(x) {
 function DEBUG2(x) {
         
     if ( DBG-1 > 0 ) {
-
-        if (index(x,g_tk) ) sub(g_tk,"",x);
-        print "[DEBUG] '$LOG_TAG' " (systime()-ELAPSED_TIME)" : " x;
+        timestamp("[DEBUG]",x);
     }
 
 }
@@ -431,26 +439,35 @@ END{
 
 #IN indexHash - hash whose indexes are for scanned items ready to be processed.
 function merge_files_and_do_actions(indexHash,\
-file_to_db,overview_db,ov_count) {
+file_to_db,overview_db,ov_count,f) {
     if (g_opt_dry_run) {
         INFO("Database update skipped - dry run");
         return;
     }
     DB_SIZE = loadDatabase(INDEX_DB,DB_ARR,file_to_db);
     if (lockdb()) {
+
+        #new files are added first and removed from file_to_db list.
+        add_new_scanned_files_to_database(indexHash,INDEX_DB_NEW,DB_ARR,file_to_db);
+
         if (g_absent_files_removed || g_opt_no_actions) {
             #Just copy the file if no actions requested. In this case
             #all we want to do are minimal updates so the gui can re-read the
             #database index quickly. Eg when marking a file.
-            exec("cp "quoteFile(INDEX_DB)" "quoteFile(INDEX_DB_NEW));
+            for(f in g_index_line) {
+                if (f in file_to_db) {
+                    print g_index_line[f] >> INDEX_DB_NEW;
+                }
+            }
+            close(INDEX_DB_NEW);
+
         } else {
-            remove_absent_files_from_new_db(DB_SIZE,DB_ARR,INDEX_DB_NEW); 
+            remove_absent_files_from_new_db(DB_SIZE,DB_ARR,INDEX_DB_NEW,file_to_db); 
             g_absent_files_removed=1;
 
             remove_files_with_delete_actions(DB_ARR,DB_SIZE);
         }
 
-        add_new_scanned_files_to_database(indexHash,INDEX_DB_NEW,DB_ARR,file_to_db);
 
         ov_count = build_overview_array(INDEX_DB_NEW,overview_db);
 
@@ -493,22 +510,21 @@ function lockdb(\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
-    split("10,10,20,30,60,120",backoff,",");
-    for(attempts=1 ; (attempts in backoff) && dbIsLocked(g_lock_file) ; attempts++) {
+    split("10,10,10,10,10,10,10,20,30,60,120",backoff,",");
+    for(attempts=1 ; (attempts in backoff) ; attempts++) {
+        if (!dbIsLocked(g_lock_file)) {
+            print PID > g_lock_file;
+            close(g_lock_file);
+            INFO("Locked Database");
+            set_permissions(quoteFile(g_lock_file));
+            return 1;
+        }
         sleep=backoff[attempts];
         WARNING("Failed to get exclusive lock. Retry in "sleep" seconds.");
         system("sleep "sleep);
     }
-    if (dbIsLocked(g_lock_file)) {
-        ERROR("Failed to get exclusive lock");
-        return 0;
-    } else {
-        INFO("Locked Database");
-        print PID > g_lock_file;
-        close(g_lock_file);
-        set_permissions(quoteFile(g_lock_file));
-        return 1;
-    }
+    ERROR("Failed to get exclusive lock");
+    return 0;
 }
 
 function unlockdb() {
@@ -650,7 +666,14 @@ temp,f,fmax) {
             report_status("Scan "g_progress[1]);
             scan_contents(folderArray[f]);
         }
+
     }
+    #Make sure we do at least one pass of the database if no arguments were given
+    if (!g_absent_files_removed && !g_opt_no_actions) {
+        # call without any indexes.
+        merge_files_and_do_actions();
+    }
+    
 }
 
 function findLSFormat(\
@@ -724,7 +747,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
     while((getline scan_line < tempFile) > 0 ) {
 
 
-        DEBUG( "ls: ["scan_line"]"); 
+        #DEBUG( "ls: ["scan_line"]"); 
 
         store=0;
 
@@ -921,9 +944,9 @@ function checkMultiPart(name,count,\
 i,firstName) {
     firstName=gMovieFiles[count-1];
 
-    DEBUG("Multipart check ["firstName"] vs ["name"]");
+    #DEBUG("Multipart check ["firstName"] vs ["name"]");
     if (length(firstName) != length(name)) {
-        DEBUG("length ["firstName"] != ["name"]");
+        #DEBUG("length ["firstName"] != ["name"]");
         return 0;
     }
     if (firstName == name) return 0;
@@ -1306,64 +1329,6 @@ bestUrl,keywords) {
     return "";
 }
 
-## Try all of the array indexs(not values) in deep web search for imdb link.
-## Deep search = just search without imdb to get titles from results then find common substring and 
-## use this substring for imdb search.
-## TODO:obsoleted
-#function deepSearchArrayForIMDB(idx,k,titleThreshold,linkThreshold,triedTitles,\
-#bestUrl,keywords,text) {
-#
-#    g_search_total["deep"]++;
-#    #Try deep searches.
-#    for(keywords in k) {
-#        #text=searchForBestTitleSubstring(keywords "+nfo+download" ,titleThreshold);
-#        text=searchForBestTitleSubstring(keywords ,titleThreshold);
-#        bestUrl = deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles);
-#        if (bestUrl == "" ) {
-#            # search without episode tag
-#            if (sub(/ *s?[0-9][0-9][ex]?[0-9][0-9].*/,"",text)) {
-#                bestUrl = deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles);
-#            }
-#        }  
-#        if (bestUrl != "" ) {
-#            break;
-#        }
-#   }
-#   if (bestUrl != "") {
-#       g_search_hits["deep"]++;
-#   }
-#   DEBUG("Deep search result = ["bestUrl"]");
-#   return bestUrl;
-#}
-
-## TODO:obsoleted
-#function deepSearchStep2(idx,keywords,text,linkThreshold,triedTitles,\
-#bestUrl) {
-#    if (text != "" ) {
-#
-#        if (text in triedTitles) {
-#            INFO("Already tried ["text"]");
-#        } else {
-#            DEBUG("deep search ["keywords"] => ["text"]");
-#            triedTitles[text]++;
-#
-#            if (0 && g_category[idx] == "T") {
-#                bestUrl=getAllTvInfoAndImdbLink(idx,text);
-#            }
-#            if (bestUrl == "") {
-#
-#                #Now search this common title string together with imdb links.
-#                bestUrl = searchForIMDB(text,linkThreshold);
-#            }
-#            if (bestUrl != "") {
-#                INFO("Found with deep search ["keywords"]=>["text"]");
-#            }
-#        }
-#    }
-#    return bestUrl;
-#}
-#
-
 # Extract the filename from the path. Note if the file ends in / then the folder is the filename
 function basename(f) {
     if (match(f,"/[^/]+$")) {
@@ -1377,84 +1342,6 @@ function basename(f) {
     sub(gExtRegExAll,"",f); #remove extension
     #DEBUG("After ext ["f"]");
     return f;
-}
-
-#Given a list of page titles determine the most frquently occuring substring
-# TODO:obsoleted
-function get_frequent_substring(titles,threshold,\
-cleaned_titles,i,j,k,substring_count,substring_words,txt) {
-    for(i in titles) {
-        cleaned_titles[i]=tolower(cleanTitle(titles[i]));
-    }
-
-    dump(1,"cleaned",cleaned_titles);
-
-    #count substrings and add to totals substring_count=count substring_words = number of words
-    for(i in cleaned_titles) {
-        #gsub(/\<dr\>/,"doctor",cleaned_titles[i]);
-        merge_substring_count(cleaned_titles[i],substring_count,substring_words);
-    }
-
-    #The number of occurences is more important than the number of words.
-    for(i in substring_count) {
-        j = substring_count[i]-1 ;
-        k = substring_words[i]-1 ;
-#        #Increase weighting if it ends in a year.
-#        if ( i ~ "\\<(19|20)[0-9][0-9]$" || i ~ "\\((19|20)[0-9][0-9]\\)$") {
-#            j *= 10 ; 
-#        }
-        # This is a weighting based on words + number of occurences. Not exact science
-        # A one word file wont be found (due to -1) but then other rules should find it directly before this.
-        #substring_count[i] = (j-1) * j * (k-1)*k;
-        substring_count[i] = j * j * k;
-        if (substring_count[i]-threshold >= 0 ) {
-            DEBUG("count = "j"\twords="substring_words[i]"\tfinal = "substring_count[i] "\t["i"]");
-        } else {
-            delete substring_count[i];
-        }
-    }
-    txt = getMax(substring_count,threshold,1,1);
-    DEBUG("FOUND["txt"]");
-    return txt;
-}
-
-# Count all substrings in text. eg.
-# "And So say all of us" gives "and" "and so" and so say" ... "so" "so say" etc.
-# TODO:obsoleted
-function merge_substring_count(title,substring_count,substring_words,\
-txt,first_word_pos,e,s,w,start,i,j,sep,current_title_substrings) {
-
-    start = 0 ;
-    first_word_pos=0;
-
-    DEBUG("Extracting from ["title"]");
-    #DEBUG("Check against ["catalog_format_tags"]");
-
-    w=1;
-    sep=",+";
-    do {
-        start ++;
-        e[w-1]=start-2;
-        s[w++]=start;
-
-        start=indexFrom(title," ",start);
-    } while (start > 0);
-    e[w-1]=length(title);
-    
-    for(i=1 ; (i in s) ; i++ ) {
-        for(j=i ; (j in s) ; j++ ) {
-
-            txt=substr(title,s[i],e[j]-s[i]+1);
-
-            #only count strings we havent already seen in this title.
-            if (!(txt in current_title_substrings)) {
-                #DEBUG("Substring = "i"/"s[i]" to "j"/"e[j]" = ["txt"]");
-                substring_count[txt] += 1; # (10-s[i]);
-                substring_words[txt]=j-i+1;
-                current_title_substrings[txt]=1;
-            }
-        }
-    }
 }
 
 #If stripFormatTags set then only portion before recognised format tags (eg 720p etc) is search.
@@ -1529,7 +1416,9 @@ f,imdbid,imdb,newPosterUrl,line) {
     }
 
     DEBUG("Setting external url to ["url"]");
-    gExternalSourceUrl[idx] = url;
+    if (gExternalSourceUrl[idx] == "") {
+        gExternalSourceUrl[idx] = url;
+    }
     
     f=getUrl(url,"imdb_main",1);
 
@@ -1763,14 +1652,12 @@ function deleteFiles(db,idx,mode,\
 
 #Check all the links
 #To quickly find out if a set of files exist use ls
-function remove_absent_files_from_new_db(dbSize,db,newDbFile,   i,\
-    list,q,maxCommandLength) {
+function remove_absent_files_from_new_db(dbSize,db,newDbFile,file_to_db,\
+i,list,q,maxCommandLength) {
     list="";
     maxCommandLength=3999;
 
     report_status("Pruning");
-
-    print "#Index" > newDbFile;
 
     kept_file_count=0;
     absent_file_count=0;
@@ -1782,15 +1669,18 @@ function remove_absent_files_from_new_db(dbSize,db,newDbFile,   i,\
 
             WARNING("Empty file for index " i);
 
-        } else {
+        } else if (db[FILE,i] in file_to_db) {
+
+            #file was in old db and not already re-added as part of a new scan
 
             q=quoteFile(db[FILE,i]);
+            delete file_to_db[db[FILE,i]];
             list " "q;
 
             if (length(list)+length(q) - maxCommandLength < 0 ) {
                 list=list " "q;
             } else {
-                determineFileStatus(list,newDbFile);
+            determineFileStatus(list,newDbFile);
                 list=q
             }
         }
@@ -1812,7 +1702,7 @@ function quoteFile(f) {
 }
 
 function determineFileStatus(list,newDbFile,\
-f,cmd,i,line) {
+f,cmd,i,line,a) {
     INFO("Checking batch");
     f=NEW_CAPTURE_FILE("PROBEMISSING");
     cmd="ls -d -- " list " > " f " 2>&1" 
@@ -1834,7 +1724,7 @@ f,cmd,i,line) {
                 absent_file_count++;
             } else {
                 INFO("Grandparent folder absent - media removed - ["line"] - keeping file");
-                print g_index_line[line] > newDbFile;
+                print g_index_line[line] >> newDbFile;
                 kept_file_count++;
             }
 
@@ -1842,7 +1732,7 @@ f,cmd,i,line) {
 
            #DEBUG("KEEPING ["$0"]");
            if (line in g_index_line) {
-               print g_index_line[line] > newDbFile;
+               print g_index_line[line] >> newDbFile;
                kept_file_count++;
            } else {
                 WARNING("["line"] not present in index");
@@ -2043,7 +1933,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
 
     } else {
 
-        DEBUG("No date format found");
+        DEBUG("No date format found for "line);
         return 0;
     }
     datePart = substr(line,RSTART,RLENGTH);
@@ -2082,7 +1972,7 @@ tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest) {
     }
 
     rest=nonDate[2];
-    title = cleanTitle(nonDate[1]);
+    title = clean_title(nonDate[1]);
 
     y = date[1];
     m = date[2];
@@ -2093,7 +1983,10 @@ tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest) {
     #search for the showname 
     tvdbid = search1TvDbId(idx,title);
     if (tvdbid != "") {
-        fetchXML("http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,episodeInfo);
+
+
+        gExternalSourceUrl[idx] = getTvDbInfo(idx,getTvdbSeriesUrl(tvdbid));
+        fetchXML("http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-",episodeInfo);
         if ( episodeInfo["/Data/Error"] != "" ) {
             ERROR(episodeInfo["/Data/Error"]);
             tvdbid="";
@@ -2101,16 +1994,23 @@ tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest) {
     }
     details[TITLE]=title;
     if (tvdbid != "") {
+        gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+        DEBUG("Air Date is "gAirDate[idx]);
+
         details[SEASON]=episodeInfo["/Data/Episode/SeasonNumber"];
         details[EPISODE]=episodeInfo["/Data/Episode/EpisodeNumber"];
         details[ADDITIONAL_INFO]=episodeInfo["/Data/Episode/EpisodeName"];
         #TODO We can cache the above url for later use instead of fetching episode explicitly.
+        # Setting this will help short circuit searching later.
+        #gExternalSourceUrl[idx]=getTvdbSeriesUrl(tvdbid);
+        #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "gExternalSourceUrl[idx]);
     } else {
         details[SEASON]=y;
         details[EPISODE]=sprintf("%02d%02d",m,d);
         sub(/\....$/,"",rest);
-        details[ADDITIONAL_INFO]=cleanTitle(rest);
+        details[ADDITIONAL_INFO]=clean_title(rest);
     }
+    #dump(0,"epinfo",episodeInfo);
     return 1;
 }
 
@@ -2131,12 +2031,12 @@ function extractEpisode(line,idx,details,        d,dir) {
         split(gFolder[idx],dir,"/"); # split folder
         for(d in dir ) { ; } # Count
 
-        details[TITLE] = cleanTitle(dir[d]);
+        details[TITLE] = clean_title(dir[d]);
         DEBUG("Using parent folder for title ["details[TITLE] "]");
         sub(/(S[0-9]|Series|Season) *[0-9]+.*/,"",details[TITLE]);
         if (details[TITLE] == "" ) {
             # Looks like an intermediate Season folder. Get the parent folder.
-            details[TITLE] = cleanTitle(dir[d-1]);
+            details[TITLE] = clean_title(dir[d-1]);
             DEBUG("Using grandparent folder for title ["details[TITLE] "]");
         }
     }
@@ -2174,7 +2074,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
        }
    }
 
-    tmpDetails[TITLE] = cleanTitle(tmpDetails[TITLE]);
+    tmpDetails[TITLE] = clean_title(tmpDetails[TITLE]);
     
     DEBUG("ExtractEpisode: Title= ["tmpDetails[TITLE]"]");
 
@@ -2245,7 +2145,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
         file=gMovieFiles[idx];
         if (file == "" ) continue;
 
-        INFO("\n\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\t==\n");
+        INFO("\n\t\t==\t\t==\t\t==\t\t==\n");
         INFO(idx":"file);
 
         DEBUG("nfo check :"file);
@@ -2280,6 +2180,10 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
         #This will help for TV shows that have odd formatting.
 
         if (checkTvFilenameFormat(idx)) {
+
+            if (bestUrl == "" && gExternalSourceUrl[idx] != "" ) {
+                bestUrl = gExternalSourceUrl[idx];
+            }
             # TV
             # There are different ways to get imdburl for tv show.
             # via nfo or determine via epguides/thetvdb search
@@ -2292,18 +2196,20 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
 
                 INFO("TODO:Need a solid route from imdb link to epguides page");
                 
-                bestUrlViaEpguide = getAllTvInfoAndImdbLink(idx);
+                bestUrlViaEpguide = getAllInfoFromTvDbAndImdbLink(idx);
 
             } else {
 
-                INFO("Seach Phase: tv db");
+                #only do this if we DONT have IMDB link?
+
+                INFO("Search Phase: tv db");
                 #Get imdb url from eguide first.
-                bestUrl = getAllTvInfoAndImdbLink(idx);
+                bestUrl = getAllInfoFromTvDbAndImdbLink(idx);
                 if (bestUrl == "") {
                     #TODO This is desperately inaccurate - better off keeping original filename
                     bestUrl=searchInternetForImdbLink(idx);
                     scrapeIMDBTitlePage(idx,bestUrl);
-                    bestUrl2 = getAllTvInfoAndImdbLink(idx);
+                    bestUrl2 = getAllInfoFromTvDbAndImdbLink(idx);
                 } else {
                     scrapeIMDBTitlePage(idx,bestUrl);
                 }
@@ -2323,7 +2229,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
             # search online info using film basename sans format tags looking for imdb link
             # -----------------------------------------------------------------------------
             if (bestUrl == "") {
-                INFO("Seach Phase: usenet online nfo");
+                INFO("Search Phase: usenet online nfo");
                 bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
             }
             if (bestUrl == "") {
@@ -2337,7 +2243,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
             # -----------------------------------------------------------------------------
             if (bestUrl == "") {
 
-                INFO("Seach Phase: web page + imdb");
+                INFO("Search Phase: web page + imdb");
                 bestUrl=searchInternetForImdbLink(idx);
             }
 
@@ -2688,37 +2594,34 @@ initial,i,tmp) {
 
     delete alternateTitles;
 
-    if (index(abbrev," ") == 0) {
+    INFO("Search Phase: epguid abbreviations");
 
-        INFO("Seach Phase: epguid abbreviations");
-
-        #First check if weve seen this before. This code can be removed if short of space.
-        if (abbrev in g_abbrev_cache) {
-            INFO("Retrived abbreviation "abbrev" from cache");
-            split(g_abbrev_cache[abbrev],tmp,"\t");
-            for(i in tmp) {
-                alternateTitles[tmp[i]] = 1;
-            }
-        } else {
-
-            initial = epguideInitial(abbrev);
-            searchAbbreviation(initial,abbrev,alternateTitles);
-
-            #if the abbreviation begins with t it may stand for "the" so we need to 
-            #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
-            if (initial == "t" ) {
-                initial = epguideInitial(substr(abbrev,2));
-                if (initial != "t" ) {
-                    searchAbbreviation(initial,abbrev,alternateTitles);
-                }
-            }
-            # Store in abbreviation cache - this code can be removed if short on space.
-            INFO("Saved abbreviation "abbrev" to cache");
-            for(i in alternateTitles) {
-                g_abbrev_cache[abbrev]=g_abbrev_cache[abbrev]"\t"i;
-            }
-            g_abbrev_cache[abbrev]=substr(g_abbrev_cache[abbrev],2);
+    #First check if weve seen this before. This code can be removed if short of space.
+    if (abbrev in g_abbrev_cache) {
+        INFO("Retrived abbreviation "abbrev" from cache");
+        split(g_abbrev_cache[abbrev],tmp,"\t");
+        for(i in tmp) {
+            alternateTitles[tmp[i]] = 1;
         }
+    } else {
+
+        initial = epguideInitial(abbrev);
+        searchAbbreviation(initial,abbrev,alternateTitles);
+
+        #if the abbreviation begins with t it may stand for "the" so we need to 
+        #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
+        if (initial == "t" ) {
+            initial = epguideInitial(substr(abbrev,2));
+            if (initial != "t" ) {
+                searchAbbreviation(initial,abbrev,alternateTitles);
+            }
+        }
+        # Store in abbreviation cache - this code can be removed if short on space.
+        INFO("Saved abbreviation "abbrev" to cache");
+        for(i in alternateTitles) {
+            g_abbrev_cache[abbrev]=g_abbrev_cache[abbrev]"\t"i;
+        }
+        g_abbrev_cache[abbrev]=substr(g_abbrev_cache[abbrev],2);
     }
     dump(0,"abbrev["abbrev"]",alternateTitles);
 }
@@ -2854,7 +2757,9 @@ id,bestId,bestFirstAired,firstAired,ages,count) {
     dump(0,"closely matched titles",titles);
     for(id in titles) count++;
 
-    if (count = 1) {
+    if (count == 0) {
+        bestId = "";
+    } else if (count == 1) {
         bestId = id;
     } else {
 
@@ -2911,15 +2816,21 @@ bestScore,bestTitles,potentialTitle,potentialMatches,origTitles,titleScore,count
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
 function searchTvDb(title,requiredTagList,closeTitles,\
-allTitles,f,line,info,bestId,currentId,currentName,requiredTagNames,add,i) {
+allTitles,f,line,info,currentId,currentName,requiredTagNames,add,i,url) {
 
     delete closeTitles;
-    bestMatchLevel = 0;
-    DEBUG("Checking ["title"] against list "menuUrl);
+    DEBUG("searchTvDb Checking ["title"]" );
 
     split(requiredTagList,requiredTagNames,",");
 
-    f = getUrl("http://thetvdb.com//api/GetSeries.php?seriesname="title,"tvdb_idx",1);
+    url="http://thetvdb.com//api/GetSeries.php?seriesname="title;
+    if (match(title," [Aa]nd ")) {
+        #try "a and b\ta & b"
+        url=url"\t"url;
+        sub(/ [Aa]nd /," \\& ",url); 
+    }
+
+    f = getUrl(url,"tvdb_idx",1);
     if (f != "") {
         FS="\n";
         while((getline line < f) > 0 ) {
@@ -3031,7 +2942,7 @@ f,line) {
 
 #Parse flat XML into an array
 function parseXML(line,info,\
-currentTag,start,i,tag,text,lines,parts) {
+previousTag,currentTag,start,i,tag,text,lines,parts) {
 
     # Carriage returns mess up parsing
     gsub(/\r/,"",line);
@@ -3092,7 +3003,7 @@ currentTag,start,i,tag,text,lines,parts) {
 # Return 1 if it is an initial or abbreviated type of match.
 # else return 0
 function similarTitles(titleIn,possibleTitleIn,\
-bPos,cPos,yearOrCountry,matchLevel,shortName,tmp,possibleTitle) {
+bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
 
     matchLevel = 0;
     yearOrCountry="";
@@ -3100,15 +3011,15 @@ bPos,cPos,yearOrCountry,matchLevel,shortName,tmp,possibleTitle) {
         DEBUG("Checking ["titleIn"] against ["possibleTitleIn"]");
 
     if ((bPos=index(possibleTitleIn," (")) > 0) {
-        yearOrCountry=cleanTitle(substr(possibleTitleIn,bPos+2));
+        yearOrCountry=clean_title(substr(possibleTitleIn,bPos+2));
         DEBUG("Qualifier "yearOrCountry);
     }
 
     if ((cPos=index(possibleTitleIn,",")) > 0) {
-        shortName=cleanTitle(substr(possibleTitleIn,1,cPos-1));
+        shortName=clean_title(substr(possibleTitleIn,1,cPos-1));
     }
 
-    possibleTitle=cleanTitle(possibleTitleIn);
+    possibleTitle=clean_title(possibleTitleIn);
 
     sub(/^[Tt]he /,"",possibleTitle);
     sub(/^[Tt]he /,"",titleIn);
@@ -3120,7 +3031,10 @@ bPos,cPos,yearOrCountry,matchLevel,shortName,tmp,possibleTitle) {
         DEBUG("Qualified title "possibleTitleIn);
     }
     if (index(possibleTitle,titleIn) == 1) {
-        matchLevel = 1;
+        #TODO Note we could kee the 1 match levels here and below, but if so
+        #we should still go on to search abbreviations. For now easier to comment out.
+        #The zero score will trigger the abbreviation code.
+        # matchLevel = 1;
 
         #This will match exact name OR if BOTH contain original year or country
         if (possibleTitle == titleIn) {
@@ -3151,7 +3065,12 @@ bPos,cPos,yearOrCountry,matchLevel,shortName,tmp,possibleTitle) {
         }
     } else if (index(titleIn,possibleTitle) == 1) {
         #Check our title just has a country added
-        matchLevel = 1;
+
+        #TODO Note we could kee the 1 match levels here and above, but if so
+        #we should still go on to search abbreviations. For now easier to comment out.
+        #The zero score will trigger the abbreviation code.
+
+        #matchLevel = 1;
         diff=substr(titleIn,length(possibleTitle)+1);
         if ( diff ~ " (19|20)[0-9][0-9]$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
             #unqualified match xxxx 2000 vs xxxx
@@ -3192,6 +3111,12 @@ i,score,bestScore,tmpTitles) {
     DEBUG("Filtered titles with score = "bestScore);
 
     dump(0,"filtered["title"]=",titleHashOut);
+
+    if (bestScore == 0 ) {
+        DEBUG("all zero score - discard them all to trigger another match method");
+        delete titleHashOut;
+    }
+
     return bestScore;
 }
 
@@ -3232,11 +3157,13 @@ url,count,title,link,links,i,count2) {
 # IN titleIn - The thing we are looking for - eg ttscc
 # IN/OUT alternateTitles - hash of titles - index is the title, value is 1
 function searchAbbreviation(letter,titleIn,alternateTitles,\
-tmp,possibleTitle,f,names,links,i,ltitle) {
+possibleTitle,names,i,ltitle) {
 
     ltitle = tolower(titleIn);
 
     DEBUG("Checking "titleIn" for abbeviations on menu page - "letter);
+
+    if (ltitle == "" ) return ;
 
     getEpguideNames(letter,names);
 
@@ -3246,204 +3173,74 @@ tmp,possibleTitle,f,names,links,i,ltitle) {
 
         sub(/\(.*/,"",possibleTitle);
 
-        possibleTitle = trim(possibleTitle);
+        possibleTitle = clean_title(possibleTitle);
 
-        tmp = abbrevTwoOrMoreInitials(possibleTitle);
-        if (tmp != "" && ltitle == tmp) {
-            alternateTitles[possibleTitle]=1;
+        if (abbrevMatch(ltitle,possibleTitle)) {
+            alternateTitles[possibleTitle]="ab1";
+        } else if (abbrevContraction(ltitle,possibleTitle)) {
+            alternateTitles[possibleTitle]="ab2";
         }
-
-        #TODO this logic can be improved to stop as soon as alternateTitles is set - test for next release
-
-        # echo Family Guy = fguy only true if 1st word longer?
-        tmp =abbrevInitialThenWord(possibleTitle); 
-        if (tmp != "" && ltitle == tmp) {
-            alternateTitles[possibleTitle]=1;
-        }
-
-        # echo Desperate Housewives = desperateh only true if 1st word shorter?
-        tmp =abbrevWordThenInitial(possibleTitle); 
-        if (tmp != "" && ltitle == tmp) {
-            alternateTitles[possibleTitle]=1;
-        }
-
-        # Eg greek = grk 
-        tmp =abbrevRemoveDoubleVowel(possibleTitle); 
-        if (tmp != "" && ltitle == tmp) {
-            alternateTitles[possibleTitle]=1;
-        }
-
-#        # Eg greek and grk (again) or tblt = tablet etc.
-#        if (abbrevOneWordContraction(ltitle,tolower(possibleTitle))) {
-#            alternateTitles[possibleTitle]=1;
-#        }
-
-        possibleTitle="";
     }
 }
 
-# TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+#split title into words then see how many words or initials we can match.
+# eg desperateh fguy  "law and order csi"
+#note if a word AND initial match then we try to match the word first.
+#I cant think of a scenario where we would have to backtract and try
+# the initial instead.
+#
+#eg toxxx might abbreviate "to xxx" or "t" ...
+function abbrevMatch(abbrev , possible_title,\
+wrd,a,words,rest_of_abbrev,found,abbrev_len) {
+    split(tolower(possible_title),words," ");
+    a=1;
+    wrd=1;
+    abbrev_len = length(abbrev);
+    while(abbrev_len-a  >= 0 && (wrd in words)) {
+        rest_of_abbrev = substr(abbrev,a);
+
+        if (index(   rest_of_abbrev  ,   words[wrd]  ) == 1) {
+            #abbreviation starts with entire word.
+            a += length(words[wrd]);
+            wrd++;
+        } else if (substr(words[wrd],1,1) == substr(rest_of_abbrev,1,1)) {
+            a ++;
+            wrd++;
+        } else if (substr(rest_of_abbrev,1,1) == " ") {
+            a ++;
+        } else if (words[wrd] == "and" ) {
+            wrd++;
+        } else {
+            #no match
+            break;
+        }
+    }
+    found = ((a -abbrev_len ) > 0 ) && !(wrd in words);
+    if (found) {
+        INFO(abbrev " abbreviates "possible_title);
+    }
+    return found;
+}
+
+
 # match tblt to tablet , grk greek etc.
-# This is not trivial as it may have to skip a false match.
-# sleep on it and implement properly.
-#function abbrevOneWordContraction(abbrev,possibleTitle,\
-#i,j) {
-#    if (index(possibleTitle," ")) return 0;
-#
-#    j=1;
-#
-#    if (substr(abbrev,j,1) != substr(possibleTitle,1,1)) return 0;
-#
-#    while(i <= length(possibleTitle) && substr(abbrev,j,1) == substr(possibleTitle,i,1)) {
-#        i++;
-#        j++;
-#    }
-#
-#    if (i > length(possibleTitle)) return 1;
-#
-#
-#    } 
-#}
+function abbrevContraction(abbrev,possibleTitle,\
+found,regex) {
+    # if (index(possibleTitle," ") || index(abbrev," ")) return 0;
 
-#If a title has exactly two words and the first word is longest return initial of word1 followed by word2
-# eg fguy for family guy
-function abbrevInitialThenWord(text,\
-spacePos,abbr) {
-    spacePos = index(text," ");
-    # Reject no spaces
-    if (spacePos == 0) {
-        return "";
+    # Use regular expressions to do the heavy lifting.
+    # First if abbreviation is grk convert to g.*r.*k
+    regex=tolower(abbrev);
+    gsub(//,".*",regex);
+    regex= "^" substr(regex,3,length(regex)-4) "$";
+
+    found = match(tolower(possibleTitle),regex);
+
+    if (found) {
+        INFO(abbrev " abbreviates "possibleTitle);
     }
-    # Two spaces
-    if (text ~ / [^ ]+ /) {
-        return "";
-    }
-    if (spacePos*2 - length(text) < 0) {
-        #first word is short - unlikely to abbreviate this way?
-        return "";
-    }
-    abbr = tolower(substr(text,1,1) substr(text,spacePos+1));
-    DEBUG2(text"|"abbr);
-    return abbr;
+    return found;
 }
-
-#If a title has exactly two words and the first word is shortest return word1 followed by initial of word2
-# eg desperateh for Desperate Housewives
-function abbrevWordThenInitial(text,\
-spacePos,abbr) {
-    text = tolower(text);
-    spacePos = index(text," ");
-    # Reject no spaces
-    if (spacePos == 0) {
-        return "";
-    }
-    #If first word is "the" then unlikely to keep this and abbreviate 2nd word.
-    if (substr(text,1,4) == "the ") {
-        return "";
-    }
-    # Two spaces
-    if (text ~ / [^ ]+ /) {
-        return "";
-    }
-#    if (spacePos*2 > length(text)) {
-#        #first word is longer - unlikely to abbreviate this way?
-#        return "";
-#    }
-    abbr = substr(text,1,spacePos-1) substr(text,spacePos+1,1);
-    DEBUG2(text"|"abbr);
-    return abbr;
-}
-
-# If there are 3 or more words then try initials
-function threeWordInitials(text,\
-abbr) {
-    abbr=tolower(text);
-    if (abbr !~ / [^ ]+ /) {
-        return "";
-    }
-    while(match(abbr,"[a-z][a-z]+")) {
-        abbr = substr(abbr,1,RSTART-1) " " substr(abbr,RSTART,1) " " substr(abbr,RSTART+RLENGTH+1);
-    }
-    gsub(/ +/,"",abbr);
-    DEBUG2(text"|"abbr);
-    return abbr;
-}
-
-# If there are 2 or more words then try initials
-function abbrevTwoOrMoreInitials(text,\
-abbr) {
-    abbr=tolower(text);
-    if (index(abbr," ") ==0) {
-        return "";
-    }
-    while(match(abbr,"[a-z][a-z]+")) {
-        abbr = substr(abbr,1,RSTART-1) " " substr(abbr,RSTART,1) " " substr(abbr,RSTART+RLENGTH+1);
-    }
-    gsub(/ +/,"",abbr);
-    DEBUG2(text"|"abbr);
-    return abbr;
-}
-
-# if there is one word with a double vowel remove it
-function abbrevRemoveDoubleVowel(text,\
-abbr) {
-    if (index(text," ")) {
-        return "";
-    }
-    sub(/[aeiouAEIOU][aeiouAEIOU]/,"",text);
-    abbr = tolower(text);
-    DEBUG2(text"|"abbr);
-    return abbr;
-}
-
-
-
-function getAllTvInfoAndImdbLink(idx,title) {
-    #return getAllInfoFromEpguidesAndImdbLink(idx,title);
-    return getAllInfoFromTvDbAndImdbLink(idx,title);
-}
-
-#function getAllInfoFromEpguidesAndImdbLink(idx,title,\
-#epguideSeriesPage,url,alternateTitles,i) {
-#
-#    if (title == "") {
-#        title=gTitle[idx];
-#    }
-#    epguideSeriesPage = gEpguideIndex[title];
-#
-#    if (epguideSeriesPage != "" ) {
-#        DEBUG("Using existing mapping for ["title"]="epguideSeriesPage);
-#    } else {
-#
-#        epguideSeriesPage = searchEpguideTitles(idx,title,1);
-#    }
-#
-#    if (epguideSeriesPage == "" ) {
-#        searchAbbreviationAgainstTitles(title,alternateTitles);
-#
-#        #THIS IS NOW BROKEN AND NEEDS REWRTING OR ABANDONING
-#        #See TVDB Abbreviation Code.
-#
-#        for(i = 1 ; epguideSeriesPage == "" && (i in alternateTitles) ; i++ ) {
-#            DEBUG("Checking possible abbreviation "alternateTitles[i]);
-#            epguideSeriesPage = searchEpguideTitles(idx,alternateTitles[i],1);
-#            if (epguideSeriesPage != "") {
-#                gEpguideIndex[alternateTitles[i]] = epguideSeriesPage;
-#            }
-#
-#        }
-#    }
-#
-#    if (epguideSeriesPage == "" ) {
-#        WARNING("getAllInfoFromEpguidesAndImdbLink could not find series page");
-#        return "";
-#    } else {
-#
-#        gEpguideIndex[title] = epguideSeriesPage;
-#
-#        return getEpguideInfo(idx,epguideSeriesPage);
-#    }
-#}
 
 function epguideInitial(title,\
 letter) {
@@ -3476,39 +3273,7 @@ letter) {
     return letter;
 }
 
-# Returns url to epguides series page
-function searchEpguideTitles(idx,title,attempt,\
-    letter,names,namess2,epguideSeriesUrl) {
-
-
-    DEBUG("Search of epGuide titles for ["title"]");
-
-    # TV SEARCH
-
-    letter = epguideInitial(title);
-
-    if (match(letter,"[a-z]")) {
-        #Use epguides menu
-        DEBUG("Checking ["title"] against list "letter);
-        getEpguideNames(letter,names);
-
-        filterSimilarTitles(title,names,names2);
-
-        # If more than one title is a good match we need to refine further
-        # TODO: this needs to be fixed
-        epguideSeriesUrl = selectBestOfBestTitle(idx,names2);
-
-        DEBUG("Endpage with url = ["epguideSeriesUrl"]");
-
-        return epguideSeriesUrl;
-
-    } else {
-        WARNING("Could not resolve title [" title "] on attempt "attempt);
-        return "";
-    }
-}
-
-function cleanTitle(t) {
+function clean_title(t) {
     if (index(t,"&") && index(t,";")) {
         gsub(/[&]amp;/,"and",t);
         t = html_decode(t);
@@ -3531,71 +3296,17 @@ function cleanTitle(t) {
     return t;
 }
 
-## TODO:obsoleted
-#function searchForBestTitleSubstring(query,threshold,\
-#titles) {
-#    getTitlesFromGoogle(query,titles);
-#    return get_frequent_substring(titles,threshold);
-#}
-
 function de_emphasise(html) {
     gsub(/<(\/|)(b|em|strong|wbr)>/,"",html); #remove emphasis tags
     gsub(/<[^\/][^<]+[\/]>/,"",html); #remove single tags eg <wbr />
     return html;
 }
 
-## Search google for a filename and examine titles of search results.
-##Both google and yahoo have the main title inside <h3><a..>Title</a></h3>
-## TODO:obsoleted
-#function getTitlesFromGoogle(query,titles,\
-#f,h3pos,i,pos,html,h3txt ) {
-#    i=0;
-#    split("",titles,""); #clear
-#
-#    f = web_search_to_file(g_title_search_engines,query,"","search4words",1);
-#    if (f != "") {
-#
-#        FS="\n";
-#        while((getline html < f) > 0 ) {
-#
-#            html = de_emphasise(html);
-#
-#
-#            #if "Results for:" occurs then ignore everything processed so far. 
-#            #This was output of "Did you mean"
-#            if ((pos=index(html,">Results for:")) > 0 ) {
-#                delete titles;
-#                html = substr(html,pos);
-#            }
-#
-#            #INFO("check h3");
-#
-#            while((pos=index(html,"<h3")) > 0) {
-#                html=substr(html,pos);
-#                h3pos=index(html,"</h3>");
-#                h3txt=substr(html,1,h3pos);
-#                html=substr(html,h3pos+4);
-#
-#                #INFO("1.h3txt=["h3txt"] pos="pos);
-#                h3txt = tolower(extractTagText(h3txt,"a"));
-#                #INFO("2.h3txt=["h3txt"]");
-#                h3txt = remove_format_tags(h3txt);
-#                #INFO("h3txt=["h3txt"]");
-#                if (h3txt != "" ) {
-#                    titles[i++] = h3txt;
-#                }
-#            }
-#        }
-#        close(f);
-#        rm(f,1);
-#    }
-#}
-
 # This finds the item with the most votes and returns it if it is > threshold.
 # Special case: If threshold = -1 then the votes must exceed the square of the 
 # difference between next largest amount.
 function getMax(arr,requiredThreshold,requireDifferenceSquared,dontRejectCloseSubstrings,\
-maxValue,maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
+maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
     nextBest=0;
     maxName="";
     best=0;
@@ -3684,7 +3395,7 @@ function search_url(search_engines,q,num) {
     }
 }
 
-# Seach a google page for most frequently occuring imdb link
+# Search a google page for most frequently occuring imdb link
 function searchForIMDB(keywords,linkThreshold) {
     #We want imdb links but not from imdb themselves as this skews the results.
     #Also keeping the number of results down helps focus on early matches.
@@ -3810,19 +3521,23 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
         imdbLink = extractImdbLink(seriesInfo["/Data/Series/IMDB_ID"]);
     }
 
-    #Refine the title.
-    adjustTitle(idx,seriesInfo["/Data/Series/SeriesName"],"thetvdb");
+    if ("/Data/Episode/id" in episodeInfo) {
+        gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+        gEpTitle[idx]=episodeInfo["/Data/Episode/EpisodeName"];
+    }
 
-    g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
+    if ("/Data/Series/id" in seriesInfo) {
+        #Refine the title.
+        adjustTitle(idx,seriesInfo["/Data/Series/SeriesName"],"thetvdb");
 
-    gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+        g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
 
-    gEpTitle[idx]=episodeInfo["/Data/Episode/EpisodeName"];
 
-    g_plot[idx] = seriesInfo["/Data/Series/Overview"];
-    g_genre[idx] = seriesInfo["/Data/Series/Genre"];
-    gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
-    g_rating[idx] = seriesInfo["/Data/Series/Rating"];
+        g_plot[idx] = seriesInfo["/Data/Series/Overview"];
+        g_genre[idx] = seriesInfo["/Data/Series/Genre"];
+        gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
+        g_rating[idx] = seriesInfo["/Data/Series/Rating"];
+    }
 
     g_poster[idx] = getTvDbSeasonBanner(bannerApiUrl,g_season[idx]);
     if (g_poster[idx] == "" ) {
@@ -3877,104 +3592,6 @@ f,line,url,xml) {
     DEBUG("Season banner = "url);
     return url;
 }
-
-## Scrape epguides series page, populate arrays and return imdb link
-#function getEpguideInfo(idx,epguideSeriesUrl,\
-#f,newTitle,imdbLink,imdbLinkAndText,i,j,line,text2,hyp2,episodeTextHyphen,episodeText,dirName) {
-#
-#    #The url for this link
-#    gEpGuides[idx]=epguideSeriesUrl;
-#
-#    episodeText=sprintf(" %d-%2d ",g_season[idx],(g_episode[idx]+0));
-#    episodeTextHyphen=index(episodeText,"-");
-#
-#    f=getUrl(epguideSeriesUrl,"epguide_nfo",1);
-#
-#    if (f != "" ) {
-#
-#        FS="\n";
-#        while((getline line < f) > 0 ) {
-#
-#            #DEBUG("epguide:" line);
-#
-#            if (gExternalSourceUrl[idx]=="" ) {
-#
-#                if (imdbLinkAndText=="" && index(line,"imdb") && match(line,"<a[^<]+imdb[^<]+</a>")) {
-#
-#                    imdbLinkAndText=substr(line,RSTART,RLENGTH);
-#
-#                    imdbLink=extractImdbLink(imdbLinkAndText);
-#
-#                    #Refine the title.
-#                    newTitle=trim(capitalise(extractTagText(imdbLinkAndText,"a")));
-#                    adjustTitle(idx,newTitle,"epguides");
-#
-#
-#                    #Also get episode info from IMDB. This is to help decide when episode titles in epguides.com are wrong.
-#                    #It may change the link if the original was to the pilot episode rather than the series.
-#                    imdbLink = extractImdbEpisode(idx,imdbLink,0);
-#                }
-#
-#            }
-#
-#            #Sometimes there is more than one entry per episode. So store the links in an array.
-#            #The correct one will be chosen via IMDB episode title.
-#            hyp2=index(line,"-");
-#            if (hyp2 - 20 < 0 && ( hyp2 - episodeTextHyphen >= 0 ) ) {
-#                text2=substr(line,hyp2-episodeTextHyphen+1,length(episodeText));
-#                #DEBUG("episodeText["episodeText"] text2["text2"] all=["line"]");
-#
-#                if (episodeText == text2) {
-#
-#                    gProdCode[idx]=trim(substr(line,14,9));
-#
-#                    g_year[idx]=1900+substr(line,35,2);
-#                    if (g_year[idx] - 1920 < 0 ) { g_year[idx] += 100; } 
-#
-#                    gAirDate[idx]=formatDate(substr(line,28,9));
-#
-#                    gTvCom[idx]=extractAttribute(line,"a","href");
-#
-#                    gEpTitle[idx]=extractTagText(line,"a");
-#
-#                    DEBUG("Found Episode title ["gEpTitle[idx]"]");
-#                }
-#            }
-#
-#            #We may have ariived by Google Feeling Lucky so get the real url name
-#
-#            ## TODO review
-#
-#            if (index(gEpGuides[idx],".search.") && (i=index(line,"DirName"))>0) {
-#
-#                i += 8;
-#                line = substr(line,i);
-#                j=index(line,"\"");
-#                dirName=substr(line,1,j-1);
-#
-#                gEpGuides[idx]="http://epguides.com/"dirName;
-#
-#            }
-#            if ( g_poster[idx] == "" && g_settings["catalog_tv_poster_source"] == "epguides" ) {
-#                if (match(line,"<img[^<]+([Cc]ast|[Ss]how)[^<]+>")) {
-#                    g_poster[idx] = gEpGuides[idx]"/"extractAttribute(substr(line,RSTART,RLENGTH),"img","src");
-#                }
-#            }
-#            if (index(line,"botnavbar")) {
-#                break;
-#            }
-#        }
-#        close(f);
-#    }
-#    if (imdbLink == "" ) {
-#        WARNING("getEpguideInfo returns blank imdb url");
-#    } else {
-#        DEBUG("getEpguideInfo returns imdb url ["imdbLink"]");
-#    }
-#    return imdbLink;
-#}
-#
-
 
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
@@ -4054,7 +3671,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     system("rm -f -- "tmpFile" "isoPart);
     INFO("iso title for "isoPath" = ["f"]");
     gsub(/[Ww]in32/,"",f);
-    return cleanTitle(f);
+    return clean_title(f);
 }
 
 function extractImdbLink(text,\
@@ -4678,7 +4295,7 @@ semicolon,quote,quotePos,title2) {
     #Remove the year
     gsub(/ \((19|20)[0-9][0-9](\/I|)\) *(\([A-Z]+\)|)$/,"",title);
 
-    title=cleanTitle(title);
+    title=clean_title(title);
     if (adjustTitle(idx,title,"imdb")) {
         gOriginalTitle[idx] = gTitle[idx];
     }
@@ -4721,7 +4338,7 @@ l,akas,a,c,exclude,e,eEeE) {
                 }
                 #Use first match from AKA section 
                 akas[a]=substr(akas[a],1,index(akas[a]," (")-1);
-                akas[a]=cleanTitle(akas[a]);
+                akas[a]=clean_title(akas[a]);
                 sub(/ \(.*/,"",akas[a]);
                 adjustTitle(idx,akas[a],"imdb_aka"); 
                 return;
@@ -5235,7 +4852,7 @@ function fixTitles(idx) {
         gsub(/.*\//,"",gTitle[idx]); #Remove path
         DEBUG("Setting title to folder["gTitle[idx]"]");
     }
-    gTitle[idx]=cleanTitle(gTitle[idx]);
+    gTitle[idx]=clean_title(gTitle[idx]);
 }
 
 function get_best_episode_title(idx,\
@@ -5255,7 +4872,7 @@ function get_best_episode_title(idx,\
     }
 
     if (gEpTitle[idx] == "") {
-        gEpTitle[idx] = "Episode "g_episode[idx] " " cleanTitle(remove_format_tags(gAdditionalInfo[idx]));
+        gEpTitle[idx] = "Episode "g_episode[idx] " " clean_title(remove_format_tags(gAdditionalInfo[idx]));
     }
 }
 
@@ -5284,6 +4901,7 @@ row,estimate,nfo,dbIdx) {
 
     if (g_file[i] in file_to_db) {
         dbIdx = file_to_db[g_file[i]];
+        delete file_to_db[g_file[i]]; #remove the entry so any older entries are not re-added
         row=row"\t"WATCHED"\t"dbArr[WATCHED,dbIdx];
         row=row"\t"ACTION"\t"dbArr[ACTION,dbIdx];
     } else {
@@ -5411,20 +5029,16 @@ function clean_capture_files() {
     exec("rm -f -- \""CAPTURE_PREFIX JOBID "\".* ");
 }
 function INFO(x) {
-    if (index(x,g_tk) ) sub(g_tk,"",x);
-    print "[INFO]  '$LOG_TAG' "(systime()-ELAPSED_TIME)" : " x;
+    timestamp("[INFO]",x);
 }
 function WARNING(x) {
-    if (index(x,g_tk) ) sub(g_tk,"",x);
-    print "[WARNING] '$LOG_TAG'"x;
+    timestamp("[WARNING]",x);
 }
 function ERROR(x) {
-    if (index(x,g_tk) ) sub(g_tk,"",x);
-    print "[ERROR] '$LOG_TAG'"x;
+    timestamp("[ERROR]",x);
 }
 function DETAIL(x) {
-    if (index(x,g_tk) ) sub(g_tk,"",x);
-    print "[DETAIL] '$LOG_TAG'"x;
+    timestamp("[DETAIL]",x);
 }
 
 # Remove spaces and non alphanum

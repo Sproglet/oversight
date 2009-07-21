@@ -109,7 +109,7 @@ UPGRADE() {
                 exit 1
             fi
 
-            $APPDIR/gunzip.php "$tardir/$newtgzfile" "$tardir/$newtarfile"
+            $APPDIR/bin/gunzip -f -c "$tardir/$newtgzfile" > "$tardir/$newtarfile"
             rm -f "$tardir/$newtgzfile"
 
             HTML Backup old files

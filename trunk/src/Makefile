@@ -9,7 +9,7 @@ ifeq ($(OUT),nmt)
 endif
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
-	config.o hashtable_loop.o vasprintf.o db.o dbfield.o
+	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o
 
 SRC=$(OVS_OBJS:.o=.c)
 
@@ -23,6 +23,8 @@ LIBS=-lm
 
 LDFLAGS=-g -Wall -O $(LIBS)
 
+all: oversight
+
 
 oversight:  $(OVS_OBJS)
 	$(CC) $(LDFLAGS) -o oversight2.cgi $(OVS_OBJS)
@@ -31,7 +33,7 @@ tester: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(OBJECTS)
 
 tidy:
-	rm *.o
+	rm -f *.o
 
 clean: tidy
 	rm -f tester old_tester oversight

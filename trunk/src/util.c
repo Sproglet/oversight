@@ -8,6 +8,7 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "util.h"
 #include "hashtable.h"
@@ -305,7 +306,7 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
 
     // As h1 has h2 values we destroy h2 to avoid double memory frees.
     if (!copy) {
-        hashtable_destroy(h2,0);
+        hashtable_destroy(h2,1,0);
     }
 }
 
@@ -366,7 +367,7 @@ void util_unittest() {
     free(x);
 
     printf("destroy\n");
-    hashtable_destroy(h,0);
+    hashtable_destroy(h,1,0);
     //this may cause error after a destroy?
     // free(hello);
 }
@@ -538,6 +539,19 @@ void *MALLOC(unsigned long bytes) {
             exit(1);
         }
 
+    }
+    return p;
+}
+
+char *util_tolower(char *s) {
+    char *p = NULL;
+    if(s) {
+        p = MALLOC(strlen(p)+1);
+        char *q = p ;
+        while (*s) {
+            *q = tolower(*s);
+        }
+        *q='\0';
     }
     return p;
 }

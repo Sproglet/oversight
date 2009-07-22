@@ -28,6 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #include "vasprintf.h"
 #include "util.h" //for MALLOC
 
+#define TEST
+#ifdef TEST
 int ovs_vasprintf (char **result, char *format, va_list args) {
   char *p = format;
   /* Add one to make sure that it is never zero, which might cause MALLOC
@@ -85,7 +87,13 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
               (void) va_arg (ap, double);
               break;
             case 's':
-              total_width += strlen (va_arg (ap, char *));
+              { char *ss=va_arg (ap, char *);
+                  if (ss) {
+                      total_width += strlen (ss);
+                  } else {
+                      total_width += 6; /* "(null)" */
+                  }
+              }
               break;
             case 'p':
             case 'n':
@@ -100,6 +108,20 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
   else
     return 0;
 }
+#else
+int ovs_vasprintf (char **result, char *format, va_list args) {
+#define BUFLEN 300
+    char buf[BUFLEN];
+    int result_len;
+
+    vsnprintf(buf,BUFLEN,format,args);
+    buf[BUFLEN]='\0';
+
+    result_len = strlen(buf);
+    *result=strdup(buf);
+    return result_len;
+}
+#endif
 
 int ovs_asprintf (char **result, char *format, ...)
 {

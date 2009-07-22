@@ -273,14 +273,14 @@ int is_pc_browser() {
 
 char *html_encode(char *s) {
     assert(s);
-    unsigned char *p,*q,*result;
+    char *p,*q,*result;
 
     int size=0;
 
     for (p = s ; *p ; p++) {
         if (*p == '<' || *p == '>'  || *p == '&' ) {
             size += 5;
-        } else if (*p > 127) {
+        } else if (*p <  0) { // changed to char * so from >127 to <0
             size += 7;
         } else {
             size ++;
@@ -289,14 +289,17 @@ char *html_encode(char *s) {
     result = q = MALLOC(size+1);
     assert(q);
     for (p = s ; *p ; p++) {
+
         if (*p == '<' ) {
-           sprintf(q,"&lt;"); q+= 4;
+           strcpy(q,"&lt;"); q+= 4;
         } else if (*p == '>' ) {
            sprintf(q,"&gt;"); q+= 4;
         } else if (*p == '&' ) {
            sprintf(q,"&amp;"); q+= 5;
-        } else if (*p > 127 ) {
-           sprintf(q,"&#x%x;",(int)*p); q+= strlen(q);
+        } else if (*p < 0 ) { // changed to char * so from >127 to <0
+            // -128 -> 128 -1 -> 255
+           sprintf(q,"&#x%x;",256+(int)*p);
+           q+= strlen(q);
         } else {
             *q = *p; q++;
         }

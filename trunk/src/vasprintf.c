@@ -33,7 +33,10 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
   /* Add one to make sure that it is never zero, which might cause MALLOC
      to return NULL.  */
   int total_width = strlen (format) + 1;
-  va_list ap = args;
+
+  va_list ap;
+
+  memcpy(&ap,&args,sizeof(va_list));
 
   while (*p != '\0')
     {

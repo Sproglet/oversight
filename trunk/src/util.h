@@ -18,7 +18,7 @@ void regextract_free(Array *submatches);
 int regpos(char *s,char *pattern);
 
 void util_unittest();
-void chomp(char *line);
+int chomp(char *line);
 
 int exists(char *path);
 
@@ -40,6 +40,7 @@ int nmt_uid();
 int nmt_gid();
 
 void *MALLOC(unsigned long bytes);
+void *REALLOC(void *p,unsigned long bytes);
 char *STRDUP(char *s);
 
 #endif

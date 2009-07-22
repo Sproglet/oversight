@@ -191,6 +191,7 @@ int config_check_long(struct hashtable *h,char *key,long *out) {
         html_error("ERROR: Integer conversion error for [%s] = [%s]",key,s);
         exit(1);
     }
+    *out = val;
     return 1;
 }
 
@@ -264,6 +265,7 @@ void config_read_dimensions(struct hashtable *ovs_cfg,struct hashtable *nmt_cfg,
     int is_pal;
     int pal_fixed = 0;
 
+    html_comment("read dimensions");
     dim->scanlines = scanlines = get_scanlines(nmt_cfg,&is_pal);
 
     html_comment("scanlines=[%ld] ispal = %d",scanlines,is_pal);
@@ -294,6 +296,7 @@ void config_read_dimensions(struct hashtable *ovs_cfg,struct hashtable *nmt_cfg,
         int lines=500;
         if (scanlines) lines=scanlines;
 
+        html_comment("rows = %d\n",dim->rows);
         dim->poster_menu_img_height = lines/ dim->rows + 1.6 ;
 
         if (is_pal) {

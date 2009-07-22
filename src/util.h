@@ -42,5 +42,7 @@ int nmt_gid();
 void *MALLOC(unsigned long bytes);
 void *REALLOC(void *p,unsigned long bytes);
 char *STRDUP(char *s);
+char *util_tolower(char *s);
+unsigned int stringhash(void *vptr);
 
 #endif

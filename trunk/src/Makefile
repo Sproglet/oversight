@@ -9,7 +9,7 @@ ifeq ($(OUT),nmt)
 endif
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
-	config.o hashtable_loop.o vasprintf.o
+	config.o hashtable_loop.o vasprintf.o db.o
 
 SRC=$(OVS_OBJS:.o=.c)
 

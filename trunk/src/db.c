@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <string.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "db.h"
 #include "dbfield.h"
@@ -140,6 +141,39 @@ int extract_field_long(char *field_id,char *buffer,long *val_ptr,int quiet) {
     }
     return 0;
 }
+int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
+    char *s;
+    int fld_len;
+    assert(val_ptr);
+    assert(field_id);
+    assert(buffer);
+    int y,m,d,H,M,S;
+
+    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
+        char term;
+        if (sscanf(s,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) != 7) {
+            if (!quiet) html_error("failed to extract long field %s",field_id);
+        } else if (term != '\t') {
+            if (!quiet) html_error("bad terminator [%c] after long field %s = %d %d %d %d %d %d",term,field_id,y,m,d,H,M,S);
+        } else {
+            struct tm t;
+            t.tm_year = y - 1900;
+            t.tm_mon = m - 1;
+            t.tm_mday = d;
+            t.tm_hour = H;
+            t.tm_min = M;
+            t.tm_sec = S;
+            *val_ptr = mktime(&t);
+            if (*val_ptr < 0 ) {
+                html_log(0,"bad timstamp = %s",asctime(&t));
+                html_log(0,"%d %d %d %d %d %d",y,m,d,H,M,S);
+            }
+            //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
+            return 1;
+        }
+    }
+    return 0;
+}
 int extract_field_int(char *field_id,char *buffer,int *val_ptr,int quiet) {
     char *s;
     int fld_len;
@@ -196,7 +230,7 @@ int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
     rowid->linked = NULL;
 
     if (extract_field_long(DB_FLDID_ID,buffer,&(rowid->id),0)) {
-        if (extract_field_long(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
+        if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
             if (extract_field_int(DB_FLDID_ID,buffer,&(rowid->watched),0)) {
                 if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
                     if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {

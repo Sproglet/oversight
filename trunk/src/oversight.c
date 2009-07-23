@@ -129,19 +129,13 @@ void menu(struct hashtable *query,
 
     config_check_str(query,"s",&sort);
 
-    html_log(0,"sort by [%s]",sort);
 
-    if (strcmp(sort,DB_FLDID_TITLE) == 0) {
+    if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
+        html_log(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
     } else {
+        html_log(0,"sort by age [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
-    }
-
-    int i;
-    for(i = 0 ; i < hashtable_count(overview) ; i++ ) {
-
-        DbRowId *rid = sorted_row_ids[i];
-        html_log(0,"sorted [%s]",rid->title);
     }
 
     db_overview_hash_destroy(overview);

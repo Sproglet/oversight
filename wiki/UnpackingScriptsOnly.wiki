@@ -1,0 +1,47 @@
+#labels Featured
+#Installing unpacking scripts only
+
+= Introduction =
+
+This page descripbes how to install just the unpacking scripts. They do not have an installer, as they are sometimes used on other platforms. For NMT users it is much easier to just install Oversight and then dont use it. This will set up all of the optimal configurations for nzbget and the unpacking scripts. And Oversight uses VERY little resources if its not being used. It doesnt require myIHome etc.
+
+For non-NMT users, or stubborn, frugal NMT users read on..
+
+
+= Details =
+
+Download unpak-BETA.zip and install unpak.sh , unpak.cfg.example catalog.sh and catalog.cfg.example in the same folder where the original unpak.sh is. 
+
+In nzbget.conf then set the following options 
+
+{{{
+PostProcess=/replace/with/path/to/unpak.sh
+AllowReprocess=yes
+ParBheck=no
+RenameBroken=no
+CreateBrokenLog=yes
+}}}
+
+Optionally, For better nzbget debugging and performance on NMT I also set the following 
+(all automatically set be installing oversight)
+
+{{{
+Detailtarget=none
+Debugtarget=none
+Infotarget=screen
+Warningtarget=both
+Errortarget=both
+Createlog=yes
+Resetlog=yes
+LogBufferSize=100
+#IO Performance
+DirectWrite=yes
+ContinuePartial=no
+}}}
+
+
+{{{
+OutputMode=loggable <= only if your nmtclient doesnt have curses support - NMT users should set this 
+NzbDirFileAge=12
+DupeCheck=yes
+}}}

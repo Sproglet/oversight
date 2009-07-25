@@ -17,13 +17,14 @@ In nzbget.conf then set the following options
 {{{
 PostProcess=/replace/with/path/to/unpak.sh
 AllowReprocess=yes
-ParBheck=no
+ParCheck=no
+ParRepair=no
 RenameBroken=no
 CreateBrokenLog=yes
 }}}
 
 Optionally, For better nzbget debugging and performance on NMT I also set the following 
-(all automatically set be installing oversight)
+(all automatically set by installing oversight)
 
 {{{
 Detailtarget=none

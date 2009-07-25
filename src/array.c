@@ -154,7 +154,7 @@ Array *splitch(char *s_in,char ch) {
     Array *a = array_new(free);
     char *s = s_in;
     char *p;
-    printf("split ch [%s] by [%c]\n",s,ch);
+    // printf("split ch [%s] by [%c]\n",s,ch);
 
     if (s == NULL) {
         return a;
@@ -169,7 +169,7 @@ Array *splitch(char *s_in,char ch) {
 
         part[p-s]='\0';
 
-        printf("part=[%s]\n",part);
+       //  printf("part=[%s]\n",part);
 
         array_add(a,part);
 
@@ -194,7 +194,7 @@ Array *split(char *s_in,char *pattern) {
         return a;
     }
 
-    printf("split re [%s] by [%s]\n",s_in,pattern);
+    //printf("split re [%s] by [%s]\n",s_in,pattern);
 
     if (strlen(pattern) == 1 ) {
         return splitch(s_in,pattern[0]);
@@ -238,20 +238,20 @@ Array *split(char *s_in,char *pattern) {
         strncpy(part,s,match_start);
         part[match_start]='\0';
 
-        printf("part=[%s]\n",part);
+    //    printf("part=[%s]\n",part);
 
         array_add(a,part);
 
         //Move past the match
         if (match_start == 0 && match_end == 0) {
-            printf("inc\n");
+     //       printf("inc\n");
             match_end++;
         } 
         s += match_end;
         eflag = REG_NOTBOL;
 
     }
-    printf("split4 [%s]\n",s);
+    // printf("split4 [%s]\n",s);
     // Add the last part
     array_add(a,strdup(s));
 

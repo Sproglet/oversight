@@ -44,5 +44,6 @@ void *REALLOC(void *p,unsigned long bytes);
 char *STRDUP(char *s);
 char *util_tolower(char *s);
 unsigned int stringhash(void *vptr);
+char *util_hostname();
 
 #endif

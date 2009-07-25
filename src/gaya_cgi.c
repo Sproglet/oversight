@@ -32,7 +32,7 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 
             char *name=url_decode(qarr->array[i]);
             char *val=url_decode(eq+1);
-            printf("query [%s]=[%s]\n",name,val);
+            //printf("query [%s]=[%s]\n",name,val);
 
             if (hashtable_insert(hashtable_in,name,val) ==0) {
                 fprintf(stderr," Error inserting [%s]=[%s]\n",name,val);
@@ -336,11 +336,16 @@ void html_vacomment(char *format,va_list ap) {
     }
 }
 
-int html_log_level = 0;
+static int html_log_level = 0;
 
 void html_log_level_set(int level) {
     html_log_level = level;
 }
+
+int html_log_level_get() {
+    return html_log_level;
+}
+
 
 void html_log(int level,char *format,...) {
     va_list ap;
@@ -353,7 +358,7 @@ void html_log(int level,char *format,...) {
 void html_error(char *format,...) {
     va_list ap;
     va_start(ap,format);
-    printf("Content-Type: text/html\n\nERROR");
+    printf("ERROR");
     vprintf(format,ap);
     va_end(ap);
 }

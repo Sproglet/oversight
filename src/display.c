@@ -10,6 +10,8 @@
 #include "db.h"
 #include "dboverview.h"
 #include "oversight.h"
+#include "hashtable.h"
+#include "hashtable_loop.h"
     
 #define XHTML
 void tag(char *label,char *attr,va_list ap) {
@@ -59,9 +61,122 @@ void td(char *attr,...) {
 }
 
 
+// Merge the current query string with the parameters.
+// Keep the parameters that are not in the new parameter list and are also not blank
+// Also exclude "colour" because it represents a one off action and not at state.
+char *self_url(char *new_params) {
+
+    struct hashtable_itr *itr;
+    char *param_name;
+    char *param_value;
+
+    int first=1;
+
+    char *url = STRDUP(SELF_URL);
+
+    for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
+
+        
+        int param_name_len = strlen(param_name);
+        char *p = NULL ;
+
+        if ( param_value && *param_value ) {
+            if (strcmp(param_name,"colour") != 0) {
+                if (strstr(param_name,"option_") == NULL) {
+                    //
+                    // search for pram_name in new_params
+                    int add_param=1;
+                    for (p = strstr(new_params,param_name); p ; p=strstr(new_params,p+1) ) {
+
+                        if ( ( p == new_params || p[-1] == '&' ) ) {
+                            // start of string is beginning or after &
+                           char *end = p + param_name_len;
+                           if (strchr("&=",*end)) {
+                              // end of string is = or & or nul
+                              // param_name is in new_params - we dont want this
+                              add_param=0;
+                              break;
+                           }
+                        }
+                    }
+                    if (add_param) {
+                        char *new;
+                        ovs_asprintf(&new,"%s%c%s=%s",url,(first?"?":"&"),param_name,param_value);
+                        free(url);
+                        url = new;
+                    }
+                }
+            }
+        }
+    }
+    return url;
+}
+
+void display_self_link_multi(char *params,char *attr,char *title) {
+    char *url = self_url(params);
+
+    printf("<a href=\"%s\" %s>%s</a>",url,attr,title);
+
+    free(params);
+}
+
+void display_remote_button(char *button_colour,char *params,char *text) {
+    char *params2;
+    char *attr;
+    char *text2;
+
+    ovs_asprintf(&params2,"%s&colour=%s",params,button_colour);
+    ovs_asprintf(&attr,"tvid=\"%s\"",button_colour);
+    ovs_asprintf(&text2,"<font class=\"%sbutton\">%s</font>",button_colour,text);
+
+    display_self_link_multi(params2,attr,text2);
+
+    free(params2);
+    free(attr);
+    free(text2);
+}
+
+
+void display_toggle(char *button_colour,char *param,char *v1,char *text1,char *v2,char *text2) {
+    char *params;
+    char *text;
+    char *next = v1;
+    int v1current = 0;
+    int v2current = 0;
+
+    if (config_check_str(g_query,QUERY_PARAM_TYPE_FILTER,&params)) {
+        if (strcmp(param,v1)==0) {
+            v1current = 1;
+            next = v2;
+        }
+        if (strcmp(param,v2)==0) {
+            v2current = 1;
+            next = v1;
+        }
+    }
+
+    ovs_asprintf(&params,"p=0&%s=%s",param,next);
+
+    ovs_asprintf(&text,"%s%s%s<br>%s%s%s",
+            (v1current?"<u><b>":""),v1,(v1current?"</b></u>":""),
+            (v2current?"<u><b>":""),v2,(v2current?"</b></u>":""));
+
+    display_remote_button(button_colour,params,text);
+
+    free(params);
+    free(text);
+}
+
 void display_sort_cells() {
+
     td("");
-    printf("Sort cells here");
+
+    display_toggle("red",QUERY_PARAM_TYPE_FILTER,"T","Tv","M","Film");
+
+    display_toggle("green",QUERY_PARAM_WATCHED_FILTER,"U","Unmarked","W","Marked");
+
+    display_toggle("blue",QUERY_PARAM_SORT,DB_FLDID_TITLE,"Name",DB_FLDID_INDEXTIME,"Age");
+
     td(NULL);
 }
 
@@ -243,9 +358,9 @@ char *file_style(DbRowId *rowid,int grid_toggle) {
 
     static char grid_class[16];
 
-    sprintf(grid_class,"grid%cW%d_%d",
-            row_id->category,
-            row_id->watched!=0,
+    sprintf(grid_class," class=grid%cW%d_%d ",
+            rowid->category,
+            rowid->watched!=0,
             grid_toggle & 1);
 
     return grid_class;
@@ -253,11 +368,11 @@ char *file_style(DbRowId *rowid,int grid_toggle) {
 char *watched_style(DbRowId *rowid,int grid_toggle) {
 
     if (rowid->watched) {
-        return "watched";
+        return " class=watched ";
     } else { 
         long fresh_days;
         if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
-            if (rowid->age + fresh_days*24*60*60 > time(NULL)) {
+            if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
                 return " border=2 class=fresh ";
             }
         }
@@ -276,7 +391,6 @@ void print_poster_image_tag(DbRowId *rowid,char *attr) {
 
     if (rowid->watched) {
         ovs_asprintf(&newattr," %s %s ",attr,watched_style(rowid,0));
-        ovs_asprintf(&newattr," %s border=2 class=fresh ",attr);
     }
 
     print_local_image_link(path,rowid->title,newattr);
@@ -291,23 +405,16 @@ void print_poster_image_tag(DbRowId *rowid,char *attr) {
 void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
-    char grid_class[16];
-
-    sprintf(grid_class,"grid%cW%d_%d",
-            row_id->category,
-            row_id->watched!=0,
-            grid_toggle & 1);
-
-
     html_log(0,"TODO:Highlight matched bit");
-    printf("\t\t<td %s class=%s>",width_attr,grid_class);
+    printf("\t\t<td %s class=%s>",width_attr,file_style(row_id,grid_toggle));
 
     if (g_dimension->poster_mode
             && ( row_id->category == 'T' || row_id->category == 'M' )
             && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
 
         char *attr;
-        ovs_asprintf(&attr," width=%d height=%d ",g_dimension->poster_menu_img_width,g_dimension->poster_menu_img_height);
+        ovs_asprintf(&attr," width=%d height=%d ",
+                g_dimension->poster_menu_img_width,g_dimension->poster_menu_img_height);
         print_poster_image_tag(row_id,attr);
         free(attr);
 
@@ -425,7 +532,7 @@ void display_menu() {
     long watched_param;
     int watched = DB_WATCHED_FILTER_ANY;
 
-    if (config_check_long(g_query,"_wf",&watched_param)) {
+    if (config_check_long(g_query,QUERY_PARAM_WATCHED_FILTER,&watched_param)) {
         if (watched_param) {
             watched=DB_WATCHED_FILTER_YES;
         } else {
@@ -438,10 +545,10 @@ void display_menu() {
     char *media_type_str=NULL;
     int media_type=DB_MEDIA_TYPE_ANY;
 
-    if (config_check_str(g_query,"_tf",&media_type_str)) {
+    if (config_check_str(g_query,QUERY_PARAM_TYPE_FILTER,&media_type_str)) {
         switch(*media_type_str) {
             case 'T': media_type=DB_MEDIA_TYPE_TV; break ;
-            case 'F': media_type=DB_MEDIA_TYPE_FILM; break ;
+            case 'M': media_type=DB_MEDIA_TYPE_FILM; break ;
         }
     }
     html_log(0,"Media type = %d",media_type);

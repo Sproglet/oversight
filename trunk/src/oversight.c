@@ -65,11 +65,14 @@ void cat(char *content,char *file) {
     size_t bytes;
     if (fp) {
         while((bytes=fread(catbuf,1,CATBUFLEN,fp)) > 0)  {
-            fwrite(catbuf,1,bytes,fp);
+            fwrite(catbuf,1,bytes,stdout);
         }
         fclose(fp);
+        exit(0);
+    } else {
+        fprintf(stderr,"Error %d opening [%s|%s]\n",errno,content,file);
+        exit(1);
     }
-    exit(0);
 }
 
 int main(int argc,char **argv) {

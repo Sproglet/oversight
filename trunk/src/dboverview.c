@@ -42,31 +42,35 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
     }
 }
 int db_overview_name_eqf(void *rid1,void *rid2) {
-    return db_overview_cmp_by_title(&rid1,&rid2) == 0;
+    return db_overview_cmp_by_title((DbRowId **)&rid1,(DbRowId **)&rid2) == 0;
 }
 
-void overview_dump(char *label,struct hashtable *overview) {
+void overview_dump(int level,char *label,struct hashtable *overview) {
     struct hashtable_itr *itr;
     DbRowId *k;
 
-    if (hashtable_count(overview) ) {
-        for (itr=hashtable_loop_init(overview) ; hashtable_loop_more(itr,&k,NULL) ; ) {
+    if (level <= html_log_level_get()) {
+        if (hashtable_count(overview) ) {
+            for (itr=hashtable_loop_init(overview) ; hashtable_loop_more(itr,&k,NULL) ; ) {
 
-            html_log(1,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
+                html_log(1,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
+            }
+        } else {
+            html_log(1,"%s EMPTY",label);
         }
-    } else {
-        html_log(1,"%s EMPTY",label);
     }
 }
 
-void overview_array_dump(char *label,DbRowId **arr) {
-    if (*arr) {
-        while (*arr) {
-            html_log(1,"%s key=[%c\t%s\ts%02d\t%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->date);
-            arr++;
+void overview_array_dump(int level,char *label,DbRowId **arr) {
+    if (level <= html_log_level_get()) {
+        if (*arr) {
+            while (*arr) {
+                html_log(level,"%s key=[%c\t%s\ts%02d\t%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->date);
+                arr++;
+            }
+        } else {
+            html_log(level,"%s EMPTY",label);
         }
-    } else {
-        html_log(1,"%s EMPTY",label);
     }
 }
 
@@ -90,6 +94,17 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
             if (match) {
 
                 html_log(0,"overview: match [%s] with [%s]",rid->title,match->title);
+
+                //Move youngest age to the first overview item
+                if (rid->date < match->date ) {
+                    match->date = rid->date;
+                }
+
+                //*If item is unwatched then set overview as unwatched.
+                if (rid->watched == 0 ) {
+                   match->watched = 0;
+                }
+
                 // Add rid to linked list at match->linked
                 rid->linked = match->linked;
                 match->linked = rid;
@@ -102,7 +117,7 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
         }
     }
     html_log(0,"overview: %d entries created from %d records",hashtable_count(overview),total);
-    overview_dump("ovw create:",overview);
+    overview_dump(4,"ovw create:",overview);
     return overview;
 }
 
@@ -128,9 +143,9 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
     DbRowId **ids = flatten_hash_to_array(overview);
 
     html_log(0,"sorting %d items",hashtable_count(overview));
-    overview_array_dump("ovw flatten",ids);
+    overview_array_dump(4,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
-    overview_array_dump("ovw sorted",ids);
+    overview_array_dump(4,"ovw sorted",ids);
 
     return ids;
 }

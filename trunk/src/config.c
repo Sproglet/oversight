@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "oversight.h"
 #include "util.h"
 #include "config.h"
 #include "assert.h"
@@ -239,12 +240,21 @@ int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out)
     return result;
 }
 
-long get_scanlines(struct hashtable *nmt_settings,int *is_pal) {
+long get_scanlines(int *is_pal) {
     long scanlines = 0;
-    char *tv_mode = hashtable_search(nmt_settings,"video_output");
-    int tv_mode_int = atoi(tv_mode);
+    int tv_mode_int;
 
-    if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 ) {
+    if (!g_dimension->local_browser) {
+        //Remote browser
+        tv_mode_int = 6; 
+    } else {
+        //Localbrowser- get resolution
+        char *tv_mode = hashtable_search(g_nmt_settings,"video_output");
+        html_log(0,"tvmode = %s",tv_mode);
+        tv_mode_int = atoi(tv_mode);
+    }
+
+    if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 || tv_mode_int == 16 ) {
         scanlines = 720;
     } else if (tv_mode_int <= 5 || ( tv_mode_int >= 7 && tv_mode_int <= 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
         scanlines = 0;
@@ -258,64 +268,72 @@ long get_scanlines(struct hashtable *nmt_settings,int *is_pal) {
      return scanlines;
 }
 
-void config_read_dimensions(struct hashtable *ovs_cfg,struct hashtable *nmt_cfg,Dimensions *dim) {
+void config_read_dimensions() {
 
     char scanlines_str[9];
-    long scanlines;
     int is_pal;
     int pal_fixed = 0;
 
+    
     html_comment("read dimensions");
-    dim->scanlines = scanlines = get_scanlines(nmt_cfg,&is_pal);
 
-    html_comment("scanlines=[%ld] ispal = %d",scanlines,is_pal);
+    char *addr = getenv("REMOTE_ADDR");
 
-    sprintf(scanlines_str,"%ld",scanlines);
-    html_comment("scanlinesstr=[%]",scanlines_str);
+    g_dimension = MALLOC(sizeof(Dimensions));
 
-    config_get_long_indexed(ovs_cfg,"ovs_font_size",scanlines_str,&(dim->font_size));
-    config_get_long_indexed(ovs_cfg,"ovs_title_size",scanlines_str,&(dim->title_size));
-    config_get_long_indexed(ovs_cfg,"ovs_movie_poster_width",scanlines_str,&(dim->movie_img_width));
-    config_get_long_indexed(ovs_cfg,"ovs_tv_poster_width",scanlines_str,&(dim->tv_img_width));
-    config_get_long_indexed(ovs_cfg,"ovs_max_plot_length",scanlines_str,&(dim->max_plot_length));
-    config_get_long_indexed(ovs_cfg,"ovs_button_size",scanlines_str,&(dim->button_size));
-    config_get_long_indexed(ovs_cfg,"ovs_certificate_size",scanlines_str,&(dim->certificate_size));
-    config_get_long_indexed(ovs_cfg,"ovs_poster_mode",scanlines_str,&(dim->poster_mode));
-    if (dim->poster_mode) {
-        config_get_long_indexed(ovs_cfg,"ovs_poster_mode_rows",scanlines_str,&(dim->rows));
-        config_get_long_indexed(ovs_cfg,"ovs_poster_mode_cols",scanlines_str,&(dim->cols));
-        config_get_long_indexed(ovs_cfg,"ovs_poster_mode_height",scanlines_str,&(dim->poster_menu_img_height));
-        config_get_long_indexed(ovs_cfg,"ovs_poster_mode_width",scanlines_str,&(dim->poster_menu_img_width));
+    g_dimension->local_browser = (addr == NULL || strcmp(addr,"127.0.0.1") == 0);
+
+    g_dimension->scanlines = get_scanlines(&is_pal);
+
+    html_comment("scanlines=[%ld] ispal = %d",g_dimension->scanlines,is_pal);
+
+    sprintf(scanlines_str,"%ld",g_dimension->scanlines);
+
+
+    html_comment("scanlines_str=[%]",scanlines_str);
+
+    config_get_long_indexed(g_oversight_config,"ovs_font_size",scanlines_str,&(g_dimension->font_size));
+    config_get_long_indexed(g_oversight_config,"ovs_title_size",scanlines_str,&(g_dimension->title_size));
+    config_get_long_indexed(g_oversight_config,"ovs_movie_poster_width",scanlines_str,&(g_dimension->movie_img_width));
+    config_get_long_indexed(g_oversight_config,"ovs_tv_poster_width",scanlines_str,&(g_dimension->tv_img_width));
+    config_get_long_indexed(g_oversight_config,"ovs_max_plot_length",scanlines_str,&(g_dimension->max_plot_length));
+    config_get_long_indexed(g_oversight_config,"ovs_button_size",scanlines_str,&(g_dimension->button_size));
+    config_get_long_indexed(g_oversight_config,"ovs_certificate_size",scanlines_str,&(g_dimension->certificate_size));
+    config_get_long_indexed(g_oversight_config,"ovs_poster_mode",scanlines_str,&(g_dimension->poster_mode));
+    if (g_dimension->poster_mode) {
+        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_rows",scanlines_str,&(g_dimension->rows));
+        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_cols",scanlines_str,&(g_dimension->cols));
+        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_height",scanlines_str,&(g_dimension->poster_menu_img_height));
+        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_width",scanlines_str,&(g_dimension->poster_menu_img_width));
     } else {
-        config_get_long_indexed(ovs_cfg,"ovs_rows",scanlines_str,&(dim->rows));
-        config_get_long_indexed(ovs_cfg,"ovs_cols",scanlines_str,&(dim->cols));
+        config_get_long_indexed(g_oversight_config,"ovs_rows",scanlines_str,&(g_dimension->rows));
+        config_get_long_indexed(g_oversight_config,"ovs_cols",scanlines_str,&(g_dimension->cols));
     }
 
-    if (dim->poster_menu_img_height == 0) {
+    if (g_dimension->poster_menu_img_height == 0) {
         //compute
         int lines=500;
-        if (scanlines) lines=scanlines;
+        if (g_dimension->scanlines) lines=g_dimension->scanlines;
 
-        html_comment("rows = %d\n",dim->rows);
-        dim->poster_menu_img_height = lines/ dim->rows + 1.6 ;
+        html_comment("rows = %d\n",g_dimension->rows);
+        g_dimension->poster_menu_img_height = lines/ g_dimension->rows + 1.6 ;
 
         if (is_pal) {
             // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed
-            dim->poster_menu_img_height *= ( 576 / 480 );
+            g_dimension->poster_menu_img_height *= ( 576 / 480 );
             pal_fixed = 1;
         }
     }
 
-    if (dim->poster_menu_img_width == 0) {
+    if (g_dimension->poster_menu_img_width == 0) {
         //compute from height
-        dim->poster_menu_img_width =  dim->poster_menu_img_height / 1.5 ;
+        g_dimension->poster_menu_img_width =  g_dimension->poster_menu_img_height / 1.5 ;
         if (pal_fixed) {
             // the height has been scaled to compensate for gaya bug. 
             // Scale the width based on the original height!
-            dim->poster_menu_img_width *= ( 480 / 576 );
+            g_dimension->poster_menu_img_width *= ( 480 / 576 );
         }
     }
-
 
 }
 

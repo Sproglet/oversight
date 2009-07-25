@@ -6,6 +6,7 @@
 typedef struct dimension_str {
     long scanlines;
     long poster_mode;
+    long local_browser;
     long rows;
     long cols;
     long font_size;
@@ -37,6 +38,6 @@ int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out)
 int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out);
 int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out);
 
-void config_read_dimensions(struct hashtable *ovs_cfg,struct hashtable *nmt_cfg,Dimensions *dim);
+void config_read_dimensions();
 
 #endif

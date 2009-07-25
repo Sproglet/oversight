@@ -165,8 +165,7 @@ int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet)
             t.tm_sec = S;
             *val_ptr = mktime(&t);
             if (*val_ptr < 0 ) {
-                html_log(0,"bad timstamp = %s",asctime(&t));
-                html_log(0,"%d %d %d %d %d %d",y,m,d,H,M,S);
+                html_log(0,"bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
             }
             //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
             return 1;
@@ -229,20 +228,28 @@ int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
     rowid->category='?';
     rowid->linked = NULL;
 
-    if (extract_field_long(DB_FLDID_ID,buffer,&(rowid->id),0)) {
-        if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
-            if (extract_field_int(DB_FLDID_ID,buffer,&(rowid->watched),0)) {
-                if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
-                    if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
-                        extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
-                        extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
-                        return 1;
+    switch(buffer[0]) {
+        case '\t':
+            if (extract_field_long(DB_FLDID_ID,buffer,&(rowid->id),0)) {
+                if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
+                    if (extract_field_int(DB_FLDID_ID,buffer,&(rowid->watched),0)) {
+                        if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
+                            if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
+                                extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
+                                extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
+                                return 1;
+                            }
+                        }
                     }
                 }
             }
-        }
+            html_error("Failed to parse row {%s}",buffer);
+            break;
+        case '#' : // do nothing
+            break;
+        default:
+            html_error("Unknown line in db {%s}",buffer);
     }
-    html_error("Failed to parse row {%s}",buffer);
     return 0;
 }
 
@@ -452,9 +459,9 @@ DbRowSet * db_scan_titles(
     }
     fclose(fp);
     if (rowset) {
-        html_log(0,"filtered %d of %d rows",row_count,total_rows);
+        html_log(0,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
-        html_error("No rows loaded");
+        html_error("db[%s] No rows loaded",db->source);
     }
     return rowset;
 }

@@ -571,3 +571,10 @@ char *STRDUP(char *s) {
     }
     return p;
 }
+char *util_hostname() {
+#define HOSTBUFSIZ 30
+    static char hostname[HOSTBUFSIZ];
+    gethostname(hostname,HOSTBUFSIZ);
+    hostname[HOSTBUFSIZ-1]='\0';
+    return hostname;
+}

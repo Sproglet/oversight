@@ -18,6 +18,7 @@ void html_vacomment(char *format,va_list ap);
 
 void html_error(char *format,...);
 void html_log_level_set(int lvl);
+int html_log_level_get();
 void html_log(int level,char *format,...);
 void html_hashtable_dump(int level,char *label,struct hashtable *h);
 

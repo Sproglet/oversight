@@ -226,7 +226,6 @@ int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
     rowid->offset = fpos;
     rowid->season = -1;
     rowid->category='?';
-    rowid->linked = NULL;
 
     switch(buffer[0]) {
         case '\t':
@@ -237,6 +236,22 @@ int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
                             if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
                                 extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
                                 extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
+
+                                //if (in_text_mode() || (rowid->category != 'M' && rowid->category != 'T' ) ) {
+
+            //html_log(0,"db getting file..");
+                                    extract_field_str(DB_FLDID_FILE,buffer,&(rowid->file),0);
+            //html_log(0,"db file = [%s]",rowid->file);
+                                    rowid->ext = strrchr(rowid->file,'.');
+            //html_log(0,"db ext = [%s]",rowid->ext);
+                                    if (rowid->ext) rowid->ext++;
+            //html_log(0,"db ext = [%s]",rowid->ext);
+
+                                    extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
+            //html_log(0,"db cert = [%s]",rowid->certificate);
+
+                                //}
+
                                 return 1;
                             }
                         }
@@ -494,6 +509,10 @@ void db_rowid_free(DbRowId *rid,int free_base) {
 
     free(rid->title);
     free(rid->poster);
+    free(rid->file);
+    //Dont free ext as it points to file.
+
+    free(rid->certificate);
     rid->db->refcount--;
     if (free_base) {
         free(rid);

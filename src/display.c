@@ -198,7 +198,7 @@ char *get_self_link(char *params,char *attr,char *title) {
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 static FILE *playlist_fp=NULL;
 
-int playlist_close() {
+void playlist_close() {
     if (playlist_fp) {
         fclose(playlist_fp);
         playlist_fp=NULL;
@@ -681,8 +681,8 @@ char *build_ext_list(DbRowId *row_id) {
 
     char *ext_icons = icon_link(row_id->ext);
 
-    DbRowId ri;
-    for( ri = row_id->next ; ri ; ri=ri->linked ) {
+    DbRowId *ri;
+    for( ri = row_id->linked ; ri ; ri=ri->linked ) {
         if (strstr(ext_icons,ri->ext) == NULL) {
             char *new_ext;
             ovs_asprintf(&new_ext,"%s%s",ext_icons,icon_link(ri->ext));
@@ -697,18 +697,40 @@ char *build_id_list(DbRowId *row_id) {
 
     char *idlist=NULL;
 
-    ovs_asprintf(&idlist,"%s(%d",row_id->db->source,row_id->id);
-    DbRowId ri;
+    ovs_asprintf(&idlist,"%s(%ld|",row_id->db->source,row_id->id);
+    DbRowId *ri;
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
         char *tmp;
-        ovs_asprintf(&tmp,"%s|%s",idlist,ri->id);
+        ovs_asprintf(&tmp,"%s%ld|",idlist,ri->id);
         free(idlist);
         idlist = tmp;
     }
+
+    idlist[strlen(idlist)-1] = ')';
+
     return idlist;
 }
 
-void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
+#define MAX_TITLE_LEN 50
+char *trim_title(char *title) {
+    char *out = STRDUP(title);
+    if (strlen(out) > MAX_TITLE_LEN) {
+        strcpy(out+MAX_TITLE_LEN-3,"..");
+    }
+    return out;
+}
+
+char *query_val(char *name) {
+    char *val;
+    if (config_check_str(g_query,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+
+
+void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
     html_log(0,"TODO:Highlight matched bit");
@@ -716,35 +738,36 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
     char *title=NULL;
     char *font_class=NULL;
     char *grid_class=NULL;
-    char *ext_icons = NULL;
-    char *idlist=NULL;
 
-    char *select;
-    if (!config_check_str(g_query,"select",&select)) {
-       select="";
-    }
+    char *select = query_val("select");
+    int tv_or_movie = (row_id->category == 'T' || row_id->category == 'M' );
 
-    int selecting=(*select != '\0');
 
-    if (g_dimension->poster_mode
-            && ( row_id->category == 'T' || row_id->category == 'M' )
-            && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
+    if (in_poster_mode() ) {
+        if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
 
-        // POSTER MODE
+            html_log(1,"dbg: tv or movie : set details as jpg");
 
-        char *attr;
-        ovs_asprintf(&attr," width=%d height=%d ",
+
+            char *attr;
+            ovs_asprintf(&attr," width=%d height=%d ",
                 g_dimension->poster_menu_img_width,g_dimension->poster_menu_img_height);
-        title = get_poster_image_tag(row_id,attr);
-        free(attr);
+            title = get_poster_image_tag(row_id,attr);
+            free(attr);
 
-        font_class = "fc";
-        grid_class = "gc";
+            font_class = "fc";
+            grid_class = "gc";
+        } else {
+            html_log(1,"dbg: unclassified : set details as title");
+            // Unclassified
+            title=STRDUP(row_id->title);
+            font_class = watched_style(row_id,grid_toggle);
+        }
 
     } else {
 
         // TEXT MODE
-        int tv_or_movie = (row_id->category == 'T' || row_id->category == 'M' );
+        html_log(1,"dbg: get text mode details ");
 
         font_class = watched_style(row_id,grid_toggle);
         grid_class = file_style(row_id,grid_toggle);
@@ -753,11 +776,10 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
        title = row_id->title;
 
        char *cert = row_id->certificate;
-       if ((tmp=strchr(certificate,':')) != NULL) {
+       if ((tmp=strchr(cert,':')) != NULL) {
            ovs_asprintf(&cert,"(%s)",tmp+1);
        }
 
-       char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,grid_class);
 
         char *title = trim_title(row_id->title);
 
@@ -770,9 +792,11 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         }
 
         if (tv_or_movie) {
+            html_log(1,"dbg: add certificate");
             //Add certificate and extension
             char *tmp;
             char *ext_icons=build_ext_list(row_id);
+            html_log(1,"dbg: add extension [%s]",ext_icons);
             ovs_asprintf(&tmp,"%s %s %s",title,cert,ext_icons);
             free(title);
             title=tmp;
@@ -781,6 +805,7 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         }
 
         if (row_id->category == 'T') {
+            html_log(1,"dbg: add episode count");
             //Add episode count
             int group_count=0;
             DbRowId *rid;
@@ -797,48 +822,63 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         long crossview=0;
         config_check_long(g_oversight_config,"ovs_crossview",&crossview);
         if (crossview == 1) {
-           char *tmp =add_network_icon(title);
+            html_log(1,"dbg: add network icon");
+           char *tmp =add_network_icon(row_id->db->source,title);
            free(title);
            title = tmp;
         }
 
-        free(attr);
     }
+
+    html_log(0,"dbg: details [%s]",title);
 
 
     char *cell_text;
-    if (selecting) {
+    if (*select) {
 
         //cell_text = select_checkbox(row_id,title);
 
     } else {
 
 
+        char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,grid_class);
+        html_log(0,"dbg: scroll attributes [%s]",attr);
+
         if (tv_or_movie) {
             char *params;
-            char *attrs;
 
             char *idlist = build_id_list(row_id);
+
+            html_log(0,"dbg: id list... [%s]",idlist);
+
             ovs_asprintf(&params,"view=%s&idlist=%s",
                     (row_id->category=='T'?"tv":"movie"),
                     idlist);
-            free(idlist);
+            html_log(0,"dbg: params [%s]",params);
 
             cell_text = get_self_link_with_font(params,attr,title,font_class);
+            html_log(0,"dbg: get_self_link_with_font [%s]",cell_text);
+
+            free(idlist);
+            free(params);
 
         } else {
 
+            char cellId[9];
+
+            sprintf(cellId,"%d",cell_no);
             char *cellName;
-            if (centreCell) {
+            if (centre_cell) {
                 cellName="centreCell";
             } else {
-                cellName=NULL;
+                cellName=cellId;
             }
 
 
             cell_text = vod_link(title,row_id->db->source,row_id->file,cellName,attr,font_class);
 
         }
+        free(attr);
     }
 
     free(title);
@@ -885,7 +925,7 @@ void display_grid(long page, int numids, DbRowId **row_ids) {
 
             if ( i < numids ) {
 
-                display_item(row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                display_item(i-start,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             } else {
                 display_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }

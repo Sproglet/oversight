@@ -358,8 +358,8 @@ void html_log(int level,char *format,...) {
 void html_error(char *format,...) {
     va_list ap;
     va_start(ap,format);
-    printf("ERROR");
-    vprintf(format,ap);
+    printf("<!-- ERROR -->");
+    html_vacomment(format,ap);
     va_end(ap);
 }
 

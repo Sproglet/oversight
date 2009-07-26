@@ -46,6 +46,7 @@ void embed_stylesheet() {
             printf("%s",buffer);
         }
     }
+    display_dynamic_styles();
     printf("</style>\n");
     free(css);
 }
@@ -105,7 +106,7 @@ int main(int argc,char **argv) {
 
 
     printf("Content-Type: text/html\n\n<html><head>");
-    html_log_level_set(3);
+    html_log_level_set(1);
 
     html_comment("Appdir= [%s]",appDir());
 
@@ -146,7 +147,7 @@ int main(int argc,char **argv) {
 /*
     doActions(query);
 */
-    printf("</head><body>");
+    printf("</head>");
 
     if (view && strcmp(view,"tv") == 0) {
 
@@ -161,7 +162,7 @@ int main(int argc,char **argv) {
         display_menu();
     }
 
-    printf("</body></html>");
+    printf("</html>");
 
     /*
     html_comment("dump shit");

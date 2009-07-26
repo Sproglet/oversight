@@ -40,4 +40,7 @@ int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out)
 
 void config_read_dimensions();
 
+long allow_admin();
+long allow_delist();
+long allow_delete();
 #endif

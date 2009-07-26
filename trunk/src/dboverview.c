@@ -111,7 +111,7 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
             } else {
 
-                html_log(0,"overview: new entry [%s]",rid->title);
+                html_log(3,"overview: new entry [%s]",rid->title);
                 hashtable_insert(overview,rid,rid);
             }
         }

@@ -10,6 +10,67 @@
 #include "gaya_cgi.h"
 #include "vasprintf.h"
 
+int browsing_from_lan() {
+    static int result = -1;
+    if (result == -1) {
+        result = 0;
+        if (g_dimension->local_browser) {
+            result = 1;
+        } else {
+            char *ip = getenv("REMOTE_ADDR");
+            if (ip) {
+                if (strncmp(ip,"192.168.",8) == 0 ||
+                    strncmp(ip,"10.",3) == 0 ||
+                    regpos(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.") ) {
+                    result = 1;
+                }
+            }
+        }
+        html_log(0,"browsing from lan = %d",result);
+    }
+    return result;
+}
+
+long allow_delete() {
+    static long result=-1;
+    if (result == -1) {
+        result=0;
+        if (browsing_from_lan()) {
+            result=1;
+        } else if (!config_check_long(g_oversight_config,"ovs_wan_delete",&result)) {
+            result=0;
+        }
+        html_log(0,"allow delete = %d",result);
+    }
+    return result;
+}
+long allow_delist() {
+    static long result=-1;
+    if (result == -1) {
+        result=0;
+        if (browsing_from_lan()) {
+            result=1;
+        } else if (!config_check_long(g_oversight_config,"ovs_wan_delist",&result)) {
+            result=0;
+        }
+        html_log(0,"allow delist = %d",result);
+    }
+    return result;
+}
+long allow_admin() {
+    static long result=-1;
+    if (result == -1) {
+        result=0;
+        if (browsing_from_lan()) {
+            result=1;
+        } else if (!config_check_long(g_oversight_config,"ovs_wan_admin",&result)) {
+            result=0;
+        }
+        html_log(0,"allow admin = %d",result);
+    }
+    return result;
+}
+
 void config_write(struct hashtable *cfg,char *filename) {
 
     assert(cfg);
@@ -47,7 +108,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     ovs_asprintf(&f,"%s/%s",d,defaults_file);
 
     if (is_file(f)) {
-        fprintf(stderr,"loading [%s]\n",f);
+        html_log(0,"loading [%s]",f);
         out = config_load(f);
     } else {
         out = string_string_hashtable();
@@ -59,7 +120,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     sprintf(f,"%s/%s",d,main_file);
 
     if (is_file(f)) {
-        fprintf(stderr,"loading [%s]\n",f);
+        html_log(0,"loading [%s]",f);
         new = config_load(f);
     } else {
         new = string_string_hashtable();

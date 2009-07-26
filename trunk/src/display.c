@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "display.h"
 #include "gaya_cgi.h"
@@ -101,26 +102,44 @@ char *self_url(char *new_params) {
                     }
                     if (add_param) {
                         char *new;
-                        ovs_asprintf(&new,"%s%c%s=%s",url,(first?"?":"&"),param_name,param_value);
+                        ovs_asprintf(&new,"%s%c%s=%s",url,(first?'?':'&'),param_name,param_value);
                         free(url);
                         url = new;
+                        first=0;
                     }
                 }
             }
         }
     }
-    return url;
+    char *new;
+    ovs_asprintf(&new,"%s%c%s",url,(first?'?':'&'),new_params);
+    free(url);
+    
+    return new;
 }
 
 void display_self_link_multi(char *params,char *attr,char *title) {
+
+    assert(params);
+    assert(attr);
+    assert(title);
+
+    html_log(0," begin self link multi for params[%s] attr[%s] title[%s]",params,attr,title);
+
     char *url = self_url(params);
+    html_log(0," end self link multi [%s]",url);
 
     printf("<a href=\"%s\" %s>%s</a>",url,attr,title);
 
-    free(params);
+    free(url);
 }
 
 void display_remote_button(char *button_colour,char *params,char *text) {
+
+    assert(button_colour);
+    assert(params);
+    assert(text);
+
     char *params2;
     char *attr;
     char *text2;
@@ -137,29 +156,42 @@ void display_remote_button(char *button_colour,char *params,char *text) {
 }
 
 
-void display_toggle(char *button_colour,char *param,char *v1,char *text1,char *v2,char *text2) {
+void display_toggle(char *button_colour,char *param_name,char *v1,char *text1,char *v2,char *text2) {
+
+    assert(button_colour);
+    assert(param_name);
+    assert(v1);
+    assert(text1);
+    assert(v2);
+    assert(text2);
+
+    char *param_value;
     char *params;
     char *text;
     char *next = v1;
     int v1current = 0;
     int v2current = 0;
 
-    if (config_check_str(g_query,QUERY_PARAM_TYPE_FILTER,&params)) {
-        if (strcmp(param,v1)==0) {
+    if (config_check_str(g_query,param_name,&param_value)) {
+        if (strcmp(param_value,v1)==0) {
             v1current = 1;
             next = v2;
         }
-        if (strcmp(param,v2)==0) {
+        if (strcmp(param_value,v2)==0) {
             v2current = 1;
             next = v1;
         }
     }
 
-    ovs_asprintf(&params,"p=0&%s=%s",param,next);
+    ovs_asprintf(&params,"p=0&%s=%s",param_name,next);
+
+    html_log(0,"params = [%s]",params);
 
     ovs_asprintf(&text,"%s%s%s<br>%s%s%s",
-            (v1current?"<u><b>":""),v1,(v1current?"</b></u>":""),
-            (v2current?"<u><b>":""),v2,(v2current?"</b></u>":""));
+            (v1current?"<u><b>":""),text1,(v1current?"</b></u>":""),
+            (v2current?"<u><b>":""),text2,(v2current?"</b></u>":""));
+
+    html_log(0,"toggle text = [%s]",text);
 
     display_remote_button(button_colour,params,text);
 
@@ -169,23 +201,80 @@ void display_toggle(char *button_colour,char *param,char *v1,char *text1,char *v
 
 void display_sort_cells() {
 
-    td("");
+    printf("<td>");
 
-    display_toggle("red",QUERY_PARAM_TYPE_FILTER,"T","Tv","M","Film");
+    display_toggle("red",QUERY_PARAM_TYPE_FILTER,
+            QUERY_PARAM_MEDIA_TYPE_VALUE_TV,"Tv",
+            QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE,"Film");
 
-    display_toggle("green",QUERY_PARAM_WATCHED_FILTER,"U","Unmarked","W","Marked");
+    printf("</td><td>");
 
-    display_toggle("blue",QUERY_PARAM_SORT,DB_FLDID_TITLE,"Name",DB_FLDID_INDEXTIME,"Age");
+    display_toggle("green",QUERY_PARAM_WATCHED_FILTER,
+            QUERY_PARAM_WATCHED_VALUE_NO,"Unmarked",
+            QUERY_PARAM_WATCHED_VALUE_YES,"Marked");
 
-    td(NULL);
+    printf("</td><td>");
+
+    display_toggle("blue",QUERY_PARAM_SORT,
+            DB_FLDID_TITLE,"Name",
+            DB_FLDID_INDEXTIME,"Age");
+
+    printf("</td>");
 }
 
 void display_filter_bar() {
     printf("filterbar");
 }
 
+char *get_catalog_message() {
+#define MSG_SIZE 20
+    char *result = NULL;
+    static char msg[MSG_SIZE+1];
+    char *filename;
+    ovs_asprintf(&filename,"%s/catalog.status",appDir());
+
+    msg[0] = '\0';
+
+    FILE *fp = fopen(filename,"r");
+    if (fp) {
+        fgets(msg,MSG_SIZE,fp);
+        msg[MSG_SIZE] = '\0';
+        chomp(msg);
+
+        result = msg;
+
+        fclose(fp);
+    } else {
+        html_error("Error %d opening [%s]",errno,filename);
+    }
+    free(filename);
+
+    return result;
+}
+
+int exists_file_in_dir(char *dir,char *name) {
+
+    char *filename;
+    int result = 0;
+
+    ovs_asprintf(&filename,"%s/%s",dir,name);
+    result = is_file(filename);
+    free(filename);
+    return result;
+}
+
 void display_status() {
-    printf("status");
+    char *msg = get_catalog_message();
+    if (msg == NULL) {
+
+        if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
+            msg = "[ Catalog update pending ]";
+        } else if (db_full_size() == 0 ) {
+            msg = "[ Video index is empty. Select setup icon and scan the media drive ]";
+        }
+    }
+
+    printf("%s",(msg == NULL ? "" : msg));
 }
 
 
@@ -431,7 +520,9 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
 
 
 void display_template(char*template_name) {
+    printf("<body>");
     printf("%s template here",template_name);
+    printf("</body>");
 }
 
 void display_grid(long page, int numids, DbRowId **row_ids) {
@@ -500,10 +591,177 @@ char *get_tvid( char *sequence ) {
     return out;
 
 }
+
+void display_submit(char *name,char *value) {
+    assert(name);
+    assert(value);
+    printf("<input type=submit name=\"%s\" value=\"%s\" />",name,value);
+}
+
+void display_confirm(char *name,char *val_ok,char *val_cancel) {
+    printf("<table width=100%%><tr><td align=center>");
+    display_submit(name,val_ok);
+    printf("</td><td align=center>");
+    display_submit(name,val_cancel);
+    printf("</td></tr></table>");
+}
+
+char *default_button_attr() {
+    static char *default_attr = NULL;
+    if (default_attr == NULL) {
+        ovs_asprintf(&default_attr,"width=%ld height=%ld",g_dimension->button_size,g_dimension->button_size);
+        html_log(0,"default button attr = %s",default_attr);
+    }
+    return default_attr;
+}
+
+char *ovs_icon_type() {
+    static char *icon_type = NULL;
+    if (icon_type == NULL) {
+        if (!config_check_str(g_oversight_config,"ovs_icon_type",&icon_type)) {
+            icon_type="png";
+        }
+        html_log(0,"icon type = %s",icon_type);
+    }
+    return icon_type;
+}
+
+char *icon_source(image_name) {
+    char *path;
+    assert(image_name);
+    ovs_asprintf(&path,"%s/images/nav/set1/%s.%s",
+            appDir(),
+            image_name,
+            ovs_icon_type());
+    char *result = local_image_source(path);
+    free(path);
+    return result;
+}
+
+void display_theme_image_tag(char *image_name,char *attr) {
+
+    char *isrc;
+    assert(image_name);
+    if (attr == NULL || ! *attr) {
+
+        attr = default_button_attr();
+    }
+    isrc = icon_source(image_name);
+    printf("<img alt=\"%s\" border=0 src=%s %s />",image_name,isrc,attr);
+    free(isrc);
+}
+
+void display_page_control(char *select,char *view,int page,int on,int offset,char *tvid_name,char *image_base_name) {
+    assert(select);
+    assert(view);
+    assert(tvid_name);
+    assert(image_base_name);
+
+    if (! *select) {
+        //only show page controls when NOT selecting
+        if (on)  {
+            char *params=NULL;
+            char *attrs=NULL;
+            ovs_asprintf(&params,"p=%d",page+offset);
+            ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
+
+            display_theme_image_link(params,attrs,image_base_name);
+            free(params);
+            free(attrs);
+        } else if (! *view ) {
+            //Only show disabled page controls in main menu view (not tv / movie subpage) - this may change
+            char *image_off=NULL;
+            ovs_asprintf(&image_off,"%s-off",image_base_name);
+            display_theme_image_tag(image_off,NULL);
+            free(image_off);
+        }
+    }
+}
+
+void display_nav_buttons(int page,int prev_page,int next_page) {
+    
+    char *q_view=NULL;
+    char *q_select=NULL;
+
+    if (!config_check_str(g_query,"view",&q_view)) {
+        q_view = "";
+    }
+
+    if (!config_check_str(g_query,"select",&q_select)) {
+        q_select = "";
+    }
+
+    printf("<table class=footer width=100%%><tr valign=top>");
+
+    printf("<td width=10%%>");
+    display_page_control(q_select,q_view,page,prev_page,-1,"pgup","left");
+    printf("</td>");
+
+    if (*q_view && *q_select) {
+        printf("<td align=center>");
+        display_theme_image_link("view=&idlist=","name=up","back");
+        printf("</td>");
+    }
+
+    printf("<td align=center>");
+    if (! *q_view) {
+        if(hashtable_count(g_query) == 0 && g_dimension->local_browser) {
+            printf("<a href=\"/start.cgi\" name=home >");
+            display_theme_image_tag("exit",NULL);
+            printf("</a>");
+        } else {
+            printf("<a href=\"%s?\" name=home TVID=HOME >",SELF_URL);
+            display_theme_image_tag("home",NULL);
+            printf("</a>");
+        }
+    }
+
+    if (! *q_select) {
+    } else {
+        if (strcmp(q_select,"Mark") == 0 ) {
+
+            printf("<td>"); display_submit("action","Mark"); printf("</td>");
+
+        } else if (strcmp(q_select,"Delete") == 0 ) {
+
+            if (allow_delete()) {
+                printf("<td>"); display_submit("action","Delete"); printf("</td>");
+            }
+
+            if (allow_delist()) {
+                printf("<td>"); display_submit("action","Remove_From_List"); printf("</td>");
+            }
+            printf("<td>"); display_submit("select","Cancel"); printf("</td>");
+        }
+    }
+
+    printf("</td>");
+
+
+    printf("<td width=10%%>");
+    display_page_control(q_select,q_view,page,next_page,1,"pgdn","right");
+    printf("</td>");
+
+
+
+    printf("</tr></table>");
+}
+
 void display_menu() {
 
+    char *start_cell;
     // Get filter options
     long crossview=0;
+
+    if (config_check_str(g_query,QUERY_PARAM_REGEX,&start_cell)) {
+        start_cell="filter5";
+    } else {
+        start_cell="centreCell";
+    }
+
+
+    printf("<body onloadset=%s focuscolor=yellow focustext=black class=local%ld >",
+            start_cell,g_dimension->local_browser);
 
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
     html_log(0,"Crossview = %ld",crossview);
@@ -529,13 +787,17 @@ void display_menu() {
     html_log(0,"Regex filter = %s",regex);
 
     // Watched filter
-    long watched_param;
+    char *watched_param;
     int watched = DB_WATCHED_FILTER_ANY;
 
-    if (config_check_long(g_query,QUERY_PARAM_WATCHED_FILTER,&watched_param)) {
-        if (watched_param) {
+    if (config_check_str(g_query,QUERY_PARAM_WATCHED_FILTER,&watched_param)) {
+
+        if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
+
             watched=DB_WATCHED_FILTER_YES;
-        } else {
+
+        } else if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
+
             watched=DB_WATCHED_FILTER_NO;
         }
     }
@@ -546,9 +808,15 @@ void display_menu() {
     int media_type=DB_MEDIA_TYPE_ANY;
 
     if (config_check_str(g_query,QUERY_PARAM_TYPE_FILTER,&media_type_str)) {
-        switch(*media_type_str) {
-            case 'T': media_type=DB_MEDIA_TYPE_TV; break ;
-            case 'M': media_type=DB_MEDIA_TYPE_FILM; break ;
+
+        if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
+
+            media_type=DB_MEDIA_TYPE_TV; 
+
+        } else if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
+
+            media_type=DB_MEDIA_TYPE_FILM; 
+
         }
     }
     html_log(0,"Media type = %d",media_type);
@@ -582,8 +850,11 @@ void display_menu() {
     }
     display_header(media_type);
     display_grid(page,hashtable_count(overview),sorted_row_ids);
-    display_footer();
+    display_nav_buttons(page,
+            page>0,
+            (page+1)*g_dimension->rows*g_dimension->cols < hashtable_count(overview));
 
+    printf("</body>");
     db_overview_hash_destroy(overview);
 
     free(sorted_row_ids);
@@ -591,5 +862,38 @@ void display_menu() {
     //finished now - so we could just let os free
     db_free_rowsets_and_dbs(rowsets);
 
+}
+
+void display_dynamic_styles() {
+
+    long font_size = g_dimension->font_size;
+    long small_font = font_size - 2;
+    char *view;
+
+    if (!config_check_str(g_query,"view",&view)) {
+        view="";
+    }
+    assert(view);
+
+    printf(".dummy {};"); //bug in gaya - ignores style after comment
+    printf(".recent { font-size:%ld; }",font_size);
+    printf("td { font-size:%ld; font-family:\"arial\";  }",font_size);
+
+    if (strcmp(view,"movie")==0 || strcmp(view,"tv") ==0 ) {
+        printf("font.plot { font-size:%ld ; font-weight:normal; }",small_font); 
+        // watched/Unwatched tv
+        printf("td.ep10 { background-color:#222222; font-weight:bold; font-size:%ld; }",small_font);
+        printf("td.ep11 { background-color:#111111; font-weight:bold; font-size:%ld; }",small_font);
+        printf("td.ep00 { background-color:#004400; font-weight:bold; font-size:%ld; }",small_font);
+        printf("td.ep01 { background-color:#003300; font-weight:bold; font-size:%ld; }",small_font);
+        printf(".eptitle { font-size:100%% ; font-weight:normal; font-size:%ld; }",small_font);
+
+        printf("h1 { text-align:center; font-size:%ld; font-weight:bold; color:#FFFF00; }"
+                ,g_dimension->title_size);
+
+        printf(".label { color:red }");
+    } else {
+        printf(".scanlines%ld {color:#FFFF55; font-weight:bold; }",g_dimension->scanlines);
+    }
 }
 

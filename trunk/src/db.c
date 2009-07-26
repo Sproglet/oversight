@@ -292,6 +292,12 @@ char *localDbPath() {
     return a;
 }
 
+static int g_db_size = 0;
+
+int db_full_size() {
+    return g_db_size;
+}
+
 //
 // Returns null terminated array of rowsets
 DbRowSet **db_crossview_scan_titles(
@@ -304,9 +310,14 @@ DbRowSet **db_crossview_scan_titles(
     DbRowSet **rowsets = MALLOC((rowset_count+1)*sizeof(DbRowSet*));
     Db *db;
 
+
     db = db_init(localDbPath(),"*");
+
     rowsets[0] = db_scan_titles(db,name_filter,media_type,watched);
     rowsets[1]=NULL;
+
+    g_db_size = rowsets[0]->size;
+
     if (crossview) {
         char *root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE";
         DIR *d = opendir(root);

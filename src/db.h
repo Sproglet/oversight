@@ -74,4 +74,5 @@ DbRowSet **db_crossview_scan_titles(
         int watched         // 1=watched 2=unwatched 3=any
         );
 void db_free_rowsets_and_dbs(DbRowSet **rowsets);
+int db_full_size();
 #endif

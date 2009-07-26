@@ -8,4 +8,5 @@ void display_menu();
 
 void display_template(char*template_name);
 
+void display_dynamic_styles();
 #endif

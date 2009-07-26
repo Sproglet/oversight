@@ -8,12 +8,24 @@
 #include "display.h"
 #include "gaya_cgi.h"
 #include "util.h"
+#include "array.h"
 #include "db.h"
 #include "dboverview.h"
 #include "oversight.h"
 #include "hashtable.h"
 #include "hashtable_loop.h"
     
+void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
+char *get_theme_image_tag(char *image_name,char *attr);
+
+char *query_val(char *name) {
+    char *val;
+    if (config_check_str(g_query,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
 // Return a full path 
 char *get_path(char *path) {
     char *new=NULL;
@@ -71,7 +83,6 @@ char *get_poster_path(DbRowId *rowid) {
     return url2;
 }
 
-char *get_theme_image_tag(char *image_name,char *attr);
 
 #define XHTML
 void tag(char *label,char *attr,va_list ap) {
@@ -400,8 +411,86 @@ void display_sort_cells() {
     printf("</td>");
 }
 
+//Add current named html parameter as a hidden value
+void add_hidden(char *name_list) {
+    Array *names = split(name_list,",");
+    int i;
+    for(i = 0 ; i < names->size ; i++ ) {
+
+        char *name =names->array[i];
+        char *val = query_val(name);
+
+        if (*val) {
+            printf("<input type=hidden name=\"%s\" value=\"%s\" >\n",name,val);
+        }
+    }
+}
+
+void display_submit(char *name,char *value) {
+    assert(name);
+    assert(value);
+    printf("<input type=submit name=\"%s\" value=\"%s\" />",name,value);
+}
+
+void display_confirm(char *name,char *val_ok,char *val_cancel) {
+    printf("<table width=100%%><tr><td align=center>");
+    display_submit(name,val_ok);
+    printf("</td><td align=center>");
+    display_submit(name,val_cancel);
+    printf("</td></tr></table>");
+}
+
+
 void display_filter_bar() {
-    printf("filterbar");
+    if (*query_val(QUERY_PARAM_SEARCH_MODE) || *query_val(QUERY_PARAM_REGEX)) {
+
+        if (g_dimension->local_browser) {
+            char *current_regex =query_val(QUERY_PARAM_REGEX);
+            printf("Use the numbers to search");
+            display_theme_image_link("p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=","","start-small","width=20 height=20");
+            printf("<font class=keypada>[%s]</font>",current_regex);
+
+            char *params;
+            
+            // Print icon to remove last digit from tvid search
+            int regex_len=strlen(current_regex);
+            if (regex_len >= 1 ) {
+                regex_len --;
+
+                ovs_asprintf(&params,"p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=%.*s",
+                        regex_len,current_regex);
+                display_theme_image_link(params,"","left-small","width=20 height=20");
+            }
+
+        } else {
+
+            printf("<input type=text name=searcht value=\"%s\" >",query_val("searcht"));
+            add_hidden(QUERY_PARAM_SEARCH_MODE);
+            display_submit("searchb","Search");
+            display_submit("searchb","Hide");
+
+        }
+
+    } else {
+        display_theme_image_link("p=0&" QUERY_PARAM_SEARCH_MODE "=1","","find","");
+    }
+}
+
+void form_start() {
+    char *url;
+
+    if (strcasecmp(query_val("view"),"admin") == 0) {
+        char *action = query_val("action");
+        if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
+            return;
+        } else {
+            url="?"; // clear URL
+        } 
+    } else {
+        url=""; //keep query string eg when marking deleting
+    }
+    printf("<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n",url);
+    add_hidden("cache,idlist,view,page,sort,"QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
 }
 
 char *get_catalog_message() {
@@ -720,14 +809,6 @@ char *trim_title(char *title) {
     return out;
 }
 
-char *query_val(char *name) {
-    char *val;
-    if (config_check_str(g_query,name,&val)) {
-        return val;
-    } else {
-        return "";
-    }
-}
 
 
 void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
@@ -890,9 +971,16 @@ void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 }
 
 
+void display_play_button(char *text1,char *text2) {
+    printf("<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s%s</a>",text1,text2);
+}
+
 void display_template(char*template_name) {
     printf("<body>");
+    form_start();
     printf("%s template here",template_name);
+    printf("</form>");
+    display_play_button("","");
     printf("</body>");
 }
 
@@ -961,20 +1049,6 @@ char *get_tvid( char *sequence ) {
     html_log(1,"tvid %s = regex %s",sequence,out);
     return out;
 
-}
-
-void display_submit(char *name,char *value) {
-    assert(name);
-    assert(value);
-    printf("<input type=submit name=\"%s\" value=\"%s\" />",name,value);
-}
-
-void display_confirm(char *name,char *val_ok,char *val_cancel) {
-    printf("<table width=100%%><tr><td align=center>");
-    display_submit(name,val_ok);
-    printf("</td><td align=center>");
-    display_submit(name,val_cancel);
-    printf("</td></tr></table>");
 }
 
 char *default_button_attr() {
@@ -1139,8 +1213,9 @@ void display_menu() {
     }
 
 
-    printf("<body onloadset=%s focuscolor=yellow focustext=black class=local%ld >",
+    printf("<body onloadset=%s focuscolor=yellow focustext=black class=local%ld >\n",
             start_cell,g_dimension->local_browser);
+    form_start();
 
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
     html_log(0,"Crossview = %ld",crossview);
@@ -1233,7 +1308,7 @@ void display_menu() {
             page>0,
             (page+1)*g_dimension->rows*g_dimension->cols < hashtable_count(overview));
 
-    printf("</body>");
+    printf("</form></body>");
     db_overview_hash_destroy(overview);
 
     free(sorted_row_ids);

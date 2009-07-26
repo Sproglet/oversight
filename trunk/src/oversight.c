@@ -144,6 +144,9 @@ int main(int argc,char **argv) {
 
 
     embed_stylesheet();
+    printf("<meta name=\"robots\" content=\"nofollow\" >\n");
+    printf("<title>OverSight Index (%s)</title>",util_hostname());
+
 /*
     doActions(query);
 */

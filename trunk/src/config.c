@@ -10,6 +10,14 @@
 #include "gaya_cgi.h"
 #include "vasprintf.h"
 
+int in_poster_mode() {
+    return g_dimension->poster_mode != 0 ;
+}
+
+int in_text_mode() {
+    return g_dimension->poster_mode  == 0;
+}
+
 int browsing_from_lan() {
     static int result = -1;
     if (result == -1) {

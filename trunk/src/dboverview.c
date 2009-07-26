@@ -21,8 +21,9 @@ unsigned int db_overview_hashf(void *rid) {
     return h;
 }
 
+// This function is inverted to usual sense as we wnat the oldest first.
 int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
-    return (*rid1)->date - (*rid2)->date;
+    return (*rid2)->date - (*rid1)->date;
 }
 
 int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
@@ -89,14 +90,16 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
             DbRowId *rid = (*rowset_ptr)->rows+i;
 
+            //html_log(2,"dbg: overview merging [%s]",rid->title);
+
             DbRowId *match = hashtable_search(overview,rid);
 
             if (match) {
 
                 html_log(0,"overview: match [%s] with [%s]",rid->title,match->title);
 
-                //Move youngest age to the first overview item
-                if (rid->date < match->date ) {
+                //Move most recent age to the first overview item
+                if (rid->date > match->date ) {
                     match->date = rid->date;
                 }
 
@@ -111,9 +114,10 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
             } else {
 
-                html_log(3,"overview: new entry [%s]",rid->title);
+                html_log(2,"overview: new entry [%s]",rid->title);
                 hashtable_insert(overview,rid,rid);
             }
+            //html_log(2,"dbg done [%s]",rid->title);
         }
     }
     html_log(0,"overview: %d entries created from %d records",hashtable_count(overview),total);
@@ -145,7 +149,7 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
     html_log(0,"sorting %d items",hashtable_count(overview));
     overview_array_dump(4,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
-    overview_array_dump(2,"ovw sorted",ids);
+    overview_array_dump(1,"ovw sorted",ids);
 
     return ids;
 }

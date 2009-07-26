@@ -325,13 +325,14 @@ void html_comment(char *format,...) {
 
 void html_vacomment(char *format,va_list ap) {
     int len;
-    char *s1,*s2;
+    char *s1;
 
     if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
-        s2=html_encode(s1);
-        printf("<!-- %s -->\n",s2);
+        // char *s2;
+        //s2=html_encode(s1);
+        printf("<!-- %s -->\n",s1);
         fflush(stdout);
-        free(s2);
+        //free(s2);
         free(s1);
     }
 }

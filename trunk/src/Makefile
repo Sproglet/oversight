@@ -2,11 +2,11 @@ CC=gcc
 
 CFLAGS=-g -Wall 
 
-ifeq ($(OUT),nmt)
-	CC=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
-	LD=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
-	CFLAGS=-g -Wall -O -DOUT=$(OUT)
-endif
+#ifeq ($(OUT),nmt)
+#endif
+CC=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
+LD=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
+CFLAGS=-g -Wall -O -DOUT=$(OUT)
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o
@@ -28,6 +28,8 @@ all: oversight
 
 oversight:  $(OVS_OBJS)
 	$(CC) $(LDFLAGS) -o oversight2.cgi $(OVS_OBJS)
+	cp -v oversight2.cgi /cygdrive/a/Apps/oversight/.
+
 
 tester: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(OBJECTS)

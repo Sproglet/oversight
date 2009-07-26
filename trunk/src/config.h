@@ -44,4 +44,6 @@ long allow_admin();
 long allow_delist();
 long allow_delete();
 long allow_mark();
+int in_poster_mode();
+int in_text_mode();
 #endif

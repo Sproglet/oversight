@@ -21,6 +21,9 @@ typedef struct Dbrowid_struct {
     struct Dbrowid_struct *linked;
 
     // Add ext member etc but only populate if postermode=0 as the text mode has this extra detail
+    char *file;
+    char *ext;
+    char *certificate;
 
 } DbRowId;
 

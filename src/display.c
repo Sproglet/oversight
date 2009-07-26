@@ -14,6 +14,63 @@
 #include "hashtable.h"
 #include "hashtable_loop.h"
     
+// Return a full path 
+char *get_path(char *path) {
+    char *new=NULL;
+    assert(path);
+    if (path[0] == '/' ) {
+        new = STRDUP(path);
+    } else if (strncmp(path,"ovs:",4) == 0) {
+        ovs_asprintf(&new,"%s/db/global/%s",appDir(),path+4);
+    } else {
+        // Other paths are relative to the media file
+        /**
+         * NO MORE PATHS TO MEDIA FILES
+        char *f = strrchr(media_file,'/');
+        if (f != NULL) {
+            *f ='\0';
+            ovs_asprintf(&new,"%s/%s",media_file,path);
+            *f='/';
+        } 
+        */
+        new = STRDUP(path);
+    }
+    return new;
+}
+
+
+#define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
+char *get_mounted_path(char *source,char *path) {
+
+    char *new = NULL;
+    assert(source);
+    assert(path);
+
+    if (*source == '*' ) {
+        new = STRDUP(path);
+    } else if (strchr(source,'/')) {
+        new = STRDUP(path);
+    } else if (strncmp(path,"/share/",7) != 0) {
+        new = STRDUP(path);
+    } else {
+        // Source = xxx 
+        // [pop-nfs][/share/Apps/oversight/... becomes
+        // /opt/sybhttpd/localhost.drives/NETWORK_SHARE/pop-nfs/Apps/oversight/...
+        ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
+    }
+    return new;
+}
+
+
+
+char *get_poster_path(DbRowId *rowid) {
+    assert(rowid->poster);
+    char *url = get_path(rowid->poster); //conver ovs: to internal path
+    char *url2 = get_mounted_path(rowid->db->source,url);
+    free(url);
+    return url2;
+}
+
 char *get_theme_image_tag(char *image_name,char *attr);
 
 #define XHTML
@@ -120,21 +177,140 @@ char *self_url(char *new_params) {
     return new;
 }
 
-void display_self_link_multi(char *params,char *attr,char *title) {
+char *get_self_link(char *params,char *attr,char *title) {
 
     assert(params);
     assert(attr);
     assert(title);
+    char *result=NULL;
 
     html_log(0," begin self link multi for params[%s] attr[%s] title[%s]",params,attr,title);
 
     char *url = self_url(params);
     html_log(0," end self link multi [%s]",url);
 
-    printf("<a href=\"%s\" %s>%s</a>",url,attr,title);
+    ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
 
     free(url);
+    return result;
 }
+
+#define NMT_PLAYLIST "/tmp/playlist.htm"
+static FILE *playlist_fp=NULL;
+
+int playlist_close() {
+    if (playlist_fp) {
+        fclose(playlist_fp);
+        playlist_fp=NULL;
+    }
+}
+
+FILE *playlist_open() {
+    if (playlist_fp == NULL) {
+        playlist_fp = fopen(NMT_PLAYLIST,"w");
+    }
+    return playlist_fp;
+}
+
+char *add_network_icon(char *source,char *text) {
+
+    assert(source);
+    assert(text);
+    char *icon;
+    char *result=NULL;
+
+    if (strcmp(source,"*") == 0) {
+
+        icon =  get_theme_image_tag("harddisk"," width=20 height=15 ");
+
+    } else {
+
+        icon =  get_theme_image_tag("network"," width=20 height=15 ");
+
+    }
+
+    ovs_asprintf(&result,"%s %s",icon,text);
+
+    free(icon);
+    return result;
+
+}
+
+
+char *vod_link(char *title,char *source,char *file,char *href_name,char *href_attr,char *font_class){
+
+    assert(title);
+    assert(source);
+    assert(file);
+    assert(href_name);
+    assert(href_attr);
+    assert(font_class);
+
+    char *vod;
+    int add_to_playlist=1;
+    char *result=NULL;
+
+    if (file[strlen(file)-1] == '/' ) {
+        // VIDEO_TS
+        ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+        add_to_playlist = 0;
+
+    } else if (regpos(file,"\\.(iso|ISO|img|IMG)$") ) {
+
+        // iso or img
+        ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+
+    } else {
+        // avi mkv etc
+        ovs_asprintf(&vod," vod file=c name=\"%s\" %s ",href_name,href_attr);
+    }
+
+    char *path = get_mounted_path(source,file);
+
+    if (add_to_playlist) {
+        FILE *fp = playlist_open();
+        fprintf(fp,"%s|0|0|file://%s|",file,path);
+    }
+
+    char *encoded_path = url_encode(path);
+
+    if (font_class != NULL && *font_class ) {
+
+        ovs_asprintf(&result,"<a href=\"%s\" %s><font class=\"%s\">%s</font></a>",
+                encoded_path,vod,font_class,title);
+    } else {
+        ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",
+                encoded_path,vod,title);
+    }
+
+    free(encoded_path);
+    free(path);
+    free(vod);
+    return result;
+}
+
+char *get_self_link_with_font(char *params,char *attr,char *title,char *font_class) {
+    assert(params);
+    assert(attr);
+    assert(title);
+    assert(font_class);
+    char *title2=NULL;
+
+    ovs_asprintf(&title2,"<font class=\"%s\">%s</font>",font_class,title);
+    char *result = get_self_link(params,attr,title2);
+
+    free(title2);
+    return result;
+}
+
+
+void display_self_link(char *params,char *attr,char *title) {
+    char *tmp;
+    tmp=get_self_link(params,attr,title);
+    printf("%s",tmp);
+    free(tmp);
+}
+
 
 void display_remote_button(char *button_colour,char *params,char *text) {
 
@@ -150,7 +326,7 @@ void display_remote_button(char *button_colour,char *params,char *text) {
     ovs_asprintf(&attr,"tvid=\"%s\"",button_colour);
     ovs_asprintf(&text2,"<font class=\"%sbutton\">%s</font>",button_colour,text);
 
-    display_self_link_multi(params2,attr,text2);
+    display_self_link(params2,attr,text2);
 
     free(params2);
     free(attr);
@@ -290,7 +466,7 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
     assert(image_name);
 
     char  *tag=get_theme_image_tag(image_name,button_attr);
-    display_self_link_multi(qlist,href_attr,tag);
+    display_self_link(qlist,href_attr,tag);
     free(tag);
 }
 
@@ -341,13 +517,16 @@ void display_header(int media_type) {
     printf("</tr></table>");
 }
 
-char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell) {
+char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *class) {
     char *attr;
     ovs_asprintf(&attr,
-            " %s %s %s ",
+            " %s %s %s %s%s",
             (centre_cell? " name=centreCell ":""),
             (left_scroll? " onkeyleftset=pgup1 ":""),
-            (right_scroll? " onrightleftset=pgdp1 ":""));
+            (right_scroll? " onrightleftset=pgdp1 ":""),
+            (class != NULL?" class=":""),
+            (class != NULL?class:""));
+
     return attr;
 }
 
@@ -356,70 +535,13 @@ void display_empty(char *width_attr,int grid_toggle,int left_scroll,int right_sc
     char *attr;
     printf("\t\t<td %s class=empty%d>",width_attr,grid_toggle);
 
-    attr=get_scroll_attributes(left_scroll,right_scroll,centre_cell);
+    attr=get_scroll_attributes(left_scroll,right_scroll,centre_cell,NULL);
     printf("<a href=\"\" %s></a>\n",attr);
 
     printf("</td>\n");
     free(attr);
 }
 
-
-// Return a full path 
-char *get_path(char *path) {
-    char *new=NULL;
-    assert(path);
-    if (path[0] == '/' ) {
-        new = STRDUP(path);
-    } else if (strncmp(path,"ovs:",4) == 0) {
-        ovs_asprintf(&new,"%s/db/global/%s",appDir(),path+4);
-    } else {
-        // Other paths are relative to the media file
-        /**
-         * NO MORE PATHS TO MEDIA FILES
-        char *f = strrchr(media_file,'/');
-        if (f != NULL) {
-            *f ='\0';
-            ovs_asprintf(&new,"%s/%s",media_file,path);
-            *f='/';
-        } 
-        */
-        new = STRDUP(path);
-    }
-    return new;
-}
-
-
-#define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
-char *get_mounted_path(char *source,char *path) {
-
-    char *new = NULL;
-    assert(source);
-    assert(path);
-
-    if (*source == '*' ) {
-        new = STRDUP(path);
-    } else if (strchr(source,'/')) {
-        new = STRDUP(path);
-    } else if (strncmp(path,"/share/",7) != 0) {
-        new = STRDUP(path);
-    } else {
-        // Source = xxx 
-        // [pop-nfs][/share/Apps/oversight/... becomes
-        // /opt/sybhttpd/localhost.drives/NETWORK_SHARE/pop-nfs/Apps/oversight/...
-        ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
-    }
-    return new;
-}
-
-
-
-char *get_poster_path(DbRowId *rowid) {
-    assert(rowid->poster);
-    char *url = get_path(rowid->poster); //conver ovs: to internal path
-    char *url2 = get_mounted_path(rowid->db->source,url);
-    free(url);
-    return url2;
-}
 
 char *local_image_source(char *path) {
     char *new = NULL;
@@ -509,17 +631,106 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr) {
     return result;
 }
 
+char *ovs_icon_type() {
+    static char *icon_type = NULL;
+    if (icon_type == NULL) {
+        if (!config_check_str(g_oversight_config,"ovs_icon_type",&icon_type)) {
+            icon_type="png";
+        }
+        html_log(0,"icon type = %s",icon_type);
+    }
+    return icon_type;
+}
+
+char *container_icon(char *image_name,char *name) {
+    char *path;
+    char *attr;
+    char *name_br;
+
+    ovs_asprintf(&path,"%s/images/%s.%s",appDir(),image_name,ovs_icon_type());
+    ovs_asprintf(&name_br,"(%s)",name);
+    ovs_asprintf(&attr," width=30 alt=\"[%s]\" style=\"background-color:#AAAAAA\" ",name);
+
+    char *result = get_local_image_link(path,name_br,attr);
+
+    free(path);
+    free(name_br);
+    free(attr);
+    return result;
+}
+char *icon_link(char *name) {
+
+    char *result=NULL;
+
+    if (name[strlen(name)-1] == '/') {
+        result = container_icon("video_ts","vob");
+    } else {
+        char *ext = name + strlen(name) - 3;
+        if (strcasecmp(ext,"iso")==0 || strcasecmp(ext,"img") == 0 || strcasecmp(ext,"mkv") == 0) {
+            result = container_icon(ext,ext);
+        } else if (strcasecmp(ext,"avi") != 0) {
+            ovs_asprintf(&result,"<font size=\"-1\">[%s]</font>",ext);
+        }
+    }
+    return result;
+}
+
+
+
+char *build_ext_list(DbRowId *row_id) {
+
+    char *ext_icons = icon_link(row_id->ext);
+
+    DbRowId ri;
+    for( ri = row_id->next ; ri ; ri=ri->linked ) {
+        if (strstr(ext_icons,ri->ext) == NULL) {
+            char *new_ext;
+            ovs_asprintf(&new_ext,"%s%s",ext_icons,icon_link(ri->ext));
+            free(ext_icons);
+            ext_icons = new_ext;
+        }
+    }
+    return ext_icons;
+}
+
+char *build_id_list(DbRowId *row_id) {
+
+    char *idlist=NULL;
+
+    ovs_asprintf(&idlist,"%s(%d",row_id->db->source,row_id->id);
+    DbRowId ri;
+    for( ri = row_id->linked ; ri ; ri=ri->linked ) {
+        char *tmp;
+        ovs_asprintf(&tmp,"%s|%s",idlist,ri->id);
+        free(idlist);
+        idlist = tmp;
+    }
+    return idlist;
+}
 
 void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
     html_log(0,"TODO:Highlight matched bit");
-    printf("\t\t<td %s class=%s>",width_attr,file_style(row_id,grid_toggle));
+
     char *title=NULL;
+    char *font_class=NULL;
+    char *grid_class=NULL;
+    char *ext_icons = NULL;
+    char *idlist=NULL;
+
+    char *select;
+    if (!config_check_str(g_query,"select",&select)) {
+       select="";
+    }
+
+    int selecting=(*select != '\0');
 
     if (g_dimension->poster_mode
             && ( row_id->category == 'T' || row_id->category == 'M' )
             && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
+
+        // POSTER MODE
 
         char *attr;
         ovs_asprintf(&attr," width=%d height=%d ",
@@ -527,7 +738,16 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         title = get_poster_image_tag(row_id,attr);
         free(attr);
 
+        font_class = "fc";
+        grid_class = "gc";
+
     } else {
+
+        // TEXT MODE
+        int tv_or_movie = (row_id->category == 'T' || row_id->category == 'M' );
+
+        font_class = watched_style(row_id,grid_toggle);
+        grid_class = file_style(row_id,grid_toggle);
        
        char *tmp;
        title = row_id->title;
@@ -537,39 +757,7 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
            ovs_asprintf(&cert,"(%s)",tmp+1);
        }
 
-       char *select;
-       if (!config_check_str(g_query,"select",&select)) {
-           select="";
-       }
-
-       // Build list of extensions
-        char *ext = "";
-        if (!*select) {
-            ext = row_id->ext;
-            DbRowId ri;
-            for( ri = row_id ; ri ; ri=ri->linked ) {
-                if (strstr(ext,ri->ext) == NULL) {
-                    char *new_ext;
-                    ovs_asprintf(&new_ext,"%s%s",ext,icon_link(ri->ext));
-                    if (ext != row_id->ext) free(ext);
-                    ext = new_ext;
-                }
-            }
-        }
-
-        char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell);
-
-        char *idlist;
-        int group_count = 1;
-        ovs_asprintf(&idlist,"%s(%d",row_id->db->source,row_id->id);
-        DbRowId ri;
-        for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-            char *tmp;
-            ovs_asprintf(&tmp,"%s|%s",idlist,ri->id);
-            free(idlist);
-            idlist = tmp;
-            group_count++;
-        }
+       char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,grid_class);
 
         char *title = trim_title(row_id->title);
 
@@ -581,16 +769,25 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
             title=tmp;
         }
 
-        if (row_id->category == 'T' || row_id->category == 'M' ) {
+        if (tv_or_movie) {
             //Add certificate and extension
             char *tmp;
-            ovs_asprintf(&tmp,"%s %s %s",title,cert,ext);
+            char *ext_icons=build_ext_list(row_id);
+            ovs_asprintf(&tmp,"%s %s %s",title,cert,ext_icons);
             free(title);
             title=tmp;
+            if (cert != row_id->certificate) free(cert);
+            free(ext_icons);
         }
 
         if (row_id->category == 'T') {
             //Add episode count
+            int group_count=0;
+            DbRowId *rid;
+
+            for(rid=row_id ; rid ; rid=rid->linked) {
+                group_count++;
+            }
             char *tmp;
             ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d</font>",title,group_count);
             free(title);
@@ -605,37 +802,51 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
            title = tmp;
         }
 
-        char *link;
+        free(attr);
+    }
 
-        if (row_id->category == 'T'  || row_id->category == 'M') {
+
+    char *cell_text;
+    if (selecting) {
+
+        //cell_text = select_checkbox(row_id,title);
+
+    } else {
+
+
+        if (tv_or_movie) {
             char *params;
             char *attrs;
 
-            zzzzzz
+            char *idlist = build_id_list(row_id);
+            ovs_asprintf(&params,"view=%s&idlist=%s",
+                    (row_id->category=='T'?"tv":"movie"),
+                    idlist);
+            free(idlist);
 
-            link = get_self_link_multi_with_font(
-        } else if (row_id->category == 'M') {
+            cell_text = get_self_link_with_font(params,attr,title,font_class);
+
         } else {
+
+            char *cellName;
+            if (centreCell) {
+                cellName="centreCell";
+            } else {
+                cellName=NULL;
+            }
+
+
+            cell_text = vod_link(title,row_id->db->source,row_id->file,cellName,attr,font_class);
+
         }
-
-
-        //--- cleanup
-        if (cert != row_id->certificate) free(cert);
-        if (ext != row_id->ext) free(ext);
-        free(attr);
-        free(idlist);
-        free(title);
-
-
-    } else if (row_id->category =='M' ) {
-    } else {
-
     }
 
-    printf("%s",img);
-    free(img);
-    
+    free(title);
+
+    printf("\t\t<td %s class=%s>",width_attr,grid_class);
+    printf("%s",cell_text);
     printf("</td>");
+    free(cell_text);
 }
 
 
@@ -733,17 +944,6 @@ char *default_button_attr() {
         html_log(0,"default button attr = %s",default_attr);
     }
     return default_attr;
-}
-
-char *ovs_icon_type() {
-    static char *icon_type = NULL;
-    if (icon_type == NULL) {
-        if (!config_check_str(g_oversight_config,"ovs_icon_type",&icon_type)) {
-            icon_type="png";
-        }
-        html_log(0,"icon type = %s",icon_type);
-    }
-    return icon_type;
 }
 
 char *icon_source(image_name) {

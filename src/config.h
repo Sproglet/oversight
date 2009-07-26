@@ -43,4 +43,5 @@ void config_read_dimensions();
 long allow_admin();
 long allow_delist();
 long allow_delete();
+long allow_mark();
 #endif

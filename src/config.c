@@ -31,6 +31,19 @@ int browsing_from_lan() {
     return result;
 }
 
+long allow_mark() {
+    static long result=-1;
+    if (result == -1) {
+        result=0;
+        if (browsing_from_lan()) {
+            result=1;
+        } else if (!config_check_long(g_oversight_config,"ovs_wan_mark",&result)) {
+            result=0;
+        }
+        html_log(0,"allow mark = %d",result);
+    }
+    return result;
+}
 long allow_delete() {
     static long result=-1;
     if (result == -1) {

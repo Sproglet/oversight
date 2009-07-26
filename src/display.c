@@ -14,6 +14,8 @@
 #include "hashtable.h"
 #include "hashtable_loop.h"
     
+char *get_theme_image_tag(char *image_name,char *attr);
+
 #define XHTML
 void tag(char *label,char *attr,va_list ap) {
 
@@ -87,7 +89,7 @@ char *self_url(char *new_params) {
                     //
                     // search for pram_name in new_params
                     int add_param=1;
-                    for (p = strstr(new_params,param_name); p ; p=strstr(new_params,p+1) ) {
+                    for (p = strstr(new_params,param_name); p ; p=strstr(p+1,param_name) ) {
 
                         if ( ( p == new_params || p[-1] == '&' ) ) {
                             // start of string is beginning or after &
@@ -283,8 +285,13 @@ void display_footer(
     printf("Footer here");
 }
 
-void display_theme_image_link(char *qlist,char *attr,char *image_name) {
-    printf(image_name);
+void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr) {
+    assert(qlist);
+    assert(image_name);
+
+    char  *tag=get_theme_image_tag(image_name,button_attr);
+    display_self_link_multi(qlist,href_attr,tag);
+    free(tag);
 }
 
 void build_tvid_list() {
@@ -329,24 +336,31 @@ void display_header(int media_type) {
     td(NULL);
     //- cell ---------------------
     td("");
-    display_theme_image_link("view=admin&action=ask","TVID=SETUP","configure");
+    display_theme_image_link("view=admin&action=ask","TVID=SETUP","configure","");
     td(NULL);
     printf("</tr></table>");
 }
 
-void display_scroll_attributes(int left_scroll,int right_scroll,int centre_cell) {
-    if (centre_cell) printf(" name=centreCell ");
-    if (left_scroll) printf(" onkeyleftset=pgup1 ");
-    if (right_scroll) printf(" onrightleftset=pgdp1 ");
+char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell) {
+    char *attr;
+    ovs_asprintf(&attr,
+            " %s %s %s ",
+            (centre_cell? " name=centreCell ":""),
+            (left_scroll? " onkeyleftset=pgup1 ":""),
+            (right_scroll? " onrightleftset=pgdp1 ":""));
+    return attr;
 }
 
 void display_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scroll,int centre_cell) {
 
+    char *attr;
     printf("\t\t<td %s class=empty%d>",width_attr,grid_toggle);
 
-    printf("<a href=\"\" "); display_scroll_attributes(left_scroll,right_scroll,centre_cell); printf("></a>\n");
+    attr=get_scroll_attributes(left_scroll,right_scroll,centre_cell);
+    printf("<a href=\"\" %s></a>\n",attr);
 
     printf("</td>\n");
+    free(attr);
 }
 
 
@@ -430,16 +444,19 @@ char *local_image_source(char *path) {
 
 }
 
-void print_local_image_link(char *path,char *alt_text,char *attr) {
+char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
     assert(path);
     assert(alt_text);
     assert(attr);
 
+    char *result;
+
     char *img_src = local_image_source(path);
 
-    printf("<img alt=\"%s\" src=%s %s >",alt_text,img_src,attr);
+    ovs_asprintf(&result,"<img alt=\"%s\" src=%s %s >",alt_text,img_src,attr);
     free(img_src);
+    return result;
 }
 
 
@@ -469,10 +486,11 @@ char *watched_style(DbRowId *rowid,int grid_toggle) {
     return file_style(rowid,grid_toggle);
 }
 
-void print_poster_image_tag(DbRowId *rowid,char *attr) {
+char * get_poster_image_tag(DbRowId *rowid,char *attr) {
 
     assert(rowid);
     assert(attr);
+    char *result = NULL;
     
     char *newattr=attr;
 
@@ -482,12 +500,13 @@ void print_poster_image_tag(DbRowId *rowid,char *attr) {
         ovs_asprintf(&newattr," %s %s ",attr,watched_style(rowid,0));
     }
 
-    print_local_image_link(path,rowid->title,newattr);
+    result = get_local_image_link(path,rowid->title,newattr);
 
     if (newattr != attr) {
         free(newattr);
     }
     free(path);
+    return result;
 }
 
 
@@ -496,6 +515,7 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
 
     html_log(0,"TODO:Highlight matched bit");
     printf("\t\t<td %s class=%s>",width_attr,file_style(row_id,grid_toggle));
+    char *title=NULL;
 
     if (g_dimension->poster_mode
             && ( row_id->category == 'T' || row_id->category == 'M' )
@@ -504,16 +524,116 @@ void display_item(DbRowId *row_id,char *width_attr,int grid_toggle,
         char *attr;
         ovs_asprintf(&attr," width=%d height=%d ",
                 g_dimension->poster_menu_img_width,g_dimension->poster_menu_img_height);
-        print_poster_image_tag(row_id,attr);
+        title = get_poster_image_tag(row_id,attr);
         free(attr);
 
     } else {
+       
+       char *tmp;
+       title = row_id->title;
 
-        printf("%s",row_id->title);
-        if (row_id->season > 0) {
-            printf(" %d",row_id->season);
+       char *cert = row_id->certificate;
+       if ((tmp=strchr(certificate,':')) != NULL) {
+           ovs_asprintf(&cert,"(%s)",tmp+1);
+       }
+
+       char *select;
+       if (!config_check_str(g_query,"select",&select)) {
+           select="";
+       }
+
+       // Build list of extensions
+        char *ext = "";
+        if (!*select) {
+            ext = row_id->ext;
+            DbRowId ri;
+            for( ri = row_id ; ri ; ri=ri->linked ) {
+                if (strstr(ext,ri->ext) == NULL) {
+                    char *new_ext;
+                    ovs_asprintf(&new_ext,"%s%s",ext,icon_link(ri->ext));
+                    if (ext != row_id->ext) free(ext);
+                    ext = new_ext;
+                }
+            }
         }
+
+        char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell);
+
+        char *idlist;
+        int group_count = 1;
+        ovs_asprintf(&idlist,"%s(%d",row_id->db->source,row_id->id);
+        DbRowId ri;
+        for( ri = row_id->linked ; ri ; ri=ri->linked ) {
+            char *tmp;
+            ovs_asprintf(&tmp,"%s|%s",idlist,ri->id);
+            free(idlist);
+            idlist = tmp;
+            group_count++;
+        }
+
+        char *title = trim_title(row_id->title);
+
+        if (row_id->category == 'T' && row_id->season >= 1) {
+            //Add season
+            char *tmp;
+            ovs_asprintf(&tmp,"%s S%s",title,row_id->season);
+            free(title);
+            title=tmp;
+        }
+
+        if (row_id->category == 'T' || row_id->category == 'M' ) {
+            //Add certificate and extension
+            char *tmp;
+            ovs_asprintf(&tmp,"%s %s %s",title,cert,ext);
+            free(title);
+            title=tmp;
+        }
+
+        if (row_id->category == 'T') {
+            //Add episode count
+            char *tmp;
+            ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d</font>",title,group_count);
+            free(title);
+            title=tmp;
+        }
+
+        long crossview=0;
+        config_check_long(g_oversight_config,"ovs_crossview",&crossview);
+        if (crossview == 1) {
+           char *tmp =add_network_icon(title);
+           free(title);
+           title = tmp;
+        }
+
+        char *link;
+
+        if (row_id->category == 'T'  || row_id->category == 'M') {
+            char *params;
+            char *attrs;
+
+            zzzzzz
+
+            link = get_self_link_multi_with_font(
+        } else if (row_id->category == 'M') {
+        } else {
+        }
+
+
+        //--- cleanup
+        if (cert != row_id->certificate) free(cert);
+        if (ext != row_id->ext) free(ext);
+        free(attr);
+        free(idlist);
+        free(title);
+
+
+    } else if (row_id->category =='M' ) {
+    } else {
+
     }
+
+    printf("%s",img);
+    free(img);
     
     printf("</td>");
 }
@@ -638,17 +758,23 @@ char *icon_source(image_name) {
     return result;
 }
 
-void display_theme_image_tag(char *image_name,char *attr) {
+void href(char *url,char *attr,char *text) {
+    printf("\n<a href=\"%s\" %s>%s</a>",url,attr,text);
+}
+
+char *get_theme_image_tag(char *image_name,char *attr) {
 
     char *isrc;
+    char *result = NULL;
     assert(image_name);
     if (attr == NULL || ! *attr) {
 
         attr = default_button_attr();
     }
     isrc = icon_source(image_name);
-    printf("<img alt=\"%s\" border=0 src=%s %s />",image_name,isrc,attr);
+    ovs_asprintf(&result,"<img alt=\"%s\" border=0 src=%s %s />",image_name,isrc,attr);
     free(isrc);
+    return result;
 }
 
 void display_page_control(char *select,char *view,int page,int on,int offset,char *tvid_name,char *image_base_name) {
@@ -665,15 +791,19 @@ void display_page_control(char *select,char *view,int page,int on,int offset,cha
             ovs_asprintf(&params,"p=%d",page+offset);
             ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
 
-            display_theme_image_link(params,attrs,image_base_name);
+            html_log(1,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
+
+            display_theme_image_link(params,attrs,image_base_name,"");
             free(params);
             free(attrs);
         } else if (! *view ) {
             //Only show disabled page controls in main menu view (not tv / movie subpage) - this may change
             char *image_off=NULL;
             ovs_asprintf(&image_off,"%s-off",image_base_name);
-            display_theme_image_tag(image_off,NULL);
+            char *tag = get_theme_image_tag(image_off,NULL);
+            printf("%s",tag);
             free(image_off);
+            free(tag);
         }
     }
 }
@@ -693,31 +823,40 @@ void display_nav_buttons(int page,int prev_page,int next_page) {
 
     printf("<table class=footer width=100%%><tr valign=top>");
 
-    printf("<td width=10%%>");
+    printf("\n<td width=10%%>");
     display_page_control(q_select,q_view,page,prev_page,-1,"pgup","left");
     printf("</td>");
 
     if (*q_view && *q_select) {
-        printf("<td align=center>");
-        display_theme_image_link("view=&idlist=","name=up","back");
+        printf("\n<td align=center>");
+        display_theme_image_link("view=&idlist=","name=up","back","");
         printf("</td>");
     }
 
-    printf("<td align=center>");
+    printf("\n<td align=center>");
     if (! *q_view) {
         if(hashtable_count(g_query) == 0 && g_dimension->local_browser) {
-            printf("<a href=\"/start.cgi\" name=home >");
-            display_theme_image_tag("exit",NULL);
-            printf("</a>");
+            char *tag=get_theme_image_tag("exit",NULL);
+            printf("<a href=\"/start.cgi\" name=home >%s</a>",tag);
+            free(tag);
         } else {
-            printf("<a href=\"%s?\" name=home TVID=HOME >",SELF_URL);
-            display_theme_image_tag("home",NULL);
-            printf("</a>");
+            char *tag=get_theme_image_tag("home",NULL);
+            printf("<a href=\"%s?\" name=home TVID=HOME >%s</a>",SELF_URL,tag);
+            free(tag);
         }
     }
 
     if (! *q_select) {
+        // user is viewing
+        if (allow_mark()) {
+            printf("<td>"); display_theme_image_link("select=Mark","tvid=EJECT","mark",""); printf("</td>");
+        }
+        if (allow_delete() || allow_delist()) {
+            printf("<td>"); display_theme_image_link("select=Delete","tvid=CLEAR","delete",""); printf("</td>");
+        }
+
     } else {
+        // user is selecting
         if (strcmp(q_select,"Mark") == 0 ) {
 
             printf("<td>"); display_submit("action","Mark"); printf("</td>");
@@ -738,7 +877,7 @@ void display_nav_buttons(int page,int prev_page,int next_page) {
     printf("</td>");
 
 
-    printf("<td width=10%%>");
+    printf("\n<td width=10%%>");
     display_page_control(q_select,q_view,page,next_page,1,"pgdn","right");
     printf("</td>");
 

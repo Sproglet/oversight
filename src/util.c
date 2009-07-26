@@ -296,10 +296,10 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
             }
 
             if ( hashtable_change(h1,k,v) ) {
-                html_log(1,"Changed [ %s ] = [ %s ]\n",k,v);
+                html_log(2,"Changed [ %s ] = [ %s ]",k,v);
             } else {
                 hashtable_insert(h1,k,v);
-                html_log(4,"Added [ %s ] = [ %s ]\n",k,v);
+                html_log(4,"Added [ %s ] = [ %s ]",k,v);
             }
         }
     }

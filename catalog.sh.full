@@ -800,7 +800,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
             w5=scan_words[5];
 
             if ( gLS_TIME_POS ) {
-                lsMonth=scan_words[gLS_TIME_POS-2];
+                lsMonth=tolower(scan_words[gLS_TIME_POS-2]);
                 lsDate=scan_words[gLS_TIME_POS-1];
                 lsTimeOrYear=scan_words[gLS_TIME_POS];
             }
@@ -4898,6 +4898,15 @@ row,estimate,nfo,dbIdx) {
     }
 
     row="\t"ID"\t"(gMaxDatabaseId++);
+    row=row"\t"CATEGORY"\t"g_category[i];
+    if (gMovieFileCount - 4 > 0) {
+        #bulk add - use the estimate download date as the index date.
+        #this helps the index to appear to have some chronological order
+        #on first build
+        row=row"\t"INDEXTIME"\t"estimate;
+    } else {
+        row=row"\t"INDEXTIME"\t"NOW;
+    }
 
     if (g_file[i] in file_to_db) {
         dbIdx = file_to_db[g_file[i]];
@@ -4910,13 +4919,16 @@ row,estimate,nfo,dbIdx) {
     }
 
     #Title and Season must be kept next to one another to aid grepping.
+    #Put the overview items near the start to speed up scanning
     row=row"\t"TITLE"\t"gTitle[i];
     if (gOriginalTitle[i] != "" && gOriginalTitle[i] != gTitle[i] ) {
         row=row"\t"ORIG_TITLE"\t"gOriginalTitle[i];
     }
     row=row"\t"SEASON"\t"g_season[i];
-
     row=row"\t"EPISODE"\t"g_episode[i];
+    row=row"\t"POSTER"\t"g_poster[i];
+    row=row"\t"GENRE"\t"g_genre[i];
+    row=row"\t"RATING"\t"g_rating[i];
 
     row=row"\t"SEASON0"\t"sprintf("%02d",g_season[i]);
     row=row"\t"EPISODE0"\t"pad_episode(g_episode[i]);
@@ -4927,20 +4939,7 @@ row,estimate,nfo,dbIdx) {
     row=row"\t"PARTS"\t"gParts[i];
     row=row"\t"URL"\t"gExternalSourceUrl[i];
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
-    row=row"\t"GENRE"\t"g_genre[i];
-    row=row"\t"RATING"\t"g_rating[i];
-    row=row"\t"PLOT"\t"g_plot[i];
-    row=row"\t"CATEGORY"\t"g_category[i];
-    row=row"\t"POSTER"\t"g_poster[i];
     row=row"\t"FILETIME"\t"g_file_time[i];
-    if (gMovieFileCount - 4 > 0) {
-        #bulk add - use the estimate download date as the index date.
-        #this helps the index to appear to have some chronological order
-        #on first build
-        row=row"\t"INDEXTIME"\t"estimate;
-    } else {
-        row=row"\t"INDEXTIME"\t"NOW;
-    }
     row=row"\t"DOWNLOADTIME"\t"estimate;
     #row=row"\t"SEARCH"\t"g_search[i];
     row=row"\t"PROD"\t"gProdCode[i]; #todo remove without affecting load loop in oversight.cgi
@@ -4958,6 +4957,7 @@ row,estimate,nfo,dbIdx) {
         gsub(/.*\//,"",nfo);
     }
     row=row"\t"NFO"\t"nfo;
+    row=row"\t"PLOT"\t"g_plot[i];
     return row;
 }
 

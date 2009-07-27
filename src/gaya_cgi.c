@@ -18,7 +18,7 @@
 struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 
     int i;
-    Array *qarr = split(q,"&");
+    Array *qarr = split(q,"&",0);
 
     if (hashtable_in == NULL) {
         hashtable_in = string_string_hashtable();
@@ -62,17 +62,21 @@ struct hashtable *read_post_data(char *post_filename) {
     }
 
     char *boundary = getenv("POST_BOUNDARY");
-    char *method = getenv("METHOD");
+    char *method = getenv("HTTP_METHOD");
     char *post_type= getenv("POST_TYPE");
 
+    html_log(0,"HTTP_METHOD=[%s]",method);
+    html_log(0,"POST_TYPE=[%s]",post_type);
+    html_log(0,"POST_BOUNDARY=[%s]",boundary);
+
     int url_encoded_in_post_data = 
-        (strcmp(method,"POST") == 0 && strcmp(post_type,"application/x-www-form-urlencoded") == 0);
+        (method != NULL && strcmp(method,"POST") == 0 &&
+         post_type != NULL && strcmp(post_type,"application/x-www-form-urlencoded") == 0);
 
     int cr_lf = 1;
     int unix_mode = 0;
 
-    int in_data = -1;
-    int start_data = -2;
+    int in_header = 0;
 
     int format=cr_lf;
 
@@ -87,36 +91,41 @@ struct hashtable *read_post_data(char *post_filename) {
     char *name = NULL;
     char *value = NULL;
 
-    // indicates which part of post data we are parsing
-    int phase=0;
+
+    html_log(2,"opening post file [%s]",post_filename);
 
     FILE *pfp = fopen(post_filename,"r");
 
     if (pfp == NULL) {
-        fprintf(stderr,"Unable to open post data [%s]\n",post_filename);
+        html_error("Unable to open post data [%s]\n",post_filename);
         exit(1);
     }
 
     char post_line[POST_BUF];
 
     while(fgets(post_line,POST_BUF,pfp) != NULL ) {
-        if (phase >= 0) phase++;
 
 //if ((p=strrchr(post_line,'\n')) != NULL) {
 //*p='\0';
 //}
 
-        printf("<!-- %s -->",post_line);
+
         if (url_encoded_in_post_data) {
-            char *q = replace_all(post_line,"[^:]:",""); //why?
+
+            // This is a one off rule that indicates the post file is just a single line
+            // containing a query string
+            html_log(0,"post line url: %s",post_line);
+
+            char *q = replace_all(post_line,"[^:]:","",0); //why?
             parse_query_string(q,result);
             free(q);
+
         } else if (strstr(post_line,boundary) ) {
 
+            html_log(0,"post line bdry: %s",post_line);
             if (fileptr != NULL ) {
                 // Process item defined before boundary
                 fclose(fileptr);
-                fileptr=NULL;
                 // TODO may need to change ownership of files here.
 
             } else if (name != NULL && value != NULL ) {
@@ -124,49 +133,69 @@ struct hashtable *read_post_data(char *post_filename) {
 
                 char *found;
 
-                if ((found=hashtable_search(result,name)) != NULL) {
+                html_log(1,"post: name [%s] about to add val [%s] ...",name,value);
 
-                    //Add the new value separated by \\r
-                    hashtable_insert(result,name,join_str_fmt_free("%s\r%s",found,value));
+                if ((found=hashtable_remove(result,name)) != NULL) {
+
+                    html_log(1,"post: name [%s] existing val [%s] new val [%s]",name,found,value);
+                    char *tmp;
+                    ovs_asprintf(&tmp,"%s\r%s",found,value);
+                    hashtable_insert(result,name,tmp);
+                    free(found);
+                    free(value);
+
                 } else {
 
+                    html_log(1,"post: name [%s] new val [%s]..",name,value);
                     //Add the new value
                     hashtable_insert(result,name,value);
                 }
-                name = value = NULL;
             }
-            phase = 0;
+            name = value = NULL;
+            fileptr=NULL;
+            in_header = 1;
 
-        } else if (phase > 0 && strstr(post_line,"Content-Disposition: form-data; name=") == post_line) {
+        } else if (in_header ) {
+           
+            html_log(0,"post line head: %s",post_line);
+           if (strstr(post_line,"Content-Disposition: form-data; name=") == post_line) {
 
-            name=regextract1(post_line,"name=\"([^\"]+)\"",1);
-            value=NULL;
-            format=cr_lf;
+                name=regextract1(post_line,"name=\"([^\"]+)\"",1,0);
+                html_log(1,"post: extracted name [%s]",name);
+                value=NULL;
+                format=cr_lf;
 
-            if (strstr(post_line,"filename=\"")) {
-                //
-                //Start writing to a file
-                //
-                char *filename=regextract1(post_line,"filename=\"([^\"]+)\"",1);
+                if (strstr(post_line,"filename=\"")) {
+                    //
+                    //Start writing to a file
+                    //
+                    char *filename=regextract1(post_line,"filename=\"([^\"]+)\"",1,0);
 
-                if (filename != NULL) {
-                    char *filepath = strdup(upload_dir);
+                    if (filename != NULL) {
+                        char *filepath = strdup(upload_dir);
 
-                    filepath=join_str_fmt_free("%s/%s",filepath,filename);
+                        filepath=join_str_fmt_free("%s/%s",filepath,filename);
 
-                    fileptr = fopen(filepath,"w");
-                    free(filepath);
+                        fileptr = fopen(filepath,"w");
+                        free(filepath);
+                    }
                 }
+
+            } else if (strstr(post_line,"Content-Type: application=") == post_line) {
+
+                format = unix_mode;
+
+            } else if (strchr("\r\n",post_line[0])) {
+
+                // blank line - start reading data.
+                in_header = 0;
+                html_log(0,"Start data : inheader = %d",in_header);
+                value = NULL;
             }
-        } else if (phase > 0 && strstr(post_line,"Content-Type: application=") == post_line) {
 
-            format = unix_mode;
-
-        } else if (phase > 0 && strcmp(post_line,"\r") ==0) {
-
-            phase = start_data;
-
-        } else if (phase < 0 ) { //start_date or in_data
+        } else {
+            // not in_header - read data
+            html_log(0,"post line data: %s",post_line);
 
             if (format == cr_lf) {
                 //remove newline
@@ -176,15 +205,18 @@ struct hashtable *read_post_data(char *post_filename) {
 
             if (fileptr != NULL) {
                 fprintf(fileptr,"%s\n",post_line);
-            } else if (phase == start_data) {
-                value=strdup(post_line);
+            } else if (value == NULL) {
+                value=STRDUP(post_line);
             } else {
-                value=join_str_fmt_free("%s\n%s",value,strdup(post_line));
+                char *tmp;
+                ovs_asprintf(&tmp,"%s\n%s",value,post_line);
+                free(value);
+                value = tmp;
             }
-            phase = in_data;
         }
     }
     fclose(pfp);
+    html_log(0,"post: end");
 
     return result;
 }
@@ -385,29 +417,3 @@ void html_hashtable_dump(int level,char *label,struct hashtable *h) {
         }
     }
 }
-
-void html_hashtable_dump2(int level,char *label,struct hashtable *h) {
-
-
-    if (level <= html_log_level) {
-
-        if (hashtable_count(h)) {
-
-           char *k,*v;
-           struct hashtable_itr *itr = hashtable_iterator(h); ;
-
-           do {
-
-               k = hashtable_iterator_key(itr);
-               v = hashtable_iterator_value(itr);
-
-                html_comment("%s : [ %s ] = [ %s ]",label,k,v);
-
-            } while (hashtable_iterator_advance(itr));
-
-        } else {
-            html_comment("%s : EMPTY HASH",label);
-        }
-    }
-}
-

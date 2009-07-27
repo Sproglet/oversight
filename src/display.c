@@ -266,7 +266,7 @@ char *vod_link(char *title,char *source,char *file,char *href_name,char *href_at
         ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
         add_to_playlist = 0;
 
-    } else if (regpos(file,"\\.(iso|ISO|img|IMG)$") ) {
+    } else if (regpos(file,"\\.(iso|ISO|img|IMG)$",0) ) {
 
         // iso or img
         ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
@@ -413,7 +413,7 @@ void display_sort_cells() {
 
 //Add current named html parameter as a hidden value
 void add_hidden(char *name_list) {
-    Array *names = split(name_list,",");
+    Array *names = split(name_list,",",0);
     int i;
     for(i = 0 ; i < names->size ; i++ ) {
 
@@ -429,7 +429,7 @@ void add_hidden(char *name_list) {
 void display_submit(char *name,char *value) {
     assert(name);
     assert(value);
-    printf("<input type=submit name=\"%s\" value=\"%s\" />",name,value);
+    printf("<input type=submit name=\"%s\" value=\"%s\">",name,value);
 }
 
 void display_confirm(char *name,char *val_ok,char *val_cancel) {
@@ -577,7 +577,7 @@ void display_header(int media_type) {
 
     char *version=OVS_VERSION;
     version +=4;
-    version = replace_all(version,"BETA","b");
+    version = replace_all(version,"BETA","b",0);
 
 
     printf("<br><font size=2>V2.%s %s</font>",version,util_hostname());
@@ -612,7 +612,7 @@ char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,cha
             " %s %s %s %s%s",
             (centre_cell? " name=centreCell ":""),
             (left_scroll? " onkeyleftset=pgup1 ":""),
-            (right_scroll? " onrightleftset=pgdp1 ":""),
+            (right_scroll? " onkeyrightset=pgdn1 ":""),
             (class != NULL?" class=":""),
             (class != NULL?class:""));
 
@@ -995,6 +995,9 @@ void display_grid(long page, int numids, DbRowId **row_ids) {
     int centre_col = cols/2;
     int r,c;
 
+    int page_before = (page > 0);
+    int page_after = (end < numids);
+
     if (end > numids) end = numids;
 
     printf("<table class=overview width=100%%>\n");
@@ -1007,8 +1010,8 @@ void display_grid(long page, int numids, DbRowId **row_ids) {
         for ( c = 0 ; c < cols ; c++ ) {
             i = start + c * rows + r ;
 
-            int left_scroll = (page > 0 && c == 0);
-            int right_scroll = (c == cols-1 && numids > start+rows*cols );
+            int left_scroll = (page_before && c == 0);
+            int right_scroll = (page_after && c == cols-1 );
             int centre_cell = (r == centre_row && c == centre_col);
 
             if ( i < numids ) {
@@ -1222,7 +1225,7 @@ void display_menu() {
 
     //Tvid filter = this as the form 234
     html_log(0,"search query...");
-    hashtable_dump("query",g_query);
+    html_hashtable_dump(0,"query",g_query);
     char *name_filter=hashtable_search(g_query,"_rt"); 
     html_log(0,"done search query");
     char *regex = NULL;

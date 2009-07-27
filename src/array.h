@@ -18,7 +18,7 @@ void array_set(Array *a,int idx,void *ptr);
 void array_free(Array *a );
 
 
-Array *split(char *s,char *pattern);
+Array *split(char *s,char *pattern,int reg_opts);
 Array *splitc(char *s,char c);
 
 #endif

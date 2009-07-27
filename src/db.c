@@ -325,13 +325,16 @@ DbRowSet **db_crossview_scan_titles(
     DbRowSet **rowsets = MALLOC((rowset_count+1)*sizeof(DbRowSet*));
     Db *db;
 
+    int this_db_size;
+
 
     db = db_init(localDbPath(),"*");
 
-    rowsets[0] = db_scan_titles(db,name_filter,media_type,watched);
+    rowsets[0] = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
     rowsets[1]=NULL;
 
-    g_db_size = rowsets[0]->size;
+    g_db_size += this_db_size;
+
 
     if (crossview) {
         char *root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE";
@@ -349,7 +352,8 @@ DbRowSet **db_crossview_scan_titles(
 
                     if (db) {
 
-                        DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched);
+                        DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
+                        g_db_size += this_db_size;
 
                         if (r != NULL) {
                             rowset_count++;
@@ -383,19 +387,20 @@ DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched         // 1=watched 2=unwatched 3=any
+        int watched,        // 1=watched 2=unwatched 3=any
+        int *gross_size     // Full unfiltered size of database.
         ){
 
     regex_t pattern;
     DbRowSet *rowset = NULL;
 
-    html_log(3,"Creating db scan pattern..");
+    html_log(2,"Creating db scan pattern..");
 
     if (name_filter) {
         // Take the pattern and turn it into <TAB>_ID<TAB>pattern<TAB>
         int status;
 
-        if ((status = regcomp(&pattern,name_filter,REG_EXTENDED)) != 0) {
+        if ((status = regcomp(&pattern,name_filter,REG_EXTENDED|REG_ICASE)) != 0) {
 
 #define BUFSIZE 256
             char buf[BUFSIZE];
@@ -404,6 +409,7 @@ DbRowSet * db_scan_titles(
             assert(1);
             return NULL;
         }
+        html_log(0,"filering by regex [%s]",name_filter);
     }
 
     char *watched_substring=NULL;
@@ -422,7 +428,7 @@ DbRowSet * db_scan_titles(
         default: assert(watched == DB_MEDIA_TYPE_TV); break;
     }
 
-    html_log(3,"db scanning...");
+    html_log(2,"db scanning...");
 
     int row_count=0;
     int total_rows=0;
@@ -444,6 +450,9 @@ DbRowSet * db_scan_titles(
                 exit(1);
             }
 
+            if (buffer[0] == '\t' && gross_size != NULL) {
+                (*gross_size)++;
+            }
 
 
             if (name_filter) {

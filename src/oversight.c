@@ -106,7 +106,7 @@ int main(int argc,char **argv) {
 
 
     printf("Content-Type: text/html\n\n<html><head>");
-    html_log_level_set(1);
+    html_log_level_set(2);
 
     html_comment("Appdir= [%s]",appDir());
 
@@ -114,13 +114,17 @@ int main(int argc,char **argv) {
     //util_unittest();
     //config_unittest();
 
+    html_comment("read query ... ");
     g_query=parse_query_string(getenv("QUERY_STRING"),NULL);
 
+    html_comment("read post ... ");
 
     struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
     
     html_comment("merge query and post data");
     merge_hashtables(g_query,post,0); // post is destroyed
+
+    html_hashtable_dump(0,"query final",g_query);
 
     // Run the old cgi script for admin functions
     // This will be phased out as the admin functions are brought in.

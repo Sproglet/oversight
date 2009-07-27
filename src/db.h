@@ -60,7 +60,8 @@ DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched         // 1=watched 2=unwatched 3=any
+        int watched,        // 1=watched 2=unwatched 3=any
+        int *gross_size
         );
 
 int db_lock(char *source);

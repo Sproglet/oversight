@@ -91,11 +91,8 @@ MAIN_PAGE() {
     # Do this outside of awk so we can see script errors in the browser.
     cat "$APPDIR/oversight.css" #css link tag broken i think
     Q="'"
-    CATALOG_RUNNING=
     if [ -f "$APPDIR/catalog.lck" ] ; then
-        if [ -d "/proc/`cat $APPDIR/catalog.lck`" ] ; then
-            CATALOG_RUNNING=1
-        else
+        if [ ! -d "/proc/`cat $APPDIR/catalog.lck`" ] ; then
             #If a process was killed clear the message
             rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
         fi
@@ -850,16 +847,7 @@ function getMountedPath(source,file) {
     return file;
 }
 
-#Replace start of file path with what client is expecting to see.
-function mountedPath(file,src,dst) {
-    if (substr(file,1,length(src)) == src) {
-        return dst substr(file,length(src)+1);
-    } else {
-        return file;
-    }
-}
-
-function vod_link(title,src,file,vod_name,vod_number,hrefAttr,class,\
+function vod_link(title,src,file,vod_name,hrefAttr,class,\
     f,name,_VOD,isIso) {
 
     if (substr(file,length(file)) == "/") {
@@ -1006,8 +994,8 @@ function posterImgTag(idx,imgAttr,\
 url) {
     h_comment("posterImgTag of "idx);
     if (db[POSTER,idx] != "") {
-        url=getPath(db[POSTER,idx],db[FILE,idx]);
-        url=getMountedPath(db[SOURCE,idx],url);
+        ##url=getPath(db[POSTER,idx],db[FILE,idx]);
+        ##url=getMountedPath(db[SOURCE,idx],url);
         if (db[CATEGORY,idx] == "M") {
             if (imgAttr == "" ) imgAttr = gMoviePosterAttr;
         } else {
@@ -1103,28 +1091,24 @@ t) {
     }
     return t;
 }
+function iconSrc(imageName)  {
+    return localImageSrc(APPDIR"/images/"g_icon_set"/"imageName"."ovs_icon_type);
+}
+function localImageLink(path,alt,attrs)  {
+    attrs =" alt=\""alt"\" src="localImageSrc(path)" "attrs;
+    return "<img "attrs" />";
+}
 
 function themeImageLink(queryString,hrefAttr,iconName,buttonAttr) {
     return selfLinkMulti(queryString,hrefAttr,themeImageTag(iconName,buttonAttr));
 }
 
-function localImageLink(path,alt,attrs)  {
-    attrs =" alt=\""alt"\" src="localImageSrc(path)" "attrs;
-    return "<img "attrs" />";
-}
-function confirm(name,val_ok,img_ok,val_cancel,img_cancel) {
-    return "<table width=100%><tr><td align=center>"themeImageInputButton(name,val_ok,img_ok)"</td><td align=center>"themeImageInputButton(name,val_cancel,img_cancel)"</td></tr>";
+function confirm(name,val_ok,val_cancel) {
+    return "<table width=100%><tr><td align=center>"display_submit(name,val_ok)"</td><td align=center>"display_submit(name,val_cancel)"</td></tr>";
 }
 
-function themeImageInputButton(name,value,imageName,attrs,\
-txt)  {
-    txt=imageName;
-    gsub(/[^a-zA-Z0-9]/," ",txt);
-    if (1 || g_local_browser) {
-        return "<input type=submit name=\""name"\" value=\""value"\" />";
-    } else {
-        return "<input type=image name=\""name"\" value=\""value"\" alt=\""imageName"\" border=0 src="iconSrc(imageName)" "attrs" /><br>"txt;
-    }
+function display_submit(name,value)  {
+    return "<input type=submit name=\""name"\" value=\""value"\" />";
 }
 function localImageSrc(path)  {
     if (g_local_browser ) {
@@ -1143,9 +1127,6 @@ function localImageSrc(path)  {
         # otherwise pass as a paramter to this script. It will cat jpg etc it to stdout
         return "\""SELF"?"path"\"";
     }
-}
-function iconSrc(imageName)  {
-    return localImageSrc(APPDIR"/images/"g_icon_set"/"imageName"."ovs_icon_type);
 }
 
 function movie_listing(db,idx,\
@@ -1171,11 +1152,11 @@ function movie_listing(db,idx,\
         }
             
         playBtn=themeImageTag("player_play",otherSize);
-        #print vod_link(f playBtn,src,db[FILE,idx],0,0,"onkeyleftset=up onkeyupset=upquick",style);
-        print vod_link(f playBtn,src,db[FILE,idx],0,0,"onkeyleftset=up",style);
+        #print vod_link(f playBtn,src,db[FILE,idx],0,"onkeyleftset=up onkeyupset=upquick",style);
+        print vod_link(f playBtn,src,db[FILE,idx],0,"onkeyleftset=up",style);
         split(db[PARTS,0],parts,"/");
         for(p in parts) {
-            print "<br>"vod_link(parts[p] playBtn,src,d"/"parts[p],p,p,"",style);
+            print "<br>"vod_link(parts[p] playBtn,src,d"/"parts[p],p,"",style);
         }
     }
 }
@@ -1226,7 +1207,7 @@ function tv_listing(db,db_size,idx,cols, \
                         # attr = attr " onkeyupset=upquick "; 
                         if (c  == 0 ) { attr = attr " onkeyleftset=up "; }
                     }
-                    rowTxt=rowTxt vod_link(vodTxt,db[SOURCE,actualIndex],db[FILE,actualIndex], i,i,attr,watchedStyle(db,actualIndex,(i%2)));
+                    rowTxt=rowTxt vod_link(vodTxt,db[SOURCE,actualIndex],db[FILE,actualIndex], i,attr,watchedStyle(db,actualIndex,(i%2)));
                 } else {
                     vodTxt=db[EPISODE0,actualIndex];
                     rowTxt=rowTxt selectCheckbox(db,actualIndex,db[ID,actualIndex],vodTxt);
@@ -1636,9 +1617,6 @@ function selfUrl2(appendedNames, url,varname,b) {
     return url;
 }
 
-function selfLinkMultiJs(nameValuePairs,attributes,title) {
-    return "<a href=\"javascript: location.replace('"'"'" selfUrl(nameValuePairs) "'"'"');\" "attributes" >"title"</a>";
-}
 function selfLinkMulti(nameValuePairs,attributes,title) {
 
     return "<a href=\"" selfUrl(nameValuePairs) "\" "attributes" >"title"</a>";
@@ -1647,10 +1625,6 @@ function selfLinkMulti(nameValuePairs,attributes,title) {
 
 function selfLinkMultiWithFont(nameValuePairs,attributes,title,fontClass) {
     return selfLinkMulti(nameValuePairs,attributes,"<font class="fontClass">"title"</font>");
-}
-#Javascript version. Mainly to stop excessive crawling
-function selfLinkMultiJsWithFont(nameValuePairs,attributes,title,fontClass) {
-    return selfLinkMultiJs(nameValuePairs,attributes,"<font class="fontClass">"title"</font>");
 }
 
 function href(link,attr,text) {
@@ -1823,14 +1797,14 @@ function showSelectControls(page,prevPage,nextPage) {
         #print "<td align=center><a href=\"./tvnzb.cgi\">"localImageLink(APPDIR"/images/tv_icon.png","TvNzB",gButtonAttr)"</a></td>";
     } else {
         if (query["select"] == "Mark" ) {
-            print "<td>"themeImageInputButton("action","Mark","mark")"</td>"
+            print "<td>"display_submit("action","Mark","mark")"</td>"
         }
         if (query["select"] == "Delete" ) {
-            if (allow_delete) print "<td>"themeImageInputButton("action","Delete","delete_data")"</td>"
-            if (allow_delist) print "<td>"themeImageInputButton("action","Remove_From_List","remove_from_list")"</td>"
+            if (allow_delete) print "<td>"display_submit("action","Delete","delete_data")"</td>"
+            if (allow_delist) print "<td>"display_submit("action","Remove_From_List","remove_from_list")"</td>"
         }
         #print "<td><input type=submit name=select value=Cancel ></td>"
-        print "<td>"themeImageInputButton("select","Cancel","cancel")"</td>"
+        print "<td>"display_submit("select","Cancel","cancel")"</td>"
     }
     print "<td align=right width=10%>"pageControl(page,nextPage,1,"pgdn","right")"</td>";
     print "</tr></table>";
@@ -2087,7 +2061,6 @@ function displayItem(db_size,db,idxArr,i,widthAttr,gridToggle,leftScroll,rightSc
 
     if (db[CATEGORY,idx] == "T") {
 
-        t=url_encode(db[TITLE,idx]);
         s=db[SEASON,idx];
         if (s != "" ) {
             _title = _title " S" s;
@@ -2127,7 +2100,7 @@ function displayItem(db_size,db,idxArr,i,widthAttr,gridToggle,leftScroll,rightSc
         _title = addNetworkIcon(src, trimTitle(_title) ext);
 
         h_comment("FILE = "db[FILE,idx]);
-        link = vod_link(_title,src,db[FILE,idx],n,i,attr,fontClass);
+        link = vod_link(_title,src,db[FILE,idx],n,attr,fontClass);
     }
 
     printf "\t<td%s class=\"%s\">\n",widthAttr,gridClass;
@@ -2231,20 +2204,6 @@ i,j) {
         eq=index(clauses[i],"=");
         dest[url_decode(substr(clauses[i],1,eq-1))]=url_decode(substr(clauses[i],eq+1));
     }
-}
-
-function replace(str,old,new,repeat,   i,_start,_ol,_nl) {
-    h_comment("REPLACE ["str"]["old"]["new"]"); 
-    _start=0;
-    _ol=length(old);
-    _nl=length(new);
-    while ((i=index(substr(str,_start+1),old)) > 0) {
-        str=substr(str,1,_start+i-1) new substr(str,_start+i+_ol);
-        _start += _nl;
-        if (repeat == "") { break; }
-    }
-    h_comment("REPLACE OUT ["str"]"); 
-    return str;
 }
 
 function SEND_COMMAND_TEXT(cmd,source) {
@@ -2359,7 +2318,6 @@ BEGIN {
     g_hostname="'"$HOSTNAME"'";
     g_version="'"$VERSION"'";
     g_catalog_pending="'"$CATALOG_PENDING"'";
-    g_catalog_running="'"$CATALOG_RUNNING"'";
     g_catalog_message="'"$CATALOG_MESSAGE"'";
     APPDIR="'$APPDIR'";
     print "<!-- Generated at "strftime()" -->";
@@ -2368,7 +2326,6 @@ BEGIN {
     print "<!-- poster "catalog_poster_location "-->";
     print "<!-- Scan path "catalog_scan_paths "-->";
     g_ticks=systime();
-    g_hdd_mount="/opt/sybhttpd/localhost.drives/HARD_DISK";
 
     SELF="";
 
@@ -2781,7 +2738,7 @@ cfg,cancelText,backText) {
 
         system("cd \""APPDIR"\" && ./options.sh TABLE2 \"help/"cfg"."helpSuffix"\" \""cfg"\" HIDE_VAR_PREFIX=1");
         addHidden("file");
-        print confirm("action","Save Settings","save_settings","Cancel","cancel");
+        print confirm("action","Save Settings","Cancel");
 
     } else if (match(action,"^check") || action == "showinstall" ) {
 
@@ -2799,7 +2756,7 @@ cfg,cancelText,backText) {
 
                 print "<br>You have the latest version";
                 if (betaInvolved) {
-                    print "<br>"confirm("action","Re-Install","install","Cancel","cancel");
+                    print "<br>"confirm("action","Re-Install","Cancel");
                 } else {
                     print backText;
                 }
@@ -2811,7 +2768,7 @@ cfg,cancelText,backText) {
                 print "<br>You appear to have a newer version. If you still want the public version use the normal application installation procedure";
                 print backText;
             } else {
-                print "<br>Upgrade version "gNewVersion" available" confirm("action","Install","install","Cancel","cancel");
+                print "<br>Upgrade version "gNewVersion" available" confirm("action","Install","Cancel");
             }
         } else {
             print "<br>An error occured looking for upgrades. Web site may be down or internet connectivity lost.";
@@ -2841,10 +2798,10 @@ cfg,cancelText,backText) {
         }
 
     } else if (action == "clearcache_confirm" ) {
-        print confirm("action","clearcache","clear_cache","Cancel","cancel");
+        print confirm("action","clearcache","Cancel");
 
     } else if (action == "rescan_confirm" ) {
-        print "Scan paths: "catalog_scan_paths "<p>This will return immediately and start a background scan which will complete in 15-60 minutes (depending on number of videos).<br>Internet bandwidth (esp torrent upload) also affects overall scan speed." confirm("action","rescan","rescan","Cancel","cancel");
+        print "Scan paths: "catalog_scan_paths "<p>This will return immediately and start a background scan which will complete in 15-60 minutes (depending on number of videos).<br>Internet bandwidth (esp torrent upload) also affects overall scan speed." confirm("action","rescan","Cancel");
 
     } else {
 

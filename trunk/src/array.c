@@ -115,7 +115,7 @@ void array_unittest() {
 
     char *s="oneXXtwoXXthree\tfour";
 
-    a = split(s,"XX");
+    a = split(s,"XX",0);
 
     assert(a->size == 3);
     assert(strcmp(a->array[0],"one") == 0);
@@ -123,7 +123,7 @@ void array_unittest() {
     assert(strcmp(a->array[2],"three\tfour") == 0);
     array_free(a);
 
-    a = split(s,"X");
+    a = split(s,"X",0);
     assert(a->size == 5);
     assert(strcmp(a->array[0],"one") == 0);
     assert(strcmp(a->array[1],"") == 0);
@@ -132,14 +132,14 @@ void array_unittest() {
     assert(strcmp(a->array[4],"three\tfour") == 0);
     array_free(a);
 
-    a = split(s,"X+");
+    a = split(s,"X+",0);
     assert(a->size == 3);
     assert(strcmp(a->array[0],"one") == 0);
     assert(strcmp(a->array[1],"two") == 0);
     assert(strcmp(a->array[2],"three\tfour") == 0);
     array_free(a);
 
-    a = split(s,"X*");
+    a = split(s,"X*",0);
     array_print(s,a);
     array_free(a);
 
@@ -186,7 +186,7 @@ Array *splitch(char *s_in,char ch) {
  * If pattern is one character long then a simple
  * character split is used.
  */
-Array *split(char *s_in,char *pattern) {
+Array *split(char *s_in,char *pattern,int reg_opts) {
 
     Array *a = array_new(free);
 
@@ -196,7 +196,7 @@ Array *split(char *s_in,char *pattern) {
 
     //printf("split re [%s] by [%s]\n",s_in,pattern);
 
-    if (strlen(pattern) == 1 ) {
+    if (strlen(pattern) == 1 && reg_opts == 0 ) {
         return splitch(s_in,pattern[0]);
     }
 
@@ -212,7 +212,7 @@ Array *split(char *s_in,char *pattern) {
 #define BUFSIZE 256
     char buf[BUFSIZE];
 
-    if ((status = regcomp(&re,pattern,REG_EXTENDED)) != 0) {
+    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
 
         regerror(status,&re,buf,BUFSIZE);
 

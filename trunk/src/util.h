@@ -10,12 +10,12 @@ void hashtable_dump(char *label,struct hashtable *h);
 char *join_str_fmt_free(char *fmt,char *s1,char *s2);
 char *substring(char *s,int start_pos, int end_pos);
 
-char *replace_all(char *s_in,char *pattern,char *replace);
+char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts);
 
-Array *regextract(char *s,char *pattern);
-char *regextract1(char *s,char *pattern,int submatch);
+Array *regextract(char *s,char *pattern,int reg_opts);
+char *regextract1(char *s,char *pattern,int submatch,int reg_opts);
 void regextract_free(Array *submatches);
-int regpos(char *s,char *pattern);
+int regpos(char *s,char *pattern,int reg_opts);
 
 void util_unittest();
 int chomp(char *line);

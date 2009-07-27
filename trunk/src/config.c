@@ -29,7 +29,7 @@ int browsing_from_lan() {
             if (ip) {
                 if (strncmp(ip,"192.168.",8) == 0 ||
                     strncmp(ip,"10.",3) == 0 ||
-                    regpos(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.") ) {
+                    regpos(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.",0) ) {
                     result = 1;
                 }
             }
@@ -179,7 +179,7 @@ struct hashtable *config_load_fp(FILE *fp) {
 
         chomp(line);
 
-        if (regpos(line,"^\\s*#") >= 0) {
+        if (regpos(line,"^\\s*#",0) >= 0) {
             //skip comment
         } else {
             char *key = NULL;
@@ -188,10 +188,10 @@ struct hashtable *config_load_fp(FILE *fp) {
 
             // key = value where value = X....X or just X (where X= ^space )
             // \x5b = [ \x5d = ]
-            if ((key = regextract1(line,"^[[:space:]]*([][A-Za-z0-9_.]+)[=:]",1)) != NULL ) {
+            if ((key = regextract1(line,"^[[:space:]]*([][A-Za-z0-9_.]+)[=:]",1,0)) != NULL ) {
 
 
-                if ((val = regextract1(line,"[=:][[:space:]]*([^[:space:]]?.*[^[:space:]])[[:space:]]*$",1)) != NULL) {
+                if ((val = regextract1(line,"[=:][[:space:]]*([^[:space:]]?.*[^[:space:]])[[:space:]]*$",1,0)) != NULL) {
                     if (strlen(val)>=3 ) {
                         if (strchr("\"'",*val)) {
                             if (val[strlen(val)-1] == *val) {

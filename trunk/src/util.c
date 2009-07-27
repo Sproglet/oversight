@@ -62,7 +62,7 @@ char *join_str_fmt_free(char *fmt,char *s1,char *s2) {
  * If pattern is one character long then a simple
  * character split is used.
  */
-char *replace_all(char *s_in,char *pattern,char *replace) {
+char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts) {
 
     assert(s_in);
     assert(pattern);
@@ -89,7 +89,7 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
 #define BUFSIZE 256
     char buf[BUFSIZE];
 
-    if ((status = regcomp(&re,pattern,REG_EXTENDED)) != 0) {
+    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
 
         regerror(status,&re,buf,BUFSIZE);
         fprintf(stderr,"%s\n",buf);
@@ -154,7 +154,7 @@ char *replace_all(char *s_in,char *pattern,char *replace) {
 
 #define BUFSIZE 256
 /* return position of regex in a string. -1 if no match  */
-int regpos(char *s,char *pattern) {
+int regpos(char *s,char *pattern,int reg_opts) {
     assert(s);
     assert(pattern);
 
@@ -162,7 +162,7 @@ int regpos(char *s,char *pattern) {
     regmatch_t pmatch[1];
     regex_t re;
 
-    if ((status = regcomp(&re,pattern,REG_EXTENDED)) != 0) {
+    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
 
         char buf[BUFSIZE];
         regerror(status,&re,buf,BUFSIZE);
@@ -184,9 +184,9 @@ int regpos(char *s,char *pattern) {
 /*
  * Extract a single regex submatch
  */
-char *regextract1(char *s,char *pattern,int submatch) {
+char *regextract1(char *s,char *pattern,int submatch,int reg_opts) {
 
-    Array *a = regextract(s,pattern);
+    Array *a = regextract(s,pattern,reg_opts);
     char *segment = NULL;
 
     if (a == NULL) {
@@ -202,7 +202,7 @@ char *regextract1(char *s,char *pattern,int submatch) {
 /*
  * Match a regular expression and return the submatch'ed braketed pair 0=the entire match
  */
-Array *regextract(char *s,char *pattern) {
+Array *regextract(char *s,char *pattern,int reg_opts) {
 
     int submatch = 1;
     // count number of submatch brackets
@@ -221,7 +221,7 @@ Array *regextract(char *s,char *pattern) {
 
     regex_t re;
 
-    if ((status = regcomp(&re,pattern,REG_EXTENDED)) != 0) {
+    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
 
         char buf[BUFSIZE];
         regerror(status,&re,buf,BUFSIZE);
@@ -306,7 +306,7 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
 
     // As h1 has h2 values we destroy h2 to avoid double memory frees.
     if (!copy) {
-        hashtable_destroy(h2,1,0);
+        hashtable_destroy(h2,0,0);
     }
 }
 
@@ -321,7 +321,7 @@ void util_unittest() {
     //regex functions
     //
     printf("regextract...\n");
-    Array *a = regextract("over there!","([a-z]+)!");
+    Array *a = regextract("over there!","([a-z]+)!",0);
     char *there = strdup(a->array[1]);
     array_free(a);
 
@@ -331,15 +331,15 @@ void util_unittest() {
     hello=join_str_fmt_free("%s %s",hello,there);
 
     printf("replaceall...\n");
-    char *x=replace_all(hello,"e","E");
+    char *x=replace_all(hello,"e","E",0);
     printf("%s\n",x);
     assert(strcmp(x,"hEllo thErE") == 0);
 
     printf("regpos...\n");
-    assert(regpos("hello","e") == 1);
+    assert(regpos("hello","e",0) == 1);
 
     printf("regmatch...\n");
-    Array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)");
+    Array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)",0);
     assert(matches);
     assert(matches->size == 5);
     assert(strcmp(matches->array[0],"a=b helllo d:ef") ==0);
@@ -495,7 +495,6 @@ int nmt_gid() {
 
 void hashtable_dump(char *label,struct hashtable *h) {
 
-
     if (hashtable_count(h)) {
 
        char *k,*v;
@@ -546,10 +545,10 @@ void *MALLOC(unsigned long bytes) {
 char *util_tolower(char *s) {
     char *p = NULL;
     if(s) {
-        p = MALLOC(strlen(p)+1);
+        p = MALLOC(strlen(s)+1);
         char *q = p ;
         while (*s) {
-            *q = tolower(*s);
+            *q++ = tolower(*s++);
         }
         *q='\0';
     }

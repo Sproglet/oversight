@@ -1,0 +1,16 @@
+<!-- Default Menu Templete  $Id$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu {:HOSTNAME:}</title>
+        {:INCLUDE(css):}
+    </head>
+    <body focuscolor=yellow focustext=black class=local{:BROWSER_IS_GAYA:} >
+        {:FORM_START:}
+            {:HEADER:}
+            {:TVIDS:}
+            {:GRID:} 
+            {:NAVBAR:}
+        </form>
+    </body>
+</html>

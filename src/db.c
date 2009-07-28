@@ -12,6 +12,8 @@
 #include "dbfield.h"
 #include "gaya_cgi.h"
 
+struct hashtable *read_and_parse_row(FILE *fp);
+
 char *db_get_lock_file_name() {
     char *s;
     ovs_asprintf(&s,"%s/catalog.lck",getenv("APPDIR"));
@@ -88,11 +90,11 @@ int field_pos(char *field_id,char *buffer,char **start,int *length,int quiet) {
     assert(field_id);
     assert(buffer);
     assert(start);
-    assert(strlen(field_id) < 5);
 
     int fid_len = strlen(field_id);
 
-    for (p = strstr(buffer,field_id) ; p != NULL ; p = strstr(p+1,field_id) ) {
+    //We can increment search by fid_len as the field names cant overlap due to tabs(DB_SEP).
+    for (p = strstr(buffer,field_id) ; p != NULL ; p = strstr(p+fid_len,field_id) ) {
         if (p[-1] == DB_SEP && p[fid_len] == DB_SEP ) {
             *start=p+fid_len+1;
             p=strchr(*start,DB_SEP);
@@ -214,6 +216,67 @@ int extract_field_char(char *field_id,char *buffer,char *val_ptr,int quiet) {
     return 0;
 }
 
+#ifdef FAST_PARSE
+struct hashtable *read_and_parse_row(FILE *fp) {
+    char value[DB_ROW_BUF_SIZE];
+#define DB_NAME_BUF_SIZE 10
+    char name[DB_NAME_BUF_SIZE];
+    char next;
+
+    char *buf[2] = { name , value };
+    char buflen[2] = { DB_ROW_BUF_SIZE,DB_NAME_BUF_SIZE};
+
+    struct hashtable *row_hash = string_string_hashtable();
+
+    int buf_pick=1;
+    do {
+        next = getc(fp);
+
+        switch(next) {
+        case '\t':
+            while(next == '\t') {
+                //read next field
+                
+                buf_pick = 1-buf_pick;
+                char *p = buf[buf_pick];
+                char *end = p + buflen[buf_pick];
+
+                next = getc(fp);
+                while (next != '\r' && next != '\n' && next != '\t') {
+
+                    assert(p < end);
+
+                    *p++ = next;
+
+                    next = getc(fp);
+                }
+                if (next == '\t') {
+                    *p = '\0';
+                    if (buf_pick == 1) {
+                        // just finished value - add to hash.
+                        html_log(0,"parsed field %s=%s",name,value);
+                        hashtable_insert(row_hash,STRDUP(name),STRDUP(value));
+                    }
+                } else {
+                    //end of row
+                    return row_hash;
+                }
+            }
+            break;
+        case '\n' : case '\r' :  // EOL terminators
+            break;
+        case '#': //comment
+            fgets(buffer,DB_ROW_BUF_SIZE,fp);
+            break;
+
+            
+        default: // Anything else
+            html_error("unexpected character [%c] at start of line",next);
+        }
+    }
+    return NULL;
+}
+#endif
 
 int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
 
@@ -396,7 +459,7 @@ DbRowSet * db_scan_titles(
 
     html_log(2,"Creating db scan pattern..");
 
-    if (name_filter) {
+    if (name_filter && *name_filter) {
         // Take the pattern and turn it into <TAB>_ID<TAB>pattern<TAB>
         int status;
 
@@ -439,23 +502,36 @@ DbRowSet * db_scan_titles(
         DbRowId rowid;
 #define DB_ROW_BUF_SIZE 4000
         char buffer[DB_ROW_BUF_SIZE+1];
+
+#ifdef FAST_PARSE
+        while (1) {
+            hashtable *row_hash = read_and_parse_row(fp,&pos);
+            if (row_hash) {
+                total_rows++;
+
+                if (buffer[0] == '\t' && gross_size != NULL) {
+                    (*gross_size)++;
+            }
+        }
+#endif
+
         while (1) {
             pos = ftell(fp);
+            /*
+             * TODO: Further optimisation - replace fgets with function that parses 
+             * input using fgetc directly into hashtable name value pairs.
+             */
             if (fgets(buffer,DB_ROW_BUF_SIZE,fp) == NULL) break;
 
             total_rows++;
-
-            if (chomp(buffer) == 0 ) {
-                html_error("Long db line alert");
-                exit(1);
-            }
 
             if (buffer[0] == '\t' && gross_size != NULL) {
                 (*gross_size)++;
             }
 
 
-            if (name_filter) {
+
+            if (name_filter && *name_filter) {
                 char *title_start=NULL;
                 int title_len=0;
                 int match;

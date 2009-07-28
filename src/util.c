@@ -16,6 +16,8 @@
 #include "hashtable_utility.h"
 #include "gaya_cgi.h"
 #include "vasprintf.h"
+#include "config.h"
+#include "oversight.h"
 
 
 
@@ -576,4 +578,12 @@ char *util_hostname() {
     gethostname(hostname,HOSTBUFSIZ);
     hostname[HOSTBUFSIZ-1]='\0';
     return hostname;
+}
+char *query_val(char *name) {
+    char *val;
+    if (config_check_str(g_query,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
 }

@@ -17,15 +17,8 @@
     
 void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
+void display_tvids(DbRowId **rowids);
 
-char *query_val(char *name) {
-    char *val;
-    if (config_check_str(g_query,name,&val)) {
-        return val;
-    } else {
-        return "";
-    }
-}
 // Return a full path 
 char *get_path(char *path) {
     char *new=NULL;
@@ -560,6 +553,7 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
 }
 
 void build_tvid_list() {
+
     printf("tvid?");
 }
 
@@ -590,9 +584,6 @@ void display_header(int media_type) {
     //- cell ---------------------
     td("");
     display_filter_bar();
-    if (g_dimension->local_browser && hashtable_search(g_query,"select") == NULL) {
-        build_tvid_list();
-    }
     td(NULL);
     //
     //- cell ---------------------
@@ -914,7 +905,7 @@ void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     html_log(0,"dbg: details [%s]",title);
 
 
-    char *cell_text;
+    char *cell_text=NULL;
     if (*select) {
 
         //cell_text = select_checkbox(row_id,title);
@@ -971,14 +962,66 @@ void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 }
 
 
+char *template_replace(char *input) {
+    char *output = STRDUP(input);
+
+    return output;
+}
+
 void display_play_button(char *text1,char *text2) {
     printf("<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s%s</a>",text1,text2);
 }
 
-void display_template(char*template_name) {
+char *scanlines_to_text(long scanlines) {
+    switch(scanlines) {
+        case 1080: return "1080";
+        case 720: return "720";
+        default: return "sd";
+    }
+}
+
+void display_template(char*template_name,char *file_name) {
     printf("<body>");
     form_start();
-    printf("%s template here",template_name);
+
+    html_log(0,"begin template");
+
+    char *file;
+    ovs_asprintf(&file,"%s/templates/%s/%s/%s.template",appDir(),
+            template_name,
+            scanlines_to_text(g_dimension->scanlines),
+            file_name);
+    html_log(1,"opening %s",file);
+
+    FILE *fp=fopen(file,"r");
+    if (fp == NULL) {
+        if (errno == 2) {
+            free(file);
+            ovs_asprintf(&file,"%s/templates/%s/any/%s.template",appDir(),
+                    template_name,
+                    file_name);
+            html_log(1,"opening %s",file);
+            fp=fopen(file,"r");
+        }
+        if (fp == NULL) {
+            html_error("Error %d opening %s",errno,file);
+        }
+    }
+
+    if (fp) {
+#define HTML_BUF_SIZE 999
+        char buffer[HTML_BUF_SIZE+1];
+        while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
+            buffer[HTML_BUF_SIZE] = '\0';
+            html_log(1,"raw:%s",buffer);
+            char *output = template_replace(buffer);
+            printf("%s",output);
+        }
+        fflush(stdout);
+        fclose(fp);
+    }
+
+    if (file) free(file);
     printf("</form>");
     display_play_button("","");
     printf("</body>");
@@ -1218,6 +1261,7 @@ void display_menu() {
 
     printf("<body onloadset=%s focuscolor=yellow focustext=black class=local%ld >\n",
             start_cell,g_dimension->local_browser);
+
     form_start();
 
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
@@ -1235,10 +1279,11 @@ void display_menu() {
     } else {
         //Check regex entered via text box
         html_log(2,"getting regex..");
-        regex=hashtable_search(g_query,"searcht");
-        if (regex) {
+
+
+        if (*query_val("searcht") && *query_val(QUERY_PARAM_SEARCH_MODE)) {
             html_log(2,"lc regex..");
-            regex=util_tolower(regex);
+            regex=util_tolower(query_val("searcht"));
         }
     }
     html_log(0,"Regex filter = %s",regex);
@@ -1282,7 +1327,7 @@ void display_menu() {
     DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
 
 
-    if (regex) { free(regex); regex=NULL; }
+    if (regex && *regex ) { free(regex); regex=NULL; }
 
     struct hashtable *overview = db_overview_hash_create(rowsets);
 
@@ -1306,6 +1351,7 @@ void display_menu() {
         page = 0;
     }
     display_header(media_type);
+    display_tvids(sorted_row_ids);
     display_grid(page,hashtable_count(overview),sorted_row_ids);
     display_nav_buttons(page,
             page>0,
@@ -1321,36 +1367,135 @@ void display_menu() {
 
 }
 
+void set_tvid_increments(int *tvid_val) {
+    memset(tvid_val,0,256);
+    tvid_val['1']=1;
+    tvid_val['2']=tvid_val['a']=tvid_val['b']=tvid_val['c']=2;
+    tvid_val['3']=tvid_val['d']=tvid_val['e']=tvid_val['f']=3;
+    tvid_val['4']=tvid_val['g']=tvid_val['h']=tvid_val['i']=4;
+    tvid_val['5']=tvid_val['j']=tvid_val['k']=tvid_val['l']=5;
+    tvid_val['6']=tvid_val['m']=tvid_val['n']=tvid_val['o']=6;
+    tvid_val['7']=tvid_val['p']=tvid_val['q']=tvid_val['r']=tvid_val['s']=7;
+    tvid_val['8']=tvid_val['t']=tvid_val['u']=tvid_val['v']=8;
+    tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=8;
+}
+
+void display_tvids(DbRowId **rowids) {
+
+    //if (g_dimension->local_browser && *query_val("select") == '\0')
+    if (*query_val("select") == '\0')
+    {
+
+#define TVID_MAX_LEN 3 //
+#define TVID_MAX 999   //must be 9 or 99 or 999
+
+        char *current_tvid = query_val(QUERY_PARAM_REGEX);
+
+        // Tracks which tvid codes to output to html 0=dont output
+        char tvid_output[TVID_MAX+1];
+        memset(tvid_output,0,TVID_MAX+1); // initially no output
+
+        // Map character to tvid digit.
+        int tvid_val[256];
+        set_tvid_increments(tvid_val);
+
+        html_log(0,"tvid generation");
+
+        int current_tvid_len = strlen(current_tvid);
+
+        // Pre compute tvid link using @X@ as a placeholder
+#define TVID_MARKER "@X@"
+        char *params;
+        ovs_asprintf(&params,"p=0&"QUERY_PARAM_REGEX"=%s"TVID_MARKER,current_tvid);
+
+        char *link_template = get_self_link(params,"tvid=\""TVID_MARKER"\"","");
+        free(params);
+
+        DbRowId **rowid_ptr;
+        for(rowid_ptr = rowids ; *rowid_ptr ; rowid_ptr++ ) {
+
+            DbRowId *rid = *rowid_ptr;
+
+            char *lc_title = util_tolower(rid->title);
+
+            Array *words = split(lc_title," ",0);
+
+            if (words) {
+                int w;
+                for(w = 0 ; w < words->size ; w++ ) {
+
+                    unsigned char *word = words->array[w];
+                    unsigned char *remaining_word = word + current_tvid_len;
+
+                    if (word+strlen((char *)word) > remaining_word) {
+                        //
+                        // no go through all remaining letters converting to tvid number
+                        // and set that tvid to be output. eg.
+                        // Say remaining word is "ost" of Lost. then we want tvids
+                        // o =>6
+                        // os => 67
+                        // ost => 678
+
+                        int i,tvid_index=0;
+                        for(i = 0 ; i < TVID_MAX_LEN && *remaining_word ; i++,remaining_word++ ) {
+                            tvid_index *= 10;
+                            tvid_index += tvid_val[*remaining_word];
+
+                            tvid_output[tvid_index] = 1;
+                        }
+                    }
+
+                }
+            }
+
+            array_free(words);
+
+
+            free(lc_title);
+        }
+        // Now output all of the selected tvids.
+        int i;
+        char i_str[TVID_MAX_LEN+1];
+        for(i = 1 ; i <= TVID_MAX ; i++ ) {
+            if (tvid_output[i]) {
+                sprintf(i_str,"%d",i);
+                char *link = replace_all(link_template,TVID_MARKER,i_str,0);
+                printf("%s\n",link);
+                free(link);
+            }
+        }
+
+        free(link_template);
+    }
+}
+
 void display_dynamic_styles() {
 
     long font_size = g_dimension->font_size;
     long small_font = font_size - 2;
-    char *view;
+    char *view = query_val("view");
 
-    if (!config_check_str(g_query,"view",&view)) {
-        view="";
-    }
-    assert(view);
 
-    printf(".dummy {};"); //bug in gaya - ignores style after comment
-    printf(".recent { font-size:%ld; }",font_size);
-    printf("td { font-size:%ld; font-family:\"arial\";  }",font_size);
+    printf(".dummy {};\n"); //bug in gaya - ignores style after comment
+    printf(".recent { font-size:%ld; }\n",font_size);
+    printf("td { font-size:%ld; font-family:\"arial\";  }\n",font_size);
 
     if (strcmp(view,"movie")==0 || strcmp(view,"tv") ==0 ) {
-        printf("font.plot { font-size:%ld ; font-weight:normal; }",small_font); 
+        printf("font.plot { font-size:%ld ; font-weight:normal; }\n",small_font); 
         // watched/Unwatched tv
-        printf("td.ep10 { background-color:#222222; font-weight:bold; font-size:%ld; }",small_font);
-        printf("td.ep11 { background-color:#111111; font-weight:bold; font-size:%ld; }",small_font);
-        printf("td.ep00 { background-color:#004400; font-weight:bold; font-size:%ld; }",small_font);
-        printf("td.ep01 { background-color:#003300; font-weight:bold; font-size:%ld; }",small_font);
-        printf(".eptitle { font-size:100%% ; font-weight:normal; font-size:%ld; }",small_font);
+        printf("td.ep10 { background-color:#222222; font-weight:bold; font-size:%ld; }\n",small_font);
+        printf("td.ep11 { background-color:#111111; font-weight:bold; font-size:%ld; }\n",small_font);
+        printf("td.ep00 { background-color:#004400; font-weight:bold; font-size:%ld; }\n",small_font);
+        printf("td.ep01 { background-color:#003300; font-weight:bold; font-size:%ld; }\n",small_font);
+        printf(".eptitle { font-size:100%% ; font-weight:normal; font-size:%ld; }\n",small_font);
 
-        printf("h1 { text-align:center; font-size:%ld; font-weight:bold; color:#FFFF00; }"
+        printf("h1 { text-align:center; font-size:%ld; font-weight:bold; color:#FFFF00; }\n"
                 ,g_dimension->title_size);
 
-        printf(".label { color:red }");
+        printf(".label { color:red }\n");
     } else {
-        printf(".scanlines%ld {color:#FFFF55; font-weight:bold; }",g_dimension->scanlines);
+        printf(".scanlines%ld {color:#FFFF55; font-weight:bold; }\n",g_dimension->scanlines);
     }
+    fflush(stdout);
 }
 

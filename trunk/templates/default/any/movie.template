@@ -1,18 +1,29 @@
 <!-- Default Movie Templete  $Id$ -->
-<table width=100%>
-    <tr valaign=top>
-        <td width=30%><center>{:POSTER:}</center></td>
-        <td>
-            <h1><center>{:TITLE:}{ S:SEASON:}{(:YEAR:)}{:CERTIFICATE_IMAGE:}{:EXTERNAL_URL:}</center></h1>
-            <table class=detail width=100%>
-                <tr><td class=list0 align=left><font class=label>Genre :</font>&nbsp;{:GENRE:}</td><tr>
-                <tr><td class=list0 align=left><font class=label>Rating :</font>&nbsp;{:RATING_STARS:}</td><tr>
-                <tr><td class=list0 align=left><font class=label>Plot :</font>&nbsp;{:PLOT:}</td><tr>
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu {:HOSTNAME:}</title>
+        {:INCLUDE(css):}
+    </head>
+    <body focuscolor=yellow focustext=black class=local{:BROWSER_IS_GAYA:} >
+        {:FORM_START:}
+            <table width=100%>
+                <tr valaign=top>
+                    <td width=30%><center>{:POSTER:}</center></td>
+                    <td>
+                        <h1><center>{:TITLE:}{ S:SEASON:}{(:YEAR:)}{:CERTIFICATE_IMAGE:}{:EXTERNAL_URL:}</center></h1>
+                        <table class=detail width=100%>
+                            <tr><td class=list0 align=left><font class=label>Genre :</font>&nbsp;{:GENRE:}</td><tr>
+                            <tr><td class=list0 align=left><font class=label>Rating :</font>&nbsp;{:RATING_STARS:}</td><tr>
+                            <tr><td class=list0 align=left><font class=label>Plot :</font>&nbsp;{:PLOT:}</td><tr>
+                        </table>
+                        {:MOVIELISTING:}
+                        <hr>
+                    </td>
+                </tr>
             </table>
-            {:MOVIELISTING:}
-            <hr>
-        </td>
-    </tr>
-</table>
-{:SELECT_CONTROLS:}
-
+            {:SELECT_CONTROLS:}
+        </form>
+        {:PLAY_TVID:}
+    </body>
+</html>

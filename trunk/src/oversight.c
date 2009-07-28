@@ -15,6 +15,7 @@
 #include "db.h"
 #include "dboverview.h"
 #include "display.h"
+#include "actions.h"
 
 void embed_stylesheet();
 void exec_old_cgi(int argc,char **argv);
@@ -41,10 +42,12 @@ void embed_stylesheet() {
     ovs_asprintf(&css,"%s/oversight2.css",appDir());
     printf("<style type=\"text/css\">\n");
     if ((fp=fopen(css,"r")) != NULL) {
-        char buffer[CSS_BUFSIZ];
+        char buffer[CSS_BUFSIZ+1];
         while(fgets(buffer,CSS_BUFSIZ,fp)) {
+            buffer[CSS_BUFSIZ] = '\0';
             printf("%s",buffer);
         }
+        fclose(fp);
     }
     display_dynamic_styles();
     printf("</style>\n");
@@ -128,16 +131,12 @@ int main(int argc,char **argv) {
 
     // Run the old cgi script for admin functions
     // This will be phased out as the admin functions are brought in.
-    char *view=hashtable_search(g_query,"view");  
+    char *view=query_val("view");  
 
     /*
      * For functions that are not yet ported - run the old script.
      */
-    if (view && strcmp(view,"admin") == 0) {        //TODO Delete when code finished
-        exec_old_cgi(argc,argv);                    //TODO Delete when code finished
-    } else if (view && strcmp(view,"tv") == 0) {    //TODO Delete when code finished
-        exec_old_cgi(argc,argv);                    //TODO Delete when code finished
-    } else if (view && strcmp(view,"movie") == 0) { //TODO Delete when code finished
+    if (strcmp(view,"admin") == 0) {        //TODO Delete when code finished
         exec_old_cgi(argc,argv);                    //TODO Delete when code finished
     }
 
@@ -145,6 +144,8 @@ int main(int argc,char **argv) {
     load_configs();
 
     config_read_dimensions();
+
+    do_actions();
 
 
     embed_stylesheet();
@@ -156,13 +157,13 @@ int main(int argc,char **argv) {
 */
     printf("</head>");
 
-    if (view && strcmp(view,"tv") == 0) {
+    if (strcmp(view,"tv") == 0) {
 
-        display_template("tv");
+        display_template("default","tv");
 
-    } else if (view && strcmp(view,"movie") == 0) {
+    } else if (strcmp(view,"movie") == 0) {
 
-        display_template("movie");
+        display_template("default","movie");
 
     } else {
 

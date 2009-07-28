@@ -108,7 +108,7 @@ int main(int argc,char **argv) {
 
 
 
-    printf("Content-Type: text/html\n\n<html><head>");
+    printf("Content-Type: text/html\n\n");
     html_log_level_set(2);
 
     html_comment("Appdir= [%s]",appDir());
@@ -157,20 +157,24 @@ int main(int argc,char **argv) {
 */
     printf("</head>");
 
+    get_sorted_rows_from_params(&rowsets,&sorted_rows);
+
+
     if (strcmp(view,"tv") == 0) {
 
-        display_template("default","tv");
+        display_template("default","tv",sorted_rows);
 
     } else if (strcmp(view,"movie") == 0) {
 
-        display_template("default","movie");
+        display_template("default","movie",sorted_rows);
 
     } else {
 
-        display_menu();
+        display_template("default","menu",sorted_rows);
+        //display_menu();
     }
 
-    printf("</html>");
+    free_sorted_rows(rowsets,sorted_rows);
 
     /*
     html_comment("dump shit");

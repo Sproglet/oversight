@@ -9,7 +9,7 @@ LD=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
 CFLAGS=-g -Wall -O -DOUT=$(OUT)
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
-	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o
+	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o
 
 SRC=$(OVS_OBJS:.o=.c)
 
@@ -27,6 +27,7 @@ all: oversight
 
 
 oversight:  $(OVS_OBJS)
+	ctags -R .
 	$(CC) $(LDFLAGS) -o oversight2.cgi $(OVS_OBJS)
 	cp -v oversight2.cgi /cygdrive/a/Apps/oversight/.
 

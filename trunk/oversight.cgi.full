@@ -1020,11 +1020,7 @@ function certificateImage(c,imgAttr  , c1) {
 function programDetailCell(label,txt,tdclass,\
 plot) {
     gsub(/ /,"\\&nbsp;",label);
-    if(0) {
-        return "<tr><td class="tdclass" width=20% align=right>"label"</td><td class="tdclass">"txt"</td></tr>";
-    } else {
-        return "<tr><td class="tdclass" width=100% align=left><font class=label>"label" :</font>&nbsp;"txt"</td></tr>";
-    }
+    return "<tr><td class="tdclass" width=100% align=left><font class=label>"label" :</font>&nbsp;"txt"</td></tr>";
 }
 
 function ratingTxt(rating,\

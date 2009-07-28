@@ -71,8 +71,7 @@ struct hashtable;
  * @return                  newly created hashtable or NULL on failure
  */
 
-struct hashtable *
-create_hashtable(unsigned int minsize,
+struct hashtable * create_hashtable(unsigned int minsize,
                  unsigned int (*hashfunction) (void*),
                  int (*key_eq_fn) (void*,void*));
 

@@ -14,6 +14,7 @@
 #include "oversight.h"
 #include "hashtable.h"
 #include "hashtable_loop.h"
+#include "macro.h"
     
 void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
@@ -405,7 +406,8 @@ void display_sort_cells() {
 }
 
 //Add current named html parameter as a hidden value
-void add_hidden(char *name_list) {
+char * add_hidden(char *name_list) {
+    char *output="";
     Array *names = split(name_list,",",0);
     int i;
     for(i = 0 ; i < names->size ; i++ ) {
@@ -414,9 +416,14 @@ void add_hidden(char *name_list) {
         char *val = query_val(name);
 
         if (*val) {
-            printf("<input type=hidden name=\"%s\" value=\"%s\" >\n",name,val);
+
+            char *tmp;
+            ovs_asprintf(&tmp,"%s<input type=hidden name=\"%s\" value=\"%s\" >\n",output,name,val);
+            if (*output) free(output);
+            output = tmp;
         }
     }
+    return output;
 }
 
 void display_submit(char *name,char *value) {
@@ -472,18 +479,6 @@ void display_filter_bar() {
 void form_start() {
     char *url;
 
-    if (strcasecmp(query_val("view"),"admin") == 0) {
-        char *action = query_val("action");
-        if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
-            return;
-        } else {
-            url="?"; // clear URL
-        } 
-    } else {
-        url=""; //keep query string eg when marking deleting
-    }
-    printf("<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n",url);
-    add_hidden("cache,idlist,view,page,sort,"QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
 }
 
 char *get_catalog_message() {
@@ -962,10 +957,58 @@ void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 }
 
 
-char *template_replace(char *input) {
-    char *output = STRDUP(input);
+void template_replace(char *input,DbRowId **sorted_row_ids) {
+    char *p,*q;
 
-    return output;
+    for (p=input,q=strchr(p,'{')  ; q  ;  q=strchr(p,'{') ) {
+
+        char *macro_start = q;
+        char *macro_name_start = NULL;
+        char *macro_name_end = NULL;
+        char *macro_end = NULL;
+        //print bit before macro
+        *q='\0';
+        printf("%s",p);
+        *q='{';
+
+        macro_name_start=strchr(macro_start,':');
+        if (macro_name_start) {
+            macro_name_start++;
+            macro_name_end = strchr(macro_name_start,':');
+            if (macro_name_end) {
+                macro_end=strchr(macro_name_end,'}');
+            }
+        }
+
+        // Cant identify macro - advance to next character.
+        if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL ) {
+
+            putc('{',stdout);
+            p=macro_start+1;
+
+        } else {
+
+            macro_name_end[0] = '\0';
+            char *macro_output = macro_call(macro_name_start,sorted_row_ids);
+            macro_name_end[0] = ':';
+            if (macro_output && *macro_output) {
+
+                // Print bit before macro call
+                 macro_name_start[-1] = '\0'; 
+                 printf("%s",macro_start+1);
+                 macro_name_start[-1]=':';
+
+                 printf("%s",macro_output);
+
+                 // Print bit after macro call
+                 macro_end[0] = '\0';
+                 printf("%s",macro_name_end+1);
+                 macro_end[0] = '}';
+             }
+            p = macro_end + 1;
+        }
+    }
+    printf("%s",p);
 }
 
 void display_play_button(char *text1,char *text2) {
@@ -980,9 +1023,7 @@ char *scanlines_to_text(long scanlines) {
     }
 }
 
-void display_template(char*template_name,char *file_name) {
-    printf("<body>");
-    form_start();
+void display_template(char*template_name,char *file_name,DbRowId **sorted_row_ids) {
 
     html_log(0,"begin template");
 
@@ -1010,12 +1051,14 @@ void display_template(char*template_name,char *file_name) {
 
     if (fp) {
 #define HTML_BUF_SIZE 999
+
         char buffer[HTML_BUF_SIZE+1];
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
             buffer[HTML_BUF_SIZE] = '\0';
-            html_log(1,"raw:%s",buffer);
-            char *output = template_replace(buffer);
-            printf("%s",output);
+            if (strstr(buffer,"<!--") == NULL) {
+                html_log(1,"raw:%s",buffer);
+            }
+            template_replace(buffer,sorted_row_ids);
         }
         fflush(stdout);
         fclose(fp);
@@ -1246,23 +1289,9 @@ void display_nav_buttons(int page,int prev_page,int next_page) {
     printf("</tr></table>");
 }
 
-void display_menu() {
-
-    char *start_cell;
+void get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr) {
     // Get filter options
     long crossview=0;
-
-    if (config_check_str(g_query,QUERY_PARAM_REGEX,&start_cell)) {
-        start_cell="filter5";
-    } else {
-        start_cell="centreCell";
-    }
-
-
-    printf("<body onloadset=%s focuscolor=yellow focustext=black class=local%ld >\n",
-            start_cell,g_dimension->local_browser);
-
-    form_start();
 
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
     html_log(0,"Crossview = %ld",crossview);
@@ -1346,10 +1375,36 @@ void display_menu() {
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
     }
 
+    //Free hash without freeing keys
+    db_overview_hash_destroy(overview);
+
+    if (sortedRowsPtr) *sortedRowsPtr = sorted_row_ids;
+    if (rowSetsPtr) *rowSetsPtr = rowsets;
+
+}
+
+void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids) {
+
+    free(sorted_row_ids);
+
+    //finished now - so we could just let os free
+    db_free_rowsets_and_dbs(rowsets);
+}
+
+
+
+void display_menu() {
+
+    char *start_cell;
+
     long page;
     if (!config_check_long(g_query,"p",&page)) {
         page = 0;
     }
+
+    display_template("default","menu",sorted_row_ids);
+
+    form_start();
     display_header(media_type);
     display_tvids(sorted_row_ids);
     display_grid(page,hashtable_count(overview),sorted_row_ids);
@@ -1358,12 +1413,6 @@ void display_menu() {
             (page+1)*g_dimension->rows*g_dimension->cols < hashtable_count(overview));
 
     printf("</form></body>");
-    db_overview_hash_destroy(overview);
-
-    free(sorted_row_ids);
-
-    //finished now - so we could just let os free
-    db_free_rowsets_and_dbs(rowsets);
 
 }
 

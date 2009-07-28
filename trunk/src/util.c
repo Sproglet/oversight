@@ -38,9 +38,9 @@ int stringcmp(void *a,void *b) {
     return strcmp(a,b) ==0;
 }
 
-struct hashtable *string_string_hashtable() {
+struct hashtable *string_string_hashtable(int size) {
 
-    return create_hashtable(16,stringhash,stringcmp);
+    return create_hashtable(size,stringhash,stringcmp);
 }
 
 

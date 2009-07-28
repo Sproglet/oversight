@@ -5,11 +5,11 @@
         <title>Oversight Menu {:HOSTNAME:}</title>
         {:INCLUDE(css):}
     </head>
-    <body focuscolor=yellow focustext=black class=local{:BROWSER_IS_GAYA:} >
+    <body focuscolor=yellow focustext=black class=local{:IS_GAYA:} >
         {:FORM_START:}
             <table width=100%>
                 <tr valaign=top>
-                    <td width=30%><center>{:POSTER:}</center></td>
+                    <td width=30%><center>{:POSTER_IMG:}</center></td>
                     <td>
                         <h1><center>{:TITLE:}{ S:SEASON:}{(:YEAR:)}{:CERTIFICATE_IMAGE:}{:EXTERNAL_URL:}</center></h1>
                         <table class=detail width=100%>

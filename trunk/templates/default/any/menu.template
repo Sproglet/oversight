@@ -5,12 +5,37 @@
         <title>Oversight Menu {:HOSTNAME:}</title>
         {:INCLUDE(css):}
     </head>
-    <body focuscolor=yellow focustext=black class=local{:BROWSER_IS_GAYA:} >
+    <body {onloadset=:START_CELL:} focuscolor=yellow focustext=black {class=local:IS_GAYA:} >
         {:FORM_START:}
-            {:HEADER:}
+            <table class=header width=100%>
+                <tr>
+                    <td><font size=6>{:MEDIA_TYPE:}</font>
+                    <br><font size=2>{:VERSION:} {:HOSTNAME:}</font>
+                    </td>
+                    <td>{:MEDIA_TOGGLE:}</td>
+                    <td>{:WATCHED_TOGGLE:}</td>
+                    <td>{:SORT_TYPE_TOGGLE:}</td>
+                    <td>{:FILTER_BAR:}</td>
+                    <td>{:STATUS:}</td>
+                    <td>{:SETUP_BUTTON:}</td>
+                </tr>
+            </table>
             {:TVIDS:}
             {:GRID:} 
-            {:NAVBAR:}
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td width=10%>{:LEFT_BUTTON:}</td>
+                    {<td align=center>:SELECT_BACK_BUTTON:</td>}
+                    <td align=center>{:HOME_BUTTON:}</td>
+                    {<td align=center>:MARK_BUTTON:</td>}
+                    {<td align=center>:DELETE_BUTTON:</td>}
+                    {<td align=center>:SELECT_MARK_SUBMIT:</td>}
+                    {<td align=center>:SELECT_DELETE_SUBMIT:</td>}
+                    {<td align=center>:SELECT_DELIST_SUBMIT:</td>}
+                    {<td align=center>:SELECT_CANCEL_SUBMIT:</td>}
+                    <td width=10%>{:RIGHT_BUTTON:}</td>
+                </tr>
+            </table>
         </form>
     </body>
 </html>

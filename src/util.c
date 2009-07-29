@@ -358,7 +358,7 @@ void util_unittest() {
 
     // hashtables
     //
-    struct hashtable *h = string_string_hashtable();
+    struct hashtable *h = string_string_hashtable(16);
 
     assert(hashtable_insert(h,hello,x));
 

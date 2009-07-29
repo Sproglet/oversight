@@ -278,7 +278,7 @@ struct hashtable *read_and_parse_row(FILE *fp) {
 }
 #endif
 
-int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
+int parse_row(int tv_or_movie_view,long fpos,char *buffer,Db *db,DbRowId *rowid) {
 
     assert(db);
     assert(rowid);
@@ -314,6 +314,9 @@ int parse_row(long fpos,char *buffer,Db *db,DbRowId *rowid) {
             //html_log(0,"db cert = [%s]",rowid->certificate);
 
                                 //}
+                                if (tv_or_movie_view) {
+                                    extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
+                                }
 
                                 return 1;
                             }
@@ -457,6 +460,9 @@ DbRowSet * db_scan_titles(
     regex_t pattern;
     DbRowSet *rowset = NULL;
 
+    char *view=query_val("view");
+    int tv_or_movie_view = (strcmp(view,"tv")==0 || strcmp(view,"movie") == 0);
+
     html_log(2,"Creating db scan pattern..");
 
     if (name_filter && *name_filter) {
@@ -563,7 +569,7 @@ DbRowSet * db_scan_titles(
                 }
             }
 
-            if (parse_row(pos,buffer,db,&rowid)) {
+            if (parse_row(tv_or_movie_view,pos,buffer,db,&rowid)) {
                 row_count = db_rowset_add(rowset,&rowid);
             }
         }

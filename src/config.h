@@ -1,6 +1,7 @@
 #ifndef __CONFIG_H_ALORD__
 #define __CONFIG_H_ALORD__
 
+#include <stdio.h>
 #include "hashtable.h"
 
 typedef struct dimension_str {

@@ -8,7 +8,7 @@ void dbf_ids_init() {
 
     if (dbf_ids != NULL) return;
 
-    dbf_ids = string_string_hashtable();
+    dbf_ids = string_string_hashtable(32);
 
     hashtable_insert(dbf_ids,DB_FLDID_ID,"ID");
     hashtable_insert(dbf_ids,DB_FLDID_WATCHED,"Watched");

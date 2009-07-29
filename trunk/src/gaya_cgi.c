@@ -383,6 +383,8 @@ int html_log_level_get() {
 
 void html_log(int level,char *format,...) {
     va_list ap;
+
+    assert(level < 10);
     va_start(ap,format);
     if (level <= html_log_level ) {
         html_vacomment(format,ap);

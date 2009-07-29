@@ -4,10 +4,10 @@
         <meta name="robots" content="nofollow">
         <title>Oversight Tv Menu [:HOSTNAME:]</title>
         <style type="text/css">
-            [:INCLUDE_TEMPLATE(any,css):]
+            [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black class=local[:BROWSER_IS_GAYA:] >
+    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
         [:FORM_START:]
             <table width=100%>
                 <tr>
@@ -18,16 +18,26 @@
                             <tr><td class=list0 align=left><font class=label>Genre :</font>&nbsp;[:GENRE:]</td><tr>
                             <tr><td class=list0 align=left><font class=label>Rating :</font>&nbsp;[:RATING_STARS:]</td><tr>
                             <tr><td class=list0 align=left><font class=label>Plot :</font>&nbsp;[:PLOT:]</td><tr>
-                            <tr><td class=list0 align=left><font class=label>Plot :</font>&nbsp;[:RATING_STARS:]</td><tr>
                         </table>
-                        [:SELECT_CONTROLS:]
+                        <table class=footer width=100%>
+                            <tr valign=top>
+                                [<td align=center>:SELECT_BACK_BUTTON:</td>]
+                                <td align=center>[:HOME_BUTTON:]</td>
+                                [<td align=center>:MARK_BUTTON:</td>]
+                                [<td align=center>:DELETE_BUTTON:</td>]
+                                [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                                [<td align=center>:SELECT_DELETE_SUBMIT:</td>]
+                                [<td align=center>:SELECT_DELIST_SUBMIT:</td>]
+                                [<td align=center>:SELECT_CANCEL_SUBMIT:</td>]
+                            </tr>
+                        </table>
                     </td>
                 </tr>
             </table>
             <table width=100%>
                 <tr>
                     <td class=filelist align=center>
-                    [:LISTING2:]
+                    [:LISTING:]
                     </td>
                 </tr>
             </table>

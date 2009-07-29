@@ -3,6 +3,7 @@
 #include <string.h>
 #include "util.h"
 #include "oversight.h"
+#include "gaya_cgi.h"
 
 void do_actions() {
 

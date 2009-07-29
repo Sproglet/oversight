@@ -4,6 +4,6 @@
 #include "db.h"
 
 void macro_init();
-char *macro_call(char *call,DbRowId **sorted_rows);
+char *macro_call(char *call,int num_rows,DbRowId **sorted_rows);
 
 #endif

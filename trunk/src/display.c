@@ -16,7 +16,7 @@
 #include "hashtable_loop.h"
 #include "macro.h"
     
-void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
+char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 void display_tvids(DbRowId **rowids);
 
@@ -317,7 +317,7 @@ void display_self_link(char *params,char *attr,char *title) {
 }
 
 
-void display_remote_button(char *button_colour,char *params,char *text) {
+char *get_remote_button(char *button_colour,char *params,char *text) {
 
     assert(button_colour);
     assert(params);
@@ -331,15 +331,16 @@ void display_remote_button(char *button_colour,char *params,char *text) {
     ovs_asprintf(&attr,"tvid=\"%s\"",button_colour);
     ovs_asprintf(&text2,"<font class=\"%sbutton\">%s</font>",button_colour,text);
 
-    display_self_link(params2,attr,text2);
+    char *result = get_self_link(params2,attr,text2);
 
     free(params2);
     free(attr);
     free(text2);
+    return result;
 }
 
 
-void display_toggle(char *button_colour,char *param_name,char *v1,char *text1,char *v2,char *text2) {
+char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char *v2,char *text2) {
 
     assert(button_colour);
     assert(param_name);
@@ -376,33 +377,11 @@ void display_toggle(char *button_colour,char *param_name,char *v1,char *text1,ch
 
     html_log(0,"toggle text = [%s]",text);
 
-    display_remote_button(button_colour,params,text);
+    char *result = get_remote_button(button_colour,params,text);
 
     free(params);
     free(text);
-}
-
-void display_sort_cells() {
-
-    printf("<td>");
-
-    display_toggle("red",QUERY_PARAM_TYPE_FILTER,
-            QUERY_PARAM_MEDIA_TYPE_VALUE_TV,"Tv",
-            QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE,"Film");
-
-    printf("</td><td>");
-
-    display_toggle("green",QUERY_PARAM_WATCHED_FILTER,
-            QUERY_PARAM_WATCHED_VALUE_NO,"Unmarked",
-            QUERY_PARAM_WATCHED_VALUE_YES,"Marked");
-
-    printf("</td><td>");
-
-    display_toggle("blue",QUERY_PARAM_SORT,
-            DB_FLDID_TITLE,"Name",
-            DB_FLDID_INDEXTIME,"Age");
-
-    printf("</td>");
+    return result;
 }
 
 //Add current named html parameter as a hidden value
@@ -440,73 +419,6 @@ void display_confirm(char *name,char *val_ok,char *val_cancel) {
     printf("</td></tr></table>");
 }
 
-
-void display_filter_bar() {
-    if (*query_val(QUERY_PARAM_SEARCH_MODE) || *query_val(QUERY_PARAM_REGEX)) {
-
-        if (g_dimension->local_browser) {
-            char *current_regex =query_val(QUERY_PARAM_REGEX);
-            printf("Use the numbers to search");
-            display_theme_image_link("p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=","","start-small","width=20 height=20");
-            printf("<font class=keypada>[%s]</font>",current_regex);
-
-            char *params;
-            
-            // Print icon to remove last digit from tvid search
-            int regex_len=strlen(current_regex);
-            if (regex_len >= 1 ) {
-                regex_len --;
-
-                ovs_asprintf(&params,"p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=%.*s",
-                        regex_len,current_regex);
-                display_theme_image_link(params,"","left-small","width=20 height=20");
-            }
-
-        } else {
-
-            printf("<input type=text name=searcht value=\"%s\" >",query_val("searcht"));
-            add_hidden(QUERY_PARAM_SEARCH_MODE);
-            display_submit("searchb","Search");
-            display_submit("searchb","Hide");
-
-        }
-
-    } else {
-        display_theme_image_link("p=0&" QUERY_PARAM_SEARCH_MODE "=1","","find","");
-    }
-}
-
-void form_start() {
-    char *url;
-
-}
-
-char *get_catalog_message() {
-#define MSG_SIZE 20
-    char *result = NULL;
-    static char msg[MSG_SIZE+1];
-    char *filename;
-    ovs_asprintf(&filename,"%s/catalog.status",appDir());
-
-    msg[0] = '\0';
-
-    FILE *fp = fopen(filename,"r");
-    if (fp) {
-        fgets(msg,MSG_SIZE,fp);
-        msg[MSG_SIZE] = '\0';
-        chomp(msg);
-
-        result = msg;
-
-        fclose(fp);
-    } else {
-        html_error("Error %d opening [%s]",errno,filename);
-    }
-    free(filename);
-
-    return result;
-}
-
 int exists_file_in_dir(char *dir,char *name) {
 
     char *filename;
@@ -518,27 +430,23 @@ int exists_file_in_dir(char *dir,char *name) {
     return result;
 }
 
-void display_status() {
-    char *msg = get_catalog_message();
-    if (msg == NULL) {
-
-        if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
-            msg = "[ Catalog update pending ]";
-        } else if (db_full_size() == 0 ) {
-            msg = "[ Video index is empty. Select setup icon and scan the media drive ]";
-        }
-    }
-
-    printf("%s",(msg == NULL ? "" : msg));
-}
-
 
 void display_footer(
         ) {
     printf("Footer here");
 }
 
+char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr) {
+    assert(qlist);
+    assert(image_name);
+
+    char  *tag=get_theme_image_tag(image_name,button_attr);
+    char *result = get_self_link(qlist,href_attr,tag);
+    free(tag);
+    return result;
+}
 void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr) {
+
     assert(qlist);
     assert(image_name);
 
@@ -550,46 +458,6 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
 void build_tvid_list() {
 
     printf("tvid?");
-}
-
-void display_header(int media_type) {
-
-    printf("<table class=header width=100%%><tr>\n");
-    td("align=left width=20%");
-    char *mt="?";
-    switch(media_type) {
-        case DB_MEDIA_TYPE_ANY: mt="All Video"; break;
-        case DB_MEDIA_TYPE_TV: mt="TV Shows"; break;
-        case DB_MEDIA_TYPE_FILM: mt="Movies"; break;
-    }
-    printf("<font size=6>%s</font>\n",mt);
-
-    char *version=OVS_VERSION;
-    version +=4;
-    version = replace_all(version,"BETA","b",0);
-
-
-    printf("<br><font size=2>V2.%s %s</font>",version,util_hostname());
-    td(NULL);
-
-    //-- cell --------------------
-
-    display_sort_cells();
-
-    //- cell ---------------------
-    td("");
-    display_filter_bar();
-    td(NULL);
-    //
-    //- cell ---------------------
-    td("");
-    display_status();
-    td(NULL);
-    //- cell ---------------------
-    td("");
-    display_theme_image_link("view=admin&action=ask","TVID=SETUP","configure","");
-    td(NULL);
-    printf("</tr></table>");
 }
 
 char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *class) {
@@ -957,10 +825,13 @@ void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 }
 
 
-void template_replace(char *input,DbRowId **sorted_row_ids) {
+#define MACRO_CH_BEG '['
+#define MACRO_CH_SEP ':'
+#define MACRO_CH_END ']'
+void template_replace(char *input,int num_rows,DbRowId **sorted_row_ids) {
     char *p,*q;
 
-    for (p=input,q=strchr(p,'{')  ; q  ;  q=strchr(p,'{') ) {
+    for (p=input,q=strchr(p,MACRO_CH_BEG)  ; q  ;  q=strchr(p,MACRO_CH_BEG) ) {
 
         char *macro_start = q;
         char *macro_name_start = NULL;
@@ -969,41 +840,41 @@ void template_replace(char *input,DbRowId **sorted_row_ids) {
         //print bit before macro
         *q='\0';
         printf("%s",p);
-        *q='{';
+        *q=MACRO_CH_BEG;
 
-        macro_name_start=strchr(macro_start,':');
+        macro_name_start=strchr(macro_start,MACRO_CH_SEP);
         if (macro_name_start) {
             macro_name_start++;
-            macro_name_end = strchr(macro_name_start,':');
+            macro_name_end = strchr(macro_name_start,MACRO_CH_SEP);
             if (macro_name_end) {
-                macro_end=strchr(macro_name_end,'}');
+                macro_end=strchr(macro_name_end,MACRO_CH_END);
             }
         }
 
         // Cant identify macro - advance to next character.
         if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL ) {
 
-            putc('{',stdout);
+            putc(MACRO_CH_BEG,stdout);
             p=macro_start+1;
 
         } else {
 
             macro_name_end[0] = '\0';
-            char *macro_output = macro_call(macro_name_start,sorted_row_ids);
-            macro_name_end[0] = ':';
+            char *macro_output = macro_call(macro_name_start,num_rows,sorted_row_ids);
+            macro_name_end[0] = MACRO_CH_SEP;
             if (macro_output && *macro_output) {
 
                 // Print bit before macro call
                  macro_name_start[-1] = '\0'; 
                  printf("%s",macro_start+1);
-                 macro_name_start[-1]=':';
+                 macro_name_start[-1]=MACRO_CH_SEP;
 
                  printf("%s",macro_output);
 
                  // Print bit after macro call
                  macro_end[0] = '\0';
                  printf("%s",macro_name_end+1);
-                 macro_end[0] = '}';
+                 macro_end[0] = MACRO_CH_END;
              }
             p = macro_end + 1;
         }
@@ -1023,7 +894,7 @@ char *scanlines_to_text(long scanlines) {
     }
 }
 
-void display_template(char*template_name,char *file_name,DbRowId **sorted_row_ids) {
+void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids) {
 
     html_log(0,"begin template");
 
@@ -1058,7 +929,7 @@ void display_template(char*template_name,char *file_name,DbRowId **sorted_row_id
             if (strstr(buffer,"<!--") == NULL) {
                 html_log(1,"raw:%s",buffer);
             }
-            template_replace(buffer,sorted_row_ids);
+            template_replace(buffer,num_rows,sorted_row_ids);
         }
         fflush(stdout);
         fclose(fp);
@@ -1180,116 +1051,9 @@ char *get_theme_image_tag(char *image_name,char *attr) {
     return result;
 }
 
-void display_page_control(char *select,char *view,int page,int on,int offset,char *tvid_name,char *image_base_name) {
-    assert(select);
-    assert(view);
-    assert(tvid_name);
-    assert(image_base_name);
-
-    if (! *select) {
-        //only show page controls when NOT selecting
-        if (on)  {
-            char *params=NULL;
-            char *attrs=NULL;
-            ovs_asprintf(&params,"p=%d",page+offset);
-            ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
-
-            html_log(1,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
-
-            display_theme_image_link(params,attrs,image_base_name,"");
-            free(params);
-            free(attrs);
-        } else if (! *view ) {
-            //Only show disabled page controls in main menu view (not tv / movie subpage) - this may change
-            char *image_off=NULL;
-            ovs_asprintf(&image_off,"%s-off",image_base_name);
-            char *tag = get_theme_image_tag(image_off,NULL);
-            printf("%s",tag);
-            free(image_off);
-            free(tag);
-        }
-    }
-}
-
-void display_nav_buttons(int page,int prev_page,int next_page) {
-    
-    char *q_view=NULL;
-    char *q_select=NULL;
-
-    if (!config_check_str(g_query,"view",&q_view)) {
-        q_view = "";
-    }
-
-    if (!config_check_str(g_query,"select",&q_select)) {
-        q_select = "";
-    }
-
-    printf("<table class=footer width=100%%><tr valign=top>");
-
-    printf("\n<td width=10%%>");
-    display_page_control(q_select,q_view,page,prev_page,-1,"pgup","left");
-    printf("</td>");
-
-    if (*q_view && *q_select) {
-        printf("\n<td align=center>");
-        display_theme_image_link("view=&idlist=","name=up","back","");
-        printf("</td>");
-    }
-
-    printf("\n<td align=center>");
-    if (! *q_view) {
-        if(hashtable_count(g_query) == 0 && g_dimension->local_browser) {
-            char *tag=get_theme_image_tag("exit",NULL);
-            printf("<a href=\"/start.cgi\" name=home >%s</a>",tag);
-            free(tag);
-        } else {
-            char *tag=get_theme_image_tag("home",NULL);
-            printf("<a href=\"%s?\" name=home TVID=HOME >%s</a>",SELF_URL,tag);
-            free(tag);
-        }
-    }
-
-    if (! *q_select) {
-        // user is viewing
-        if (allow_mark()) {
-            printf("<td>"); display_theme_image_link("select=Mark","tvid=EJECT","mark",""); printf("</td>");
-        }
-        if (allow_delete() || allow_delist()) {
-            printf("<td>"); display_theme_image_link("select=Delete","tvid=CLEAR","delete",""); printf("</td>");
-        }
-
-    } else {
-        // user is selecting
-        if (strcmp(q_select,"Mark") == 0 ) {
-
-            printf("<td>"); display_submit("action","Mark"); printf("</td>");
-
-        } else if (strcmp(q_select,"Delete") == 0 ) {
-
-            if (allow_delete()) {
-                printf("<td>"); display_submit("action","Delete"); printf("</td>");
-            }
-
-            if (allow_delist()) {
-                printf("<td>"); display_submit("action","Remove_From_List"); printf("</td>");
-            }
-            printf("<td>"); display_submit("select","Cancel"); printf("</td>");
-        }
-    }
-
-    printf("</td>");
 
 
-    printf("\n<td width=10%%>");
-    display_page_control(q_select,q_view,page,next_page,1,"pgdn","right");
-    printf("</td>");
-
-
-
-    printf("</tr></table>");
-}
-
-void get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr) {
+int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr) {
     // Get filter options
     long crossview=0;
 
@@ -1375,12 +1139,14 @@ void get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
     }
 
+    int numrows = hashtable_count(overview);
     //Free hash without freeing keys
     db_overview_hash_destroy(overview);
 
     if (sortedRowsPtr) *sortedRowsPtr = sorted_row_ids;
     if (rowSetsPtr) *rowSetsPtr = rowsets;
 
+    return numrows;
 }
 
 void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids) {
@@ -1392,29 +1158,6 @@ void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids) {
 }
 
 
-
-void display_menu() {
-
-    char *start_cell;
-
-    long page;
-    if (!config_check_long(g_query,"p",&page)) {
-        page = 0;
-    }
-
-    display_template("default","menu",sorted_row_ids);
-
-    form_start();
-    display_header(media_type);
-    display_tvids(sorted_row_ids);
-    display_grid(page,hashtable_count(overview),sorted_row_ids);
-    display_nav_buttons(page,
-            page>0,
-            (page+1)*g_dimension->rows*g_dimension->cols < hashtable_count(overview));
-
-    printf("</form></body>");
-
-}
 
 void set_tvid_increments(int *tvid_val) {
     memset(tvid_val,0,256);
@@ -1517,34 +1260,3 @@ void display_tvids(DbRowId **rowids) {
         free(link_template);
     }
 }
-
-void display_dynamic_styles() {
-
-    long font_size = g_dimension->font_size;
-    long small_font = font_size - 2;
-    char *view = query_val("view");
-
-
-    printf(".dummy {};\n"); //bug in gaya - ignores style after comment
-    printf(".recent { font-size:%ld; }\n",font_size);
-    printf("td { font-size:%ld; font-family:\"arial\";  }\n",font_size);
-
-    if (strcmp(view,"movie")==0 || strcmp(view,"tv") ==0 ) {
-        printf("font.plot { font-size:%ld ; font-weight:normal; }\n",small_font); 
-        // watched/Unwatched tv
-        printf("td.ep10 { background-color:#222222; font-weight:bold; font-size:%ld; }\n",small_font);
-        printf("td.ep11 { background-color:#111111; font-weight:bold; font-size:%ld; }\n",small_font);
-        printf("td.ep00 { background-color:#004400; font-weight:bold; font-size:%ld; }\n",small_font);
-        printf("td.ep01 { background-color:#003300; font-weight:bold; font-size:%ld; }\n",small_font);
-        printf(".eptitle { font-size:100%% ; font-weight:normal; font-size:%ld; }\n",small_font);
-
-        printf("h1 { text-align:center; font-size:%ld; font-weight:bold; color:#FFFF00; }\n"
-                ,g_dimension->title_size);
-
-        printf(".label { color:red }\n");
-    } else {
-        printf(".scanlines%ld {color:#FFFF55; font-weight:bold; }\n",g_dimension->scanlines);
-    }
-    fflush(stdout);
-}
-

@@ -25,6 +25,9 @@ typedef struct Dbrowid_struct {
     char *ext;
     char *certificate;
 
+    //only populate if view=tv or movie
+    char *url;
+
 } DbRowId;
 
 

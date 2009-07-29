@@ -132,7 +132,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
         html_log(0,"loading [%s]",f);
         out = config_load(f);
     } else {
-        out = string_string_hashtable();
+        out = string_string_hashtable(16);
     }
     free(f);
 
@@ -144,7 +144,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
         html_log(0,"loading [%s]",f);
         new = config_load(f);
     } else {
-        new = string_string_hashtable();
+        new = string_string_hashtable(16);
     }
     free(f);
 
@@ -172,7 +172,7 @@ struct hashtable *config_load(char *filename) {
 #define CFG_BUFSIZ 200
 struct hashtable *config_load_fp(FILE *fp) {
 
-    struct hashtable *result=string_string_hashtable();
+    struct hashtable *result=string_string_hashtable(16);
     char line[CFG_BUFSIZ];
 
     while((fgets(line,CFG_BUFSIZ,fp))) {

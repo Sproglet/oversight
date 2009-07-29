@@ -28,17 +28,19 @@ void array_free(Array *a) {
 
     void(*free_fn)(void *);
 
-    free_fn = a->free_fn;
+    if (a) {
+        free_fn = a->free_fn;
 
-    if (free_fn != NULL) {
-        for(i = 0 ; i < a->size ; i++ ) {
-            if (a->array[i]) {
-                (*free_fn)(a->array[i]);
+        if (free_fn != NULL) {
+            for(i = 0 ; i < a->size ; i++ ) {
+                if (a->array[i]) {
+                    (*free_fn)(a->array[i]);
+                }
             }
         }
-    }
-    if (a->array) {
-        free(a->array);
+        if (a->array) {
+            free(a->array);
+        }
     }
 }
 

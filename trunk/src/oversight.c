@@ -148,30 +148,24 @@ int main(int argc,char **argv) {
     do_actions();
 
 
-    embed_stylesheet();
-    printf("<meta name=\"robots\" content=\"nofollow\" >\n");
-    printf("<title>OverSight Index (%s)</title>",util_hostname());
 
-/*
-    doActions(query);
-*/
-    printf("</head>");
+    DbRowSet **rowsets;
+    DbRowId **sorted_rows;
 
-    get_sorted_rows_from_params(&rowsets,&sorted_rows);
+    int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
 
 
     if (strcmp(view,"tv") == 0) {
 
-        display_template("default","tv",sorted_rows);
+        display_template("default","tv",num_rows,sorted_rows);
 
     } else if (strcmp(view,"movie") == 0) {
 
-        display_template("default","movie",sorted_rows);
+        display_template("default","movie",num_rows,sorted_rows);
 
     } else {
 
-        display_template("default","menu",sorted_rows);
-        //display_menu();
+        display_template("default","menu",num_rows,sorted_rows);
     }
 
     free_sorted_rows(rowsets,sorted_rows);

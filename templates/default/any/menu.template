@@ -4,7 +4,7 @@
         <meta name="robots" content="nofollow">
         <title>Oversight Menu [:HOSTNAME:]</title>
         <style type="text/css">
-            [:INCLUDE_TEMPLATE(any,css):]
+            [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=local:IS_GAYA:] >

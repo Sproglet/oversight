@@ -473,16 +473,19 @@ char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,cha
     return attr;
 }
 
-void display_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scroll,int centre_cell) {
+char *get_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scroll,int centre_cell) {
 
     char *attr;
-    printf("\t\t<td %s class=empty%d>",width_attr,grid_toggle);
 
     attr=get_scroll_attributes(left_scroll,right_scroll,centre_cell,NULL);
-    printf("<a href=\"\" %s></a>\n",attr);
 
-    printf("</td>\n");
+    char *result;
+
+    ovs_asprintf(&result,"\t\t<td %s class=empty%d><a href=\"\" %s></a>\n",
+            width_attr,grid_toggle,attr);
+
     free(attr);
+    return result;
 }
 
 
@@ -665,7 +668,7 @@ char *trim_title(char *title) {
 
 
 
-void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
+char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
     html_log(0,"TODO:Highlight matched bit");
@@ -818,30 +821,36 @@ void display_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     free(title);
 
-    printf("\t\t<td %s class=%s>",width_attr,grid_class);
-    printf("%s",cell_text);
-    printf("</td>");
+    char *result;
+    ovs_asprintf(&result,"\t\t<td %s class=%s>%s</td>",width_attr,grid_class,cell_text);
     free(cell_text);
+    return result;
 }
 
 
 #define MACRO_CH_BEG '['
 #define MACRO_CH_SEP ':'
 #define MACRO_CH_END ']'
-void template_replace(char *input,int num_rows,DbRowId **sorted_row_ids) {
-    char *p,*q;
+void template_replace(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
-    for (p=input,q=strchr(p,MACRO_CH_BEG)  ; q  ;  q=strchr(p,MACRO_CH_BEG) ) {
+    char *macro_start = NULL;
 
-        char *macro_start = q;
+
+    char *p = input;
+    macro_start = strchr(input,MACRO_CH_BEG);
+    while (macro_start ) {
+
         char *macro_name_start = NULL;
         char *macro_name_end = NULL;
         char *macro_end = NULL;
         //print bit before macro
-        *q='\0';
+        *macro_start='\0';
         printf("%s",p);
-        *q=MACRO_CH_BEG;
+        *macro_start=MACRO_CH_BEG;
 
+        // Check we have MACRO_CH_BEG .. MACRO_CH_SEP MACRO_NAME MACRO_CH_SEP .. MACRO_CH_END
+        // eg [text1:name:text2]
+        // If the macro "name" is non-empty then "text1 macro-out text2" is printed.
         macro_name_start=strchr(macro_start,MACRO_CH_SEP);
         if (macro_name_start) {
             macro_name_start++;
@@ -855,12 +864,13 @@ void template_replace(char *input,int num_rows,DbRowId **sorted_row_ids) {
         if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL ) {
 
             putc(MACRO_CH_BEG,stdout);
-            p=macro_start+1;
+            macro_end = macro_start;
 
         } else {
 
+            int free_result=0;
             macro_name_end[0] = '\0';
-            char *macro_output = macro_call(macro_name_start,num_rows,sorted_row_ids);
+            char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
             macro_name_end[0] = MACRO_CH_SEP;
             if (macro_output && *macro_output) {
 
@@ -868,22 +878,28 @@ void template_replace(char *input,int num_rows,DbRowId **sorted_row_ids) {
                  macro_name_start[-1] = '\0'; 
                  printf("%s",macro_start+1);
                  macro_name_start[-1]=MACRO_CH_SEP;
+                 fflush(stdout);
 
                  printf("%s",macro_output);
+                 if (free_result) free(macro_output);
+                 fflush(stdout);
 
                  // Print bit after macro call
                  macro_end[0] = '\0';
                  printf("%s",macro_name_end+1);
                  macro_end[0] = MACRO_CH_END;
+                 fflush(stdout);
              }
-            p = macro_end + 1;
         }
-    }
-    printf("%s",p);
-}
 
-void display_play_button(char *text1,char *text2) {
-    printf("<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s%s</a>",text1,text2);
+        p=macro_end+1;
+
+        macro_start=strchr(p,MACRO_CH_BEG);
+
+    }
+    // Print the last bit
+    printf("%s",p);
+    fflush(stdout);
 }
 
 char *scanlines_to_text(long scanlines) {
@@ -926,25 +942,20 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
         char buffer[HTML_BUF_SIZE+1];
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
             buffer[HTML_BUF_SIZE] = '\0';
-            if (strstr(buffer,"<!--") == NULL) {
-                html_log(1,"raw:%s",buffer);
-            }
-            template_replace(buffer,num_rows,sorted_row_ids);
+//            if (strstr(buffer,"<!--") == NULL) {
+//                html_log(1,"raw:%s",buffer);
+//            }
+            template_replace(template_name,buffer,num_rows,sorted_row_ids);
         }
         fflush(stdout);
         fclose(fp);
     }
 
     if (file) free(file);
-    printf("</form>");
-    display_play_button("","");
-    printf("</body>");
 }
 
-void display_grid(long page, int numids, DbRowId **row_ids) {
+char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     
-    int rows = g_dimension->rows;
-    int cols = g_dimension->cols;
     int items_per_page = rows * cols;
     int start = page * items_per_page;
     int end = start + items_per_page;
@@ -957,31 +968,56 @@ void display_grid(long page, int numids, DbRowId **row_ids) {
 
     if (end > numids) end = numids;
 
-    printf("<table class=overview width=100%%>\n");
+    html_log(0,"grid page %ld rows %d cols %d",page,rows,cols);
+
+    char *result=NULL;
     int i = start;
     char *width_attr;
+    char *tmp;
 
     ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
     for ( r = 0 ; r < rows ; r++ ) {
-        printf("<tr>\n");
+
+        html_log(0,"grid row %d",r);
+        ovs_asprintf(&tmp,"%s<tr>\n",result);
+        free(result);
+        result=tmp;
+
         for ( c = 0 ; c < cols ; c++ ) {
+            html_log(0,"grid col %d",c);
             i = start + c * rows + r ;
 
             int left_scroll = (page_before && c == 0);
             int right_scroll = (page_after && c == cols-1 );
             int centre_cell = (r == centre_row && c == centre_col);
 
+            char *item=NULL;
             if ( i < numids ) {
-
-                display_item(i-start,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                html_log(0,"grid item");
+                item = get_item(i-start,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             } else {
-                display_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                html_log(0,"grid empty");
+                item = get_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }
+            ovs_asprintf(&tmp,"%s%s\n",result,item);
+            free(result);
+            free(item);
+            result=tmp;
+            html_log(0,"grid end col %d",c);
         }
-        printf("</tr>\n");
+        
+        ovs_asprintf(&tmp,"%s</tr>\n",result);
+        free(result);
+        result=tmp;
+        html_log(0,"grid end row %d",r);
+
     }
-    printf("</table>\n");
+    ovs_asprintf(&tmp,"<table class=overview width=100%%>\n%s\n</table>\n",result);
+    free(result);
+    result=tmp;
+
     free(width_attr);
+    return result;
 }
 
 /* Convert 234 to TVID/text message regex */

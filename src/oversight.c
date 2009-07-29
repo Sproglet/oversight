@@ -17,7 +17,6 @@
 #include "display.h"
 #include "actions.h"
 
-void embed_stylesheet();
 void exec_old_cgi(int argc,char **argv);
 void load_configs () {
     html_comment("load ovs config");
@@ -31,27 +30,6 @@ void load_configs () {
     html_comment("load nmt settings");
     g_nmt_settings = config_load("/tmp/setting.txt");
 
-}
-
-
-// nmt css links dont work properly - so embed the stylesheet.
-#define CSS_BUFSIZ 200
-void embed_stylesheet() {
-    char *css;
-    FILE *fp;
-    ovs_asprintf(&css,"%s/oversight2.css",appDir());
-    printf("<style type=\"text/css\">\n");
-    if ((fp=fopen(css,"r")) != NULL) {
-        char buffer[CSS_BUFSIZ+1];
-        while(fgets(buffer,CSS_BUFSIZ,fp)) {
-            buffer[CSS_BUFSIZ] = '\0';
-            printf("%s",buffer);
-        }
-        fclose(fp);
-    }
-    display_dynamic_styles();
-    printf("</style>\n");
-    free(css);
 }
 
 #define PLAYLIST "/tmp/playlist.htm"

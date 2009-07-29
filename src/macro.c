@@ -14,39 +14,121 @@
 
 static struct hashtable *macros = NULL;
 
-char *macro_fn_poster(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
-    return STRDUP("poster");
+long get_current_page() {
+    long page;
+    if (!config_check_long(g_query,"p",&page)) {
+        page = 0;
+    }
+    return page;
 }
 
-char *macro_fn_db(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
-    return STRDUP("db");
+char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    return get_poster_image_tag(sorted_rows[0],"");
 }
 
-char *macro_fn_cert(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
-    return STRDUP("cert");
+char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
+    return sorted_rows[0]->plot;
 }
 
-char *macro_fn_movie_listing(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
+    return sorted_rows[0]->genre;
+}
+
+char *macro_fn_title(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
+    return sorted_rows[0]->title;
+}
+
+char *macro_fn_season(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    char *season=NULL;;
+    if (sorted_rows[0]->season >=0) {
+        ovs_asprintf(&season,"%d",sorted_rows[0]->season);
+    }
+    return season;
+}
+char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    time_t c = sorted_rows[0]->date;
+    struct tm *t = localtime(&c);
+    char *year;
+    ovs_asprintf(&year,"%d",t->tm_year+1900);
+    return year;
+}
+
+char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *cert = util_tolower(sorted_rows[0]->certificate);
+    char *tmp;
+
+    tmp=replace_all(cert,"usa:","us:",0);
+    free(cert);
+    cert=tmp;
+
+
+    tmp=replace_all(cert,":","/",0);
+    free(cert);
+    cert=tmp;
+
+    ovs_asprintf(&tmp,"%s/images/cert/%s.%s",appDir(),cert,ovs_icon_type());
+    free(cert);
+    cert=tmp;
+
+    char *attr;
+    ovs_asprintf(&attr," width=%d height=%d ",g_dimension->certificate_size,g_dimension->certificate_size);
+
+    tmp = get_local_image_link(cert,sorted_rows[0]->certificate,attr);
+    free(attr);
+
+    return tmp;
+}
+
+char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return STRDUP("movie_listing");
 }
 
-char *macro_fn_rating_stars(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return STRDUP("rating_starts");
 }
 
-char *macro_fn_grid(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
-    return STRDUP("grid");
+char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    int rows=0;
+    int cols=0;
+    if(args) {
+        if (args->size != 2) {
+            html_error("macro :%s or %s(rows,cols)",call,call);
+        } else {
+            char *end;
+
+            rows=strtol(args->array[0],&end,10);
+            if (!*(char *)(args->array[0]) || *end) {
+                html_error("macro :%s invalid number [%s]",call,args->array[0]);
+            }
+
+            cols=strtol(args->array[1],&end,10);
+            if (!*(char *)(args->array[1]) || *end) {
+                html_error("macro :%s invalid number [%s]",call,args->array[1]);
+            }
+
+        }
+    } else {
+        rows = g_dimension->rows;
+        cols = g_dimension->cols;
+    }
+    return get_grid(get_current_page(),rows,cols,num_rows,sorted_rows);
 }
 
-char *macro_fn_header(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_header(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return STRDUP("header");
 }
 
-char *macro_fn_hostname(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
-    return STRDUP(util_hostname());
+char *macro_fn_hostname(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
+    return util_hostname();
 }
 
-char *macro_fn_form_start(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *url=NULL;
     if (strcasecmp(query_val("view"),"admin") == 0) {
@@ -67,21 +149,22 @@ char *macro_fn_form_start(char *call,Array *args,int num_rows,DbRowId **sorted_r
     return result;
 }
 
-char *macro_fn_tvids(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return STRDUP("tvids");
 }
 
-char *macro_fn_is_gaya(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_is_gaya(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
     if (g_dimension->local_browser) {
-        return STRDUP("1");
+        return "1";
     } else {
-        return STRDUP("0");
+        return "0";
     }
 }
 
-char *macro_fn_include(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
-    if (args && args->size == 2) {
-        display_template(args->array[0],args->array[1],num_rows,sorted_rows);
+char *macro_fn_include(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    if (args && args->size == 1) {
+        display_template(template_name,args->array[0],num_rows,sorted_rows);
     } else if (!args) {
         html_error("missing  args for include");
     } else {
@@ -90,16 +173,18 @@ char *macro_fn_include(char *call,Array *args,int num_rows,DbRowId **sorted_rows
     return NULL;
 }
 
-char *macro_fn_start_cell(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_start_cell(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
 
     if (*query_val(QUERY_PARAM_REGEX)) {
-        return STRDUP("filter5");
+        return "filter5";
     } else {
-        return STRDUP("centreCell");
+        return "centreCell";
     }
 
 }
-char *macro_fn_media_type(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_media_type(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
     char *mt="?";
     switch(*query_val(QUERY_PARAM_TYPE_FILTER)) {
         case 'T': mt="TV Shows"; break;
@@ -107,9 +192,9 @@ char *macro_fn_media_type(char *call,Array *args,int num_rows,DbRowId **sorted_r
         default: mt="All Video"; break;
     }
 
-    return STRDUP(mt);
+    return mt;
 }
-char *macro_fn_version(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_version(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *version=OVS_VERSION;
     version +=4;
@@ -117,24 +202,24 @@ char *macro_fn_version(char *call,Array *args,int num_rows,DbRowId **sorted_rows
 
 }
 
-char *macro_fn_media_toggle(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_media_toggle(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     return get_toggle("red",QUERY_PARAM_TYPE_FILTER,
             QUERY_PARAM_MEDIA_TYPE_VALUE_TV,"Tv",
             QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE,"Film");
 
 }
-char *macro_fn_watched_toggle(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_watched_toggle(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return get_toggle("green",QUERY_PARAM_WATCHED_FILTER,
             QUERY_PARAM_WATCHED_VALUE_NO,"Unmarked",
             QUERY_PARAM_WATCHED_VALUE_YES,"Marked");
 }
-char *macro_fn_sort_type_toggle(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_sort_type_toggle(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return get_toggle("blue",QUERY_PARAM_SORT,
             DB_FLDID_TITLE,"Name",
             DB_FLDID_INDEXTIME,"Age");
 }
-char *macro_fn_filter_bar(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_filter_bar(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *result=NULL;
 
@@ -180,7 +265,7 @@ char *macro_fn_filter_bar(char *call,Array *args,int num_rows,DbRowId **sorted_r
     return result;
 }
 
-char *macro_fn_status(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_status(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
 #define MSG_SIZE 20
     static char msg[MSG_SIZE+1];
@@ -216,16 +301,8 @@ char *macro_fn_status(char *call,Array *args,int num_rows,DbRowId **sorted_rows)
 }
 
 
-char *macro_fn_setup_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_setup_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return get_theme_image_link("view=admin&action=ask","TVID=SETUP","configure","");
-}
-
-long get_current_page() {
-    long page;
-    if (!config_check_long(g_query,"p",&page)) {
-        page = 0;
-    }
-    return page;
 }
 
 char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) {
@@ -263,17 +340,17 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
     return result;
 }
 
-char *macro_fn_left_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_left_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    int on = get_current_page() > g_dimension->rows*g_dimension->cols;
+    int on = get_current_page() > 0;
 
-    return get_page_control(on,1,"pgup","left");
+    return get_page_control(on,-1,"pgup","left");
 }
 
 
 
 
-char *macro_fn_right_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_right_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     int on = ((get_current_page()+1)*g_dimension->rows*g_dimension->cols < num_rows);
 
@@ -282,7 +359,7 @@ char *macro_fn_right_button(char *call,Array *args,int num_rows,DbRowId **sorted
 
 
 
-char *macro_fn_select_back_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_select_back_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (*query_val("view") && *query_val("select")) {
         result = get_theme_image_link("view=&idlist=","name=up","back","");
@@ -290,7 +367,7 @@ char *macro_fn_select_back_button(char *call,Array *args,int num_rows,DbRowId **
     return result;
 }
 
-char *macro_fn_home_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
 
     if (! *query_val("view")) {
@@ -308,7 +385,7 @@ char *macro_fn_home_button(char *call,Array *args,int num_rows,DbRowId **sorted_
     return result;
 }
 
-char *macro_fn_mark_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (!*query_val("select") && allow_mark()) {
         result = get_theme_image_link("select=Mark","tvid=EJECT","mark","");
@@ -316,42 +393,42 @@ char *macro_fn_mark_button(char *call,Array *args,int num_rows,DbRowId **sorted_
     return result;
 }
 
-char *macro_fn_delete_button(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (!*query_val("select") && (allow_delete() || allow_delist())) {
         result = get_theme_image_link("select=Delete","tvid=CLEAR","delete","");
     }
     return result;
 }
-char *macro_fn_select_mark_submit(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_select_mark_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (*query_val("select")) {
         ovs_asprintf(&result,"<input type=submit name=action value=Mark >");
     }
     return result;
 }
-char *macro_fn_select_delete_submit(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_select_delete_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (*query_val("select")) {
         ovs_asprintf(&result,"<input type=submit name=action value=Delete >");
     }
     return result;
 }
-char *macro_fn_select_delist_submit(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_select_delist_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (*query_val("select")) {
         ovs_asprintf(&result,"<input type=submit name=action value=Remove_From_List >");
     }
     return result;
 }
-char *macro_fn_select_cancel_submit(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_select_cancel_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (*query_val("select")) {
         ovs_asprintf(&result,"<input type=submit name=select value=Cancel >");
     }
     return result;
 }
-char *macro_fn_external_url(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result;
     if (!g_dimension->local_browser){
         char *url=sorted_rows[0]->url;
@@ -401,30 +478,43 @@ char *numeric_constant_macro(long val,Array *args) {
     return result;
 }
 
-char *macro_fn_font_size(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_font_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return numeric_constant_macro(g_dimension->font_size,args);
 }
-char *macro_fn_title_size(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_title_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return numeric_constant_macro(g_dimension->title_size,args);
 }
-char *macro_fn_scanlines(char *call,Array *args,int num_rows,DbRowId **sorted_rows) {
+char *macro_fn_scanlines(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return numeric_constant_macro(g_dimension->scanlines,args);
+}
+
+char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result;
+
+    char *text="";
+    if (args && args->size > 0)  {
+        text = args->array[0];
+    }
+    ovs_asprintf(&result,
+        "<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s</a>",text);
+    return result;
 }
 
 void macro_init() {
 
     if (macros == NULL) {
-        html_log(0,"begin macro init");
+        //html_log(0,"begin macro init");
         macros = string_string_hashtable(32);
 
-        hashtable_insert(macros,"POSTER_IMAGE",macro_fn_poster);
-        hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert);
+        hashtable_insert(macros,"PLOT",macro_fn_plot);
+        hashtable_insert(macros,"POSTER",macro_fn_poster);
+        hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
         hashtable_insert(macros,"EXTERNAL_URL",macro_fn_external_url);
-        hashtable_insert(macros,"TITLE",macro_fn_db);
-        hashtable_insert(macros,"GENRE",macro_fn_db);
-        hashtable_insert(macros,"SEASON",macro_fn_db);
-        hashtable_insert(macros,"YEAR",macro_fn_db);
+        hashtable_insert(macros,"TITLE",macro_fn_title);
+        hashtable_insert(macros,"GENRE",macro_fn_genre);
+        hashtable_insert(macros,"SEASON",macro_fn_season);
+        hashtable_insert(macros,"YEAR",macro_fn_year);
         hashtable_insert(macros,"RATING_STARS",macro_fn_rating_stars);
         hashtable_insert(macros,"GRID",macro_fn_grid);
         hashtable_insert(macros,"HEADER",macro_fn_header);
@@ -456,16 +546,18 @@ void macro_init() {
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
-        html_log(0,"end macro init");
+        hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
+        //html_log(0,"end macro init");
     }
 }
 
-char *macro_call(char *call,int num_rows,DbRowId **sorted_rows) {
+char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
 
     if (macros == NULL) macro_init();
 
     char *result = NULL;
-    char *(*fn)(char *name,Array *args,int num_rows,DbRowId **) = NULL;
+    char *(*fn)(char *template_name,char *name,Array *args,int num_rows,DbRowId **,int *) = NULL;
     Array *args=NULL;
 
     char *p = strchr(call,'(');
@@ -489,11 +581,13 @@ char *macro_call(char *call,int num_rows,DbRowId **sorted_rows) {
             
 
     if (fn) {
-        html_log(0,"begin macro [%s]",call);
-        result =  (*fn)(call,args,num_rows,sorted_rows);
-        html_log(0,"end macro [%s]",call);
+        //html_log(0,"begin macro [%s]",call);
+        *free_result=1;
+        result =  (*fn)(template_name,call,args,num_rows,sorted_rows,free_result);
+        //html_log(0,"end macro [%s]",call);
     } else {
         html_error("no macro [%s]",call);
+        printf("?%s?",call);
     }
     array_free(args);
     return result;

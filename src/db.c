@@ -11,8 +11,10 @@
 #include "db.h"
 #include "dbfield.h"
 #include "gaya_cgi.h"
+#include "oversight.h"
 
 struct hashtable *read_and_parse_row(FILE *fp);
+int in_idlist(int id,int size,int *ids);
 
 char *db_get_lock_file_name() {
     char *s;
@@ -278,7 +280,16 @@ struct hashtable *read_and_parse_row(FILE *fp) {
 }
 #endif
 
-int parse_row(int tv_or_movie_view,long fpos,char *buffer,Db *db,DbRowId *rowid) {
+#define ALL_IDS -1
+int parse_row(
+        int num_ids, // number of ids passed in the idlist parameter of the query string
+        int *ids,    // sorted array of ids passed in query string idlist.
+        int tv_or_movie_view, // true if looking at tv or moview view.
+        long fpos,  // Probably not needed any more
+        char *buffer,  // The current buffer contaning a line of input from the database
+        Db *db,        // the database
+        DbRowId *rowid // current rowid structure to populate.
+        ) {
 
     assert(db);
     assert(rowid);
@@ -290,41 +301,61 @@ int parse_row(int tv_or_movie_view,long fpos,char *buffer,Db *db,DbRowId *rowid)
     rowid->season = -1;
     rowid->category='?';
 
+    int report_error=1;
+
     switch(buffer[0]) {
         case '\t':
             if (extract_field_long(DB_FLDID_ID,buffer,&(rowid->id),0)) {
-                if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
-                    if (extract_field_int(DB_FLDID_ID,buffer,&(rowid->watched),0)) {
-                        if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
-                            if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
-                                extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
-                                extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
 
-                                //if (in_text_mode() || (rowid->category != 'M' && rowid->category != 'T' ) ) {
+                // Filter on id if necessary
+                //html_log(0,"dbg row id = %ld",rowid->id);
+                if (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) {
 
-            //html_log(0,"db getting file..");
-                                    extract_field_str(DB_FLDID_FILE,buffer,&(rowid->file),0);
-            //html_log(0,"db file = [%s]",rowid->file);
-                                    rowid->ext = strrchr(rowid->file,'.');
-            //html_log(0,"db ext = [%s]",rowid->ext);
-                                    if (rowid->ext) rowid->ext++;
-            //html_log(0,"db ext = [%s]",rowid->ext);
+                    if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
+                        if (extract_field_int(DB_FLDID_ID,buffer,&(rowid->watched),0)) {
+                            if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
+                                if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
+                                    extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
+                                    extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
+                                    extract_field_str(DB_FLDID_GENRE,buffer,&(rowid->genre),0);
 
-                                    extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
-            //html_log(0,"db cert = [%s]",rowid->certificate);
+                                    //if (in_text_mode() || (rowid->category != 'M' && rowid->category != 'T' ) ) {
 
-                                //}
-                                if (tv_or_movie_view) {
-                                    extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
+                //html_log(0,"db getting file..");
+                                        extract_field_str(DB_FLDID_FILE,buffer,&(rowid->file),0);
+                //html_log(0,"db file = [%s]",rowid->file);
+                                        rowid->ext = strrchr(rowid->file,'.');
+                //html_log(0,"db ext = [%s]",rowid->ext);
+                                        if (rowid->ext) rowid->ext++;
+                //html_log(0,"db ext = [%s]",rowid->ext);
+
+                                        extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
+                //html_log(0,"db cert = [%s]",rowid->certificate);
+
+                                    //}
+                                    if (tv_or_movie_view) {
+                                        extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
+                                        //the big one!
+                                        extract_field_str(DB_FLDID_PLOT,buffer,&(rowid->plot),0);
+                                        if (strlen(rowid->plot) > g_dimension->max_plot_length) {
+                                            strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
+                                        }
+
+
+                                    }
+
+                                    return 1;
                                 }
-
-                                return 1;
                             }
                         }
                     }
+                } else {
+                    report_error=0;
                 }
             }
-            html_error("Failed to parse row {%s}",buffer);
+            if (report_error) {
+                html_error("Failed to parse row {%s}",buffer);
+            }
             break;
         case '#' : // do nothing
             break;
@@ -379,6 +410,57 @@ int db_full_size() {
     return g_db_size;
 }
 
+// Return 1 if db should be scanned accoring to html get parameters.
+int db_to_be_scanned(char *name) {
+    static char *idlist = NULL;
+    if (idlist == NULL) {
+        idlist = query_val("idlist");
+    }
+    if (*idlist) {
+        //Look for "name(" in idlist
+        char *p = idlist;
+        char *q;
+        int name_len = strlen(name);
+
+        while((q=strstr(p,name)) != NULL) {
+            if (q[name_len] == '(') {
+                return 1;
+            }
+            p = q+name_len;
+        }
+        return 0;
+    } else {
+        // Empty idlist parameter - always scan
+        return 1;
+    }
+}
+
+void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
+        int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
+
+    if (db_to_be_scanned(name)) {
+
+        Db *db = db_init(path,name);
+
+        if (db) {
+
+            int this_db_size=0;
+            DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
+
+            if ( r != NULL ) {
+
+                (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbRowSet*));
+                (*row_set_ptr)[(*rowset_count_ptr)++] = r;
+                (*row_set_ptr)[(*rowset_count_ptr)]=NULL;
+
+                g_db_size += this_db_size;
+
+            }
+        }
+    }
+}
+
+
 //
 // Returns null terminated array of rowsets
 DbRowSet **db_crossview_scan_titles(
@@ -387,22 +469,17 @@ DbRowSet **db_crossview_scan_titles(
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
         int watched         // 1=watched 2=unwatched 3=any
         ){
-    int rowset_count=1;
-    DbRowSet **rowsets = MALLOC((rowset_count+1)*sizeof(DbRowSet*));
-    Db *db;
+    int rowset_count=0;
+    DbRowSet **rowsets = NULL;
 
-    int this_db_size;
-
-
-    db = db_init(localDbPath(),"*");
-
-    rowsets[0] = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
-    rowsets[1]=NULL;
-
-    g_db_size += this_db_size;
-
+    // Add information from the local database
+    db_scan_and_add_rowset(
+        localDbPath(),"*",
+        name_filter,media_type,watched,
+        &rowset_count,&rowsets);
 
     if (crossview) {
+        //get iformation from any remote databases
         char *root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE";
         DIR *d = opendir(root);
         if (d) {
@@ -414,20 +491,12 @@ DbRowSet **db_crossview_scan_titles(
 
                 ovs_asprintf(&path,"%s/%s/Apps/oversight/index.db",root,name);
                 if (is_file(path)) {
-                    Db *db = db_init(path,name);
 
-                    if (db) {
+                    db_scan_and_add_rowset(
+                        path,name,
+                        name_filter,media_type,watched,
+                        &rowset_count,&rowsets);
 
-                        DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
-                        g_db_size += this_db_size;
-
-                        if (r != NULL) {
-                            rowset_count++;
-                            rowsets = REALLOC(rowsets,(rowset_count+1)*sizeof(DbRowSet*));
-                            rowsets[rowset_count-1] = r;
-                            rowsets[rowset_count]=NULL;
-                        }
-                    }
                 } else {
                     html_log(0,"crossview search %s doesnt exist",path);
                 }
@@ -449,6 +518,93 @@ void db_free_rowsets_and_dbs(DbRowSet **rowsets) {
     free(rowsets);
 }
 
+//integer compare function for sort.
+int id_cmp_fn(const void *i,const void *j) {
+    return (*(const int *)i) - (*(const int *)j);
+}
+
+// For a given db name - extract and sort the list of ids in the idlist query param
+// eg idlist=dbname(id1|id2|id3)name2(id4|id5)...
+// if there is no idlist then ALL ids are OK. to indicate this num_ids = -1
+int *extract_idlist(char *db_name,int *num_ids) {
+
+    char *query = query_val("idlist");
+    int *result = NULL;
+
+    if (*query) {
+        *num_ids = 0;
+        char *p = delimited_substring(query,')',db_name,'(',1,0);
+        if (p) {
+            p += strlen(db_name)+1;
+            char *q = strchr(p,')');
+            if (q) {
+                *q = '\0';
+                Array *idstrings = split(p,"|",0);
+                *q = ')';
+                if (idstrings) {
+                    result = malloc(idstrings->size * sizeof(int));
+                    int i;
+                    for(i = 0 ; i < idstrings->size ; i++ ) {
+                        char ch;
+                        result[i]=0;
+                        sscanf(idstrings->array[i],"%d%c",result+i,&ch);
+                    }
+                    // Sort the ids.
+                    qsort(result,idstrings->size,sizeof(int),id_cmp_fn);
+                    *num_ids = idstrings->size;
+
+                    array_free(idstrings);
+                }
+            }
+        }
+
+    } else {
+        *num_ids = ALL_IDS;
+    }
+
+    if (*num_ids == ALL_IDS) {
+        html_log(0,"db: name=%s searching all ids",db_name);
+    } else {
+        int i;
+        for(i  = 0 ; i < *num_ids ; i++ ) {
+            html_log(0,"db: name=%s id %d",db_name,result[i]);
+        }
+    }
+
+    return result;
+}
+
+// quick binary chop to search list.
+int in_idlist(int id,int size,int *ids) {
+
+    if (size == 0) return 0;
+    if (size == ALL_IDS) return 1;
+
+    int min=0;
+    int max=size;
+    int mid;
+    do {
+        mid = (min+max) / 2;
+
+        if (id < ids[mid] ) {
+
+            max = mid;
+
+        } else if (id > ids[mid] ) {
+
+            min = mid + 1 ;
+
+        } else {
+
+            html_log(0,"found %d",ids[mid]);
+            return 1;
+        }
+    } while (min < max);
+
+    //html_log("not found %d",id);
+    return 0;
+}
+
 DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
@@ -462,6 +618,9 @@ DbRowSet * db_scan_titles(
 
     char *view=query_val("view");
     int tv_or_movie_view = (strcmp(view,"tv")==0 || strcmp(view,"movie") == 0);
+
+    int num_ids;
+    int *ids = extract_idlist(db->source,&num_ids);
 
     html_log(2,"Creating db scan pattern..");
 
@@ -569,7 +728,8 @@ DbRowSet * db_scan_titles(
                 }
             }
 
-            if (parse_row(tv_or_movie_view,pos,buffer,db,&rowid)) {
+
+            if (parse_row(num_ids,ids,tv_or_movie_view,pos,buffer,db,&rowid)) {
                 row_count = db_rowset_add(rowset,&rowid);
             }
         }
@@ -580,6 +740,7 @@ DbRowSet * db_scan_titles(
     } else {
         html_error("db[%s] No rows loaded",db->source);
     }
+    free(ids);
     return rowset;
 }
 
@@ -600,8 +761,14 @@ void db_rowid_free(DbRowId *rid,int free_base) {
 
     free(rid->title);
     free(rid->poster);
+    free(rid->genre);
     free(rid->file);
     //Dont free ext as it points to file.
+
+
+    // Following are only set in tv/movie view
+    free(rid->url);
+    free(rid->plot);
 
     free(rid->certificate);
     rid->db->refcount--;

@@ -15,6 +15,7 @@ typedef struct Dbrowid_struct {
     int watched;
     char *title;
     char *poster;
+    char *genre;
     char category;
     int season;
 
@@ -27,6 +28,7 @@ typedef struct Dbrowid_struct {
 
     //only populate if view=tv or movie
     char *url;
+    char *plot;
 
 } DbRowId;
 

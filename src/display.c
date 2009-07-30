@@ -18,7 +18,6 @@
     
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
-void display_tvids(DbRowId **rowids);
 
 // Return a full path 
 char *get_path(char *path) {
@@ -952,6 +951,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
     }
 
     if (file) free(file);
+    html_log(0,"end template");
 }
 
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
@@ -1208,8 +1208,9 @@ void set_tvid_increments(int *tvid_val) {
     tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=8;
 }
 
-void display_tvids(DbRowId **rowids) {
+char *get_tvid_links(DbRowId **rowids) {
 
+    char *result = NULL;
     //if (g_dimension->local_browser && *query_val("select") == '\0')
     if (*query_val("select") == '\0')
     {
@@ -1217,6 +1218,7 @@ void display_tvids(DbRowId **rowids) {
 #define TVID_MAX_LEN 3 //
 #define TVID_MAX 999   //must be 9 or 99 or 999
 
+        int tvid_total=0;
         char *current_tvid = query_val(QUERY_PARAM_REGEX);
 
         // Tracks which tvid codes to output to html 0=dont output
@@ -1232,7 +1234,7 @@ void display_tvids(DbRowId **rowids) {
         int current_tvid_len = strlen(current_tvid);
 
         // Pre compute tvid link using @X@ as a placeholder
-#define TVID_MARKER "@X@"
+#define TVID_MARKER "@X@Y@"
         char *params;
         ovs_asprintf(&params,"p=0&"QUERY_PARAM_REGEX"=%s"TVID_MARKER,current_tvid);
 
@@ -1269,7 +1271,11 @@ void display_tvids(DbRowId **rowids) {
                             tvid_index *= 10;
                             tvid_index += tvid_val[*remaining_word];
 
-                            tvid_output[tvid_index] = 1;
+                            if (tvid_output[tvid_index] == 0) {
+                                tvid_total++;
+                                tvid_output[tvid_index] = 1;
+                            }
+
                         }
                     }
 
@@ -1282,17 +1288,24 @@ void display_tvids(DbRowId **rowids) {
             free(lc_title);
         }
         // Now output all of the selected tvids.
+        result = malloc((strlen(link_template)+5)*tvid_total);
+
         int i;
         char i_str[TVID_MAX_LEN+1];
+        char *p = result;
         for(i = 1 ; i <= TVID_MAX ; i++ ) {
             if (tvid_output[i]) {
                 sprintf(i_str,"%d",i);
                 char *link = replace_all(link_template,TVID_MARKER,i_str,0);
-                printf("%s\n",link);
+                strcpy(p,link);
                 free(link);
+                p=strchr(p,'\0');
+                *p++ = '\n';
+                *p = '\0';
             }
         }
-
         free(link_template);
+
     }
+    return result;
 }

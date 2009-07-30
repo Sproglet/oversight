@@ -88,6 +88,10 @@ char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_
     return STRDUP("movie_listing");
 }
 
+char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    return get_tvid_links(sorted_rows);
+}
+
 char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return STRDUP("rating_starts");
 }
@@ -147,10 +151,6 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     ovs_asprintf(&result,"<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n%s",url,hidden);
     free(hidden);
     return result;
-}
-
-char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return STRDUP("tvids");
 }
 
 char *macro_fn_is_gaya(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -547,6 +547,7 @@ void macro_init() {
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
+        hashtable_insert(macros,"TVIDS",macro_fn_tvids);
         //html_log(0,"end macro init");
     }
 }

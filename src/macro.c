@@ -28,7 +28,34 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 
 char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result=0;
-    return sorted_rows[0]->plot;
+    int max = 0;
+    if (args && args->size > 0) {
+        char *max_str=args->array[0];
+        char *end;
+        if (max_str && *max_str) {
+            int tmp = strtol(max_str,&end,10);
+            if (*end) {
+                return "PLOT bad arg";
+            } else {
+                max = tmp;
+            }
+        }
+    }
+
+    if (max == 0 || max > strlen(sorted_rows[0]->plot) ) {
+
+        return sorted_rows[0]->plot;
+
+    } else {
+
+        char *out = STRDUP(sorted_rows[0]->plot);
+        out[max] = '\0';
+        if (max > 10) {
+            strcpy(out+max-4,"...");
+        }
+        *free_result=1;
+        return out;
+    }
 }
 
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -85,7 +112,7 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
 }
 
 char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return STRDUP("movie_listing");
+    return movie_listing(sorted_rows[0]);
 }
 
 char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -359,9 +386,9 @@ char *macro_fn_right_button(char *template_name,char *call,Array *args,int num_r
 
 
 
-char *macro_fn_select_back_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_back_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val("view") && *query_val("select")) {
+    if (*query_val("view") && !*query_val("select")) {
         result = get_theme_image_link("view=&idlist=","name=up","back","");
     }
     return result;
@@ -489,15 +516,11 @@ char *macro_fn_scanlines(char *template_name,char *call,Array *args,int num_rows
 }
 
 char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    char *result;
-
     char *text="";
     if (args && args->size > 0)  {
         text = args->array[0];
     }
-    ovs_asprintf(&result,
-        "<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s</a>",text);
-    return result;
+    return get_play_tvid(text);
 }
 
 void macro_init() {
@@ -531,7 +554,7 @@ void macro_init() {
 
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"RIGHT_BUTTON",macro_fn_right_button);
-        hashtable_insert(macros,"SELECT_BACK_BUTTON",macro_fn_select_back_button);
+        hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
         hashtable_insert(macros,"HOME_BUTTON",macro_fn_home_button);
         hashtable_insert(macros,"MARK_BUTTON",macro_fn_mark_button);
         hashtable_insert(macros,"DELETE_BUTTON",macro_fn_delete_button);

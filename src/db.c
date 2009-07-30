@@ -280,6 +280,21 @@ struct hashtable *read_and_parse_row(FILE *fp) {
 }
 #endif
 
+void db_rowid_dump(DbRowId *rid) {
+    
+    html_log(0,"ROWID: id = %d",rid->id);
+    html_log(0,"ROWID: watched = %d",rid->watched);
+    html_log(0,"ROWID: title(%s)",rid->title);
+    html_log(0,"ROWID: file(%s)",rid->file);
+    html_log(0,"ROWID: ext(%s)",rid->ext);
+    html_log(0,"ROWID: season(%d)",rid->season);
+    html_log(0,"ROWID: genre(%s)",rid->genre);
+    html_log(0,"ROWID: ext(%c)",rid->category);
+    html_log(0,"ROWID: parts(%s)",rid->parts);
+    html_log(0,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
+    html_log(0,"----");
+}
+
 #define ALL_IDS -1
 int parse_row(
         int num_ids, // number of ids passed in the idlist parameter of the query string
@@ -335,6 +350,7 @@ int parse_row(
                                     //}
                                     if (tv_or_movie_view) {
                                         extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
+                                        extract_field_str(DB_FLDID_PARTS,buffer,&(rowid->parts),0);
                                         //the big one!
                                         extract_field_str(DB_FLDID_PLOT,buffer,&(rowid->plot),0);
                                         if (strlen(rowid->plot) > g_dimension->max_plot_length) {
@@ -768,6 +784,7 @@ void db_rowid_free(DbRowId *rid,int free_base) {
 
     // Following are only set in tv/movie view
     free(rid->url);
+    free(rid->parts);
     free(rid->plot);
 
     free(rid->certificate);

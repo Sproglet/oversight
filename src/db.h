@@ -29,9 +29,11 @@ typedef struct Dbrowid_struct {
     //only populate if view=tv or movie
     char *url;
     char *plot;
+    char *parts;
 
 } DbRowId;
 
+void db_rowid_dump(DbRowId *rid);
 
 #define DB_MEDIA_TYPE_TV 1
 #define DB_MEDIA_TYPE_FILM 2

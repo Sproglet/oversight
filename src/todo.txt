@@ -1,13 +1,7 @@
-tvid function
-grid function
-tv.template nav bar
-movie.template nav bar
+
+ext field is incorrect for vob dirs
 
 
-
-write tvid links
-
-include files.
 
 add box set view - use  menu view with either ID filter OR tv name filter. and modify overview
 eq/hash functions = view=0 (tv name is same) view=box (tv name,series) is same.

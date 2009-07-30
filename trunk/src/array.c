@@ -6,6 +6,7 @@
 #include "array.h"
 #include "assert.h"
 #include "util.h"
+#include "gaya_cgi.h"
 
 
 Array *array_new(void(*free_fn)(void *)) {
@@ -86,13 +87,13 @@ void array_print(char *label,Array *a) {
 
     int i;
 
-    fprintf(stderr,"%s: size %d mem %d  \n",label,a->size,a->mem_size);
+    html_log(0,"%s: size %d mem %d  \n",label,a->size,a->mem_size);
 
     if ( a->size) {
 
         for(i = 0 ; i < a->size ; i++ ) {
 
-            fprintf(stderr,"%s: [%d]=<%s>\n",label,i,(char *)(a->array[i]));
+            html_log(0,"%s: [%d]=<%s>\n",label,i,(char *)(a->array[i]));
         }
     }
 }
@@ -158,7 +159,7 @@ Array *splitch(char *s_in,char ch) {
     char *p;
     // printf("split ch [%s] by [%c]\n",s,ch);
 
-    if (s == NULL) {
+    if (s_in == NULL || *s_in == '\0' ) {
         return a;
     }
 
@@ -192,7 +193,7 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
 
     Array *a = array_new(free);
 
-    if (s_in == NULL) {
+    if (s_in == NULL || *s_in == '\0' ) {
         return a;
     }
 
@@ -254,7 +255,6 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
 
     }
     // printf("split4 [%s]\n",s);
-    // Add the last part
     array_add(a,strdup(s));
 
     regfree(&re);

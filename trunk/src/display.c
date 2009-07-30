@@ -19,6 +19,13 @@
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 
+char *get_play_tvid(char *text) {
+    char *result;
+    ovs_asprintf(&result,
+        "<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s</a>",text);
+    return result;
+}
+
 // Return a full path 
 char *get_path(char *path) {
     char *new=NULL;
@@ -241,9 +248,11 @@ char *add_network_icon(char *source,char *text) {
 }
 
 
-char *vod_link(char *title,char *source,char *file,char *href_name,char *href_attr,char *font_class){
+//T2 just to avoid c string handling in calling functions!
+char *vod_link(char *title ,char *t2,char *source,char *file,char *href_name,char *href_attr,char *font_class){
 
     assert(title);
+    assert(t2);
     assert(source);
     assert(file);
     assert(href_name);
@@ -280,11 +289,11 @@ char *vod_link(char *title,char *source,char *file,char *href_name,char *href_at
 
     if (font_class != NULL && *font_class ) {
 
-        ovs_asprintf(&result,"<a href=\"%s\" %s><font class=\"%s\">%s</font></a>",
-                encoded_path,vod,font_class,title);
+        ovs_asprintf(&result,"<a href=\"%s\" %s><font class=\"%s\">%s%s</font></a>",
+                encoded_path,vod,font_class,title,t2);
     } else {
-        ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",
-                encoded_path,vod,title);
+        ovs_asprintf(&result,"<a href=\"%s\" %s>%s%s</a>",
+                encoded_path,vod,title,t2);
     }
 
     free(encoded_path);
@@ -666,6 +675,135 @@ char *trim_title(char *title) {
 }
 
 
+char *select_checkbox(DbRowId *rid,char *id_list,char *text) {
+    char *result = NULL;
+    char *select = query_val("select");
+
+    if (*select) {
+        if (rid->watched && strcmp(select,"Mark")) {
+
+            ovs_asprintf(&result,
+                "<input type=checkbox name=\""CHECKBOX_PREFIX"%s(%s)\" CHECKED >"
+                "<input type=hidden name=\"orig_"CHECKBOX_PREFIX"%s(%s)\" value=on>"
+                "<font class=%s>%s</font>",
+                    rid->db->source,id_list,
+                    rid->db->source,id_list,
+                    select,text);
+        } else {
+
+            ovs_asprintf(&result,
+                "<input type=checkbox name=\""CHECKBOX_PREFIX"%s(%s)\" >"
+                "<font class=%s>%s</font>",
+                    rid->db->source,id_list,
+                    select,text);
+        }
+    } else {
+        ovs_asprintf(&result,"<font class=Ignore>%s</font>",text);
+    }
+    return result;
+}
+
+//For a normal file return the file name, for a DVD VOB folder return parent folder.
+char *row_basename(DbRowId *rowid) {
+    //Get the file basename for the movie.
+    char *file = rowid->file;
+    int title_len = strlen(file);
+    char *p;
+    if (file[title_len-1] == '/' ) {
+        // VOB Folder
+        file[title_len-1] = '\0';
+        p=strrchr(file,'/');
+        file[title_len-1] = '/';
+    } else {
+        // Normal file
+        p=strrchr(file,'/');
+    }
+    if (p == NULL) {
+        p=rowid->file;
+    }else{
+        p++;
+    }
+    return p;
+}
+
+
+char *movie_listing(DbRowId *rowid) {
+
+    db_rowid_dump(rowid);
+
+    char *select = query_val("select");
+    char *style = watched_style(rowid,0);
+    if (*select) {
+        char num[15];
+        sprintf(num,"%ld",rowid->id);
+        return select_checkbox(rowid,num,rowid->file);
+    } else {
+        char *result=NULL;
+        char *button_attr=NULL;
+        Array *parts = split(rowid->parts,"/",0);
+        int button_size;
+        html_log(0,"parts ptr = %ld",parts);
+        if (parts && parts->size) {
+            array_print("movie_listing",parts);
+            // Multiple parts
+            button_size = g_dimension->button_size * 2 / 3;
+        } else {
+            // Just one part
+            button_size = g_dimension->button_size;
+        }
+
+        ovs_asprintf(&button_attr," width=%d height=%d ",button_size,button_size);
+        char *movie_play = get_theme_image_tag("player_play",button_attr);
+        free(button_attr);
+
+        char *basename=row_basename(rowid);
+
+        result=vod_link(basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
+        // Add vod links for all of the parts
+        
+        if (parts && parts->size) {
+            char *dir_end = strrchr(rowid->file,'/');
+            *dir_end = '\0';
+            char *dir = rowid->file;
+
+            int i;
+            for(i = 0 ; i < parts->size ; i++ ) {
+
+                char i_str[10];
+                sprintf(i_str,"%d",i);
+
+                char *part_path;
+                ovs_asprintf(&part_path,"%s/%s",dir,parts->array[i]);
+
+                char *tmp=vod_link(parts->array[i],movie_play,rowid->db->source,part_path,i_str,"",style);
+                free(part_path);
+
+                char *vod_list;
+                ovs_asprintf(&vod_list,"%s\n<br>%s",result,tmp);
+                free(tmp);
+                free(result);
+                result=vod_list;
+            }
+            *dir_end = '/';
+
+            // Big play button
+            {
+                char *big_play = get_theme_image_tag("player_play","");
+                char *play_tvid = get_play_tvid(big_play);
+                free(big_play);
+
+                char *vod_list;
+                ovs_asprintf(&vod_list,"%s\n%s",play_tvid,result);
+                free(result);
+                result = vod_list;
+            }
+        }
+        free(movie_play);
+        return result;
+    }
+}
+
+
 
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
@@ -812,7 +950,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             }
 
 
-            cell_text = vod_link(title,row_id->db->source,row_id->file,cellName,attr,font_class);
+            cell_text = vod_link(title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
 
         }
         free(attr);

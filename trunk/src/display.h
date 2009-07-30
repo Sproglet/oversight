@@ -5,6 +5,7 @@
 #include "config.h"
 #include "db.h"
 
+#define CHECKBOX_PREFIX "cb_"
 void display_menu();
 
 void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids);
@@ -23,4 +24,6 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
 char *get_tvid_links(DbRowId **rowids);
+char *get_play_tvid(char *text);
+char *movie_listing(DbRowId *rowid);
 #endif

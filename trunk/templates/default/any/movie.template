@@ -19,14 +19,14 @@
                             <tr><td class=list0 align=left><font class=label>Rating :</font>&nbsp;[:RATING_STARS:]</td><tr>
                             <tr><td class=list0 align=left><font class=label>Plot :</font>&nbsp;[:PLOT:]</td><tr>
                         </table>
-                        [:MOVIELISTING:]
+                        [:MOVIE_LISTING:]
                         <hr>
                     </td>
                 </tr>
             </table>
             <table class=footer width=100%>
                 <tr valign=top>
-                    [<td align=center>:SELECT_BACK_BUTTON:</td>]
+                    [<td align=center>:BACK_BUTTON:</td>]
                     <td align=center>[:HOME_BUTTON:]</td>
                     [<td align=center>:MARK_BUTTON:</td>]
                     [<td align=center>:DELETE_BUTTON:</td>]

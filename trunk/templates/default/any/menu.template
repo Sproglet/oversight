@@ -22,7 +22,6 @@
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
             </table>
-            [:TVIDS:]
             [:GRID:] 
             <table class=footer width=100%>
                 <tr valign=top>
@@ -39,5 +38,6 @@
                 </tr>
             </table>
         </form>
+        [:TVIDS:]
     </body>
 </html>

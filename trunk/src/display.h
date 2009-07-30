@@ -22,4 +22,5 @@ int exists_file_in_dir(char *dir,char *name);
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
+char *get_tvid_links(DbRowId **rowids);
 #endif

@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "vasprintf.h"
 #include "util.h" //for MALLOC
@@ -128,8 +129,11 @@ int ovs_asprintf (char **result, char *format, ...)
   va_list args;
   int done;
 
+  assert(result);
+
   va_start (args, format);
   done = ovs_vasprintf (result, format, args);
+  assert(*result);
   va_end (args);
 
   return done;

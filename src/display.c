@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "display.h"
 #include "gaya_cgi.h"
@@ -207,20 +208,30 @@ char *get_self_link(char *params,char *attr,char *title) {
 }
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
-static FILE *playlist_fp=NULL;
 
-void playlist_close() {
-    if (playlist_fp) {
-        fclose(playlist_fp);
-        playlist_fp=NULL;
-    }
-}
+//void playlist_close() {
+//    if (playlist_fp) {
+//        fclose(playlist_fp);
+//        playlist_fp=NULL;
+//    }
+//}
 
 FILE *playlist_open() {
-    if (playlist_fp == NULL) {
-        playlist_fp = fopen(NMT_PLAYLIST,"w");
+    static FILE *fp=NULL;
+    static FILE *j=NULL;
+    fflush(stdout);
+    //html_log(0,"play list fp is %ld %ld %ld",k,fp,j);
+    //exit(1);
+    if (fp == NULL) {
+        if (unlink(NMT_PLAYLIST) ) {
+            html_log(0,"Failed to delete ["NMT_PLAYLIST"]");
+        } else {
+            html_log(0,"deleted ["NMT_PLAYLIST"]");
+        }
+        j = fp = fopen(NMT_PLAYLIST,"w");
     }
-    return playlist_fp;
+    assert(fp == j); //DONT ASK! ok catch corruption of static area - maybe...
+    return fp;
 }
 
 char *add_network_icon(char *source,char *text) {
@@ -282,7 +293,10 @@ char *vod_link(char *title ,char *t2,char *source,char *file,char *href_name,cha
 
     if (add_to_playlist) {
         FILE *fp = playlist_open();
-        fprintf(fp,"%s|0|0|file://%s|",file,path);
+        fflush(fp);
+        //segfaulting ?
+        fprintf(fp,"|0|0|file://|");
+        fprintf(fp,"%s|0|0|file://%s|",util_basename(file),path);
     }
 
     char *encoded_path = url_encode(path);
@@ -410,7 +424,11 @@ char * add_hidden(char *name_list) {
             output = tmp;
         }
     }
-    return output;
+    if (!*output) {
+        return NULL;
+    } else {
+        return output;
+    }
 }
 
 void display_submit(char *name,char *value) {
@@ -538,7 +556,7 @@ char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
 char *file_style(DbRowId *rowid,int grid_toggle) {
 
-    static char grid_class[16];
+    static char grid_class[30];
 
     sprintf(grid_class," class=grid%cW%d_%d ",
             rowid->category,
@@ -587,12 +605,15 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr) {
 
 char *ovs_icon_type() {
     static char *icon_type = NULL;
+    static char *i=NULL;
     if (icon_type == NULL) {
         if (!config_check_str(g_oversight_config,"ovs_icon_type",&icon_type)) {
             icon_type="png";
         }
         html_log(0,"icon type = %s",icon_type);
+        i = icon_type;
     }
+    assert(icon_type == i );
     return icon_type;
 }
 
@@ -650,6 +671,9 @@ char *build_ext_list(DbRowId *row_id) {
 char *build_id_list(DbRowId *row_id) {
 
     char *idlist=NULL;
+    assert(row_id);
+    assert(row_id->db);
+    assert(row_id->db->source);
 
     ovs_asprintf(&idlist,"%s(%ld|",row_id->db->source,row_id->id);
     DbRowId *ri;
@@ -703,28 +727,6 @@ char *select_checkbox(DbRowId *rid,char *id_list,char *text) {
     return result;
 }
 
-//For a normal file return the file name, for a DVD VOB folder return parent folder.
-char *row_basename(DbRowId *rowid) {
-    //Get the file basename for the movie.
-    char *file = rowid->file;
-    int title_len = strlen(file);
-    char *p;
-    if (file[title_len-1] == '/' ) {
-        // VOB Folder
-        file[title_len-1] = '\0';
-        p=strrchr(file,'/');
-        file[title_len-1] = '/';
-    } else {
-        // Normal file
-        p=strrchr(file,'/');
-    }
-    if (p == NULL) {
-        p=rowid->file;
-    }else{
-        p++;
-    }
-    return p;
-}
 
 
 char *movie_listing(DbRowId *rowid) {
@@ -756,7 +758,7 @@ char *movie_listing(DbRowId *rowid) {
         char *movie_play = get_theme_image_tag("player_play",button_attr);
         free(button_attr);
 
-        char *basename=row_basename(rowid);
+        char *basename=util_basename(rowid->file);
 
         result=vod_link(basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
         // Add vod links for all of the parts
@@ -939,6 +941,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
         } else {
 
+
             char cellId[9];
 
             sprintf(cellId,"%d",cell_no);
@@ -1116,6 +1119,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
     for ( r = 0 ; r < rows ; r++ ) {
 
+
         html_log(0,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr>\n",result);
         free(result);
@@ -1197,10 +1201,14 @@ char *default_button_attr() {
 char *icon_source(image_name) {
     char *path;
     assert(image_name);
+
+    char *app=appDir();
+    char *ico=ovs_icon_type();
+
     ovs_asprintf(&path,"%s/images/nav/set1/%s.%s",
-            appDir(),
+            app,
             image_name,
-            ovs_icon_type());
+            ico);
     char *result = local_image_source(path);
     free(path);
     return result;

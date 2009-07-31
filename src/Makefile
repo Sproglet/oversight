@@ -6,7 +6,7 @@ CFLAGS=-g -Wall
 #endif
 CC=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
 LD=/cross-gcc/mipsel-linux-uclibc/bin/mipsel-linux-uclibc-gcc
-CFLAGS=-g -Wall -O -DOUT=$(OUT)
+CFLAGS=-g -Wall -DOUT=$(OUT)
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o

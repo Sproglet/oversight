@@ -47,5 +47,6 @@ char *util_tolower(char *s);
 unsigned int stringhash(void *vptr);
 char *util_hostname();
 char *query_val(char *name);
+char *util_basename(char *file);
 
 #endif

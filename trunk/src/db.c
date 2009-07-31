@@ -327,7 +327,9 @@ int parse_row(
                 if (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) {
 
                     if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
-                        if (extract_field_int(DB_FLDID_ID,buffer,&(rowid->watched),0)) {
+
+                        if (extract_field_int(DB_FLDID_WATCHED,buffer,&(rowid->watched),0)) {
+                            assert(rowid->watched == 0 || rowid->watched == 1);
                             if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
                                 if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
                                     extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);

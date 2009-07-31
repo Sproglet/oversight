@@ -162,6 +162,7 @@ char *macro_fn_hostname(char *template_name,char *call,Array *args,int num_rows,
 char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *url=NULL;
+
     if (strcasecmp(query_val("view"),"admin") == 0) {
         char *action = query_val("action");
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
@@ -175,7 +176,9 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     char *hidden = add_hidden("cache,idlist,view,page,sort,"
             QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
     char *result;
-    ovs_asprintf(&result,"<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n%s",url,hidden);
+    ovs_asprintf(&result,"<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n%s",url,
+            (hidden?hidden:"")
+        );
     free(hidden);
     return result;
 }

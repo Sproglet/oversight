@@ -611,3 +611,24 @@ char *query_val(char *name) {
         return "";
     }
 }
+// return basename of media file. ptr must NOT be freed.
+char *util_basename(char *file) {
+//For a normal file return the file name, for a DVD VOB folder return parent folder.
+    int title_len = strlen(file);
+    char *p;
+    if (file[title_len-1] == '/' ) {
+        // VOB Folder
+        file[title_len-1] = '\0';
+        p=strrchr(file,'/');
+        file[title_len-1] = '/';
+    } else {
+        // Normal file
+        p=strrchr(file,'/');
+    }
+    if (p == NULL) {
+        p=file;
+    }else{
+        p++;
+    }
+    return p;
+}

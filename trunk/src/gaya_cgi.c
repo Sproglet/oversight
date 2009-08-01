@@ -251,8 +251,8 @@ char *url_encode(char *str) {
   while (*pstr) {
     if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
       *pbuf++ = *pstr;
-    else if (*pstr == ' ') 
-      *pbuf++ = '+';
+//    else if (*pstr == ' ') 
+//      *pbuf++ = '+';
     else 
       *pbuf++ = '%', *pbuf++ = to_hex(*pstr >> 4), *pbuf++ = to_hex(*pstr & 15);
     pstr++;

@@ -32,4 +32,5 @@ char *get_tvid_links(DbRowId **rowids);
 char *get_play_tvid(char *text);
 char *movie_listing(DbRowId *rowid);
 long use_boxsets();
+char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols);
 #endif

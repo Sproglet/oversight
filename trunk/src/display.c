@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
+#include <regex.h>
+#include <time.h>
 
 #include "display.h"
 #include "gaya_cgi.h"
@@ -264,7 +266,8 @@ int has_category(DbRowId *rowid) {
 
 
 //T2 just to avoid c string handling in calling functions!
-char *vod_link(DbRowId *rowid,char *title ,char *t2,char *source,char *file,char *href_name,char *href_attr,char *font_class){
+char *vod_link(DbRowId *rowid,char *title ,char *t2,
+        char *source,char *file,char *href_name,char *href_attr,char *font_class){
 
     assert(title);
     assert(t2);
@@ -291,12 +294,16 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,char *source,char *file,char
         free(params);
 
     } else {
-        if (file[strlen(file)-1] == '/' ) {
+
+        char *p = file + strlen(file);
+
+        if (p[-1] == '/' ) {
             // VIDEO_TS
             ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
             add_to_playlist = 0;
 
-        } else if (regpos(file,"\\.(iso|ISO|img|IMG)$",0) ) {
+        } else if (strcasecmp(p-4,".iso") == 0 || strcasecmp(p-4,".img") ==0) {
+            // TODO bug regpos(file,"\\.(iso|ISO|img|IMG)$",0) ) {
 
             // iso or img
             ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
@@ -646,6 +653,8 @@ char *container_icon(char *image_name,char *name) {
     free(attr);
     return result;
 }
+
+//free result
 char *icon_link(char *name) {
 
     char *result=NULL;
@@ -1483,3 +1492,161 @@ long use_boxsets() {
     return boxsets;
 }
 
+char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
+    int r,c;
+
+    char *select=query_val("select");
+
+    char *listing=NULL;
+#define DATE_BUF_SIZ 40
+    char date_buf[DATE_BUF_SIZ];
+    char *date_format=NULL;
+
+    int width2=100/cols; //text and date
+    int width1=4; //episode width
+    width2 -= width1;
+
+    // Date format
+    if (!config_check_str(g_oversight_config,"ovs_date_format",&date_format)) {
+        date_format="- %d %b";
+    }
+
+    if (num_rows/cols < rows ) {
+        rows = (num_rows+cols-1) / cols;
+    }
+
+html_log(0,"tv_listing col.........%d",num_rows);
+    for(r=0 ; r < rows ; r++ ) {
+html_log(0,"tv_listing row..........");
+        char *row_text = NULL;
+        for(c = 0 ; c < cols ; c++ ) {
+
+            int i = c * rows + r;
+html_log(0,"tv_listing col.........%d %d",i,num_rows);
+            if (i < num_rows) {
+html_log(0,"tv_listing 11");
+
+                char *title=NULL;
+                char *episode_col = NULL;
+
+                DbRowId *rid = sorted_rows[i];
+html_log(0,"tv_listing 22");
+
+                char episode[20];
+                sprintf(episode,"%02d.",rid->episode);
+html_log(0,"tv_listing 33");
+
+                if (*select) {
+                    char id[20];
+                    sprintf(id,"%ld",rid->id);
+                    episode_col = select_checkbox(
+                            rid,
+                            id,
+                            episode);
+                } else {
+html_log(0,"tv_listing 1");
+                    episode_col = vod_link(
+                            rid,
+                            episode,"",
+                            rid->db->source,
+                            rid->file,
+                            episode,
+                            "",
+                            watched_style(rid,i%2));
+                }
+html_log(0,"tv_listing 1");
+
+                // Title
+                title=rid->eptitle;
+                if (title == NULL || !*title) {
+                    title=rid->eptitle_imdb;
+                }
+                if (title == NULL || !*title) {
+                    title=rid->additional_nfo;
+                }
+                if (title == NULL || !*title) {
+                    title=util_basename(rid->file);
+                }
+html_log(0,"tv_listing 1");
+
+                //TODO truncate episode length here - 37 chars?
+                
+                char *title_txt=NULL;
+                int is_proper = regpos(rid->file,"proper",REG_ICASE);
+html_log(0,"tv_listing p");
+                int is_repack = regpos(rid->file,"repack",REG_ICASE);
+html_log(0,"tv_listing q");
+                char *icon_text = icon_link(rid->file);
+html_log(0,"tv_listing r");
+
+                ovs_asprintf(&title_txt,"%s%s%s&nbsp;%s",
+                        title,
+                        (is_proper?"&nbsp;<font class=proper>[pr]</font>":""),
+                        (is_repack?"&nbsp;<font class=repack>[rpk]</font>":""),
+                        icon_text);
+html_log(0,"tv_listing s");
+                free(icon_text);
+
+html_log(0,"tv_listing t");
+
+                //Date
+                long date=rid->airdate;
+                if (date<=0) {
+                    date=rid->airdate_imdb;
+                }
+                *date_buf='\0';
+html_log(0,"tv_listing u");
+                date=strftime(date_buf,DATE_BUF_SIZ,date_format,localtime((time_t *)(&date)));
+html_log(0,"tv_listing v");
+
+                //Put Episode/Title/Date together in new cell.
+                char *tmp;
+                ovs_asprintf(&tmp,"%s<td class=ep%d%d width=%d%%>%s</td><td width=%d%%>%s%s</td>\n",
+                        (row_text?row_text:""),
+                        sorted_rows[0]->watched,i%2,
+                        width1,
+                        episode_col,
+                        width2,
+                        title_txt,
+                        (*date_buf?date_buf:"")
+                        );
+html_log(0,"tv_listing w");
+                free(title_txt);
+html_log(0,"tv_listing x");
+                free(episode_col);
+html_log(0,"tv_listing y");
+                free(row_text);
+html_log(0,"tv_listing z");
+                row_text=tmp;
+html_log(0,"tv_listing a");
+
+            } else {
+                char *tmp=NULL;
+                ovs_asprintf(&tmp,"%s<td width=%d%%></td><td width=%d%%>%s%s</td>\n",
+                    (row_text?row_text:""),
+                    width1,
+                    width2);
+                free(row_text);
+                row_text=tmp;
+            }
+html_log(0,"tv_listing b");
+        }
+        // Add the row
+        if (row_text) {
+html_log(0,"tv_listing 2");
+            char *tmp;
+            ovs_asprintf(&tmp,"%s<tr>%s</tr>\n",(listing?listing:""),row_text);
+html_log(0,"tv_listing 3");
+            free(row_text);
+            free(listing);
+            listing=tmp;
+        }
+html_log(0,"tv_listing 4");
+    }
+html_log(0,"tv_listing 5");
+
+    char *result=NULL;
+    ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);
+    free(listing);
+    return result;
+}

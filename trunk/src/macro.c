@@ -145,9 +145,10 @@ char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_row
         rows = 10;
         cols = 2;
     }
-    *free_result = 0;
-    return "tv listing here";
+    return tv_listing(num_rows,sorted_rows,rows,cols);
 }
+
+
 
 char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return movie_listing(sorted_rows[0]);

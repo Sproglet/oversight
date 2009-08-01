@@ -32,6 +32,13 @@ typedef struct Dbrowid_struct {
     char *parts;
     int episode;
 
+    long airdate;
+    long airdate_imdb;
+
+    char *eptitle;
+    char *eptitle_imdb;
+    char *additional_nfo;
+
 } DbRowId;
 
 void db_rowid_dump(DbRowId *rid);

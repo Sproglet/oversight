@@ -145,6 +145,37 @@ int extract_field_long(char *field_id,char *buffer,long *val_ptr,int quiet) {
     }
     return 0;
 }
+int extract_field_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
+    char *s;
+    int fld_len;
+    assert(val_ptr);
+    assert(field_id);
+    assert(buffer);
+    int y,m,d;
+
+    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
+        char term;
+        if (sscanf(s,"%4d-%d-%d%c",&y,&m,&d,&term) != 4) {
+            if (!quiet) html_error("failed to extract date field %s",field_id);
+        } else if (term != '\t') {
+            if (!quiet) html_error("bad terminator [%c] after date field %s = %d %d",term,field_id,y,m,d);
+        } else {
+            struct tm t;
+            t.tm_year = y - 1900;
+            t.tm_mon = m - 1;
+            t.tm_mday = d;
+            t.tm_hour = 0;
+            t.tm_min = 0;
+            t.tm_sec = 0;
+            *val_ptr = mktime(&t);
+            if (*val_ptr < 0 ) {
+                html_log(0,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
 int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
     char *s;
     int fld_len;
@@ -156,9 +187,9 @@ int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet)
     if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
         char term;
         if (sscanf(s,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) != 7) {
-            if (!quiet) html_error("failed to extract long field %s",field_id);
+            if (!quiet) html_error("failed to extract timestamp field %s",field_id);
         } else if (term != '\t') {
-            if (!quiet) html_error("bad terminator [%c] after long field %s = %d %d %d %d %d %d",term,field_id,y,m,d,H,M,S);
+            if (!quiet) html_error("bad terminator [%c] after timestamp field %s = %d %d %d %d %d %d",term,field_id,y,m,d,H,M,S);
         } else {
             struct tm t;
             t.tm_year = y - 1900;
@@ -293,6 +324,11 @@ void db_rowid_dump(DbRowId *rid) {
     html_log(0,"ROWID: ext(%c)",rid->category);
     html_log(0,"ROWID: parts(%s)",rid->parts);
     html_log(0,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
+    html_log(0,"ROWID: eptitle(%s)",rid->eptitle);
+    html_log(0,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
+    html_log(0,"ROWID: additional_nfo(%s)",rid->additional_nfo);
+    html_log(0,"ROWID: airdate(%s)",asctime(localtime((time_t *)&(rid->airdate))));
+    html_log(0,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
     html_log(0,"----");
 }
 
@@ -348,8 +384,17 @@ int parse_row(
                 //html_log(0,"db ext = [%s]",rowid->ext);
 
                                         extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
+                                        extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
                 //html_log(0,"db cert = [%s]",rowid->certificate);
                                         extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
+
+                                        extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);
+                                        extract_field_str(DB_FLDID_EPTITLEIMDB,buffer,&(rowid->eptitle_imdb),0);
+
+                                        extract_field_str(DB_FLDID_ADDITIONAL_INFO,buffer,&(rowid->additional_nfo),0);
+
+                                        extract_field_date(DB_FLDID_AIRDATE,buffer,&(rowid->airdate),0);
+                                        extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
 
                                     //}
                                     if (tv_or_movie_view) {
@@ -790,6 +835,9 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     free(rid->url);
     free(rid->parts);
     free(rid->plot);
+    free(rid->eptitle);
+    free(rid->eptitle_imdb);
+    free(rid->additional_nfo);
 
     free(rid->certificate);
     rid->db->refcount--;

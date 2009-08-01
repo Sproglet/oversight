@@ -386,15 +386,6 @@ int parse_row(
                                         extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
                                         extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
                 //html_log(0,"db cert = [%s]",rowid->certificate);
-                                        extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
-
-                                        extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);
-                                        extract_field_str(DB_FLDID_EPTITLEIMDB,buffer,&(rowid->eptitle_imdb),0);
-
-                                        extract_field_str(DB_FLDID_ADDITIONAL_INFO,buffer,&(rowid->additional_nfo),0);
-
-                                        extract_field_date(DB_FLDID_AIRDATE,buffer,&(rowid->airdate),0);
-                                        extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
 
                                     //}
                                     if (tv_or_movie_view) {
@@ -406,6 +397,15 @@ int parse_row(
                                             strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
                                         }
 
+                                        extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
+
+                                        extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);
+                                        extract_field_str(DB_FLDID_EPTITLEIMDB,buffer,&(rowid->eptitle_imdb),0);
+
+                                        extract_field_str(DB_FLDID_ADDITIONAL_INFO,buffer,&(rowid->additional_nfo),0);
+
+                                        extract_field_date(DB_FLDID_AIRDATE,buffer,&(rowid->airdate),0);
+                                        extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
 
                                     }
 

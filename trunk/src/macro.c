@@ -111,6 +111,44 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
     return tmp;
 }
 
+int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
+
+    int result = 0;
+    if(args) {
+        if (args->size != 2) {
+            html_error("macro :%s or %s(rows,cols)",call,call);
+        } else {
+            char *end;
+
+            *rowsp=strtol(args->array[0],&end,10);
+            if (!*(char *)(args->array[0]) || *end) {
+                html_error("macro :%s invalid number [%s]",call,args->array[0]);
+            } else {
+
+                *colsp=strtol(args->array[1],&end,10);
+                if (!*(char *)(args->array[1]) || *end) {
+                    html_error("macro :%s invalid number [%s]",call,args->array[1]);
+                } else {
+                    result = 1;
+                }
+            }
+
+        }
+    }
+    return result;
+}
+
+char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    int rows=0;
+    int cols=0;
+    if (!get_rows_cols(call,args,&rows,&cols)) {
+        rows = 10;
+        cols = 2;
+    }
+    *free_result = 0;
+    return "tv listing here";
+}
+
 char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return movie_listing(sorted_rows[0]);
 }
@@ -126,24 +164,7 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
 char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     int rows=0;
     int cols=0;
-    if(args) {
-        if (args->size != 2) {
-            html_error("macro :%s or %s(rows,cols)",call,call);
-        } else {
-            char *end;
-
-            rows=strtol(args->array[0],&end,10);
-            if (!*(char *)(args->array[0]) || *end) {
-                html_error("macro :%s invalid number [%s]",call,args->array[0]);
-            }
-
-            cols=strtol(args->array[1],&end,10);
-            if (!*(char *)(args->array[1]) || *end) {
-                html_error("macro :%s invalid number [%s]",call,args->array[1]);
-            }
-
-        }
-    } else {
+    if (!get_rows_cols(call,args,&rows,&cols)) {
         rows = g_dimension->rows;
         cols = g_dimension->cols;
     }
@@ -459,7 +480,7 @@ char *macro_fn_select_cancel_submit(char *template_name,char *call,Array *args,i
     return result;
 }
 char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    char *result;
+    char *result=NULL;
     if (!g_dimension->local_browser){
         char *url=sorted_rows[0]->url;
         if (url != NULL) {
@@ -536,6 +557,7 @@ void macro_init() {
         hashtable_insert(macros,"POSTER",macro_fn_poster);
         hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
+        hashtable_insert(macros,"TV_LISTING",macro_fn_tv_listing);
         hashtable_insert(macros,"EXTERNAL_URL",macro_fn_external_url);
         hashtable_insert(macros,"TITLE",macro_fn_title);
         hashtable_insert(macros,"GENRE",macro_fn_genre);

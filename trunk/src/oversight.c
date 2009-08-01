@@ -57,6 +57,24 @@ void cat(char *content,char *file) {
     }
 }
 
+//Code to play a file. Only Gaya will understand this.
+void gaya_auto_load(char *file) {
+
+    char *iso_attr="";
+
+    printf("Content-Type: text/html\n\n");
+    printf("<html><body onloadset=playme>\n");
+
+    char *p=file+strlen(file);
+
+    if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
+        iso_attr="ZCD=2";
+    }
+    printf("<a href=\"file%%3A%%2F%%2F%s\" file=c %s onfocusload name=playme>playme</a>\n", // file://
+            file,iso_attr);
+    printf("</body></html>\n");
+}
+
 int main(int argc,char **argv) {
     int result=0;
 
@@ -64,21 +82,30 @@ int main(int argc,char **argv) {
 
     if (q == NULL || strchr(q,'=') == NULL ) {
         if (argc > 1 ) {
-            char *dot = strrchr(argv[1],'.');
 
-            if (dot) {
-                if (strcmp(dot,".png") == 0 ) {
 
-                    cat("image/png",argv[1]);
+            if (util_starts_with(argv[1],REMOTE_VOD_PREFIX2)) {
 
-                } else if ( strcmp(dot,".jpg") == 0 ) {
+                gaya_auto_load(argv[1]+strlen(REMOTE_VOD_PREFIX2));
+                exit(0);
 
-                    cat("image/jpeg",argv[1]);
+            } else {
+                char *dot = strrchr(argv[1],'.');
 
-                } else if ( strcmp(dot,".gif") == 0) {
+                if (dot) {
+                    if (strcmp(dot,".png") == 0 ) {
 
-                    cat("image/gif",argv[1]);
+                        cat("image/png",argv[1]);
 
+                    } else if ( strcmp(dot,".jpg") == 0 ) {
+
+                        cat("image/jpeg",argv[1]);
+
+                    } else if ( strcmp(dot,".gif") == 0) {
+
+                        cat("image/gif",argv[1]);
+
+                    }
                 }
             }
         }
@@ -132,6 +159,8 @@ int main(int argc,char **argv) {
 
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
 
+
+    playlist_open();
 
     if (strcmp(view,"tv") == 0) {
 

@@ -48,5 +48,6 @@ unsigned int stringhash(void *vptr);
 char *util_hostname();
 char *query_val(char *name);
 char *util_basename(char *file);
+int util_starts_with(char *a,char *b);
 
 #endif

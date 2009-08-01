@@ -29,7 +29,7 @@ int browsing_from_lan() {
             if (ip) {
                 if (strncmp(ip,"192.168.",8) == 0 ||
                     strncmp(ip,"10.",3) == 0 ||
-                    regpos(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.",0) ) {
+                    util_strreg(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.",0) != NULL ) {
                     result = 1;
                 }
             }
@@ -179,7 +179,7 @@ struct hashtable *config_load_fp(FILE *fp) {
 
         chomp(line);
 
-        if (regpos(line,"^\\s*#",0) >= 0) {
+        if (util_strreg(line,"^\\s*#",0)) {
             //skip comment
         } else {
             char *key = NULL;

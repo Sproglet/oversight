@@ -16,7 +16,7 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts);
 Array *regextract(char *s,char *pattern,int reg_opts);
 char *regextract1(char *s,char *pattern,int submatch,int reg_opts);
 void regextract_free(Array *submatches);
-int regpos(char *s,char *pattern,int reg_opts);
+char *util_strreg(char *s,char *pattern,int reg_opts);
 
 void util_unittest();
 int chomp(char *line);

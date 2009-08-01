@@ -363,7 +363,7 @@ END{
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
     split(g_settings["catalog_cert_country_list"],gCertificateCountries,"|");
 
-    gExtList1="avi|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|wmv";
+    gExtList1="avi|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|m4v|wmv";
     gExtList2="img|iso";
 
     gExtList1=tolower(gExtList1) "|" toupper(gExtList1);

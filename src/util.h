@@ -50,4 +50,6 @@ char *query_val(char *name);
 char *util_basename(char *file);
 int util_starts_with(char *a,char *b);
 
+#define FREE(x) do { free(x) ; x = NULL ;  } while(0)
+
 #endif

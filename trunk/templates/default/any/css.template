@@ -119,6 +119,8 @@ td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-2):
 td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-2):]; }
 .eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
 
+.epdate { color:#AAAAFF; }
+
 h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
 
 .label { color:red }

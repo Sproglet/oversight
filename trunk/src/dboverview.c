@@ -28,8 +28,8 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
         // Compare by season
 
         return ( 
-                (((*rid1)->season<<9)+(*rid1)->episode) 
-                - (((*rid2)->season<<9)+(*rid2)->episode)
+                (((*rid1)->season*1000)+(*rid1)->episode) 
+                - (((*rid2)->season*1000)+(*rid2)->episode)
                );
     } else {
         // Same title - arbitrary comparison
@@ -80,6 +80,32 @@ unsigned int db_overview_name_season_hashf(void *rid) {
     }
     return h;
 }
+// overview equality function based on titles and season only. This is used in non-boxset mode.
+int db_overview_name_season_episode_eqf(DbRowId *rid1,DbRowId *rid2) {
+
+    if (rid1->category != rid2->category) {
+        return 0;
+    } else if (rid1->category == 'T' ) {
+       if (strcmp(rid1->title,rid2->title) != 0) {
+          return 0;
+       } else {
+          return ((rid1->season<<9)+rid1->episode) == ((rid2->season<<9)+rid2->episode);
+       }
+    } else {
+        return strcmp(rid1->title,rid2->title) ==0;
+    }
+}
+// overview hash function based on titles and season only. This is used in non-boxset mode.
+unsigned int db_overview_name_season_episode_hashf(void *rid) {
+    unsigned int h;
+    h  = stringhash(((DbRowId *)rid)->title);
+    if (((DbRowId *)rid)->category == 'T') {
+        // tv shows Unique per title/season/category
+        h = ( h << 5 ) + h + ((DbRowId *)rid)->season;
+        h = ( h << 5 ) + h + ((DbRowId *)rid)->episode;
+    }
+    return h;
+}
 
 void overview_dump(int level,char *label,struct hashtable *overview) {
     struct hashtable_itr *itr;
@@ -101,7 +127,7 @@ void overview_array_dump(int level,char *label,DbRowId **arr) {
     if (level <= html_log_level_get()) {
         if (*arr) {
             while (*arr) {
-                html_log(level,"%s key=[%c\t%s\ts%02d\t%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->date);
+                html_log(level,"%s key=[%c\t%s s%02de%02d date:%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
                 arr++;
             }
         } else {
@@ -126,8 +152,13 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     void *eq_fn;
     void *hash_fn;
 
-    if (use_boxsets()) {
-        if (*view) {
+    if (strcmp(view,"tv") == 0 || strcmp(view,"movie") == 0) {
+
+        hash_fn = db_overview_name_season_episode_hashf;
+        eq_fn = db_overview_name_season_episode_eqf;
+
+    } else if (use_boxsets()) {
+        if (strcmp(view,"tvboxset") == 0) {
             // BoxSet equality function equates tv shows by name/season
             // if view=tv or file doesnt matter as we have already filtered down past this level
             // but if view = boxset then it matters
@@ -216,6 +247,7 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
     html_log(0,"sorting %d items",hashtable_count(overview));
     overview_array_dump(4,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
+    html_log(0,"sorted %d items",hashtable_count(overview));
     overview_array_dump(1,"ovw sorted",ids);
 
     return ids;

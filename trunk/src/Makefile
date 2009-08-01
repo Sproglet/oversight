@@ -23,13 +23,18 @@ LIBS=-lm
 
 LDFLAGS=-g -Wall -O $(LIBS)
 
-all: oversight
+all: oversight share
 
 
 oversight:  $(OVS_OBJS)
 	ctags -R .
 	$(CC) $(LDFLAGS) -o oversight2.cgi $(OVS_OBJS)
+
+share: /cygdrive/a/start_app.sh 
 	cp -v oversight2.cgi /cygdrive/a/Apps/oversight/.
+
+/cygdrive/a/start_app.sh:
+	net use a: '\\192.168.88.11\share' 1234  /user:nmt
 
 
 tester: $(OBJECTS)

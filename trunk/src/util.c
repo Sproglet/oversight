@@ -156,7 +156,7 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts) {
 
 #define BUFSIZE 256
 /* return position of regex in a string. -1 if no match  */
-int regpos(char *s,char *pattern,int reg_opts) {
+char *util_strreg(char *s,char *pattern,int reg_opts) {
     assert(s);
     assert(pattern);
 
@@ -170,13 +170,13 @@ int regpos(char *s,char *pattern,int reg_opts) {
         regerror(status,&re,buf,BUFSIZE);
         fprintf(stderr,"%s\n",buf);
         assert(1);
-        return -1;
+        return NULL;
     }
 
-    int pos = -1;
+    char *pos = NULL;
 
     if (regexec(&re,s,1,pmatch,0) == 0) {
-        pos = pmatch[0].rm_so;
+        pos = s+pmatch[0].rm_so;
     }
 
     regfree(&re);
@@ -337,8 +337,9 @@ void util_unittest() {
     printf("%s\n",x);
     assert(strcmp(x,"hEllo thErE") == 0);
 
-    printf("regpos...\n");
-    assert(regpos("hello","e",0) == 1);
+    printf("strreg...\n");
+    char *hstr="hello";
+    assert(util_strreg(hstr,"e",0) == hstr);
 
     printf("regmatch...\n");
     Array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)",0);

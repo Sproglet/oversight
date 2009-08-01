@@ -258,9 +258,13 @@ char *add_network_icon(char *source,char *text) {
 
 }
 
+int has_category(DbRowId *rowid) {
+    return (rowid->category == 'T' || rowid->category == 'M' );
+}
+
 
 //T2 just to avoid c string handling in calling functions!
-char *vod_link(char *title ,char *t2,char *source,char *file,char *href_name,char *href_attr,char *font_class){
+char *vod_link(DbRowId *rowid,char *title ,char *t2,char *source,char *file,char *href_name,char *href_attr,char *font_class){
 
     assert(title);
     assert(t2);
@@ -270,44 +274,53 @@ char *vod_link(char *title ,char *t2,char *source,char *file,char *href_name,cha
     assert(href_attr);
     assert(font_class);
 
-    char *vod;
-    int add_to_playlist=1;
+    char *vod=NULL;
+    int add_to_playlist= has_category(rowid);
     char *result=NULL;
 
-    if (file[strlen(file)-1] == '/' ) {
-        // VIDEO_TS
-        ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
-        add_to_playlist = 0;
-
-    } else if (regpos(file,"\\.(iso|ISO|img|IMG)$",0) ) {
-
-        // iso or img
-        ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
-
-    } else {
-        // avi mkv etc
-        ovs_asprintf(&vod," vod file=c name=\"%s\" %s ",href_name,href_attr);
-    }
-
     char *path = get_mounted_path(source,file);
-
-    if (add_to_playlist) {
-        FILE *fp = playlist_open();
-        fflush(fp);
-        //segfaulting ?
-        fprintf(fp,"|0|0|file://|");
-        fprintf(fp,"%s|0|0|file://%s|",util_basename(file),path);
-    }
-
     char *encoded_path = url_encode(path);
 
-    if (font_class != NULL && *font_class ) {
 
-        ovs_asprintf(&result,"<a href=\"%s\" %s><font class=\"%s\">%s%s</font></a>",
-                encoded_path,vod,font_class,title,t2);
+    if (!g_dimension->local_browser) {
+
+        //If using a browser then VOD tags dont work. Make this script load the file into gaya
+        char *params =NULL;
+        ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
+        result = get_self_link(params,"",title);
+        free(params);
+
     } else {
-        ovs_asprintf(&result,"<a href=\"%s\" %s>%s%s</a>",
-                encoded_path,vod,title,t2);
+        if (file[strlen(file)-1] == '/' ) {
+            // VIDEO_TS
+            ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+            add_to_playlist = 0;
+
+        } else if (regpos(file,"\\.(iso|ISO|img|IMG)$",0) ) {
+
+            // iso or img
+            ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+
+        } else {
+            // avi mkv etc
+            ovs_asprintf(&vod," vod file=c name=\"%s\" %s ",href_name,href_attr);
+        }
+
+        if (add_to_playlist) {
+            FILE *fp = playlist_open();
+            fprintf(fp,"%s|0|0|file://%s|",util_basename(file),path);
+            fflush(fp);
+        }
+
+
+        if (font_class != NULL && *font_class ) {
+
+            ovs_asprintf(&result,"<a href=\"file://%s\" %s><font class=\"%s\">%s%s</font></a>",
+                    encoded_path,vod,font_class,title,t2);
+        } else {
+            ovs_asprintf(&result,"<a href=\"file://%s\" %s>%s%s</a>",
+                    encoded_path,vod,title,t2);
+        }
     }
 
     free(encoded_path);
@@ -760,7 +773,7 @@ char *movie_listing(DbRowId *rowid) {
 
         char *basename=util_basename(rowid->file);
 
-        result=vod_link(basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
+        result=vod_link(rowid,basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
         // Add vod links for all of the parts
         
         if (parts && parts->size) {
@@ -777,7 +790,7 @@ char *movie_listing(DbRowId *rowid) {
                 char *part_path;
                 ovs_asprintf(&part_path,"%s/%s",dir,parts->array[i]);
 
-                char *tmp=vod_link(parts->array[i],movie_play,rowid->db->source,part_path,i_str,"",style);
+                char *tmp=vod_link(rowid,parts->array[i],movie_play,rowid->db->source,part_path,i_str,"",style);
                 free(part_path);
 
                 char *vod_list;
@@ -817,7 +830,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     char *grid_class=NULL;
 
     char *select = query_val("select");
-    int tv_or_movie = (row_id->category == 'T' || row_id->category == 'M' );
+    int tv_or_movie = has_category(row_id);
 
 
     if (in_poster_mode() ) {
@@ -953,7 +966,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             }
 
 
-            cell_text = vod_link(title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
+            cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
 
         }
         free(attr);
@@ -1313,7 +1326,12 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     config_check_str(g_query,"s",&sort);
 
 
-    if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
+    if (strcmp(query_val("view"),"tv") == 0) {
+
+        html_log(0,"sort by name / season / episode");
+        sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+
+    } if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
         html_log(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
     } else {
@@ -1455,3 +1473,13 @@ char *get_tvid_links(DbRowId **rowids) {
     }
     return result;
 }
+long use_boxsets() {
+    static long boxsets = -1;
+    if(boxsets == -1) {
+        if (!config_check_long(g_oversight_config,"ovs_boxsets",&boxsets)) {
+            boxsets = 0;
+        }
+    }
+    return boxsets;
+}
+

@@ -6,8 +6,13 @@
 #include "db.h"
 
 #define CHECKBOX_PREFIX "cb_"
+
+#define REMOTE_VOD_PREFIX2 "vod.ovs." 
+#define REMOTE_VOD_PREFIX1 "remote.vod.ovs."
+
 void display_menu();
 
+FILE *playlist_open();
 void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids);
 int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr);
 void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids);
@@ -26,4 +31,5 @@ char * get_local_image_link(char *path,char *alt_text,char *attr);
 char *get_tvid_links(DbRowId **rowids);
 char *get_play_tvid(char *text);
 char *movie_listing(DbRowId *rowid);
+long use_boxsets();
 #endif

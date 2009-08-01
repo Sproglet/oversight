@@ -632,3 +632,7 @@ char *util_basename(char *file) {
     }
     return p;
 }
+int util_starts_with(char *a,char *b) {
+    return strncmp(a,b,strlen(b))==0;
+}
+

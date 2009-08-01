@@ -288,6 +288,7 @@ void db_rowid_dump(DbRowId *rid) {
     html_log(0,"ROWID: file(%s)",rid->file);
     html_log(0,"ROWID: ext(%s)",rid->ext);
     html_log(0,"ROWID: season(%d)",rid->season);
+    html_log(0,"ROWID: episode(%d)",rid->episode);
     html_log(0,"ROWID: genre(%s)",rid->genre);
     html_log(0,"ROWID: ext(%c)",rid->category);
     html_log(0,"ROWID: parts(%s)",rid->parts);
@@ -348,6 +349,7 @@ int parse_row(
 
                                         extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
                 //html_log(0,"db cert = [%s]",rowid->certificate);
+                                        extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
 
                                     //}
                                     if (tv_or_movie_view) {

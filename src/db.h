@@ -30,6 +30,7 @@ typedef struct Dbrowid_struct {
     char *url;
     char *plot;
     char *parts;
+    int episode;
 
 } DbRowId;
 

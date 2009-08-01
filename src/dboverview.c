@@ -6,26 +6,16 @@
 #include "util.h"
 #include "gaya_cgi.h"
 #include "hashtable.h"
+#include "display.h"
 #include "hashtable_loop.h"
 
-unsigned int db_overview_hashf(void *rid) {
-    unsigned int h;
-    if (((DbRowId *)rid)->category == 'T') {
-        // tv shows Unique per title/season/category
-        h  = stringhash(((DbRowId *)rid)->title);
-        h = ( h << 5 ) + h + ((DbRowId *)rid)->season;
-    } else {
-        // Anything else is unique
-        h = (int)rid;
-    }
-    return h;
-}
-
 // This function is inverted to usual sense as we wnat the oldest first.
+// This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
     return (*rid2)->date - (*rid1)->date;
 }
 
+// This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
     int c;
@@ -36,14 +26,59 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
     if ((*rid1)->category == 'T' && (*rid2)->category=='T') {
         // Compare by season
-        return ((*rid1)->season - (*rid2)->season);
+
+        return ( 
+                (((*rid1)->season<<9)+(*rid1)->episode) 
+                - (((*rid2)->season<<9)+(*rid2)->episode)
+               );
     } else {
         // Same title - arbitrary comparison
         return (*rid1) - (*rid2);
     }
 }
-int db_overview_name_eqf(void *rid1,void *rid2) {
-    return db_overview_cmp_by_title((DbRowId **)&rid1,(DbRowId **)&rid2) == 0;
+
+// overview equality function based on titles only. This is used in boxset mode.
+int db_overview_name_eqf(DbRowId *rid1,DbRowId *rid2) {
+
+    if (rid1->category != rid2->category) {
+        return 0;
+    } else {
+        return strcmp(rid1->title,rid2->title) ==0;
+    }
+}
+// overview hash function based on titles only. This is used in boxset mode.
+unsigned int db_overview_name_hashf(void *rid) {
+
+    unsigned int h;
+    h  = stringhash(((DbRowId *)rid)->title);
+    return h;
+}
+
+
+// overview equality function based on titles and season only. This is used in non-boxset mode.
+int db_overview_name_season_eqf(DbRowId *rid1,DbRowId *rid2) {
+
+    if (rid1->category != rid2->category) {
+        return 0;
+    } else if (rid1->category == 'T' ) {
+       if (strcmp(rid1->title,rid2->title) != 0) {
+          return 0;
+       } else {
+          return (rid1->season == rid2->season);
+       }
+    } else {
+        return strcmp(rid1->title,rid2->title) ==0;
+    }
+}
+// overview hash function based on titles and season only. This is used in non-boxset mode.
+unsigned int db_overview_name_season_hashf(void *rid) {
+    unsigned int h;
+    h  = stringhash(((DbRowId *)rid)->title);
+    if (((DbRowId *)rid)->category == 'T') {
+        // tv shows Unique per title/season/category
+        h = ( h << 5 ) + h + ((DbRowId *)rid)->season;
+    }
+    return h;
 }
 
 void overview_dump(int level,char *label,struct hashtable *overview) {
@@ -79,7 +114,39 @@ void overview_array_dump(int level,char *label,DbRowId **arr) {
 struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     
     int total=0;
-    struct hashtable *overview = create_hashtable(100,db_overview_hashf,db_overview_name_eqf);
+    struct hashtable *overview = NULL;
+
+    char *view=query_val("view");
+   
+    //Functions used to create the overview hash
+    //If boxsets are enabled then the overview should equate all shows with the same season.
+    //TODO we need to find a generic image for the box set!
+//int (*eq_fn)(DbRowId *rid1,DbRowId *rid2);
+//unsigned int (*hash_fn)(void *rid);
+    void *eq_fn;
+    void *hash_fn;
+
+    if (use_boxsets()) {
+        if (*view) {
+            // BoxSet equality function equates tv shows by name/season
+            // if view=tv or file doesnt matter as we have already filtered down past this level
+            // but if view = boxset then it matters
+            hash_fn = db_overview_name_season_hashf;
+            eq_fn = db_overview_name_season_eqf;
+        } else {
+            // Overview equality function equates tv shows by name
+            hash_fn = db_overview_name_hashf;
+            eq_fn = db_overview_name_eqf;
+        }
+    } else {
+        // Overview equality function equates tv shows by name/season
+        hash_fn = db_overview_name_season_hashf;
+        eq_fn = db_overview_name_season_eqf;
+    }
+
+    //tv Items with the same title/season are the same
+    overview = create_hashtable(100,hash_fn,eq_fn);
+
     DbRowSet **rowset_ptr;
     for(rowset_ptr = rowsets ; *rowset_ptr ; rowset_ptr++ ) {
 

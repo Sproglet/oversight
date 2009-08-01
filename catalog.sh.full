@@ -2403,7 +2403,7 @@ choice,i,url) {
             # search binsearch.info 
             url = searchOnlineNfoLinksForImdb(name,\
                 "https://www.binsearch.info",\
-                "/index.php?q=\"QUERY\"&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
+                "/index.php?q=\"QUERY.\"&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
                 "/viewNFO[^\"]+",20);
 
 # ngindex search not accurate enough

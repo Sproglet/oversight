@@ -12,6 +12,9 @@
 #include "dbfield.h"
 #include "gaya_cgi.h"
 #include "oversight.h"
+#include "hashtable_loop.h"
+
+#define DB_ROW_BUF_SIZE 4000
 
 struct hashtable *read_and_parse_row(FILE *fp);
 int in_idlist(int id,int size,int *ids);
@@ -72,13 +75,17 @@ int db_unlock(char *source) {
  * Load the database. Each database entry will just be an ID and a pointer to the DB file position
  * (see DbRow)
  */
-Db *db_init(char *filename, // path to the file
+Db *db_init(char *filename, // path to the file - if NULL compute from source
         char *source       // logical name or tag - local="*"
         ) {
 
     Db *db = MALLOC(sizeof(Db));
 
-    db->path =  STRDUP(filename);
+    if (filename == NULL) {
+        db->path = get_mounted_path(source,"/share/Apps/oversight/index.db");
+    } else {
+        db->path =  STRDUP(filename);
+    }
     db->source= STRDUP(source);
     db->refcount =0;
     return db;
@@ -545,8 +552,7 @@ DbRowSet **db_crossview_scan_titles(
 
     if (crossview) {
         //get iformation from any remote databases
-        char *root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE";
-        DIR *d = opendir(root);
+        DIR *d = opendir(NETWORK_SHARE);
         if (d) {
             struct dirent dent,*p;
             while((readdir_r(d,&dent,&p)) == 0) {
@@ -554,7 +560,7 @@ DbRowSet **db_crossview_scan_titles(
                 char *path=NULL;
                 char *name=dent.d_name;
 
-                ovs_asprintf(&path,"%s/%s/Apps/oversight/index.db",root,name);
+                ovs_asprintf(&path,NETWORK_SHARE"%s/Apps/oversight/index.db",name);
                 if (is_file(path)) {
 
                     db_scan_and_add_rowset(
@@ -721,16 +727,20 @@ DbRowSet * db_scan_titles(
         default: assert(watched == DB_MEDIA_TYPE_TV); break;
     }
 
-    html_log(2,"db scanning...");
 
     int row_count=0;
     int total_rows=0;
+
+    html_log(2,"db scanning %s",db->path);
+
     FILE *fp = fopen(db->path,"r");
+    html_log(2,"db scanning %s",db->path);
+    assert(fp);
+html_log(2,"db fp.%ld..",(long)fp);
     if (fp) {
         unsigned long pos;
         rowset=db_rowset(db);
         DbRowId rowid;
-#define DB_ROW_BUF_SIZE 4000
         char buffer[DB_ROW_BUF_SIZE+1];
 
 #ifdef FAST_PARSE
@@ -744,6 +754,7 @@ DbRowSet * db_scan_titles(
             }
         }
 #endif
+html_log(2,"db start loop...");
 
         while (1) {
             pos = ftell(fp);
@@ -751,7 +762,9 @@ DbRowSet * db_scan_titles(
              * TODO: Further optimisation - replace fgets with function that parses 
              * input using fgetc directly into hashtable name value pairs.
              */
+            buffer[DB_ROW_BUF_SIZE]='\0';
             if (fgets(buffer,DB_ROW_BUF_SIZE,fp) == NULL) break;
+            assert( buffer[DB_ROW_BUF_SIZE] == '\0');
 
             total_rows++;
 
@@ -761,6 +774,7 @@ DbRowSet * db_scan_titles(
 
 
 
+html_log(2,"db start loop...");
             if (name_filter && *name_filter) {
                 char *title_start=NULL;
                 int title_len=0;
@@ -871,4 +885,108 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
         }
     }
 }
+
+void db_set_fields_by_source(
+        char *field_id,char *new_value,char *source,char *idlist) {
+
+html_log(0," begin db init");
+
+    Db *db = db_init(NULL,source);
+
+    int new_len = 0;
+    
+    if (new_value != NULL) {
+        new_len = strlen(new_value);
+    }
+
+    char *id_regex_text;
+    regex_t id_regex_ptn;
+
+    char *regex_text;
+    regex_t regex_ptn;
+
+    char buf[DB_ROW_BUF_SIZE+1];
+
+    regmatch_t pmatch[5];
+
+    ovs_asprintf(&regex_text,"\t%s\t([^\t]+)\t",field_id);
+    util_regcomp(&regex_ptn,regex_text,0);
+
+    ovs_asprintf(&id_regex_text,"\t%s\t(%s)\t",DB_FLDID_ID,idlist);
+    util_regcomp(&id_regex_ptn,id_regex_text,0);
+
+
+html_log(0," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
+
+    if (db) {
+html_log(0," begin open db");
+        FILE *db_in = fopen(db->path,"r");
+
+        if (db_in) {
+            char *tmpdb="/share/Apps/oversight/index.db.tmp";
+
+            FILE *db_out = fopen(tmpdb,"w");
+
+            if (db_out) {
+                while(1) {
+                    
+                    buf[DB_ROW_BUF_SIZE]='\0';
+
+                    if (fgets(buf,DB_ROW_BUF_SIZE,db_in) == NULL) {
+                        break;
+                    }
+
+                    assert( buf[DB_ROW_BUF_SIZE] == '\0' );
+
+
+
+                    if (regexec(&id_regex_ptn,buf,0,NULL,0) == 0 && regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
+
+                        if (new_value == NULL) {
+                            // do nothing. line is not written 
+                        } else {
+                            int spos=pmatch[1].rm_so;
+                            int epos=pmatch[1].rm_eo;
+
+html_log(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
+
+                            buf[spos]='\0';
+
+                            fprintf(db_out,"%s%s%s",buf,new_value,buf+epos);
+                        }
+
+                    } else {
+
+                        fprintf(db_out,"%s",buf);
+
+                    }
+
+                }
+                fclose(db_out);
+            }
+
+            fclose(db_in);
+        }
+        db_free(db);
+    }
+html_log(0," end db_set_fields_by_source");
+    regfree(&regex_ptn);
+    regfree(&id_regex_ptn);
+    FREE(regex_text);
+    FREE(id_regex_text);
+
+}
+
+void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source) {
+    struct hashtable_itr *itr;
+    char *source;
+    char *idlist;
+
+html_log(0," begin db_set_fields");
+    for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
+        db_set_fields_by_source(field_id,new_value,source,idlist);
+    }
+html_log(0," end db_set_fields");
+}
+
 

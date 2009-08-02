@@ -95,4 +95,5 @@ DbRowSet **db_crossview_scan_titles(
         );
 void db_free_rowsets_and_dbs(DbRowSet **rowsets);
 int db_full_size();
+void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source);
 #endif

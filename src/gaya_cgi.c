@@ -174,11 +174,15 @@ struct hashtable *read_post_data(char *post_filename) {
 
                     if (filename != NULL) {
                         char *filepath = strdup(upload_dir);
+                        char *tmp;
 
-                        filepath=join_str_fmt_free("%s/%s",filepath,filename);
 
-                        fileptr = fopen(filepath,"w");
-                        free(filepath);
+                        ovs_asprintf(&tmp,"%s/%s",filepath,filename);
+                        FREE(filepath);
+                        FREE(filename);
+
+                        fileptr = fopen(tmp,"w");
+                        FREE(tmp);
                     }
                 }
 

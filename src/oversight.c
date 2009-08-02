@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 
 #define OVS_MAIN 1
 #include "oversight.h"
@@ -63,14 +64,15 @@ void gaya_auto_load(char *file) {
     char *iso_attr="";
 
     printf("Content-Type: text/html\n\n");
-    printf("<html><body onloadset=playme>\n");
+    //printf("<html><body onloadset=playme>\n");
+    printf("<html><body >\n");
 
     char *p=file+strlen(file);
 
     if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
         iso_attr="ZCD=2";
     }
-    printf("<a href=\"file%%3A%%2F%%2F%s\" file=c %s onfocusload name=playme>playme</a>\n", // file://
+    printf("<a href=\"file://%s\" file=c %s onfocusload name=playme>playme</a>\n", // file://
             file,iso_attr);
     printf("</body></html>\n");
 }
@@ -130,7 +132,7 @@ int main(int argc,char **argv) {
     struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
     
     html_comment("merge query and post data");
-    merge_hashtables(g_query,post,0); // post is destroyed
+    merge_hashtables(g_query,post,1); // post is destroyed
 
     html_hashtable_dump(0,"query final",g_query);
 
@@ -216,6 +218,27 @@ void exec_old_cgi(int argc,char **argv) {
     }
 }
 
+
+char *get_mounted_path(char *source,char *path) {
+
+    char *new = NULL;
+    assert(source);
+    assert(path);
+
+    if (*source == '*' ) {
+        new = STRDUP(path);
+    } else if (strchr(source,'/')) {
+        new = STRDUP(path);
+    } else if (strncmp(path,"/share/",7) != 0) {
+        new = STRDUP(path);
+    } else {
+        // Source = xxx 
+        // [pop-nfs][/share/Apps/oversight/... becomes
+        // /opt/sybhttpd/localhost.drives/NETWORK_SHARE/pop-nfs/Apps/oversight/...
+        ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
+    }
+    return new;
+}
 
 
 

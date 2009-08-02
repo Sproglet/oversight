@@ -7,6 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include "util.h" //for MALLOC
+#include "gaya_cgi.h" //for html_log
 
 /*
 Credit for primes table: Aaron Krowne
@@ -134,9 +135,7 @@ hashtable_count(struct hashtable *h)
 }
 
 /*****************************************************************************/
-int
-hashtable_insert(struct hashtable *h, void *k, void *v)
-{
+int hashtable_insert(struct hashtable *h, void *k, void *v) {
     /* This method allows duplicate keys - but they shouldn't be used */
     unsigned int index;
     struct entry *e;
@@ -156,6 +155,40 @@ hashtable_insert(struct hashtable *h, void *k, void *v)
     e->v = v;
     e->next = h->table[index];
     h->table[index] = e;
+    return -1;
+}
+int hashtable_insert_log(struct hashtable *h, void *k, void *v) {
+    /* This method allows duplicate keys - but they shouldn't be used */
+    unsigned int index;
+    struct entry *e;
+
+html_log(0,"hti 1");
+    if (++(h->entrycount) > h->loadlimit)
+    {
+html_log(0,"hti 2");
+        /* Ignore the return value. If expand fails, we should
+         * still try cramming just this value into the existing table
+         * -- we may not have memory for a larger table, but one more
+         * element may be ok. Next time we insert, we'll try expanding again.*/
+        hashtable_expand(h);
+    }
+html_log(0,"hti 3");
+    e = (struct entry *)MALLOC(sizeof(struct entry));
+html_log(0,"hti 4");
+    if (NULL == e) { --(h->entrycount); return 0; } /*oom*/
+html_log(0,"hti 5");
+    e->h = hash(h,k);
+html_log(0,"hti 6");
+    index = indexFor(h->tablelength,e->h);
+html_log(0,"hti 7");
+    e->k = k;
+html_log(0,"hti 8");
+    e->v = v;
+html_log(0,"hti 9");
+    e->next = h->table[index];
+html_log(0,"hti 10");
+    h->table[index] = e;
+html_log(0,"hti 11");
     return -1;
 }
 
@@ -219,14 +252,17 @@ hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
     unsigned int i;
     struct entry *e, *f;
     struct entry **table = h->table;
+
+
     for (i = 0; i < h->tablelength; i++)
     {
         e = table[i];
         while (NULL != e) {
             f = e;
+
             e = e->next;
             if (free_keys) freekey(f->k);
-            if (free_values) free(f->k);
+            if (free_values) free(f->v);
             free(f);
         }
     }

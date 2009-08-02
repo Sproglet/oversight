@@ -96,6 +96,7 @@ struct hashtable * create_hashtable(unsigned int minsize,
 
 int 
 hashtable_insert(struct hashtable *h, void *k, void *v);
+int hashtable_insert_log(struct hashtable *h, void *k, void *v);
 
 #define DEFINE_HASHTABLE_INSERT(fnname, keytype, valuetype) \
 int fnname (struct hashtable *h, keytype *k, valuetype *v) \

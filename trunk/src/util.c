@@ -45,21 +45,6 @@ struct hashtable *string_string_hashtable(int size) {
 
 
 /*
- * This function joins two strings with a separator and returns the result
- * in new memory.
- * The original strings are freed.
- * If the separator is nul then it is ignored.
- * This might be just enough to avoid using a proper string library
- */
-char *join_str_fmt_free(char *fmt,char *s1,char *s2) {
-
-    char *s;
-    ovs_asprintf(&s,fmt,s1,s2);
-    if (s1) free(s1);
-    if (s2 && (s2 != s1)) free(s2);
-    return s;
-}
-/*
  * Split a strin s_in into an array using regex pattern.
  * If pattern is one character long then a simple
  * character split is used.
@@ -85,21 +70,7 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts) {
 
     regmatch_t pmatch[5];
 
-    int status;
-
-
-#define BUFSIZE 256
-    char buf[BUFSIZE];
-
-    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
-
-        regerror(status,&re,buf,BUFSIZE);
-        fprintf(stderr,"%s\n",buf);
-        assert(1);
-
-        return NULL;
-
-    }
+    util_regcomp(&re,pattern,REG_EXTENDED|reg_opts);
 
     Array *a = array_new(free);
 
@@ -155,23 +126,27 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts) {
 }
 
 #define BUFSIZE 256
+void util_regcomp(regex_t *re,char *pattern,int flags) {
+
+    int status;
+
+    if ((status = regcomp(re,pattern,REG_EXTENDED|flags)) != 0) {
+
+        char buf[BUFSIZE];
+        regerror(status,re,buf,BUFSIZE);
+        fprintf(stderr,"%s\n",buf);
+        assert(1);
+    }
+}
 /* return position of regex in a string. -1 if no match  */
 char *util_strreg(char *s,char *pattern,int reg_opts) {
     assert(s);
     assert(pattern);
 
-    int status;
     regmatch_t pmatch[1];
     regex_t re;
 
-    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
-
-        char buf[BUFSIZE];
-        regerror(status,&re,buf,BUFSIZE);
-        fprintf(stderr,"%s\n",buf);
-        assert(1);
-        return NULL;
-    }
+    util_regcomp(&re,pattern,0);
 
     char *pos = NULL;
 
@@ -217,20 +192,11 @@ Array *regextract(char *s,char *pattern,int reg_opts) {
 
     assert(s);
     assert(pattern);
-    int status;
     Array *result = NULL;
-
 
     regex_t re;
 
-    if ((status = regcomp(&re,pattern,REG_EXTENDED|reg_opts)) != 0) {
-
-        char buf[BUFSIZE];
-        regerror(status,&re,buf,BUFSIZE);
-        fprintf(stderr,"%s\n",buf);
-        assert(1);
-        return NULL;
-    }
+    util_regcomp(&re,pattern,REG_EXTENDED|reg_opts);
 
     regmatch_t *pmatch = calloc(submatch+1,sizeof(regmatch_t));
 
@@ -329,8 +295,6 @@ void util_unittest() {
 
     assert(strcmp(there,"there") == 0);
 
-
-    hello=join_str_fmt_free("%s %s",hello,there);
 
     printf("replaceall...\n");
     char *x=replace_all(hello,"e","E",0);

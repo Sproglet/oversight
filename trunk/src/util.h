@@ -1,5 +1,12 @@
 #ifndef __UTIL_H_ALORD__
 #define __UTIL_H_ALORD__
+
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <regex.h>
+
 #include "array.h"
 #include "hashtable.h"
 
@@ -49,7 +56,14 @@ char *util_hostname();
 char *query_val(char *name);
 char *util_basename(char *file);
 int util_starts_with(char *a,char *b);
+void util_regcomp(regex_t *re,char *pattern,int flags);
 
 #define FREE(x) do { free(x) ; x = NULL ;  } while(0)
+
+#define DB_CHECK do {\
+    html_log(0," DBCHECK %s %d",__FILE__,__LINE__);\
+    FILE *fp=fopen("/share/Apps/oversight/index.db","r");\
+    fclose(fp);\
+} while(0)
 
 #endif

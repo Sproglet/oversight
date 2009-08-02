@@ -54,28 +54,6 @@ char *get_path(char *path) {
 }
 
 
-#define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
-char *get_mounted_path(char *source,char *path) {
-
-    char *new = NULL;
-    assert(source);
-    assert(path);
-
-    if (*source == '*' ) {
-        new = STRDUP(path);
-    } else if (strchr(source,'/')) {
-        new = STRDUP(path);
-    } else if (strncmp(path,"/share/",7) != 0) {
-        new = STRDUP(path);
-    } else {
-        // Source = xxx 
-        // [pop-nfs][/share/Apps/oversight/... becomes
-        // /opt/sybhttpd/localhost.drives/NETWORK_SHARE/pop-nfs/Apps/oversight/...
-        ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
-    }
-    return new;
-}
-
 
 
 char *get_poster_path(DbRowId *rowid) {
@@ -292,8 +270,16 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     if (!g_dimension->local_browser) {
 
         //If using a browser then VOD tags dont work. Make this script load the file into gaya
+        //Note we send the view and idlist parameters so that we can render the original page 
+        //in the brower after the infomation is sent to gaya.
+
+        //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
+        //The script than captures this after clicking via do_actions,
+        //this sends a url to gaya which points back to this script again but will just contain
+        //small text to auto load a file using <a onfocusload> and <body onloadset>
         char *params =NULL;
-        ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
+        ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
+        //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
         result = get_self_link(params,"",title);
         FREE(params);
 

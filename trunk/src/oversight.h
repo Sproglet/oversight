@@ -32,5 +32,8 @@ OVS_EXTERN int g_local_browser;
 #define QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE "M"
 
 #define SELF_URL ""
+#define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
+
+char *get_mounted_path(char *source,char *path);
 
 #endif

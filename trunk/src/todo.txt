@@ -8,6 +8,11 @@ delete &movie
 delete & overview.
 admin pages.
 
+tvid search broken
+sd tv posters too big
+
+in do_action logic - if all items have just been deleted then clear view= and clear idlist=
+
 
 
 add box set view - use  menu view with either ID filter OR tv name filter. and modify overview

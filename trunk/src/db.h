@@ -32,6 +32,9 @@ typedef struct Dbrowid_struct {
     char *parts;
     int episode;
 
+    //only populate if deleting
+    char *nfo;
+
     long airdate;
     long airdate_imdb;
 
@@ -57,7 +60,6 @@ typedef struct Db_struct {
     char *source;   // *=local otherwise use nmt share name
     char *lockfile; // ..../catalog.lck
     char *backup;   // backup path ....index.db.old
-    int refcount;   // # references to this db.
     int locked_by_this_code;
 
 } Db;
@@ -98,5 +100,5 @@ DbRowSet **db_crossview_scan_titles(
         );
 void db_free_rowsets_and_dbs(DbRowSet **rowsets);
 int db_full_size();
-void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source);
+void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);
 #endif

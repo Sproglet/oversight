@@ -264,10 +264,15 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *result=NULL;
 
     char *path = get_mounted_path(source,file);
+
     char *encoded_path = url_encode(path);
 
 
-    if (!g_dimension->local_browser) {
+    if (!exists(path) ) {
+
+        ovs_asprintf(&result,"<font class=error>%s missing</font>",path);
+
+    } else if (!g_dimension->local_browser) {
 
         //If using a browser then VOD tags dont work. Make this script load the file into gaya
         //Note we send the view and idlist parameters so that we can render the original page 
@@ -278,7 +283,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         //this sends a url to gaya which points back to this script again but will just contain
         //small text to auto load a file using <a onfocusload> and <body onloadset>
         char *params =NULL;
-        ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
+        ovs_asprintf(&params,"idlist=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
         //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
         result = get_self_link(params,font_class,title);
         FREE(params);
@@ -452,17 +457,6 @@ void display_confirm(char *name,char *val_ok,char *val_cancel) {
     printf("</td><td align=center>");
     display_submit(name,val_cancel);
     printf("</td></tr></table>");
-}
-
-int exists_file_in_dir(char *dir,char *name) {
-
-    char *filename;
-    int result = 0;
-
-    ovs_asprintf(&filename,"%s/%s",dir,name);
-    result = is_file(filename);
-    FREE(filename);
-    return result;
 }
 
 
@@ -1594,12 +1588,13 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
 
                 //Put Episode/Title/Date together in new cell.
                 char *tmp;
-                ovs_asprintf(&tmp,"%s<td class=ep%d%d width=%d%%>%s</td><td width=%d%%>%s<font class=epdate>%s</font></td>\n",
+                ovs_asprintf(&tmp,"%s<td class=ep%d%d width=%d%%>%s</td><td width=%d%%><font %s>%s</font><font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
                         rid->watched,i%2,
                         width1,
                         episode_col,
                         width2,
+                        watched_style(rid,i%2),
                         title_txt,
                         (*date_buf?date_buf:"")
                         );
@@ -1629,7 +1624,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
     }
 
     char *result=NULL;
-    ovs_asprintf(&result,"vdbg:<table width=100%% class=listing>%s</table>",listing);
+    ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);
     FREE(listing);
     return result;
 }

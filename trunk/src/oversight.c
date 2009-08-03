@@ -152,7 +152,9 @@ int main(int argc,char **argv) {
 
     config_read_dimensions();
 
+    html_log(0,"== Begin Actions ==");
     do_actions();
+    html_log(0,"== End Actions ==");
 
 
 
@@ -176,6 +178,8 @@ int main(int argc,char **argv) {
 
         display_template("default","menu",num_rows,sorted_rows);
     }
+
+    delete_queue_delete();
 
     free_sorted_rows(rowsets,sorted_rows);
 

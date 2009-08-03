@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <dirent.h>
 #include "util.h"
+#include "actions.h"
 #include "oversight.h"
 #include "gaya_cgi.h"
 #include "display.h"
@@ -10,6 +12,7 @@
 
 struct hashtable *get_newly_selected_ids_by_source();
 struct hashtable *get_newly_deselected_ids_by_source();
+int count_unchecked();
 
 //True if there was post data.
 int has_post_data() {
@@ -78,6 +81,120 @@ void gaya_send_link(char *arg) {
     }
 }
 
+
+void delete_file(char *dir,char *name) {
+    char *path;
+    ovs_asprintf(&path,"%s/%s",dir,name);
+    html_log(0,"delete [%s]",path);
+    unlink(path);
+    FREE(path);
+}
+
+void delete_media(DbRowId *rid,int delete_related) {
+
+    char *f = strrchr(rid->file,'/');
+    Array *names_to_delete=NULL;
+
+    if (f[1] == '\0' ) {
+        if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
+            html_log(0,"folder doesnt look like dvd floder");
+            return;
+        }
+        util_rmdir(f,".");
+        names_to_delete = array_new(free);
+    } else {
+        *f='/';
+        html_log(0,"delete [%s]",rid->file);
+        unlink(rid->file);
+        *f='\0';
+        names_to_delete = split(rid->parts,"/",0);
+
+        if (delete_related) {
+
+            struct dirent *dp;
+            DIR *d = opendir(rid->file);
+            if (d != NULL) {
+                while((dp = readdir(d)) != NULL) {
+                    if (util_starts_with(dp->d_name,"unpak.")) {
+
+                        array_add(names_to_delete,dp->d_name);
+
+                    } else if ( util_strreg(dp->d_name,"[^A-Za-z0-9](sample|samp)[^A-Za-z0-9]",REG_ICASE) != NULL ) {
+
+                        array_add(names_to_delete,dp->d_name);
+
+                    } 
+                }
+                closedir(d);
+            }
+        }
+    }
+
+    //Delete the following files if not used.
+    delete_queue_add(rid->db->source,rid->poster);
+    delete_queue_add(rid->db->source,rid->nfo);
+
+    if(names_to_delete && names_to_delete->size) {
+       int i=0;
+       for(i= 0 ; i<names_to_delete->size ; i++) {
+           delete_file(rid->file,names_to_delete->array[i]);
+       }
+    }
+    array_free(names_to_delete);
+    *f='/';
+}
+
+static struct hashtable *g_delete_queue = NULL;
+
+void delete_queue_add(char *source,char *path) {
+
+    if (source && path && *source && *path ) {
+        char *real_path = get_mounted_path(source,path);
+        if (g_delete_queue == NULL) {
+            g_delete_queue = string_string_hashtable(16);
+        }
+        if (hashtable_search(g_delete_queue,real_path)) {
+            free(real_path);
+        } else {
+            html_log(0,"delete_queue: pending delete [%s]",real_path);
+            hashtable_insert(g_delete_queue,real_path,"1");
+        }
+    }
+}
+
+
+//Remove the filename from the delete queue
+void delete_queue_unqueue(char *source,char *path) {
+    if (g_delete_queue != NULL && path != NULL ) {
+        char *real_path = get_mounted_path(source,path);
+        html_log(0,"delete_queue: unqueuing [%s] in use",real_path);
+        hashtable_remove(g_delete_queue,real_path);
+        FREE(real_path);
+    }
+}
+
+//physically delete files that have been queued for deletetion
+void delete_queue_delete() {
+    struct hashtable_itr *itr;
+    char *k;
+
+    if (g_delete_queue != NULL ) {
+        
+        for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,NULL) ; ) {
+            html_log(0,"delete_queue: deleting [%s]",k);
+            unlink(k);
+        }
+        hashtable_destroy(g_delete_queue,1,0);
+        g_delete_queue=NULL;
+    }
+}
+void clean_params() {
+    hashtable_remove(g_query,"idlist");
+    hashtable_remove(g_query,"view");
+    hashtable_remove(g_query,"action");
+    hashtable_remove(g_query,"select");
+}
+
 void do_actions() {
 
     char *view=query_val("view");
@@ -110,11 +227,11 @@ void do_actions() {
             struct hashtable *source_id_hash = NULL;
             
             source_id_hash = get_newly_selected_ids_by_source();
-            db_set_fields(DB_FLDID_WATCHED,"1",source_id_hash);
+            db_set_fields(DB_FLDID_WATCHED,"1",source_id_hash,DELETE_MODE_NONE);
             hashtable_destroy(source_id_hash,1,1);
 
             source_id_hash = get_newly_deselected_ids_by_source();
-            db_set_fields(DB_FLDID_WATCHED,"0",source_id_hash);
+            db_set_fields(DB_FLDID_WATCHED,"0",source_id_hash,DELETE_MODE_NONE);
             hashtable_destroy(source_id_hash,1,1);
 
 
@@ -123,16 +240,24 @@ void do_actions() {
             struct hashtable *source_id_hash = NULL;
             
             source_id_hash = get_newly_selected_ids_by_source();
-            db_set_fields(DB_FLDID_ACTION,"D",source_id_hash);
+            db_set_fields(DB_FLDID_ACTION,"D",source_id_hash,DELETE_MODE_DELETE);
             hashtable_destroy(source_id_hash,1,1);
+            if (count_unchecked() == 0) {
+                // No more remaining go back to main view
+                clean_params();
+            }
 
         } else if (allow_mark() && strcmp(action,"Remove_From_List") == 0) {
 
             struct hashtable *source_id_hash = NULL;
             
             source_id_hash = get_newly_selected_ids_by_source();
-            db_set_fields(DB_FLDID_ID,NULL,source_id_hash);
+            db_set_fields(DB_FLDID_ID,NULL,source_id_hash,DELETE_MODE_REMOVE);
             hashtable_destroy(source_id_hash,1,1);
+            if (count_unchecked() == 0) {
+                clean_params();
+                // No more remaining go back to main view
+            }
         }
 
     }
@@ -203,7 +328,7 @@ html_log(0," merge_id_by_source  current [%s]",current_id_list);
 
                 if (current_id_list == NULL) {
 
-                    hashtable_insert_log(h,STRDUP(source),STRDUP(idlist));
+                    hashtable_insert(h,STRDUP(source),STRDUP(idlist));
 html_log(0," merge_id_by_source added [%s]",idlist);
 
                 } else {
@@ -224,6 +349,25 @@ html_log(0," merge_id_by_source appended [%s]",new_idlist);
 html_log(0," end merge_id_by_source");
 }
 
+
+int count_unchecked() {
+
+    int total=0;
+
+    char *name;
+    char *val;
+    struct hashtable_itr *itr;
+
+    for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&name,&val) ; ) {
+
+        if (util_starts_with(name,CHECKBOX_PREFIX) && strcmp(val,"on") != 0) {
+            total++;
+        }
+
+    }
+    html_log(0,"unchecked count [%d]",total);
+    return total;
+}
 
 struct hashtable *get_newly_selected_ids_by_source() {
 

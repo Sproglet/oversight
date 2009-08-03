@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include "db.h"
+#include "actions.h"
 #include "dbfield.h"
 #include "gaya_cgi.h"
 #include "oversight.h"
@@ -102,7 +103,6 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
 
     db->lockfile = replace_all(db->path,"index.db","catalog.lck",0);
 
-    db->refcount =0;
     db->locked_by_this_code=0;
     return db;
 }
@@ -360,10 +360,9 @@ int parse_row(
         int num_ids, // number of ids passed in the idlist parameter of the query string
         int *ids,    // sorted array of ids passed in query string idlist.
         int tv_or_movie_view, // true if looking at tv or moview view.
-        long fpos,  // Probably not needed any more
         char *buffer,  // The current buffer contaning a line of input from the database
         Db *db,        // the database
-        DbRowId *rowid // current rowid structure to populate.
+        DbRowId *rowid// current rowid structure to populate.
         ) {
 
     assert(db);
@@ -372,7 +371,6 @@ int parse_row(
     memset(rowid,0,sizeof(*rowid));
 
     rowid->db = db;
-    rowid->offset = fpos;
     rowid->season = -1;
     rowid->category='?';
 
@@ -431,6 +429,24 @@ int parse_row(
                                         extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
 
                                     }
+                                    // If doing actions we need to get the nfo file. 
+                                    // Also get it during normal load if there are files queued to delete.
+                                    // in the latter case remove the file from the queue is it is still in use.
+                                    extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
+                                    /*
+                                    if (deleting == PRE_DELETE || g_delete_queue != NULL) {
+                                        extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
+                                        if (deleting != PRE_DELETE) {
+                                            delete_queue_remove(rowid->nfo);
+                                            free(rowid->nfo);
+                                            rowid->nfo = NULL;
+                                        }
+                                    }
+                                    */
+
+                                    // The folowing files are removed from the delete queue whenever they are parsed.
+                                    delete_queue_unqueue(rowid->db->source,rowid->nfo);
+                                    delete_queue_unqueue(rowid->db->source,rowid->poster);
 
                                     return 1;
                                 }
@@ -458,7 +474,6 @@ DbRowSet *db_rowset(Db *db) {
 
     DbRowSet *dbrs = MALLOC(sizeof(DbRowSet));
     dbrs->db = db;
-    db->refcount++;
     dbrs->size=0;
     dbrs->memsize=0;
     dbrs->rows=NULL;
@@ -479,7 +494,6 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
     *insert = *id;
     (dbrs->size)++;
 
-    insert->db->refcount++;
 
     return dbrs->size;
 }
@@ -756,7 +770,6 @@ DbRowSet * db_scan_titles(
     assert(fp);
 html_log(2,"db fp.%ld..",(long)fp);
     if (fp) {
-        unsigned long pos;
         rowset=db_rowset(db);
         DbRowId rowid;
         char buffer[DB_ROW_BUF_SIZE+1];
@@ -775,7 +788,6 @@ html_log(2,"db fp.%ld..",(long)fp);
 html_log(2,"db start loop...");
 
         while (1) {
-            pos = ftell(fp);
             /*
              * TODO: Further optimisation - replace fgets with function that parses 
              * input using fgetc directly into hashtable name value pairs.
@@ -823,7 +835,7 @@ html_log(2,"db start loop...");
             }
 
 
-            if (parse_row(num_ids,ids,tv_or_movie_view,pos,buffer,db,&rowid)) {
+            if (parse_row(num_ids,ids,tv_or_movie_view,buffer,db,&rowid)) {
                 row_count = db_rowset_add(rowset,&rowid);
             }
         }
@@ -840,7 +852,6 @@ html_log(2,"db start loop...");
 
 void db_free(Db *db) {
 
-    assert(db->refcount == 0);
 
     if (db->locked_by_this_code) {
         db_unlock(db);
@@ -874,8 +885,10 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     free(rid->eptitle_imdb);
     free(rid->additional_nfo);
 
+    //Only populated if deleting
+    free(rid->nfo);
+
     free(rid->certificate);
-    rid->db->refcount--;
     if (free_base) {
         free(rid);
     }
@@ -890,7 +903,6 @@ void db_rowset_free(DbRowSet *dbrs) {
     }
 
     free(dbrs->rows);
-    dbrs->db->refcount--;
     free(dbrs);
 }
 
@@ -908,7 +920,7 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
 }
 
 void db_set_fields_by_source(
-        char *field_id,char *new_value,char *source,char *idlist) {
+        char *field_id,char *new_value,char *source,char *idlist,int delete_mode) {
 
 html_log(0," begin db init");
 
@@ -963,8 +975,13 @@ html_log(0," begin open db");
 
                     if (regexec(&id_regex_ptn,buf,0,NULL,0) == 0 && regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
 
-                        if (new_value == NULL) {
+                        if (delete_mode == DELETE_MODE_REMOVE) {
                             // do nothing. line is not written 
+                        } else if (delete_mode == DELETE_MODE_DELETE) {
+                            DbRowId rid;
+                            parse_row(ALL_IDS,NULL,0,buf,db,&rid);
+                            delete_media(&rid,1);
+                            db_rowid_free(&rid,0);
                         } else {
                             int spos=pmatch[1].rm_so;
                             int epos=pmatch[1].rm_eo;
@@ -1001,14 +1018,14 @@ html_log(0," end db_set_fields_by_source");
 
 }
 
-void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source) {
+void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode) {
     struct hashtable_itr *itr;
     char *source;
     char *idlist;
 
 html_log(0," begin db_set_fields");
     for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
-        db_set_fields_by_source(field_id,new_value,source,idlist);
+        db_set_fields_by_source(field_id,new_value,source,idlist,delete_mode);
     }
 html_log(0," end db_set_fields");
 }

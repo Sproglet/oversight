@@ -19,56 +19,66 @@
 struct hashtable *read_and_parse_row(FILE *fp);
 int in_idlist(int id,int size,int *ids);
 
-char *db_get_lock_file_name() {
-    char *s;
-    ovs_asprintf(&s,"%s/catalog.lck",getenv("APPDIR"));
-    return s;
-}
+int db_lock_pid(Db *db) {
 
-int db_is_locked(char *lockfile) {
-    int lockpid;
-    if (is_file(lockfile)) {
-        FILE *fp = fopen(lockfile,"r");
-        int count = fscanf(fp,"%d\n",&lockpid);
+    int lockpid=0;
+
+    if (is_file(db->lockfile)) {
+
+        FILE *fp = fopen(db->lockfile,"r");
+
+        fscanf(fp,"%d\n",&lockpid);
         fclose(fp);
-        if (count == 1) {
-            if (lockpid != getpid()) {
-                html_log(0,"Database locked by pid=%d current pid=%d",lockpid,getpid());
-                return 1;
-            }
-        }
     }
-    return 0;
+    return lockpid;
 }
 
-int db_lock(char *source) {
+int db_is_locked_by_another_process(Db *db) {
+
+    int lockpid =  db_lock_pid(db) ;
+
+    if ( lockpid != 0 && lockpid != getpid() ) {
+        html_log(0,"Database locked by pid=%d current pid=%d",lockpid,getpid());
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int db_lock(Db *db) {
 
     int backoff[] = { 10,10,10,10,10,10,20,30, 0 };
-    char *lockfile = db_get_lock_file_name(source);
 
     int attempt;
 
-    for(attempt = 0 ; backoff[attempt] ; attempt++ ) {
+    db->locked_by_this_code=0;
+    for(attempt = 0 ; backoff[attempt] && db->locked_by_this_code ==0 ; attempt++ ) {
 
-        if (!db_is_locked(lockfile)) {
+        if (db_is_locked_by_another_process(db)) {
+
             sleep(backoff[attempt]);
             html_log(0,"Sleeping for %d\n",backoff[attempt]);
 
-            FILE *fp = fopen(lockfile,"w");
-            fprintf(fp,"%d\n",getpid());
-            fclose(fp);
-            free(lockfile);
-            return 1;
+        } else {
+            db->locked_by_this_code=1;
         }
     }
-    html_error("Failed to get lock [%s]\n",lockfile);
-    free(lockfile);
-    return 0;
+    if (db->locked_by_this_code) {
+        FILE *fp = fopen(db->lockfile,"w");
+        fprintf(fp,"%d\n",getpid());
+        fclose(fp);
+        html_log(0,"Aquired lock [%s]\n",db->lockfile);
+    } else {
+        html_error("Failed to get lock [%s]\n",db->lockfile);
+    }
+    return db->locked_by_this_code;
 }
 
-int db_unlock(char *source) {
-    char *lockfile = db_get_lock_file_name(source);
-    return unlink(lockfile) ==0;
+int db_unlock(Db *db) {
+
+    db->locked_by_this_code=0;
+    html_log(0,"Released lock [%s]\n",db->lockfile);
+    return unlink(db->lockfile) ==0;
 }
 
 /*
@@ -87,7 +97,13 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
         db->path =  STRDUP(filename);
     }
     db->source= STRDUP(source);
+
+    ovs_asprintf(&(db->backup),"%s.old",db->path);
+
+    db->lockfile = replace_all(db->path,"index.db","catalog.lck",0);
+
     db->refcount =0;
+    db->locked_by_this_code=0;
     return db;
 }
 
@@ -602,6 +618,8 @@ int *extract_idlist(char *db_name,int *num_ids) {
     char *query = query_val("idlist");
     int *result = NULL;
 
+    html_log(0,"extract_idlist from [%s]",query);
+
     if (*query) {
         *num_ids = 0;
         char *p = delimited_substring(query,')',db_name,'(',1,0);
@@ -772,9 +790,6 @@ html_log(2,"db start loop...");
                 (*gross_size)++;
             }
 
-
-
-html_log(2,"db start loop...");
             if (name_filter && *name_filter) {
                 char *title_start=NULL;
                 int title_len=0;
@@ -827,8 +842,14 @@ void db_free(Db *db) {
 
     assert(db->refcount == 0);
 
+    if (db->locked_by_this_code) {
+        db_unlock(db);
+    }
+
     free(db->source);
     free(db->path);
+    free(db->lockfile);
+    free(db->backup);
     free(db);
 
 }
@@ -918,7 +939,7 @@ html_log(0," begin db init");
 
 html_log(0," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
 
-    if (db) {
+    if (db && db_lock(db)) {
 html_log(0," begin open db");
         FILE *db_in = fopen(db->path,"r");
 
@@ -966,7 +987,10 @@ html_log(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epo
             }
 
             fclose(db_in);
+            util_rename(db->path,db->backup);
+            util_rename(tmpdb,db->path);
         }
+        db_unlock(db);
         db_free(db);
     }
 html_log(0," end db_set_fields_by_source");

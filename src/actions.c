@@ -52,7 +52,7 @@ void clear_selection() {
     int i;
     for(i=0 ; i<a->size ; i++) {
         html_log(0,"removing query[%s]",a->array[i]);
-        hashtable_remove(g_query,k);
+        hashtable_remove(g_query,a->array[i]);
     }
     array_free(a);
 }

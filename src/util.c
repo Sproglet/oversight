@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <ctype.h>
+#include <dirent.h>
 
 #include "util.h"
 #include "hashtable.h"
@@ -377,18 +378,18 @@ char *delimited_substring(char *buf,char prefix,char *substr,char suffix,int mat
 }
 
 int exists(char *path) {
-       return access(path,F_OK);
+       return access(path,F_OK) == 0;
 }
 
 int is_writeable(char *path) {
-       return access(path,W_OK);
+       return access(path,W_OK) == 0;
 }
 
 int is_readable(char *path) {
-       return access(path,R_OK);
+       return access(path,R_OK) == 0;
 }
 int is_executable(char *path) {
-       return access(path,X_OK);
+       return access(path,X_OK) == 0;
 }
 
 int is_file(char *path) {
@@ -607,5 +608,36 @@ char *util_basename(char *file) {
 }
 int util_starts_with(char *a,char *b) {
     return strncmp(a,b,strlen(b))==0;
+}
+
+void util_rmdir(char *path,char *name) {
+    char *full_path;
+    ovs_asprintf(&full_path,"%s/%s",path,name);
+    DIR *d = opendir(full_path);
+    if (d) {
+        struct dirent *dp;
+        while((dp = readdir(d)) != NULL) {
+            if(strcmp(dp->d_name,".") != 0 && strcmp(dp->d_name,"..") != 0) {
+                util_rmdir(full_path,dp->d_name);
+            }
+        }
+        closedir(d);
+        html_log(0,"rmdir [%s]",full_path);
+    } else {
+        html_log(0,"unlink [%s]",full_path);
+        unlink(full_path);
+    }
+    free(full_path);
+}
+
+int exists_file_in_dir(char *dir,char *name) {
+
+    char *filename;
+    int result = 0;
+
+    ovs_asprintf(&filename,"%s/%s",dir,name);
+    result = is_file(filename);
+    FREE(filename);
+    return result;
 }
 

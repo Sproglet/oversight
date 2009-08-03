@@ -22,8 +22,43 @@ long get_current_page() {
     return page;
 }
 
+int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
+
+    int result = 0;
+    if(args) {
+        if (args->size != 2) {
+            html_error("macro :%s or %s(rows,cols)",call,call);
+        } else {
+            char *end;
+
+            *rowsp=strtol(args->array[0],&end,10);
+            if (!*(char *)(args->array[0]) || *end) {
+                html_error("macro :%s invalid number [%s]",call,args->array[0]);
+            } else {
+
+                *colsp=strtol(args->array[1],&end,10);
+                if (!*(char *)(args->array[1]) || *end) {
+                    html_error("macro :%s invalid number [%s]",call,args->array[1]);
+                } else {
+                    result = 1;
+                }
+            }
+
+        }
+    }
+    return result;
+}
+
+
 char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return get_poster_image_tag(sorted_rows[0],"");
+    if (num_rows == 0) {
+       *free_result=0;
+       return "poster";
+    } else if (args && args->size) {
+        return get_poster_image_tag(sorted_rows[0],args->array[0]);
+    } else {
+        return get_poster_image_tag(sorted_rows[0],"");
+    }
 }
 
 char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -109,33 +144,6 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
     free(attr);
 
     return tmp;
-}
-
-int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
-
-    int result = 0;
-    if(args) {
-        if (args->size != 2) {
-            html_error("macro :%s or %s(rows,cols)",call,call);
-        } else {
-            char *end;
-
-            *rowsp=strtol(args->array[0],&end,10);
-            if (!*(char *)(args->array[0]) || *end) {
-                html_error("macro :%s invalid number [%s]",call,args->array[0]);
-            } else {
-
-                *colsp=strtol(args->array[1],&end,10);
-                if (!*(char *)(args->array[1]) || *end) {
-                    html_error("macro :%s invalid number [%s]",call,args->array[1]);
-                } else {
-                    result = 1;
-                }
-            }
-
-        }
-    }
-    return result;
 }
 
 char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -454,21 +462,21 @@ char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_
 }
 char *macro_fn_select_mark_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val("select")) {
+    if (strcmp(query_val("select"),"Mark")==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Mark >");
     }
     return result;
 }
 char *macro_fn_select_delete_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val("select")) {
+    if (strcmp(query_val("select"),"Delete")==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Delete >");
     }
     return result;
 }
 char *macro_fn_select_delist_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val("select")) {
+    if (strcmp(query_val("select"),"Delete")==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Remove_From_List >");
     }
     return result;

@@ -66,5 +66,7 @@ int util_rename(char *old,char *new);
     FILE *fp=fopen("/share/Apps/oversight/index.db","r");\
     fclose(fp);\
 } while(0)
+void util_rmdir(char *path,char *name);
 
+int exists_file_in_dir(char *dir,char *name);
 #endif

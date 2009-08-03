@@ -440,6 +440,14 @@ char *nmt_subdir(char *root,char *name) {
     return d;
 }
 
+int util_rename(char *old,char *new) {
+    if (rename(old,new)) {
+        nmt_chown(new);
+        return 1;
+    }
+    return 0;
+}
+
 void nmt_chown(char *d) {
     if (nmt_uid() >= 0 && nmt_gid() >= 0) {
         chown(d,nmt_uid(),nmt_gid());

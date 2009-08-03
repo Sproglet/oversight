@@ -53,9 +53,12 @@ void db_rowid_dump(DbRowId *rid);
 
 typedef struct Db_struct {
 
-    char *path;
-    char *source;
-    int refcount; // # references to this db.
+    char *path;     // ..../index.db (auto computed from source)
+    char *source;   // *=local otherwise use nmt share name
+    char *lockfile; // ..../catalog.lck
+    char *backup;   // backup path ....index.db.old
+    int refcount;   // # references to this db.
+    int locked_by_this_code;
 
 } Db;
 
@@ -79,8 +82,8 @@ DbRowSet * db_scan_titles(
         int *gross_size
         );
 
-int db_lock(char *source);
-int db_unlock(char *source);
+int db_lock(Db *db);
+int db_unlock(Db *db);
 void db_rowset_free(DbRowSet *dbrs);
 void db_rowid_free(DbRowId *rid,int free_base);
 void db_free(Db *db);

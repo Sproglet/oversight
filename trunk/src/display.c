@@ -718,7 +718,7 @@ char *select_checkbox(DbRowId *rid,char *text) {
 
         char *id_list = build_id_list(rid);
 
-        if (rid->watched && strcmp(select,"Mark")) {
+        if (rid->watched && strcmp(select,"Mark") == 0) {
 
             ovs_asprintf(&result,
                 "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" CHECKED >"
@@ -1250,7 +1250,10 @@ char *get_theme_image_tag(char *image_name,char *attr) {
 
 
 
+
 int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr) {
+
+
     // Get filter options
     long crossview=0;
 
@@ -1593,7 +1596,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 char *tmp;
                 ovs_asprintf(&tmp,"%s<td class=ep%d%d width=%d%%>%s</td><td width=%d%%>%s<font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
-                        sorted_rows[0]->watched,i%2,
+                        rid->watched,i%2,
                         width1,
                         episode_col,
                         width2,

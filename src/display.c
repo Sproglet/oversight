@@ -280,7 +280,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         char *params =NULL;
         ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
         //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-        result = get_self_link(params,"",title);
+        result = get_self_link(params,font_class,title);
         FREE(params);
 
     } else {

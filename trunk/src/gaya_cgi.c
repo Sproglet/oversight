@@ -355,6 +355,7 @@ void html_comment(char *s) {
 void html_comment(char *format,...) {
     va_list ap;
 
+    assert((long)format > 10);
     va_start(ap,format);
     html_vacomment(format,ap);
     va_end(ap);

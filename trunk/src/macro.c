@@ -149,6 +149,7 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
 char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     int rows=0;
     int cols=0;
+    html_log(0,"macro_fn_tv_listing");
     if (!get_rows_cols(call,args,&rows,&cols)) {
         rows = 10;
         cols = 2;

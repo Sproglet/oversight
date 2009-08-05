@@ -15,12 +15,17 @@ int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
     return (*rid2)->date - (*rid1)->date;
 }
 
+int index_strcmp(char *a,char *b) {
+    if (strncasecmp(a,"the ",4)==0) a+= 4;
+    if (strncasecmp(b,"the ",4)==0) b+= 4;
+    return strcasecmp(a,b);
+}
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
     int c;
     // If titles are different - return comparison
-    if ((c=strcmp((*rid1)->title,(*rid2)->title)) != 0) {
+    if ((c=index_strcmp((*rid1)->title,(*rid2)->title)) != 0) {
         return c;
     }
 

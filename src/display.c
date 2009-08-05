@@ -478,11 +478,6 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
     FREE(tag);
 }
 
-void build_tvid_list() {
-
-    printf("tvid?");
-}
-
 char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *class) {
     char *attr;
     ovs_asprintf(&attr,
@@ -1253,14 +1248,11 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     html_log(0,"Crossview = %ld",crossview);
 
     //Tvid filter = this as the form 234
-    html_log(0,"search query...");
     html_hashtable_dump(0,"query",g_query);
-    char *name_filter=hashtable_search(g_query,"_rt"); 
-    html_log(0,"done search query");
-    char *regex = NULL;
-    if (name_filter) {
-        regex = get_tvid(name_filter);
-    } else {
+
+    char *regex = get_tvid(query_val(QUERY_PARAM_REGEX));
+
+    if (regex == NULL || !*regex) {
         //Check regex entered via text box
 
         if (*query_val("searcht") && *query_val(QUERY_PARAM_SEARCH_MODE)) {
@@ -1365,7 +1357,7 @@ void set_tvid_increments(int *tvid_val) {
     tvid_val['6']=tvid_val['m']=tvid_val['n']=tvid_val['o']=6;
     tvid_val['7']=tvid_val['p']=tvid_val['q']=tvid_val['r']=tvid_val['s']=7;
     tvid_val['8']=tvid_val['t']=tvid_val['u']=tvid_val['v']=8;
-    tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=8;
+    tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=9;
 }
 
 char *get_tvid_links(DbRowId **rowids) {

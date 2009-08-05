@@ -53,6 +53,7 @@ char *STRDUP(char *s);
 char *util_tolower(char *s);
 unsigned int stringhash(void *vptr);
 char *util_hostname();
+char *util_dirname(char *file);
 char *query_val(char *name);
 void query_remove(char *name);
 char *util_basename(char *file);
@@ -68,6 +69,8 @@ int util_rename(char *old,char *new);
     fclose(fp);\
 } while(0)
 void util_rmdir(char *path,char *name);
+
+#define TRACE html_log(0,"%s %s %d",__FUNCTION__,__FILE__,__LINE__)
 
 int exists_file_in_dir(char *dir,char *name);
 #endif

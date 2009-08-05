@@ -154,8 +154,12 @@ int main(int argc,char **argv) {
 
     html_log(0,"== Begin Actions ==");
     do_actions();
-    html_log(0,"== End Actions ==");
+    html_log(0,"== End Actions view=%s select=%s ==",query_val("view"),query_val("select"));
+   
 
+    // After actions get view again. This is in case we have just deleted the last item in 
+    // a tv or moview view. Then we want to go back to the main view.
+    view=query_val("view");  
 
 
     DbRowSet **rowsets;

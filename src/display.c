@@ -30,7 +30,7 @@ char *get_play_tvid(char *text) {
 }
 
 // Return a full path 
-char *get_path(char *path) {
+char *get_path(DbRowId *rid,char *path) {
     char *new=NULL;
     assert(path);
     if (path[0] == '/' ) {
@@ -38,17 +38,9 @@ char *get_path(char *path) {
     } else if (strncmp(path,"ovs:",4) == 0) {
         ovs_asprintf(&new,"%s/db/global/%s",appDir(),path+4);
     } else {
-        // Other paths are relative to the media file
-        /**
-         * NO MORE PATHS TO MEDIA FILES
-        char *f = strrchr(media_file,'/');
-        if (f != NULL) {
-            *f ='\0';
-            ovs_asprintf(&new,"%s/%s",media_file,path);
-            *f='/';
-        } 
-        */
-        new = STRDUP(path);
+        char *d=util_dirname(rid->file);
+       ovs_asprintf(&new,"%s/%s",d,path);
+       FREE(d);
     }
     return new;
 }
@@ -58,7 +50,7 @@ char *get_path(char *path) {
 
 char *get_poster_path(DbRowId *rowid) {
     assert(rowid->poster);
-    char *url = get_path(rowid->poster); //conver ovs: to internal path
+    char *url = get_path(rowid,rowid->poster); //conver ovs: to internal path
     char *url2 = get_mounted_path(rowid->db->source,url);
     FREE(url);
     return url2;
@@ -309,7 +301,9 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
         if (add_to_playlist) {
             FILE *fp = playlist_open();
-            fprintf(fp,"%s|0|0|file://%s|",util_basename(file),path);
+            char *name=util_basename(file);
+            fprintf(fp,"%s|0|0|file://%s|",name,path);
+            free(name);
             fflush(fp);
         }
 
@@ -576,7 +570,7 @@ char *watched_style(DbRowId *rowid,int grid_toggle) {
         long fresh_days;
         if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
             if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
-                return " border=2 class=fresh ";
+                return " border=3 class=fresh ";
             }
         }
     }
@@ -768,12 +762,10 @@ char *movie_listing(DbRowId *rowid) {
         char *basename=util_basename(rowid->file);
 
         result=vod_link(rowid,basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
+        free(basename);
         // Add vod links for all of the parts
         
         if (parts && parts->size) {
-            char *dir_end = strrchr(rowid->file,'/');
-            *dir_end = '\0';
-            char *dir = rowid->file;
 
             int i;
             for(i = 0 ; i < parts->size ; i++ ) {
@@ -782,18 +774,19 @@ char *movie_listing(DbRowId *rowid) {
                 sprintf(i_str,"%d",i);
 
                 char *part_path;
-                ovs_asprintf(&part_path,"%s/%s",dir,parts->array[i]);
+                char *d=util_dirname(rowid->file);
+                ovs_asprintf(&part_path,"%s/%s",d,parts->array[i]);
 
                 char *tmp=vod_link(rowid,parts->array[i],movie_play,rowid->db->source,part_path,i_str,"",style);
                 FREE(part_path);
 
                 char *vod_list;
                 ovs_asprintf(&vod_list,"%s\n<br>%s",result,tmp);
+                FREE(d);
                 FREE(tmp);
                 FREE(result);
                 result=vod_list;
             }
-            *dir_end = '/';
 
             // Big play button
             {
@@ -834,8 +827,13 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
 
             char *attr;
-            ovs_asprintf(&attr," width=%d height=%d ",
-                g_dimension->poster_menu_img_width,g_dimension->poster_menu_img_height);
+
+            ovs_asprintf(&attr," width=%d height=%d %s ",
+                g_dimension->poster_menu_img_width,
+                g_dimension->poster_menu_img_height,
+                watched_style(row_id,grid_toggle)
+                );
+
             title = get_poster_image_tag(row_id,attr);
             FREE(attr);
 
@@ -1489,6 +1487,7 @@ int year(time_t t) {
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
     int r,c;
 
+    TRACE;
     char *select=query_val("select");
 
     char *listing=NULL;
@@ -1514,8 +1513,10 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
     }
 
     for(r=0 ; r < rows ; r++ ) {
+        html_log(0,"tvlisting row %d",r);
         char *row_text = NULL;
         for(c = 0 ; c < cols ; c++ ) {
+            html_log(0,"tvlisting col %d",c);
 
             int i = c * rows + r;
             if (i < num_rows) {
@@ -1544,6 +1545,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 }
 
                 // Title
+                int free_title=0;
                 title=rid->eptitle;
                 if (title == NULL || !*title) {
                     title=rid->eptitle_imdb;
@@ -1551,8 +1553,11 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 if (title == NULL || !*title) {
                     title=rid->additional_nfo;
                 }
+    TRACE;
                 if (title == NULL || !*title) {
+    TRACE;
                     title=util_basename(rid->file);
+                    free_title=1;
                 }
 
                 //TODO truncate episode length here - 37 chars?
@@ -1561,12 +1566,16 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 int is_proper = util_strreg(rid->file,"proper",REG_ICASE) != NULL;
                 int is_repack = util_strreg(rid->file,"repack",REG_ICASE) != NULL;
                 char *icon_text = icon_link(rid->file);
+    TRACE;
 
                 ovs_asprintf(&title_txt,"%s%s%s&nbsp;%s",
                         title,
                         (is_proper?"&nbsp;<font class=proper>[pr]</font>":""),
                         (is_repack?"&nbsp;<font class=repack>[rpk]</font>":""),
                         (icon_text?icon_text:""));
+    TRACE;
+                if (free_title) FREE(title);
+    TRACE;
                 FREE(icon_text);
 
 
@@ -1587,17 +1596,21 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 date=strftime(date_buf,DATE_BUF_SIZ,date_format,localtime((time_t *)(&date)));
 
                 //Put Episode/Title/Date together in new cell.
+                char td_class[10];
+                sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
-                ovs_asprintf(&tmp,"%s<td class=ep%d%d width=%d%%>%s</td><td width=%d%%><font %s>%s</font><font class=epdate>%s</font></td>\n",
+                ovs_asprintf(&tmp,"%s<td %s width=%d%%>%s</td><td %s width=%d%%><font %s>%s</font><font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
-                        rid->watched,i%2,
+                        td_class,
                         width1,
                         episode_col,
+                        td_class,
                         width2,
                         watched_style(rid,i%2),
                         title_txt,
                         (*date_buf?date_buf:"")
                         );
+    TRACE;
                 FREE(title_txt);
                 FREE(episode_col);
                 FREE(row_text);
@@ -1609,6 +1622,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                     (row_text?row_text:""),
                     width1,
                     width2);
+    TRACE;
                 FREE(row_text);
                 row_text=tmp;
             }
@@ -1617,11 +1631,13 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
         if (row_text) {
             char *tmp;
             ovs_asprintf(&tmp,"%s<tr>%s</tr>\n",(listing?listing:""),row_text);
+    TRACE;
             FREE(row_text);
             FREE(listing);
             listing=tmp;
         }
     }
+    TRACE;
 
     char *result=NULL;
     ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);

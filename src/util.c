@@ -578,9 +578,8 @@ char *util_hostname() {
     return hostname;
 }
 void query_remove(char *name) {
-    if (hashtable_remove(g_query,name) != NULL) {
-        html_log(0,"Removing query item [%s]",name);
-    } else {
+    html_log(0,"Removing query item [%s]",name);
+    if (hashtable_remove(g_query,name) == NULL) {
         html_log(4,"query item not present [%s]",name);
     }
 }
@@ -593,26 +592,47 @@ char *query_val(char *name) {
         return "";
     }
 }
-// return basename of media file. ptr must NOT be freed.
-char *util_basename(char *file) {
-//For a normal file return the file name, for a DVD VOB folder return parent folder.
+// return parent dir of media file. ptr must be freed.
+char *util_dirname(char *file) {
     int title_len = strlen(file);
-    char *p;
-    if (file[title_len-1] == '/' ) {
+    char *p=STRDUP(file);
+    char *q;
+
+    if (p[title_len-1] == '/' ) {
         // VOB Folder
-        file[title_len-1] = '\0';
-        p=strrchr(file,'/');
-        file[title_len-1] = '/';
+        p[title_len-1] = '\0';
+        q=strrchr(file,'/');
+        p[title_len-1] = '/';
+        *q='\0';
     } else {
         // Normal file
-        p=strrchr(file,'/');
+        q=strrchr(file,'/');
     }
-    if (p == NULL) {
-        p=file;
-    }else{
-        p++;
-    }
+    *q='\0';
     return p;
+}
+// return basename of media file. ptr must be freed.
+char *util_basename(char *file) {
+//For a normal file return the file name, for a DVD VOB folder return parent folder.
+    char *p,*s;
+
+    s = p = strrchr(file,'/');
+
+    if (s && s[1] == '\0' ) {  
+        //If it ends with / go back to penultimate / - for VOBSUB
+        *p='\0';
+        s=strrchr(file,'/');
+    }
+
+    // Copy string after /
+    if (s) {
+        s=STRDUP(s+1);
+    }
+
+    //If vobsub restore final /
+    if (p && *p=='\0') *p='/';
+
+    return s;
 }
 int util_starts_with(char *a,char *b) {
     return strncmp(a,b,strlen(b))==0;

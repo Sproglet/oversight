@@ -431,18 +431,23 @@ char *macro_fn_back_button(char *template_name,char *call,Array *args,int num_ro
 char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
 
-    if (! *query_val("view")) {
-        if(hashtable_count(g_query) == 0 && g_dimension->local_browser) {
-            char *tag=get_theme_image_tag("exit",NULL);
-            ovs_asprintf(&result,"<a href=\"/start.cgi\" name=home >%s</a>",tag);
-            free(tag);
-        } else {
-            char *tag=get_theme_image_tag("home",NULL);
-            ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",SELF_URL,tag);
-            free(tag);
-        }
+    if(!*query_val("select")) {
+        char *tag=get_theme_image_tag("home",NULL);
+        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",SELF_URL,tag);
+        free(tag);
     }
 
+    return result;
+}
+
+char *macro_fn_exit_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+
+    if(g_dimension->local_browser && !*query_val("select")) {
+        char *tag=get_theme_image_tag("exit",NULL);
+        ovs_asprintf(&result,"<a href=\"/start.cgi\" name=home >%s</a>",tag);
+        free(tag);
+    }
     return result;
 }
 
@@ -591,6 +596,7 @@ void macro_init() {
         hashtable_insert(macros,"RIGHT_BUTTON",macro_fn_right_button);
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
         hashtable_insert(macros,"HOME_BUTTON",macro_fn_home_button);
+        hashtable_insert(macros,"EXIT_BUTTON",macro_fn_exit_button);
         hashtable_insert(macros,"MARK_BUTTON",macro_fn_mark_button);
         hashtable_insert(macros,"DELETE_BUTTON",macro_fn_delete_button);
         hashtable_insert(macros,"SELECT_MARK_SUBMIT",macro_fn_select_mark_submit);

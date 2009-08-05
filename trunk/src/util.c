@@ -577,6 +577,14 @@ char *util_hostname() {
     hostname[HOSTBUFSIZ-1]='\0';
     return hostname;
 }
+void query_remove(char *name) {
+    if (hashtable_remove(g_query,name) != NULL) {
+        html_log(0,"Removing query item [%s]",name);
+    } else {
+        html_log(4,"query item not present [%s]",name);
+    }
+}
+     
 char *query_val(char *name) {
     char *val;
     if (config_check_str(g_query,name,&val)) {

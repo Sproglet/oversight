@@ -54,6 +54,7 @@ char *util_tolower(char *s);
 unsigned int stringhash(void *vptr);
 char *util_hostname();
 char *query_val(char *name);
+void query_remove(char *name);
 char *util_basename(char *file);
 int util_starts_with(char *a,char *b);
 void util_regcomp(regex_t *re,char *pattern,int flags);

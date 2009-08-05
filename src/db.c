@@ -36,14 +36,21 @@ int db_lock_pid(Db *db) {
 
 int db_is_locked_by_another_process(Db *db) {
 
+    int result=0;
     int lockpid =  db_lock_pid(db) ;
 
     if ( lockpid != 0 && lockpid != getpid() ) {
-        html_log(0,"Database locked by pid=%d current pid=%d",lockpid,getpid());
-        return 1;
-    } else {
-        return 0;
+        char *dir;
+        ovs_asprintf(&dir,"/proc/%d",lockpid);
+        if (is_dir(dir)) {
+            html_log(0,"Database locked by pid=%d current pid=%d",lockpid,getpid());
+            result=1;
+        } else {
+            html_log(0,"Database was locked by pid=%d current pid=%d : releasing lock",lockpid,getpid());
+        }
+        FREE(dir);
     }
+    return result;
 }
 
 int db_lock(Db *db) {

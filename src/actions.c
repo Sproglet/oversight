@@ -39,9 +39,9 @@ void clear_selection() {
 
 
     // Clear the selection
-    hashtable_remove(g_query,"select");
+    query_remove("select");
     if (strcmp(query_val("action"),"Cancel") ==0) {
-        hashtable_remove(g_query,"action");
+        query_remove("action");
     }
     struct hashtable_itr *itr;
     Array *a = array_new(NULL);
@@ -55,7 +55,7 @@ void clear_selection() {
     int i;
     for(i=0 ; i<a->size ; i++) {
         html_log(0,"removing query[%s]",a->array[i]);
-        hashtable_remove(g_query,a->array[i]);
+        query_remove(a->array[i]);
     }
     array_free(a);
 }
@@ -95,6 +95,7 @@ void delete_media(DbRowId *rid,int delete_related) {
     char *f = strrchr(rid->file,'/');
     Array *names_to_delete=NULL;
 
+    html_log(0,"%s %d begin delete_media",__FILE__,__LINE__);
     if (f[1] == '\0' ) {
         if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
             html_log(0,"folder doesnt look like dvd floder");
@@ -141,6 +142,7 @@ void delete_media(DbRowId *rid,int delete_related) {
        }
     }
     array_free(names_to_delete);
+    html_log(0,"%s %d end delete_media",__FILE__,__LINE__);
     *f='/';
 }
 
@@ -189,11 +191,12 @@ void delete_queue_delete() {
     }
 }
 void clean_params() {
-    hashtable_remove(g_query,"idlist");
-    hashtable_remove(g_query,"view");
-    hashtable_remove(g_query,"action");
-    hashtable_remove(g_query,"select");
+    query_remove("idlist");
+    query_remove("view");
+    query_remove("action");
+    query_remove("select");
 }
+
 
 void do_actions() {
 
@@ -205,15 +208,15 @@ void do_actions() {
     char *file=query_val(REMOTE_VOD_PREFIX1);
     if (file && *file) {
         gaya_send_link(file); 
-        hashtable_remove(g_query,REMOTE_VOD_PREFIX1);
+        query_remove(REMOTE_VOD_PREFIX1);
     }
 
 
 
     if (strcmp(query_val("searchb"),"Hide") == 0) {
 
-        hashtable_remove(g_query,QUERY_PARAM_SEARCH_MODE);
-        hashtable_remove(g_query,"searchb");
+        query_remove(QUERY_PARAM_SEARCH_MODE);
+        query_remove("searchb");
     }
 
     if (allow_admin() && strcmp(view,"admin")==0 ) {

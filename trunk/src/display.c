@@ -1636,3 +1636,37 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
     FREE(listing);
     return result;
 }
+char *get_status() {
+    char *result=NULL;
+#define MSG_SIZE 20
+    static char msg[MSG_SIZE+1];
+    char *filename;
+    ovs_asprintf(&filename,"%s/catalog.status",appDir());
+
+    msg[0] = '\0';
+
+    FILE *fp = fopen(filename,"r");
+    if (fp) {
+        fgets(msg,MSG_SIZE,fp);
+        msg[MSG_SIZE] = '\0';
+        chomp(msg);
+
+        result = STRDUP(msg);
+
+        fclose(fp);
+    } else {
+        html_error("Error %d opening [%s]",errno,filename);
+    }
+    free(filename);
+
+    if (result == NULL) {
+
+        if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
+            result = STRDUP("[ Catalog update pending ]");
+        } else if (db_full_size() == 0 ) {
+            result = STRDUP("[ Video index is empty. Select setup icon and scan the media drive ]");
+        }
+    }
+
+    return result;
+}

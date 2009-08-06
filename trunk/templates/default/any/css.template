@@ -127,3 +127,6 @@ h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF0
 
 .label { color:red }
 .scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
+<!--
+vi:ts=4:sw=4:et:syntax=css
+-->

@@ -32,10 +32,62 @@ void display_admin_settings() {
     display_confirm("action","Save Settings","Cancel");
 }
 
+char *get_cfg_link(char *config_file,
+        char *help_suffix,
+        char *attr,
+        char *label) {
+    char *p,*link;
+
+    ovs_asprintf(p,"action=settings&file=%s&help=%s",config_file,help_suffix);
+
+
+    link= get_self_link(p,attr,label);
+    FREE(p);
+    return link;
+}
+
+
+char *get_screen_config_row(char *label,char *config_label,char *class) {
+    char *attr;
+    char *help_suffix;
+    char *poster_help_suffix;
+    char *detail_help_suffix;
+    char *result = NULL;
+
+    ovs_asprintf(attr,"class=%s",class);
+    ovs_asprintf(help_suffix,"%s.help",config_label);
+    ovs_asprintf(poster_help_suffix,"%s-poster.help",config_label);
+    ovs_asprintf(detail_help_suffix,"%s-detail.help",config_label);
+
+    char *help_link =
+        get_cfg_link("oversight.cfg",help_suffix,class,"text mode");
+
+    char *poster_help_link =
+        get_cfg_link("oversight.cfg",poster_help_suffix,class,"poster mode");
+
+    char *detail_help_link =
+        get_cfg_link("oversight.cfg",detail_help_suffix,class,"detail view");
+
+    ovs_asprintf(&result,
+            "<table><tr><td width=25%>%s</td>"
+            "<td width=25%>%s</td>"
+            "<td width=25%>%s</td>"
+            "<td width=25%>%s</td></tr></table>",
+            label,help_link,poster_help_link,detail_help_link);
+
+
+    FREE(attr);
+    FREE(help_suffix);
+    FREE(poster_help_suffix);
+    FREE(detail_help_suffix);
+    FREE(help_link);
+    FREE(poster_help_link);
+    FREE(detail_help_link);
+    return result;
+}
+
+
 void display_admin_main_page() {
-
-    ggg
-
 }
 
 void display_admin() {

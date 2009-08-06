@@ -22,6 +22,7 @@
                         <table class=footer width=100%>
                             <tr valign=top>
                                 [<td align=center>:BACK_BUTTON:</td>]
+                                [<td align=center>:EXIT_BUTTON:</td>]
                                 <td align=center>[:HOME_BUTTON:]</td>
                                 [<td align=center>:MARK_BUTTON:</td>]
                                 [<td align=center>:DELETE_BUTTON:</td>]

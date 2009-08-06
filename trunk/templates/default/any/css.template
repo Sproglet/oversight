@@ -115,10 +115,10 @@ font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
 
 /* watched/Unwatched tv */ .dummy {color:red;}
 
-td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-2):]; }
-td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-2):]; }
-td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-2):]; }
-td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-2):]; }
+td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
 .eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
 
 .epdate { color:#AAAAFF; }

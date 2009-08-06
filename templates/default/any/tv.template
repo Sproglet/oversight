@@ -1,4 +1,4 @@
-<!-- Default Tv Templete  $Id:$ -->
+<!-- Default Tv Template  $Id:$ -->
 <html>
     <head>
         <meta name="robots" content="nofollow">
@@ -47,3 +47,6 @@
     </body>
 </html>
 
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

@@ -1,0 +1,88 @@
+<!-- Default Admin Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Tv Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=&idlist=&action=,,back) Oversight Configuration</h1>
+        <h3>[:STATUS:]</h3>
+        <table width=100%>
+        <tr>
+            <td width=5%></td>
+            <td align=left width=45%>[:CONFIG_LINK(oversight.cfg,help,,Oversight Jukebox Settings General):]</td>
+            <td width=5%>[:ICON(catalog):]</td>
+            <td align=left width=45%>
+                Catalog Settings:
+                <br>[:CONFIG_LINK(catalog.cfg,detect.help,,Scraping and Detecting);]
+                <br>[:CONFIG_LINK(catalog.cfg,help,,Indexing and Renaming);]
+            </td>
+        </tr>
+        <tr>
+            <td width=5%>[:ICON(display):]</td>
+            <td align=left width=45%>Display<br>
+                <table>
+                    <tr>
+                        <td width=25%>SD</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd.help,class=scanlines0,text mode):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd-poster.help,class=scanlines0,poster mode):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd-detail.help,class=scanlines0,detail view):]</td>
+                    </tr>
+                </table>
+            </td>
+            <td width=5%>[:ICON(rescan):]</td>
+            <td align=left width=45%><br>[:LINK(action=rescan_confirm,,Rescan internal HDD):]</td>
+        </tr>
+
+        <tr>
+            <td width=5%>[:ICON(display):]</td>
+            <td align=left width=45%>
+                <table>
+                    <tr>
+                        <td width=25%>720</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720.help,class=scanlines720,text mode):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-poster.help,class=scanlines720,poster mode):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-detail.help,class=scanlines720,detail view):]</td>
+                    </tr>
+                </table>
+            </td>
+            <td width=5%>[:ICON(unpak):]</td>
+            <td align=left width=45%>[:CONFIG_LINK(unpak.cfg,help,,Unpak: Unpacking and Repairing):]</td>
+        </tr>
+        <tr>
+            <td width=5%>[:ICON(display):]</td>
+            <td align=left width=45%>
+                <table>
+                    <tr>
+                        <td width=25%>1080</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080.help,class=scanlines1080,text mode):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-poster.help,class=scanlines1080,poster mode):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-detail.help,class=scanlines1080,detail view):]</td>
+                    </tr>
+                </table>
+            </td>
+            <td width=5%>[:ICON(security):]</td>
+            <td align=left width=45%>[:CONFIG_LINK(oversight.cfg,secure.help,,Internet Access):]</td>
+        </tr>
+        </table>
+        <hr>
+        <table width=100%>
+            <tr>
+                <td width=50%>
+                    Tv Mode:[:TV_MODE:]
+                    <br>Internal Disk:[:DISK_USED:]
+                    <br>Uptime:[:UPTIME:]
+                    <br>Load Average:[:LOAD:]
+                </td>
+                <td>[:PAYPAL:]</td>
+            </tr>
+        </table>
+    </body>
+</html>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

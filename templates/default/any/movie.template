@@ -1,4 +1,4 @@
-<!-- Default Movie Templete  $Id:$ -->
+<!-- Default Movie Template  $Id:$ -->
 <html>
     <head>
         <meta name="robots" content="nofollow">
@@ -41,3 +41,6 @@
         [:PLAY_TVID:]
     </body>
 </html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

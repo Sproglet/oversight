@@ -186,7 +186,7 @@ char *macro_fn_sys_disk_used(char *template_name,char *call,Array *args,int num_
 
         if (statvfs("/share/.",&s) == 0) {
 
-            double free_gigs=s.f_bavail*s.f_bsize/1024.0/1024/1024;
+            double free_gigs=s.f_bfree*s.f_bsize/1024.0/1024;
 
             double free_percent = 100.0 * s.f_bfree / s.f_blocks;
 
@@ -679,6 +679,32 @@ char *macro_fn_scanlines(char *template_name,char *call,Array *args,int num_rows
     return numeric_constant_macro(g_dimension->scanlines,args);
 }
 
+// Write a html input table for a configuration file. The help file(arg2) decides which options to show.
+char *macro_fn_edit_config(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    char *result = NULL;
+    if (args && args->size == 2) {
+        char *file=args->array[0];
+        char *help_suffix=args->array[1];
+        char *cmd;
+
+        //Note this outputs directly to stdout so always returns null
+        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE2 \"help/%s.%s\" \"%s\" HIDE_VAR_PREFIX=1",
+                appDir(),file,help_suffix,file);
+
+        system(cmd);
+        FREE(cmd);
+
+        *free_result = 0;
+
+        result="";
+
+    } else {
+        ovs_asprintf(&result,"%s(config_file,help_suffix)",call);
+    }
+    return result;
+}
+
 char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *text="";
     if (args && args->size > 0)  {
@@ -739,6 +765,7 @@ void macro_init() {
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
+        hashtable_insert(macros,"EDIT_CONFIG",macro_fn_edit_config);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"TVIDS",macro_fn_tvids);
         hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);
@@ -746,6 +773,36 @@ void macro_init() {
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         //html_log(0,"end macro init");
     }
+}
+
+// ?xx = html query variable
+// ovs.xxx = oversight config
+// catalog.xxx = catalog config
+// unpak.xxx = unpak config
+char *get_variable(char *vname) {
+
+    char *result=NULL;
+
+    if (*vname == '?' ) {
+
+        // query variable
+        result=query_val(vname+1);
+
+    } else if (util_starts_with(vname,"ovs.")) {
+
+        result = oversight_val(strchr(vname,'.')+1);
+
+    } else if (util_starts_with(vname,"catalog.")) {
+
+        result = catalog_val(strchr(vname,'.')+1);
+
+    } else if (util_starts_with(vname,"unpak.")) {
+
+        result = unpak_val(strchr(vname,'.')+1);
+
+    }
+
+    return result;
 }
 
 char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -757,36 +814,64 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
     char *(*fn)(char *template_name,char *name,Array *args,int num_rows,DbRowId **,int *) = NULL;
     Array *args=NULL;
 
-    char *p = strchr(call,'(');
-    if (p == NULL) {
-        fn = hashtable_search(macros,call);
-    } else {
-        char *q=strchr(p,')');
-        if (q == NULL) {
-            html_error("missing ) for [%s]",call);
-        } else {
-            // Get the arguments
-            *q='\0';
-            args = split(p+1,",",0);
-            *q=')';
-            // Get the function
-            *p = '\0';
-            fn = hashtable_search(macros,call);
-            *p='(';
-        }
-    }
-            
+    if (*call == '$') {
 
-    if (fn) {
-        //html_log(0,"begin macro [%s]",call);
-        *free_result=1;
-        result =  (*fn)(template_name,call,args,num_rows,sorted_rows,free_result);
-        //html_log(0,"end macro [%s]",call);
+        free_result=0;
+
+        result=get_variable(call+1);
+
+        if (result == NULL) {
+
+            printf("?%s?",call);
+
+        }
+
     } else {
-        html_error("no macro [%s]",call);
-        printf("?%s?",call);
+
+        //Macro call
+
+        char *p = strchr(call,'(');
+        if (p == NULL) {
+            fn = hashtable_search(macros,call);
+        } else {
+            char *q=strchr(p,')');
+            if (q == NULL) {
+                html_error("missing ) for [%s]",call);
+            } else {
+                // Get the arguments
+                *q='\0';
+                args = split(p+1,",",0);
+                *q=')';
+                // Get the function
+                *p = '\0';
+                fn = hashtable_search(macros,call);
+                *p='(';
+                // Replace any veriables in the function
+                if (args) {
+                    int i;
+                    for(i = 0 ; i < args->size ; i++ ) {
+                        char *v=args->array[i];
+                        if (v && *v=='$') {
+                            char *new_v = STRDUP(get_variable(v+1));
+                            FREE(v);
+                            args->array[i] = new_v;
+                        }
+                    }
+                }
+            }
+        }
+                
+
+        if (fn) {
+            //html_log(0,"begin macro [%s]",call);
+            *free_result=1;
+            result =  (*fn)(template_name,call,args,num_rows,sorted_rows,free_result);
+            //html_log(0,"end macro [%s]",call);
+        } else {
+            printf("?%s?",call);
+        }
+        array_free(args);
     }
-    array_free(args);
     return result;
 }
 

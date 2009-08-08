@@ -1,0 +1,33 @@
+<!-- Default Rescan Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Settings Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=&idlist=&action=,back):] Oversight Configuration</h1>
+
+        <form action="?" enctype="multipart/form-data" method="POST">
+
+            Scan Paths : [:$catalog.catalog_scan_paths:]
+            <p>This will return immediately and start a background scan.
+            <br>This should complete in 15-60 minutes depending on number of videos.
+            <br>Internet bandwidth (esp torrent upload) also affects overall scan speed.
+
+            <table width=100%>
+                <tr>
+                    <td align=center><input type=submit name=action value="rescan_request"></td>
+                    <td align=center><input type=submit name=action value="Cancel"></td>
+                </tr>
+            </table>
+
+            <input type=hidden name=old_action value="[:$?action:]">
+        </form>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

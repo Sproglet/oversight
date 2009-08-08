@@ -135,7 +135,7 @@ int field_pos(char *field_id,char *buffer,char **start,int *length,int quiet) {
             return 1;
         }
     }
-    if (!quiet) html_error("Failed to find field [%s]",field_id);
+    if (!quiet) html_log(0,"ERROR: Failed to find field [%s]",field_id);
     return 0;
 }
 
@@ -151,7 +151,7 @@ int extract_field_str(char *field_id,char *buffer,char **str,int quiet) {
         *((*str)+fld_len) = '\0';
         return 1;
     }
-    if (!quiet) html_error("Failed to extract string field [%s]",field_id);
+    if (!quiet) html_log(0,"ERROR: Failed to extract string field [%s]",field_id);
     return 0;
 }
 
@@ -165,9 +165,9 @@ int extract_field_long(char *field_id,char *buffer,long *val_ptr,int quiet) {
         long val;
         char term;
         if (sscanf(s,"%ld%c",&val,&term) != 2) {
-            if (!quiet) html_error("failed to extract long field %s",field_id);
+            if (!quiet) html_log(0,"ERROR: failed to extract long field %s",field_id);
         } else if (term != '\t') {
-            if (!quiet) html_error("bad terminator [%c] after long field %s = %ld",term,field_id,val);
+            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after long field %s = %ld",term,field_id,val);
         } else {
             *val_ptr = val;
             return 1;
@@ -186,9 +186,9 @@ int extract_field_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
     if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
         char term;
         if (sscanf(s,"%4d-%d-%d%c",&y,&m,&d,&term) != 4) {
-            if (!quiet) html_error("failed to extract date field %s",field_id);
+            if (!quiet) html_log(0,"ERROR: failed to extract date field %s",field_id);
         } else if (term != '\t') {
-            if (!quiet) html_error("bad terminator [%c] after date field %s = %d %d",term,field_id,y,m,d);
+            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after date field %s = %d %d",term,field_id,y,m,d);
         } else {
             struct tm t;
             t.tm_year = y - 1900;
@@ -219,7 +219,7 @@ int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet)
         if (sscanf(s,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) != 7) {
             if (!quiet) html_error("failed to extract timestamp field %s",field_id);
         } else if (term != '\t') {
-            if (!quiet) html_error("bad terminator [%c] after timestamp field %s = %d %d %d %d %d %d",term,field_id,y,m,d,H,M,S);
+            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after timestamp field %s = %d %d %d %d %d %d",term,field_id,y,m,d,H,M,S);
         } else {
             struct tm t;
             t.tm_year = y - 1900;
@@ -230,7 +230,7 @@ int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet)
             t.tm_sec = S;
             *val_ptr = mktime(&t);
             if (*val_ptr < 0 ) {
-                html_log(0,"bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
+                html_log(0,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
             }
             //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
             return 1;
@@ -248,9 +248,9 @@ int extract_field_int(char *field_id,char *buffer,int *val_ptr,int quiet) {
         int val;
         char term;
         if (sscanf(s,"%d%c",&val,&term) != 2) {
-            if (!quiet) html_error("failed to extract int field [%s]",field_id);
+            if (!quiet) html_log(0,"ERROR: failed to extract int field [%s]",field_id);
         } else if (term != '\t') {
-            if (!quiet) html_error("bad terminator [%c] after int field %s = %d",term,field_id,val);
+            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after int field %s = %d",term,field_id,val);
         } else {
             *val_ptr = val;
             return 1;
@@ -268,9 +268,9 @@ int extract_field_char(char *field_id,char *buffer,char *val_ptr,int quiet) {
         char val;
         char term;
         if (sscanf(s,"%c%c",&val,&term) != 2) {
-            if (!quiet) html_error("failed to extract character field %s",field_id);
+            if (!quiet) html_log(0,"ERROR: failed to extract character field %s",field_id);
         } else if (term != '\t') {
-            if (!quiet) html_error("bad terminator [%c] after character field %s = %c",term,field_id,val);
+            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after character field %s = %c",term,field_id,val);
         } else {
             *val_ptr = val;
             return 1;

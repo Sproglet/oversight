@@ -197,6 +197,19 @@ void clean_params() {
     query_remove("select");
 }
 
+void send_command(char *source,char *remote_cmd) {
+    char *cmd;
+    char *script = get_mounted_path(source,"/share/Apps/oversight/oversight,sh");
+    ovs_asprintf(&cmd,"\"%s\" SAY %s",script,remote_cmd);
+
+    html_log(0,"send command:%s",cmd);
+
+    system(cmd);
+
+    FREE(script);
+    FREE(cmd);
+}
+
 
 void do_actions() {
 
@@ -221,7 +234,37 @@ void do_actions() {
 
     if (allow_admin() && strcmp(view,"admin")==0 ) {
 
-        //do_admin_actions();
+        if (strcmp(action,"rescan_request") == 0) {
+
+            send_command("*","catalog.sh RESCAN UPDATE_POSTERS NOWRITE_NFO");
+
+        } else if (strcmp(action,"Save Settings") == 0) {
+
+            struct hashtable_itr *itr;
+            char *k,*value;
+            for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&k,&value) ; ) {
+                if (util_starts_with(k,"option_")) {
+                    char *real_name = strchr(k,'_') + 1;
+
+                    char *old_name,*old_value;
+                    ovs_asprintf(&old_name,"orig_%s",real_name);
+                    old_value=query_val(old_name);
+
+                    if (strcmp(value,old_value) != 0) {
+                        char *cmd;
+                        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s\" \"%s\" \"%s\"",
+                                appDir(),
+                                query_val("file"),
+                                real_name,
+                                value);
+                        html_log(0,"system %s",cmd);
+                        system(cmd);
+                        FREE(cmd);
+                    }
+                    FREE(old_name);
+                }
+            }
+        }
 
     } else if (*select) {
 

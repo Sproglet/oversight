@@ -400,7 +400,9 @@ void html_error(char *format,...) {
     va_list ap;
     va_start(ap,format);
     printf("<!-- ERROR -->");
-    html_vacomment(format,ap);
+    vprintf(format,ap);
+    fflush(stdout);
+    //html_vacomment(format,ap);
     va_end(ap);
 }
 

@@ -1655,7 +1655,7 @@ char *get_status() {
 
         fclose(fp);
     } else {
-        html_error("Error %d opening [%s]",errno,filename);
+        html_log(0,"Error %d opening [%s]",errno,filename);
     }
     free(filename);
 

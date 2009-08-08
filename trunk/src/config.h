@@ -5,6 +5,7 @@
 #include "hashtable.h"
 
 typedef struct dimension_str {
+    int tv_mode;
     long scanlines;
     long poster_mode;
     long local_browser;

@@ -343,6 +343,9 @@ long get_scanlines(int *is_pal) {
     } else {
         scanlines = 1080;
     }
+
+    g_dimension->tv_mode = tv_mode_int;
+
     // NMT does not use correct aspect ratio for gaya on PAL. Video Playback is OK but gaya is squashed
     if (is_pal) {
         *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);

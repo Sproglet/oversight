@@ -140,13 +140,6 @@ int main(int argc,char **argv) {
     // This will be phased out as the admin functions are brought in.
     char *view=query_val("view");  
 
-    /*
-     * For functions that are not yet ported - run the old script.
-     */
-    if (strcmp(view,"admin") == 0) {        //TODO Delete when code finished
-        exec_old_cgi(argc,argv);                    //TODO Delete when code finished
-    }
-
 
     load_configs();
 
@@ -177,6 +170,10 @@ int main(int argc,char **argv) {
     } else if (strcmp(view,"movie") == 0) {
 
         display_template("default","movie",num_rows,sorted_rows);
+
+    } else if (strcmp(view,"admin") == 0) {
+
+        display_admin();
 
     } else {
 

@@ -592,6 +592,14 @@ char *query_val(char *name) {
         return "";
     }
 }
+char *catalog_val(char *name) {
+    char *val;
+    if (config_check_str(g_catalog_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
 // return parent dir of media file. ptr must be freed.
 char *util_dirname(char *file) {
     int title_len = strlen(file);

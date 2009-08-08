@@ -19,6 +19,8 @@
 #include "actions.h"
 
 void exec_old_cgi(int argc,char **argv);
+
+// Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
 void load_configs () {
     html_comment("load ovs config");
     g_oversight_config =

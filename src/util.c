@@ -600,6 +600,27 @@ char *catalog_val(char *name) {
         return "";
     }
 }
+char *oversight_val(char *name) {
+    char *val;
+    if (config_check_str(g_oversight_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+char *unpak_val(char *name) {
+    char *val;
+
+    if (g_unpack_config == NULL) {
+        g_unpack_config = config_load_wth_defaults(appDir(),"unpak.cfg.example","unpak.cfg");
+    }
+
+    if (config_check_str(g_unpack_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
 // return parent dir of media file. ptr must be freed.
 char *util_dirname(char *file) {
     int title_len = strlen(file);

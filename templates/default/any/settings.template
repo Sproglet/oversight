@@ -1,0 +1,32 @@
+<!-- Default Admin Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Settings Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Configuration</h1>
+
+        <form action="?" enctype="multipart/form-data" method="POST">
+
+            [:EDIT_CONFIG($?file,$?help):]
+
+            <input type=hidden name=file value="[:$?file:]">
+            <input type=hidden name=view value="[:$?view:]">
+            <table width=100%>
+                <tr>
+                    <td align=center><input type=submit name=action value="Save Settings"></td>
+                    <td align=center><input type=submit name=action value="Cancel"></td>
+                </tr>
+            </table>
+            <input type=hidden name=old_action value="[:$?action:]">
+
+        </form>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

@@ -33,4 +33,6 @@ char *movie_listing(DbRowId *rowid);
 long use_boxsets();
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols);
 char *get_status();
+char *get_self_link(char *params,char *attr,char *title);
+void display_confirm(char *name,char *val_ok,char *val_cancel);
 #endif

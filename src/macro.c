@@ -2,11 +2,14 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/statvfs.h>
+#include <sys/types.h>
 
 #include "hashtable.h"
 #include "util.h"
 #include "oversight.h"
 #include "db.h"
+#include "display.h"
 #include "dboverview.h"
 #include "display.h"
 #include "gaya_cgi.h"
@@ -158,6 +161,73 @@ char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_row
 }
 
 
+char *macro_fn_tv_paypal(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+
+    return result;
+}
+char *macro_fn_tv_mode(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    *free_result=0;
+    static char result[20] = "";
+    if (!*result) {
+        sprintf(result,"%d",g_dimension->tv_mode);
+    }
+
+    return result;
+}
+char *macro_fn_sys_disk_used(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result=0;
+    static char result[50] = "";
+
+    if (!*result) {
+
+        struct statvfs s;
+
+        if (statvfs("/share/.",&s) == 0) {
+
+            double free_gigs=s.f_bavail*s.f_bsize/1024.0/1024/1024;
+
+            double free_percent = 100.0 * s.f_bfree / s.f_blocks;
+
+            sprintf(result,"%.1lfG free (%.1lf%%)",free_gigs,free_percent);
+        
+        }
+    }
+
+    return result;
+}
+
+char *macro_fn_sys_uptime(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    static char result[50] = "";
+
+    *free_result = 0;
+    if (!*result) {
+        FILE *fp = fopen("/proc/uptime","r");
+        if (fp != NULL) {
+#define BUFSIZE 50
+            char buf[BUFSIZE+1] = "";
+            if (fgets(buf,BUFSIZE,fp)) {
+
+                long upsecs;
+
+                if (sscanf(buf,"%ld",&upsecs) == 1) {
+                    int secs = upsecs % 60; upsecs -= secs ; upsecs /= 60;
+                    int mins = upsecs % 60; upsecs -= mins ; upsecs /= 60;
+                    int hrs = upsecs % 24; upsecs -= hrs ; upsecs /= 24;
+                    int days = upsecs;
+                    char *p = result;
+                    if (days) p += sprintf(p,"%dday%s ",days,(days>1?"s":""));
+                    if (hrs) p += sprintf(p,"%dhr%s ",hrs,(hrs>1?"s":""));
+                    if (mins) p += sprintf(p,"%dm ",mins);
+                }
+            }
+        }
+
+    }
+    return result;
+}
 
 char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return movie_listing(sorted_rows[0]);
@@ -322,6 +392,91 @@ char *macro_fn_filter_bar(char *template_name,char *call,Array *args,int num_row
 
     } else {
         result = get_theme_image_link("p=0&" QUERY_PARAM_SEARCH_MODE "=1","","find","");
+    }
+    return result;
+}
+
+// Display a link back to this cgi file with paramters adjusted.
+char *macro_fn_link(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+
+    if (args && args->size == 2) {
+
+        result = get_self_link(args->array[0],"",args->array[1]);
+
+    } else if (args && args->size == 3) {
+
+        result= get_self_link(args->array[0],args->array[2],args->array[1]);
+
+    } else {
+
+        printf("%s(params,title[,attr])",call);
+    }
+    return result;
+}
+
+char *macro_fn_icon_link(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+    if (args && args->size == 2) {
+
+        result = get_theme_image_link(args->array[0],"",args->array[1],"");
+
+    } else if (args && args->size == 3) {
+
+        result= get_theme_image_link(args->array[0],args->array[2],args->array[1],"");
+
+    } else if (args && args->size == 3) {
+
+        result= get_theme_image_link(args->array[0],args->array[2],args->array[1],args->array[3]);
+
+    } else {
+
+        printf("%s(params,icon[,href_attr[,image_attr]])",call);
+    }
+    return result;
+}
+
+// Display an icon
+char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+    if (args && args->size == 1) {
+
+        result= get_theme_image_tag(args->array[0],"");
+
+    } else if (args && args->size == 2) {
+
+        result= get_theme_image_tag(args->array[0],args->array[1]);
+
+    } else {
+
+        printf("%s(icon_name[,attr])",call);
+    }
+    return result;
+}
+
+char *config_link(char *config_file,char *help_suffix,char *html_attributes,char *text) {
+    char *params,*link;
+    ovs_asprintf(&params,"action=settings&file=%s&help=%s",config_file,help_suffix);
+    link = get_self_link(params,html_attributes,text);
+    free(params);
+    return link;
+}
+
+char *macro_fn_admin_config_link(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    char *result=NULL;
+
+    if (args && args->size == 3) {
+
+        result= config_link(args->array[0],args->array[1],"",args->array[2]);
+
+    } else if (args && args->size == 4) {
+
+        result= config_link(args->array[0],args->array[1],args->array[3],args->array[2]);
+
+    } else {
+
+        printf("%s(config_file,help_suffix,text[,html_attributes])",call);
     }
     return result;
 }
@@ -544,6 +699,7 @@ void macro_init() {
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
         hashtable_insert(macros,"TV_LISTING",macro_fn_tv_listing);
         hashtable_insert(macros,"EXTERNAL_URL",macro_fn_external_url);
+        hashtable_insert(macros,"CONFIG_LINK",macro_fn_admin_config_link);
         hashtable_insert(macros,"TITLE",macro_fn_title);
         hashtable_insert(macros,"GENRE",macro_fn_genre);
         hashtable_insert(macros,"SEASON",macro_fn_season);
@@ -562,6 +718,9 @@ void macro_init() {
         hashtable_insert(macros,"STATUS",macro_fn_status);
         hashtable_insert(macros,"SETUP_BUTTON",macro_fn_setup_button);
 
+        hashtable_insert(macros,"LINK",macro_fn_link);
+        hashtable_insert(macros,"ICON",macro_fn_icon);
+        hashtable_insert(macros,"ICON_LINK",macro_fn_icon_link);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"RIGHT_BUTTON",macro_fn_right_button);
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
@@ -582,6 +741,9 @@ void macro_init() {
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"TVIDS",macro_fn_tvids);
+        hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);
+        hashtable_insert(macros,"SYS_DISK_USED",macro_fn_sys_disk_used);
+        hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         //html_log(0,"end macro init");
     }
 }

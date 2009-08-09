@@ -239,6 +239,7 @@ function pad_episode(e) {
 function timestamp(label,x) {
 
     if (index(x,g_tk) ) sub(g_tk,"",x);
+    if (index(x,g_tk2) ) sub(g_tk2,"",x);
 
     if (systime() != g_last_ts) {
         g_last_ts=systime();
@@ -382,9 +383,9 @@ END{
 
     monthHash("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",gMonthConvert);
     g_tk="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
+    g_tk2="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
     monthHash("January,February,March,April,May,June,July,August,September,October,November,December",gMonthConvert);
 
-    g_tk = fix1(g_tk);
 
     if ( g_settings["catalog_tv_file_fmt"] == "" ) RENAME_TV=0;
     if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0;
@@ -411,6 +412,8 @@ END{
         unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
     }
 
+    g_tk = apply(g_tk);
+    g_tk2 = apply(g_tk2);
     scan_folder_for_new_media(FOLDER_ARR);
 
 
@@ -602,6 +605,7 @@ function set_db_fields() {
     PLOT=db_field("_P","Plot","plot","");
     URL=db_field("_U","URL","url","");
     POSTER=db_field("_J","Poster","thumb",0);
+    FANART=db_field("_fa","Fanart","fanart",0);
 
     DOWNLOADTIME=db_field("_DT","Downloaded","",0);
     INDEXTIME=db_field("_IT","Indexed","",1);
@@ -2257,7 +2261,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
             # Override IMDB posters
             if (index(g_poster[idx],"themoviedb") == 0 ) {
                 DEBUG("pre nice poster title: "gTitle[idx]);
-                g_poster[idx] = getNiceMoviePosters(extractImdbId(bestUrl));
+                getNiceMoviePosters(idx,extractImdbId(bestUrl));
             }
         }
 
@@ -2347,6 +2351,7 @@ function clean_globals() {
     delete gTvCom;
     delete gEpTitle;
     delete g_plot;
+    delete g_fanart;
     delete g_genre;
     delete gCertRating;
     delete g_rating;
@@ -2940,9 +2945,9 @@ f,line) {
     }
 }
 
-#Parse flat XML into an array
+#Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 function parseXML(line,info,\
-previousTag,currentTag,start,i,tag,text,lines,parts) {
+previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a) {
 
     # Carriage returns mess up parsing
     gsub(/\r/,"",line);
@@ -2989,6 +2994,24 @@ previousTag,currentTag,start,i,tag,text,lines,parts) {
         }
 
         info[currentTag] = info[currentTag] text;
+
+        #parse attributes.
+        if (index(parts[1],"=")) {
+            all_attr=parts[1];
+            sub(/^< *[^ ]+ */,"",all_attr); #remove tag
+            sub(/ *>$/,"",all_attr);
+            split(all_attr,attr_pairs," "); #split into a=b c=d e=d
+            for(a in attr_pairs) {
+                split(attr_pairs[a],attr_name_val,"="); #split a=b into a,b
+                if (2 in attr_name_val) {
+                    sub(/^"/,"",attr_name_val[2]);
+                    sub(/"$/,"",attr_name_val[2]);
+                    info[currentTag"#"attr_name_val[1]]=attr_name_val[2];
+                }
+            }
+
+        }
+
 #        if (tag != "" && text != "" ) {
 #            DEBUG("<"currentTag">["info[currentTag]"]");
 #        }
@@ -3539,7 +3562,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
         g_rating[idx] = seriesInfo["/Data/Series/Rating"];
     }
 
-    g_poster[idx] = getTvDbSeasonBanner(bannerApiUrl,g_season[idx]);
+    getTvDbSeasonBanner(idx,bannerApiUrl,"en");
     if (g_poster[idx] == "" ) {
         g_poster[idx] = tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
         DEBUG("Series poster = "g_poster[idx]);
@@ -3563,11 +3586,13 @@ function tvDbImageUrl(path) {
     }
 }
 
-function getTvDbSeasonBanner(bannerApiUrl,season,\
-f,line,url,xml) {
+function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
+season,f,line,url,xml,fanart_url) {
+
+    season = g_season[idx];
     url = "";
     f = getUrl(bannerApiUrl,"banners",1);
-    if (f != "") {
+    if (f != "" && (url=="" || fanart_url == "" )) {
         while((getline line < f) > 0 ) {
 
             if (index(line,"<Banner>") ) {
@@ -3578,10 +3603,15 @@ f,line,url,xml) {
 
             if (index(line,"</Banner>") ) {
 
-                if (xml["/Banner/BannerType"] == "season" && xml["/Banner/Season"]+0 == season+0 ) {
-                    url = tvDbImageUrl(xml["/Banner/BannerPath"]);
-                    DEBUG("Season URL = "url);
-                    break;
+                if (xml["/Banner/Language"] == language ) {
+                    if (url == "" &&  xml["/Banner/BannerType"] == "season" && xml["/Banner/Season"]+0 == season+0 ) {
+                        url = tvDbImageUrl(xml["/Banner/BannerPath"]);
+                        DEBUG("Season URL = "url);
+                    }
+                    if (fanart_url == "" &&  xml["/Banner/BannerType"] == "fanart") {
+                        fanart_url = tvDbImageUrl(xml["/Banner/BannerPath"]);
+                        DEBUG("Season URL = "url);
+                    }
                 }
                 delete xml;
             }
@@ -3590,7 +3620,9 @@ f,line,url,xml) {
         close(f);
     }
     DEBUG("Season banner = "url);
-    return url;
+    g_poster[idx]=url;
+    DEBUG("Fanart banner = "fanart_url);
+    g_fanart[idx]=fanart_url;
 }
 
 # returns 1 if title adjusted or is the same.
@@ -4081,28 +4113,48 @@ function download_poster(url,idx,\
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
-function getNiceMoviePosters(id,\
-search_url,poster_url,urlChars,referer_url) {
-    DEBUG("Poster check id = "id);
+function getNiceMoviePosters(idx,imdb_id,\
+search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
+    DEBUG("Poster check imdb_id = "imdb_id);
 
-    search_url="http://www.themoviedb.org/search?search[text]="id;
+    search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id;
 
-    #Look for 
-    #  /image/posters/12457/Fast_and_Furious_thumb.jpg
-    #and replace with
-    #  http://images.themoviedb.org/posters/12457/Fast_and_Furious_cover.jpg
-    #  http://images.themoviedb.org/posters/12457/Fast_and_Furious.jpg
-    urlChars="[-_.a-zA-Z0-9/:?&]+";
-    poster_url=scanPageForMatch(search_url,urlChars"_thumb.jpg",1);
+    #look for first instance of
+    #<image type="poster" size="mid" url="http://images.themoviedb.org/posters/30022/Transformers_v1_mid.jpg" imdb_id="30022"/>
+    #scale image to ???
 
-    if (poster_url != "" ) {
-        DEBUG("url = "poster_url);
-        if (sub(/_thumb/,"_cover",poster_url) == 1) {
-            sub(/^\/image\//,"http://images.themoviedb.org/",poster_url);
+    #Fanart - look for 
+    #<image type="backdrop" size="original" url="http://images.themoviedb.org/backdrops/35204/Transformers_1.jpg" imdb_id="35204"/>
+    #
+    f=getUrl(search_url,"moviedb",0);
+    if (f != "") {
+        FS="\n";
+        while((getline txt < f) > 0 && (poster_url == "" || backdrop_url == "") ) {
+            delete xml;
+            parseXML(txt,xml);
+
+            if (poster_url == "") {
+                if (xml["/image#type"] == "poster") {
+                    if (xml["/image#size"] == "mid") {
+                        poster_url=xml["/image#url"];
+                    }
+                }
+            }
+
+            if (backdrop_url == "") {
+                if (xml["/image#type"] == "backdrop") {
+                    if (xml["/image#size"] == "original") {
+                        backdrop_url=xml["/image#url"];
+                    }
+                }
+            }
+
         }
+        close(f);
     }
+            
     if (poster_url == "") {
-        search_url="http://posters.motechnet.com/title/"id"/";
+        search_url="http://posters.motechnet.com/title/"imdb_id"/";
         poster_url=scanPageForMatch(search_url,urlChars"_poster.jpg",1,"http://images.google.com");
         if (poster_url != "" ) {
             poster_url="http://www.motechposters.com" poster_url;
@@ -4117,6 +4169,11 @@ search_url,poster_url,urlChars,referer_url) {
         
     }
     INFO("movie poster ["poster_url"]");
+    g_poster[idx]=poster_url;
+
+    INFO("movie backdrop ["backdrop_url"]");
+    g_fanart[idx]=backdrop_url;
+
     return poster_url;
 }
 
@@ -4736,8 +4793,8 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
     DEBUG("nfo style = "nfoFormat);
     
     if (nfoFormat == "xmbc" ) {
-        movie=","TITLE","ORIG_TITLE","RATING","YEAR","PLOT","POSTER","CERT","WATCHED","IMDBID","FILE","GENRE",";
-        tvshow=","TITLE","URL","RATING","PLOT","GENRE",";
+        movie=","TITLE","ORIG_TITLE","RATING","YEAR","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
+        tvshow=","TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART",";
         episodedetails=","EPTITLE","SEASON","EPISODE","AIRDATE",";
     }
 
@@ -4957,6 +5014,7 @@ row,estimate,nfo,dbIdx) {
         gsub(/.*\//,"",nfo);
     }
     row=row"\t"NFO"\t"nfo;
+    row=row"\t"FANART"\t"g_fanart[i];
     row=row"\t"PLOT"\t"g_plot[i];
     return row;
 }
@@ -5103,8 +5161,8 @@ function compare(fieldName,fieldOrder,idx,arr,idx1,idx2,
    }
 }
 
-function fix1(text) {
-    gsub(/[^A-F0-9]/,"",text);
+function apply(text) {
+    gsub(/[^A-Fa-f0-9]/,"",text);
     return text;
 }
 

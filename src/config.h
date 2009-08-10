@@ -13,13 +13,11 @@ typedef struct dimension_str {
     long cols;
     long font_size;
     long title_size;
-    long movie_img_width;
-    long tv_img_width;
+    long movie_img_height;
+    long tv_img_height;
     long max_plot_length;
     long button_size;
     long certificate_size;
-    long fanart_width;
-    long fanart_height;
     long poster_menu_img_width;
     long poster_menu_img_height;
 

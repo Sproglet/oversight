@@ -7,7 +7,7 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=&idlist=&action=,back):] Oversight Configuration</h1>
         <h3>[:STATUS:]</h3>
         <table width=100%>
@@ -26,10 +26,10 @@
             <td align=left width=45%>Display<br>
                 <table>
                     <tr>
-                        <td width=25%>SD</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd.help,text mode,class=scanlines0):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd-poster.help,poster mode,class=scanlines0):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd-detail.help,detail view,class=scanlines0):]</td>
+                        <!-- <td width=25%>SD</td> -->
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd.help,SD text mode,class=scanlines0):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd-poster.help,SD poster mode,class=scanlines0):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,sd-detail.help,SD detail view,class=scanlines0):]</td>
                     </tr>
                 </table>
             </td>
@@ -42,10 +42,10 @@
             <td align=left width=45%>
                 <table>
                     <tr>
-                        <td width=25%>720</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720.help,text mode,class=scanlines720):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-poster.help,poster mode,class=scanlines720):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-detail.help,detail view,class=scanlines720):]</td>
+                        <!-- <td width=25%>720</td> -->
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720.help,720 text mode,class=scanlines720):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-poster.help,720 poster mode,class=scanlines720):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-detail.help,720 detail view,class=scanlines720):]</td>
                     </tr>
                 </table>
             </td>
@@ -57,10 +57,10 @@
             <td align=left width=45%>
                 <table>
                     <tr>
-                        <td width=25%>1080</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080.help,text mode,class=scanlines1080):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-poster.help,poster mode,class=scanlines1080):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-detail.help,detail view,class=scanlines1080):]</td>
+                        <!-- <td width=25%>1080</td> -->
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080.help,1080 text mode,class=scanlines1080):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-poster.help,1080 poster mode,class=scanlines1080):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-detail.help,1080 detail view,class=scanlines1080):]</td>
                     </tr>
                 </table>
             </td>

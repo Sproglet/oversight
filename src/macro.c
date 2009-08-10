@@ -54,23 +54,60 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
 
 
 char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    int use_wallpaper = 1;
     char *result = NULL;
 
-    char *fanart = sorted_rows[0]->fanart;
-   
-    if (fanart == NULL || !*fanart) {
-
-        *free_result=0;
-        result = "";
-
-    } else if (!args || args->size == 0 ) {
-
-        result  = local_image_source(fanart);
-
-    } else {
+    if (args && args->size != 0 ) {
 
         *free_result=0;
         result=call;
+
+    } else {
+
+        char *fanart = sorted_rows[0]->fanart;
+
+        if (fanart && *fanart) {
+
+            fanart = get_path(sorted_rows[0],sorted_rows[0]->fanart);
+            if (is_file(fanart)) {
+                use_wallpaper=0;
+            } 
+
+        }
+
+//TRACE; html_log(0,"fanart[%s]",fanart);
+
+        if (use_wallpaper) {
+            if (g_dimension->scanlines == 0 ) {
+                ovs_asprintf(&fanart,"%s/templates/%s/sd/wallpaper.jpg",appDir(),template_name);
+            } else {
+                ovs_asprintf(&fanart,"%s/templates/%s/%d/wallpaper.jpg",appDir(),template_name,g_dimension->scanlines);
+            }
+
+//TRACE; html_log(0,"fanart[%s]",fanart);
+
+        } else {
+
+            if (g_dimension->scanlines == 0 ) {
+
+                fanart = replace_all(fanart,"\\.jpg$",".sd.jpg",0);
+
+            } else {
+
+                fanart = replace_all(fanart,"\\.jpg$",".hd.jpg",0);
+
+            }
+
+//TRACE; html_log(0,"fanart[%s]",fanart);
+
+        }
+
+        result  = local_image_source(fanart);
+
+//TRACE; html_log(0,"fanart[%s]",result);
+
+        FREE(fanart);
 
     }
 
@@ -92,11 +129,15 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
     } else if (!args || args->size == 0 ) {
 
         char *attr;
+        long height;
+
         if (sorted_rows[0]->category == 'T') {
-            ovs_asprintf(&attr," width=%d  ",g_dimension->tv_img_width);
+            height=g_dimension->tv_img_height;
         } else {
-            ovs_asprintf(&attr," width=%d  ",g_dimension->movie_img_width);
+            height=g_dimension->movie_img_height;
         }
+        ovs_asprintf(&attr," height=%d  ",height);
+
         result =  get_poster_image_tag(sorted_rows[0],attr);
         FREE(attr);
 
@@ -584,7 +625,7 @@ char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRo
 
 char *config_link(char *config_file,char *help_suffix,char *html_attributes,char *text) {
     char *params,*link;
-    ovs_asprintf(&params,"action=settings&file=%s&help=%s",config_file,help_suffix);
+    ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",config_file,help_suffix,text);
     link = get_self_link(params,html_attributes,text);
     free(params);
     return link;

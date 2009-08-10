@@ -1853,12 +1853,16 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
 
         get_best_episode_title(idx);
 
-        if (g_poster[idx] != "") {
-            g_poster[idx] = download_image(POSTER,g_poster[idx],idx);
-        }
+        #Only get posters if catalog is installed as part of oversight
+        if (APPDIR == "/share/Apps/oversight" ) {
 
-        if (g_fanart[idx] != "") {
-            g_fanart[idx] = download_image(FANART,g_fanart[idx],idx);
+            if (g_poster[idx] != "") {
+                g_poster[idx] = download_image(POSTER,g_poster[idx],idx);
+            }
+
+            if (g_fanart[idx] != "") {
+                g_fanart[idx] = download_image(FANART,g_fanart[idx],idx);
+            }
         }
 
         relocate_files(idx);
@@ -3164,7 +3168,8 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 
 function tvDbImageUrl(path) {
     if(path != "") {
-        return "http://images.thetvdb.com/banners/_cache/" path;
+        #return "http://images.thetvdb.com/banners/_cache/" path;
+        return "http://images.thetvdb.com/banners/" path;
     } else {
         return "";
     }
@@ -3687,7 +3692,14 @@ function download_image(field_id,url,idx,\
 
             g_already_fetched_poster[internal_path] = 1;
 
-            exec("wget " args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );
+            # Script to fetch poster and create sd and hd versions
+            if (field_id == POSTER) {
+                exec(APPDIR"/bin/jpg_fetch_and_scale poster "quoteFile(url)" "quoteFile(internal_path)" "args" &");
+            } else {
+                exec(APPDIR"/bin/jpg_fetch_and_scale fanart "quoteFile(url)" "quoteFile(internal_path)" "args" &");
+            }
+
+            #exec("wget " args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );
 
         }
 

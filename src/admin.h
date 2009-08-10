@@ -5,4 +5,5 @@
 #include "util.h"
 #include "hashtable.h"
 
+void display_admin();
 #endif

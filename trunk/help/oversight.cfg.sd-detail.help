@@ -3,3 +3,5 @@ ovs_movie_poster_height[0]:Movie Poster height(Std.Def.)|250
 ovs_tv_poster_height[0]:TV Poster height(Std.Def.)|250
 ovs_max_plot_length[0]:Maximum Plot Length (Std.Def.)|370
 ovs_certificate_size[0]:Certificate Size(Std Def.)|20
+ovs_fanart_width[0]:Backdrop Width|0
+ovs_fanart_height[0]:Backdrop Height|0

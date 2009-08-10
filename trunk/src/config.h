@@ -18,6 +18,8 @@ typedef struct dimension_str {
     long max_plot_length;
     long button_size;
     long certificate_size;
+    long fanart_width;
+    long fanart_height;
     long poster_menu_img_width;
     long poster_menu_img_height;
 

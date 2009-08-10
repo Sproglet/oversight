@@ -30,6 +30,7 @@
 #define DB_FLDID_PLOT "_P"
 #define DB_FLDID_URL "_U"
 #define DB_FLDID_POSTER "_J"
+#define DB_FLDID_FANART "_fa"
 
 #define DB_FLDID_DOWNLOADTIME "_DT"
 #define DB_FLDID_INDEXTIME "_IT"

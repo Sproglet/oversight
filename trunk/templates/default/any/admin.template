@@ -76,7 +76,7 @@
                     <br>Internal Disk:[:SYS_DISK_USED:]
                     <br>Uptime:[:SYS_UPTIME:]
                 </td>
-                <td>[:PAYPAL:]</td>
+                [:PAYPAL:]
             </tr>
         </table>
     </body>

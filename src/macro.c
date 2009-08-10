@@ -53,15 +53,59 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
 }
 
 
-char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    if (num_rows == 0) {
-       *free_result=0;
-       return "poster";
-    } else if (args && args->size) {
-        return get_poster_image_tag(sorted_rows[0],args->array[0]);
+char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+
+    char *fanart = sorted_rows[0]->fanart;
+   
+    if (fanart == NULL || !*fanart) {
+
+        *free_result=0;
+        result = "";
+
+    } else if (!args || args->size == 0 ) {
+
+        result  = local_image_source(fanart);
+
     } else {
-        return get_poster_image_tag(sorted_rows[0],"");
+
+        *free_result=0;
+        result=call;
+
     }
+
+    return result;
+}
+
+char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+
+    if (num_rows == 0) {
+
+       *free_result=0;
+       result = "poster - no rows";
+
+    } else if (args && args->size  == 1) {
+
+        result = get_poster_image_tag(sorted_rows[0],args->array[0]);
+
+    } else if (!args || args->size == 0 ) {
+
+        char *attr;
+        if (sorted_rows[0]->category == 'T') {
+            ovs_asprintf(&attr," width=%d  ",g_dimension->tv_img_width);
+        } else {
+            ovs_asprintf(&attr," width=%d  ",g_dimension->movie_img_width);
+        }
+        result =  get_poster_image_tag(sorted_rows[0],attr);
+        FREE(attr);
+
+    } else {
+
+        *free_result = 0;
+        result = "POSTER([attributes])";
+    }
+    return result;
 }
 
 char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -198,6 +242,26 @@ char *macro_fn_sys_disk_used(char *template_name,char *call,Array *args,int num_
     return result;
 }
 
+char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *p = NULL;
+    if (!(g_dimension->local_browser) && *oversight_val("remove_donate_msg") != '1' ) {
+        p = "<td><font size=2>Any contributions are gratefully received towards"
+        "<font color=red>Oversight</font>,"
+        "<font color=#FFFF00>TvNZB</font>,"
+        "<font color=blue>Zebedee</font> and "
+        "<font color=green>Unpak</font> scripts"
+        "This message can be removed via Oversight Settings.</font></td>"
+        "<td><form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\">"
+        "<input type=\"hidden\" name=\"cmd\" value=\"_s-xclick\">"
+        "<input type=\"hidden\" name=\"hosted_button_id\" value=\"2496882\">"
+        "<input type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
+        "<img alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
+        "</form></td>";
+        *free_result=0;
+    }
+    return p;
+}
+
 char *macro_fn_sys_uptime(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     static char result[50] = "";
@@ -288,15 +352,18 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
     int num_stars=0;
     char *star_path=NULL;
 
-    if (args && args->size == 2 && sscanf(args->array[0],"%d",&num_stars) == 1 && strstr(args->array[1],"%d") ) {
+    if (*oversight_val("ovs_display_rating") != '0') {
 
-        star_path=args->array[1];
+        if (args && args->size == 2 && sscanf(args->array[0],"%d",&num_stars) == 1 && strstr(args->array[1],"%d") ) {
 
-        result = get_rating_stars(sorted_rows[0],num_stars,star_path);
+            star_path=args->array[1];
 
-    } else {
+            result = get_rating_stars(sorted_rows[0],num_stars,star_path);
 
-        ovs_asprintf(&result,"%s(num_stars, star image path eg /oversight/images/stars/star%%d.png) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call);
+        } else {
+
+            ovs_asprintf(&result,"%s(num_stars, star image path eg /oversight/images/stars/star%%d.png) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call);
+        }
     }
         
     return result;
@@ -782,6 +849,7 @@ void macro_init() {
 
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
+        hashtable_insert(macros,"FANART_URL",macro_fn_fanart_url);
         hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
         hashtable_insert(macros,"TV_LISTING",macro_fn_tv_listing);
@@ -832,6 +900,7 @@ void macro_init() {
         hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);
         hashtable_insert(macros,"SYS_DISK_USED",macro_fn_sys_disk_used);
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
+        hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         //html_log(0,"end macro init");
     }
 }

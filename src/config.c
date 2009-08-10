@@ -385,6 +385,8 @@ void config_read_dimensions() {
     config_get_long_indexed(g_oversight_config,"ovs_button_size",scanlines_str,&(g_dimension->button_size));
     config_get_long_indexed(g_oversight_config,"ovs_certificate_size",scanlines_str,&(g_dimension->certificate_size));
     config_get_long_indexed(g_oversight_config,"ovs_poster_mode",scanlines_str,&(g_dimension->poster_mode));
+    config_get_long_indexed(g_oversight_config,"ovs_fanart_width",scanlines_str,&(g_dimension->fanart_width));
+    config_get_long_indexed(g_oversight_config,"ovs_fanart_height",scanlines_str,&(g_dimension->fanart_height));
     if (g_dimension->poster_mode) {
         config_get_long_indexed(g_oversight_config,"ovs_poster_mode_rows",scanlines_str,&(g_dimension->rows));
         config_get_long_indexed(g_oversight_config,"ovs_poster_mode_cols",scanlines_str,&(g_dimension->cols));
@@ -405,7 +407,6 @@ void config_read_dimensions() {
 
         if (is_pal) {
             // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed
-            g_dimension->poster_menu_img_height *= ( 576 / 480 );
             pal_fixed = 1;
         }
     }
@@ -416,9 +417,33 @@ void config_read_dimensions() {
         if (pal_fixed) {
             // the height has been scaled to compensate for gaya bug. 
             // Scale the width based on the original height!
-            g_dimension->poster_menu_img_width *= ( 480 / 576 );
+            g_dimension->poster_menu_img_height *= ( 576 / 480 );
         }
     }
+
+    pal_fixed=0;
+    if (g_dimension->fanart_height == 0) {
+        if (g_dimension->scanlines == 0) {
+            g_dimension->fanart_height = 480;
+        } else {
+            g_dimension->fanart_height = 720;
+        }
+        if (is_pal) {
+            pal_fixed=1;
+        }
+
+    }
+    if (g_dimension->fanart_width == 0) {
+        if (g_dimension->scanlines == 0) {
+            // Same as HD for now - may need tweaking
+            g_dimension->fanart_width = g_dimension->fanart_height * 9 / 16;
+        } else {
+            g_dimension->fanart_width = g_dimension->fanart_height * 9 / 16;
+        }
+        if (pal_fixed) {
+            g_dimension->fanart_height *= ( 576 / 480 );
+        }
+    } 
 
 }
 

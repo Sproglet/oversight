@@ -7,20 +7,20 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] background=file:///share/Apps/oversight/715.jpg >
+    <!-- <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] [background=:FANART_URL:] > -->
         [:FORM_START:]
-            <table width=100%>
+            <table width=100% [class=transparent:IS_GAYA:]>
                 <tr valaign=top>
                     <td width=30%><center>[:POSTER:]</center></td>
                     <td>
                         <h1><center>[:TITLE:][ S:SEASON:][(:YEAR:)][:CERTIFICATE_IMAGE:][:EXTERNAL_URL:]</center></h1>
                         <table class=detail width=100%>
-                            <tr><td class=list0 align=left><font class=label>Genre :</font>&nbsp;[:GENRE:]</td><tr>
-                            <tr><td class=list0 align=left><font class=label>Rating :</font>&nbsp;[:RATING_STARS(10,/oversight/images/stars/star%d.png):]</td><tr>
-                            <tr><td class=list0 align=left><font class=label>Plot :</font>&nbsp;[:PLOT:]</td><tr>
+                            <tr><td align=left><font class=label>Genre :</font>&nbsp;[:GENRE:]</td><tr>
+                            <tr><td align=left><font class=label>Rating :</font>&nbsp;[:RATING_STARS(10,/oversight/images/stars/star%d.png):]</td><tr>
+                            <tr><td align=left><font class=label>Plot :</font>&nbsp;[:PLOT:]</td><tr>
                         </table>
                         [:MOVIE_LISTING:]
-                        <hr>
                     </td>
                 </tr>
             </table>

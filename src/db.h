@@ -29,6 +29,7 @@ typedef struct Dbrowid_struct {
     //only populate if view=tv or movie
     char *url;
     char *plot;
+    char *fanart;
     char *parts;
     int episode;
 

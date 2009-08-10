@@ -7,9 +7,9 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] background=[:FANART_URL:] >
         [:FORM_START:]
-            <table width=100%>
+            <table width=100% [class=transparent:IS_GAYA:]>
                 <tr>
                     <td width=25%><center>[:POSTER:]</center></td>
                     <td>

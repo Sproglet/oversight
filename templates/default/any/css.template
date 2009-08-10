@@ -1,4 +1,6 @@
-body.local1 { color:yellow ; background-color:#000022; }
+body.local0 { color:white ; background-color:black; }
+body.local1 { color:yellow ; background-color:black; }
+
 font.Delete {color:#FF9966; font-weight:normal; }
 font.Ignore {color:#777;}
 font.Mark {color:#AAA;}
@@ -98,15 +100,21 @@ td.endtable { background-color:blue; }
 
 td.filelistXXX { text-align:center; background-color:#070707; }
 td.filelist { text-align:center; }
-td.list0 { background-color:#000044; }
-td.list1 { background-color:#000033; }
+td.list0 {
+                filter:alpha(opacity=60);
+                opacity:0.6;
+                background-color:black;
+                color:white;
+}
+td.list1 {
+    background-color:black-alpha1;
+}
 .proper { color: yellow; size:small; }
 .repack { color: yellow; size:small; }
 a.movie { color:#aaaaff; }
 .label { color:red }
 td { color:white ; text-align:left; }
-body.local0 { color:white ; background-color:black; }
-body.local1 { color:yellow ; background-color:#000022; }
+
 input { background-color:black; color:yellow; font-weight:bold; border=0; }
 
 .dummy {}
@@ -129,6 +137,19 @@ h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF0
 
 .label { color:red }
 .scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
+
+.transparent0 {
+                filter:alpha(opacity=60);
+                opacity:0.6;
+                background-color:black;
+                color:white;
+}
+
+.transparent1 {
+    background-color:black-alpha3;
+}
+
+
 <!--
 vi:ts=4:sw=4:et:syntax=css
 -->

@@ -397,6 +397,7 @@ int parse_row(
 
     memset(rowid,0,sizeof(*rowid));
     rowid->rating=0;
+    rowid->watched=0;
 
     rowid->db = db;
     rowid->season = -1;
@@ -414,71 +415,73 @@ int parse_row(
 
                     if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
 
-                        if (extract_field_int(DB_FLDID_WATCHED,buffer,&(rowid->watched),0)) {
-                            assert(rowid->watched == 0 || rowid->watched == 1);
-                            if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
-                                if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
-                                    extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
-                                    extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
-                                    extract_field_str(DB_FLDID_GENRE,buffer,&(rowid->genre),0);
+                        if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
+                            if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
 
-                                    //if (in_text_mode() || (rowid->category != 'M' && rowid->category != 'T' ) ) {
+                                extract_field_int(DB_FLDID_WATCHED,buffer,&(rowid->watched),1);
+                                assert(rowid->watched == 0 || rowid->watched == 1);
 
-                //html_log(0,"db getting file..");
-                                        extract_field_str(DB_FLDID_FILE,buffer,&(rowid->file),0);
-                //html_log(0,"db file = [%s]",rowid->file);
-                                        rowid->ext = strrchr(rowid->file,'.');
-                //html_log(0,"db ext = [%s]",rowid->ext);
-                                        if (rowid->ext) rowid->ext++;
-                //html_log(0,"db ext = [%s]",rowid->ext);
+                                extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
+                                extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
+                                extract_field_str(DB_FLDID_GENRE,buffer,&(rowid->genre),0);
 
-                                        extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
-                                        extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
-                //html_log(0,"db cert = [%s]",rowid->certificate);
+                                //if (in_text_mode() || (rowid->category != 'M' && rowid->category != 'T' ) ) {
 
-                                    //}
-                                    if (tv_or_movie_view) {
-                                        extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
-                                        extract_field_str(DB_FLDID_PARTS,buffer,&(rowid->parts),0);
-                                        //the big one!
-                                        extract_field_str(DB_FLDID_PLOT,buffer,&(rowid->plot),0);
-                                        if (strlen(rowid->plot) > g_dimension->max_plot_length) {
-                                            strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
-                                        }
+            //html_log(0,"db getting file..");
+                                    extract_field_str(DB_FLDID_FILE,buffer,&(rowid->file),0);
+            //html_log(0,"db file = [%s]",rowid->file);
+                                    rowid->ext = strrchr(rowid->file,'.');
+            //html_log(0,"db ext = [%s]",rowid->ext);
+                                    if (rowid->ext) rowid->ext++;
+            //html_log(0,"db ext = [%s]",rowid->ext);
 
-                                        extract_field_double(DB_FLDID_RATING,buffer,&(rowid->rating),0);
-                                        extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
+                                    extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
+                                    extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
+            //html_log(0,"db cert = [%s]",rowid->certificate);
 
-                                        extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);
-                                        extract_field_str(DB_FLDID_EPTITLEIMDB,buffer,&(rowid->eptitle_imdb),0);
-
-                                        extract_field_str(DB_FLDID_ADDITIONAL_INFO,buffer,&(rowid->additional_nfo),0);
-
-                                        extract_field_date(DB_FLDID_AIRDATE,buffer,&(rowid->airdate),0);
-                                        extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
-
+                                //}
+                                if (tv_or_movie_view) {
+                                    extract_field_str(DB_FLDID_FANART,buffer,&(rowid->fanart),0);
+                                    extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
+                                    extract_field_str(DB_FLDID_PARTS,buffer,&(rowid->parts),0);
+                                    //the big one!
+                                    extract_field_str(DB_FLDID_PLOT,buffer,&(rowid->plot),0);
+                                    if (strlen(rowid->plot) > g_dimension->max_plot_length) {
+                                        strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
                                     }
-                                    // If doing actions we need to get the nfo file. 
-                                    // Also get it during normal load if there are files queued to delete.
-                                    // in the latter case remove the file from the queue is it is still in use.
-                                    extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
-                                    /*
-                                    if (deleting == PRE_DELETE || g_delete_queue != NULL) {
-                                        extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
-                                        if (deleting != PRE_DELETE) {
-                                            delete_queue_remove(rowid->nfo);
-                                            free(rowid->nfo);
-                                            rowid->nfo = NULL;
-                                        }
-                                    }
-                                    */
 
-                                    // The folowing files are removed from the delete queue whenever they are parsed.
-                                    delete_queue_unqueue(rowid->db->source,rowid->nfo);
-                                    delete_queue_unqueue(rowid->db->source,rowid->poster);
+                                    extract_field_double(DB_FLDID_RATING,buffer,&(rowid->rating),0);
+                                    extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
 
-                                    return 1;
+                                    extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);
+                                    extract_field_str(DB_FLDID_EPTITLEIMDB,buffer,&(rowid->eptitle_imdb),0);
+
+                                    extract_field_str(DB_FLDID_ADDITIONAL_INFO,buffer,&(rowid->additional_nfo),0);
+
+                                    extract_field_date(DB_FLDID_AIRDATE,buffer,&(rowid->airdate),0);
+                                    extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
+
                                 }
+                                // If doing actions we need to get the nfo file. 
+                                // Also get it during normal load if there are files queued to delete.
+                                // in the latter case remove the file from the queue is it is still in use.
+                                extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
+                                /*
+                                if (deleting == PRE_DELETE || g_delete_queue != NULL) {
+                                    extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
+                                    if (deleting != PRE_DELETE) {
+                                        delete_queue_remove(rowid->nfo);
+                                        free(rowid->nfo);
+                                        rowid->nfo = NULL;
+                                    }
+                                }
+                                */
+
+                                // The folowing files are removed from the delete queue whenever they are parsed.
+                                delete_queue_unqueue(rowid->db->source,rowid->nfo);
+                                delete_queue_unqueue(rowid->db->source,rowid->poster);
+
+                                return 1;
                             }
                         }
                     }
@@ -909,6 +912,7 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     // Following are only set in tv/movie view
     free(rid->url);
     free(rid->parts);
+    free(rid->fanart);
     free(rid->plot);
     free(rid->eptitle);
     free(rid->eptitle_imdb);

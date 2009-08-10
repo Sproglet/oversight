@@ -1131,6 +1131,11 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 #define HTML_BUF_SIZE 999
 
         char buffer[HTML_BUF_SIZE+1];
+        /*
+        int is_css = strncmp(file_name,"css.",4) == 0 ;
+        int fix_css_bug = is_css && is_local_browser();
+        */
+
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
             buffer[HTML_BUF_SIZE] = '\0';
 //            if (strstr(buffer,"<!--") == NULL) {
@@ -1141,6 +1146,13 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
                 p++;
             }
             template_replace(template_name,p,num_rows,sorted_row_ids);
+
+            /*
+            if (fix_css_bug && strstr(p,"/*") ) {
+                printf(".dummy { color:red; }");
+            }
+            */
+
         }
         fflush(stdout);
         fclose(fp);

@@ -1,3 +1,4 @@
+catalogh.sh.full:3697 - replace wget with a script that will get a poster and create sd and hd versions.
 Allow optional imdb rating.
 
 BIG Feature - 

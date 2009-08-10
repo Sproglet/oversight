@@ -7,7 +7,7 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=local:IS_GAYA:] >
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
         [:FORM_START:]
             <table class=header width=100%>
                 <tr>

@@ -36,4 +36,5 @@ char *get_status();
 char *get_self_link(char *params,char *attr,char *title);
 void display_confirm(char *name,char *val_ok,char *val_cancel);
 char *local_image_source(char *path);
+char *get_path(DbRowId *rid,char *path);
 #endif

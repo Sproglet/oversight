@@ -1,0 +1,9 @@
+This software uses lots of other stuff!
+
+libjpeg tools.
+Crystal KDE Theme Icons
+Blue Twiser KDE Wallpaper.
+Gnu utilities 
+busybox
+
+Probably other stuff I hadnt thought of.

@@ -520,15 +520,18 @@ char *local_image_source(char *path) {
     if (g_dimension->local_browser) {
         //If using gaya just go directly to the file system
         ovs_asprintf(&new,"\"file://%s\"",path);
+
     } else if (strstr(path,"/share/Apps/oversight") == path) {
         // if /share/Apps/oversight/file/path 
         // then use /oversight/file/path thanks to symlink 
         //  /opt/sybhttpd/default/oversight -> /share/Apps/oversight/
         ovs_asprintf(&new,"\"%s\"",path+11);
+
     } else if (strstr(path,"/opt/sybhttpd/default") == path) {
         // if in /opt/sybhttpd/default/file/path
         // then use /file/path
         ovs_asprintf(&new,"\"%s\"",path+21);
+
     } else {
         // otherwise pass as a paramter to this script. It will cat jpg etc it to stdout
         ovs_asprintf(&new,"\"?%s\"",path);
@@ -1131,27 +1134,22 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 #define HTML_BUF_SIZE 999
 
         char buffer[HTML_BUF_SIZE+1];
-        /*
+
         int is_css = strncmp(file_name,"css.",4) == 0 ;
         int fix_css_bug = is_css && is_local_browser();
-        */
+
 
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
             buffer[HTML_BUF_SIZE] = '\0';
-//            if (strstr(buffer,"<!--") == NULL) {
-//                html_log(1,"raw:%s",buffer);
-//            }
             char *p=buffer;
             while(*p == ' ') {
                 p++;
             }
             template_replace(template_name,p,num_rows,sorted_row_ids);
 
-            /*
-            if (fix_css_bug && strstr(p,"/*") ) {
+            if (fix_css_bug && strstr(p,"*/") ) {
                 printf(".dummy { color:red; }");
             }
-            */
 
         }
         fflush(stdout);

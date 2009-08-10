@@ -7,18 +7,21 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] background=file:///share/Apps/oversight/715.jpg >
-    <!-- <body focuscolor=yellow focustext=black [class=local:IS_GAYA:] [background=:FANART_URL:] > -->
+<!--
+    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:] background=http://192.168.88.11:8883/oversight/templates/default/720/wallpaper.jpg >
+    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:] [background=:FANART_URL:] >
+-->
+    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL:] >
         [:FORM_START:]
-            <table width=100% [class=transparent:IS_GAYA:]>
+            <table width=100% >
                 <tr valaign=top>
                     <td width=30%><center>[:POSTER:]</center></td>
-                    <td>
+                    <td >
                         <h1><center>[:TITLE:][ S:SEASON:][(:YEAR:)][:CERTIFICATE_IMAGE:][:EXTERNAL_URL:]</center></h1>
-                        <table class=detail width=100%>
-                            <tr><td align=left><font class=label>Genre :</font>&nbsp;[:GENRE:]</td><tr>
-                            <tr><td align=left><font class=label>Rating :</font>&nbsp;[:RATING_STARS(10,/oversight/images/stars/star%d.png):]</td><tr>
-                            <tr><td align=left><font class=label>Plot :</font>&nbsp;[:PLOT:]</td><tr>
+                        <center>[:RATING_STARS(10,/oversight/images/stars/star%d.png):]</center>
+                        <table [class=transparent:IS_GAYA:] width=100%>
+                            <tr><td align=left><font class=label>Genre :</font>&nbsp;<font class=info[:IS_GAYA:]>[:GENRE:]</font></td><tr>
+                            <tr><td align=left><font class=label>Plot :</font>&nbsp;<font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
                         </table>
                         [:MOVIE_LISTING:]
                     </td>

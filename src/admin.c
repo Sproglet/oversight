@@ -6,6 +6,7 @@
 #include "display.h"
 #include "gaya_cgi.h"
 
+
 void display_admin() {
 
     char *action = query_val("action");

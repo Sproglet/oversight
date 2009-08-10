@@ -3,7 +3,6 @@ Allow optional imdb rating.
 BIG Feature - 
 Search filename on bintube - look for nfo link - extract imdb id 
 
-BUG: When clearing out cache only do so for the current process.
 Need to check cache left behind by killed processes
 
 BUG: parsing VIDEO_TS eg /share/Complete/hulk wolverine

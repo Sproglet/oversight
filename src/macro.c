@@ -233,12 +233,73 @@ char *macro_fn_movie_listing(char *template_name,char *call,Array *args,int num_
     return movie_listing(sorted_rows[0]);
 }
 
+// add code for a star image to a buffer and return pointer to end of buffer.
+char *add_star(char *buf,char *star_path,int star_no) {
+    char *p = buf;
+    p += sprintf(p,"<img src=\"");
+    p += sprintf(p,star_path,star_no);
+    p += sprintf(p,"\">");
+    return p;
+}
+
 char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return get_tvid_links(sorted_rows);
 }
 
+char *get_rating_stars(DbRowId *rid,int num_stars,char *star_path) {
+
+    double rating = rid->rating;
+
+    if (rating > 10) rating=10;
+
+    char *result = malloc((num_stars+1) * (strlen(star_path)+strlen("<img src=..>")+10));
+    int i;
+
+    char *p = result;
+
+TRACE; html_log(0,"rating %lf",rating);
+    for(i = 1 ; i <= (int)(rating+0.0001) ; i++) {
+
+        p = add_star(p,star_path,10);
+        num_stars --;
+
+    }
+TRACE; html_log(0,"done whole stars : remaing stars %d",num_stars);
+
+    int tenths = (int)(0.001+10*(rating - (int)(rating+0.001)));
+    if (tenths) {
+        p = add_star(p,star_path,tenths);
+        num_stars --;
+    }
+TRACE; html_log(0,"done partial stars : remaing stars %d",num_stars);
+
+    while(num_stars > 0 ) {
+
+        p = add_star(p,star_path,0);
+        num_stars--;
+    }
+TRACE; html_log(0,"done empty stars : remaing stars %d",num_stars);
+
+    return result;
+}
+
 char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return STRDUP("rating_starts");
+    char *result = NULL;
+    int num_stars=0;
+    char *star_path=NULL;
+
+    if (args && args->size == 2 && sscanf(args->array[0],"%d",&num_stars) == 1 && strstr(args->array[1],"%d") ) {
+
+        star_path=args->array[1];
+
+        result = get_rating_stars(sorted_rows[0],num_stars,star_path);
+
+    } else {
+
+        ovs_asprintf(&result,"%s(num_stars, star image path eg /oversight/images/stars/star%%d.png) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call);
+    }
+        
+    return result;
 }
 
 char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {

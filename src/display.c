@@ -331,7 +331,7 @@ char *get_self_link_with_font(char *params,char *attr,char *title,char *font_cla
     assert(font_class);
     char *title2=NULL;
 
-    ovs_asprintf(&title2,"<font class=\"%s\">%s</font>",font_class,title);
+    ovs_asprintf(&title2,"<font %s>%s</font>",font_class,title);
     char *result = get_self_link(params,attr,title2);
 
     FREE(title2);
@@ -386,15 +386,22 @@ char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char 
     int v1current = 0;
     int v2current = 0;
 
-    if (config_check_str(g_query,param_name,&param_value)) {
-        if (strcmp(param_value,v1)==0) {
-            v1current = 1;
-            next = v2;
-        }
-        if (strcmp(param_value,v2)==0) {
-            v2current = 1;
-            next = v1;
-        }
+    param_value = query_val(param_name);
+
+    if (!*param_value) {
+
+        next = v1;
+        v1current = v2current = 0;
+
+    } else if (strcmp(param_value,v1)==0) {
+
+        v1current = 1;
+        next = v2;
+
+    } else if (strcmp(param_value,v2)==0) {
+            
+        v2current = 1;
+        next = "";
     }
 
     ovs_asprintf(&params,"p=0&%s=%s",param_name,next);
@@ -565,7 +572,11 @@ char *watched_style(DbRowId *rowid,int grid_toggle) {
         long fresh_days;
         if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
             if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
-                return " border=3 class=fresh ";
+                if (in_poster_mode()) {
+                    return " border=3 class=freshposter ";
+                } else {
+                    return " class=freshtext ";
+                }
             }
         }
     }
@@ -648,13 +659,19 @@ char *icon_link(char *name) {
 
 char *build_ext_list(DbRowId *row_id) {
 
+    html_log(2,"ext=%s",row_id->ext);
     char *ext_icons = icon_link(row_id->ext);
+    html_log(2,"ext_icons=%s",ext_icons);
 
     DbRowId *ri;
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-        if (strstr(ext_icons,ri->ext) == NULL) {
+        if (ri->ext && (ext_icons==NULL || strstr(ext_icons,ri->ext) == NULL)) {
             char *new_ext;
-            ovs_asprintf(&new_ext,"%s%s",ext_icons,icon_link(ri->ext));
+            char *linked_icon = icon_link(ri->ext);
+            ovs_asprintf(&new_ext,"%s%s",
+                    (ext_icons?ext_icons:""),
+                    (linked_icon?linked_icon:""));
+            FREE(linked_icon);
             FREE(ext_icons);
             ext_icons = new_ext;
         }
@@ -801,6 +818,23 @@ char *movie_listing(DbRowId *rowid) {
 }
 
 
+int group_count(DbRowId *rid) {
+    int i=0;
+    for(  ; rid ; rid=rid->linked) {
+        i++;
+    }
+    return i;
+}
+
+int unwatched_count(DbRowId *rid) {
+    int i=0;
+    for(  ; rid ; rid=rid->linked) {
+        if (rid->watched == 0) {
+            i++;
+        }
+    }
+    return i;
+}
 
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
@@ -832,8 +866,8 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             title = get_poster_image_tag(row_id,attr);
             FREE(attr);
 
-            font_class = "fc";
-            grid_class = "gc";
+            font_class = "class=fc";
+            grid_class = "class=gc";
         } else {
             html_log(1,"dbg: unclassified : set details as title");
             // Unclassified
@@ -850,23 +884,28 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         grid_class = file_style(row_id,grid_toggle);
        
        char *tmp;
-       title = row_id->title;
+       title = trim_title(row_id->title);
 
+TRACE; html_log(2,"title=[%s]",title);
        char *cert = row_id->certificate;
        if ((tmp=strchr(cert,':')) != NULL) {
-           ovs_asprintf(&cert,"(%s)",tmp+1);
+           if (tmp[1] != '\0') {
+               ovs_asprintf(&cert,"(%s)",tmp+1);
+           } else {
+               cert = NULL;
+           }
        }
 
 
-        char *title = trim_title(row_id->title);
 
         if (row_id->category == 'T' && row_id->season >= 1) {
             //Add season
             char *tmp;
-            ovs_asprintf(&tmp,"%s S%s",title,row_id->season);
+            ovs_asprintf(&tmp,"%s S%d",title,row_id->season);
             FREE(title);
             title=tmp;
         }
+TRACE; html_log(2,"title=[%s]",title);
 
         if (tv_or_movie) {
             html_log(1,"dbg: add certificate");
@@ -874,27 +913,35 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             char *tmp;
             char *ext_icons=build_ext_list(row_id);
             html_log(1,"dbg: add extension [%s]",ext_icons);
-            ovs_asprintf(&tmp,"%s %s %s",title,cert,ext_icons);
+
+            ovs_asprintf(&tmp,"%s %s %s",
+                    title,
+                    (cert?cert:""),
+                    (ext_icons?ext_icons:""));
+
             FREE(title);
             title=tmp;
             if (cert != row_id->certificate) FREE(cert);
             FREE(ext_icons);
         }
 
+TRACE; html_log(2,"title=[%s]",title);
+
         if (row_id->category == 'T') {
             html_log(1,"dbg: add episode count");
             //Add episode count
-            int group_count=0;
-            DbRowId *rid;
 
-            for(rid=row_id ; rid ; rid=rid->linked) {
-                group_count++;
+            int unwatched = unwatched_count(row_id);
+
+            if (unwatched) {
+                char *tmp;
+                int total = group_count(row_id);
+                ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d of %d</font>",title,unwatched,total);
+                FREE(title);
+                title=tmp;
             }
-            char *tmp;
-            ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d</font>",title,group_count);
-            FREE(title);
-            title=tmp;
         }
+TRACE; html_log(2,"title=[%s]",title);
 
         long crossview=0;
         config_check_long(g_oversight_config,"ovs_crossview",&crossview);
@@ -905,6 +952,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
            title = tmp;
         }
 
+TRACE; html_log(2,"title=[%s]",title);
     }
 
     html_log(0,"dbg: details [%s]",title);
@@ -929,6 +977,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
                 idlist);
         html_log(0,"dbg: params [%s]",params);
 
+TRACE; html_log(2,"title=[%s]",title);
         cell_text = get_self_link_with_font(params,attr,title,font_class);
         html_log(0,"dbg: get_self_link_with_font [%s]",cell_text);
 
@@ -964,7 +1013,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     FREE(title);
 
     char *result;
-    ovs_asprintf(&result,"\t\t<td %s class=%s>%s</td>",width_attr,grid_class,cell_text);
+    ovs_asprintf(&result,"\t\t<td %s %s>%s</td>",width_attr,grid_class,cell_text);
     FREE(cell_text);
     return result;
 }
@@ -1087,7 +1136,11 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 //            if (strstr(buffer,"<!--") == NULL) {
 //                html_log(1,"raw:%s",buffer);
 //            }
-            template_replace(template_name,buffer,num_rows,sorted_row_ids);
+            char *p=buffer;
+            while(*p == ' ') {
+                p++;
+            }
+            template_replace(template_name,p,num_rows,sorted_row_ids);
         }
         fflush(stdout);
         fclose(fp);
@@ -1123,7 +1176,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
 
         html_log(0,"grid row %d",r);
-        ovs_asprintf(&tmp,"%s<tr>\n",result);
+        ovs_asprintf(&tmp,"%s<tr>\n",(result?result:""));
         FREE(result);
         result=tmp;
 

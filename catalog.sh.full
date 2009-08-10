@@ -4451,6 +4451,8 @@ l) {
     getline l <f;
     gsub(/<[^<>]+>/,"",l);
     sub(/ +more */,"",l);
+    sub(/^\|/,"",l);
+    sub(/\|$/,"",l);
     DEBUG("IMDB: Got genre = ["l"]");
     return l;
 }

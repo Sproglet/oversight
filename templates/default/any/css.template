@@ -22,8 +22,10 @@ img { border: 0px solid black; }
 .gridMW0_1 { color:white; background-color:#106610; }
 .gridW0_0 { color:white; background-color:#551010; }
 .gridW0_1 { color:white; background-color:#661010; }
-.fresh { 
+.freshtext { 
     color:yellow; font-weight:bold; font-style:italic; 
+}
+.freshposter { 
     border: 2px solid yellow;
 }
 .recent {color:white; font-style:italic; }

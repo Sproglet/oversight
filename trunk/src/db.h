@@ -41,6 +41,7 @@ typedef struct Dbrowid_struct {
     char *eptitle;
     char *eptitle_imdb;
     char *additional_nfo;
+    double rating;
 
 } DbRowId;
 

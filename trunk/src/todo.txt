@@ -11,6 +11,8 @@ admin pages.
 tvid search broken
 sd tv posters too big
 
+add word boundary search in pc mode
+
 in do_action logic - if all items have just been deleted then clear view= and clear idlist=
 
 

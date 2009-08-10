@@ -238,6 +238,26 @@ int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet)
     }
     return 0;
 }
+int extract_field_double(char *field_id,char *buffer,double *val_ptr,int quiet) {
+    char *s;
+    int fld_len;
+    assert(val_ptr);
+    assert(field_id);
+    assert(buffer);
+    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
+        double val;
+        char term;
+        if (sscanf(s,"%lf%c",&val,&term) != 2) {
+            if (!quiet) html_log(0,"ERROR: failed to extract double field [%s]",field_id);
+        } else if (term != '\t') {
+            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after double field %s = %d",term,field_id,val);
+        } else {
+            *val_ptr = val;
+            return 1;
+        }
+    }
+    return 0;
+}
 int extract_field_int(char *field_id,char *buffer,int *val_ptr,int quiet) {
     char *s;
     int fld_len;
@@ -376,6 +396,7 @@ int parse_row(
     assert(rowid);
 
     memset(rowid,0,sizeof(*rowid));
+    rowid->rating=0;
 
     rowid->db = db;
     rowid->season = -1;
@@ -425,6 +446,7 @@ int parse_row(
                                             strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
                                         }
 
+                                        extract_field_double(DB_FLDID_RATING,buffer,&(rowid->rating),0);
                                         extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
 
                                         extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);

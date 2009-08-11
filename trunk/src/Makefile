@@ -8,7 +8,8 @@ XXXCROSS=/cross-gcc/mipsel-linux-uclibc
 CROSS=/usr/local/mips
 CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
-CFLAGS=-g -Wall -DOUT=$(OUT)
+XXCFLAGS=-g -Wall -DOUT=$(OUT)
+CFLAGS=-O2 -Wall -DOUT=$(OUT)
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o \

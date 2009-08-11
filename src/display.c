@@ -267,7 +267,6 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
         char *name = util_basename(path);
 
-        TRACE;
         html_log(2,"path[%s]",path);
         html_log(2,"d[%s]",d);
         html_log(2,"dd[%s]",dd);
@@ -911,7 +910,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
        char *tmp;
        title = trim_title(row_id->title);
 
-TRACE; html_log(2,"title=[%s]",title);
        char *cert = row_id->certificate;
        if ((tmp=strchr(cert,':')) != NULL) {
            if (tmp[1] != '\0') {
@@ -930,7 +928,6 @@ TRACE; html_log(2,"title=[%s]",title);
             FREE(title);
             title=tmp;
         }
-TRACE; html_log(2,"title=[%s]",title);
 
         if (tv_or_movie) {
             html_log(1,"dbg: add certificate");
@@ -950,7 +947,6 @@ TRACE; html_log(2,"title=[%s]",title);
             FREE(ext_icons);
         }
 
-TRACE; html_log(2,"title=[%s]",title);
 
         if (row_id->category == 'T') {
             html_log(1,"dbg: add episode count");
@@ -966,7 +962,6 @@ TRACE; html_log(2,"title=[%s]",title);
                 title=tmp;
             }
         }
-TRACE; html_log(2,"title=[%s]",title);
 
         long crossview=0;
         config_check_long(g_oversight_config,"ovs_crossview",&crossview);
@@ -977,7 +972,6 @@ TRACE; html_log(2,"title=[%s]",title);
            title = tmp;
         }
 
-TRACE; html_log(2,"title=[%s]",title);
     }
 
     html_log(0,"dbg: details [%s]",title);
@@ -1002,7 +996,6 @@ TRACE; html_log(2,"title=[%s]",title);
                 idlist);
         html_log(0,"dbg: params [%s]",params);
 
-TRACE; html_log(2,"title=[%s]",title);
         cell_text = get_self_link_with_font(params,attr,title,font_class);
         html_log(0,"dbg: get_self_link_with_font [%s]",cell_text);
 
@@ -1564,7 +1557,6 @@ int year(time_t t) {
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
     int r,c;
 
-    TRACE;
     char *select=query_val("select");
 
     char *listing=NULL;
@@ -1630,9 +1622,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 if (title == NULL || !*title) {
                     title=rid->additional_nfo;
                 }
-    TRACE;
                 if (title == NULL || !*title) {
-    TRACE;
                     title=util_basename(rid->file);
                     free_title=1;
                 }
@@ -1643,16 +1633,13 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 int is_proper = util_strreg(rid->file,"proper",REG_ICASE) != NULL;
                 int is_repack = util_strreg(rid->file,"repack",REG_ICASE) != NULL;
                 char *icon_text = icon_link(rid->file);
-    TRACE;
 
                 ovs_asprintf(&title_txt,"%s%s%s&nbsp;%s",
                         title,
                         (is_proper?"&nbsp;<font class=proper>[pr]</font>":""),
                         (is_repack?"&nbsp;<font class=repack>[rpk]</font>":""),
                         (icon_text?icon_text:""));
-    TRACE;
                 if (free_title) FREE(title);
-    TRACE;
                 FREE(icon_text);
 
 
@@ -1687,7 +1674,6 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                         title_txt,
                         (*date_buf?date_buf:"")
                         );
-    TRACE;
                 FREE(title_txt);
                 FREE(episode_col);
                 FREE(row_text);
@@ -1699,7 +1685,6 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                     (row_text?row_text:""),
                     width1,
                     width2);
-    TRACE;
                 FREE(row_text);
                 row_text=tmp;
             }
@@ -1708,13 +1693,11 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
         if (row_text) {
             char *tmp;
             ovs_asprintf(&tmp,"%s<tr>%s</tr>\n",(listing?listing:""),row_text);
-    TRACE;
             FREE(row_text);
             FREE(listing);
             listing=tmp;
         }
     }
-    TRACE;
 
     char *result=NULL;
     ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);

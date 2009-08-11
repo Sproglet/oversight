@@ -13,3 +13,6 @@ write file prune functions
 
 add box set view - use  menu view with either ID filter OR tv name filter. and modify overview
 eq/hash functions = view=0 (tv name is same) view=box (tv name,series) is same.
+
+follow YAMJ convention for fanart.
+Make sure fanart can find default != poster image.

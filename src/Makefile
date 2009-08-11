@@ -2,10 +2,14 @@ CC=gcc
 
 CFLAGS=-g -Wall 
 
-#ifeq ($(OUT),nmt)
-#endif
-XXXCROSS=/cross-gcc/mipsel-linux-uclibc
+ifdef WINDIR
+CROSS=/cross-gcc/mipsel-linux-uclibc
+REMOTE_TARGET=share
+else
 CROSS=/usr/local/mips
+REMOTE_TARGET=mount
+endif
+
 CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 XXCFLAGS=-g -Wall -DOUT=$(OUT)
@@ -22,25 +26,24 @@ HEADERS=$(SRC:.c=.h)
 OBJECTS=hashtable.o hashtable_itr.o tester.o
 
 
+EXE=oversight
 
 LIBS=-lm
 
 LDFLAGS=-g -Wall -O $(LIBS)
 
-all: oversight mount
-
-#all: oversight share
-
+all: oversight $(REMOTE_TARGET)
 
 oversight:  $(OVS_OBJS)
 	ctags -R .
-	$(CC) $(LDFLAGS) -o oversight2.cgi $(OVS_OBJS)
+	$(CC) $(LDFLAGS) -o $(EXE) $(OVS_OBJS)
+	cp $(EXE) ..
 
 mount: /mnt/hdx/start_app.sh 
-	cp -v oversight2.cgi /mnt/hdx/Apps/oversight/.
+	cp -v $(EXE) /mnt/hdx/Apps/oversight/.
 
 share: /cygdrive/a/start_app.sh 
-	cp -v oversight2.cgi /cygdrive/a/Apps/oversight/.
+	cp -v $(EXE) /cygdrive/a/Apps/oversight/.
 
 /mnt/hdx/start_app.sh:
 	sudo mount /mnt/hdx

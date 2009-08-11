@@ -7,23 +7,24 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-<!--
-    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:] background=http://192.168.88.11:8883/oversight/templates/default/720/wallpaper.jpg >
-    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:] [background=:FANART_URL:] >
--->
-    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL:] >
+    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
         [:FORM_START:]
             <table width=100% >
-                <tr valaign=top>
-                    <td width=30%><center>[:POSTER:]</center></td>
+                <tr valign=bottom>
+                    <td width=1% class=center>[:POSTER:]</td>
                     <td >
-                        <h1><center>[:TITLE:][ S:SEASON:][(:YEAR:)][:CERTIFICATE_IMAGE:][:EXTERNAL_URL:]</center></h1>
-                        <center>[:RATING_STARS(10,/oversight/images/stars/star%d.png):]</center>
                         <table [class=transparent:IS_GAYA:] width=100%>
-                            <tr><td align=left><font class=label>Genre :</font>&nbsp;<font class=info[:IS_GAYA:]>[:GENRE:]</font></td><tr>
-                            <tr><td align=left><font class=label>Plot :</font>&nbsp;<font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
+                            <tr>
+                                <td class=title><font class=title>[:TITLE:][(:YEAR:)]</font></td>
+                                <td class=right width=20%><font class=info[:IS_GAYA:]>[:EXTERNAL_URL:]</font></td>
+                            </tr>
+                            <tr>
+                                <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
+                                <td class=right>[:RATING_STARS(5,/oversight/images/stars/star%d.png):]</td>
+                            </tr>
+                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
+                            <tr><Td>[:MOVIE_LISTING:]</td></tr>
                         </table>
-                        [:MOVIE_LISTING:]
                     </td>
                 </tr>
             </table>

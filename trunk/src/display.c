@@ -273,9 +273,12 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         html_log(2,"name[%s]",name);
 
         if (!exists(dd)) {
+
             //media gone
             ovs_asprintf(&result,"cant access %s",name);
+
         } else {
+
             //media present - file gone!
             db_remove_row(rowid);
             ovs_asprintf(&result,"removed %s",name);

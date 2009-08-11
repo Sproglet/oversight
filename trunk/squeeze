@@ -4,6 +4,6 @@ SQUEEZE() {
     #sed -r 's/^[ 	]+/ /;/^ #/ d;/^#[^!]/ d;/^$/ d' "$1" > "$2"
 }
 
-SQUEEZE oversight.cgi.full oversight.cgi
+SQUEEZE oversight.cgi.full oversight.old.cgi
 
 SQUEEZE catalog.sh.full catalog.sh

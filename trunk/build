@@ -3,5 +3,5 @@
 chmod 775 *cgi *.sh
 ../nmt-scripts/build `basename "$PWD"` "$@" oversight.cgi \
 	*.sh *.css *.cgi *.full *.example images templates help/*.help \
-	logs/.keep tmp/.keep *.html bin/*.sh bin/wget bin/gzip
+	logs/.keep tmp/.keep *.html bin
 #./bundle.unpak

@@ -623,22 +623,30 @@ char *unpak_val(char *name) {
 }
 // return parent dir of media file. ptr must be freed.
 char *util_dirname(char *file) {
-    int title_len = strlen(file);
-    char *p=STRDUP(file);
-    char *q;
 
-    if (p[title_len-1] == '/' ) {
-        // VOB Folder
-        p[title_len-1] = '\0';
-        q=strrchr(file,'/');
-        p[title_len-1] = '/';
-        *q='\0';
+    char *result=NULL;
+
+    char *p = strrchr(file,'/');
+    if (!p) {
+        result = STRDUP(".");
     } else {
-        // Normal file
-        q=strrchr(file,'/');
+
+        char *q;
+
+        if (!p[1]) {
+            // VOB Folder
+            *p='\0';
+            q=strrchr(file,'/');
+            *p='/';
+        } else {
+            // Normal file
+            q=p;
+        }
+        *q='\0';
+        result=STRDUP(file);
+        *q='/';
     }
-    *q='\0';
-    return p;
+    return result;
 }
 // return basename of media file. ptr must be freed.
 char *util_basename(char *file) {

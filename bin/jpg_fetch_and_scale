@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 
 # $Id:$
 #
@@ -21,7 +21,7 @@ jpg_resize() {
     case "$type" in 
         fanart)
             case "$tv_mode" in 
-                hd) new_width=${input_width:-1300} ;; #add 1300
+                hd) new_width=${input_width:-1280} ;; #add 1300
                 sd) new_width=${input_width:-900} ;; # 800 also 624 or 720!
                 *) echo "unknown tv_mode $tv_mode usage $0 file.jpg poster|fanart hd|sd [width]" ; exit 1 ;;
             esac

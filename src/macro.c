@@ -55,62 +55,65 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
 
 char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    int use_wallpaper = 1;
     char *result = NULL;
+    char *default_wallpaper=NULL;
 
-    if (args && args->size != 0 ) {
+    if (args && args->size > 1 ) {
 
-        *free_result=0;
-        result=call;
+        ovs_asprintf(&result,"%s([default wallpaper])",call);
 
     } else {
 
-        char *fanart = sorted_rows[0]->fanart;
+        if (args && args->size == 1 ) {
+
+            default_wallpaper = args->array[0];
+        }
+
+        //TRACE; html_log(0,"def[%s]",default_wallpaper);
+
+
+        int i;
+        char *fanart = NULL;
+        for (i = 0 ; fanart == NULL && i < num_rows ; i++ ) {
+            fanart = sorted_rows[i]->fanart;
+        }
 
         if (fanart && *fanart) {
 
-            fanart = get_path(sorted_rows[0],sorted_rows[0]->fanart);
-            if (is_file(fanart)) {
-                use_wallpaper=0;
-            } 
+            fanart = get_path(sorted_rows[0],fanart);
+            if (is_file(fanart) ) {
 
+                char *file;
+
+                if (g_dimension->scanlines == 0 ) {
+                    file = replace_all(fanart,"\\.jpg$",".sd.jpg",0);
+                } else {
+                    file = replace_all(fanart,"\\.jpg$",".hd.jpg",0);
+
+                }
+                FREE(fanart);
+                result  = local_image_source(file);
+                FREE(file);
+            }
         }
 
-//TRACE; html_log(0,"fanart[%s]",fanart);
+        if (!result && default_wallpaper) {
 
-        if (use_wallpaper) {
-            if (g_dimension->scanlines == 0 ) {
-                ovs_asprintf(&fanart,"%s/templates/%s/sd/wallpaper.jpg",appDir(),template_name);
-            } else {
-                ovs_asprintf(&fanart,"%s/templates/%s/%d/wallpaper.jpg",appDir(),template_name,g_dimension->scanlines);
-            }
-
-//TRACE; html_log(0,"fanart[%s]",fanart);
-
-        } else {
+        //TRACE; html_log(0,"def[%s]",default_wallpaper);
 
             if (g_dimension->scanlines == 0 ) {
-
-                fanart = replace_all(fanart,"\\.jpg$",".sd.jpg",0);
-
+                ovs_asprintf(&fanart,"%s/templates/%s/sd/%s",appDir(),template_name,default_wallpaper);
             } else {
-
-                fanart = replace_all(fanart,"\\.jpg$",".hd.jpg",0);
-
+                ovs_asprintf(&fanart,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,default_wallpaper);
             }
-
-//TRACE; html_log(0,"fanart[%s]",fanart);
-
-        }
-
-        result  = local_image_source(fanart);
-
-//TRACE; html_log(0,"fanart[%s]",result);
-
-        FREE(fanart);
-
+        //TRACE; html_log(0,"fa[%s]",fanart);
+            if (is_file(fanart) ) {
+                result  = local_image_source(fanart);
+        //TRACE; html_log(0,"res[%s]",result);
+                FREE(fanart);
+            }
+        } 
     }
-
     return result;
 }
 
@@ -130,16 +133,30 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 
         char *attr;
         long height;
+        DbRowId *rid=NULL;
 
-        if (sorted_rows[0]->category == 'T') {
-            height=g_dimension->tv_img_height;
-        } else {
-            height=g_dimension->movie_img_height;
+        int i;
+        for (i = 0 ; i < num_rows ; i++ ) {
+            char *poster = sorted_rows[i]->poster ;
+            if (poster && *poster) {
+                rid = sorted_rows[i];
+                break;
+            }
         }
-        ovs_asprintf(&attr," height=%d  ",height);
 
-        result =  get_poster_image_tag(sorted_rows[0],attr);
-        FREE(attr);
+        if (rid) {
+
+            if (rid->category == 'T') {
+                height=g_dimension->tv_img_height;
+            } else {
+                height=g_dimension->movie_img_height;
+            }
+            ovs_asprintf(&attr," height=%d  ",height);
+
+            result =  get_poster_image_tag(rid,attr);
+            FREE(attr);
+        } 
+
 
     } else {
 
@@ -357,33 +374,31 @@ char *get_rating_stars(DbRowId *rid,int num_stars,char *star_path) {
 
     if (rating > 10) rating=10;
 
+    rating = rating * num_stars / 10.0 ;
+
     char *result = malloc((num_stars+1) * (strlen(star_path)+strlen("<img src=..>")+10));
     int i;
 
     char *p = result;
 
-TRACE; html_log(0,"rating %lf",rating);
     for(i = 1 ; i <= (int)(rating+0.0001) ; i++) {
 
         p = add_star(p,star_path,10);
         num_stars --;
 
     }
-TRACE; html_log(0,"done whole stars : remaing stars %d",num_stars);
 
     int tenths = (int)(0.001+10*(rating - (int)(rating+0.001)));
     if (tenths) {
         p = add_star(p,star_path,tenths);
         num_stars --;
     }
-TRACE; html_log(0,"done partial stars : remaing stars %d",num_stars);
 
     while(num_stars > 0 ) {
 
         p = add_star(p,star_path,0);
         num_stars--;
     }
-TRACE; html_log(0,"done empty stars : remaing stars %d",num_stars);
 
     return result;
 }

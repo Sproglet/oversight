@@ -434,8 +434,8 @@ END{
     rm(g_status_file);
 }
 
-#IN indexHash - hash whose indexes are for scanned items ready to be processed.
-function merge_files_and_do_actions(indexHash,\
+#IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
+function merge_files_and_do_actions(indexToMergeHash,\
 file_to_db,f,added_to_db) {
 
     if (g_opt_dry_run) {
@@ -444,10 +444,10 @@ file_to_db,f,added_to_db) {
 
     } else if (lockdb()) {
 
-        DB_SIZE = copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW);
+        DB_SIZE = copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW,indexToMergeHash);
 
         #new files are added first and removed from file_to_db list.
-        add_new_scanned_files_to_database(indexHash,INDEX_DB_NEW);
+        add_new_scanned_files_to_database(indexToMergeHash,INDEX_DB_NEW);
 
         close(INDEX_DB_NEW);
 
@@ -1257,7 +1257,7 @@ fields,f,i,fileRe) {
     }
 }
 
-function copyUntouchedToNewDatabase(db_file,new_db_file,\
+function copyUntouchedToNewDatabase(db_file,new_db_file,indexToMergeHash,\
 kept_count,updated_count,f,record_action,dbline,dbline2,dbfields,idx) {
 
     kept_count=0;
@@ -1277,10 +1277,11 @@ kept_count,updated_count,f,record_action,dbline,dbline2,dbfields,idx) {
         if (f in gMovieFilePresent) {
 
             idx=gMovieFilePresent[f];
-            dbline2 = createIndexRow(1,dbfields[WATCHED,1]);
-            g_added_to_db[idx]=1;
+            dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1]);
             updated_count++;
             print dbline2"\t" >> new_db_file;
+            delete indexToMergeHash[idx];
+
 
         } else if ( dbfields[DIR,1] ~ g_settings["catalog_ignore_paths"] ) {
 
@@ -1304,6 +1305,7 @@ kept_count,updated_count,f,record_action,dbline,dbline2,dbfields,idx) {
         }
     }
     close(db_file);
+
     close(new_db_file);
     INFO("kept "kept_count" updated "updated_count" records from main database");
     return count;
@@ -1920,7 +1922,6 @@ function clean_globals() {
     delete gCertCountry;
     delete g_poster;
     delete g_genre;
-    delete g_added_to_db;
     delete gProdCode;
     delete gTitle;
     delete gOriginalTitle;
@@ -4539,7 +4540,7 @@ function get_best_episode_title(idx,\
     }
 }
 
-function createIndexRow(i,watched,\
+function createIndexRow(i,db_index,watched,\
 row,estimate,nfo,dbIdx) {
     # Estimated download date. cant use nfo time as these may get overwritten.
     estimate=gDate[gFolder[i]"/unpak.log"];
@@ -4560,7 +4561,12 @@ row,estimate,nfo,dbIdx) {
         g_file[i] = g_file[i] "/";
     }
 
-    row="\t"ID"\t"(gMaxDatabaseId++);
+    if (db_index == -1 ) {
+        row="\t"ID"\t"(++gMaxDatabaseId);
+    } else {
+        row="\t"ID"\t"db_index;
+    }
+
     row=row"\t"CATEGORY"\t"g_category[i];
     if (gMovieFileCount - 4 > 0) {
         #bulk add - use the estimate download date as the index date.
@@ -4617,36 +4623,33 @@ row,estimate,nfo,dbIdx) {
     return row;
 }
 
-# IN indexHash - hash whose indexes are the items we want to add during this iteration.
+# IN indexToMergeHash - hash whose indexes are the items we want to add during this iteration.
 # IN output_file = Name of the database
 # IN db_size = Size of the database
 # IN added_to_db - index=file value=idx
-function add_new_scanned_files_to_database(indexHash,output_file,\
+function add_new_scanned_files_to_database(indexToMergeHash,output_file,\
 i,row,fields,f,\
 minIdx,maxIdx,inf) {
 
     report_status("Merging");
     gMaxDatabaseId++;
 
-#    #TODO this should just be for i in indexHash - troubleshooting.
-#    for(i in indexHash) {
+#    #TODO this should just be for i in indexToMergeHash - troubleshooting.
+#    for(i in indexToMergeHash) {
 #        if (minIdx =="" || i-minIdx < 0 ) minIdx = i;
 #        if (maxIdx =="" || i-maxIdx > 0 ) maxIdx = i;
 #    }
     INFO("Adding indexes "minIdx" - "maxIdx);
 #
 #    for(i = minIdx ; i-maxIdx <= 0 ; i++ ) 
-    for(i in indexHash) {
+    for(i in indexToMergeHash) {
 
         f=gMovieFiles[i];
 
         DEBUG("Adding to db:"i"["gTitle[i]"]["gMovieFiles[i]"]");
         if (gMovieFiles[i] == "") continue;
 
-        # already added when writing existing db entries.
-       if (f in g_added_to_db) continue;
-
-        row=createIndexRow(i,0);
+        row=createIndexRow(i,-1,0);
 
         print row"\t" >> output_file;
 

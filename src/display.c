@@ -262,7 +262,29 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
     if (!exists(path) ) {
 
-        ovs_asprintf(&result,"<font class=error>%s missing</font>",path);
+        char *d = util_dirname(path);
+        char *dd = util_dirname(d);
+
+        char *name = util_basename(path);
+
+        TRACE;
+        html_log(2,"path[%s]",path);
+        html_log(2,"d[%s]",d);
+        html_log(2,"dd[%s]",dd);
+        html_log(2,"name[%s]",name);
+
+        if (!exists(dd)) {
+            //media gone
+            ovs_asprintf(&result,"cant access %s",name);
+        } else {
+            //media present - file gone!
+            db_remove_row(rowid);
+            ovs_asprintf(&result,"removed %s",name);
+        }
+        FREE(name);
+        FREE(d);
+        FREE(dd);
+
 
     } else if (!g_dimension->local_browser) {
 
@@ -1654,7 +1676,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 char td_class[10];
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
-                ovs_asprintf(&tmp,"%s<td %s width=%d%%>%s</td><td %s width=%d%%><font %s>%s</font><font class=epdate>%s</font></td>\n",
+                ovs_asprintf(&tmp,"%s<td class=%s width=%d%%>%s</td><td class=%s width=%d%%><font %s>%s</font><font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
                         td_class,
                         width1,

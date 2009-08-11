@@ -7,21 +7,36 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] background=[:FANART_URL:] >
+    <body focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(lightwave.jpg):] >
         [:FORM_START:]
             <table width=100% >
-                <tr>
-                    <td width=25%><center>[:POSTER:]</center></td>
+                <tr valign=bottom>
+                    <td class=center width=1%>[:POSTER:]</td>
                     <td>
-                        <h1><center>[:TITLE:][ S:SEASON:][(:YEAR:)][:CERTIFICATE_IMAGE:][:EXTERNAL_URL:]</center></h1>
-                        <center>[:RATING_STARS(10,/oversight/images/stars/star%d.png):] </center>
+                        <table [class=transparent:IS_GAYA:] width=100% >
+                            <tr>
+                                <td class=title><font class=title>[:TITLE:]</font></td>
+                                <td align=left><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:,]</font></td>
+                            </tr>
+                            <tr>
+                                <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
+                                <td class=right>[:RATING_STARS(5,/oversight/images/stars/star%d.png):]</td>
+                            </tr>
+                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <table width=100% [class=transparent:IS_GAYA:]>
+                <tr>
+                    <td class=filelist align=center>
+                    [:TV_LISTING:]
+                    </td>
+                </tr>
+            </table>
 
                         <table [class=transparent:IS_GAYA:] width=100%>
-                            <tr><td align=left><font class=label>Genre :</font>&nbsp;<font class=info[:IS_GAYA:]>[:GENRE:]</font></td><tr>
-                            <tr><td align=left><font class=label>Plot :</font>&nbsp;<font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
-                        </table>
-
-                        <table class=footer width=100%>
                             <tr valign=top>
                                 [<td align=center>:BACK_BUTTON:</td>]
                                 [<td align=center>:EXIT_BUTTON:</td>]
@@ -34,16 +49,6 @@
                                 [<td align=center>:SELECT_CANCEL_SUBMIT:</td>]
                             </tr>
                         </table>
-                    </td>
-                </tr>
-            </table>
-            <table width=100% [class=transparent:IS_GAYA:]>
-                <tr>
-                    <td class=filelist align=center>
-                    [:TV_LISTING:]
-                    </td>
-                </tr>
-            </table>
         </form>
         [:PLAY_TVID:]
     </body>

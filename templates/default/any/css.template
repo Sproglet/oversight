@@ -125,6 +125,7 @@ td.list1 {
 a.movie { color:#aaaaff; }
 .label { color:red }
 td { color:white ; text-align:left; }
+.right { text-align:right; }
 
 input { background-color:black; color:yellow; font-weight:bold; border=0; }
 
@@ -145,6 +146,7 @@ td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):
 .epdate { color:#AAAAFF; }
 
 h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
+.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
 
 .label { color:red }
 .scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }

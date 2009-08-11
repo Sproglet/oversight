@@ -1051,6 +1051,12 @@ html_log(0," end db_set_fields_by_source");
 
 }
 
+void db_remove_row(DbRowId *rid) {
+    char idlist[20];
+    sprintf(idlist,"%ld",rid->id);
+    db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,DELETE_MODE_REMOVE);
+}
+
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode) {
     struct hashtable_itr *itr;
     char *source;

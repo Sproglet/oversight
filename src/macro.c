@@ -58,7 +58,12 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
     char *result = NULL;
     char *default_wallpaper=NULL;
 
-    if (args && args->size > 1 ) {
+    if (*oversight_val("ovs_display_fanart") == '0' ) {
+
+        // do nothing
+
+        
+    } else if (args && args->size > 1 ) {
 
         ovs_asprintf(&result,"%s([default wallpaper])",call);
 
@@ -218,35 +223,58 @@ char *macro_fn_season(char *template_name,char *call,Array *args,int num_rows,Db
 }
 char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    time_t c = sorted_rows[0]->date;
-    struct tm *t = localtime(&c);
-    char *year;
-    ovs_asprintf(&year,"%d",t->tm_year+1900);
+    time_t c;
+    char *year = NULL;
+    DbRowId *rid = sorted_rows[0];
+    int year_num = 0;
+   
+    if (rid->category == 'T' ) {
+
+       c = rid->airdate;
+        struct tm *t = localtime(&c);
+        year_num = t->tm_year+1900;
+
+    } else if (rid->category == 'M' ) {
+
+        year_num = rid->year;
+
+    } else {
+        c = rid->date;
+        struct tm *t = localtime(&c);
+        year_num = t->tm_year+1900;
+    }
+    if (year_num) {
+        ovs_asprintf(&year,"%d",year_num);
+    }
     return year;
 }
 
 char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    char *cert = util_tolower(sorted_rows[0]->certificate);
-    char *tmp;
+    char *tmp=NULL;
 
-    tmp=replace_all(cert,"usa:","us:",0);
-    free(cert);
-    cert=tmp;
+    if (*oversight_val("ovs_display_certificate") == '1') {
+        char *cert = util_tolower(sorted_rows[0]->certificate);
 
 
-    tmp=replace_all(cert,":","/",0);
-    free(cert);
-    cert=tmp;
+        tmp=replace_all(cert,"usa:","us:",0);
+        free(cert);
+        cert=tmp;
 
-    ovs_asprintf(&tmp,"%s/images/cert/%s.%s",appDir(),cert,ovs_icon_type());
-    free(cert);
-    cert=tmp;
 
-    char *attr;
-    ovs_asprintf(&attr," width=%d height=%d ",g_dimension->certificate_size,g_dimension->certificate_size);
+        tmp=replace_all(cert,":","/",0);
+        free(cert);
+        cert=tmp;
 
-    tmp = get_local_image_link(cert,sorted_rows[0]->certificate,attr);
-    free(attr);
+        ovs_asprintf(&tmp,"%s/images/cert/%s.%s",appDir(),cert,ovs_icon_type());
+        free(cert);
+        cert=tmp;
+
+        char *attr;
+        ovs_asprintf(&attr," width=%d height=%d ",g_dimension->certificate_size,g_dimension->certificate_size);
+
+        tmp = get_local_image_link(cert,sorted_rows[0]->certificate,attr);
+        free(attr);
+    }
 
     return tmp;
 }

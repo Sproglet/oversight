@@ -25,6 +25,7 @@ typedef struct Dbrowid_struct {
     char *file;
     char *ext;
     char *certificate;
+    int year;
 
     //only populate if view=tv or movie
     char *url;

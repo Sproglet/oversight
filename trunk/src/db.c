@@ -398,6 +398,7 @@ int parse_row(
     memset(rowid,0,sizeof(*rowid));
     rowid->rating=0;
     rowid->watched=0;
+    rowid->year=0;
 
     rowid->db = db;
     rowid->season = -1;
@@ -419,6 +420,7 @@ int parse_row(
                             if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
 
                                 extract_field_int(DB_FLDID_WATCHED,buffer,&(rowid->watched),1);
+                                extract_field_int(DB_FLDID_YEAR,buffer,&(rowid->year),1);
                                 assert(rowid->watched == 0 || rowid->watched == 1);
 
                                 extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);

@@ -13,7 +13,7 @@
                 <tr valign=bottom>
                     <td class=center width=1%>[:POSTER:]</td>
                     <td>
-                        <table [class=transparent:IS_GAYA:] width=100% >
+                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
                                 <td class=title><font class=title>[:TITLE:]</font></td>
                                 <td align=left><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:,]</font></td>
@@ -28,7 +28,7 @@
                 </tr>
             </table>
 
-            <table width=100% [class=transparent:IS_GAYA:]>
+            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                 <tr>
                     <td class=filelist align=center>
                     [:TV_LISTING:]

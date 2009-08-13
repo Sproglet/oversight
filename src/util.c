@@ -706,3 +706,12 @@ int exists_file_in_dir(char *dir,char *name) {
     return result;
 }
 
+int util_system(char *cmd) {
+    int result;
+    html_log(0,"system %s",cmd);
+    result = system(cmd);
+    html_log(0,"system result %d",result);
+    return result;
+}
+
+

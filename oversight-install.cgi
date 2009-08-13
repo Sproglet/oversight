@@ -72,6 +72,7 @@ INSTALL() {
         chown -R nmt:nmt "$INSTALL_DIR"
         "$NMT" NMT_INSTALL_WS "$wsname" "$httpd/$appname/$cgiName"
         "$NMT" NMT_INSTALL "$appname" "$start_command"
+        "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
         eval "$start_command"
 
         cd "$INSTALL_DIR"

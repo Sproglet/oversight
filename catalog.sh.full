@@ -138,7 +138,7 @@ check_missing_settings
 
 if [ -z "$*" ] ; then
     cat<<USAGE
-    usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [DEBUG] [REBUILD] [NOACTIONS] [RESCAN] 
+    usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [DEBUG] [REBUILD] [NOACTIONS] [RESCAN] [NEWSCAN]
              [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN] [UPDATE_POSTERS]
              ..folders..
 ____________________________________________________________________________________________________________________    
@@ -159,6 +159,7 @@ Other options
     DEBUG          - lots of logging
     REBUILD        - Run even if no folders. Usually to tidy database.
     RESCAN         - Rescan default paths
+    NEWSCAN        - Rescan default paths - new media only
     NOACTIONS      - Do not run any actions and hide Delete actions from overview.
     STDOUT         - Write to stdout (if not present output goes to log file)
     UPDATE_POSTERS - Fetch new posters for each scanned item.
@@ -325,6 +326,199 @@ function report_status(msg) {
     }
 }
 
+function get_new_folders(folder_list,timestamp_file,\
+new_list,f,i,j,dir,newfile,newdir,cmd) {
+    if (!exists(timestamp_file)) {
+        return;
+    }
+    DEBUG("Checking for changed content");
+    for( i in folder_list ) {
+        dir=folder_list[i];
+        if (dir) {
+            DEBUG("Checking "dir" for changed content");
+            f=NEW_CAPTURE_FILE("NEWFOLDERS");
+            exec("cd "quoteFile(dir)" && "APPDIR"/bin/busybox find . -newer "quoteFile(timestamp_file)" > "quoteFile(f));
+DEBUG("end find");
+            while((getline newfile < f) > 0) {
+DEBUG("find line "newfile);
+
+                # If the new item is a folder add it.
+                # If the new item is media add the parent folder - to make sure we get nfo etc.
+                #
+                # Note due to rar-timestamps sometimes media will have older timestamps than the folder.
+                newdir=dir"/"newfile;
+
+DEBUG("isDirectory "newdir);
+
+                if (isDirectory(newdir) ) {
+                    DEBUG("Changed content - "newdir);
+                } else {
+                    newdir=dirname(newdir);
+                    DEBUG("Changed content - "dir"/"newfile" > "newdir);
+                }
+                new_list[newdir]=1;
+            }
+DEBUG("close find "f);
+            close(f);
+        } else {
+            DEBUG("Ignoring blank "dir);
+        }
+    }
+
+    #copy the new folders to the output array
+    delete folder_list;
+    i=1;
+    for(j in new_list) {
+        folder_list[i++] = j;
+    }
+
+}
+
+function get_mounts(mtab,\
+line,parts,f) {
+    if ("@ovs_fetched" in mtab) return;
+    f="/etc/mtab";
+    while((getline line < f ) > 0) {
+        split(line,parts," ");
+        mtab[parts[2]]=1;
+        DEBUG("mtab ["parts[2]"]");
+    }
+    mtab["@ovs_fetched"] = 1;
+}
+
+function get_settings(settings,\
+line,parts,f,n,v,n2,v2) {
+    if ("@ovs_fetched" in settings) return;
+
+    f="/tmp/setting.txt";
+    while((getline line < f ) > 0) {
+        n=index(line,"=");
+        v=substr(line,n+1);
+        n=substr(line,1,n-1);
+        settings[n] = v;
+        DEBUG("setting ["n"]=["v"]");
+
+        # if servname2=nas then store servname_nas=2 - this makes it easier to
+        # find the corresponding servlink2 using the share name.
+        if (n ~ /^servname/ ) {
+
+            n2="servname_"v;
+            v2="servlink"substr(n,length(n));
+
+            settings[n2] = v2;
+            DEBUG("setting *** ["n2"]=["v2"]");
+        }
+    }
+    close(f);
+    settings["@ovs_fetched"] = 1;
+}
+
+function parse_link(link,details,\
+parts,i,x) {
+    #link is nfs:/..../&smb.user=fred&smb.passwd=pwd
+    if (link == "") return 0;
+
+    split("link="link,parts,"&");
+    # now have link=nfs:/..../ , smb.user=fred ,  smb.passwd=pwd
+
+    if (!(3 in parts)) return 0;
+    for(i in parts) {
+        split(parts[i],x,"=");
+        details[x[1]]=x[2];
+    }
+    return 1;
+}
+
+function is_mounted(path,\
+f,result) {
+    result = 0;
+    f = NEW_CAPTURE_FILE("DF");
+    exec("df "quoteFile(path)" > "quoteFile(f));
+    while ((getline line < f) > 0) {
+        if (index(line,"/")) {
+            sub(/^[^%]+% /,"",line);
+
+            if (system("test "quoteFile(line)" -ef "quoteFile(path)) == 0) {
+               result=1;
+           }
+       }
+    }
+    close(f);
+    DEBUG("is mounted "path" = "result);
+    return result;
+}
+
+function nmt_mount_share(s,settings,\
+path,link,f,link_details,remote,cmd) {
+
+
+
+    path = "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"s;
+    if (is_mounted(path)) {
+
+        DEBUG(s " already mounted at "path);
+        return path;
+    }
+
+
+    path="/share/.oversight_mounts/"s;
+    if (is_mounted(path)) {
+        DEBUG(s " already mounted at "path);
+        return path;
+    }
+
+    get_settings(settings);
+
+    DEBUG("servname_"s" = "settings[settings["servname_"s]]);
+    if (parse_link(settings[settings["servname_"s]],link_details) == 0) {
+        DEBUG("Could not find "s" in shares");
+        return "";
+    }
+
+
+    remote=link_details["link"];
+    DEBUG("Link for "s" is "remote);
+
+    sub(/^(nfs:\/\/|smb:)/,"",remote);
+
+    if (link_details["link"] ~ "nfs:") {
+
+        cmd = "mkdir -p "path" && mount "remote" "path;
+
+    } else if (link_details["link"] ~ "nfs:") {
+
+        cmd = "mkdir -p "path" && mount -t cifs -o username="link_details["smb.user"]",password="link_details["smb.passwd"]" "remote" "path;
+
+    } else {
+
+        ERROR("Dont know how to mount "link_details["link"]);
+        path="";
+    }
+    if (exec(cmd) != 0) {
+        DEBUG("Unable to mount share "link_details["link"]);
+        path="";
+    }
+    return path;
+}
+
+# Given a path without a / find the mounted path
+function nmt_get_share_path(f,\
+share,share_path,rest) {
+    if (f ~ "^/") {
+        DEBUG("nmt_get_share_path "f" unchanged");
+        return f;
+    } else {
+        share=g_share_map[f];
+        rest=f;
+        sub(/^[^\/]+/,"",rest);
+        share_path=g_share_name_to_folder[share] rest;
+
+        DEBUG("nmt_get_share_path "f" = "share_path);
+        return share_path;
+    }
+}
+
+
 END{
 
     g_item_count = 0;
@@ -390,9 +584,38 @@ END{
 
     THIS_YEAR=substr(NOW,1,4);
 
-    if (RESCAN == 1) {
+    scan_options="-Rl";
+
+    if (RESCAN == 1 || NEWSCAN == 1) {
+
         INFO("Scanning default paths");
-        split(g_settings["catalog_scan_paths"],FOLDER_ARR,"[,|]");
+        split(trim(g_settings["catalog_scan_paths"]),FOLDER_ARR," *[,|] *");
+        g_timestamp_file=APPDIR"/.lastscan";
+    }
+
+
+    for(f in FOLDER_ARR) {
+        if (substr(FOLDER_ARR[f],1,1) != "/") {
+            # Assume it is a share
+            share_name=FOLDER_ARR[f];
+            sub(/\/.*/,"",share_name);
+
+            if (!(share_name in g_share_name_to_folder)) {
+                g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings);
+            DEBUG("share name "share_name" = "g_share_name_to_folder[share_name]);
+            }
+            g_share_map[FOLDER_ARR[f]] = share_name;
+
+            FOLDER_ARR[f] = nmt_get_share_path(FOLDER_ARR[f]);
+            DEBUG("Share folder "FOLDER_ARR[f]);
+        } else {
+            DEBUG("Folder "FOLDER_ARR[f]);
+        }
+    }
+
+    if (NEWSCAN) {
+        get_new_folders(FOLDER_ARR,g_timestamp_file);
+        scan_options="-l";
     }
 
     for(f in FOLDER_ARR) {
@@ -408,7 +631,7 @@ END{
 
     g_tk = apply(g_tk);
     g_tk2 = apply(g_tk2);
-    scan_folder_for_new_media(FOLDER_ARR);
+    scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
 
     clean_capture_files();
@@ -432,6 +655,11 @@ END{
     }
 
     rm(g_status_file);
+
+    if (RESCAN == 1 || NEWSCAN == 1) {
+        print "last scan at " strftime(systime()) > g_timestamp_file;
+        close(g_timestamp_file);
+    }
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
@@ -564,8 +792,6 @@ function set_db_fields() {
 
     SEASON=db_field("_s","Season","season") ;
     EPISODE=db_field("_e","Episode","episode");
-    SEASON0=db_field("0_s","0SEASON","");
-    EPISODE0=db_field("0_e","0EPISODE","");
 
     GENRE=db_field("_G","Genre","genre") ;
     RATING=db_field("_r","Rating","rating");
@@ -600,7 +826,7 @@ function db_field(key,name,tag) {
     return key;
 }
 
-function scan_folder_for_new_media(folderArray,\
+function scan_folder_for_new_media(folderArray,scan_options,\
 temp,f,fmax) {
 
     #Need to make sure the ls format is as "standard"
@@ -619,7 +845,7 @@ temp,f,fmax) {
             g_progress[1]="folder "f"/"fmax;
 
             report_status("Scan "g_progress[1]);
-            scan_contents(folderArray[f]);
+            scan_contents(folderArray[f],scan_options);
         }
 
     }
@@ -662,7 +888,7 @@ tempFile,folderNameNext,i,currentFolder) {
 }
 
 # Input is ls -lR or ls -l
-function scan_contents(root,\
+function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) {
 
@@ -688,7 +914,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
     # We want to list a file which may be a file, folder or symlink.
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
-    exec("( "LS" -Rl "quotedRoot"/ || "LS" -Rl "quotedRoot" ) > "tempFile );
+    exec("( "LS" "scan_options" "quotedRoot"/ || "LS" "scan_options" "quotedRoot" ) > "tempFile );
     currentFolder = root;
     skipFolder=0;
     folderNameNext=1;
@@ -957,7 +1183,7 @@ nfo,lcNfo) {
 
 function exec(cmd, err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   DEBUG2("SYSTEM : [["cmd"]]");
+   DEBUG("SYSTEM : [["cmd"]]");
    if ((err=system(cmd)) != 0) {
       ERROR("Return code "err" executing "cmd) ;
   }
@@ -1114,6 +1340,22 @@ bestUrl,keywords) {
         }
     }
     return "";
+}
+
+# Extract the dir`name from the path. Note if the file ends in / then the parent is used (for VIDEO_TS)
+function dirname(f) {
+
+    #Special case - paths ending in /, the / indicates it is a VIDEO_TS folder and should otherwise be ignored.
+    sub(/\/$/,"",f);
+
+    #Relative paths
+    if (f !~ "^[/$]" ) {
+        f = "./"f;
+    }
+
+    #remove filename
+    sub(/\/[^\/]+$/,"",f);
+    return f;
 }
 
 # Extract the filename from the path. Note if the file ends in / then the folder is the filename
@@ -1277,7 +1519,7 @@ kept_count,updated_count,f,record_action,dbline,dbline2,dbfields,idx) {
         if (f in gMovieFilePresent) {
 
             idx=gMovieFilePresent[f];
-            dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1]);
+            dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1],dbfields[INDEXTIME,1]);
             updated_count++;
             print dbline2"\t" >> new_db_file;
             delete indexToMergeHash[idx];
@@ -2155,19 +2397,32 @@ tvDbSeriesPage,alternateTitles) {
 
     if (tvDbSeriesPage == "" ) {
         g_search_total["tvabbrev"]++;
-        searchAbbreviationAgainstTitles(title,alternateTitles);
 
-        if (filterTitlesByTvDbPresence(alternateTitles,"FirstAired,Overview",alternateTitles) - 1 > 0 ) {
+        cache_key=gFolder[idx]"@"title;
 
-            filterTitlesFoundOnUsenetWithSpecificText(alternateTitles,cleanSuffix(idx),alternateTitles);
+        if(cache_key in g_abbrev_cache) {
 
+            tvDbSeriesPage = g_abbrev_cache[cache_key];
+
+        } else {
+
+            searchAbbreviationAgainstTitles(title,alternateTitles);
+
+            if (filterTitlesByTvDbPresence(alternateTitles,"FirstAired,Overview",alternateTitles) - 1 > 0 ) {
+
+                filterTitlesFoundOnUsenetWithSpecificText(alternateTitles,cleanSuffix(idx),alternateTitles);
+
+            }
+
+            title = selectBestOfBestTitle(idx,alternateTitles);
+
+            tvDbSeriesPage = searchTvDbTitles(idx,title);
+
+            if (tvDbSeriesPage) {
+                g_search_hits["tvabbrev"]++;
+                g_abbrev_cache[cache_key] = tvDbSeriesPage;
+            }
         }
-
-        title = selectBestOfBestTitle(idx,alternateTitles);
-
-        tvDbSeriesPage = searchTvDbTitles(idx,title);
-
-        if (tvDbSeriesPage) g_search_hits["tvabbrev"]++;
     }
 
     if (tvDbSeriesPage == "" ) {
@@ -2190,32 +2445,16 @@ initial,i,tmp) {
 
     INFO("Search Phase: epguid abbreviations");
 
-    #First check if weve seen this before. This code can be removed if short of space.
-    if (abbrev in g_abbrev_cache) {
-        INFO("Retrived abbreviation "abbrev" from cache");
-        split(g_abbrev_cache[abbrev],tmp,"\t");
-        for(i in tmp) {
-            alternateTitles[tmp[i]] = 1;
-        }
-    } else {
+    initial = epguideInitial(abbrev);
+    searchAbbreviation(initial,abbrev,alternateTitles);
 
-        initial = epguideInitial(abbrev);
-        searchAbbreviation(initial,abbrev,alternateTitles);
-
-        #if the abbreviation begins with t it may stand for "the" so we need to 
-        #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
-        if (initial == "t" ) {
-            initial = epguideInitial(substr(abbrev,2));
-            if (initial != "t" ) {
-                searchAbbreviation(initial,abbrev,alternateTitles);
-            }
+    #if the abbreviation begins with t it may stand for "the" so we need to 
+    #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
+    if (initial == "t" ) {
+        initial = epguideInitial(substr(abbrev,2));
+        if (initial != "t" ) {
+            searchAbbreviation(initial,abbrev,alternateTitles);
         }
-        # Store in abbreviation cache - this code can be removed if short on space.
-        INFO("Saved abbreviation "abbrev" to cache");
-        for(i in alternateTitles) {
-            g_abbrev_cache[abbrev]=g_abbrev_cache[abbrev]"\t"i;
-        }
-        g_abbrev_cache[abbrev]=substr(g_abbrev_cache[abbrev],2);
     }
     dump(0,"abbrev["abbrev"]",alternateTitles);
 }
@@ -4540,12 +4779,21 @@ function get_best_episode_title(idx,\
     }
 }
 
-function createIndexRow(i,db_index,watched,\
+function file_time(f) {
+    if (f in gDate) {
+        return gDate[f];
+    } else {
+        return "";
+    }
+}
+
+function createIndexRow(i,db_index,watched,index_time,\
 row,estimate,nfo,dbIdx) {
+
     # Estimated download date. cant use nfo time as these may get overwritten.
-    estimate=gDate[gFolder[i]"/unpak.log"];
+    estimate=file_time(gFolder[i]"/unpak.log");
     if (estimate == "") {
-        estimate=gDate[gFolder[i]"/unpak.txt"];
+        estimate=file_time(gFolder[i]"/unpak.txt");
     }
     if (estimate == "") {
         estimate = g_file_time[i];
@@ -4568,14 +4816,19 @@ row,estimate,nfo,dbIdx) {
     }
 
     row=row"\t"CATEGORY"\t"g_category[i];
-    if (gMovieFileCount - 4 > 0) {
-        #bulk add - use the estimate download date as the index date.
-        #this helps the index to appear to have some chronological order
-        #on first build
-        row=row"\t"INDEXTIME"\t"estimate;
-    } else {
-        row=row"\t"INDEXTIME"\t"NOW;
+
+    if (index_time == "") {
+        if (gMovieFileCount - 4 > 0) {
+            #bulk add - use the estimate download date as the index date.
+            #this helps the index to appear to have some chronological order
+            #on first build
+            index_time = estimate;
+        } else {
+            index_time = NOW;
+        }
     }
+
+    row=row"\t"INDEXTIME"\t"index_time;
 
     row=row"\t"WATCHED"\t"watched;
 
@@ -4591,8 +4844,6 @@ row,estimate,nfo,dbIdx) {
     row=row"\t"GENRE"\t"g_genre[i];
     row=row"\t"RATING"\t"g_rating[i];
 
-    row=row"\t"SEASON0"\t"sprintf("%02d",g_season[i]);
-    row=row"\t"EPISODE0"\t"pad_episode(g_episode[i]);
 
     row=row"\t"YEAR"\t"g_year[i];
     row=row"\t"FILE"\t"g_file[i];
@@ -4649,7 +4900,7 @@ minIdx,maxIdx,inf) {
         DEBUG("Adding to db:"i"["gTitle[i]"]["gMovieFiles[i]"]");
         if (gMovieFiles[i] == "") continue;
 
-        row=createIndexRow(i,-1,0);
+        row=createIndexRow(i,-1,0,"");
 
         print row"\t" >> output_file;
 
@@ -4724,7 +4975,7 @@ function apply(text) {
 
 #Move folder names from argument list
 function get_folders_from_args(folder_arr,\
-i,folderCount,moveDown) {
+i,folderCount,moveDown,d) {
     folderCount=0;
     moveDown=0;
     for(i = 1 ; i - ARGC < 0 ; i++ ) {
@@ -4775,6 +5026,9 @@ i,folderCount,moveDown) {
             moveDown++;
         } else if (ARGV[i] == "UPDATE_POSTERS" )  {
             UPDATE_POSTERS=1;
+            moveDown++;
+        } else if (ARGV[i] == "NEWSCAN" )  {
+            NEWSCAN=1;
             moveDown++;
         } else if (ARGV[i] == "RESCAN" )  {
             RESCAN=1;

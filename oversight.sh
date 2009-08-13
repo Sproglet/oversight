@@ -26,7 +26,6 @@ fi
 
 CMD_BUF="$TMPDIR/cmd"
 LOCK="$TMPDIR/oversight.lck"
-CACHE_DIR="$TMPDIR/cache"
 PENDING_FILE="$TMPDIR/cmd.pending"
 
 NMT="$APPDIR/install.sh"
@@ -76,15 +75,6 @@ LISTEN() {
         rm -f "$LOCK"
 }
 
-#If a beta is currently installed check for any upgrade else check stable only
-check_for_upgrades() {
-    if grep -q "^VERSION.*BETA" $APPDIR/oversight.cgi ; then
-        "$APPDIR/upgrade.sh" oversight check_stable_or_beta 
-    else
-        "$APPDIR/upgrade.sh" oversight check_stable 
-    fi
-}
-
 ARGLIST() {
     ARGS=""
     for i in "$@" ; do
@@ -130,17 +120,6 @@ HTML() {
     echo "<p>$@<p>"
 }
 
-UPGRADE() {
-    if "$APPDIR/upgrade.sh" oversight "$@" ; then
-        case "$1" in
-            upgrade|undo) 
-                CLEAR_CACHE
-                ;;
-        esac
-    fi
-
-}
-
 MYIP() {
     #ifconfig eth0 | awk '/inet/ { sub(/[^:]*:/,"",$2) ; print $2; }'
     awk -F== '/eth_ipaddr/ {print $2} {next}' /tmp/setting.txt
@@ -150,11 +129,6 @@ LOAD_SETTINGS() {
     #load all settings from syabas generated file (esp Workgroup & ipaddress)
     sed '/=/ {s/=/="/;s/$/"/}' /tmp/setting.txt > /tmp/setting.txt.sh
     . /tmp/setting.txt.sh
-}
-
-CLEAR_CACHE() {
-    if [ -d "$CACHE_DIR" ] ; then rm -f -- "$CACHE_DIR"/* ; fi
-    if [ -d "$CACHE_DIR.old" ] ; then rm -f -- "$CACHE_DIR.old"/* ; fi
 }
 
 #This file contains lines copied from mtab with a comment appended so we know which logical name to associate 
@@ -276,26 +250,45 @@ torrent_check()  {
     esac
 }
 
+add_watch_cron() {
+    if [ "$1" != "off" ] ; then
+        d="*"
+        m="*"
+        h="*"
+        case "$1" in
+            10m) d="*"    ; h="*" ; m="0,10,20,30,40,50" ;;
+            15m) d="*"    ; h="*" ; m="0,15,30,45" ;;
+            20m) d="*"    ; h="*" ; m="0,20,40" ;;
+            30m) d="*"    ; h="*" ; m="0,30" ;;
+            1h)  d="*"    ; h="0-23" ; m="0" ;;
+            2h)  d="*"    ; h="0,2,4,6,8,10,12,14,16,18,20,22" ; m="0" ;;
+            3h)  d="*"    ; h="0,3,6,9,12,15,18,21" ; m="0" ;;
+            4h)  d="*"    ; h="0,4,8,12,16,20" ; m="0" ;;
+            6h)  d="*"    ; h="0,6,12,18" ; m="0" ;;
+            8h)  d="*"    ; h="0,8,16" ; m="0" ;;
+            12h) d="*"    ; h="0,12" ; m="0" ;;
+            1d)  d="1-31" ; h=0 ; m=0 ;;
+        esac
+        if [ "$d$m$h" != "***" ] ; then
+            "$NMT" NMT_CRON_ADD root "$appname.watch" "$m $h $d * * cd '$APPDIR' && './catalog.sh' NEWSCAN >/dev/null 2>&1 &"
+        fi
+    else
+        "$NMT" NMT_CRON_DEL root "$appname.watch"
+    fi
+}
+
 
 case "$1" in 
+    WATCH_FOLDERS)
+        add_watch_cron "$2"
+        ;;
+
     REBOOTFIX)
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
-        "$NMT" NMT_CRON_ADD nmt "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
-        #This detects new versions but need to check spindown
-        #"$NMT" NMT_CRON_ADD nmt "$appname" "* * * * * cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
-        #Include message for the old v1 link for the time being.
-        oldcgi="/opt/sybhttpd/default/oversight.cgi"
-        rm -f $oldcgi || true
-        cat <<HERE >$oldcgi
-#!/bin/sh
-cat <<HERE2
-Content-Type: text/html
+        "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
+        add_watch_cron "`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $APPDIR/catalog.cfg`"
+        ;;
 
-Oversight has moved. Please update your bookmarks.
-<a href="/oversight/oversight.cgi">Click here to continue</a>
-HERE2
-HERE
-        exit ;;
     LISTEN)
         log="$APPDIR/logs/listen.log" 
         if [ -f /tmp/oversight.disable ] ; then
@@ -306,25 +299,20 @@ HERE
             SWITCHUSER "$OWNER" "$@"
             LISTEN >> "$log" 2>&1 || rm -f "$LOCK"
         fi
-        d="`date '+%H%M'`"
-        if [ "$d" = 0000 ] ; then
-            check_for_upgrades
-        fi
 
         #torrent_check "$d"
 
         exit;;
     UNINSTALL)
-        "$NMT" NMT_CRON_DEL nmt "$appname" 
         "$NMT" NMT_CRON_DEL root "$appname" 
+        "$NMT" NMT_CRON_DEL root "$appname" 
+        "$NMT" NMT_CRON_DEL root "$appname.watch"
         rm -f "/opt/sybhttpd/default/oversight" "$PENDING_FILE" "$CMD_BUF.live"
         exit;;
     SAY)
         shift;
         SAY "$@"
         exit;;
-    CLEAR_CACHE) CLEAR_CACHE ;;
-    UPGRADE) UPGRADE "$2" ;;
     FIND_REMOTE) shift ; FIND_REMOTE "$@" ;;
     REMOUNT) shift ; REMOUNT "$@" ;;
     SHARE) shift ; SHARE "$@" ;;

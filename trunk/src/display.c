@@ -258,6 +258,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *path = get_mounted_path(source,file);
 
     char *encoded_path = url_encode(path);
+    int show_link = 1;
 
 
     if (!exists(path) ) {
@@ -275,70 +276,78 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         if (!exists(dd)) {
 
             //media gone
-            ovs_asprintf(&result,"cant access %s",name);
+            ovs_asprintf(&result,"<font class=error>%s</font>",name);
+            show_link=0;
 
+#if 0
+            //commented out - try mount on demand
         } else {
 
             //media present - file gone!
             db_remove_row(rowid);
             ovs_asprintf(&result,"removed %s",name);
+#endif
         }
         FREE(name);
         FREE(d);
         FREE(dd);
+    }
+
+    if (show_link) {
 
 
-    } else if (!g_dimension->local_browser) {
+        if (!g_dimension->local_browser) {
 
-        //If using a browser then VOD tags dont work. Make this script load the file into gaya
-        //Note we send the view and idlist parameters so that we can render the original page 
-        //in the brower after the infomation is sent to gaya.
+            //If using a browser then VOD tags dont work. Make this script load the file into gaya
+            //Note we send the view and idlist parameters so that we can render the original page 
+            //in the brower after the infomation is sent to gaya.
 
-        //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
-        //The script than captures this after clicking via do_actions,
-        //this sends a url to gaya which points back to this script again but will just contain
-        //small text to auto load a file using <a onfocusload> and <body onloadset>
-        char *params =NULL;
-        ovs_asprintf(&params,"idlist=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-        //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-        result = get_self_link(params,font_class,title);
-        FREE(params);
-
-    } else {
-
-        char *p = file + strlen(file);
-
-        if (p[-1] == '/' ) {
-            // VIDEO_TS
-            ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
-            add_to_playlist = 0;
-
-        } else if (strcasecmp(p-4,".iso") == 0 || strcasecmp(p-4,".img") ==0) {
-
-            // iso or img
-            ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+            //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
+            //The script than captures this after clicking via do_actions,
+            //this sends a url to gaya which points back to this script again but will just contain
+            //small text to auto load a file using <a onfocusload> and <body onloadset>
+            char *params =NULL;
+            ovs_asprintf(&params,"idlist=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
+            //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
+            result = get_self_link(params,font_class,title);
+            FREE(params);
 
         } else {
-            // avi mkv etc
-            ovs_asprintf(&vod," vod file=c name=\"%s\" %s ",href_name,href_attr);
-        }
 
-        if (add_to_playlist) {
-            FILE *fp = playlist_open();
-            char *name=util_basename(file);
-            fprintf(fp,"%s|0|0|file://%s|",name,path);
-            free(name);
-            fflush(fp);
-        }
+            char *p = file + strlen(file);
+
+            if (p[-1] == '/' ) {
+                // VIDEO_TS
+                ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+                add_to_playlist = 0;
+
+            } else if (strcasecmp(p-4,".iso") == 0 || strcasecmp(p-4,".img") ==0) {
+
+                // iso or img
+                ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
+
+            } else {
+                // avi mkv etc
+                ovs_asprintf(&vod," vod file=c name=\"%s\" %s ",href_name,href_attr);
+            }
+
+            if (add_to_playlist) {
+                FILE *fp = playlist_open();
+                char *name=util_basename(file);
+                fprintf(fp,"%s|0|0|file://%s|",name,path);
+                free(name);
+                fflush(fp);
+            }
 
 
-        if (font_class != NULL && *font_class ) {
+            if (font_class != NULL && *font_class ) {
 
-            ovs_asprintf(&result,"<a href=\"file://%s\" %s><font class=\"%s\">%s%s</font></a>",
-                    encoded_path,vod,font_class,title,t2);
-        } else {
-            ovs_asprintf(&result,"<a href=\"file://%s\" %s>%s%s</a>",
-                    encoded_path,vod,title,t2);
+                ovs_asprintf(&result,"<a href=\"file://%s\" %s><font class=\"%s\">%s%s</font></a>",
+                        encoded_path,vod,font_class,title,t2);
+            } else {
+                ovs_asprintf(&result,"<a href=\"file://%s\" %s>%s%s</a>",
+                        encoded_path,vod,title,t2);
+            }
         }
     }
 
@@ -599,11 +608,11 @@ char *watched_style(DbRowId *rowid,int grid_toggle) {
         long fresh_days;
         if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
             if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
-                if (in_poster_mode()) {
-                    return " border=3 class=freshposter ";
-                } else {
-                    return " class=freshtext ";
-                }
+                //if (in_poster_mode()) {
+                    //return " border=3 class=fresh ";
+                //} else {
+                    return " class=fresh ";
+                //}
             }
         }
     }

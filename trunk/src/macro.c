@@ -85,21 +85,20 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
 
         if (fanart && *fanart) {
 
+            char *file=NULL;
+
             fanart = get_path(sorted_rows[0],fanart);
-            if (is_file(fanart) ) {
-
-                char *file;
-
-                if (g_dimension->scanlines == 0 ) {
-                    file = replace_all(fanart,"\\.jpg$",".sd.jpg",0);
-                } else {
-                    file = replace_all(fanart,"\\.jpg$",".hd.jpg",0);
-
-                }
-                FREE(fanart);
-                result  = local_image_source(file);
-                FREE(file);
+            if (g_dimension->scanlines == 0 ) {
+                file = replace_all(fanart,"\\.jpg$",".sd.jpg",0);
+            } else {
+                file = replace_all(fanart,"\\.jpg$",".hd.jpg",0);
             }
+            FREE(fanart);
+            if (is_file(file) ) {
+
+                result  = local_image_source(file);
+            }
+            FREE(file);
         }
 
         if (!result && default_wallpaper) {
@@ -990,9 +989,11 @@ void macro_init() {
 }
 
 // ?xx = html query variable
-// ovs.xxx = oversight config
-// catalog.xxx = catalog config
-// unpak.xxx = unpak config
+// ovs_xxx = oversight config
+// catalog_xxx = catalog config
+// unpak_xxx = unpak config
+//
+
 char *get_variable(char *vname) {
 
     char *result=NULL;
@@ -1002,17 +1003,17 @@ char *get_variable(char *vname) {
         // query variable
         result=query_val(vname+1);
 
-    } else if (util_starts_with(vname,"ovs.")) {
+    } else if (util_starts_with(vname,"ovs_") ) {
 
-        result = oversight_val(strchr(vname,'.')+1);
+        result = oversight_val(vname);
 
-    } else if (util_starts_with(vname,"catalog.")) {
+    } else if (util_starts_with(vname,"catalog_")) {
 
-        result = catalog_val(strchr(vname,'.')+1);
+        result = catalog_val(vname);
 
-    } else if (util_starts_with(vname,"unpak.")) {
+    } else if (util_starts_with(vname,"unpak_")) {
 
-        result = unpak_val(strchr(vname,'.')+1);
+        result = unpak_val(vname);
 
     }
 

@@ -1,9 +1,17 @@
 This software uses lots of other stuff!
 
 libjpeg tools.
+
 Crystal KDE Theme Icons
+http://www.everaldo.com/crystal/?action=license
+
 Blue Twiser KDE Wallpaper.
+
 Gnu utilities 
-busybox
+
+Busybox
+http://www.busybox.net/license.html
 
 Probably other stuff I hadnt thought of.
+If any package authors have any questions 
+email me. oversight AT lordy dot org dot uk

@@ -1,7 +1,6 @@
 # $Id$ 
 ovs_config_version=1
 ovs_new_days=3
-ovs_enable_web_cache=1
 ovs_wan_admin=0
 ovs_wan_delete=0
 ovs_wan_delist=0
@@ -9,7 +8,7 @@ ovs_wan_mark=0
 ovs_icon_set="set1"
 ovs_icon_type="png"
 ovs_crossview=0
-ovs_new_version_check=1
+ovs_display_fanart=0
 
 ovs_poster_mode[0]=1
 ovs_rows[0]=9

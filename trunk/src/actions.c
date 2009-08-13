@@ -199,7 +199,7 @@ void clean_params() {
 
 void send_command(char *source,char *remote_cmd) {
     char *cmd;
-    char *script = get_mounted_path(source,"/share/Apps/oversight/oversight,sh");
+    char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh");
     ovs_asprintf(&cmd,"\"%s\" SAY %s",script,remote_cmd);
 
     html_log(0,"send command:%s",cmd);
@@ -241,25 +241,39 @@ void do_actions() {
         } else if (strcmp(action,"Save Settings") == 0) {
 
             struct hashtable_itr *itr;
-            char *k,*value;
-            for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&k,&value) ; ) {
-                if (util_starts_with(k,"option_")) {
-                    char *real_name = strchr(k,'_') + 1;
+            char *option_name,*value;
+            for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&option_name,&value) ; ) {
+                if (util_starts_with(option_name,"option_")) {
+
+                    char *real_name = strchr(option_name,'_')+1;
 
                     char *old_name,*old_value;
-                    ovs_asprintf(&old_name,"orig_%s",real_name);
+                    ovs_asprintf(&old_name,"orig_%s",option_name);
+
                     old_value=query_val(old_name);
 
                     if (strcmp(value,old_value) != 0) {
+
+                        html_log(0,"new name value [%s]=[%s]=[%s]",option_name,real_name,value);
+                        html_log(0,"old name value [%s]=[%s]",old_name,old_value);
+
                         char *cmd;
                         ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s\" \"%s\" \"%s\"",
                                 appDir(),
                                 query_val("file"),
                                 real_name,
                                 value);
-                        html_log(0,"system %s",cmd);
-                        system(cmd);
+                        util_system(cmd);
                         FREE(cmd);
+
+                        if (strcmp(real_name,"catalog_watch_frequency") == 0) {
+                           char *cmd;
+                           ovs_asprintf(&cmd,"cd \"%s\" && ./oversight.sh WATCH_FOLDERS %s",
+                                   appDir(),value);
+                           util_system(cmd);
+                           FREE(cmd);
+                        }
+
                     }
                     FREE(old_name);
                 }

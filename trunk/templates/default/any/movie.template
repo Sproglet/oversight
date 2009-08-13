@@ -10,10 +10,10 @@
     <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
         [:FORM_START:]
             <table width=100% >
-                <tr valign=bottom>
+                <tr class=fanart[:$ovs_display_fanart:] XXvalign=bottom>
                     <td width=1% class=center>[:POSTER:]</td>
                     <td >
-                        <table [class=transparent:IS_GAYA:] width=100%>
+                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
                                 <td class=title><font class=title>[:TITLE:][(:YEAR:)]</font></td>
                                 <td class=right width=20%><font class=info[:IS_GAYA:]>[:EXTERNAL_URL:]</font></td>
@@ -28,7 +28,7 @@
                     </td>
                 </tr>
             </table>
-            <table class=footer width=100%>
+            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                 <tr valign=top>
                     [<td align=center>:BACK_BUTTON:</td>]
                     [<td align=center>:EXIT_BUTTON:</td>]

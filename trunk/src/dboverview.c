@@ -111,6 +111,17 @@ unsigned int db_overview_name_season_episode_hashf(void *rid) {
     }
     return h;
 }
+// overview equality function based on file path only. This is used in non-boxset mode.
+int db_overview_file_path_eqf(DbRowId *rid1,DbRowId *rid2) {
+
+    return strcmp(rid1->file,rid2->file) ==0;
+}
+// overview hash function based on file path . This is used in non-boxset mode.
+unsigned int db_overview_file_path_hashf(void *rid) {
+    unsigned int h;
+    h  = stringhash(((DbRowId *)rid)->file);
+    return h;
+}
 
 void overview_dump(int level,char *label,struct hashtable *overview) {
     struct hashtable_itr *itr;
@@ -159,8 +170,12 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
     if (strcmp(view,"tv") == 0 || strcmp(view,"movie") == 0) {
 
-        hash_fn = db_overview_name_season_episode_hashf;
-        eq_fn = db_overview_name_season_episode_eqf;
+        //At this level equality is based on file name. 
+        //This means that duplicate episodes appear twice - which is what we want
+        hash_fn = db_overview_file_path_hashf;
+        eq_fn = db_overview_file_path_eqf;
+        //hash_fn = db_overview_name_season_episode_hashf;
+        //eq_fn = db_overview_name_season_episode_eqf;
 
     } else if (use_boxsets()) {
         if (strcmp(view,"tvboxset") == 0) {

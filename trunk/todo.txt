@@ -1,10 +1,9 @@
 catalogh.sh.full:3697 - replace wget with a script that will get a poster and create sd and hd versions.
 Allow optional imdb rating.
 
-BIG Feature - 
-Search filename on bintube - look for nfo link - extract imdb id 
+if abbreviation match then assume all other similar abbreviations IN THE SAME FOLDER are the same.
 
-Need to check cache left behind by killed processes
+check torrent watch
 
 BUG: parsing VIDEO_TS eg /share/Complete/hulk wolverine
 

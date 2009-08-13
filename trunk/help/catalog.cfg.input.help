@@ -1,0 +1,4 @@
+catalog_scan_paths:Comma separated list of paths to scan. eg /share/Video or just the share name eg NAS1
+catalog_watch_frequency:How often to automatically check scan paths for new media. 1hr or more recommended.|off|10m|15m|20m|30m|1h|2h|3h|4h|6h|8h|12h|1d
+catalog_ignore_paths:List of paths to ignore. *=any string, ?=any single character, <=start of word >=end of word.
+catalog_ignore_names:List of file names to ignore. *=any string, ?=any single character, <=start of word >=end of word.

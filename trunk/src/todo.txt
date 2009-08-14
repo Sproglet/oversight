@@ -1,11 +1,22 @@
 
 ext field is incorrect for vob dirs
 
-tvid search broken
+if a path starts with
+/opt/sybhttpd/localhost.drives/NETWORK_SHARE/XXX or 
+/share/.oversight_mounts/XXX
+
+then look up address in /etc/mtab and try to ping it.
+If it is not present try to mount it
+  use options soft,intr,timeo=100
+
+If it is present try to ping it:
+    if it is not pingable then set fot = error
+else
+   create auto-mounting vod link
+fi
 
 add word boundary search in pc mode
 
-in do_action logic - if all items have just been deleted then clear view= and clear idlist=
 
 write file prune functions
 1. add code to call resize script in catalog.

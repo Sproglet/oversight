@@ -17,6 +17,7 @@
 #include "dboverview.h"
 #include "display.h"
 #include "actions.h"
+#include "admin.h"
 
 void exec_old_cgi(int argc,char **argv);
 
@@ -61,22 +62,26 @@ void cat(char *content,char *file) {
 }
 
 //Code to play a file. Only Gaya will understand this.
-void gaya_auto_load(char *file) {
+void gaya_auto_load(char *url_encoded_file) {
 
-    char *iso_attr="";
+    char *file = url_decode(url_encoded_file);
+    char *name = util_basename(file);
 
     printf("Content-Type: text/html\n\n");
-    //printf("<html><body onloadset=playme>\n");
+    printf("<html><body onloadset=playme bgcolor=black text=white link=yellow >\n");
     printf("<html><body >\n");
 
-    char *p=file+strlen(file);
+    printf("<a href=\"file://%s\" %s onfocusload name=playme>Play %s</a>\n", // file://
+            url_encoded_file,vod_attr(file),name);
 
-    if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
-        iso_attr="ZCD=2";
-    }
-    printf("<a href=\"file://%s\" file=c %s onfocusload name=playme>playme</a>\n", // file://
-            file,iso_attr);
+    printf("<br><a href=\"/oversight/oversight.cgi\">Oversight</a>\n");
+
+    printf("<br><a href=\"/start.cgi\">Home</a>\n");
+
     printf("</body></html>\n");
+
+    FREE(file);
+    FREE(name);
 }
 
 int main(int argc,char **argv) {

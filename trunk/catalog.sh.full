@@ -432,15 +432,11 @@ parts,i,x) {
 function is_mounted(path,\
 f,result) {
     result = 0;
-    f = NEW_CAPTURE_FILE("DF");
-    exec("df "quoteFile(path)" > "quoteFile(f));
+    f = "/etc/mtab";
     while ((getline line < f) > 0) {
-        if (index(line,"/")) {
-            sub(/^[^%]+% /,"",line);
-
-            if (system("test "quoteFile(line)" -ef "quoteFile(path)) == 0) {
-               result=1;
-           }
+        if (index(line," "path" cifs ") || index(line," "path" nfs ")) {
+           result=1;
+           break;
        }
     }
     close(f);
@@ -449,23 +445,18 @@ f,result) {
 }
 
 function nmt_mount_share(s,settings,\
-path,link,f,link_details,remote,cmd) {
+path,link,f,link_details,remote,cmd,mount_root) {
 
 
+    mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
+    path = mount_root s;
 
-    path = "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"s;
     if (is_mounted(path)) {
 
         DEBUG(s " already mounted at "path);
         return path;
     }
 
-
-    path="/share/.oversight_mounts/"s;
-    if (is_mounted(path)) {
-        DEBUG(s " already mounted at "path);
-        return path;
-    }
 
     get_settings(settings);
 
@@ -483,9 +474,9 @@ path,link,f,link_details,remote,cmd) {
 
     if (link_details["link"] ~ "nfs:") {
 
-        cmd = "mkdir -p "path" && mount "remote" "path;
+        cmd = "mkdir -p "path" && mount -o soft,nolock,timeo=10 "remote" "path;
 
-    } else if (link_details["link"] ~ "nfs:") {
+    } else if (link_details["link"] ~ "smb:") {
 
         cmd = "mkdir -p "path" && mount -t cifs -o username="link_details["smb.user"]",password="link_details["smb.passwd"]" "remote" "path;
 

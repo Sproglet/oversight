@@ -608,6 +608,14 @@ char *oversight_val(char *name) {
         return "";
     }
 }
+char *setting_val(char *name) {
+    char *val;
+    if (config_check_str(g_nmt_settings,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
 char *unpak_val(char *name) {
     char *val;
 
@@ -655,19 +663,28 @@ char *util_basename(char *file) {
 
     s = p = strrchr(file,'/');
 
-    if (s && s[1] == '\0' ) {  
-        //If it ends with / go back to penultimate / - for VOBSUB
-        *p='\0';
-        s=strrchr(file,'/');
-    }
+    if (s == NULL) {
 
-    // Copy string after /
-    if (s) {
-        s=STRDUP(s+1);
-    }
+        s = STRDUP(file);
 
-    //If vobsub restore final /
-    if (p && *p=='\0') *p='/';
+    } else {
+
+        if (s && s[1] == '\0' ) {  
+            //If it ends with / go back to penultimate / - for VOBSUB
+            *p='\0';
+            s=strrchr(file,'/');
+        }
+
+        // Copy string after /
+        if (s) {
+            s=STRDUP(s+1);
+        } else {
+            s= STRDUP(file);
+        }
+
+        //If vobsub restore final /
+        if (p && *p=='\0') *p='/';
+    }
 
     return s;
 }

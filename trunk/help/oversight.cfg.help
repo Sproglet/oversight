@@ -3,6 +3,7 @@ ovs_recent_days:Highlight as recent if video newer than this number of days|1|2|
 #ovs_icon_set:Name of Icon set|set1|none
 #ovs_icon_type:Type of icons|png|gif|jpg
 ovs_crossview:View content on another mounted NMT|1|0
+ovs_tv_play_via_pc:Start tv playback from browser|1|0
 ovs_remove_donate_msg:Set to 1 to remove donate button|0|1 
 ovs_display_rating:Display Ratings|1|0
 ovs_display_certificate:Display Certificates|1|0

@@ -48,4 +48,5 @@ long allow_delete();
 long allow_mark();
 int in_poster_mode();
 int in_text_mode();
+int browsing_from_lan();
 #endif

@@ -574,6 +574,7 @@ int db_to_be_scanned(char *name) {
 void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
         int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
 
+    html_log(0,"begin db_scan_and_add_rowset");
     if (db_to_be_scanned(name)) {
 
         Db *db = db_init(path,name);
@@ -594,6 +595,7 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
             }
         }
     }
+    html_log(0,"end db_scan_and_add_rowset");
 }
 
 
@@ -608,6 +610,7 @@ DbRowSet **db_crossview_scan_titles(
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
 
+    html_log(0,"begin db_crossview_scan_titles");
     // Add information from the local database
     db_scan_and_add_rowset(
         localDbPath(),"*",
@@ -640,17 +643,20 @@ DbRowSet **db_crossview_scan_titles(
             closedir(d);
         }
     }
+    html_log(0,"end db_crossview_scan_titles");
     return rowsets;
 }
 
 void db_free_rowsets_and_dbs(DbRowSet **rowsets) {
-    DbRowSet **r;
-    for(r = rowsets ; *r ; r++ ) {
-        Db *db = (*r)->db;
-        db_rowset_free(*r);
-        db_free(db);
+    if (rowsets) {
+        DbRowSet **r;
+        for(r = rowsets ; *r ; r++ ) {
+            Db *db = (*r)->db;
+            db_rowset_free(*r);
+            db_free(db);
+        }
+        free(rowsets);
     }
-    free(rowsets);
 }
 
 //integer compare function for sort.
@@ -816,6 +822,7 @@ html_log(2,"db fp.%ld..",(long)fp);
 
                 if (buffer[0] == '\t' && gross_size != NULL) {
                     (*gross_size)++;
+                }
             }
         }
 #endif
@@ -873,14 +880,15 @@ html_log(2,"db start loop...");
                 row_count = db_rowset_add(rowset,&rowid);
             }
         }
+        fclose(fp);
     }
-    fclose(fp);
     if (rowset) {
         html_log(0,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
-        html_error("db[%s] No rows loaded",db->source);
+        html_log(0,"db[%s] No rows loaded",db->source);
     }
     free(ids);
+    html_log(0,"return rowset");
     return rowset;
 }
 

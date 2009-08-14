@@ -801,7 +801,7 @@ DbRowSet * db_scan_titles(
 
     FILE *fp = fopen(db->path,"r");
     html_log(2,"db scanning %s",db->path);
-    assert(fp);
+    //assert(fp);
 html_log(2,"db fp.%ld..",(long)fp);
     if (fp) {
         rowset=db_rowset(db);

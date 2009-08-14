@@ -13,7 +13,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090721-2BETA
+VERSION=20090814-2BETA
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 # Added more checking around nfo name
@@ -520,7 +520,8 @@ END{
         g_settings_orig[i] = g_settings[i];
     }
 
-    g_lock_file=APPDIR"/catalog.lck";
+    g_db_lock_file=APPDIR"/catalog.lck";
+    g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
 
     load_catalog_settings(APPDIR"/catalog.cfg");
@@ -582,6 +583,11 @@ END{
         INFO("Scanning default paths");
         split(trim(g_settings["catalog_scan_paths"]),FOLDER_ARR," *[,|] *");
         g_timestamp_file=APPDIR"/.lastscan";
+
+        if (!lock(g_scan_lock_file) ) {
+            INFO("Scan already in progress");
+            exit;
+        }
     }
 
 
@@ -661,7 +667,7 @@ file_to_db,f,added_to_db) {
 
         INFO("Database update skipped - dry run");
 
-    } else if (lockdb()) {
+    } else if (lock(g_db_lock_file)) {
 
         DB_SIZE = copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW,indexToMergeHash);
 
@@ -672,17 +678,17 @@ file_to_db,f,added_to_db) {
 
         replace_database_with_new();
 
-        unlockdb();
+        unlock(g_db_lock_file);
     }
 }
 
-function dbIsLocked(\
+function is_locked(lock_file,\
 pid) {
-    if (!exists(g_lock_file)) return 0;
+    if (!exists(lock_file)) return 0;
 
     pid="";
-    if ((getline pid < g_lock_file) >= 0) {
-        close(g_lock_file);
+    if ((getline pid < lock_file) >= 0) {
+        close(lock_file);
     }
     if (pid == "" ) {
        DEBUG("Not Locked = "pid);
@@ -701,17 +707,17 @@ pid) {
     }
 }
 
-function lockdb(\
+function lock(lock_file,\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
     split("10,10,10,10,10,10,10,20,30,60,120",backoff,",");
     for(attempts=1 ; (attempts in backoff) ; attempts++) {
-        if (!dbIsLocked(g_lock_file)) {
-            print PID > g_lock_file;
-            close(g_lock_file);
-            INFO("Locked Database");
-            set_permissions(quoteFile(g_lock_file));
+        if (!is_locked(lock_file)) {
+            print PID > lock_file;
+            close(lock_file);
+            INFO("Locked "lock_file);
+            set_permissions(quoteFile(lock_file));
             return 1;
         }
         sleep=backoff[attempts];
@@ -722,9 +728,9 @@ attempts,sleep,backoff) {
     return 0;
 }
 
-function unlockdb() {
-    INFO("Unlocked Database");
-    rm(g_lock_file);
+function unlock(lock_file) {
+    INFO("Unlocked "lock_file);
+    rm(lock_file);
     report_status("");
 }
 
@@ -3763,8 +3769,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
     # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
 
     # Set this between 1 and 4 to throttle speed of requests to the same domain
-    same_domain_delay=0;
-    cmd = get_sleep_command(url,same_domain_delay) cmd;
+
+    # same_domain_delay=0;
+    # cmd = get_sleep_command(url,same_domain_delay) cmd;
 
     return exec(cmd);
 }
@@ -3925,9 +3932,9 @@ function download_image(field_id,url,idx,\
 
             # Script to fetch poster and create sd and hd versions
             if (field_id == POSTER) {
-                exec(APPDIR"/bin/jpg_fetch_and_scale poster "quoteFile(url)" "quoteFile(internal_path)" "args" &");
+                exec(APPDIR"/bin/jpg_fetch_and_scale poster "quoteFile(url)" "quoteFile(internal_path)" "args);
             } else {
-                exec(APPDIR"/bin/jpg_fetch_and_scale fanart "quoteFile(url)" "quoteFile(internal_path)" "args" &");
+                exec(APPDIR"/bin/jpg_fetch_and_scale fanart "quoteFile(url)" "quoteFile(internal_path)" "args);
             }
 
             #exec("wget " args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );

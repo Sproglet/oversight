@@ -26,7 +26,7 @@ OVS_EXTERN struct hashtable *g_nmt_settings;
 OVS_EXTERN Dimensions *g_dimension;
 OVS_EXTERN int g_local_browser;
 */
-#define OVS_VERSION "20090811-1BETA"
+#define OVS_VERSION "20090814-1BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"

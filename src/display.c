@@ -18,6 +18,7 @@
 #include "hashtable.h"
 #include "hashtable_loop.h"
 #include "macro.h"
+#include "mount.h"
     
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
@@ -238,6 +239,19 @@ int has_category(DbRowId *rowid) {
     return (rowid->category == 'T' || rowid->category == 'M' );
 }
 
+char *vod_attr(char *file) {
+
+    char *p = file + strlen(file);
+
+    if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
+
+        return "file=c ZCD=2";
+
+    } else {
+        return "vod file=c";
+
+    }
+}
 
 //T2 just to avoid c string handling in calling functions!
 char *vod_link(DbRowId *rowid,char *title ,char *t2,
@@ -256,6 +270,8 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *result=NULL;
 
     char *path = get_mounted_path(source,file);
+
+    nmt_mount(path);
 
     char *encoded_path = url_encode(path);
     int show_link = 1;
@@ -276,8 +292,9 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         if (!exists(dd)) {
 
             //media gone
-            ovs_asprintf(&result,"<font class=error>%s</font>",name);
-            show_link=0;
+            //ovs_asprintf(&result,"<font class=error>%s</font>",name);
+            //show_link=0;
+            font_class="class=error";
 
 #if 0
             //commented out - try mount on demand
@@ -296,40 +313,30 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     if (show_link) {
 
 
-        if (!g_dimension->local_browser) {
+        if (!g_dimension->local_browser && browsing_from_lan()) {
 
-            //If using a browser then VOD tags dont work. Make this script load the file into gaya
-            //Note we send the view and idlist parameters so that we can render the original page 
-            //in the brower after the infomation is sent to gaya.
+            if (*oversight_val("ovs_tv_play_via_pc") == '1') {
+                //If using a browser then VOD tags dont work. Make this script load the file into gaya
+                //Note we send the view and idlist parameters so that we can render the original page 
+                //in the brower after the infomation is sent to gaya.
 
-            //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
-            //The script than captures this after clicking via do_actions,
-            //this sends a url to gaya which points back to this script again but will just contain
-            //small text to auto load a file using <a onfocusload> and <body onloadset>
-            char *params =NULL;
-            ovs_asprintf(&params,"idlist=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-            //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-            result = get_self_link(params,font_class,title);
-            FREE(params);
+                //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
+                //The script than captures this after clicking via do_actions,
+                //this sends a url to gaya which points back to this script again but will just contain
+                //small text to auto load a file using <a onfocusload> and <body onloadset>
+                char *params =NULL;
+                ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
+                //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
+                result = get_self_link_with_font(params,font_class,title,font_class);
+                FREE(params);
+
+            } else {
+                ovs_asprintf(&result,"<font class=%s>%s</font>",font_class,title);
+            }
 
         } else {
 
-            char *p = file + strlen(file);
-
-            if (p[-1] == '/' ) {
-                // VIDEO_TS
-                ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
-                add_to_playlist = 0;
-
-            } else if (strcasecmp(p-4,".iso") == 0 || strcasecmp(p-4,".img") ==0) {
-
-                // iso or img
-                ovs_asprintf(&vod," file=c ZCD=2 name=\"%s\" %s ",href_name,href_attr);
-
-            } else {
-                // avi mkv etc
-                ovs_asprintf(&vod," vod file=c name=\"%s\" %s ",href_name,href_attr);
-            }
+            ovs_asprintf(&vod," %s name=\"%s\" %s ",vod_attr(file),href_name,href_attr);
 
             if (add_to_playlist) {
                 FILE *fp = playlist_open();
@@ -357,14 +364,14 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     return result;
 }
 
-char *get_self_link_with_font(char *params,char *attr,char *title,char *font_class) {
+char *get_self_link_with_font(char *params,char *attr,char *title,char *font_attr) {
     assert(params);
     assert(attr);
     assert(title);
-    assert(font_class);
+    assert(font_attr);
     char *title2=NULL;
 
-    ovs_asprintf(&title2,"<font %s>%s</font>",font_class,title);
+    ovs_asprintf(&title2,"<font %s>%s</font>",font_attr,title);
     char *result = get_self_link(params,attr,title2);
 
     FREE(title2);

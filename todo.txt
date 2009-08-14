@@ -107,33 +107,6 @@ gunzip: invalid magic
 
 
 
-Also make sure abbreaviations return all matches.
-
-if there is a qualified match it wins
-if unqualified then if its a tvrip 
-    1 filter to those currently aired.
-    check season = current showing 
-
-
-BUG: I noticed a slight issue when oversight renames tv episodes. For nzbs like:
-Law.and.Order.CI.S08E07.720p.HDTV.X264-DIMENSION
-Law.and.Order.SVU.S10E21.720p.HDTV.X264-DIMENSION
-the folder names created by oversight are simply "Law and Order" followed by the season, e.g "Law And Order - Season 8" and "Law And Order - Season 10". They should be "Law And Order Criminal Intent - Season 8" and "Law And Order Special Victims Unit - Season 10".
-Can something be done about this?
-
-
-New Abbreviation rule.
-if par of title matches and rest is an abbreviation score 2.5
-wg. 
-Law And Order SVU vs Law And Order Special Victims Unit
-Star Trek TNG - But google4words should do this
-
-After google4words finds a string then if category is TV then search string against thetvdb not google.
-
-CSI
-
-Bug - Greek found but title is wrong std-grk103 - fix XML parser first
-
 Option to check IMDB or Amazon for tv series posters? Test with Grand Designs
 
 Rescan: Add a Rescan link/option

@@ -5,6 +5,7 @@ ovs_wan_admin=0
 ovs_wan_delete=0
 ovs_wan_delist=0
 ovs_wan_mark=0
+ovs_tv_play_via_pc=1
 ovs_icon_set="set1"
 ovs_icon_type="png"
 ovs_crossview=0

@@ -315,11 +315,16 @@ char *macro_fn_sys_disk_used(char *template_name,char *call,Array *args,int num_
 
         if (statvfs("/share/.",&s) == 0) {
 
-            double free_gigs=s.f_bfree*s.f_bsize/1024.0/1024;
+            //use doubles to avoid overflow
+            double free = s.f_bfree;
+
+            free *= s.f_bsize;  //bytes
+
+            free /= (1024*1024*1024) ; //Gigs
 
             double free_percent = 100.0 * s.f_bfree / s.f_blocks;
 
-            sprintf(result,"%.1lfG free (%.1lf%%)",free_gigs,free_percent);
+            sprintf(result,"%.1lfG free (%.1lf%%)",free,free_percent);
         
         }
     }
@@ -332,7 +337,7 @@ char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,Db
     if (!(g_dimension->local_browser) && *oversight_val("remove_donate_msg") != '1' ) {
         p = "<td><font size=2>Any contributions are gratefully received towards"
         "<font color=red>Oversight</font>,"
-        "<font color=#FFFF00>TvNZB</font>,"
+        "<font color=#FFFF00>FeedTime</font>,"
         "<font color=blue>Zebedee</font> and "
         "<font color=green>Unpak</font> scripts"
         "This message can be removed via Oversight Settings.</font></td>"

@@ -2,16 +2,31 @@
 <html>
     <head>
         <meta name="robots" content="nofollow">
-        <title>Oversight Tv Menu [:HOSTNAME:]</title>
+        <title>Oversight ([:HOSTNAME:]):  [:TITLE:] Season [:SEASON:] </title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
     <body focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(lightwave.jpg):] >
         [:FORM_START:]
-            <table width=100% >
+            <table width=100%>
+                <tr valign=top>
+                    [<td align=center>:BACK_BUTTON:</td>]
+                    [<td align=center>:EXIT_BUTTON:</td>]
+                    <td align=center>[:HOME_BUTTON:]</td>
+                    [<td align=center>:MARK_BUTTON:</td>]
+                    [<td align=center>:DELETE_BUTTON:</td>]
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center>:SELECT_DELETE_SUBMIT:</td>]
+                    [<td align=center>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center>:SELECT_CANCEL_SUBMIT:</td>]
+                </tr>
+            </table>
+
+            <table width=100%>
                 <tr valign=bottom>
                     <td class=center width=1%>[:POSTER:]</td>
+
                     <td>
                         <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
@@ -26,7 +41,7 @@
                         </table>
                     </td>
                 </tr>
-            </table>
+             </table>
 
             <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                 <tr>
@@ -36,19 +51,6 @@
                 </tr>
             </table>
 
-                        <table [class=transparent:IS_GAYA:] width=100%>
-                            <tr valign=top>
-                                [<td align=center>:BACK_BUTTON:</td>]
-                                [<td align=center>:EXIT_BUTTON:</td>]
-                                <td align=center>[:HOME_BUTTON:]</td>
-                                [<td align=center>:MARK_BUTTON:</td>]
-                                [<td align=center>:DELETE_BUTTON:</td>]
-                                [<td align=center>:SELECT_MARK_SUBMIT:</td>]
-                                [<td align=center>:SELECT_DELETE_SUBMIT:</td>]
-                                [<td align=center>:SELECT_DELIST_SUBMIT:</td>]
-                                [<td align=center>:SELECT_CANCEL_SUBMIT:</td>]
-                            </tr>
-                        </table>
         </form>
         [:PLAY_TVID:]
     </body>

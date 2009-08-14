@@ -123,7 +123,7 @@ td.list0 {
                 color:white;
 }
 td.list1 {
-    background-color:black-alpha1;
+    background-color:black-alpha3;
 }
 .proper { color: yellow; size:small; }
 .repack { color: yellow; size:small; }
@@ -180,7 +180,7 @@ table.transparent_fanart1_local0 {
 }
 
 table.transparent_fanart1_local1 {
-    background-color:black-alpha3;
+    background-color:black-alpha2;
 }
 
 table.transparent_fanart0_local0 {

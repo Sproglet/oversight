@@ -836,7 +836,7 @@ char *movie_listing(DbRowId *rowid) {
                 FREE(part_path);
 
                 char *vod_list;
-                ovs_asprintf(&vod_list,"%s\n<br>%s",result,tmp);
+                ovs_asprintf(&vod_list,"%s\n%s",result,tmp);
                 FREE(d);
                 FREE(tmp);
                 FREE(result);

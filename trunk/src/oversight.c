@@ -187,9 +187,13 @@ int main(int argc,char **argv) {
         display_template("default","menu",num_rows,sorted_rows);
     }
 
+TRACE;
+
     delete_queue_delete();
+TRACE;
 
     free_sorted_rows(rowsets,sorted_rows);
+TRACE;
 
     /*
     html_comment("dump shit");
@@ -198,9 +202,13 @@ int main(int argc,char **argv) {
     html_hashtable_dump(3,"settings",nmt_settings);
     */
     hashtable_destroy(g_oversight_config,1,1);
+TRACE;
     hashtable_destroy(g_catalog_config,1,1);
+TRACE;
     hashtable_destroy(g_nmt_settings,1,1);
+TRACE;
     hashtable_destroy(g_query,1,0);
+TRACE;
 
     /*
     hashtable database_list= open_databases(g_query);

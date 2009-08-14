@@ -198,44 +198,47 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     //tv Items with the same title/season are the same
     overview = create_hashtable(100,hash_fn,eq_fn);
 
-    DbRowSet **rowset_ptr;
-    for(rowset_ptr = rowsets ; *rowset_ptr ; rowset_ptr++ ) {
+    if (rowsets) {
 
-        int i;
-        for( i = 0 ; i < (*rowset_ptr)->size ; i++ ) {
+        DbRowSet **rowset_ptr;
+        for(rowset_ptr = rowsets ; *rowset_ptr ; rowset_ptr++ ) {
 
-            total++;
+            int i;
+            for( i = 0 ; i < (*rowset_ptr)->size ; i++ ) {
 
-            DbRowId *rid = (*rowset_ptr)->rows+i;
+                total++;
 
-            //html_log(2,"dbg: overview merging [%s]",rid->title);
+                DbRowId *rid = (*rowset_ptr)->rows+i;
 
-            DbRowId *match = hashtable_search(overview,rid);
+                //html_log(2,"dbg: overview merging [%s]",rid->title);
 
-            if (match) {
+                DbRowId *match = hashtable_search(overview,rid);
 
-                html_log(0,"overview: match [%s] with [%s]",rid->title,match->title);
+                if (match) {
 
-                //Move most recent age to the first overview item
-                if (rid->date > match->date ) {
-                    match->date = rid->date;
+                    html_log(0,"overview: match [%s] with [%s]",rid->title,match->title);
+
+                    //Move most recent age to the first overview item
+                    if (rid->date > match->date ) {
+                        match->date = rid->date;
+                    }
+
+                    //*If item is unwatched then set overview as unwatched.
+                    if (rid->watched == 0 ) {
+                       match->watched = 0;
+                    }
+
+                    // Add rid to linked list at match->linked
+                    rid->linked = match->linked;
+                    match->linked = rid;
+
+                } else {
+
+                    html_log(2,"overview: new entry [%s]",rid->title);
+                    hashtable_insert(overview,rid,rid);
                 }
-
-                //*If item is unwatched then set overview as unwatched.
-                if (rid->watched == 0 ) {
-                   match->watched = 0;
-                }
-
-                // Add rid to linked list at match->linked
-                rid->linked = match->linked;
-                match->linked = rid;
-
-            } else {
-
-                html_log(2,"overview: new entry [%s]",rid->title);
-                hashtable_insert(overview,rid,rid);
+                //html_log(2,"dbg done [%s]",rid->title);
             }
-            //html_log(2,"dbg done [%s]",rid->title);
         }
     }
     html_log(0,"overview: %d entries created from %d records",hashtable_count(overview),total);

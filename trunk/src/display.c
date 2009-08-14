@@ -1151,7 +1151,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 
     FILE *fp=fopen(file,"r");
     if (fp == NULL) {
-        if (errno == 2) {
+        if (errno == 2 || errno == 22) {
             FREE(file);
             ovs_asprintf(&file,"%s/templates/%s/any/%s.template",appDir(),
                     template_name,
@@ -1471,8 +1471,8 @@ char *get_tvid_links(DbRowId **rowids) {
         char *current_tvid = query_val(QUERY_PARAM_REGEX);
 
         // Tracks which tvid codes to output to html 0=dont output
-        char tvid_output[TVID_MAX+1];
-        memset(tvid_output,0,TVID_MAX+1); // initially no output
+        char tvid_output[TVID_MAX+2];
+        memset(tvid_output,0,TVID_MAX+2); // initially no output
 
         // Map character to tvid digit.
         int tvid_val[256];
@@ -1538,6 +1538,7 @@ char *get_tvid_links(DbRowId **rowids) {
         }
         // Now output all of the selected tvids.
         result = malloc((strlen(link_template)+5)*tvid_total);
+        *result = '\0';
 
         int i;
         char i_str[TVID_MAX_LEN+1];

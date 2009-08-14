@@ -94,6 +94,7 @@ INSTALL() {
             touch "index.db"
             touch "index.db.idx"
         fi
+        touch catalog.cfg oversight.cfg unpak.cfg
 
         chmod a+r /dev/random /dev/urandom
         BOUNCE_NZBGET

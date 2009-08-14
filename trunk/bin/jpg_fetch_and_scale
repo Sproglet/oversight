@@ -12,7 +12,9 @@ export PATH="$OVS_HOME/bin:$PATH"
 
 
 jpg_resize() {
+
     # resize a jpeg to Sd or Hd backdrop
+
     input="$1"
     type="$2"
     tv_mode="$3"
@@ -57,19 +59,44 @@ if [ -z "$3" ] ; then
 	exit 1
 fi
 
-type="$1" ; shift; # poster or fanart
-url="$1" ; shift;
-file="$1" ; shift ;
+fetch_resize() {
+    DEBUG "fetch and resize $@"
+    type="$1" ; shift; # poster or fanart
+    url="$1" ; shift;
+    file="$1" ; shift ;
 
-if wget -O "$file" "$@" "$url"  ; then
-    case "$type" in
-        fanart)
-            jpg_resize "$file" $type hd
-            jpg_resize "$file" $type sd
-            ;;
-        poster)
-            jpg_resize "$file" $type sd
-            ;;
-    esac
+    if wget -O "$file" "$@" "$url"  ; then
+        case "$type" in
+            fanart)
+                jpg_resize "$file" $type hd
+                jpg_resize "$file" $type sd
+                ;;
+            poster)
+                jpg_resize "$file" $type sd
+                ;;
+        esac
+    fi
+}
+
+Q=/share/Apps/oversight/tmp/resize.queue
+# Due to memory limits we pricess one request at a time.
+if [ -f $Q.pending ]  || [ -f $Q.processing ] ; then
+    echo  "$@" >> $Q.pending
+else
+    echo  "$@" >> $Q.pending
+
+    while [ -f "$Q.pending" ] ; do
+
+        cat "$Q.pending" >> "$Q.processing"
+
+        while FS= read line ; do
+
+            fetch_resize $line
+
+        done < "$Q.processing"
+
+        rm "$Q.processing"
+
+    done
 fi
 

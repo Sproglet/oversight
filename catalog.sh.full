@@ -347,6 +347,8 @@ DEBUG("find line "newfile);
                 #
                 # Note due to rar-timestamps sometimes media will have older timestamps than the folder.
                 newdir=dir"/"newfile;
+                # remove /./
+                gsub(/\/\.\//,"/",newdir);
 
 DEBUG("isDirectory "newdir);
 

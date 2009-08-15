@@ -7,6 +7,10 @@ check torrent watch
 
 BUG: parsing VIDEO_TS eg /share/Complete/hulk wolverine
 
+Verify no more /./ scan paths.
+
+Q. Why are we scraping IMDB for TV shows?
+
 FEATURE: amazon scrape - Some crazy people put Amazon links in nfo eg.
 http://www.amazon.com/dp/B00006HAWP In this case scrape the URL for ttnnnnnnn
 

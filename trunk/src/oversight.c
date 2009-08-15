@@ -167,24 +167,32 @@ int main(int argc,char **argv) {
 
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
 
+    char *skin_name=oversight_val("ovs_skin_name");
 
-    playlist_open();
+    if (strchr(skin_name,'/') || *skin_name == '.' || !*skin_name ) {
 
-    if (strcmp(view,"tv") == 0) {
-
-        display_template("default","tv",num_rows,sorted_rows);
-
-    } else if (strcmp(view,"movie") == 0) {
-
-        display_template("default","movie",num_rows,sorted_rows);
-
-    } else if (strcmp(view,"admin") == 0) {
-
-        display_admin();
+        html_error("Invalid skin name[%s]",skin_name);
 
     } else {
 
-        display_template("default","menu",num_rows,sorted_rows);
+        playlist_open();
+
+        if (strcmp(view,"tv") == 0) {
+
+            display_template(skin_name,"tv",num_rows,sorted_rows);
+
+        } else if (strcmp(view,"movie") == 0) {
+
+            display_template(skin_name,"movie",num_rows,sorted_rows);
+
+        } else if (strcmp(view,"admin") == 0) {
+
+            display_admin();
+
+        } else {
+
+            display_template(skin_name,"menu",num_rows,sorted_rows);
+        }
     }
 
 TRACE;

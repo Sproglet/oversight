@@ -40,7 +40,7 @@ void clear_selection() {
 
     // Clear the selection
     query_remove("select");
-    if (strcmp(query_val("action"),"Cancel") ==0) {
+    if (strcmp(query_val("action"),"Cancel") !=0) {
         query_remove("action");
     }
     struct hashtable_itr *itr;

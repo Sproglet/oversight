@@ -582,8 +582,14 @@ END{
 
     if (RESCAN == 1 || NEWSCAN == 1) {
 
-        INFO("Scanning default paths");
-        split(trim(g_settings["catalog_scan_paths"]),FOLDER_ARR," *[,|] *");
+        if (NEWSCAN == 1) {
+            INFO("Scanning watch paths");
+            split(trim(g_settings["catalog_watch_paths"]),FOLDER_ARR," *[,|]+ *");
+        } else {
+            INFO("Scanning default and watch paths");
+            split(trim(g_settings["catalog_scan_paths"]","g_settings["catalog_watch_paths"]),FOLDER_ARR," *[,|]+ *");
+        }
+
         g_timestamp_file=APPDIR"/.lastscan";
 
         if (!lock(g_scan_lock_file) ) {

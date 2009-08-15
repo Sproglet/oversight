@@ -297,10 +297,13 @@ char *macro_fn_tv_paypal(char *template_name,char *call,Array *args,int num_rows
 }
 char *macro_fn_tv_mode(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    *free_result=0;
-    static char result[20] = "";
-    if (!*result) {
-        sprintf(result,"%d",g_dimension->tv_mode);
+    static char *result = NULL;
+
+    if (g_dimension->tv_mode == 0) {
+        ovs_asprintf(&result,"<font class=error>%d Please change Video Output from AUTO in main av settings.</font>",
+                g_dimension->tv_mode);
+    } else {
+        ovs_asprintf(&result,"%d",g_dimension->tv_mode);
     }
 
     return result;

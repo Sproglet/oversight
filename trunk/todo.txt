@@ -11,6 +11,12 @@ Verify no more /./ scan paths.
 
 Q. Why are we scraping IMDB for TV shows?
 
+Have seperate rescan and watch folders. /share/Tv and /sahre/Movies do not need to be watched.
+
+DONE: Add TV_MODE=0 warning!
+
+After selecting/deleting return to the same view.
+
 FEATURE: amazon scrape - Some crazy people put Amazon links in nfo eg.
 http://www.amazon.com/dp/B00006HAWP In this case scrape the URL for ttnnnnnnn
 

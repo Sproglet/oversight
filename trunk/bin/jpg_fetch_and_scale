@@ -106,6 +106,8 @@ running() {
     if [ -f $pid_file ] ; then
         if [ -d /proc/`cat $pid_file` ] ; then
             return 0
+        else
+            rm -f "$pid_file"
         fi
     fi
     return 1

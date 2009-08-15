@@ -5126,7 +5126,7 @@ main() {
     set -e
 
     clean_tmp
-    chown $uid:$gid $INDEX_DB*
+    chown -R $uid:$gid $INDEX_DB* "$APPDIR/tmp"
     return $x
 }
 

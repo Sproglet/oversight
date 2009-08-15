@@ -2659,6 +2659,11 @@ allTitles,f,line,info,currentId,currentName,requiredTagNames,add,i,url) {
         url=url"\t"url;
         sub(/ [Aa]nd /," \\& ",url); 
     }
+    if (match(title," O ")) {
+        #try "Mr O Connor\tMr OConnor"
+        url=url"\t"url;
+        sub(/ O /," O",url); 
+    }
 
     f = getUrl(url,"tvdb_idx",1);
     if (f != "") {
@@ -2858,6 +2863,18 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
 
         DEBUG("Checking ["titleIn"] against ["possibleTitleIn"]");
 
+    # Conan O Brien is a really tricky show to match on!
+    # Its a daily,
+    # It has two very good alternatives both of which have more than just Conan O Brien in the title,
+    # it has "O" which thetvdb handles inconsistently.
+    # The following tweak is for the latter issue.
+    if (sub(/ [Oo] /," O",possibleTitle)) {
+        possibleTitle=clean_title(possibleTitleIn);
+    }
+    if (sub(/ [Oo] /," O",titleIn)) {
+        titleIn=clean_title(titleIn);
+    }
+
     if ((bPos=index(possibleTitleIn," (")) > 0) {
         yearOrCountry=clean_title(substr(possibleTitleIn,bPos+2));
         DEBUG("Qualifier "yearOrCountry);
@@ -2908,6 +2925,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
             #We have to allow for example BSG to match the new series rather 
             # than the old , however new series is qualified (2003) at thetvdb
             matchLevel = 5;
+
         } else {
             DEBUG("No match for ["titleIn"+"yearOrCountry"] against ["possibleTitle"]");
         }
@@ -2925,6 +2943,11 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
             matchLevel = 5;
             INFO("match for ["titleIn"] containing ["possibleTitle"]");
         }
+    } else if ( index(possibleTitle,"Show With "titleIn) ) {
+
+        # The blah blah Show With Some Person might just be known as "Some Person"
+        # eg The Tonight Show With Jay Leno
+        matchLevel = 4;
     }
     DEBUG("["titleIn"] vs ["possibleTitle"] = "matchLevel);
     return matchLevel;
@@ -3852,7 +3875,7 @@ poster_ref) {
 #or internally in a common folder.
 # Note if poster may be url<tab>referer_url
 function download_image(field_id,url,idx,\
-    poster_ref,havePoster,with_media_path,internal_path,urls,referer,args,copy_file,get_it) {
+    poster_ref,havePoster,with_media_path,internal_path,urls,referer,wget_args,copy_file,get_it,script_arg) {
 
     #Check for posters stored locally with the film. these  will never be overwritten if
     # catalog_poster_location = internal [ the default]
@@ -3919,26 +3942,25 @@ function download_image(field_id,url,idx,\
             url=urls[1];
             referer=urls[2];
 
-            args=" -q -O "quoteFile(internal_path);
+            wget_args=" -q -O "quoteFile(internal_path);
 
             DEBUG("Poster url = "url);
             if (referer != "" ) {
                 DEBUG("Referer = "referer);
-                args = args " --referer=\""referer"\" ";
+                wget_args = wget_args " --referer=\""referer"\" ";
             }
-            args = args " -U \""g_user_agent"\" ";
+            wget_args = wget_args " -U \""g_user_agent"\" ";
 
             g_already_fetched_poster[internal_path] = 1;
 
             # Script to fetch poster and create sd and hd versions
             if (field_id == POSTER) {
-                exec(APPDIR"/bin/jpg_fetch_and_scale poster "quoteFile(url)" "quoteFile(internal_path)" "args);
+                script_arg="poster";
             } else {
-                exec(APPDIR"/bin/jpg_fetch_and_scale fanart "quoteFile(url)" "quoteFile(internal_path)" "args);
+                script_arg="fanart";
             }
 
-            #exec("wget " args quoteFile(url) " & chown '$uid:$gid' "quoteFile(internal_path) " &" );
-
+            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteFile(url)" "quoteFile(internal_path)" "wget_args" &");
         }
 
     }

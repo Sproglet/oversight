@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh 
 
 # $Id:$
 #
@@ -60,10 +60,20 @@ if [ -z "$3" ] ; then
 fi
 
 fetch_resize() {
-    DEBUG "fetch and resize $@"
+    calling_pid="$1"; shift;
     type="$1" ; shift; # poster or fanart
     url="$1" ; shift;
     file="$1" ; shift ;
+
+    if [ -f "$file" ] ; then
+        # return if file is newer than parent process.
+        # It has already been fetched during this scan.
+        #So if OLDEST file is /proc/ then return
+        if ls -t "$file" /proc/$calling_pid/exe | grep ^/proc/ ; then
+            echo "[INFO] Already fetched $file during this scan"
+            return 0
+        fi
+    fi
 
     if wget -O "$file" "$@" "$url"  ; then
         case "$type" in
@@ -79,19 +89,47 @@ fetch_resize() {
 }
 
 Q=/share/Apps/oversight/tmp/resize.queue
-# Due to memory limits we pricess one request at a time.
-if [ -f $Q.pending ]  || [ -f $Q.processing ] ; then
-    echo  "$@" >> $Q.pending
+
+add_queue() {
+    args=
+    for i in "$@" ; do
+        i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
+        args="$args $i"
+    done
+    echo "$args" >> $Q.pending
+    echo "[INFO] Queued jpg_resize $args"
+}
+
+
+pid_file=$Q.pid
+running() {
+    if [ -f $pid_file ] ; then
+        if [ -d /proc/`cat $pid_file` ] ; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+
+# Due to memory limits we process one request at a time.
+if running ; then
+    add_queue  "$@"
 else
-    echo  "$@" >> $Q.pending
+    echo $$ > $pid_file
+
+    add_queue  "$@"
 
     while [ -f "$Q.pending" ] ; do
 
-        cat "$Q.pending" >> "$Q.processing"
+        mv "$Q.pending" "$Q.tmp"
+        cat "$Q.tmp" >> "$Q.processing"
+        rm "$Q.tmp"
 
         while FS= read line ; do
 
-            fetch_resize $line
+            echo "[INFO] Process jpg_resize $@"
+            eval fetch_resize $line
 
         done < "$Q.processing"
 

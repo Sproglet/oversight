@@ -242,13 +242,33 @@ FIND_REMOTE() {
     echo "</pre>"
 }
 
-# Check for completed torrents every 30 minutes.
-torrent_check()  {
-    #Check torrents every 30 mins - make configurable 
-    case "$1" in
-        *10|*40) $APPDIR/bin/torrent.sh transmission unpak_all ;;
-    esac
+# $1=max value
+# $2=period
+# $3=offset
+# return list of minute values. eq 20,3 returns 3,23,43
+
+get_period() {
+    startms=$(( $2 + $3 ))
+    ms=$startms
+
+    for i in `seq 0 $1` ; do
+
+        if [ $(( $i % $startms )) -eq 0 -a $i -ne $startms ] ; then
+
+            ms="$ms,$i"
+
+        fi
+
+    done
+    echo $ms
 }
+            
+
+# $1=frequency
+# $2=cron tag
+# $3=function eg "./catalog.sh function"
+# $4=hour offset
+# $5=minute offset
 
 add_watch_cron() {
     if [ "$1" != "off" ] ; then
@@ -256,37 +276,46 @@ add_watch_cron() {
         m="*"
         h="*"
         case "$1" in
-            10m) d="*"    ; h="*" ; m="0,10,20,30,40,50" ;;
-            15m) d="*"    ; h="*" ; m="0,15,30,45" ;;
-            20m) d="*"    ; h="*" ; m="0,20,40" ;;
-            30m) d="*"    ; h="*" ; m="0,30" ;;
-            1h)  d="*"    ; h="0-23" ; m="0" ;;
-            2h)  d="*"    ; h="0,2,4,6,8,10,12,14,16,18,20,22" ; m="0" ;;
-            3h)  d="*"    ; h="0,3,6,9,12,15,18,21" ; m="0" ;;
-            4h)  d="*"    ; h="0,4,8,12,16,20" ; m="0" ;;
-            6h)  d="*"    ; h="0,6,12,18" ; m="0" ;;
-            8h)  d="*"    ; h="0,8,16" ; m="0" ;;
-            12h) d="*"    ; h="0,12" ; m="0" ;;
-            1d)  d="1-31" ; h=0 ; m=0 ;;
+            10m) d="*"    ; h="*" ; m="`get_period 59 10 $5`";;
+            15m) d="*"    ; h="*" ; m="`get_period 59 15 $5`";;
+            20m) d="*"    ; h="*" ; m="`get_period 59 20 $5`";;
+            30m) d="*"    ; h="*" ; m="`get_period 59 30 $5`" ;;
+            1h)  d="*"    ; h="0-23" ; m="$5" ;;
+            2h)  d="*"    ; h="`get_period 23 2 $4`" ; m="$5" ;;
+            3h)  d="*"    ; h="`get_period 23 3 $4`" ; m="$5" ;;
+            4h)  d="*"    ; h="`get_period 23 4 $4`" ; m="$5" ;;
+            6h)  d="*"    ; h="`get_period 23 6 $4`" ; m="$5" ;;
+            8h)  d="*"    ; h="`get_period 23 8 $4`" ; m="$5" ;;
+            12h) d="*"    ; h="`get_period 23 12 $4`" ; m="$5" ;;
+            1d)  d="1-31" ; h=0 ; m=$5 ;;
         esac
         if [ "$d$m$h" != "***" ] ; then
-            "$NMT" NMT_CRON_ADD root "$appname.watch" "$m $h $d * * cd '$APPDIR' && './catalog.sh' NEWSCAN >/dev/null 2>&1 &"
+            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR' && './catalog.sh' $3 >/dev/null 2>&1 &"
         fi
     else
-        "$NMT" NMT_CRON_DEL root "$appname.watch"
+        "$NMT" NMT_CRON_DEL root "$appname.$2"
     fi
 }
 
 
 case "$1" in 
+    NEWSCAN)
+        "$APPDIR/catalog.sh" NEWSCAN
+
+        if grep -q /^catalog_watch_torrents=.*1/ $APPDIR/catalog.cfg* ; then
+            "$APPDIR/bin/torrent.sh" transmission unpak_all
+        fi
+        ;;
+
     WATCH_FOLDERS)
-        add_watch_cron "$2"
+        add_watch_cron "$2" "watch" "NEWSCAN" 0 0
         ;;
 
     REBOOTFIX)
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
         "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
-        add_watch_cron "`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $APPDIR/catalog.cfg`"
+        freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $APPDIR/catalog.cfg`"
+        add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
         ;;
 
     LISTEN)
@@ -300,7 +329,6 @@ case "$1" in
             LISTEN >> "$log" 2>&1 || rm -f "$LOCK"
         fi
 
-        #torrent_check "$d"
 
         exit;;
     UNINSTALL)

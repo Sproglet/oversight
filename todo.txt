@@ -7,11 +7,15 @@ check torrent watch
 
 BUG: parsing VIDEO_TS eg /share/Complete/hulk wolverine
 
-BUG Banner size error
-
 FEATURE: amazon scrape - Some crazy people put Amazon links in nfo eg.
 http://www.amazon.com/dp/B00006HAWP In this case scrape the URL for ttnnnnnnn
 
+Play from menu
+
+BUG: The picture may be downloaded twice if the second scan occurs before the picture is downloaded.
+but also have to be mindful of UPDATE_POSTERS option. We only want one picture per scan process.
+SOLUTION: jpeg_fetch should check if the picture is  newer than the catalog process...
+catalog can pass PID. jpeg fetch will only download picure if it is older than /proc/PID
 
 
 FALSE +VE

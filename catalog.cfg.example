@@ -39,8 +39,13 @@ catalog_poster_prefix="ovs_"
 
 catalog_format_tags="dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdscr,blu720p,blu1080p,bluray,dvdrip,brrip,dsrip,hdtv,ntsc,pdtv,r5,screener,workprint,ws,x264,xvid,yenc,alt,par2"
 catalog_scan_paths="/share/Video,/share/Movies,/share/Tv,/share/Complete"
-#How often to watch for new media. This is implemented in oversight.
+#
+#How often to watch for new media. This is implemented in oversight. NMT only.
 catalog_watch_minutes=60
+
+#watch for completed torrents. This is implemented in oversight. NMT only.
+catalog_watch_torrents=0
+
 #Ignore the following paths when scanning.
 # *=anything,?=single char, <=start of word , >=end of word ,=OR
 catalog_ignore_paths="/share/~Other,*/Download" 

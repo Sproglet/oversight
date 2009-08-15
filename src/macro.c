@@ -456,6 +456,18 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
         
     return result;
 }
+char *macro_fn_rating(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+
+    if (*oversight_val("ovs_display_rating") != '0' && num_rows) {
+
+        if (sorted_rows[0]->rating > 0.01) {
+            ovs_asprintf(&result,"%.1lf",sorted_rows[0]->rating);
+        }
+    }
+
+    return result;
+}
 
 char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     int rows=0;
@@ -947,6 +959,7 @@ void macro_init() {
         hashtable_insert(macros,"GENRE",macro_fn_genre);
         hashtable_insert(macros,"SEASON",macro_fn_season);
         hashtable_insert(macros,"YEAR",macro_fn_year);
+        hashtable_insert(macros,"RATING",macro_fn_rating);
         hashtable_insert(macros,"RATING_STARS",macro_fn_rating_stars);
         hashtable_insert(macros,"GRID",macro_fn_grid);
         hashtable_insert(macros,"HEADER",macro_fn_header);

@@ -12,12 +12,20 @@
 
         <form action="?" enctype="multipart/form-data" method="POST">
 
-            Scan Paths : [:$catalog_scan_paths:]
-            <p>This will return immediately and start a background scan.
+            <center>
+            <table>
+            <tr>
+            <td>
+            <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
+            <p>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
+            <p>This will return immediately and start a background scan of the listed paths.
             <br>This should complete in 15-60 minutes depending on number of videos.
             <br>Internet bandwidth (esp torrent upload) also affects overall scan speed.
 
-            <p> To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here}):]
+            <p> To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here},style="color=red;"):]
+            </td>
+            </tr>
+            </table>
 
             <table width=100%>
                 <tr>
@@ -25,6 +33,7 @@
                     <td align=center><input type=submit name=action value="Cancel"></td>
                 </tr>
             </table>
+            </center>
 
             <input type=hidden name=old_action value="[:$?action:]">
             <input type=hidden name=view value="[:$?view:]">

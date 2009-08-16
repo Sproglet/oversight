@@ -70,7 +70,7 @@ fetch_resize() {
         # It has already been fetched during this scan.
         #So if OLDEST file is /proc/ then return
         if ls -t "$file" /proc/$calling_pid/exe | grep ^/proc/ ; then
-            echo "[INFO] Already fetched $file during this scan"
+            INFO "Already fetched $file during this scan"
             return 0
         fi
     fi
@@ -97,7 +97,7 @@ add_queue() {
         args="$args $i"
     done
     echo "$args" >> $Q.pending
-    echo "[INFO] Queued jpg_resize $args"
+    INFO "Queued $args"
 }
 
 
@@ -111,6 +111,10 @@ running() {
         fi
     fi
     return 1
+}
+
+INFO() {
+    echo "[INFO] jpeg queue : $@"
 }
 
 
@@ -130,7 +134,7 @@ else
 
         while FS= read line ; do
 
-            echo "[INFO] Process jpg_resize $@"
+            INFO " Unqueued : $@"
             eval fetch_resize $line
 
         done < "$Q.processing"

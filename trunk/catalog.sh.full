@@ -309,7 +309,8 @@ BEGIN {
     no="no";
     g_quote="'"'"'";
 
-    g_imdb_regex="\\<tt[0-9]+\\>";
+    #g_imdb_regex="\\<tt[0-9]+\\>";
+    g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
 
     ELAPSED_TIME=systime();
     get_folders_from_args(FOLDER_ARR);
@@ -600,7 +601,7 @@ END{
 
 
     for(f in FOLDER_ARR) {
-        if (substr(FOLDER_ARR[f],1,1) != "/") {
+        if (FOLDER_ARR[f] ~ /^[^\/.]/ ) {
             # Assume it is a share
             share_name=FOLDER_ARR[f];
             sub(/\/.*/,"",share_name);
@@ -1444,10 +1445,10 @@ f,imdbid,imdb,newPosterUrl,line) {
 
     if (url == "" ) return;
 
-    if (gExternalSourceUrl[idx] == url) {
-        INFO("Already scraped IMDB "url" for this item");
+    if (scrape_check(idx,"imdb") ) {
         return;
-    }
+    } 
+    scrape_set(idx,"imdb");
 
     DEBUG("Setting external url to ["url"]");
     if (gExternalSourceUrl[idx] == "") {
@@ -1816,8 +1817,7 @@ tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest) {
     tvdbid = search1TvDbId(idx,title);
     if (tvdbid != "") {
 
-
-        gExternalSourceUrl[idx] = getTvDbInfo(idx,getTvdbSeriesUrl(tvdbid));
+        getTvDbInfo(idx,getTvdbSeriesUrl(tvdbid));
         fetchXML("http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-",episodeInfo);
         if ( episodeInfo["/Data/Error"] != "" ) {
             ERROR(episodeInfo["/Data/Error"]);
@@ -2026,8 +2026,6 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
                 #Get a better title using link from nfo to scrape epguides  with.
                 scrapeIMDBTitlePage(idx,bestUrl);
 
-                INFO("TODO:Need a solid route from imdb link to epguides page");
-                
                 bestUrlViaEpguide = getAllInfoFromTvDbAndImdbLink(idx);
 
             } else {
@@ -2063,11 +2061,11 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
             if (bestUrl == "") {
                 INFO("Search Phase: usenet online nfo");
                 bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
-            }
-            if (bestUrl == "") {
-                name2 = remove_format_tags(name);
-                if (name2 != name) {
-                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name2);
+                if (bestUrl == "") {
+                    name2 = remove_format_tags(name);
+                    if (name2 != name) {
+                        bestUrl = searchOnlineNfoLinksForImdbAlternate(name2);
+                    }
                 }
             }
 
@@ -2086,11 +2084,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
                 scrapeIMDBTitlePage(idx,bestUrl);
 
             }
-            # Override IMDB posters
-            if (index(g_poster[idx],"themoviedb") == 0 ) {
-                DEBUG("pre nice poster title: "gTitle[idx]);
-                getNiceMoviePosters(idx,extractImdbId(bestUrl));
-            }
+            getNiceMoviePosters(idx,extractImdbId(bestUrl));
         }
 
 
@@ -2103,7 +2097,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
         get_best_episode_title(idx);
 
         #Only get posters if catalog is installed as part of oversight
-        if (APPDIR == "/share/Apps/oversight" ) {
+        if (index(APPDIR,"/oversight") ) {
 
             if (g_poster[idx] != "") {
                 g_poster[idx] = download_image(POSTER,g_poster[idx],idx);
@@ -2158,6 +2152,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
 # however this is bead when doing the initial scan of a NAS etc.
 function clean_globals() {
     delete gMovieFiles;
+    delete g_scraped;
     delete gNfoDefault;
     delete gFolderMediaCount;
     delete gFolderInfoCount;
@@ -2243,7 +2238,7 @@ choice,i,url) {
 
             # search binsearch.info 
             url = searchOnlineNfoLinksForImdb(name,\
-                "https://www.binsearch.info",\
+                "http://www.binsearch.info",\
                 "/index.php?q=\"QUERY.\"&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
                 "/viewNFO[^\"]+",20);
 
@@ -2289,7 +2284,9 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
             nfo2 = nfo2 "\t" domain nfo;
         }
         sub(/[&]amp;/,"\\&",nfo2);
-        scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds);
+        if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
+            scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
+        }
         for(id in imdbIds) {
             totalImdbIds[id] += imdbIds[id];
         }
@@ -2297,7 +2294,11 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
         for(nfo in nfoPaths) {
             nfo2 = domain nfo;
             sub(/[&]amp;/,"\\&",nfo2);
-            scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds);
+
+            if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
+                scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
+            }
+
             for(id in imdbIds) {
                 totalImdbIds[id] += imdbIds[id];
             }
@@ -2311,6 +2312,23 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
     return extractImdbLink(bestId);
 
 }
+
+# Search for imdb ids in any pages referenced by the nfo file.
+# This is really for amazon links in nfo files but might work for some other sites.
+function scanPageForIMDBviaLinksInNfo(url,imdbIds,\
+amzurl,amazon_urls,imdb_per_page,imdb_id) {
+    if (scanPageForMatches(url,"http://(www.|)amazon[ !#-;=?-~]+",0,1,"",amazon_urls)) {
+        for(amzurl in amazon_urls) {
+            if (scanPageForMatches(amzurl, g_imdb_regex ,0,1,"", imdb_per_page)) {
+                for(imdb_id in imdb_per_page) {
+                    INFO("Found "imdb_id" via amazon link");
+                    imdbIds[imdb_id] += imdb_per_page[imdb_id];
+                }
+            }
+        }
+    }
+}
+
 
 function firstIndex(inHash,i) {
     for (i in inHash) return i;
@@ -2400,6 +2418,8 @@ tvDbSeriesPage,alternateTitles) {
         if (tvDbSeriesPage) g_search_hits["thetvdb"]++;
     }
 
+    # Abbreviation search
+
     if (tvDbSeriesPage == "" ) {
         g_search_total["tvabbrev"]++;
 
@@ -2408,6 +2428,7 @@ tvDbSeriesPage,alternateTitles) {
         if(cache_key in g_abbrev_cache) {
 
             tvDbSeriesPage = g_abbrev_cache[cache_key];
+            INFO("Fetched abbreviation "cache_key" = "tvDbSeriesPage);
 
         } else {
 
@@ -2426,6 +2447,7 @@ tvDbSeriesPage,alternateTitles) {
             if (tvDbSeriesPage) {
                 g_search_hits["tvabbrev"]++;
                 g_abbrev_cache[cache_key] = tvDbSeriesPage;
+                INFO("Caching abbreviation "cache_key" = "tvDbSeriesPage);
             }
         }
     }
@@ -2750,9 +2772,15 @@ url,id2) {
 }
 
 function searchTvDbTitles(idx,title,\
-tvdbid,tvDbSeriesUrl) {
+tvdbid,tvDbSeriesUrl,id,imdb_id) {
 
-    tvdbid = search1TvDbId(idx,title);
+    if (gExternalSourceUrl[idx]) {
+        imdb_id = extractImdbId(gExternalSourceUrl[idx]);
+        tvdbid = searchTvDbByImdbId(imdb_id);
+    }
+    if (tvdbid == "") {
+        tvdbid = search1TvDbId(idx,title);
+    }
     if (tvdbid != "") {
         tvDbSeriesUrl=getTvdbSeriesUrl(tvdbid);
     }
@@ -2863,54 +2891,54 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
 # Return 2 if it is a likely match
 # Return 1 if it is an initial or abbreviated type of match.
 # else return 0
-function similarTitles(titleIn,possibleTitleIn,\
-bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
+function similarTitles(titleIn,possible_title,\
+bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
 
     matchLevel = 0;
     yearOrCountry="";
 
-        DEBUG("Checking ["titleIn"] against ["possibleTitleIn"]");
+        DEBUG("Checking ["titleIn"] against ["possible_title"]");
 
     # Conan O Brien is a really tricky show to match on!
     # Its a daily,
     # It has two very good alternatives both of which have more than just Conan O Brien in the title,
     # it has "O" which thetvdb handles inconsistently.
     # The following tweak is for the latter issue.
-    if (sub(/ [Oo] /," O",possibleTitle)) {
-        possibleTitle=clean_title(possibleTitleIn);
+    if (sub(/ [Oo] /," O",possible_title)) {
+        possible_title=clean_title(possible_title);
     }
     if (sub(/ [Oo] /," O",titleIn)) {
         titleIn=clean_title(titleIn);
     }
 
-    if ((bPos=index(possibleTitleIn," (")) > 0) {
-        yearOrCountry=clean_title(substr(possibleTitleIn,bPos+2));
+    if ((bPos=index(possible_title," (")) > 0) {
+        yearOrCountry=clean_title(substr(possible_title,bPos+2));
         DEBUG("Qualifier "yearOrCountry);
     }
 
-    if ((cPos=index(possibleTitleIn,",")) > 0) {
-        shortName=clean_title(substr(possibleTitleIn,1,cPos-1));
+    if ((cPos=index(possible_title,",")) > 0) {
+        shortName=clean_title(substr(possible_title,1,cPos-1));
     }
 
-    possibleTitle=clean_title(possibleTitleIn);
+    possible_title=clean_title(possible_title);
 
-    sub(/^[Tt]he /,"",possibleTitle);
+    sub(/^[Tt]he /,"",possible_title);
     sub(/^[Tt]he /,"",titleIn);
 
-    if (substr(titleIn,2) == substr(possibleTitle,2)) {
-        DEBUG("Checking ["titleIn"] against ["possibleTitle"]");
+    if (substr(titleIn,2) == substr(possible_title,2)) {
+        DEBUG("Checking ["titleIn"] against ["possible_title"]");
     }
     if (yearOrCountry != "") {
-        DEBUG("Qualified title "possibleTitleIn);
+        DEBUG("Qualified title "possible_title);
     }
-    if (index(possibleTitle,titleIn) == 1) {
+    if (index(possible_title,titleIn) == 1) {
         #TODO Note we could kee the 1 match levels here and below, but if so
         #we should still go on to search abbreviations. For now easier to comment out.
         #The zero score will trigger the abbreviation code.
         # matchLevel = 1;
 
         #This will match exact name OR if BOTH contain original year or country
-        if (possibleTitle == titleIn) {
+        if (possible_title == titleIn) {
 
             matchLevel=5;
 
@@ -2927,17 +2955,17 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
 
         #This will match if difference is year or country. In this case just pick the 
         # last one and user can fix up
-        } else if ( possibleTitle == titleIn " " yearOrCountry ) {
-            INFO("match for ["titleIn"+"yearOrCountry"] against ["possibleTitle"]");
+        } else if ( possible_title == titleIn " " yearOrCountry ) {
+            INFO("match for ["titleIn"+"yearOrCountry"] against ["possible_title"]");
             #unqualified match xxxx vs xxxx YYYY
             #We have to allow for example BSG to match the new series rather 
             # than the old , however new series is qualified (2003) at thetvdb
             matchLevel = 5;
 
         } else {
-            DEBUG("No match for ["titleIn"+"yearOrCountry"] against ["possibleTitle"]");
+            DEBUG("No match for ["titleIn"+"yearOrCountry"] against ["possible_title"]");
         }
-    } else if (index(titleIn,possibleTitle) == 1) {
+    } else if (index(titleIn,possible_title) == 1) {
         #Check our title just has a country added
 
         #TODO Note we could kee the 1 match levels here and above, but if so
@@ -2945,19 +2973,19 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName,possibleTitle) {
         #The zero score will trigger the abbreviation code.
 
         #matchLevel = 1;
-        diff=substr(titleIn,length(possibleTitle)+1);
+        diff=substr(titleIn,length(possible_title)+1);
         if ( diff ~ " (19|20)[0-9][0-9]$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
             #unqualified match xxxx 2000 vs xxxx
             matchLevel = 5;
-            INFO("match for ["titleIn"] containing ["possibleTitle"]");
+            INFO("match for ["titleIn"] containing ["possible_title"]");
         }
-    } else if ( index(possibleTitle,"Show With "titleIn) ) {
+    } else if ( index(possible_title,"Show With "titleIn) ) {
 
         # The blah blah Show With Some Person might just be known as "Some Person"
         # eg The Tonight Show With Jay Leno
         matchLevel = 4;
     }
-    DEBUG("["titleIn"] vs ["possibleTitle"] = "matchLevel);
+    DEBUG("["titleIn"] vs ["possible_title"] = "matchLevel);
     return matchLevel;
 }
 
@@ -3036,7 +3064,7 @@ url,count,title,link,links,i,count2) {
 # IN titleIn - The thing we are looking for - eg ttscc
 # IN/OUT alternateTitles - hash of titles - index is the title, value is 1
 function searchAbbreviation(letter,titleIn,alternateTitles,\
-possibleTitle,names,i,ltitle) {
+possible_title,names,i,ltitle) {
 
     ltitle = tolower(titleIn);
 
@@ -3048,16 +3076,16 @@ possibleTitle,names,i,ltitle) {
 
     for(i in names) {
 
-        possibleTitle = names[i];
+        possible_title = names[i];
 
-        sub(/\(.*/,"",possibleTitle);
+        sub(/\(.*/,"",possible_title);
 
-        possibleTitle = clean_title(possibleTitle);
+        possible_title = clean_title(possible_title);
 
-        if (abbrevMatch(ltitle,possibleTitle)) {
-            alternateTitles[possibleTitle]="ab1";
-        } else if (abbrevContraction(ltitle,possibleTitle)) {
-            alternateTitles[possibleTitle]="ab2";
+        if (abbrevMatch(ltitle,possible_title)) {
+            alternateTitles[possible_title]="abbreviation-initials";
+        } else if (abbrevContraction(ltitle,possible_title)) {
+            alternateTitles[possible_title]="abbreviation-contraction";
         }
     }
 }
@@ -3070,11 +3098,14 @@ possibleTitle,names,i,ltitle) {
 #
 #eg toxxx might abbreviate "to xxx" or "t" ...
 function abbrevMatch(abbrev , possible_title,\
-wrd,a,words,rest_of_abbrev,found,abbrev_len) {
+wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
     split(tolower(possible_title),words," ");
     a=1;
     wrd=1;
     abbrev_len = length(abbrev);
+
+    short_words["and"] = short_words["in"] = short_words["it"] = short_words["of"] = 1;
+
     while(abbrev_len-a  >= 0 && (wrd in words)) {
         rest_of_abbrev = substr(abbrev,a);
 
@@ -3087,7 +3118,7 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len) {
             wrd++;
         } else if (substr(rest_of_abbrev,1,1) == " ") {
             a ++;
-        } else if (words[wrd] == "and" ) {
+        } else if (words[wrd] in short_words ) {
             wrd++;
         } else {
             #no match
@@ -3096,16 +3127,32 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len) {
     }
     found = ((a -abbrev_len ) > 0 ) && !(wrd in words);
     if (found) {
-        INFO(abbrev " abbreviates "possible_title);
+        INFO(possible_title " abbreviated by ["abbrev"]");
     }
     return found;
 }
 
 
+# if the possible title has n words and the abbreviation is n letters then reject.
+# no one would abbreviate 'red blue' as anything but 'rb' which has already been picked up by abbrevMatch
+
+#similarly a contraction should have more letters than words. eg. at least one letter is picked from each word
+#as it is usually a phonic type contraction eg.
+# Royal Pain might be rylpn 
+# If a word is not represented by letters then we are possibly shafted. This is more likely small words. in of it etc
+function contractionPrerequisite(abbrev,possible_title) {
+    spaces = possible_title ;
+    gsub(/[^ ]+/,"",spaces); #spaces is one less then number of words.
+    if (length(abbrev) - (length(spaces)+1) <= 0 ) {
+        return 0;
+    }
+    return 1;
+}
+
 # match tblt to tablet , grk greek etc.
-function abbrevContraction(abbrev,possibleTitle,\
+function abbrevContraction(abbrev,possible_title,\
 found,regex) {
-    # if (index(possibleTitle," ") || index(abbrev," ")) return 0;
+
 
     # Use regular expressions to do the heavy lifting.
     # First if abbreviation is grk convert to g.*r.*k
@@ -3113,10 +3160,17 @@ found,regex) {
     gsub(//,".*",regex);
     regex= "^" substr(regex,3,length(regex)-4) "$";
 
-    found = match(tolower(possibleTitle),regex);
+    found = match(tolower(possible_title),regex);
 
     if (found) {
-        INFO(abbrev " abbreviates "possibleTitle);
+        # Note this check should be at the start for efficiency but it is here to
+        # see exactly what is getting rejected.
+        if (!contractionPrerequisite(abbrev,possible_title)) {
+            INFO(possible_title " rejected for abbrev ["abbrev"]");
+            found = 0;
+        } else {
+            INFO(possible_title " abbreviated by ["abbrev"]");
+        }
     }
     return found;
 }
@@ -3370,11 +3424,24 @@ function getTvDbEpisodeXML(seriesUrl,season,episode,episodeInfo) {
     }
 }
 
+function scrape_check(idx,site) {
+    return (index(g_scraped[idx],site));
+}
+
+function scrape_set(idx,site) {
+    g_scraped[idx] = g_scraped[idx] "," site;
+}
+
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 function getTvDbInfo(idx,tvDbSeriesUrl,\
 seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
+
+    if (scrape_check(idx,"thetvdb") ) {
+        return gExternalSourceUrl[idx];
+    } 
+    scrape_set(idx,"thetvdb");
 
     #The url for this link
     gEpGuides[idx]=tvDbSeriesUrl;
@@ -3386,8 +3453,6 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 
     # For twin episodes just use the first episode number for lookup by adding 0
     sub(/en.xml/,"banners.xml",bannerApiUrl);
-
-    DEBUG("Episode=["g_episode[idx]"] = "(g_episode[idx] ~ "^[0-9,]+$" ));
 
     if (g_episode[idx] ~ "^[0-9,]+$" ) {
 
@@ -3430,6 +3495,9 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
         return "IGNORE";
     } else {
         DEBUG("getTvDbInfo returns imdb url ["imdbLink"]");
+    }
+    if (imdbLink != "" ) {
+        gExternalSourceUrl[idx] = imdbLink;
     }
     return imdbLink;
 }
@@ -3476,7 +3544,7 @@ season,f,line,url,xml,fanart_url) {
         }
         close(f);
     }
-    DEBUG("Season banner = "url);
+    DEBUG("Season poster = "url);
     g_poster[idx]=url;
     DEBUG("Fanart banner = "fanart_url);
     g_fanart[idx]=fanart_url;
@@ -3804,6 +3872,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
     # same_domain_delay=0;
     # cmd = get_sleep_command(url,same_domain_delay) cmd;
 
+    DEBUG("WGET ["url"]");
     return exec(cmd);
 }
 
@@ -4060,29 +4129,40 @@ matches,i) {
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scanPageForMatches(url,regex,max,cache,referer,matches,\
-f,line,count,getMore,linematches,linecount) {
+f,line,count,getMore,linematches,linecount,regex_text) {
 
     delete matches;
 
     DEBUG("scan "url" for "regex);
     f=getUrl(url,"scan4match",cache,referer);
 
+    # this is a hack - to speed things up look for any fixed text portion of the regex
+    regex_text=regex;
+    sub(/[][.?\\*(|].*/,"",regex_text);
+    INFO("Looking for fixed text ["regex_text"] before regex ["regex"]");
+
     count=0;
     if (f != "" ) {
 
         FS="\n";
-        getMore=1;
+        remain=max;
 
-        while(getMore && ((getline line < f) > 0)  ) {
+        while(((getline line < f) > 0)  ) {
 
-            linecount = getMatches(line,regex,(max==0?0:max-count),linematches);
+            if (regex_text == "" || index(line,regex_text)) {
 
-            DEBUG2(regex" match "linecount" in "line);
+                linecount = getMatches(line,regex,remain,linematches);
 
-            addHash(matches,linematches);
-            count += linecount;
-            if (max > 0) {
-                getMore = (max-count) > 0;
+                DEBUG2(regex" match "linecount" in "line);
+
+                addHash(matches,linematches);
+                count += linecount;
+                if (max > 0) {
+                    remain -= count;
+                    if (remain <= 0) {
+                        break;
+                    }
+                }
             }
         }
         close(f);
@@ -4093,20 +4173,34 @@ f,line,count,getMore,linematches,linecount) {
 
 function getMatches(line,regex,max,matches,\
 getMore,start,count) {
-    getMore = 1;
-    start=0;
     count =0 ;
     delete matches;
-    while (getMore && match(substr(line,start+1),regex) != 0) {
-        matches[substr(line,RSTART+start,RLENGTH)]++;
 
+
+# getMore = 1;
+# start=0;
+#    while (getMore && match(substr(line,start+1),regex) != 0) {
+#        matches[substr(line,RSTART+start,RLENGTH)]++;
+#
+#        count++;
+#        if (max > 0 ) {
+#            getMore = (max-count) > 0;
+#        }
+#
+#        start += RSTART+RLENGTH;
+#    }
+
+    while(line != "" && match(line,regex)) {
+        matches[substr(line,RSTART,RLENGTH)]++;
+        line=substr(line,RSTART+RLENGTH);
         count++;
         if (max > 0 ) {
-            getMore = (max-count) > 0;
+            if (count <= 0) {
+                break;
+            }
         }
+    } 
 
-        start += RSTART+RLENGTH;
-    }
     dump(3,count " linematches",matches);
     return count;
 }
@@ -4156,9 +4250,6 @@ title,y,poster_imdb_url) {
                     #Save it for later. 
                     g_imdb_poster_url[idx]=poster_imdb_url;
                     DEBUG("IMDB: Got imdb poster ["g_imdb_poster_url[idx]"]");
-                    if (g_poster[idx] == "") {
-                        g_poster[idx] = poster_imdb_url;
-                    }
                 }
             }
             if (g_plot[idx] == "" && index(line,"Plot:")) {
@@ -4446,6 +4537,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    }
                }
 
+               # Also move any poster file
                if(g_poster[i] != "" && substr(g_poster[i],1,1)!= "/" && substr(g_poster[i],1,4) != "ovs:" ) {
                    oldName=oldFolder"/"g_poster[i];
                    newName=newFolder"/"g_poster[i];

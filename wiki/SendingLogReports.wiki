@@ -15,5 +15,5 @@ To send me logs:
 
 5. Email the new compressed file to me. nmt at lordy dot org period uk.
 
-If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise a new defect (http://code.google.com/p/oversight/issues/list) and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
+If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
 Eg if scanning always fails on a particular file name, then that information along with the filename and the logs is enough.

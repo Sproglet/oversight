@@ -29,12 +29,6 @@ so any savings may be lost regardless.
 
 =======================
 
-
-catalogh.sh.full:3697 - replace wget with a script that will get a poster and create sd and hd versions.
-Allow optional imdb rating.
-
-if abbreviation match then assume all other similar abbreviations IN THE SAME FOLDER are the same.
-
 check torrent watch
 
 BUG: parsing VIDEO_TS eg /share/Complete/hulk wolverine
@@ -43,7 +37,7 @@ Verify no more /./ scan paths.
 
 Q. Why are we scraping IMDB for TV shows?
 
-Have seperate rescan and watch folders. /share/Tv and /sahre/Movies do not need to be watched.
+DONE Have seperate rescan and watch folders. /share/Tv and /sahre/Movies do not need to be watched.
 
 DONE: Add TV_MODE=0 warning!
 
@@ -151,10 +145,6 @@ gunzip: invalid magic
 [INFO]   283 : 
     ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==
 
-
-
-Option to check IMDB or Amazon for tv series posters? Test with Grand Designs
-
 Rescan: Add a Rescan link/option
 
 Samples: still not getting deleted!
@@ -163,35 +153,10 @@ Samples: still not getting deleted!
 http://www.networkedmediatank.com/showthread.php?tid=14410&pid=202554#pid202554
 
 
-tvdb use url http://thetvdb.com//api/GetSeries.php?seriesname=the%20unusuals
-then search for imdb id xml tab, then ise series id tag, poster is
-http://images.thetvdb.com/banners/_cache/posters/73739-7.jpg
-Posters can be picked by reverse -5,-4,-3,-2,-1.jpg etc.
-
-movie db - search direct for imdbid
-http://www.themoviedb.org/search?search[text]=tt1013752
-
-
-single result will have movie url on page as
-http://www.themoviedb.org/movie/13804
-then that page will have
-http://images.themoviedb.org/posters/12457/Fast_and_Furious_cover.jpg (small)
-link to http://images.themoviedb.org/posters/12457/Fast_and_Furious.jpg
-
-is the movie.
-
-
-moviedb 
 
 BUG:oversight.sh: When deleting a film - delete the nfo file
 FEATURE:catalog: If not category found by title - look at text of search results.
 
-BUG:oversight: removing donate logo causes:
-
-"ERROR awk: cmd. line:2048: Unexpected token".
-
-==============================================================
-FEATURE: Scene keywords. Some can be partial words 720P*
 ==============================================================
 BUG: ovs: Deleting last item in drilldown gives blank screen
 ==============================================================
@@ -205,8 +170,6 @@ Check logic when .nfo file is called .NFO. It appears to be
     1. ignored when looking for imdb url.
     2. ignored during relocate/rename
 
-
-BUG: make lock file only active during update to db (not during scraping)
 
 DVD icon on tv overview
 Make 'delete' and 'mark' work with cross view
@@ -224,7 +187,6 @@ BUG: To differentiate betwen game iso and video iso, mount and check VIDEO_TS et
 
 TODO Undo rename feature - how
 FEATURE 1: Film file renaming.
-FEATURE: Add more search heuristics:
 
 BUG 1 catalog.sh: if oversight not present - set poster location to with_video
 BUG 1 Add onkeyup on lower menu bar to go to table. Similarly for top menu (onkeydown)
@@ -243,123 +205,21 @@ BUG 2 oversight: Sort playlist for TV programs.
 FEATURE 2 oversight: Add left-right navigation on level 2
 FEATURE 2 oversight: Add Category change TV<->Film Unknown->TV|Film
 FEATURE 2 oversight: removable media - dont remove stuff if the share has gone away. Need to use df command on folder to determine share. (symlinks?) What to do? This ties in with remote viewing also.
-FEATURE 3: Amazon search if not found on IMDB/epguides?
 FEATURE 3 Add option to catalog.sh to add files without flagging as new. This is for torrents that have just moved location. (wait for Transmission 1.60)
 FEATURE 3 oversight: hot key file back to gaya browser. using /?filter=0 + index.html
 FEATURE 3 tvnzb, torrent links.
 FEATURE 3 unpak : grab subtitles.
-FEATURE 4 NTSC vs PAL scaling.
 FEATURE 4 Cope with Program files not present in tvnfo. (eg foreign)
-FEATURE 5 BINTUBE Search - may not work. Dont want to rely on odd sites.
 FEATURE 5 add streaming when files are clicked on PC web browser
 
 TEST oversight: post-update script
 TEST catalog: Big Brother format.
 TEST catalog: avi prefix.
 
-TEST 1 MAKE SURE unpak_movie_folder_format and unpak_tv_file_format are moved to catalog.sh FILM_FOLDER_FMT and TV_FILE_FMT
-TEST 1 oversight: Allow view of remote INDEX.DB, remap path for file references.  make sure operations are sent to correct oversight.sh LISTENER (no security!)
-
-DONE: Scanning quote file fix
-DONE: Fix when epguide links to Pilot Episode and not series.
-DONE installer changes AllowReprocess and ParCheck
-DONE Use parent folder for search if it contains only one folder AND is registered in gFolderCount ie it was inside our original search list.
-DONE Do a search with all optional, then extract most frequnet emphasized text. or which has most imdb links
-DONE If title contains year , then do a search and extract from year backwards, - added weighting for year.
-DONE Google search filename - get longest substring. then google substring+imdb. Justify.
-DONE DRYRUN feature
-DONE: Check new content highlighting
-DONE Complete generate_nfo_files with xmbc format.
-DONE unpak not invoking catalog with RENAME
-DONE unpak: fixed bug getting pars with new versions of nzbget
-DONE IMDB link ok but epguides is broken Try to identify what is happening when 34 xx 34 appears.
-DONE Presence of nfo throws off logic. 
-DONE Supress jpg downloads
-DONE Centralise poster downloads. (good for Read-Only partitions)
-DONE The Tudors not logged.
-DONE Address House to House MD mapping.
-DONE 2 config.cgi (General configuration editor - use tvnzb code)
-DONE 1 Address search issue raised in email a while back
-DONE Web service urls only allow single parameter & get url encoded. - fix
-    have single arg which is url decoded and passed back to query string
-   OR just have a new index page off the web service page listing oversight, tvnzb and zebedee.
-DONE Exclude Paths. / Exclude Names
-
 DONE oversight: Default button on drilldown set to first media file
 DONE catalog: Only pages if cache if it looks like a TV show
 DONE oversight: Multi number search - Find '*DO*ctor' by going direct to channel '36' TVIDS
-DONE oversight: Add Upgrade direct from website
-DONE oversight: Add re-scan option in admin page
 DONE Deleted one episode but entire series disappeared then came back after rescan - however jpg deleted and should have been flagged as in use. review.
 DONE Change mark/unmark logic, so marked items are already checked.
 DONE VIDEO_TS
 DONE A keyword search heuristic should look for a year then only include prior words before punctuation.  eg "blah blah : Title 2004 blah"
-DONE When doing a deep search , if it already has tv format the 2nd search should be on epguides not on the web.
-FIXED: unpack: sample delete.
-FIXED: ctg: 2 part movies CD01/CD02
-FIXED: unpak: sanity_check error http://www.networkedmediatank.com/showthread.php?tid=21592&pid=192791#pid192791
-DONE: More robust nfo name creation
-DONE Feature - use the Movie Db.org
-DONE Full Big Brother parsing
-DONE Feature - Season Banners
-DONE: catalog.sh write progress to lock file 1 of 99. Oversight.cgi displays this
-DONE: twin episode parsing
-DONE Grk detection
-DONE:use tvdb and movietv for posters.
-
-DONE: Deal with remakes - give precidence to current
-[DEBUG]  9 : [Battlestar Galactica] vs [Battlestar Galactica 2003] = 2
-[DEBUG]  9 : Checking [Battlestar Galactica] against [Battlestar Galactica]
-[DEBUG]  9 : [Battlestar Galactica] vs [Battlestar Galactica] = 3
-Introduce qualified & unqulified matches
-qualified = both have year or country
-unqualified = one has year or country
-
----------------------------------------------------------------------
-Pre  Release TESTS
----------------------------------------------------------------------
-== Unpak.sh ==
-    * Par-Fetch   
-    * All-Pars
-    * No-Pars 
-== Catalog.sh ==
-  * Tv formats
-    * S00E00
-    * S00.D12e (BB)
-    * 00x00
-    * 101
-    * Abbreviated Names
-        * initials | word-letter | letter-word | no vowels
-  * Movie
-  * Mp3 
-  * exe
-  * xxx
-== oversight.cgi == 
-  * Install
-  * ReInstall
-  * Mark/Unmark
-  * Remove
-  * Play Unsorted
-  * Play Movie
-  * Play TV
-  * Delete 1 inside , 
-  * Delete all inside,
-  * Delete from overview. 
-
-Parental Controls , TV/Film flip / Master/Slave 
-
-http://posters.motechnet.com using the search:
-Code:
-http://posters.motechnet.com/covers/<imdb>_largeCover.jpg
-If that fails, and you have moviecovers set in the moviejukebox.properties file (imdb.alternate.poster.search=moviecovers) then this search is used:
-Code:
-http://www.google.com/search?meta=&q=site%3Amoviecovers.com+<movie name>
-Note: this is a French site.
-
-If none of those turn up a poster then the source of the IMDB page is searched for the text "ia.media-imdb.com/images" and that image is used. If that turns up blank then
-If imdb.alternate.poster.search=yahoo:
-Code:
-http://fr.images.search.yahoo.com/search/images?p=<moviename>+poster&fr=&ei=utf-8&js=1&x=wrt
-If imdb.alternate.poster.search=google:
-Code:
-http://images.google.fr/images?q=<moviename>&gbv=2

@@ -68,15 +68,19 @@ void gaya_auto_load(char *url_encoded_file) {
     char *name = util_basename(file);
 
     printf("Content-Type: text/html\n\n");
-    printf("<html><body onloadset=playme bgcolor=black text=white link=yellow >\n");
+    printf("<html><body onloadset=playme bgcolor=black text=white link=white >\n");
     printf("<html><body >\n");
-
-    printf("<a href=\"file://%s\" %s onfocusload name=playme>Play %s</a>\n", // file://
-            url_encoded_file,vod_attr(file),name);
 
     printf("<br><a href=\"/oversight/oversight.cgi\">Oversight</a>\n");
 
+    //char *back=get_self_link("","",name);
+    //printf("<br>%s\n",back);
+    //FREE(back);
+
     printf("<br><a href=\"/start.cgi\">Home</a>\n");
+
+    printf("<hr><a href=\"file://%s\" %s onfocusload name=playme>Play %s</a>\n", // file://
+            url_encoded_file,vod_attr(file),name);
 
     printf("</body></html>\n");
 

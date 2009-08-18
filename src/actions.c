@@ -148,18 +148,29 @@ void delete_media(DbRowId *rid,int delete_related) {
 
 static struct hashtable *g_delete_queue = NULL;
 
-void delete_queue_add(char *source,char *path) {
+void delete_queue_add(DbRowId *rid,char *path) {
 
-    if (source && path && *source && *path ) {
-        char *real_path = get_mounted_path(source,path);
-        if (g_delete_queue == NULL) {
-            g_delete_queue = string_string_hashtable(16);
-        }
-        if (hashtable_search(g_delete_queue,real_path)) {
-            free(real_path);
-        } else {
-            html_log(0,"delete_queue: pending delete [%s]",real_path);
-            hashtable_insert(g_delete_queue,real_path,"1");
+    char *source = rid->db->source;
+
+    if (path) {
+        //Get path relative to media
+        path=get_path(rid,path);
+
+        if (source && path && *source && *path ) {
+
+            char *mounted_path = get_mounted_path(source,path); // translate source
+            char *real_path = get_path(rid,mounted_path); // if local use media path. note path functions need rewriting!
+            FREE(mounted_path);
+
+            if (g_delete_queue == NULL) {
+                g_delete_queue = string_string_hashtable(16);
+            }
+            if (hashtable_search(g_delete_queue,real_path)) {
+                free(real_path);
+            } else {
+                html_log(0,"delete_queue: pending delete [%s]",real_path);
+                hashtable_insert(g_delete_queue,real_path,"1");
+            }
         }
     }
 }
@@ -210,6 +221,17 @@ void send_command(char *source,char *remote_cmd) {
     FREE(cmd);
 }
 
+
+void remove_row(int delete_mode) {
+    struct hashtable *source_id_hash = NULL;
+    source_id_hash = get_newly_selected_ids_by_source();
+    db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_DELETE);
+    hashtable_destroy(source_id_hash,1,1);
+    if (count_unchecked() == 0) {
+        // No more remaining go back to main view
+        clean_params();
+    }
+}
 
 void do_actions() {
 
@@ -295,29 +317,16 @@ void do_actions() {
             hashtable_destroy(source_id_hash,1,1);
 
 
-        } else if (allow_mark() && strcmp(action,"Delete") == 0) {
+        } else if (allow_delete() && strcmp(action,"Delete") == 0) {
 
-            struct hashtable *source_id_hash = NULL;
-            
-            source_id_hash = get_newly_selected_ids_by_source();
-            db_set_fields(DB_FLDID_ACTION,"D",source_id_hash,DELETE_MODE_DELETE);
-            hashtable_destroy(source_id_hash,1,1);
-            if (count_unchecked() == 0) {
-                // No more remaining go back to main view
-                clean_params();
-            }
+TRACE;
+            remove_row(DELETE_MODE_DELETE);
 
-        } else if (allow_mark() && strcmp(action,"Remove_From_List") == 0) {
+        } else if (allow_delist() && strcmp(action,"Remove_From_List") == 0) {
 
-            struct hashtable *source_id_hash = NULL;
-            
-            source_id_hash = get_newly_selected_ids_by_source();
-            db_set_fields(DB_FLDID_ID,NULL,source_id_hash,DELETE_MODE_REMOVE);
-            hashtable_destroy(source_id_hash,1,1);
-            if (count_unchecked() == 0) {
-                clean_params();
-                // No more remaining go back to main view
-            }
+TRACE;
+            remove_row(DELETE_MODE_REMOVE);
+
         }
 
     }

@@ -384,8 +384,8 @@ void db_rowid_dump(DbRowId *rid) {
 
 #define ALL_IDS -1
 int parse_row(
-        int num_ids, // number of ids passed in the idlist parameter of the query string
-        int *ids,    // sorted array of ids passed in query string idlist.
+        int num_ids, // number of ids passed in the idlist parameter of the query string. if ALL_IDS then id list is ignored.
+        int *ids,    // sorted array of ids passed in query string idlist to use as a filter.
         int tv_or_movie_view, // true if looking at tv or moview view.
         char *buffer,  // The current buffer contaning a line of input from the database
         Db *db,        // the database
@@ -985,14 +985,17 @@ html_log(0," begin db init");
 
     regmatch_t pmatch[5];
 
+html_log(0," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
+
     ovs_asprintf(&regex_text,"\t%s\t([^\t]+)\t",field_id);
     util_regcomp(&regex_ptn,regex_text,0);
+    html_log(0,"regex filter [%s]",regex_text);
 
     ovs_asprintf(&id_regex_text,"\t%s\t(%s)\t",DB_FLDID_ID,idlist);
     util_regcomp(&id_regex_ptn,id_regex_text,0);
+    html_log(0,"regex extract [%s]",id_regex_text);
 
 
-html_log(0," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
 
     if (db && db_lock(db)) {
 html_log(0," begin open db");
@@ -1016,28 +1019,37 @@ html_log(0," begin open db");
 
 
 
-                    if (regexec(&id_regex_ptn,buf,0,NULL,0) == 0 && regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
+                    if (regexec(&id_regex_ptn,buf,0,NULL,0) != 0 ) {
 
-                        if (delete_mode == DELETE_MODE_REMOVE) {
+                        // No match - emit
+                        fprintf(db_out,"%s",buf);
+
+                    } else if (delete_mode == DELETE_MODE_REMOVE) {
+TRACE;
                             // do nothing. line is not written 
-                        } else if (delete_mode == DELETE_MODE_DELETE) {
-                            DbRowId rid;
-                            parse_row(ALL_IDS,NULL,0,buf,db,&rid);
-                            delete_media(&rid,1);
-                            db_rowid_free(&rid,0);
-                        } else {
-                            int spos=pmatch[1].rm_so;
-                            int epos=pmatch[1].rm_eo;
+                    } else if (delete_mode == DELETE_MODE_DELETE) {
+TRACE;
+                        DbRowId rid;
+                        parse_row(ALL_IDS,NULL,0,buf,db,&rid);
+                        delete_media(&rid,1);
+                        db_rowid_free(&rid,0);
+
+                    } else if ( regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
+                        // Field is present - change it
+TRACE;
+                        int spos=pmatch[1].rm_so;
+                        int epos=pmatch[1].rm_eo;
 
 html_log(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
 
-                            buf[spos]='\0';
+                        buf[spos]='\0';
 
-                            fprintf(db_out,"%s%s%s",buf,new_value,buf+epos);
-                        }
+                        fprintf(db_out,"%s%s%s",buf,new_value,buf+epos);
 
                     } else {
-
+                        // field not present - we could append the field at this stage.
+                        // but there is not calling function that adds fields on the fly!
+                        // so just emit
                         fprintf(db_out,"%s",buf);
 
                     }
@@ -1066,6 +1078,11 @@ void db_remove_row(DbRowId *rid) {
     sprintf(idlist,"%ld",rid->id);
     db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,DELETE_MODE_REMOVE);
 }
+void db_delete_row_and_media(DbRowId *rid) {
+    char idlist[20];
+    sprintf(idlist,"%ld",rid->id);
+    db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,DELETE_MODE_DELETE);
+}
 
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode) {
     struct hashtable_itr *itr;
@@ -1074,6 +1091,7 @@ void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_sourc
 
 html_log(0," begin db_set_fields");
     for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
+TRACE;
         db_set_fields_by_source(field_id,new_value,source,idlist,delete_mode);
     }
 html_log(0," end db_set_fields");

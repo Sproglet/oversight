@@ -10,6 +10,11 @@ export LD_LIBRARY_PATH="$OVS_HOME/bin:$LD_LIBRARY_PATH"
 
 export PATH="$OVS_HOME/bin:$PATH"
 
+TMP=/share/Apps/oversight/tmp
+if [ ! -d $TMP ] ; then 
+    TMP=/tmp
+fi
+
 
 jpg_resize() {
 
@@ -50,7 +55,7 @@ jpg_resize() {
         ln "$input" "$output"
     else
         #Could use a pipe but input may = output so use tmp file.
-        djpeg -scale $new_width/$old_width "$input" > /tmp/$$ && cjpeg /tmp/$$ > "$output" && rm /tmp/$$
+        djpeg -scale $new_width/$old_width "$input" > $TMP/$$ && cjpeg $TMP/$$ > "$output" && rm $TMP/$$
     fi
 }
 
@@ -88,7 +93,7 @@ fetch_resize() {
     fi
 }
 
-Q=/share/Apps/oversight/tmp/resize.queue
+Q=$TMP/resize.queue
 
 add_queue() {
     args=

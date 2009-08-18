@@ -131,17 +131,19 @@ char *self_url(char *new_params) {
                     //
                     // search for pram_name in new_params
                     int add_param=1;
-                    for (p = strstr(new_params,param_name); p ; p=strstr(p+1,param_name) ) {
+                    if (new_params && *new_params) {
+                        for (p = strstr(new_params,param_name); p ; p=strstr(p+1,param_name) ) {
 
-                        if ( ( p == new_params || p[-1] == '&' ) ) {
-                            // start of string is beginning or after &
-                           char *end = p + param_name_len;
-                           if (strchr("&=",*end)) {
-                              // end of string is = or & or nul
-                              // param_name is in new_params - we dont want this
-                              add_param=0;
-                              break;
-                           }
+                            if ( ( p == new_params || p[-1] == '&' ) ) {
+                                // start of string is beginning or after &
+                               char *end = p + param_name_len;
+                               if (strchr("&=",*end)) {
+                                  // end of string is = or & or nul
+                                  // param_name is in new_params - we dont want this
+                                  add_param=0;
+                                  break;
+                               }
+                            }
                         }
                     }
                     if (add_param) {

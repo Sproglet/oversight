@@ -6,6 +6,9 @@
 #!note [    ] is [<space><tab>]
 #!If not compressed then awk will report "bad address" error on some platforms.
 #
+# This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
+# of global arrays causing memory problems.
+
 # AWK funnies
 # Sometimes awk doesnt seem to do a string compare when both values look like numbers.
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
@@ -23,7 +26,6 @@ VERSION=20090814-2BETA
 # Pushing limits of awks usability. Next time I'll use <insert any other scripting language here>
 # Also sometimes lines are left in for debugging
 #
-#TODO Preserve WATCHED and INDEXTIME fields when updating.
 #TODO When parsing file time if month is later, or month same and date later,  then current then year--
 #TODO should check write permissions to nfo file - not urgent
 #Error displaying titles for Leon Wall-E etc. special chars.
@@ -627,37 +629,42 @@ END{
     for(f in FOLDER_ARR) {
        DEBUG("Folder:\t"FOLDER_ARR[f]);
     }
-    gMovieFileCount = 0;
-    gMaxDatabaseId = 0;
-    
-    if (!g_opt_no_actions) {
-        load_settings("'$UNPAK_CFG'");
-        unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
-    }
 
-    g_tk = apply(g_tk);
-    g_tk2 = apply(g_tk2);
-    scan_folder_for_new_media(FOLDER_ARR,scan_options);
+    if (1 in FOLDER_ARR) {
 
-
-    clean_capture_files();
-
-    et=systime()-ELAPSED_TIME;
-
-    for(dm in g_search_count) {
-        DEBUG(dm" : "g_search_count[dm]" searches"); 
-    }
-    for(method in g_search_total) {
-
-        DEBUG(method" Search hits/total = "g_search_hits[method]"/"g_search_total[method]"="(100.0*g_search_hits[method]/g_search_total[method])"%");
-    }
-    DEBUG(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
-
-    #Check script
-    for(i in g_settings) {
-        if (!(i in g_settings_orig)) {
-            WARNING("Undefined setting "i" referenced");
+        gMovieFileCount = 0;
+        gMaxDatabaseId = 0;
+        
+        if (!g_opt_no_actions) {
+            load_settings("'$UNPAK_CFG'");
+            unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
         }
+
+        g_tk = apply(g_tk);
+        g_tk2 = apply(g_tk2);
+        scan_folder_for_new_media(FOLDER_ARR,scan_options);
+
+
+        clean_capture_files();
+
+        et=systime()-ELAPSED_TIME;
+
+        for(dm in g_search_count) {
+            DEBUG(dm" : "g_search_count[dm]" searches"); 
+        }
+        for(method in g_search_total) {
+
+            DEBUG(method" Search hits/total = "g_search_hits[method]"/"g_search_total[method]"="(100.0*g_search_hits[method]/g_search_total[method])"%");
+        }
+        DEBUG(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
+
+        #Check script
+        for(i in g_settings) {
+            if (!(i in g_settings_orig)) {
+                WARNING("Undefined setting "i" referenced");
+            }
+        }
+
     }
 
     rm(g_status_file);
@@ -5104,8 +5111,8 @@ function DETAIL(x) {
 
 # Remove spaces and non alphanum
 function trimAll(str) {
-    sub(/([^a-zA-Z0-9]|[ ])+$/,"",str);
-    sub(/^([^a-zA-Z0-9]|[ ])+/,"",str);
+    sub(/([^a-zA-Z0-9()]|[ ])+$/,"",str);
+    sub(/^([^a-zA-Z0-9()]|[ ])+/,"",str);
     return str;
 }
 

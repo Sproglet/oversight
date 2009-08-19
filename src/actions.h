@@ -6,7 +6,7 @@
 void do_actions();
 void delete_queue_delete();
 void delete_queue_unqueue(char *source,char *path);
-void delete_queue_add(char *source,char *path);
+void delete_queue_add(DbRowId *rid,char *path);
 void delete_media(DbRowId *rid,int delete_related);
 
 #define DELETE_MODE_NONE 0

@@ -3539,7 +3539,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 function tvDbImageUrl(path) {
     if(path != "") {
         #return "http://images.thetvdb.com/banners/_cache/" path;
-        return "http://images.thetvdb.com/banners/" path;
+        return "http://images.thetvdb.com/banners/" url_encode(html_decode(path));
     } else {
         return "";
     }
@@ -3777,37 +3777,79 @@ function indexFrom(str,x,startPos,\
     return j+startPos-1;
 }
 
-function url_encode(text) {
+function utf8_encode(text,\
+i,text2,ll) {
+    if (g_chr[32] == "" ) {
+        decode_init();
+    }
+    text2="";
+    ll=length(text);
+    for(i = 1 ; i - ll <= 0 ; i++ ) {
+        c=substr(text,i,1);
+        text2 = text2 g_utf8[c];
+    }
+    if (text != text2 ) {
+        DEBUG("utf8 encode ["text"]=["text2"]");
+    }
 
-    if (index(text,"%")) { gsub(/[%]/,"%25",text); }
-    if (index(text,"?")) { gsub(/[?]/,"%3F",text); }
-    if (index(text,"&")) { gsub(/[&]/,"%26",text); }
-    if (index(text," ")) { gsub(/ /,"%20",text); }
-    if (index(text,":")) { gsub(/:/,"%3A",text); }
-    if (index(text,"=")) { gsub(/=/,"%3D",text); }
-    if (index(text,"(")) { gsub(/\(/,"%40",text); }
-    if (index(text,")")) { gsub(/\)/,"%41",text); }
-    if (index(text,"[")) { gsub(/\[/,"%5B",text); }
-    if (index(text,"]")) { gsub(/\]/,"%5D",text); }
-    if (index(text,"+")) { gsub(/[+]/,"%43",text); }
-
-    return text;
+    return text2;
 }
 
-function decode_init(atoi,\
-i,c,h) {
+
+function url_encode(text,\
+i,text2,ll) {
+
+    if (g_chr[32] == "" ) {
+        decode_init();
+    }
+
+    text=utf8_encode(text);
+
+    text2="";
+    ll=length(text);
+    for(i = 1 ; i - ll <= 0 ; i++ ) {
+        c=substr(text,i,1);
+        if (index("% =()[]+",c) || g_ascii[c] -128 >= 0 ) {
+            text2= text2 "%" g_hex[g_ascii[c]];
+        } else {
+            text2=text2 c;
+        }
+    }
+    if (text != text2 ) {
+        DEBUG("url encode ["text"]=["text2"]");
+    }
+
+    return text2;
+}
+
+function decode_init(\
+i,c,h,b1,b2,b3,b4) {
     DEBUG("create decode matrix");
     for(i=0 ; i - 256 < 0 ; i++ ) {
         c=sprintf("%c",i);
-        h=sprintf("x%02x",i);
-        atoi[i] = c;
-        atoi[h] = c;
+        h=sprintf("%02x",i);
+        g_chr[i] = c;
+        g_chr["x"h] = c;
+        g_ascii[c] = i;
+        g_hex[i]=h;
+
+    }
+    for(i=0 ; i - 128 < 0 ; i++ ) {
+        c = g_chr[i];
+        g_utf8[c]=c;
+    }
+    for(i=128 ; i - 256 < 0 ; i++ ) {
+        c = g_chr[i];
+        b1=192+rshift(i,6);
+        b2=128+and(i,63);
+        g_utf8[c]=g_chr[b1+0] g_chr[b2+0];
     }
 }
+
 function html_decode(text,\
 i,j,code,newcode) {
-    if (g_atoi[32] == "" ) {
-        decode_init(g_atoi);
+    if (g_chr[32] == "" ) {
+        decode_init();
     }
     i=0;
     while((i=indexFrom(text,"&#",i)) > 0) {
@@ -3816,9 +3858,9 @@ i,j,code,newcode) {
         code=tolower(substr(text,i+2,j-(i+2)));
 
         if (substr(code,1,1) == "x") {
-            newcode=g_atoi[code];
+            newcode=g_chr[code];
         } else {
-            newcode=g_atoi[0+code];
+            newcode=g_chr[0+code];
         }
         text=substr(text,1,i-1) newcode substr(text,j+1);
     }
@@ -4103,7 +4145,7 @@ search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
             if (poster_url == "") {
                 if (xml["/image#type"] == "poster") {
                     if (xml["/image#size"] == "mid") {
-                        poster_url=xml["/image#url"];
+                        poster_url=url_encode(html_decode(xml["/image#url"]));
                     }
                 }
             }
@@ -4111,7 +4153,7 @@ search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
             if (backdrop_url == "") {
                 if (xml["/image#type"] == "backdrop") {
                     if (xml["/image#size"] == "original") {
-                        backdrop_url=xml["/image#url"];
+                        backdrop_url=url_encode(html_decode(xml["/image#url"]));
                     }
                 }
             }

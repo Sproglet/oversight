@@ -16,6 +16,7 @@
 #include "hashtable_loop.h"
 
 #define DB_ROW_BUF_SIZE 4000
+#define QUICKPARSE
 
 struct hashtable *read_and_parse_row(FILE *fp);
 int in_idlist(int id,int size,int *ids);
@@ -43,10 +44,10 @@ int db_is_locked_by_another_process(Db *db) {
         char *dir;
         ovs_asprintf(&dir,"/proc/%d",lockpid);
         if (is_dir(dir)) {
-            html_log(0,"Database locked by pid=%d current pid=%d",lockpid,getpid());
+            html_log(1,"Database locked by pid=%d current pid=%d",lockpid,getpid());
             result=1;
         } else {
-            html_log(0,"Database was locked by pid=%d current pid=%d : releasing lock",lockpid,getpid());
+            html_log(1,"Database was locked by pid=%d current pid=%d : releasing lock",lockpid,getpid());
         }
         FREE(dir);
     }
@@ -65,7 +66,7 @@ int db_lock(Db *db) {
         if (db_is_locked_by_another_process(db)) {
 
             sleep(backoff[attempt]);
-            html_log(0,"Sleeping for %d\n",backoff[attempt]);
+            html_log(1,"Sleeping for %d\n",backoff[attempt]);
 
         } else {
             db->locked_by_this_code=1;
@@ -75,7 +76,7 @@ int db_lock(Db *db) {
         FILE *fp = fopen(db->lockfile,"w");
         fprintf(fp,"%d\n",getpid());
         fclose(fp);
-        html_log(0,"Aquired lock [%s]\n",db->lockfile);
+        html_log(1,"Aquired lock [%s]\n",db->lockfile);
     } else {
         html_error("Failed to get lock [%s]\n",db->lockfile);
     }
@@ -85,7 +86,7 @@ int db_lock(Db *db) {
 int db_unlock(Db *db) {
 
     db->locked_by_this_code=0;
-    html_log(0,"Released lock [%s]\n",db->lockfile);
+    html_log(1,"Released lock [%s]\n",db->lockfile);
     return unlink(db->lockfile) ==0;
 }
 
@@ -135,166 +136,67 @@ int field_pos(char *field_id,char *buffer,char **start,int *length,int quiet) {
             return 1;
         }
     }
-    if (!quiet) html_log(0,"ERROR: Failed to find field [%s]",field_id);
+    if (!quiet) html_log(1,"ERROR: Failed to find field [%s]",field_id);
     return 0;
 }
 
-int extract_field_str(char *field_id,char *buffer,char **str,int quiet) {
-    char *s;
-    int fld_len;
-    assert(str);
-    assert(field_id);
-    assert(buffer);
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        *str = MALLOC(fld_len+1);
-        strncpy(*str,s,fld_len);
-        *((*str)+fld_len) = '\0';
-        return 1;
-    }
-    if (!quiet) html_log(0,"ERROR: Failed to extract string field [%s]",field_id);
-    return 0;
-}
+int parse_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
 
-int extract_field_long(char *field_id,char *buffer,long *val_ptr,int quiet) {
-    char *s;
-    int fld_len;
-    assert(val_ptr);
-    assert(field_id);
-    assert(buffer);
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        long val;
-        char term;
-        if (sscanf(s,"%ld%c",&val,&term) != 2) {
-            if (!quiet) html_log(0,"ERROR: failed to extract long field %s",field_id);
-        } else if (term != '\t') {
-            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after long field %s = %ld",term,field_id,val);
-        } else {
-            *val_ptr = val;
-            return 1;
-        }
-    }
-    return 0;
-}
-int extract_field_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
-    char *s;
-    int fld_len;
-    assert(val_ptr);
-    assert(field_id);
-    assert(buffer);
+    char term='\0';
     int y,m,d;
 
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        char term;
-        if (sscanf(s,"%4d-%d-%d%c",&y,&m,&d,&term) != 4) {
-            if (!quiet) html_log(0,"ERROR: failed to extract date field %s",field_id);
-        } else if (term != '\t') {
-            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after date field %s = %d %d",term,field_id,y,m,d);
-        } else {
-            struct tm t;
-            t.tm_year = y - 1900;
-            t.tm_mon = m - 1;
-            t.tm_mday = d;
-            t.tm_hour = 0;
-            t.tm_min = 0;
-            t.tm_sec = 0;
-            *val_ptr = mktime(&t);
-            if (*val_ptr < 0 ) {
-                html_log(0,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
-            }
-            return 1;
+    if (!*buffer) {
+        // blank is OK
+        return 1;
+    } else if (sscanf(buffer,"%4d-%d-%d%c",&y,&m,&d,&term) < 3) {
+        if (!quiet) html_error("ERROR: failed to extract date field %s",field_id);
+    } else if (term != '\t' && term != '\0') {
+        if (!quiet) html_error("ERROR: bad terminator [%c=%d] after date field %s = %d %d",term,term,field_id,y,m,d);
+    } else {
+        struct tm t;
+        t.tm_year = y - 1900;
+        t.tm_mon = m - 1;
+        t.tm_mday = d;
+        t.tm_hour = 0;
+        t.tm_min = 0;
+        t.tm_sec = 0;
+        *val_ptr = mktime(&t);
+        if (*val_ptr < 0 ) {
+            html_log(1,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
         }
+        return 1;
     }
     return 0;
 }
-int extract_field_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
-    char *s;
-    int fld_len;
+
+int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
     assert(val_ptr);
     assert(field_id);
     assert(buffer);
     int y,m,d,H,M,S;
-
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        char term;
-        if (sscanf(s,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) != 7) {
-            if (!quiet) html_error("failed to extract timestamp field %s",field_id);
-        } else if (term != '\t') {
-            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after timestamp field %s = %d %d %d %d %d %d",term,field_id,y,m,d,H,M,S);
-        } else {
-            struct tm t;
-            t.tm_year = y - 1900;
-            t.tm_mon = m - 1;
-            t.tm_mday = d;
-            t.tm_hour = H;
-            t.tm_min = M;
-            t.tm_sec = S;
-            *val_ptr = mktime(&t);
-            if (*val_ptr < 0 ) {
-                html_log(0,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
-            }
-            //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
-            return 1;
+    char term='\0';
+    if (!*buffer) {
+        // blank is OK
+        return 1;
+    } else if (sscanf(buffer,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) < 6) {
+        if (!quiet) html_log(1,"failed to extract timestamp field %s",field_id);
+    } else if (term != '\t' && term != '\0') {
+        if (!quiet) html_log(1,"ERROR: bad terminator [%c=%d] after timestamp field %s = %d %d %d %d %d %d",term,term,field_id,y,m,d,H,M,S);
+    } else {
+        struct tm t;
+        t.tm_year = y - 1900;
+        t.tm_mon = m - 1;
+        t.tm_mday = d;
+        t.tm_hour = H;
+        t.tm_min = M;
+        t.tm_sec = S;
+        *val_ptr = mktime(&t);
+        if (*val_ptr < 0 ) {
+        TRACE;
+            html_log(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
         }
-    }
-    return 0;
-}
-int extract_field_double(char *field_id,char *buffer,double *val_ptr,int quiet) {
-    char *s;
-    int fld_len;
-    assert(val_ptr);
-    assert(field_id);
-    assert(buffer);
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        double val;
-        char term;
-        if (sscanf(s,"%lf%c",&val,&term) != 2) {
-            if (!quiet) html_log(0,"ERROR: failed to extract double field [%s]",field_id);
-        } else if (term != '\t') {
-            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after double field %s = %d",term,field_id,val);
-        } else {
-            *val_ptr = val;
-            return 1;
-        }
-    }
-    return 0;
-}
-int extract_field_int(char *field_id,char *buffer,int *val_ptr,int quiet) {
-    char *s;
-    int fld_len;
-    assert(val_ptr);
-    assert(field_id);
-    assert(buffer);
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        int val;
-        char term;
-        if (sscanf(s,"%d%c",&val,&term) != 2) {
-            if (!quiet) html_log(0,"ERROR: failed to extract int field [%s]",field_id);
-        } else if (term != '\t') {
-            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after int field %s = %d",term,field_id,val);
-        } else {
-            *val_ptr = val;
-            return 1;
-        }
-    }
-    return 0;
-}
-int extract_field_char(char *field_id,char *buffer,char *val_ptr,int quiet) {
-    char *s;
-    int fld_len;
-    assert(val_ptr);
-    assert(field_id);
-    assert(buffer);
-    if (field_pos(field_id,buffer,&s,&fld_len,quiet)) {
-        char val;
-        char term;
-        if (sscanf(s,"%c%c",&val,&term) != 2) {
-            if (!quiet) html_log(0,"ERROR: failed to extract character field %s",field_id);
-        } else if (term != '\t') {
-            if (!quiet) html_log(0,"ERROR: bad terminator [%c] after character field %s = %c",term,field_id,val);
-        } else {
-            *val_ptr = val;
-            return 1;
-        }
+        //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
+        return 1;
     }
     return 0;
 }
@@ -337,7 +239,7 @@ struct hashtable *read_and_parse_row(FILE *fp) {
                     *p = '\0';
                     if (buf_pick == 1) {
                         // just finished value - add to hash.
-                        html_log(0,"parsed field %s=%s",name,value);
+                        html_log(1,"parsed field %s=%s",name,value);
                         hashtable_insert(row_hash,STRDUP(name),STRDUP(value));
                     }
                 } else {
@@ -363,23 +265,23 @@ struct hashtable *read_and_parse_row(FILE *fp) {
 
 void db_rowid_dump(DbRowId *rid) {
     
-    html_log(0,"ROWID: id = %d",rid->id);
-    html_log(0,"ROWID: watched = %d",rid->watched);
-    html_log(0,"ROWID: title(%s)",rid->title);
-    html_log(0,"ROWID: file(%s)",rid->file);
-    html_log(0,"ROWID: ext(%s)",rid->ext);
-    html_log(0,"ROWID: season(%d)",rid->season);
-    html_log(0,"ROWID: episode(%d)",rid->episode);
-    html_log(0,"ROWID: genre(%s)",rid->genre);
-    html_log(0,"ROWID: ext(%c)",rid->category);
-    html_log(0,"ROWID: parts(%s)",rid->parts);
-    html_log(0,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
-    html_log(0,"ROWID: eptitle(%s)",rid->eptitle);
-    html_log(0,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
-    html_log(0,"ROWID: additional_nfo(%s)",rid->additional_nfo);
-    html_log(0,"ROWID: airdate(%s)",asctime(localtime((time_t *)&(rid->airdate))));
-    html_log(0,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
-    html_log(0,"----");
+    html_log(1,"ROWID: id = %d",rid->id);
+    html_log(1,"ROWID: watched = %d",rid->watched);
+    html_log(1,"ROWID: title(%s)",rid->title);
+    html_log(1,"ROWID: file(%s)",rid->file);
+    html_log(1,"ROWID: ext(%s)",rid->ext);
+    html_log(1,"ROWID: season(%d)",rid->season);
+    html_log(1,"ROWID: episode(%s)",rid->episode);
+    html_log(1,"ROWID: genre(%s)",rid->genre);
+    html_log(1,"ROWID: ext(%c)",rid->category);
+    html_log(1,"ROWID: parts(%s)",rid->parts);
+    html_log(1,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
+    html_log(1,"ROWID: eptitle(%s)",rid->eptitle);
+    html_log(1,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
+    html_log(1,"ROWID: additional_nfo(%s)",rid->additional_nfo);
+    html_log(1,"ROWID: airdate(%s)",asctime(localtime((time_t *)&(rid->airdate))));
+    html_log(1,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
+    html_log(1,"----");
 }
 
 #define ALL_IDS -1
@@ -404,103 +306,112 @@ int parse_row(
     rowid->season = -1;
     rowid->category='?';
 
-    int report_error=1;
+    int result = 0;
+    
+    char *name_start = buffer;
+    for(;;) {
 
-    switch(buffer[0]) {
-        case '\t':
-            if (extract_field_long(DB_FLDID_ID,buffer,&(rowid->id),0)) {
+        char *name_end,*value_start,*value_end = NULL;
 
-                // Filter on id if necessary
-                //html_log(0,"dbg row id = %ld",rowid->id);
-                if (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) {
-
-                    if (extract_field_timestamp(DB_FLDID_INDEXTIME,buffer,&(rowid->date),0)) {
-
-                        if (extract_field_str(DB_FLDID_TITLE,buffer,&(rowid->title),0)) {
-                            if (extract_field_str(DB_FLDID_POSTER,buffer,&(rowid->poster),0)) {
-
-                                extract_field_int(DB_FLDID_WATCHED,buffer,&(rowid->watched),1);
-                                extract_field_int(DB_FLDID_YEAR,buffer,&(rowid->year),1);
-                                assert(rowid->watched == 0 || rowid->watched == 1);
-
-                                extract_field_int(DB_FLDID_SEASON,buffer,&(rowid->season),1);
-                                extract_field_char(DB_FLDID_CATEGORY,buffer,&(rowid->category),1);
-                                extract_field_str(DB_FLDID_GENRE,buffer,&(rowid->genre),0);
-
-                                //if (in_text_mode() || (rowid->category != 'M' && rowid->category != 'T' ) ) {
-
-            //html_log(0,"db getting file..");
-                                    extract_field_str(DB_FLDID_FILE,buffer,&(rowid->file),0);
-            //html_log(0,"db file = [%s]",rowid->file);
-                                    rowid->ext = strrchr(rowid->file,'.');
-            //html_log(0,"db ext = [%s]",rowid->ext);
-                                    if (rowid->ext) rowid->ext++;
-            //html_log(0,"db ext = [%s]",rowid->ext);
-
-                                    extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
-                                    extract_field_str(DB_FLDID_CERT,buffer,&(rowid->certificate),0);
-            //html_log(0,"db cert = [%s]",rowid->certificate);
-
-                                //}
-                                if (tv_or_movie_view) {
-                                    extract_field_str(DB_FLDID_FANART,buffer,&(rowid->fanart),0);
-                                    extract_field_str(DB_FLDID_URL,buffer,&(rowid->url),0);
-                                    extract_field_str(DB_FLDID_PARTS,buffer,&(rowid->parts),0);
-                                    //the big one!
-                                    extract_field_str(DB_FLDID_PLOT,buffer,&(rowid->plot),0);
-                                    if (strlen(rowid->plot) > g_dimension->max_plot_length) {
-                                        strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
-                                    }
-
-                                    extract_field_double(DB_FLDID_RATING,buffer,&(rowid->rating),0);
-                                    extract_field_int(DB_FLDID_EPISODE,buffer,&(rowid->episode),0);
-
-                                    extract_field_str(DB_FLDID_EPTITLE,buffer,&(rowid->eptitle),0);
-                                    extract_field_str(DB_FLDID_EPTITLEIMDB,buffer,&(rowid->eptitle_imdb),0);
-
-                                    extract_field_str(DB_FLDID_ADDITIONAL_INFO,buffer,&(rowid->additional_nfo),0);
-
-                                    extract_field_date(DB_FLDID_AIRDATE,buffer,&(rowid->airdate),0);
-                                    extract_field_date(DB_FLDID_AIRDATEIMDB,buffer,&(rowid->airdate_imdb),0);
-
-                                }
-                                // If doing actions we need to get the nfo file. 
-                                // Also get it during normal load if there are files queued to delete.
-                                // in the latter case remove the file from the queue is it is still in use.
-                                extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
-                                /*
-                                if (deleting == PRE_DELETE || g_delete_queue != NULL) {
-                                    extract_field_str(DB_FLDID_NFO,buffer,&(rowid->nfo),0);
-                                    if (deleting != PRE_DELETE) {
-                                        delete_queue_remove(rowid->nfo);
-                                        free(rowid->nfo);
-                                        rowid->nfo = NULL;
-                                    }
-                                }
-                                */
-
-                                // The folowing files are removed from the delete queue whenever they are parsed.
-                                delete_queue_unqueue(rowid->db->source,rowid->nfo);
-                                delete_queue_unqueue(rowid->db->source,rowid->poster);
-
-                                return 1;
-                            }
-                        }
-                    }
-                } else {
-                    report_error=0;
-                }
-            }
-            if (report_error) {
-                html_error("Failed to parse row {%s}",buffer);
-            }
+        //find start of name
+        if (*name_start != '\t') {
+            html_error("rowid %d: Tab expected before next field name",rowid->id);
             break;
-        case '#' : // do nothing
+        }
+
+        name_start++;
+        if (!*name_start || *name_start == 10 || *name_start == 13 ) {
+            result = 1;
             break;
-        default:
-            html_error("Unknown line in db {%s}",buffer);
+        }
+
+        //find end of name
+        name_end=name_start;
+        while(*name_end && *name_end != '\t') {
+            name_end++;
+        }
+        if (*name_end != '\t') {
+            html_error("rowid %d: Tab expected after next field name - got %c(%d) %c=%d",rowid->id,*name_start,*name_start,*name_end,*name_end);
+            break;
+        }
+        *name_end = '\0';
+        //html_log(-1,"fname[%s]",name_start);
+
+
+        //find start of value
+        value_end=value_start=name_end+1;
+        while(*value_end && *value_end != '\t') {
+            value_end++;
+        }
+
+        if (*value_end != '\t') {
+            html_error("rowid %d: Tab expected after field value",rowid->id);
+            break;
+        }
+
+
+        *value_end = '\0';
+
+        //html_log(-1,"fval[%s]",value_start);
+
+
+        // Used to checl for trailing chars.
+        char *tmps=NULL;
+        char tmpc='\0';
+        int tmp_conv=1;
+
+        if (strcmp(name_start,DB_FLDID_ID) == 0)  rowid->id=strtol(value_start,&tmps,10) ;
+        else if (strcmp(name_start,DB_FLDID_INDEXTIME) == 0)  parse_timestamp(name_start,value_start,&(rowid->date),0);
+        else if (strcmp(name_start,DB_FLDID_TITLE) == 0) rowid->title = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_POSTER) == 0) rowid->poster = STRDUP(value_start);
+
+        else if (strcmp(name_start,DB_FLDID_WATCHED) == 0) {
+            rowid->watched=strtol(value_start,&tmps,10);
+            assert(rowid->watched == 0 || rowid->watched == 1);
+        } else if (strcmp(name_start,DB_FLDID_YEAR) == 0)  rowid->year=strtol(value_start,&tmps,10);
+        else if (strcmp(name_start,DB_FLDID_SEASON) == 0) rowid->season = strtol(value_start,&tmps,10);
+        else if (strcmp(name_start,DB_FLDID_CATEGORY) == 0) rowid->category = *value_start;
+        else if (strcmp(name_start,DB_FLDID_GENRE) == 0) rowid->genre = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_FILE) == 0) {
+            rowid->file = STRDUP(value_start);
+            rowid->ext = strrchr(rowid->file,'.');
+            if (rowid->ext) rowid->ext++;
+
+        } else if (strcmp(name_start,DB_FLDID_CERT) == 0) rowid->certificate = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_FANART) == 0) rowid->fanart = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_URL) == 0) rowid->url = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_PARTS) == 0) rowid->parts = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_PLOT) == 0)  {
+            rowid->plot = STRDUP(value_start);
+            if (strlen(rowid->plot) > g_dimension->max_plot_length) {
+                strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
+            }
+        } else if (strcmp(name_start,DB_FLDID_RATING) == 0) sscanf(value_start,"%lf",&(rowid->rating));
+        else if (strcmp(name_start,DB_FLDID_EPISODE) == 0) rowid->episode = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_EPTITLE) == 0) rowid->eptitle = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_EPTITLEIMDB) == 0) rowid->eptitle_imdb = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_ADDITIONAL_INFO) == 0) rowid->additional_nfo = STRDUP(value_start);
+        else if (strcmp(name_start,DB_FLDID_AIRDATE) == 0) parse_date(name_start,value_start,&(rowid->airdate),0);
+        else if (strcmp(name_start,DB_FLDID_AIRDATEIMDB) == 0) parse_date(name_start,value_start,&(rowid->airdate_imdb),0);
+        else if (strcmp(name_start,DB_FLDID_NFO) == 0) rowid->nfo=STRDUP(value_start);
+
+        if ( (tmps && *tmps)  || tmpc != '\0' || tmp_conv != 1 ) {
+            html_error("Error parsing [%s]=[%s]",name_start,value_start);
+        }
+
+        // The folowing files are removed from the delete queue whenever they are parsed.
+        delete_queue_unqueue(rowid->db->source,rowid->nfo);
+        delete_queue_unqueue(rowid->db->source,rowid->poster);
+
+        *name_end = *value_end = '\t';
+        name_start = value_end;
     }
-    return 0;
+
+    result =   (result && (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) );
+    if (!result) {
+        db_rowid_free(rowid,0);
+    }
+    return result;
 }
 
 DbRowSet *db_rowset(Db *db) {
@@ -574,7 +485,7 @@ int db_to_be_scanned(char *name) {
 void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
         int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
 
-    html_log(0,"begin db_scan_and_add_rowset");
+    html_log(1,"begin db_scan_and_add_rowset");
     if (db_to_be_scanned(name)) {
 
         Db *db = db_init(path,name);
@@ -595,7 +506,7 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
             }
         }
     }
-    html_log(0,"end db_scan_and_add_rowset");
+    html_log(1,"end db_scan_and_add_rowset");
 }
 
 
@@ -610,7 +521,7 @@ DbRowSet **db_crossview_scan_titles(
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
 
-    html_log(0,"begin db_crossview_scan_titles");
+    html_log(1,"begin db_crossview_scan_titles");
     // Add information from the local database
     db_scan_and_add_rowset(
         localDbPath(),"*",
@@ -636,14 +547,14 @@ DbRowSet **db_crossview_scan_titles(
                         &rowset_count,&rowsets);
 
                 } else {
-                    html_log(0,"crossview search %s doesnt exist",path);
+                    html_log(1,"crossview search %s doesnt exist",path);
                 }
                 free(path);
             }
             closedir(d);
         }
     }
-    html_log(0,"end db_crossview_scan_titles");
+    html_log(1,"end db_crossview_scan_titles");
     return rowsets;
 }
 
@@ -672,7 +583,7 @@ int *extract_idlist(char *db_name,int *num_ids) {
     char *query = query_val("idlist");
     int *result = NULL;
 
-    html_log(0,"extract_idlist from [%s]",query);
+    html_log(1,"extract_idlist from [%s]",query);
 
     if (*query) {
         *num_ids = 0;
@@ -706,11 +617,11 @@ int *extract_idlist(char *db_name,int *num_ids) {
     }
 
     if (*num_ids == ALL_IDS) {
-        html_log(0,"db: name=%s searching all ids",db_name);
+        html_log(1,"db: name=%s searching all ids",db_name);
     } else {
         int i;
         for(i  = 0 ; i < *num_ids ; i++ ) {
-            html_log(0,"db: name=%s id %d",db_name,result[i]);
+            html_log(1,"db: name=%s id %d",db_name,result[i]);
         }
     }
 
@@ -739,7 +650,7 @@ int in_idlist(int id,int size,int *ids) {
 
         } else {
 
-            html_log(0,"found %d",ids[mid]);
+            html_log(1,"found %d",ids[mid]);
             return 1;
         }
     } while (min < max);
@@ -765,7 +676,7 @@ DbRowSet * db_scan_titles(
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);
 
-    html_log(2,"Creating db scan pattern..");
+    html_log(3,"Creating db scan pattern..");
 
     if (name_filter && *name_filter) {
         // Take the pattern and turn it into <TAB>_ID<TAB>pattern<TAB>
@@ -780,7 +691,7 @@ DbRowSet * db_scan_titles(
             assert(1);
             return NULL;
         }
-        html_log(0,"filering by regex [%s]",name_filter);
+        html_log(1,"filering by regex [%s]",name_filter);
     }
 
     char *watched_substring=NULL;
@@ -803,12 +714,12 @@ DbRowSet * db_scan_titles(
     int row_count=0;
     int total_rows=0;
 
-    html_log(2,"db scanning %s",db->path);
+    html_log(3,"db scanning %s",db->path);
 
     FILE *fp = fopen(db->path,"r");
-    html_log(2,"db scanning %s",db->path);
+    html_log(3,"db scanning %s",db->path);
     //assert(fp);
-html_log(2,"db fp.%ld..",(long)fp);
+html_log(3,"db fp.%ld..",(long)fp);
     if (fp) {
         rowset=db_rowset(db);
         DbRowId rowid;
@@ -826,7 +737,7 @@ html_log(2,"db fp.%ld..",(long)fp);
             }
         }
 #endif
-html_log(2,"db start loop...");
+html_log(3,"db start loop...");
 
         while (1) {
             /*
@@ -843,52 +754,37 @@ html_log(2,"db start loop...");
                 (*gross_size)++;
             }
 
-            if (name_filter && *name_filter) {
-                char *title_start=NULL;
-                int title_len=0;
-                int match;
+            if (parse_row(num_ids,ids,tv_or_movie_view,buffer,db,&rowid)) {
 
-                // Modify buffer in place and try to match. This allows use of ^ $
-                // And prevents the regex matching against the rest of the buffer.
-                if (field_pos(DB_FLDID_TITLE,buffer,&title_start,&title_len,0)) {
-                    title_start[title_len] = '\0';
-                    match = regexec(&pattern,title_start,0,NULL,0);
+                if (name_filter && *name_filter) {
+                    int match= regexec(&pattern,rowid.title,0,NULL,0);
                     if (match != 0 ) {
-                        html_log(4,"skipped %s!=%s",title_start,name_filter);
-                        title_start[title_len] = DB_SEP;
+                        html_log(5,"skipped %s!=%s",rowid.title,name_filter);
                         continue;
                     }
-                    title_start[title_len] = DB_SEP;
                 }
-            }
-            if (media_substring) {
-                if (strstr(buffer,media_substring) == NULL) {
-                    html_log(4,"skipped %s",media_substring);
-                    continue;
+                switch(media_type) {
+                    case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') continue; ; break;
+                    case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') continue; ; break;
                 }
-            }
 
-            if (watched_substring) {
-                if (strstr(buffer,watched_substring) == NULL) {
-                    html_log(4,"skipped %s",watched_substring);
-                    continue;
+                switch(watched) {
+                    case DB_WATCHED_FILTER_NO : if (rowid.watched != 0 ) continue ; break;
+                    case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) continue ; break;
                 }
-            }
-
-
-            if (parse_row(num_ids,ids,tv_or_movie_view,buffer,db,&rowid)) {
                 row_count = db_rowset_add(rowset,&rowid);
             }
+
         }
         fclose(fp);
     }
     if (rowset) {
-        html_log(0,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
+        html_log(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
-        html_log(0,"db[%s] No rows loaded",db->source);
+        html_log(1,"db[%s] No rows loaded",db->source);
     }
     free(ids);
-    html_log(0,"return rowset");
+    html_log(1,"return rowset");
     return rowset;
 }
 
@@ -916,6 +812,7 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     free(rid->poster);
     free(rid->genre);
     free(rid->file);
+    free(rid->episode);
     //Dont free ext as it points to file.
 
 
@@ -965,7 +862,7 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
 void db_set_fields_by_source(
         char *field_id,char *new_value,char *source,char *idlist,int delete_mode) {
 
-html_log(0," begin db init");
+html_log(1," begin db init");
 
     Db *db = db_init(NULL,source);
 
@@ -985,20 +882,20 @@ html_log(0," begin db init");
 
     regmatch_t pmatch[5];
 
-html_log(0," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
+html_log(1," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
 
     ovs_asprintf(&regex_text,"\t%s\t([^\t]+)\t",field_id);
     util_regcomp(&regex_ptn,regex_text,0);
-    html_log(0,"regex filter [%s]",regex_text);
+    html_log(1,"regex filter [%s]",regex_text);
 
     ovs_asprintf(&id_regex_text,"\t%s\t(%s)\t",DB_FLDID_ID,idlist);
     util_regcomp(&id_regex_ptn,id_regex_text,0);
-    html_log(0,"regex extract [%s]",id_regex_text);
+    html_log(1,"regex extract [%s]",id_regex_text);
 
 
 
     if (db && db_lock(db)) {
-html_log(0," begin open db");
+html_log(1," begin open db");
         FILE *db_in = fopen(db->path,"r");
 
         if (db_in) {
@@ -1025,10 +922,8 @@ html_log(0," begin open db");
                         fprintf(db_out,"%s",buf);
 
                     } else if (delete_mode == DELETE_MODE_REMOVE) {
-TRACE;
                             // do nothing. line is not written 
                     } else if (delete_mode == DELETE_MODE_DELETE) {
-TRACE;
                         DbRowId rid;
                         parse_row(ALL_IDS,NULL,0,buf,db,&rid);
                         delete_media(&rid,1);
@@ -1036,11 +931,10 @@ TRACE;
 
                     } else if ( regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
                         // Field is present - change it
-TRACE;
                         int spos=pmatch[1].rm_so;
                         int epos=pmatch[1].rm_eo;
 
-html_log(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
+html_log(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
 
                         buf[spos]='\0';
 
@@ -1065,7 +959,7 @@ html_log(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epo
         db_unlock(db);
         db_free(db);
     }
-html_log(0," end db_set_fields_by_source");
+html_log(1," end db_set_fields_by_source");
     regfree(&regex_ptn);
     regfree(&id_regex_ptn);
     FREE(regex_text);
@@ -1089,12 +983,84 @@ void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_sourc
     char *source;
     char *idlist;
 
-html_log(0," begin db_set_fields");
+html_log(1," begin db_set_fields");
     for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
 TRACE;
         db_set_fields_by_source(field_id,new_value,source,idlist,delete_mode);
     }
-html_log(0," end db_set_fields");
+html_log(1," end db_set_fields");
 }
 
+void get_genre_from_string(char *gstr,struct hashtable *h) {
+
+    char *p;
+
+    for(;;) {
+        //while (*gstr == ' ' ) gstr++; // eat space
+
+        while (*gstr && strchr("|, ",*gstr) ) { gstr++; } // eat sep
+
+        //while (*gstr == ' ' ) gstr++; // eat space - ltrim
+
+        if (!*gstr) {
+            break;
+        }
+
+        p = gstr;
+        while ( *p && strchr("|, ",*p) == NULL) { p++; } // find end sep
+
+        //while ( p > gstr && p[-1] == ' ' ) p--; // rtrim
+
+        if (*gstr && p > gstr) {
+            char save_c = *p;
+            *p = '\0';
+
+            // Exclude 'and' and 'Show' from genres
+            if (strcmp(gstr,"and") != 0 && strcmp(gstr,"Show") != 0 ) {
+
+                //html_log(1,"Genre[%s]",gstr);
+                if (gstr && *gstr) {
+                    char *g = hashtable_search(h,gstr);
+                    if (g==NULL) {
+                        html_log(1,"added Genre[%s]",gstr);
+                        hashtable_insert(h,STRDUP(gstr),"1");
+                    }
+                }
+            }
+
+            *p = save_c;
+
+            gstr = p;
+        }
+    }
+}
+
+Array *get_genres(DbRowSet **rowset) {
+
+    int rset_no;
+    DbRowSet *r;
+    int i;
+
+    // First insert all genres into a hashtable
+    struct hashtable *h = string_string_hashtable(16);
+
+    for(rset_no = 0 ; rowset[rset_no] ; rset_no++ ) {
+        r = rowset[rset_no];
+
+        for ( i = 0 ; i < r->size ; i++ ) {
+            DbRowId *id = r->rows + i;
+            if (id->genre) {
+
+                get_genre_from_string(id->genre,h);
+            }
+        }
+    }
+
+    // Now create a new array from hashtable keys.
+    Array *a = util_hashtable_keys(h);
+    array_sort(a,NULL);
+    array_print("sorted genres",a);
+    hashtable_destroy(h,0,0);
+    return a;
+}
 

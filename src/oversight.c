@@ -33,6 +33,7 @@ void load_configs () {
 
     html_comment("load nmt settings");
     g_nmt_settings = config_load("/tmp/setting.txt");
+    html_comment("end load nmt settings");
 
 }
 
@@ -129,6 +130,13 @@ int main(int argc,char **argv) {
     printf("Content-Type: text/html\n\n");
     html_log_level_set(2);
 
+    load_configs();
+
+    long log_level;
+    if (config_check_long(g_oversight_config,"ovs_log_level",&log_level)) {
+        html_log_level_set(log_level);
+    }
+
     html_comment("Appdir= [%s]",appDir());
 
     //array_unittest();
@@ -152,13 +160,12 @@ int main(int argc,char **argv) {
     char *view=query_val("view");  
 
 
-    load_configs();
 
     config_read_dimensions();
 
-    html_log(0,"== Begin Actions ==");
+    html_comment("Begin Actions");
     do_actions();
-    html_log(0,"== End Actions view=%s select=%s ==",query_val("view"),query_val("select"));
+    html_comment("End Actions view=%s select=%s ==",query_val("view"),query_val("select"));
    
 
     // After actions get view again. This is in case we have just deleted the last item in 
@@ -169,7 +176,11 @@ int main(int argc,char **argv) {
     DbRowSet **rowsets;
     DbRowId **sorted_rows;
 
+    html_comment("Get rows");
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
+
+    html_comment("Get genres");
+    g_genre = get_genres(rowsets);
 
     char *skin_name=oversight_val("ovs_skin_name");
 
@@ -178,6 +189,7 @@ int main(int argc,char **argv) {
         html_error("Invalid skin name[%s]",skin_name);
 
     } else {
+        html_comment("display template");
 
         playlist_open();
 
@@ -198,6 +210,7 @@ int main(int argc,char **argv) {
             display_template(skin_name,"menu",num_rows,sorted_rows);
         }
     }
+    html_comment("cleanup");
 
 TRACE;
 
@@ -214,19 +227,21 @@ TRACE;
     html_hashtable_dump(3,"settings",nmt_settings);
     */
     hashtable_destroy(g_oversight_config,1,1);
-TRACE;
+
     hashtable_destroy(g_catalog_config,1,1);
-TRACE;
+
     hashtable_destroy(g_nmt_settings,1,1);
-TRACE;
+
     hashtable_destroy(g_query,1,0);
-TRACE;
 
     /*
     hashtable database_list= open_databases(g_query);
 
     display_page(g_query,database_list);
     */
+
+    html_comment("end");
+
 
     return result;
     

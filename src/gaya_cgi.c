@@ -58,7 +58,7 @@ struct hashtable *read_post_data(char *post_filename) {
     struct hashtable *result = string_string_hashtable(16);
 
     if (post_filename == NULL) {
-        html_log(1,"no post data");
+        html_log(2,"no post data");
         return result;
     }
 
@@ -66,9 +66,9 @@ struct hashtable *read_post_data(char *post_filename) {
     char *method = getenv("HTTP_METHOD");
     char *post_type= getenv("POST_TYPE");
 
-    html_log(0,"HTTP_METHOD=[%s]",method);
-    html_log(0,"POST_TYPE=[%s]",post_type);
-    html_log(0,"POST_BOUNDARY=[%s]",boundary);
+    html_log(1,"HTTP_METHOD=[%s]",method);
+    html_log(1,"POST_TYPE=[%s]",post_type);
+    html_log(1,"POST_BOUNDARY=[%s]",boundary);
 
     int url_encoded_in_post_data = 
         (method != NULL && strcmp(method,"POST") == 0 &&
@@ -93,7 +93,7 @@ struct hashtable *read_post_data(char *post_filename) {
     char *value = NULL;
 
 
-    html_log(2,"opening post file [%s]",post_filename);
+    html_log(3,"opening post file [%s]",post_filename);
 
     FILE *pfp = fopen(post_filename,"r");
 
@@ -115,7 +115,7 @@ struct hashtable *read_post_data(char *post_filename) {
 
             // This is a one off rule that indicates the post file is just a single line
             // containing a query string
-            html_log(0,"post line url: %s",post_line);
+            html_log(1,"post line url: %s",post_line);
 
             char *q = replace_all(post_line,"[^:]:","",0); //why?
             parse_query_string(q,result);
@@ -123,7 +123,7 @@ struct hashtable *read_post_data(char *post_filename) {
 
         } else if (strstr(post_line,boundary) ) {
 
-            html_log(0,"post line bdry: %s",post_line);
+            html_log(1,"post line bdry: %s",post_line);
             if (fileptr != NULL ) {
                 // Process item defined before boundary
                 fclose(fileptr);
@@ -134,11 +134,11 @@ struct hashtable *read_post_data(char *post_filename) {
 
                 char *found;
 
-                html_log(1,"post: name [%s] about to add val [%s] ...",name,value);
+                html_log(2,"post: name [%s] about to add val [%s] ...",name,value);
 
                 if ((found=hashtable_remove(result,name)) != NULL) {
 
-                    html_log(1,"post: name [%s] existing val [%s] new val [%s]",name,found,value);
+                    html_log(2,"post: name [%s] existing val [%s] new val [%s]",name,found,value);
                     char *tmp;
                     ovs_asprintf(&tmp,"%s\r%s",found,value);
                     hashtable_insert(result,name,tmp);
@@ -147,7 +147,7 @@ struct hashtable *read_post_data(char *post_filename) {
 
                 } else {
 
-                    html_log(1,"post: name [%s] new val [%s]..",name,value);
+                    html_log(2,"post: name [%s] new val [%s]..",name,value);
                     //Add the new value
                     hashtable_insert(result,name,value);
                 }
@@ -158,11 +158,11 @@ struct hashtable *read_post_data(char *post_filename) {
 
         } else if (in_header ) {
            
-            html_log(0,"post line head: %s",post_line);
+            html_log(1,"post line head: %s",post_line);
            if (strstr(post_line,"Content-Disposition: form-data; name=") == post_line) {
 
                 name=regextract1(post_line,"name=\"([^\"]+)\"",1,0);
-                html_log(1,"post: extracted name [%s]",name);
+                html_log(2,"post: extracted name [%s]",name);
                 value=NULL;
                 format=cr_lf;
 
@@ -194,13 +194,13 @@ struct hashtable *read_post_data(char *post_filename) {
 
                 // blank line - start reading data.
                 in_header = 0;
-                html_log(0,"Start data : inheader = %d",in_header);
+                html_log(1,"Start data : inheader = %d",in_header);
                 value = NULL;
             }
 
         } else {
             // not in_header - read data
-            html_log(0,"post line data: %s",post_line);
+            html_log(1,"post line data: %s",post_line);
 
             if (format == cr_lf) {
                 //remove newline
@@ -221,7 +221,7 @@ struct hashtable *read_post_data(char *post_filename) {
         }
     }
     fclose(pfp);
-    html_log(0,"post: end");
+    html_log(1,"post: end");
 
     return result;
 }
@@ -368,7 +368,7 @@ void html_vacomment(char *format,va_list ap) {
     if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
         // char *s2;
         //s2=html_encode(s1);
-        printf("<!-- %ld %s -->\n",clock(),s1);
+        printf("<!-- %ld %s -->\n",clock()>>10,s1);
         fflush(stdout);
         //free(s2);
         free(s1);
@@ -390,11 +390,11 @@ void html_log(int level,char *format,...) {
     va_list ap;
 
     assert(level < 10);
-    va_start(ap,format);
     if (level <= html_log_level ) {
+        va_start(ap,format);
         html_vacomment(format,ap);
+        va_end(ap);
     }
-    va_end(ap);
 }
 void html_error(char *format,...) {
     va_list ap;

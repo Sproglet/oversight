@@ -34,7 +34,7 @@ int browsing_from_lan() {
                 }
             }
         }
-        html_log(0,"browsing from lan = %d",result);
+        html_log(1,"browsing from lan = %d",result);
     }
     return result;
 }
@@ -48,7 +48,7 @@ long allow_mark() {
         } else if (!config_check_long(g_oversight_config,"ovs_wan_mark",&result)) {
             result=0;
         }
-        html_log(0,"allow mark = %d",result);
+        html_log(1,"allow mark = %d",result);
     }
     return result;
 }
@@ -61,7 +61,7 @@ long allow_delete() {
         } else if (!config_check_long(g_oversight_config,"ovs_wan_delete",&result)) {
             result=0;
         }
-        html_log(0,"allow delete = %d",result);
+        html_log(1,"allow delete = %d",result);
     }
     return result;
 }
@@ -74,7 +74,7 @@ long allow_delist() {
         } else if (!config_check_long(g_oversight_config,"ovs_wan_delist",&result)) {
             result=0;
         }
-        html_log(0,"allow delist = %d",result);
+        html_log(1,"allow delist = %d",result);
     }
     return result;
 }
@@ -87,7 +87,7 @@ long allow_admin() {
         } else if (!config_check_long(g_oversight_config,"ovs_wan_admin",&result)) {
             result=0;
         }
-        html_log(0,"allow admin = %d",result);
+        html_log(1,"allow admin = %d",result);
     }
     return result;
 }
@@ -129,7 +129,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     ovs_asprintf(&f,"%s/%s",d,defaults_file);
 
     if (is_file(f)) {
-        html_log(0,"loading [%s]",f);
+        html_log(1,"loading [%s]",f);
         out = config_load(f);
     } else {
         out = string_string_hashtable(16);
@@ -141,7 +141,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     sprintf(f,"%s/%s",d,main_file);
 
     if (is_file(f)) {
-        html_log(0,"loading [%s]",f);
+        html_log(1,"loading [%s]",f);
         new = config_load(f);
     } else {
         new = string_string_hashtable(16);
@@ -244,9 +244,9 @@ int config_get_str(struct hashtable *h,char *key,char **out) {
 }
 //gets optional string config value via out : returns 1 if found 0 if not
 int config_check_str(struct hashtable *h,char *key,char **out) {
-    html_log(3,"Checking string [%s]",key);
+    //html_log(4,"Checking string [%s]",key);
     *out =  hashtable_search(h,key);
-    html_log(3,"Checked string [%s] = [%s]",key,*out);
+    //html_log(4,"Checked string [%s] = [%s]",key,*out);
     return (*out != NULL);
 }
 
@@ -264,12 +264,12 @@ int config_get_long(struct hashtable *h,char *key,long *out) {
 int config_check_long(struct hashtable *h,char *key,long *out) {
     char *s,*end;
     long val;
-    html_log(3,"Checking long [%s]",key);
+    //html_log(4,"Checking long [%s]",key);
     if (config_check_str(h,key,&s) == 0) {
         return 0;
     }
     val=strtol(s,&end,10);
-    html_log(3,"Checked long [%s]=%ld",key,val);
+    html_log(4,"Checked long [%s]=%ld",key,val);
     if (*s != '\0' && *end != '\0') {
         html_error("ERROR: Integer conversion error for [%s] = [%s]",key,s);
         exit(1);
@@ -306,7 +306,7 @@ int config_get_long_indexed(struct hashtable *h,char *k,char *index,long *out) {
         html_error("ERROR: missing config int entry {%s[%s]}",k,index);
         exit(1);
     }
-    html_log(3,"%s[%s] = %ld result %d",k,index,*out,result);
+    html_log(4,"%s[%s] = %ld result %d",k,index,*out,result);
     return result;
 }
 
@@ -314,7 +314,7 @@ int config_get_long_indexed(struct hashtable *h,char *k,char *index,long *out) {
 int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out) {
     char *s ;
     int result=0;
-    html_log(3,"Checking long [%s[%s]]",k,index);
+    //html_log(4,"Checking long [%s[%s]]",k,index);
     if (ovs_asprintf(&s,"%s[%s]",k,index) >= 0 ) {
         result = config_check_long(h,s,out);
         free(s);
@@ -332,7 +332,7 @@ long get_scanlines(int *is_pal) {
     } else {
         //Localbrowser- get resolution
         char *tv_mode = hashtable_search(g_nmt_settings,"video_output");
-        html_log(0,"tvmode = %s",tv_mode);
+        html_log(1,"tvmode = %s",tv_mode);
         tv_mode_int = atoi(tv_mode);
     }
 

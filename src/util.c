@@ -265,10 +265,10 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
             }
 
             if ( hashtable_change(h1,k,v) ) {
-                html_log(2,"Changed [ %s ] = [ %s ]",k,v);
+                html_log(3,"Changed [ %s ] = [ %s ]",k,v);
             } else {
                 hashtable_insert(h1,k,v);
-                html_log(4,"Added [ %s ] = [ %s ]",k,v);
+                html_log(5,"Added [ %s ] = [ %s ]",k,v);
             }
         }
     }
@@ -578,9 +578,9 @@ char *util_hostname() {
     return hostname;
 }
 void query_remove(char *name) {
-    html_log(0,"Removing query item [%s]",name);
+    html_log(1,"Removing query item [%s]",name);
     if (hashtable_remove(g_query,name) == NULL) {
-        html_log(4,"query item not present [%s]",name);
+        html_log(5,"query item not present [%s]",name);
     }
 }
      
@@ -704,9 +704,9 @@ void util_rmdir(char *path,char *name) {
             }
         }
         closedir(d);
-        html_log(0,"rmdir [%s]",full_path);
+        html_log(1,"rmdir [%s]",full_path);
     } else {
-        html_log(0,"unlink [%s]",full_path);
+        html_log(1,"unlink [%s]",full_path);
         unlink(full_path);
     }
     free(full_path);
@@ -725,10 +725,21 @@ int exists_file_in_dir(char *dir,char *name) {
 
 int util_system(char *cmd) {
     int result;
-    html_log(0,"system %s",cmd);
+    html_log(1,"system %s",cmd);
     result = system(cmd);
-    html_log(0,"system result %d",result);
+    html_log(1,"system result %d",result);
     return result;
 }
+
+Array *util_hashtable_keys(struct hashtable *h) {
+    Array *a = array_new(free);
+    struct hashtable_itr *itr;
+    char *k,*v;
+    for (itr = hashtable_loop_init(h) ; hashtable_loop_more(itr,&k,&v) ; ) {
+        array_add(a,k);
+    }
+    return a;
+}
+
 
 

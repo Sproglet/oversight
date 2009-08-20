@@ -14,6 +14,7 @@
                     <td><font size=6>[:MEDIA_TYPE:]</font>
                     <br><font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>
+                    <td>[:GENRE_SELECT:]</td>
                     <td>[:MEDIA_TOGGLE:]</td>
                     <td>[:WATCHED_TOGGLE:]</td>
                     <td>[:SORT_TYPE_TOGGLE:]</td>

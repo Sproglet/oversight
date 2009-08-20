@@ -83,17 +83,32 @@ void array_set(Array *a,int idx,void *ptr) {
     }
 }
 
+// strcmp function for qsort.
+int array_strcasecmp(const void *a,const void *b) {
+    return strcasecmp(*(char **)a,*(char **)b);
+}
+
+// Sort an array. If 2nd arg is null then use default sort array_strcasecmp
+void array_sort(Array *a,int (*fn)(const void *,const void *)) {
+    if (a && a->size) {
+        if (fn == NULL) {
+            fn = array_strcasecmp;
+        }
+        qsort(a->array,a->size,sizeof(void *),fn);
+    }
+}
+
 void array_print(char *label,Array *a) {
 
     int i;
 
-    html_log(0,"%s: size %d mem %d  \n",label,a->size,a->mem_size);
+    html_log(1,"%s: size %d mem %d",label,a->size,a->mem_size);
 
     if ( a->size) {
 
         for(i = 0 ; i < a->size ; i++ ) {
 
-            html_log(0,"%s: [%d]=<%s>\n",label,i,(char *)(a->array[i]));
+            html_log(1,"%s: [%d]=<%s>",label,i,(char *)(a->array[i]));
         }
     }
 }
@@ -231,9 +246,6 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
         int match_start = pmatch[0].rm_so;
         int match_end = pmatch[0].rm_eo;
         
-        printf("start %d end %d\n",match_start,match_end);
-
-
         // printf("split3 match found at [%*.s][%*.s]\n",match_start,s,(match_end-match_start),s+match_start);
 
         char *part = MALLOC(match_start+1);

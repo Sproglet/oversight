@@ -78,4 +78,5 @@ void util_rmdir(char *path,char *name);
 #define TRACE html_log(0,"%s %s %d",__FUNCTION__,__FILE__,__LINE__)
 
 int exists_file_in_dir(char *dir,char *name);
+Array *util_hashtable_keys(struct hashtable *h);
 #endif

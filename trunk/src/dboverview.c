@@ -32,10 +32,9 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
     if ((*rid1)->category == 'T' && (*rid2)->category=='T') {
         // Compare by season
 
-        return ( 
-                (((*rid1)->season*1000)+(*rid1)->episode) 
-                - (((*rid2)->season*1000)+(*rid2)->episode)
-               );
+        int d = (*rid1)->season-(*rid2)->season;
+        if (!d ) return d;
+        return strcmp((*rid1)->episode,(*rid2)->episode);
     } else {
         // Same title - arbitrary comparison
         return (*rid1) - (*rid2);
@@ -93,8 +92,10 @@ int db_overview_name_season_episode_eqf(DbRowId *rid1,DbRowId *rid2) {
     } else if (rid1->category == 'T' ) {
        if (strcmp(rid1->title,rid2->title) != 0) {
           return 0;
+       } else if ( rid1->season != rid2->season ) {
+           return 0 ;
        } else {
-          return ((rid1->season<<9)+rid1->episode) == ((rid2->season<<9)+rid2->episode);
+          return strcmp(rid1->episode,rid2->episode) ==0;
        }
     } else {
         return strcmp(rid1->title,rid2->title) ==0;
@@ -107,7 +108,7 @@ unsigned int db_overview_name_season_episode_hashf(void *rid) {
     if (((DbRowId *)rid)->category == 'T') {
         // tv shows Unique per title/season/category
         h = ( h << 5 ) + h + ((DbRowId *)rid)->season;
-        h = ( h << 5 ) + h + ((DbRowId *)rid)->episode;
+        h = ( h << 5 ) + h + stringhash(((DbRowId *)rid)->episode);
     }
     return h;
 }
@@ -131,10 +132,10 @@ void overview_dump(int level,char *label,struct hashtable *overview) {
         if (hashtable_count(overview) ) {
             for (itr=hashtable_loop_init(overview) ; hashtable_loop_more(itr,&k,NULL) ; ) {
 
-                html_log(1,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
+                html_log(2,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
             }
         } else {
-            html_log(1,"%s EMPTY",label);
+            html_log(2,"%s EMPTY",label);
         }
     }
 }
@@ -143,7 +144,7 @@ void overview_array_dump(int level,char *label,DbRowId **arr) {
     if (level <= html_log_level_get()) {
         if (*arr) {
             while (*arr) {
-                html_log(level,"%s key=[%c\t%s s%02de%02d date:%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
+                html_log(level,"%s key=[%c\t%s s%02de%s date:%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
                 arr++;
             }
         } else {
@@ -210,13 +211,13 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
                 DbRowId *rid = (*rowset_ptr)->rows+i;
 
-                //html_log(2,"dbg: overview merging [%s]",rid->title);
+                //html_log(3,"dbg: overview merging [%s]",rid->title);
 
                 DbRowId *match = hashtable_search(overview,rid);
 
                 if (match) {
 
-                    html_log(0,"overview: match [%s] with [%s]",rid->title,match->title);
+                    html_log(1,"overview: match [%s] with [%s]",rid->title,match->title);
 
                     //Move most recent age to the first overview item
                     if (rid->date > match->date ) {
@@ -234,14 +235,14 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
                 } else {
 
-                    html_log(2,"overview: new entry [%s]",rid->title);
+                    html_log(3,"overview: new entry [%s]",rid->title);
                     hashtable_insert(overview,rid,rid);
                 }
-                //html_log(2,"dbg done [%s]",rid->title);
+                //html_log(3,"dbg done [%s]",rid->title);
             }
         }
     }
-    html_log(0,"overview: %d entries created from %d records",hashtable_count(overview),total);
+    html_log(1,"overview: %d entries created from %d records",hashtable_count(overview),total);
     overview_dump(4,"ovw create:",overview);
     return overview;
 }
@@ -267,10 +268,10 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
 
     DbRowId **ids = flatten_hash_to_array(overview);
 
-    html_log(0,"sorting %d items",hashtable_count(overview));
+    html_log(1,"sorting %d items",hashtable_count(overview));
     overview_array_dump(4,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
-    html_log(0,"sorted %d items",hashtable_count(overview));
+    html_log(1,"sorted %d items",hashtable_count(overview));
     overview_array_dump(1,"ovw sorted",ids);
 
     return ids;

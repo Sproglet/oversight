@@ -74,7 +74,7 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
             default_wallpaper = args->array[0];
         }
 
-        //TRACE; html_log(0,"def[%s]",default_wallpaper);
+        //TRACE; html_log(1,"def[%s]",default_wallpaper);
 
 
         int i;
@@ -103,17 +103,17 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
 
         if (!result && default_wallpaper) {
 
-        //TRACE; html_log(0,"def[%s]",default_wallpaper);
+        //TRACE; html_log(1,"def[%s]",default_wallpaper);
 
             if (g_dimension->scanlines == 0 ) {
                 ovs_asprintf(&fanart,"%s/templates/%s/sd/%s",appDir(),template_name,default_wallpaper);
             } else {
                 ovs_asprintf(&fanart,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,default_wallpaper);
             }
-        //TRACE; html_log(0,"fa[%s]",fanart);
+        //TRACE; html_log(1,"fa[%s]",fanart);
             if (is_file(fanart) ) {
                 result  = local_image_source(fanart);
-        //TRACE; html_log(0,"res[%s]",result);
+        //TRACE; html_log(1,"res[%s]",result);
                 FREE(fanart);
             }
         } 
@@ -202,6 +202,29 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
     }
 }
 
+char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+    char *tmp;
+
+    if (g_genre && g_genre->size) { 
+        int i;
+        result=STRDUP("<select onchange=\"location=this.options[this.selectedIndex].value;\">"
+                "<option value=\"/oversight/oversight.cgi?" DB_FLDID_GENRE "=\">All</option>");
+
+        for(i = 0 ; i < g_genre->size ; i++ ) {
+            char *g=g_genre->array[i];
+            ovs_asprintf(&tmp,"%s<option value=\"/oversight/oversight.cgi?" DB_FLDID_GENRE "=%s\">%s</option>",result,g,g);
+            FREE(result);
+            result=tmp;
+        }
+        ovs_asprintf(&tmp,"%s</select>",result);
+        FREE(result);
+        result=tmp;
+    }
+
+    return result;
+}
+
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result=0;
     return sorted_rows[0]->genre;
@@ -281,7 +304,7 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
 char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     int rows=0;
     int cols=0;
-    html_log(0,"macro_fn_tv_listing");
+    html_log(1,"macro_fn_tv_listing");
     if (!get_rows_cols(call,args,&rows,&cols)) {
         rows = 10;
         cols = 2;
@@ -741,7 +764,7 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
             ovs_asprintf(&params,"p=%d",page+offset);
             ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
 
-            html_log(1,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
+            html_log(2,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
 
             result = get_theme_image_link(params,attrs,image_base_name,"");
             free(params);
@@ -947,7 +970,7 @@ char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows
 void macro_init() {
 
     if (macros == NULL) {
-        //html_log(0,"begin macro init");
+        //html_log(1,"begin macro init");
         macros = string_string_hashtable(32);
 
         hashtable_insert(macros,"PLOT",macro_fn_plot);
@@ -1005,7 +1028,8 @@ void macro_init() {
         hashtable_insert(macros,"SYS_DISK_USED",macro_fn_sys_disk_used);
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
-        //html_log(0,"end macro init");
+        hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
+        //html_log(1,"end macro init");
     }
 }
 
@@ -1099,10 +1123,10 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
                 
 
         if (fn) {
-            //html_log(0,"begin macro [%s]",call);
+            //html_log(1,"begin macro [%s]",call);
             *free_result=1;
             result =  (*fn)(template_name,call,args,num_rows,sorted_rows,free_result);
-            //html_log(0,"end macro [%s]",call);
+            //html_log(1,"end macro [%s]",call);
         } else {
             printf("?%s?",call);
         }

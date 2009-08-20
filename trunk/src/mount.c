@@ -16,10 +16,10 @@ static struct hashtable *mount_points = NULL;
 
 void add_mount_point(char *p,char *val) {
     if (hashtable_search(mount_points,p) == NULL) {
-        html_log(0,"Adding mount point [%s]",p);
+        html_log(1,"Adding mount point [%s]",p);
         hashtable_insert(mount_points,STRDUP(p),val);
     } else {
-        html_log(0,"Already added mount point [%s]",p);
+        html_log(1,"Already added mount point [%s]",p);
     }
 }
 
@@ -67,13 +67,13 @@ int is_mounted(char *path) {
     mount_status = hashtable_search(mount_points,path) ;
 
     if (mount_status == NULL) {
-        html_log(0,"%s is not mounted",path);
+        html_log(1,"%s is not mounted",path);
         return 0;
     } else if (*mount_status == '0') {
-        html_log(0,"already tried to mount %s",path);
+        html_log(1,"already tried to mount %s",path);
         return 1;
     } else {
-        html_log(2,"already mounted %s",path);
+        html_log(3,"already mounted %s",path);
         return 1;
     }
 }
@@ -82,25 +82,25 @@ int is_mounted(char *path) {
 
 void nmt_mount (char *file) {
 
-html_log(0,"mount [%s]",file);
+html_log(1,"mount [%s]",file);
     if (util_starts_with(file,NETWORK_SHARE)) { 
 
         char *rest = strchr(file+strlen(NETWORK_SHARE)+1,'/');
 
-TRACE ; html_log(0,"mount rest [%s]",rest);
+TRACE ; html_log(1,"mount rest [%s]",rest);
 
         if (rest) {
             *rest = '\0';
             char *path = STRDUP(file);
 
-TRACE ; html_log(0,"mount path [%s]",path);
+TRACE ; html_log(1,"mount path [%s]",path);
 
             *rest = '/';
 
             if (!is_mounted(path)) {
 
                 char *share_name = util_basename(path);
-TRACE ; html_log(0,"mount share_name [%s]",share_name);
+TRACE ; html_log(1,"mount share_name [%s]",share_name);
 
                 char *key=STRDUP("servname?");
                 char *last=key+strlen(key)-1;
@@ -114,24 +114,24 @@ TRACE ; html_log(0,"mount share_name [%s]",share_name);
                         break;
                     }
                 }
-TRACE ; html_log(0,"mount index [%d=%c]",index,index);
+TRACE ; html_log(1,"mount index [%d=%c]",index,index);
                 if (index) {
                     FREE(key);
                     ovs_asprintf(&key,"servlink%c",index);
 
                     char *serv_link = setting_val(key);
-TRACE ; html_log(0,"mount servlink [%s]",serv_link);
+TRACE ; html_log(1,"mount servlink [%s]",serv_link);
                     FREE(key);
 
                     ovs_asprintf(&key,"link%c",index);
                     char *link = setting_val(key);
-TRACE ; html_log(0,"mount link [%s]",link);
+TRACE ; html_log(1,"mount link [%s]",link);
 
                     char *user=regextract1(serv_link,"smb.user=([^&]+)",1,0);
-TRACE ; html_log(0,"mount user [%s]",user);
+TRACE ; html_log(1,"mount user [%s]",user);
 
                     char *passwd=regextract1(serv_link,"smb.passwd=([^&]+)",1,0);
-TRACE ; html_log(0,"mount passwd [%s]",passwd);
+TRACE ; html_log(1,"mount passwd [%s]",passwd);
 
                     char *cmd = NULL;
                     if (util_starts_with(link,"nfs://")) {

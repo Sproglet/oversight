@@ -1237,13 +1237,14 @@ url,triedTitles,txt,txt2,titlesRequired,linksRequired) {
         url=searchHeuristicsForImdbLink(idx,txt,triedTitles,titlesRequired,linksRequired);
     }
 
-    if ( url == "" ) {
-        txt2 = remove_scene_name_and_parts(idx);
-        if (txt2 != txt ) {
-            #Because we have lost some info (the release group is removed) the required threshold is increased.
-            url=searchHeuristicsForImdbLink(idx,txt2,triedTitles,titlesRequired+1,linksRequired+1);
-        }
-    }
+#if it has a scene name then online nfo search is better. - disable for now
+#    if ( url == "" ) {
+#        txt2 = remove_scene_name_and_parts(idx);
+#        if (txt2 != txt ) {
+#            #Because we have lost some info (the release group is removed) the required threshold is increased.
+#            url=searchHeuristicsForImdbLink(idx,txt2,triedTitles,titlesRequired+1,linksRequired+1);
+#        }
+#    }
 
     if (url == "" && match(gMovieFiles[idx],gExtRegexIso)) {
         txt = getIsoTitle(gFolder[idx]"/"gMovieFiles[idx]);
@@ -1301,11 +1302,6 @@ bestUrl,k,text_no_underscore) {
     }
 
     bestUrl = searchArrayForIMDB(k,linksRequired,triedTitles);
-
-    if (bestUrl == "" ) {
-        DEBUG("Deep search disabled");
-        #bestUrl = deepSearchArrayForIMDB(idx,k,titlesRequired,linksRequired,triedTitles);
-    }
 
     return bestUrl;
 }
@@ -5075,20 +5071,11 @@ row,estimate,nfo,dbIdx) {
 # IN db_size = Size of the database
 # IN added_to_db - index=file value=idx
 function add_new_scanned_files_to_database(indexToMergeHash,output_file,\
-i,row,fields,f,\
-minIdx,maxIdx,inf) {
+i,row,fields,f,inf) {
 
     report_status("Merging");
     gMaxDatabaseId++;
 
-#    #TODO this should just be for i in indexToMergeHash - troubleshooting.
-#    for(i in indexToMergeHash) {
-#        if (minIdx =="" || i-minIdx < 0 ) minIdx = i;
-#        if (maxIdx =="" || i-maxIdx > 0 ) maxIdx = i;
-#    }
-    INFO("Adding indexes "minIdx" - "maxIdx);
-#
-#    for(i = minIdx ; i-maxIdx <= 0 ; i++ ) 
     for(i in indexToMergeHash) {
 
         f=gMovieFiles[i];

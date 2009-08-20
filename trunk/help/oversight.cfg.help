@@ -9,4 +9,5 @@ ovs_display_rating:Display Ratings|1|0
 ovs_display_certificate:Display Certificates|1|0
 ovs_display_fanart:Display fanart - Fan art must be previously downloaded by catalog.sh and also in skin|0|1
 ovs_skin_name:Name of skin (must be in templates folder)|default
+ovs_log_level:Amount of logging within html comments|0|1|2|3|4|5
 

@@ -54,7 +54,7 @@ void clear_selection() {
 
     int i;
     for(i=0 ; i<a->size ; i++) {
-        html_log(0,"removing query[%s]",a->array[i]);
+        html_log(1,"removing query[%s]",a->array[i]);
         query_remove(a->array[i]);
     }
     array_free(a);
@@ -62,19 +62,19 @@ void clear_selection() {
 
 void gaya_send_link(char *arg) {
     //send this link to gaya with a single argment.
-//html_log(0,"dbg remove this arg=[%s]",arg);
+//html_log(1,"dbg remove this arg=[%s]",arg);
     FILE *pip = fopen("/tmp/gaya_bc","w");
     if (!pip) {
         html_error("cant send [%s] to gaya");
     } else {
         char *link;
         char *file=url_encode(arg);
-//html_log(0,"dbg remove this and this 1 file=[%s]",file);
+//html_log(1,"dbg remove this and this 1 file=[%s]",file);
         ovs_asprintf(&link,"http://localhost:8883%s?"REMOTE_VOD_PREFIX2"%s",getenv("SCRIPT_NAME"),file);
-//html_log(0,"dbg remove this and this 2 link=[%s]",link);
+//html_log(1,"dbg remove this and this 2 link=[%s]",link);
         free(file);
-//html_log(0,"dbg remove this and this 3");
-        html_log(0,"sending link to gaya [%s]",link);
+//html_log(1,"dbg remove this and this 3");
+        html_log(1,"sending link to gaya [%s]",link);
         fprintf(pip,"%s\n",link);
         fclose(pip);
         free(link);
@@ -85,8 +85,10 @@ void gaya_send_link(char *arg) {
 void delete_file(char *dir,char *name) {
     char *path;
     ovs_asprintf(&path,"%s/%s",dir,name);
-    html_log(0,"delete [%s]",path);
-    unlink(path);
+    html_log(1,"delete [%s]",path);
+    if (unlink(path) ) {
+        html_error("failed to delete [%s] from [%s]",name,dir);
+    }
     FREE(path);
 }
 
@@ -95,17 +97,17 @@ void delete_media(DbRowId *rid,int delete_related) {
     char *f = strrchr(rid->file,'/');
     Array *names_to_delete=NULL;
 
-    html_log(0,"%s %d begin delete_media",__FILE__,__LINE__);
+    html_log(1,"%s %d begin delete_media",__FILE__,__LINE__);
     if (f[1] == '\0' ) {
         if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
-            html_log(0,"folder doesnt look like dvd floder");
+            html_log(1,"folder doesnt look like dvd floder");
             return;
         }
         util_rmdir(f,".");
         names_to_delete = array_new(free);
     } else {
         *f='/';
-        html_log(0,"delete [%s]",rid->file);
+        html_log(1,"delete [%s]",rid->file);
         unlink(rid->file);
         *f='\0';
         names_to_delete = split(rid->parts,"/",0);
@@ -118,11 +120,11 @@ void delete_media(DbRowId *rid,int delete_related) {
                 while((dp = readdir(d)) != NULL) {
                     if (util_starts_with(dp->d_name,"unpak.")) {
 
-                        array_add(names_to_delete,dp->d_name);
+                        array_add(names_to_delete,STRDUP(dp->d_name));
 
                     } else if ( util_strreg(dp->d_name,"[^A-Za-z0-9](sample|samp)[^A-Za-z0-9]",REG_ICASE) != NULL ) {
 
-                        array_add(names_to_delete,dp->d_name);
+                        array_add(names_to_delete,STRDUP(dp->d_name));
 
                     } 
                 }
@@ -132,8 +134,8 @@ void delete_media(DbRowId *rid,int delete_related) {
     }
 
     //Delete the following files if not used.
-    delete_queue_add(rid->db->source,rid->poster);
-    delete_queue_add(rid->db->source,rid->nfo);
+    delete_queue_add(rid,rid->poster);
+    delete_queue_add(rid,rid->nfo);
 
     if(names_to_delete && names_to_delete->size) {
        int i=0;
@@ -142,7 +144,7 @@ void delete_media(DbRowId *rid,int delete_related) {
        }
     }
     array_free(names_to_delete);
-    html_log(0,"%s %d end delete_media",__FILE__,__LINE__);
+    html_log(1,"%s %d end delete_media",__FILE__,__LINE__);
     *f='/';
 }
 
@@ -168,7 +170,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
             if (hashtable_search(g_delete_queue,real_path)) {
                 free(real_path);
             } else {
-                html_log(0,"delete_queue: pending delete [%s]",real_path);
+                html_log(1,"delete_queue: pending delete [%s]",real_path);
                 hashtable_insert(g_delete_queue,real_path,"1");
             }
         }
@@ -180,7 +182,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
 void delete_queue_unqueue(char *source,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
         char *real_path = get_mounted_path(source,path);
-        html_log(0,"delete_queue: unqueuing [%s] in use",real_path);
+        html_log(1,"delete_queue: unqueuing [%s] in use",real_path);
         hashtable_remove(g_delete_queue,real_path);
         FREE(real_path);
     }
@@ -194,7 +196,7 @@ void delete_queue_delete() {
     if (g_delete_queue != NULL ) {
         
         for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,NULL) ; ) {
-            html_log(0,"delete_queue: deleting [%s]",k);
+            html_log(1,"delete_queue: deleting [%s]",k);
             unlink(k);
         }
         hashtable_destroy(g_delete_queue,1,0);
@@ -213,7 +215,7 @@ void send_command(char *source,char *remote_cmd) {
     char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh");
     ovs_asprintf(&cmd,"\"%s\" SAY %s",script,remote_cmd);
 
-    html_log(0,"send command:%s",cmd);
+    html_log(1,"send command:%s",cmd);
 
     system(cmd);
 
@@ -225,7 +227,7 @@ void send_command(char *source,char *remote_cmd) {
 void remove_row(int delete_mode) {
     struct hashtable *source_id_hash = NULL;
     source_id_hash = get_newly_selected_ids_by_source();
-    db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_DELETE);
+    db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,delete_mode);
     hashtable_destroy(source_id_hash,1,1);
     if (count_unchecked() == 0) {
         // No more remaining go back to main view
@@ -276,8 +278,8 @@ void do_actions() {
 
                     if (strcmp(value,old_value) != 0) {
 
-                        html_log(0,"new name value [%s]=[%s]=[%s]",option_name,real_name,value);
-                        html_log(0,"old name value [%s]=[%s]",old_name,old_value);
+                        html_log(1,"new name value [%s]=[%s]=[%s]",option_name,real_name,value);
+                        html_log(1,"old name value [%s]=[%s]",old_name,old_value);
 
                         char *cmd;
                         ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s\" \"%s\" \"%s\"",
@@ -386,11 +388,11 @@ void merge_id_by_source(struct hashtable *h,char *val) {
                 char *source = source_ids->array[0];
                 char *idlist = source_ids->array[1];
                 
-html_log(0," merge_id_by_source [%s][%s]",source,idlist);
+html_log(1," merge_id_by_source [%s][%s]",source,idlist);
 
                 char *current_id_list = hashtable_search(h,source);
 
-html_log(0," merge_id_by_source  current [%s]",current_id_list);
+html_log(1," merge_id_by_source  current [%s]",current_id_list);
 
                 char *new_idlist;
 
@@ -398,7 +400,7 @@ html_log(0," merge_id_by_source  current [%s]",current_id_list);
                 if (current_id_list == NULL) {
 
                     hashtable_insert(h,STRDUP(source),STRDUP(idlist));
-html_log(0," merge_id_by_source added [%s]",idlist);
+html_log(1," merge_id_by_source added [%s]",idlist);
 
                 } else {
 
@@ -407,7 +409,7 @@ html_log(0," merge_id_by_source added [%s]",idlist);
                     FREE(current_id_list);
                     hashtable_insert(h,STRDUP(source),new_idlist);
 
-html_log(0," merge_id_by_source appended [%s]",new_idlist);
+html_log(1," merge_id_by_source appended [%s]",new_idlist);
 
                 }
                 array_free(source_ids);
@@ -415,7 +417,7 @@ html_log(0," merge_id_by_source appended [%s]",new_idlist);
         }
         array_free(sources);
     }
-html_log(0," end merge_id_by_source");
+html_log(1," end merge_id_by_source");
 }
 
 
@@ -434,7 +436,7 @@ int count_unchecked() {
         }
 
     }
-    html_log(0,"unchecked count [%d]",total);
+    html_log(1,"unchecked count [%d]",total);
     return total;
 }
 
@@ -450,7 +452,7 @@ struct hashtable *get_newly_selected_ids_by_source() {
 
         if (is_checkbox(name,val) && checkbox_just_added(name) ) {
 
-            html_log(0,"checkbox added [%s]",name);
+            html_log(1,"checkbox added [%s]",name);
 
             name += strlen(CHECKBOX_PREFIX);
 
@@ -474,14 +476,14 @@ struct hashtable *get_newly_deselected_ids_by_source() {
 
         if (is_checkbox(name,val) && checkbox_just_removed(name) ) {
 
-            html_log(0,"checkbox removed [%s]",name);
+            html_log(1,"checkbox removed [%s]",name);
             name += strlen("orig_"CHECKBOX_PREFIX);
 
             merge_id_by_source(h,name);
 
         }
     }
-html_log(0," end get_newly_deselected_ids_by_source");
+html_log(1," end get_newly_deselected_ids_by_source");
     return h;
 }
 

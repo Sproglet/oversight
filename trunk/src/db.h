@@ -32,7 +32,7 @@ typedef struct Dbrowid_struct {
     char *plot;
     char *fanart;
     char *parts;
-    int episode;
+    char *episode;
 
     //only populate if deleting
     char *nfo;
@@ -106,4 +106,5 @@ int db_full_size();
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);
 void db_remove_row(DbRowId *rid);
 void db_delete_row_and_media(DbRowId *rid);
+Array *get_genres(DbRowSet **rowset);
 #endif

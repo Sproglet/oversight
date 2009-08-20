@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "hashtable.h"
+#include "array.h"
 
 OVS_EXTERN(struct hashtable *g_query,NULL);
 OVS_EXTERN(struct hashtable *g_oversight_config,NULL);
@@ -17,15 +18,8 @@ OVS_EXTERN(struct hashtable *g_catalog_config,NULL);
 OVS_EXTERN(struct hashtable *g_nmt_settings,NULL);
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 OVS_EXTERN(int g_local_browser,0);
-/*
-OVS_EXTERN struct hashtable *g_query;
-OVS_EXTERN struct hashtable *g_oversight_config;
-OVS_EXTERN struct hashtable *g_unpack_config;
-OVS_EXTERN struct hashtable *g_catalog_config;
-OVS_EXTERN struct hashtable *g_nmt_settings;
-OVS_EXTERN Dimensions *g_dimension;
-OVS_EXTERN int g_local_browser;
-*/
+OVS_EXTERN(Array *g_genre,NULL);
+
 #define OVS_VERSION "20090814-1BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"

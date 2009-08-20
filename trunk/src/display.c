@@ -175,10 +175,10 @@ char *get_self_link(char *params,char *attr,char *title) {
     assert(title);
     char *result=NULL;
 
-    html_log(0," begin self link multi for params[%s] attr[%s] title[%s]",params,attr,title);
+    html_log(1," begin self link multi for params[%s] attr[%s] title[%s]",params,attr,title);
 
     char *url = self_url(params);
-    html_log(0," end self link multi [%s]",url);
+    html_log(1," end self link multi [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
 
@@ -199,13 +199,13 @@ FILE *playlist_open() {
     static FILE *fp=NULL;
     static FILE *j=NULL;
     fflush(stdout);
-    //html_log(0,"play list fp is %ld %ld %ld",k,fp,j);
+    //html_log(1,"play list fp is %ld %ld %ld",k,fp,j);
     //exit(1);
     if (fp == NULL) {
         if (unlink(NMT_PLAYLIST) ) {
-            html_log(0,"Failed to delete ["NMT_PLAYLIST"]");
+            html_log(1,"Failed to delete ["NMT_PLAYLIST"]");
         } else {
-            html_log(0,"deleted ["NMT_PLAYLIST"]");
+            html_log(1,"deleted ["NMT_PLAYLIST"]");
         }
         j = fp = fopen(NMT_PLAYLIST,"w");
     }
@@ -286,10 +286,10 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
         char *name = util_basename(path);
 
-        html_log(2,"path[%s]",path);
-        html_log(2,"d[%s]",d);
-        html_log(2,"dd[%s]",dd);
-        html_log(2,"name[%s]",name);
+        html_log(3,"path[%s]",path);
+        html_log(3,"d[%s]",d);
+        html_log(3,"dd[%s]",dd);
+        html_log(3,"name[%s]",name);
 
         if (!exists(dd)) {
 
@@ -448,13 +448,13 @@ char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char 
 
     ovs_asprintf(&params,"p=0&%s=%s",param_name,next);
 
-    html_log(0,"params = [%s]",params);
+    html_log(1,"params = [%s]",params);
 
     ovs_asprintf(&text,"%s%s%s<br>%s%s%s",
             (v1current?"<u><b>":""),text1,(v1current?"</b></u>":""),
             (v2current?"<u><b>":""),text2,(v2current?"</b></u>":""));
 
-    html_log(0,"toggle text = [%s]",text);
+    html_log(1,"toggle text = [%s]",text);
 
     char *result = get_remote_button(button_colour,params,text);
 
@@ -658,7 +658,7 @@ char *ovs_icon_type() {
         if (!config_check_str(g_oversight_config,"ovs_icon_type",&icon_type)) {
             icon_type="png";
         }
-        html_log(0,"icon type = %s",icon_type);
+        html_log(1,"icon type = %s",icon_type);
         i = icon_type;
     }
     assert(icon_type == i );
@@ -704,9 +704,9 @@ char *icon_link(char *name) {
 
 char *build_ext_list(DbRowId *row_id) {
 
-    html_log(2,"ext=%s",row_id->ext);
+    html_log(3,"ext=%s",row_id->ext);
     char *ext_icons = icon_link(row_id->ext);
-    html_log(2,"ext_icons=%s",ext_icons);
+    html_log(3,"ext_icons=%s",ext_icons);
 
     DbRowId *ri;
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
@@ -802,7 +802,7 @@ char *movie_listing(DbRowId *rowid) {
         char *button_attr=NULL;
         Array *parts = split(rowid->parts,"/",0);
         int button_size;
-        html_log(0,"parts ptr = %ld",parts);
+        html_log(1,"parts ptr = %ld",parts);
         if (parts && parts->size) {
             array_print("movie_listing",parts);
             // Multiple parts
@@ -884,7 +884,7 @@ int unwatched_count(DbRowId *rid) {
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
-    html_log(0,"TODO:Highlight matched bit");
+    html_log(1,"TODO:Highlight matched bit");
 
     char *title=NULL;
     char *font_class=NULL;
@@ -897,7 +897,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     if (in_poster_mode() ) {
         if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
 
-            html_log(1,"dbg: tv or movie : set details as jpg");
+            html_log(2,"dbg: tv or movie : set details as jpg");
 
 
             char *attr;
@@ -914,7 +914,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             font_class = "class=fc";
             grid_class = "class=gc";
         } else {
-            html_log(1,"dbg: unclassified : set details as title");
+            html_log(2,"dbg: unclassified : set details as title");
             // Unclassified
             title=STRDUP(row_id->title);
             font_class = watched_style(row_id,grid_toggle);
@@ -923,7 +923,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     } else {
 
         // TEXT MODE
-        html_log(1,"dbg: get text mode details ");
+        html_log(2,"dbg: get text mode details ");
 
         font_class = watched_style(row_id,grid_toggle);
         grid_class = file_style(row_id,grid_toggle);
@@ -951,11 +951,11 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         }
 
         if (tv_or_movie) {
-            html_log(1,"dbg: add certificate");
+            html_log(2,"dbg: add certificate");
             //Add certificate and extension
             char *tmp;
             char *ext_icons=build_ext_list(row_id);
-            html_log(1,"dbg: add extension [%s]",ext_icons);
+            html_log(2,"dbg: add extension [%s]",ext_icons);
 
             ovs_asprintf(&tmp,"%s %s %s",
                     title,
@@ -970,7 +970,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
 
         if (row_id->category == 'T') {
-            html_log(1,"dbg: add episode count");
+            html_log(2,"dbg: add episode count");
             //Add episode count
 
             int unwatched = unwatched_count(row_id);
@@ -987,7 +987,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         long crossview=0;
         config_check_long(g_oversight_config,"ovs_crossview",&crossview);
         if (crossview == 1) {
-            html_log(1,"dbg: add network icon");
+            html_log(2,"dbg: add network icon");
            char *tmp =add_network_icon(row_id->db->source,title);
            FREE(title);
            title = tmp;
@@ -995,14 +995,14 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     }
 
-    html_log(0,"dbg: details [%s]",title);
+    html_log(1,"dbg: details [%s]",title);
 
 
     char *cell_text=NULL;
 
 
     char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,grid_class);
-    html_log(0,"dbg: scroll attributes [%s]",attr);
+    html_log(1,"dbg: scroll attributes [%s]",attr);
 
     char *idlist = build_id_list(row_id);
 
@@ -1010,15 +1010,15 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         char *params;
 
 
-        html_log(0,"dbg: id list... [%s]",idlist);
+        html_log(1,"dbg: id list... [%s]",idlist);
 
         ovs_asprintf(&params,"view=%s&idlist=%s",
                 (row_id->category=='T'?"tv":"movie"),
                 idlist);
-        html_log(0,"dbg: params [%s]",params);
+        html_log(1,"dbg: params [%s]",params);
 
         cell_text = get_self_link_with_font(params,attr,title,font_class);
-        html_log(0,"dbg: get_self_link_with_font [%s]",cell_text);
+        html_log(1,"dbg: get_self_link_with_font [%s]",cell_text);
 
         FREE(params);
 
@@ -1142,14 +1142,14 @@ char *scanlines_to_text(long scanlines) {
 
 void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids) {
 
-    html_log(0,"begin template");
+    html_log(1,"begin template");
 
     char *file;
     ovs_asprintf(&file,"%s/templates/%s/%s/%s.template",appDir(),
             template_name,
             scanlines_to_text(g_dimension->scanlines),
             file_name);
-    html_log(1,"opening %s",file);
+    html_log(2,"opening %s",file);
 
     FILE *fp=fopen(file,"r");
     if (fp == NULL) {
@@ -1158,7 +1158,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
             ovs_asprintf(&file,"%s/templates/%s/any/%s.template",appDir(),
                     template_name,
                     file_name);
-            html_log(1,"opening %s",file);
+            html_log(2,"opening %s",file);
             fp=fopen(file,"r");
         }
         if (fp == NULL) {
@@ -1193,7 +1193,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
     }
 
     if (file) FREE(file);
-    html_log(0,"end template");
+    html_log(1,"end template");
 }
 
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
@@ -1210,7 +1210,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
     if (end > numids) end = numids;
 
-    html_log(0,"grid page %ld rows %d cols %d",page,rows,cols);
+    html_log(1,"grid page %ld rows %d cols %d",page,rows,cols);
 
     char *result=NULL;
     int i = start;
@@ -1221,13 +1221,13 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     for ( r = 0 ; r < rows ; r++ ) {
 
 
-        html_log(0,"grid row %d",r);
+        html_log(1,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr>\n",(result?result:""));
         FREE(result);
         result=tmp;
 
         for ( c = 0 ; c < cols ; c++ ) {
-            html_log(0,"grid col %d",c);
+            html_log(1,"grid col %d",c);
             i = start + c * rows + r ;
 
             int left_scroll = (page_before && c == 0);
@@ -1236,23 +1236,23 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
             char *item=NULL;
             if ( i < numids ) {
-                html_log(0,"grid item");
+                html_log(1,"grid item");
                 item = get_item(i-start,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             } else {
-                html_log(0,"grid empty");
+                html_log(1,"grid empty");
                 item = get_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }
             ovs_asprintf(&tmp,"%s%s\n",result,item);
             FREE(result);
             FREE(item);
             result=tmp;
-            html_log(0,"grid end col %d",c);
+            html_log(1,"grid end col %d",c);
         }
         
         ovs_asprintf(&tmp,"%s</tr>\n",result);
         FREE(result);
         result=tmp;
-        html_log(0,"grid end row %d",r);
+        html_log(1,"grid end row %d",r);
 
     }
     ovs_asprintf(&tmp,"<table class=overview width=100%%>\n%s\n</table>\n",result);
@@ -1285,7 +1285,7 @@ char *get_tvid( char *sequence ) {
             p += strlen(p);
         }
     }
-    html_log(1,"tvid %s = regex %s",sequence,out);
+    html_log(2,"tvid %s = regex %s",sequence,out);
     return out;
 
 }
@@ -1294,7 +1294,7 @@ char *default_button_attr() {
     static char *default_attr = NULL;
     if (default_attr == NULL) {
         ovs_asprintf(&default_attr,"width=%ld height=%ld",g_dimension->button_size,g_dimension->button_size);
-        html_log(0,"default button attr = %s",default_attr);
+        html_log(1,"default button attr = %s",default_attr);
     }
     return default_attr;
 }
@@ -1336,7 +1336,6 @@ char *get_theme_image_tag(char *image_name,char *attr) {
 
 
 
-
 int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr) {
 
 
@@ -1344,7 +1343,7 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     long crossview=0;
 
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
-    html_log(0,"Crossview = %ld",crossview);
+    html_log(1,"Crossview = %ld",crossview);
 
     //Tvid filter = this as the form 234
     html_hashtable_dump(0,"query",g_query);
@@ -1358,7 +1357,7 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
             regex=util_tolower(query_val("searcht"));
         }
     }
-    html_log(2,"Regex filter = %s",regex);
+    html_log(3,"Regex filter = %s",regex);
 
     // Watched filter
     char *watched_param;
@@ -1375,7 +1374,7 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
             watched=DB_WATCHED_FILTER_NO;
         }
     }
-    html_log(0,"Watched filter = %ld",watched);
+    html_log(1,"Watched filter = %ld",watched);
 
     // Tv/Film filter
     char *media_type_str=NULL;
@@ -1393,7 +1392,7 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
 
         }
     }
-    html_log(0,"Media type = %d",media_type);
+    html_log(1,"Media type = %d",media_type);
 
     
     DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
@@ -1412,17 +1411,17 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
 
     if (strcmp(query_val("view"),"tv") == 0) {
 
-        html_log(0,"sort by name / season / episode");
+        html_log(1,"sort by name / season / episode");
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
 
-        html_log(0,"sort by name [%s]",sort);
+        html_log(1,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else {
 
-        html_log(0,"sort by age [%s]",sort);
+        html_log(1,"sort by age [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
     }
 
@@ -1480,7 +1479,7 @@ char *get_tvid_links(DbRowId **rowids) {
         int tvid_val[256];
         set_tvid_increments(tvid_val);
 
-        html_log(0,"tvid generation");
+        html_log(1,"tvid generation");
 
         int current_tvid_len = strlen(current_tvid);
 
@@ -1604,10 +1603,10 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
     }
 
     for(r=0 ; r < rows ; r++ ) {
-        html_log(0,"tvlisting row %d",r);
+        html_log(1,"tvlisting row %d",r);
         char *row_text = NULL;
         for(c = 0 ; c < cols ; c++ ) {
-            html_log(0,"tvlisting col %d",c);
+            html_log(1,"tvlisting col %d",c);
 
             int i = c * rows + r;
             if (i < num_rows) {
@@ -1617,20 +1616,17 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
 
                 DbRowId *rid = sorted_rows[i];
 
-                char episode[20];
-                sprintf(episode,"%02d.",rid->episode);
-
                 if (*select) {
                     episode_col = select_checkbox(
                             rid,
-                            episode);
+                            rid->episode);
                 } else {
                     episode_col = vod_link(
                             rid,
-                            episode,"",
+                            rid->episode,"",
                             rid->db->source,
                             rid->file,
-                            episode,
+                            rid->episode,
                             "",
                             watched_style(rid,i%2));
                 }
@@ -1745,7 +1741,7 @@ char *get_status() {
 
         fclose(fp);
     } else {
-        html_log(0,"Error %d opening [%s]",errno,filename);
+        html_log(1,"Error %d opening [%s]",errno,filename);
     }
     free(filename);
 

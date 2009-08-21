@@ -1,0 +1,72 @@
+#Configuration for catalog.sh - must be unix format
+# $Id: catalog.cfg.example 131 2009-08-15 15:17:11Z lordylordy $ 
+#
+##----------------------------------------------------------------------------------------
+# Rename format.
+catalog_film_folder_fmt="/share/Movies/{:TITLE:}{ (:YEAR:)}{ - :CERT:}"
+catalog_tv_file_fmt="/share/Tv/{:TITLE:}{ - Season :SEASON:}/{:NAME:}"
+#
+# available fields are:
+#    {:TITLE}
+#    {:SEASON:} 
+#    {:EPISODE:} 
+#    {:0SEASON:} 
+#    {:0EPISODE:} 
+#    {:EPTITLE:} 
+#    {:GENRE:} 
+#    {:CERT:} 
+#    {:YEAR:} 
+#    {:NAME:} is original file name.
+#    {:INFO:} is any additional info from the file name.
+#    {:BASE:} is original file name without extension.
+#    {:EXT:}
+#  Recommend not changing the filename if possible as it is useful imformation if the database
+#  has to be rebuilt.
+##----------------------------------------------------------------------------------------
+
+catalog_folder_titles=0
+
+catalog_nfo_read="yes"
+
+#catalog_nfo_write=never|always|if_none_exists
+catalog_nfo_write="never"
+
+#catalog_nfo_format="xmbc|flat"
+catalog_nfo_format="xmbc"
+
+catalog_fetch_posters="yes"
+catalog_poster_prefix="ovs_"
+
+catalog_format_tags="dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdscr,blu720p,blu1080p,bluray,dvdrip,brrip,dsrip,hdtv,ntsc,pdtv,r5,screener,workprint,ws,x264,xvid,yenc,alt,par2"
+
+
+catalog_scan_paths="/share/Video,/share/Movies,/share/Tv,/share/Complete"
+#Folders to watch for new media. This is implemented in oversight. NMT only.
+catalog_watch_paths="NAS1,NAS2/movies"
+#How often to watch for new media. This is implemented in oversight. NMT only.
+catalog_watch_minutes=60
+#watch for completed torrents. This is implemented in oversight. NMT only.
+catalog_watch_torrents=0
+
+#Ignore the following paths when scanning.
+# *=anything,?=single char, <=start of word , >=end of word ,=OR
+catalog_ignore_paths="/share/~Other,*/Download" 
+#Ignore the following names when scanning.
+# *=anything,?=single char, <=start of word , >=end of word ,=OR
+catalog_ignore_names="*<samp>*,*<sample>*"
+catalog_title_country_list="USA,UK"
+catalog_cert_country_list="UK,USA,Ireland"
+#This is how many imdb links required in google search results.
+catalog_imdb_links_required=4
+#This is how many repetitions of the title required in google search results.
+catalog_imdb_titles_required=4
+catalog_user="nmt"
+catalog_group="nmt"
+# Comma seperated list of search providers. All are used esp during initial scan to avoid getting blacklisted.
+# Google is quick to block with initial scans so it is only used for deep searches.
+#catalog_search_engines="GOOGLE,MSN,YAHOO,MSNUK,YAHOOUK"
+catalog_search_engines="MSN,YAHOO,MSNUK,YAHOOUK"
+catalog_deep_search_engines="GOOGLE,GOOGLEIE"
+#scene tags - dont use ones that are normal words.
+#catalog_scene_tags="dmd,rep,alli,vmt,trv,bald,axxo,tdm,trv,vite,fico,coa,opt,"
+catalog_config_version=1

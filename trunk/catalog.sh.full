@@ -92,21 +92,23 @@ if [ ! -s "$INDEX_DB" ] ; then
     PERMS "$INDEX_DB"
 fi
 
-if [ ! -f "$APPDIR/catalog.cfg" ] ; then
-    cp "$APPDIR/catalog.cfg.example" "$APPDIR/catalog.cfg"
+CONF_FILE="$APPDIR/conf/catalog.cfg"
+
+if [ ! -f "$CONF_FILE" ] ; then
+    cp "$CONF_FILE.example" "$CONF_FILE"
 fi
 
 # Have to do fix endings because of WordPad. Also not all platforms have sed -i
 #cat preserves dest permissions
 # note replace ^M with ^L-^N to avoid eol issues with subervsion
 # eol-style not doing as expected via cygwin/windows.
-if grep -q '[-]' "$APPDIR/catalog.cfg" ; then
+if grep -q '[-]' "$CONF_FILE" ; then
     tmpFile="$tmp_dir/catalog.cfg.$$"
-    sed 's/[-]$//' "$APPDIR/catalog.cfg" > "$tmpFile"
-    cat "$tmpFile" > "$APPDIR/catalog.cfg"
+    sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
+    cat "$tmpFile" > "$CONF_FILE"
     rm -f "$tmpFile"
 fi
-. "$APPDIR/catalog.cfg"
+. "$CONF_FILE"
 
 check_missing_settings() {
     # Just in case user has an earlier config file that doesnt have these settings.
@@ -529,7 +531,7 @@ END{
     g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
 
-    load_catalog_settings(APPDIR"/catalog.cfg");
+    load_catalog_settings(CONF_FILE);
 
 
     INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
@@ -5262,6 +5264,7 @@ function load_catalog_settings(file_name) {
 ' JOBID=$JOBID PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     "LS=$LS" \
     "APPDIR=$APPDIR" \
+    "CONF_FILE=$CONF_FILE" \
     "INDEX_DB=$INDEX_DB" "$@"
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"

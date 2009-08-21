@@ -6,9 +6,11 @@ html=$ROOT/tmp/$$.html
 err=$ROOT/tmp/$$.err
 if /share/Apps/oversight/oversight "$@" > "$html" 2>"$err" ; then
     cat "$html"
+    rm -f -- "$html" "$err"
 else
     echo "Content-Type: text/html"
     echo
+    cat "$html"
     cat "$err"
 fi
 
@@ -18,4 +20,3 @@ case "$1" in
         ;;
 esac
 # comment out the following line to diagnose problems.
-rm -f -- "$html" "$err"

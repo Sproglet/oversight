@@ -32,30 +32,31 @@ char *get_play_tvid(char *text) {
 
 // Return a full path 
 char *get_path(DbRowId *rid,char *path) {
-    char *new=NULL;
+
+    char *mounted_path=NULL;
+
+    char *path_relative_to_host_nmt=NULL;
     assert(path);
     if (path[0] == '/' ) {
-        new = STRDUP(path);
+        path_relative_to_host_nmt = STRDUP(path);
     } else if (strncmp(path,"ovs:",4) == 0) {
-        ovs_asprintf(&new,"%s/db/global/%s",appDir(),path+4);
+        ovs_asprintf(&path_relative_to_host_nmt,"%s/db/global/%s",appDir(),path+4);
     } else {
         char *d=util_dirname(rid->file);
-       ovs_asprintf(&new,"%s/%s",d,path);
+       ovs_asprintf(&path_relative_to_host_nmt,"%s/%s",d,path);
        FREE(d);
     }
-    return new;
+
+    mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt);
+
+    FREE(path_relative_to_host_nmt);
+
+    return mounted_path;
 }
 
 
 
 
-char *get_poster_path(DbRowId *rowid) {
-    assert(rowid->poster);
-    char *url = get_path(rowid,rowid->poster); //conver ovs: to internal path
-    char *url2 = get_mounted_path(rowid->db->source,url);
-    FREE(url);
-    return url2;
-}
 
 
 #define XHTML
@@ -271,7 +272,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     int add_to_playlist= has_category(rowid);
     char *result=NULL;
 
-    char *path = get_mounted_path(source,file);
+    char *path = get_path(rowid,file);
 
     nmt_mount(path);
 
@@ -556,7 +557,7 @@ char *get_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scrol
 }
 
 
-char *local_image_source(char *path) {
+char *file_to_url(char *path) {
     char *new = NULL;
     assert(path);
     if (g_dimension->local_browser) {
@@ -590,10 +591,15 @@ char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
     char *result;
 
-    char *img_src = local_image_source(path);
 
-    ovs_asprintf(&result,"<img alt=\"%s\" src=%s %s >",alt_text,img_src,attr);
-    FREE(img_src);
+    if (!exists(path) ) {
+        result = STRDUP(alt_text);
+        html_log(0,"%s doesnt exist",path);
+    } else {
+        char *img_src = file_to_url(path);
+        ovs_asprintf(&result,"<img alt=\"%s\" src=%s %s >",alt_text,img_src,attr);
+        FREE(img_src);
+    }
     return result;
 }
 
@@ -628,6 +634,99 @@ char *watched_style(DbRowId *rowid,int grid_toggle) {
     return file_style(rowid,grid_toggle);
 }
 
+char *check_path(char *a,char *b,char *c,char *d) {
+    char *p;
+
+    ovs_asprintf(&p,"%s%s%s%s",a,b,c,d);
+    if (!exists(p)) {
+        html_log(-1,"%s doesnt exist",p);
+        FREE(p);
+        p = NULL;
+    } else {
+        html_log(-1,"%s exist",p);
+    }
+    return p;
+}
+
+char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
+
+    char *path = NULL;
+    DbRowId *rid = sorted_rows[0];
+    char *modifier="";
+
+    if (is_fanart) {
+        modifier="fanart";
+    }
+
+    // First check the filesystem. We do this via the mounted path.
+    // This requires that the remote file is already mounted.
+    char *file = get_path(rid,rid->file);
+    char *dir = util_dirname(file);
+
+    // Find position of file extension.
+    char *dot = NULL;
+    char saved='\0';;
+
+    // First look for file.modifier.jpg file.modifier.png
+    if (rid->ext != NULL) { 
+        dot = strrchr(file,'.');
+        if (dot) {
+
+            dot++;
+            saved=*dot;
+            *dot = '\0';
+        }
+    }
+
+
+    path=check_path(file,modifier,"jpg","");
+
+    if (path == NULL) path=check_path(file,modifier,"png","");
+
+    if (is_fanart) {
+        if (path == NULL) path=check_path(dir,"/",modifier,".jpg");
+        if (path == NULL) path=check_path(dir,"/",modifier,".png");
+    }
+    FREE(file);
+    FREE(dir);
+
+
+    if (path == NULL) {
+        // No pictures on filesystem - look in db
+        int i;
+        if (is_fanart) {
+            for (i = 0 ;  i < num_rows ; i++ ) {
+                path = sorted_rows[i]->fanart;
+                if (path) break;
+            }
+        } else {
+            for (i = 0 ;  i < num_rows ; i++ ) {
+                path = sorted_rows[i]->poster;
+                if (path) break;
+            }
+        }
+        if (path) {
+            char *mounted_path = get_path(sorted_rows[i],path);
+            FREE(path);
+            path = mounted_path;
+
+            if (is_fanart ) {
+                char *file;
+                if (g_dimension->scanlines == 0 ) {
+                    file = replace_all(path,"\\.jpg$",".sd.jpg",0);
+                } else {
+                    file = replace_all(path,"\\.jpg$",".hd.jpg",0);
+                }
+                FREE(path);
+                path = file;
+            }
+        }
+    }
+
+    return path;
+
+}
+
 char * get_poster_image_tag(DbRowId *rowid,char *attr) {
 
     assert(rowid);
@@ -636,7 +735,7 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr) {
     
     char *newattr=attr;
 
-    char *path = get_poster_path(rowid);
+    char *path = get_picture_path(1,&rowid,0);
 
     if (rowid->watched) {
         ovs_asprintf(&newattr," %s %s ",attr,watched_style(rowid,0));
@@ -830,16 +929,10 @@ char *movie_listing(DbRowId *rowid) {
                 char i_str[10];
                 sprintf(i_str,"%d",i);
 
-                char *part_path;
-                char *d=util_dirname(rowid->file);
-                ovs_asprintf(&part_path,"%s/%s",d,parts->array[i]);
-
-                char *tmp=vod_link(rowid,parts->array[i],movie_play,rowid->db->source,part_path,i_str,"",style);
-                FREE(part_path);
+                char *tmp=vod_link(rowid,parts->array[i],movie_play,rowid->db->source,parts->array[i],i_str,"",style);
 
                 char *vod_list;
                 ovs_asprintf(&vod_list,"%s\n%s",result,tmp);
-                FREE(d);
                 FREE(tmp);
                 FREE(result);
                 result=vod_list;
@@ -1310,7 +1403,7 @@ char *icon_source(image_name) {
             app,
             image_name,
             ico);
-    char *result = local_image_source(path);
+    char *result = file_to_url(path);
     FREE(path);
     return result;
 }

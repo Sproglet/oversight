@@ -152,36 +152,26 @@ static struct hashtable *g_delete_queue = NULL;
 
 void delete_queue_add(DbRowId *rid,char *path) {
 
-    char *source = rid->db->source;
-
     if (path) {
-        //Get path relative to media
-        path=get_path(rid,path);
+        char *real_path=get_path(rid,path);
 
-        if (source && path && *source && *path ) {
-
-            char *mounted_path = get_mounted_path(source,path); // translate source
-            char *real_path = get_path(rid,mounted_path); // if local use media path. note path functions need rewriting!
-            FREE(mounted_path);
-
-            if (g_delete_queue == NULL) {
-                g_delete_queue = string_string_hashtable(16);
-            }
-            if (hashtable_search(g_delete_queue,real_path)) {
-                free(real_path);
-            } else {
-                html_log(1,"delete_queue: pending delete [%s]",real_path);
-                hashtable_insert(g_delete_queue,real_path,"1");
-            }
+        if (g_delete_queue == NULL) {
+            g_delete_queue = string_string_hashtable(16);
+        }
+        if (hashtable_search(g_delete_queue,real_path)) {
+            free(real_path);
+        } else {
+            html_log(1,"delete_queue: pending delete [%s]",real_path);
+            hashtable_insert(g_delete_queue,real_path,"1");
         }
     }
 }
 
 
 //Remove the filename from the delete queue
-void delete_queue_unqueue(char *source,char *path) {
+void delete_queue_unqueue(DbRowId *rid,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
-        char *real_path = get_mounted_path(source,path);
+        char *real_path = get_path(rid,path);
         html_log(1,"delete_queue: unqueuing [%s] in use",real_path);
         hashtable_remove(g_delete_queue,real_path);
         FREE(real_path);
@@ -282,7 +272,7 @@ void do_actions() {
                         html_log(1,"old name value [%s]=[%s]",old_name,old_value);
 
                         char *cmd;
-                        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s\" \"%s\" \"%s\"",
+                        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"conf/%s\" \"%s\" \"%s\"",
                                 appDir(),
                                 query_val("file"),
                                 real_name,

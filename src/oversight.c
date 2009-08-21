@@ -25,11 +25,11 @@ void exec_old_cgi(int argc,char **argv);
 void load_configs () {
     html_comment("load ovs config");
     g_oversight_config =
-        config_load_wth_defaults(appDir(),"oversight.cfg.example","oversight.cfg");
+        config_load_wth_defaults(appDir(),"conf/.oversight.cfg.defaults","conf/oversight.cfg");
 
     html_comment("load catalog config");
     g_catalog_config =
-        config_load_wth_defaults(appDir(),"catalog.cfg.example","catalog.cfg");
+        config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
 
     html_comment("load nmt settings");
     g_nmt_settings = config_load("/tmp/setting.txt");

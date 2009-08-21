@@ -52,7 +52,6 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
     return result;
 }
 
-
 char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *result = NULL;
@@ -74,49 +73,21 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
             default_wallpaper = args->array[0];
         }
 
-        //TRACE; html_log(1,"def[%s]",default_wallpaper);
+        char *fanart = get_picture_path(num_rows,sorted_rows,1);
 
+        if (!fanart && default_wallpaper) {
 
-        int i;
-        char *fanart = NULL;
-        for (i = 0 ; fanart == NULL && i < num_rows ; i++ ) {
-            fanart = sorted_rows[i]->fanart;
-        }
-
-        if (fanart && *fanart) {
-
-            char *file=NULL;
-
-            fanart = get_path(sorted_rows[0],fanart);
-            if (g_dimension->scanlines == 0 ) {
-                file = replace_all(fanart,"\\.jpg$",".sd.jpg",0);
-            } else {
-                file = replace_all(fanart,"\\.jpg$",".hd.jpg",0);
-            }
-            FREE(fanart);
-            if (is_file(file) ) {
-
-                result  = local_image_source(file);
-            }
-            FREE(file);
-        }
-
-        if (!result && default_wallpaper) {
-
-        //TRACE; html_log(1,"def[%s]",default_wallpaper);
+            // Use default wallpaper
 
             if (g_dimension->scanlines == 0 ) {
                 ovs_asprintf(&fanart,"%s/templates/%s/sd/%s",appDir(),template_name,default_wallpaper);
             } else {
                 ovs_asprintf(&fanart,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,default_wallpaper);
             }
-        //TRACE; html_log(1,"fa[%s]",fanart);
-            if (is_file(fanart) ) {
-                result  = local_image_source(fanart);
-        //TRACE; html_log(1,"res[%s]",result);
-                FREE(fanart);
-            }
-        } 
+        }
+
+        result  = file_to_url(fanart);
+        FREE(fanart);
     }
     return result;
 }
@@ -139,14 +110,6 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
         long height;
         DbRowId *rid=NULL;
 
-        int i;
-        for (i = 0 ; i < num_rows ; i++ ) {
-            char *poster = sorted_rows[i]->poster ;
-            if (poster && *poster) {
-                rid = sorted_rows[i];
-                break;
-            }
-        }
 
         if (rid) {
 
@@ -943,7 +906,7 @@ char *macro_fn_edit_config(char *template_name,char *call,Array *args,int num_ro
         char *cmd;
 
         //Note this outputs directly to stdout so always returns null
-        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE2 \"help/%s.%s\" \"%s\" HIDE_VAR_PREFIX=1",
+        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE2 \"help/%s.%s\" \"conf/%s\" HIDE_VAR_PREFIX=1",
                 appDir(),file,help_suffix,file);
 
         system(cmd);

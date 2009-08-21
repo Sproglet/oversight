@@ -620,7 +620,7 @@ char *unpak_val(char *name) {
     char *val;
 
     if (g_unpack_config == NULL) {
-        g_unpack_config = config_load_wth_defaults(appDir(),"unpak.cfg.example","unpak.cfg");
+        g_unpack_config = config_load_wth_defaults(appDir(),"conf/unpak.cfg.example","conf/unpak.cfg");
     }
 
     if (config_check_str(g_unpack_config,name,&val)) {

@@ -146,7 +146,7 @@ VERSION=20090721-1BETA
 # it will be created from the unpak.cfg.example file.
 # If unpak_load_settings starts with '/' it's location is absolute,
 # otherwise it is relative to the location of this script.
-unpak_load_settings=unpak.cfg
+unpak_load_settings=conf/unpak.cfg
 
 ########################################################################
 # SECTION: LOGGING FUNCTIONS
@@ -369,7 +369,7 @@ merge_unpak_settings() {
     if [ -n "$unpak_load_settings" ] ; then
         #If there is no sample cfg - create one
         if [ ! -f "$unpak_load_settings" ] ; then
-            cp "$script_folder/unpak.cfg.example" "$unpak_load_settings"
+            cp "$unpak_load_settings.example" "$unpak_load_settings"
             echo "Create $unpak_load_settings file from example"
         fi
 

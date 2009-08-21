@@ -28,22 +28,17 @@ PUSH() {
 
             ls -l $root/oversight.cgi
 
+            cp -av oversight *.full *.cgi *.css *.sh conf/*example help conf/.*defaults $root/.
+
             echo scripts ...
             case "$mode" in
 
-            q)
-                cp -a oversight *.full *.cgi *.css *.sh bin $root/.
-                ;;
 
             all)
-                cp -a oversight *.full *.cfg *.cgi *.css *.sh bin help *.example *.php $root/.
                 echo images...
-                cp -a images/ $root/.
+                cp -a bin/ images/ $root/.
                 ;;
 
-            *)
-                cp -a oversight *.full *.cfg *.cgi *.css *.sh bin help *.example *.php $root/.
-                ;;
             esac
 
             echo clear cache ...

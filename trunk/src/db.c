@@ -314,7 +314,19 @@ int parse_row(
     int result = 0;
     
     char *name_start = buffer;
-    for(;;) {
+
+    //bitfield to track overview fields
+    unsigned int overview_mask = 0;
+    unsigned int target_field_mask = 0;
+
+    // If we are in overview/menu mode then stop as soon as we have parsed the required fields.
+    if (tv_or_movie_view) {
+        target_field_mask = 0xFFFFFFFF;
+    } else {
+        // overview mode
+        target_field_mask = 0xFFFF;
+    }
+    while(overview_mask != target_field_mask) {
 
         char *name_end,*value_start,*value_end = NULL;
 
@@ -345,9 +357,19 @@ int parse_row(
 
         //find start of value
         value_end=value_start=name_end+1;
-        while(*value_end && *value_end != '\t') {
+        while(*value_end) {
+            if (*value_end == '\t') {
+                // if the tab is followed by a field name or EOL then break.
+                // This is added because some XML API return tabs. 
+                // Really we should change separator to something else.
+                switch(value_end[1]) {
+                    case '_' : case '\n': case '\r' : case '\0' : 
+                        goto got_value_end; //Yes it really is a goto
+                }
+            }
             value_end++;
         }
+got_value_end:
 
         if (*value_end != '\t') {
             html_log(-1,"rowid %d: Tab expected after field value",rowid->id);
@@ -374,7 +396,10 @@ int parse_row(
                 else if (strcmp(name_start,DB_FLDID_AIRDATEIMDB) == 0) parse_date(name_start,value_start,&(rowid->airdate_imdb),0);
                 break;
             case 'C':
-                if (strcmp(name_start,DB_FLDID_CATEGORY) == 0) rowid->category = *value_start;
+                if (strcmp(name_start,DB_FLDID_CATEGORY) == 0)  {
+                    rowid->category = *value_start;
+                    overview_mask |= 0x1;
+                }
                 break;
             case 'D':
                 //do nothing - DOWNLOADTIME
@@ -392,20 +417,33 @@ int parse_row(
                     rowid->file = copy_string(val_len,value_start);
                     rowid->ext = strrchr(rowid->file,'.');
                     if (rowid->ext) rowid->ext++;
+                    overview_mask |= 0x2;
                 }
                 break;
 
             case 'G':
-                if (strcmp(name_start,DB_FLDID_GENRE) == 0) rowid->genre = copy_string(val_len,value_start);
+                if (strcmp(name_start,DB_FLDID_GENRE) == 0) {
+                    rowid->genre = copy_string(val_len,value_start);
+                    overview_mask |= 0x4;
+                }
                 break;
             case 'J':
-                if (strcmp(name_start,DB_FLDID_POSTER) == 0) rowid->poster = copy_string(val_len,value_start);
+                if (strcmp(name_start,DB_FLDID_POSTER) == 0) {
+                    rowid->poster = copy_string(val_len,value_start);
+                    overview_mask |= 0x8;
+                }
                 break;
             case 'i':
-                if (strcmp(name_start,DB_FLDID_ID) == 0)  rowid->id=strtol(value_start,&tmps,10) ;
+                if (strcmp(name_start,DB_FLDID_ID) == 0) {
+                    rowid->id=strtol(value_start,&tmps,10) ;
+                    overview_mask |= 0x10;
+                }
                 break;
             case 'I':
-                if (strcmp(name_start,DB_FLDID_INDEXTIME) == 0)  parse_timestamp(name_start,value_start,&(rowid->date),0);
+                if (strcmp(name_start,DB_FLDID_INDEXTIME) == 0) {
+                    parse_timestamp(name_start,value_start,&(rowid->date),0);
+                    overview_mask |= 0x20;
+                }
                 break;
             case 'n':
                 if (strcmp(name_start,DB_FLDID_NFO) == 0) rowid->nfo=copy_string(val_len,value_start);
@@ -425,19 +463,31 @@ int parse_row(
                 }
                 break;
             case 'r':
-                if (strcmp(name_start,DB_FLDID_RATING) == 0) sscanf(value_start,"%lf",&(rowid->rating));
+                if (strcmp(name_start,DB_FLDID_RATING) == 0) {
+                    sscanf(value_start,"%lf",&(rowid->rating));
+                    overview_mask |= 0x40;
+                }
                 break;
             case 'R':
-                if (strcmp(name_start,DB_FLDID_CERT) == 0) rowid->certificate = copy_string(val_len,value_start);
+                if (strcmp(name_start,DB_FLDID_CERT) == 0) {
+                    rowid->certificate = copy_string(val_len,value_start);
+                    overview_mask |= 0x80;
+                }
                 break;
             case 's':
-                if (strcmp(name_start,DB_FLDID_SEASON) == 0) rowid->season = strtol(value_start,&tmps,10);
+                if (strcmp(name_start,DB_FLDID_SEASON) == 0) {
+                    rowid->season = strtol(value_start,&tmps,10);
+                    overview_mask |= 0x100;
+                }
                 break;
             case 't':
                 //do nothing - TVCOM
                 break;
             case 'T':
-                if (strcmp(name_start,DB_FLDID_TITLE) == 0) rowid->title = copy_string(val_len,value_start);
+                if (strcmp(name_start,DB_FLDID_TITLE) == 0) {
+                    rowid->title = copy_string(val_len,value_start);
+                    overview_mask |= 0x200;
+                }
                 break;
             case 'U':
                 if (strcmp(name_start,DB_FLDID_URL) == 0) rowid->url = copy_string(val_len,value_start);
@@ -446,10 +496,14 @@ int parse_row(
                 if (strcmp(name_start,DB_FLDID_WATCHED) == 0) {
                     rowid->watched=strtol(value_start,&tmps,10);
                     assert(rowid->watched == 0 || rowid->watched == 1);
+                    overview_mask |= 0x400;
                 }
                 break;
             case 'Y':
-                if (strcmp(name_start,DB_FLDID_YEAR) == 0)  rowid->year=strtol(value_start,&tmps,10);
+                if (strcmp(name_start,DB_FLDID_YEAR) == 0) {
+                    rowid->year=strtol(value_start,&tmps,10);
+                    overview_mask |= 0x800;
+                }
                 break;
             default:
                 html_log(-1,"Unknown field [%s]",name_start);
@@ -462,13 +516,12 @@ int parse_row(
             html_error("Error parsing [%s]=[%s]",name_start,value_start);
         }
 
-        // The folowing files are removed from the delete queue whenever they are parsed.
-        delete_queue_unqueue(rowid,rowid->nfo);
-        delete_queue_unqueue(rowid,rowid->poster);
-
         *name_end = *value_end = '\t';
         name_start = value_end;
     }
+    // The folowing files are removed from the delete queue whenever they are parsed.
+    delete_queue_unqueue(rowid,rowid->nfo);
+    delete_queue_unqueue(rowid,rowid->poster);
 
     result =   (result && (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) );
     if (!result) {

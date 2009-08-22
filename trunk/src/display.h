@@ -40,4 +40,5 @@ char *file_to_url(char *path);
 char *get_path(DbRowId *rid,char *path);
 char *vod_attr(char *file);
 char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart);
+void create_file_to_url_symlink();
 #endif

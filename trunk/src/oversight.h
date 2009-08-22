@@ -37,6 +37,7 @@ OVS_EXTERN(Array *g_genre,NULL);
 
 #define SELF_URL ""
 #define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
+#define NETWORK_SYMLINK "/opt/sybhttpd/default/.network"
 
 char *get_mounted_path(char *source,char *path);
 

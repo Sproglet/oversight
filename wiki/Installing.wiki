@@ -1,6 +1,14 @@
 #labels Phase-Deploy,Featured
 How to install Oversight
 
+= Before You Start ==
+
+Make sure you are NOT using AUTO mode for your Audio/Video connection.
+This mode is only recommended for troubleshooting and initial setup.
+See http://www.networkedmediatank.com/showthread.php?tid=6906
+and http://www.networkedmediatank.com/wiki/index.php/TV_Mode
+for more
+
 = Introduction =
 
 There are four ways to install Oversight on your [http://www.networkedmediatank.com/wiki/index.php/Products Networked Media Tank]. 

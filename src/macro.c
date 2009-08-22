@@ -95,6 +95,8 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
 char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
 
+    DbRowId *rid=sorted_rows[0];
+
     if (num_rows == 0) {
 
        *free_result=0;
@@ -102,13 +104,12 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 
     } else if (args && args->size  == 1) {
 
-        result = get_poster_image_tag(sorted_rows[0],args->array[0]);
+        result = get_poster_image_tag(rid,args->array[0]);
 
     } else if (!args || args->size == 0 ) {
 
         char *attr;
         long height;
-        DbRowId *rid=NULL;
 
 
         if (rid) {

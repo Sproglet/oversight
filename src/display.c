@@ -556,6 +556,25 @@ char *get_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scrol
 }
 
 
+static int use_file_to_url_symlink=0;
+void create_file_to_url_symlink() {
+    // Create a symlink that gives a remote browse simple access to all
+    // files via http://ip:8883/...
+    // By default remote browsers can only see /opt/httpd/default and
+    // only gaya can see the other media mount points eg /opt/sybhttpd/localhost.drives
+    // (becuase sybhttpd checks the headers sent back by the browser (see mini-installer)
+    // This link allows /NETWORK_SHARE/path/to/file to be accessed as
+    // http://:8883/.network/path/to/file
+    //
+    // This is a potential security risk so well make it optional
+    // Without it - remote browsers  access mounted images by passing them as an argument
+    // to oversight.cgi which then 'cats' them to stdout - see main()
+    if (!exists(NETWORK_SYMLINK)) {
+        symlink(NETWORK_SHARE,NETWORK_SYMLINK);
+    }
+    use_file_to_url_symlink=1;
+}
+
 char *file_to_url(char *path) {
     char *new = NULL;
     assert(path);
@@ -563,17 +582,19 @@ char *file_to_url(char *path) {
         //If using gaya just go directly to the file system
         ovs_asprintf(&new,"\"file://%s\"",path);
 
-    } else if (strstr(path,"/share/Apps/oversight") == path) {
+    } else if (util_starts_with(path,"/share/Apps/oversight")) {
         // if /share/Apps/oversight/file/path 
         // then use /oversight/file/path thanks to symlink 
         //  /opt/sybhttpd/default/oversight -> /share/Apps/oversight/
         ovs_asprintf(&new,"\"%s\"",path+11);
 
-    } else if (strstr(path,"/opt/sybhttpd/default") == path) {
+    } else if (util_starts_with(path,"/opt/sybhttpd/default")) {
         // if in /opt/sybhttpd/default/file/path
         // then use /file/path
         ovs_asprintf(&new,"\"%s\"",path+21);
 
+    } else if (use_file_to_url_symlink && util_starts_with(path,NETWORK_SHARE)) {
+        ovs_asprintf(&new,"\"/.network/%s\"",path+strlen(NETWORK_SHARE));
     } else {
         // otherwise pass as a paramter to this script. It will cat jpg etc it to stdout
         ovs_asprintf(&new,"\"?%s\"",path);
@@ -657,6 +678,7 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
         modifier="fanart";
     }
 
+if (1) {
     // First check the filesystem. We do this via the mounted path.
     // This requires that the remote file is already mounted.
     char *file = get_path(rid,rid->file);
@@ -688,6 +710,7 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
     }
     FREE(file);
     FREE(dir);
+}
 
 
     if (path == NULL) {
@@ -1278,7 +1301,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
                 p++;
             }
             if ((count=template_replace(template_name,p,num_rows,sorted_row_ids)) != 0 ) {
-                html_log(0,"macro cound %d",count);
+                html_log(0,"macro count %d",count);
             }
 
             if (fix_css_bug && strstr(p,"*/") ) {

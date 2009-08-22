@@ -689,7 +689,12 @@ char *util_basename(char *file) {
     return s;
 }
 int util_starts_with(char *a,char *b) {
-    return strncmp(a,b,strlen(b))==0;
+    while(*a == *b) {
+        if (*b == '\0') return 1;
+        a++;
+        b++;
+    }
+    return *b == '\0';
 }
 
 void util_rmdir(char *path,char *name) {

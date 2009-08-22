@@ -528,15 +528,14 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
     FREE(tag);
 }
 
-char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *class) {
+char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin) {
     char *attr;
     ovs_asprintf(&attr,
             " %s %s %s %s%s",
             (centre_cell? " name=centreCell ":""),
             (left_scroll? " onkeyleftset=pgup1 ":""),
             (right_scroll? " onkeyrightset=pgdn1 ":""),
-            (class != NULL?" class=":""),
-            (class != NULL?class:""));
+            (attrin != NULL?attrin:""));
 
     return attr;
 }
@@ -639,11 +638,11 @@ char *check_path(char *a,char *b,char *c,char *d) {
 
     ovs_asprintf(&p,"%s%s%s%s",a,b,c,d);
     if (!exists(p)) {
-        html_log(-1,"%s doesnt exist",p);
+        html_log(1,"%s doesnt exist",p);
         FREE(p);
         p = NULL;
     } else {
-        html_log(-1,"%s exist",p);
+        html_log(1,"%s exist",p);
     }
     return p;
 }
@@ -1154,9 +1153,10 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 #define MACRO_CH_BEG '['
 #define MACRO_CH_SEP ':'
 #define MACRO_CH_END ']'
-void template_replace(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
+int template_replace(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
     char *macro_start = NULL;
+    int count = 0;
 
 
     char *p = input;
@@ -1194,6 +1194,7 @@ void template_replace(char *template_name,char *input,int num_rows,DbRowId **sor
             int free_result=0;
             macro_name_end[0] = '\0';
             char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
+            count++;
             macro_name_end[0] = MACRO_CH_SEP;
             if (macro_output && *macro_output) {
 
@@ -1223,6 +1224,7 @@ void template_replace(char *template_name,char *input,int num_rows,DbRowId **sor
     // Print the last bit
     printf("%s",p);
     fflush(stdout);
+    return count;
 }
 
 char *scanlines_to_text(long scanlines) {
@@ -1269,12 +1271,15 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 
 
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
+            int count = 0; 
             buffer[HTML_BUF_SIZE] = '\0';
             char *p=buffer;
             while(*p == ' ') {
                 p++;
             }
-            template_replace(template_name,p,num_rows,sorted_row_ids);
+            if ((count=template_replace(template_name,p,num_rows,sorted_row_ids)) != 0 ) {
+                html_log(0,"macro cound %d",count);
+            }
 
             if (fix_css_bug && strstr(p,"*/") ) {
                 printf(".dummy { color:red; }");
@@ -1635,10 +1640,24 @@ char *get_tvid_links(DbRowId **rowids) {
         *result = '\0';
 
         int i;
-        char i_str[TVID_MAX_LEN+1];
+        //char i_str[TVID_MAX_LEN+1];
         char *p = result;
+
+        Array *link_parts=split(link_template,TVID_MARKER,0);
+        html_log(-1,"link [%s]",link_template);
+        // Split the link_template into two strings - before and after the TVID_MARKER
+
         for(i = 1 ; i <= TVID_MAX ; i++ ) {
             if (tvid_output[i]) {
+                int j;
+                p += sprintf(p,"%s",(char *)link_parts->array[0]);
+                for(j = 1 ; j <  link_parts->size ;  j++ ) {
+                    p += sprintf(p,"%d%s",i,(char *)link_parts->array[j]);
+                }
+                *p++ = '\n';
+                *p = '\0';
+
+                /*
                 sprintf(i_str,"%d",i);
                 char *link = replace_all(link_template,TVID_MARKER,i_str,0);
                 strcpy(p,link);
@@ -1646,8 +1665,10 @@ char *get_tvid_links(DbRowId **rowids) {
                 p=strchr(p,'\0');
                 *p++ = '\n';
                 *p = '\0';
+                */
             }
         }
+        array_free(link_parts);
         FREE(link_template);
 
     }

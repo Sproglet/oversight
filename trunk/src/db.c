@@ -283,6 +283,12 @@ void db_rowid_dump(DbRowId *rid) {
     html_log(1,"----");
 }
 
+char *copy_string(int len,char *s) {
+    char *p = MALLOC(len+1);
+    strcpy(p,s);
+    return p;
+}
+
 #define ALL_IDS -1
 int parse_row(
         int num_ids, // number of ids passed in the idlist parameter of the query string. if ALL_IDS then id list is ignored.
@@ -351,6 +357,8 @@ int parse_row(
 
         *value_end = '\0';
 
+        int val_len=value_end-value_start;
+
         //html_log(-1,"fval[%s]",value_start);
 
 
@@ -361,7 +369,7 @@ int parse_row(
 
         switch(name_start[1]) {
             case 'a':
-                if (strcmp(name_start,DB_FLDID_ADDITIONAL_INFO) == 0) rowid->additional_nfo = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_ADDITIONAL_INFO) == 0) rowid->additional_nfo = copy_string(val_len,value_start);
                 else if (strcmp(name_start,DB_FLDID_AIRDATE) == 0) parse_date(name_start,value_start,&(rowid->airdate),0);
                 else if (strcmp(name_start,DB_FLDID_AIRDATEIMDB) == 0) parse_date(name_start,value_start,&(rowid->airdate_imdb),0);
                 break;
@@ -372,26 +380,26 @@ int parse_row(
                 //do nothing - DOWNLOADTIME
                 break;
             case 'e':
-                if (strcmp(name_start,DB_FLDID_EPISODE) == 0) rowid->episode = STRDUP(value_start);
-                else if (strcmp(name_start,DB_FLDID_EPTITLE) == 0) rowid->eptitle = STRDUP(value_start);
-                else if (strcmp(name_start,DB_FLDID_EPTITLEIMDB) == 0) rowid->eptitle_imdb = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_EPISODE) == 0) rowid->episode = copy_string(val_len,value_start);
+                else if (strcmp(name_start,DB_FLDID_EPTITLE) == 0) rowid->eptitle = copy_string(val_len,value_start);
+                else if (strcmp(name_start,DB_FLDID_EPTITLEIMDB) == 0) rowid->eptitle_imdb = copy_string(val_len,value_start);
                 break;
             case 'f':
-                if (strcmp(name_start,DB_FLDID_FANART) == 0) rowid->fanart = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_FANART) == 0) rowid->fanart = copy_string(val_len,value_start);
                 break;
             case 'F':
                 if (strcmp(name_start,DB_FLDID_FILE) == 0) {
-                    rowid->file = STRDUP(value_start);
+                    rowid->file = copy_string(val_len,value_start);
                     rowid->ext = strrchr(rowid->file,'.');
                     if (rowid->ext) rowid->ext++;
                 }
                 break;
 
             case 'G':
-                if (strcmp(name_start,DB_FLDID_GENRE) == 0) rowid->genre = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_GENRE) == 0) rowid->genre = copy_string(val_len,value_start);
                 break;
             case 'J':
-                if (strcmp(name_start,DB_FLDID_POSTER) == 0) rowid->poster = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_POSTER) == 0) rowid->poster = copy_string(val_len,value_start);
                 break;
             case 'i':
                 if (strcmp(name_start,DB_FLDID_ID) == 0)  rowid->id=strtol(value_start,&tmps,10) ;
@@ -400,18 +408,18 @@ int parse_row(
                 if (strcmp(name_start,DB_FLDID_INDEXTIME) == 0)  parse_timestamp(name_start,value_start,&(rowid->date),0);
                 break;
             case 'n':
-                if (strcmp(name_start,DB_FLDID_NFO) == 0) rowid->nfo=STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_NFO) == 0) rowid->nfo=copy_string(val_len,value_start);
                 break;
             case 'o':
                 // do nothing - _ot ORIGINAL_TITLE
                 break;
             case 'p':
-                if (strcmp(name_start,DB_FLDID_PARTS) == 0) rowid->parts = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_PARTS) == 0) rowid->parts = copy_string(val_len,value_start);
                 break;
             case 'P':
                 if (strcmp(name_start,DB_FLDID_PLOT) == 0)  {
-                    rowid->plot = STRDUP(value_start);
-                    if (strlen(rowid->plot) > g_dimension->max_plot_length) {
+                    rowid->plot = copy_string(val_len,value_start);
+                    if (val_len > g_dimension->max_plot_length) {
                         strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
                     }
                 }
@@ -420,7 +428,7 @@ int parse_row(
                 if (strcmp(name_start,DB_FLDID_RATING) == 0) sscanf(value_start,"%lf",&(rowid->rating));
                 break;
             case 'R':
-                if (strcmp(name_start,DB_FLDID_CERT) == 0) rowid->certificate = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_CERT) == 0) rowid->certificate = copy_string(val_len,value_start);
                 break;
             case 's':
                 if (strcmp(name_start,DB_FLDID_SEASON) == 0) rowid->season = strtol(value_start,&tmps,10);
@@ -429,10 +437,10 @@ int parse_row(
                 //do nothing - TVCOM
                 break;
             case 'T':
-                if (strcmp(name_start,DB_FLDID_TITLE) == 0) rowid->title = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_TITLE) == 0) rowid->title = copy_string(val_len,value_start);
                 break;
             case 'U':
-                if (strcmp(name_start,DB_FLDID_URL) == 0) rowid->url = STRDUP(value_start);
+                if (strcmp(name_start,DB_FLDID_URL) == 0) rowid->url = copy_string(val_len,value_start);
                 break;
             case 'w':
                 if (strcmp(name_start,DB_FLDID_WATCHED) == 0) {

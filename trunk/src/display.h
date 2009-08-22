@@ -39,4 +39,5 @@ void display_confirm(char *name,char *val_ok,char *val_cancel);
 char *file_to_url(char *path);
 char *get_path(DbRowId *rid,char *path);
 char *vod_attr(char *file);
+char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart);
 #endif

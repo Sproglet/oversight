@@ -104,23 +104,27 @@ int main(int argc,char **argv) {
                 exit(0);
 
             } else {
-                char *dot = strrchr(argv[1],'.');
+                char *img = url_decode(argv[1]);
+                char *dot = strrchr(img,'.');
 
                 if (dot) {
+
+
                     if (strcmp(dot,".png") == 0 ) {
 
-                        cat("image/png",argv[1]);
+                        cat("image/png",img);
 
                     } else if ( strcmp(dot,".jpg") == 0 ) {
 
-                        cat("image/jpeg",argv[1]);
+                        cat("image/jpeg",img);
 
                     } else if ( strcmp(dot,".gif") == 0) {
 
-                        cat("image/gif",argv[1]);
+                        cat("image/gif",img);
 
                     }
                 }
+                FREE(img);
             }
         }
     }

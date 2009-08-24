@@ -531,10 +531,10 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
 char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin) {
     char *attr;
     ovs_asprintf(&attr,
-            " %s %s %s %s%s",
-            (centre_cell? " name=centreCell ":""),
-            (left_scroll? " onkeyleftset=pgup1 ":""),
-            (right_scroll? " onkeyrightset=pgdn1 ":""),
+            " %s%s%s %s ",
+            (centre_cell? "name=centreCell ":""),
+            (left_scroll? "onkeyleftset=pgup1 ":""),
+            (right_scroll? "onkeyrightset=pgdn1 ":""),
             (attrin != NULL?attrin:""));
 
     return attr;
@@ -1167,7 +1167,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     FREE(title);
 
     char *result;
-    ovs_asprintf(&result,"\t\t<td %s %s>%s</td>",width_attr,grid_class,cell_text);
+    ovs_asprintf(&result,"\t\t<td %s %s >%s</td>",width_attr,grid_class,cell_text);
     FREE(cell_text);
     return result;
 }
@@ -1481,37 +1481,34 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     html_log(3,"Regex filter = %s",regex);
 
     // Watched filter
-    char *watched_param;
+    // ==============
     int watched = DB_WATCHED_FILTER_ANY;
+    char *watched_param=query_val(QUERY_PARAM_WATCHED_FILTER);
 
-    if (config_check_str(g_query,QUERY_PARAM_WATCHED_FILTER,&watched_param)) {
+    if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
 
-        if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
+        watched=DB_WATCHED_FILTER_YES;
 
-            watched=DB_WATCHED_FILTER_YES;
+    } else if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
 
-        } else if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
-
-            watched=DB_WATCHED_FILTER_NO;
-        }
+        watched=DB_WATCHED_FILTER_NO;
     }
+
     html_log(1,"Watched filter = %ld",watched);
 
     // Tv/Film filter
-    char *media_type_str=NULL;
+    // ==============
+    char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
     int media_type=DB_MEDIA_TYPE_ANY;
 
-    if (config_check_str(g_query,QUERY_PARAM_TYPE_FILTER,&media_type_str)) {
+    if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
 
-        if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
+        media_type=DB_MEDIA_TYPE_TV; 
 
-            media_type=DB_MEDIA_TYPE_TV; 
+    } else if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
 
-        } else if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
+        media_type=DB_MEDIA_TYPE_FILM; 
 
-            media_type=DB_MEDIA_TYPE_FILM; 
-
-        }
     }
     html_log(1,"Media type = %d",media_type);
 
@@ -1529,10 +1526,8 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
 
     config_check_str(g_query,"s",&sort);
 
-
     if (strcmp(query_val("view"),"tv") == 0) {
 
-        html_log(1,"sort by name / season / episode");
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
@@ -1561,7 +1556,9 @@ void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids) {
     FREE(sorted_row_ids);
 
     //finished now - so we could just let os free
+TRACE;
     db_free_rowsets_and_dbs(rowsets);
+TRACE;
 }
 
 

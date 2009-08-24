@@ -24,6 +24,7 @@ OVS_EXTERN(Array *g_genre,NULL);
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"
+#define QUERY_PARAM_GENRE "G"
 #define QUERY_PARAM_SORT "s"
 #define QUERY_PARAM_REGEX "_rf"
 #define QUERY_PARAM_SEARCH_MODE "_sm"

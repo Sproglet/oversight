@@ -18,8 +18,16 @@
 #define DB_ROW_BUF_SIZE 4000
 #define QUICKPARSE
 
-struct hashtable *read_and_parse_row(FILE *fp);
+char *copy_string(int len,char *s);
+DbRowId *db_rowid_new(Db *db);
+DbRowId *read_and_parse_row(
+        Db *db,
+        FILE *fp,
+        int *eof,
+        int tv_or_movie_view // true if looking at tv or moview view.
+        );
 int in_idlist(int id,int size,int *ids);
+void get_genre_from_string(char *gstr,struct hashtable **h);
 
 int db_lock_pid(Db *db) {
 
@@ -200,67 +208,265 @@ int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
     return 0;
 }
 
-#ifdef FAST_PARSE
-struct hashtable *read_and_parse_row(FILE *fp) {
+void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,unsigned int *overview_mask) {
+
+    // Used to checl for trailing chars.
+    char *tmps=NULL;
+    char tmpc='\0';
+    int tmp_conv=1;
+
+    switch(name[1]) {
+        case 'a':
+            if (strcmp(name,DB_FLDID_ADDITIONAL_INFO) == 0) rowid->additional_nfo = copy_string(val_len,val);
+            else if (strcmp(name,DB_FLDID_AIRDATE) == 0) parse_date(name,val,&(rowid->airdate),0);
+            else if (strcmp(name,DB_FLDID_AIRDATEIMDB) == 0) parse_date(name,val,&(rowid->airdate_imdb),0);
+            break;
+        case 'C':
+            if (strcmp(name,DB_FLDID_CATEGORY) == 0)  {
+                rowid->category = *val;
+                *overview_mask |= 0x1;
+            }
+            break;
+        case 'D':
+            //do nothing - DOWNLOADTIME
+            break;
+        case 'e':
+            if (strcmp(name,DB_FLDID_EPISODE) == 0) rowid->episode = copy_string(val_len,val);
+            else if (strcmp(name,DB_FLDID_EPTITLE) == 0) rowid->eptitle = copy_string(val_len,val);
+            else if (strcmp(name,DB_FLDID_EPTITLEIMDB) == 0) rowid->eptitle_imdb = copy_string(val_len,val);
+            break;
+        case 'f':
+            if (strcmp(name,DB_FLDID_FANART) == 0) rowid->fanart = copy_string(val_len,val);
+            break;
+        case 'F':
+            if (strcmp(name,DB_FLDID_FILE) == 0) {
+                rowid->file = copy_string(val_len,val);
+                rowid->ext = strrchr(rowid->file,'.');
+                if (rowid->ext) rowid->ext++;
+                *overview_mask |= 0x2;
+            }
+            break;
+
+        case 'G':
+            if (strcmp(name,DB_FLDID_GENRE) == 0) {
+                rowid->genre = copy_string(val_len,val);
+                *overview_mask |= 0x4;
+            }
+            break;
+        case 'J':
+            if (strcmp(name,DB_FLDID_POSTER) == 0) {
+                rowid->poster = copy_string(val_len,val);
+                *overview_mask |= 0x8;
+            }
+            break;
+        case 'i':
+            if (strcmp(name,DB_FLDID_ID) == 0) {
+                rowid->id=strtol(val,&tmps,10) ;
+                *overview_mask |= 0x10;
+            }
+            break;
+        case 'I':
+            if (strcmp(name,DB_FLDID_INDEXTIME) == 0) {
+                parse_timestamp(name,val,&(rowid->date),0);
+                *overview_mask |= 0x20;
+            }
+            break;
+        case 'n':
+            if (strcmp(name,DB_FLDID_NFO) == 0) rowid->nfo=copy_string(val_len,val);
+            break;
+        case 'o':
+            // do nothing - _ot ORIGINAL_TITLE
+            break;
+        case 'p':
+            if (strcmp(name,DB_FLDID_PARTS) == 0) rowid->parts = copy_string(val_len,val);
+            break;
+        case 'P':
+            if (strcmp(name,DB_FLDID_PLOT) == 0)  {
+                rowid->plot = copy_string(val_len,val);
+                if (val_len > g_dimension->max_plot_length) {
+                    strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
+                }
+            }
+            break;
+        case 'r':
+            if (strcmp(name,DB_FLDID_RATING) == 0) {
+                sscanf(val,"%lf",&(rowid->rating));
+                *overview_mask |= 0x40;
+            }
+            break;
+        case 'R':
+            if (strcmp(name,DB_FLDID_CERT) == 0) {
+                rowid->certificate = copy_string(val_len,val);
+                *overview_mask |= 0x80;
+            }
+            break;
+        case 's':
+            if (strcmp(name,DB_FLDID_SEASON) == 0) {
+                rowid->season = strtol(val,&tmps,10);
+                *overview_mask |= 0x100;
+            }
+            break;
+        case 't':
+            //do nothing - TVCOM
+            break;
+        case 'T':
+            if (strcmp(name,DB_FLDID_TITLE) == 0) {
+                rowid->title = copy_string(val_len,val);
+                *overview_mask |= 0x200;
+            }
+            break;
+        case 'U':
+            if (strcmp(name,DB_FLDID_URL) == 0) {
+                rowid->url = copy_string(val_len,val);
+            }
+            break;
+        case 'w':
+            if (strcmp(name,DB_FLDID_WATCHED) == 0) {
+                rowid->watched=strtol(val,&tmps,10);
+                assert(rowid->watched == 0 || rowid->watched == 1);
+                *overview_mask |= 0x400;
+            }
+            break;
+        case 'Y':
+            if (strcmp(name,DB_FLDID_YEAR) == 0) {
+                rowid->year=strtol(val,&tmps,10);
+                *overview_mask |= 0x800;
+            }
+            break;
+        default:
+            html_log(-1,"Unknown field [%s]",name);
+    }
+
+    if ( (tmps && *tmps)  || tmpc != '\0' || tmp_conv != 1 ) {
+        html_error("Error parsing [%s]=[%s]",name,val);
+    }
+}
+DbRowId *read_and_parse_row(
+        Db *db,
+        FILE *fp,
+        int *eof,
+        int tv_or_movie_view // true if looking at tv or moview view.
+        ) {
+
+
     char value[DB_ROW_BUF_SIZE];
 #define DB_NAME_BUF_SIZE 10
+#define RESET 1
+#define RESET_AND_ADD 2
     char name[DB_NAME_BUF_SIZE];
     char next;
 
     char *buf[2] = { name , value };
-    char buflen[2] = { DB_ROW_BUF_SIZE,DB_NAME_BUF_SIZE};
+    char *bufend[2] = { name+DB_NAME_BUF_SIZE , value+DB_ROW_BUF_SIZE };
 
-    struct hashtable *row_hash = string_string_hashtable();
+    DbRowId *rowid = NULL;
 
-    int buf_pick=1;
-    do {
-        next = getc(fp);
+    //initially point p at the value buffer.
+    //This initial value is discarded but it removes the need to 
+    //check for p != NULL for every character iteration
+    char *p=buf[1];
+    char *end=bufend[1];
+    unsigned int overview_mask=0;
 
-        switch(next) {
-        case '\t':
-            while(next == '\t') {
-                //read next field
-                
-                buf_pick = 1-buf_pick;
-                char *p = buf[buf_pick];
-                char *end = p + buflen[buf_pick];
+#define STATE_START -1
+#define STATE_NAME 0
+#define STATE_VAR 1
+    int state=STATE_START;
 
-                next = getc(fp);
-                while (next != '\r' && next != '\n' && next != '\t') {
+    while((next = getc(fp)) != EOF) {
 
-                    assert(p < end);
 
-                    *p++ = next;
+#ifdef TEST_FIRST
+        if (next > 20 ) {
+            // Add the character
+            *p++ = next;
+            if (p >= end ) {
+                p--;
+                *p = '\0';
+                break;
+            }
+        } else {
+#endif
+            switch(next) {
+            case '\n' : case '\r' : case '\0': // EOL terminators
+                goto eol;
+                break;
+            case '\t':
+                switch(state) {
+                    case STATE_START:
+                        state=STATE_NAME;
+                        p=buf[state];
+                        end=bufend[state];
+                        break;
+                    case STATE_NAME:
+                        *p = '\0';
+                        state=STATE_VAR;
+                        p=buf[state];
+                        end=bufend[state];
+                        break;
+                    case STATE_VAR:
+                        next = getc(fp);
+                        if (next != '_' ) {
+                            //If plot contains <tab> allow it if it is NOT followed by _
+                            //which is the prefix for out html vars. This is a nasty hack due 
+                            //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
+                            ungetc(next,fp);
+                        } else {
+                            *p = '\0';
+                            html_log(3,"parsed field %s=%s",name,value);
+                            if (rowid == NULL) {
+                                rowid = db_rowid_new(db);
+                            }
+                            db_rowid_set_field(rowid,name,value,p-value,&overview_mask);
 
-                    next = getc(fp);
+                            state=STATE_NAME;
+                            p=buf[state];
+                            end=bufend[state];
+                            *p++='_';
+                        }
+                        break;
+                    default:
+                        assert(0);
+                        break;
                 }
-                if (next == '\t') {
+                break;
+            default:
+                // Add the character
+                *p++ = next;
+                if (p >= end ) {
+                    p--;
                     *p = '\0';
-                    if (buf_pick == 1) {
-                        // just finished value - add to hash.
-                        html_log(1,"parsed field %s=%s",name,value);
-                        hashtable_insert(row_hash,STRDUP(name),STRDUP(value));
-                    }
-                } else {
-                    //end of row
-                    return row_hash;
+                    break;
                 }
             }
-            break;
-        case '\n' : case '\r' :  // EOL terminators
-            break;
-        case '#': //comment
-            fgets(buffer,DB_ROW_BUF_SIZE,fp);
-            break;
-
-            
-        default: // Anything else
-            html_error("unexpected character [%c] at start of line",next);
+#ifdef TEST_FIRST
         }
-    }
-    return NULL;
-}
 #endif
+    }
+eol:
+    if (next == EOF) {
+        *eof = 1;
+    }
+    if (p) {
+        *p = '\0';
+    }
+    return rowid;
+}
+
+DbRowId *db_rowid_new(Db *db) {
+
+    DbRowId *rowid = MALLOC(sizeof(*rowid));
+    memset(rowid,0,sizeof(*rowid));
+    rowid->rating=0;
+    rowid->watched=0;
+    rowid->year=0;
+
+    rowid->db = db;
+    rowid->season = -1;
+    rowid->category='?';
+
+    return rowid;
+}
 
 void db_rowid_dump(DbRowId *rid) {
     
@@ -285,7 +491,8 @@ void db_rowid_dump(DbRowId *rid) {
 
 char *copy_string(int len,char *s) {
     char *p = MALLOC(len+1);
-    strcpy(p,s);
+    memcpy(p,s,len+1);
+    //strcpy(p,s);
     return p;
 }
 
@@ -384,137 +591,8 @@ got_value_end:
         //html_log(-1,"fval[%s]",value_start);
 
 
-        // Used to checl for trailing chars.
-        char *tmps=NULL;
-        char tmpc='\0';
-        int tmp_conv=1;
+        db_rowid_set_field(rowid,name_start,value_start,val_len,&overview_mask);
 
-        switch(name_start[1]) {
-            case 'a':
-                if (strcmp(name_start,DB_FLDID_ADDITIONAL_INFO) == 0) rowid->additional_nfo = copy_string(val_len,value_start);
-                else if (strcmp(name_start,DB_FLDID_AIRDATE) == 0) parse_date(name_start,value_start,&(rowid->airdate),0);
-                else if (strcmp(name_start,DB_FLDID_AIRDATEIMDB) == 0) parse_date(name_start,value_start,&(rowid->airdate_imdb),0);
-                break;
-            case 'C':
-                if (strcmp(name_start,DB_FLDID_CATEGORY) == 0)  {
-                    rowid->category = *value_start;
-                    overview_mask |= 0x1;
-                }
-                break;
-            case 'D':
-                //do nothing - DOWNLOADTIME
-                break;
-            case 'e':
-                if (strcmp(name_start,DB_FLDID_EPISODE) == 0) rowid->episode = copy_string(val_len,value_start);
-                else if (strcmp(name_start,DB_FLDID_EPTITLE) == 0) rowid->eptitle = copy_string(val_len,value_start);
-                else if (strcmp(name_start,DB_FLDID_EPTITLEIMDB) == 0) rowid->eptitle_imdb = copy_string(val_len,value_start);
-                break;
-            case 'f':
-                if (strcmp(name_start,DB_FLDID_FANART) == 0) rowid->fanart = copy_string(val_len,value_start);
-                break;
-            case 'F':
-                if (strcmp(name_start,DB_FLDID_FILE) == 0) {
-                    rowid->file = copy_string(val_len,value_start);
-                    rowid->ext = strrchr(rowid->file,'.');
-                    if (rowid->ext) rowid->ext++;
-                    overview_mask |= 0x2;
-                }
-                break;
-
-            case 'G':
-                if (strcmp(name_start,DB_FLDID_GENRE) == 0) {
-                    rowid->genre = copy_string(val_len,value_start);
-                    overview_mask |= 0x4;
-                }
-                break;
-            case 'J':
-                if (strcmp(name_start,DB_FLDID_POSTER) == 0) {
-                    rowid->poster = copy_string(val_len,value_start);
-                    overview_mask |= 0x8;
-                }
-                break;
-            case 'i':
-                if (strcmp(name_start,DB_FLDID_ID) == 0) {
-                    rowid->id=strtol(value_start,&tmps,10) ;
-                    overview_mask |= 0x10;
-                }
-                break;
-            case 'I':
-                if (strcmp(name_start,DB_FLDID_INDEXTIME) == 0) {
-                    parse_timestamp(name_start,value_start,&(rowid->date),0);
-                    overview_mask |= 0x20;
-                }
-                break;
-            case 'n':
-                if (strcmp(name_start,DB_FLDID_NFO) == 0) rowid->nfo=copy_string(val_len,value_start);
-                break;
-            case 'o':
-                // do nothing - _ot ORIGINAL_TITLE
-                break;
-            case 'p':
-                if (strcmp(name_start,DB_FLDID_PARTS) == 0) rowid->parts = copy_string(val_len,value_start);
-                break;
-            case 'P':
-                if (strcmp(name_start,DB_FLDID_PLOT) == 0)  {
-                    rowid->plot = copy_string(val_len,value_start);
-                    if (val_len > g_dimension->max_plot_length) {
-                        strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
-                    }
-                }
-                break;
-            case 'r':
-                if (strcmp(name_start,DB_FLDID_RATING) == 0) {
-                    sscanf(value_start,"%lf",&(rowid->rating));
-                    overview_mask |= 0x40;
-                }
-                break;
-            case 'R':
-                if (strcmp(name_start,DB_FLDID_CERT) == 0) {
-                    rowid->certificate = copy_string(val_len,value_start);
-                    overview_mask |= 0x80;
-                }
-                break;
-            case 's':
-                if (strcmp(name_start,DB_FLDID_SEASON) == 0) {
-                    rowid->season = strtol(value_start,&tmps,10);
-                    overview_mask |= 0x100;
-                }
-                break;
-            case 't':
-                //do nothing - TVCOM
-                break;
-            case 'T':
-                if (strcmp(name_start,DB_FLDID_TITLE) == 0) {
-                    rowid->title = copy_string(val_len,value_start);
-                    overview_mask |= 0x200;
-                }
-                break;
-            case 'U':
-                if (strcmp(name_start,DB_FLDID_URL) == 0) rowid->url = copy_string(val_len,value_start);
-                break;
-            case 'w':
-                if (strcmp(name_start,DB_FLDID_WATCHED) == 0) {
-                    rowid->watched=strtol(value_start,&tmps,10);
-                    assert(rowid->watched == 0 || rowid->watched == 1);
-                    overview_mask |= 0x400;
-                }
-                break;
-            case 'Y':
-                if (strcmp(name_start,DB_FLDID_YEAR) == 0) {
-                    rowid->year=strtol(value_start,&tmps,10);
-                    overview_mask |= 0x800;
-                }
-                break;
-            default:
-                html_log(-1,"Unknown field [%s]",name_start);
-        }
-
-
-
-
-        if ( (tmps && *tmps)  || tmpc != '\0' || tmp_conv != 1 ) {
-            html_error("Error parsing [%s]=[%s]",name_start,value_start);
-        }
 
         *name_end = *value_end = '\t';
         name_start = value_end;
@@ -622,7 +700,7 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
             }
         }
     }
-    html_log(1,"end db_scan_and_add_rowset");
+    html_log(0,"end db_scan_and_add_rowset");
 }
 
 
@@ -670,7 +748,7 @@ DbRowSet **db_crossview_scan_titles(
             closedir(d);
         }
     }
-    html_log(1,"end db_crossview_scan_titles");
+    html_log(0,"end db_crossview_scan_titles");
     return rowsets;
 }
 
@@ -775,6 +853,8 @@ int in_idlist(int id,int size,int *ids) {
     return 0;
 }
 
+struct hashtable *genre_hash = NULL;
+
 DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
@@ -826,6 +906,8 @@ DbRowSet * db_scan_titles(
         default: assert(watched == DB_MEDIA_TYPE_TV); break;
     }
 
+    char *genre_filter = query_val(DB_FLDID_GENRE);
+
 
     int row_count=0;
     int total_rows=0;
@@ -838,22 +920,69 @@ DbRowSet * db_scan_titles(
 html_log(3,"db fp.%ld..",(long)fp);
     if (fp) {
         rowset=db_rowset(db);
-        DbRowId rowid;
-        char buffer[DB_ROW_BUF_SIZE+1];
 
-#ifdef FAST_PARSE
-        while (1) {
-            hashtable *row_hash = read_and_parse_row(fp,&pos);
-            if (row_hash) {
-                total_rows++;
+TRACE;
+        int eof=0;
+        while (eof == 0) {
+            total_rows++;
+            DbRowId *rowid = read_and_parse_row(db,fp,&eof,tv_or_movie_view);
+            if (rowid) {
+                int keeprow=1;
 
-                if (buffer[0] == '\t' && gross_size != NULL) {
+                get_genre_from_string(rowid->genre,&genre_hash);
+
+                if (genre_filter && *genre_filter) {
+                    if (!strstr(rowid->genre,genre_filter)) {
+                        keeprow=0;
+                    }
+                }
+
+                if (keeprow && name_filter && *name_filter) {
+                    int match= regexec(&pattern,rowid->title,0,NULL,0);
+                    if (match != 0 ) {
+                        html_log(5,"skipped %s!=%s",rowid->title,name_filter);
+                        keeprow=0;
+                    }
+                }
+                if (keeprow) {
+                    switch(media_type) {
+                        case DB_MEDIA_TYPE_TV : if (rowid->category != 'T') keeprow=0; ; break;
+                        case DB_MEDIA_TYPE_FILM : if (rowid->category != 'M') keeprow=0; ; break;
+                    }
+                }
+
+                if (keeprow) {
+                    switch(watched) {
+                        case DB_WATCHED_FILTER_NO : if (rowid->watched != 0 ) keeprow=0 ; break;
+                        case DB_WATCHED_FILTER_YES : if (rowid->watched != 1 ) keeprow=0 ; break;
+                    }
+                }
+                if (keeprow) {
+                    if (num_ids != ALL_IDS && !in_idlist(rowid->id,num_ids,ids)) {
+                        keeprow = 0;
+                    }
+                }
+
+                if (keeprow) {
+                    row_count = db_rowset_add(rowset,rowid);
+                    free(rowid);
+                } else {
+                    db_rowid_free(rowid,1);
+                }
+
+                if (gross_size != NULL) {
                     (*gross_size)++;
                 }
             }
         }
-#endif
+        fseek(fp,0,SEEK_SET);
+        html_log(0,"First total %d",total_rows);
+TRACE;
+#if 0
+        total_rows=0;
 html_log(3,"db start loop...");
+        DbRowId rowid;
+        char buffer[DB_ROW_BUF_SIZE+1];
 
         while (1) {
             /*
@@ -892,8 +1021,11 @@ html_log(3,"db start loop...");
             }
 
         }
+#endif
+TRACE;
         fclose(fp);
     }
+    html_log(0,"Second total %d",total_rows);
     if (rowset) {
         html_log(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
@@ -1106,9 +1238,13 @@ html_log(1," begin db_set_fields");
 html_log(1," end db_set_fields");
 }
 
-void get_genre_from_string(char *gstr,struct hashtable *h) {
+void get_genre_from_string(char *gstr,struct hashtable **h) {
 
     char *p;
+
+    if (*h == NULL) {
+        *h = string_string_hashtable(16);
+    }
 
     for(;;) {
         //while (*gstr == ' ' ) gstr++; // eat space
@@ -1135,10 +1271,10 @@ void get_genre_from_string(char *gstr,struct hashtable *h) {
 
                 //html_log(1,"Genre[%s]",gstr);
                 if (gstr && *gstr) {
-                    char *g = hashtable_search(h,gstr);
+                    char *g = hashtable_search(*h,gstr);
                     if (g==NULL) {
                         html_log(1,"added Genre[%s]",gstr);
-                        hashtable_insert(h,STRDUP(gstr),"1");
+                        hashtable_insert(*h,STRDUP(gstr),"1");
                     }
                 }
             }
@@ -1150,32 +1286,13 @@ void get_genre_from_string(char *gstr,struct hashtable *h) {
     }
 }
 
-Array *get_genres(DbRowSet **rowset) {
-
-    int rset_no;
-    DbRowSet *r;
-    int i;
-
-    // First insert all genres into a hashtable
-    struct hashtable *h = string_string_hashtable(16);
-
-    for(rset_no = 0 ; rowset[rset_no] ; rset_no++ ) {
-        r = rowset[rset_no];
-
-        for ( i = 0 ; i < r->size ; i++ ) {
-            DbRowId *id = r->rows + i;
-            if (id->genre) {
-
-                get_genre_from_string(id->genre,h);
-            }
-        }
-    }
+Array *get_genres() {
 
     // Now create a new array from hashtable keys.
-    Array *a = util_hashtable_keys(h);
+    Array *a = util_hashtable_keys(genre_hash);
     array_sort(a,NULL);
     array_print("sorted genres",a);
-    hashtable_destroy(h,0,0);
+    hashtable_destroy(genre_hash,0,0);
     return a;
 }
 

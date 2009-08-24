@@ -3181,9 +3181,22 @@ function contractionPrerequisite(abbrev,possible_title) {
     return 1;
 }
 
+function get_initials(title,\
+initials) {
+    initials = tolower(title);
+    while(match(initials,"[^ ][^ ]+ ")) {
+        initials = substr(initials,1,RSTART) " " substr(initials,RLENGTH+RSTART);
+    }
+    while(match(initials,"[^ ][^ ]+$")) {
+        initials = substr(initials,1,RSTART);
+    }
+    gsub(/ /,"",initials);
+    return initials;
+}
+
 # match tblt to tablet , grk greek etc.
 function abbrevContraction(abbrev,possible_title,\
-found,regex) {
+found,regex,initials,initial_regex) {
 
 
     # Use regular expressions to do the heavy lifting.
@@ -3204,6 +3217,17 @@ found,regex) {
             INFO(possible_title " abbreviated by ["abbrev"]");
         }
     }
+    if (found) {
+        # Check the contraction also contains the initials. 
+        initials = initial_regex = get_initials(possible_title);
+        gsub(//,".*",initial_regex);
+        if (abbrev !~ initial_regex ) {
+            INFO("Cantraction ["abbrev"] does not contain show ["possible_title"] initials ["initials"] so reject");
+            found = 0;
+        }
+    }
+
+        
     return found;
 }
 

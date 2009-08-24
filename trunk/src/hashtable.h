@@ -115,7 +115,7 @@ int fnname (struct hashtable *h, keytype *k, valuetype *v) \
 void *
 hashtable_search(struct hashtable *h, void *k);
 
-#define DEFINE_HASHTABLE_SEARCH(fnname, keytype, valuetype) \
+#define BROKENDEF_DEFINE_HASHTABLE_SEARCH(fnname, keytype, valuetype) \
 valuetype * fnname (struct hashtable *h, keytype *k) \
 { \
     return (valuetype *) (hashtable_search(h,k)); \
@@ -131,9 +131,9 @@ valuetype * fnname (struct hashtable *h, keytype *k) \
  */
 
 void * /* returns value */
-hashtable_remove(struct hashtable *h, void *k);
+hashtable_remove(struct hashtable *h, void *k,int free_key);
 
-#define DEFINE_HASHTABLE_REMOVE(fnname, keytype, valuetype) \
+#define BROKENDEF_DEFINE_HASHTABLE_REMOVE(fnname, keytype, valuetype) \
 valuetype * fnname (struct hashtable *h, keytype *k) \
 { \
     return (valuetype *) (hashtable_remove(h,k)); \

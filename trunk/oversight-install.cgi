@@ -28,8 +28,8 @@ FIND_FILE() {
 
 unpak_nzbget_bin="`FIND_FILE nzbget /share/Apps/NZBget/bin /mnt/syb8634/bin`"
 unpak_nzbget_conf="`FIND_FILE nzbget.conf /share/Apps/NZBget/.nzbget /share/.nzbget`"
-UNPAK_CONF="$INSTALL_DIR/unpak.cfg"
-CATALOG_CONF="$INSTALL_DIR/catalog.cfg"
+UNPAK_CONF="$INSTALL_DIR/conf/unpak.cfg"
+CATALOG_CONF="$INSTALL_DIR/conf/catalog.cfg"
 
 NZBGET() {
     "$unpak_nzbget_bin" -c "$unpak_nzbget_conf" "$@"
@@ -41,6 +41,27 @@ echo
 CP() {
     cp "$1" "$2" && chown -R nmt:nmt "$2"
 }
+
+RELOCATE_CONFIGS() {
+    for i in  catalog.cfg oversight.cfg unpak.cfg ; do
+        if [ -f "$i" ] ; then
+            if [ ! -f "conf/$i" ] ; then
+                mv "$i" "./conf/$i"
+            fi
+        fi
+    done
+
+    for i in *.example  ; do
+        if [ -f "$i" ] ; then
+            mv "$i" "./tmp/$i.delete_me"
+        fi
+    done
+}
+
+cd "$INSTALL_DIR"
+
+RELOCATE_CONFIGS
+
 
 if [ ! -f "$UNPAK_CONF" ] ; then
     echo $unpak_nzbget_bin
@@ -75,26 +96,25 @@ INSTALL() {
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
         eval "$start_command"
 
-        cd "$INSTALL_DIR"
 
-        UPGRADE_CONFIG catalog.cfg catalog_config_version=1
-        UPGRADE_CONFIG oversight.cfg ovs_config_version=1
+        UPGRADE_CONFIG conf/catalog.cfg catalog_config_version=1
+        UPGRADE_CONFIG conf/oversight.cfg ovs_config_version=1
 
         #Move the file format definitions.
-        if ! grep -q '^catalog_film_folder_fmt' catalog.cfg ; then
-            sed -rn '/^unpak_movie_folder_format/ s/^unpak_movie_folder_format/catalog_film_folder_fmt/p' unpak.cfg >> catalog.cfg
-            sed -i 's/^unpak_movie_folder_format/#moved to end of catalog.cfg as catalog_film_folder_fmt : # unpak_movie_folder_format/' unpak.cfg
+        if ! grep -q '^catalog_film_folder_fmt' conf/catalog.cfg ; then
+            sed -rn '/^unpak_movie_folder_format/ s/^unpak_movie_folder_format/catalog_film_folder_fmt/p' conf/unpak.cfg >> conf/catalog.cfg
+            sed -i 's/^unpak_movie_folder_format/#moved to end of catalog.cfg as catalog_film_folder_fmt : # unpak_movie_folder_format/' conf/unpak.cfg
         fi
-        if ! grep -q '^catalog_tv_file_fmt' catalog.cfg ; then
-            sed -rn '/^unpak_tv_file_format/ s/^unpak_tv_file_format/catalog_tv_file_fmt/p' unpak.cfg >> catalog.cfg
-            sed -i 's/^unpak_tv_file_format/#moved to end of catalog.cfg as catalog_tv_file_fmt # unpak_tv_file_format/' unpak.cfg
+        if ! grep -q '^catalog_tv_file_fmt' conf/catalog.cfg ; then
+            sed -rn '/^unpak_tv_file_format/ s/^unpak_tv_file_format/catalog_tv_file_fmt/p' conf/unpak.cfg >> conf/catalog.cfg
+            sed -i 's/^unpak_tv_file_format/#moved to end of catalog.cfg as catalog_tv_file_fmt # unpak_tv_file_format/' conf/unpak.cfg
         fi
 
         if [ ! -f "index.db.idx" ] ; then
             touch "index.db"
             touch "index.db.idx"
         fi
-        touch catalog.cfg oversight.cfg unpak.cfg
+        touch conf/catalog.cfg conf/oversight.cfg conf/unpak.cfg
 
         chmod a+r /dev/random /dev/urandom
         BOUNCE_NZBGET

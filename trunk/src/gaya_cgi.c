@@ -136,7 +136,7 @@ struct hashtable *read_post_data(char *post_filename) {
 
                 html_log(2,"post: name [%s] about to add val [%s] ...",name,value);
 
-                if ((found=hashtable_remove(result,name)) != NULL) {
+                if ((found=hashtable_remove(result,name,1)) != NULL) {
 
                     html_log(2,"post: name [%s] existing val [%s] new val [%s]",name,found,value);
                     char *tmp;

@@ -184,7 +184,7 @@ int main(int argc,char **argv) {
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
 
     html_comment("Get genres");
-    g_genre = get_genres(rowsets);
+    g_genre = get_genres();
 
     char *skin_name=oversight_val("ovs_skin_name");
 

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "db.h"
 #include "util.h"
@@ -8,6 +9,39 @@
 #include "hashtable.h"
 #include "display.h"
 #include "hashtable_loop.h"
+
+//Compare a string - numeric compare of numeric parts.
+int numstrcmp(char *a,char *b) {
+    int anum,bnum;
+    char *anext,*bnext;
+
+    html_log(3,"numstrcmp begin %s=%s",a,b);
+
+    if (a == NULL ) {
+        return -(b == NULL);
+    } else if (b == NULL) {
+        return 1;
+    }
+
+    while (*a && *b ) {
+        if (isdigit(*a) && isdigit(*b)) {
+            anum=strtol(a,&anext,10);
+            bnum=strtol(b,&bnext,10);
+            if (anum != bnum) {
+                html_log(3,"numstrcmp numdiff %d=%d",anum,bnum);
+                return anum-bnum;
+            }
+            a=anext;
+            b=bnext;
+        } else if (*a != *b ) {
+            html_log(3,"numstrcmp strdiff %s=%s",a,b);
+            return *a - *b;
+        }
+        a++;
+        b++;
+    }
+    return *a - *b;
+}
 
 // This function is inverted to usual sense as we wnat the oldest first.
 // This function is just used for sorting the overview AFTER it has been created.
@@ -24,6 +58,7 @@ int index_strcmp(char *a,char *b) {
 int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
     int c;
+
     // If titles are different - return comparison
     if ((c=index_strcmp((*rid1)->title,(*rid2)->title)) != 0) {
         return c;
@@ -33,8 +68,10 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
         // Compare by season
 
         int d = (*rid1)->season-(*rid2)->season;
-        if (!d ) return d;
-        return strcmp((*rid1)->episode,(*rid2)->episode);
+        if (d == 0) {
+            d = numstrcmp((*rid1)->episode,(*rid2)->episode);
+        }
+        return d;
     } else {
         // Same title - arbitrary comparison
         return (*rid1) - (*rid2);
@@ -211,7 +248,8 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
                 DbRowId *rid = (*rowset_ptr)->rows+i;
 
-                //html_log(3,"dbg: overview merging [%s]",rid->title);
+                html_log(3,"dbg: overview merging [%s]",rid->title);
+
 
                 DbRowId *match = hashtable_search(overview,rid);
 
@@ -269,10 +307,10 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
     DbRowId **ids = flatten_hash_to_array(overview);
 
     html_log(1,"sorting %d items",hashtable_count(overview));
-    overview_array_dump(4,"ovw flatten",ids);
+    overview_array_dump(3,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
-    html_log(1,"sorted %d items",hashtable_count(overview));
-    overview_array_dump(1,"ovw sorted",ids);
+    html_log(2,"sorted %d items",hashtable_count(overview));
+    overview_array_dump(2,"ovw sorted",ids);
 
     return ids;
 }

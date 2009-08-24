@@ -173,7 +173,7 @@ void delete_queue_unqueue(DbRowId *rid,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
         char *real_path = get_path(rid,path);
         html_log(1,"delete_queue: unqueuing [%s] in use",real_path);
-        hashtable_remove(g_delete_queue,real_path);
+        hashtable_remove(g_delete_queue,real_path,1);
         FREE(real_path);
     }
 }
@@ -395,7 +395,7 @@ html_log(1," merge_id_by_source added [%s]",idlist);
                 } else {
 
                     ovs_asprintf(&new_idlist,"%s|%s",current_id_list,idlist);
-                    hashtable_remove(h,source);
+                    hashtable_remove(h,source,1);
                     FREE(current_id_list);
                     hashtable_insert(h,STRDUP(source),new_idlist);
 

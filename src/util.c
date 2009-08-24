@@ -579,7 +579,7 @@ char *util_hostname() {
 }
 void query_remove(char *name) {
     html_log(1,"Removing query item [%s]",name);
-    if (hashtable_remove(g_query,name) == NULL) {
+    if (hashtable_remove(g_query,name,1) == NULL) {
         html_log(5,"query item not present [%s]",name);
     }
 }
@@ -737,6 +737,7 @@ int util_system(char *cmd) {
 }
 
 Array *util_hashtable_keys(struct hashtable *h) {
+    if (h == NULL) return NULL;
     Array *a = array_new(free);
     struct hashtable_itr *itr;
     char *k,*v;

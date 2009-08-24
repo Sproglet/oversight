@@ -1,6 +1,5 @@
 CC=gcc
 
-CFLAGS=-g -Wall 
 
 ifdef WINDIR
 CROSS=/cross-gcc/mipsel-linux-uclibc
@@ -13,7 +12,8 @@ endif
 CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 XXCFLAGS=-g -Wall -DOUT=$(OUT)
-CFLAGS=-O2 -Wall -DOUT=$(OUT)
+#CFLAGS=-g -Wall 
+CFLAGS=-O3 -Wall -DOUT=$(OUT)
 
 OVS_OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o \

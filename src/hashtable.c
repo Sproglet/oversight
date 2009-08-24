@@ -178,7 +178,7 @@ hashtable_search(struct hashtable *h, void *k)
 
 /*****************************************************************************/
 void * /* returns value associated with key */
-hashtable_remove(struct hashtable *h, void *k)
+hashtable_remove(struct hashtable *h, void *k,int free_key)
 {
     /* TODO: consider compacting the table when the load factor drops enough,
      *       or provide a 'compact' method. */
@@ -200,7 +200,7 @@ hashtable_remove(struct hashtable *h, void *k)
             *pE = e->next;
             h->entrycount--;
             v = e->v;
-            freekey(e->k);
+            if (free_key) freekey(e->k);
             free(e);
             return v;
         }

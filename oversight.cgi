@@ -19,4 +19,3 @@ case "$1" in
         chown -R nmt:nmt $ROOT
         ;;
 esac
-# comment out the following line to diagnose problems.

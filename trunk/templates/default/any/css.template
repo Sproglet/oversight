@@ -1,5 +1,19 @@
 .dummy { color:red; }
 
+html,body {
+    height:100%;
+    margin:0;
+    padding:0;
+    border:none;
+}
+#main {
+    height:99%;
+    border:none;
+    margin:0;
+    padding:0;
+}
+
+
 body.menu_background0 { color:white ; background-color:black; }
 body.menu_background1 { color:yellow ; background-color:black; }
 

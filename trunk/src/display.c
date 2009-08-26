@@ -1172,18 +1172,116 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     return result;
 }
 
+char *template_replace_only(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids);
+int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids);
 
-#define MACRO_CH_BEG '['
-#define MACRO_CH_SEP ':'
-#define MACRO_CH_END ']'
+#define MACRO_STR_START "["
+#define MACRO_STR_END "]"
+#define MACRO_STR_START_INNER ":"
+#define MACRO_STR_END_INNER ":"
+/*
+ * if mode=0 only replace simple variables in the buffer.
+ * if mode=1 replace complex variables and push to stdout. this is for more complex multi-line macros
+ * */
 int template_replace(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
+
+    char *newline=template_replace_only(template_name,input,num_rows,sorted_row_ids);
+    if (newline != input) {
+        html_log(0,"old line [%s]",input);
+        html_log(0,"new line [%s]",newline);
+    }
+    int count = template_replace_and_emit(template_name,newline,num_rows,sorted_row_ids);
+    if (newline !=input) free(newline);
+    return count;
+}
+
+char *template_replace_only(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
+
+    char *newline = input;
+    char *macro_start = NULL;
+    int count = 0;
+
+
+    macro_start = strstr(input,MACRO_STR_START);
+    while (macro_start ) {
+
+        char *macro_name_start = NULL;
+        char *macro_name_end = NULL;
+        char *macro_end = NULL;
+
+        // Check we have MACRO_STR_START .. MACRO_STR_START_INNER MACRO_NAME MACRO_STR_END_INNER .. MACRO_STR_END
+        // eg [text1:name:text2]
+        // If the macro "name" is non-empty then "text1 macro-out text2" is printed.
+        macro_name_start=strstr(macro_start,MACRO_STR_START_INNER);
+        if (macro_name_start) {
+            macro_name_start++;
+            macro_name_end = strstr(macro_name_start,MACRO_STR_END_INNER);
+            if (macro_name_end) {
+                macro_end=strstr(macro_name_end,MACRO_STR_END);
+            }
+        }
+
+        // Cant identify macro - advance to next character.
+        if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL || *macro_name_start != '$'  ) {
+
+            macro_end = macro_start;
+
+        } else {
+
+            int free_result=0;
+            *macro_name_end = '\0';
+            char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
+            count++;
+            *macro_name_end = *MACRO_STR_START_INNER;
+            if (macro_output && *macro_output) {
+
+
+                //convert AA[BB:$CC:DD]EE to AABBnewDDEE
+
+                *macro_start = '\0';   //terminate AA
+                 macro_name_start[-1] = '\0';  // terminate BB
+                 *macro_end = '\0'; // terminate DD
+
+                 char *tmp;
+
+                 ovs_asprintf(&tmp,"%s%s%s%s%s",newline,macro_start+1,macro_output,macro_name_end+1,macro_end+1);
+
+                 // Adjust the end pointer so it is relative to the new buffer.
+                 char *new_macro_end = tmp + strlen(newline)+strlen(macro_start+1)+strlen(macro_output)+strlen(macro_name_end+1);
+                 
+                 // put back the characters we just nulled.
+                 *macro_start = *MACRO_STR_START;
+                 macro_name_start[-1] = *MACRO_STR_START_INNER;
+                 *macro_end = *MACRO_STR_END;
+
+                 if (free_result) FREE(macro_output);
+                 if (newline != input) FREE(newline);
+                 newline = tmp;
+
+                 macro_end = new_macro_end;
+            } else {
+                //convert AA[BB:$CC:DD]EE to AAEE
+                char *p=macro_end+1;
+                int i = strlen(p)+1;
+                memmove(macro_start+1,p,i);
+                macro_end = macro_start;
+
+             }
+        }
+
+        macro_start=strstr(++macro_end,MACRO_STR_START);
+
+    }
+    return newline;
+}
+int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
     char *macro_start = NULL;
     int count = 0;
 
 
     char *p = input;
-    macro_start = strchr(input,MACRO_CH_BEG);
+    macro_start = strstr(input,MACRO_STR_START);
     while (macro_start ) {
 
         char *macro_name_start = NULL;
@@ -1192,39 +1290,39 @@ int template_replace(char *template_name,char *input,int num_rows,DbRowId **sort
         //print bit before macro
         *macro_start='\0';
         printf("%s",p);
-        *macro_start=MACRO_CH_BEG;
+        *macro_start=*MACRO_STR_START;
 
-        // Check we have MACRO_CH_BEG .. MACRO_CH_SEP MACRO_NAME MACRO_CH_SEP .. MACRO_CH_END
+        // Check we have MACRO_STR_START .. MACRO_STR_START_INNER MACRO_NAME MACRO_STR_END_INNER .. MACRO_STR_END
         // eg [text1:name:text2]
         // If the macro "name" is non-empty then "text1 macro-out text2" is printed.
-        macro_name_start=strchr(macro_start,MACRO_CH_SEP);
+        macro_name_start=strstr(macro_start,MACRO_STR_START_INNER);
         if (macro_name_start) {
             macro_name_start++;
-            macro_name_end = strchr(macro_name_start,MACRO_CH_SEP);
+            macro_name_end = strstr(macro_name_start,MACRO_STR_END_INNER);
             if (macro_name_end) {
-                macro_end=strchr(macro_name_end,MACRO_CH_END);
+                macro_end=strstr(macro_name_end,MACRO_STR_END);
             }
         }
 
         // Cant identify macro - advance to next character.
-        if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL ) {
+        if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL  ) {
 
-            putc(MACRO_CH_BEG,stdout);
+            putc(*MACRO_STR_START,stdout);
             macro_end = macro_start;
 
         } else {
 
             int free_result=0;
-            macro_name_end[0] = '\0';
+            *macro_name_end = '\0';
             char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
             count++;
-            macro_name_end[0] = MACRO_CH_SEP;
+            *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output && *macro_output) {
 
                 // Print bit before macro call
                  macro_name_start[-1] = '\0'; 
                  printf("%s",macro_start+1);
-                 macro_name_start[-1]=MACRO_CH_SEP;
+                 macro_name_start[-1]=*MACRO_STR_START_INNER;
                  fflush(stdout);
 
                  printf("%s",macro_output);
@@ -1234,14 +1332,14 @@ int template_replace(char *template_name,char *input,int num_rows,DbRowId **sort
                  // Print bit after macro call
                  macro_end[0] = '\0';
                  printf("%s",macro_name_end+1);
-                 macro_end[0] = MACRO_CH_END;
+                 macro_end[0] = *MACRO_STR_END;
                  fflush(stdout);
              }
         }
 
         p=macro_end+1;
 
-        macro_start=strchr(p,MACRO_CH_BEG);
+        macro_start=strstr(p,MACRO_STR_START);
 
     }
     // Print the last bit
@@ -1263,7 +1361,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
     html_log(1,"begin template");
 
     char *file;
-    ovs_asprintf(&file,"%s/templates/%s/%s/%s.template",appDir(),
+    ovs_asprintf(&file,"%s/templates/%s/%s.template",appDir(),
             template_name,
             scanlines_to_text(g_dimension->scanlines),
             file_name);
@@ -1301,7 +1399,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
                 p++;
             }
             if ((count=template_replace(template_name,p,num_rows,sorted_row_ids)) != 0 ) {
-                html_log(0,"macro count %d",count);
+                html_log(4,"macro count %d",count);
             }
 
             if (fix_css_bug && strstr(p,"*/") ) {

@@ -136,7 +136,7 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 
 char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result=0;
-    int max = 0;
+    int max = g_dimension->max_plot_length;
     if (args && args->size > 0) {
         char *max_str=args->array[0];
         char *end;
@@ -148,7 +148,7 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
                 max = tmp;
             }
         }
-    }
+    } 
 
     if (max == 0 || max > strlen(sorted_rows[0]->plot) ) {
 

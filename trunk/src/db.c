@@ -283,9 +283,6 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,unsigned
         case 'P':
             if (strcmp(name,DB_FLDID_PLOT) == 0)  {
                 rowid->plot = copy_string(val_len,val);
-                if (val_len > g_dimension->max_plot_length) {
-                    strcpy(rowid->plot + g_dimension->max_plot_length -4 , "...");
-                }
             }
             break;
         case 'r':
@@ -376,8 +373,60 @@ DbRowId *read_and_parse_row(
     while((next = getc(fp)) != EOF) {
 
 
-#ifdef TEST_FIRST
-        if (next > 20 ) {
+        switch(next) {
+        case '\n' : case '\r' : case '\0': // EOL terminators
+            if (state == STATE_VAR) {
+                *p = '\0';
+                //html_log(0,"parsed field %s=%s",name,value);
+                if (rowid == NULL) {
+                    rowid = db_rowid_new(db);
+                }
+                db_rowid_set_field(rowid,name,value,p-value,&overview_mask);
+                state = STATE_START;
+            }
+            goto eol;
+        case '\t':
+            switch(state) {
+                case STATE_START:
+                    state=STATE_NAME;
+                    p=buf[state];
+                    end=bufend[state];
+                    break;
+                case STATE_NAME:
+                    *p = '\0';
+                    state=STATE_VAR;
+                    p=buf[state];
+                    end=bufend[state];
+                    html_log(4,"name[%s]",name);
+                    break;
+                case STATE_VAR:
+                    next = getc(fp);
+                    if (next != '_' ) {
+                        //If plot contains <tab> allow it if it is NOT followed by _
+                        //which is the prefix for out html vars. This is a nasty hack due 
+                        //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
+                        ungetc(next,fp);
+                    } else {
+                        *p = '\0';
+                        html_log(4,"val[%s]",value);
+                        //html_log(0,"parsed field %s=%s",name,value);
+                        if (rowid == NULL) {
+                            rowid = db_rowid_new(db);
+                        }
+                        db_rowid_set_field(rowid,name,value,p-value,&overview_mask);
+
+                        state=STATE_NAME;
+                        p=buf[state];
+                        end=bufend[state];
+                        *p++='_';
+                    }
+                    break;
+                default:
+                    assert(0);
+                    break;
+            }
+            break;
+        default:
             // Add the character
             *p++ = next;
             if (p >= end ) {
@@ -385,63 +434,7 @@ DbRowId *read_and_parse_row(
                 *p = '\0';
                 break;
             }
-        } else {
-#endif
-            switch(next) {
-            case '\n' : case '\r' : case '\0': // EOL terminators
-                goto eol;
-                break;
-            case '\t':
-                switch(state) {
-                    case STATE_START:
-                        state=STATE_NAME;
-                        p=buf[state];
-                        end=bufend[state];
-                        break;
-                    case STATE_NAME:
-                        *p = '\0';
-                        state=STATE_VAR;
-                        p=buf[state];
-                        end=bufend[state];
-                        break;
-                    case STATE_VAR:
-                        next = getc(fp);
-                        if (next != '_' ) {
-                            //If plot contains <tab> allow it if it is NOT followed by _
-                            //which is the prefix for out html vars. This is a nasty hack due 
-                            //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
-                            ungetc(next,fp);
-                        } else {
-                            *p = '\0';
-                            html_log(3,"parsed field %s=%s",name,value);
-                            if (rowid == NULL) {
-                                rowid = db_rowid_new(db);
-                            }
-                            db_rowid_set_field(rowid,name,value,p-value,&overview_mask);
-
-                            state=STATE_NAME;
-                            p=buf[state];
-                            end=bufend[state];
-                            *p++='_';
-                        }
-                        break;
-                    default:
-                        assert(0);
-                        break;
-                }
-                break;
-            default:
-                // Add the character
-                *p++ = next;
-                if (p >= end ) {
-                    p--;
-                    *p = '\0';
-                    break;
-                }
-            }
-#ifdef TEST_FIRST
         }
-#endif
     }
 eol:
     if (next == EOF) {
@@ -549,7 +542,7 @@ int parse_row(
             break;
         }
 
-        //find end of name
+        //find end of name00527SC 
         name_end=name_start;
         while(*name_end && *name_end != '\t') {
             name_end++;

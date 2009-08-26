@@ -7,55 +7,7 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(lightwave.jpg):] >
-        [:FORM_START:]
-            <table width=100%>
-                <tr valign=top>
-                    <td>
-                    [:BACK_BUTTON:]
-                    [:EXIT_BUTTON:]
-                    [:HOME_BUTTON:]
-                    [:MARK_BUTTON:]
-                    [:DELETE_BUTTON:]
-                    [:SELECT_MARK_SUBMIT:]
-                    [:SELECT_DELETE_SUBMIT:]
-                    [:SELECT_DELIST_SUBMIT:]
-                    [:SELECT_CANCEL_SUBMIT:]
-                    </td>
-                </tr>
-            </table>
-
-            <table width=100%>
-                <tr valign=bottom>
-                    <td class=center width=1%>[:POSTER:]</td>
-
-                    <td>
-                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
-                            <tr>
-                                <td class=title><font class=title>[:TITLE:]</font></td>
-                                <td align=left><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
-                            </tr>
-                            <tr>
-                                <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
-                                <td class=right>[:RATING_STARS(5,/oversight/images/stars/star%d.png):][:RATING:]</td>
-                            </tr>
-                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
-                        </table>
-                    </td>
-                </tr>
-             </table>
-
-            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
-                <tr>
-                    <td class=filelist align=center>
-                    [:TV_LISTING:]
-                    </td>
-                </tr>
-            </table>
-
-        </form>
-        [:PLAY_TVID:]
-    </body>
+    [:INCLUDE_TEMPLATE(tv[:$ovs_display_fanart:]):]
 </html>
 
 <!--

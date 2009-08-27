@@ -483,9 +483,11 @@ void db_rowid_dump(DbRowId *rid) {
 }
 
 char *copy_string(int len,char *s) {
-    char *p = MALLOC(len+1);
-    memcpy(p,s,len+1);
-    //strcpy(p,s);
+    char *p=NULL;
+    if (s) {
+        p = MALLOC(len+1);
+        memcpy(p,s,len+1);
+    }
     return p;
 }
 
@@ -736,7 +738,7 @@ DbRowSet **db_crossview_scan_titles(
                 } else {
                     html_log(1,"crossview search %s doesnt exist",path);
                 }
-                free(path);
+                FREE(path);
             }
             closedir(d);
         }
@@ -753,7 +755,7 @@ void db_free_rowsets_and_dbs(DbRowSet **rowsets) {
             db_rowset_free(*r);
             db_free(db);
         }
-        free(rowsets);
+        FREE(rowsets);
     }
 }
 
@@ -958,7 +960,7 @@ TRACE;
 
                 if (keeprow) {
                     row_count = db_rowset_add(rowset,rowid);
-                    free(rowid);
+                    FREE(rowid);
                 } else {
                     db_rowid_free(rowid,1);
                 }
@@ -1024,7 +1026,7 @@ TRACE;
     } else {
         html_log(1,"db[%s] No rows loaded",db->source);
     }
-    free(ids);
+    FREE(ids);
     html_log(1,"return rowset");
     return rowset;
 }
@@ -1036,11 +1038,11 @@ void db_free(Db *db) {
         db_unlock(db);
     }
 
-    free(db->source);
-    free(db->path);
-    free(db->lockfile);
-    free(db->backup);
-    free(db);
+    FREE(db->source);
+    FREE(db->path);
+    FREE(db->lockfile);
+    FREE(db->backup);
+    FREE(db);
 
 }
 
@@ -1049,42 +1051,57 @@ void db_rowid_free(DbRowId *rid,int free_base) {
 
     assert(rid);
 
-    free(rid->title);
-    free(rid->poster);
-    free(rid->genre);
-    free(rid->file);
-    free(rid->episode);
+    html_log(0,"%s %lu %lu",rid->title,rid,rid->file);
+    html_log(0,"%s",rid->file);
+    FREE(rid->title);
+TRACE;
+    FREE(rid->poster);
+TRACE;
+    FREE(rid->genre);
+TRACE;
+    FREE(rid->file);
+TRACE;
+    FREE(rid->episode);
+TRACE;
     //Dont free ext as it points to file.
 
+TRACE;
 
     // Following are only set in tv/movie view
-    free(rid->url);
-    free(rid->parts);
-    free(rid->fanart);
-    free(rid->plot);
-    free(rid->eptitle);
-    free(rid->eptitle_imdb);
-    free(rid->additional_nfo);
+    FREE(rid->url);
+    FREE(rid->parts);
+    FREE(rid->fanart);
+    FREE(rid->plot);
+    FREE(rid->eptitle);
+    FREE(rid->eptitle_imdb);
+    FREE(rid->additional_nfo);
+TRACE;
 
     //Only populated if deleting
-    free(rid->nfo);
+    FREE(rid->nfo);
 
-    free(rid->certificate);
+    FREE(rid->certificate);
     if (free_base) {
-        free(rid);
+        FREE(rid);
     }
+TRACE;
 }
 
 void db_rowset_free(DbRowSet *dbrs) {
     int i;
 
     for(i = 0 ; i<dbrs->size ; i++ ) {
+TRACE;
         DbRowId *rid = dbrs->rows + i;
+TRACE;
         db_rowid_free(rid,0);
+TRACE;
     }
 
-    free(dbrs->rows);
-    free(dbrs);
+    FREE(dbrs->rows);
+TRACE;
+    FREE(dbrs);
+TRACE;
 }
 
 

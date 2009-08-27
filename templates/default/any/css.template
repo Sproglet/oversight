@@ -8,6 +8,7 @@ html,body {
 }
 #main {
     height:99%;
+    width:100%;
     border:none;
     margin:0;
     padding:0;
@@ -77,7 +78,7 @@ table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 .XXXheader {background-color:#000005; }
 .XXXfooter {background-color:black; }
 .overview { text-align:center; }
-table.overview {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.overview {	margin:0; border-spacing:1px; padding:0 ; border-width:1 ; width:1% ; }
 
 /* Filter bar - inactive */ .dummy { color:red; }
 .filterbar0 {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; font-size:8pt; }

@@ -8,6 +8,8 @@
         </style>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+        <table id=main>
+        <tr><td>
         [:FORM_START:]
             <table class=header width=100%>
                 <tr>
@@ -23,7 +25,9 @@
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
             </table>
+        </td></tr><tr><td>
             [:GRID:] 
+        </td></tr><tr><td>
             <table class=footer width=100%>
                 <tr valign=top>
                     <td width=10%>[:LEFT_BUTTON:]</td>
@@ -40,6 +44,7 @@
                 </tr>
             </table>
         </form>
+        ,</td></tr></table>
         [:TVIDS:]
     </body>
 </html>

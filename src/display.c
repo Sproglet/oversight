@@ -1474,7 +1474,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         html_log(1,"grid end row %d",r);
 
     }
-    ovs_asprintf(&tmp,"<table class=overview width=100%%>\n%s\n</table>\n",result);
+    ovs_asprintf(&tmp,"<center><table class=overview>\n%s\n</table></center>\n",result);
     FREE(result);
     result=tmp;
 

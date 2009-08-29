@@ -1,5 +1,6 @@
 /* Copyright (C) 2002 Christopher Clark <firstname.lastname@cl.cam.ac.uk> */
 
+#include "util.h"
 #include "hashtable.h"
 #include "hashtable_private.h"
 #include "hashtable_utility.h"
@@ -28,7 +29,7 @@ hashtable_change(struct hashtable *h, void *k, void *v)
         /* Check hash value to short circuit heavier comparison */
         if ((hashvalue == e->h) && (h->eqfn(k, e->k)))
         {
-            free(e->v);
+            FREE(e->v);
             e->v = v;
             return -1;
         }

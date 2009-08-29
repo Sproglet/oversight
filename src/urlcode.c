@@ -12,7 +12,7 @@ char to_hex(char code) {
 }
 
 /* Returns a url-encoded version of str */
-/* IMPORTANT: be sure to free() the returned string after use */
+/* IMPORTANT: be sure to FREE() the returned string after use */
 char *url_encode(char *str) {
   char *pstr = str, *buf = MALLOC(strlen(str) * 3 + 1), *pbuf = buf;
   while (*pstr) {
@@ -29,7 +29,7 @@ char *url_encode(char *str) {
 }
 
 /* Returns a url-decoded version of str */
-/* IMPORTANT: be sure to free() the returned string after use */
+/* IMPORTANT: be sure to FREE() the returned string after use */
 char *url_decode(char *str) {
   char *pstr = str, *buf = MALLOC(strlen(str) + 1), *pbuf = buf;
   while (*pstr) {

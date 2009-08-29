@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "gaya_cgi.h"
+#include "display.h"
 #include "util.h"
 #include "array.h"
 #include "hashtable_loop.h"
@@ -119,7 +120,7 @@ struct hashtable *read_post_data(char *post_filename) {
 
             char *q = replace_all(post_line,"[^:]:","",0); //why?
             parse_query_string(q,result);
-            free(q);
+            FREE(q);
 
         } else if (strstr(post_line,boundary) ) {
 
@@ -142,8 +143,8 @@ struct hashtable *read_post_data(char *post_filename) {
                     char *tmp;
                     ovs_asprintf(&tmp,"%s\r%s",found,value);
                     hashtable_insert(result,name,tmp);
-                    free(found);
-                    free(value);
+                    FREE(found);
+                    FREE(value);
 
                 } else {
 
@@ -215,7 +216,7 @@ struct hashtable *read_post_data(char *post_filename) {
             } else {
                 char *tmp;
                 ovs_asprintf(&tmp,"%s\n%s",value,post_line);
-                free(value);
+                FREE(value);
                 value = tmp;
             }
         }
@@ -248,7 +249,7 @@ char to_hex(char code) {
  * http://www.geekhideout.com/urlcode.shtml
  * ========================================================================*/
 /* Returns a url-encoded version of str */
-/* IMPORTANT: be sure to free() the returned string after use */
+/* IMPORTANT: be sure to FREE() the returned string after use */
 char *url_encode(char *str) {
     assert(str);
   char *pstr = str, *buf = MALLOC(strlen(str) * 3 + 1), *pbuf = buf;
@@ -269,7 +270,7 @@ char *url_encode(char *str) {
  * http://www.geekhideout.com/urlcode.shtml
  * ========================================================================*/
 /* Returns a url-decoded version of str */
-/* IMPORTANT: be sure to free() the returned string after use */
+/* IMPORTANT: be sure to FREE() the returned string after use */
 char *url_decode(char *str) {
     assert(str);
   char *pstr = str, *buf = MALLOC(strlen(str) + 1), *pbuf = buf;
@@ -349,7 +350,7 @@ char *html_encode(char *s) {
 void html_comment(char *s) {
     s = html_encode(s);
     printf("<!-- %s -->\n",s);
-    free(s);
+    FREE(s);
 }
 */
 void html_comment(char *format,...) {
@@ -370,8 +371,8 @@ void html_vacomment(char *format,va_list ap) {
         //s2=html_encode(s1);
         printf("<!-- %ld %s -->\n",clock()>>10,s1);
         fflush(stdout);
-        //free(s2);
-        free(s1);
+        //FREE(s2);
+        FREE(s1);
     }
 }
 
@@ -427,3 +428,5 @@ void html_hashtable_dump(int level,char *label,struct hashtable *h) {
         }
     }
 }
+
+

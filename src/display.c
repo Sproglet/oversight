@@ -26,7 +26,7 @@ char *get_theme_image_tag(char *image_name,char *attr);
 char *get_play_tvid(char *text) {
     char *result;
     ovs_asprintf(&result,
-        "<a href=\"file://tmp/playlist.htm?start_url=\" vod=playlist tvid=PLAY>%s</a>",text);
+        "<a href=\"file:///tmp/playlist.htm?start_url=\" vod=playlist tvid=\"_PLAY\">%s</a>",text);
     return result;
 }
 
@@ -279,38 +279,40 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *encoded_path = url_encode(path);
     int show_link = 1;
 
-
+TRACE; html_log(0,"%s",path);
     if (!exists(path) ) {
+TRACE;
 
-        char *d = util_dirname(path);
-        char *dd = util_dirname(d);
+
+        char *parent_dir = util_dirname(path);
+        char *grandparent_dir = util_dirname(parent_dir);
 
         char *name = util_basename(path);
 
         html_log(3,"path[%s]",path);
-        html_log(3,"d[%s]",d);
-        html_log(3,"dd[%s]",dd);
+        html_log(3,"parent_dir[%s]",parent_dir);
+        html_log(3,"grandparent_dir[%s]",grandparent_dir);
         html_log(3,"name[%s]",name);
 
-        if (!exists(dd)) {
+        show_link=0;
+        if (!exists(grandparent_dir)) {
+TRACE;
 
             //media gone
             //ovs_asprintf(&result,"<font class=error>%s</font>",name);
-            //show_link=0;
             font_class="class=error";
 
-#if 0
-            //commented out - try mount on demand
         } else {
+TRACE;
 
             //media present - file gone!
             db_remove_row(rowid);
             ovs_asprintf(&result,"removed %s",name);
-#endif
         }
+TRACE;
         FREE(name);
-        FREE(d);
-        FREE(dd);
+        FREE(parent_dir);
+        FREE(grandparent_dir);
     }
 
     if (show_link) {
@@ -345,7 +347,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
                 FILE *fp = playlist_open();
                 char *name=util_basename(file);
                 fprintf(fp,"%s|0|0|file://%s|",name,path);
-                free(name);
+                FREE(name);
                 fflush(fp);
             }
 
@@ -535,6 +537,7 @@ char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,cha
             (centre_cell? "name=centreCell ":""),
             (left_scroll? "onkeyleftset=pgup1 ":""),
             (right_scroll? "onkeyrightset=pgdn1 ":""),
+
             (attrin != NULL?attrin:""));
 
     return attr;
@@ -635,23 +638,47 @@ char *file_style(DbRowId *rowid,int grid_toggle) {
 
     return grid_class;
 }
+char *file_style_small(DbRowId *rowid,int grid_toggle) {
+
+    static char grid_class[30];
+
+    sprintf(grid_class," class=grid%cW%d_%d_small ",
+            rowid->category,
+            rowid->watched!=0,
+            grid_toggle & 1);
+
+    return grid_class;
+}
+int is_fresh(DbRowId *rowid) {
+    int result=0;
+    long fresh_days;
+    if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
+        if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
+            result=1;
+        }
+    }
+    return result;
+}
+
 char *watched_style(DbRowId *rowid,int grid_toggle) {
 
     if (rowid->watched) {
         return " class=watched ";
+    } else if (is_fresh(rowid) ) {
+        return " class=fresh ";
     } else { 
-        long fresh_days;
-        if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
-            if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
-                //if (in_poster_mode()) {
-                    //return " border=3 class=fresh ";
-                //} else {
-                    return " class=fresh ";
-                //}
-            }
-        }
+        return file_style(rowid,grid_toggle);
     }
-    return file_style(rowid,grid_toggle);
+}
+char *watched_style_small(DbRowId *rowid,int grid_toggle) {
+
+    if (rowid->watched) {
+        return " class=watched_small ";
+    } else if (is_fresh(rowid) ) {
+        return " class=fresh_small ";
+    } else { 
+        return file_style_small(rowid,grid_toggle);
+    }
 }
 
 char *check_path(char *a,char *b,char *c,char *d) {
@@ -940,7 +967,7 @@ char *movie_listing(DbRowId *rowid) {
         char *basename=util_basename(rowid->file);
 
         result=vod_link(rowid,basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
-        free(basename);
+        FREE(basename);
         // Add vod links for all of the parts
         
         if (parts && parts->size) {
@@ -1003,7 +1030,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *title=NULL;
     char *font_class=NULL;
-    char *grid_class=NULL;
+    char *grid_class="";
 
     char *select = query_val("select");
     int tv_or_movie = has_category(row_id);
@@ -1027,12 +1054,25 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             FREE(attr);
 
             font_class = "class=fc";
-            grid_class = "class=gc";
+            if (is_fresh(row_id)) {
+                grid_class = "class=gc_fresh";
+            } else {
+                grid_class = "class=gc";
+            }
         } else {
             html_log(2,"dbg: unclassified : set details as title");
             // Unclassified
             title=STRDUP(row_id->title);
-            font_class = watched_style(row_id,grid_toggle);
+            if (strlen(title) > 20) {
+                strcpy(title+18,"..");
+            }
+            if (is_fresh(row_id)) {
+                grid_class = "class=gc_fresh_small";
+            } else {
+                grid_class = "class=gc_small";
+            }
+
+            font_class = watched_style_small(row_id,grid_toggle);
         }
 
     } else {
@@ -1115,8 +1155,30 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *cell_text=NULL;
 
+    char *simple_title;
+    if (row_id->category=='T') {
+        ovs_asprintf(&simple_title,"%s , S%d",row_id->title,row_id->season);
+    } else {
+        ovs_asprintf(&simple_title,"%s , (%d)",row_id->title,row_id->year);
+    }
 
-    char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,grid_class);
+    char *title_change;
+    if (g_dimension->local_browser) {
+        ovs_asprintf(&title_change," %s onfocus=\"show('%s');\" onblur=\"show('|');\"",
+                (grid_class?grid_class:""),
+                simple_title);
+    } else {
+        ovs_asprintf(&title_change," %s onmouseover=\"show('%s');\" onmouseout=\"show('|');\" onfocus=\"show('%s');\" onblur=\"show('|');\"",
+                (grid_class?grid_class:""),
+                row_id->title,
+                simple_title);
+    }
+    FREE(simple_title);
+
+
+    char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,title_change);
+    FREE(title_change);
+
     html_log(1,"dbg: scroll attributes [%s]",attr);
 
     char *idlist = build_id_list(row_id);
@@ -1132,6 +1194,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
                 idlist);
         html_log(1,"dbg: params [%s]",params);
 
+        
         cell_text = get_self_link_with_font(params,attr,title,font_class);
         html_log(1,"dbg: get_self_link_with_font [%s]",cell_text);
 
@@ -1167,7 +1230,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     FREE(title);
 
     char *result;
-    ovs_asprintf(&result,"\t\t<td %s %s >%s</td>",width_attr,grid_class,cell_text);
+    ovs_asprintf(&result,"\t<td %s %s >%s</td>",width_attr,grid_class,cell_text);
     FREE(cell_text);
     return result;
 }
@@ -1191,7 +1254,7 @@ int template_replace(char *template_name,char *input,int num_rows,DbRowId **sort
         html_log(0,"new line [%s]",newline);
     }
     int count = template_replace_and_emit(template_name,newline,num_rows,sorted_row_ids);
-    if (newline !=input) free(newline);
+    if (newline !=input) FREE(newline);
     return count;
 }
 
@@ -1975,7 +2038,7 @@ char *get_status() {
     } else {
         html_log(1,"Error %d opening [%s]",errno,filename);
     }
-    free(filename);
+    FREE(filename);
 
     if (result == NULL) {
 
@@ -1986,5 +2049,75 @@ char *get_status() {
         }
     }
 
+    return result;
+}
+char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
+
+    char *attr;
+    if (g_dimension->local_browser) {
+        attr="onchange=\"location.assign(this.childNodes[this.selectedIndex].value)\"";
+    } else {
+        attr="onchange=\"location.assign(this.options[this.selectedIndex].value)\"";
+    }
+    return option_list(name,attr,firstItem,vals);
+}
+
+
+#define PLACEHOLDER "X@X@X"
+char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) {
+    char *result=NULL;
+    char *selected=query_val(name);
+    char *params;
+
+    // Do not take ownership of the keys - thay belong to the hashtable.
+    Array *keys = util_hashtable_keys(vals,0);
+    array_sort(keys,array_strcasecmp);
+
+    ovs_asprintf(&params,"%s=" PLACEHOLDER,name);
+    char *link=self_url(params);
+    FREE(params);
+    Array *link_parts = split(link,PLACEHOLDER,0);
+    FREE(link);
+
+    //GAYA does seem to like passing just the options to the link
+    //eg just "?a=b"
+    //we have to pass a more substantial path. eg. .?a=b
+    char *link_prefix;
+    if (g_dimension->local_browser) {
+        link_prefix = "/oversight/oversight.cgi";
+    } else {
+        link_prefix = "/oversight/oversight.cgi";
+    }
+
+    if (keys && keys->size) {
+        int i;
+
+
+        for(i = 0 ; i < keys->size ; i++ ) {
+            char *tmp;
+            char *k=keys->array[i];
+            char *link=join(link_parts,k);
+            //char *link=STRDUP("/oversight/oversig");
+            ovs_asprintf(&tmp,
+                    "%s<option value=\"%s%s\" %s >%s</option>\n",
+                    (result?result:""),
+                    link_prefix,
+                    link,
+                    (strcmp(selected,k)==0?"selected":""),
+                k);
+            FREE(link);
+            FREE(result);
+            result=tmp;
+        }
+    }
+    array_free(link_parts);
+    if (result) {
+        char *tmp;
+        ovs_asprintf(&tmp,"<select name=\"%s\" %s>\n<option value=\"./oversight.cgi?\">%s</option>%s</select>",
+                name,attr,firstItem,result);
+        FREE(result);
+        result = tmp;
+    }
+    array_free(keys);
     return result;
 }

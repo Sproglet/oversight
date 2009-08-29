@@ -16,6 +16,7 @@ OVS_EXTERN(struct hashtable *g_oversight_config,NULL);
 OVS_EXTERN(struct hashtable *g_unpack_config,NULL);
 OVS_EXTERN(struct hashtable *g_catalog_config,NULL);
 OVS_EXTERN(struct hashtable *g_nmt_settings,NULL);
+OVS_EXTERN(struct hashtable *g_genre_hash,NULL);
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 OVS_EXTERN(int g_local_browser,0);
 OVS_EXTERN(Array *g_genre,NULL);

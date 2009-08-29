@@ -72,12 +72,12 @@ void gaya_send_link(char *arg) {
 //html_log(1,"dbg remove this and this 1 file=[%s]",file);
         ovs_asprintf(&link,"http://localhost:8883%s?"REMOTE_VOD_PREFIX2"%s",getenv("SCRIPT_NAME"),file);
 //html_log(1,"dbg remove this and this 2 link=[%s]",link);
-        free(file);
+        FREE(file);
 //html_log(1,"dbg remove this and this 3");
         html_log(1,"sending link to gaya [%s]",link);
         fprintf(pip,"%s\n",link);
         fclose(pip);
-        free(link);
+        FREE(link);
     }
 }
 
@@ -159,7 +159,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
             g_delete_queue = string_string_hashtable(16);
         }
         if (hashtable_search(g_delete_queue,real_path)) {
-            free(real_path);
+            FREE(real_path);
         } else {
             html_log(1,"delete_queue: pending delete [%s]",real_path);
             hashtable_insert(g_delete_queue,real_path,"1");

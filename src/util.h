@@ -75,8 +75,12 @@ int util_system(char *cmd);
 } while(0)
 void util_rmdir(char *path,char *name);
 
-#define TRACE html_log(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__)
+#define TRACE do {\
+    if (!g_dimension->local_browser) {\
+        html_log(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
+    }\
+}while(0);
 
 int exists_file_in_dir(char *dir,char *name);
-Array *util_hashtable_keys(struct hashtable *h);
+Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);
 #endif

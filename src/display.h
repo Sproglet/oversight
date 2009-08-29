@@ -33,6 +33,7 @@ char *movie_listing(DbRowId *rowid);
 long use_boxsets();
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols);
 char *get_status();
+char *self_url(char *new_params);
 char *get_self_link(char *params,char *attr,char *title);
 char *get_self_link_with_font(char *params,char *attr,char *title,char *font_class);
 void display_confirm(char *name,char *val_ok,char *val_cancel);
@@ -41,4 +42,6 @@ char *get_path(DbRowId *rid,char *path);
 char *vod_attr(char *file);
 char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart);
 void create_file_to_url_symlink();
+char *auto_option_list(char *name,char *firstItem,struct hashtable *vals);
+char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals);
 #endif

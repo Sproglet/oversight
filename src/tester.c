@@ -117,7 +117,7 @@ main(int argc, char **argv)
             v = hashtable_iterator_value(itr);
             /* here (kk,v) are a valid (key, value) pair */
             /* We could call 'hashtable_remove(h,kk)' - and this operation
-             * 'free's kk. However, the iterator is then broken.
+             * 'FREE's kk. However, the iterator is then broken.
              * This is why hashtable_iterator_remove exists - see below.
              */
             i++;
@@ -164,7 +164,7 @@ main(int argc, char **argv)
 
     hashtable_destroy(h, 1);
     h = NULL;
-    free(k);
+    FREE(k);
 
     h = create_hashtable(160, hashfromkey, equalkeys);
     if (NULL == h) {
@@ -220,7 +220,7 @@ main(int argc, char **argv)
             return 1;
         }
     }
-    free(itr);
+    FREE(itr);
 
 /*****************************************************************************/
 /* Hashtable iterator remove and advance */
@@ -229,7 +229,7 @@ main(int argc, char **argv)
          hashtable_iterator_remove(itr) != 0; ) {
         ;
     }
-    free(itr);
+    FREE(itr);
     printf("After removal, hashtable contains %u items.\n",
             hashtable_count(h));
 
@@ -237,7 +237,7 @@ main(int argc, char **argv)
 /* Hashtable destroy */
 
     hashtable_destroy(h, 1);
-    free(k);
+    FREE(k);
     return 0;
 }
 

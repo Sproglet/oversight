@@ -1,4 +1,7 @@
-
+Changed from poster to text mode and got segmentation fault.
+=============================================================
+Hunt down Battlestar Bug!
+=============================================================
 ext field is incorrect for vob dirs
 
 if a path starts with

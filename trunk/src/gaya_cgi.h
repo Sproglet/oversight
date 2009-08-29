@@ -1,7 +1,10 @@
 #ifndef __GAYA_CGI_H__
 #define __GAYA_CGI_H__
 #include "hashtable.h"
+#include "array.h"
 #include "stdarg.h"
+#include "oversight.h"
+#include "display.h"
 
 // for gaya_cgi.c
 struct hashtable *parse_query_string(char *q,struct hashtable *);

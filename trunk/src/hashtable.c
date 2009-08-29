@@ -43,7 +43,7 @@ create_hashtable(unsigned int minsize,
     h = (struct hashtable *)MALLOC(sizeof(struct hashtable));
     if (NULL == h) return NULL; /*oom*/
     h->table = (struct entry **)MALLOC(sizeof(struct entry*) * size);
-    if (NULL == h->table) { free(h); return NULL; } /*oom*/
+    if (NULL == h->table) { FREE(h); return NULL; } /*oom*/
     memset(h->table, 0, size * sizeof(struct entry *));
     h->tablelength  = size;
     h->primeindex   = pindex;
@@ -95,7 +95,7 @@ hashtable_expand(struct hashtable *h)
                 newtable[index] = e;
             }
         }
-        free(h->table);
+        FREE(h->table);
         h->table = newtable;
     }
     /* Plan B: realloc instead */
@@ -201,7 +201,7 @@ hashtable_remove(struct hashtable *h, void *k,int free_key)
             h->entrycount--;
             v = e->v;
             if (free_key) freekey(e->k);
-            free(e);
+            FREE(e);
             return v;
         }
         pE = &(e->next);
@@ -228,12 +228,12 @@ hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
 
             e = e->next;
             if (free_keys) freekey(f->k);
-            if (free_values) free(f->v);
-            free(f);
+            if (free_values) FREE(f->v);
+            FREE(f);
         }
     }
-    free(h->table);
-    free(h);
+    FREE(h->table);
+    FREE(h);
 }
 
 /*

@@ -134,7 +134,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     } else {
         out = string_string_hashtable(16);
     }
-    free(f);
+    FREE(f);
 
     // load the main settings
     f = MALLOC(strlen(d)+strlen(main_file)+3);
@@ -146,7 +146,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     } else {
         new = string_string_hashtable(16);
     }
-    free(f);
+    FREE(f);
 
     merge_hashtables(out,new,1);
 
@@ -197,7 +197,7 @@ struct hashtable *config_load_fp(FILE *fp) {
                             if (val[strlen(val)-1] == *val) {
                                 //remove quotes
                                 char *val2 = substring(val,1,strlen(val)-1);
-                                free(val);
+                                FREE(val);
                                 val = val2;
                             }
                         }
@@ -293,7 +293,7 @@ int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out)
     int result=0;
     if (ovs_asprintf(&s,"%s[%s]",k,index) >= 0 ) {
         result = config_check_str(h,s,out);
-        free(s);
+        FREE(s);
     }
     return result;
 }
@@ -317,7 +317,7 @@ int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out)
     //html_log(4,"Checking long [%s[%s]]",k,index);
     if (ovs_asprintf(&s,"%s[%s]",k,index) >= 0 ) {
         result = config_check_long(h,s,out);
-        free(s);
+        FREE(s);
     }
     return result;
 }
@@ -342,6 +342,11 @@ long get_scanlines(int *is_pal) {
         scanlines = 0;
     } else {
         scanlines = 1080;
+    }
+
+    // Note that NMT A series does not have a true 1080p but scales up 720
+    if (scanlines == 1080) {
+        scanlines = 720;
     }
 
     g_dimension->tv_mode = tv_mode_int;

@@ -40,7 +40,7 @@ void array_free(Array *a) {
             }
         }
         if (a->array) {
-            free(a->array);
+            FREE(a->array);
         }
     }
 }
@@ -197,6 +197,37 @@ Array *splitch(char *s_in,char ch) {
 
     return a;
 
+}
+
+char *join(Array *a,char *sep) {
+    char *result=NULL;
+    int len=0;
+    int slen = strlen(sep);
+
+    if (a && a->size) {
+        int i;
+        for(i = 0 ; i< a->size ; i++ ) {
+            if (a->array[i]) {
+                len += strlen(a->array[i]) + slen;
+            }
+        }
+        result = MALLOC(len);
+        char *p = result;
+        for(i = 0 ; i< a->size ; i++ ) {
+            if (i) {
+                // copy the separator
+                memcpy(p,sep,slen);
+                p+=slen;
+            }
+            if (a->array[i]) {
+                // copy the string
+                p += sprintf(p,"%s",(char *)a->array[i]);
+            }
+        }
+        *p = '\0';
+
+    }
+    return result;
 }
 
 /*

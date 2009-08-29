@@ -220,7 +220,7 @@ Array *regextract(char *s,char *pattern,int reg_opts) {
             }
         }
     }
-    free(pmatch);
+    FREE(pmatch);
 
     regfree(&re);
 
@@ -332,12 +332,12 @@ void util_unittest() {
     assert(hashtable_search(h,x) == NULL);
 
     printf("free x\n");
-    free(x);
+    FREE(x);
 
     printf("destroy\n");
     hashtable_destroy(h,1,0);
     //this may cause error after a destroy?
-    // free(hello);
+    // FREE(hello);
 }
 
 int chomp(char *str) {
@@ -714,7 +714,7 @@ void util_rmdir(char *path,char *name) {
         html_log(1,"unlink [%s]",full_path);
         unlink(full_path);
     }
-    free(full_path);
+    FREE(full_path);
 }
 
 int exists_file_in_dir(char *dir,char *name) {
@@ -736,9 +736,15 @@ int util_system(char *cmd) {
     return result;
 }
 
-Array *util_hashtable_keys(struct hashtable *h) {
+Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys) {
     if (h == NULL) return NULL;
-    Array *a = array_new(free);
+    Array *a;
+   
+    if (take_ownership_of_keys) {
+       a = array_new(free);
+    } else {
+       a = array_new(NULL);
+    }
     struct hashtable_itr *itr;
     char *k,*v;
     for (itr = hashtable_loop_init(h) ; hashtable_loop_more(itr,&k,&v) ; ) {

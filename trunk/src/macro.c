@@ -167,26 +167,7 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
 }
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    char *result = NULL;
-    char *tmp;
-
-    if (g_genre && g_genre->size) { 
-        int i;
-        result=STRDUP("<select onchange=\"location=this.options[this.selectedIndex].value;\">"
-                "<option value=\"/oversight/oversight.cgi?" DB_FLDID_GENRE "=\">All</option>");
-
-        for(i = 0 ; i < g_genre->size ; i++ ) {
-            char *g=g_genre->array[i];
-            ovs_asprintf(&tmp,"%s<option value=\"/oversight/oversight.cgi?" DB_FLDID_GENRE "=%s\">%s</option>",result,g,g);
-            FREE(result);
-            result=tmp;
-        }
-        ovs_asprintf(&tmp,"%s</select>",result);
-        FREE(result);
-        result=tmp;
-    }
-
-    return result;
+    return auto_option_list(DB_FLDID_GENRE,"All Genres",g_genre_hash);
 }
 
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -243,23 +224,23 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
 
 
         tmp=replace_all(cert,"usa:","us:",0);
-        free(cert);
+        FREE(cert);
         cert=tmp;
 
 
         tmp=replace_all(cert,":","/",0);
-        free(cert);
+        FREE(cert);
         cert=tmp;
 
         ovs_asprintf(&tmp,"%s/images/cert/%s.%s",appDir(),cert,ovs_icon_type());
-        free(cert);
+        FREE(cert);
         cert=tmp;
 
         char *attr;
         ovs_asprintf(&attr," width=%d height=%d ",g_dimension->certificate_size,g_dimension->certificate_size);
 
         tmp = get_local_image_link(cert,sorted_rows[0]->certificate,attr);
-        free(attr);
+        FREE(attr);
     }
 
     return tmp;
@@ -270,7 +251,7 @@ char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_row
     int cols=0;
     html_log(1,"macro_fn_tv_listing");
     if (!get_rows_cols(call,args,&rows,&cols)) {
-        rows = 10;
+        rows = 14;
         cols = 2;
     }
     return tv_listing(num_rows,sorted_rows,rows,cols);
@@ -498,7 +479,7 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     ovs_asprintf(&result,"<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n%s",url,
             (hidden?hidden:"")
         );
-    free(hidden);
+    FREE(hidden);
     return result;
 }
 
@@ -590,13 +571,13 @@ char *macro_fn_filter_bar(char *template_name,char *call,Array *args,int num_row
                 ovs_asprintf(&params,"p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=%.*s",
                         regex_len,current_regex);
                 left = get_theme_image_link(params,"","left-small","width=20 height=20");
-                free(params);
+                FREE(params);
             }
 
             ovs_asprintf(&result,"Use keypad to search%s<font class=keypada>[%s]</font>%s",
                     start,current_regex,(left?left:""));
-            free(start);
-            if (left) free(left);
+            FREE(start);
+            if (left) FREE(left);
 
         } else {
 
@@ -676,7 +657,7 @@ char *config_link(char *config_file,char *help_suffix,char *html_attributes,char
     char *params,*link;
     ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",config_file,help_suffix,text);
     link = get_self_link(params,html_attributes,text);
-    free(params);
+    FREE(params);
     return link;
 }
 
@@ -731,14 +712,14 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
             html_log(2,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
 
             result = get_theme_image_link(params,attrs,image_base_name,"");
-            free(params);
-            free(attrs);
+            FREE(params);
+            FREE(attrs);
         } else if (! *view ) {
             //Only show disabled page controls in main menu view (not tv / movie subpage) - this may change
             char *image_off=NULL;
             ovs_asprintf(&image_off,"%s-off",image_base_name);
             result = get_theme_image_tag(image_off,NULL);
-            free(image_off);
+            FREE(image_off);
         }
     }
     return result;
@@ -777,7 +758,7 @@ char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_ro
     if(!*query_val("select")) {
         char *tag=get_theme_image_tag("home",NULL);
         ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",SELF_URL,tag);
-        free(tag);
+        FREE(tag);
     }
 
     return result;
@@ -789,7 +770,7 @@ char *macro_fn_exit_button(char *template_name,char *call,Array *args,int num_ro
     if(g_dimension->local_browser && !*query_val("select")) {
         char *tag=get_theme_image_tag("exit",NULL);
         ovs_asprintf(&result,"<a href=\"/start.cgi\" name=home >%s</a>",tag);
-        free(tag);
+        FREE(tag);
     }
     return result;
 }
@@ -844,7 +825,7 @@ char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_r
         if (url != NULL) {
             char *image=get_theme_image_tag("upgrade"," alt=External ");
             ovs_asprintf(&result,"<a href=\"%s\">%s</a>",url,image);
-            free(image);
+            FREE(image);
         }
     }
     return result;

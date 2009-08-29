@@ -449,7 +449,7 @@ eol:
 DbRowId *db_rowid_new(Db *db) {
 
     DbRowId *rowid = MALLOC(sizeof(*rowid));
-    memset(rowid,0,sizeof(*rowid));
+    memset(rowid,0,sizeof(DbRowId));
     rowid->rating=0;
     rowid->watched=0;
     rowid->year=0;
@@ -504,7 +504,7 @@ int parse_row(
     assert(db);
     assert(rowid);
 
-    memset(rowid,0,sizeof(*rowid));
+    memset(rowid,0,sizeof(DbRowId));
     rowid->rating=0;
     rowid->watched=0;
     rowid->year=0;
@@ -848,8 +848,6 @@ int in_idlist(int id,int size,int *ids) {
     return 0;
 }
 
-struct hashtable *genre_hash = NULL;
-
 DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
@@ -924,7 +922,7 @@ TRACE;
             if (rowid) {
                 int keeprow=1;
 
-                get_genre_from_string(rowid->genre,&genre_hash);
+                get_genre_from_string(rowid->genre,&g_genre_hash);
 
                 if (genre_filter && *genre_filter) {
                     if (!strstr(rowid->genre,genre_filter)) {
@@ -1294,15 +1292,5 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
             gstr = p;
         }
     }
-}
-
-Array *get_genres() {
-
-    // Now create a new array from hashtable keys.
-    Array *a = util_hashtable_keys(genre_hash);
-    array_sort(a,NULL);
-    array_print("sorted genres",a);
-    hashtable_destroy(genre_hash,0,0);
-    return a;
 }
 

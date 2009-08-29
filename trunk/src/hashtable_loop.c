@@ -17,7 +17,7 @@
  *        ..
  *        ..
  *    } while (hashtable_iterator_advance(itr);
- *    free(itr);
+ *    FREE(itr);
  * } 
  * 
  * --------------------------------------------
@@ -130,7 +130,7 @@ int hashtable_loop_more(struct hashtable_itr *itr,void *k,void *v) {
         return -1;
 
     } else {
-        free(itr);
+        FREE(itr);
         return 0;
     }
 }

@@ -2221,7 +2221,8 @@ name) {
 #The resultant links are scraped for imdb ids.
 # Not newzleech not used as the search is too vague. bintube and binsearch have exact search.
 function searchOnlineNfoLinksForImdbAlternate(name,\
-choice,i,url) {
+choice,i,url,sz) {
+    sz=500;
     g_nfo_search_choices = 2;
     g_search_total["online_nfo"]++;
 
@@ -2237,7 +2238,7 @@ choice,i,url) {
             # Film - search bintube for nfos
             url = searchOnlineNfoLinksForImdb(name,\
                 "http://www.bintube.com",\
-                "/?q=\"QUERY\"",\
+                "/?b="sz"&q=\"QUERY\"",\
                 "/nfo/pid/[^\"]+",20);
 
         } else if (choice == 1 ) {
@@ -2245,7 +2246,7 @@ choice,i,url) {
             # search binsearch.info 
             url = searchOnlineNfoLinksForImdb(name,\
                 "http://www.binsearch.info",\
-                "/index.php?q=QUERY&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
+                "/index.php?q=QUERY&minsize="sz"&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
                 "/viewNFO[^\"]+",20);
 
 # ngindex search not accurate enough

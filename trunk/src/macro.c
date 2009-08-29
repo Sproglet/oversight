@@ -251,7 +251,7 @@ char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_row
     int cols=0;
     html_log(1,"macro_fn_tv_listing");
     if (!get_rows_cols(call,args,&rows,&cols)) {
-        rows = 14;
+        rows = 16;
         cols = 2;
     }
     return tv_listing(num_rows,sorted_rows,rows,cols);

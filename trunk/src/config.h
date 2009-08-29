@@ -8,6 +8,7 @@ typedef struct dimension_str {
     int tv_mode;
     long scanlines;
     long poster_mode;
+    long title_bar; //dynamic title bar.
     long local_browser;
     long rows;
     long cols;

@@ -6,15 +6,26 @@
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
+        <script type="text/javascript">
+  var title = 1;
+  function show(x)
+  {
+    if (title == 1) title = document.getElementById('menutitle');
+    title.firstChild.nodeValue = x;
+  }
+        </script>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+<center>
         <table id=main>
         <tr><td>
         [:FORM_START:]
             <table class=header width=100%>
                 <tr>
-                    <td><font size=6>[:MEDIA_TYPE:]</font>
-                    <br><font size=2>[:VERSION:] [:HOSTNAME:]</font>
+                    <td rowspan=2>
+                        <font size=6>[:MEDIA_TYPE:]</font>
+                        <br>
+                        <font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>
                     <td>[:GENRE_SELECT:]</td>
                     <td>[:MEDIA_TOGGLE:]</td>
@@ -23,6 +34,9 @@
                     <td>[:FILTER_BAR:]</td>
                     <td>[:STATUS:]</td>
                     <td>[:SETUP_BUTTON:]</td>
+                </tr>
+                <tr>
+                    <td colspan=7 id=menutitle align=center></td>
                 </tr>
             </table>
         </td></tr><tr><td>
@@ -44,8 +58,9 @@
                 </tr>
             </table>
         </form>
-        ,</td></tr></table>
+        </td></tr></table>
         [:TVIDS:]
+</center>
     </body>
 </html>
 <!--

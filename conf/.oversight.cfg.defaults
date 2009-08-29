@@ -12,6 +12,7 @@ ovs_icon_type="png"
 ovs_crossview=0
 ovs_display_fanart=0
 ovs_skin_name="default"
+ovs_title_bar="poster_mode"
 
 ovs_poster_mode[0]=1
 ovs_rows[0]=9

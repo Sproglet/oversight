@@ -1,5 +1,11 @@
 .dummy { color:red; }
 
+#menutitle {
+    font-size:12pt;
+    color:yellow;
+    text-align:center;
+}
+
 html,body {
     height:100%;
     margin:0;
@@ -14,6 +20,10 @@ html,body {
     padding:0;
 }
 
+td.gc_fresh { background-color:red; border-color:red; border-width:2px; padding:1px; margin:1px; }
+td.gc { border-color:red; border-width:2px; }
+td.gc_fresh_small { font-size:10pt; }
+td.gc_small { font-size:10pt; }
 
 body.menu_background0 { color:white ; background-color:black; }
 body.menu_background1 { color:yellow ; background-color:black; }
@@ -52,10 +62,11 @@ img { border: 0px solid black; }
 .gridW0_1 { color:white; background-color:#661010; }
 
 img.fresh { 
-    border: 2px solid yellow;
-    border-width: 2;
+    border-width: 2px;
     color:yellow;
+    border-color:yellow;
 }
+.dummy { color:red; }
 
 td.fresh { color:yellow; font-weight:bold; font-style:italic; }
 a.fresh { color:yellow; font-weight:bold; font-style:italic; }
@@ -77,8 +88,10 @@ table.header {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 .XXXheader {background-color:#000005; }
 .XXXfooter {background-color:black; }
-.overview { text-align:center; }
-table.overview {	margin:0; border-spacing:1px; padding:0 ; border-width:1 ; width:1% ; }
+.overview_poster1 { text-align:center; width:1%; }
+.overview_poster0 { text-align:center;  width:100%;}
+table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 
 /* Filter bar - inactive */ .dummy { color:red; }
 .filterbar0 {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; font-size:8pt; }
@@ -132,14 +145,14 @@ td.list1 {
 .repack { color: yellow; size:small; }
 a.movie { color:#aaaaff; }
 .label { color:red }
-td { color:white ; }
 .right { text-align:right; }
 
 input { background-color:black; color:yellow; font-weight:bold; border=0; }
+select { background-color:black; color:yellow; font-weight:bold; border=0; border-color:red; font-size:small; }
 
 .dummy {}
 .recent { font-size:[:FONT_SIZE:]; }
-td { font-size:[:FONT_SIZE:]; font-family:"arial";  }
+td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
 
 font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
 

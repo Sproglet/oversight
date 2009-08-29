@@ -1,16 +1,20 @@
 <!-- Default Movie Template  $Id:$ -->
-<body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
+<body focuscolor=yellow focustext=black height=100% [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
     [:FORM_START:]
-<table id="main">
-    <tr valign="center">
+<table id="main" width=100% >
+    <tr valign="middle">
         <td>
             <table width=100%>
-                <tr valign=bottom>
-                    <td align=left>
-                    [:INCLUDE_TEMPLATE(buttons):]
-                    <br>[:POSTER:]
+                <tr valign=top>
+                    <td colspan=2>
+                        [:INCLUDE_TEMPLATE(buttons):]
                     </td>
-                    <td >
+                </tr>
+                <tr valign=bottom>
+                    <td align=left width=1%>
+                    [:POSTER:]
+                    </td>
+                    <td>
                         <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
                                 <td class=title><font class=title>[:TITLE:][ (:YEAR:)]</font></td>

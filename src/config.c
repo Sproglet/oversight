@@ -424,6 +424,19 @@ void config_read_dimensions() {
         }
     }
 
+    char *title_bar = oversight_val("ovs_title_bar");
+    g_dimension->title_bar = 0;
+TRACE;
+    if (strcasecmp(title_bar,"always") == 0) {
+TRACE;
+        g_dimension->title_bar = 1;
+    } else if (strcasecmp(title_bar,"poster_mode") == 0) {
+TRACE;
+        g_dimension->title_bar = g_dimension->poster_mode;
+    }
+
+  
+
 }
 
 

@@ -279,9 +279,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *encoded_path = url_encode(path);
     int show_link = 1;
 
-TRACE; html_log(0,"%s",path);
     if (!exists(path) ) {
-TRACE;
 
 
         char *parent_dir = util_dirname(path);
@@ -296,20 +294,17 @@ TRACE;
 
         show_link=0;
         if (!exists(grandparent_dir)) {
-TRACE;
 
             //media gone
             //ovs_asprintf(&result,"<font class=error>%s</font>",name);
             font_class="class=error";
 
         } else {
-TRACE;
 
             //media present - file gone!
             db_remove_row(rowid);
             ovs_asprintf(&result,"removed %s",name);
         }
-TRACE;
         FREE(name);
         FREE(parent_dir);
         FREE(grandparent_dir);
@@ -835,14 +830,16 @@ char *icon_link(char *name) {
 
     char *result=NULL;
 
-    if (name[strlen(name)-1] == '/') {
-        result = container_icon("video_ts","vob");
-    } else {
-        char *ext = name + strlen(name) - 3;
-        if (strcasecmp(ext,"iso")==0 || strcasecmp(ext,"img") == 0 || strcasecmp(ext,"mkv") == 0) {
-            result = container_icon(ext,ext);
-        } else if (strcasecmp(ext,"avi") != 0) {
-            ovs_asprintf(&result,"<font size=\"-1\">[%s]</font>",ext);
+    if (name) {
+        if (name[strlen(name)-1] == '/') {
+            result = container_icon("video_ts","vob");
+        } else {
+            char *ext = name + strlen(name) - 3;
+            if (strcasecmp(ext,"iso")==0 || strcasecmp(ext,"img") == 0 || strcasecmp(ext,"mkv") == 0) {
+                result = container_icon(ext,ext);
+            } else if (strcasecmp(ext,"avi") != 0) {
+                ovs_asprintf(&result,"<font size=\"-1\">[%s]</font>",ext);
+            }
         }
     }
     return result;
@@ -861,12 +858,14 @@ char *build_ext_list(DbRowId *row_id) {
         if (ri->ext && (ext_icons==NULL || strstr(ext_icons,ri->ext) == NULL)) {
             char *new_ext;
             char *linked_icon = icon_link(ri->ext);
-            ovs_asprintf(&new_ext,"%s%s",
-                    (ext_icons?ext_icons:""),
-                    (linked_icon?linked_icon:""));
-            FREE(linked_icon);
-            FREE(ext_icons);
-            ext_icons = new_ext;
+            if (linked_icon) {
+                ovs_asprintf(&new_ext,"%s%s",
+                        (ext_icons?ext_icons:""),
+                        (linked_icon?linked_icon:""));
+                FREE(linked_icon);
+                FREE(ext_icons);
+                ext_icons = new_ext;
+            }
         }
     }
     return ext_icons;
@@ -961,12 +960,12 @@ char *movie_listing(DbRowId *rowid) {
         }
 
         ovs_asprintf(&button_attr," width=%d height=%d ",button_size,button_size);
-        char *movie_play = get_theme_image_tag("player_play",button_attr);
+        //char *movie_play = get_theme_image_tag("player_play",button_attr);
         FREE(button_attr);
 
         char *basename=util_basename(rowid->file);
 
-        result=vod_link(rowid,basename,movie_play,rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
+        result=vod_link(rowid,basename,"",rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
         FREE(basename);
         // Add vod links for all of the parts
         
@@ -978,28 +977,28 @@ char *movie_listing(DbRowId *rowid) {
                 char i_str[10];
                 sprintf(i_str,"%d",i);
 
-                char *tmp=vod_link(rowid,parts->array[i],movie_play,rowid->db->source,parts->array[i],i_str,"",style);
+                char *tmp=vod_link(rowid,parts->array[i],"",rowid->db->source,parts->array[i],i_str,"",style);
 
                 char *vod_list;
-                ovs_asprintf(&vod_list,"%s\n%s",result,tmp);
+                ovs_asprintf(&vod_list,"%s<br>\n%s",result,tmp);
                 FREE(tmp);
                 FREE(result);
                 result=vod_list;
             }
-
-            // Big play button
-            {
-                char *big_play = get_theme_image_tag("player_play","");
-                char *play_tvid = get_play_tvid(big_play);
-                FREE(big_play);
-
-                char *vod_list;
-                ovs_asprintf(&vod_list,"%s\n%s",play_tvid,result);
-                FREE(result);
-                result = vod_list;
-            }
         }
-        FREE(movie_play);
+
+        // Big play button
+        {
+            char *big_play = get_theme_image_tag("player_play","");
+            char *play_tvid = get_play_tvid(big_play);
+            FREE(big_play);
+
+            char *vod_list;
+            ovs_asprintf(&vod_list,"<table><tr><td>%s</td><td>%s</td></table>",play_tvid,result);
+            FREE(result);
+            result = vod_list;
+        }
+        //FREE(movie_play);
         return result;
     }
 }
@@ -1021,6 +1020,20 @@ int unwatched_count(DbRowId *rid) {
         }
     }
     return i;
+}
+
+char *mouse_or_focus_event(char *title,char *on_event,char *off_event) {
+    char *result = NULL;
+    ovs_asprintf(&result," %s=\"show('%s');\" %s=\"show('.');\"",on_event,title,off_event);
+    return result;
+}
+
+char *focus_event(char *title) {
+    return mouse_or_focus_event(title,"onfocus","onblur");
+}
+
+char *mouse_event(char *title) {
+    return mouse_or_focus_event(title,"onmouseover","onmouseout");
 }
 
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
@@ -1157,22 +1170,25 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *simple_title;
     if (row_id->category=='T') {
-        ovs_asprintf(&simple_title,"%s , S%d",row_id->title,row_id->season);
+        ovs_asprintf(&simple_title,"%s S%d",row_id->title,row_id->season);
+    } else if (row_id->year) {
+        ovs_asprintf(&simple_title,"%s (%d)",row_id->title,row_id->year);
     } else {
-        ovs_asprintf(&simple_title,"%s , (%d)",row_id->title,row_id->year);
+        ovs_asprintf(&simple_title,"%s",row_id->title);
     }
 
     char *title_change;
-    if (g_dimension->local_browser) {
-        ovs_asprintf(&title_change," %s onfocus=\"show('%s');\" onblur=\"show('|');\"",
-                (grid_class?grid_class:""),
-                simple_title);
-    } else {
-        ovs_asprintf(&title_change," %s onmouseover=\"show('%s');\" onmouseout=\"show('|');\" onfocus=\"show('%s');\" onblur=\"show('|');\"",
-                (grid_class?grid_class:""),
-                row_id->title,
-                simple_title);
+    char *focus_ev = "";
+    char *mouse_ev = "";
+
+    if (g_dimension->title_bar) {
+        focus_ev = focus_event(simple_title);
+        if (!g_dimension->local_browser) {
+            mouse_ev = mouse_event(simple_title);
+        }
     }
+
+    ovs_asprintf(&title_change," %s %s" ,(grid_class?grid_class:""), focus_ev);
     FREE(simple_title);
 
 
@@ -1182,6 +1198,15 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     html_log(1,"dbg: scroll attributes [%s]",attr);
 
     char *idlist = build_id_list(row_id);
+
+    //Gaya has a navigation bug in which highlighting sometimes misbehaves on links 
+    //with multi-lines of text. This was not a problem until the roaming title display
+    //was introduced. When the bug triggers all elements become unfocussed causing
+    //navigation position to be lost. 
+    //To circumvent bug - only the first word of the link is highlighted.
+    char *first_space=NULL;
+    first_space=strchr(title,' ');
+    if (first_space) *first_space='\0';
 
     if (tv_or_movie) {
         char *params;
@@ -1195,6 +1220,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         html_log(1,"dbg: params [%s]",params);
 
         
+
         cell_text = get_self_link_with_font(params,attr,title,font_class);
         html_log(1,"dbg: get_self_link_with_font [%s]",cell_text);
 
@@ -1213,10 +1239,10 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             cellName=cellId;
         }
 
-
         cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
 
     }
+    if (first_space) *first_space=' ';
     FREE(attr);
 
     if (*select) {
@@ -1226,12 +1252,31 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         cell_text=tmp;
     }
 
-    FREE(idlist);
-    FREE(title);
 
     char *result;
-    ovs_asprintf(&result,"\t<td %s %s >%s</td>",width_attr,grid_class,cell_text);
+
+    if (first_space) {
+        // Adjust first space to show the rest of the title
+        *first_space=' ';
+    } else {
+        //Title has already been shown in full
+        first_space="";
+    }
+
+    if (*first_space) {
+        ovs_asprintf(&result,"\t<td %s %s %s>%s<font class=%s>%s</font></td>",
+                width_attr,grid_class,mouse_ev,
+                cell_text,font_class,first_space);
+    } else {
+        ovs_asprintf(&result,"\t<td %s %s %s >%s</td>",
+                width_attr,grid_class,mouse_ev,cell_text);
+    }
+    if (mouse_ev && *mouse_ev) FREE(mouse_ev);
+    if (focus_ev && *focus_ev) FREE(focus_ev);
+
     FREE(cell_text);
+    FREE(idlist);
+    FREE(title);
     return result;
 }
 
@@ -1492,7 +1537,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
     if (end > numids) end = numids;
 
-    html_log(1,"grid page %ld rows %d cols %d",page,rows,cols);
+    html_log(0,"grid page %ld rows %d cols %d",page,rows,cols);
 
     char *result=NULL;
     int i = start;
@@ -1503,13 +1548,12 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     for ( r = 0 ; r < rows ; r++ ) {
 
 
-        html_log(1,"grid row %d",r);
+        html_log(0,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr>\n",(result?result:""));
         FREE(result);
         result=tmp;
 
         for ( c = 0 ; c < cols ; c++ ) {
-            html_log(1,"grid col %d",c);
             i = start + c * rows + r ;
 
             int left_scroll = (page_before && c == 0);
@@ -1518,10 +1562,8 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
             char *item=NULL;
             if ( i < numids ) {
-                html_log(1,"grid item");
                 item = get_item(i-start,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             } else {
-                html_log(1,"grid empty");
                 item = get_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }
             ovs_asprintf(&tmp,"%s%s\n",result,item);
@@ -1537,7 +1579,9 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         html_log(1,"grid end row %d",r);
 
     }
-    ovs_asprintf(&tmp,"<center><table class=overview>\n%s\n</table></center>\n",result);
+    ovs_asprintf(&tmp,"<center><table class=overview_poster%d width=100%%>\n%s\n</table></center>\n",
+            g_dimension->poster_mode,
+            result);
     FREE(result);
     result=tmp;
 

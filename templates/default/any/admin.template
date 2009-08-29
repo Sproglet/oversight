@@ -45,9 +45,9 @@
                 <table>
                     <tr>
                         <!-- <td width=25%>720</td> -->
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720.help,720 text mode,class=scanlines720):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-poster.help,720 poster mode,class=scanlines720):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-detail.help,720 detail view,class=scanlines720):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720.help,HD text mode,class=scanlines720):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-poster.help,HD poster mode,class=scanlines720):]</td>
+                        <td width=25%>[:CONFIG_LINK(oversight.cfg,720-detail.help,HD detail view,class=scanlines720):]</td>
                     </tr>
                 </table>
             </td>
@@ -55,17 +55,18 @@
             <td align=left width=45%>[:CONFIG_LINK(unpak.cfg,help,Unpak- Unpacking and Repairing):]</td>
         </tr>
         <tr>
+<!--
             <td width=5%>[:ICON(display):]</td>
             <td align=left width=45%>
                 <table>
                     <tr>
-                        <!-- <td width=25%>1080</td> -->
                         <td width=25%>[:CONFIG_LINK(oversight.cfg,1080.help,1080 text mode,class=scanlines1080):]</td>
                         <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-poster.help,1080 poster mode,class=scanlines1080):]</td>
                         <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-detail.help,1080 detail view,class=scanlines1080):]</td>
                     </tr>
                 </table>
             </td>
+-->
             <td width=5%>[:ICON(security):]</td>
             <td align=left width=45%>[:CONFIG_LINK(oversight.cfg,secure.help,Internet Access):]</td>
         </tr>

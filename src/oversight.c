@@ -220,7 +220,6 @@ TRACE;
 
     delete_queue_delete();
 TRACE;
-
     free_sorted_rows(rowsets,sorted_rows);
 TRACE;
 

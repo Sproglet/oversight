@@ -213,24 +213,22 @@ int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
 }
 
 // This will take ownership of the val - freeing it if necessary.
-void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
+void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view,int copy) {
 
     // Used to checl for trailing chars.
     char *tmps=NULL;
     char tmpc='\0';
     int tmp_conv=1;
-    int free_val=1;
+    int free_val=!copy; //if copying dont free
 
     assign_ticks -= clock();
     switch(name[1]) {
         case 'a':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_ADDITIONAL_INFO) == 0) {
-                rowid->additional_nfo = val;
+                rowid->additional_nfo = (copy?copy_string(val_len,val):val);
                 free_val=0;
             } else if (tv_or_movie_view && strcmp(name,DB_FLDID_AIRDATE) == 0) {
-                other_assign_ticks -= clock();
                 parse_date(name,val,&(rowid->airdate),0);
-                other_assign_ticks += clock();
             } else if (tv_or_movie_view && strcmp(name,DB_FLDID_AIRDATEIMDB) == 0) {
                 parse_date(name,val,&(rowid->airdate_imdb),0);
             }
@@ -245,25 +243,25 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'e':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_EPISODE) == 0) {
-                rowid->episode = val;
+                rowid->episode = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }else if (tv_or_movie_view && strcmp(name,DB_FLDID_EPTITLE) == 0) {
-                rowid->eptitle = val;
+                rowid->eptitle = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }else if (tv_or_movie_view && strcmp(name,DB_FLDID_EPTITLEIMDB) == 0) {
-                rowid->eptitle_imdb = val;
+                rowid->eptitle_imdb = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'f':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_FANART) == 0) {
-                rowid->fanart = val;
+                rowid->fanart = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'F':
             if (strcmp(name,DB_FLDID_FILE) == 0) {
-                rowid->file = val;
+                rowid->file = (copy?copy_string(val_len,val):val);
                 free_val=0;
                 rowid->ext = strrchr(rowid->file,'.');
                 if (rowid->ext) rowid->ext++;
@@ -272,13 +270,13 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
 
         case 'G':
             if (strcmp(name,DB_FLDID_GENRE) == 0) {
-                rowid->genre = val;
+                rowid->genre = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'J':
             if (strcmp(name,DB_FLDID_POSTER) == 0) {
-                rowid->poster = val;
+                rowid->poster = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
@@ -294,7 +292,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'n':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_NFO) == 0) {
-                rowid->nfo=val;
+                rowid->nfo=(copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
@@ -303,16 +301,14 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'p':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_PARTS) == 0) {
-                rowid->parts = val;
+                rowid->parts = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'P':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_PLOT) == 0)  {
-                plot_assign_ticks -= clock();
-                rowid->plot = val;
+                rowid->plot = (copy?copy_string(val_len,val):val);
                 free_val=0;
-                plot_assign_ticks += clock();
             }
             break;
         case 'r':
@@ -322,7 +318,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'R':
             if (strcmp(name,DB_FLDID_CERT) == 0) {
-                rowid->certificate = val;
+                rowid->certificate = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
@@ -336,13 +332,13 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'T':
             if (strcmp(name,DB_FLDID_TITLE) == 0) {
-                rowid->title = val;
+                rowid->title = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'U':
             if (tv_or_movie_view && strcmp(name,DB_FLDID_URL) == 0) {
-                rowid->url = val;
+                rowid->url = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
@@ -367,6 +363,16 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
     assign_ticks += clock();
     if (free_val) FREE(val);
 }
+#define DB_NAME_BUF_SIZE 10
+#define DB_VAL_BUF_SIZE 4000
+#define RESET 1
+#define RESET_AND_ADD 2
+
+#define VAL_SZ_INIT 30
+#define VAL_SZ_INC 50
+#define STATE_START -1
+#define STATE_NAME 0
+#define STATE_VAR 1
 
 // TODO Change this back to static value and using copy_string() in db_rowid_set_field
 DbRowId *read_and_parse_row(
@@ -379,12 +385,132 @@ DbRowId *read_and_parse_row(
     read_and_parse_row_ticks -= clock();
 
 
-#define DB_NAME_BUF_SIZE 10
-#define RESET 1
-#define RESET_AND_ADD 2
 
-#define VAL_SZ_INIT 30
-#define VAL_SZ_INC 50
+    char name[DB_NAME_BUF_SIZE];
+    char *name_end = name+DB_NAME_BUF_SIZE;
+
+    char value[DB_VAL_BUF_SIZE];
+    char *value_end=value+DB_VAL_BUF_SIZE;
+
+    register char next;
+
+    DbRowId *rowid = NULL;
+
+    //initially point p at the value buffer.
+    //This initial value is discarded but it removes the need to 
+    //check for p != NULL for every character iteration
+    register char *p=NULL;
+    char *end=NULL;
+
+    int state=STATE_START;
+
+TRACE;
+    for(;;) {
+        
+        next = getc(fp);
+
+        switch(next) {
+        case EOF: goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
+        case '\n' : case '\r' : case '\0': // EOL terminators
+            if (state == STATE_VAR) {
+                *p = '\0';
+                html_log(3,"parsed field %s=%s",name,value);
+                if (rowid == NULL) {
+                    rowid = db_rowid_new(db);
+                }
+                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
+                state = STATE_START;
+            }
+            goto eol;
+        case '\t':
+            switch(state) {
+                case STATE_START:
+
+                    state=STATE_NAME;
+                    p=name;
+                    end=name_end;
+                    break;
+
+                case STATE_NAME:
+
+                    //switch to STATE_VAR
+
+                    *p = '\0';
+                    state=STATE_VAR;
+                    p=value;
+                    end=value_end;
+                    html_log(3,"name[%s]",name);
+                    break;
+
+                case STATE_VAR:
+                    //switch to STATE_VAR if TAB is followed by _ (start of a name)
+                    next = getc(fp);
+                    if (next != '_' ) {
+                        //If plot contains <tab> allow it if it is NOT followed by _
+                        //which is the prefix for out html vars. This is a nasty hack due 
+                        //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
+                        ungetc(next,fp);
+                    } else {
+                        *p = '\0';
+                        html_log(3,"val[%s]",value);
+                        if (rowid == NULL) {
+                            rowid = db_rowid_new(db);
+                        }
+                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
+
+                        state=STATE_NAME;
+                        p=name;
+                        end=name_end;
+                        *p++='_';
+                    }
+TRACE;
+                    break;
+                default:
+                    assert(0);
+                    break;
+            }
+            break;
+        default:
+            // Add the character
+            *p++ = next;
+#if 0 //this should not really be commented out - could allow buffere overflow
+            if (p >= end ) {
+TRACE;
+                // Name variable. This shouldnt happen - truncate
+                p--;
+                *p = '\0';
+TRACE;
+                break;
+            }
+#endif
+        }
+    }
+eol:
+    if (next == EOF) {
+        *eof = 1;
+    }
+TRACE;
+    if (p) {
+TRACE;
+        *p = '\0';
+TRACE;
+    }
+TRACE;
+    read_and_parse_row_ticks += clock();
+TRACE;
+    return rowid;
+}
+// TODO Change this back to static value and using copy_string() in db_rowid_set_field
+DbRowId *read_and_parse_rowXX(
+        Db *db,
+        FILE *fp,
+        int *eof,
+        int tv_or_movie_view // true if looking at tv or moview view.
+        ) {
+
+    read_and_parse_row_ticks -= clock();
+
+
 
     char name[DB_NAME_BUF_SIZE];
     char *name_end = name+DB_NAME_BUF_SIZE;
@@ -392,21 +518,19 @@ DbRowId *read_and_parse_row(
     char *value;
     int val_sz;
 
-    char next;
+    register char next;
 
     DbRowId *rowid = NULL;
 
     //initially point p at the value buffer.
     //This initial value is discarded but it removes the need to 
     //check for p != NULL for every character iteration
-    char *p;
-    char *end;
+    register char *p=NULL;
+    char *end=NULL;
 
-#define STATE_START -1
-#define STATE_NAME 0
-#define STATE_VAR 1
     int state=STATE_START;
 
+TRACE;
     while((next = getc(fp)) != EOF) {
 
 
@@ -414,11 +538,11 @@ DbRowId *read_and_parse_row(
         case '\n' : case '\r' : case '\0': // EOL terminators
             if (state == STATE_VAR) {
                 *p = '\0';
-                //html_log(0,"parsed field %s=%s",name,value);
+                html_log(0,"parsed field %s=%s",name,value);
                 if (rowid == NULL) {
                     rowid = db_rowid_new(db);
                 }
-                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
+                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,0);
                 state = STATE_START;
             }
             goto eol;
@@ -440,7 +564,7 @@ DbRowId *read_and_parse_row(
                     val_sz=VAL_SZ_INIT;
                     p=value=MALLOC(val_sz);
                     end=p+val_sz;
-                    html_log(4,"name[%s]",name);
+                    html_log(0,"name[%s]",name);
                     break;
 
                 case STATE_VAR:
@@ -453,18 +577,18 @@ DbRowId *read_and_parse_row(
                         ungetc(next,fp);
                     } else {
                         *p = '\0';
-                        html_log(4,"val[%s]",value);
-                        //html_log(0,"parsed field %s=%s",name,value);
+                        html_log(0,"val[%s]",value);
                         if (rowid == NULL) {
                             rowid = db_rowid_new(db);
                         }
-                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
+                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,0);
 
                         state=STATE_NAME;
                         p=name;
                         end=name_end;
                         *p++='_';
                     }
+TRACE;
                     break;
                 default:
                     assert(0);
@@ -475,6 +599,7 @@ DbRowId *read_and_parse_row(
             // Add the character
             *p++ = next;
             if (p >= end ) {
+TRACE;
                 //end of buffer
                 if (state == STATE_VAR) {
                     // Make some more space
@@ -487,6 +612,7 @@ DbRowId *read_and_parse_row(
                     // Name variable. This shouldnt happen - truncate
                     p--;
                     *p = '\0';
+TRACE;
                     break;
                 }
             }
@@ -496,10 +622,15 @@ eol:
     if (next == EOF) {
         *eof = 1;
     }
+TRACE;
     if (p) {
+TRACE;
         *p = '\0';
+TRACE;
     }
+TRACE;
     read_and_parse_row_ticks += clock();
+TRACE;
     return rowid;
 }
 
@@ -627,11 +758,11 @@ got_value_end:
 
         //html_log(-1,"fval[%s]",value_start);
         //
-        char *value_copy = MALLOC(val_len+1);
-        memcpy(value_copy,value_start,val_len+1);
+        //char *value_copy = MALLOC(val_len+1);
+        //memcpy(value_copy,value_start,val_len+1);
 
 
-        db_rowid_set_field(rowid,name_start,value_copy,val_len,1);
+        db_rowid_set_field(rowid,name_start,value_start,val_len,1,0);
 
 
         *name_end = *value_end = '\t';
@@ -963,16 +1094,22 @@ TRACE;
         int eof=0;
         while (eof == 0) {
             total_rows++;
+TRACE;
             DbRowId *rowid = read_and_parse_row(db,fp,&eof,tv_or_movie_view);
+TRACE;
             if (rowid) {
+TRACE;
                 int keeprow=1;
 
                 get_genre_from_string(rowid->genre,&g_genre_hash);
 
                 if (genre_filter && *genre_filter) {
+TRACE;
                     if (!strstr(rowid->genre,genre_filter)) {
+                        html_log(3,"Rejected [%s] as [%s] not in [%s]",rowid->title,genre_filter,rowid->genre);
                         keeprow=0;
                     }
+TRACE;
                 }
 
                 if (keeprow && name_filter && *name_filter) {
@@ -982,12 +1119,14 @@ TRACE;
                         keeprow=0;
                     }
                 }
+TRACE;
                 if (keeprow) {
                     switch(media_type) {
                         case DB_MEDIA_TYPE_TV : if (rowid->category != 'T') keeprow=0; ; break;
                         case DB_MEDIA_TYPE_FILM : if (rowid->category != 'M') keeprow=0; ; break;
                     }
                 }
+TRACE;
 
                 if (keeprow) {
                     switch(watched) {
@@ -995,11 +1134,13 @@ TRACE;
                         case DB_WATCHED_FILTER_YES : if (rowid->watched != 1 ) keeprow=0 ; break;
                     }
                 }
+TRACE;
                 if (keeprow) {
                     if (num_ids != ALL_IDS && !in_idlist(rowid->id,num_ids,ids)) {
                         keeprow = 0;
                     }
                 }
+TRACE;
 
                 if (keeprow) {
                     row_count = db_rowset_add(rowset,rowid);
@@ -1007,10 +1148,13 @@ TRACE;
                 } else {
                     db_rowid_free(rowid,1);
                 }
+TRACE;
 
                 if (gross_size != NULL) {
+TRACE;
                     (*gross_size)++;
                 }
+TRACE;
             }
         }
         TRACE;
@@ -1102,18 +1246,12 @@ void db_rowid_free(DbRowId *rid,int free_base) {
 //    html_log(0,"%s %lu %lu",rid->title,rid,rid->file);
 //    html_log(0,"%s",rid->file);
     FREE(rid->title);
-TRACE;
     FREE(rid->poster);
-TRACE;
     FREE(rid->genre);
-TRACE;
     FREE(rid->file);
-TRACE;
     FREE(rid->episode);
-TRACE;
     //Dont free ext as it points to file.
 
-TRACE;
 
     // Following are only set in tv/movie view
     FREE(rid->url);
@@ -1123,7 +1261,6 @@ TRACE;
     FREE(rid->eptitle);
     FREE(rid->eptitle_imdb);
     FREE(rid->additional_nfo);
-TRACE;
 
     //Only populated if deleting
     FREE(rid->nfo);
@@ -1132,7 +1269,6 @@ TRACE;
     if (free_base) {
         FREE(rid);
     }
-TRACE;
 }
 
 void db_rowset_free(DbRowSet *dbrs) {

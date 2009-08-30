@@ -525,7 +525,7 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
     FREE(tag);
 }
 
-char *get_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin) {
+char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin) {
     char *attr;
     ovs_asprintf(&attr,
             " %s%s%s %s ",
@@ -542,7 +542,7 @@ char *get_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scrol
 
     char *attr;
 
-    attr=get_scroll_attributes(left_scroll,right_scroll,centre_cell,NULL);
+    attr=add_scroll_attributes(left_scroll,right_scroll,centre_cell,NULL);
 
     char *result;
 
@@ -1036,168 +1036,137 @@ char *mouse_event(char *title) {
     return mouse_or_focus_event(title,"onmouseover","onmouseout");
 }
 
+char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
+
+    char *title = NULL;
+    html_log(2,"dbg: tv or movie : set details as jpg");
+
+
+    char *attr;
+
+    ovs_asprintf(&attr," width=%d height=%d %s ",
+        g_dimension->poster_menu_img_width,
+        g_dimension->poster_menu_img_height,
+        watched_style(row_id,grid_toggle)
+        );
+
+    title = get_poster_image_tag(row_id,attr);
+    FREE(attr);
+
+    *font_class = "class=fc";
+    if (is_fresh(row_id)) {
+        *grid_class = "class=gc_fresh";
+    } else {
+        *grid_class = "class=gc";
+    }
+    return title;
+}
+
+char *get_poster_mode_item_unknown(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
+    html_log(2,"dbg: unclassified : set details as title");
+    // Unclassified
+    char *title=STRDUP(row_id->title);
+    if (strlen(title) > 20) {
+        strcpy(title+18,"..");
+    }
+    if (is_fresh(row_id)) {
+        *grid_class = "class=gc_fresh_small";
+    } else {
+        *grid_class = "class=gc_small";
+    }
+    *font_class = watched_style(row_id,grid_toggle);
+    *grid_class = file_style(row_id,grid_toggle);
+
+    *font_class = watched_style_small(row_id,grid_toggle);
+    return title;
+}
+
+char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
+    int tv_or_movie = has_category(row_id);
+    // TEXT MODE
+    html_log(2,"dbg: get text mode details ");
+
+    *font_class = watched_style(row_id,grid_toggle);
+    *grid_class = file_style(row_id,grid_toggle);
+   
+   char *tmp;
+   char *title = trim_title(row_id->title);
+
+   char *cert = row_id->certificate;
+   if ((tmp=strchr(cert,':')) != NULL) {
+       if (tmp[1] != '\0') {
+           ovs_asprintf(&cert,"(%s)",tmp+1);
+       } else {
+           cert = NULL;
+       }
+   }
+
+    if (row_id->category == 'T' && row_id->season >= 1) {
+        //Add season
+        char *tmp;
+        ovs_asprintf(&tmp,"%s S%d",title,row_id->season);
+        FREE(title);
+        title=tmp;
+    }
+
+    if (tv_or_movie) {
+        html_log(2,"dbg: add certificate");
+        //Add certificate and extension
+        char *tmp;
+        char *ext_icons=build_ext_list(row_id);
+        html_log(2,"dbg: add extension [%s]",ext_icons);
+
+        ovs_asprintf(&tmp,"%s %s %s",
+                title,
+                (cert?cert:""),
+                (ext_icons?ext_icons:""));
+
+        FREE(title);
+        title=tmp;
+        if (cert != row_id->certificate) FREE(cert);
+        FREE(ext_icons);
+    }
+
+
+    if (row_id->category == 'T') {
+        html_log(2,"dbg: add episode count");
+        //Add episode count
+
+        int unwatched = unwatched_count(row_id);
+
+        if (unwatched) {
+            char *tmp;
+            int total = group_count(row_id);
+            ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d of %d</font>",title,unwatched,total);
+            FREE(title);
+            title=tmp;
+        }
+    }
+
+    long crossview=0;
+    config_check_long(g_oversight_config,"ovs_crossview",&crossview);
+    if (crossview == 1) {
+        html_log(2,"dbg: add network icon");
+       char *tmp =add_network_icon(row_id->db->source,title);
+       FREE(title);
+       title = tmp;
+    }
+
+    return title;
+}
+
+
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
     html_log(1,"TODO:Highlight matched bit");
 
     char *title=NULL;
-    char *font_class=NULL;
+    char *font_class="";
     char *grid_class="";
 
     char *select = query_val("select");
     int tv_or_movie = has_category(row_id);
-
-
-    if (in_poster_mode() ) {
-        if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
-
-            html_log(2,"dbg: tv or movie : set details as jpg");
-
-
-            char *attr;
-
-            ovs_asprintf(&attr," width=%d height=%d %s ",
-                g_dimension->poster_menu_img_width,
-                g_dimension->poster_menu_img_height,
-                watched_style(row_id,grid_toggle)
-                );
-
-            title = get_poster_image_tag(row_id,attr);
-            FREE(attr);
-
-            font_class = "class=fc";
-            if (is_fresh(row_id)) {
-                grid_class = "class=gc_fresh";
-            } else {
-                grid_class = "class=gc";
-            }
-        } else {
-            html_log(2,"dbg: unclassified : set details as title");
-            // Unclassified
-            title=STRDUP(row_id->title);
-            if (strlen(title) > 20) {
-                strcpy(title+18,"..");
-            }
-            if (is_fresh(row_id)) {
-                grid_class = "class=gc_fresh_small";
-            } else {
-                grid_class = "class=gc_small";
-            }
-
-            font_class = watched_style_small(row_id,grid_toggle);
-        }
-
-    } else {
-
-        // TEXT MODE
-        html_log(2,"dbg: get text mode details ");
-
-        font_class = watched_style(row_id,grid_toggle);
-        grid_class = file_style(row_id,grid_toggle);
-       
-       char *tmp;
-       title = trim_title(row_id->title);
-
-       char *cert = row_id->certificate;
-       if ((tmp=strchr(cert,':')) != NULL) {
-           if (tmp[1] != '\0') {
-               ovs_asprintf(&cert,"(%s)",tmp+1);
-           } else {
-               cert = NULL;
-           }
-       }
-
-
-
-        if (row_id->category == 'T' && row_id->season >= 1) {
-            //Add season
-            char *tmp;
-            ovs_asprintf(&tmp,"%s S%d",title,row_id->season);
-            FREE(title);
-            title=tmp;
-        }
-
-        if (tv_or_movie) {
-            html_log(2,"dbg: add certificate");
-            //Add certificate and extension
-            char *tmp;
-            char *ext_icons=build_ext_list(row_id);
-            html_log(2,"dbg: add extension [%s]",ext_icons);
-
-            ovs_asprintf(&tmp,"%s %s %s",
-                    title,
-                    (cert?cert:""),
-                    (ext_icons?ext_icons:""));
-
-            FREE(title);
-            title=tmp;
-            if (cert != row_id->certificate) FREE(cert);
-            FREE(ext_icons);
-        }
-
-
-        if (row_id->category == 'T') {
-            html_log(2,"dbg: add episode count");
-            //Add episode count
-
-            int unwatched = unwatched_count(row_id);
-
-            if (unwatched) {
-                char *tmp;
-                int total = group_count(row_id);
-                ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d of %d</font>",title,unwatched,total);
-                FREE(title);
-                title=tmp;
-            }
-        }
-
-        long crossview=0;
-        config_check_long(g_oversight_config,"ovs_crossview",&crossview);
-        if (crossview == 1) {
-            html_log(2,"dbg: add network icon");
-           char *tmp =add_network_icon(row_id->db->source,title);
-           FREE(title);
-           title = tmp;
-        }
-
-    }
-
-    html_log(1,"dbg: details [%s]",title);
-
-
-    char *cell_text=NULL;
-
-    char *simple_title;
-    if (row_id->category=='T') {
-        ovs_asprintf(&simple_title,"%s S%d",row_id->title,row_id->season);
-    } else if (row_id->year) {
-        ovs_asprintf(&simple_title,"%s (%d)",row_id->title,row_id->year);
-    } else {
-        ovs_asprintf(&simple_title,"%s",row_id->title);
-    }
-
-    char *title_change;
-    char *focus_ev = "";
-    char *mouse_ev = "";
-
-    if (g_dimension->title_bar) {
-        focus_ev = focus_event(simple_title);
-        if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event(simple_title);
-        }
-    }
-
-    ovs_asprintf(&title_change," %s %s" ,(grid_class?grid_class:""), focus_ev);
-    FREE(simple_title);
-
-
-    char *attr = get_scroll_attributes(left_scroll,right_scroll,centre_cell,title_change);
-    FREE(title_change);
-
-    html_log(1,"dbg: scroll attributes [%s]",attr);
-
-    char *idlist = build_id_list(row_id);
 
     //Gaya has a navigation bug in which highlighting sometimes misbehaves on links 
     //with multi-lines of text. This was not a problem until the roaming title display
@@ -1205,8 +1174,70 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     //navigation position to be lost. 
     //To circumvent bug - only the first word of the link is highlighted.
     char *first_space=NULL;
-    first_space=strchr(title,' ');
-    if (first_space) *first_space='\0';
+
+    if (in_poster_mode() ) {
+        if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
+
+            title = get_poster_mode_item(row_id,grid_toggle,&font_class,&grid_class);
+
+        } else {
+            title = get_poster_mode_item_unknown(row_id,grid_toggle,&font_class,&grid_class);
+            first_space = strchr(title,' ');
+        }
+
+    } else {
+
+        title = get_text_mode_item(row_id,grid_toggle,&font_class,&grid_class);
+        first_space = strchr(title,' ');
+    }
+    if (first_space) {
+        // Truncate even more if the first space does not occur early enough in the title.
+        if (first_space - title > 11 ) {
+            first_space = title+11;
+        }
+        *first_space='\0';
+    }
+
+    html_log(1,"dbg: details [%s]",title);
+
+
+    char *cell_text=NULL;
+    char *focus_ev = "";
+    char *mouse_ev = "";
+
+    if (g_dimension->title_bar) {
+
+        char *simple_title;
+        if (row_id->category=='T') {
+            ovs_asprintf(&simple_title,"%s S%d",row_id->title,row_id->season);
+        } else if (row_id->year) {
+            ovs_asprintf(&simple_title,"%s (%d)",row_id->title,row_id->year);
+        } else {
+            ovs_asprintf(&simple_title,"%s",row_id->title);
+        }
+
+        focus_ev = focus_event(simple_title);
+        if (!g_dimension->local_browser) {
+            mouse_ev = mouse_event(simple_title);
+        }
+        FREE(simple_title);
+    }
+
+    char *title_change_attr;
+    ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), focus_ev);
+
+
+    char *attr = add_scroll_attributes(left_scroll,right_scroll,centre_cell,title_change_attr);
+    FREE(title_change_attr);
+
+    html_log(1,"dbg: scroll attributes [%s]",attr);
+
+    char *idlist = build_id_list(row_id);
+
+//    if (g_dimension->local_browser && g_dimension->title_bar) {
+//        first_space=strchr(title,' ');
+//        if (first_space) *first_space='\0';
+//    }
 
     if (tv_or_movie) {
         char *params;
@@ -1242,7 +1273,9 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
 
     }
-    if (first_space) *first_space=' ';
+        // Convert <a hrefd....><x><y><q>..</q>... ..<z>..</z></y></x></a>
+        // To      <a hrefd....><x><y><q>..</q>...</y></x></a><x><y>..<z>..</z></y></x>
+    //if (first_space) *first_space=' ';
     FREE(attr);
 
     if (*select) {
@@ -1255,28 +1288,30 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *result;
 
-    if (first_space) {
-        // Adjust first space to show the rest of the title
-        *first_space=' ';
-    } else {
-        //Title has already been shown in full
-        first_space="";
-    }
-
-    if (*first_space) {
-        ovs_asprintf(&result,"\t<td %s %s %s>%s<font class=%s>%s</font></td>",
-                width_attr,grid_class,mouse_ev,
-                cell_text,font_class,first_space);
-    } else {
-        ovs_asprintf(&result,"\t<td %s %s %s >%s</td>",
-                width_attr,grid_class,mouse_ev,cell_text);
-    }
+//    if (first_space) {
+//        // Adjust first space to show the rest of the title
+//        *first_space=' ';
+//    } else {
+//        //Title has already been shown in full
+//        first_space="";
+//    }
+//
+//    if (*first_space) {
+//        ovs_asprintf(&result,"\t<td %s %s %s>%s<font class=%s>%s</font></td>",
+//                width_attr,grid_class,mouse_ev,
+//                cell_text,font_class,first_space);
+//    } else {
+        ovs_asprintf(&result,"\t<td %s %s %s >%s%s%s</td>",
+                width_attr,grid_class,mouse_ev,cell_text,
+                (first_space?" ":""),
+                (first_space?first_space+1:""));
+//    }
     if (mouse_ev && *mouse_ev) FREE(mouse_ev);
     if (focus_ev && *focus_ev) FREE(focus_ev);
 
     FREE(cell_text);
     FREE(idlist);
-    FREE(title);
+    FREE(title); // first_space points inside of title
     return result;
 }
 
@@ -1579,7 +1614,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         html_log(1,"grid end row %d",r);
 
     }
-    ovs_asprintf(&tmp,"<center><table class=overview_poster%d width=100%%>\n%s\n</table></center>\n",
+    ovs_asprintf(&tmp,"<center><table class=overview_poster%d>\n%s\n</table></center>\n",
             g_dimension->poster_mode,
             result);
     FREE(result);
@@ -1758,6 +1793,7 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
 
 void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids) {
 
+TRACE;
     FREE(sorted_row_ids);
 
     //finished now - so we could just let os free
@@ -2117,7 +2153,7 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     Array *keys = util_hashtable_keys(vals,0);
     array_sort(keys,array_strcasecmp);
 
-    ovs_asprintf(&params,"%s=" PLACEHOLDER,name);
+    ovs_asprintf(&params,"p=&%s=" PLACEHOLDER,name);
     char *link=self_url(params);
     FREE(params);
     Array *link_parts = split(link,PLACEHOLDER,0);

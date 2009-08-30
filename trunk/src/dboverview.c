@@ -197,6 +197,8 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     struct hashtable *overview = NULL;
 
     char *view=query_val("view");
+
+TRACE;
    
     //Functions used to create the overview hash
     //If boxsets are enabled then the overview should equate all shows with the same season.
@@ -207,6 +209,7 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     void *hash_fn;
 
     if (strcmp(view,"tv") == 0 || strcmp(view,"movie") == 0) {
+TRACE;
 
         //At this level equality is based on file name. 
         //This means that duplicate episodes appear twice - which is what we want
@@ -216,6 +219,7 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
         //eq_fn = db_overview_name_season_episode_eqf;
 
     } else if (use_boxsets()) {
+TRACE;
         if (strcmp(view,"tvboxset") == 0) {
             // BoxSet equality function equates tv shows by name/season
             // if view=tv or file doesnt matter as we have already filtered down past this level
@@ -228,32 +232,41 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
             eq_fn = db_overview_name_eqf;
         }
     } else {
+TRACE;
         // Overview equality function equates tv shows by name/season
         hash_fn = db_overview_name_season_hashf;
         eq_fn = db_overview_name_season_eqf;
     }
+TRACE;
 
     //tv Items with the same title/season are the same
     overview = create_hashtable(100,hash_fn,eq_fn);
+TRACE;
 
     if (rowsets) {
+TRACE;
 
         DbRowSet **rowset_ptr;
         for(rowset_ptr = rowsets ; *rowset_ptr ; rowset_ptr++ ) {
+TRACE;
 
             int i;
             for( i = 0 ; i < (*rowset_ptr)->size ; i++ ) {
 
                 total++;
 
+TRACE;
                 DbRowId *rid = (*rowset_ptr)->rows+i;
 
                 html_log(3,"dbg: overview merging [%s]",rid->title);
 
 
+TRACE;
                 DbRowId *match = hashtable_search(overview,rid);
+TRACE;
 
                 if (match) {
+TRACE;
 
                     html_log(1,"overview: match [%s] with [%s]",rid->title,match->title);
 
@@ -272,14 +285,19 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
                     match->linked = rid;
 
                 } else {
+TRACE;
 
                     html_log(3,"overview: new entry [%s]",rid->title);
                     hashtable_insert(overview,rid,rid);
                 }
+TRACE;
                 //html_log(3,"dbg done [%s]",rid->title);
             }
+TRACE;
         }
+TRACE;
     }
+TRACE;
     html_log(1,"overview: %d entries created from %d records",hashtable_count(overview),total);
     overview_dump(4,"ovw create:",overview);
     return overview;

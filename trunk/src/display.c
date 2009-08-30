@@ -1755,31 +1755,38 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     
     DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
 
+TRACE;
 
     if (regex && *regex ) { FREE(regex); regex=NULL; }
 
     struct hashtable *overview = db_overview_hash_create(rowsets);
+TRACE;
 
     DbRowId **sorted_row_ids = NULL;
     
     char *sort = DB_FLDID_TITLE;
 
     config_check_str(g_query,"s",&sort);
+TRACE;
 
     if (strcmp(query_val("view"),"tv") == 0) {
+TRACE;
 
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
+TRACE;
 
         html_log(1,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else {
+TRACE;
 
         html_log(1,"sort by age [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
     }
+TRACE;
 
     int numrows = hashtable_count(overview);
     //Free hash without freeing keys

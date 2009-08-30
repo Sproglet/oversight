@@ -20,11 +20,14 @@
 
 static long read_and_parse_row_ticks=0;
 static long assign_ticks=0;
-static long plot_assign_ticks=0;
-static long other_assign_ticks=0;
+static long inner_date_ticks=0;
+static long date_ticks=0;
+static long filter_ticks=0;
 char *copy_string(int len,char *s);
 DbRowId *db_rowid_new(Db *db);
+DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
 DbRowId *read_and_parse_row(
+        DbRowId *rowid,
         Db *db,
         FILE *fp,
         int *eof,
@@ -181,6 +184,20 @@ int parse_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
     return 0;
 }
 
+// Return some long that represents time. mktime() is ideal but a bit slow on PCH
+// we just need a nuber we can sort on
+long time_ordinal(struct tm *t) {
+#if 1
+    return mktime(t);
+#else
+    // maxint is 2147483647
+// return t->tm_sec + 60*(t->tm_min + 60 * (t->tm_hour + 24 * ( (t->tm_mday-1) + 31 * (t->tm_mon + 12 * t->tm_year-50 ))));
+    return ((((((((((t->tm_year-50) >> 4)+t->tm_mon) >> 5) + (t->tm_mday-1)) >> 5)+t->tm_hour)>>6)+t->tm_min)>>6)+t->tm_sec;
+    //max 59 + 60*(59 + 60 * (23 + 24 * ( 30 + 31 * (11 + 12 * 5 ))));
+    //  = 32140799
+#endif
+}
+
 int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
     assert(val_ptr);
     assert(field_id);
@@ -202,7 +219,9 @@ int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
         t.tm_hour = H;
         t.tm_min = M;
         t.tm_sec = S;
-        *val_ptr = mktime(&t);
+        inner_date_ticks -= clock();
+        *val_ptr = time_ordinal(&t);
+        inner_date_ticks += clock();
         if (*val_ptr < 0 ) {
             html_log(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
         }
@@ -228,9 +247,13 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
                 rowid->additional_nfo = (copy?copy_string(val_len,val):val);
                 free_val=0;
             } else if (tv_or_movie_view && strcmp(name,DB_FLDID_AIRDATE) == 0) {
+                date_ticks -= clock();
                 parse_date(name,val,&(rowid->airdate),0);
+                date_ticks += clock();
             } else if (tv_or_movie_view && strcmp(name,DB_FLDID_AIRDATEIMDB) == 0) {
+                date_ticks -= clock();
                 parse_date(name,val,&(rowid->airdate_imdb),0);
+                date_ticks += clock();
             }
             break;
         case 'C':
@@ -287,7 +310,9 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'I':
             if (strcmp(name,DB_FLDID_INDEXTIME) == 0) {
+                date_ticks -= clock();
                 parse_timestamp(name,val,&(rowid->date),0);
+                date_ticks += clock();
             }
             break;
         case 'n':
@@ -376,12 +401,14 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
 
 // TODO Change this back to static value and using copy_string() in db_rowid_set_field
 DbRowId *read_and_parse_row(
+        DbRowId *rowid,
         Db *db,
         FILE *fp,
         int *eof,
         int tv_or_movie_view // true if looking at tv or moview view.
         ) {
 
+    db_rowid_init(rowid,db);
     read_and_parse_row_ticks -= clock();
 
 
@@ -394,8 +421,6 @@ DbRowId *read_and_parse_row(
 
     register char next;
 
-    DbRowId *rowid = NULL;
-
     //initially point p at the value buffer.
     //This initial value is discarded but it removes the need to 
     //check for p != NULL for every character iteration
@@ -404,7 +429,6 @@ DbRowId *read_and_parse_row(
 
     int state=STATE_START;
 
-TRACE;
     for(;;) {
         
         next = getc(fp);
@@ -415,9 +439,6 @@ TRACE;
             if (state == STATE_VAR) {
                 *p = '\0';
                 html_log(3,"parsed field %s=%s",name,value);
-                if (rowid == NULL) {
-                    rowid = db_rowid_new(db);
-                }
                 db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
                 state = STATE_START;
             }
@@ -453,9 +474,6 @@ TRACE;
                     } else {
                         *p = '\0';
                         html_log(3,"val[%s]",value);
-                        if (rowid == NULL) {
-                            rowid = db_rowid_new(db);
-                        }
                         db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
 
                         state=STATE_NAME;
@@ -463,7 +481,6 @@ TRACE;
                         end=name_end;
                         *p++='_';
                     }
-TRACE;
                     break;
                 default:
                     assert(0);
@@ -473,13 +490,11 @@ TRACE;
         default:
             // Add the character
             *p++ = next;
-#if 0 //this should not really be commented out - could allow buffere overflow
+#if 1 //this should not really be commented out - could allow buffere overflow
             if (p >= end ) {
-TRACE;
                 // Name variable. This shouldnt happen - truncate
                 p--;
                 *p = '\0';
-TRACE;
                 break;
             }
 #endif
@@ -489,15 +504,13 @@ eol:
     if (next == EOF) {
         *eof = 1;
     }
-TRACE;
     if (p) {
-TRACE;
         *p = '\0';
-TRACE;
     }
-TRACE;
     read_and_parse_row_ticks += clock();
-TRACE;
+    if (rowid->genre == NULL) {
+        html_log(0,"no genre [%s][%s]",rowid->file,rowid->title);
+    }
     return rowid;
 }
 // TODO Change this back to static value and using copy_string() in db_rowid_set_field
@@ -530,7 +543,6 @@ DbRowId *read_and_parse_rowXX(
 
     int state=STATE_START;
 
-TRACE;
     while((next = getc(fp)) != EOF) {
 
 
@@ -588,7 +600,6 @@ TRACE;
                         end=name_end;
                         *p++='_';
                     }
-TRACE;
                     break;
                 default:
                     assert(0);
@@ -599,7 +610,6 @@ TRACE;
             // Add the character
             *p++ = next;
             if (p >= end ) {
-TRACE;
                 //end of buffer
                 if (state == STATE_VAR) {
                     // Make some more space
@@ -612,7 +622,6 @@ TRACE;
                     // Name variable. This shouldnt happen - truncate
                     p--;
                     *p = '\0';
-TRACE;
                     break;
                 }
             }
@@ -622,15 +631,10 @@ eol:
     if (next == EOF) {
         *eof = 1;
     }
-TRACE;
     if (p) {
-TRACE;
         *p = '\0';
-TRACE;
     }
-TRACE;
     read_and_parse_row_ticks += clock();
-TRACE;
     return rowid;
 }
 
@@ -762,7 +766,7 @@ got_value_end:
         //memcpy(value_copy,value_start,val_len+1);
 
 
-        db_rowid_set_field(rowid,name_start,value_start,val_len,1,0);
+        db_rowid_set_field(rowid,name_start,value_start,val_len,1,1);
 
 
         *name_end = *value_end = '\t';
@@ -797,7 +801,7 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
     assert(id->db == dbrs->db);
 
     if (dbrs->size >= dbrs->memsize) {
-        dbrs->memsize += 10;
+        dbrs->memsize += 50;
         dbrs->rows = REALLOC(dbrs->rows,dbrs->memsize * sizeof(DbRowId));
     }
     DbRowId *insert = dbrs->rows + dbrs->size;
@@ -1090,129 +1094,76 @@ html_log(3,"db fp.%ld..",(long)fp);
     if (fp) {
         rowset=db_rowset(db);
 
-TRACE;
         int eof=0;
+        DbRowId rowid;
+        db_rowid_init(&rowid,db);
+
         while (eof == 0) {
+            filter_ticks -= clock();
             total_rows++;
-TRACE;
-            DbRowId *rowid = read_and_parse_row(db,fp,&eof,tv_or_movie_view);
-TRACE;
-            if (rowid) {
-TRACE;
+            read_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
+
+            if (rowid.file) {
                 int keeprow=1;
 
-                get_genre_from_string(rowid->genre,&g_genre_hash);
+                if (rowid.genre) {
+                    get_genre_from_string(rowid.genre,&g_genre_hash);
+                }
 
                 if (genre_filter && *genre_filter) {
-TRACE;
-                    if (!strstr(rowid->genre,genre_filter)) {
-                        html_log(3,"Rejected [%s] as [%s] not in [%s]",rowid->title,genre_filter,rowid->genre);
+                    if (!strstr(rowid.genre,genre_filter)) {
+                        html_log(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
                         keeprow=0;
                     }
-TRACE;
                 }
 
                 if (keeprow && name_filter && *name_filter) {
-                    int match= regexec(&pattern,rowid->title,0,NULL,0);
-                    if (match != 0 ) {
-                        html_log(5,"skipped %s!=%s",rowid->title,name_filter);
-                        keeprow=0;
-                    }
-                }
-TRACE;
-                if (keeprow) {
-                    switch(media_type) {
-                        case DB_MEDIA_TYPE_TV : if (rowid->category != 'T') keeprow=0; ; break;
-                        case DB_MEDIA_TYPE_FILM : if (rowid->category != 'M') keeprow=0; ; break;
-                    }
-                }
-TRACE;
-
-                if (keeprow) {
-                    switch(watched) {
-                        case DB_WATCHED_FILTER_NO : if (rowid->watched != 0 ) keeprow=0 ; break;
-                        case DB_WATCHED_FILTER_YES : if (rowid->watched != 1 ) keeprow=0 ; break;
-                    }
-                }
-TRACE;
-                if (keeprow) {
-                    if (num_ids != ALL_IDS && !in_idlist(rowid->id,num_ids,ids)) {
-                        keeprow = 0;
-                    }
-                }
-TRACE;
-
-                if (keeprow) {
-                    row_count = db_rowset_add(rowset,rowid);
-                    FREE(rowid);
-                } else {
-                    db_rowid_free(rowid,1);
-                }
-TRACE;
-
-                if (gross_size != NULL) {
-TRACE;
-                    (*gross_size)++;
-                }
-TRACE;
-            }
-        }
-        TRACE;
-        html_log(0,"read_and_parse_row_ticks %d",read_and_parse_row_ticks);
-        html_log(0,"assign_ticks %d",assign_ticks);
-        html_log(0,"plot_assign_ticks %d",plot_assign_ticks);
-        html_log(0,"other_assign_ticks %d",other_assign_ticks);
-
-        html_log(0,"First total %d",total_rows);
-TRACE;
-#if 0
-        total_rows=0;
-html_log(3,"db start loop...");
-        DbRowId rowid;
-        char buffer[DB_ROW_BUF_SIZE+1];
-
-        while (1) {
-            /*
-             * TODO: Further optimisation - replace fgets with function that parses 
-             * input using fgetc directly into hashtable name value pairs.
-             */
-            buffer[DB_ROW_BUF_SIZE]='\0';
-            if (fgets(buffer,DB_ROW_BUF_SIZE,fp) == NULL) break;
-            assert( buffer[DB_ROW_BUF_SIZE] == '\0');
-
-            total_rows++;
-
-            if (buffer[0] == '\t' && gross_size != NULL) {
-                (*gross_size)++;
-            }
-
-            if (parse_row(num_ids,ids,tv_or_movie_view,buffer,db,&rowid)) {
-
-                if (name_filter && *name_filter) {
                     int match= regexec(&pattern,rowid.title,0,NULL,0);
                     if (match != 0 ) {
                         html_log(5,"skipped %s!=%s",rowid.title,name_filter);
-                        continue;
+                        keeprow=0;
                     }
                 }
-                switch(media_type) {
-                    case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') continue; ; break;
-                    case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') continue; ; break;
+                if (keeprow) {
+                    switch(media_type) {
+                        case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
+                        case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
+                    }
                 }
 
-                switch(watched) {
-                    case DB_WATCHED_FILTER_NO : if (rowid.watched != 0 ) continue ; break;
-                    case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) continue ; break;
+                if (keeprow) {
+                    switch(watched) {
+                        case DB_WATCHED_FILTER_NO : if (rowid.watched != 0 ) keeprow=0 ; break;
+                        case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) keeprow=0 ; break;
+                    }
                 }
-                row_count = db_rowset_add(rowset,&rowid);
+                if (keeprow) {
+                    if (num_ids != ALL_IDS && !in_idlist(rowid.id,num_ids,ids)) {
+                        keeprow = 0;
+                    }
+                }
+
+                if (keeprow) {
+                    row_count = db_rowset_add(rowset,&rowid);
+                } else {
+                    db_rowid_free(&rowid,0);
+                }
+
+                if (gross_size != NULL) {
+                    (*gross_size)++;
+                }
             }
-
+            filter_ticks += clock();
         }
-#endif
-TRACE;
+        html_log(0,"read_and_parse_row_ticks %d",read_and_parse_row_ticks/1000);
+        html_log(0,"inner_date_ticks %d",inner_date_ticks/1000);
+        html_log(0,"date_ticks %d",date_ticks/1000);
+        html_log(0,"assign_ticks %d",assign_ticks/1000);
+        html_log(0,"filter_ticks %d",filter_ticks/1000);
+
+        html_log(0,"First total %d",total_rows);
         fclose(fp);
     }
-    html_log(0,"Second total %d",total_rows);
     if (rowset) {
         html_log(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
@@ -1275,17 +1226,12 @@ void db_rowset_free(DbRowSet *dbrs) {
     int i;
 
     for(i = 0 ; i<dbrs->size ; i++ ) {
-TRACE;
         DbRowId *rid = dbrs->rows + i;
-TRACE;
         db_rowid_free(rid,0);
-TRACE;
     }
 
     FREE(dbrs->rows);
-TRACE;
     FREE(dbrs);
-TRACE;
 }
 
 

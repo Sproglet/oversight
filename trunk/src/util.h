@@ -76,7 +76,7 @@ int util_system(char *cmd);
 void util_rmdir(char *path,char *name);
 
 #define TRACE do {\
-    if (!g_dimension->local_browser) {\
+    if (0 && !g_dimension->local_browser) {\
         html_log(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
     }\
 }while(0);

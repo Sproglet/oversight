@@ -372,6 +372,7 @@ void config_read_dimensions() {
     g_dimension = MALLOC(sizeof(Dimensions));
 
     g_dimension->local_browser = (addr == NULL || strcmp(addr,"127.0.0.1") == 0);
+    //g_dimension->local_browser = 1;
 
     g_dimension->scanlines = get_scanlines(&is_pal);
 
@@ -420,8 +421,15 @@ void config_read_dimensions() {
         if (pal_fixed) {
             // the height has been scaled to compensate for gaya bug. 
             // Scale the width based on the original height!
-            g_dimension->poster_menu_img_height *= ( 1.0 * 576 / 480 );
+            g_dimension->poster_menu_img_height *= ( 576.0 / 480 );
         }
+    }
+
+    g_dimension->movie_img_width = g_dimension->movie_img_height * 2 / 3;
+    g_dimension->tv_img_width = g_dimension->tv_img_height * 2 / 3;
+    if (is_pal) {
+        g_dimension->movie_img_height *= ( 576.0 / 480 );
+        g_dimension->tv_img_height *= ( 576.0 / 480 );
     }
 
     char *title_bar = oversight_val("ovs_title_bar");

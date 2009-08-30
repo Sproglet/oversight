@@ -110,16 +110,19 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 
         char *attr;
         long height;
+        long width;
 
 
         if (rid) {
 
             if (rid->category == 'T') {
                 height=g_dimension->tv_img_height;
+                width=g_dimension->tv_img_width;
             } else {
                 height=g_dimension->movie_img_height;
+                width=g_dimension->movie_img_width;
             }
-            ovs_asprintf(&attr," height=%d  ",height);
+            ovs_asprintf(&attr," height=%d width=%d  ",height,width);
 
             result =  get_poster_image_tag(rid,attr);
             FREE(attr);

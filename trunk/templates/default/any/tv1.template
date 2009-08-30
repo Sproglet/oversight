@@ -1,7 +1,7 @@
 <!-- Default Fanart Tv Template  $Id:$ -->
 <body height=100% focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(lightwave.jpg):] >
 [:FORM_START:]
-<table id=main>
+<table id=main width=100% height=100%>
     <tr valign=top>
         <td colspan=2>
             [:INCLUDE_TEMPLATE(buttons):]
@@ -14,11 +14,11 @@
             <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                 <tr>
                     <td class=title><font class=title>[:TITLE:]</font></td>
-                    <td align=left><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
+                    <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
                 </tr>
                 <tr>
                     <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
-                    <td class=right>[:RATING_STARS(5,/oversight/images/stars/star%d.png):][:RATING:]</td>
+                    <td align=right>[:RATING_STARS(5,/oversight/images/stars/star%d.png):][:RATING:]</td>
                 </tr>
                 <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
             </table>

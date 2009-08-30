@@ -17,7 +17,7 @@
     </head>
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
 <center>
-        <table id=main>
+        <table id=main width=100% heigth=100%>
         <tr><td>
         [:FORM_START:]
             <table class=header width=100%>
@@ -36,11 +36,13 @@
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
                 <tr>
-                    <td colspan=7 id=menutitle align=center></td>
+                    <td colspan=7 id=menutitle align=center>&nbsp;</td>
                 </tr>
             </table>
         </td></tr><tr><td>
+            <center>
             [:GRID:] 
+            </center>
         </td></tr><tr><td>
             <table class=footer width=100%>
                 <tr valign=top>

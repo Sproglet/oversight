@@ -1,4 +1,4 @@
-# $Id: oversight.cfg.example 142 2009-08-20 04:08:32Z lordylordy $ 
+# $Id: oversight.cfg.example 151 2009-08-29 18:13:59Z lordylordy $ 
 ovs_config_version=1
 ovs_log_level=0
 ovs_new_days=3
@@ -19,8 +19,8 @@ ovs_rows[0]=9
 ovs_cols[0]=2
 ovs_font_size[0]=18
 ovs_title_size[0]=24
-ovs_movie_poster_height[0]=220
-ovs_tv_poster_height[0]=220
+ovs_movie_poster_height[0]=200
+ovs_tv_poster_height[0]=200
 ovs_max_plot_length[0]=300
 ovs_button_size[0]=40
 ovs_certificate_size[0]=20
@@ -37,24 +37,25 @@ ovs_title_size[720]=30
 ovs_movie_poster_height[720]=300
 ovs_tv_poster_height[720]=300
 ovs_max_plot_length[720]=600
-ovs_button_size[720]=60
+ovs_button_size[720]=40
 ovs_certificate_size[720]=30
 ovs_poster_mode_rows[720]=3
-ovs_poster_mode_cols[720]=12
+ovs_poster_mode_cols[720]=9
 ovs_poster_mode_width[720]=0
 ovs_poster_mode_height[720]=0
 
 ovs_poster_mode[1080]=1
-ovs_rows[1080]=20
+ovs_rows[1080]=17
 ovs_cols[1080]=2
-ovs_font_size[1080]=24
-ovs_title_size[1080]=34
-ovs_movie_poster_height[1080]=400
-ovs_tv_poster_height[1080]=400
+ovs_font_size[1080]=20
+ovs_title_size[1080]=30
+ovs_movie_poster_height[1080]=300
+ovs_tv_poster_height[1080]=300
 ovs_max_plot_length[1080]=600
-ovs_button_size[1080]=80
-ovs_certificate_size[1080]=40
+ovs_button_size[1080]=40
+ovs_certificate_size[1080]=30
 ovs_poster_mode_rows[1080]=3
-ovs_poster_mode_cols[1080]=15
+ovs_poster_mode_cols[1080]=9
 ovs_poster_mode_width[1080]=0
 ovs_poster_mode_height[1080]=0
+

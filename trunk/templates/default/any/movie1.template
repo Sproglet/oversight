@@ -1,5 +1,8 @@
 <!-- Default Fanart Movie Template  $Id:$ -->
     <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
+<table id="main" width=100% >
+    <tr valign="bottom">
+        <td>
         [:FORM_START:]
             <table width=100%>
                 <tr valign=top>
@@ -36,6 +39,9 @@
             </table>
         </form>
         [:PLAY_TVID:]
+        </td>
+    </tr>
+</table>
     </body>
 <!--
 vi:ts=4:sw=4:et:syntax=html

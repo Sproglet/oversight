@@ -2,8 +2,10 @@
 
 #menutitle {
     font-size:12pt;
-    color:yellow;
+    color:white;
     text-align:center;
+    font-family:"arial";
+    font-weight:bold;
 }
 
 html,body {

@@ -183,16 +183,21 @@ int main(int argc,char **argv) {
     html_comment("Get rows");
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
 
+TRACE;
+
     char *skin_name=oversight_val("ovs_skin_name");
 
+TRACE;
     if (strchr(skin_name,'/') || *skin_name == '.' || !*skin_name ) {
 
         html_error("Invalid skin name[%s]",skin_name);
 
     } else {
+TRACE;
         html_comment("display template");
 
         playlist_open();
+TRACE;
 
         if (strcmp(view,"tv") == 0) {
 

@@ -15,7 +15,7 @@ int numstrcmp(char *a,char *b) {
     int anum,bnum;
     char *anext,*bnext;
 
-    html_log(3,"numstrcmp begin %s=%s",a,b);
+    HTML_LOG(3,"numstrcmp begin %s=%s",a,b);
 
     if (a == NULL ) {
         return -(b == NULL);
@@ -28,13 +28,13 @@ int numstrcmp(char *a,char *b) {
             anum=strtol(a,&anext,10);
             bnum=strtol(b,&bnext,10);
             if (anum != bnum) {
-                html_log(3,"numstrcmp numdiff %d=%d",anum,bnum);
+                HTML_LOG(3,"numstrcmp numdiff %d=%d",anum,bnum);
                 return anum-bnum;
             }
             a=anext;
             b=bnext;
         } else if (*a != *b ) {
-            html_log(3,"numstrcmp strdiff %s=%s",a,b);
+            HTML_LOG(3,"numstrcmp strdiff %s=%s",a,b);
             return *a - *b;
         }
         a++;
@@ -169,10 +169,10 @@ void overview_dump(int level,char *label,struct hashtable *overview) {
         if (hashtable_count(overview) ) {
             for (itr=hashtable_loop_init(overview) ; hashtable_loop_more(itr,&k,NULL) ; ) {
 
-                html_log(2,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
+                HTML_LOG(2,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
             }
         } else {
-            html_log(2,"%s EMPTY",label);
+            HTML_LOG(2,"%s EMPTY",label);
         }
     }
 }
@@ -181,11 +181,11 @@ void overview_array_dump(int level,char *label,DbRowId **arr) {
     if (level <= html_log_level_get()) {
         if (*arr) {
             while (*arr) {
-                html_log(level,"%s key=[%c\t%s s%02de%s date:%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
+                HTML_LOG(level,"%s key=[%c\t%s s%02de%s date:%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
                 arr++;
             }
         } else {
-            html_log(level,"%s EMPTY",label);
+            HTML_LOG(level,"%s EMPTY",label);
         }
     }
 }
@@ -258,7 +258,7 @@ TRACE;
 TRACE;
                 DbRowId *rid = (*rowset_ptr)->rows+i;
 
-                html_log(3,"dbg: overview merging [%s]",rid->title);
+                HTML_LOG(3,"dbg: overview merging [%s]",rid->title);
 
 
 TRACE;
@@ -268,7 +268,7 @@ TRACE;
                 if (match) {
 TRACE;
 
-                    html_log(1,"overview: match [%s] with [%s]",rid->title,match->title);
+                    HTML_LOG(1,"overview: match [%s] with [%s]",rid->title,match->title);
 
                     //Move most recent age to the first overview item
                     if (rid->date > match->date ) {
@@ -287,18 +287,18 @@ TRACE;
                 } else {
 TRACE;
 
-                    html_log(3,"overview: new entry [%s]",rid->title);
+                    HTML_LOG(3,"overview: new entry [%s]",rid->title);
                     hashtable_insert(overview,rid,rid);
                 }
 TRACE;
-                //html_log(3,"dbg done [%s]",rid->title);
+                //HTML_LOG(3,"dbg done [%s]",rid->title);
             }
 TRACE;
         }
 TRACE;
     }
 TRACE;
-    html_log(1,"overview: %d entries created from %d records",hashtable_count(overview),total);
+    HTML_LOG(1,"overview: %d entries created from %d records",hashtable_count(overview),total);
     overview_dump(4,"ovw create:",overview);
     return overview;
 }
@@ -324,10 +324,10 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
 
     DbRowId **ids = flatten_hash_to_array(overview);
 
-    html_log(1,"sorting %d items",hashtable_count(overview));
+    HTML_LOG(1,"sorting %d items",hashtable_count(overview));
     overview_array_dump(3,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
-    html_log(2,"sorted %d items",hashtable_count(overview));
+    HTML_LOG(2,"sorted %d items",hashtable_count(overview));
     overview_array_dump(2,"ovw sorted",ids);
 
     return ids;

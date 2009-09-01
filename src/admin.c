@@ -11,7 +11,7 @@ void display_admin() {
 
     char *action = query_val("action");
 
-    html_log(1,"action = %s",action);
+    HTML_LOG(1,"action = %s",action);
 
     if (!allow_admin()) {
 

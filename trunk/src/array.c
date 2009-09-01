@@ -102,13 +102,13 @@ void array_print(char *label,Array *a) {
 
     int i;
 
-    html_log(1,"%s: size %d mem %d",label,a->size,a->mem_size);
+    HTML_LOG(1,"%s: size %d mem %d",label,a->size,a->mem_size);
 
     if ( a->size) {
 
         for(i = 0 ; i < a->size ; i++ ) {
 
-            html_log(1,"%s: [%d]=<%s>",label,i,(char *)(a->array[i]));
+            HTML_LOG(1,"%s: [%d]=<%s>",label,i,(char *)(a->array[i]));
         }
     }
 }

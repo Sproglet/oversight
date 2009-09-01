@@ -75,9 +75,15 @@ int util_system(char *cmd);
 } while(0)
 void util_rmdir(char *path,char *name);
 
+#define HTML_LOG(level,format...) do {\
+    if (level <= html_log_level ) {\
+        html_log(level,format);\
+    }\
+}while(0);
+
 #define TRACE do {\
     if (0 && !g_dimension->local_browser) {\
-        html_log(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
+        HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
     }\
 }while(0);
 

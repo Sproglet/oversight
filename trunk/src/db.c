@@ -23,6 +23,7 @@ static long assign_ticks=0;
 static long inner_date_ticks=0;
 static long date_ticks=0;
 static long filter_ticks=0;
+static long read_ticks=0;
 char *copy_string(int len,char *s);
 DbRowId *db_rowid_new(Db *db);
 DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
@@ -59,10 +60,10 @@ int db_is_locked_by_another_process(Db *db) {
         char *dir;
         ovs_asprintf(&dir,"/proc/%d",lockpid);
         if (is_dir(dir)) {
-            html_log(1,"Database locked by pid=%d current pid=%d",lockpid,getpid());
+            HTML_LOG(1,"Database locked by pid=%d current pid=%d",lockpid,getpid());
             result=1;
         } else {
-            html_log(1,"Database was locked by pid=%d current pid=%d : releasing lock",lockpid,getpid());
+            HTML_LOG(1,"Database was locked by pid=%d current pid=%d : releasing lock",lockpid,getpid());
         }
         FREE(dir);
     }
@@ -81,7 +82,7 @@ int db_lock(Db *db) {
         if (db_is_locked_by_another_process(db)) {
 
             sleep(backoff[attempt]);
-            html_log(1,"Sleeping for %d\n",backoff[attempt]);
+            HTML_LOG(1,"Sleeping for %d\n",backoff[attempt]);
 
         } else {
             db->locked_by_this_code=1;
@@ -91,7 +92,7 @@ int db_lock(Db *db) {
         FILE *fp = fopen(db->lockfile,"w");
         fprintf(fp,"%d\n",getpid());
         fclose(fp);
-        html_log(1,"Aquired lock [%s]\n",db->lockfile);
+        HTML_LOG(1,"Aquired lock [%s]\n",db->lockfile);
     } else {
         html_error("Failed to get lock [%s]\n",db->lockfile);
     }
@@ -101,7 +102,7 @@ int db_lock(Db *db) {
 int db_unlock(Db *db) {
 
     db->locked_by_this_code=0;
-    html_log(1,"Released lock [%s]\n",db->lockfile);
+    HTML_LOG(1,"Released lock [%s]\n",db->lockfile);
     return unlink(db->lockfile) ==0;
 }
 
@@ -151,7 +152,7 @@ int field_pos(char *field_id,char *buffer,char **start,int *length,int quiet) {
             return 1;
         }
     }
-    if (!quiet) html_log(1,"ERROR: Failed to find field [%s]",field_id);
+    if (!quiet) HTML_LOG(1,"ERROR: Failed to find field [%s]",field_id);
     return 0;
 }
 
@@ -177,7 +178,7 @@ int parse_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
         t.tm_sec = 0;
         *val_ptr = mktime(&t);
         if (*val_ptr < 0 ) {
-            html_log(1,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
+            HTML_LOG(1,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
         }
         return 1;
     }
@@ -208,9 +209,9 @@ int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
         // blank is OK
         return 1;
     } else if (sscanf(buffer,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) < 6) {
-        if (!quiet) html_log(1,"failed to extract timestamp field %s",field_id);
+        if (!quiet) HTML_LOG(1,"failed to extract timestamp field %s",field_id);
     } else if (term != '\t' && term != '\0') {
-        if (!quiet) html_log(1,"ERROR: bad terminator [%c=%d] after timestamp field %s = %d %d %d %d %d %d",term,term,field_id,y,m,d,H,M,S);
+        if (!quiet) HTML_LOG(1,"ERROR: bad terminator [%c=%d] after timestamp field %s = %d %d %d %d %d %d",term,term,field_id,y,m,d,H,M,S);
     } else {
         struct tm t;
         t.tm_year = y - 1900;
@@ -223,7 +224,7 @@ int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
         *val_ptr = time_ordinal(&t);
         inner_date_ticks += clock();
         if (*val_ptr < 0 ) {
-            html_log(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
+            HTML_LOG(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
         }
         //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
         return 1;
@@ -379,7 +380,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             }
             break;
         default:
-            html_log(-1,"Unknown field [%s]",name);
+            HTML_LOG(-1,"Unknown field [%s]",name);
     }
 
     if ( (tmps && *tmps)  || tmpc != '\0' || tmp_conv != 1 ) {
@@ -438,7 +439,7 @@ DbRowId *read_and_parse_row(
         case '\n' : case '\r' : case '\0': // EOL terminators
             if (state == STATE_VAR) {
                 *p = '\0';
-                html_log(3,"parsed field %s=%s",name,value);
+                HTML_LOG(3,"parsed field %s=%s",name,value);
                 db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
                 state = STATE_START;
             }
@@ -460,7 +461,7 @@ DbRowId *read_and_parse_row(
                     state=STATE_VAR;
                     p=value;
                     end=value_end;
-                    html_log(3,"name[%s]",name);
+                    HTML_LOG(3,"name[%s]",name);
                     break;
 
                 case STATE_VAR:
@@ -473,7 +474,7 @@ DbRowId *read_and_parse_row(
                         ungetc(next,fp);
                     } else {
                         *p = '\0';
-                        html_log(3,"val[%s]",value);
+                        HTML_LOG(3,"val[%s]",value);
                         db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
 
                         state=STATE_NAME;
@@ -490,7 +491,7 @@ DbRowId *read_and_parse_row(
         default:
             // Add the character
             *p++ = next;
-#if 1 //this should not really be commented out - could allow buffere overflow
+#if 0 //this should not really be commented out - could allow buffere overflow
             if (p >= end ) {
                 // Name variable. This shouldnt happen - truncate
                 p--;
@@ -509,7 +510,7 @@ eol:
     }
     read_and_parse_row_ticks += clock();
     if (rowid->genre == NULL) {
-        html_log(0,"no genre [%s][%s]",rowid->file,rowid->title);
+        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
     }
     return rowid;
 }
@@ -550,7 +551,7 @@ DbRowId *read_and_parse_rowXX(
         case '\n' : case '\r' : case '\0': // EOL terminators
             if (state == STATE_VAR) {
                 *p = '\0';
-                html_log(0,"parsed field %s=%s",name,value);
+                HTML_LOG(0,"parsed field %s=%s",name,value);
                 if (rowid == NULL) {
                     rowid = db_rowid_new(db);
                 }
@@ -576,7 +577,7 @@ DbRowId *read_and_parse_rowXX(
                     val_sz=VAL_SZ_INIT;
                     p=value=MALLOC(val_sz);
                     end=p+val_sz;
-                    html_log(0,"name[%s]",name);
+                    HTML_LOG(0,"name[%s]",name);
                     break;
 
                 case STATE_VAR:
@@ -589,7 +590,7 @@ DbRowId *read_and_parse_rowXX(
                         ungetc(next,fp);
                     } else {
                         *p = '\0';
-                        html_log(0,"val[%s]",value);
+                        HTML_LOG(0,"val[%s]",value);
                         if (rowid == NULL) {
                             rowid = db_rowid_new(db);
                         }
@@ -658,23 +659,23 @@ DbRowId *db_rowid_new(Db *db) {
 
 void db_rowid_dump(DbRowId *rid) {
     
-    html_log(1,"ROWID: id = %d",rid->id);
-    html_log(1,"ROWID: watched = %d",rid->watched);
-    html_log(1,"ROWID: title(%s)",rid->title);
-    html_log(1,"ROWID: file(%s)",rid->file);
-    html_log(1,"ROWID: ext(%s)",rid->ext);
-    html_log(1,"ROWID: season(%d)",rid->season);
-    html_log(1,"ROWID: episode(%s)",rid->episode);
-    html_log(1,"ROWID: genre(%s)",rid->genre);
-    html_log(1,"ROWID: ext(%c)",rid->category);
-    html_log(1,"ROWID: parts(%s)",rid->parts);
-    html_log(1,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
-    html_log(1,"ROWID: eptitle(%s)",rid->eptitle);
-    html_log(1,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
-    html_log(1,"ROWID: additional_nfo(%s)",rid->additional_nfo);
-    html_log(1,"ROWID: airdate(%s)",asctime(localtime((time_t *)&(rid->airdate))));
-    html_log(1,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
-    html_log(1,"----");
+    HTML_LOG(1,"ROWID: id = %d",rid->id);
+    HTML_LOG(1,"ROWID: watched = %d",rid->watched);
+    HTML_LOG(1,"ROWID: title(%s)",rid->title);
+    HTML_LOG(1,"ROWID: file(%s)",rid->file);
+    HTML_LOG(1,"ROWID: ext(%s)",rid->ext);
+    HTML_LOG(1,"ROWID: season(%d)",rid->season);
+    HTML_LOG(1,"ROWID: episode(%s)",rid->episode);
+    HTML_LOG(1,"ROWID: genre(%s)",rid->genre);
+    HTML_LOG(1,"ROWID: ext(%c)",rid->category);
+    HTML_LOG(1,"ROWID: parts(%s)",rid->parts);
+    HTML_LOG(1,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
+    HTML_LOG(1,"ROWID: eptitle(%s)",rid->eptitle);
+    HTML_LOG(1,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
+    HTML_LOG(1,"ROWID: additional_nfo(%s)",rid->additional_nfo);
+    HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime((time_t *)&(rid->airdate))));
+    HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
+    HTML_LOG(1,"----");
 }
 
 char *copy_string(int len,char *s) {
@@ -727,11 +728,11 @@ int parse_row(
             name_end++;
         }
         if (*name_end != '\t') {
-            html_log(-1,"rowid %d: Tab expected after next field name - got %c(%d) %c=%d",rowid->id,*name_start,*name_start,*name_end,*name_end);
+            HTML_LOG(-1,"rowid %d: Tab expected after next field name - got %c(%d) %c=%d",rowid->id,*name_start,*name_start,*name_end,*name_end);
             break;
         }
         *name_end = '\0';
-        //html_log(-1,"fname[%s]",name_start);
+        //HTML_LOG(-1,"fname[%s]",name_start);
 
 
         //find start of value
@@ -751,7 +752,7 @@ int parse_row(
 got_value_end:
 
         if (*value_end != '\t') {
-            html_log(-1,"rowid %d: Tab expected after field value",rowid->id);
+            HTML_LOG(-1,"rowid %d: Tab expected after field value",rowid->id);
             break;
         }
 
@@ -760,7 +761,7 @@ got_value_end:
 
         int val_len=value_end-value_start;
 
-        //html_log(-1,"fval[%s]",value_start);
+        //HTML_LOG(-1,"fval[%s]",value_start);
         //
         //char *value_copy = MALLOC(val_len+1);
         //memcpy(value_copy,value_start,val_len+1);
@@ -854,7 +855,7 @@ int db_to_be_scanned(char *name) {
 void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
         int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
 
-    html_log(1,"begin db_scan_and_add_rowset");
+    HTML_LOG(1,"begin db_scan_and_add_rowset");
     if (db_to_be_scanned(name)) {
 
         Db *db = db_init(path,name);
@@ -875,7 +876,7 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
             }
         }
     }
-    html_log(0,"end db_scan_and_add_rowset");
+    HTML_LOG(0,"end db_scan_and_add_rowset");
 }
 
 
@@ -890,7 +891,7 @@ DbRowSet **db_crossview_scan_titles(
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
 
-    html_log(1,"begin db_crossview_scan_titles");
+    HTML_LOG(1,"begin db_crossview_scan_titles");
     // Add information from the local database
     db_scan_and_add_rowset(
         localDbPath(),"*",
@@ -916,14 +917,14 @@ DbRowSet **db_crossview_scan_titles(
                         &rowset_count,&rowsets);
 
                 } else {
-                    html_log(1,"crossview search %s doesnt exist",path);
+                    HTML_LOG(1,"crossview search %s doesnt exist",path);
                 }
                 FREE(path);
             }
             closedir(d);
         }
     }
-    html_log(0,"end db_crossview_scan_titles");
+    HTML_LOG(0,"end db_crossview_scan_titles");
     return rowsets;
 }
 
@@ -952,7 +953,7 @@ int *extract_idlist(char *db_name,int *num_ids) {
     char *query = query_val("idlist");
     int *result = NULL;
 
-    html_log(1,"extract_idlist from [%s]",query);
+    HTML_LOG(1,"extract_idlist from [%s]",query);
 
     if (*query) {
         *num_ids = 0;
@@ -986,11 +987,11 @@ int *extract_idlist(char *db_name,int *num_ids) {
     }
 
     if (*num_ids == ALL_IDS) {
-        html_log(1,"db: name=%s searching all ids",db_name);
+        HTML_LOG(1,"db: name=%s searching all ids",db_name);
     } else {
         int i;
         for(i  = 0 ; i < *num_ids ; i++ ) {
-            html_log(1,"db: name=%s id %d",db_name,result[i]);
+            HTML_LOG(1,"db: name=%s id %d",db_name,result[i]);
         }
     }
 
@@ -1019,12 +1020,12 @@ int in_idlist(int id,int size,int *ids) {
 
         } else {
 
-            html_log(1,"found %d",ids[mid]);
+            HTML_LOG(1,"found %d",ids[mid]);
             return 1;
         }
     } while (min < max);
 
-    //html_log("not found %d",id);
+    //HTML_LOG("not found %d",id);
     return 0;
 }
 
@@ -1045,7 +1046,7 @@ DbRowSet * db_scan_titles(
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);
 
-    html_log(3,"Creating db scan pattern..");
+    HTML_LOG(3,"Creating db scan pattern..");
 
     if (name_filter && *name_filter) {
         // Take the pattern and turn it into <TAB>_ID<TAB>pattern<TAB>
@@ -1060,7 +1061,7 @@ DbRowSet * db_scan_titles(
             assert(1);
             return NULL;
         }
-        html_log(1,"filering by regex [%s]",name_filter);
+        HTML_LOG(1,"filering by regex [%s]",name_filter);
     }
 
     char *watched_substring=NULL;
@@ -1085,12 +1086,12 @@ DbRowSet * db_scan_titles(
     int row_count=0;
     int total_rows=0;
 
-    html_log(3,"db scanning %s",db->path);
+    HTML_LOG(3,"db scanning %s",db->path);
 
     FILE *fp = fopen(db->path,"r");
-    html_log(3,"db scanning %s",db->path);
+    HTML_LOG(3,"db scanning %s",db->path);
     //assert(fp);
-html_log(3,"db fp.%ld..",(long)fp);
+HTML_LOG(3,"db fp.%ld..",(long)fp);
     if (fp) {
         rowset=db_rowset(db);
 
@@ -1112,7 +1113,7 @@ html_log(3,"db fp.%ld..",(long)fp);
 
                 if (genre_filter && *genre_filter) {
                     if (!strstr(rowid.genre,genre_filter)) {
-                        html_log(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
+                        HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
                         keeprow=0;
                     }
                 }
@@ -1120,7 +1121,7 @@ html_log(3,"db fp.%ld..",(long)fp);
                 if (keeprow && name_filter && *name_filter) {
                     int match= regexec(&pattern,rowid.title,0,NULL,0);
                     if (match != 0 ) {
-                        html_log(5,"skipped %s!=%s",rowid.title,name_filter);
+                        HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
                         keeprow=0;
                     }
                 }
@@ -1155,22 +1156,23 @@ html_log(3,"db fp.%ld..",(long)fp);
             }
             filter_ticks += clock();
         }
-        html_log(0,"read_and_parse_row_ticks %d",read_and_parse_row_ticks/1000);
-        html_log(0,"inner_date_ticks %d",inner_date_ticks/1000);
-        html_log(0,"date_ticks %d",date_ticks/1000);
-        html_log(0,"assign_ticks %d",assign_ticks/1000);
-        html_log(0,"filter_ticks %d",filter_ticks/1000);
+        HTML_LOG(0,"read_and_parse_row_ticks %d",read_and_parse_row_ticks/1000);
+        HTML_LOG(0,"inner_date_ticks %d",inner_date_ticks/1000);
+        HTML_LOG(0,"date_ticks %d",date_ticks/1000);
+        HTML_LOG(0,"assign_ticks %d",assign_ticks/1000);
+        HTML_LOG(0,"filter_ticks %d",filter_ticks/1000);
+        HTML_LOG(0,"read_ticks %d",read_ticks/1000);
 
-        html_log(0,"First total %d",total_rows);
+        HTML_LOG(0,"First total %d",total_rows);
         fclose(fp);
     }
     if (rowset) {
-        html_log(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
+        HTML_LOG(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
-        html_log(1,"db[%s] No rows loaded",db->source);
+        HTML_LOG(1,"db[%s] No rows loaded",db->source);
     }
     FREE(ids);
-    html_log(1,"return rowset");
+    HTML_LOG(1,"return rowset");
     return rowset;
 }
 
@@ -1194,8 +1196,8 @@ void db_rowid_free(DbRowId *rid,int free_base) {
 
     assert(rid);
 
-//    html_log(0,"%s %lu %lu",rid->title,rid,rid->file);
-//    html_log(0,"%s",rid->file);
+//    HTML_LOG(0,"%s %lu %lu",rid->title,rid,rid->file);
+//    HTML_LOG(0,"%s",rid->file);
     FREE(rid->title);
     FREE(rid->poster);
     FREE(rid->genre);
@@ -1238,11 +1240,11 @@ void db_rowset_free(DbRowSet *dbrs) {
 void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
     int i;
     if (dbrs->size == 0) {
-        html_log(level,"Rowset: %s : EMPTY",label);
+        HTML_LOG(level,"Rowset: %s : EMPTY",label);
     } else {
         for(i = 0 ; i<dbrs->size ; i++ ) {
             DbRowId *rid = dbrs->rows + i;
-            html_log(level,"Rowset: %s [%s - %c - %d %s ]",label,rid->title,rid->category,rid->season,rid->poster);
+            HTML_LOG(level,"Rowset: %s [%s - %c - %d %s ]",label,rid->title,rid->category,rid->season,rid->poster);
         }
     }
 }
@@ -1250,7 +1252,7 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
 void db_set_fields_by_source(
         char *field_id,char *new_value,char *source,char *idlist,int delete_mode) {
 
-html_log(1," begin db init");
+HTML_LOG(1," begin db init");
 
     Db *db = db_init(NULL,source);
 
@@ -1270,20 +1272,20 @@ html_log(1," begin db init");
 
     regmatch_t pmatch[5];
 
-html_log(1," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
+HTML_LOG(1," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
 
     ovs_asprintf(&regex_text,"\t%s\t([^\t]+)\t",field_id);
     util_regcomp(&regex_ptn,regex_text,0);
-    html_log(1,"regex filter [%s]",regex_text);
+    HTML_LOG(1,"regex filter [%s]",regex_text);
 
     ovs_asprintf(&id_regex_text,"\t%s\t(%s)\t",DB_FLDID_ID,idlist);
     util_regcomp(&id_regex_ptn,id_regex_text,0);
-    html_log(1,"regex extract [%s]",id_regex_text);
+    HTML_LOG(1,"regex extract [%s]",id_regex_text);
 
 
 
     if (db && db_lock(db)) {
-html_log(1," begin open db");
+HTML_LOG(1," begin open db");
         FILE *db_in = fopen(db->path,"r");
 
         if (db_in) {
@@ -1322,7 +1324,7 @@ html_log(1," begin open db");
                         int spos=pmatch[1].rm_so;
                         int epos=pmatch[1].rm_eo;
 
-html_log(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
+HTML_LOG(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
 
                         buf[spos]='\0';
 
@@ -1347,7 +1349,7 @@ html_log(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epo
         db_unlock(db);
         db_free(db);
     }
-html_log(1," end db_set_fields_by_source");
+HTML_LOG(1," end db_set_fields_by_source");
     regfree(&regex_ptn);
     regfree(&id_regex_ptn);
     FREE(regex_text);
@@ -1371,11 +1373,11 @@ void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_sourc
     char *source;
     char *idlist;
 
-html_log(1," begin db_set_fields");
+HTML_LOG(1," begin db_set_fields");
     for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
         db_set_fields_by_source(field_id,new_value,source,idlist,delete_mode);
     }
-html_log(1," end db_set_fields");
+HTML_LOG(1," end db_set_fields");
 }
 
 void get_genre_from_string(char *gstr,struct hashtable **h) {
@@ -1409,11 +1411,11 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
             // Exclude 'and' and 'Show' from genres
             if (strcmp(gstr,"and") != 0 && strcmp(gstr,"Show") != 0 ) {
 
-                //html_log(1,"Genre[%s]",gstr);
+                //HTML_LOG(1,"Genre[%s]",gstr);
                 if (gstr && *gstr) {
                     char *g = hashtable_search(*h,gstr);
                     if (g==NULL) {
-                        html_log(1,"added Genre[%s]",gstr);
+                        HTML_LOG(1,"added Genre[%s]",gstr);
                         hashtable_insert(*h,STRDUP(gstr),"1");
                     }
                 }

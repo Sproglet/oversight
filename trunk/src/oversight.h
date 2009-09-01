@@ -20,6 +20,7 @@ OVS_EXTERN(struct hashtable *g_genre_hash,NULL);
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 OVS_EXTERN(int g_local_browser,0);
 OVS_EXTERN(Array *g_genre,NULL);
+OVS_EXTERN(int html_log_level,0);
 
 #define OVS_VERSION "20090814-1BETA"
 

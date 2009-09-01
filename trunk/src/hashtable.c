@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include "util.h" //for MALLOC
-#include "gaya_cgi.h" //for html_log
+#include "gaya_cgi.h" //for HTML_LOG
 
 /*
 Credit for primes table: Aaron Krowne

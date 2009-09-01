@@ -252,7 +252,7 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
 char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     int rows=0;
     int cols=0;
-    html_log(1,"macro_fn_tv_listing");
+    HTML_LOG(1,"macro_fn_tv_listing");
     if (!get_rows_cols(call,args,&rows,&cols)) {
         rows = 16;
         cols = 2;
@@ -712,7 +712,7 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
             ovs_asprintf(&params,"p=%d",page+offset);
             ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
 
-            html_log(2,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
+            HTML_LOG(2,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
 
             result = get_theme_image_link(params,attrs,image_base_name,"");
             FREE(params);
@@ -918,7 +918,7 @@ char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows
 void macro_init() {
 
     if (macros == NULL) {
-        //html_log(1,"begin macro init");
+        //HTML_LOG(1,"begin macro init");
         macros = string_string_hashtable(32);
 
         hashtable_insert(macros,"PLOT",macro_fn_plot);
@@ -977,7 +977,7 @@ void macro_init() {
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
-        //html_log(1,"end macro init");
+        //HTML_LOG(1,"end macro init");
     }
 }
 
@@ -1071,10 +1071,10 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
                 
 
         if (fn) {
-            //html_log(1,"begin macro [%s]",call);
+            //HTML_LOG(1,"begin macro [%s]",call);
             *free_result=1;
             result =  (*fn)(template_name,call,args,num_rows,sorted_rows,free_result);
-            //html_log(1,"end macro [%s]",call);
+            //HTML_LOG(1,"end macro [%s]",call);
         } else {
             printf("?%s?",call);
         }

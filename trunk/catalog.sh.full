@@ -2189,7 +2189,6 @@ function clean_globals() {
     delete gEpTitle;
     delete g_plot;
     delete g_fanart;
-    delete g_genre;
     delete gCertRating;
     delete g_rating;
     delete g_category;
@@ -3535,7 +3534,9 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 
 
         g_plot[idx] = seriesInfo["/Data/Series/Overview"];
-        g_genre[idx] = seriesInfo["/Data/Series/Genre"];
+        if (g_genre[idx] == "" ) {
+            g_genre[idx] = seriesInfo["/Data/Series/Genre"];
+        }
         gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
         g_rating[idx] = seriesInfo["/Data/Series/Rating"];
     }
@@ -4354,7 +4355,9 @@ title,y,poster_imdb_url) {
             if (g_plot[idx] == "" && index(line,"Plot:")) {
                 g_plot[idx] = scrapeIMDBPlot(f);
             }
-            if (g_genre[idx] == "" && index(line,"Genre:")) {
+
+            #IMDB Genre takes precedence
+            if (index(line,"Genre:")) {
                 g_genre[idx]=scrapeIMDBGenre(f);
             }
             if (g_rating[idx] == "" && index(line,"/10</b>") ) {

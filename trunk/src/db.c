@@ -263,9 +263,9 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             }
             break;
         case 'C':
-            //if (strcmp(name,DB_FLDID_CATEGORY) == 0)  {
+            if (name[2] == '\0') { // _C
                 rowid->category = *val;
-            //}
+            }
             break;
         case 'D':
             //do nothing - DOWNLOADTIME
@@ -298,8 +298,22 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             if (name[2] == '\0') {
                 rowid->file = (copy?copy_string(val_len,val):val);
                 free_val=0;
-                rowid->ext = strrchr(rowid->file,'.');
-                if (rowid->ext) rowid->ext++;
+#if 0
+                char *p = rowid->file + val_len;
+                char *first = p - 6; // search backwards up to 6 chars for extension
+                if (first < rowid->file ) first = rowid->file;
+                while(p > first) {
+                    if (*--p == '.') {
+                        rowid->ext = p+1;
+                        break;
+                    }
+                }
+#else
+                char *p = strrchr(rowid->file,'.');
+                if (p) {
+                    rowid->ext = p+1;
+                }
+#endif
             }
             break;
 

@@ -1,3 +1,5 @@
+Change dbrow from dynamic to fixed  or fixed/extensible
+
 Changed from poster to text mode and got segmentation fault.
 =============================================================
 Hunt down Battlestar Bug!

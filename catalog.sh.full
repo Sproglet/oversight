@@ -2221,7 +2221,7 @@ name) {
 # Not newzleech not used as the search is too vague. bintube and binsearch have exact search.
 function searchOnlineNfoLinksForImdbAlternate(name,\
 choice,i,url,sz) {
-    sz=500;
+    sz=150;
     g_nfo_search_choices = 2;
     g_search_total["online_nfo"]++;
 
@@ -4187,17 +4187,17 @@ search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
     }
             
     if (poster_url == "") {
-        search_url="http://posters.motechnet.com/title/"imdb_id"/";
-        poster_url=scanPageForMatch(search_url,urlChars"_poster.jpg",1,"http://images.google.com");
-        if (poster_url != "" ) {
-            poster_url="http://www.motechposters.com" poster_url;
+        search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
+        referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
+        DEBUG("Got motech referer "referer_url);
+        if (referer_url != "" ) {
+            poster_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
+            if (poster_url != "" ) {
+                poster_url="http://www.motechposters.com" poster_url;
 
-            # if image =  http://www.motechposters.com/posters/transformers-2007_poster.jpg
-            # set referer = http://www.motechposters.com/title/transformers-2007
-            referer_url = poster_url;
-            sub(/\/posters\//,"/title/",referer_url);
-            sub(/_poster.jpg/,"",referer_url);
-            poster_url=poster_url"\t"referer_url;
+                poster_url=poster_url"\t"referer_url;
+                DEBUG("Got motech poster "poster_url);
+            }
         }
         
     }
@@ -4253,7 +4253,10 @@ f,line,count,getMore,linematches,linecount,regex_text) {
 
                 linecount = getMatches(line,regex,remain,linematches);
 
-                DEBUG2(regex" match "linecount" in "line);
+                #DEBUG2(regex" match "linecount" in "line);
+                if (index(regex,"motech")) {
+                    DEBUG(regex" match "linecount" in "line);
+                }
 
                 addHash(matches,linematches);
                 count += linecount;
@@ -4272,7 +4275,7 @@ f,line,count,getMore,linematches,linecount,regex_text) {
 }
 
 function getMatches(line,regex,max,matches,\
-getMore,start,count) {
+getMore,start,count,m) {
     count =0 ;
     delete matches;
 
@@ -4291,7 +4294,13 @@ getMore,start,count) {
 #    }
 
     while(line != "" && match(line,regex)) {
-        matches[substr(line,RSTART,RLENGTH)]++;
+        m = substr(line,RSTART,RLENGTH);
+
+        if (index(regex,"motech")) {
+            DEBUG("match ["m"]");
+        }
+
+        matches[m]++;
         line=substr(line,RSTART+RLENGTH);
         count++;
         if (max > 0 ) {
@@ -4301,6 +4310,9 @@ getMore,start,count) {
         }
     } 
 
+    if (index(regex,"motech")) {
+    dump(0,count " linematches",matches);
+    }
     dump(3,count " linematches",matches);
     return count;
 }

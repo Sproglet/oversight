@@ -74,7 +74,7 @@ fetch_resize() {
         # return if file is newer than parent process.
         # It has already been fetched during this scan.
         #So if OLDEST file is /proc/ then return
-        if ls -t "$file" /proc/$calling_pid/exe | grep ^/proc/ ; then
+        if ls -t "$file" /proc/$calling_pid/exe | awk 'END { print $0; }' |  grep ^/proc/ ; then
             INFO "Already fetched $file during this scan"
             return 0
         fi
@@ -102,6 +102,7 @@ add_queue() {
         args="$args $i"
     done
     echo "$args" >> $Q.pending
+    chmod 555 "$Q.pending"
     INFO "Queued $args"
 }
 
@@ -135,6 +136,7 @@ else
 
         mv "$Q.pending" "$Q.tmp"
         cat "$Q.tmp" >> "$Q.processing"
+        chmod 555 "$Q.processing"
         rm "$Q.tmp"
 
         while FS= read line ; do

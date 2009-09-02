@@ -241,50 +241,61 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
     int tmp_conv=1;
     int free_val=!copy; //if copying dont free
 
-    assign_ticks -= clock();
     switch(name[1]) {
         case 'a':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_ADDITIONAL_INFO) == 0) {
-                rowid->additional_nfo = (copy?copy_string(val_len,val):val);
-                free_val=0;
-            } else if (tv_or_movie_view && strcmp(name,DB_FLDID_AIRDATE) == 0) {
-                date_ticks -= clock();
-                parse_date(name,val,&(rowid->airdate),0);
-                date_ticks += clock();
-            } else if (tv_or_movie_view && strcmp(name,DB_FLDID_AIRDATEIMDB) == 0) {
-                date_ticks -= clock();
-                parse_date(name,val,&(rowid->airdate_imdb),0);
-                date_ticks += clock();
+            if (tv_or_movie_view ) {
+                if (name[2] == 'i' ) { // _ai
+                    rowid->additional_nfo = (copy?copy_string(val_len,val):val);
+                    free_val=0;
+
+                } else if (name[2] == 'd' ) { // _ad...
+
+                    if (name[3] == '\0') { // _ad
+
+                        parse_date(name,val,&(rowid->airdate),0);
+
+                    } else if (name[3] == 'i') { // _adi
+
+                        parse_date(name,val,&(rowid->airdate_imdb),0);
+
+                    }
+                }
             }
             break;
         case 'C':
-            if (strcmp(name,DB_FLDID_CATEGORY) == 0)  {
+            //if (strcmp(name,DB_FLDID_CATEGORY) == 0)  {
                 rowid->category = *val;
-            }
+            //}
             break;
         case 'D':
             //do nothing - DOWNLOADTIME
             break;
         case 'e':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_EPISODE) == 0) {
-                rowid->episode = (copy?copy_string(val_len,val):val);
-                free_val=0;
-            }else if (tv_or_movie_view && strcmp(name,DB_FLDID_EPTITLE) == 0) {
-                rowid->eptitle = (copy?copy_string(val_len,val):val);
-                free_val=0;
-            }else if (tv_or_movie_view && strcmp(name,DB_FLDID_EPTITLEIMDB) == 0) {
-                rowid->eptitle_imdb = (copy?copy_string(val_len,val):val);
-                free_val=0;
+            if (tv_or_movie_view ) {
+                if (name[2] == '\0') { // _e
+                    rowid->episode = (copy?copy_string(val_len,val):val);
+                    free_val=0;
+                }else if (name[2] == 't') {
+                    if (name[3] == '\0') { // _et
+                        rowid->eptitle = (copy?copy_string(val_len,val):val);
+                        free_val=0;
+                    } else if (name[3] == 'i') { // _eti
+                        rowid->eptitle_imdb = (copy?copy_string(val_len,val):val);
+                        free_val=0;
+                    }
+                }
             }
             break;
         case 'f':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_FANART) == 0) {
-                rowid->fanart = (copy?copy_string(val_len,val):val);
-                free_val=0;
+            if (tv_or_movie_view ) {
+                // if (strcmp(name,DB_FLDID_FANART) == 0) {
+                    rowid->fanart = (copy?copy_string(val_len,val):val);
+                    free_val=0;
+                //}
             }
             break;
         case 'F':
-            if (strcmp(name,DB_FLDID_FILE) == 0) {
+            if (name[2] == '\0') {
                 rowid->file = (copy?copy_string(val_len,val):val);
                 free_val=0;
                 rowid->ext = strrchr(rowid->file,'.');
@@ -293,63 +304,67 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
 
         case 'G':
-            if (strcmp(name,DB_FLDID_GENRE) == 0) {
+            if (name[2] == '\0') {
                 rowid->genre = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'J':
-            if (strcmp(name,DB_FLDID_POSTER) == 0) {
+            if (name[2] == '\0') {
                 rowid->poster = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'i':
-            if (strcmp(name,DB_FLDID_ID) == 0) {
+            if (name[2] == 'd') {
                 rowid->id=strtol(val,&tmps,10) ;
             }
             break;
         case 'I':
-            if (strcmp(name,DB_FLDID_INDEXTIME) == 0) {
-                date_ticks -= clock();
+            if (name[2] == 'T') {
                 parse_timestamp(name,val,&(rowid->date),0);
-                date_ticks += clock();
             }
             break;
         case 'n':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_NFO) == 0) {
-                rowid->nfo=(copy?copy_string(val_len,val):val);
-                free_val=0;
+            if (tv_or_movie_view ) {
+                if (name[2] == 'f') {
+                    rowid->nfo=(copy?copy_string(val_len,val):val);
+                    free_val=0;
+                }
             }
             break;
         case 'o':
             // do nothing - _ot ORIGINAL_TITLE
             break;
         case 'p':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_PARTS) == 0) {
-                rowid->parts = (copy?copy_string(val_len,val):val);
-                free_val=0;
+            if (tv_or_movie_view ) {
+                if (name[2] == 't') {
+                    rowid->parts = (copy?copy_string(val_len,val):val);
+                    free_val=0;
+                }
             }
             break;
         case 'P':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_PLOT) == 0)  {
-                rowid->plot = (copy?copy_string(val_len,val):val);
-                free_val=0;
+            if (tv_or_movie_view ) {
+                if (name[2] == '\0') {
+                    rowid->plot = (copy?copy_string(val_len,val):val);
+                    free_val=0;
+                }
             }
             break;
         case 'r':
-            if (strcmp(name,DB_FLDID_RATING) == 0) {
+            if (name[2] == '\0') {
                 sscanf(val,"%lf",&(rowid->rating));
             }
             break;
         case 'R':
-            if (strcmp(name,DB_FLDID_CERT) == 0) {
+            if (name[2] == '\0') {
                 rowid->certificate = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 's':
-            if (strcmp(name,DB_FLDID_SEASON) == 0) {
+            if (name[2] == '\0') {
                 rowid->season = strtol(val,&tmps,10);
             }
             break;
@@ -357,25 +372,27 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             //do nothing - TVCOM
             break;
         case 'T':
-            if (strcmp(name,DB_FLDID_TITLE) == 0) {
+            if (name[2] == '\0') {
                 rowid->title = (copy?copy_string(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'U':
-            if (tv_or_movie_view && strcmp(name,DB_FLDID_URL) == 0) {
-                rowid->url = (copy?copy_string(val_len,val):val);
-                free_val=0;
+            if (tv_or_movie_view ) {
+                if (name[2] == '\0') {
+                    rowid->url = (copy?copy_string(val_len,val):val);
+                    free_val=0;
+                }
             }
             break;
         case 'w':
-            if (strcmp(name,DB_FLDID_WATCHED) == 0) {
+            if (name[2] == '\0') {
                 rowid->watched=strtol(val,&tmps,10);
                 assert(rowid->watched == 0 || rowid->watched == 1);
             }
             break;
         case 'Y':
-            if (strcmp(name,DB_FLDID_YEAR) == 0) {
+            if (name[2] == '\0') {
                 rowid->year=strtol(val,&tmps,10);
             }
             break;
@@ -386,7 +403,6 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
     if ( (tmps && *tmps)  || tmpc != '\0' || tmp_conv != 1 ) {
         html_error("Error parsing [%s]=[%s]",name,val);
     }
-    assign_ticks += clock();
     if (free_val) FREE(val);
 }
 #define DB_NAME_BUF_SIZE 10
@@ -677,6 +693,7 @@ void db_rowid_dump(DbRowId *rid) {
     HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
     HTML_LOG(1,"----");
 }
+
 
 char *copy_string(int len,char *s) {
     char *p=NULL;

@@ -38,10 +38,15 @@ char *get_path(DbRowId *rid,char *path) {
     char *path_relative_to_host_nmt=NULL;
     assert(path);
     if (path[0] == '/' ) {
-        path_relative_to_host_nmt = STRDUP(path);
+
+        path_relative_to_host_nmt = path;
+
     } else if (strncmp(path,"ovs:",4) == 0) {
+
         ovs_asprintf(&path_relative_to_host_nmt,"%s/db/global/%s",appDir(),path+4);
+
     } else {
+
         char *d=util_dirname(rid->file);
        ovs_asprintf(&path_relative_to_host_nmt,"%s/%s",d,path);
        FREE(d);
@@ -49,7 +54,9 @@ char *get_path(DbRowId *rid,char *path) {
 
     mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt);
 
-    FREE(path_relative_to_host_nmt);
+    if (path_relative_to_host_nmt != path) {
+        FREE(path_relative_to_host_nmt);
+    }
 
     return mounted_path;
 }
@@ -272,7 +279,9 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     int add_to_playlist= has_category(rowid);
     char *result=NULL;
 
+    HTML_LOG(0,"VOD file[%s]",file);
     char *path = get_path(rowid,file);
+    HTML_LOG(0,"VOD path[%s]",path);
 
     nmt_mount(path);
 
@@ -751,7 +760,6 @@ if (1) {
         }
         if (path) {
             char *mounted_path = get_path(sorted_rows[i],path);
-            FREE(path);
             path = mounted_path;
 
             if (is_fanart ) {
@@ -1824,6 +1832,8 @@ void set_tvid_increments(int *tvid_val) {
     tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=9;
 }
 
+#define TVID_MAX_LEN 2 //
+#define TVID_MAX 99  //must be 10 ^ TVID_MAX_LEN -1
 char *get_tvid_links(DbRowId **rowids) {
 
     char *result = NULL;
@@ -1831,8 +1841,6 @@ char *get_tvid_links(DbRowId **rowids) {
     if (*query_val("select") == '\0')
     {
 
-#define TVID_MAX_LEN 3 //
-#define TVID_MAX 999   //must be 9 or 99 or 999
 
         int tvid_total=0;
         char *current_tvid = query_val(QUERY_PARAM_REGEX);

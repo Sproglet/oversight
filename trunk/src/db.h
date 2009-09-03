@@ -5,13 +5,14 @@
 #include "util.h"
 #include "vasprintf.h"
 #include "dbfield.h"
+#include "time.h"
 
 typedef struct Dbrowid_struct {
 
     long id;
     struct Db_struct *db;
     long offset;
-    long date;
+    OVS_TIME date;
     int watched;
     char *title;
     char *poster;
@@ -37,8 +38,8 @@ typedef struct Dbrowid_struct {
     //only populate if deleting
     char *nfo;
 
-    long airdate;
-    long airdate_imdb;
+    OVS_TIME airdate;
+    OVS_TIME airdate_imdb;
 
     char *eptitle;
     char *eptitle_imdb;

@@ -21,11 +21,13 @@ OVS_EXTERN(Dimensions *g_dimension,NULL);
 OVS_EXTERN(int g_local_browser,0);
 OVS_EXTERN(Array *g_genre,NULL);
 OVS_EXTERN(int html_log_level,0);
+OVS_EXTERN(int g_playlist_count,0);
 
 #define OVS_VERSION "20090814-1BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"
+#define QUERY_PARAM_TITLE_FILTER "_Tf"
 #define QUERY_PARAM_GENRE "G"
 #define QUERY_PARAM_SORT "s"
 #define QUERY_PARAM_REGEX "_rf"
@@ -43,5 +45,8 @@ OVS_EXTERN(int html_log_level,0);
 #define NETWORK_SYMLINK "/opt/sybhttpd/default/.network"
 
 char *get_mounted_path(char *source,char *path);
+
+// Instead of converting timestamps to epoc time use a rough representation (see time_ordinal)
+#define FAST_TIME
 
 #endif

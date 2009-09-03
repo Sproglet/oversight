@@ -249,17 +249,26 @@ int has_category(DbRowId *rowid) {
     return (rowid->category == 'T' || rowid->category == 'M' );
 }
 
-char *vod_attr(char *file) {
-
+int is_dvd(char *file) {
     char *p = file + strlen(file);
 
     if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
 
-        return "file=c ZCD=2";
+        return 1;
 
     } else {
-        return "vod file=c";
+            
+        return 0;
+    }
+}
 
+
+char *vod_attr(char *file) {
+
+    if (is_dvd(file)) {
+        return "file=c ZCD=2";
+    } else {
+        return "vod file=c";
     }
 }
 
@@ -276,7 +285,8 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     assert(font_class);
 
     char *vod=NULL;
-    int add_to_playlist= has_category(rowid);
+
+    int add_to_playlist= has_category(rowid) && !is_dvd(rowid->file);
     char *result=NULL;
 
     HTML_LOG(0,"VOD file[%s]",file);
@@ -353,6 +363,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
                 fprintf(fp,"%s|0|0|file://%s|",name,path);
                 FREE(name);
                 fflush(fp);
+                g_playlist_count++;
             }
 
 
@@ -439,8 +450,10 @@ char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char 
 
     if (!*param_value) {
 
+        //next = v1;
+        //v1current = v2current = 0;
+        v2current = 1;
         next = v1;
-        v1current = v2current = 0;
 
     } else if (strcmp(param_value,v1)==0) {
 
@@ -450,7 +463,8 @@ char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char 
     } else if (strcmp(param_value,v2)==0) {
             
         v2current = 1;
-        next = "";
+        next = v1;
+        //next = "";
     }
 
     ovs_asprintf(&params,"p=0&%s=%s",param_name,next);
@@ -657,7 +671,7 @@ int is_fresh(DbRowId *rowid) {
     int result=0;
     long fresh_days;
     if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
-        if (rowid->date + fresh_days*24*60*60 > time(NULL)) {
+        if (internal_time2epoc(rowid->date) + fresh_days*24*60*60 > time(NULL)) {
             result=1;
         }
     }
@@ -954,22 +968,8 @@ char *movie_listing(DbRowId *rowid) {
         return select_checkbox(rowid,rowid->file);
     } else {
         char *result=NULL;
-        char *button_attr=NULL;
         Array *parts = split(rowid->parts,"/",0);
-        int button_size;
         HTML_LOG(1,"parts ptr = %ld",parts);
-        if (parts && parts->size) {
-            array_print("movie_listing",parts);
-            // Multiple parts
-            button_size = g_dimension->button_size * 2 / 3;
-        } else {
-            // Just one part
-            button_size = g_dimension->button_size;
-        }
-
-        ovs_asprintf(&button_attr," width=%d height=%d ",button_size,button_size);
-        //char *movie_play = get_theme_image_tag("player_play",button_attr);
-        FREE(button_attr);
 
         char *basename=util_basename(rowid->file);
 
@@ -996,17 +996,21 @@ char *movie_listing(DbRowId *rowid) {
         }
 
         // Big play button
-        {
-            char *big_play = get_theme_image_tag("player_play","");
-            char *play_tvid = get_play_tvid(big_play);
-            FREE(big_play);
-
-            char *vod_list;
-            ovs_asprintf(&vod_list,"<table><tr><td>%s</td><td>%s</td></table>",play_tvid,result);
-            FREE(result);
-            result = vod_list;
+        char *play_button = get_theme_image_tag("player_play","");
+        char *play_tvid;
+        if (is_dvd(rowid->file)) {
+            // DVDs are not added to the play list. So the play button just plays the dvd directly
+            play_tvid = vod_link(rowid,play_button,"",rowid->db->source,rowid->file,"1","",style);
+        } else {
+            play_tvid = get_play_tvid(play_button);
         }
-        //FREE(movie_play);
+
+        char *vod_list;
+        ovs_asprintf(&vod_list,"<table><tr><td>%s</td><td>%s</td></table>",play_tvid,result);
+        FREE(result);
+        result = vod_list;
+        FREE(play_button);
+        FREE(play_tvid);
         return result;
     }
 }
@@ -1177,26 +1181,30 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     int tv_or_movie = has_category(row_id);
 
     //Gaya has a navigation bug in which highlighting sometimes misbehaves on links 
-    //with multi-lines of text. This was not a problem until the roaming title display
+    //with multi-lines of text. This was not a problem until the javascript title display
     //was introduced. When the bug triggers all elements become unfocussed causing
     //navigation position to be lost. 
     //To circumvent bug - only the first word of the link is highlighted.
     char *first_space=NULL;
+    int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
     if (in_poster_mode() ) {
         if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
 
             title = get_poster_mode_item(row_id,grid_toggle,&font_class,&grid_class);
+            if (link_first_word_only && *title != '<' && !util_starts_with(title,"<img")) {
+                first_space = strchr(title,' ');
+            }
 
         } else {
             title = get_poster_mode_item_unknown(row_id,grid_toggle,&font_class,&grid_class);
-            first_space = strchr(title,' ');
+            if (link_first_word_only) first_space = strchr(title,' ');
         }
 
     } else {
 
         title = get_text_mode_item(row_id,grid_toggle,&font_class,&grid_class);
-        first_space = strchr(title,' ');
+        if (link_first_word_only) first_space = strchr(title,' ');
     }
     if (first_space) {
         // Truncate even more if the first space does not occur early enough in the title.
@@ -1281,9 +1289,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
 
     }
-        // Convert <a hrefd....><x><y><q>..</q>... ..<z>..</z></y></x></a>
-        // To      <a hrefd....><x><y><q>..</q>...</y></x></a><x><y>..<z>..</z></y></x>
-    //if (first_space) *first_space=' ';
     FREE(attr);
 
     if (*select) {
@@ -1296,24 +1301,11 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *result;
 
-//    if (first_space) {
-//        // Adjust first space to show the rest of the title
-//        *first_space=' ';
-//    } else {
-//        //Title has already been shown in full
-//        first_space="";
-//    }
-//
-//    if (*first_space) {
-//        ovs_asprintf(&result,"\t<td %s %s %s>%s<font class=%s>%s</font></td>",
-//                width_attr,grid_class,mouse_ev,
-//                cell_text,font_class,first_space);
-//    } else {
-        ovs_asprintf(&result,"\t<td %s %s %s >%s%s%s</td>",
-                width_attr,grid_class,mouse_ev,cell_text,
-                (first_space?" ":""),
-                (first_space?first_space+1:""));
-//    }
+    ovs_asprintf(&result,"\t<td %s %s %s >%s%s%s</td>",
+            width_attr,grid_class,mouse_ev,cell_text,
+            (first_space?" ":""),
+            (first_space?first_space+1:""));
+
     if (mouse_ev && *mouse_ev) FREE(mouse_ev);
     if (focus_ev && *focus_ev) FREE(focus_ev);
 
@@ -1587,6 +1579,11 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     char *width_attr;
     char *tmp;
 
+    if (numids < rows * cols ) {
+        //re-arrange layout to have as many columns as possible.
+        rows = (numids + (cols-1)) / cols;
+    }
+
     ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
     for ( r = 0 ; r < rows ; r++ ) {
 
@@ -1624,7 +1621,8 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     }
     ovs_asprintf(&tmp,"<center><table class=overview_poster%d>\n%s\n</table></center>\n",
             g_dimension->poster_mode,
-            result);
+            (result?result:"<tr><td>No selection</td><tr>")
+    );
     FREE(result);
     result=tmp;
 
@@ -2056,16 +2054,18 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 if (date<=0) {
                     date=rid->airdate_imdb;
                 }
-
-                char *date_format=NULL;
-                if  (year(time(NULL)) != year(date)) {  //if ( (year(time(NULL)-date) / 60 / 60 / 24 > 300 ) {
-                    date_format = old_date_format;
-                } else {
-                    date_format = new_date_format;
-                }
-
                 *date_buf='\0';
-                date=strftime(date_buf,DATE_BUF_SIZ,date_format,localtime((time_t *)(&date)));
+                if (date > 0) {
+
+                    char *date_format=NULL;
+                    if  (year(time(NULL)) != year(date)) {  //if ( (year(time(NULL)-date) / 60 / 60 / 24 > 300 ) {
+                        date_format = old_date_format;
+                    } else {
+                        date_format = new_date_format;
+                    }
+
+                    date=strftime(date_buf,DATE_BUF_SIZ,date_format,localtime((time_t *)(&date)));
+                }
 
                 //Put Episode/Title/Date together in new cell.
                 char td_class[10];
@@ -2191,28 +2191,32 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
         for(i = 0 ; i < keys->size ; i++ ) {
             char *tmp;
             char *k=keys->array[i];
+            char *v=hashtable_search(vals,k);
             char *link=join(link_parts,k);
-            //char *link=STRDUP("/oversight/oversig");
             ovs_asprintf(&tmp,
-                    "%s<option value=\"%s%s\" %s >%s</option>\n",
-                    (result?result:""),
-                    link_prefix,
-                    link,
-                    (strcmp(selected,k)==0?"selected":""),
-                k);
+                "%s<option value=\"%s%s\" %s >%s</option>\n",
+                (result?result:""),
+                link_prefix,
+                link,
+                (strcmp(selected,k)==0?"selected":""),
+                v);
             FREE(link);
             FREE(result);
             result=tmp;
         }
     }
-    array_free(link_parts);
     if (result) {
         char *tmp;
-        ovs_asprintf(&tmp,"<select name=\"%s\" %s>\n<option value=\"./oversight.cgi?\">%s</option>%s</select>",
-                name,attr,firstItem,result);
+        char *link=join(link_parts,"");
+        ovs_asprintf(&tmp,"<select name=\"%s\" %s>\n<option value=\"%s%s\">%s</option>\n%s</select>",
+                name,attr,
+                link_prefix,
+                link,
+                firstItem,result);
         FREE(result);
         result = tmp;
     }
+    array_free(link_parts);
     array_free(keys);
     return result;
 }

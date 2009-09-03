@@ -211,7 +211,7 @@ char *join(Array *a,char *sep) {
                 len += strlen(a->array[i]) + slen;
             }
         }
-        result = MALLOC(len);
+        result = MALLOC(len+1);
         char *p = result;
         for(i = 0 ; i< a->size ; i++ ) {
             if (i) {

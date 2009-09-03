@@ -201,7 +201,7 @@ SWITCHUSER() {
 
 get_unpak_cfg() {
     for ext in cfg cfg.example ; do
-        for nzd in "$APPDIR" /share/Apps/NZBGet/.nzbget /share/.nzbget ; do
+        for nzd in "$APPDIR/conf" /share/Apps/NZBGet/.nzbget /share/.nzbget ; do
             if [ -f "$nzd/unpak.$ext" ] ; then 
                 echo "$nzd/unpak.$ext"
                 return
@@ -214,6 +214,7 @@ catalog() {
 
     #Look at the old unpak file - to make sure we dont index pin folder.
     UNPAK_CFG=`get_unpak_cfg`
+    echo UNPAK="[$UNPAK_CFG]"
 
     Q="'"
 

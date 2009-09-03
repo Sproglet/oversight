@@ -23,7 +23,7 @@
             <table class=header width=100%>
                 <tr>
                     <td rowspan=2>
-                        <font size=6>[:MEDIA_TYPE:]</font>
+                        <font size=3>Oversight</font>
                         <br>
                         <font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>

@@ -1204,7 +1204,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     } else {
 
         title = get_text_mode_item(row_id,grid_toggle,&font_class,&grid_class);
-        if (link_first_word_only) first_space = strchr(title,' ');
     }
     if (first_space) {
         // Truncate even more if the first space does not occur early enough in the title.
@@ -1530,7 +1529,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 
         char buffer[HTML_BUF_SIZE+1];
 
-        int is_css = strncmp(file_name,"css.",4) == 0 ;
+        int is_css = util_starts_with(file_name,"css.") ;
         int fix_css_bug = is_css && is_local_browser();
 
 
@@ -1546,7 +1545,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
             }
 
             if (fix_css_bug && strstr(p,"*/") ) {
-                printf(".dummy { color:red; }");
+                printf(".dummy { color:blue; }");
             }
 
         }
@@ -1619,7 +1618,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         HTML_LOG(1,"grid end row %d",r);
 
     }
-    ovs_asprintf(&tmp,"<center><table class=overview_poster%d>\n%s\n</table></center>\n",
+    ovs_asprintf(&tmp,"<center><table class=overview_poster%d width=100%%>\n%s\n</table></center>\n",
             g_dimension->poster_mode,
             (result?result:"<tr><td>No selection</td><tr>")
     );

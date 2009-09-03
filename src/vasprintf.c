@@ -36,13 +36,7 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
   /* Add one to make sure that it is never zero, which might cause MALLOC
      to return NULL.  */
   int total_width = strlen (format) + 1;
-  int vdbg = util_starts_with(format,"vdbg:");
 
-  if (vdbg) {
-      printf("<!--  ovs_vasprintf start(%d) -->\n",total_width);
-      printf("<!--  ovs_vasprintf format(%s) -->\n",format);
-      fflush(stdout);
-  }
   va_list ap;
 
   memcpy(&ap,&args,sizeof(va_list));
@@ -111,7 +105,6 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
 
                         {
                             unsigned short tmp = va_arg(ap, int );
-                            if (vdbg){ printf("<!-- ovs_vasprintf  short-%c(%hd) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
 
@@ -119,14 +112,12 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
 
                         {
                             long tmp = va_arg(ap, long );
-                            if (vdbg){ printf("<!-- ovs_vasprintf  int-%c(%ld) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
 
                     case '\0':
                         {
                             int tmp = va_arg(ap, int );
-                            if (vdbg){ printf("<!-- ovs_vasprintf  int-%c(%d) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
                     default:
@@ -152,7 +143,6 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
 
                         {
                             char tmp = va_arg(ap, int );
-                            if (vdbg){ printf("<!-- ovs_vasprintf  int-%c(%c) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
 
@@ -175,7 +165,6 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
 
                         {
                             double tmp = va_arg(ap, double );
-                            if (vdbg){ printf("<!-- ovs_vasprintf  int-%c(%lf) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
 
@@ -183,7 +172,6 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
 
                         {
                             long double tmp = va_arg(ap, long  double);
-                            if (vdbg){ printf("<!-- ovs_vasprintf  int-%c(%Lf) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
 
@@ -191,7 +179,6 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
 
                         {
                             float tmp = va_arg(ap, double );
-                            if (vdbg){ printf("<!-- ovs_vasprintf  int-%c(%f) -->\n",*p,tmp); fflush(stdout); }
                         }
                         break;
 
@@ -205,22 +192,10 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
                   {
                       char *ss=va_arg (ap, char *);
                       if (ss) {
-                          if (vdbg) {
-                              printf("<!-- ovs_vasprintf %%s ptr(%ld) -->\n",(long)ss);
-                              fflush(stdout);
-                          }
                           int len = strlen(ss);
-                          if (vdbg) {
-                              printf("<!-- ovs_vasprintf %%s(%d) -->\n",len);
-                              fflush(stdout);
-                          }
                           total_width += len;
                       } else {
                           total_width += 6; /* "(null)" */
-                          if (vdbg) {
-                              printf("<!-- ovs_vasprintf %%s(null) -->\n");
-                              fflush(stdout);
-                          }
                       }
                   }
                   break;
@@ -235,10 +210,6 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
         }
     }
 
-  if (vdbg) {
-      printf("<!--  ovs_vasprintf total(%d) -->\n",total_width);
-      fflush(stdout);
-  }
   *result = MALLOC (total_width);
 
   if (*result != NULL)

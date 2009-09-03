@@ -3,10 +3,10 @@ CC=gcc
 
 ifdef WINDIR
 CROSS=/cross-gcc/mipsel-linux-uclibc
-REMOTE_TARGET=share
+REMOTE_TARGET=ftp
 else
 CROSS=/usr/local/mips
-REMOTE_TARGET=mount
+REMOTE_TARGET=ftp
 endif
 
 CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
@@ -34,6 +34,8 @@ LDFLAGS=-g -Wall -O $(LIBS)
 
 all: oversight $(REMOTE_TARGET)
 
+
+
 oversight:  $(OVS_OBJS)
 	ctags -R .
 	$(CC) $(LDFLAGS) -o $(EXE) $(OVS_OBJS)
@@ -44,6 +46,10 @@ mount: /mnt/hdx/start_app.sh
 
 share: /cygdrive/a/start_app.sh 
 	cp -v $(EXE) /cygdrive/a/Apps/oversight/.
+
+ftp: oversight
+	../send ftpuser 1234 $(EXE) /Apps/oversight
+
 
 /mnt/hdx/start_app.sh:
 	sudo mount /mnt/hdx

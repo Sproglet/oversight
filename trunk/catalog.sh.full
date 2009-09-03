@@ -88,7 +88,7 @@ fi
 
 INDEX_DB="$APPDIR/index.db"
 if [ ! -s "$INDEX_DB" ] ; then
-    echo "#Index" > "$INDEX_DB"; #There must always be one line!
+    echo "#Index" > "$INDEX_DB";
     PERMS "$INDEX_DB"
 fi
 

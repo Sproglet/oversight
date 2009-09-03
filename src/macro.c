@@ -169,21 +169,16 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
     }
 }
 
+// TODO - Sort needs to default to Sort By Age. Add extra option to auto_option_list - default value.
 char *macro_fn_sort_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
-    char *label;
-    if (g_dimension->scanlines == 0) {
-        label = "Tv/M";
-    } else {
-        label = "Tv/Movie";
-    }
 
     if (!result) {
         struct hashtable *sort = string_string_hashtable(4);
         hashtable_insert(sort,DB_FLDID_TITLE,"Name");
         hashtable_insert(sort,DB_FLDID_INDEXTIME,"Age");
         hashtable_insert(sort,DB_FLDID_YEAR,"Year");
-        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,label,sort);
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"Age",sort);
         hashtable_destroy(sort,0,0);
     }
     *free_result = 0;
@@ -193,10 +188,16 @@ char *macro_fn_sort_select(char *template_name,char *call,Array *args,int num_ro
 char *macro_fn_media_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
     if (!result) {
+        char *label;
+        if (g_dimension->scanlines == 0) {
+            label = "Tv+Mov";
+        } else {
+            label = "Tv+Movie";
+        }
         struct hashtable *category = string_string_hashtable(4);
         hashtable_insert(category,"M","Movie");
         hashtable_insert(category,"T","Tv");
-        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"Tv/Movie",category);
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,label,category);
         hashtable_destroy(category,0,0);
     }
     *free_result = 0;

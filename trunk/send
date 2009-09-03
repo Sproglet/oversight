@@ -1,0 +1,16 @@
+#!/bin/sh
+# ftp port is firewalled.
+if ( ifconfig || ipconfig ) 2>/dev/null | grep 192.162.88 ; then
+    hdx=192.168.88.11
+else
+    hdx=lordy.org.uk
+fi
+
+ftp -n  <<HERE
+open $hdx
+user $1 $2
+cd $4
+bin
+hash
+put $3 
+HERE

@@ -342,7 +342,7 @@ new_list,f,i,j,dir,newfile,newdir,cmd) {
         if (dir) {
             DEBUG("Checking "dir" for changed content");
             f=NEW_CAPTURE_FILE("NEWFOLDERS");
-            exec("cd "quoteFile(dir)" && "APPDIR"/bin/busybox find . -newer "quoteFile(timestamp_file)" > "quoteFile(f));
+            exec("touch "quoteFile(f)" ; cd "quoteFile(dir)" && "APPDIR"/bin/busybox find . -newer "quoteFile(timestamp_file)" > "quoteFile(f));
 DEBUG("end find");
             while((getline newfile < f) > 0) {
 DEBUG("find line "newfile);
@@ -3929,11 +3929,24 @@ function getUrl(url,capture_label,cache,referer,\
     return f;
 }
 
+function get_referer(url,\
+i,referer) {
+    # fake referer anyway
+    i = index(substr(url,10),"/");
+    if (i) {
+        referer=substr(url,1,9+i);
+    }
+    return referer;
+}
+
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 function wget(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) {
 
     args=" --no-check-certificate -q -U \""g_user_agent"\" --waitretry=1 -t 2 ";
+    if (referer == "") {
+        referer = get_referer(url);
+    }
     if (referer != "") {
         DEBUG("Referer = "referer);
         args=args" --referer=\""referer"\" ";
@@ -4123,6 +4136,9 @@ function download_image(field_id,url,idx,\
             wget_args=" -q -O "quoteFile(internal_path);
 
             DEBUG("Poster url = "url);
+            if (referer == "" ) {
+                referer = get_referer(url);
+            }
             if (referer != "" ) {
                 DEBUG("Referer = "referer);
                 wget_args = wget_args " --referer=\""referer"\" ";

@@ -447,9 +447,12 @@ DbRowId *read_and_parse_row(
 
     int state=STATE_START;
 
+    // Skip comment lines
+    while ( (next = getc(fp) ) == '#' ) {
+        if (fgets(value,DB_VAL_BUF_SIZE,fp) == NULL) break;
+    }
+
     for(;;) {
-        
-        next = getc(fp);
 
         switch(next) {
         case EOF: goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
@@ -517,6 +520,7 @@ DbRowId *read_and_parse_row(
             }
 #endif
         }
+        next = getc(fp);
     }
 eol:
     if (next == EOF) {

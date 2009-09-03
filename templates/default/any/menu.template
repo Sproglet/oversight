@@ -27,16 +27,16 @@
                         <br>
                         <font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>
+                    <td>[:TITLE_SELECT:]</td>
                     <td>[:GENRE_SELECT:]</td>
-                    <td>[:MEDIA_TOGGLE:]</td>
-                    <td>[:WATCHED_TOGGLE:]</td>
+                    <td>[:MEDIA_SELECT:]</td>
+                    <td>[:WATCHED_SELECT:]</td>
                     <td>[:SORT_TYPE_TOGGLE:]</td>
-                    <td>[:FILTER_BAR:]</td>
                     <td>[:STATUS:]</td>
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
                 <tr>
-                    <td colspan=7 id=menutitle align=center>&nbsp;</td>
+                    <td colspan=8 id=menutitle align=center>&nbsp;</td>
                 </tr>
             </table>
         </td></tr><tr><td>
@@ -61,7 +61,6 @@
             </table>
         </form>
         </td></tr></table>
-        [:TVIDS:]
 </center>
     </body>
 </html>

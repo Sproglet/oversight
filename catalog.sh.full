@@ -2159,6 +2159,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
 function clean_globals() {
     delete gMovieFiles;
     delete g_scraped;
+    delete g_full_imdb_title;
     delete gNfoDefault;
     delete gFolderMediaCount;
     delete gFolderInfoCount;
@@ -4187,8 +4188,15 @@ search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
     }
             
     if (poster_url == "") {
-        search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
-        referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
+        if (1) {
+            search_url = tolower(g_full_imdb_title[idx]);
+            gsub(/[^a-z0-9]+/,"-",search_url);
+            sub(/-$/,"",search_url);
+            referer_url = "http://www.motechposters.com/title/"search_url"/";
+        } else {
+            search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
+            referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
+        }
         DEBUG("Got motech referer "referer_url);
         if (referer_url != "" ) {
             poster_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
@@ -4330,7 +4338,7 @@ title,y,poster_imdb_url) {
         if (index(line,"<title>")) {
             title = extractTagText(line,"title");
             DEBUG("Title found ["title "] current title ["gTitle[idx]"]");
-
+            g_full_imdb_title[idx]=title;
             title=checkIMDBTvTitle(idx,title);
         }
         if (index(line,"pagecontent")) {

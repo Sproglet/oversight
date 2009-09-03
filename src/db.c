@@ -23,7 +23,9 @@ static long assign_ticks=0;
 static long inner_date_ticks=0;
 static long date_ticks=0;
 static long filter_ticks=0;
+static long discard_ticks=0;
 static long read_ticks=0;
+static long keep_ticks=0;
 char *copy_string(int len,char *s);
 DbRowId *db_rowid_new(Db *db);
 DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
@@ -156,7 +158,7 @@ int field_pos(char *field_id,char *buffer,char **start,int *length,int quiet) {
     return 0;
 }
 
-int parse_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
+int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet) {
 
     char term='\0';
     int y,m,d;
@@ -185,21 +187,9 @@ int parse_date(char *field_id,char *buffer,long *val_ptr,int quiet) {
     return 0;
 }
 
-// Return some long that represents time. mktime() is ideal but a bit slow on PCH
-// we just need a nuber we can sort on
-long time_ordinal(struct tm *t) {
-#if 1
-    return mktime(t);
-#else
-    // maxint is 2147483647
-// return t->tm_sec + 60*(t->tm_min + 60 * (t->tm_hour + 24 * ( (t->tm_mday-1) + 31 * (t->tm_mon + 12 * t->tm_year-50 ))));
-    return ((((((((((t->tm_year-50) >> 4)+t->tm_mon) >> 5) + (t->tm_mday-1)) >> 5)+t->tm_hour)>>6)+t->tm_min)>>6)+t->tm_sec;
-    //max 59 + 60*(59 + 60 * (23 + 24 * ( 30 + 31 * (11 + 12 * 5 ))));
-    //  = 32140799
-#endif
-}
 
-int parse_timestamp(char *field_id,char *buffer,long *val_ptr,int quiet) {
+
+int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet) {
     assert(val_ptr);
     assert(field_id);
     assert(buffer);
@@ -440,9 +430,6 @@ DbRowId *read_and_parse_row(
         ) {
 
     db_rowid_init(rowid,db);
-    read_and_parse_row_ticks -= clock();
-
-
 
     char name[DB_NAME_BUF_SIZE];
     char *name_end = name+DB_NAME_BUF_SIZE;
@@ -538,7 +525,6 @@ eol:
     if (p) {
         *p = '\0';
     }
-    read_and_parse_row_ticks += clock();
     if (rowid->genre == NULL) {
         HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
     }
@@ -552,7 +538,6 @@ DbRowId *read_and_parse_rowXX(
         int tv_or_movie_view // true if looking at tv or moview view.
         ) {
 
-    read_and_parse_row_ticks -= clock();
 
 
 
@@ -665,7 +650,6 @@ eol:
     if (p) {
         *p = '\0';
     }
-    read_and_parse_row_ticks += clock();
     return rowid;
 }
 
@@ -1077,6 +1061,8 @@ DbRowSet * db_scan_titles(
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);
 
+    char *title_filter = query_val(QUERY_PARAM_TITLE_FILTER);
+
     HTML_LOG(3,"Creating db scan pattern..");
 
     if (name_filter && *name_filter) {
@@ -1130,16 +1116,43 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
         DbRowId rowid;
         db_rowid_init(&rowid,db);
 
+        unsigned char title_filter_start='\0';
+        unsigned char title_filter_end=255;
+        if (title_filter && *title_filter) {
+            title_filter_start=*(unsigned char *)title_filter;
+            title_filter_end=*(unsigned char *)(title_filter+strlen(title_filter)-1);
+            HTML_LOG(0,"Title Filter [%c-%c]",title_filter_start,title_filter_end);
+        }
+
+
+
         while (eof == 0) {
-            filter_ticks -= clock();
             total_rows++;
+            read_and_parse_row_ticks -= clock();
             read_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
+            read_and_parse_row_ticks += clock();
+            filter_ticks -= clock();
 
             if (rowid.file) {
                 int keeprow=1;
 
                 if (rowid.genre) {
                     get_genre_from_string(rowid.genre,&g_genre_hash);
+                }
+
+                if (rowid.title) {
+                    unsigned char *t = (unsigned char *)rowid.title;
+                    if (*rowid.title == 'T' && util_starts_with(rowid.title,"The ")) {
+                        t += 4;
+                    }
+                    if (title_filter_start == '0' ) {
+                        // Non alpahbetic
+                        if (*t >= 'A' && *t <= 'Z') {
+                            keeprow = 0;
+                        }
+                    } else if (*t < title_filter_start || *t > title_filter_end) {
+                        keeprow = 0;
+                    }
                 }
 
                 if (genre_filter && *genre_filter) {
@@ -1176,9 +1189,13 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                 }
 
                 if (keeprow) {
+                    keep_ticks -= clock();
                     row_count = db_rowset_add(rowset,&rowid);
+                    keep_ticks += clock();
                 } else {
+                    discard_ticks -= clock();
                     db_rowid_free(&rowid,0);
+                    discard_ticks += clock();
                 }
 
                 if (gross_size != NULL) {
@@ -1192,6 +1209,8 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
         HTML_LOG(0,"date_ticks %d",date_ticks/1000);
         HTML_LOG(0,"assign_ticks %d",assign_ticks/1000);
         HTML_LOG(0,"filter_ticks %d",filter_ticks/1000);
+        HTML_LOG(0,"keep_ticks %d",keep_ticks/1000);
+        HTML_LOG(0,"discard_ticks %d",discard_ticks/1000);
         HTML_LOG(0,"read_ticks %d",read_ticks/1000);
 
         HTML_LOG(0,"First total %d",total_rows);
@@ -1447,7 +1466,8 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
                     char *g = hashtable_search(*h,gstr);
                     if (g==NULL) {
                         HTML_LOG(1,"added Genre[%s]",gstr);
-                        hashtable_insert(*h,STRDUP(gstr),"1");
+                        char *g=STRDUP(gstr);
+                        hashtable_insert(*h,g,g);
                     }
                 }
             }

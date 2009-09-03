@@ -169,8 +169,85 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
     }
 }
 
+char *macro_fn_sort_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char *result=NULL;
+    char *label;
+    if (g_dimension->scanlines == 0) {
+        label = "Tv/M";
+    } else {
+        label = "Tv/Movie";
+    }
+
+    if (!result) {
+        struct hashtable *sort = string_string_hashtable(4);
+        hashtable_insert(sort,DB_FLDID_TITLE,"Name");
+        hashtable_insert(sort,DB_FLDID_INDEXTIME,"Age");
+        hashtable_insert(sort,DB_FLDID_YEAR,"Year");
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,label,sort);
+        hashtable_destroy(sort,0,0);
+    }
+    *free_result = 0;
+    return result;
+}
+
+char *macro_fn_media_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char *result=NULL;
+    if (!result) {
+        struct hashtable *category = string_string_hashtable(4);
+        hashtable_insert(category,"M","Movie");
+        hashtable_insert(category,"T","Tv");
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"Tv/Movie",category);
+        hashtable_destroy(category,0,0);
+    }
+    *free_result = 0;
+    return result;
+}
+
+char *macro_fn_watched_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char *result=NULL;
+    if (!result) {
+        struct hashtable *watched = string_string_hashtable(4);
+        hashtable_insert(watched,"W","Watched");
+        hashtable_insert(watched,"U","Unwatched");
+        result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"---",watched);
+        hashtable_destroy(watched,0,0);
+    }
+    *free_result = 0;
+    return result;
+}
+
+char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char *result=NULL;
+    if (!result) {
+        struct hashtable *title = string_string_hashtable(30);
+        hashtable_insert(title,"A","A");
+        hashtable_insert(title,"B","B");
+        hashtable_insert(title,"C","C");
+        hashtable_insert(title,"D","D");
+        hashtable_insert(title,"EF","EF");
+        hashtable_insert(title,"GH","GH");
+        hashtable_insert(title,"IK","IJK");
+        hashtable_insert(title,"L","L");
+        hashtable_insert(title,"M","M");
+        hashtable_insert(title,"NP","NOP");
+        hashtable_insert(title,"QR","QR");
+        hashtable_insert(title,"S","S");
+        hashtable_insert(title,"T","T");
+        hashtable_insert(title,"UZ","U-Z");
+        hashtable_insert(title,"0","0-9");
+        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"A-Z",title);
+    }
+    *free_result = 0;
+    return result;
+}
+
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return auto_option_list(DB_FLDID_GENRE,"All Genres",g_genre_hash);
+    static char *result = NULL;
+    if (!result) {
+        result = auto_option_list(DB_FLDID_GENRE,"All Genres",g_genre_hash);
+    }
+    *free_result = 0;
+    return result;
 }
 
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -213,7 +290,9 @@ char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRo
         struct tm *t = localtime(&c);
         year_num = t->tm_year+1900;
     }
-    if (year_num) {
+
+    // TODO This is a logical bug - need to stop using uniz time functions to support dates before 1970
+    if (year_num > 1970) {
         ovs_asprintf(&year,"%d",year_num);
     }
     return year;
@@ -942,7 +1021,10 @@ void macro_init() {
         hashtable_insert(macros,"VERSION",macro_fn_version);
         hashtable_insert(macros,"HOSTNAME",macro_fn_hostname);
         hashtable_insert(macros,"MEDIA_TOGGLE",macro_fn_media_toggle);
+        hashtable_insert(macros,"MEDIA_SELECT",macro_fn_media_select);
+        hashtable_insert(macros,"SORT_SELECT",macro_fn_sort_select);
         hashtable_insert(macros,"WATCHED_TOGGLE",macro_fn_watched_toggle);
+        hashtable_insert(macros,"WATCHED_SELECT",macro_fn_watched_select);
         hashtable_insert(macros,"SORT_TYPE_TOGGLE",macro_fn_sort_type_toggle);
         hashtable_insert(macros,"FILTER_BAR",macro_fn_filter_bar);
         hashtable_insert(macros,"STATUS",macro_fn_status);
@@ -977,6 +1059,7 @@ void macro_init() {
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
+        hashtable_insert(macros,"TITLE_SELECT",macro_fn_title_select);
         //HTML_LOG(1,"end macro init");
     }
 }

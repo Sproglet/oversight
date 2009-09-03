@@ -92,6 +92,9 @@ void gaya_auto_load(char *url_encoded_file) {
 int main(int argc,char **argv) {
     int result=0;
 
+    assert(sizeof(long long) >= 8);
+
+
     char *q=getenv("QUERY_STRING");
 
     if (q == NULL || strchr(q,'=') == NULL ) {
@@ -132,6 +135,7 @@ int main(int argc,char **argv) {
 
 
     printf("Content-Type: text/html\n\n");
+
     html_log_level_set(2);
 
     load_configs();

@@ -53,7 +53,7 @@ catalog_watch_torrents=0
 catalog_ignore_paths="/share/~Other,*/Download" 
 #Ignore the following names when scanning.
 # *=anything,?=single char, <=start of word , >=end of word ,=OR
-catalog_ignore_names="*<samp>*,*<sample>*"
+catalog_ignore_names="*<samp>*,*<sample>*,divxfactory-*,nympho-*,fle-*,dfa-*,starlets-*,wde-*,swe6-*,ps-*,slieze-*,xcite-*,ichiban-*,motto-*"
 catalog_title_country_list="USA,UK"
 catalog_cert_country_list="UK,USA,Ireland"
 #This is how many imdb links required in google search results.

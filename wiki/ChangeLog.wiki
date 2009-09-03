@@ -1,11 +1,36 @@
 = Oversight Change Log =
 
+20090903-1BETA
+
+  * Filter by Genre
+  * Simple Alphabet Filter (removed TVID filter)
+  * Dynamic display of video title as you navigate.
+  * Some Scanning improvements.
+  * Alternate template layouts fanart vs no-fanart.
+  * 1080p treated as 720p (should look decent to people running on 1080p)
+  * Deleted files are pruned. - They are first highlighted as removed in the GUI, then the message goes away.
+  * Some Gui performance tweaks.
+  * Bugfixes.
+
+20090814-1BETA
+
+  * templates offer basic "skinning" capability
+  * Automatically Watch Folders for new content. (including NAS)
+  * Auto-mount and playback from multiple NAS (avi,mkv AND ISOs)
+For auto-NAS mounting you must change the scan path to simply be the share name.. eg.
+/share/Video,/share/Movies,NAS1,NAS2/films
+The full unix path is no longer required and should not be used.
+  * Fanart / Backdrops. - Can be turned off too for purists Smile
+  * Remote Play - Click on your browser - starts playing on the TV.
+  * Re-write in C. Mark/Remove operations are much faster and also made dynamic/on-the-fly skinning possible.
+
+
 20090721-1BETA
   * Better Abbreviation detection 'law and order svu' 'fguy' grk' 'desperateh' 'ttscc'
   * bundled gzip binary for non-telnet HDX/eGreat
   * Better info displayed for "daily" shows. 
   * Display tvmode code in setup screen.
-  * Seatch tvdbcom for 'and' or '&'
+  * Search tvdbcom for 'and' or '&'
   * remove redundant epguides code.
   * Fixed Donate button removal - God knows why! :)
   * Fixed Duplicate Movies during incremental scanning (due to memory usage fix)

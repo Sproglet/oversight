@@ -1618,8 +1618,15 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         HTML_LOG(1,"grid end row %d",r);
 
     }
-    ovs_asprintf(&tmp,"<center><table class=overview_poster%d width=100%%>\n%s\n</table></center>\n",
+    char *w;
+    if (!g_dimension->poster_mode) {
+        w="width=100%";
+    } else {
+        w="";
+    }
+    ovs_asprintf(&tmp,"<center><table class=overview_poster%d %s>\n%s\n</table></center>\n",
             g_dimension->poster_mode,
+            w,
             (result?result:"<tr><td>No selection</td><tr>")
     );
     FREE(result);

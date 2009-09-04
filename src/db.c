@@ -39,6 +39,17 @@ DbRowId *read_and_parse_row(
 int in_idlist(int id,int size,int *ids);
 void get_genre_from_string(char *gstr,struct hashtable **h);
 
+#define COPY_STRING(len,from) ((from)?memcpy(MALLOC((len)+1),(from),(len)+1):NULL)
+
+char *copy_string(int len,char *s) {
+    char *p=NULL;
+    if (s) {
+        p = MALLOC(len+1);
+        memcpy(p,s,len+1);
+    }
+    return p;
+}
+
 int db_lock_pid(Db *db) {
 
     int lockpid=0;
@@ -231,11 +242,13 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
     int tmp_conv=1;
     int free_val=!copy; //if copying dont free
 
+    assert(name[0]=='_');
+
     switch(name[1]) {
         case 'a':
             if (tv_or_movie_view ) {
                 if (name[2] == 'i' ) { // _ai
-                    rowid->additional_nfo = (copy?copy_string(val_len,val):val);
+                    rowid->additional_nfo = (copy?COPY_STRING(val_len,val):val);
                     free_val=0;
 
                 } else if (name[2] == 'd' ) { // _ad...
@@ -263,14 +276,14 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
         case 'e':
             if (tv_or_movie_view ) {
                 if (name[2] == '\0') { // _e
-                    rowid->episode = (copy?copy_string(val_len,val):val);
+                    rowid->episode = (copy?COPY_STRING(val_len,val):val);
                     free_val=0;
                 }else if (name[2] == 't') {
                     if (name[3] == '\0') { // _et
-                        rowid->eptitle = (copy?copy_string(val_len,val):val);
+                        rowid->eptitle = (copy?COPY_STRING(val_len,val):val);
                         free_val=0;
                     } else if (name[3] == 'i') { // _eti
-                        rowid->eptitle_imdb = (copy?copy_string(val_len,val):val);
+                        rowid->eptitle_imdb = (copy?COPY_STRING(val_len,val):val);
                         free_val=0;
                     }
                 }
@@ -278,15 +291,15 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'f':
             if (tv_or_movie_view ) {
-                // if (strcmp(name,DB_FLDID_FANART) == 0) {
-                    rowid->fanart = (copy?copy_string(val_len,val):val);
+                if (name[2] == 'a') {
+                    rowid->fanart = (copy?COPY_STRING(val_len,val):val);
                     free_val=0;
-                //}
+                }
             }
             break;
         case 'F':
             if (name[2] == '\0') {
-                rowid->file = (copy?copy_string(val_len,val):val);
+                rowid->file = (copy?COPY_STRING(val_len,val):val);
                 free_val=0;
 #if 0
                 char *p = rowid->file + val_len;
@@ -309,13 +322,13 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
 
         case 'G':
             if (name[2] == '\0') {
-                rowid->genre = (copy?copy_string(val_len,val):val);
+                rowid->genre = (copy?COPY_STRING(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'J':
             if (name[2] == '\0') {
-                rowid->poster = (copy?copy_string(val_len,val):val);
+                rowid->poster = (copy?COPY_STRING(val_len,val):val);
                 free_val=0;
             }
             break;
@@ -332,7 +345,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
         case 'n':
             if (tv_or_movie_view ) {
                 if (name[2] == 'f') {
-                    rowid->nfo=(copy?copy_string(val_len,val):val);
+                    rowid->nfo=(copy?COPY_STRING(val_len,val):val);
                     free_val=0;
                 }
             }
@@ -343,7 +356,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
         case 'p':
             if (tv_or_movie_view ) {
                 if (name[2] == 't') {
-                    rowid->parts = (copy?copy_string(val_len,val):val);
+                    rowid->parts = (copy?COPY_STRING(val_len,val):val);
                     free_val=0;
                 }
             }
@@ -351,7 +364,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
         case 'P':
             if (tv_or_movie_view ) {
                 if (name[2] == '\0') {
-                    rowid->plot = (copy?copy_string(val_len,val):val);
+                    rowid->plot = (copy?COPY_STRING(val_len,val):val);
                     free_val=0;
                 }
             }
@@ -363,7 +376,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'R':
             if (name[2] == '\0') {
-                rowid->certificate = (copy?copy_string(val_len,val):val);
+                rowid->certificate = (copy?COPY_STRING(val_len,val):val);
                 free_val=0;
             }
             break;
@@ -377,14 +390,14 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case 'T':
             if (name[2] == '\0') {
-                rowid->title = (copy?copy_string(val_len,val):val);
+                rowid->title = (copy?COPY_STRING(val_len,val):val);
                 free_val=0;
             }
             break;
         case 'U':
             if (tv_or_movie_view ) {
                 if (name[2] == '\0') {
-                    rowid->url = (copy?copy_string(val_len,val):val);
+                    rowid->url = (copy?COPY_STRING(val_len,val):val);
                     free_val=0;
                 }
             }
@@ -511,7 +524,7 @@ DbRowId *read_and_parse_row(
         default:
             // Add the character
             *p++ = next;
-#if 0 //this should not really be commented out - could allow buffere overflow
+#if 1 //this should not really be commented out - could allow buffere overflow
             if (p >= end ) {
                 // Name variable. This shouldnt happen - truncate
                 p--;
@@ -660,8 +673,6 @@ eol:
 DbRowId *db_rowid_init(DbRowId *rowid,Db *db) {
     memset(rowid,0,sizeof(DbRowId));
     rowid->rating=0;
-    rowid->watched=0;
-    rowid->year=0;
 
     rowid->db = db;
     rowid->season = -1;
@@ -696,15 +707,6 @@ void db_rowid_dump(DbRowId *rid) {
     HTML_LOG(1,"----");
 }
 
-
-char *copy_string(int len,char *s) {
-    char *p=NULL;
-    if (s) {
-        p = MALLOC(len+1);
-        memcpy(p,s,len+1);
-    }
-    return p;
-}
 
 #define ALL_IDS -1
 int parse_row(

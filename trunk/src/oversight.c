@@ -217,7 +217,7 @@ TRACE;
 
         } else {
 
-            create_file_to_url_symlink();
+            //create_file_to_url_symlink();
 
             // main menu
             display_template(skin_name,"menu",num_rows,sorted_rows);

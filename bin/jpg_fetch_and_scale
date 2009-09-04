@@ -81,15 +81,20 @@ fetch_resize() {
     fi
 
     if wget -O "$file" "$@" "$url"  ; then
-        case "$type" in
-            fanart)
-                jpg_resize "$file" $type hd
-                jpg_resize "$file" $type sd
-                ;;
-            poster)
-                jpg_resize "$file" $type sd
-                ;;
-        esac
+        ls -l $file
+        if [ -s "$file" ] ; then
+            case "$type" in
+                fanart)
+                    jpg_resize "$file" $type hd
+                    jpg_resize "$file" $type sd
+                    ;;
+                poster)
+                    jpg_resize "$file" $type sd
+                    ;;
+            esac
+        else
+            rm -f "$file"
+        fi
     fi
 }
 

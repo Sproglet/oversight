@@ -1074,18 +1074,22 @@ int unwatched_count(DbRowId *rid) {
     return i;
 }
 
-char *mouse_or_focus_event(char *title,char *on_event,char *off_event) {
+char *mouse_or_focus_event(char *title,char *source,char *on_event,char *off_event) {
     char *result = NULL;
-    ovs_asprintf(&result," %s=\"show('%s');\" %s=\"show('.');\"",on_event,title,off_event);
+    if (source && *source != '*') {
+        ovs_asprintf(&result," %s=\"show('%s [%s]');\" %s=\"show('.');\"",on_event,title,source,off_event);
+    } else {
+        ovs_asprintf(&result," %s=\"show('%s');\" %s=\"show('.');\"",on_event,title,off_event);
+    }
     return result;
 }
 
-char *focus_event(char *title) {
-    return mouse_or_focus_event(title,"onfocus","onblur");
+char *focus_event(char *title,char *source) {
+    return mouse_or_focus_event(title,source,"onfocus","onblur");
 }
 
-char *mouse_event(char *title) {
-    return mouse_or_focus_event(title,"onmouseover","onmouseout");
+char *mouse_event(char *title,char *source) {
+    return mouse_or_focus_event(title,source,"onmouseover","onmouseout");
 }
 
 char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
@@ -1272,9 +1276,9 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
             ovs_asprintf(&simple_title,"%s",row_id->title);
         }
 
-        focus_ev = focus_event(simple_title);
+        focus_ev = focus_event(simple_title,row_id->db->source);
         if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event(simple_title);
+            mouse_ev = mouse_event(simple_title,row_id->db->source);
         }
         FREE(simple_title);
     }

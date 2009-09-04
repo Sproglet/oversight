@@ -73,6 +73,10 @@ typedef struct DbResults_struct {
     long size;
     long memsize;
     DbRowId *rows;
+    int movie_total;
+    int series_total;
+    int episode_total;
+    int other_media_total;
 } DbRowSet;
 
 

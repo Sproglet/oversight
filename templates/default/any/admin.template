@@ -78,6 +78,12 @@
                     Tv Mode:[:TV_MODE:]
                     <br>Internal Disk:[:SYS_DISK_USED:]
                     <br>Uptime:[:SYS_UPTIME:]
+                    <br>Load Av:[:SYS_LOAD_AVG:]
+                </td>
+                <td>
+                    Movies:[:MOVIE_TOTAL:]
+                    <br>Episodes:[:EPISODE_TOTAL:]
+                    <br>Other:[:OTHER_MEDIA_TOTAL:]
                 </td>
                 [:PAYPAL:]
             </tr>

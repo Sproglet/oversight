@@ -217,6 +217,31 @@ char *macro_fn_watched_select(char *template_name,char *call,Array *args,int num
     return result;
 }
 
+char *macro_fn_episode_total(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char result[10]="";
+    *free_result=0;
+    if (!*result) {
+        sprintf(result,"%d",g_episode_total);
+    }
+    return result;
+}
+
+char *macro_fn_movie_total(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char result[10]="";
+    *free_result=0;
+    if (!*result) {
+        sprintf(result,"%d",g_movie_total);
+    }
+    return result;
+}
+char *macro_fn_other_media_total(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char result[10]="";
+    *free_result=0;
+    if (!*result) {
+        sprintf(result,"%d",g_other_media_total);
+    }
+    return result;
+}
 char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
     if (!result) {
@@ -403,6 +428,37 @@ char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,Db
         *free_result=0;
     }
     return p;
+}
+
+char *macro_fn_sys_load_avg(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char result[50] = "";
+    *free_result = 0;
+    if (!*result) {
+        double av[3];
+#if 0
+        if (getloadavg(av,3) == 3) {
+            sprintf(result,"1m:%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
+        }
+#else
+        FILE *fp = popen("uptime","r");
+        if (fp) {
+#define BLEN 99
+            char buf[BLEN];
+            while(fgets(buf,BLEN,fp) != NULL) {
+                char *p = strstr(buf,"average:");
+                if (p) {
+                    p = strchr(p,' ');
+                    if (p) {
+                        sscanf(p," %lf, %lf, %lf",av,av+1,av+2);
+                    }
+                    sprintf(result,"%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
+                }
+            }
+            pclose(fp);
+        }
+#endif
+    }
+    return result;
 }
 
 char *macro_fn_sys_uptime(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -1012,7 +1068,7 @@ void macro_init() {
 
     if (macros == NULL) {
         //HTML_LOG(1,"begin macro init");
-        macros = string_string_hashtable(32);
+        macros = string_string_hashtable(64);
 
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
@@ -1072,9 +1128,13 @@ void macro_init() {
         hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);
         hashtable_insert(macros,"SYS_DISK_USED",macro_fn_sys_disk_used);
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
+        hashtable_insert(macros,"SYS_LOAD_AVG",macro_fn_sys_load_avg);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
         hashtable_insert(macros,"TITLE_SELECT",macro_fn_title_select);
+        hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
+        hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
+        hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
         //HTML_LOG(1,"end macro init");
     }
 }

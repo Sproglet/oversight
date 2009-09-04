@@ -242,10 +242,63 @@ char *macro_fn_other_media_total(char *template_name,char *call,Array *args,int 
     }
     return result;
 }
+
+void add_letter_range(struct hashtable *title,unsigned char start,unsigned char end,int max_group_size) {
+    unsigned char ch;
+    int size=0;
+    char group_title[50] = "";
+    char group_range[3] = "";
+
+    char *p=group_title;
+
+    for(ch = start ; ch <= end ; ch ++ ) {
+        int delta = g_title_letter_count[ch];
+        if (size+delta > max_group_size) {
+            // push current option group to option list and start a new one
+            if (*group_range) {
+
+                hashtable_insert(title,STRDUP(group_range),STRDUP(group_title));
+            }
+            size=delta;
+            // Start range
+            group_range[0]=ch;
+            group_range[1]='\0';
+            group_range[2]='\0';
+            // Start title
+            p=group_title;
+            if (delta) {
+                *p++ = ch;
+                *p = '\0';
+            }
+
+        } else {
+            size += delta;
+            // update range
+            group_range[1]=ch;
+            group_range[2]='\0';
+            // update title
+            if (delta) {
+                *p++ = ch;
+                *p = '\0';
+            }
+        }
+    }
+
+
+}
+
 char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
     if (!result) {
+
         struct hashtable *title = string_string_hashtable(30);
+
+        add_letter_range(title,'A','Z',25);
+        add_letter_range(title,'0','9',25);
+        int group_size=0;
+        char group_start=
+        for (i=0 ; i < NUM_TITLE_LETTERS ; i++ ) {
+
         hashtable_insert(title,"A","A");
         hashtable_insert(title,"B","B");
         hashtable_insert(title,"C","C");
@@ -261,7 +314,7 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
         hashtable_insert(title,"T","T");
         hashtable_insert(title,"UZ","U-Z");
         hashtable_insert(title,"0","0-9");
-        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"A-Z",title);
+        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"All",title);
     }
     *free_result = 0;
     return result;

@@ -3,8 +3,10 @@
 
 #ifdef OVS_MAIN
 #define OVS_EXTERN(x,y) x = y
+#define OVS_EXTERN1(x,y) x 
 #else
 #define OVS_EXTERN(x,y) extern x
+#define OVS_EXTERN1(x,y) extern x
 #endif
 
 #include "config.h"
@@ -25,6 +27,9 @@ OVS_EXTERN(int g_playlist_count,0);
 OVS_EXTERN(int g_movie_total,0);
 OVS_EXTERN(int g_episode_total,0);
 OVS_EXTERN(int g_other_media_total,0);
+
+#define NUM_TITLE_LETTERS 256
+OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 

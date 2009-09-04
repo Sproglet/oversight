@@ -25,12 +25,15 @@
 // String hashfunction - used by string_string_hashtable()
 // http://www.cse.yorku.ca/~oz/hash.html
 unsigned int stringhash(void *vptr) {
-    unsigned long hash = 5381;
+    register unsigned long hash = 5381;
     int c;
     unsigned char *str = vptr;
 
     while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        /*Berstein*/
+        //hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        /*LUA*/
+        hash ^= ((hash << 5) + (hash >> 2)) + c; 
     }
 
     return hash;

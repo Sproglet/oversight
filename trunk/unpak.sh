@@ -2062,7 +2062,7 @@ main() {
           exit 1 ;;
     esac
 
-    version_check
+    # version_check
     #---------------------------------------------------------
 
     case $mode in

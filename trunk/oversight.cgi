@@ -4,6 +4,13 @@
 ROOT=/share/Apps/oversight
 html=$ROOT/tmp/$$.html
 err=$ROOT/tmp/$$.err
+
+case "$1" in 
+    *admin*)
+        chown -R nmt:nmt $ROOT >/dev/null 2>&1  
+        ;;
+esac
+
 if /share/Apps/oversight/oversight "$@" > "$html" 2>"$err" ; then
     cat "$html"
     rm -f -- "$html" "$err"
@@ -14,8 +21,3 @@ else
     cat "$err"
 fi
 
-case "$1" in 
-    *admin*)
-        chown -R nmt:nmt $ROOT
-        ;;
-esac

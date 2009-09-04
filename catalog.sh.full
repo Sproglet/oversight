@@ -16,7 +16,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090904-5BETA
+VERSION=20090904-6BETA
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 # Added more checking around nfo name
@@ -3944,7 +3944,7 @@ i,referer) {
 function wget(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) {
 
-    args=" --no-check-certificate -q -U \""g_user_agent"\" --waitretry=1 -t 2 ";
+    args=" --no-check-certificate -q -U \""g_user_agent"\" -w 3 -t 5 ";
     if (referer == "") {
         referer = get_referer(url);
     }
@@ -4217,7 +4217,7 @@ search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
         DEBUG("Got motech referer "referer_url);
         if (referer_url != "" ) {
             poster_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
-            if (poster_url != "" ) {
+            if (poster_url != ""  && index(poster_url,"thumb.jpg") == 0 ) {
                 poster_url="http://www.motechposters.com" poster_url;
 
                 poster_url=poster_url"\t"referer_url;

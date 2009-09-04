@@ -509,6 +509,20 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
         
     return result;
 }
+
+char *macro_fn_source(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+    if (num_rows) {
+        DbRowId *r=sorted_rows[0];
+        if (r->db && r->db->source) {
+            if (*(r->db->source) != '*') {
+                result = add_network_icon(r->db->source,r->db->source);
+            }
+        }
+    }
+    return result;
+}
+
 char *macro_fn_rating(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
 
@@ -1014,6 +1028,7 @@ void macro_init() {
         hashtable_insert(macros,"YEAR",macro_fn_year);
         hashtable_insert(macros,"RATING",macro_fn_rating);
         hashtable_insert(macros,"RATING_STARS",macro_fn_rating_stars);
+        hashtable_insert(macros,"SOURCE",macro_fn_source);
         hashtable_insert(macros,"GRID",macro_fn_grid);
         hashtable_insert(macros,"HEADER",macro_fn_header);
         hashtable_insert(macros,"FORM_START",macro_fn_form_start);

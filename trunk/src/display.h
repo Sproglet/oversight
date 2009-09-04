@@ -44,4 +44,5 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart);
 void create_file_to_url_symlink();
 char *auto_option_list(char *name,char *firstItem,struct hashtable *vals);
 char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals);
+char *add_network_icon(char *source,char *text);
 #endif

@@ -228,7 +228,7 @@ char *add_network_icon(char *source,char *text) {
     char *icon;
     char *result=NULL;
 
-    if (strcmp(source,"*") == 0) {
+    if (*source == '*' ) {
 
         icon =  get_theme_image_tag("harddisk"," width=20 height=15 ");
 
@@ -893,23 +893,63 @@ char *build_ext_list(DbRowId *row_id) {
     return ext_icons;
 }
 
-char *build_id_list(DbRowId *row_id) {
+char *add_one_source_to_idlist(DbRowId *row_id,char *current_idlist,int *mixed_sources) {
 
     char *idlist=NULL;
     assert(row_id);
     assert(row_id->db);
     assert(row_id->db->source);
+    ovs_asprintf(&idlist,"%s%s(%ld|",
+            NVL(current_idlist),
+            row_id->db->source,row_id->id);
+    FREE(current_idlist);
 
-    ovs_asprintf(&idlist,"%s(%ld|",row_id->db->source,row_id->id);
+    if (mixed_sources) *mixed_sources=0;
+
     DbRowId *ri;
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-        char *tmp;
-        ovs_asprintf(&tmp,"%s%ld|",idlist,ri->id);
-        FREE(idlist);
-        idlist = tmp;
+        if (strcmp(ri->db->source,row_id->db->source) == 0) {
+            char *tmp;
+            // Add all other items with the same source
+            ovs_asprintf(&tmp,"%s%ld|",idlist,ri->id);
+            FREE(idlist);
+            idlist = tmp;
+        } else {
+            if (mixed_sources) *mixed_sources=1;
+        }
     }
+    idlist[strlen(idlist)-1] = ')';
+    return idlist;
+}
+
+char *build_id_list(DbRowId *row_id) {
+
+    int mixed_sources=0;
+    char *idlist=NULL;
+    assert(row_id);
+    assert(row_id->db);
+    assert(row_id->db->source);
+
+    idlist = add_one_source_to_idlist(row_id,NULL,&mixed_sources);
 
     idlist[strlen(idlist)-1] = ')';
+
+    if (mixed_sources) {
+        // Add rows from other sources. This could be merged with the loop above
+        // but to help performance we only track sources if we need to as the loop
+        // performance is O(n^2)
+        struct hashtable *sources = string_string_hashtable(4);
+        hashtable_insert(sources,row_id->db->source,"1");
+        DbRowId *ri;
+
+        for( ri = row_id->linked ; ri ; ri=ri->linked ) {
+            if (hashtable_search(sources,ri->db->source) == NULL) {
+                hashtable_insert(sources,ri->db->source,"1");
+                idlist = add_one_source_to_idlist(ri,idlist,&mixed_sources);
+            }
+        }
+        hashtable_destroy(sources,0,0);
+    }
 
     return idlist;
 }
@@ -1157,7 +1197,7 @@ char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char 
 
     long crossview=0;
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
-    if (crossview == 1) {
+    if (crossview == 1 && *(row_id->db->source) != '*') {
         HTML_LOG(2,"dbg: add network icon");
        char *tmp =add_network_icon(row_id->db->source,title);
        FREE(title);
@@ -1171,7 +1211,8 @@ char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char 
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
 
-    HTML_LOG(1,"TODO:Highlight matched bit");
+    //TODO:Highlight matched bit
+    HTML_LOG(2,"Item %d = %s %s %s",cell_no,row_id->db->source,row_id->title,row_id->file);
 
     char *title=NULL;
     char *font_class="";
@@ -1572,6 +1613,19 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     if (end > numids) end = numids;
 
     HTML_LOG(0,"grid page %ld rows %d cols %d",page,rows,cols);
+
+#if 0
+    HTML_LOG(0,"input size = %d",numids);
+    for(r=0 ; r<numids ; r++) {
+        HTML_LOG(0,"get_grid row %d %s %s %s",r,row_ids[r]->db->source,row_ids[r]->title,row_ids[r]->file);
+        DbRowId *l =row_ids[r]->linked;
+        while (l) {
+            HTML_LOG(0,"get_grid linked %d %s %s %s",r,l->db->source,l->title,l->file);
+           l = l->linked;
+        }
+    }
+#endif
+
 
     char *result=NULL;
     int i = start;
@@ -2073,11 +2127,19 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                     date=strftime(date_buf,DATE_BUF_SIZ,date_format,localtime((time_t *)(&date)));
                 }
 
+                //network icon
+                char *network_icon=NULL;
+                if (*(rid->db->source) != '*') {
+                    network_icon = add_network_icon(rid->db->source,"");
+                }
+
                 //Put Episode/Title/Date together in new cell.
                 char td_class[10];
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
-                ovs_asprintf(&tmp,"%s<td class=%s width=%d%%>%s</td><td class=%s width=%d%%><font %s>%s</font><font class=epdate>%s</font></td>\n",
+                ovs_asprintf(&tmp,
+                        "%s<td class=%s width=%d%%>%s</td>" 
+                        "<td class=%s width=%d%%><font %s>%s%s</font><font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
                         td_class,
                         width1,
@@ -2085,6 +2147,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                         td_class,
                         width2,
                         watched_style(rid,i%2),
+                        (network_icon?network_icon:""),
                         title_txt,
                         (*date_buf?date_buf:"")
                         );
@@ -2214,8 +2277,9 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     if (result) {
         char *tmp;
         char *link=join(link_parts,"");
-        ovs_asprintf(&tmp,"<select name=\"%s\" %s>\n<option value=\"%s%s\">%s</option>\n%s</select>",
-                name,attr,
+        ovs_asprintf(&tmp,"<select %s>\n<option value=\"%s%s\">%s</option>\n%s</select>",
+                //name,
+                attr,
                 link_prefix,
                 link,
                 firstItem,result);

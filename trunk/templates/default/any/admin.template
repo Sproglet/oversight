@@ -74,9 +74,9 @@
         <hr>
         <table width=100%>
             <tr>
-                <td width=50%>
+                <td>
                     Tv Mode:[:TV_MODE:]
-                    <br>Internal Disk:[:SYS_DISK_USED:]
+                    <br>Disk:[:SYS_DISK_USED:]
                     <br>Uptime:[:SYS_UPTIME:]
                     <br>Load Av:[:SYS_LOAD_AVG:]
                 </td>

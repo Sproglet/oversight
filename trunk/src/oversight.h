@@ -28,7 +28,7 @@ OVS_EXTERN(int g_other_media_total,0);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20090904-3BETA"
+#define OVS_VERSION "20090904-4BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"

@@ -414,7 +414,7 @@ char *macro_fn_sys_disk_used(char *template_name,char *call,Array *args,int num_
 char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *p = NULL;
     if (!(g_dimension->local_browser) && *oversight_val("remove_donate_msg") != '1' ) {
-        p = "<td><font size=2>Any contributions are gratefully received towards"
+        p = "<td width=25%><font size=2>Any contributions are gratefully received towards"
         "<font color=red>Oversight</font>,"
         "<font color=#FFFF00>FeedTime</font>,"
         "<font color=blue>Zebedee</font> and "

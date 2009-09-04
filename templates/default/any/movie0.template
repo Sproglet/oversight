@@ -18,7 +18,7 @@
                         <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
                                 <td class=title><font class=title>[:TITLE:][ (:YEAR:)]</font></td>
-                                <td class=right width=20%><font class=info[:IS_GAYA:]>[:EXTERNAL_URL:]</font></td>
+                                <td class=right width=20%><font class=info[:IS_GAYA:]>[:EXTERNAL_URL:][:SOURCE:]</font></td>
                             </tr>
                             <tr>
                                 <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>

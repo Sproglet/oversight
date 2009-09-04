@@ -807,10 +807,8 @@ DbRowSet *db_rowset(Db *db) {
     assert(db);
 
     DbRowSet *dbrs = MALLOC(sizeof(DbRowSet));
+    memset(dbrs,0,sizeof(DbRowSet));
     dbrs->db = db;
-    dbrs->size=0;
-    dbrs->memsize=0;
-    dbrs->rows=NULL;
     return dbrs;
 }
 
@@ -828,6 +826,11 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
     *insert = *id;
     (dbrs->size)++;
 
+    switch(id->category) {
+        case 'T': dbrs->episode_total++; break;
+        case 'M': dbrs->movie_total++; break;
+        default: dbrs->other_media_total++; break;
+    }
 
     return dbrs->size;
 }
@@ -1140,6 +1143,13 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
             filter_ticks -= clock();
 
             if (rowid.file) {
+
+                switch(rowid.category) {
+                    case 'T': g_episode_total++; break;
+                    case 'M': g_movie_total++; break;
+                    default: g_other_media_total++; break;
+                }
+
                 int keeprow=1;
 
                 if (rowid.genre) {

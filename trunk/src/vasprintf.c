@@ -104,20 +104,20 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
                     case 'h':
 
                         {
-                            unsigned short tmp = va_arg(ap, int );
+                            /*unsigned short tmp = */ va_arg(ap, int );
                         }
                         break;
 
                     case 'l':
 
                         {
-                            long tmp = va_arg(ap, long );
+                            /* long tmp =*/ va_arg(ap, long );
                         }
                         break;
 
                     case '\0':
                         {
-                            int tmp = va_arg(ap, int );
+                            /* int tmp =*/ va_arg(ap, int );
                         }
                         break;
                     default:
@@ -142,7 +142,7 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
                     case '\0':
 
                         {
-                            char tmp = va_arg(ap, int );
+                            /* char tmp =*/ va_arg(ap, int );
                         }
                         break;
 
@@ -164,21 +164,21 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
                     case 'l':
 
                         {
-                            double tmp = va_arg(ap, double );
+                            /*double tmp =*/ va_arg(ap, double );
                         }
                         break;
 
                     case 'L':
 
                         {
-                            long double tmp = va_arg(ap, long  double);
+                            /*long double tmp =*/ va_arg(ap, long  double);
                         }
                         break;
 
                     case '\0':
 
                         {
-                            float tmp = va_arg(ap, double );
+                            /*float tmp =*/ va_arg(ap, double );
                         }
                         break;
 

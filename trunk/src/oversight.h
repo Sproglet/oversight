@@ -22,10 +22,13 @@ OVS_EXTERN(int g_local_browser,0);
 OVS_EXTERN(Array *g_genre,NULL);
 OVS_EXTERN(int html_log_level,0);
 OVS_EXTERN(int g_playlist_count,0);
+OVS_EXTERN(int g_movie_total,0);
+OVS_EXTERN(int g_episode_total,0);
+OVS_EXTERN(int g_other_media_total,0);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20090904-2BETA"
+#define OVS_VERSION "20090904-3BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"

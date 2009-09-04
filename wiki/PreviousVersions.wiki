@@ -1,0 +1,11 @@
+#labels Featured
+Once in a while, a beta may be a bit - well - beta, and you may prefer to roll back to an earlier version whilst awaiting some much needed fixes. 
+
+The easier way to do this is using CSI.
+first download the earlier version  directly from
+
+http://code.google.com/p/nmt-mini-installer/source/browse/#svn/downloads/oversight
+
+(select the version you want and then 'view raw file' and save)
+
+Then using the CSI installer (http://www.nmtinstaller.com) - select 'File->Install From File' and browse to your previously saved zip file. 

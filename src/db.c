@@ -903,6 +903,9 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
     HTML_LOG(0,"end db_scan_and_add_rowset %d",*rowset_count_ptr);
 }
 
+void clear_title_letter_count() {
+    memset(g_title_letter_count,0,NUM_TITLE_LETTERS);
+}
 
 //
 // Returns null terminated array of rowsets
@@ -914,6 +917,8 @@ DbRowSet **db_crossview_scan_titles(
         ){
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
+
+    clear_title_letter_count();
 
     HTML_LOG(1,"begin db_crossview_scan_titles");
     // Add information from the local database
@@ -1055,6 +1060,16 @@ int in_idlist(int id,int size,int *ids) {
     return 0;
 }
 
+#define FIRST_TITLE_LETTER(title) \
+        (!title?\
+            '\0'\
+        :\
+            (*(title) == 'T' && util_starts_with((title),"The ") ?\
+                (title)[4]\
+             :\
+             *title)\
+        )
+
 DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
@@ -1158,17 +1173,16 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                     get_genre_from_string(rowid.genre,&g_genre_hash);
                 }
 
-                if (rowid.title) {
-                    unsigned char *t = (unsigned char *)rowid.title;
-                    if (*rowid.title == 'T' && util_starts_with(rowid.title,"The ")) {
-                        t += 4;
-                    }
+                unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
+                g_title_letter_count[toupper(first_letter)]++;
+
+                if (first_letter) {
                     if (title_filter_start == '0' ) {
                         // Non alpahbetic
-                        if (*t >= 'A' && *t <= 'Z') {
+                        if (first_letter >= 'A' && first_letter <= 'Z') {
                             keeprow = 0;
                         }
-                    } else if (*t < title_filter_start || *t > title_filter_end) {
+                    } else if (first_letter < title_filter_start || first_letter > title_filter_end) {
                         keeprow = 0;
                     }
                 }

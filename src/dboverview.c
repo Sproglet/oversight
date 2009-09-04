@@ -108,7 +108,8 @@ int db_overview_name_season_eqf(DbRowId *rid1,DbRowId *rid2) {
           return (rid1->season == rid2->season);
        }
     } else {
-        return strcmp(rid1->title,rid2->title) ==0;
+        //films are equal only if source and file are equal
+        return strcmp(rid1->file,rid2->file) && strcmp(rid1->db->source,rid2->db->source) ==0 ;
     }
 }
 // overview hash function based on titles and season only. This is used in non-boxset mode.
@@ -152,7 +153,7 @@ unsigned int db_overview_name_season_episode_hashf(void *rid) {
 // overview equality function based on file path only. This is used in non-boxset mode.
 int db_overview_file_path_eqf(DbRowId *rid1,DbRowId *rid2) {
 
-    return strcmp(rid1->file,rid2->file) ==0;
+    return strcmp(rid1->file,rid2->file) ==0 && strcmp(rid1->db->source,rid2->db->source) == 0;
 }
 // overview hash function based on file path . This is used in non-boxset mode.
 unsigned int db_overview_file_path_hashf(void *rid) {
@@ -169,10 +170,10 @@ void overview_dump(int level,char *label,struct hashtable *overview) {
         if (hashtable_count(overview) ) {
             for (itr=hashtable_loop_init(overview) ; hashtable_loop_more(itr,&k,NULL) ; ) {
 
-                HTML_LOG(2,"%s key=[%c %s s%02d]",label,k->category,k->title,k->season);
+                HTML_LOG(0,"%s key=[%s][%c %s s%02d]",label,k->db->source,k->category,k->title,k->season);
             }
         } else {
-            HTML_LOG(2,"%s EMPTY",label);
+            HTML_LOG(0,"%s EMPTY",label);
         }
     }
 }
@@ -181,7 +182,7 @@ void overview_array_dump(int level,char *label,DbRowId **arr) {
     if (level <= html_log_level_get()) {
         if (*arr) {
             while (*arr) {
-                HTML_LOG(level,"%s key=[%c\t%s s%02de%s date:%d]",label,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
+                HTML_LOG(level,"%s key=[%s %c\t%s s%02de%s date:%ll]",label,(*arr)->db->source,(*arr)->category,(*arr)->title,(*arr)->season,(*arr)->episode,(*arr)->date);
                 arr++;
             }
         } else {
@@ -243,6 +244,7 @@ TRACE;
     overview = create_hashtable(100,hash_fn,eq_fn);
 TRACE;
 
+    int rowset_count=0;
     if (rowsets) {
 TRACE;
 
@@ -251,6 +253,8 @@ TRACE;
 TRACE;
 
             int i;
+            HTML_LOG(1,"dbg: overview merging rowset[%d]",++rowset_count);
+
             for( i = 0 ; i < (*rowset_ptr)->size ; i++ ) {
 
                 total++;
@@ -258,7 +262,7 @@ TRACE;
 TRACE;
                 DbRowId *rid = (*rowset_ptr)->rows+i;
 
-                HTML_LOG(3,"dbg: overview merging [%s]",rid->title);
+                HTML_LOG(2,"dbg: overview merging [%s][%s]",rid->db->source,rid->title);
 
 
 TRACE;
@@ -298,8 +302,8 @@ TRACE;
 TRACE;
     }
 TRACE;
-    HTML_LOG(1,"overview: %d entries created from %d records",hashtable_count(overview),total);
-    overview_dump(4,"ovw create:",overview);
+    HTML_LOG(0,"overview: %d entries created from %d records",hashtable_count(overview),total);
+    overview_dump(3,"ovw create:",overview);
     return overview;
 }
 
@@ -328,7 +332,7 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
     overview_array_dump(3,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
     HTML_LOG(2,"sorted %d items",hashtable_count(overview));
-    overview_array_dump(2,"ovw sorted",ids);
+    overview_array_dump(0,"ovw sorted",ids);
 
     return ids;
 }

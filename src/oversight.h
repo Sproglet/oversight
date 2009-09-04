@@ -23,7 +23,9 @@ OVS_EXTERN(Array *g_genre,NULL);
 OVS_EXTERN(int html_log_level,0);
 OVS_EXTERN(int g_playlist_count,0);
 
-#define OVS_VERSION "20090904-1BETA"
+#define NVL(s) ((s)?(s):"")
+
+#define OVS_VERSION "20090904-2BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"

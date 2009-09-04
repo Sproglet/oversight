@@ -895,7 +895,7 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
             }
         }
     }
-    HTML_LOG(0,"end db_scan_and_add_rowset");
+    HTML_LOG(0,"end db_scan_and_add_rowset %d",*rowset_count_ptr);
 }
 
 
@@ -927,16 +927,18 @@ DbRowSet **db_crossview_scan_titles(
                 char *path=NULL;
                 char *name=dent.d_name;
 
-                ovs_asprintf(&path,NETWORK_SHARE"%s/Apps/oversight/index.db",name);
+                ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
+
                 if (is_file(path)) {
 
+                    HTML_LOG(0,"crossview [%s]",path);
                     db_scan_and_add_rowset(
                         path,name,
                         name_filter,media_type,watched,
                         &rowset_count,&rowsets);
 
                 } else {
-                    HTML_LOG(1,"crossview search %s doesnt exist",path);
+                    HTML_LOG(0,"crossview search [%s] doesnt exist",path);
                 }
                 FREE(path);
             }

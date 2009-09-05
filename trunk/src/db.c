@@ -7,6 +7,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <time.h>
+#include <ctype.h>
 
 #include "db.h"
 #include "actions.h"
@@ -544,128 +545,6 @@ eol:
     }
     if (rowid->genre == NULL) {
         HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
-    }
-    return rowid;
-}
-// TODO Change this back to static value and using copy_string() in db_rowid_set_field
-DbRowId *read_and_parse_rowXX(
-        Db *db,
-        FILE *fp,
-        int *eof,
-        int tv_or_movie_view // true if looking at tv or moview view.
-        ) {
-
-
-
-
-    char name[DB_NAME_BUF_SIZE];
-    char *name_end = name+DB_NAME_BUF_SIZE;
-
-    char *value;
-    int val_sz;
-
-    register char next;
-
-    DbRowId *rowid = NULL;
-
-    //initially point p at the value buffer.
-    //This initial value is discarded but it removes the need to 
-    //check for p != NULL for every character iteration
-    register char *p=NULL;
-    char *end=NULL;
-
-    int state=STATE_START;
-
-    while((next = getc(fp)) != EOF) {
-
-
-        switch(next) {
-        case '\n' : case '\r' : case '\0': // EOL terminators
-            if (state == STATE_VAR) {
-                *p = '\0';
-                HTML_LOG(0,"parsed field %s=%s",name,value);
-                if (rowid == NULL) {
-                    rowid = db_rowid_new(db);
-                }
-                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,0);
-                state = STATE_START;
-            }
-            goto eol;
-        case '\t':
-            switch(state) {
-                case STATE_START:
-
-                    state=STATE_NAME;
-                    p=name;
-                    end=name_end;
-                    break;
-
-                case STATE_NAME:
-
-                    //switch to STATE_VAR
-
-                    *p = '\0';
-                    state=STATE_VAR;
-                    val_sz=VAL_SZ_INIT;
-                    p=value=MALLOC(val_sz);
-                    end=p+val_sz;
-                    HTML_LOG(0,"name[%s]",name);
-                    break;
-
-                case STATE_VAR:
-                    //switch to STATE_VAR if TAB is followed by _ (start of a name)
-                    next = getc(fp);
-                    if (next != '_' ) {
-                        //If plot contains <tab> allow it if it is NOT followed by _
-                        //which is the prefix for out html vars. This is a nasty hack due 
-                        //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
-                        ungetc(next,fp);
-                    } else {
-                        *p = '\0';
-                        HTML_LOG(0,"val[%s]",value);
-                        if (rowid == NULL) {
-                            rowid = db_rowid_new(db);
-                        }
-                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,0);
-
-                        state=STATE_NAME;
-                        p=name;
-                        end=name_end;
-                        *p++='_';
-                    }
-                    break;
-                default:
-                    assert(0);
-                    break;
-            }
-            break;
-        default:
-            // Add the character
-            *p++ = next;
-            if (p >= end ) {
-                //end of buffer
-                if (state == STATE_VAR) {
-                    // Make some more space
-                    int offset=p-value;
-                    val_sz += VAL_SZ_INC;
-                    value = REALLOC(value,val_sz);
-                    end = value + val_sz;
-                    p = value+offset;
-                } else {
-                    // Name variable. This shouldnt happen - truncate
-                    p--;
-                    *p = '\0';
-                    break;
-                }
-            }
-        }
-    }
-eol:
-    if (next == EOF) {
-        *eof = 1;
-    }
-    if (p) {
-        *p = '\0';
     }
     return rowid;
 }

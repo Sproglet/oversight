@@ -56,6 +56,7 @@ jpg_resize() {
     else
         #Could use a pipe but input may = output so use tmp file.
         djpeg -scale $new_width/$old_width "$input" > $TMP/$$ && cjpeg $TMP/$$ > "$output" && rm $TMP/$$
+        perms "$output"
     fi
 }
 
@@ -64,24 +65,18 @@ if [ -z "$3" ] ; then
 	exit 1
 fi
 
+perms() {
+    chown nmt:nmt "$@"
+}
+
 fetch_resize() {
     calling_pid="$1"; shift;
     type="$1" ; shift; # poster or fanart
     url="$1" ; shift;
     file="$1" ; shift ;
 
-    if [ -f "$file" ] ; then
-        # return if file is newer than parent process.
-        # It has already been fetched during this scan.
-        #So if OLDEST file is /proc/ then return
-        if ls -t "$file" /proc/$calling_pid/exe | awk 'END { print $0; }' |  grep ^/proc/ ; then
-            INFO "Already fetched $file during this scan"
-            return 0
-        fi
-    fi
-
     if wget -O "$file" "$@" "$url"  ; then
-        ls -l $file
+        perms $file
         if [ -s "$file" ] ; then
             case "$type" in
                 fanart)
@@ -107,7 +102,7 @@ add_queue() {
         args="$args $i"
     done
     echo "$args" >> $Q.pending
-    chmod 555 "$Q.pending"
+    chmod 666 "$Q.pending"
     INFO "Queued $args"
 }
 
@@ -141,7 +136,7 @@ else
 
         mv "$Q.pending" "$Q.tmp"
         cat "$Q.tmp" >> "$Q.processing"
-        chmod 555 "$Q.processing"
+        chmod 666 "$Q.processing"
         rm "$Q.tmp"
 
         while FS= read line ; do
@@ -151,8 +146,10 @@ else
 
         done < "$Q.processing"
 
-        rm "$Q.processing"
+        rm -f "$Q.processing"
 
     done
+
+    rm -f $pid_file
 fi
 

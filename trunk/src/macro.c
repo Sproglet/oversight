@@ -252,39 +252,41 @@ void add_letter_range(struct hashtable *title,unsigned char start,unsigned char 
     char *p=group_title;
 
     for(ch = start ; ch <= end ; ch ++ ) {
+
         int delta = g_title_letter_count[ch];
         if (size+delta > max_group_size) {
             // push current option group to option list and start a new one
-            if (*group_range) {
+            if (size) {
 
+                HTML_LOG(0,"Adding range [%s][%s] at char %c/%d size %d",group_range,group_title,ch,ch,size);
                 hashtable_insert(title,STRDUP(group_range),STRDUP(group_title));
+                size=0;
             }
-            size=delta;
+        }
+        if (size == 0) {
             // Start range
             group_range[0]=ch;
-            group_range[1]='\0';
-            group_range[2]='\0';
             // Start title
-            p=group_title;
-            if (delta) {
-                *p++ = ch;
-                *p = '\0';
-            }
-
-        } else {
-            size += delta;
-            // update range
-            group_range[1]=ch;
-            group_range[2]='\0';
-            // update title
-            if (delta) {
-                *p++ = ch;
-                *p = '\0';
+            //p=group_title;
+            sprintf(group_title,"%c",ch);
+        }
+        size += delta;
+        // update range
+        group_range[1]=ch;
+        group_range[2]='\0';
+        // update title
+        if (delta) {
+            //*p++ = ch;
+            //*p = '\0';
+            if (ch != *group_range) {
+                sprintf(group_title+1,"-%c",ch);
             }
         }
     }
-
-
+    if (size) {
+        HTML_LOG(0,"Adding end range [%s][%s] at char %c/%d size %d",group_range,group_title,end,end,size);
+        hashtable_insert(title,STRDUP(group_range),STRDUP(group_title));
+    }
 }
 
 char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -293,11 +295,11 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 
         struct hashtable *title = string_string_hashtable(30);
 
+#if 1
+        add_letter_range(title,' ','@',25);
         add_letter_range(title,'A','Z',25);
-        add_letter_range(title,'0','9',25);
-        int group_size=0;
-        char group_start=
-        for (i=0 ; i < NUM_TITLE_LETTERS ; i++ ) {
+#else
+
 
         hashtable_insert(title,"A","A");
         hashtable_insert(title,"B","B");
@@ -314,7 +316,9 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
         hashtable_insert(title,"T","T");
         hashtable_insert(title,"UZ","U-Z");
         hashtable_insert(title,"0","0-9");
+#endif
         result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"All",title);
+        hashtable_destroy(title,1,1);
     }
     *free_result = 0;
     return result;
@@ -475,7 +479,7 @@ char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,Db
         "<td><form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\">"
         "<input type=\"hidden\" name=\"cmd\" value=\"_s-xclick\">"
         "<input type=\"hidden\" name=\"hosted_button_id\" value=\"2496882\">"
-        "<input type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
+        "<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
         "<img alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
         "</form></td>";
         *free_result=0;

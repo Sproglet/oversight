@@ -10,6 +10,9 @@ you will see
 
 http://oversight.googlecode.com/svn/trunk/screenshots/prune2.png 
 
-At this point Oversight has removed from the index, and after that it will be gone...
+At this point Oversight has removed it from the index, and after that it will be gone...
 
 http://oversight.googlecode.com/svn/trunk/screenshots/prune3.png 
+
+Note that Oversight will only prune files if their Grand Parent folder is present.
+This is to ensure files are not pruned just because the NAS or USB device on which they reside is disconnected.

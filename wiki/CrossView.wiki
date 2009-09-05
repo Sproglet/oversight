@@ -1,3 +1,4 @@
+#labels Featured
 CrossView allows you to install Oversight on two NMTs and they can both share media in a single view.
 
 It is slightly different to using a NAS.
@@ -28,5 +29,3 @@ http://oversight.googlecode.com/svn/trunk/screenshots/crossview/crossview3.png
 The details page shows the source also.
 
 http://oversight.googlecode.com/svn/trunk/screenshots/crossview/crossview4.png
-
-

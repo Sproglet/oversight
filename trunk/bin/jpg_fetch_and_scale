@@ -90,6 +90,8 @@ fetch_resize() {
         else
             rm -f "$file"
         fi
+    else
+        rm -f "$file"
     fi
 }
 

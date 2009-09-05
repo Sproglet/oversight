@@ -1,8 +1,0 @@
-The oversight.cgi script was ported to C.
-This makes it more responsive and allows addition of more features without affecting performance.
-The main difference between the previous version of oversight is the addition of 
-html templates and support for fanart.
-These are both in their infancy.
-
-To get fanart for existing movies you have to rescan them.
-Th get fanart for existing tv shows either rescan or wait until another episode is added.

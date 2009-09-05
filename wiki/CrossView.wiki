@@ -9,16 +9,22 @@ For Crossview, your NMT displays a combination of its own Oversight Index and a 
 
 Note for Cross View to work :
 
-0. Make sure OVersight is installed on both NMTs, and make sure they each have a network source that points to the other.
+*Pre-requisites*
 
-1. the Remote NMT mount must be active. The easiest way to do this is to select the Remote NMT in the standard NMT Sources screen.(I will make this nicer at some point). 
+  # Make sure OVersight is installed on both NMTs, 
+  # make sure each NMT has a network source that points to the other.
+  # Make sure at least one Oversight install has indexed media content. 
 
-2. Enable the crossview option in oversight..
+*Enabling Cross View*
+
+  # the Remote NMT mount must be active. The easiest way to do this is to select the Remote NMT in the standard NMT Sources screen.(I will make this nicer at some point). 
+  # Enable the crossview option in oversight..
+  # That's it.
 
 
 http://oversight.googlecode.com/svn/trunk/screenshots/crossview/crossview1.png
 
-3. That's it. Now Both Oversight menus are visible in a single view. Here is an example where there menu is filtered for Horrors beginning with 'E'. In this case each NMT had its own copy of 'Eden Park' on their internal disk, and now both are showing:
+  Now Both Oversight menus are visible in a single view. Here is an example where there menu is filtered for Horrors beginning with 'E'. In this case each NMT had its own copy of 'Eden Park' on their internal disk, and now both are showing:
 
 http://oversight.googlecode.com/svn/trunk/screenshots/crossview/crossview2.png
 

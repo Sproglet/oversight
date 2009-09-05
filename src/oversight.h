@@ -3,10 +3,10 @@
 
 #ifdef OVS_MAIN
 #define OVS_EXTERN(x,y) x = y
-#define OVS_EXTERN1(x,y) x 
+#define OVS_EXTERN1(x) x 
 #else
 #define OVS_EXTERN(x,y) extern x
-#define OVS_EXTERN1(x,y) extern x
+#define OVS_EXTERN1(x) extern x
 #endif
 
 #include "config.h"
@@ -33,7 +33,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20090904-6BETA"
+#define OVS_VERSION "20090905-1BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"

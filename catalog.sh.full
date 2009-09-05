@@ -590,11 +590,16 @@ END{
 
         if (NEWSCAN == 1) {
             INFO("Scanning watch paths");
-            split(trim(g_settings["catalog_watch_paths"]),FOLDER_ARR," *[,|]+ *");
+            folder_list=g_settings["catalog_watch_paths"];
         } else {
             INFO("Scanning default and watch paths");
-            split(trim(g_settings["catalog_scan_paths"]","g_settings["catalog_watch_paths"]),FOLDER_ARR," *[,|]+ *");
+            folder_list=g_settings["catalog_scan_paths"]","g_settings["catalog_watch_paths"];
         }
+        trim(folder_list);
+        sub(/^,+/,"",folder_list);
+        sub(/,+$/,"",folder_list);
+
+        split(folder_list,FOLDER_ARR," *[,|]+ *");
 
         g_timestamp_file=APPDIR"/.lastscan";
 
@@ -4121,7 +4126,9 @@ function download_image(field_id,url,idx,\
             }
         }
 
-        if (get_it) {
+        if (get_it && !(internal_path in g_image_requested) ) {
+
+            g_image_requested[internal_path]=1;
 
             INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
 

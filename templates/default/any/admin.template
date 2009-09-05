@@ -36,7 +36,7 @@
                 </table>
             </td>
             <td width=5%>[:ICON(rescan):]</td>
-            <td align=left width=45%><br>[:LINK(action=rescan_confirm,Rescan internal HDD):]</td>
+            <td align=left width=45%><br>[:LINK(action=rescan_confirm,Rescan All Media):]</td>
         </tr>
 
         <tr>

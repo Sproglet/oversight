@@ -325,7 +325,7 @@ case "$1" in
             exit
         fi
         if [ -e "$PENDING_FILE" ] ; then
-            SWITCHUSER "$OWNER" "$@"
+            #SWITCHUSER "$OWNER" "$@"
             LISTEN >> "$log" 2>&1 || rm -f "$LOCK"
         fi
 

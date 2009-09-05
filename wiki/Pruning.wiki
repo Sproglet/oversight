@@ -15,4 +15,4 @@ At this point Oversight has removed it from the index, and after that it will be
 http://oversight.googlecode.com/svn/trunk/screenshots/prune3.png 
 
 Note that Oversight will only prune files if their Grand Parent folder is present.
-This is to ensure files are not pruned just because the NAS or USB device on which they reside is disconnected.
+This is to help ensure files are not pruned just because the NAS or USB device on which they reside is disconnected. It's not perfect but should work for most cases, and is simpler than trying to interrogate the mount table , esp if files are indexed via symlinks.

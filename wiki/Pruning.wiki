@@ -1,0 +1,15 @@
+This page explains what happens to the index if you delete files manually...
+
+Lets say you have Life Of Brian
+
+http://oversight.googlecode.com/svn/trunk/screenshots/prune0.png
+http://oversight.googlecode.com/svn/trunk/screenshots/prune1.png
+
+If you delete the file using PC or other method , the first time you revisit the link
+you will see
+
+http://oversight.googlecode.com/svn/trunk/screenshots/prune2.png 
+
+At this point Oversight has removed from the index, and after that it will be gone...
+
+http://oversight.googlecode.com/svn/trunk/screenshots/prune3.png 

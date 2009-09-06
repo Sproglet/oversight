@@ -22,7 +22,7 @@
     
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
-char *icon_source(image_name);
+char *icon_source(char *image_name);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -299,6 +299,9 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *encoded_path = url_encode(path);
     int show_link = 1;
 
+    static int auto_prune=-2;
+    if (auto_prune == -2) auto_prune = *oversight_val("ovs_auto_prune") == '1';
+
     if (!exists(path) ) {
 
 
@@ -313,17 +316,17 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         HTML_LOG(3,"name[%s]",name);
 
         show_link=0;
-        if (!exists(grandparent_dir)) {
-
-            //media gone
-            //ovs_asprintf(&result,"<font class=error>%s</font>",name);
-            font_class="class=error";
-
-        } else {
+        if (exists(grandparent_dir) && auto_prune) {
 
             //media present - file gone!
             db_remove_row(rowid);
             ovs_asprintf(&result,"removed %s",name);
+
+        } else {
+
+            //media gone or auto_prune disabled
+            //ovs_asprintf(&result,"<font class=error>%s</font>",name);
+            font_class="class=error";
         }
         FREE(name);
         FREE(parent_dir);
@@ -1226,6 +1229,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     char *select = query_val("select");
     int tv_or_movie = has_category(row_id);
     char *cell_background_image=NULL;
+    int displaying_text;
 
     //Gaya has a navigation bug in which highlighting sometimes misbehaves on links 
     //with multi-lines of text. This was not a problem until the javascript title display
@@ -1236,20 +1240,30 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
     if (in_poster_mode() ) {
+        displaying_text=0;
         if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
 
             title = get_poster_mode_item(row_id,grid_toggle,&font_class,&grid_class);
-            if (link_first_word_only && *title != '<' && !util_starts_with(title,"<img")) {
+            if (*title != '<' && !util_starts_with(title,"<img")) {
+                displaying_text=1;
                 first_space = strchr(title,' ');
             }
 
         } else {
             title = get_poster_mode_item_unknown(row_id,grid_toggle,&font_class,&grid_class);
+            displaying_text=1;
+        }
+        if (displaying_text) {
+
+            //Reduce amount of text in link - to fix gaya navigation
             if (link_first_word_only) first_space = strchr(title,' ');
+
+            // Display alternate image
             switch (row_id->category) {
                 case 'T':
                     cell_background_image=icon_source("tv"); break;
                 case 'M':
+                case 'F':
                     cell_background_image=icon_source("video"); break;
                 default:
                     cell_background_image=icon_source("video"); break;
@@ -1257,6 +1271,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         }
 
     } else {
+        displaying_text=1;
 
         title = get_text_mode_item(row_id,grid_toggle,&font_class,&grid_class);
     }
@@ -1749,7 +1764,7 @@ char *default_button_attr() {
     return default_attr;
 }
 
-char *icon_source(image_name) {
+char *icon_source(char *image_name) {
     char *path;
     assert(image_name);
 

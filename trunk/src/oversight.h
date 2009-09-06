@@ -9,6 +9,7 @@
 #define OVS_EXTERN1(x) extern x
 #endif
 
+#include <time.h>
 #include "config.h"
 #include "hashtable.h"
 #include "array.h"
@@ -27,6 +28,7 @@ OVS_EXTERN(int g_playlist_count,0);
 OVS_EXTERN(int g_movie_total,0);
 OVS_EXTERN(int g_episode_total,0);
 OVS_EXTERN(int g_other_media_total,0);
+OVS_EXTERN(time_t g_start_clock,0);
 
 #define NUM_TITLE_LETTERS 256
 OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);

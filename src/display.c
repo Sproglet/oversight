@@ -22,6 +22,7 @@
     
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
+char *icon_source(image_name);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -1224,6 +1225,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *select = query_val("select");
     int tv_or_movie = has_category(row_id);
+    char *cell_background_image=NULL;
 
     //Gaya has a navigation bug in which highlighting sometimes misbehaves on links 
     //with multi-lines of text. This was not a problem until the javascript title display
@@ -1244,6 +1246,14 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         } else {
             title = get_poster_mode_item_unknown(row_id,grid_toggle,&font_class,&grid_class);
             if (link_first_word_only) first_space = strchr(title,' ');
+            switch (row_id->category) {
+                case 'T':
+                    cell_background_image=icon_source("tv"); break;
+                case 'M':
+                    cell_background_image=icon_source("video"); break;
+                default:
+                    cell_background_image=icon_source("video"); break;
+            }
         }
 
     } else {
@@ -1345,13 +1355,16 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s %s %s >%s%s%s</td>",
+    ovs_asprintf(&result,"\t<td %s%s %s %s %s >%s%s%s</td>",
+            (cell_background_image?"background=":""),
+            (cell_background_image?cell_background_image:""),
             width_attr,grid_class,mouse_ev,cell_text,
             (first_space?" ":""),
             (first_space?first_space+1:""));
 
     if (mouse_ev && *mouse_ev) FREE(mouse_ev);
     if (focus_ev && *focus_ev) FREE(focus_ev);
+    if (cell_background_image && *cell_background_image) FREE(cell_background_image);
 
     FREE(cell_text);
     FREE(idlist);
@@ -1641,7 +1654,13 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         rows = (numids + (cols-1)) / cols;
     }
 
-    ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
+    if (g_dimension->poster_mode) {
+        ovs_asprintf(&width_attr," width=%dpx height=%dpx ",
+            g_dimension->poster_menu_img_width,
+            g_dimension->poster_menu_img_height);
+    } else {
+        ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
+    }
     for ( r = 0 ; r < rows ; r++ ) {
 
 

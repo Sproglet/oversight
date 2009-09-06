@@ -1719,7 +1719,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     ovs_asprintf(&tmp,"<center><table class=overview_poster%d %s>\n%s\n</table></center>\n",
             g_dimension->poster_mode,
             w,
-            (result?result:"<tr><td>No selection</td><tr>")
+            (result?result:"<tr><td>No results</td><tr>")
     );
     FREE(result);
     result=tmp;

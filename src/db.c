@@ -15,6 +15,7 @@
 #include "gaya_cgi.h"
 #include "oversight.h"
 #include "hashtable_loop.h"
+#include "network.h"
 
 #define DB_ROW_BUF_SIZE 4000
 #define QUICKPARSE
@@ -567,6 +568,7 @@ DbRowId *db_rowid_new(Db *db) {
 
 void db_rowid_dump(DbRowId *rid) {
     
+    time_t t;
     HTML_LOG(1,"ROWID: id = %d",rid->id);
     HTML_LOG(1,"ROWID: watched = %d",rid->watched);
     HTML_LOG(1,"ROWID: title(%s)",rid->title);
@@ -577,12 +579,15 @@ void db_rowid_dump(DbRowId *rid) {
     HTML_LOG(1,"ROWID: genre(%s)",rid->genre);
     HTML_LOG(1,"ROWID: ext(%c)",rid->category);
     HTML_LOG(1,"ROWID: parts(%s)",rid->parts);
-    HTML_LOG(1,"ROWID: date(%s)",asctime(localtime((time_t *)&(rid->date))));
+    t = rid->date;
+    HTML_LOG(1,"ROWID: date(%s)",asctime(localtime(&t)));
     HTML_LOG(1,"ROWID: eptitle(%s)",rid->eptitle);
     HTML_LOG(1,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
     HTML_LOG(1,"ROWID: additional_nfo(%s)",rid->additional_nfo);
-    HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime((time_t *)&(rid->airdate))));
-    HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime((time_t *)&(rid->airdate_imdb))));
+    t = rid->airdate;
+    HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime(&t)));
+    t = rid->airdate_imdb;
+    HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime(&t)));
     HTML_LOG(1,"----");
 }
 
@@ -786,6 +791,52 @@ void clear_title_letter_count() {
     memset(g_title_letter_count,0,NUM_TITLE_LETTERS);
 }
 
+char *next_space(char *p) {
+    char *space=p;
+
+    while(*space) {
+        if (*space == ' ') return space;
+        if (*space == '\\' ) space++;
+        space++;
+    }
+    return NULL;
+}
+
+char *is_nmt_network_share(char *mtab_line) {
+
+
+    char *space=next_space(mtab_line);
+
+    HTML_LOG(3,"mtab looking at[%s]",space);
+    if (space) {
+        if (util_starts_with(space+1,NETWORK_SHARE)) {
+            HTML_LOG(0,"mtab nmt share[%s]",mtab_line);
+           return space+1;
+        }
+    }
+    HTML_LOG(2,"mtab ignore[%s]",mtab_line);
+    return NULL;
+}
+
+
+// Extract ip from mtab and try to ping it - corrupts buffer.
+int is_pingable(char *mtab_line) {
+    char *ip = mtab_line;
+    while (*ip && !isdigit(*ip)) ip++;
+    if (!*ip) {
+        HTML_LOG(0,"IP not found in [%s]",mtab_line);
+        return 0;
+    }
+    char *ipend = ip;
+    while (*ipend && (isdigit(*ipend) || *ipend == '.')) ipend++;
+
+    *ipend='\0';
+    HTML_LOG(1,"pinging [%s]",ip);
+    int result = ping(ip);
+    HTML_LOG(0,"ping [%s] = %d",ip,result);
+    return result ==1;
+}
+
 //
 // Returns null terminated array of rowsets
 DbRowSet **db_crossview_scan_titles(
@@ -808,30 +859,74 @@ DbRowSet **db_crossview_scan_titles(
 
     if (crossview) {
         //get iformation from any remote databases
-        DIR *d = opendir(NETWORK_SHARE);
-        if (d) {
-            struct dirent dent,*p;
-            while((readdir_r(d,&dent,&p)) == 0) {
+        //
+        //TODO there may be a long time out if trying to access an unmounted device.
+        //Better to scan /etc/mtab for shares then do a quick ping first.
+        //make m=ping timeout configurable.
+        if(1) {
+            FILE *fp = fopen("/etc/mtab","r");
+            if (fp) {
+#define MNT_BUF_SZ 999
+                char mnt_buf[MNT_BUF_SZ];
+                while(fgets(mnt_buf,MNT_BUF_SZ,fp)) {
 
-                char *path=NULL;
-                char *name=dent.d_name;
+                    char *mount_point = is_nmt_network_share(mnt_buf);
+                    if (mount_point) {
+                        if (is_pingable(mnt_buf)) {
+                            //Terminate the mount point string
+                            //Note could use * in formatting instead of modifying buffer.
+                            char *space_b4_mount_type = next_space(mount_point);
+                            if (space_b4_mount_type) {
+                                char *path;
+                                *space_b4_mount_type='\0';
+                                char *name = path + strlen(NETWORK_SHARE);
+                                ovs_asprintf(&path,"%s/Apps/oversight/index.db",mount_point);
+                                if (is_file(path)) {
 
-                ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
+                                    HTML_LOG(0,"crossview [%s]",path);
+                                    db_scan_and_add_rowset(
+                                        path,name,
+                                        name_filter,media_type,watched,
+                                        &rowset_count,&rowsets);
 
-                if (is_file(path)) {
+                                } else {
+                                    HTML_LOG(0,"crossview search [%s] doesnt exist",path);
+                                }
+                                FREE(path);
+                            }
 
-                    HTML_LOG(0,"crossview [%s]",path);
-                    db_scan_and_add_rowset(
-                        path,name,
-                        name_filter,media_type,watched,
-                        &rowset_count,&rowsets);
+                        }
+                    }
 
-                } else {
-                    HTML_LOG(0,"crossview search [%s] doesnt exist",path);
                 }
-                FREE(path);
+                fclose(fp);
             }
-            closedir(d);
+        } else {
+            DIR *d = opendir(NETWORK_SHARE);
+            if (d) {
+                struct dirent dent,*p;
+                while((readdir_r(d,&dent,&p)) == 0) {
+
+                    char *path=NULL;
+                    char *name=dent.d_name;
+
+                    ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
+
+                    if (is_file(path)) {
+
+                        HTML_LOG(0,"crossview [%s]",path);
+                        db_scan_and_add_rowset(
+                            path,name,
+                            name_filter,media_type,watched,
+                            &rowset_count,&rowsets);
+
+                    } else {
+                        HTML_LOG(0,"crossview search [%s] doesnt exist",path);
+                    }
+                    FREE(path);
+                }
+                closedir(d);
+            }
         }
     }
     HTML_LOG(0,"end db_crossview_scan_titles");

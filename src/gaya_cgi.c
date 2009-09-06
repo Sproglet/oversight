@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <time.h>
 
+#include "oversight.h"
 #include "gaya_cgi.h"
 #include "display.h"
 #include "util.h"
@@ -369,7 +370,7 @@ void html_vacomment(char *format,va_list ap) {
     if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
         // char *s2;
         //s2=html_encode(s1);
-        printf("<!-- %ld %s -->\n",clock()>>10,s1);
+        printf("<!-- %ld/%ld %s -->\n",clock()>>10,time(NULL)-g_start_clock,s1);
         fflush(stdout);
         //FREE(s2);
         FREE(s1);

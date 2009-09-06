@@ -92,6 +92,7 @@ void gaya_auto_load(char *url_encoded_file) {
 int main(int argc,char **argv) {
     int result=0;
 
+    g_start_clock = time(NULL);
     assert(sizeof(long long) >= 8);
 
 

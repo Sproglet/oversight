@@ -11,11 +11,7 @@
   function show(x)
   {
     if (title == 1) title = document.getElementById('menutitle');
-    if (x != '' ) {
-        title.firstChild.nodeValue = x;
-    } else {
-        title.firstChild.nodeValue = '[:STATUS:].';
-    }
+    title.firstChild.nodeValue = x;
   }
         </script>
     </head>
@@ -36,10 +32,11 @@
                     <td>[:MEDIA_SELECT:]</td>
                     <td>[:WATCHED_SELECT:]</td>
                     <td>[:SORT_TYPE_TOGGLE:]</td>
+                    <td>[:STATUS:]</td>
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
                 <tr>
-                    <td colspan=7 id=menutitle align=center>&nbsp;</td>
+                    <td colspan=8 id=menutitle align=center>&nbsp;</td>
                 </tr>
             </table>
         </td></tr><tr><td>

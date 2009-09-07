@@ -821,6 +821,15 @@ char *is_nmt_network_share(char *mtab_line) {
 
 // Extract ip from mtab and try to ping it - corrupts buffer.
 int is_pingable(char *mtab_line) {
+
+    static long ping_millis = -1;
+    if (ping_millis == -1) {
+        if (!config_check_long(g_oversight_config,"ovs_nas_timeout",&ping_millis)) {
+            HTML_LOG(0,"ping timeout defaulting to 100ms");
+            ping_millis=100;
+        }
+    }
+
     char *ip = mtab_line;
     while (*ip && !isdigit(*ip)) ip++;
     if (!*ip) {
@@ -832,7 +841,7 @@ int is_pingable(char *mtab_line) {
 
     *ipend='\0';
     HTML_LOG(1,"pinging [%s]",ip);
-    int result = ping(ip);
+    int result = ping(ip,ping_millis);
     HTML_LOG(0,"ping [%s] = %d",ip,result);
     return result ==1;
 }
@@ -879,7 +888,8 @@ DbRowSet **db_crossview_scan_titles(
                             if (space_b4_mount_type) {
                                 char *path;
                                 *space_b4_mount_type='\0';
-                                char *name = path + strlen(NETWORK_SHARE);
+                                char *name = mount_point + strlen(NETWORK_SHARE);
+
                                 ovs_asprintf(&path,"%s/Apps/oversight/index.db",mount_point);
                                 if (is_file(path)) {
 

@@ -26,6 +26,8 @@
 #include <sys/capability.h>
 #endif
 
+#include "gaya_cgi.h"
+
 /**
  * Ping: reference <Unix network programming>, volume 1, third edition.
  */
@@ -74,130 +76,13 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 }
 
 /**
- * return sock fd, < 0: error.
- * unit of timeouts: second.
- */
-int connect_remote_with_timeouts(char *host, char *port, int family, int socktype, int protocol,
-	int resolve_timeout, int connect_timeout, int send_timeout, int recv_timeout)
-{
-	struct timeval c_timeout, s_timeout, r_timeout;
-	int sock_fd = -1, flags, ret = 0;
-
-	struct addrinfo *rp, *addr_info;
-
-	addr_info = get_remote_addr(host, port, family, socktype, protocol, resolve_timeout);
-	if (addr_info == NULL)
-		return -1;
-
-	c_timeout.tv_sec = connect_timeout;
-	c_timeout.tv_usec = 0;
-
-	s_timeout.tv_sec = send_timeout;
-	s_timeout.tv_usec = 0;
-
-	r_timeout.tv_sec = recv_timeout;
-	r_timeout.tv_usec = 0;
-
-	for (rp = addr_info; rp != NULL; rp = rp->ai_next) {
-
-		sock_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-
-		if (sock_fd == -1) {
-			ret = -2;
-			goto END;
-		}
-
-		flags = fcntl(sock_fd, F_GETFL, 0);
-		if (flags < 0) {
-			ret = -3;
-			goto END;
-		}
-
-		if (fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-			ret = -4;
-			goto END;
-		}
-
-		/* Ignore setsockopt() failures -- use default */
-		setsockopt(sock_fd, IPPROTO_TCP, SO_SNDTIMEO, &s_timeout, sizeof(struct timeval));
-		setsockopt(sock_fd, IPPROTO_TCP, SO_RCVTIMEO, &r_timeout, sizeof(struct timeval));
-
-		ret = connect(sock_fd, addr_info->ai_addr, addr_info->ai_addrlen);
-
-		if (ret == 0) {
-			if (fcntl(sock_fd, F_SETFL, flags) < 0) {
-				ret = -5;
-				goto END;
-			}
-		} else if (ret < 0 && errno != EINPROGRESS) {
-			ret = -6;
-			goto END;
-		}
-
-		/* non-blocking listen */
-		fd_set rs, ws, es;
-		FD_ZERO(&rs);
-		FD_SET(sock_fd, &rs);
-		ws = es = rs;
-
-		ret = select(sock_fd + 1, &rs, &ws, &es, &c_timeout);
-		if (ret < 0) {
-			ret = -7;
-			goto END;
-		} else if (0 == ret) {
-			ret = -8;
-			goto END;
-		}
-
-		if (!FD_ISSET(sock_fd, &rs) && !FD_ISSET(sock_fd, &ws)) {
-			ret = -9;
-			goto END;
-		}
-
-		int err;
-		socklen_t len = sizeof(int);
-		if (getsockopt(sock_fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-			ret = -10;
-			goto END;
-		}
-
-		if (err != 0) {
-			ret = -11;
-			goto END;
-		}
-
-		/* socket is ready for read/write, reset to blocking mode */
-		if (fcntl(sock_fd, F_SETFL, flags) < 0) {
-			ret = -12;
-			goto END;
-		}
-	}
-
-END:
-
-	freeaddrinfo(addr_info);
-	addr_info = NULL;
-
-	if (ret < 0) {
-		if (sock_fd > 0) {
-			close(sock_fd);
-			sock_fd = -1;
-		}
-		return ret;
-	} else {
-		return sock_fd;
-	}
-}
-
-
-/**
  * Need root privilege
  * @return:
  * > 0 -- ok,
  * < 0 -- failed.
  * Ping: reference <Unix network programming>, volume 1, third edition.
  */
-int ping (char *host)
+int ping (char *host,long timeout_millis)
 {
 	#define BUF_SIZE	1500
 	#define ICMP_REQUEST_DATA_LEN 56
@@ -214,9 +99,19 @@ int ping (char *host)
 
 	int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
-	struct timeval timeout = {5, 0};
-	setsockopt(sockfd, IPPROTO_ICMP, SO_SNDTIMEO, &timeout, sizeof(struct timeval));
-	setsockopt(sockfd, IPPROTO_ICMP, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
+    long timeout_secs = timeout_millis / 1000;
+    long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
+
+	struct timeval timeout = {timeout_secs, timeout_usecs };
+
+    int res;
+
+	if ((res = setsockopt(sockfd, IPPROTO_ICMP, SO_SNDTIMEO, &timeout, sizeof(struct timeval))) != 0) {
+        HTML_LOG(0,"Error %d/%d setting timeout",res,errno);
+    }
+	if ((res = setsockopt(sockfd, IPPROTO_ICMP, SO_RCVTIMEO, &timeout, sizeof(struct timeval))) != 0) {
+        HTML_LOG(0,"Error %d/%d setting timeout",res,errno);
+    }
 
 	/* don't need special permissions any more */
 	setuid(getuid());

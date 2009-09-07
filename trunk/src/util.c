@@ -21,6 +21,20 @@
 #include "oversight.h"
 
 
+// All folders have . and ..
+int is_empty_dir(char *dname)
+{
+    int i=0;
+    DIR *d = opendir(dname);
+    if (d) {
+        while(readdir(d)) {
+            i++;
+            if (i == 3) break;
+        }
+        closedir(d);
+    }
+    return i >= 3;
+}
 
 // String hashfunction - used by string_string_hashtable()
 // http://www.cse.yorku.ca/~oz/hash.html

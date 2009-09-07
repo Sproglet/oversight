@@ -316,7 +316,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         HTML_LOG(3,"name[%s]",name);
 
         show_link=0;
-        if (exists(grandparent_dir) && auto_prune) {
+        if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
 
             //media present - file gone!
             db_remove_row(rowid);

@@ -249,7 +249,6 @@ void add_letter_range(struct hashtable *title,unsigned char start,unsigned char 
     char group_title[50] = "";
     char group_range[3] = "";
 
-    char *p=group_title;
 
     for(ch = start ; ch <= end ; ch ++ ) {
 
@@ -267,7 +266,6 @@ void add_letter_range(struct hashtable *title,unsigned char start,unsigned char 
             // Start range
             group_range[0]=ch;
             // Start title
-            //p=group_title;
             sprintf(group_title,"%c",ch);
         }
         size += delta;
@@ -276,8 +274,6 @@ void add_letter_range(struct hashtable *title,unsigned char start,unsigned char 
         group_range[2]='\0';
         // update title
         if (delta) {
-            //*p++ = ch;
-            //*p = '\0';
             if (ch != *group_range) {
                 sprintf(group_title+1,"-%c",ch);
             }

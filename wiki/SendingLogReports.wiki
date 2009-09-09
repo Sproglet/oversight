@@ -27,8 +27,7 @@ Send the following logs if you thing files have scanned OK but you are getting f
 
 To send GUI logs:
 
-  # Open Oversight in the PC. Go to OVersight->Setup->Oversight Jukebox Settings General
-and set log level to '1' (NO MORE!), and save , 
+  # Open Oversight in the PC. Go to OVersight->Setup->Oversight Jukebox Settings General and set log level to '1' (NO MORE!), and save , 
   # now go back to the page that is causing problems. 
   # if using IE/FF, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
   # email the page to me as an attachment  nmt AT lordy dot org Dot uk.

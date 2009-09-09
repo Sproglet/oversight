@@ -9,7 +9,7 @@ Oversight is optimized for scene release names. So in most cases files downloade
 
 =Movie Names=
 
-Scene release name (ie the download name) are best if the download was made available within the last 2 years on usenet.
+Scene release name (ie the download name) are best if the download was made available within the last 2 years on usenet. 
 
 After that the film title or title and year.
 
@@ -23,7 +23,10 @@ The Wrestler 2008.iso
 The Wrestler - 2008.iso
 The Wrestler (2008).iso
 
-You can also put the imdbid in a nfo file in the same folder. In this case it would be tt1125849
+You can also put the imdbid in a nfo file in the same folder. In this case it would be tt1125849.
+
+Note on occasion two scene releases will have the same name eg..
+scr-tw.iso actually matches both The Wrestler and The Walker. In this case, at present it will chose the one with the most occurences.
 
 =TV Shows=
 
@@ -37,7 +40,7 @@ Lost.S05e05.720p.hdtv.avi
 
 ==Abbreviations==
 
-In order to support scene names, various abbreviations are also searched, if there is not direct matvh at thetvdb.com. In this case the TvProgram should also be listed on epguides.com for a good chance of getting the right abbreviation. This is pretty much guesswork from Oversights perspective but it seems to do a good job. As more than one show may match an abbreviate, Oversight discards ones that do not have the Overview and FirstAired information set at thetvdb.com. 
+In order to support scene names, if there is not direct match at thetvdb.com., various abbreviations are also searched, as this is quite common.  In this case, for this to work, the Tv Program also needs to be listed on epguides.com. This is pretty much guesswork from Oversights perspective but it seems to do a good job, for stuff I watch. As more than one show may match an abbreviation, Oversight discards ones that do not have the "Overview" and "FirstAired" information defined at thetvdb.com. 
 
 Anything between the eipsode text and the extension is stored as additional information, and is displayed if Oversight cannot find the episode title at thetvdb.com.
 

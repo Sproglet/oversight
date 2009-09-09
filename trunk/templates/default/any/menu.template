@@ -10,8 +10,8 @@
   var title = 1;
   function show(x)
   {
-    if (title == 1) title = document.getElementById('menutitle');
-    title.firstChild.nodeValue = x;
+    if (title == 1) title = document.getElementById('menutitle').firstChild;
+    title.nodeValue = x;
   }
         </script>
     </head>
@@ -28,6 +28,7 @@
                         <font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>
                     <td>[:TITLE_SELECT:]</td>
+                    <td>[:TITLE2_SELECT:]</td>
                     <td>[:GENRE_SELECT:]</td>
                     <td>[:MEDIA_SELECT:]</td>
                     <td>[:WATCHED_SELECT:]</td>

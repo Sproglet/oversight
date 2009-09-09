@@ -1,33 +1,6 @@
-Improved abbreviation selection.
-
-Givin  programs a1,a2,a3  and file a.avi it currently searches for a1+a a2+a a3+a and sees which has the most links.
-Alternative is to search just for "a" then clean the page of all formatting & scripts. then see which program 
-occurs the most. Care will have to be taken if program is common words. This is one reason why current approach is good - but slow.
-We can focus on certain subtext - eg <span class="s"> but this adds more dependency on site layout. Put on hold for now!
+Check why Russell Peters Outsource - one black one green
 
 =================
-
-After getting possible titles from epguides filter them at thetvdb. use a two letter starts with filter rather than individual lookups?
-eg instead of
-DEBUG]  05:11:50 : pre tvdb check:Sex Games=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Stromberg=[abbreviation-contraction]
-[DEBUG]  05:11:50 : pre tvdb check:Speed Grapher=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Spy Groove=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Saving Grace=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Still Game=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Samurai Girl=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Sams Game=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Sd Gundam=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Smart Guy=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Shoestring=[abbreviation-contraction]
-[DEBUG]  05:11:50 : pre tvdb check:Shaky Ground=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Spy Game=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:State Of Grace=[abbreviation-initials]
-[DEBUG]  05:11:50 : pre tvdb check:Space Ghost=[abbreviation-initials]
-triggering 14 searches try searches for sa , se, st , sp, sd ,sm sh and scrape. Downside this is NOT an api page
-so any savings may be lost regardless.
-
-=======================
 
 check torrent watch
 

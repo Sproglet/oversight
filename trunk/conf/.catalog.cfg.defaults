@@ -24,8 +24,6 @@ catalog_tv_file_fmt="/share/Tv/{:TITLE:}{ - Season :SEASON:}/{:NAME:}"
 #  has to be rebuilt.
 ##----------------------------------------------------------------------------------------
 
-catalog_folder_titles=0
-
 catalog_nfo_read="yes"
 
 #catalog_nfo_write=never|always|if_none_exists

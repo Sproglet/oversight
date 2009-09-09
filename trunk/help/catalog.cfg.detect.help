@@ -1,4 +1,3 @@
-catalog_folder_titles:Set to 1 for force use of folder names rather than search for program titles.|0|1
 catalog_nfo_read:Read details from existing nfo|yes|no
 catalog_fetch_posters:Set to 1 to fetch posters|yes|no
 catalog_format_tags:Comma separated list of format tags that are unlikey to be part of program name|dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdscr,blu720p,blu1080p,bluray,dvdrip,brrip,dsrip,hdtv,ntsc,pdtv,r5,screener,workprint,ws,x264,xvid,yenc,alt,par2

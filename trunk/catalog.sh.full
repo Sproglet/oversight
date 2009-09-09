@@ -554,7 +554,7 @@ END{
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
     split(g_settings["catalog_cert_country_list"],gCertificateCountries,"|");
 
-    gExtList1="avi|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|m4v|wmv";
+    gExtList1="avi|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
     gExtList2="img|iso";
 
     gExtList1=tolower(gExtList1) "|" toupper(gExtList1);
@@ -5015,12 +5015,6 @@ function fixTitles(idx) {
         DEBUG("Setting title to file["gTitle[idx]"]");
     }
 
-    # If catalog_folder_titles set use the folder name
-    if ( g_settings["catalog_folder_titles"] == 1 ) {
-        gTitle[idx] = gFolder[idx];
-        gsub(/.*\//,"",gTitle[idx]); #Remove path
-        DEBUG("Setting title to folder["gTitle[idx]"]");
-    }
     gTitle[idx]=clean_title(gTitle[idx]);
 }
 

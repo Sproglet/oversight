@@ -3,19 +3,32 @@ As things are currently in beta - if something doesnt work as expected its quite
 
 As the software matures hopefully this will happen less often.
 
+<wiki:toc max_depth="1" />
+
+=Scanning Logs=
+
+Send the following logs if you have problems with scanning or adding new content:
+
 To send me logs:
 
-1. (on the TV/NMT go to Setup/NMT Applications) and make sure SMB/Samba service is started.
-
-2. On your PC, open windows explorer and in the address bar type \\192.128.x.y where 192.168.x.y is the IP address of your NMT.
-
-3. Browse to Apps\oversight\
-
-4. Right click on the logs folder and zip it (send to Compressed Folder/Winzip/7zip/Winrar etc)
-
-5. Email the new compressed file to me. nmt at lordy dot org period uk.
-
-6. If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
+  # (on the TV/NMT go to Setup/NMT Applications) and make sure SMB/Samba service is started.
+  # On your PC, open windows explorer and in the address bar type \\192.128.x.y where 192.168.x.y is the IP address of your NMT.
+  # Browse to Apps\oversight\
+  # Right click on the logs folder and zip it (send to Compressed Folder/Winzip/7zip/Winrar etc)
+  # Email the new compressed file to me. nmt at lordy dot org period uk.
+  # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
 
 If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
 Eg if scanning always fails on a particular file name, then that information along with the filename and the logs is enough.
+
+= GUI Logs=
+
+Send the following logs if you thing files have scanned OK but you are getting funny things happen in the user interface.
+
+To send GUI logs:
+
+  # Open Oversight in the PC. Go to OVersight->Setup->Oversight Jukebox Settings General
+and set log level to '1' (NO MORE!), and save , 
+  # now go back to the page that is causing problems. 
+  # if using IE/FF, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
+  # email the page to me as an attachment  nmt AT lordy dot org Dot uk.

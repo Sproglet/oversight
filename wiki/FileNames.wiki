@@ -1,4 +1,7 @@
 An overriding requirement of Oversight is to minimize manual file renaming.
+
+<wiki:toc max_depth="2" />
+
 Most non-alphanumeric characters are ignored when trying to guess what film or tv show is in a file.
 
 Oversight is optimized for scene release names. So in most cases files downloaded should not be renamed. However it can also attempt to lookup names using the Show or Film title.

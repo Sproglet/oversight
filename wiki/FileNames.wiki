@@ -45,6 +45,9 @@ Best format is the Show Name (as per thetvdb.com )
 
 =Images=
 
+The scanning process downloads its own posters and fanrt to an internal folder, however you can use you own posters if you put them in the same folder as the media.
+You do not need to rescan in this case. Oversight finds the new posters as it is drawing each page.
+
 ==Posters==
 
 At present Posters should have the same name as the file but the jpg or png extension. eg

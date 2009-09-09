@@ -40,10 +40,15 @@ DbRowId *read_and_parse_row(
         );
 int in_idlist(int id,int size,int *ids);
 void get_genre_from_string(char *gstr,struct hashtable **h);
+void get_first_two_letters(char *t);
+
+#define UNSET -2
+static int use_folder_titles = UNSET;
 
 #define COPY_STRING(len,from) ((from)?memcpy(MALLOC((len)+1),(from),(len)+1):NULL)
 
-char *copy_string(int len,char *s) {
+char *copy_string(int len,char *s)
+{
     char *p=NULL;
     if (s) {
         p = MALLOC(len+1);
@@ -52,7 +57,8 @@ char *copy_string(int len,char *s) {
     return p;
 }
 
-int db_lock_pid(Db *db) {
+int db_lock_pid(Db *db)
+{
 
     int lockpid=0;
 
@@ -66,7 +72,8 @@ int db_lock_pid(Db *db) {
     return lockpid;
 }
 
-int db_is_locked_by_another_process(Db *db) {
+int db_is_locked_by_another_process(Db *db)
+{
 
     int result=0;
     int lockpid =  db_lock_pid(db) ;
@@ -85,7 +92,8 @@ int db_is_locked_by_another_process(Db *db) {
     return result;
 }
 
-int db_lock(Db *db) {
+int db_lock(Db *db)
+{
 
     int backoff[] = { 10,10,10,10,10,10,20,30, 0 };
 
@@ -114,7 +122,8 @@ int db_lock(Db *db) {
     return db->locked_by_this_code;
 }
 
-int db_unlock(Db *db) {
+int db_unlock(Db *db)
+{
 
     db->locked_by_this_code=0;
     HTML_LOG(1,"Released lock [%s]\n",db->lockfile);
@@ -127,7 +136,8 @@ int db_unlock(Db *db) {
  */
 Db *db_init(char *filename, // path to the file - if NULL compute from source
         char *source       // logical name or tag - local="*"
-        ) {
+        )
+{
 
     Db *db = MALLOC(sizeof(Db));
 
@@ -171,7 +181,8 @@ int field_pos(char *field_id,char *buffer,char **start,int *length,int quiet) {
     return 0;
 }
 
-int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet) {
+int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
+{
 
     char term='\0';
     int y,m,d;
@@ -202,7 +213,8 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet) {
 
 
 
-int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet) {
+int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
+{
     assert(val_ptr);
     assert(field_id);
     assert(buffer);
@@ -424,6 +436,38 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
     }
     if (free_val) FREE(val);
 }
+
+void set_title_as_folder(DbRowId *rowid)
+{
+
+    char *e=strrchr(rowid->file,'\0');
+    char *s = NULL;
+    int is_vob=0;
+
+    if (e && e > rowid->file) {
+
+        e--;
+        s = e;
+
+        if (e > rowid->file && *e == '/') {
+            *e = '\0';
+            s--;
+            is_vob=1;
+        }
+        while(s > rowid->file && *s != '/') {
+            s--;
+        }
+        if ( s >= rowid->file ) {
+            HTML_LOG(1,"Title changed from [%s] to [%s]",rowid->title,s);
+            FREE(rowid->title);
+            rowid->title = STRDUP(s);
+            if (is_vob) {
+                *e='/';
+            }
+        }
+    }
+}
+
 #define DB_NAME_BUF_SIZE 10
 #define DB_VAL_BUF_SIZE 4000
 #define RESET 1
@@ -546,6 +590,10 @@ eol:
     }
     if (rowid->genre == NULL) {
         HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
+    }
+    if (use_folder_titles) {
+
+        set_title_as_folder(rowid);
     }
     return rowid;
 }
@@ -859,6 +907,10 @@ DbRowSet **db_crossview_scan_titles(
 
     clear_title_letter_count();
 
+    if (use_folder_titles == UNSET ) {
+        use_folder_titles = *oversight_val("ovs_use_folders_as_title") == '1';
+    }
+
     HTML_LOG(1,"begin db_crossview_scan_titles");
     // Add information from the local database
     db_scan_and_add_rowset(
@@ -1156,6 +1208,8 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                 if (rowid.genre) {
                     get_genre_from_string(rowid.genre,&g_genre_hash);
                 }
+
+                //get_first_two_letters(rowid.title);
 
                 unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
                 g_title_letter_count[toupper(first_letter)]++;
@@ -1492,6 +1546,28 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
 
             gstr = p;
         }
+    }
+}
+
+void get_first_two_letters(char *t) {
+    if (g_first_two_letters == NULL) {
+        g_first_two_letters = string_string_hashtable(20);
+    }
+
+    char *p = t;
+    char pair[3];
+    p = t-1;
+    while(p) {
+        p++;
+        if (!*p) break;
+        pair[0]=toupper(*p);
+        pair[1]=tolower(p[1]);
+        pair[2]='\0';
+        if (hashtable_search(g_first_two_letters,pair) == NULL) {
+            char *q=STRDUP(pair);
+            hashtable_insert(g_first_two_letters,q,q);
+        }
+        p = strchr(p,' ');
     }
 }
 

@@ -319,6 +319,14 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
     *free_result = 0;
     return result;
 }
+char *macro_fn_title2_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char *result=NULL;
+    if (!result) {
+        result =  auto_option_list("t2","All",g_first_two_letters);
+    }
+    *free_result = 0;
+    return result;
+}
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
@@ -1185,6 +1193,7 @@ void macro_init() {
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
         hashtable_insert(macros,"TITLE_SELECT",macro_fn_title_select);
+        hashtable_insert(macros,"TITLE2_SELECT",macro_fn_title2_select);
         hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);

@@ -1448,7 +1448,7 @@ char *template_replace_only(char *template_name,char *input,int num_rows,DbRowId
             char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
             count++;
             *macro_name_end = *MACRO_STR_START_INNER;
-            if (macro_output && *macro_output) {
+            if (macro_output) {
 
 
                 //convert AA[BB:$CC:DD]EE to AABBnewDDEE

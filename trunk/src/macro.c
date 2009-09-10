@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <ctype.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
 
@@ -16,6 +17,7 @@
 #include "macro.h"
 
 static struct hashtable *macros = NULL;
+char *get_variable(char *vname);
 
 long get_current_page() {
     long page;
@@ -1045,43 +1047,168 @@ char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_r
 }
 
 // Parse val +2,-3,/4 
-char *numeric_constant_macro(long val,Array *args) {
+long numeric_constant_eval(long val,Array *args) {
 
-    char *result = NULL;
+    if (args) {
+        //int i;
+        //for(i = 0 ; i < args->size ; i++ ) {
+            char *p=args->array[0];
+            HTML_LOG(0,"start parsing [%s]",p);
+            int error=0;
+
+            char op='+';
+            while (!error && *p && op) {
+
+                long num2;
+                char *end;
+                char *numstr;
+                char *nextp;
+                //get the operator
+                HTML_LOG(0,"parsing [%s]",p);
+
+               
+#if 0
+                // parse number
+                if (*p == '$') {
+                    p++;
+                    nextp=p;
+                    while(*nextp && ( isalnum(*nextp) || strchr("_[]",*nextp) ) ) {
+                        nextp++;
+                    }
+                    char tmp = *nextp;
+                    *nextp='\0';
+                    numstr=get_variable(p);
+                    HTML_LOG(0,"var [%s]=[%s]",p,numstr);
+                    *nextp=tmp;
+                    if (numstr && *numstr) {
+                        num2 = strtol(numstr,&end,10);
+
+                    } else {
+                        html_error("bad setting [%s]",p);
+                        break;
+                    }
+                    p = nextp;
+
+                } else
+#endif
+                    
+                    if (isdigit(*p)) {
+
+                    num2=strtol(p,&nextp,10);
+                    numstr=p;
+                    p = nextp;
+
+                } else {
+                    html_error("unexpected character [%c]",*p);
+                    error=1;
+                    break;
+                }
+
+                if (*numstr == '\0' ) {
+                    html_error("bad number [%s]",numstr);
+                    break;
+                }
+
+                HTML_LOG(0,"val[%ld] op[%c] num [%ld]",val,op,num2);
+
+                // do the calculation
+                switch(op) {
+                    case '+': val += num2; break;
+                    case '-': val -= num2; break;
+                    case '/': val /= num2; break;
+                    case '*': val *= num2; break;
+                    case '%': val %= num2; break;
+
+                    default:
+                        html_error("unexpected operator [%d]",*p);
+                        error=1;
+                        break;
+                }
+                if (*p == '\0') break;
+                op=*p++;
+            }
+        //}
+    }
+    return val;
+}
+
+void replace_variables(Array *args)
+{
     if (args) {
         int i;
         for(i = 0 ; i < args->size ; i++ ) {
+            HTML_LOG(0,"Begin replace_variables [%s]",args->array[i]);
             char *p=args->array[i];
+            char *newp=NULL;
+            char *v;
+            while((v=strchr(p,'$')) != NULL) {
+                char *endv = v+1;
+                while (*endv && (isalnum(*endv) || strchr("_[]",*endv))) {
+                    endv++;
+                }
+                char tmp = *endv;
+                *endv = '\0'; //replace char following variable name
+                *v='\0'; //replace $ with null
+                char *replace=get_variable(v+1);
 
-            //get the operator
-            char op='+';
-            switch(*p) {
-                case '+': case '-': case '/': case '*': case '%':
-                    op=*p++; break;
-            }
+                char *tmp2;
+                ovs_asprintf(&tmp2,"%s%s%s",NVL(newp),p,replace);
+                FREE(newp);
+                newp = tmp2;
 
-            // parse number
-            char *end;
-            long num2=strtol(p,&end,10);
-            if (*p == '\0' || *end != '\0' ) {
-                html_error("bad number [%s]",p);
+                //restore end of strings
+                *p='$';
+                *endv = tmp;
+                //advance
+                p = endv;
             }
-
-            // do the calculation
-            switch(op) {
-                case '+': val += num2; break;
-                case '-': val -= num2; break;
-                case '/': val /= num2; break;
-                case '*': val *= num2; break;
-                case '%': val %= num2; break;
+            // Last bit
+            if (*p) {
+                char *tmp2;
+                ovs_asprintf(&tmp2,"%s%s",NVL(newp),p);
+                FREE(newp);
+                newp = tmp2;
             }
+            //Now replace the array variable
+            if (newp) {
+                FREE(args->array[i]); //TODO : can we free this?
+                args->array[i] = newp;
+            }
+            HTML_LOG(0,"End replace_variables [%s]",args->array[i]);
         }
     }
-    ovs_asprintf(&result,"%ld",val);
+}
+
+char *numeric_constant_macro(long val,Array *args) {
+    char *result = NULL;
+    long out = numeric_constant_eval(val,args);
+    ovs_asprintf(&result,"%ld",out);
     return result;
 }
 
-char *macro_fn_font_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+char *macro_fn_if(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    long l = numeric_constant_eval(0,args);
+    if (l) {
+        HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[1]);
+        if (args->size >= 2) {
+            return STRDUP(args->array[1]);
+        }
+    } else {
+        HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[2]);
+        if (args->size >= 3) {
+            return STRDUP(args->array[2]);
+        }
+    }
+    return NULL;
+}
+char *macro_fn_number(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    return numeric_constant_macro(0,args);
+}
+char *macro_fn_font_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
     return numeric_constant_macro(g_dimension->font_size,args);
 }
 char *macro_fn_title_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -1180,6 +1307,8 @@ void macro_init() {
         hashtable_insert(macros,"IS_GAYA",macro_fn_is_gaya);
         hashtable_insert(macros,"INCLUDE_TEMPLATE",macro_fn_include);
         hashtable_insert(macros,"START_CELL",macro_fn_start_cell);
+        hashtable_insert(macros,"NUMBER",macro_fn_number);
+        hashtable_insert(macros,"IF",macro_fn_if);
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
@@ -1207,7 +1336,8 @@ void macro_init() {
 // unpak_xxx = unpak config
 //
 
-char *get_variable(char *vname) {
+char *get_variable(char *vname)
+{
 
     char *result=NULL;
 
@@ -1274,18 +1404,8 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
                 *p = '\0';
                 fn = hashtable_search(macros,call);
                 *p='(';
-                // Replace any veriables in the function
-                if (args) {
-                    int i;
-                    for(i = 0 ; i < args->size ; i++ ) {
-                        char *v=args->array[i];
-                        if (v && *v=='$') {
-                            char *new_v = STRDUP(get_variable(v+1));
-                            FREE(v);
-                            args->array[i] = new_v;
-                        }
-                    }
-                }
+                // Replace any variables in the function
+                replace_variables(args);
             }
         }
                 

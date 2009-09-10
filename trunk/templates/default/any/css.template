@@ -1,26 +1,8 @@
 .dummy { color:red; }
 
-#menutitle {
-    font-size:12pt;
-    color:white;
-    text-align:center;
-    font-family:"arial";
-    font-weight:bold;
-}
-
-html,body {
-    height:100%;
-    margin:0;
-    padding:0;
-    border:none;
-}
-#main {
-    height:99%;
-    width:100%;
-    border:none;
-    margin:0;
-    padding:0;
-}
+#menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
+html,body { height:100%; margin:0; padding:0; border:none; }
+#main { height:99%; width:100%; border:none; margin:0; padding:0; }
 
 td.gc_fresh { background-color:#AA00AA; border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
 td.gc { border-width:2px; }
@@ -94,18 +76,6 @@ table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 .overview_poster0 { text-align:center;  width:100%;}
 table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
-
-/* Filter bar - inactive */ .dummy { color:red; }
-.filterbar0 {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; font-size:8pt; }
-.filterbarno0 {	color:#888800; }
-.filterbartxt0 {	color:white; }
-
-/* Filter bar - active */ .dummy { color:red; }
-.filterbar1 {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; }
-.filterbarno1 {	color:yellow; font-weight:bold; }
-.filterbartxt1 {	color:#FFFF44; }
-.filterbar1 {	background-color:#3333AA; }
-.keypad { color:red; font-weight:bold; }
 
 .yellowbutton { color:#FFFF55; background-color:black; font-weight:bold ; text-decoration:none; }
 a.yellowbutton { color:black ; }

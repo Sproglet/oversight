@@ -1060,7 +1060,6 @@ long numeric_constant_eval(long val,Array *args) {
             while (!error && *p && op) {
 
                 long num2;
-                char *end;
                 char *numstr;
                 char *nextp;
                 //get the operator
@@ -1070,8 +1069,12 @@ long numeric_constant_eval(long val,Array *args) {
 #if 0
                 // parse number
                 if (*p == '$') {
+                    char *end;
                     p++;
                     nextp=p;
+                    if (*nextp == '?') {
+                        nextp++;
+                    }
                     while(*nextp && ( isalnum(*nextp) || strchr("_[]",*nextp) ) ) {
                         nextp++;
                     }
@@ -1085,6 +1088,10 @@ long numeric_constant_eval(long val,Array *args) {
 
                     } else {
                         html_error("bad setting [%s]",p);
+                        break;
+                    }
+                    if (*end != '\0') {
+                        html_error("bad number [%s]",numstr);
                         break;
                     }
                     p = nextp;
@@ -1143,6 +1150,9 @@ void replace_variables(Array *args)
             char *v;
             while((v=strchr(p,'$')) != NULL) {
                 char *endv = v+1;
+                if (*endv == '?') {
+                    endv++;
+                }
                 while (*endv && (isalnum(*endv) || strchr("_[]",*endv))) {
                     endv++;
                 }

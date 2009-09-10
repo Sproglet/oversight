@@ -724,7 +724,7 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
     char *modifier="";
 
     if (is_fanart) {
-        modifier="fanart";
+        modifier="fanart.";
     }
 
 if (1) {

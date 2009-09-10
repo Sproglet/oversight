@@ -9,11 +9,11 @@
     </head>
     <body focuscolor=yellow focustext=black class=admin_background[:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=&idlist=&action=,back):] Oversight Configuration</h1>
-        <h3>[:STATUS:][:IF($ovs_wan_admin,Wan Admin Enabled):][:IF($ovs_wan_delete,Wan delete enabled):]</h3>
+        <h3>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access Enabled!):]</h3>
         <table width=100%>
         <tr>
             <td width=5%></td>
-            <td align=left width=45%>[:CONFIG_LINK(oversight.cfg,help,Oversight Jukebox Settings General):]</td>
+            <td align=left width=45%>[:CONFIG_LINK(oversight.cfg,help,General Settings):]</td>
             <td width=5%>[:ICON(catalog):]</td>
             <td align=left width=45%>
                 <ul>
@@ -55,18 +55,6 @@
             <td align=left width=45%>[:CONFIG_LINK(unpak.cfg,help,Unpak- Unpacking and Repairing):]</td>
         </tr>
         <tr>
-<!--
-            <td width=5%>[:ICON(display):]</td>
-            <td align=left width=45%>
-                <table>
-                    <tr>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080.help,1080 text mode,class=scanlines1080):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-poster.help,1080 poster mode,class=scanlines1080):]</td>
-                        <td width=25%>[:CONFIG_LINK(oversight.cfg,1080-detail.help,1080 detail view,class=scanlines1080):]</td>
-                    </tr>
-                </table>
-            </td>
--->
             <td width=5%>[:ICON(security):]</td>
             <td align=left width=45%>[:CONFIG_LINK(oversight.cfg,secure.help,Internet Access):]</td>
         </tr>

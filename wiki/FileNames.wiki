@@ -7,7 +7,7 @@ Most non-alphanumeric characters are ignored when trying to guess what film or t
 
 Oversight is optimized for scene release names. So in most cases files downloaded should not be renamed. However it can also attempt to lookup names using the Show or Film title.
 
-=Movie Names=
+=Movie Names (avi,mkv,iso etc) =
 
 Scene release name (ie the download name) are best if the download was made available within the last 2 years on usenet. 
 
@@ -70,7 +70,7 @@ The-Wrestler.avi
 
 Again this may change to automatically chose any landscape image in the same folder.
 
-=ISOS=
+=ISO TV Shows=
 
 There is no support for ISO TV SHows. yet. 
 For Movie Isos, Posters, Fanart and NFO should be in the same folder that *contains* the VIDEO_TS folder. (ie they should be neighbours)

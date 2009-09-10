@@ -1,0 +1,19 @@
+Oversight launches incremental scans in three instances:
+
+1. On completion of a usenet download.
+2. When new content is added to 'watch folder'
+3. When a NMT Transmission Torrent is completed (this needs more testing)
+
+I plan I have a rescan button against a particular item. 
+First we need an edit option to change IMDB Id., fanart & poster links.
+Then "save" or "save and rescan"
+
+In the mean time yo can manually rescan if you have telnet installed.
+
+#log in
+#type 'cd /share/Apps/oversight'
+#type './catalog.sh /path/to/new/media/folder'
+
+Or if you want to grab new posters
+
+#type './catalog.sh UPDATE_POSTERS /path/to/new/media/folder'

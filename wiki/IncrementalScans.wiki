@@ -11,10 +11,7 @@ Then "save" or "save and rescan"
 
 In the mean time yo can manually rescan if you have telnet installed.
 
-#log in
-#type 'cd /share/Apps/oversight'
-#type './catalog.sh /path/to/new/media/folder'
-
-Or if you want to grab new posters
-
-#type './catalog.sh UPDATE_POSTERS /path/to/new/media/folder'
+  #log in
+  #type 'cd /share/Apps/oversight'
+  #type './catalog.sh /path/to/new/media/folder'
+  #Or to get new posters type './catalog.sh UPDATE_POSTERS /path/to/new/media/folder'

@@ -33,7 +33,7 @@
                     <td>[:MEDIA_SELECT:]</td>
                     <td>[:WATCHED_SELECT:]</td>
                     <td>[:SORT_TYPE_TOGGLE:]</td>
-                    <td>[:STATUS:]</td>
+                    <td>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</td>
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
                 <tr>

@@ -2227,8 +2227,16 @@ name) {
 #The resultant links are scraped for imdb ids.
 # Not newzleech not used as the search is too vague. bintube and binsearch have exact search.
 function searchOnlineNfoLinksForImdbAlternate(name,\
-choice,i,url,sz) {
-    sz=150;
+url) {
+    url=searchOnlineNfoLinksForImdbAlternateFilter(name,"",150);
+    if (url == "") {
+        url=searchOnlineNfoLinksForImdbAlternateFilter(name,"+nfo","");
+    }
+    return url;
+}
+
+function searchOnlineNfoLinksForImdbAlternateFilter(name,additionalKeywords,minSize,\
+choice,i,url) {
     g_nfo_search_choices = 2;
     g_search_total["online_nfo"]++;
 
@@ -2244,16 +2252,16 @@ choice,i,url,sz) {
             # Film - search bintube for nfos
             url = searchOnlineNfoLinksForImdb(name,\
                 "http://www.bintube.com",\
-                "/?b="sz"&q=\"QUERY\"",\
-                "/nfo/pid/[^\"]+",20);
+                "/?b="minSize"&q=\"QUERY\"" additionalKeywords,\
+                "/nfo/pid/[^\"]+",20,"nfo/","nfo/display/text/");
 
         } else if (choice == 1 ) {
 
             # search binsearch.info 
             url = searchOnlineNfoLinksForImdb(name,\
                 "http://www.binsearch.info",\
-                "/index.php?q=QUERY&minsize="sz"&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
-                "/viewNFO[^\"]+",20);
+                "/index.php?q=QUERY"additionalKeywords"&minsize="minSize"&max=50&adv_age=999&adv_sort=date&adv_col=on&adv_nfo=on&postdate=on",\
+                "/viewNFO[^\"]+",20,"","");
 
 # ngindex search not accurate enough
 #        } else {
@@ -2277,7 +2285,7 @@ choice,i,url,sz) {
 # for imdb links , keeping a tally as we go.
 # example
 # searchOnlineNfoLinksForImdb(idx,"http://www.bintube.com","/?q=","/nfo/pid/[0-9a-f]+") 
-function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosToScan,
+function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosToScan,inurlFind,inurlReplace,
 nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id) {
 
     INFO("Online nfo search for "name);
@@ -2295,6 +2303,9 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
         nfo2="";
         for(nfo in nfoPaths) {
             nfo2 = nfo2 "\t" domain nfo;
+            if (inurlFind != "") {
+                sub(inurlFind,inurlReplace,nfo2);
+            }
         }
         sub(/[&]amp;/,"\\&",nfo2);
         if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
@@ -2306,6 +2317,9 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
     } else {
         for(nfo in nfoPaths) {
             nfo2 = domain nfo;
+            if (inurlFind != "") {
+                sub(inurlFind,inurlReplace,nfo2);
+            }
             sub(/[&]amp;/,"\\&",nfo2);
 
             if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {

@@ -82,6 +82,11 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
  * < 0 -- failed.
  * Ping: reference <Unix network programming>, volume 1, third edition.
  */
+
+#define USE_SELECT
+// If USE_SELECT then select() is used for timeout rather than the original setsockopt/recvmsg
+// This is because setsockopt SO_SNDTIMEO does not work on NMT.
+
 int ping (char *host,long timeout_millis)
 {
 	#define BUF_SIZE	1500
@@ -94,8 +99,6 @@ int ping (char *host,long timeout_millis)
 	pid_t pid = getpid() & 0xffff; /* ICMP ID field is 16 bits */
 
 	char send_buf[BUF_SIZE];
-	char recv_buf[BUF_SIZE];
-	char control_buf[BUF_SIZE];
 
 	int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
@@ -104,14 +107,17 @@ int ping (char *host,long timeout_millis)
 
 	struct timeval timeout = {timeout_secs, timeout_usecs };
 
-    int res;
 
+#ifndef USE_SELECT
+    int res;
 	if ((res = setsockopt(sockfd, IPPROTO_ICMP, SO_SNDTIMEO, &timeout, sizeof(struct timeval))) != 0) {
         HTML_LOG(0,"Error %d/%d setting timeout",res,errno);
     }
 	if ((res = setsockopt(sockfd, IPPROTO_ICMP, SO_RCVTIMEO, &timeout, sizeof(struct timeval))) != 0) {
         HTML_LOG(0,"Error %d/%d setting timeout",res,errno);
     }
+#endif
+
 
 	/* don't need special permissions any more */
 	setuid(getuid());
@@ -133,6 +139,17 @@ int ping (char *host,long timeout_millis)
 	if (sendto(sockfd, send_buf, len, 0, ai->ai_addr, ai->ai_addrlen) <= 0) {
 		ret = -4;
 	} else {
+#ifdef USE_SELECT
+        //Slight risk is that we are not looking at the return packet. But chances 
+        //are anything that responds within the shot timeouts required for oversight
+        //(100ms) is in working order.
+        fd_set set;
+        FD_SET(sockfd,&set);
+        ret = select(1,&set,NULL,NULL,&timeout);
+#else
+        char recv_buf[BUF_SIZE];
+        char control_buf[BUF_SIZE];
+        //The proper way - except setsockopt timeout doesnt work on NMT
 		struct msghdr msg;
 		struct iovec iov;
 		iov.iov_base = recv_buf;
@@ -143,6 +160,11 @@ int ping (char *host,long timeout_millis)
 		msg.msg_control = control_buf;
 		msg.msg_namelen = ai->ai_addrlen;
 		msg.msg_controllen = sizeof(control_buf);
+
+        
+        if (sel_val == 1) {
+            return -5; // timeout
+        } else if (sel_val == 1
 
 		if ((len = recvmsg(sockfd, &msg, 0)) <= 0) {
 			ret = -5;
@@ -159,8 +181,9 @@ int ping (char *host,long timeout_millis)
 				ret = -6;
 			}
 		}
-
 		free(msg.msg_name);
+#endif
+
 	}
 
 	free(ai);

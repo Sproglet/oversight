@@ -1335,6 +1335,9 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     FREE(rid->eptitle_imdb);
     FREE(rid->additional_nfo);
 
+    ARRAY_FREE(rid->playlist_paths);
+    ARRAY_FREE(rid->playlist_names);
+
     //Only populated if deleting
     FREE(rid->nfo);
 

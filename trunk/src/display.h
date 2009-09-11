@@ -16,6 +16,7 @@ FILE *playlist_open();
 void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids);
 int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr);
 void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids);
+void build_playlist(int num_rows,DbRowId **sorted_rows);
 
 void display_dynamic_styles();
 

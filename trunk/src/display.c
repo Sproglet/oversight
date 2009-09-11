@@ -24,10 +24,12 @@ char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *bu
 char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
 
+#define NMT_PLAYLIST "/tmp/playlist.htm"
+
 char *get_play_tvid(char *text) {
     char *result;
     ovs_asprintf(&result,
-        "<a href=\"file:///tmp/playlist.htm?start_url=\" vod=playlist tvid=\"_PLAY\">%s</a>",text);
+        "<a href=\"file://" NMT_PLAYLIST "?start_url=\" vod=playlist tvid=\"_PLAY\">%s</a>",text);
     return result;
 }
 
@@ -195,7 +197,6 @@ char *get_self_link(char *params,char *attr,char *title) {
     return result;
 }
 
-#define NMT_PLAYLIST "/tmp/playlist.htm"
 
 //void playlist_close() {
 //    if (playlist_fp) {
@@ -290,9 +291,9 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     int add_to_playlist= has_category(rowid) && !is_dvd(rowid->file);
     char *result=NULL;
 
-    HTML_LOG(0,"VOD file[%s]",file);
+    HTML_LOG(1,"VOD file[%s]",file);
     char *path = get_path(rowid,file);
-    HTML_LOG(0,"VOD path[%s]",path);
+    HTML_LOG(1,"VOD path[%s]",path);
 
     nmt_mount(path);
 
@@ -362,12 +363,11 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
             ovs_asprintf(&vod," %s name=\"%s\" %s ",vod_attr(file),href_name,href_attr);
 
             if (add_to_playlist) {
-                FILE *fp = playlist_open();
-                char *name=util_basename(file);
-                fprintf(fp,"%s|0|0|file://%s|",name,path);
-                FREE(name);
-                fflush(fp);
-                g_playlist_count++;
+                //Build playlist array for this entry.
+                if (rowid->playlist_names == NULL) rowid->playlist_names = array_new(free);
+                if (rowid->playlist_paths == NULL) rowid->playlist_paths = array_new(free);
+                array_add(rowid->playlist_names,util_basename(file));
+                array_add(rowid->playlist_paths,STRDUP(path));
             }
 
 
@@ -2061,7 +2061,35 @@ int year(time_t t) {
     return localtime(&t)->tm_year + 1900;
 }
 
-char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
+void build_playlist(int num_rows,DbRowId **sorted_rows)
+{
+    int i;
+    FILE *fp = NULL;
+    for(i = 0 ; i < num_rows ; i++ ) {
+        DbRowId *rowid = sorted_rows[i];
+        if (rowid->playlist_names && rowid->playlist_paths) {
+            int j;
+            HTML_LOG(0,"Adding files for [%s] to playlist",rowid->title);
+            assert(rowid->playlist_names->size == rowid->playlist_paths->size);
+            for(j = 0 ; j < rowid->playlist_names->size ; j++ ) {
+
+                char *name = rowid->playlist_names->array[j]; 
+                char *path = rowid->playlist_paths->array[j]; 
+                HTML_LOG(0,"Adding [%s] to playlist",path);
+
+                if (fp == NULL) fp = playlist_open();
+                fprintf(fp,"%s|0|0|file://%s|",name,path);
+                fflush(fp);
+            }
+        }
+    }
+    if (fp) {
+        fclose(fp);
+    }
+}
+
+char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
+{
     int r,c;
 
     char *select=query_val("select");
@@ -2156,7 +2184,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
                 if (date > 0) {
 
                     char *date_format=NULL;
-                    if  (year(time(NULL)) != year(date)) {  //if ( (year(time(NULL)-date) / 60 / 60 / 24 > 300 ) {
+                    if  (year(time(NULL)) != year(date)) {  
                         date_format = old_date_format;
                     } else {
                         date_format = new_date_format;
@@ -2213,6 +2241,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols) {
             listing=tmp;
         }
     }
+
 
     char *result=NULL;
     ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);

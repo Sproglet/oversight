@@ -1356,6 +1356,10 @@ char *get_variable(char *vname)
         // query variable
         result=query_val(vname+1);
 
+    } else if (*vname == '%' ) {
+
+        result=db_get_field(vname+1);
+
     } else if (util_starts_with(vname,"ovs_") ) {
 
         result = oversight_val(vname);

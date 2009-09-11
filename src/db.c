@@ -247,76 +247,262 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
     return 0;
 }
 
-// This will take ownership of the val - freeing it if necessary.
-void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view,int copy) {
+#define FIELD_TYPE_NONE '-'
+#define FIELD_TYPE_STR 's'
+#define FIELD_TYPE_DOUBLE 'f'
+#define FIELD_TYPE_CHAR 'c'
+#define FIELD_TYPE_LONG 'l'
+#define FIELD_TYPE_INT 'i'
+#define FIELD_TYPE_DATE 'd'
+#define FIELD_TYPE_TIMESTAMP 't'
 
-    // Used to checl for trailing chars.
-    char *tmps=NULL;
-    char tmpc='\0';
-    int tmp_conv=1;
-    int free_val=!copy; //if copying dont free
+int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char *type,int *overview) {
+
+    *offset=NULL;
+    *type = FIELD_TYPE_NONE;
+    *overview = 0;
 
     assert(name[0]=='_');
 
     switch(name[1]) {
         case 'a':
-            if (tv_or_movie_view ) {
-                if (name[2] == 'i' ) { // _ai
-                    rowid->additional_nfo = (copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
+            if (name[2] == 'i' ) { // _ai
+                *offset=&(rowid->additional_nfo);
+                *type = FIELD_TYPE_STR;
 
-                } else if (name[2] == 'd' ) { // _ad...
+            } else if (name[2] == 'd' ) { // _ad...
 
-                    if (name[3] == '\0') { // _ad
+                if (name[3] == '\0') { // _ad
 
-                        parse_date(name,val,&(rowid->airdate),0);
+                    *offset=&(rowid->airdate);
+                    *type = FIELD_TYPE_DATE;
 
-                    } else if (name[3] == 'i') { // _adi
+                } else if (name[3] == 'i') { // _adi
 
-                        parse_date(name,val,&(rowid->airdate_imdb),0);
+                    *offset=&(rowid->airdate_imdb);
+                    *type = FIELD_TYPE_DATE;
 
-                    }
                 }
             }
             break;
         case 'C':
             if (name[2] == '\0') { // _C
-                rowid->category = *val;
+                *offset=&(rowid->category);
+                *type = FIELD_TYPE_CHAR;
+                *overview = 1;
             }
             break;
         case 'D':
             if (name[2] == 'T' ) {
-                parse_timestamp(name,val,&(rowid->downloadtime),0);
+                *offset=&(rowid->downloadtime);
+                *type = FIELD_TYPE_TIMESTAMP;
+                *overview = 1;
             }
             break;
         case 'e':
-            if (tv_or_movie_view ) {
-                if (name[2] == '\0') { // _e
-                    rowid->episode = (copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
-                }else if (name[2] == 't') {
-                    if (name[3] == '\0') { // _et
-                        rowid->eptitle = (copy?COPY_STRING(val_len,val):val);
-                        free_val=0;
-                    } else if (name[3] == 'i') { // _eti
-                        rowid->eptitle_imdb = (copy?COPY_STRING(val_len,val):val);
-                        free_val=0;
-                    }
+            if (name[2] == '\0') { // _e
+                *offset=&(rowid->episode);
+                *type = FIELD_TYPE_STR;
+            }else if (name[2] == 't') {
+                if (name[3] == '\0') { // _et
+                    *offset=&(rowid->eptitle);
+                    *type = FIELD_TYPE_STR;
+                } else if (name[3] == 'i') { // _eti
+                    *offset=&(rowid->eptitle_imdb);
+                    *type = FIELD_TYPE_STR;
                 }
             }
             break;
         case 'f':
-            if (tv_or_movie_view ) {
                 if (name[2] == 'a') {
-                    rowid->fanart = (copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
+                    *offset=&(rowid->fanart);
+                    *type = FIELD_TYPE_STR;
+                    *overview = 1;
                 }
-            }
             break;
         case 'F':
             if (name[2] == '\0') {
-                rowid->file = (copy?COPY_STRING(val_len,val):val);
-                free_val=0;
+                *offset=&(rowid->file);
+                *type = FIELD_TYPE_STR;
+                *overview = 1;
+            } else if (name[2] == 'T' ) {
+                *offset=&(rowid->filetime);
+                *type = FIELD_TYPE_TIMESTAMP;
+                *overview = 1;
+            }
+            break;
+
+        case 'G':
+            if (name[2] == '\0') {
+                *offset=&(rowid->genre);
+                *type = FIELD_TYPE_STR;
+                *overview = 1;
+            }
+            break;
+        case 'J':
+            if (name[2] == '\0') {
+                *offset=&(rowid->poster);
+                *type = FIELD_TYPE_STR;
+                *overview = 1;
+            }
+            break;
+        case 'i':
+            if (name[2] == 'd') {
+                *offset=&(rowid->id);
+                *type = FIELD_TYPE_LONG;
+                *overview = 1;
+            }
+            break;
+        case 'I':
+            if (name[2] == 'T') {
+                *offset=&(rowid->date);
+                *type = FIELD_TYPE_TIMESTAMP;
+                *overview = 1;
+            }
+            break;
+        case 'n':
+                if (name[2] == 'f') {
+                    *offset=&(rowid->nfo);
+                    *type = FIELD_TYPE_STR;
+                }
+            break;
+        case 'o':
+            // do nothing - _ot ORIGINAL_TITLE
+            break;
+        case 'p':
+                if (name[2] == 't') {
+                    *offset=&(rowid->parts);
+                    *type = FIELD_TYPE_STR;
+                }
+            break;
+        case 'P':
+                if (name[2] == '\0') {
+                *offset=&(rowid->plot);
+                *type = FIELD_TYPE_STR;
+                }
+            break;
+        case 'r':
+            if (name[2] == '\0') {
+                *offset=&(rowid->rating);
+                *type = FIELD_TYPE_DOUBLE;
+                *overview = 1;
+            }
+            break;
+        case 'R':
+            if (name[2] == '\0') {
+                *offset=&(rowid->certificate);
+                *type = FIELD_TYPE_STR;
+                *overview = 1;
+            }
+            break;
+        case 's':
+            if (name[2] == '\0') {
+                *offset=&(rowid->season);
+                *type = FIELD_TYPE_INT;
+                *overview = 1;
+            }
+            break;
+        case 't':
+            //do nothing - TVCOM
+            break;
+        case 'T':
+            if (name[2] == '\0') {
+                *offset=&(rowid->title);
+                *type = FIELD_TYPE_STR;
+                *overview = 1;
+            }
+            break;
+        case 'U':
+                if (name[2] == '\0') {
+                *offset=&(rowid->url);
+                *type = FIELD_TYPE_STR;
+                }
+            break;
+        case 'w':
+            if (name[2] == '\0') {
+                *offset=&(rowid->watched);
+                *type = FIELD_TYPE_INT;
+                *overview = 1;
+            }
+            break;
+        case 'Y':
+            if (name[2] == '\0') {
+                *offset=&(rowid->year) ;
+                *type = FIELD_TYPE_INT;
+                *overview = 1;
+            }
+            break;
+        default:
+            HTML_LOG(-1,"Unknown field [%s]",name);
+    }
+    return *type != FIELD_TYPE_NONE;
+
+}
+// This will take ownership of the val - freeing it if necessary.
+char * db_rowid_get_field(DbRowId *rowid,char *name) {
+
+    char *result=NULL;
+    void *offset;
+    char type;
+    int overview;
+
+    if (!db_rowid_get_field_offset_type(rowid,name,&offset,&type,&overview)) {
+        return NULL;
+    }
+
+    switch(type) {
+        case FIELD_TYPE_STR:
+            ovs_asprintf(&result,"%s",offset);
+            break;
+        case FIELD_TYPE_CHAR:
+            ovs_asprintf(&result,"%c",*(char *)(offset));
+            break;
+        case FIELD_TYPE_DOUBLE:
+            ovs_asprintf(&result,"%.1lf",*(double *)offset);
+            break;
+        case FIELD_TYPE_INT:
+            ovs_asprintf(&result,"%d",*(int *)offset);
+            break;
+        case FIELD_TYPE_LONG:
+            ovs_asprintf(&result,"%ld",*(long *)offset);
+            break;
+        case FIELD_TYPE_DATE:
+            ovs_asprintf(&result,"%s",fmt_date_static(*(OVS_TIME *)offset));
+            break;
+        case FIELD_TYPE_TIMESTAMP:
+            ovs_asprintf(&result,"%s",fmt_timestamp_static(*(OVS_TIME *)offset));
+            break;
+        default:
+            HTML_LOG(0,"Bad field type [%c]",type);
+            assert(0);
+    }
+    return result;
+}
+
+// This will take ownership of the val - freeing it if necessary.
+void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view,int copy) {
+
+    void *offset;
+    char type;
+    int overview;
+    if (!db_rowid_get_field_offset_type(rowid,name,&offset,&type,&overview)) {
+        return;
+    }
+
+    //Dont get the field if this is the menu view and it is not an overview field 
+    if (!tv_or_movie_view && !overview) return;
+
+    // Used to checl for trailing chars.
+    char *tmps=NULL;
+    int free_val=!copy; //if copying dont free
+
+    assert(name[0]=='_');
+
+    switch(type) {
+        case FIELD_TYPE_STR:
+            free_val=0;
+            *(char **)offset = (copy?COPY_STRING(val_len,val):val);
+            if (offset == &(rowid->file)) {
 #if 0
                 char *p = rowid->file + val_len;
                 char *first = p - 6; // search backwards up to 6 chars for extension
@@ -333,110 +519,29 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
                     rowid->ext = p+1;
                 }
 #endif
-            } else if (name[2] == 'T' ) {
-                parse_timestamp(name,val,&(rowid->filetime),0);
             }
             break;
-
-        case 'G':
-            if (name[2] == '\0') {
-                rowid->genre = (copy?COPY_STRING(val_len,val):val);
-                free_val=0;
-            }
+        case FIELD_TYPE_CHAR:
+            *(char *)offset = *val;
             break;
-        case 'J':
-            if (name[2] == '\0') {
-                rowid->poster = (copy?COPY_STRING(val_len,val):val);
-                free_val=0;
-            }
+        case FIELD_TYPE_INT:
+            *(int *)offset=strtol(val,&tmps,10) ;
             break;
-        case 'i':
-            if (name[2] == 'd') {
-                rowid->id=strtol(val,&tmps,10) ;
-            }
+        case FIELD_TYPE_LONG:
+            *(long *)offset=strtol(val,&tmps,10) ;
             break;
-        case 'I':
-            if (name[2] == 'T') {
-                parse_timestamp(name,val,&(rowid->date),0);
-            }
+        case FIELD_TYPE_DOUBLE:
+            sscanf(val,"%lf",(double *)offset);
             break;
-        case 'n':
-            if (tv_or_movie_view ) {
-                if (name[2] == 'f') {
-                    rowid->nfo=(copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
-                }
-            }
+        case FIELD_TYPE_DATE:
+            parse_date(name,val,offset,0);
             break;
-        case 'o':
-            // do nothing - _ot ORIGINAL_TITLE
-            break;
-        case 'p':
-            if (tv_or_movie_view ) {
-                if (name[2] == 't') {
-                    rowid->parts = (copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
-                }
-            }
-            break;
-        case 'P':
-            if (tv_or_movie_view ) {
-                if (name[2] == '\0') {
-                    rowid->plot = (copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
-                }
-            }
-            break;
-        case 'r':
-            if (name[2] == '\0') {
-                sscanf(val,"%lf",&(rowid->rating));
-            }
-            break;
-        case 'R':
-            if (name[2] == '\0') {
-                rowid->certificate = (copy?COPY_STRING(val_len,val):val);
-                free_val=0;
-            }
-            break;
-        case 's':
-            if (name[2] == '\0') {
-                rowid->season = strtol(val,&tmps,10);
-            }
-            break;
-        case 't':
-            //do nothing - TVCOM
-            break;
-        case 'T':
-            if (name[2] == '\0') {
-                rowid->title = (copy?COPY_STRING(val_len,val):val);
-                free_val=0;
-            }
-            break;
-        case 'U':
-            if (tv_or_movie_view ) {
-                if (name[2] == '\0') {
-                    rowid->url = (copy?COPY_STRING(val_len,val):val);
-                    free_val=0;
-                }
-            }
-            break;
-        case 'w':
-            if (name[2] == '\0') {
-                rowid->watched=strtol(val,&tmps,10);
-                assert(rowid->watched == 0 || rowid->watched == 1);
-            }
-            break;
-        case 'Y':
-            if (name[2] == '\0') {
-                rowid->year=strtol(val,&tmps,10);
-            }
+        case FIELD_TYPE_TIMESTAMP:
+            parse_timestamp(name,val,offset,0);
             break;
         default:
-            HTML_LOG(-1,"Unknown field [%s]",name);
-    }
-
-    if ( (tmps && *tmps)  || tmpc != '\0' || tmp_conv != 1 ) {
-        html_error("Error parsing [%s]=[%s]",name,val);
+            HTML_LOG(0,"Bad field type [%c]",type);
+            assert(0);
     }
     if (free_val) FREE(val);
 }
@@ -781,6 +886,14 @@ DbRowSet *db_rowset(Db *db) {
     return dbrs;
 }
 
+
+//Save the first row as the default row to edit.
+static DbRowId *g_first_row=NULL;
+DbRowId *get_first_row() {
+    return g_first_row;
+}
+
+
 int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
 
     assert(id);
@@ -801,8 +914,20 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
         default: dbrs->other_media_total++; break;
     }
 
+    //Save the first row as the default row to edit.
+    if (g_first_row == NULL) {
+        g_first_row = insert;
+    }
+
     return dbrs->size;
 }
+
+char *db_get_field(char *fieldid)
+{
+    if (g_first_row == NULL) return NULL;
+    return db_rowid_get_field(g_first_row,fieldid);
+}
+
 
 char *localDbPath() {
     static char *a=NULL;

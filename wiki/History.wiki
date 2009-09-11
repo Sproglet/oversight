@@ -1,6 +1,6 @@
 #labels Featured
 Oversight grew out a requirement to easily find new stuff that had downloaded to my NMT.
-It did really start off with the intention of being a graphical jukebox. It was just a way to quickly find any new media on the NMT.
+It didn't really start off with the intention of being a graphical jukebox. It was just a way to quickly find any new media on the NMT.
 
 The NMT platform has a built in usenet client (nzbget) for which I wrote a post-processing script to automatically move and rename things in a tidy way. The problem was, because the NMT GUI does not have a 'search by date/age' feature, it was difficult to work out what had downloaded recently. Especially as nzbget did not have a history of jobs that could be easily inspected.
 
@@ -8,4 +8,10 @@ First I started trying to create hard links to new media, with names that would 
 
 This was OK but still looked a bit horrible. It was difficult to maintain the list if media was deleted by the user, and was generally confusing.
 
-Then I thought, rather than being constrained by the NMT browser, and hard links, I could just have my own html page that just list a table of recent downloads. This started as a text page, and it just evolved from there, borrowing some ideas from the NMT jukeboxes around.
+Then I thought, rather than being constrained by the NMT browser, and hard links, I could just have my own html page that just list a table of recent downloads. This started as a html table of filenames, ordered by date, then I started scraping info from IMDB and displayed this in a text page. After that, I thoght, in for a penny, and added DVD covers etc and it just evolved from there, borrowing some ideas from the NMT jukeboxes around.
+
+However the things I think set it apart from other jukeboxes are:
+
+1. Use of scene names - most of the stuff downloaded is not for keeps. If I want to keep something I buy the DVD. In any case I donw want the hassle of renaming stuff , just so that it gets detected. So Oversight makes extra effort to search scene names , abbreviations etc.
+
+2. Front page shows newest content - Again - the first thing I want to see when I launch oversight is any new content that has recently been downloaded. This gives the NMT a PVR 'what's new today' feel.

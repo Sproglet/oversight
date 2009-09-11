@@ -1144,7 +1144,7 @@ void replace_variables(Array *args)
     if (args) {
         int i;
         for(i = 0 ; i < args->size ; i++ ) {
-            HTML_LOG(0,"Begin replace_variables [%s]",args->array[i]);
+            HTML_LOG(2,"Begin replace_variables [%s]",args->array[i]);
             char *p=args->array[i];
             char *newp=NULL;
             char *v;
@@ -1184,7 +1184,7 @@ void replace_variables(Array *args)
                 FREE(args->array[i]); //TODO : can we free this?
                 args->array[i] = newp;
             }
-            HTML_LOG(0,"End replace_variables [%s]",args->array[i]);
+            HTML_LOG(2,"End replace_variables [%s]",args->array[i]);
         }
     }
 }

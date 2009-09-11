@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "time.h"
 
 inline OVS_TIME time_ordinal(struct tm *t) {
@@ -39,4 +40,57 @@ time_t internal_time2epoc(OVS_TIME t1) {
 #else
     return t1;
 #endif
+}
+struct tm *internal_time2tm(OVS_TIME t1,struct tm *t)
+{
+    static struct tm t_static;
+    if (t == NULL) {
+        t = &t_static;
+    }
+#ifdef OVS_USE_FAST_TIME
+    // Binary layout is YYYY YYYYYYMM MMdddddh hhhhmmmm mmssssss
+    t->tm_sec = t1 & 0x3F;
+    t->tm_min = ( t1 >> 6) & 0x3F;
+    t->tm_hour = ( t1 >> (6+6)) & 0x1F;
+    t->tm_mday = ( ( t1 >> (6+6+5)) & 0x1F  );
+    t->tm_mon = ( t1 >> (6+6+5+5)) & 0xF  ;
+    t->tm_year = ( t1 >> (6+6+5+5+4)) & 0x7F  ;
+#else
+    localtime_r(&t1,t);
+#endif
+    return t;
+}
+
+char *fmt_timestamp_static(OVS_TIME t1)
+{
+    static char buf[20];
+    struct tm t;
+    internal_time2tm(t1,&t);
+    sprintf(buf,"%4d%02d%02d%02d%02d%02d",
+            t.tm_year+1900,
+            t.tm_mon+1,
+            t.tm_mday,
+            t.tm_hour,
+            t.tm_min,
+            t.tm_sec);
+    return buf;
+}
+
+char *fmt_date_static(OVS_TIME t1)
+{
+    static char buf[20];
+    struct tm t;
+    internal_time2tm(t1,&t);
+    sprintf(buf,"%4d-%02d-%02d",
+            t.tm_year+1900,
+            t.tm_mon+1,
+            t.tm_mday);
+    return buf;
+}
+
+int year(OVS_TIME t1)
+{
+    struct tm t;
+    internal_time2tm(t1,&t);
+    return t.tm_year+1900;
 }

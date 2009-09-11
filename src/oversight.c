@@ -207,10 +207,12 @@ TRACE;
         if (strcmp(view,"tv") == 0) {
 
             display_template(skin_name,"tv",num_rows,sorted_rows);
+            build_playlist(num_rows,sorted_rows);
 
         } else if (strcmp(view,"movie") == 0) {
 
             display_template(skin_name,"movie",num_rows,sorted_rows);
+            build_playlist(num_rows,sorted_rows);
 
         } else if (strcmp(view,"admin") == 0) {
 
@@ -222,6 +224,7 @@ TRACE;
 
             // main menu
             display_template(skin_name,"menu",num_rows,sorted_rows);
+            build_playlist(num_rows,sorted_rows);
         }
     }
     html_comment("cleanup");

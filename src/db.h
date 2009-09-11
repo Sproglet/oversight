@@ -46,6 +46,11 @@ typedef struct Dbrowid_struct {
     char *additional_nfo;
     double rating;
 
+    //Only set if a row has a vodlink displayed and is added the the playlist
+    Array *playlist_paths;
+    Array *playlist_names;
+
+
 } DbRowId;
 
 void db_rowid_dump(DbRowId *rid);

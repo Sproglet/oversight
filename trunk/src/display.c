@@ -2056,11 +2056,6 @@ long use_boxsets() {
     return boxsets;
 }
 
-
-int year(time_t t) {
-    return localtime(&t)->tm_year + 1900;
-}
-
 void build_playlist(int num_rows,DbRowId **sorted_rows)
 {
     int i;
@@ -2098,15 +2093,15 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 #define DATE_BUF_SIZ 40
     char date_buf[DATE_BUF_SIZ];
     char *old_date_format=NULL;
-    char *new_date_format=NULL;
+    char *recent_date_format=NULL;
 
     int width2=100/cols; //text and date
     int width1=4; //episode width
     width2 -= width1;
 
     // Date format
-    if (!config_check_str(g_oversight_config,"ovs_date_format",&new_date_format)) {
-        new_date_format="- %d %b";
+    if (!config_check_str(g_oversight_config,"ovs_date_format",&recent_date_format)) {
+        recent_date_format="- %d %b";
     }
     if (!config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
         old_date_format="-%d&nbsp;%b&nbsp;%y";
@@ -2176,7 +2171,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
 
                 //Date
-                long date=rid->airdate;
+                OVS_TIME date=rid->airdate;
                 if (date<=0) {
                     date=rid->airdate_imdb;
                 }
@@ -2184,13 +2179,13 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                 if (date > 0) {
 
                     char *date_format=NULL;
-                    if  (year(time(NULL)) != year(date)) {  
+                    if  (year(epoc2internal_time(time(NULL))) != year(date)) {  
                         date_format = old_date_format;
                     } else {
-                        date_format = new_date_format;
+                        date_format = recent_date_format;
                     }
 
-                    date=strftime(date_buf,DATE_BUF_SIZ,date_format,localtime((time_t *)(&date)));
+                    date=strftime(date_buf,DATE_BUF_SIZ,date_format,internal_time2tm(date,NULL));
                 }
 
                 //network icon

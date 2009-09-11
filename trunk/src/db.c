@@ -202,7 +202,7 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
         t.tm_hour = 0;
         t.tm_min = 0;
         t.tm_sec = 0;
-        *val_ptr = mktime(&t);
+        *val_ptr = time_ordinal(&t);
         if (*val_ptr < 0 ) {
             HTML_LOG(1,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
         }
@@ -285,7 +285,9 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             }
             break;
         case 'D':
-            //do nothing - DOWNLOADTIME
+            if (name[2] == 'T' ) {
+                parse_timestamp(name,val,&(rowid->downloadtime),0);
+            }
             break;
         case 'e':
             if (tv_or_movie_view ) {
@@ -331,6 +333,8 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
                     rowid->ext = p+1;
                 }
 #endif
+            } else if (name[2] == 'T' ) {
+                parse_timestamp(name,val,&(rowid->filetime),0);
             }
             break;
 
@@ -478,6 +482,37 @@ void set_title_as_folder(DbRowId *rowid)
 #define STATE_START -1
 #define STATE_NAME 0
 #define STATE_VAR 1
+
+void write_row(FILE *fp,DbRowId *rid) {
+    fprintf(fp,"\t%s\t%ld",DB_FLDID_ID,rid->id);
+    fprintf(fp,"\t%s\t%c",DB_FLDID_CATEGORY,rid->category);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_INDEXTIME,fmt_timestamp_static(rid->date));
+    fprintf(fp,"\t%s\t%d",DB_FLDID_WATCHED,rid->watched);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_TITLE,rid->title);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_SEASON,rid->season);
+    fprintf(fp,"\t%s\t%.1lf",DB_FLDID_RATING,rid->rating);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPISODE,rid->episode);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_POSTER,rid->poster);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,rid->genre);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,rid->parts);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_YEAR,rid->year);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,rid->file);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_ADDITIONAL_INFO,rid->additional_nfo);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_URL,rid->url);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,rid->certificate);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_FILETIME,fmt_timestamp_static(rid->filetime));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(rid->downloadtime));
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_PROD,rid->prod);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATE,fmt_date_static(rid->airdate));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLEIMDB,rid->eptitle_imdb);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATEIMDB,fmt_date_static(rid->airdate_imdb));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,rid->eptitle);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,rid->nfo);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,rid->fanart);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot);
+    fprintf(fp,"\t\n");
+    fflush(fp);
+}
 
 // TODO Change this back to static value and using copy_string() in db_rowid_set_field
 DbRowId *read_and_parse_row(

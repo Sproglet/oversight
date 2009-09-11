@@ -1,0 +1,11 @@
+#labels Featured
+Oversight grew out a requirement to easily find new stuff that had downloaded to my NMT.
+It did really start off with the intention of being a graphical jukebox. It was just a way to quickly find any new media on the NMT.
+
+The NMT platform has a built in usenet client (nzbget) for which I wrote a post-processing script to automatically move and rename things in a tidy way. The problem was, because the NMT GUI does not have a 'search by date/age' feature, it was difficult to work out what had downloaded recently. Especially as nzbget did not have a history of jobs that could be easily inspected.
+
+First I started trying to create hard links to new media, with names that would show me the most recent downloads first.
+
+This was OK but still looked a bit horrible. It was difficult to maintain the list if media was deleted by the user, and was generally confusing.
+
+Then I thought, rather than being constrained by the NMT browser, and hard links, I could just have my own html page that just list a table of recent downloads. This started as a text page, and it just evolved from there, borrowing some ideas from the NMT jukeboxes around.

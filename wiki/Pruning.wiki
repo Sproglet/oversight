@@ -1,3 +1,7 @@
+<wiki:toc max_depth="1" />
+
+=Pruning=
+
 This page explains what happens to the index if you delete files manually...
 
 Lets say you have Life Of Brian
@@ -13,6 +17,8 @@ http://oversight.googlecode.com/svn/trunk/screenshots/prune2.png
 At this point Oversight has removed it from the index, and after that it will be gone...
 
 http://oversight.googlecode.com/svn/trunk/screenshots/prune3.png 
+
+==USB/NAS removal==
 
 Note that Oversight will only prune files if their Grand Parent folder is present.
 This is to help ensure files are not pruned just because the NAS or USB device on which they reside is disconnected. It's not perfect but should work for most cases, and is simpler than trying to interrogate the mount table , esp if files are indexed via symlinks.

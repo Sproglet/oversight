@@ -959,7 +959,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
         if (!match(substr(perms,2,9),"^[-rwxsSt]+$") ) {
             #Just entered a folder
            currentFolder = scan_line;
-           sub(/\/*:/,"",currentFolder);
+           sub(/\/*:$/,"",currentFolder);
            DEBUG("Folder = "currentFolder);
            folderNameNext=0;
             if ( currentFolder ~ g_settings["catalog_ignore_paths"] ) {
@@ -3569,7 +3569,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
     }
 
     if (imdbLink == "" ) {
-        WARNING("getTvDbInfo returns blank imdb url");
+        WARNING("getTvDbInfo returns blank imdb url. Consider updating the imdb field for this series at www.thetvdb.com");
         return "";
         return "IGNORE";
     } else {

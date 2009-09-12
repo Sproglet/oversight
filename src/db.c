@@ -1149,7 +1149,7 @@ DbRowSet **db_crossview_scan_titles(
         }
     }
     //Save the first row as the default row to edit.
-    if (g_first_row == NULL) {
+    if (g_first_row == NULL && rowsets && rowsets[0]->rows ) {
         g_first_row = rowsets[0]->rows;
         HTML_LOG(0,"First row=[%s]",g_first_row->title);
         HTML_LOG(0,"First row=[%s]",db_get_field("_T"));

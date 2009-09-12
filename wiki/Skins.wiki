@@ -1,0 +1,73 @@
+Oversight has a limited Skin capability.
+It comes in the form of templates with macros to replace certain functions.
+
+==Macros==
+
+The template system is like the C-PreProcessor. It takes a file in, and replaces certain bits of it (MACROS), and spits out the results. Before rendering a html or css page, it is passed through the macro processor.
+
+The syntax is not very nice. (I may overhaul this one day)..
+
+eg.
+    `<h3>`[:$%TITLE:]`</h3>`; 
+
+will display the title of the current video inside of `<h3>` tags. The exact definition is
+
+  `[optional bit1:macro name:optional bit2]`
+
+The optional bits are only displayed if the results of 'macro name' are defined.
+
+==Simple Macros==
+
+Simple Macros are replaced with a single piece of text which may be a html query parameter, a value in the oversight dayabase, or a configuration file value. Simple Macros have a 'dollar' character immediately after the first colon..
+
+`[:$macro:]`  
+
+===HTML Query Parameter values===
+
+For HTML Query macros the $ is followed by '?'.
+
+`[:$?name:]`  
+
+eg given http://popcorn:8883/oversight/oversight.cgi?view=movie
+
+URL `[:$?view;]` will display "movie"
+ 
+===Media fields (title, file, watched etc) ===
+
+For Fields from the Oversight database the $ is followed by '%'.
+
+`[:$%field:]`
+
+eg given Movie 'Transformers'
+
+`[:$%YEAR:]` will display the year '2007'
+
+For TV listings only the first item is used. This needs to be improved.
+
+===Configuration Values ===
+
+
+For Fields from Configuration files the $ is followed by ovs_, catalog_ or unpak_ .
+
+`[:$ovs_option_name:]`  
+
+`[:$catalog_option_name:]`  
+
+`[:$unpak_option_name:]`  
+
+==Compound Macros==
+
+Compound macros are specialist macros that do a specific task. eg. display a list of TV episodes in a certain format [:TV_LISTING:]
+
+Compound macros do NOT have a dollar character.
+
+I may overhaul these macros to be more flexible, at present the bes documentation is to look at the [http://code.google.com/p/oversight/source/browse/#svn/trunk/templates/default/any existing templates] and the [http://code.google.com/p/oversight/source/browse/trunk/src/macro.c macro_init function] in the source code. 
+
+==Issues==
+
+At present there are a number of things that hold back general skin development:
+
+  #. There anyn't tools for high quality, arbitrary  jpeg resizing running natively on the NMT. This may change soon - but until then Gaya uses its own resising which is pretty nasty.
+  #. There are no tools for fancy reflections & transformations on covers. - I can live without this for the time being.
+  # There isnt a 100% clear separation of content and presentation. Some things like the "tv episode listing" use too much hardcoded html.
+  # I made it up as I went along - I created a template system which does allow some flexibility but it doesn't follow any particular standard, so skinners might be reluctant to 'learn it'. It's also not documented - yet - so that doesnt help.

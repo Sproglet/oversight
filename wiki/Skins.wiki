@@ -2,6 +2,8 @@
 Oversight has a limited Skin capability.
 It comes in the form of templates with macros to replace certain text within html and css pages.
 
+<wiki:toc max_depth="2" />
+
 ==Macros==
 
 The template system is like the C-PreProcessor. It takes a file in, and replaces certain bits of it (MACROS), and spits out the results. Before rendering a html or css page, it is passed through the macro processor.

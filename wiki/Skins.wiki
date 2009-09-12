@@ -9,7 +9,7 @@ The template system is like the C-PreProcessor. It takes a file in, and replaces
 The syntax is not very nice. (I may overhaul this one day)..
 
 eg.
-    `<h3>`[:$%TITLE:]`</h3>`; 
+    `<h3>[:$%TITLE:]</h3>`
 
 will display the title of the current video inside of `<h3>` tags. The exact definition is
 

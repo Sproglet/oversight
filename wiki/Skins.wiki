@@ -60,7 +60,7 @@ For Fields from Configuration files the $ is followed by ovs_, catalog_ or unpak
 
 ==Compound Macros==
 
-Compound macros are specialist macros that do a specific task. eg. display a list of TV episodes in a certain format [:TV_LISTING:]
+Compound macros are specialist macros that do a specific task. eg. display a list of TV episodes in a certain format `[:TV_LISTING:]`
 
 Compound macros do NOT have a dollar character.
 

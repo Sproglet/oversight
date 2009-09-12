@@ -1,5 +1,6 @@
+#labels Featured
 Oversight has a limited Skin capability.
-It comes in the form of templates with macros to replace certain functions.
+It comes in the form of templates with macros to replace certain text within html and css pages.
 
 ==Macros==
 

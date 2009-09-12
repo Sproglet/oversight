@@ -1171,7 +1171,7 @@ void replace_variables(Array *args)
                 char *replace=get_variable(v+1);
 
                 char *tmp2;
-                ovs_asprintf(&tmp2,"%s%s%s",NVL(newp),p,replace);
+                ovs_asprintf(&tmp2,"%s%s%s",NVL(newp),p,NVL(replace));
                 if (free_result) {
                     FREE(replace);
                 }

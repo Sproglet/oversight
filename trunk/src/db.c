@@ -292,6 +292,12 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                 *overview = 1;
             }
             break;
+        case 'd':
+            if (name[2] == '\0') { // _d
+                *offset=&(rowid->director);
+                *type = FIELD_TYPE_STR;
+            }
+            break;
         case 'D':
             if (name[2] == 'T' ) {
                 *offset=&(rowid->downloadtime);
@@ -454,7 +460,7 @@ char * db_rowid_get_field(DbRowId *rowid,char *name) {
 
     switch(type) {
         case FIELD_TYPE_STR:
-            ovs_asprintf(&result,"%s",*(char **)offset);
+            ovs_asprintf(&result,"%s",NVL(*(char **)offset));
             break;
         case FIELD_TYPE_CHAR:
             ovs_asprintf(&result,"%c",*(char *)(offset));

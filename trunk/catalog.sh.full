@@ -805,6 +805,7 @@ function set_db_fields() {
 
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
     TITLE=db_field("_T","Title","title") ;
+    DIRECTOR=db_field("_d","Director","director") ;
     AKA=db_field("_K","AKA","");
 
     CATEGORY=db_field("_C","Category","");
@@ -2172,6 +2173,7 @@ function clean_globals() {
     delete gParts;
     delete gCertRating;
     delete gCertCountry;
+    delete g_director;
     delete g_poster;
     delete g_genre;
     delete gProdCode;
@@ -2257,7 +2259,7 @@ choice,i,url) {
             # search binsearch.info 
             url = searchOnlineNfoLinksForImdb(name,\
                 "http://www.binsearch.info",\
-                "/index.php?q=QUERY"additionalKeywords"&minsize="minSize"&max=50&adv_age=999&adv_sort=date&adv_nfo=on&postdate=on",\
+                "/index.php?q=\"QUERY\""additionalKeywords"&minsize="minSize"&max=50&adv_age=999&adv_sort=date&adv_nfo=on&postdate=on",\
                 "/viewNFO[^\"]+",20,"","");
 
 # ngindex search not accurate enough
@@ -2330,10 +2332,15 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
     }
 
     #return most frequent match
-    bestScores(totalImdbIds,totalImdbIds,0);
-    bestId = firstIndex(totalImdbIds);
-    INFO("best imdb link ["domain"] = "bestId);
-    return extractImdbLink(bestId);
+    if (bestScores(totalImdbIds,totalImdbIds,0) > 0) {
+
+        bestId = firstIndex(totalImdbIds);
+        INFO("best imdb link ["domain"] = "bestId);
+        return extractImdbLink(bestId);
+    } else {
+        INFO("To many matches with the smae number of occurrences. Discarding results");
+        return "";
+    }
 
 }
 
@@ -4387,8 +4394,10 @@ title,y,poster_imdb_url) {
     } else if (imdbContentPosition == "body") {
 
         if (index(line,">Company:")) {
+
             DEBUG("Found company details - ending");
             imdbContentPosition="footer";
+
         } else {
 
             #This is the main information section
@@ -4411,6 +4420,10 @@ title,y,poster_imdb_url) {
                     DEBUG("IMDB: Got imdb poster ["g_imdb_poster_url[idx]"]");
                 }
             }
+            if (g_director[idx] == "" && index(line,"Director:")) {
+                g_director[idx] = scrapeIMDBDirector(f);
+            }
+
             if (g_plot[idx] == "" && index(line,"Plot:")) {
                 g_plot[idx] = scrapeIMDBPlot(f);
             }
@@ -4550,7 +4563,9 @@ l,cert,c) {
 }
 function scrapeIMDBPlot(f,\
 p,i) {
-    getline p <f;
+    while(p == "") {
+        getline p <f;
+    }
 
     #Full plot . keep it for next time
     if ((i=index(p," <a")) > 0) {
@@ -4562,9 +4577,20 @@ p,i) {
     DEBUG("IMDB: Got plot = ["p"]");
     return p;
 }
+function scrapeIMDBDirector(f,\
+l) {
+    while(l == "") {
+        getline l <f;
+    }
+    l=extractTagText(l,"a");
+    DEBUG("IMDB: Got director = ["l"]");
+    return l;
+}
 function scrapeIMDBGenre(f,\
 l) {
-    getline l <f;
+    while(l == "") {
+        getline l <f;
+    }
     gsub(/<[^<>]+>/,"",l);
     sub(/ +more */,"",l);
     sub(/^\|/,"",l);
@@ -4920,7 +4946,7 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
     DEBUG("nfo style = "nfoFormat);
     
     if (nfoFormat == "xmbc" ) {
-        movie=","TITLE","ORIG_TITLE","RATING","YEAR","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
+        movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTOR","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
         tvshow=","TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART",";
         episodedetails=","EPTITLE","SEASON","EPISODE","AIRDATE",";
     }
@@ -5126,6 +5152,7 @@ row,estimate,nfo) {
     row=row"\t"PARTS"\t"gParts[i];
     row=row"\t"URL"\t"gExternalSourceUrl[i];
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
+    row=row"\t"DIRECTOR"\t"g_director[i];
     row=row"\t"FILETIME"\t"g_file_time[i];
     row=row"\t"DOWNLOADTIME"\t"estimate;
     #row=row"\t"SEARCH"\t"g_search[i];

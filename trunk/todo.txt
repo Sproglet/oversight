@@ -1,6 +1,34 @@
 Check why Russell Peters Outsource - one black one green
 
 =================
+How to get allocine.fr  id..
+
+"Production year: 2008" intitle:transporter  inurl:screenrush.co.uk inurl:fichefilm_gen_cfilm
+www.screenrush.co.uk/film/fichefilm_gen_cfilm=133730.html
+
+OR "Films of 2003" intitle:transporter  inurl:screenrush.co.uk inurl:fichefilm_gen_cfilm
+
+Note the production year is sometimes imdb year -1
+Films of is sometimes imdb year + 1 !
+
+Then switch to allocine.fr and extract title and plot.
+
+=================
+
+Spanish: Film Affinity:
+intitle:"transporter 2 (2005)" inurl:http://www.filmaffinity.com/en/
+then change en to es and extract title and plot.
+
+=================
+
+Italian
+
+Titolo originale "The transporter" "anno" "2008" site:http://filmup.leonardo.it intitle:Scheda
+
+Note if we start also scraping the Director this will help with i18n searches.
+
+
+=================
 
 check torrent watch
 

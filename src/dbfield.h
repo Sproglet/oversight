@@ -46,6 +46,7 @@
 #define DB_FLDID_NFO "_nfo"
 
 
-char *dbf_label(char *id);
+char *dbf_macro_to_fieldid(char *macro);
+char *dbf_fieldid_to_macro(char *fieldid);
 
 #endif

@@ -2,62 +2,75 @@
 #include "util.h"
 #define NULL ((void *)0)
 
-struct hashtable *dbf_ids = NULL;
+struct hashtable *dbf_macro_to_id = NULL;
+struct hashtable *dbf_id_to_macro = NULL; 
 
-void dbf_ids_init() {
-
-    if (dbf_ids != NULL) return;
-
-    dbf_ids = string_string_hashtable(32);
-
-    hashtable_insert(dbf_ids,DB_FLDID_ID,"ID");
-    hashtable_insert(dbf_ids,DB_FLDID_WATCHED,"Watched");
-    hashtable_insert(dbf_ids,DB_FLDID_ACTION,"Next Operation");
-    hashtable_insert(dbf_ids,DB_FLDID_PARTS,"PARTS");
-    hashtable_insert(dbf_ids,DB_FLDID_FILE,"FILE");
-    hashtable_insert(dbf_ids,DB_FLDID_NAME,"NAME");
-    hashtable_insert(dbf_ids,DB_FLDID_DIR,"DIR");
-
-
-    hashtable_insert(dbf_ids,DB_FLDID_ORIG_TITLE,"ORIG_TITLE");
-    hashtable_insert(dbf_ids,DB_FLDID_TITLE,"Title");
-    hashtable_insert(dbf_ids,DB_FLDID_AKA,"AKA");
-
-    hashtable_insert(dbf_ids,DB_FLDID_CATEGORY,"Category");
-    hashtable_insert(dbf_ids,DB_FLDID_ADDITIONAL_INFO,"Additional Info");
-    hashtable_insert(dbf_ids,DB_FLDID_YEAR,"Year");
-
-    hashtable_insert(dbf_ids,DB_FLDID_SEASON,"Season");
-    hashtable_insert(dbf_ids,DB_FLDID_EPISODE,"Episode");
-    hashtable_insert(dbf_ids,DB_FLDID_SEASON0,"0SEASON");
-    hashtable_insert(dbf_ids,DB_FLDID_EPISODE0,"0EPISODE");
-
-    hashtable_insert(dbf_ids,DB_FLDID_GENRE,"Genre");
-    hashtable_insert(dbf_ids,DB_FLDID_RATING,"Rating");
-    hashtable_insert(dbf_ids,DB_FLDID_CERT,"CERT");
-    hashtable_insert(dbf_ids,DB_FLDID_PLOT,"Plot");
-    hashtable_insert(dbf_ids,DB_FLDID_URL,"URL");
-    hashtable_insert(dbf_ids,DB_FLDID_POSTER,"Poster");
-
-    hashtable_insert(dbf_ids,DB_FLDID_DOWNLOADTIME,"Downloaded");
-    hashtable_insert(dbf_ids,DB_FLDID_INDEXTIME,"Indexed");
-    hashtable_insert(dbf_ids,DB_FLDID_FILETIME,"Modified");
-
-    hashtable_insert(dbf_ids,DB_FLDID_SEARCH,"Search URL");
-    hashtable_insert(dbf_ids,DB_FLDID_PROD,"ProdId.");
-    hashtable_insert(dbf_ids,DB_FLDID_AIRDATE,"Air Date");
-    hashtable_insert(dbf_ids,DB_FLDID_TVCOM,"TvCom");
-    hashtable_insert(dbf_ids,DB_FLDID_EPTITLE,"Episode Title");
-    hashtable_insert(dbf_ids,DB_FLDID_EPTITLEIMDB,"Episode Title(imdb)");
-    hashtable_insert(dbf_ids,DB_FLDID_AIRDATEIMDB,"Air Date(imdb)");
-    hashtable_insert(dbf_ids,DB_FLDID_NFO,"NFO");
+void add_label(char *field_id,char *macro_tag)
+{
+    hashtable_insert(dbf_macro_to_id,macro_tag,field_id);
+    hashtable_insert(dbf_id_to_macro,field_id,macro_tag);
 }
 
-char *dbf_label(char *id) {
-    if (dbf_ids == NULL) {
+void dbf_ids_init()
+{
+
+    if (dbf_id_to_macro) return;
+
+    dbf_id_to_macro = string_string_hashtable(32);
+    dbf_macro_to_id = string_string_hashtable(32);
+
+    add_label(DB_FLDID_ID,"ID");
+    add_label(DB_FLDID_WATCHED,"WATCHED");
+    add_label(DB_FLDID_PARTS,"PARTS");
+    add_label(DB_FLDID_FILE,"FILE");
+    add_label(DB_FLDID_NAME,"NAME");
+    add_label(DB_FLDID_DIR,"DIR");
+
+
+    add_label(DB_FLDID_ORIG_TITLE,"ORIG_TITLE");
+    add_label(DB_FLDID_TITLE,"TITLE");
+    add_label(DB_FLDID_AKA,"AKA");
+
+    add_label(DB_FLDID_CATEGORY,"CATEGORY");
+    add_label(DB_FLDID_ADDITIONAL_INFO,"EXTRA_INFO");
+    add_label(DB_FLDID_YEAR,"YEAR");
+
+    add_label(DB_FLDID_SEASON,"SEASON");
+    add_label(DB_FLDID_EPISODE,"EPISODE");
+
+    add_label(DB_FLDID_GENRE,"GENRE");
+    add_label(DB_FLDID_RATING,"RATING");
+    add_label(DB_FLDID_CERT,"CERT");
+    add_label(DB_FLDID_PLOT,"PLOT");
+    add_label(DB_FLDID_URL,"URL");
+    add_label(DB_FLDID_POSTER,"POSTER");
+
+    add_label(DB_FLDID_DOWNLOADTIME,"DOWNLOADTIME");
+    add_label(DB_FLDID_INDEXTIME,"INDEXTIME");
+    add_label(DB_FLDID_FILETIME,"FILETIME");
+
+    add_label(DB_FLDID_PROD,"PRODID");
+    add_label(DB_FLDID_AIRDATE,"AIRDATE");
+    add_label(DB_FLDID_TVCOM,"TVCOM");
+    add_label(DB_FLDID_EPTITLE,"EPITLE");
+    add_label(DB_FLDID_EPTITLEIMDB,"IMDB_EPTITLE");
+    add_label(DB_FLDID_AIRDATEIMDB,"IMDB_AIRDATE");
+    add_label(DB_FLDID_NFO,"NFO");
+}
+
+char *dbf_macro_to_fieldid(char *macro)
+{
+    if (dbf_macro_to_id == NULL) {
         dbf_ids_init();
     }
+    return hashtable_search(dbf_macro_to_id,macro);
+}
 
-    return hashtable_search(dbf_ids,id);
+char *dbf_fieldid_to_macro(char *fieldid)
+{
+    if (dbf_id_to_macro == NULL) {
+        dbf_ids_init();
+    }
+    return hashtable_search(dbf_id_to_macro,fieldid);
 }
 

@@ -1290,7 +1290,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     char *focus_ev = "";
     char *mouse_ev = "";
 
-    if (g_dimension->title_bar) {
+    if (g_dimension->title_bar && !*select) {
 
         char *simple_title;
         if (row_id->category=='T') {
@@ -1324,7 +1324,11 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 //        if (first_space) *first_space='\0';
 //    }
 
-    if (tv_or_movie) {
+    if (*select) {
+
+        cell_text = STRDUP(title);
+
+    } else if (tv_or_movie) {
         char *params;
 
 

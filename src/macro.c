@@ -15,6 +15,11 @@
 #include "display.h"
 #include "gaya_cgi.h"
 #include "macro.h"
+#include "dbfield.h"
+
+#define MACRO_VARIABLE_PREFIX '$'
+#define MACRO_QUERY_PREFIX '?'
+#define MACRO_DBROW_PREFIX '%'
 
 static struct hashtable *macros = NULL;
 char *get_variable(char *vname);
@@ -1068,11 +1073,11 @@ long numeric_constant_eval(long val,Array *args) {
                
 #if 0
                 // parse number
-                if (*p == '$') {
+                if (*p == MACRO_VARIABLE_PREFIX) {
                     char *end;
                     p++;
                     nextp=p;
-                    if (*nextp == '?') {
+                    if (*nextp == MACRO_QUERY_PREFIX) {
                         nextp++;
                     }
                     while(*nextp && ( isalnum(*nextp) || strchr("_[]",*nextp) ) ) {
@@ -1148,9 +1153,13 @@ void replace_variables(Array *args)
             char *p=args->array[i];
             char *newp=NULL;
             char *v;
-            while((v=strchr(p,'$')) != NULL) {
+            while((v=strchr(p,MACRO_VARIABLE_PREFIX)) != NULL) {
+                int free_result = 0;
                 char *endv = v+1;
-                if (*endv == '?') {
+                if (*endv == MACRO_QUERY_PREFIX ) {
+                    endv++;
+                } else if (*endv == MACRO_DBROW_PREFIX ) {
+                    free_result = 1;
                     endv++;
                 }
                 while (*endv && (isalnum(*endv) || strchr("_[]",*endv))) {
@@ -1163,11 +1172,14 @@ void replace_variables(Array *args)
 
                 char *tmp2;
                 ovs_asprintf(&tmp2,"%s%s%s",NVL(newp),p,replace);
+                if (free_result) {
+                    FREE(replace);
+                }
                 FREE(newp);
                 newp = tmp2;
 
                 //restore end of strings
-                *p='$';
+                *p=MACRO_VARIABLE_PREFIX;
                 *endv = tmp;
                 //advance
                 p = endv;
@@ -1351,14 +1363,19 @@ char *get_variable(char *vname)
 
     char *result=NULL;
 
-    if (*vname == '?' ) {
+    if (*vname == MACRO_QUERY_PREFIX ) {
 
         // query variable
         result=query_val(vname+1);
 
-    } else if (*vname == '%' ) {
+    } else if (*vname == MACRO_DBROW_PREFIX ) {
 
-        result=db_get_field(vname+1);
+        HTML_LOG(0,"DBROW LOOKUP [%s]",vname+1);
+        char *fieldid = dbf_macro_to_fieldid(vname+1);
+        if (fieldid) {
+            HTML_LOG(0,"DBROW LOOKUP [%s]",fieldid);
+            result=db_get_field(fieldid);
+        }
 
     } else if (util_starts_with(vname,"ovs_") ) {
 
@@ -1386,7 +1403,7 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
     char *(*fn)(char *template_name,char *name,Array *args,int num_rows,DbRowId **,int *) = NULL;
     Array *args=NULL;
 
-    if (*call == '$') {
+    if (*call == MACRO_VARIABLE_PREFIX) {
 
         free_result=0;
 

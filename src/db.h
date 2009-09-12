@@ -34,6 +34,7 @@ typedef struct Dbrowid_struct {
     char *fanart;
     char *parts;
     char *episode;
+    char *director;
 
     //only populate if deleting
     char *nfo;

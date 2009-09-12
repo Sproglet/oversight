@@ -333,7 +333,7 @@ function report_status(msg) {
 }
 
 function get_new_folders(folder_list,timestamp_file,\
-new_list,f,i,j,dir,newfile,newdir,cmd) {
+new_list,f,i,j,dir,newfile,newdir) {
     if (!exists(timestamp_file)) {
         return;
     }
@@ -395,7 +395,7 @@ line,parts,f) {
 }
 
 function get_settings(settings,\
-line,parts,f,n,v,n2,v2) {
+line,f,n,v,n2,v2) {
     if ("@ovs_fetched" in settings) return;
 
     f="/tmp/setting.txt";
@@ -438,7 +438,7 @@ parts,i,x) {
 }
 
 function is_mounted(path,\
-f,result) {
+f,result,line) {
     result = 0;
     f = "/etc/mtab";
     while ((getline line < f) > 0) {
@@ -453,7 +453,7 @@ f,result) {
 }
 
 function nmt_mount_share(s,settings,\
-path,link,f,link_details,remote,cmd,mount_root) {
+path,link_details,remote,cmd,mount_root) {
 
 
     mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
@@ -685,8 +685,7 @@ END{
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
-function merge_files_and_do_actions(indexToMergeHash,\
-file_to_db,f,added_to_db) {
+function merge_files_and_do_actions(indexToMergeHash) {
 
     if (g_opt_dry_run) {
 
@@ -849,7 +848,7 @@ function db_field(key,name,tag) {
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-temp,f,fmax) {
+f,fmax) {
 
     #Need to make sure the ls format is as "standard"
     gLS_FILE_POS=0;
@@ -1235,14 +1234,13 @@ function folderIsRelevant(dir) {
 }
 # If no direct urls found. Search using file names.
 function searchInternetForImdbLink(idx,\
-url,triedTitles,txt,txt2,titlesRequired,linksRequired) {
+url,triedTitles,txt,txt2,linksRequired) {
 
-    titlesRequired = 0+g_settings["catalog_imdb_titles_required"];
     linksRequired = 0+g_settings["catalog_imdb_links_required"];
     
     txt = basename(gMovieFiles[idx]);
     if (tolower(txt) != "dvd_volume" ) {
-        url=searchHeuristicsForImdbLink(idx,txt,triedTitles,titlesRequired,linksRequired);
+        url=searchHeuristicsForImdbLink(txt,triedTitles,linksRequired);
     }
 
 #if it has a scene name then online nfo search is better. - disable for now
@@ -1250,19 +1248,19 @@ url,triedTitles,txt,txt2,titlesRequired,linksRequired) {
 #        txt2 = remove_scene_name_and_parts(idx);
 #        if (txt2 != txt ) {
 #            #Because we have lost some info (the release group is removed) the required threshold is increased.
-#            url=searchHeuristicsForImdbLink(idx,txt2,triedTitles,titlesRequired+1,linksRequired+1);
+#            url=searchHeuristicsForImdbLink(txt2,triedTitles,linksRequired+1);
 #        }
 #    }
 
     if (url == "" && match(gMovieFiles[idx],gExtRegexIso)) {
         txt = getIsoTitle(gFolder[idx]"/"gMovieFiles[idx]);
         if (length(txt) - 3 > 0 ) {
-            url=searchHeuristicsForImdbLink(idx,txt,triedTitles,titlesRequired,linksRequired);
+            url=searchHeuristicsForImdbLink(txt,triedTitles,linksRequired);
         }
     }
 
     if (url == "" && folderIsRelevant(gFolder[idx])) {
-        url=searchHeuristicsForImdbLink(idx,tolower(basename(gFolder[idx])),triedTitles,titlesRequired,linksRequired);
+        url=searchHeuristicsForImdbLink(tolower(basename(gFolder[idx])),triedTitles,linksRequired);
     }
 
     return url;
@@ -1297,7 +1295,7 @@ heuristicId,keywords) {
 }
 
 
-function searchHeuristicsForImdbLink(idx,text,triedTitles,titlesRequired,linksRequired,\
+function searchHeuristicsForImdbLink(text,triedTitles,linksRequired,\
 bestUrl,k,text_no_underscore) {
 
     mergeSearchKeywords(text,k);
@@ -1448,7 +1446,7 @@ t) {
 }
 
 function scrapeIMDBTitlePage(idx,url,\
-f,imdbid,imdb,newPosterUrl,line) {
+f,line,imdbContentPosition) {
 
     if (url == "" ) return;
 
@@ -1518,7 +1516,7 @@ fields,f,i,fileRe) {
 }
 
 function copyUntouchedToNewDatabase(db_file,new_db_file,indexToMergeHash,\
-kept_count,updated_count,f,record_action,dbline,dbline2,dbfields,idx) {
+kept_count,updated_count,f,dbline,dbline2,dbfields,idx) {
 
     kept_count=0;
     updated_count=0;
@@ -1568,7 +1566,7 @@ kept_count,updated_count,f,record_action,dbline,dbline2,dbfields,idx) {
 
     close(new_db_file);
     INFO("kept "kept_count" updated "updated_count" records from main database");
-    return count;
+    return kept_count+updated_count;
 }
 
 function getPath(name,localPath) {
@@ -1961,8 +1959,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 ############### GET IMDB URL FROM NFO ########################################
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
-first_tv_db_entry,\
-idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,msg,\
+idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name2) {
 
 
@@ -2421,7 +2418,7 @@ foundId,line) {
 
 # returns IGNORE?
 function getAllInfoFromTvDbAndImdbLink(idx,title,\
-tvDbSeriesPage,alternateTitles) {
+tvDbSeriesPage,alternateTitles,cache_key) {
 
     if (title == "") {
         title=gTitle[idx];
@@ -2493,7 +2490,7 @@ tvDbSeriesPage,alternateTitles) {
 # IN abbrev - abbreviated name eg ttscc
 # OUT alternateTitles - hash of matching names eg {Terminator The Sarah Conor Chronicles,...} indexed by title.
 function searchAbbreviationAgainstTitles(abbrev,alternateTitles,\
-initial,i,tmp) {
+initial) {
 
     delete alternateTitles;
 
@@ -2639,7 +2636,7 @@ id,xml) {
 # Another one, for conan obrien use thetvdb get episode by date api call to differentiate between shows.
 # This is all yucky edge case stuff. And its not coded. In the mean time I will just return the first element :)
 function selectBestOfBestTitle(idx,titles,\
-id,bestId,bestFirstAired,firstAired,ages,count) {
+id,bestId,bestFirstAired,ages,count) {
     INFO("TODO:Refine selection rules here. May user should choose");
     dump(0,"closely matched titles",titles);
     for(id in titles) count++;
@@ -2673,7 +2670,7 @@ id,bestId,bestFirstAired,firstAired,ages,count) {
 # OUT closeTitles - hash of matching titles. hashed by showid => title
 # RETURNS number of matches
 function filterTitlesByTvDbPresence(titleInHash,requiredTags,titleOutHash,\
-bestScore,bestTitles,potentialTitle,potentialMatches,origTitles,titleScore,count) {
+bestScore,potentialTitle,potentialMatches,origTitles,titleScore,count) {
     bestScore=-1;
     count=0;
 
@@ -2825,7 +2822,7 @@ url,id2) {
 }
 
 function searchTvDbTitles(idx,title,\
-tvdbid,tvDbSeriesUrl,id,imdb_id) {
+tvdbid,tvDbSeriesUrl,imdb_id) {
 
     if (gExternalSourceUrl[idx]) {
         imdb_id = extractImdbId(gExternalSourceUrl[idx]);
@@ -3082,7 +3079,7 @@ i,score,bestScore,tmpTitles) {
 
 # Return the list of names in the epguide menu indexed by link
 function getEpguideNames(letter,names,\
-url,count,title,link,links,i,count2) {
+url,title,link,links,i,count2) {
     url = "http://epguides.com/menu"letter;
 
     scanPageForMatches(url,"<li>(|<b>)<a.*</li>",0,1,"",links);
@@ -3193,7 +3190,8 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
 #as it is usually a phonic type contraction eg.
 # Royal Pain might be rylpn 
 # If a word is not represented by letters then we are possibly shafted. This is more likely small words. in of it etc
-function contractionPrerequisite(abbrev,possible_title) {
+function contractionPrerequisite(abbrev,possible_title,\
+spaces) {
     spaces = possible_title ;
     gsub(/[^ ]+/,"",spaces); #spaces is one less then number of words.
     if (length(abbrev) - (length(spaces)+1) <= 0 ) {
@@ -3823,7 +3821,7 @@ function indexFrom(str,x,startPos,\
 }
 
 function utf8_encode(text,\
-i,text2,ll) {
+i,text2,ll,c) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
@@ -3842,7 +3840,7 @@ i,text2,ll) {
 
 
 function url_encode(text,\
-i,text2,ll) {
+i,text2,ll,c) {
 
     if (g_chr[32] == "" ) {
         decode_init();
@@ -3868,7 +3866,7 @@ i,text2,ll) {
 }
 
 function decode_init(\
-i,c,h,b1,b2,b3,b4) {
+i,c,h,b1,b2) {
     DEBUG("create decode matrix");
     for(i=0 ; i - 256 < 0 ; i++ ) {
         c=sprintf("%c",i);
@@ -4003,7 +4001,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
 
     # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-    # same_domain_delay=0;
+    same_domain_delay=0;
     # cmd = get_sleep_command(url,same_domain_delay) cmd;
 
     DEBUG("WGET ["url"]");
@@ -4090,13 +4088,16 @@ function download_image(field_id,url,idx,\
 
     #Check for posters stored locally with the film. these  will never be overwritten if
     # catalog_poster_location = internal [ the default]
-    with_media_path = local_poster_path(idx,1);
+#    with_media_path = local_poster_path(idx,1);
 
-    if (hasContent(with_media_path) ) {
-
-        INFO("Using local poster "with_media_path" - superceeds internal poster");
-        copy_file=1;
-    } 
+    # Local posters are usualy not very good and Oversight can dynamically select these posters 
+    # anyway. So we wont bother to copy them anymore, but rather fetch high quality poster from 
+    # the internet.
+#    if (hasContent(with_media_path) ) {
+#
+#        INFO("Using local poster "with_media_path" - superceeds internal poster");
+#        copy_file=1;
+#    } 
 
     #We will possibly be updating or fetching the poster..
 
@@ -4114,14 +4115,14 @@ function download_image(field_id,url,idx,\
     DEBUG("poster_ref = ["poster_ref"]");
     DEBUG("new poster url = "url);
 
-    if(copy_file) {
-
-        #Copy local file to internal location
-        preparePath(internal_path);
-        system("cp "quoteFile(with_media_path)" "quoteFile(internal_path));
-        g_already_fetched_poster[internal_path] = 1;
-
-    } else {
+#    if(copy_file) {
+#
+#        #Copy local file to internal location
+#        preparePath(internal_path);
+#        system("cp "quoteFile(with_media_path)" "quoteFile(internal_path));
+#        g_already_fetched_poster[internal_path] = 1;
+#
+#    } else {
 
         get_it = 0;
 
@@ -4179,14 +4180,14 @@ function download_image(field_id,url,idx,\
             exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteFile(url)" "quoteFile(internal_path)" "wget_args" &");
         }
 
-    }
+#    }
     return poster_ref;
 }
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
 function getNiceMoviePosters(idx,imdb_id,\
-search_url,poster_url,backdrop_url,urlChars,referer_url,txt,xml) {
+search_url,poster_url,backdrop_url,referer_url,txt,xml) {
     DEBUG("Poster check imdb_id = "imdb_id);
 
     search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id;
@@ -4275,7 +4276,7 @@ matches,i) {
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scanPageForMatches(url,regex,max,cache,referer,matches,\
-f,line,count,getMore,linematches,linecount,regex_text) {
+f,line,count,linematches,linecount,regex_text,remain) {
 
     delete matches;
 
@@ -5062,7 +5063,7 @@ function file_time(f) {
 }
 
 function createIndexRow(i,db_index,watched,index_time,\
-row,estimate,nfo,dbIdx) {
+row,estimate,nfo) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
     estimate=file_time(gFolder[i]"/unpak.log");
@@ -5240,7 +5241,7 @@ function apply(text) {
 
 #Move folder names from argument list
 function get_folders_from_args(folder_arr,\
-i,folderCount,moveDown,d) {
+i,folderCount,moveDown) {
     folderCount=0;
     moveDown=0;
     for(i = 1 ; i - ARGC < 0 ; i++ ) {

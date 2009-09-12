@@ -1619,7 +1619,7 @@ delete_files() {
     if [ $mode = torrent_seeding ] ; then return ; fi
 
     if [ -f "$delete_queue" ] ; then
-        exec_file_list "rm \1" "-e" < "$delete_queue"
+        exec_file_list "rm \1" "--" < "$delete_queue"
         #mv "$delete_queue" "$delete_queue.bak"
         rm -f "$delete_queue"
     fi

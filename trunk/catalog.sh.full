@@ -2713,7 +2713,7 @@ score) {
             DEBUG("searchTvDb removing countries from ["title"]" );
             if (match(tolower(title)," (au|uk|us)( |$)")) {
                 DEBUG("Removing "substr(title,RSTART+1,RLENGTH-1));
-                title=substr(title,1,RSTART) substr(title,RSTART+RLENGTH);
+                title=substr(title,1,RSTART-1) substr(title,RSTART+RLENGTH);
                 DEBUG("Trying generic title "title);
                 score=searchTvDb2(title,requiredTagList,closeTitles);
             }

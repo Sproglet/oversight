@@ -450,9 +450,11 @@ char * db_rowid_get_field(DbRowId *rowid,char *name) {
         return NULL;
     }
 
+    //HTML_LOG(0,"db_rowid_get_field of [%s] %d=%d?",rowid->title,I//);
+
     switch(type) {
         case FIELD_TYPE_STR:
-            ovs_asprintf(&result,"%s",offset);
+            ovs_asprintf(&result,"%s",*(char **)offset);
             break;
         case FIELD_TYPE_CHAR:
             ovs_asprintf(&result,"%c",*(char *)(offset));
@@ -914,11 +916,6 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
         default: dbrs->other_media_total++; break;
     }
 
-    //Save the first row as the default row to edit.
-    if (g_first_row == NULL) {
-        g_first_row = insert;
-    }
-
     return dbrs->size;
 }
 
@@ -1151,6 +1148,15 @@ DbRowSet **db_crossview_scan_titles(
             }
         }
     }
+    //Save the first row as the default row to edit.
+    if (g_first_row == NULL) {
+        g_first_row = rowsets[0]->rows;
+        HTML_LOG(0,"First row=[%s]",g_first_row->title);
+        HTML_LOG(0,"First row=[%s]",db_get_field("_T"));
+        HTML_LOG(0,"First row=[%s]",db_rowid_get_field(g_first_row,"_T"));
+        HTML_LOG(0,"First row=[%s]",g_first_row->title);
+    }
+
     HTML_LOG(0,"end db_crossview_scan_titles");
     return rowsets;
 }

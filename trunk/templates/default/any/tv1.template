@@ -30,6 +30,7 @@
                 <tr>
                     <td class=filelist align=center>
                     [:TV_LISTING:]
+                    [:INCLUDE_TEMPLATE(submit_btn):]
                     </td>
                 </tr>
             </table>

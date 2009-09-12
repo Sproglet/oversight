@@ -146,6 +146,7 @@ VERSION=20090721-1BETA
 # it will be created from the unpak.cfg.example file.
 # If unpak_load_settings starts with '/' it's location is absolute,
 # otherwise it is relative to the location of this script.
+unpak_default_settings=conf/.unpak.cfg.defaults
 unpak_load_settings=conf/unpak.cfg
 
 ########################################################################
@@ -323,71 +324,40 @@ nzbget_cmd_request() {
     fi
 }
 
-set_default_settings() {
-
-    # :r! grep '^unpak_' /mnt/popcorn/.nzbget/unpak.cfg  | grep -v subfolder
-    unpak_settings_version=1
-
-
-
-    unpak_completed_dir="../Complete" #Default location for completed downloads
-    unpak_movie_folder_format=
-    unpak_tv_file_format=
-    unpak_music_folder=
-    unpak_debug_mode=0
-    unpak_sanity_check_rar_files=1
-    unpak_rename_img_to_iso=1
-    unpak_check_for_new_versions=1
-    unpak_delete_rar_files=1
-    unpak_max_nzbfile_age=30
-    unpak_nested_unrar_depth=3
-    unpak_disable_external_par_repair=0
-    unpak_external_par_repair_tidy_queue=1
-    unpak_pause_nzbget=0
-    unpak_pause_nzbget_during_unrar=0
-    unpak_maximum_par_repair_minutes=300
-
-    unpak_nmt_pin="2468" 
-    unpak_nmt_pin_root="/share/~Other"
-    unpak_nmt_pin_folder_scramble_windows_share=1
-    unpak_delete_samples="*<sample>*|*<samp>*"
-    unpak_delete_files="*.nzb|*.sfv|*.url|*.damaged|_brokenlog.txt|*.par2|*.queued|unpak.*"
-    unpak_nmt_disable_screensaver=1
-}
-
 unpak_settings_version=1
 # Cant call logging yet.
-merge_unpak_settings() {
+load_unpak_settings() {
 
-    case "$unpak_load_settings" in
+    cfg="$1"
+    case "$cfg" in
         /*) true;;
-        *) unpak_load_settings="$script_folder/$unpak_load_settings" ;;
+        *) cfg="$script_folder/$cfg" ;;
     esac
 
-    INFO "merge_unpak_settings [$unpak_load_settings]"
+    INFO "load_unpak_settings [$cfg]"
 
-    if [ -n "$unpak_load_settings" ] ; then
+    if [ -n "$cfg" ] ; then
         #If there is no sample cfg - create one
-        if [ ! -f "$unpak_load_settings" ] ; then
-            cp "$unpak_load_settings.example" "$unpak_load_settings"
-            echo "Create $unpak_load_settings file from example"
+        if [ ! -f "$cfg" ] ; then
+            cp "$cfg.example" "$cfg"
+            echo "Create $cfg file from example"
         fi
 
-        if [ -f "$unpak_load_settings" ] ; then
-            if egrep -q "^ *unpak_settings_version=('|)$unpak_settings_version($|[^0-9])" "$unpak_load_settings" ; then
-                #echo "Loading settings from $unpak_load_settings"
+        if [ -f "$cfg" ] ; then
+            if egrep -q "^ *unpak_settings_version=('|)$unpak_settings_version($|[^0-9])" "$cfg" ; then
+                #echo "Loading settings from $cfg"
                 # Have to do fix endings because of WordPad. Also not all platforms have sed -i
                 #cat preserves dest permissions
-                if grep -q '$' "$unpak_load_settings" ; then
+                if grep -q '$' "$cfg" ; then
                     WARNING Fixing corrupted config file
                     tmpFile="$TMP/unpak.cfg.$$"
-                    sed -r 's/$//' "$unpak_load_settings" > "$tmpFile"
-                    cat "$tmpFile" > "$unpak_load_settings" 
+                    sed -r 's/$//' "$cfg" > "$tmpFile"
+                    cat "$tmpFile" > "$cfg" 
                     rm -f "$tmpFile"
                 fi
-                . "$unpak_load_settings"
+                . "$cfg"
             else
-                echo "Settings in $unpak_load_settings ignored. Not compatible"
+                echo "Settings in $cfg ignored. Not compatible"
             fi
         else
             echo "Using Default Settings"
@@ -2235,11 +2205,12 @@ cd "$arg_download_dir"
 create_resume_file unpak.resume "$script_folder/unpak.sh" "$@"
 
 
-set_default_settings
+load_unpak_settings "$unpak_default_settings"
 
 set | grep "^unpak" | log_stream DEBUG "unpak1"
 
-merge_unpak_settings
+load_unpak_settings "$unpak_load_settings"
+
 set | grep "^unpak" | log_stream DEBUG "unpak2"
 
 if [ $mode = nzbget ] ; then

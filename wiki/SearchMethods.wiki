@@ -11,20 +11,20 @@ For movies Oversight uses the following searches:
 
 ==ONLINE_NFO==
  Searches nfo files at bintube and binsearch websites.
- Excellent for scene release filenames.
- OK for movies with distinctive titles in the filename.
- Bad for movies with filenames consisting of a few common English words. eg Wanted.avi
+  * Excellent for scene release filenames.
+  * OK for movies with distinctive titles in the filename.
+  * Bad for movies with filenames consisting of a few common English words. eg Wanted.avi
 
 ==IMDBTITLE==
   Extracts the main keywords from the title , removes any format info (eg DVDRip),
 and then searches the web for those words and "imdb" and picks the first one.
-  Good for movies with distinctive titles in the filename.
-  Hit an Miss for Remakes unless the year is specified in the filename.
-  Poor for Scene release filenames.
+  * Good for movies with distinctive titles in the filename.
+  * Hit an Miss for Remakes unless the year is specified in the filename.
+  * Poor for Scene release filenames.
 
 ==IMDBLINK== 
   Extracts the main keywords from the title , removes any format info (eg DVDRip),
 and then searches the web for those words and "imdb" , but excludes the IMDB wesite itself and also olny selects a link which occurs significantly more often than other links.
-  OK for scene releases.
-  Good for movies with distinctive titles in the filename.
-  Good at not picking anything if it can be confused with a remake. (Low false positives but then needs another search method to finish the job) 
+  * OK for scene releases.
+  * Good for movies with distinctive titles in the filename.
+  * Good at not picking anything if it can be confused with a remake. (Low false positives but then needs another search method to finish the job) 

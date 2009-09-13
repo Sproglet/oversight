@@ -14,6 +14,7 @@ For movies Oversight uses the following searches:
   * Excellent for scene release filenames.
   * OK for movies with distinctive titles in the filename.
   * Bad for movies with filenames consisting of a few common English words. eg Wanted.avi
+  * Bad for remakes with smae titles.
 
 ==IMDBTITLE==
   Extracts the main keywords from the title , removes any format info (eg DVDRip),

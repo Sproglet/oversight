@@ -93,6 +93,7 @@ if [ ! -s "$INDEX_DB" ] ; then
 fi
 
 CONF_FILE="$APPDIR/conf/catalog.cfg"
+DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
 
 if [ ! -f "$CONF_FILE" ] ; then
     cp "$CONF_FILE.example" "$CONF_FILE"
@@ -296,12 +297,12 @@ i,n,v,option) {
             gsub(/ *[,|] */,"|",v);
 
             if (n in g_settings) {
-                INFO("Setting "n" already overidden as "g_settings[n]" not "v"]");
+                INFO("Overiding "n" -> "v);
             } else {
-                g_settings[n] = v;
                 g_settings_orig[n]=v;
-                INFO(n"=["v"]");
             }
+            g_settings[n] = v;
+            INFO(n"=["v"]");
         }
     }
     close(file_name);
@@ -532,6 +533,7 @@ END{
     g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
 
+    load_catalog_settings(DEFAULTS_FILE);
     load_catalog_settings(CONF_FILE);
 
 
@@ -1233,6 +1235,20 @@ function folderIsRelevant(dir) {
    }
    return 1;
 }
+
+function searchInternetForFirstImdbPage(idx,name_no_tags,\
+keywords) {
+
+    keywords = textToSearchKeywords(name_no_tags,0);
+
+    return scanPageForMatch(search_url(g_link_search_engines,keywords"+%2Bimdb",10),g_imdb_regex,0);
+
+
+    # The following - catalog tries to do weighting but this ignores any relevancy
+    # assumed by the order of the search results. We might have to ditch this.
+    #return scanGoogleForBestMatch(g_link_search_engines,keywords"+%2Bimdb",g_imdb_regex,"search4imdb",2);
+}
+
 # If no direct urls found. Search using file names.
 function searchInternetForImdbLink(idx,\
 url,triedTitles,txt,txt2,linksRequired) {
@@ -1290,7 +1306,7 @@ function mergeSearchKeywords(text,keywordArray,\
 heuristicId,keywords) {
     # Build array of different styles of keyword search. eg [a b] [+a +b] ["a b"]
     for(heuristicId =  0 ; heuristicId -1  <= 0 ; heuristicId++ ) {
-        keywords =fileNameToSearchKeywords(text,heuristicId);
+        keywords =textToSearchKeywords(text,heuristicId);
         keywordArray[keywords]=1;
     }
 }
@@ -1392,7 +1408,7 @@ function basename(f) {
 
 #If stripFormatTags set then only portion before recognised format tags (eg 720p etc) is search.
 #This helps broaden results and get better consensus from google.
-function fileNameToSearchKeywords(f,heuristic\
+function textToSearchKeywords(f,heuristic\
 ) {
 
     #heuristic 0 - All words optional (+) and strip format tags strip episode s0ne0n
@@ -1402,7 +1418,7 @@ function fileNameToSearchKeywords(f,heuristic\
 
     if (heuristic == 0 || heuristic == 1) {
 
-        gsub(/[^-_A-Za-z0-9]+/,"+",f);
+        gsub(/[^-A-Za-z0-9]+/,"+",f);
 
         #remove words ending with numbers
         #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
@@ -1961,7 +1977,8 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name2) {
+ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name_no_tags,\
+s,search_order) {
 
 
     startTime = systime();
@@ -2063,30 +2080,39 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,na
             # -----------------------------------------------------------------------------
 
             name=cleanSuffix(idx);
+            name_no_tags=remove_format_tags(name);
+            scene_name=(name ~ g_settings["catalog_movie_scene_name_regex"]);
+            if (scene_name) {
+                split(trim(g_settings["catalog_movie_search_order_scene"]),search_order," *[,|] *");
+            } else {
+                split(trim(g_settings["catalog_movie_search_order_nonscene"]),search_order," *[,|] *");
+            }
 
-
-
-            # search online info using film basename sans format tags looking for imdb link
-            # -----------------------------------------------------------------------------
-            if (bestUrl == "") {
-                INFO("Search Phase: usenet online nfo");
-                bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
+            for(s in search_order) {
                 if (bestUrl == "") {
-                    name2 = remove_format_tags(name);
-                    if (name2 != name) {
-                        bestUrl = searchOnlineNfoLinksForImdbAlternate(name2);
+
+                    INFO("Search Phase: "search_order[s]);
+
+                    if (search_order[s] == "ONLINE_NFO") {
+
+                        bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
+                        if (bestUrl == "") {
+                            if (name_no_tags != name) {
+                                bestUrl = searchOnlineNfoLinksForImdbAlternate(name2);
+                            }
+                        }
+
+                    } else if (search_order[s] == "IMDBFIRST") {
+
+                        bestUrl=searchInternetForFirstImdbPage(idx,name_no_tags);
+
+                    } else if (search_order[s] == "IMDBLINKS") {
+
+                        bestUrl=searchInternetForImdbLink(idx);
+
                     }
                 }
             }
-
-            # Search the internet for the film name and imdb tags
-            # -----------------------------------------------------------------------------
-            if (bestUrl == "") {
-
-                INFO("Search Phase: web page + imdb");
-                bestUrl=searchInternetForImdbLink(idx);
-            }
-
 
             # Finished Search. Scrape IMDB
             if (bestUrl != "") {
@@ -2332,13 +2358,13 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
     }
 
     #return most frequent match
-    if (bestScores(totalImdbIds,totalImdbIds,0) > 0) {
+    if (bestScores(totalImdbIds,totalImdbIds,0)+0 > 0) {
 
         bestId = firstIndex(totalImdbIds);
         INFO("best imdb link ["domain"] = "bestId);
         return extractImdbLink(bestId);
     } else {
-        INFO("To many matches with the smae number of occurrences. Discarding results");
+        INFO("To many matches with the same number of occurrences. Discarding results");
         return "";
     }
 
@@ -2396,6 +2422,7 @@ i,bestScore,count,tmp,isHigher) {
         count++;
     }
     dump(0,"post best",outHash);
+    INFO("count = "count);
     return count;
 }
 
@@ -3390,20 +3417,30 @@ function search_url(search_engines,q,num) {
     #return "http://www.scroogle.org/cgi-bin/nbbw.cgi?Gw="q;
     ++g_web_search_count;
     if (!(g_web_search_count in search_engines )) g_web_search_count=1;
+
     if (search_engines[g_web_search_count] == "google") {
         return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
+
     } else if (search_engines[g_web_search_count] == "googleie") {
         return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
+
     } else if (search_engines[g_web_search_count] == "yahoouk") {
         return "http://uk.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
+
+    } else if (search_engines[g_web_search_count] == "yahooau") {
+        return "http://au.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
+
     } else if (search_engines[g_web_search_count] == "yahoo") {
         return "http://search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
+
     } else if (search_engines[g_web_search_count] == "msn") {
         gsub(/inurl%/,"site%",q);
         return "http://search.msn.com/results.aspx?q="q;
+
     } else if (search_engines[g_web_search_count] == "msnuk") {
         gsub(/inurl%/,"site%",q);
         return "http://search.msn.co.uk/results.aspx?q="q;
+
     } else {
         ERROR("Unknown search engine "g_web_search_count" ["search_engines[g_web_search_count]"]");
         exit;
@@ -4358,7 +4395,7 @@ getMore,start,count,m) {
         line=substr(line,RSTART+RLENGTH);
         count++;
         if (max > 0 ) {
-            if (count <= 0) {
+            if (count - max >= 0) {
                 break;
             }
         }
@@ -4579,9 +4616,10 @@ p,i) {
 }
 function scrapeIMDBDirector(f,\
 l) {
-    while(l == "") {
+    while(index(l,"name") == 0) {
         getline l <f;
     }
+    INFO("Extracting director from ["l"]");
     l=extractTagText(l,"a");
     DEBUG("IMDB: Got director = ["l"]");
     return l;
@@ -5373,6 +5411,7 @@ function load_catalog_settings(file_name) {
     "LS=$LS" \
     "APPDIR=$APPDIR" \
     "CONF_FILE=$CONF_FILE" \
+    "DEFAULTS_FILE=$DEFAULTS_FILE" \
     "INDEX_DB=$INDEX_DB" "$@"
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"

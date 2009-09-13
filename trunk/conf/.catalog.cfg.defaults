@@ -63,8 +63,12 @@ catalog_group="nmt"
 # Comma seperated list of search providers. All are used esp during initial scan to avoid getting blacklisted.
 # Google is quick to block with initial scans so it is only used for deep searches.
 #catalog_search_engines="GOOGLE,MSN,YAHOO,MSNUK,YAHOOUK"
-catalog_search_engines="MSN,YAHOO,MSNUK,YAHOOUK"
+catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
 catalog_deep_search_engines="GOOGLE,GOOGLEIE"
-#scene tags - dont use ones that are normal words.
-#catalog_scene_tags="dmd,rep,alli,vmt,trv,bald,axxo,tdm,trv,vite,fico,coa,opt,"
+
+#catalog_movie_scene_name_regex="[^ ]-[^ ][^ ]"
+catalog_movie_scene_name_regex="^[-a-z0-9.]+$"
+catalog_movie_search_order_scene="ONLINE_NFO,IMDBFIRST,IMDBLINKS"
+catalog_movie_search_order_nonscene="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+
 catalog_config_version=1

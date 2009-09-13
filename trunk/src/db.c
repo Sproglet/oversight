@@ -1036,8 +1036,8 @@ int is_pingable(char *mtab_line) {
     static long ping_millis = -1;
     if (ping_millis == -1) {
         if (!config_check_long(g_oversight_config,"ovs_nas_timeout",&ping_millis)) {
-            HTML_LOG(0,"ping timeout defaulting to 100ms");
             ping_millis=100;
+            HTML_LOG(0,"ping timeout defaulting to %ldms",ping_millis);
         }
     }
 

@@ -144,8 +144,9 @@ int ping (char *host,long timeout_millis)
         //are anything that responds within the shot timeouts required for oversight
         //(100ms) is in working order.
         fd_set set;
+        FD_ZERO(&set);
         FD_SET(sockfd,&set);
-        ret = select(1,&set,NULL,NULL,&timeout);
+        ret = select(1+sockfd,&set,NULL,NULL,&timeout);
 #else
         char recv_buf[BUF_SIZE];
         char control_buf[BUF_SIZE];

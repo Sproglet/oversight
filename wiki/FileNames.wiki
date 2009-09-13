@@ -54,7 +54,9 @@ You do not need to rescan in this case. Oversight finds the new posters as it is
 
 ==Posters==
 
-At present Posters should have the same name as the file but the jpg or png extension. eg
+At present Posters should either
+  # Just be called poster.jpg or poster.png OR
+  # (not working yet) have the same name as the file but the .jpg or .png extension .e.g.
 
 The-Wrestler.jpg
 The-Wrestler.avi
@@ -63,7 +65,9 @@ Eventually (not yet!) there will be a much looser assciation. If there is only o
 
 ==Fanart==
 
-At present Fanart should have the same name as the file but the .fanart.jpg or .fanart.png extension. eg
+At present Fanart should either
+  # Just be called fanart.jpg or fanart.png OR
+  # (not working yet) have the same name as the file but the .fanart.jpg or .fanart.png extension. eg
 
 The-Wrestler.fanart.jpg
 The-Wrestler.avi

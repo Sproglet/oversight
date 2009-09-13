@@ -27,7 +27,7 @@ Ideally it would be nice for the user not to see removed items at all. There are
 
 2. The pruning takes place whenever new media is added, or at regular intervals - Again, until the pruning occurs - you will get could not play errors.
 
-3. Oversight completely hides the removed entries dynamically , as the page is drawn - this will always be correct and the approach I will be taking - however it requires some code changes - so that only the items on the screen are checked (we dont want to check the existance of 600 files every time we draw a page). At preset, Oversight does the checks but they just come a bit too late in the sequence, so that I have to still put something on the screen where the file would have been. I will fix this but bear with me. I've thought through most of the options from both a performance and usability perspective but I just havent had time to code it yet.
+3. Oversight completely hides the removed entries dynamically , as the page is drawn - this will always be correct and the approach I will be taking - however it requires some code changes - so that only the items on the screen are checked (we dont want to check the existence of 600 files every time we draw a page). At preset, Oversight does the checks but they just come a bit too late in the sequence, so as an interim solution, I have to still put something on the screen where the file would have been. I will fix this but bear with me. I've thought through most of the options from both a performance and usability perspective but I just haven't had time to code it yet. It's still less work and effort than rescanning - just not as pretty or transparent.
 
 ==USB/NAS removal==
 

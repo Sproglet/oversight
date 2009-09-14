@@ -294,7 +294,7 @@ i,n,v,option) {
         if (match(option,"^[A-Za-z0-9_]+=")) {
             n=substr(option,1,RLENGTH-1);
             v=substr(option,RLENGTH+1);
-            gsub(/ *[,|] */,"|",v);
+            #gsub(/ *[,] */,",",v);
 
             if (n in g_settings) {
                 INFO("Overiding "n" -> "v);
@@ -310,6 +310,7 @@ i,n,v,option) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_cvs_sep=" *, *";
     g_opt_dry_run=0;
     yes="yes";
     no="no";
@@ -554,7 +555,7 @@ END{
     g_settings["catalog_format_tags"]="\\<("tolower(g_settings["catalog_format_tags"])")\\>";
 
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
-    split(g_settings["catalog_cert_country_list"],gCertificateCountries,"|");
+    split(g_settings["catalog_cert_country_list"],gCertificateCountries,",");
 
     gExtList1="avi|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
     gExtList2="img|iso";
@@ -571,7 +572,7 @@ END{
     gExtRegExAll="\\.("gExtList1"|"gExtList2")$";
     INFO(gExtRegExAll);
 
-    split(g_settings["catalog_title_country_list"],gTitleCountries,"|");
+    split(g_settings["catalog_title_country_list"],gTitleCountries,g_cvs_sep);
 
     monthHash("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",gMonthConvert);
     g_tk="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
@@ -595,13 +596,13 @@ END{
             folder_list=g_settings["catalog_watch_paths"];
         } else {
             INFO("Scanning default and watch paths");
-            folder_list=g_settings["catalog_scan_paths"]","g_settings["catalog_watch_paths"];
+            folder_list=g_settings["catalog_scan_paths"] g_cvs_sep g_settings["catalog_watch_paths"];
         }
         trim(folder_list);
         sub(/^,+/,"",folder_list);
         sub(/,+$/,"",folder_list);
 
-        split(folder_list,FOLDER_ARR," *[,|]+ *");
+        split(folder_list,FOLDER_ARR,g_cvs_sep);
 
         g_timestamp_file=APPDIR"/.lastscan";
 
@@ -1236,12 +1237,12 @@ function folderIsRelevant(dir) {
    return 1;
 }
 
-function searchInternetForFirstImdbPage(idx,name_no_tags,\
+function searchInternetForFirstImdbPage(idx,name_no_tags,qualifier,\
 keywords) {
 
     keywords = textToSearchKeywords(name_no_tags,0);
 
-    return scanPageForMatch(search_url(g_link_search_engines,keywords"+%2Bimdb",10),g_imdb_regex,0);
+    return scanPageForMatch(search_url(g_link_search_engines,keywords"+"qualifier,10),g_imdb_regex,0);
 
 
     # The following - catalog tries to do weighting but this ignores any relevancy
@@ -2081,15 +2082,21 @@ s,search_order) {
 
             name=cleanSuffix(idx);
             name_no_tags=remove_format_tags(name);
-            scene_name=(name ~ g_settings["catalog_movie_scene_name_regex"]);
-            if (scene_name) {
-                split(trim(g_settings["catalog_movie_search_order_scene"]),search_order," *[,|] *");
-            } else {
-                split(trim(g_settings["catalog_movie_search_order_nonscene"]),search_order," *[,|] *");
+
+            #Find any search order that matches the file format
+            for(i = 1 ; i < 5 ; i++ ) {
+                search="catalog_movie_search_order"i;
+                if (search in g_settings) {
+                    split(g_settings[search],search_order," *, *");
+                    if (name ~ search_order[1]) {
+                        break;
+                    }
+                }
+                delete search_order;
             }
 
             for(s in search_order) {
-                if (bestUrl == "") {
+                if (bestUrl == "" && s != 1) {
 
                     INFO("Search Phase: "search_order[s]);
 
@@ -2098,18 +2105,27 @@ s,search_order) {
                         bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
                         if (bestUrl == "") {
                             if (name_no_tags != name) {
-                                bestUrl = searchOnlineNfoLinksForImdbAlternate(name2);
+                                #Add a dot on the end to stop binsearch false matching sub words.
+                                #eg binsearch will find "a-bcd" given "a-b" to prevent this 
+                                # change a-b to "a-b."
+                                bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".");
                             }
                         }
 
+                    } else if (search_order[s] == "IMDB") {
+
+                        bestUrl=searchInternetForFirstImdbPage(idx,name_no_tags,url_encode("site:imdb.com"));
+
                     } else if (search_order[s] == "IMDBFIRST") {
 
-                        bestUrl=searchInternetForFirstImdbPage(idx,name_no_tags);
+                        bestUrl=searchInternetForFirstImdbPage(idx,name_no_tags,url_encode("+imdb"));
 
                     } else if (search_order[s] == "IMDBLINKS") {
 
                         bestUrl=searchInternetForImdbLink(idx);
 
+                    } else {
+                        ERROR("Unknown search method "search_order[s]);
                     }
                 }
             }
@@ -2239,10 +2255,12 @@ name) {
     sub(/\.[^.]+$/,"",name);
     # name=remove_format_tags(name);
 
-    if (gParts[idx] != "" ) {
-        #remove  part qualifier xxxx1 or xxxxxa
-        sub(/(|cd|part)[1a]$/,"",name);
-    }
+# no point in removing the CD parts as this makes binsearch more inaccurate
+
+#    if (gParts[idx] != "" ) {
+#        #remove  part qualifier xxxx1 or xxxxxa
+#        sub(/(|cd|part)[1a]$/,"",name);
+#    }
     name=trimAll(name);
     return name;
 }
@@ -2315,6 +2333,11 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
 
     INFO("Online nfo search for "name);
 
+    if (length(name) <= 1) {
+        INFO("name too short ");
+        return "";
+    }
+
     sub(/QUERY/,name,queryPath);
 
     #Get all nfo links
@@ -2358,12 +2381,20 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
     }
 
     #return most frequent match
-    if (bestScores(totalImdbIds,totalImdbIds,0)+0 > 0) {
+    count = bestScores(totalImdbIds,totalImdbIds,0)+0;
+    if (count == 1) {
 
         bestId = firstIndex(totalImdbIds);
         INFO("best imdb link ["domain"] = "bestId);
         return extractImdbLink(bestId);
+
+    } else if (count == 0) {
+
+        INFO("No matches");
+        return "";
+
     } else {
+
         INFO("To many matches with the same number of occurrences. Discarding results");
         return "";
     }
@@ -5396,13 +5427,13 @@ function load_catalog_settings(file_name) {
 
     #Search engines used for simple keywords+"imdb" searches.
     #google,msn and yahoo all about the same.
-    split(tolower(g_settings["catalog_search_engines"]),g_link_search_engines,"|");
+    split(tolower(g_settings["catalog_search_engines"]),g_link_search_engines,g_cvs_sep);
 
     #Search engines used for for deep searches (when mapping obsucre filename to a title).
     #Google seems much better at this compared to others.
     #Could use Google for everything but it may think your network is infected
     #when doing big scans.
-    split(tolower(g_settings["catalog_deep_search_engines"]),g_title_search_engines,"|");
+    split(tolower(g_settings["catalog_deep_search_engines"]),g_title_search_engines,g_cvs_sep);
     g_web_search_count=0;
 }
 #ENDAWK

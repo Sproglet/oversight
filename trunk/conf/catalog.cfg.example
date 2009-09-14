@@ -66,9 +66,22 @@ catalog_group="nmt"
 catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
 catalog_deep_search_engines="GOOGLE,GOOGLEIE"
 
-catalog_movie_scene_name_regex="^[-a-z0-9.]+$"
-catalog_movie_search_order_scene="ONLINE_NFO,IMDBFIRST,IMDBLINKS"
-catalog_movie_search_order_nonscene="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+# Here the order of search methods can be selected based on the file name.
+# Note that the IMDBFIRST search will always find something and can give false +ve
+# so only use for short titles where other search methods might get confused.
+# Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods
+# 
+
+#scene names
+catalog_movie_search_order1="^[-a-z0-9.]+$,ONLINE_NFO,IMDBLINKS,IMDBFIRST"
+#something with the year in it.
+catalog_movie_search_order2=" .(20|19)[0-9][0-9],IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+
+# 10 characters or more - search for most frequently occuring imdb reference first
+catalog_movie_search_order3="..........,IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+
+# Short titles - best try a simple search first.
+catalog_movie_search_order4=".,IMDB,IMDBLINKS,ONLINE_NFO"
 
 #scene tags - dont use ones that are normal words.
 catalog_config_version=1

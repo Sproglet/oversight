@@ -52,7 +52,7 @@ jpg_resize() {
     #scale it
     echo djpeg -scale $new_width/$old_width "$input to $output"
     if [ $new_width == $old_width ] ; then
-        ln "$input" "$output"
+        ln -f "$input" "$output"
     else
         #Could use a pipe but input may = output so use tmp file.
         djpeg -scale $new_width/$old_width "$input" > $TMP/$$ && cjpeg $TMP/$$ > "$output" && rm $TMP/$$

@@ -37,7 +37,7 @@ PUSH() {
 
             all)
                 echo images...
-                cp -a bin/ images/ $root/.
+                cp -a bin/ templates/ $root/.
                 ;;
 
             esac

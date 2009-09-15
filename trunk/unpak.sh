@@ -1294,7 +1294,8 @@ rarname() {
 related_rar_files() {
     r=$(rarname "$1")
     r2=$( echo "$r" | re_escape )
-    ls -d "$r"* | egrep "^$r2$rar_re"
+    #ls -d "$r"* | egrep "^$r2$rar_re"
+    ls -d "$r"* | awk "/^$r2$rar_re/ && length(\$0) == length(\"$1\") { print }"
 }
 first_rarname_filter() {
     egrep -v '([._]part[0-9]*([02-9]|[1-9][0-9]*1).rar|rar.[0-9]+)$' | egrep '[._](part0*1\.rar|rar|0*1)$'

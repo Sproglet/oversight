@@ -186,10 +186,10 @@ char *get_self_link(char *params,char *attr,char *title) {
     assert(title);
     char *result=NULL;
 
-    HTML_LOG(1," begin self link multi for params[%s] attr[%s] title[%s]",params,attr,title);
+    HTML_LOG(1," begin self link for params[%s] attr[%s] title[%s]",params,attr,title);
 
     char *url = self_url(params);
-    HTML_LOG(1," end self link multi [%s]",url);
+    HTML_LOG(2," end self link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
 
@@ -753,10 +753,9 @@ if (1) {
 
     if (path == NULL) path=check_path(file,modifier,"png","");
 
-    if (is_fanart) {
-        if (path == NULL) path=check_path(dir,"/",modifier,".jpg");
-        if (path == NULL) path=check_path(dir,"/",modifier,".png");
-    }
+    if (path == NULL) path=check_path(dir,"/",(is_fanart?modifier:"poster."),"jpg");
+    if (path == NULL) path=check_path(dir,"/",(is_fanart?modifier:"poster."),"png");
+
     FREE(file);
     FREE(dir);
 }
@@ -1500,16 +1499,12 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
 
 
     char *p = input;
-    macro_start = strstr(input,MACRO_STR_START);
+    macro_start = strstr(p,MACRO_STR_START);
     while (macro_start ) {
 
         char *macro_name_start = NULL;
         char *macro_name_end = NULL;
         char *macro_end = NULL;
-        //print bit before macro
-        *macro_start='\0';
-        printf("%s",p);
-        *macro_start=*MACRO_STR_START;
 
         // Check we have MACRO_STR_START .. MACRO_STR_START_INNER MACRO_NAME MACRO_STR_END_INNER .. MACRO_STR_END
         // eg [text1:name:text2]
@@ -1526,6 +1521,8 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
         // Cant identify macro - advance to next character.
         if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL  ) {
 
+            //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
+            PRINTSPAN(p,macro_start);
             putc(*MACRO_STR_START,stdout);
             macro_end = macro_start;
 
@@ -1534,14 +1531,18 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
             int free_result=0;
             *macro_name_end = '\0';
             char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
+
+            //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
+            if (macro_start > p ) {
+                printf("%.*s",macro_start-p,p); 
+            }
+
             count++;
             *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output && *macro_output) {
 
                 // Print bit before macro call
-                 macro_name_start[-1] = '\0'; 
-                 printf("%s",macro_start+1);
-                 macro_name_start[-1]=*MACRO_STR_START_INNER;
+                 PRINTSPAN(macro_start+1,macro_name_start-1);
                  fflush(stdout);
 
                  printf("%s",macro_output);
@@ -1549,9 +1550,7 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
                  fflush(stdout);
 
                  // Print bit after macro call
-                 macro_end[0] = '\0';
-                 printf("%s",macro_name_end+1);
-                 macro_end[0] = *MACRO_STR_END;
+                 PRINTSPAN(macro_name_end+1,macro_end);
                  fflush(stdout);
              }
         }

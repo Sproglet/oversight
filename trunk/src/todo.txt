@@ -1,5 +1,7 @@
 Change dbrow from dynamic to fixed  or fixed/extensible
 
+trying to work out why tv form doesnt work
+
 Changed from poster to text mode and got segmentation fault.
 =============================================================
 Hunt down Battlestar Bug!

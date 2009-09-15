@@ -1080,9 +1080,9 @@ int unwatched_count(DbRowId *rid) {
 char *mouse_or_focus_event(char *title,char *source,char *on_event,char *off_event) {
     char *result = NULL;
     if (source && *source != '*') {
-        ovs_asprintf(&result," %s=\"show('%s [%s]');\" %s=\"show('');\"",on_event,title,source,off_event);
+        ovs_asprintf(&result," %s=\"show('%s [%s]');\" %s=\"show('_');\"",on_event,title,source,off_event);
     } else {
-        ovs_asprintf(&result," %s=\"show('%s');\" %s=\"show('');\"",on_event,title,off_event);
+        ovs_asprintf(&result," %s=\"show('%s');\" %s=\"show('_');\"",on_event,title,off_event);
     }
     return result;
 }

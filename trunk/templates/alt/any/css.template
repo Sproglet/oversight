@@ -119,8 +119,10 @@ a.movie { color:#aaaaff; }
 .label { color:red }
 .right { text-align:right; }
 
-input { background-color:black; color:#66AAFF; font-weight:bold; border=0; }
-select { background-color:black; color:#66AAFF; font-weight:bold; border=0; border-color:red; font-size:small; }
+Xinput { color:black; background-color:#0077DD; font-weight:bold; border=0; }
+Xselect { color:black; background-color:#0077DD; font-weight:bold; border=0; border-color:#0077DD; font-size:small; }
+input { background-color:black; color:#88CCFF; font-weight:bold; border=0; }
+select { background-color:black; color:#88CCFF; font-weight:bold; border=0; border-color:#88CCFF; font-size:small; }
 
 .dummy {}
 .recent { font-size:[:FONT_SIZE:]; }

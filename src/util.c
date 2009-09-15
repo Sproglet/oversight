@@ -429,9 +429,12 @@ int is_dir(char *path) {
 
 
 char *appDir() {
-    char *d="/share/Apps/oversight";
-    if (!is_dir(d)) {
-        d=".";
+    static char *d=NULL;
+    if (d == NULL) {
+        d = "/share/Apps/oversight";
+        if (!is_dir(d)) {
+            d=".";
+        }
     }
     return d;
 }

@@ -838,7 +838,7 @@ char *container_icon(char *image_name,char *name) {
     char *attr;
     char *name_br;
 
-    ovs_asprintf(&path,"%s/images/%s.%s",appDir(),image_name,ovs_icon_type());
+    ovs_asprintf(&path,"%s/templates/%s/images/%s.%s",appDir(),skin_name(),image_name,ovs_icon_type());
     ovs_asprintf(&name_br,"(%s)",name);
     ovs_asprintf(&attr," width=30 alt=\"[%s]\" style=\"background-color:#AAAAAA\" ",name);
 
@@ -1767,17 +1767,27 @@ char *default_button_attr() {
     return default_attr;
 }
 
-char *icon_source(char *image_name) {
+char *skin_name()
+{
+    static char *template_name=NULL;
+    if (!template_name) template_name=oversight_val("ovs_skin_name");
+    return template_name;
+}
+
+char *icon_source(char *image_name)
+{
+
     char *path;
     assert(image_name);
 
-    char *app=appDir();
     char *ico=ovs_icon_type();
 
-    ovs_asprintf(&path,"%s/images/nav/set1/%s.%s",
-            app,
+    ovs_asprintf(&path,"%s/templates/%s/images/%s.%s",
+            appDir(),
+            skin_name(),
             image_name,
             ico);
+
     char *result = file_to_url(path);
     FREE(path);
     return result;

@@ -408,7 +408,7 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
         FREE(cert);
         cert=tmp;
 
-        ovs_asprintf(&tmp,"%s/images/cert/%s.%s",appDir(),cert,ovs_icon_type());
+        ovs_asprintf(&tmp,"%s/templates/%s/images/cert/%s.%s",appDir(),skin_name(),cert,ovs_icon_type());
         FREE(cert);
         cert=tmp;
 
@@ -577,9 +577,15 @@ char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbR
     return get_tvid_links(sorted_rows);
 }
 
-char *get_rating_stars(DbRowId *rid,int num_stars,char *star_path) {
+char *get_rating_stars(DbRowId *rid,int num_stars)
+{
 
     double rating = rid->rating;
+    static char *star_path=NULL;
+    if (!star_path) {
+        ovs_asprintf(&star_path,"/oversight/templates/%s/images/stars/star%%d.%s",
+                skin_name(),ovs_icon_type());
+    }
 
     if (rating > 10) rating=10;
 
@@ -619,15 +625,15 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
 
     if (*oversight_val("ovs_display_rating") != '0') {
 
-        if (args && args->size == 2 && sscanf(args->array[0],"%d",&num_stars) == 1 && strstr(args->array[1],"%d") ) {
+        if (args && args->size == 1 && sscanf(args->array[0],"%d",&num_stars) == 1 ) {
 
             star_path=args->array[1];
 
-            result = get_rating_stars(sorted_rows[0],num_stars,star_path);
+            result = get_rating_stars(sorted_rows[0],num_stars);
 
         } else {
 
-            ovs_asprintf(&result,"%s(num_stars, star image path eg /oversight/images/stars/star%%d.png) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call);
+            ovs_asprintf(&result,"%s(num_stars) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call);
         }
     }
         

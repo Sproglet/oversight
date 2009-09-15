@@ -22,7 +22,7 @@
                             </tr>
                             <tr>
                                 <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
-                                <td class=right>[:RATING_STARS(5,/oversight/images/stars/star%d.png):][:RATING:]</td>
+                                <td class=right>[:RATING_STARS(5):][:RATING:]</td>
                             </tr>
                             <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
                             <tr><Td>[:MOVIE_LISTING:]</td></tr>

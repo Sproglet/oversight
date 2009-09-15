@@ -19,6 +19,7 @@
                 <ul>
                 <li>[:CONFIG_LINK(catalog.cfg,input.help,Input - Media Sources):]</li>
                 <li>[:CONFIG_LINK(catalog.cfg,detect.help,Scraping):]</li>
+                <li>[:CONFIG_LINK(catalog.cfg,search.help,Advanced Search):]</li>
                 <li>[:CONFIG_LINK(catalog.cfg,output.help,Output - Renaming):]</li>
                 </ul>
             </td>

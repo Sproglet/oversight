@@ -39,11 +39,16 @@ OPTION_TABLE2() {
 
 OPTION_PARSE() {
     awk '
-ARGIND==2 {
+{
+    print "<!-- "FILENAME " : " $0 "-->";
+}
+
+FILENAME ~ "help$" {
      addVal(clean($0),":",help,1);
      next;
 }
-ARGIND==3 {
+
+FILENAME ~ "(cfg|defaults)$" {
     addVal(clean($0),"=",val,0);
     next;
 }
@@ -58,6 +63,9 @@ i) {
 
 function addVal(line,sep,arr,addToOrder,   i,name,rest) {
 
+    if (MODE ~ "^TABLE") {
+        print "<!-- "FILENAME " : " sep " : " $0 "-->";
+    }
     sub(/$/,"",line);
     i = index(line,sep);
     if (i > 0 ) {
@@ -204,7 +212,7 @@ END {
 func=$1
 shift
 case "$func" in
-    TABLE) OPTION_TABLE "$@" ;;
+    TABLE) OPTION_TABLE "$@" ;; ## help config defaults
     TABLE2) OPTION_TABLE2 "$@" ;;
     GET) OPTION_GET "$@" ;;
     SET) OPTION_SET "$@" ;;

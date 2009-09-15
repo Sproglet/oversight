@@ -1979,7 +1979,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name_no_tags,\
-s,search_order) {
+s,search_order,search_order_key,search_regex_key) {
 
 
     startTime = systime();
@@ -2085,10 +2085,13 @@ s,search_order) {
 
             #Find any search order that matches the file format
             for(i = 1 ; i < 5 ; i++ ) {
-                search="catalog_movie_search_order"i;
-                if (search in g_settings) {
-                    split(g_settings[search],search_order," *, *");
-                    if (name ~ search_order[1]) {
+                search_regex_key="catalog_movie_search_regex"i;
+                if (name ~ g_settings[search_regex_key]) {
+                    search_order_key="catalog_movie_search_order"i;
+                    if (!(search_order_key in g_settings)) {
+                        ERROR("Missing setting "search_order_key);
+                    } else {
+                        split(g_settings[search_order_key],search_order," *, *");
                         break;
                     }
                 }
@@ -2096,7 +2099,7 @@ s,search_order) {
             }
 
             for(s in search_order) {
-                if (bestUrl == "" && s != 1) {
+                if (bestUrl == "") {
 
                     INFO("Search Phase: "search_order[s]);
 

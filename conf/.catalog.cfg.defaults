@@ -69,12 +69,18 @@ catalog_deep_search_engines="GOOGLE,GOOGLEIE"
 # Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods
 
 #scene names
-catalog_movie_search_order1="^[-a-z0-9.]+$,ONLINE_NFO,IMDBLINKS,IMDBFIRST"
+catalog_movie_search_regex1="^[-a-z0-9.]+$"
+catalog_movie_search_order1="ONLINE_NFO,IMDBLINKS,IMDBFIRST"
 #something with the year in it.
-catalog_movie_search_order2=" .(20|19)[0-9][0-9],IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+catalog_movie_search_regex2=" .(20|19)[0-9][0-9]"
+catalog_movie_search_order2="IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+
 # 10 characters or more - search for most frequently occuring imdb reference first
-catalog_movie_search_order3="..........,IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+catalog_movie_search_regex3=".........."
+catalog_movie_search_order3="IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+
 # Short titles - best try a simple search first.
-catalog_movie_search_order4=".,IMDB,IMDBLINKS,ONLINE_NFO"
+catalog_movie_search_regex4="."
+catalog_movie_search_order4="IMDB,IMDBLINKS,ONLINE_NFO"
 
 catalog_config_version=1

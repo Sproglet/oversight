@@ -1779,6 +1779,10 @@ char *icon_source(char *image_name)
 
     char *path;
     assert(image_name);
+    static int is_default_skin = UNSET;
+    if (is_default_skin == UNSET) {
+        is_default_skin = (strcmp(skin_name(),"default") == 0);
+    }
 
     char *ico=ovs_icon_type();
 
@@ -1787,6 +1791,14 @@ char *icon_source(char *image_name)
             skin_name(),
             image_name,
             ico);
+
+    if (!exists(path) && !is_default_skin) {
+        FREE(path);
+        ovs_asprintf(&path,"%s/templates/default/images/%s.%s",
+                appDir(),
+                image_name,
+                ico);
+    }
 
     char *result = file_to_url(path);
     FREE(path);

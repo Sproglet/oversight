@@ -90,6 +90,7 @@ void util_rmdir(char *path,char *name);
 
 #define PRINTSPAN(p,q) do { if (q>p) printf("%.*s",((q)-(p)),(p)); } while(0)
 #define PRINTNSTR(n,p) do { if (n) printf("%.*s",(n),(p)); } while(0)
+#define UNSET -2
 
 int exists_file_in_dir(char *dir,char *name);
 Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);

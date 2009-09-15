@@ -990,7 +990,7 @@ rar_sanity_check_nzb() {
     fi
 
     #There is a bug in df - cant do df -k . but df -k ./ works
-    free_space=$(( $( df -k ./ | awk 'NR==2 {print $4}' ) / 1024 ))
+    free_space=$(( $( free_space ./ ) / 1024 ))
     queued_size=$(( $size * $num_actual_parts / 1024 / 1024 ))
     INFO "Freespace $free_space MB"
     if [ $queued_size -ge "$free_space"  ] ; then
@@ -999,6 +999,11 @@ rar_sanity_check_nzb() {
     fi
 
     return $result
+}
+
+# Check free space - watch out for df split across lines.
+free_space() {
+    df -k "$1" | awk 'NR==1 { u=index($0,"Use%"); } END { $0=substr($0,1,u-2) ; sub(/.* /,"") ;  print $0 } '
 }
 
 # Do a quick header check on each part.

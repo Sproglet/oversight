@@ -11,6 +11,8 @@ APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
 APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 TVMODE=`cat /tmp/tvmode`
 
+CONF=$APPDIR/conf/catalog.cfg
+
 OWNER=nmt
 GROUP=nmt
 appname=oversight
@@ -302,7 +304,7 @@ case "$1" in
     NEWSCAN)
         "$APPDIR/catalog.sh" NEWSCAN
 
-        if grep -q /^catalog_watch_torrents=.*1/ $APPDIR/catalog.cfg* ; then
+        if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
             "$APPDIR/bin/torrent.sh" transmission unpak_all
         fi
         ;;
@@ -314,7 +316,7 @@ case "$1" in
     REBOOTFIX)
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
         "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
-        freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $APPDIR/catalog.cfg`"
+        freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
         add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
         ;;
 

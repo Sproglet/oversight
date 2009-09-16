@@ -1,4 +1,3 @@
-#labels Featured
 = Oversight Change Log =
 
 20090903-1BETA

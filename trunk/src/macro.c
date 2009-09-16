@@ -694,10 +694,10 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;
         } else {
-            url="/oversight/oversight.cgi"; // clear URL
+            url="?"; // clear URL
         } 
     } else {
-        url="/oversight/oversight.cgi"; //keep query string eg when marking deleting
+        url="?"; //keep query string eg when marking deleting
     }
     char *hidden = add_hidden("cache,idlist,view,page,sort,"
             QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);

@@ -38,7 +38,7 @@ int is_checkbox(char *name,char *val) {
 void clear_selection() {
 
 
-    // Clear the selection
+    query_remove("form");
     query_remove("select");
     if (strcmp(query_val("action"),"Cancel") !=0) {
         query_remove("action");
@@ -229,7 +229,7 @@ void do_actions() {
 
     char *view=query_val("view");
     char *action=query_val("action");
-    char *select=query_val("select");
+    //char *select=query_val("select");
 
     // If remote play then send to gaya
     char *file=query_val(REMOTE_VOD_PREFIX1);
@@ -294,7 +294,7 @@ void do_actions() {
             }
         }
 
-    } else if (*select) {
+    } else if (*action) {
 
         if (allow_mark() && strcmp(action,"Mark") == 0) {
 
@@ -325,7 +325,7 @@ TRACE;
 
     html_hashtable_dump(0,"post action query",g_query);
 
-    if (has_post_data()) {
+    if (*query_val("form")) {
 
         clear_selection();
 
@@ -411,13 +411,13 @@ HTML_LOG(1," end merge_id_by_source");
 }
 
 
-int count_unchecked() {
+int count_checked() {
 
     int total=0;
-
     char *name;
     char *val;
     struct hashtable_itr *itr;
+
 
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&name,&val) ; ) {
 
@@ -426,6 +426,26 @@ int count_unchecked() {
         }
 
     }
+    HTML_LOG(1,"checked count [%d]",total);
+    return total;
+}
+
+
+int count_unchecked() {
+
+    int total=0;
+
+    //First count the total number of ids passed in idlist
+    char *p = query_val("idlist");
+    if (*p) {
+        total++;
+        while (*p) {
+            if (*p++ == '|' ) total++;
+        }
+    }
+
+    //Now subtract total number of checked items.
+    total -= count_checked();
     HTML_LOG(1,"unchecked count [%d]",total);
     return total;
 }

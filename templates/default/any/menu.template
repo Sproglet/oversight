@@ -16,10 +16,10 @@
         </script>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+        [:FORM_START:]
 <center>
         <table id=main width=100% heigth=100%>
         <tr><td>
-        [:FORM_START:]
             <table class=header width=100%>
                 <tr>
                     <td rowspan=2>
@@ -60,9 +60,9 @@
                     <td width=10%>[:RIGHT_BUTTON:]</td>
                 </tr>
             </table>
-        </form>
         </td></tr></table>
 </center>
+        </form>
     </body>
 </html>
 <!--

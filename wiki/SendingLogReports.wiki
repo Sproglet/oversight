@@ -5,11 +5,10 @@ As the software matures hopefully this will happen less often.
 
 <wiki:toc max_depth="1" />
 
-=Scanning Logs=
+=Scan Logs - send these you have problems with adding or updating content=
 
-Send the following logs if you have problems with scanning or adding new content:
 
-To send me logs:
+To send scan logs:
 
   # (on the TV/NMT go to Setup/NMT Applications) and make sure SMB/Samba service is started.
   # On your PC, open windows explorer and in the address bar type \\192.168.x.y where 192.168.x.y is the IP address of your NMT.
@@ -22,9 +21,9 @@ To send me logs:
 If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
 Eg if scanning always fails on a particular file name, then that information along with the filename and the logs is enough.
 
-= GUI Logs=
+= GUI Logs - send if odd things happen in the user interface=
 
-Send 'gui' logs if you think files have scanned OK but you are getting funny things happen in the user interface.
+Send 'gui' logs if you think files have scanned OK but you are getting odd things happen in the user interface.
 
 To send GUI logs:
 

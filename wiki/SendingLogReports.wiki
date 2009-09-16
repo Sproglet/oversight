@@ -24,7 +24,7 @@ Eg if scanning always fails on a particular file name, then that information alo
 
 = GUI Logs=
 
-Send the following logs if you thing files have scanned OK but you are getting funny things happen in the user interface.
+Send 'gui' logs if you think files have scanned OK but you are getting funny things happen in the user interface.
 
 To send GUI logs:
 

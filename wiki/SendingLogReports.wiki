@@ -21,7 +21,7 @@ To send scan logs:
 If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
 Eg if scanning always fails on a particular file name, then that information along with the filename and the logs is enough.
 
-= GUI Logs - send if odd things happen in the user interface=
+= GUI Logs - send these if odd things happen in the user interface=
 
 Send 'gui' logs if you think files have scanned OK but you are getting odd things happen in the user interface.
 

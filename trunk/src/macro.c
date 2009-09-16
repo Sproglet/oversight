@@ -697,12 +697,15 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
             url="?"; // clear URL
         } 
     } else {
-        url="?"; //keep query string eg when marking deleting
+        url=""; //keep query string eg when marking deleting
     }
-    char *hidden = add_hidden("cache,idlist,view,page,sort,"
+    char *hidden = add_hidden("cache,idlist,view,page,sort,select,"
             QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
     char *result;
-    ovs_asprintf(&result,"<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >\n%s",url,
+    ovs_asprintf(&result,
+            "<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >"
+            "<input type=hidden name=form value=\"1\">\n%s",
+            url,
             (hidden?hidden:"")
         );
     FREE(hidden);

@@ -34,7 +34,7 @@ int browsing_from_lan() {
                 }
             }
         }
-        HTML_LOG(1,"browsing from lan = %d",result);
+        HTML_LOG(0,"browsing from lan = %d",result);
     }
     return result;
 }
@@ -48,7 +48,7 @@ long allow_mark() {
         } else if (!config_check_long(g_oversight_config,"ovs_wan_mark",&result)) {
             result=0;
         }
-        HTML_LOG(1,"allow mark = %d",result);
+        HTML_LOG(0,"allow mark = %d",result);
     }
     return result;
 }
@@ -61,7 +61,7 @@ long allow_delete() {
         } else if (!config_check_long(g_oversight_config,"ovs_wan_delete",&result)) {
             result=0;
         }
-        HTML_LOG(1,"allow delete = %d",result);
+        HTML_LOG(0,"allow delete = %d",result);
     }
     return result;
 }

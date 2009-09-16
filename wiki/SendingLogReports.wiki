@@ -16,6 +16,7 @@ To send me logs:
   # Browse to Apps\oversight\
   # Right click on the logs folder and zip it (send to Compressed Folder/Winzip/7zip/Winrar etc)
   # Email the new compressed file to me. nmt at lordy dot org period uk.
+  # In the email mention one or two specific examples of the problem. Eg. The file "star trek 2009.avi" is indexed as "Star Trek Series 20 episode 9" (just an example - that shouldn't happen ;) )
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
 
 If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 

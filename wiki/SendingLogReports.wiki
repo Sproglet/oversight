@@ -1,4 +1,5 @@
 #labels Featured
+#sidebar TableOfContents
 As things are currently in beta - if something doesnt work as expected its quite possible its is a bug. Rather than spending hours tearing your hair out, send the log files to me :)
 
 As the software matures hopefully this will happen less often.

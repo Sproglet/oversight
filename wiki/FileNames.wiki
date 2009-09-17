@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 An overriding requirement of Oversight is to minimize manual file renaming.
 

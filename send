@@ -1,5 +1,6 @@
 #!/bin/sh
 # ftp port is firewalled.
+d=$1 ; shift
 if ( ifconfig || ipconfig ) 2>/dev/null | grep 192.168.88 ; then
     hdx=192.168.88.11
 else
@@ -8,9 +9,10 @@ fi
 
 ftp -n  <<HERE
 open $hdx
-user $1 $2
-cd $4
+user ftpuser 1234
+cd $d
 bin
 hash
-put $3 
+prompt
+mput $@ 
 HERE

@@ -2171,6 +2171,9 @@ s,search_order,search_order_key,search_regex_key) {
         if (g_opt_dry_run) {
             print "dryrun: "g_file[idx]" -> "gTitle[idx];
         }
+
+        #lang_test(idx);
+
         DEBUG("processed in "thisTime"s | processed "(idx+1)" items in "(elapsedTime)"s av time per item " (elapsedTime/(idx+1)) "s");
 
         #Batch updates so that user sees some progress
@@ -5439,6 +5442,39 @@ function load_catalog_settings(file_name) {
     split(tolower(g_settings["catalog_deep_search_engines"]),g_title_search_engines,g_cvs_sep);
     g_web_search_count=0;
 }
+
+function lang_test(idx) {
+    scrape_es(idx);
+    scrape_fr(idx);
+    scrape_it(idx);
+}
+
+function scrape_es(idx,details,\
+url) {
+    delete details;
+    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"g_director[idx]"+"url_encode("inurl:http://www.filmaffinity.com/en"));
+    if (sub("/en/","/es/",url)) {
+        HTML_LOG(0,"es "url);
+    }
+}
+function scrape_fr(idx,details,\
+url) {
+    delete details;
+    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"g_director[idx]"+"\
+    url_encode("inurl:http://www.screenrush.co.uk")"+"\
+    url_encode("inurlfichefilm_gen_cfilm"));
+    if (sub("/screenrush.co.uk/","/allocine.fr/",url)) {
+        HTML_LOG(0,"fr "url);
+    }
+}
+function scrape_it(idx,details,\
+url) {
+    delete details;
+    url=first_result(gTitle[idx]" "g_director[idx]" "url_encode("intitle:Scheda")"+"\
+    url_encode("site:filmup.leonardo.it"));
+    HTML_LOG(0,"it "url);
+}
+
 #ENDAWK
 
 ' JOBID=$JOBID PID=$$ NOW=`date +%Y%m%d%H%M%S` \

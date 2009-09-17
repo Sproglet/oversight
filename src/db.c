@@ -877,6 +877,7 @@ got_value_end:
     // The folowing files are removed from the delete queue whenever they are parsed.
     delete_queue_unqueue(rowid,rowid->nfo);
     delete_queue_unqueue(rowid,rowid->poster);
+    delete_queue_unqueue(rowid,rowid->fanart);
 
     result =   (result && (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) );
     if (!result) {
@@ -1368,6 +1369,9 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
             filter_ticks -= clock();
 
             if (rowid.file) {
+                delete_queue_unqueue(&rowid,rowid.nfo);
+                delete_queue_unqueue(&rowid,rowid.poster);
+                delete_queue_unqueue(&rowid,rowid.fanart);
 
                 switch(rowid.category) {
                     case 'T': g_episode_total++; break;
@@ -1584,7 +1588,8 @@ HTML_LOG(1," begin open db");
         FILE *db_in = fopen(db->path,"r");
 
         if (db_in) {
-            char *tmpdb="/share/Apps/oversight/index.db.tmp";
+            char *tmpdb;
+            ovs_asprintf(&tmpdb,"/share/Apps/oversight/index.db.tmp.%d",getpid());
 
             FILE *db_out = fopen(tmpdb,"w");
 
@@ -1640,6 +1645,7 @@ HTML_LOG(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epo
             fclose(db_in);
             util_rename(db->path,db->backup);
             util_rename(tmpdb,db->path);
+            FREE(tmpdb);
         }
         db_unlock(db);
         db_free(db);

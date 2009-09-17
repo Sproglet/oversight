@@ -687,6 +687,7 @@ char *macro_fn_hostname(char *template_name,char *call,Array *args,int num_rows,
 
 char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
+    int free_url=0;
     char *url=NULL;
 
     if (strcasecmp(query_val("view"),"admin") == 0) {
@@ -697,9 +698,12 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
             url="?"; // clear URL
         } 
     } else {
-        url=""; //keep query string eg when marking deleting
+        //we dont want it in the URL after the form is submitted.
+        //keep query string eg when marking deleting. Select is passed as post variable
+        url=self_url("select=");
+        free_url=1;
     }
-    char *hidden = add_hidden("cache,idlist,view,page,sort,select,"
+    char *hidden = add_hidden("idlist,view,page,sort,select,"
             QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
     char *result;
     ovs_asprintf(&result,
@@ -709,6 +713,7 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
             (hidden?hidden:"")
         );
     FREE(hidden);
+    if  (free_url) { FREE(url); }
     return result;
 }
 

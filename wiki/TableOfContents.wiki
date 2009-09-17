@@ -1,14 +1,14 @@
 Everyone
 
-  *[!Installing Installing Oversight]
-  *[http://code.google.com/p/oversight/wiki/Running Running Oversight for the first time]
+  *[InstallingOversight Installing Oversight]
+  *[RunningOversight Running Oversight for the first time]
   *[CrossView Sharing content between two NMT]
   *[FileNames File Name formats]
   *[SendingLogReports Sending Log Reports]
   *[http://code.google.com/p/oversight/wiki/Pruning Removing absent files.]
   *[KnownIssues Things that are not working.]
   *[IncrementalScans Incremental Scans]
-  *[http://code.google.com/p/oversight/wiki/FAQ Frequently Asked Questions]
+  *[OversightFAQ Frequently Asked Questions]
 
 Advanced
 
@@ -18,9 +18,9 @@ Advanced
 
 Developers
   *[ChangeLog]
-  *[http://code.google.com/p/oversight/wiki/Skins How To Skin Oversight]
+  *[OversightSkin How To Skin Oversight]
 
 Obsessed
 
-  *[http://code.google.com/p/oversight/wiki/History How Oversight Came about]
+  *[OversightHistory How Oversight Came about]
   *[ComingSoon Oh Really?]

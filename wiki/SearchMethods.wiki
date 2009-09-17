@@ -1,3 +1,4 @@
+#sidebar TableOfContents
 Oversight employs a number of different search methods:
 
 =TV Searches=

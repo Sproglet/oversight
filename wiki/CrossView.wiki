@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 CrossView allows you to install Oversight on two NMTs and they can both share media in a single view.
 

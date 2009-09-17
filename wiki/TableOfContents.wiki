@@ -1,7 +1,7 @@
 Everyone
 
-  *[Installing Installing Oversight]
-  *[Running Running Oversight for the first time]
+  *[http://code.google.com/p/oversight/wiki/Installing Installing Oversight]
+  *[./Running Running Oversight for the first time]
   *[CrossView Sharing content between two NMT]
   *[FileNames File Name formats]
   *[SendingLogReports Sending Log Reports]

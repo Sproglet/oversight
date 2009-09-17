@@ -154,10 +154,12 @@ int main(int argc,char **argv) {
 
     html_comment("read query ... ");
     g_query=parse_query_string(getenv("QUERY_STRING"),NULL);
+    html_hashtable_dump(0,"query",g_query);
 
     html_comment("read post ... ");
 
     struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
+    html_hashtable_dump(0,"post",g_query);
     
     html_comment("merge query and post data");
     merge_hashtables(g_query,post,1); // post is destroyed

@@ -85,7 +85,7 @@ void gaya_send_link(char *arg) {
 void delete_file(char *dir,char *name) {
     char *path;
     ovs_asprintf(&path,"%s/%s",dir,name);
-    HTML_LOG(1,"delete [%s]",path);
+    HTML_LOG(0,"delete [%s]",path);
     if (unlink(path) ) {
         html_error("failed to delete [%s] from [%s]",name,dir);
     }
@@ -100,7 +100,7 @@ void delete_media(DbRowId *rid,int delete_related) {
     HTML_LOG(1,"%s %d begin delete_media",__FILE__,__LINE__);
     if (f[1] == '\0' ) {
         if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
-            HTML_LOG(1,"folder doesnt look like dvd floder");
+            HTML_LOG(0,"folder doesnt look like dvd floder");
             return;
         }
         util_rmdir(f,".");
@@ -133,7 +133,8 @@ void delete_media(DbRowId *rid,int delete_related) {
         }
     }
 
-    //Delete the following files if not used.
+    //Delete the following files at the end if not used.
+    delete_queue_add(rid,rid->fanart);
     delete_queue_add(rid,rid->poster);
     delete_queue_add(rid,rid->nfo);
 
@@ -161,7 +162,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
         if (hashtable_search(g_delete_queue,real_path)) {
             FREE(real_path);
         } else {
-            HTML_LOG(1,"delete_queue: pending delete [%s]",real_path);
+            HTML_LOG(0,"delete_queue: pending delete [%s]",real_path);
             hashtable_insert(g_delete_queue,real_path,"1");
         }
     }
@@ -172,8 +173,9 @@ void delete_queue_add(DbRowId *rid,char *path) {
 void delete_queue_unqueue(DbRowId *rid,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
         char *real_path = get_path(rid,path);
-        HTML_LOG(1,"delete_queue: unqueuing [%s] in use",real_path);
-        hashtable_remove(g_delete_queue,real_path,1);
+        if (hashtable_remove(g_delete_queue,real_path,1) ) {
+            HTML_LOG(0,"delete_queue: unqueuing [%s] in use",real_path);
+        }
         FREE(real_path);
     }
 }
@@ -218,6 +220,8 @@ void remove_row(int delete_mode) {
     struct hashtable *source_id_hash = NULL;
     source_id_hash = get_newly_selected_ids_by_source();
     db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,delete_mode);
+    //TODO: Should also remove the id from idlist. - use regex?
+
     hashtable_destroy(source_id_hash,1,1);
     if (count_unchecked() == 0) {
         // No more remaining go back to main view

@@ -48,7 +48,7 @@ share: /cygdrive/a/start_app.sh
 	cp -v $(EXE) /cygdrive/a/Apps/oversight/.
 
 ftp: oversight
-	/bin/sh ../send ftpuser 1234 $(EXE) /Apps/oversight
+	/bin/sh ../send /Apps/oversight $(EXE) 
 
 
 /mnt/hdx/start_app.sh:

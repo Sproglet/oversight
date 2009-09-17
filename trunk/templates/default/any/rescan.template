@@ -37,6 +37,7 @@
 
             <input type=hidden name=old_action value="[:$?action:]">
             <input type=hidden name=view value="[:$?view:]">
+            <input type=hidden name=form value="1">
         </form>
     </body>
 </html>

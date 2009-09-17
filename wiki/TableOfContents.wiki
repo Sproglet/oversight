@@ -1,26 +1,26 @@
 Everyone
 
-  *[InstallingOversight]
-  *[RunningOversight]
-  *[CrossView]
-  *[FileNames]
-  *[SendingLogReports]
-  *[PruningFiles]
-  *[KnownIssues]
-  *[IncrementalScans]
-  *[OversightFAQ]
+  *InstallingOversight
+  *RunningOversight
+  *CrossView
+  *FileNames
+  *SendingLogReports
+  *PruningFiles
+  *KnownIssues
+  *IncrementalScans
+  *OversightFAQ
 
 Advanced
 
-  *[UnpackingScriptsOnly]
-  *[PreviousVersions]
-  *[SearchMethods]
+  *UnpackingScriptsOnly
+  *PreviousVersions
+  *SearchMethods
 
 Developers
-  *[ChangeLog]
-  *[OversightSkins]
+  *ChangeLog
+  *OversightSkins
 
 Obsessed
 
-  *[OversightHistory]
-  *[ComingSoon]
+  *OversightHistory
+  *ComingSoon

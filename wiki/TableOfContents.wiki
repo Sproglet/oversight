@@ -1,26 +1,26 @@
 Everyone
 
-  *[InstallingOversight Installing Oversight]
-  *[RunningOversight Running Oversight for the first time]
-  *[CrossView Sharing content between two NMT]
-  *[FileNames File Name formats]
-  *[SendingLogReports Sending Log Reports]
-  *[http://code.google.com/p/oversight/wiki/Pruning Removing absent files.]
-  *[KnownIssues Things that are not working.]
-  *[IncrementalScans Incremental Scans]
-  *[OversightFAQ Frequently Asked Questions]
+  *[InstallingOversight]
+  *[RunningOversight]
+  *[CrossView]
+  *[FileNames]
+  *[SendingLogReports]
+  *[PruningFiles]
+  *[KnownIssues]
+  *[IncrementalScans]
+  *[OversightFAQ]
 
 Advanced
 
-  *[UnpackingScriptsOnly NZBGet Post Processing script]
-  *[PreviousVersions How to backout to earlier version]
-  *[SearchMethods How Oversight Searches]
+  *[UnpackingScriptsOnly]
+  *[PreviousVersions]
+  *[SearchMethods]
 
 Developers
   *[ChangeLog]
-  *[OversightSkin How To Skin Oversight]
+  *[OversightSkins]
 
 Obsessed
 
-  *[OversightHistory How Oversight Came about]
-  *[ComingSoon Oh Really?]
+  *[OversightHistory]
+  *[ComingSoon]

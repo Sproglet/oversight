@@ -1,0 +1,29 @@
+#labels Featured
+#sidebar TableOfContents
+
+Oversight is a minimalistic Jukebox that runs on the NMT platform, with unique features such as Usenet downloader post processing. 
+
+It is aimed at users that regularly download content to their internal hard drive, and who want to quickly identify and access the most recently downloaded material.
+
+http://oversight.googlecode.com/svn/trunk/screenshots/ovs-fanart.png
+
+Its main strengths are 
+
+  * No PC requirement
+  * No Need to set up shares
+  * No editing XSL (powerful but yuk)
+  * Automatically watch folders for new content
+  * Auto mount and playback from multiple NAS( including ISOs)
+  * Everything in one view.
+  * Remote play - Click on browser - starts playing on TV.
+  * No Renaming of files. It has a built in scanner/scraper that works with scene releases as well as home backups.
+  * Read-Only - Does not write to media folders so can run along side other Jukeboxes.
+  * Does not require MyIHome service.
+  * Auto-hides deleted files.
+  * Mark shows as watched.
+  * Delete files using gui.
+  * Proper SD support. I have an SD tv! So it's not just an after thought that requires extra setting up. Downside is that HD may not look great. I try to test HD modes on PC Browser but need feedback from others until I buy a TV.
+
+It's a jukebox for people that just want to watch stuff and dont want to mess about too much with settings.
+
+By default it shows the most recently downloaded content first. When combined with automated nzb downloading this provides an environment that can automatically record series and announce when new content is ready for viewing, much like a PVR. 

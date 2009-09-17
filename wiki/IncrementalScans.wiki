@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 Oversight launches incremental scans in three instances:
 

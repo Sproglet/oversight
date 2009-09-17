@@ -1,4 +1,5 @@
 #labels Featured
+#sidebar TableOfContents
 Here is a summry of the most user-facing known issues with the latest beta:
 
   #. Deleting / Marking via TV/Remote doesnt work [http://code.google.com/p/oversight/issues/detail?id=69 Issue 69] [http://code.google.com/p/oversight/issues/detail?id=57 Issue 57]

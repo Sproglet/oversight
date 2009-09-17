@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 Oversight grew out a requirement to easily find new stuff that had downloaded to my NMT.
 It didn't really start off with the intention of being a graphical jukebox. It was just a way to quickly find any new media on the NMT.

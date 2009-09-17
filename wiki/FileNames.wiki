@@ -1,4 +1,5 @@
 #labels Featured
+#sidebar TableOfContents
 An overriding requirement of Oversight is to minimize manual file renaming.
 
 <wiki:toc max_depth="2" />

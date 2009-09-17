@@ -1,5 +1,4 @@
-#New Features Coming Soon
-
+#sidebar TableOfContents
 = New Features Coming Soon =
 
 These will be covered in more detail in the issue tracker.

@@ -1,6 +1,6 @@
 Everyone
 
-  *[http://code.google.com/p/oversight/wiki/Installing Installing Oversight]
+  *[!Installing Installing Oversight]
   *[http://code.google.com/p/oversight/wiki/Running Running Oversight for the first time]
   *[CrossView Sharing content between two NMT]
   *[FileNames File Name formats]

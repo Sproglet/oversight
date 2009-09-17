@@ -1,4 +1,5 @@
 #labels Featured
+#sidebar TableOfContents
 Once in a while, a beta may be a bit - well - beta, and you may prefer to roll back to an earlier version whilst awaiting some much needed fixes. 
 
 The easier way to do this is using CSI.

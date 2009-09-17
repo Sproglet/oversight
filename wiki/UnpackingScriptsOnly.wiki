@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 #Installing unpacking scripts only
 
@@ -9,9 +8,23 @@ This page descripbes how to install just the unpacking scripts. They do not have
 For non-NMT users, or stubborn, frugal NMT users read on..
 
 
-= Details =
+= Installation =
 
 Download unpak-BETA.zip and install unpak.sh , unpak.cfg.example catalog.sh and catalog.cfg.example in the same folder where the original unpak.sh is. 
+
+The files should be
+
+unpak.sh
+conf/.unpak.cfg.defaults #defaults for all new settings
+conf/unpak.cfg # your file - copy from unpak.cfg.example
+conf/unpak.cfg.example #initial file for 1st time users
+
+catalog.sh
+conf/.catalog.cfg.defaults #defaults for all new settings
+conf/catalog.cfg # your file - copy from unpak.cfg.example
+conf/catalog.cfg.example #initial file for 1st time users
+
+= Configuration =
 
 In nzbget.conf then set the following options 
 

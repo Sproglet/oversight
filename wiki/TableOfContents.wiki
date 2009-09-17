@@ -1,5 +1,6 @@
 Everyone
 
+  * OversightIntro
   * InstallingOversight
   * RunningOversight
   * CrossView

@@ -920,6 +920,17 @@ char *macro_fn_status(char *template_name,char *call,Array *args,int num_rows,Db
 }
 
 
+char *macro_fn_help_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+    if (!g_dimension->local_browser) {
+#define PROJECT_HOME "http://code.google.com/p/oversight/wiki/OversightIntro"
+        char *tag=get_theme_image_tag("help",NULL);
+        ovs_asprintf(&result,"<a href=\"" PROJECT_HOME"\" target=\"ovshelp\">%s</a>",tag);
+        FREE(tag);
+    }
+    return result;
+}
+
 char *macro_fn_setup_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return get_theme_image_link("view=admin&action=ask","TVID=SETUP","configure","");
 }
@@ -1324,6 +1335,7 @@ void macro_init() {
         hashtable_insert(macros,"FILTER_BAR",macro_fn_filter_bar);
         hashtable_insert(macros,"STATUS",macro_fn_status);
         hashtable_insert(macros,"SETUP_BUTTON",macro_fn_setup_button);
+        hashtable_insert(macros,"HELP_BUTTON",macro_fn_help_button);
 
         hashtable_insert(macros,"LINK",macro_fn_link);
         hashtable_insert(macros,"ICON",macro_fn_icon);

@@ -35,6 +35,7 @@
                     <td>[:SORT_TYPE_TOGGLE:]</td>
                     <td>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</td>
                     <td>[:SETUP_BUTTON:]</td>
+                    [<td>:HELP_BUTTON:</td>]
                 </tr>
                 <tr>
                     <td colspan=8 id=menutitle align=center>&nbsp;</td>

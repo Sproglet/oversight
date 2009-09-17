@@ -537,6 +537,7 @@ END{
     load_catalog_settings(DEFAULTS_FILE);
     load_catalog_settings(CONF_FILE);
 
+    g_tv_plugin = g_settings["catalog_tv_plugin"];
 
     INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
     INDEX_DB_OLD = INDEX_DB ".old";
@@ -809,6 +810,7 @@ function set_db_fields() {
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
     TITLE=db_field("_T","Title","title") ;
     DIRECTOR=db_field("_d","Director","director") ;
+    CREATOR=db_field("_c","Creator","creator") ;
     AKA=db_field("_K","AKA","");
 
     CATEGORY=db_field("_C","Category","");
@@ -1822,56 +1824,90 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
     return 1;
 }
 
-# If a line looks like show.name.2009-06-16 then look for episode by date. It requires that
-# show.name results in good unique match at thetvdb.com. otherwise the show.name is left 
-# unchanged and the episode number is set to mmdd
 function extractEpisodeByDates(idx,line,details,\
-tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest) {
+nonDate,title,rest,y,m,d,tvdbid,result) {
 
+    result=0;
     if (!extractDate(line,date,nonDate)) {
         return 0;
     }
-
     rest=nonDate[2];
     title = clean_title(nonDate[1]);
 
     y = date[1];
     m = date[2];
     d = date[3];
-
     INFO("Found Date y="y" m="m" d="d);
-
     #search for the showname 
-    tvdbid = search1TvDbId(idx,title);
-    if (tvdbid != "") {
+    tvdbid = search1TvId(idx,title);
 
-        getTvDbInfo(idx,getTvdbSeriesUrl(tvdbid));
-        fetchXML("http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-",episodeInfo);
-        if ( episodeInfo["/Data/Error"] != "" ) {
-            ERROR(episodeInfo["/Data/Error"]);
-            tvdbid="";
-        }
+    if (tvdbid == "") return 0;
+    get_tv_series_info(idx,getTvSeriesUrl(tvdbid));
+
+    if (g_tv_plugin == "TVDB" ) {
+        result = extractEpisodeByDates_TvDb(idx,tvdbid,title,y,m,d,rest,details);
+    } else if (g_tv_plugin == "RAGE" ) {
+        result = extractEpisodeByDates_rage(idx,tvdbid,title,y,m,d,rest,details);
     }
-    details[TITLE]=title;
-    if (tvdbid != "") {
-        gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
-        DEBUG("Air Date is "gAirDate[idx]);
-
-        details[SEASON]=episodeInfo["/Data/Episode/SeasonNumber"];
-        details[EPISODE]=episodeInfo["/Data/Episode/EpisodeNumber"];
-        details[ADDITIONAL_INFO]=episodeInfo["/Data/Episode/EpisodeName"];
-        #TODO We can cache the above url for later use instead of fetching episode explicitly.
-        # Setting this will help short circuit searching later.
-        #gExternalSourceUrl[idx]=getTvdbSeriesUrl(tvdbid);
-        #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "gExternalSourceUrl[idx]);
-    } else {
+    if (result == 0) {
         details[SEASON]=y;
         details[EPISODE]=sprintf("%02d%02d",m,d);
         sub(/\....$/,"",rest);
         details[ADDITIONAL_INFO]=clean_title(rest);
     }
-    #dump(0,"epinfo",episodeInfo);
-    return 1;
+    return result;
+}
+
+# If a line looks like show.name.2009-06-16 then look for episode by date. It requires that
+# show.name results in good unique match at thetvdb.com. otherwise the show.name is left 
+# unchanged and the episode number is set to mmdd
+function extractEpisodeByDates_TvDb(idx,tvdbid,title,y,m,d,rest,details,\
+episodeInfo) {
+
+    fetchXML("http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-",episodeInfo);
+    if ( episodeInfo["/Data/Error"] != "" ) {
+        ERROR(episodeInfo["/Data/Error"]);
+        tvdbid="";
+    }
+    details[TITLE]=title;
+    if (tvdbid != "") {
+        gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+        details[SEASON]=episodeInfo["/Data/Episode/SeasonNumber"];
+        details[EPISODE]=episodeInfo["/Data/Episode/EpisodeNumber"];
+        details[ADDITIONAL_INFO]=episodeInfo["/Data/Episode/EpisodeName"];
+        #TODO We can cache the above url for later use instead of fetching episode explicitly.
+        # Setting this will help short circuit searching later.
+        #gExternalSourceUrl[idx]=getTvSeriesUrl(tvdbid);
+        #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "gExternalSourceUrl[idx]);
+        #dump(0,"epinfo",episodeInfo);
+        return 1;
+    }
+    return 0;
+}
+function extractEpisodeByDates_rage(idx,tvdbid,title,y,m,d,rest,details,\
+tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest,f,line,match_date,result) {
+
+    result=0;
+    match_date=sprintf("%4d-%02d-%02d",y,m,d);
+    f = getUrl(getTvSeriesUrl(tvdbid));
+    while((getline line < f) > 0) {
+        if (index(line,"<episode>") ) {
+            delete episodeInfo;
+        } else if (index(line,"</episode>")) {
+            parseXML(line,episodeInfo);
+            if (episodeInfo["/episode/airdate"] == match_date) {
+                gAirDate[idx]=formatDate(match_date);
+                details[SEASON]=episodeInfo["/episode/seasonnum"];
+                details[EPISODE]=episodeInfo["/episode/epnum"];
+                details[ADDITIONAL_INFO]=episodeInfo["/episode/title"];
+                result=1;
+                break;
+            }
+            delete episodeInfo;
+        }
+    }
+    close(f);
+    return result;
 }
 
 function extractEpisode(line,idx,details,        d,dir) {
@@ -1977,7 +2013,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 ############### GET IMDB URL FROM NFO ########################################
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
-idx,file,bestUrl,bestUrlViaEpguide,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
+idx,file,bestUrl,bestUrl,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name_no_tags,\
 s,search_order,search_order_key,search_regex_key) {
 
@@ -2054,7 +2090,7 @@ s,search_order,search_order_key,search_regex_key) {
                 #Get a better title using link from nfo to scrape epguides  with.
                 scrapeIMDBTitlePage(idx,bestUrl);
 
-                bestUrlViaEpguide = getAllInfoFromTvDbAndImdbLink(idx);
+                bestUrl = getAllInfoFromTvDbAndImdbLink(idx);
 
             } else {
 
@@ -2149,8 +2185,6 @@ s,search_order,search_order_key,search_regex_key) {
         }
         fixTitles(idx);
 
-        get_best_episode_title(idx);
-
         #Only get posters if catalog is installed as part of oversight
         if (index(APPDIR,"/oversight") ) {
 
@@ -2222,6 +2256,7 @@ function clean_globals() {
     delete gCertRating;
     delete gCertCountry;
     delete g_director;
+    delete g_creator;
     delete g_poster;
     delete g_genre;
     delete gProdCode;
@@ -2233,12 +2268,9 @@ function clean_globals() {
     delete g_file_time;
     delete g_episode;
     delete g_seasion;
-    delete gEpGuides;
     delete gExternalSourceUrl;
     delete g_year;
     delete gAirDate;
-    delete gAirDateImdb;
-    delete gEpTitleImdb;
     delete gTvCom;
     delete gEpTitle;
     delete g_plot;
@@ -2487,7 +2519,6 @@ foundId,line) {
 
 ############### GET IMDB PAGE FROM URL ########################################
 
-# returns IGNORE?
 function getAllInfoFromTvDbAndImdbLink(idx,title,\
 tvDbSeriesPage,alternateTitles,cache_key) {
 
@@ -2500,17 +2531,17 @@ tvDbSeriesPage,alternateTitles,cache_key) {
     DEBUG("getAllInfoFromTvDbAndImdbLink: initial="tvDbSeriesPage);
 
     if (tvDbSeriesPage == "" && index(gExternalSourceUrl[idx],"imdb")  ) {
-        tvDbSeriesPage = getTvdbSeriesUrl(searchTvDbByImdbId(extractImdbId(gExternalSourceUrl[idx])));
+        tvDbSeriesPage = getTvSeriesUrl(searchTvByImdbId(extractImdbId(gExternalSourceUrl[idx])));
         DEBUG("getAllInfoFromTvDbAndImdbLink: byimdb="tvDbSeriesPage);
     }
 
     if (tvDbSeriesPage == "" ) {
-        g_search_total["thetvdb"]++;
+        g_search_total[g_tv_plugin]++;
         DEBUG("Checking TvDbTitles for ["title"]");
 
         tvDbSeriesPage = searchTvDbTitles(idx,title);
         DEBUG("getAllInfoFromTvDbAndImdbLink: bytitles="tvDbSeriesPage);
-        if (tvDbSeriesPage) g_search_hits["thetvdb"]++;
+        if (tvDbSeriesPage) g_search_hits[g_tv_plugin]++;
     }
 
     # Abbreviation search
@@ -2553,7 +2584,7 @@ tvDbSeriesPage,alternateTitles,cache_key) {
     } else {
         g_tvDbIndex[title]=tvDbSeriesPage;
         DEBUG("getAllInfoFromTvDbAndImdbLink Search looking at "tvDbSeriesPage);
-        return getTvDbInfo(idx,tvDbSeriesPage);
+        return get_tv_series_info(idx,tvDbSeriesPage);
     }
 }
 
@@ -2591,12 +2622,17 @@ function addHash(a1,a2,i) {
     for(i in a2) a1[i] += a2[i];
 }
 
-function search1TvDbId(idx,title,\
-closeTitles,best) {
+function search1TvId(idx,title,\
+closeTitles,best,filter) {
 
-    searchTvDb(title,"FirstAired,Overview",closeTitles);
+    if (g_tv_plugin == "TVDB" ) {
+        filter="FirstAired,Overview";
+    } else if (g_tv_plugin == "RAGE" ) {
+        filter="started,origin_country";
+    } 
+    searchTv(title,filter,closeTitles);
 
-    dump(0,"searchTvDb out",closeTitles);
+    dump(0,"searchTv out",closeTitles);
 
     best = selectBestOfBestTitle(idx,closeTitles);
     return best;
@@ -2685,7 +2721,7 @@ function getRelativeAge(idx,titleHash,ageHash,\
 id,xml) {
    for(id in titleHash) {
         if (g_category[idx] == "T") {
-            getTvDbEpisodeXML(getTvdbSeriesUrl(id),g_season[idx],g_episode[idx],xml);
+            get_episode_xml_tvdb(getTvSeriesUrl(id),g_season[idx],g_episode[idx],xml);
             ageHash[id] = xml["/Data/Episode/FirstAired"];
         } else {
             #Use the IMDB directly to indicate most recent film
@@ -2751,7 +2787,7 @@ bestScore,potentialTitle,potentialMatches,origTitles,titleScore,count) {
     copyHash(origTitles,titleInHash);
 
     for(potentialTitle in titleInHash) {
-        titleScore[potentialTitle] = searchTvDb(potentialTitle,requiredTags,potentialMatches);
+        titleScore[potentialTitle] = searchTv(potentialTitle,requiredTags,potentialMatches);
     }
     bestScores(titleScore,titleScore,0);
 
@@ -2771,40 +2807,53 @@ bestScore,potentialTitle,potentialMatches,origTitles,titleScore,count) {
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
 # This wrapper function will search with or without the country code.
-function searchTvDb(title,requiredTagList,closeTitles,\
+function searchTv(title,requiredTagList,closeTitles,\
 score) {
     if (title != "") {
-        DEBUG("searchTvDb Checking ["title"]" );
-        score=searchTvDb2(title,requiredTagList,closeTitles);
-        DEBUG("searchTvDb Checked ["title"] score = " score );
+        DEBUG("searchTv Checking ["title"]" );
+        score=searchTv2(title,requiredTagList,closeTitles);
+        DEBUG("searchTv Checked ["title"] score = " score );
         if (score+0 <= 0 ) {
-            DEBUG("searchTvDb removing countries from ["title"]" );
+            DEBUG("searchTv removing countries from ["title"]" );
             if (match(tolower(title)," (au|uk|us)( |$)")) {
                 DEBUG("Removing "substr(title,RSTART+1,RLENGTH-1));
                 title=substr(title,1,RSTART-1) substr(title,RSTART+RLENGTH);
                 DEBUG("Trying generic title "title);
-                score=searchTvDb2(title,requiredTagList,closeTitles);
+                score=searchTv2(title,requiredTagList,closeTitles);
             }
         }
     }
     return score;
 }
 
-# Search tvDb and return titles hashed by seriesId
-# Series are only considered if they have the tags listed in requiredTags
-# IN title - the title we are looking for.
-# OUT closeTitles - matching titles hashed by tvdbid. 
-# IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
-function searchTvDb2(title,requiredTagList,closeTitles,\
-allTitles,f,line,info,currentId,currentName,requiredTagNames,add,i,url) {
+function searchTv2(title,requiredTagList,closeTitles,\
+requiredTagNames,allTitles) {
 
-    delete closeTitles;
-    DEBUG("searchTvDb2 Checking ["title"]" );
-
+    DEBUG("searchTv2 Checking ["title"]" );
     split(requiredTagList,requiredTagNames,",");
+    delete closeTitles;
 
-    url="http://thetvdb.com//api/GetSeries.php?seriesname="title;
+    if (g_tv_plugin == "TVDB") {
+        searchTv2_tvdb(title,requiredTagList,allTitles);
+    } else if (g_tv_plugin == "RAGE") {
+        searchTv2_rage(title,requiredTagList,allTitles);
+    }
+    return filterSimilarTitles(title,allTitles,closeTitles);
+}
+
+function searchTv2_rage(title,requiredTagNames,allTitles,\
+,f,line,info,currentId,currentName,add,i,url) {
+
+    url="http://www.tvrage.com/feeds/search.php?show="title;
+    filter_search_results(url,"show","name","showid",requiredTagNames,allTitles);
+}
+
+#If the search engine differentiates between &/and or obrien o brien then we need multiple searches.
+# 
+function expand_url(baseurl,title,\
+url) {
+    url = baseurl title;
     if (match(title," [Aa]nd ")) {
         #try "a and b\ta & b"
         url=url"\t"url;
@@ -2815,32 +2864,53 @@ allTitles,f,line,info,currentId,currentName,requiredTagNames,add,i,url) {
         url=url"\t"url;
         sub(/ O /," O",url); 
     }
+    return url;
+}
+
+# Search tvDb and return titles hashed by seriesId
+# Series are only considered if they have the tags listed in requiredTags
+# IN title - the title we are looking for.
+# OUT closeTitles - matching titles hashed by tvdbid. 
+# IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
+function searchTv2_tvdb(title,requiredTagNames,allTitles) {
+
+    url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",title);
+
+    filter_search_results(url,"Series","SeriesName","seriesid",requiredTagNames,allTitles);
+}
+
+
+function filter_search_results(url,title,seriesTag,nameTag,idTag,requiredTagNames,allTitles,\
+,f,line,info,currentId,currentName,add,i,url,seriesStart,seriesEnd) {
 
     f = getUrl(url,"tvdb_idx",1);
+
     if (f != "") {
+        seriesStart="<"seriesTag">";
+        seriesEnd="</"seriesTag">";
         FS="\n";
         while((getline line < f) > 0 ) {
 
             #DEBUG("IN:"line);
 
-            if (index(line,"<Series>") > 0) {
+            if (index(line,seriesStart) > 0) {
                 #This also removes the top level /Data tag in the XML reference
                 delete info;
             }
 
             parseXML(line,info);
 
-            if (index(line,"</Series>") > 0) {
+            if (index(line,seriesEnd) > 0) {
 
                 dump(2,"xmlinfo",info);
 
-                currentName = info["/Series/SeriesName"];
+                currentName = info["/"seriesTag"/"nameTag];
 
-                currentId = info["/Series/seriesid"];
+                currentId = info["/"seriesTag"/"idTag"];
 
                 add=1;
                 for( i in requiredTagNames ) {
-                    if (! ( "/Series/"requiredTagNames[i] in info ) ) {
+                    if (! ( "/"seriesTag"/"requiredTagNames[i] in info ) ) {
                         DEBUG("["currentName"] rejected due to missing "requiredTagNames[i]" tag");
                         add=0;
                         break;
@@ -2857,8 +2927,7 @@ allTitles,f,line,info,currentId,currentName,requiredTagNames,add,i,url) {
         close(f);
     }
     dump(1,"search["title"]",allTitles);
-
-    return filterSimilarTitles(title,allTitles,closeTitles);
+    #filterSimilarTitles is called by the calling function
 }
 
 function dump(lvl,label,array,\
@@ -2876,17 +2945,23 @@ i,c) {
 
 # IN imdb id tt0000000
 # RETURN tvdb id
-function searchTvDbByImdbId(id,\
+function searchTvByImdbId(id,\
 url,id2) {
 
     if (id) {
-        url = "http://thetvdb.com/index.php?imdb_id="id"&order=translation&searching=Search&tab=advancedsearch";
-        id2 = scanPageForMatch(url,"[&?]id=[0-9]+[&\"]",1);
-        if (id2 != "" ) {
-            id2=substr(id2,4,length(id2)-4);
-            DEBUG("imdb id "id" => tvdb id "id2);
+        if(g_tv_plugin == "TVDB") {
+            url = "http://thetvdb.com/index.php?imdb_id="id"&order=translation&searching=Search&tab=advancedsearch";
+            id2 = scanPageForMatch(url,"[&?]id=[0-9]+[&\"]",1);
+            if (id2 != "" ) {
+                id2=substr(id2,4,length(id2)-4);
+                DEBUG("imdb id "id" => tvdb id "id2);
+            } else {
+                DEBUG("imdb id "id" not found in tvdb");
+            }
         } else {
-            DEBUG("imdb id "id" not found in tvdb");
+          # If no IMDB links look for the Creator and other attributes to help target the correct page.
+          # eg title creator 
+          # lost "J.J.Abrams" site:tvrage.com intitle:"Television series" intitle:summary inurl:shows
         }
     }
     return id2;
@@ -2897,25 +2972,28 @@ tvdbid,tvDbSeriesUrl,imdb_id) {
 
     if (gExternalSourceUrl[idx]) {
         imdb_id = extractImdbId(gExternalSourceUrl[idx]);
-        tvdbid = searchTvDbByImdbId(imdb_id);
+        tvdbid = searchTvByImdbId(imdb_id);
     }
     if (tvdbid == "") {
-        tvdbid = search1TvDbId(idx,title);
+        tvdbid = search1TvId(idx,title);
     }
     if (tvdbid != "") {
-        tvDbSeriesUrl=getTvdbSeriesUrl(tvdbid);
+        tvDbSeriesUrl=getTvSeriesUrl(tvdbid);
     }
 
     DEBUG("Endpage with url = ["tvDbSeriesUrl"]");
     return tvDbSeriesUrl;
 }
 
-function getTvdbSeriesUrl(tvdbid) {
+function getTvSeriesUrl(tvdbid) {
     if (tvdbid != "") {
-        return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/en.xml";
-    } else {
-        return "";
+        if (g_tv_plugin == "TVDB") {
+            return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/en.xml";
+        } else if (g_tv_plugin == "RAGE") {
+            return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
+        }
     }
+    return "";
 }
 
 #Load an xnl file into array - note duplicate elements are clobbered.
@@ -3567,13 +3645,29 @@ f,iurl,start,nextStart,matchList,bestUrl,x,html) {
     }
 }
 
+function get_episode_url(seriesUrl,season,episode,\
+episodeUrl ) {
+    episodeUrl = seriesUrl;
+    if (g_tv_plugin == "TVDB") {
+        #Note episode may be 23,24 so convert to number.
+        if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",episodeUrl)) {
+            return episodeUrl;
+        }
+    } else if (g_tv_plugin == "RAGE") {
+        #same url
+        return episodeUrl;
+    }
+    return "";
+}
+
 #Get eposide info by changing base url - this should really use the id
 #but no time to refactor calling code at the moment.
-function getTvDbEpisodeXML(seriesUrl,season,episode,episodeInfo) {
+function get_episode_xml(seriesUrl,season,episode,episodeInfo,\
+episodeUrl) {
     delete episodeInfo;
-    #Note episode may be 23,24 so convert to number.
-    if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",seriesUrl)) {
-        fetchXML(seriesUrl,"thetvdb-episode",episodeInfo);
+    episodeUrl = get_episode_url(seriesUrl,season,episode);
+    if (episodeUrl != "") {
+        fetchXML(seriesUrl,"tvinfo-episode",episodeInfo);
         dump(0,"episode-xml",episodeInfo);
     } else {
         INFO("cant determine episode url from "seriesUrl);
@@ -3588,19 +3682,26 @@ function scrape_set(idx,site) {
     g_scraped[idx] = g_scraped[idx] "," site;
 }
 
+function get_tv_series_info(idx,tvDbSeriesUrl) {
+
+    if (scrape_check(idx,g_tv_plugin".season") ) {
+        return gExternalSourceUrl[idx];
+    } 
+    scrape_set(idx,g_tv_plugin".season");
+
+    if (g_tv_plugin == "TVDB") {
+        return get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
+    } else if (g_tv_plugin == "RAGE") {
+        return get_tv_series_info_rage(idx,tvDbSeriesUrl);
+    }
+    return "";
+}
+
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
-function getTvDbInfo(idx,tvDbSeriesUrl,\
+function get_tv_series_info_tvdb(idx,tvDbSeriesUrl,\
 seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
-
-    if (scrape_check(idx,"thetvdb") ) {
-        return gExternalSourceUrl[idx];
-    } 
-    scrape_set(idx,"thetvdb");
-
-    #The url for this link
-    gEpGuides[idx]=tvDbSeriesUrl;
 
 
     fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
@@ -3612,7 +3713,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 
     if (g_episode[idx] ~ "^[0-9,]+$" ) {
 
-        getTvDbEpisodeXML(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo);
+        get_episode_xml_tvdb(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo);
 
     }
 
@@ -3648,11 +3749,10 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
     }
 
     if (imdbLink == "" ) {
-        WARNING("getTvDbInfo returns blank imdb url. Consider updating the imdb field for this series at www.thetvdb.com");
+        WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at www.thetvdb.com");
         return "";
-        return "IGNORE";
     } else {
-        DEBUG("getTvDbInfo returns imdb url ["imdbLink"]");
+        DEBUG("get_tv_series_info returns imdb url ["imdbLink"]");
     }
     if (imdbLink != "" ) {
         gExternalSourceUrl[idx] = imdbLink;
@@ -3662,6 +3762,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 
 function tvDbImageUrl(path) {
     if(path != "") {
+
         #return "http://images.thetvdb.com/banners/_cache/" path;
         return "http://thetvdb.com/banners/" url_encode(html_decode(path));
     } else {
@@ -3708,6 +3809,51 @@ season,f,line,url,xml,fanart_url) {
     g_fanart[idx]=fanart_url;
 }
 
+function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
+seriesInfo,episodeInfo,f,line,imdbLink) {
+
+   f = getUrl(url,"tvdb_idx",1);
+    if (f != "") {
+        FS="\n";
+        while((getline line < f) > 0 ) {
+            parseXML(line,seriesInfo);
+            if (index(line,"<Episodelist>") > 0) {
+                break;
+            }
+        }
+        adjustTitle(idx,seriesInfo["/Show/name"],g_tv_plugin);
+        g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
+
+        while((getline line < f) > 0 ) {
+            if (index(line,"<episode>") > 0) {
+                delete episodeInfo;
+            } else {
+
+                parseXML(line,episodeInfo);
+
+                if (index(line,"</episode>") > 0) {
+                    if ("/episode/epnum" in episodeInfo) {
+                        if index(episodeInfo["/episode/seasonnum"] - g_season[idx] == 0 ) {
+                            if (episodeInfo["/episode/epnum"] - g_episode[idx] == 0 ) {
+                                gEpTitle[idx]=episodeInfo["/episode/title"];
+                                gAirDate[idx]=formatDate(episodeInfo["/episode/airdate"]);
+                                break;
+                            }
+                        }
+                    }
+
+                }
+                delete episodeInfo;
+            }
+
+        }
+        close(f);
+
+ 
+    #No simple way to get to imdb from here - so imdbLink is blank?
+    return imdbLink;
+}
+
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
 function adjustTitle(idx,newTitle,source) {
@@ -3721,6 +3867,8 @@ function adjustTitle(idx,newTitle,source) {
         gTitlePriority["epguides"]=2;
         gTitlePriority["imdb_aka"]=3;
         gTitlePriority["thetvdb"]=4;
+        gTitlePriority["TVDB"]=4;
+        gTitlePriority["RAGE"]=4;
     }
 
     if (!(source in gTitlePriority)) {
@@ -3811,8 +3959,8 @@ f,s,e,txt,imdbEpisodeUrl,referencedLink,referencedId) {
     INFO("extractImdbEpisode ["imdbLink"]");
     imdbEpisodeUrl = imdbLink "/episodes";
 
-    if (gEpTitleImdb[idx] != "" ) {
-        INFO("Episode details already set to "gEpTitleImdb[idx]);
+    if (gEpTitle[idx] != "" ) {
+        INFO("Episode details already set to "gEpTitle[idx]);
     } else {
         f=getUrl(imdbEpisodeUrl,"imdb_episode",1);
         if (f != "") {
@@ -3825,10 +3973,10 @@ f,s,e,txt,imdbEpisodeUrl,referencedLink,referencedId) {
                 #DEBUG("imdb episode:"txt);
 
                 if (index(txt,"Season "s", Episode "e":")) {
-                    gEpTitleImdb[idx]=extractTagText(txt,"a");
-                    gAirDateImdb[idx]=formatDate(extractTagText(txt,"strong"));
-                    DEBUG("imdb episode title = ["gEpTitleImdb[idx]"]");
-                    DEBUG("imdb air date = ["gAirDateImdb[idx]"]");
+                    gEpTitle[idx]=extractTagText(txt,"a");
+                    gAirDate[idx]=formatDate(extractTagText(txt,"strong"));
+                    DEBUG("imdb episode title = ["gEpTitle[idx]"]");
+                    DEBUG("imdb air date = ["gAirDate[idx]"]");
                     break;
                 }
 
@@ -3849,7 +3997,7 @@ f,s,e,txt,imdbEpisodeUrl,referencedLink,referencedId) {
                 }
             }
             close(f);
-            if (referencedLink != "" && gEpTitleImdb[idx]=="" && gAirDateImdb[idx] == "") {
+            if (referencedLink != "" && gEpTitle[idx]=="" && gAirDate[idx] == "") {
                 INFO("Had IMDB link ["imdbEpisodeUrl"] but this may be an episode and ["referencedLink"] may be the series");
                 if (attempts == 0) {
                     return extractImdbEpisode(idx,extractImdbLink(referencedLink),attempts+1);
@@ -4495,7 +4643,11 @@ title,y,poster_imdb_url) {
                 }
             }
             if (g_director[idx] == "" && index(line,"Director:")) {
-                g_director[idx] = scrapeIMDBDirector(f);
+                g_director[idx] = scrapeIMDBNextPersonName(f);
+            }
+
+            if (g_creator[idx] == "" && index(line,"Creators:")) {
+                g_creator[idx] = scrapeIMDNextPersonName(f);
             }
 
             if (g_plot[idx] == "" && index(line,"Plot:")) {
@@ -4651,14 +4803,14 @@ p,i) {
     DEBUG("IMDB: Got plot = ["p"]");
     return p;
 }
-function scrapeIMDBDirector(f,\
+function scrapeIMDBNextPersonName(f,\
 l) {
     while(index(l,"name") == 0) {
         getline l <f;
     }
-    INFO("Extracting director from ["l"]");
+    INFO("Extracting name from ["l"]");
     l=extractTagText(l,"a");
-    DEBUG("IMDB: Got director = ["l"]");
+    DEBUG("IMDB: Got name = ["l"]");
     return l;
 }
 function scrapeIMDBGenre(f,\
@@ -4695,9 +4847,6 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         newName = substitute("INFO",gAdditionalInfo[i],newName);
 
         epTitle=gEpTitle[i];
-        if (epTitle == "") {
-            epTitle = gEpTitleImdb[i];
-        }
         gsub(/[^-A-Za-z0-9,. ]/,"",epTitle);
         gsub(/[{]EPTITLE[}]/,epTitle,newName);
 
@@ -5134,27 +5283,6 @@ function fixTitles(idx) {
     gTitle[idx]=clean_title(gTitle[idx]);
 }
 
-function get_best_episode_title(idx,\
-    tvcom,epguideTitles) {
-
-    if (g_category[idx] != "T") return;
-
-    DEBUG("gTvCom["idx"]=["gTvCom[idx]"]");
-    DEBUG("gEpTitle["idx"]=["gEpTitle[idx]"]");
-    DEBUG("gEpTitleImdb["idx"]=["gEpTitleImdb[idx]"]");
-
-    split(gTvCom[idx],tvcom,"\t");
-    split(gEpTitle[idx],epguideTitles,"\t");
-
-    if (gEpTitle[idx] == "") {
-        gEpTitle[idx] = gEpTitleImdb[idx];
-    }
-
-    if (gEpTitle[idx] == "") {
-        gEpTitle[idx] = "Episode "g_episode[idx] " " clean_title(remove_format_tags(gAdditionalInfo[idx]));
-    }
-}
-
 function file_time(f) {
     if (f in gDate) {
         return gDate[f];
@@ -5227,14 +5355,13 @@ row,estimate,nfo) {
     row=row"\t"PARTS"\t"gParts[i];
     row=row"\t"URL"\t"gExternalSourceUrl[i];
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
+    row=row"\t"CREATOR"\t"g_creator[i];
     row=row"\t"DIRECTOR"\t"g_director[i];
     row=row"\t"FILETIME"\t"g_file_time[i];
     row=row"\t"DOWNLOADTIME"\t"estimate;
     #row=row"\t"SEARCH"\t"g_search[i];
     row=row"\t"PROD"\t"gProdCode[i]; #todo remove without affecting load loop in oversight.cgi
     row=row"\t"AIRDATE"\t"gAirDate[i];
-    row=row"\t"EPTITLEIMDB"\t"gEpTitleImdb[i];
-    row=row"\t"AIRDATEIMDB"\t"gAirDateImdb[i];
 
     row=row"\t"TVCOM"\t"gTvCom[i];
     row=row"\t"EPTITLE"\t"gEpTitle[i];

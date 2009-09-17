@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 Q How can I get oversight to rename and move Films that were already on the PCH *before* I installed oversight?
 

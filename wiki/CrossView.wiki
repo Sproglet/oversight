@@ -1,5 +1,5 @@
+#summary CrossView allows you to install Oversight on two NMTs and they can both share media in a single view.
 #sidebar TableOfContents
-CrossView allows you to install Oversight on two NMTs and they can both share media in a single view.
 
 It is slightly different to using a NAS.
 

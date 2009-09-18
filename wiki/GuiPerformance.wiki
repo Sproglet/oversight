@@ -39,3 +39,9 @@ Eg,
 }}}
 
 Here 621 items were scanned in 0.32s. This is the longest step of the page generation task. Once plots are moved out, I'm hoping this will drop below 0.2 seconds.
+
+There are some odd bits of code to tweak performance. For example rather than using the standard localtime()/mktime() functions to convert between struct tm and UNIX timestamps  I just pushed the time fields into different bits of a 'long long' variable.
+
+http://code.google.com/p/oversight/source/browse/trunk/src/time.c
+
+This reduced the cryptically named 'inner_date_ticks' figure from around 230 down to 30.

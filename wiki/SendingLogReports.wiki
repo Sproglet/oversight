@@ -37,10 +37,11 @@ To send GUI logs:
 
 = TV Logs - send these if odd things happen only via the TV interface - not PC=
 
-To get the page that is sent to gaya/tv, you must first edit oversight.cgi with a [http://www.networkedmediatank.com/wiki/index.php/Unix_Friendly_Text_Editor unix friendly editor], and comment out the line
-'rm -f -- "$html" "$err" by putting a '#' in the first column.
-
-Then load the page up again. Now in /oversight/tmp you should have files
-1234.html 1234.err - send the newest ones. (The number will change each time)
+To get the page that is sent to gaya/tv, you must
+  # first edit oversight.cgi with a [http://www.networkedmediatank.com/wiki/index.php/Unix_Friendly_Text_Editor unix friendly editor], and comment out the line 'rm -f -- "$html" "$err" by putting a '#' in the first column.
+  # Then load the page again on the TV screen. 
+  # Now in /oversight/tmp you should have files 1234.html 1234.err - send the newest ones. (The number will change each time)
+  # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
+  # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
 
 If the issue is with the play button on the remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 

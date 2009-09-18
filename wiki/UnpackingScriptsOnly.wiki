@@ -14,15 +14,22 @@ Download unpak-BETA.zip and install unpak.sh , unpak.cfg.example catalog.sh and 
 
 The files should be
 
-unpak.sh
-conf/.unpak.cfg.defaults #defaults for all new settings
-conf/unpak.cfg # your file - copy from unpak.cfg.example
-conf/unpak.cfg.example #initial file for 1st time users
+  * unpak.sh
+  * conf/.unpak.cfg.defaults #defaults for all new settings
+  * conf/unpak.cfg # your file - copy from unpak.cfg.example
+  * conf/unpak.cfg.example #initial file for 1st time users
 
-catalog.sh
-conf/.catalog.cfg.defaults #defaults for all new settings
-conf/catalog.cfg # your file - copy from unpak.cfg.example
-conf/catalog.cfg.example #initial file for 1st time users
+  * catalog.sh
+  * conf/.catalog.cfg.defaults #defaults for all new settings
+  * conf/catalog.cfg # your file - copy from unpak.cfg.example
+  * conf/catalog.cfg.example #initial file for 1st time users
+
+Also for NMT platform :
+
+  * bin/wget
+  * bin/gzip
+
+These 'gnu' version or wget and gzip are slightly easier to work with than their busybox equivalents.
 
 = Configuration =
 

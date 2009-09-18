@@ -4,3 +4,4 @@ catalog_format_tags:Comma separated list of format tags that are unlikey to be p
 catalog_title_country_list:Comma separated list of countries prefered for IMDB movie titles. Must be on main IMDB page. Non USA may not work.
 catalog_cert_country_list:Comma separated list of Countries to use for certification. Non USA may not work.
 catalog_imdb_links_required:Number of imdb links required in web search results|4
+catalog_tv_plugin:Web site to detect tv shows|THETVDB|TVRAGE

@@ -30,9 +30,6 @@ VERSION=20090913-1BETA
 #TODO should check write permissions to nfo file - not urgent
 #Error displaying titles for Leon Wall-E etc. special chars.
 #
-# TODO: Catalog now stores all posters within oversight. Non-NMT users may need an explicit
-#switch to export these back out to the filesystem.
-
 # TODO move away from expecting gExternalSourceUrl[x] to be IMDB url. It is now sometimes thetvdb.
 
 
@@ -308,6 +305,10 @@ i,n,v,option) {
     close(file_name);
 }
 
+function plugin_error() {
+    ERROR("Unknown plugin "g_tv_plugin);
+}
+
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
     g_cvs_sep=" *, *";
@@ -538,6 +539,10 @@ END{
     load_catalog_settings(CONF_FILE);
 
     g_tv_plugin = g_settings["catalog_tv_plugin"];
+    if (g_tv_plugin !~ "^(THETVDB|TVRAGE)$" ) {
+        ERROR("Unknown tv plugin");
+        exit;
+    }
 
     INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
     INDEX_DB_OLD = INDEX_DB ".old";
@@ -597,7 +602,10 @@ END{
             folder_list=g_settings["catalog_watch_paths"];
         } else {
             INFO("Scanning default and watch paths");
-            folder_list=g_settings["catalog_scan_paths"] g_cvs_sep g_settings["catalog_watch_paths"];
+            folder_list=g_settings["catalog_scan_paths"];
+            if (g_settings["catalog_watch_paths"] != "") {
+                folder_list = folder_list "," g_settings["catalog_watch_paths"];
+            }
         }
         trim(folder_list);
         sub(/^,+/,"",folder_list);
@@ -1239,7 +1247,7 @@ function folderIsRelevant(dir) {
    return 1;
 }
 
-function searchInternetForFirstImdbPage(idx,name_no_tags,qualifier,\
+function searchInternetForFirstImdbPage(name_no_tags,qualifier,\
 keywords) {
 
     keywords = textToSearchKeywords(name_no_tags,0);
@@ -1825,7 +1833,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
 }
 
 function extractEpisodeByDates(idx,line,details,\
-nonDate,title,rest,y,m,d,tvdbid,result) {
+date,nonDate,title,rest,y,m,d,tvdbid,result) {
 
     result=0;
     if (!extractDate(line,date,nonDate)) {
@@ -1844,10 +1852,10 @@ nonDate,title,rest,y,m,d,tvdbid,result) {
     if (tvdbid == "") return 0;
     get_tv_series_info(idx,getTvSeriesUrl(tvdbid));
 
-    if (g_tv_plugin == "TVDB" ) {
-        result = extractEpisodeByDates_TvDb(idx,tvdbid,title,y,m,d,rest,details);
-    } else if (g_tv_plugin == "RAGE" ) {
-        result = extractEpisodeByDates_rage(idx,tvdbid,title,y,m,d,rest,details);
+    if (g_tv_plugin == "THETVDB" ) {
+        result = extractEpisodeByDates_TvDb(idx,tvdbid,title,y,m,d,details);
+    } else if (g_tv_plugin == "TVRAGE" ) {
+        result = extractEpisodeByDates_rage(idx,tvdbid,title,y,m,d,details);
     }
     if (result == 0) {
         details[SEASON]=y;
@@ -1861,7 +1869,7 @@ nonDate,title,rest,y,m,d,tvdbid,result) {
 # If a line looks like show.name.2009-06-16 then look for episode by date. It requires that
 # show.name results in good unique match at thetvdb.com. otherwise the show.name is left 
 # unchanged and the episode number is set to mmdd
-function extractEpisodeByDates_TvDb(idx,tvdbid,title,y,m,d,rest,details,\
+function extractEpisodeByDates_TvDb(idx,tvdbid,title,y,m,d,details,\
 episodeInfo) {
 
     fetchXML("http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-",episodeInfo);
@@ -1884,29 +1892,21 @@ episodeInfo) {
     }
     return 0;
 }
-function extractEpisodeByDates_rage(idx,tvdbid,title,y,m,d,rest,details,\
-tvdbid,episodeInfo,d,m,y,date,nonDate,title,rest,f,line,match_date,result) {
+function extractEpisodeByDates_rage(idx,tvdbid,title,y,m,d,details,\
+tvdbid,episodeInfo,d,m,y,match_date,result,filter) {
 
     result=0;
     match_date=sprintf("%4d-%02d-%02d",y,m,d);
-    f = getUrl(getTvSeriesUrl(tvdbid));
-    while((getline line < f) > 0) {
-        if (index(line,"<episode>") ) {
-            delete episodeInfo;
-        } else if (index(line,"</episode>")) {
-            parseXML(line,episodeInfo);
-            if (episodeInfo["/episode/airdate"] == match_date) {
-                gAirDate[idx]=formatDate(match_date);
-                details[SEASON]=episodeInfo["/episode/seasonnum"];
-                details[EPISODE]=episodeInfo["/episode/epnum"];
-                details[ADDITIONAL_INFO]=episodeInfo["/episode/title"];
-                result=1;
-                break;
-            }
-            delete episodeInfo;
-        }
+
+
+    filter["/episode/airdate"] = match_date;
+    if (fetchXMLSegment(getTvSeriesUrl(tvdbid),"bydate","episode",filter,episodeInfo)) {
+        gAirDate[idx]=formatDate(match_date);
+        details[SEASON]=episodeInfo["/episode/seasonnum"];
+        details[EPISODE]=episodeInfo["/episode/epnum"];
+        details[ADDITIONAL_INFO]=episodeInfo["/episode/title"];
+        result=1;
     }
-    close(f);
     return result;
 }
 
@@ -2015,7 +2015,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 idx,file,bestUrl,bestUrl,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,total_merge_cycles,bestUrl2,itemStartTime,name,name_no_tags,\
-s,search_order,search_order_key,search_regex_key) {
+s,search_order,search_order_key,search_regex_key,i) {
 
 
     startTime = systime();
@@ -2153,11 +2153,11 @@ s,search_order,search_order_key,search_regex_key) {
 
                     } else if (search_order[s] == "IMDB") {
 
-                        bestUrl=searchInternetForFirstImdbPage(idx,name_no_tags,url_encode("site:imdb.com"));
+                        bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"));
 
                     } else if (search_order[s] == "IMDBFIRST") {
 
-                        bestUrl=searchInternetForFirstImdbPage(idx,name_no_tags,url_encode("+imdb"));
+                        bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("+imdb"));
 
                     } else if (search_order[s] == "IMDBLINKS") {
 
@@ -2367,7 +2367,7 @@ choice,i,url) {
 # example
 # searchOnlineNfoLinksForImdb(idx,"http://www.bintube.com","/?q=","/nfo/pid/[0-9a-f]+") 
 function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosToScan,inurlFind,inurlReplace,
-nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id) {
+nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id,count) {
 
     INFO("Online nfo search for "name);
 
@@ -2531,7 +2531,7 @@ tvDbSeriesPage,alternateTitles,cache_key) {
     DEBUG("getAllInfoFromTvDbAndImdbLink: initial="tvDbSeriesPage);
 
     if (tvDbSeriesPage == "" && index(gExternalSourceUrl[idx],"imdb")  ) {
-        tvDbSeriesPage = getTvSeriesUrl(searchTvByImdbId(extractImdbId(gExternalSourceUrl[idx])));
+        tvDbSeriesPage = getTvSeriesUrl(searchTvByImdbId(idx,extractImdbId(gExternalSourceUrl[idx])));
         DEBUG("getAllInfoFromTvDbAndImdbLink: byimdb="tvDbSeriesPage);
     }
 
@@ -2625,9 +2625,9 @@ function addHash(a1,a2,i) {
 function search1TvId(idx,title,\
 closeTitles,best,filter) {
 
-    if (g_tv_plugin == "TVDB" ) {
+    if (g_tv_plugin == "THETVDB" ) {
         filter="FirstAired,Overview";
-    } else if (g_tv_plugin == "RAGE" ) {
+    } else if (g_tv_plugin == "TVRAGE" ) {
         filter="started,origin_country";
     } 
     searchTv(title,filter,closeTitles);
@@ -2721,8 +2721,12 @@ function getRelativeAge(idx,titleHash,ageHash,\
 id,xml) {
    for(id in titleHash) {
         if (g_category[idx] == "T") {
-            get_episode_xml_tvdb(getTvSeriesUrl(id),g_season[idx],g_episode[idx],xml);
-            ageHash[id] = xml["/Data/Episode/FirstAired"];
+            get_episode_xml(getTvSeriesUrl(id),g_season[idx],g_episode[idx],xml);
+            if (g_tv_plugin == "THETVDB") {
+                ageHash[id] = xml["/Data/Episode/FirstAired"];
+            } else if (g_tv_plugin == "TVRAGE" ) {
+                ageHash[id] = xml["/episode/airdate"];
+            }
         } else {
             #Use the IMDB directly to indicate most recent film
             ageHash[id] = id;
@@ -2834,19 +2838,12 @@ requiredTagNames,allTitles) {
     split(requiredTagList,requiredTagNames,",");
     delete closeTitles;
 
-    if (g_tv_plugin == "TVDB") {
+    if (g_tv_plugin == "THETVDB") {
         searchTv2_tvdb(title,requiredTagList,allTitles);
-    } else if (g_tv_plugin == "RAGE") {
+    } else if (g_tv_plugin == "TVRAGE") {
         searchTv2_rage(title,requiredTagList,allTitles);
     }
     return filterSimilarTitles(title,allTitles,closeTitles);
-}
-
-function searchTv2_rage(title,requiredTagNames,allTitles,\
-,f,line,info,currentId,currentName,add,i,url) {
-
-    url="http://www.tvrage.com/feeds/search.php?show="title;
-    filter_search_results(url,"show","name","showid",requiredTagNames,allTitles);
 }
 
 #If the search engine differentiates between &/and or obrien o brien then we need multiple searches.
@@ -2872,18 +2869,26 @@ url) {
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
-function searchTv2_tvdb(title,requiredTagNames,allTitles) {
+function searchTv2_tvdb(title,requiredTagNames,allTitles,\
+url) {
 
     url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",title);
 
-    filter_search_results(url,"Series","SeriesName","seriesid",requiredTagNames,allTitles);
+    filter_search_results(url,title,"Series","SeriesName","seriesid",requiredTagNames,allTitles);
+}
+
+function searchTv2_rage(title,requiredTagNames,allTitles,\
+url) {
+
+    url="http://www.tvrage.com/feeds/search.php?show="title;
+    filter_search_results(url,title,"show","name","showid",requiredTagNames,allTitles);
 }
 
 
 function filter_search_results(url,title,seriesTag,nameTag,idTag,requiredTagNames,allTitles,\
-,f,line,info,currentId,currentName,add,i,url,seriesStart,seriesEnd) {
+f,line,info,currentId,currentName,add,i,seriesStart,seriesEnd) {
 
-    f = getUrl(url,"tvdb_idx",1);
+    f = getUrl(url,"tvdb_search",1);
 
     if (f != "") {
         seriesStart="<"seriesTag">";
@@ -2906,7 +2911,7 @@ function filter_search_results(url,title,seriesTag,nameTag,idTag,requiredTagName
 
                 currentName = info["/"seriesTag"/"nameTag];
 
-                currentId = info["/"seriesTag"/"idTag"];
+                currentId = info["/"seriesTag"/"idTag];
 
                 add=1;
                 for( i in requiredTagNames ) {
@@ -2945,24 +2950,29 @@ i,c) {
 
 # IN imdb id tt0000000
 # RETURN tvdb id
-function searchTvByImdbId(id,\
+function searchTvByImdbId(idx,id,\
 url,id2) {
+    # If site does not have IMDB ids look for the Creator and other attributes to help target the correct page.
 
     if (id) {
-        if(g_tv_plugin == "TVDB") {
+        if(g_tv_plugin == "THETVDB") {
             url = "http://thetvdb.com/index.php?imdb_id="id"&order=translation&searching=Search&tab=advancedsearch";
             id2 = scanPageForMatch(url,"[&?]id=[0-9]+[&\"]",1);
             if (id2 != "" ) {
                 id2=substr(id2,4,length(id2)-4);
-                DEBUG("imdb id "id" => tvdb id "id2);
-            } else {
-                DEBUG("imdb id "id" not found in tvdb");
             }
-        } else {
-          # If no IMDB links look for the Creator and other attributes to help target the correct page.
+        } else if(g_tv_plugin == "TVRAGE") {
+            if (g_creator[idx] != "") {
+                url=gTitle[idx] "+\"" url_encode(g_director[idx])"\"+site:tvrage.com intitle:\"Television series\" intitle:summary inurl:shows";
+                id2 = scanPageForMatch(search_url(g_link_search_engines,url,10),"/id-[0-9]+",0);
+                if (id2 != "" ) {
+                    id2=substr(id2,5);
+                }
+            }
           # eg title creator 
           # lost "J.J.Abrams" site:tvrage.com intitle:"Television series" intitle:summary inurl:shows
         }
+        DEBUG("imdb id "id" =>  "g_tv_plugin"["id2"]");
     }
     return id2;
 }
@@ -2972,7 +2982,7 @@ tvdbid,tvDbSeriesUrl,imdb_id) {
 
     if (gExternalSourceUrl[idx]) {
         imdb_id = extractImdbId(gExternalSourceUrl[idx]);
-        tvdbid = searchTvByImdbId(imdb_id);
+        tvdbid = searchTvByImdbId(idx,imdb_id);
     }
     if (tvdbid == "") {
         tvdbid = search1TvId(idx,title);
@@ -2987,9 +2997,9 @@ tvdbid,tvDbSeriesUrl,imdb_id) {
 
 function getTvSeriesUrl(tvdbid) {
     if (tvdbid != "") {
-        if (g_tv_plugin == "TVDB") {
+        if (g_tv_plugin == "THETVDB") {
             return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/en.xml";
-        } else if (g_tv_plugin == "RAGE") {
+        } else if (g_tv_plugin == "TVRAGE") {
             return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
         }
     }
@@ -3648,12 +3658,12 @@ f,iurl,start,nextStart,matchList,bestUrl,x,html) {
 function get_episode_url(seriesUrl,season,episode,\
 episodeUrl ) {
     episodeUrl = seriesUrl;
-    if (g_tv_plugin == "TVDB") {
+    if (g_tv_plugin == "THETVDB") {
         #Note episode may be 23,24 so convert to number.
         if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",episodeUrl)) {
             return episodeUrl;
         }
-    } else if (g_tv_plugin == "RAGE") {
+    } else if (g_tv_plugin == "TVRAGE") {
         #same url
         return episodeUrl;
     }
@@ -3663,11 +3673,17 @@ episodeUrl ) {
 #Get eposide info by changing base url - this should really use the id
 #but no time to refactor calling code at the moment.
 function get_episode_xml(seriesUrl,season,episode,episodeInfo,\
-episodeUrl) {
+episodeUrl,filter) {
     delete episodeInfo;
     episodeUrl = get_episode_url(seriesUrl,season,episode);
     if (episodeUrl != "") {
-        fetchXML(seriesUrl,"tvinfo-episode",episodeInfo);
+        if (g_tv_plugin == "THETVDB") {
+            fetchXML(seriesUrl,"tvinfo-episode",episodeInfo);
+        } else if (g_tv_plugin == "TVRAGE" ) {
+            filter["/episode/seasonnum"] = season;
+            filter["/episode/epnum"] = episode;
+            fetchXMLSegment(seriesUrl,"tvinfo-episode","episode",filter,episodeInfo);
+        }
         dump(0,"episode-xml",episodeInfo);
     } else {
         INFO("cant determine episode url from "seriesUrl);
@@ -3689,9 +3705,9 @@ function get_tv_series_info(idx,tvDbSeriesUrl) {
     } 
     scrape_set(idx,g_tv_plugin".season");
 
-    if (g_tv_plugin == "TVDB") {
+    if (g_tv_plugin == "THETVDB") {
         return get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
-    } else if (g_tv_plugin == "RAGE") {
+    } else if (g_tv_plugin == "TVRAGE") {
         return get_tv_series_info_rage(idx,tvDbSeriesUrl);
     }
     return "";
@@ -3713,7 +3729,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
 
     if (g_episode[idx] ~ "^[0-9,]+$" ) {
 
-        get_episode_xml_tvdb(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo);
+        get_episode_xml(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo);
 
     }
 
@@ -3771,87 +3787,101 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
-season,f,line,url,xml,fanart_url) {
+xml,filter) {
 
-    season = g_season[idx];
-    url = "";
-    f = getUrl(bannerApiUrl,"banners",1);
-    if (f != "" && (url=="" || fanart_url == "" )) {
+    delete filter;
+    filter["/Banner/Language"] == language;
+    filter["/Banner/BannerType"] == "season";
+    filter["/Banner/Season"] == g_season[idx];
+    if (fetchXMLSegment(bannerApiUrl,"banners","Banner",filter,xml) ) {
+        g_poster[idx] = tvDbImageUrl(xml["/Banner/BannerPath"]);
+        DEBUG("Season URL = "g_poster[idx]);
+    }
+
+    delete filter;
+    filter["/Banner/Language"] == language;
+    filter["/Banner/BannerType"] == "fanart";
+    if (fetchXMLSegment(bannerApiUrl,"banners","Banner",filter,xml) ) {
+        g_fanart[idx] = tvDbImageUrl(xml["/Banner/BannerPath"]);
+        DEBUG("Fanart URL = "g_fanart[idx]);
+    }
+}
+
+function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
+seriesInfo,episodeInfo,filter) {
+
+    DEBUG("get_tv_series_info_rage" tvDbSeriesUrl);
+    delete filter;
+
+    if (fetchXMLSegment(tvDbSeriesUrl,"tvinfo-episode","Show",filter,seriesInfo)) {
+        adjustTitle(idx,seriesInfo["/Show/name"],g_tv_plugin);
+        g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
+    }
+
+    #TODO Scrape page at "http://www.tvrage.com/shows/id-2445/" for Creator , plot 
+
+    filter["/episode/seasonnum"] = g_season[idx];
+    filter["/episode/epnum"] = g_episode[idx];
+
+    if (fetchXMLSegment(tvDbSeriesUrl,"tvinfo-episode","episode",filter,seriesInfo)) {
+        gEpTitle[idx]=episodeInfo["/episode/title"];
+        gAirDate[idx]=formatDate(episodeInfo["/episode/airdate"]);
+    }
+
+    #TODO Scrape page at http://www.tvrage.com/24/episodes/597/ for episode plot
+
+    #TODO Craft imdb search using producer and title and year.
+
+    return ""; #no imdb link
+}
+
+
+function fetchXMLSegment(url,filelabel,tag,tagfilters,xmlout,\
+f,line,start_tag,end_tag,found,t) {
+
+   delete xmlout;
+   found=0;
+
+   start_tag="<"tag">";
+   end_tag="</"tag">";
+
+   f = getUrl(url,filelabel,1);
+    if (f != "") {
+        FS="\n";
+
         while((getline line < f) > 0 ) {
-
-            if (index(line,"<Banner>") ) {
-                delete xml;
+            if (index(line,start_tag) > 0) {
+                delete xmlout;
             }
 
-            parseXML(line,xml);
+            parseXML(line,xmlout);
 
-            if (index(line,"</Banner>") ) {
-
-                if (xml["/Banner/Language"] == language ) {
-                    if (url == "" &&  xml["/Banner/BannerType"] == "season" && xml["/Banner/Season"]+0 == season+0 ) {
-                        url = tvDbImageUrl(xml["/Banner/BannerPath"]);
-                        DEBUG("Season URL = "url);
-                    }
-                    if (fanart_url == "" &&  xml["/Banner/BannerType"] == "fanart") {
-                        fanart_url = tvDbImageUrl(xml["/Banner/BannerPath"]);
-                        DEBUG("Season URL = "url);
+            if (index(line,end_tag) > 0) {
+                found=1;
+                for( t in tagfilters) {
+                    if (tagfilters[t] ~ "^[0-9]+$" ) {
+                        if (xmlout[t] - tagfilters[t] != 0) {
+                            DEBUG("Filter block "xmlout[t]" != "tagfilters[t]);
+                            found=0;break;
+                        }
+                    } else if (xmlout[t] != tagfilters[t] ) {
+                        DEBUG("Filter block \""xmlout[t]"\" != \""tagfilters[t]"\"");
+                        found=0;break;
                     }
                 }
-                delete xml;
+
+                if (found) {
+                    DEBUG("Filter passed");
+                    break;
+                }
+
+                delete xmlout;
             }
 
         }
         close(f);
     }
-    DEBUG("Season poster = "url);
-    g_poster[idx]=url;
-    DEBUG("Fanart banner = "fanart_url);
-    g_fanart[idx]=fanart_url;
-}
-
-function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,f,line,imdbLink) {
-
-   f = getUrl(url,"tvdb_idx",1);
-    if (f != "") {
-        FS="\n";
-        while((getline line < f) > 0 ) {
-            parseXML(line,seriesInfo);
-            if (index(line,"<Episodelist>") > 0) {
-                break;
-            }
-        }
-        adjustTitle(idx,seriesInfo["/Show/name"],g_tv_plugin);
-        g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
-
-        while((getline line < f) > 0 ) {
-            if (index(line,"<episode>") > 0) {
-                delete episodeInfo;
-            } else {
-
-                parseXML(line,episodeInfo);
-
-                if (index(line,"</episode>") > 0) {
-                    if ("/episode/epnum" in episodeInfo) {
-                        if index(episodeInfo["/episode/seasonnum"] - g_season[idx] == 0 ) {
-                            if (episodeInfo["/episode/epnum"] - g_episode[idx] == 0 ) {
-                                gEpTitle[idx]=episodeInfo["/episode/title"];
-                                gAirDate[idx]=formatDate(episodeInfo["/episode/airdate"]);
-                                break;
-                            }
-                        }
-                    }
-
-                }
-                delete episodeInfo;
-            }
-
-        }
-        close(f);
-
- 
-    #No simple way to get to imdb from here - so imdbLink is blank?
-    return imdbLink;
+    return found;
 }
 
 # returns 1 if title adjusted or is the same.
@@ -3867,8 +3897,8 @@ function adjustTitle(idx,newTitle,source) {
         gTitlePriority["epguides"]=2;
         gTitlePriority["imdb_aka"]=3;
         gTitlePriority["thetvdb"]=4;
-        gTitlePriority["TVDB"]=4;
-        gTitlePriority["RAGE"]=4;
+        gTitlePriority["THETVDB"]=4;
+        gTitlePriority["TVRAGE"]=4;
     }
 
     if (!(source in gTitlePriority)) {
@@ -4319,15 +4349,6 @@ function download_image(field_id,url,idx,\
     # catalog_poster_location = internal [ the default]
 #    with_media_path = local_poster_path(idx,1);
 
-    # Local posters are usualy not very good and Oversight can dynamically select these posters 
-    # anyway. So we wont bother to copy them anymore, but rather fetch high quality poster from 
-    # the internet.
-#    if (hasContent(with_media_path) ) {
-#
-#        INFO("Using local poster "with_media_path" - superceeds internal poster");
-#        copy_file=1;
-#    } 
-
     #We will possibly be updating or fetching the poster..
 
     DEBUG("Looking for new poster...");
@@ -4344,72 +4365,62 @@ function download_image(field_id,url,idx,\
     DEBUG("poster_ref = ["poster_ref"]");
     DEBUG("new poster url = "url);
 
-#    if(copy_file) {
-#
-#        #Copy local file to internal location
-#        preparePath(internal_path);
-#        system("cp "quoteFile(with_media_path)" "quoteFile(internal_path));
-#        g_already_fetched_poster[internal_path] = 1;
-#
-#    } else {
+    get_it = 0;
 
-        get_it = 0;
+    #Get the poster if we havent fetched it already.
+    havePoster = hasContent(internal_path);
 
-        #Get the poster if we havent fetched it already.
-        havePoster = hasContent(internal_path);
-
-        if (g_settings["catalog_fetch_posters"] == "no") {
-            INFO("catalog_fetch_posters disabled");
+    if (g_settings["catalog_fetch_posters"] == "no") {
+        INFO("catalog_fetch_posters disabled");
+    } else {
+        if (!havePoster) {
+            get_it = 1;
+        } else if (UPDATE_POSTERS == 1 && !g_already_fetched_poster[internal_path]) {
+            get_it = 1;
         } else {
-            if (!havePoster) {
-                get_it = 1;
-            } else if (UPDATE_POSTERS == 1 && !g_already_fetched_poster[internal_path]) {
-                get_it = 1;
-            } else {
-                INFO("Already got "internal_path);
-            }
+            INFO("Already got "internal_path);
+        }
+    }
+
+    if (get_it && !(internal_path in g_image_requested) ) {
+
+        g_image_requested[internal_path]=1;
+
+        INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
+
+        rm(internal_path,1);
+
+        #create the folder.
+        preparePath(internal_path);
+
+        split(url,urls,"\t");
+        url=urls[1];
+        referer=urls[2];
+
+        wget_args=" -q -O "quoteFile(internal_path);
+
+        DEBUG("Poster url = "url);
+        if (referer == "" ) {
+            referer = get_referer(url);
+        }
+        if (referer != "" ) {
+            DEBUG("Referer = "referer);
+            wget_args = wget_args " --referer=\""referer"\" ";
+        }
+        wget_args = wget_args " -U \""g_user_agent"\" ";
+
+        g_already_fetched_poster[internal_path] = 1;
+
+        # Script to fetch poster and create sd and hd versions
+        if (field_id == POSTER) {
+            script_arg="poster";
+        } else {
+            script_arg="fanart";
         }
 
-        if (get_it && !(internal_path in g_image_requested) ) {
+        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteFile(url)" "quoteFile(internal_path)" "wget_args" &");
+    }
 
-            g_image_requested[internal_path]=1;
-
-            INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
-
-            rm(internal_path,1);
-
-            #create the folder.
-            preparePath(internal_path);
-
-            split(url,urls,"\t");
-            url=urls[1];
-            referer=urls[2];
-
-            wget_args=" -q -O "quoteFile(internal_path);
-
-            DEBUG("Poster url = "url);
-            if (referer == "" ) {
-                referer = get_referer(url);
-            }
-            if (referer != "" ) {
-                DEBUG("Referer = "referer);
-                wget_args = wget_args " --referer=\""referer"\" ";
-            }
-            wget_args = wget_args " -U \""g_user_agent"\" ";
-
-            g_already_fetched_poster[internal_path] = 1;
-
-            # Script to fetch poster and create sd and hd versions
-            if (field_id == POSTER) {
-                script_arg="poster";
-            } else {
-                script_arg="fanart";
-            }
-
-            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteFile(url)" "quoteFile(internal_path)" "wget_args" &");
-        }
-
-#    }
     return poster_ref;
 }
 
@@ -4647,7 +4658,7 @@ title,y,poster_imdb_url) {
             }
 
             if (g_creator[idx] == "" && index(line,"Creators:")) {
-                g_creator[idx] = scrapeIMDNextPersonName(f);
+                g_creator[idx] = scrapeIMDBNextPersonName(f);
             }
 
             if (g_plot[idx] == "" && index(line,"Plot:")) {

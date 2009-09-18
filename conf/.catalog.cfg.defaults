@@ -83,4 +83,6 @@ catalog_movie_search_order3="IMDBLINKS,ONLINE_NFO,IMDBFIRST"
 catalog_movie_search_regex4="."
 catalog_movie_search_order4="IMDB,IMDBLINKS,ONLINE_NFO"
 
+catalog_tv_plugin="TVDB"
+
 catalog_config_version=1

@@ -1,7 +1,7 @@
 #summary GUI Performance Information
 #sidebar TableOfContents
 
-The oversight cgi script is written in C which makes it rn faster than awk or php sbased programs. This is important for dynamic pages on the NMT platform, which is relatively slow. Because it is written in C, it can do quite a lot of dynamic operations whilst drawing the HTML page.
+The oversight cgi script is written in C which helps it run faster than similar awk or php based programs. This is important for dynamic pages on the NMT platform, which is relatively slow. Because it is written in C, it can do quite a lot of dynamic operations whilst drawing the HTML page.
 
 Currently it renders a menu page to a PC browser in about 1 second for a database of about 500 files. TV/Gaya takes longer because the NMT is serving the page and drawing it.
 

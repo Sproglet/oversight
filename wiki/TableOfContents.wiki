@@ -10,7 +10,7 @@ Everyone
   * PruningFiles
   * KnownIssues
   * IncrementalScans
-  * OversightFAQ
+  * OversightFaq
 
 Advanced
 
@@ -26,4 +26,4 @@ Obsessed
 
   * OversightHistory
   * ComingSoon
-  * GUIPerformance
+  * GuiPerformance

@@ -10,7 +10,7 @@ Everyone
   * PruningFiles
   * KnownIssues
   * IncrementalScans
-  * OversightFaq
+  * FrequentlyAskedQuestions
 
 Advanced
 

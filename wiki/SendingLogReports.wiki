@@ -41,6 +41,6 @@ To get the page that is sent to gaya/tv, you must first edit oversight.cgi with 
 'rm -f -- "$html" "$err" by putting a '#' in the first column.
 
 Then load the page up again. Now in /oversight/tmp you should have files
-1234.html 1234.err - send the newest ones.
+1234.html 1234.err - send the newest ones. (The number will change each time)
 
-If the issue is with the play button on te remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 
+If the issue is with the play button on the remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 

@@ -22,7 +22,7 @@ To send scan logs:
 If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
 Eg if scanning always fails on a particular file name, then that information along with the filename and the logs is enough.
 
-= GUI Logs - send these if odd things happen in the user interface=
+= GUI Logs - send these if odd things happen in the user interface using the PC browser =
 
 Send 'gui' logs if you think files have scanned OK but you are getting odd things happen in the user interface.
 
@@ -33,3 +33,14 @@ To send GUI logs:
   # if using Internet Explorer or Firefox, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
   # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
+
+
+= TV Logs - send these if odd things happen only via the TV interface - not PC=
+
+To get the page that is sent to gaya/tv, you must first edit oversight.cgi with a [http://www.networkedmediatank.com/wiki/index.php/Unix_Friendly_Text_Editor unix friendly editor], and comment out the line
+'rm -f -- "$html" "$err" by putting a '#' in the first column.
+
+Then load the page up again. Now in /oversight/tmp you should have files
+1234.html 1234.err - send the newest ones.
+
+If the issue is with the play button on te remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 

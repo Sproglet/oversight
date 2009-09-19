@@ -294,7 +294,9 @@ i,n,v,option) {
             #gsub(/ *[,] */,",",v);
 
             if (n in g_settings) {
-                INFO("Overiding "n" -> "v);
+                if (g_settings[n] != v ) {
+                    INFO("Overriding "n": "g_settings[n]" -> "v);
+                }
             } else {
                 g_settings_orig[n]=v;
             }
@@ -625,7 +627,6 @@ END{
         }
     }
 
-
     for(f in FOLDER_ARR) {
         if (FOLDER_ARR[f] ~ /^[^\/.]/ ) {
             # Assume it is a share
@@ -836,6 +837,7 @@ function set_db_fields() {
     RATING=db_field("_r","Rating","rating");
     CERT=db_field("_R","CERT","mpaa"); #Not standard?
     PLOT=db_field("_P","Plot","plot");
+    EPPLOT=db_field("_ep","Plot","plot");
     URL=db_field("_U","URL","url");
     POSTER=db_field("_J","Poster","thumb");
     FANART=db_field("_fa","Fanart","fanart");
@@ -1846,36 +1848,37 @@ function extractEpisodeByDates(idx,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result) {
 
     result=0;
-    if (!extractDate(line,date,nonDate)) {
-        return 0;
-    }
-    rest=nonDate[2];
-    title = clean_title(nonDate[1]);
+    DEBUG("extractEpisodeByDates "line);
+    if (extractDate(line,date,nonDate)) {
+        rest=nonDate[2];
+        title = clean_title(nonDate[1]);
 
-    details[TITLE]=title;
-    y = date[1];
-    m = date[2];
-    d = date[3];
-    INFO("Found Date y="y" m="m" d="d);
-    #search for the showname 
-    tvdbid = search1TvId(idx,title);
+        details[TITLE]=title;
+        y = date[1];
+        m = date[2];
+        d = date[3];
+        INFO("Found Date y="y" m="m" d="d);
+        #search for the showname 
+        tvdbid = search1TvId(idx,title);
 
-    if (tvdbid == "") return 0;
-    get_tv_series_info(idx,get_tv_series_api_url(tvdbid));
+        if (tvdbid == "") return 0;
+        get_tv_series_info(idx,get_tv_series_api_url(tvdbid));
 
-    if (g_tv_plugin == "THETVDB" ) {
-        result = extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details);
-    } else if (g_tv_plugin == "TVRAGE" ) {
-        result = extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details);
-    } else {
-        plugin_error();
+        if (g_tv_plugin == "THETVDB" ) {
+            result = extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details);
+        } else if (g_tv_plugin == "TVRAGE" ) {
+            result = extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details);
+        } else {
+            plugin_error();
+        }
+        if (result == 0) {
+            details[SEASON]=y;
+            details[EPISODE]=sprintf("%02d%02d",m,d);
+            sub(/\....$/,"",rest);
+            details[ADDITIONAL_INFO]=clean_title(rest);
+        }
     }
-    if (result == 0) {
-        details[SEASON]=y;
-        details[EPISODE]=sprintf("%02d%02d",m,d);
-        sub(/\....$/,"",rest);
-        details[ADDITIONAL_INFO]=clean_title(rest);
-    }
+    DEBUG("end extractEpisodeByDates = "result);
     return result;
 }
 
@@ -1911,12 +1914,12 @@ tvdbid,episodeInfo,d,m,y,match_date,result,filter) {
     match_date=sprintf("%4d-%02d-%02d",y,m,d);
 
 
-    filter["/episode/airdate"] = match_date;
-    if (fetchXMLSegment(get_tv_series_api_url(tvdbid),"bydate","episode",filter,episodeInfo)) {
+    filter["/Show/Episodelist/Season/episode/airdate"] = match_date;
+    if (fetch_xml_single_child(get_tv_series_api_url(tvdbid),"bydate","/Show/Episodelist/Season/episode",filter,episodeInfo)) {
         gAirDate[idx]=formatDate(match_date);
-        details[SEASON]=episodeInfo["/episode/seasonnum"];
-        details[EPISODE]=episodeInfo["/episode/epnum"];
-        details[ADDITIONAL_INFO]=episodeInfo["/episode/title"];
+        details[SEASON]=episodeInfo["/Show/Episodelist/Season/episode/seasonnum"];
+        details[EPISODE]=episodeInfo["/Show/Episodelist/Season/episode/epnum"];
+        details[ADDITIONAL_INFO]=episodeInfo["/Show/Episodelist/Season/episode/title"];
         result=1;
     }
     return result;
@@ -2254,11 +2257,6 @@ date,nonDate,premier,url) {
     if (g_imdb[idx] == "") {
     
         if (extractDate(g_premier[idx],date,nonDate)) {
-            DEBUG("["date[2]"]");
-            DEBUG(g_month_en[0+date[2]]);
-            for(xx in g_month_en) {
-                DEBUG("["xx"]=["g_month_en[xx]"]");
-            }
             premier = sprintf("\"%d %s %d\"",date[3],g_month_en[0+date[2]],date[1]);
             DEBUG("premier="premier);
         }
@@ -2307,6 +2305,7 @@ function clean_globals() {
     delete gAirDate;
     delete gTvCom;
     delete gEpTitle;
+    delete g_epplot;
     delete g_plot;
     delete g_fanart;
     delete gCertRating;
@@ -2749,7 +2748,7 @@ id,xml) {
             if (g_tv_plugin == "THETVDB") {
                 ageHash[id] = xml["/Data/Episode/FirstAired"];
             } else if (g_tv_plugin == "TVRAGE" ) {
-                ageHash[id] = xml["/episode/airdate"];
+                ageHash[id] = xml["/Show/Episodelist/Season/episode/airdate"];
             } else {
                 plugin_error();
             }
@@ -3040,7 +3039,8 @@ function get_tv_series_api_url(tvdbid) {
 #Load an xnl file into array - note duplicate elements are clobbered.
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
 function fetchXML(url,label,xml,\
-f,line) {
+f,line,result) {
+    result = 0;
     f=getUrl(url,label,1);
     if (f != "" ) {
         FS="\n";
@@ -3048,12 +3048,17 @@ f,line) {
             parseXML(line,xml);
         }
         close(f);
+        result = 1;
     }
+    return result;
 }
 
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
-function parseXML(line,info,\
+#sep is used if merging repeated element values together
+function parseXML(line,info,sep,\
 previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a) {
+
+    if (sep == "") sep = "<";
 
     # Carriage returns mess up parsing
     gsub(/\r/,"",line);
@@ -3061,6 +3066,12 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
 
 
     #break at each tag/endtag
+    # <tag1>text1</tag1>midtext<tag2>text2</tag2> becomes
+    # tag1>text1
+    # /tag1>midtext
+    # tag2>text2
+    # /tag2>
+
     split(line,lines,"<");
 
     previousTag = info["@LAST"];
@@ -3075,23 +3086,38 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
 
     for(i = start ; i in lines ; i++ ) {
 
+        # lines[i] = tag>text
+
         previousTag = "";
         #split <tag>text  [ or </tag>parenttext ]
         split(lines[i],parts,">");
+
+        # tag1 text1 OR
+        # /tag1 midtext OR
+        # tag2 text2 OR
+        # /tag2 
+
         tag = parts[1];
         sub(/ .*/,"",tag); #Remove attributes Possible bug if space before element name
         text = parts[2];
 
-        if (tag ~ /^\/?[A-Za-z0-9_]+$/ ) {
+        if (tag ~ /^\/[A-Za-z0-9_]+$/ ) {
 
-            if ( substr(tag,1,1) == "/" ) {
-                #if end tag, remove it from currentTag
-                previousTag = currentTag;
-                sub(tag"$","",currentTag);
+            # end tag
+            #if end tag, remove it from currentTag
+            previousTag = currentTag;
+            sub(tag"$","",currentTag);
 
-            } else {
-                previousTag = currentTag;
-                currentTag = currentTag "/" tag;
+
+        } else if (tag ~ /^[A-Za-z0-9_]+$/ ) {
+
+            # start tag
+            previousTag = currentTag;
+            currentTag = currentTag "/" tag;
+
+            #If merging element values add a sepearator
+            if (info[currentTag] != "") {
+                info[currentTag] = info[currentTag] sep;
             }
         } else {
 
@@ -3117,10 +3143,6 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
             }
 
         }
-
-#        if (tag != "" && text != "" ) {
-#            DEBUG("<"currentTag">["info[currentTag]"]");
-#        }
 
     }
     info["@CURRENT"] = currentTag;
@@ -3713,16 +3735,16 @@ episodeUrl ) {
 #Get eposide info by changing base url - this should really use the id
 #but no time to refactor calling code at the moment.
 function get_episode_xml(seriesUrl,season,episode,episodeInfo,\
-episodeUrl,filter) {
+episodeUrl,filter,result) {
     delete episodeInfo;
     episodeUrl = get_episode_url(seriesUrl,season,episode);
     if (episodeUrl != "") {
         if (g_tv_plugin == "THETVDB") {
-            fetchXML(seriesUrl,"tvinfo-episode",episodeInfo);
+            result = fetchXML(episodeUrl,g_tv_plugin"-episode",episodeInfo);
         } else if (g_tv_plugin == "TVRAGE" ) {
-            filter["/episode/seasonnum"] = season;
-            filter["/episode/epnum"] = episode;
-            fetchXMLSegment(episodeUrl,"tvinfo-episode","episode",filter,episodeInfo);
+            filter["/Show/Episodelist/Season#no"] = season;
+            filter["/Show/Episodelist/Season/episode/seasonnum"] = episode;
+            result = fetch_xml_single_child(episodeUrl,g_tv_plugin"-episode","/Show/Episodelist/Season/episode",filter,episodeInfo);
         } else {
             plugin_error();
         }
@@ -3730,6 +3752,8 @@ episodeUrl,filter) {
     } else {
         INFO("cant determine episode url from "seriesUrl);
     }
+    DEBUG("get_episode_xml="result);
+    return result;
 }
 
 function scrape_check(idx,site) {
@@ -3742,18 +3766,19 @@ function scrape_set(idx,site) {
 
 function get_tv_series_info(idx,tvDbSeriesUrl) {
 
-    if (scrape_check(idx,g_tv_plugin".season") ) {
-        return g_imdb[idx];
-    } 
-    scrape_set(idx,g_tv_plugin".season");
+    DEBUG("get_tv_series_info [" tvDbSeriesUrl "]");
+    if (!scrape_check(idx,g_tv_plugin".tv") ) {
+        scrape_set(idx,g_tv_plugin".tv");
 
-    if (g_tv_plugin == "THETVDB") {
-        get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
-    } else if (g_tv_plugin == "TVRAGE") {
-        get_tv_series_info_rage(idx,tvDbSeriesUrl);
-    } else {
-        plugin_error();
-    }
+        if (g_tv_plugin == "THETVDB") {
+            get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
+        } else if (g_tv_plugin == "TVRAGE") {
+            get_tv_series_info_rage(idx,tvDbSeriesUrl);
+        } else {
+            plugin_error();
+        }
+    } 
+    DEBUG("end get_tv_series_info");
 }
 
 # Scrape theTvDb series page, populate arrays and return imdb link
@@ -3784,6 +3809,7 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
     if ("/Data/Episode/id" in episodeInfo) {
         gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
         gEpTitle[idx]=episodeInfo["/Data/Episode/EpisodeName"];
+        g_epplot[idx] = seriesInfo["/Data/Episode/Overview"];
     }
 
     if ("/Data/Series/id" in seriesInfo) {
@@ -3833,59 +3859,78 @@ function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
 xml,filter) {
 
     delete filter;
-    filter["/Banner/Language"] == language;
-    filter["/Banner/BannerType"] == "season";
-    filter["/Banner/Season"] == g_season[idx];
-    if (fetchXMLSegment(bannerApiUrl,"banners","Banner",filter,xml) ) {
-        g_poster[idx] = tvDbImageUrl(xml["/Banner/BannerPath"]);
+    filter["/Banners/Banner/Language"] = language;
+    filter["/Banners/Banner/BannerType"] = "season";
+    filter["/Banners/Banner/Season"] = g_season[idx];
+    if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
+        g_poster[idx] = tvDbImageUrl(xml["/Banners/Banner/BannerPath"]);
         DEBUG("Season URL = "g_poster[idx]);
     }
 
     delete filter;
-    filter["/Banner/Language"] == language;
-    filter["/Banner/BannerType"] == "fanart";
-    if (fetchXMLSegment(bannerApiUrl,"banners","Banner",filter,xml) ) {
-        g_fanart[idx] = tvDbImageUrl(xml["/Banner/BannerPath"]);
+    filter["/Banners/Banner/Language"] = language;
+    filter["/Banners/Banner/BannerType"] = "fanart";
+    if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
+        g_fanart[idx] = tvDbImageUrl(xml["/Banners/Banner/BannerPath"]);
         DEBUG("Fanart URL = "g_fanart[idx]);
     }
 }
 
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,sid,eid,url) {
+seriesInfo,episodeInfo,filter,sid,url) {
 
-    DEBUG("get_tv_series_info_rage" tvDbSeriesUrl);
     delete filter;
 
-    if (fetchXMLSegment(tvDbSeriesUrl,"tvinfo-episode","Show",filter,seriesInfo)) {
+    if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo)) {
         adjustTitle(idx,seriesInfo["/Show/name"],g_tv_plugin);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         sid=seriesInfo["/Show/showid"];
-
         g_premier[idx]=formatDate(seriesInfo["/Show/started"]);
+    } else {
+        WARNING("Error getting series xml");
     }
 
     #TODO Scrape page at "http://www.tvrage.com/shows/id-2445/" for Creator , plot 
-
-    filter["/episode/seasonnum"] = g_season[idx];
-    filter["/episode/epnum"] = g_episode[idx];
-
-    if (fetchXMLSegment(tvDbSeriesUrl,"tvinfo-episode","episode",filter,seriesInfo)) {
-        gEpTitle[idx]=episodeInfo["/episode/title"];
-        gAirDate[idx]=formatDate(episodeInfo["/episode/airdate"]);
-        eid=episodeInfo["/episode/link"];
-        url=episodeInfo["/episode/link"];
-        g_plot[idx] = scrape_one_item("tvrageplot",url,"Episode Summary",0,"<a ",0);
+    if (get_episode_xml(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
+        gEpTitle[idx]=episodeInfo["/Show/Episodelist/Season/episode/title"];
+        gAirDate[idx]=formatDate(episodeInfo["/Show/Episodelist/Season/episode/airdate"]);
+        url=episodeInfo["/Show/Episodelist/Season/episode/link"];
+        g_epplot[idx] = scrape_one_item("tvrageplot",url,">Episode Summary</h",0,"<a ",0);
+    } else {
+        WARNING("Error getting episode xml");
     }
 }
 
-function fetchXMLSegment(url,filelabel,tag,tagfilters,xmlout,\
-f,line,start_tag,end_tag,found,t) {
+function clean_xml_path(xmlpath,xml,\
+t) {
+    #delete the current child
+    for(t in xml) {
+        if (index(t,xmlpath) == 1) {
+            delete xml[t];
+        }
+    }
+    # TODO delete this bit - just checking self modifying loops work ok
+    for(t in xml) { if (index(t,xmlpath) == 1) { ERROR("Bad loop"); exit; } }
+}
+
+function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
+f,line,start_tag,end_tag,found,t,last_tag) {
+
 
    delete xmlout;
    found=0;
 
-   start_tag="<"tag">";
-   end_tag="</"tag">";
+   last_tag = xmlpath;
+   sub(/.*\//,"",last_tag);
+
+   start_tag="<"last_tag">";
+   end_tag="</"last_tag">";
+
+   DEBUG("fetch_xml_single_child ["url"] path = "xmlpath" tag="last_tag);
+
+   for(t in tagfilters) {
+       DEBUG("filter ["t"]=["tagfilters[t]"]");
+   }
 
    f = getUrl(url,filelabel,1);
     if (f != "") {
@@ -3893,14 +3938,14 @@ f,line,start_tag,end_tag,found,t) {
 
         while((getline line < f) > 0 ) {
             if (index(line,start_tag) > 0) {
-                delete xmlout;
+                clean_xml_path(xmlpath,xmlout);
             }
 
             parseXML(line,xmlout);
 
             if (index(line,end_tag) > 0) {
                 found=1;
-                for( t in tagfilters) {
+                for(t in tagfilters) {
                     if (tagfilters[t] ~ "^[0-9]+$" ) {
                         if (xmlout[t] - tagfilters[t] != 0) {
                             DEBUG("Filter block "xmlout[t]" != "tagfilters[t]);
@@ -3917,12 +3962,13 @@ f,line,start_tag,end_tag,found,t) {
                     break;
                 }
 
-                delete xmlout;
+                clean_xml_path(xmlpath,xmlout);
             }
 
         }
         close(f);
     }
+    DEBUG("fetch_xml_single_child ["url"]="found);
     return found;
 }
 
@@ -4779,10 +4825,12 @@ l,cert,c) {
 
 function scrape_one_item(label,url,start_text,start_include,end_text,end_include,\
 f,line,out,found) {
+    DEBUG("scrape_one_item "label" start at ["start_text"]");
     f=getUrl(url,label,0);
     if (f) {
         while((getline line < f) > 0 ) {
             if (index(line,start_text)) {
+                DEBUG("trip line "line);
                 out = scrape_until(label,f,end_text,end_include);
                 if (start_include) {
                     DEBUG("scrape_one_item line = "line);
@@ -4798,10 +4846,13 @@ f,line,out,found) {
     if (found != 1) {
         ERROR("Cant find ["start_text"] in "label":"url);
     }
+    DEBUG("scrape_one_item "label" out ["out"]");
     return out;
 }
 function scrape_until(label,f,end_text,inclusive,\
 line,out,ending) {
+    ending = 0;
+    INFO("scrape_until "label":end at ["end_text"]");
     while(!ending && (getline line< f) > 0) {
         if (index(line,end_text)) {
             ending=1;
@@ -4810,11 +4861,13 @@ line,out,ending) {
             }
         }
         line = remove_tags(line);
-        #DEBUG("scrape_until :"label"+:"line);
+        if (index(line,"tvrageplot")) {
+            DEBUG("scrape_until "label":+"line);
+        }
         out = out " " line;
     }
     gsub(/ +/," ",out);
-    INFO("scrape_until out:"label"=["out"]");
+    INFO("scrape_until "label":=["out"]");
     return out;
 }
 
@@ -5366,6 +5419,7 @@ row,estimate,nfo) {
     row=row"\t"NFO"\t"nfo;
     row=row"\t"FANART"\t"g_fanart[i];
     row=row"\t"PLOT"\t"g_plot[i];
+    row=row"\t"EPPLOT"\t"g_epplot[i];
     return row;
 }
 

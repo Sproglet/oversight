@@ -20,7 +20,7 @@
                     <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
                     <td align=right>[:RATING_STARS(5):][:RATING:]</td>
                 </tr>
-                <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
+                <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:] id=tvplot>[:PLOT:]</font></td><tr>
             </table>
         </td>
     </tr>

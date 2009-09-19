@@ -28,6 +28,7 @@
 #define DB_FLDID_RATING "_r"
 #define DB_FLDID_CERT "_R"
 #define DB_FLDID_DIRECTOR "_d"
+#define DB_FLDID_EPPLOT "_ep"
 #define DB_FLDID_PLOT "_P"
 #define DB_FLDID_URL "_U"
 #define DB_FLDID_POSTER "_J"

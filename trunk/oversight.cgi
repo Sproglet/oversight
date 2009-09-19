@@ -7,7 +7,7 @@ err=$ROOT/tmp/$$.err
 
 case "$1" in 
     *admin*)
-        chown -R nmt:nmt $ROOT >/dev/null 2>&1  
+        chown nmt:nmt $ROOT/* $ROOT/conf/* >/dev/null 2>&1  
         ;;
 esac
 

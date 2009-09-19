@@ -1,5 +1,8 @@
 Check why Russell Peters Outsource - one black one green
 
+tvrage search - the episode title is not displayed in gui.
+Check index.db first.
+
 =================
 How to get allocine.fr  id..
 

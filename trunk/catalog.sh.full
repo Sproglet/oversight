@@ -580,13 +580,14 @@ END{
 
     split(g_settings["catalog_title_country_list"],gTitleCountries,g_cvs_sep);
 
-    monthHash("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",gMonthConvert);
+    g_months_short="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
+    monthHash(g_months_short,"|",gMonthConvert);
     g_tk="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
     g_tk2="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
 
-    g_months_en="January,February,March,April,May,June,July,August,September,October,November,December";
-    monthHash(g_months_en,gMonthConvert);
-    split(g_month_en,g_month_en,",");
+    g_months_long="January|February|March|April|May|June|July|August|September|October|November|December";
+    monthHash(g_months_long,"|",gMonthConvert);
+    split(g_months_long,g_month_en,"|");
 
 
     if ( g_settings["catalog_tv_file_fmt"] == "" ) RENAME_TV=0;
@@ -773,9 +774,9 @@ function unlock(lock_file) {
     report_status("");
 }
 
-function monthHash(nameList,hash,\
+function monthHash(nameList,sep,hash,\
 names,i) {
-    split(nameList,names,",");
+    split(nameList,names,sep);
     for(i in names) {
         hash[tolower(names[i])] = i+0;
     }
@@ -1777,6 +1778,8 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
     s="[-_. /]";
     m1or2 = "(" m1 "|" m2 ")";
     d1or2 = "(" d1 "|" d2 ")";
+    mword="[A-Za-z]+";
+    #mword=tolower("("g_months_short"|"g_months_long")");
 
     d = m = y = 0;
     if  (match(line,y4 s m1or2 s d1or2)) {
@@ -1794,10 +1797,15 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
         DEBUG("Date Format found dd/mm/yyyy");
         d=1 ; m = 2 ; y=3;
 
-    } else if(match(line,d1or2 s "[A-Za-z]+" s y4)) { #eu
+    } else if(match(line,d1or2 s mword s y4)) { #eu
 
         DEBUG("Date Format found dd Month yyyy");
         d=1 ; m = 2 ; y=3;
+        textMonth = 1;
+
+    } else if(match(line,mword s d1or2 s y4)) { #eu
+        DEBUG("Date Format found Month dd yyyy");
+        m=1 ; d = 2 ; y=3;
         textMonth = 1;
 
     } else {
@@ -1816,17 +1824,21 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
     y = date[y];
 
     date[1]=y;
-    date[2]=tolower(m);
+    date[2]=tolower(trim(m));
     date[3]=d;
 
     if ( textMonth == 1 ) {
+        DEBUG("date[2]="date[2]);
         if (date[2] in gMonthConvert ) {
             date[2] = gMonthConvert[date[2]];
+            DEBUG(m"="date[2]);
         } else {
             return 0;
         }
-
     }
+    date[1] += 0;
+    date[2] += 0;
+    date[3] += 0;
     return 1;
 }
 
@@ -2242,7 +2254,13 @@ date,nonDate,premier,url) {
     if (g_imdb[idx] == "") {
     
         if (extractDate(g_premier[idx],date,nonDate)) {
-            premier = sprintf("\"%d %s %d\"",date[3],g_month_en[date[2]],date[1]);
+            DEBUG("["date[2]"]");
+            DEBUG(g_month_en[0+date[2]]);
+            for(xx in g_month_en) {
+                DEBUG("["xx"]=["g_month_en[xx]"]");
+            }
+            premier = sprintf("\"%d %s %d\"",date[3],g_month_en[0+date[2]],date[1]);
+            DEBUG("premier="premier);
         }
 
         url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "premier;
@@ -2973,7 +2991,7 @@ url,id2,premier,date,nondate) {
             }
         } else if(g_tv_plugin == "TVRAGE") {
             if (extractDate(g_premier[idx],date,nondate)) {
-                premier=sprintf("\"%s %d, %d\"",g_month_en[date[2]],date[3],date[1]);
+                premier=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
             }
             
             url=gTitle[idx] " "premier" site:tvrage.com intitle:\"Television series\" intitle:summary inurl:shows";

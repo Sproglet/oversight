@@ -317,6 +317,9 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                     *offset=&(rowid->eptitle_imdb);
                     *type = FIELD_TYPE_STR;
                 }
+            }else if (name[2] == 'p') { // _ep
+                *offset=&(rowid->episode_plot);
+                *type = FIELD_TYPE_STR;
             }
             break;
         case 'f':

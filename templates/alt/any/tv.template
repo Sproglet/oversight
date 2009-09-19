@@ -6,6 +6,18 @@
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
+        <script type="text/javascript">
+  var title = 1;
+  function show(x)
+  {
+    if (title == 1) title = document.getElementById('tvplot').firstChild;
+    title.nodeValue = x;
+  }
+  function plot() {
+    if (title == 1) title = document.getElementById('tvplot').firstChild;
+    title.nodeValue = '[:$%PLOT%:]';
+  }
+        </script>
     </head>
     [:INCLUDE_TEMPLATE(tv[:$ovs_display_fanart:]):]
 </html>

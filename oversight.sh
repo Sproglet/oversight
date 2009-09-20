@@ -302,7 +302,7 @@ add_watch_cron() {
 
 case "$1" in 
     NEWSCAN)
-        "$APPDIR/catalog.sh" NEWSCAN
+        "$APPDIR/catalog.sh" NEWSCAN GET_POSTERS GET_FANART
 
         if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
             "$APPDIR/bin/torrent.sh" transmission unpak_all
@@ -318,6 +318,7 @@ case "$1" in
         "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
         freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
         add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
+        rm -f "$APPDIR/catalog.status"
         ;;
 
     LISTEN)

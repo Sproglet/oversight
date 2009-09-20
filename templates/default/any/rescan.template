@@ -11,6 +11,7 @@
         <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Oversight Configuration</h1>
 
         <form action="?" enctype="multipart/form-data" method="POST">
+            <input type=hidden name=form value="1">
 
             <center>
             <table>
@@ -27,17 +28,36 @@
             </tr>
             </table>
 
-            <table width=100%>
+            <table>
                 <tr>
-                    <td align=center><input type=submit name=action value="rescan_request"></td>
-                    <td align=center><input type=submit name=action value="Cancel"></td>
+                    <td>
+                        [:CHECKBOX(rescan_opt_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
+                    </td>
+                    <td align=left>
+                        <input type=checkbox name=rescan_opt_GET_POSTERS checked>Get Posters
+                        <input type=checkbox name=rescan_opt_REFRESH_POSTERS>Overwrite Posters
+                        <br>
+                        <input type=checkbox name=rescan_opt_GET_FANART checked>Get Fanart
+                        <input type=checkbox name=rescan_opt_REFRESH_FANART>Overwrite Fanart
+                        <hr>
+                        <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>
+                        <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
+                        <hr>
+                        <input type=radio name=rescan_opt_RESCAN checked>Full Scan<br>
+                        <input type=radio name=rescan_opt_NEWSCAN>New Items Only<br>
+                    </td>
+                </tr>
+                <tr>
+                    <td align=center colspan=2>
+                        <input type=submit name=action value="rescan_request">
+                        <input type=submit name=action value="Cancel">
+                    </td>
                 </tr>
             </table>
             </center>
 
             <input type=hidden name=old_action value="[:$?action:]">
             <input type=hidden name=view value="[:$?view:]">
-            <input type=hidden name=form value="1">
         </form>
     </body>
 </html>

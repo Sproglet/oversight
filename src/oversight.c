@@ -42,8 +42,6 @@ void clear_playlist() {
     truncate(PLAYLIST,0);
 }
 
-void exec_old_cgi(int argc,char **argv);
-
 void cat(char *content,char *file) {
     printf("Content-Type: %s\n\n",content);
     FILE *fp = fopen (file,"r");

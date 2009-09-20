@@ -1,6 +1,7 @@
 #labels Featured
 #sidebar TableOfContents
 
+
 Oversight is a minimalistic Jukebox that runs on the NMT platform, with unique features such as Usenet downloader post processing. 
 
 It is aimed at users that regularly download content to their internal hard drive, and who want to quickly identify and access the most recently downloaded material.
@@ -27,3 +28,7 @@ Its main strengths are
 It's a jukebox for people that just want to watch stuff and dont want to mess about too much with settings.
 
 By default it shows the most recently downloaded content first. When combined with automated nzb downloading this provides an environment that can automatically record series and announce when new content is ready for viewing, much like a PVR. 
+
+
+*Oversight is currently in beta. This means that there is a new version every couple of weeks. I make a best effort at testing but it has a lot of features and to run a comprehensive test suite would take hours. So my current practice is to sanity test, release the changes into the community rapidly, and they can feed back any issues. 
+At present this seems to be working ok, and allows me to spend more time coding than testing.*

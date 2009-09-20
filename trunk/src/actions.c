@@ -10,6 +10,7 @@
 #include "display.h"
 #include "hashtable_loop.h"
 
+#define RESCAN_OPT_PREFIX "rescan_opt_"
 struct hashtable *get_newly_selected_ids_by_source();
 struct hashtable *get_newly_deselected_ids_by_source();
 int count_unchecked();
@@ -47,7 +48,7 @@ void clear_selection() {
     Array *a = array_new(NULL);
     char *k,*v;
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&k,&v) ; ) {
-        if (is_checkbox(k,v)) {
+        if (is_checkbox(k,v) || util_starts_with(k,RESCAN_OPT_PREFIX)) {
             array_add(a,k);
         }
     }
@@ -207,7 +208,7 @@ void send_command(char *source,char *remote_cmd) {
     char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh");
     ovs_asprintf(&cmd,"\"%s\" SAY %s",script,remote_cmd);
 
-    HTML_LOG(1,"send command:%s",cmd);
+    HTML_LOG(0,"send command:%s",cmd);
 
     system(cmd);
 
@@ -254,7 +255,21 @@ void do_actions() {
 
         if (strcmp(action,"rescan_request") == 0) {
 
-            send_command("*","catalog.sh RESCAN UPDATE_POSTERS NOWRITE_NFO");
+            char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");
+            char *k;
+            struct hashtable_itr *itr = hashtable_loop_init(g_query);
+            while (hashtable_loop_more(itr,&k,NULL)) {
+
+                if (util_starts_with(k,RESCAN_OPT_PREFIX)) {
+                    char *tmp;
+                    ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_OPT_PREFIX));
+                    FREE(cmd);
+                    cmd = tmp;
+                }
+            }
+
+            send_command("*",cmd);
+            FREE(cmd);
 
         } else if (strcmp(action,"Save Settings") == 0) {
 

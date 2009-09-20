@@ -224,6 +224,34 @@ char *macro_fn_watched_select(char *template_name,char *call,Array *args,int num
     return result;
 }
 
+// Checkbox list of scan options
+char *macro_fn_checkbox(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    static char *result=NULL;
+    if (!args || args->size < 3 ) {
+        result = "CHECKBOX(htmlname_prefix,checked,htmlsep,values,..,..,)";
+        *free_result = 0;
+    } else {
+
+        int i;
+        char *htmlname=args->array[0];
+        char *checked=args->array[1];
+        char *sep=args->array[2];
+        int first = 1;
+
+        for(i = 3 ; i < args->size ; i++ ) {
+            char *tmp;
+            char *val = args->array[i];
+            if (val && *val) {
+                ovs_asprintf(&tmp,"%s%s<input type=checkbox name=\"%s%s\" %s>%s",
+                    NVL(result),(first==1?"":sep),htmlname,val,checked,val);
+                first = 0;
+                FREE(result);
+                result = tmp;
+            }
+        }
+    }
+    return result;
+}
 char *macro_fn_episode_total(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char result[10]="";
     *free_result=0;
@@ -1374,6 +1402,7 @@ void macro_init() {
         hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
+        hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         //HTML_LOG(1,"end macro init");
     }
 }

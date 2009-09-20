@@ -75,13 +75,15 @@ PERMS() {
 }
 
 # something sometimes changes /tmp permissions so only root can write
-tmp_dir=/tmp
+tmp_root=/tmp/oversight
 if [ -f /mnt/syb8634/VERSION  ] ; then
-    tmp_dir=/share/tmp
-    mkdir -p $tmp_dir
-    PERMS $tmp_dir
-
+    tmp_root=/share/tmp/oversight
 fi
+
+tmp_dir=$tmp_root/$$
+rm -fr "$tmp_dir"
+mkdir -p $tmp_dir
+PERMS $tmp_dir
 
 INDEX_DB="$APPDIR/index.db"
 if [ ! -s "$INDEX_DB" ] ; then
@@ -141,7 +143,9 @@ check_missing_settings
 if [ -z "$*" ] ; then
     cat<<USAGE
     usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [DEBUG] [REBUILD] [NOACTIONS] [RESCAN] [NEWSCAN]
-             [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN] [UPDATE_POSTERS]
+             [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN]
+             [GET_POSTERS] [REFRESH_POSTERS]
+             [GET_FANART] [REFRESH_FANART]
              ..folders..
 ____________________________________________________________________________________________________________________    
 To simply index all files in a folder:
@@ -164,7 +168,7 @@ Other options
     NEWSCAN        - Rescan default paths - new media only
     NOACTIONS      - Do not run any actions and hide Delete actions from overview.
     STDOUT         - Write to stdout (if not present output goes to log file)
-    UPDATE_POSTERS - Fetch new posters for each scanned item.
+    REFRESH_POSTERS - Fetch new posters for each scanned item.
 USAGE
     exit 0
 fi
@@ -323,6 +327,12 @@ BEGIN {
     g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
 
     ELAPSED_TIME=systime();
+    UPDATE_TV=1;
+    UPDATE_MOVIES=1;
+    GET_POSTERS=0;
+    GET_FANART=0;
+    REFRESH_POSTERS=0;
+    REFRESH_FANART=0;
     get_folders_from_args(FOLDER_ARR);
 }
 
@@ -595,37 +605,39 @@ END{
     if ( g_settings["catalog_tv_file_fmt"] == "" ) RENAME_TV=0;
     if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0;
 
-    CAPTURE_PREFIX="'$tmp_dir'/catalog."
+    CAPTURE_PREFIX=tmp_dir"/catalog."
 
     THIS_YEAR=substr(NOW,1,4);
 
     scan_options="-Rl";
 
     if (RESCAN == 1 || NEWSCAN == 1) {
+        if (!(1 in FOLDER_ARR)) {
 
-        if (NEWSCAN == 1) {
-            INFO("Scanning watch paths");
-            folder_list=g_settings["catalog_watch_paths"];
-        } else {
-            INFO("Scanning default and watch paths");
-            folder_list=g_settings["catalog_scan_paths"];
-            if (g_settings["catalog_watch_paths"] != "") {
-                folder_list = folder_list "," g_settings["catalog_watch_paths"];
+            if (NEWSCAN == 1) {
+                INFO("Scanning watch paths");
+                folder_list=g_settings["catalog_watch_paths"];
+            } else {
+                INFO("Scanning default and watch paths");
+                folder_list=g_settings["catalog_scan_paths"];
+                if (g_settings["catalog_watch_paths"] != "") {
+                    folder_list = folder_list "," g_settings["catalog_watch_paths"];
+                }
             }
+            trim(folder_list);
+            sub(/^,+/,"",folder_list);
+            sub(/,+$/,"",folder_list);
+
+            split(folder_list,FOLDER_ARR,g_cvs_sep);
         }
-        trim(folder_list);
-        sub(/^,+/,"",folder_list);
-        sub(/,+$/,"",folder_list);
-
-        split(folder_list,FOLDER_ARR,g_cvs_sep);
-
-        g_timestamp_file=APPDIR"/.lastscan";
-
         if (!lock(g_scan_lock_file) ) {
             INFO("Scan already in progress");
             exit;
         }
     }
+
+    g_timestamp_file=APPDIR"/.lastscan";
+
 
     for(f in FOLDER_ARR) {
         if (FOLDER_ARR[f] ~ /^[^\/.]/ ) {
@@ -660,10 +672,8 @@ END{
         gMovieFileCount = 0;
         gMaxDatabaseId = 0;
         
-        if (!g_opt_no_actions) {
-            load_settings("'$UNPAK_CFG'");
-            unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
-        }
+        load_settings("'$UNPAK_CFG'");
+        unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
 
         g_tk = apply(g_tk);
         g_tk2 = apply(g_tk2);
@@ -752,7 +762,7 @@ function lock(lock_file,\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
-    split("10,10,10,10,10,10,10,20,30,60,120",backoff,",");
+    split("10,10,20,30,60,120,300,600,1200,1200,1200,1200",backoff,",");
     for(attempts=1 ; (attempts in backoff) ; attempts++) {
         if (!is_locked(lock_file)) {
             print PID > lock_file;
@@ -956,6 +966,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
     exec("( "LS" "scan_options" "quotedRoot"/ || "LS" "scan_options" "quotedRoot" ) > "tempFile );
+    exec("ls -l "tempFile);
     currentFolder = root;
     skipFolder=0;
     folderNameNext=1;
@@ -1773,7 +1784,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
     delete nonDate;
     #Extract the date.
     #because awk doesnt capture submatches we have to do this a slightly painful way.
-    y4="20[01][0-9]";
+    y4="(20[01][0-9]|19[5-9][0-9])";
     m2="(0[1-9]|1[012])";
     m1=d1="[1-9]";
     d2="([012][0-9]|3[01])";
@@ -1812,7 +1823,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
 
     } else {
 
-        DEBUG("No date format found for "line);
+        DEBUG("No date format found for ["line"]");
         return 0;
     }
     datePart = substr(line,RSTART,RLENGTH);
@@ -2028,10 +2039,8 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 ############### GET IMDB URL FROM NFO ########################################
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
-idx,file,bestUrl,bestUrl,scanNfo,startTime,elapsedTime,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,total_merge_cycles,itemStartTime,name,name_no_tags,\
-s,search_order,search_order_key,search_regex_key,i,tvDbSeriesPage) {
-
+idx,file,bestUrl,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
+ready_to_merge,ready_to_merge_count,total_merge_cycles) {
 
     startTime = systime();
     numFiles=0;
@@ -2043,9 +2052,11 @@ s,search_order,search_order_key,search_regex_key,i,tvDbSeriesPage) {
 
     eta="";
    
+
     for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
 
-        itemStartTime = systime();
+        g_elapsedTime = g_elapsedTime - systime();
+        thisTime = -systime();
 
         report_status(g_progress[1]" item "(g_item_count++));
 
@@ -2090,145 +2101,63 @@ s,search_order,search_order_key,search_regex_key,i,tvDbSeriesPage) {
         # Esp if we have an IMDB - use that to determine category first.
         #This will help for TV shows that have odd formatting.
 
+        scanned = 0;
         if (checkTvFilenameFormat(idx)) {
 
-            if (bestUrl == "" && g_imdb[idx] != "" ) {
-                bestUrl = g_imdb[idx];
-            }
-            # TV
-            # There are different ways to get imdburl for tv show.
-            # via nfo or determine via epguides/thetvdb search
-            # If imdb url is provided via nfo we should use that to get epguides link
-            # rather than using epguides link to get imdb link
-            if (bestUrl != "") {
-
-                #Get a better title using link from nfo to scrape epguides  with.
-                scrapeIMDBTitlePage(idx,bestUrl);
-                tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
-                get_tv_series_info(idx,tvDbSeriesPage);
-
-
-            } else {
-
-                tvDbSeriesPage = search_tv_series_names(idx,gTitle[idx]);
-                if (tvDbSeriesPage != "") {
-                    get_tv_series_info(idx,tvDbSeriesPage);
-                    bestUrl = get_imdb_url_from_tv_website(idx);
-                    scrapeIMDBTitlePage(idx,bestUrl);
-                } else {
-                    #TODO This is somewhat inaccurate - better off keeping original filename
-                    bestUrl=searchInternetForImdbLink(idx);
-                    if (bestUrl != "") {
-                        scrapeIMDBTitlePage(idx,bestUrl);
-                        tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
-                        get_tv_series_info(idx,tvDbSeriesPage);
-                    }
-                }
-        #epguideSeriesPage="http://google.com/search?q=allintitle%3A+"t2"+site%3Aepguides.com&btnI=Search";
+            if (UPDATE_TV)  {
+                tv_search(idx,bestUrl);
+                scanned=1;
             }
 
         } else {
 
-            # search online info using film basename looking for imdb link
-            # -----------------------------------------------------------------------------
-
-            name=cleanSuffix(idx);
-            name_no_tags=remove_format_tags(name);
-
-            #Find any search order that matches the file format
-            for(i = 1 ; i < 5 ; i++ ) {
-                search_regex_key="catalog_movie_search_regex"i;
-                if (name ~ g_settings[search_regex_key]) {
-                    search_order_key="catalog_movie_search_order"i;
-                    if (!(search_order_key in g_settings)) {
-                        ERROR("Missing setting "search_order_key);
-                    } else {
-                        split(g_settings[search_order_key],search_order," *, *");
-                        break;
-                    }
-                }
-                delete search_order;
+            if (UPDATE_MOVIES) {
+                movie_search(idx,bestUrl);
+                scanned=1;
             }
 
-            for(s in search_order) {
-                if (bestUrl == "") {
+        }
 
-                    INFO("Search Phase: "search_order[s]);
+        if (scanned) {
+            #If poster is blank fall back to imdb
+            if (g_poster[idx] == "") {
+                g_poster[idx] = g_imdb_poster_url[idx];
+            }
+            fixTitles(idx);
 
-                    if (search_order[s] == "ONLINE_NFO") {
+            #Only get posters if catalog is installed as part of oversight
+            if (index(APPDIR,"/oversight") ) {
 
-                        bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
-                        if (bestUrl == "") {
-                            if (name_no_tags != name) {
-                                #Add a dot on the end to stop binsearch false matching sub words.
-                                #eg binsearch will find "a-bcd" given "a-b" to prevent this 
-                                # change a-b to "a-b."
-                                bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".");
-                            }
-                        }
+                if (g_poster[idx] != "" && GET_POSTERS) {
+                    g_poster[idx] = download_image(POSTER,g_poster[idx],idx);
+                }
 
-                    } else if (search_order[s] == "IMDB") {
-
-                        bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"));
-
-                    } else if (search_order[s] == "IMDBFIRST") {
-
-                        bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("+imdb"));
-
-                    } else if (search_order[s] == "IMDBLINKS") {
-
-                        bestUrl=searchInternetForImdbLink(idx);
-
-                    } else {
-                        ERROR("Unknown search method "search_order[s]);
-                    }
+                if (g_fanart[idx] != "" && GET_FANART) {
+                    g_fanart[idx] = download_image(FANART,g_fanart[idx],idx);
                 }
             }
 
-            # Finished Search. Scrape IMDB
-            if (bestUrl != "") {
+            relocate_files(idx);
 
-                scrapeIMDBTitlePage(idx,bestUrl);
+            thisTime += systime() ;
+            g_elapsedTime += systime();
+            g_total ++;
 
-            }
-            getNiceMoviePosters(idx,extractImdbId(bestUrl));
-        }
-
-
-        #If poster is blank fall back to imdb
-        if (g_poster[idx] == "") {
-            g_poster[idx] = g_imdb_poster_url[idx];
-        }
-        fixTitles(idx);
-
-        #Only get posters if catalog is installed as part of oversight
-        if (index(APPDIR,"/oversight") ) {
-
-            if (g_poster[idx] != "") {
-                g_poster[idx] = download_image(POSTER,g_poster[idx],idx);
+            if (g_opt_dry_run) {
+                print "dryrun: "g_file[idx]" -> "gTitle[idx];
             }
 
-            if (g_fanart[idx] != "") {
-                g_fanart[idx] = download_image(FANART,g_fanart[idx],idx);
-            }
+            #lang_test(idx);
+
+            DEBUG("processed in "thisTime"s");
+            DEBUG(sprintf("%d items in %ds = %.1fs per item",g_total,g_elapsedTime,(g_elapsedTime/g_total)));
+
+            #Batch updates so that user sees some progress
+            ready_to_merge[idx]=1;
+            ready_to_merge_count++
+        } else {
+            INFO("Skipping item "g_file[idx]);
         }
-
-        relocate_files(idx);
-
-        thisTime = systime() - itemStartTime;
-        elapsedTime = systime() - startTime;
-
-        if (g_opt_dry_run) {
-            print "dryrun: "g_file[idx]" -> "gTitle[idx];
-        }
-
-        #lang_test(idx);
-
-        DEBUG("processed in "thisTime"s | processed "(idx+1)" items in "(elapsedTime)"s av time per item " (elapsedTime/(idx+1)) "s");
-
-        #Batch updates so that user sees some progress
-        ready_to_merge[idx]=1;
-        ready_to_merge_count++
         DEBUG("ready_to_merge_batch_size = "ready_to_merge_batch_size);
         DEBUG("ready_to_merge_count = "ready_to_merge_count);
         if (ready_to_merge_batch_size != 0 ) {
@@ -2240,6 +2169,7 @@ s,search_order,search_order_key,search_regex_key,i,tvDbSeriesPage) {
             }
         }
     }
+    INFO("\n\t\t==\t\t==\t\t==\t\t==\n");
     # At the end we always make sure merge_files_and_do_actions has been called
     # at least once as this loads the database and carries out any file actions
     if (total_merge_cycles == 0 || ready_to_merge_count) {
@@ -2251,19 +2181,146 @@ s,search_order,search_order_key,search_regex_key,i,tvDbSeriesPage) {
     clean_globals();
 }
 
-function get_imdb_url_from_tv_website(idx,\
-date,nonDate,premier,url) {
+function tv_search(idx,bestUrl,\
+tvDbSeriesPage) {
 
+    if (bestUrl == "" && g_imdb[idx] != "" ) {
+        bestUrl = g_imdb[idx];
+    }
+    # TV
+    # There are different ways to get imdburl for tv show.
+    # via nfo or determine via epguides/thetvdb search
+    # If imdb url is provided via nfo we should use that to get epguides link
+    # rather than using epguides link to get imdb link
+    if (bestUrl != "") {
+
+        # start with IMDB then go to tv site
+
+        #Get a better title using link from nfo to scrape epguides  with.
+        scrapeIMDBTitlePage(idx,bestUrl);
+        tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
+        get_tv_series_info(idx,tvDbSeriesPage);
+
+
+    } else {
+
+        # use name to find page on tv web site.
+
+        tvDbSeriesPage = search_tv_series_names(idx,gTitle[idx]);
+        if (tvDbSeriesPage != "") {
+            get_tv_series_info(idx,tvDbSeriesPage);
+            bestUrl = get_imdb_url_from_tv_website(idx);
+            scrapeIMDBTitlePage(idx,bestUrl);
+        } else {
+
+            # Couldnt find tv website. Name might not be obvious - search google for imdb references.
+            # TODO This should filter out movie results.
+            bestUrl=searchInternetForImdbLink(idx);
+            if (bestUrl != "") {
+                scrapeIMDBTitlePage(idx,bestUrl);
+                tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
+                get_tv_series_info(idx,tvDbSeriesPage);
+            }
+        }
+    }
+}
+
+function movie_search(idx,bestUrl,\
+name,name_no_tags,i,\
+search_regex_key,search_order_key,search_order,s) {
+    # search online info using film basename looking for imdb link
+    # -----------------------------------------------------------------------------
+
+    name=cleanSuffix(idx);
+    name_no_tags=remove_format_tags(name);
+
+    #Read search order definitions from config file.
+    for(i = 1 ; i < 5 ; i++ ) {
+        search_regex_key="catalog_movie_search_regex"i;
+
+        #Find any search order that matches the file format
+        if (name ~ g_settings[search_regex_key]) {
+
+            search_order_key="catalog_movie_search_order"i;
+            if (!(search_order_key in g_settings)) {
+                ERROR("Missing setting "search_order_key);
+            } else {
+                split(g_settings[search_order_key],search_order," *, *");
+                break;
+            }
+        }
+        delete search_order;
+    }
+
+    for(s in search_order) {
+        if (bestUrl == "") {
+
+            INFO("Search Phase: "search_order[s]);
+
+            if (search_order[s] == "ONLINE_NFO") {
+
+                bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
+                if (bestUrl == "") {
+                    if (name_no_tags != name) {
+                        #Add a dot on the end to stop binsearch false matching sub words.
+                        #eg binsearch will find "a-bcd" given "a-b" to prevent this 
+                        # change a-b to "a-b."
+                        bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".");
+                    }
+                }
+
+            } else if (search_order[s] == "IMDB") {
+
+                #This is a web search of imdb site returning the first match.
+
+                bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"));
+
+            } else if (search_order[s] == "IMDBFIRST") {
+
+                bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("+imdb"));
+
+            } else if (search_order[s] == "IMDBLINKS") {
+
+                bestUrl=searchInternetForImdbLink(idx);
+
+            } else {
+                ERROR("Unknown search method "search_order[s]);
+            }
+        }
+    }
+
+    # Finished Search. Scrape IMDB
+    if (bestUrl != "") {
+
+        scrapeIMDBTitlePage(idx,bestUrl);
+
+    }
+    getNiceMoviePosters(idx,extractImdbId(bestUrl));
+}
+
+function get_imdb_url_from_tv_website(idx,\
+date,nonDate,premier,url,key) {
+
+    DEBUG("get_imdb_url_from_tv_website start=["g_imdb[idx]"]");
     if (g_imdb[idx] == "") {
     
-        if (extractDate(g_premier[idx],date,nonDate)) {
-            premier = sprintf("\"%d %s %d\"",date[3],g_month_en[0+date[2]],date[1]);
-            DEBUG("premier="premier);
-        }
+        key=gTitle[idx]"+"g_premier[idx];
+        DEBUG("get_imdb_url_from_tv_website key=["key"]");
+        if (!(key in g_tv2imdb)) {
 
-        url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "premier;
-        g_imdb[idx] = scanPageForMatch(search_url(g_link_search_engines,url,10),g_imdb_regex,0);
+            if (extractDate(g_premier[idx],date,nonDate)) {
+                premier = sprintf("\"%d %s %d\"",date[3],g_month_en[0+date[2]],date[1]);
+                DEBUG("premier="premier);
+            }
+
+
+            url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "premier;
+        
+            g_tv2imdb[key] = scanPageForMatch(search_url(g_link_search_engines,url,10),g_imdb_regex,0);
+        }
+        g_imdb[idx] = g_tv2imdb[key];
     }
+    DEBUG("get_imdb_url_from_tv_website end=["g_imdb[idx]"]");
     return extractImdbLink(g_imdb[idx]);
 }
 
@@ -2783,7 +2840,7 @@ id,bestId,bestFirstAired,ages,count) {
         bestId = id;
     } else {
 
-        INFO("For now just getting the most recent first aired for "idx" "g_category[idx]);
+        INFO("For now just getting the most recent first aired for s"g_season[idx]"e"g_episode[idx]);
         bestFirstAired="";
 
         getRelativeAge(idx,titles,ages);
@@ -3605,13 +3662,14 @@ function search_url(search_engines,q,num) {
     ++g_web_search_count;
     if (!(g_web_search_count in search_engines )) g_web_search_count=1;
 
-    if (search_engines[g_web_search_count] == "google") {
-        return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
-
-    } else if (search_engines[g_web_search_count] == "googleie") {
-        return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
-
-    } else if (search_engines[g_web_search_count] == "yahoouk") {
+#    if (search_engines[g_web_search_count] == "google") {
+#        return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
+#
+#    } else if (search_engines[g_web_search_count] == "googleie") {
+#        return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
+#
+#    } else
+    if (search_engines[g_web_search_count] == "yahoouk") {
         return "http://uk.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
 
     } else if (search_engines[g_web_search_count] == "yahooau") {
@@ -3620,13 +3678,13 @@ function search_url(search_engines,q,num) {
     } else if (search_engines[g_web_search_count] == "yahoo") {
         return "http://search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
 
-    } else if (search_engines[g_web_search_count] == "msn") {
-        gsub(/inurl%/,"site%",q);
-        return "http://search.msn.com/results.aspx?q="q;
-
-    } else if (search_engines[g_web_search_count] == "msnuk") {
-        gsub(/inurl%/,"site%",q);
-        return "http://search.msn.co.uk/results.aspx?q="q;
+#    } else if (search_engines[g_web_search_count] == "msn") {
+#        gsub(/inurl%/,"site%",q);
+#        return "http://search.msn.com/results.aspx?q="q;
+#
+#    } else if (search_engines[g_web_search_count] == "msnuk") {
+#        gsub(/inurl%/,"site%",q);
+#        return "http://search.msn.co.uk/results.aspx?q="q;
 
     } else {
         ERROR("Unknown search engine "g_web_search_count" ["search_engines[g_web_search_count]"]");
@@ -3839,8 +3897,6 @@ seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
         return "";
     } else {
         DEBUG("get_tv_series_info returns imdb url ["imdbLink"]");
-    }
-    if (imdbLink != "" ) {
         g_imdb[idx] = imdbLink;
     }
 }
@@ -3856,28 +3912,29 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
-xml,filter) {
+xml,filter,r) {
 
+    r="/Banners/Banner";
     delete filter;
-    filter["/Banners/Banner/Language"] = language;
-    filter["/Banners/Banner/BannerType"] = "season";
-    filter["/Banners/Banner/Season"] = g_season[idx];
+    filter[r"/Language"] = language;
+    filter[r"/BannerType"] = "season";
+    filter[r"/Season"] = g_season[idx];
     if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-        g_poster[idx] = tvDbImageUrl(xml["/Banners/Banner/BannerPath"]);
-        DEBUG("Season URL = "g_poster[idx]);
+        g_poster[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
+        DEBUG("Season Poster URL = "g_poster[idx]);
     }
 
     delete filter;
-    filter["/Banners/Banner/Language"] = language;
-    filter["/Banners/Banner/BannerType"] = "fanart";
+    filter[r"/Language"] = language;
+    filter[r"/BannerType"] = "fanart";
     if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-        g_fanart[idx] = tvDbImageUrl(xml["/Banners/Banner/BannerPath"]);
+        g_fanart[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
         DEBUG("Fanart URL = "g_fanart[idx]);
     }
 }
 
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,sid,url) {
+seriesInfo,episodeInfo,filter,sid,url,e) {
 
     delete filter;
 
@@ -3890,11 +3947,13 @@ seriesInfo,episodeInfo,filter,sid,url) {
         WARNING("Error getting series xml");
     }
 
+    e="/Show/Episodelist/Season/episode";
+
     #TODO Scrape page at "http://www.tvrage.com/shows/id-2445/" for Creator , plot 
     if (get_episode_xml(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
-        gEpTitle[idx]=episodeInfo["/Show/Episodelist/Season/episode/title"];
-        gAirDate[idx]=formatDate(episodeInfo["/Show/Episodelist/Season/episode/airdate"]);
-        url=episodeInfo["/Show/Episodelist/Season/episode/link"];
+        gEpTitle[idx]=episodeInfo[e"/title"];
+        gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
+        url=episodeInfo[e"/link"];
         g_epplot[idx] = scrape_one_item("tvrageplot",url,">Episode Summary</h",0,"<a ",0);
     } else {
         WARNING("Error getting episode xml");
@@ -3948,11 +4007,11 @@ f,line,start_tag,end_tag,found,t,last_tag) {
                 for(t in tagfilters) {
                     if (tagfilters[t] ~ "^[0-9]+$" ) {
                         if (xmlout[t] - tagfilters[t] != 0) {
-                            DEBUG("Filter block "xmlout[t]" != "tagfilters[t]);
+                            #DEBUG("Filter block "xmlout[t]" != "tagfilters[t]);
                             found=0;break;
                         }
                     } else if (xmlout[t] != tagfilters[t] ) {
-                        DEBUG("Filter block \""xmlout[t]"\" != \""tagfilters[t]"\"");
+                        # DEBUG("Filter block \""xmlout[t]"\" != \""tagfilters[t]"\"");
                         found=0;break;
                     }
                 }
@@ -4034,8 +4093,8 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     FS="\\n";
     sep="~";
     outputWords=0;
-    tmpFile="/tmp/bytes."JOBID;
-    isoPart="/tmp/bytes."JOBID".2";
+    tmpFile=tmp_dir"/bytes."JOBID;
+    isoPart=tmp_dir"/bytes."JOBID".2";
     delete outputText;
 
     if (exec("dd if="quoteFile(isoPath)" of="isoPart" bs=1024 count=10 skip=32") != 0) {
@@ -4400,8 +4459,13 @@ function download_image(field_id,url,idx,\
     } else {
         if (!havePoster) {
             get_it = 1;
-        } else if (UPDATE_POSTERS == 1 && !g_already_fetched_poster[internal_path]) {
-            get_it = 1;
+        } else if (!g_already_queued_poster_for_this_run[internal_path]) {
+            #note images are fetched aynchronously - we should touch the file really.
+            if (field_id == POSTER) {
+                get_it = REFRESH_POSTERS;
+            } else if (field_id == FANART) {
+                get_it = REFRESH_FANART;
+            }
         } else {
             INFO("Already got "internal_path);
         }
@@ -4411,7 +4475,7 @@ function download_image(field_id,url,idx,\
 
         g_image_requested[internal_path]=1;
 
-        INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
+        INFO((REFRESH_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
 
         rm(internal_path,1);
 
@@ -4434,7 +4498,7 @@ function download_image(field_id,url,idx,\
         }
         wget_args = wget_args " -U \""g_user_agent"\" ";
 
-        g_already_fetched_poster[internal_path] = 1;
+        g_already_queued_poster_for_this_run[internal_path] = 1;
 
         # Script to fetch poster and create sd and hd versions
         if (field_id == POSTER) {
@@ -4685,6 +4749,7 @@ title,y,poster_imdb_url) {
             if (g_plot[idx] == "" && index(line,"Plot:")) {
                 g_plot[idx] = scrape_until("iplot",f,"</div>",0);
                 sub(/\|.*/,"",g_plot[idx]);
+                sub(/full (summary|synopsis).*/,"",g_plot[idx]);
             }
 
             #IMDB Genre takes precedence
@@ -5543,9 +5608,6 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "DEBUG2" ) {
             DBG=2;
             moveDown++;
-        } else if (ARGV[i] == "NOACTIONS" ) {
-            g_opt_no_actions=1;
-            moveDown++;
         } else if (ARGV[i] == "STDOUT" ) {
             STDOUT=1;
             moveDown++;
@@ -5564,8 +5626,17 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "RENAME_FILM" ) {
             RENAME_FILM=1;
             moveDown++;
-        } else if (ARGV[i] == "UPDATE_POSTERS" )  {
-            UPDATE_POSTERS=1;
+        } else if (ARGV[i] == "GET_POSTERS" )  {
+            GET_POSTERS=1;
+            moveDown++;
+        } else if (ARGV[i] == "REFRESH_POSTERS" )  {
+            REFRESH_POSTERS=1;
+            moveDown++;
+        } else if (ARGV[i] == "GET_FANART" )  {
+            GET_FANART=1;
+            moveDown++;
+        } else if (ARGV[i] == "REFRESH_FANART" )  {
+            REFRESH_FANART=1;
             moveDown++;
         } else if (ARGV[i] == "NEWSCAN" )  {
             NEWSCAN=1;
@@ -5654,6 +5725,7 @@ url) {
     "APPDIR=$APPDIR" \
     "CONF_FILE=$CONF_FILE" \
     "DEFAULTS_FILE=$DEFAULTS_FILE" \
+    tmp_dir="$tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
@@ -5661,7 +5733,7 @@ url) {
 
 main() {
 
-    clean_tmp
+    clean_old_tmp
     set +e
     echo '[INFO] catalog version '$VERSION' $Id$'
     sed 's/^/\[INFO\] os version /' /proc/version
@@ -5672,7 +5744,8 @@ main() {
     x=$?
     set -e
 
-    clean_tmp
+    clean_old_tmp
+    rm -fr "$tmp_dir"
     chown -R $uid:$gid $INDEX_DB* "$APPDIR/tmp"
     return $x
 }
@@ -5680,9 +5753,15 @@ main() {
 #-------------------------------------------------------------------------
 
 
-clean_tmp() {
-    rm -f $tmp_dir/catalog.[0-9]*__* 2>/dev/null || true
+clean_old_tmp() {
+    #also clean logs of aborted processes.
+    for i in `ls $tmp_root` ; do
+        if [ ! -d /proc/$i ] ; then
+            rm -fr $tmp_root/$i
+        fi
+    done
 }
+
 
 clean_logs() {
     find "$APPDIR/logs" -name \*.log -mtime +1 | while IFS= read f ; do

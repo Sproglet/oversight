@@ -1,5 +1,7 @@
 Check why Russell Peters Outsource - one black one green
 
+IMDB Movie director search is broken
+
 tvrage search - the episode title is not displayed in gui.
 Check index.db first.
 

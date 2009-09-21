@@ -1,5 +1,5 @@
 <!-- Default Fanart Movie Template  $Id:$ -->
-    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
+    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(default.jpg):] >
 <table id="main" width=100% >
     <tr valign="bottom">
         <td>

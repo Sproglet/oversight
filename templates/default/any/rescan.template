@@ -31,7 +31,9 @@
             <table>
                 <tr>
                     <td>
-                        [:CHECKBOX(rescan_opt_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
+                        [:CHECKBOX(rescan_dir_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
+                        <hr>
+                        <input type=checkbox name=rescan_opt_PARALLEL_SCAN>Turbo (may slow other functions)
                     </td>
                     <td align=left>
                         <input type=checkbox name=rescan_opt_GET_POSTERS checked>Get Posters

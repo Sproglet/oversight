@@ -60,6 +60,9 @@ font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 .watchedX { color:#888888 ; background-color:#550000; font-style:italic; }
 .watched { color:7777777 ; font-style:italic; }
 .error { color:red ; font-style:italic; font-weight:bold; }
+.delete { background-color:red; }
+.delist { background-color:yellow; }
+.cancel { background-color:gray; }
 
 .gridTW1_1 { color:#555555; background-color:#101066; }
 .gridTW1_0 { color:#555555; background-color:#101055; }

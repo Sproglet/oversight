@@ -755,11 +755,11 @@ char *internal_image_path_static(DbRowId *rid,int is_fanart) {
         } else {
             // Blank it all out
             *path = '\0';
-            HTML_LOG(0,"internal_image_path_static [%s] = NULL",rid->title);
+            HTML_LOG(2,"internal_image_path_static [%s] = NULL",rid->title);
             return NULL;
         }
     }
-    HTML_LOG(0,"internal_image_path_static [%s] = [%s]",rid->title,path);
+    HTML_LOG(2,"internal_image_path_static [%s] = [%s]",rid->title,path);
     return path;
 }
 

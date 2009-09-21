@@ -82,14 +82,17 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
 
         char *fanart = get_picture_path(num_rows,sorted_rows,1);
 
-        if (!fanart && default_wallpaper) {
+        if (!fanart || !exists(fanart)) {
 
-            // Use default wallpaper
+            if (default_wallpaper) {
 
-            if (g_dimension->scanlines == 0 ) {
-                ovs_asprintf(&fanart,"%s/templates/%s/sd/%s",appDir(),template_name,default_wallpaper);
-            } else {
-                ovs_asprintf(&fanart,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,default_wallpaper);
+                // Use default wallpaper
+
+                if (g_dimension->scanlines == 0 ) {
+                    ovs_asprintf(&fanart,"%s/templates/%s/sd/%s",appDir(),template_name,default_wallpaper);
+                } else {
+                    ovs_asprintf(&fanart,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,default_wallpaper);
+                }
             }
         }
 

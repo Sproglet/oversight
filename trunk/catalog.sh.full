@@ -318,6 +318,7 @@ function plugin_error() {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_batch_size=50;
     g_tvdb_use_episode_api=1;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;
@@ -549,8 +550,7 @@ END{
     g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
 
-    load_catalog_settings(DEFAULTS_FILE);
-    load_catalog_settings(CONF_FILE);
+    load_catalog_settings();
     if (g_settings["catalog_fetch_posters"] == "yes") {
         GET_POSTERS=1;
     }
@@ -1131,7 +1131,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
 
     close(tempFile);
 
-    identify_and_catalog_scanned_files(20);
+    identify_and_catalog_scanned_files(g_batch_size);
 
     DEBUG("Finished Scanning "root);
 }
@@ -1159,7 +1159,7 @@ function storeMovie(idx,file,folder,timeStamp) {
     # this is to save memory.
     if (folder != g_last_stored_folder && idx > 100 ) {
         g_last_stored_folder = folder;
-        identify_and_catalog_scanned_files(20);
+        identify_and_catalog_scanned_files(g_batch_size);
         idx = 0;
     }
 
@@ -1246,7 +1246,7 @@ nfo,lcNfo) {
 
 function exec(cmd, err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   DEBUG("SYSTEM : [["cmd"]]");
+   #DEBUG("SYSTEM : [["cmd"]]");
    if ((err=system(cmd)) != 0) {
       ERROR("Return code "err" executing "cmd) ;
   }
@@ -2082,10 +2082,10 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles) {
         file=gMovieFiles[idx];
         if (file == "" ) continue;
 
-        INFO("\n\t\t\t---\t---\t\t---\t\t---\n");
-        INFO("Start"idx":"file);
+        INFO("\n\t---\t---\t\t---\t\t---\n");
+        INFO("Start item "idx": ["file"]");
 
-        DEBUG("nfo check :"file);
+        DEBUG("folder :["gFolder[idx]"]");
         if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
             WARNING("Skipping unknown file ["file"]");
             continue;
@@ -2184,7 +2184,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles) {
             }
         }
     }
-    INFO("\n\t\t---\t\t---\t\t---\t\t---\n");
+    INFO("\n\t---\t\t---\t\t---\t\t---\n");
     # At the end we always make sure merge_files_and_do_actions has been called
     # at least once as this loads the database and carries out any file actions
     if (total_merge_cycles == 0 || ready_to_merge_count) {
@@ -2213,6 +2213,10 @@ tvDbSeriesPage) {
 
         #Get a better title using link from nfo to scrape epguides  with.
         scrapeIMDBTitlePage(idx,bestUrl);
+        if (g_category[idx] == "M" ) {
+            INFO("Fallback to movie search");
+            return movie_search(idx,bestUrl);
+        }
         tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
         get_tv_series_info(idx,tvDbSeriesPage);
 
@@ -2226,6 +2230,10 @@ tvDbSeriesPage) {
             get_tv_series_info(idx,tvDbSeriesPage);
             bestUrl = get_imdb_url_from_tv_website(idx);
             scrapeIMDBTitlePage(idx,bestUrl);
+            if (g_category[idx] == "M" ) {
+                INFO("Fallback to movie search");
+                return movie_search(idx,bestUrl);
+            }
         } else {
 
             # Couldnt find tv website. Name might not be obvious - search google for imdb references.
@@ -2233,6 +2241,10 @@ tvDbSeriesPage) {
             bestUrl=searchInternetForImdbLink(idx);
             if (bestUrl != "") {
                 scrapeIMDBTitlePage(idx,bestUrl);
+                if (g_category[idx] == "M" ) {
+                    INFO("Fallback to movie search");
+                    return movie_search(idx,bestUrl);
+                }
                 tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
                 get_tv_series_info(idx,tvDbSeriesPage);
             }
@@ -2308,6 +2320,10 @@ search_regex_key,search_order_key,search_order,s) {
     if (bestUrl != "") {
 
         scrapeIMDBTitlePage(idx,bestUrl);
+        if (g_category[idx] == "T" ) {
+            INFO("Fallback to tv search");
+            return tv_search(idx,bestUrl);
+        }
 
     }
     getNiceMoviePosters(idx,extractImdbId(bestUrl));
@@ -3785,7 +3801,7 @@ f,iurl,start,nextStart,matchList,bestUrl,x,html) {
     if (f != "") {
         FS="\n";
 
-        DEBUG("Looking for "pattern" in "f);
+        DEBUG2("Looking for "pattern" in "f);
 
         while((getline html < f) > 0 ) {
 
@@ -4400,7 +4416,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
         referer = get_referer(url);
     }
     if (referer != "") {
-        DEBUG("Referer = "referer);
+        DEBUG2("Referer = "referer);
         args=args" --referer=\""referer"\" ";
     }
 
@@ -4545,14 +4561,16 @@ function download_image(field_id,url,idx,\
     #Get the poster if we havent fetched it already.
     havePoster = hasContent(internal_path);
 
-    if (!havePoster) {
-        get_it = 1;
-    } else if (!g_image_requested[internal_path]) {
-        #note images are fetched aynchronously - we should touch the file really.
-        if (field_id == POSTER) {
-            get_it = REFRESH_POSTERS;
-        } else if (field_id == FANART) {
-            get_it = REFRESH_FANART;
+    if (!g_image_requested[internal_path]) {
+        if (!havePoster) {
+            get_it = 1;
+        } else {
+            #note images are fetched aynchronously - we should touch the file really.
+            if (field_id == POSTER) {
+                get_it = REFRESH_POSTERS;
+            } else if (field_id == FANART) {
+                get_it = REFRESH_FANART;
+            }
         }
     } else {
         INFO("Already got "internal_path);
@@ -4975,17 +4993,17 @@ l,cert,c) {
 
 function scrape_one_item(label,url,start_text,start_include,end_text,end_include,\
 f,line,out,found) {
-    DEBUG("scrape_one_item "label" start at ["start_text"]");
+    #DEBUG("scrape_one_item "label" start at ["start_text"]");
     f=getUrl(url,label,0);
     if (f) {
         while((getline line < f) > 0 ) {
             if (index(line,start_text)) {
-                DEBUG("trip line "line);
+                #DEBUG("trip line "line);
                 out = scrape_until(label,f,end_text,end_include);
                 if (start_include) {
-                    DEBUG("scrape_one_item line = "line);
+                    #DEBUG("scrape_one_item line = "line);
                     out = remove_tags(line) out;
-                    DEBUG("scrape_one_item out = "out);
+                    #DEBUG("scrape_one_item out = "out);
                 }
                 found = 1;
                 break;
@@ -5018,7 +5036,7 @@ line,out,ending) {
     }
     gsub(/ +/," ",out);
     INFO("scrape_until "label":=["out"]");
-    return out;
+    return trim(out);
 }
 
 function relocating_files(i) {
@@ -5749,9 +5767,10 @@ i,folderCount,moveDown) {
 }
 
 
-function load_catalog_settings(file_name) {
+function load_catalog_settings() {
 
-    load_settings(file_name);
+    load_settings(DEFAULTS_FILE);
+    load_settings(CONF_FILE);
 
     gsub(/,/,"|",g_settings["catalog_format_tags"]);
     gsub(/,/,"|",g_settings["catalog_ignore_paths"]);

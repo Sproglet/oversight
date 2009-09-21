@@ -326,7 +326,6 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                 if (name[2] == 'a') {
                     *offset=&(rowid->fanart);
                     *type = FIELD_TYPE_STR;
-                    *overview = 1;
                 }
             break;
         case 'F':
@@ -352,7 +351,6 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
             if (name[2] == '\0') {
                 *offset=&(rowid->poster);
                 *type = FIELD_TYPE_STR;
-                *overview = 1;
             }
             break;
         case 'i':
@@ -422,10 +420,11 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
             }
             break;
         case 'U':
-                if (name[2] == '\0') {
+            if (name[2] == '\0') {
                 *offset=&(rowid->url);
                 *type = FIELD_TYPE_STR;
-                }
+                *overview = 1;
+            }
             break;
         case 'w':
             if (name[2] == '\0') {

@@ -59,14 +59,20 @@ LISTEN() {
                 echo "$prefix[$command]"
                 case "$prefix" in
                     oversight:)
-                        if [ "$command" = "$lastCommand" ] ; then
+                        case "$command" in
+                        "$lastCommand")
                             echo "Skipping duplicate command [$command]"
-                        else
+                            ;;
+                        *PARALLEL_SCAN*)
+                            eval  "$command" &
+                            lastCommand="$command";
+                            ;;
+                        *)
                             eval  "$command"
                             lastCommand="$command";
+                            ;;
 
-
-                        fi
+                        esac
                         ;;
                     *) echo "Ignoring [$command]" ;;
                 esac

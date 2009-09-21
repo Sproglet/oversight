@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <regex.h>
 #include <time.h>
+#include <ctype.h>
 
 #include "display.h"
 #include "gaya_cgi.h"
@@ -717,6 +718,52 @@ char *check_path(char *a,char *b,char *c,char *d) {
     return p;
 }
 
+char *internal_image_path_static(DbRowId *rid,int is_fanart) {
+    // No pictures on filesystem - look in db
+    // first build the name 
+    // TV shows = ovs:fieldid/prefix title _ year _ season.jpg
+    // films  = ovs:fieldid/prefix title _ year _  imdbid.jpg
+    //
+#define INTERNAL_IMAGE_PATH_LEN 200
+    static char path[INTERNAL_IMAGE_PATH_LEN];
+    char *p = path;
+    p += sprintf(p,"ovs:%s/%s",
+            (is_fanart?DB_FLDID_FANART:DB_FLDID_POSTER),
+            catalog_val("catalog_poster_prefix"));
+    char *t=rid->title;
+
+    // Add title replacing all runs of non-alnum with single _
+    int first_nonalnum = 1;
+    while(*t) {
+        if (isalnum(*t) || strchr("-_",*t) ) {
+            *p++ = *t;
+            first_nonalnum=1;
+        } else if (first_nonalnum) {
+            *p++ = '_';
+            first_nonalnum=0;
+        } else {
+            p++;
+        }
+        t++;
+    }
+    if (rid->category == 'T' ) {
+        p+= sprintf(p,"_%d_%d.jpg",rid->year,rid->season);
+    } else {
+        char *imdbid=NULL;
+        if (rid->url != NULL && (imdbid = strstr(rid->url,"/tt")) && isdigit(imdbid[3])) {
+            p += sprintf(p,"_%d_%.9s.jpg",rid->year,imdbid+1);
+        } else {
+            // Blank it all out
+            *path = '\0';
+            HTML_LOG(0,"internal_image_path_static [%s] = NULL",rid->title);
+            return NULL;
+        }
+    }
+    HTML_LOG(0,"internal_image_path_static [%s] = [%s]",rid->title,path);
+    return path;
+}
+
+
 char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
 
     char *path = NULL;
@@ -727,7 +774,6 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
         modifier="fanart.";
     }
 
-if (1) {
     // First check the filesystem. We do this via the mounted path.
     // This requires that the remote file is already mounted.
     char *file = get_path(rid,rid->file);
@@ -758,25 +804,17 @@ if (1) {
 
     FREE(file);
     FREE(dir);
-}
 
 
     if (path == NULL) {
-        // No pictures on filesystem - look in db
-        int i;
-        if (is_fanart) {
-            for (i = 0 ;  i < num_rows ; i++ ) {
-                path = sorted_rows[i]->fanart;
-                if (path) break;
-            }
-        } else {
-            for (i = 0 ;  i < num_rows ; i++ ) {
-                path = sorted_rows[i]->poster;
-                if (path) break;
-            }
-        }
+
+        // look in internal db
+
+        path = internal_image_path_static(rid,is_fanart);
+
+
         if (path) {
-            char *mounted_path = get_path(sorted_rows[i],path);
+            char *mounted_path = get_path(rid,path);
             path = mounted_path;
 
             if (is_fanart ) {
@@ -805,17 +843,19 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr) {
     char *newattr=attr;
 
     char *path = get_picture_path(1,&rowid,0);
+    if (path) {
 
-    if (rowid->watched) {
-        ovs_asprintf(&newattr," %s %s ",attr,watched_style(rowid,0));
+        if (rowid->watched) {
+            ovs_asprintf(&newattr," %s %s ",attr,watched_style(rowid,0));
+        }
+
+        result = get_local_image_link(path,rowid->title,newattr);
+
+        if (newattr != attr) {
+            FREE(newattr);
+        }
+        FREE(path);
     }
-
-    result = get_local_image_link(path,rowid->title,newattr);
-
-    if (newattr != attr) {
-        FREE(newattr);
-    }
-    FREE(path);
     return result;
 }
 
@@ -1240,9 +1280,8 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     if (in_poster_mode() ) {
         displaying_text=0;
-        if (tv_or_movie && row_id->poster != NULL && row_id->poster[0] != '\0' ) {
+        if (tv_or_movie && (title = get_poster_mode_item(row_id,grid_toggle,&font_class,&grid_class)) != NULL) {
 
-            title = get_poster_mode_item(row_id,grid_toggle,&font_class,&grid_class);
             if (*title != '<' && !util_starts_with(title,"<img")) {
                 displaying_text=1;
                 first_space = strchr(title,' ');

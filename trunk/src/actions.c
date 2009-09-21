@@ -11,6 +11,7 @@
 #include "hashtable_loop.h"
 
 #define RESCAN_OPT_PREFIX "rescan_opt_"
+#define RESCAN_DIR_PREFIX "rescan_dir_"
 struct hashtable *get_newly_selected_ids_by_source();
 struct hashtable *get_newly_deselected_ids_by_source();
 int count_unchecked();
@@ -255,6 +256,7 @@ void do_actions() {
 
         if (strcmp(action,"rescan_request") == 0) {
 
+            int parallel_scan = 0;
             char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");
             char *k;
             struct hashtable_itr *itr = hashtable_loop_init(g_query);
@@ -265,10 +267,29 @@ void do_actions() {
                     ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_OPT_PREFIX));
                     FREE(cmd);
                     cmd = tmp;
+                    if (strcmp(k, RESCAN_OPT_PREFIX "PARALLEL_SCAN" ) == 0 ) {
+                        parallel_scan = 1;
+                    }
                 }
             }
-
-            send_command("*",cmd);
+            
+            itr = hashtable_loop_init(g_query);
+            while (hashtable_loop_more(itr,&k,NULL)) {
+                if (util_starts_with(k,RESCAN_DIR_PREFIX)) {
+                    char *tmp;
+                    ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_OPT_PREFIX));
+                    if (parallel_scan) {
+                        send_command("*",tmp);
+                        FREE(tmp);
+                    } else {
+                        FREE(cmd);
+                        cmd = tmp;
+                    }
+                }
+            }
+            if (!parallel_scan) {
+                send_command("*",cmd);
+            }
             FREE(cmd);
 
         } else if (strcmp(action,"Save Settings") == 0) {

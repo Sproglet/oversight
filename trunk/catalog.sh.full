@@ -166,6 +166,7 @@ Other options
     REBUILD        - Run even if no folders. Usually to tidy database.
     RESCAN         - Rescan default paths
     NEWSCAN        - Rescan default paths - new media only
+    PARALLEL_SCAN  - Allow multiple scans with RESCAN or NEWSCAN keyword
     NOACTIONS      - Do not run any actions and hide Delete actions from overview.
     STDOUT         - Write to stdout (if not present output goes to log file)
     REFRESH_POSTERS - Fetch new posters for each scanned item.
@@ -317,6 +318,7 @@ function plugin_error() {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_tvdb_use_episode_api=1;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;
     yes="yes";
@@ -549,6 +551,13 @@ END{
 
     load_catalog_settings(DEFAULTS_FILE);
     load_catalog_settings(CONF_FILE);
+    if (g_settings["catalog_fetch_posters"] == "yes") {
+        GET_POSTERS=1;
+    }
+
+    if (g_settings["catalog_fetch_fanart"] == "yes") {
+        GET_FANART=1;
+    }
 
     g_tv_plugin = g_settings["catalog_tv_plugin"];
     if (g_tv_plugin !~ "^(THETVDB|TVRAGE)$" ) {
@@ -630,9 +639,11 @@ END{
 
             split(folder_list,FOLDER_ARR,g_cvs_sep);
         }
-        if (!lock(g_scan_lock_file) ) {
-            INFO("Scan already in progress");
-            exit;
+        if (PARALLEL_SCAN != 1 ) {
+            if (!lock(g_scan_lock_file) ) {
+                INFO("Scan already in progress");
+                exit;
+            }
         }
     }
 
@@ -781,7 +792,7 @@ attempts,sleep,backoff) {
 
 function unlock(lock_file) {
     INFO("Unlocked "lock_file);
-    rm(lock_file);
+    system("rm -f -- "quoteFile(lock_file));
     report_status("");
 }
 
@@ -1134,7 +1145,7 @@ function glob2re(glob) {
     gsub(/[<]/,"\\<",glob);
     gsub(/ *, */,"|",glob);
     gsub(/[>]/,"\\>",glob);
-    return "^("glob")$";
+    return "("glob")";
 }
 
 function csv2re(text) {
@@ -1437,7 +1448,8 @@ function textToSearchKeywords(f,heuristic\
 
     if (heuristic == 0 || heuristic == 1) {
 
-        gsub(/[^-A-Za-z0-9]+/,"+",f);
+        #removed hyphen from list
+        gsub(/[^A-Za-z0-9]+/,"+",f);
 
         #remove words ending with numbers
         #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
@@ -1575,11 +1587,13 @@ kept_count,updated_count,f,dbline,dbline2,dbfields,idx) {
         if (f in gMovieFilePresent) {
 
             idx=gMovieFilePresent[f];
-            dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1],dbfields[INDEXTIME,1]);
-            updated_count++;
-            print dbline2"\t" >> new_db_file;
-            delete indexToMergeHash[idx];
-
+            if (idx != -1 ) {
+                dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1],dbfields[INDEXTIME,1]);
+                updated_count++;
+                print dbline2"\t" >> new_db_file;
+                delete indexToMergeHash[idx];
+                gMovieFilePresent[f] = -1;
+            }
 
         } else if ( dbfields[DIR,1] ~ g_settings["catalog_ignore_paths"] ) {
 
@@ -1876,6 +1890,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result) {
         get_tv_series_info(idx,get_tv_series_api_url(tvdbid));
 
         if (g_tv_plugin == "THETVDB" ) {
+            #TODO We could get all the series info - this would be cached anyway.
             result = extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details);
         } else if (g_tv_plugin == "TVRAGE" ) {
             result = extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details);
@@ -2067,8 +2082,8 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles) {
         file=gMovieFiles[idx];
         if (file == "" ) continue;
 
-        INFO("\n\t\t==\t\t==\t\t==\t\t==\n");
-        INFO(idx":"file);
+        INFO("\n\t\t\t---\t---\t\t---\t\t---\n");
+        INFO("Start"idx":"file);
 
         DEBUG("nfo check :"file);
         if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
@@ -2169,7 +2184,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles) {
             }
         }
     }
-    INFO("\n\t\t==\t\t==\t\t==\t\t==\n");
+    INFO("\n\t\t---\t\t---\t\t---\t\t---\n");
     # At the end we always make sure merge_files_and_do_actions has been called
     # at least once as this loads the database and carries out any file actions
     if (total_merge_cycles == 0 || ready_to_merge_count) {
@@ -3034,31 +3049,48 @@ i,c) {
 
 # IN imdb id tt0000000
 # RETURN tvdb id
-function searchTvByImdbId(idx,id,\
-url,id2,premier,date,nondate) {
-    # If site does not have IMDB ids look for the Creator and other attributes to help target the correct page.
+function searchTvByImdbId(idx,imdbid,\
+url,id2,premier_mdy,date,nondate,regex) {
+    # If site does not have IMDB ids then use the title and premier date to search via web search
+    if (imdbid) {
+        if (imdbid in g_imdb2tv) {
 
-    if (id) {
-        if(g_tv_plugin == "THETVDB") {
-            url = "http://thetvdb.com/index.php?imdb_id="id"&order=translation&searching=Search&tab=advancedsearch";
-            id2 = scanPageForMatch(url,"[&?]id=[0-9]+[&\"]",1);
-            if (id2 != "" ) {
-                id2=substr(id2,4,length(id2)-4);
-            }
-        } else if(g_tv_plugin == "TVRAGE") {
-            if (extractDate(g_premier[idx],date,nondate)) {
-                premier=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
-            }
-            
-            url=gTitle[idx] " "premier" site:tvrage.com intitle:\"Television series\" intitle:summary inurl:shows";
-            id2 = scanPageForMatch(search_url(g_link_search_engines,url,10),"/id-[0-9]+",0);
-            if (id2 != "" ) {
-                id2=substr(id2,5);
-            }
-            # lost  site:tvrage.com intitle:"Television series" intitle:summary inurl:shows
+            id2 = g_imdb2tv[imdbid];
+
         } else {
-            plugin_error();
+
+            if (extractDate(g_premier[idx],date,nondate)) {
+                premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
+            }
+            if(g_tv_plugin == "THETVDB") {
+                regex="[&?]id=[0-9]+";
+                #first try api search
+                url = "http://thetvdb.com/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
+                id2 = scanPageForMatch(url,regex,0);
+                if (id2 == "" ) {
+                    #no joy - try web search
+                    url=gTitle[idx] " "premier" site:thetvdb.com intitle:\"Series Info\"";
+                    url="http://www.bing.com/search?q="url;
+                    id2=scanPageForMatch(url,regex,0);
+                }
+                if (id2 != "" ) {
+                    id2=substr(id2,5);
+                }
+            } else if(g_tv_plugin == "TVRAGE") {
+
+                #no api search - try web search directly
+                url=gTitle[idx] " "premier_mdy" site:tvrage.com intitle:\"Television series\" intitle:summary inurl:shows";
+                id2 = scanPageForMatch(search_url(g_link_search_engines,url,10),"/id-[0-9]+",0);
+                if (id2 != "" ) {
+                    id2=substr(id2,5);
+                }
+                # lost  site:tvrage.com intitle:"Television series" intitle:summary inurl:shows
+            } else {
+                plugin_error();
+            }
+            if (id2) g_imdb2tv[imdbid] = id2;
         }
+
         DEBUG("imdb id "id" =>  "g_tv_plugin"["id2"]");
     }
     return id2;
@@ -3113,7 +3145,7 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a) {
+previousTagXXX,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp) {
 
     if (sep == "") sep = "<";
 
@@ -3131,7 +3163,7 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
 
     split(line,lines,"<");
 
-    previousTag = info["@LAST"];
+    ##previousTag = info["@LAST"];
     currentTag = info["@CURRENT"];
 
     start=1;
@@ -3145,7 +3177,7 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
 
         # lines[i] = tag>text
 
-        previousTag = "";
+        ##previousTag = "";
         #split <tag>text  [ or </tag>parenttext ]
         split(lines[i],parts,">");
 
@@ -3155,21 +3187,47 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
         # /tag2 
 
         tag = parts[1];
-        sub(/ .*/,"",tag); #Remove attributes Possible bug if space before element name
         text = parts[2];
 
-        if (tag ~ /^\/[A-Za-z0-9_]+$/ ) {
+        if ((sp=index(tag," ")) != 0) {
+            #Remove attributes Possible bug if space before element name
+            tag=substr(tag,1,sp-1);
+        }
+
+if (0) {
+        if (substr(tag,1,1) == "/" ) {
 
             # end tag
             #if end tag, remove it from currentTag
-            previousTag = currentTag;
+            ##previousTag = currentTag;
             sub(tag"$","",currentTag);
+
+
+        } else {
+
+            # start tag
+            ##previousTag = currentTag;
+            currentTag = currentTag "/" tag;
+
+            #If merging element values add a sepearator
+            if (info[currentTag] != "") {
+                info[currentTag] = info[currentTag] sep;
+            }
+        }
+} else {
+        if (substr(tag,1,1) == "/" && tag ~ /^\/[A-Za-z0-9_]+$/ ) {
+
+            # end tag
+            #if end tag, remove it from currentTag
+            ##previousTag = currentTag;
+            #sub(tag"$","",currentTag);
+            currentTag = substr(currentTag,1,length(currentTag)-length(tag));
 
 
         } else if (tag ~ /^[A-Za-z0-9_]+$/ ) {
 
             # start tag
-            previousTag = currentTag;
+            ##previousTag = currentTag;
             currentTag = currentTag "/" tag;
 
             #If merging element values add a sepearator
@@ -3181,6 +3239,7 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
             #dont recognise tag - add to text
             info[currentTag] = info[currentTag] tag;
         }
+}
 
         info[currentTag] = info[currentTag] text;
 
@@ -3203,7 +3262,7 @@ previousTag,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_nam
 
     }
     info["@CURRENT"] = currentTag;
-    info["@LAST"] = previousTag;
+    ##info["@LAST"] = previousTag;
 }
 
 # Return 3 if a possible Title is a very good match for titleIn
@@ -3779,10 +3838,17 @@ function get_episode_url(seriesUrl,season,episode,\
 episodeUrl ) {
     episodeUrl = seriesUrl;
     if (g_tv_plugin == "THETVDB") {
+if (g_tvdb_use_episode_api) {
         #Note episode may be 23,24 so convert to number.
         if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",episodeUrl)) {
             return episodeUrl;
         }
+} else {
+        #get everything
+        if (sub(/en.xml$/,"all/en.xml",episodeUrl)) {
+            return episodeUrl;
+        }
+}
     } else if (g_tv_plugin == "TVRAGE") {
         #same url
         return episodeUrl;
@@ -3798,7 +3864,15 @@ episodeUrl,filter,result) {
     episodeUrl = get_episode_url(seriesUrl,season,episode);
     if (episodeUrl != "") {
         if (g_tv_plugin == "THETVDB") {
+
+if (g_tvdb_use_episode_api) {
             result = fetchXML(episodeUrl,g_tv_plugin"-episode",episodeInfo);
+} else {
+            filter["/Data/Episode/SeasonNumber"] = season;
+            filter["/Data/Episode/EpisodeNumber"] = episode;
+            result = fetch_xml_single_child(episodeUrl,g_tv_plugin"-episode","/Data/Episode",filter,episodeInfo);
+}
+
         } else if (g_tv_plugin == "TVRAGE" ) {
             filter["/Show/Episodelist/Season#no"] = season;
             filter["/Show/Episodelist/Season/episode/seasonnum"] = episode;
@@ -3843,12 +3917,12 @@ function get_tv_series_info(idx,tvDbSeriesUrl) {
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 function get_tv_series_info_tvdb(idx,tvDbSeriesUrl,\
-seriesInfo,episodeUrl,episodeInfo,imdbLink,bannerApiUrl) {
+seriesInfo,episodeInfo,imdbLink,bannerApiUrl) {
 
 
     fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
 
-    bannerApiUrl = episodeUrl = tvDbSeriesUrl;
+    bannerApiUrl = tvDbSeriesUrl;
 
     # For twin episodes just use the first episode number for lookup by adding 0
     sub(/en.xml/,"banners.xml",bannerApiUrl);
@@ -3961,19 +4035,35 @@ seriesInfo,episodeInfo,filter,sid,url,e) {
 }
 
 function clean_xml_path(xmlpath,xml,\
-t) {
+t,currentTag,lastTag) {
+
+if ( 0 ) {
+    #This is the proper way to remove the element
     #delete the current child
     for(t in xml) {
         if (index(t,xmlpath) == 1) {
             delete xml[t];
         }
     }
+
+} else {
+
+    #alternatively remove ALL xml data but keep the @LAST and @CURRENT elements
+    #so that the XML paths are preserved.
+    currentTag=xml["@CURRENT"];
+    lastTag=xml["@LAST"];
+    delete xml;
+    xml["@CURRENT"] = currentTag;
+    xml["@LAST"] = lastTag;
+
+}
+
     # TODO delete this bit - just checking self modifying loops work ok
-    for(t in xml) { if (index(t,xmlpath) == 1) { ERROR("Bad loop"); exit; } }
+    # for(t in xml) { if (index(t,xmlpath) == 1) { ERROR("Bad loop"); exit; } }
 }
 
 function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
-f,line,start_tag,end_tag,found,t,last_tag) {
+f,line,start_tag,end_tag,found,t,last_tag,isnum) {
 
 
    delete xmlout;
@@ -3989,6 +4079,7 @@ f,line,start_tag,end_tag,found,t,last_tag) {
 
    for(t in tagfilters) {
        DEBUG("filter ["t"]=["tagfilters[t]"]");
+       isnum[t] = (tagfilters[t] ~ "^[0-9]+$" );
    }
 
    f = getUrl(url,filelabel,1);
@@ -4005,7 +4096,7 @@ f,line,start_tag,end_tag,found,t,last_tag) {
             if (index(line,end_tag) > 0) {
                 found=1;
                 for(t in tagfilters) {
-                    if (tagfilters[t] ~ "^[0-9]+$" ) {
+                    if (isnum[t]) {
                         if (xmlout[t] - tagfilters[t] != 0) {
                             #DEBUG("Filter block "xmlout[t]" != "tagfilters[t]);
                             found=0;break;
@@ -4454,24 +4545,20 @@ function download_image(field_id,url,idx,\
     #Get the poster if we havent fetched it already.
     havePoster = hasContent(internal_path);
 
-    if (g_settings["catalog_fetch_posters"] == "no") {
-        INFO("catalog_fetch_posters disabled");
-    } else {
-        if (!havePoster) {
-            get_it = 1;
-        } else if (!g_already_queued_poster_for_this_run[internal_path]) {
-            #note images are fetched aynchronously - we should touch the file really.
-            if (field_id == POSTER) {
-                get_it = REFRESH_POSTERS;
-            } else if (field_id == FANART) {
-                get_it = REFRESH_FANART;
-            }
-        } else {
-            INFO("Already got "internal_path);
+    if (!havePoster) {
+        get_it = 1;
+    } else if (!g_image_requested[internal_path]) {
+        #note images are fetched aynchronously - we should touch the file really.
+        if (field_id == POSTER) {
+            get_it = REFRESH_POSTERS;
+        } else if (field_id == FANART) {
+            get_it = REFRESH_FANART;
         }
+    } else {
+        INFO("Already got "internal_path);
     }
 
-    if (get_it && !(internal_path in g_image_requested) ) {
+    if (get_it ) {
 
         g_image_requested[internal_path]=1;
 
@@ -4497,8 +4584,6 @@ function download_image(field_id,url,idx,\
             wget_args = wget_args " --referer=\""referer"\" ";
         }
         wget_args = wget_args " -U \""g_user_agent"\" ";
-
-        g_already_queued_poster_for_this_run[internal_path] = 1;
 
         # Script to fetch poster and create sd and hd versions
         if (field_id == POSTER) {
@@ -4743,7 +4828,7 @@ title,y,poster_imdb_url) {
                 }
             }
             if (g_director[idx] == "" && index(line,"Director:")) {
-                g_director[idx] = scrape_until("idirector",f,"/name/",0);
+                g_director[idx] = scrape_until("idirector",f,"/name/",1);
             }
 
             if (g_plot[idx] == "" && index(line,"Plot:")) {
@@ -5172,7 +5257,8 @@ function changeable(f) {
     #TODO Expand to include only paths listed in scan list.
 
     #Check folder depth to avoid nasty accidents.
-    if (substr(f,1,5) == "/tmp/") return 1;
+    if (index(f,"/tmp/") == 1) return 1;
+    if (index(f,"/share/tmp/") == 1) return 1;
 
     if (!match(f,"/[^/]+/[^/]+/")) {
         WARNING("Changing ["f"] might be risky. please make manual changes");
@@ -5454,7 +5540,7 @@ row,estimate,nfo) {
     }
     row=row"\t"SEASON"\t"g_season[i];
     row=row"\t"EPISODE"\t"g_episode[i];
-    row=row"\t"POSTER"\t"g_poster[i];
+    #row=row"\t"POSTER"\t"g_poster[i];
     row=row"\t"GENRE"\t"g_genre[i];
     row=row"\t"RATING"\t"g_rating[i];
 
@@ -5482,7 +5568,7 @@ row,estimate,nfo) {
         gsub(/.*\//,"",nfo);
     }
     row=row"\t"NFO"\t"nfo;
-    row=row"\t"FANART"\t"g_fanart[i];
+    #row=row"\t"FANART"\t"g_fanart[i];
     row=row"\t"PLOT"\t"g_plot[i];
     row=row"\t"EPPLOT"\t"g_epplot[i];
     return row;
@@ -5644,6 +5730,9 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "RESCAN" )  {
             RESCAN=1;
             moveDown++;
+        } else if (ARGV[i] == "PARALLEL_SCAN" )  {
+            PARALLEL_SCAN=1;
+            moveDown++;
         } else if (match(ARGV[i],"^[a-zA-Z_]+=")) {
             #variable assignment - keep for awk to process
         } else {
@@ -5664,13 +5753,12 @@ function load_catalog_settings(file_name) {
 
     load_settings(file_name);
 
-    g_settings["catalog_ignore_paths"]=glob2re(g_settings["catalog_ignore_paths"]);
+    gsub(/,/,"|",g_settings["catalog_format_tags"]);
+    gsub(/,/,"|",g_settings["catalog_ignore_paths"]);
+    gsub(/,/,"|",g_settings["catalog_ignore_names"]);
 
-    #Replace dir1|dir2|dir3 with dir1.*|dir2.*|dir3.*
-    gsub(/[|]/,".*|",g_settings["catalog_ignore_paths"]);
-    g_settings["catalog_ignore_paths"]=g_settings["catalog_ignore_paths"]".*";
-
-    g_settings["catalog_ignore_names"]=glob2re(g_settings["catalog_ignore_names"]);
+    g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"]);
+    g_settings["catalog_ignore_names"]="^"glob2re(g_settings["catalog_ignore_names"])"$";
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));
 

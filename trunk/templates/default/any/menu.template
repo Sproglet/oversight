@@ -55,10 +55,10 @@
                     [<td align=center>:MARK_BUTTON:</td>]
                     [<td align=center>:DELETE_BUTTON:</td>]
                     [<td align=center>:SELECT_MARK_SUBMIT:</td>]
-                    [<td align=center>:SELECT_DELETE_SUBMIT:</td>]
-                    [<td align=center>:SELECT_DELIST_SUBMIT:</td>]
-                    [<td align=center>:SELECT_CANCEL_SUBMIT:</td>]
-                    <td width=10%>[:RIGHT_BUTTON:]</td>
+                    [<td align=center class=delete>:SELECT_DELETE_SUBMIT:</td>]
+                    [<td align=center class=delist>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=cancel>:SELECT_CANCEL_SUBMIT:</td>]
+                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
                 </tr>
             </table>
         </td></tr></table>

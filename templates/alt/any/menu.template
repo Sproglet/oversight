@@ -15,7 +15,7 @@
   }
         </script>
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background="/oversight/templates/alt/720/default.jpg" >
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
         [:FORM_START:]
 <center>
         <table id=main width=100% heigth=100%>

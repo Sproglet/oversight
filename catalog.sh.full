@@ -17,6 +17,11 @@
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20090913-1BETA
+for d in /mnt/syb8634 /nmt/apps ; do
+    if [ -f $d/MIN_FIRMWARE_VER ] ; then
+        NMT_APP_DIR=$d
+    fi
+done
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 # Added more checking around nfo name
@@ -43,8 +48,13 @@ done
 APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
 APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 
+is_nmt() {
+    [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER ] 
+}
+
+
 NMT=0
-if [ -f /mnt/syb8634/VERSION ] ; then
+if is_nmt ; then
     uid=nmt
     gid=nmt
     if [ -d /share/bin ] ; then
@@ -76,7 +86,7 @@ PERMS() {
 
 # something sometimes changes /tmp permissions so only root can write
 tmp_root=/tmp/oversight
-if [ -f /mnt/syb8634/VERSION  ] ; then
+if is_nmt ; then
     tmp_root=/share/tmp/oversight
 fi
 
@@ -720,6 +730,7 @@ END{
         close(g_timestamp_file);
         unlock(g_scan_lock_file);
     }
+    remove_absent_files_from_new_db(INDEX_DB);
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
@@ -1623,6 +1634,115 @@ kept_count,updated_count,f,dbline,dbline2,dbfields,idx) {
     return kept_count+updated_count;
 }
 
+function grandparent(f) {
+    sub(/\/$/,"",f); # remove vobsub indicator
+    sub(/\/[^\/]+\/[^\/]+/,"",f);
+    return f;
+}
+
+# Re-instate old pruning test with extra folder check for absent media
+# Because we need to check every file in the database it can take some time
+# also if using awk we want to avoid spawning a process (or two) for each check
+# so ls is used. If a file is absent then it is removed only if its grandparent is 
+# present - this is to allow for detached devices. (sort of)
+function remove_absent_files_from_new_db(db,\
+    tmp_db,dbfields,\
+    list,f,q,maxCommandLength,dbline,keep,\
+    gp,blacklist_re,blacklist_dir,timer) {
+    list="";
+    maxCommandLength=3999;
+
+    INFO("Pruning...");
+    tmp_db = db "." JOBID ".tmp";
+
+    if (lock(g_db_lock_file)) {
+        g_kept_file_count=0;
+        g_absent_file_count=0;
+
+        while((getline dbline < db ) > 0) {
+
+            if ( substr(dbline,1,1) != "\t" ) { continue; }
+
+            parseDbRow(dbline,dbfields,1);
+
+            f = dbfields[FILE,1];
+
+            
+            if (blacklist_re != "" && f ~ "NETWORK_SHARE("blacklist_re")" ) {
+                WARNING("Skipping "f" - blacklisted device");
+            } else {
+
+                keep=1;
+                timer = systime();
+                if (!exists(f) ) {
+                    if (timer-systime() > 15) {
+                        # error accessing nas - blacklist this path.
+                        blacklist_dir = f;
+                        if (match(f,"NETWORK_SHARE/[^\/]+/")) {
+                            blacklist_dir = substr(f,RSTART,RLENGTH);
+                            sub(/.*NETWORK_SHARE/,"",blacklist_dir);
+                            ERROR("Unresponsive device : Blacklisting access to NETWORK_SHARE"blacklist_dir);
+                            blacklist_re = blacklist_re "|" blacklist_dir;
+                            DEBUG("re = "blacklist_re);
+                        }
+                    } else {
+                        gp = grandparent(f);
+                        if (exists(gp)) {
+                            keep=0;
+                            g_absent_file_count++;
+                        }
+                    }
+                }
+                if (keep) {
+                    print dbline > tmp_db;
+                } else {
+                    INFO("Removing "f);
+                }
+            }
+        }
+        close(tmp_db);
+        close(db);
+        INFO("UNCHANGED:"g_kept_file_count);
+        INFO("NOT FOUND:"g_absent_file_count);
+        #system("mv "quoteFile(tmp_db)" "quoteFile(db));
+        unlock(g_db_lock_file);
+    }
+}
+
+function determineFileStatus(f,list,newDbFile,\
+cmd,i,line) {
+    INFO("Checking batch");
+    cmd="ls -d -- " list " > " f " 2>&1"
+    #DEBUG("######### "cmd" #############");
+    system(cmd);
+    FS="\n";
+    while((getline line < f ) > 0 ) {
+
+        if (line == "" ) continue;
+
+        if ((i=index(line,": No such file or directory")) > 0 || (i=index(line,": Not a directory")) > 0) {
+            line = substr(line,1,i-1);
+            i = index(line,"/");
+            line = substr(line,i);
+
+            INFO("de-listing ["line"]");
+            g_absent_file_count++;
+
+        } else if (gMovieFilePresent[line] == 0) {
+
+            #DEBUG("KEEPING ["$0"]");
+            if (line in g_index_line) {
+                print g_index_line[line] > newDbFile;
+                g_kept_file_count++;
+            } else {
+                WARNING("["line"] not present in index");
+            }
+        }
+    }
+    close(f);
+}
+
+
 function getPath(name,localPath) {
     if (substr(name,1,1) == "/" ) {
         #absolute
@@ -1754,9 +1874,9 @@ function extractEpisodeByPatterns(line,details,idx) {
     #Note if looking at entire path name folders are seperated by /
 
     line = tolower(line);
-    if (!extractEpisodeByPattern(line,0,"\\<","s[0-9][0-9]?","[/ .]?e[0-9]+e[0-9]+",details,idx)) {  # s00e00e01
-    if (!extractEpisodeByPattern(line,0,"\\<","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
-        if (!extractEpisodeByPattern(line,0,"\\<","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
+    if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","s[0-9][0-9]?","[/ .]?e[0-9]+e[0-9]+",details,idx)) {  # s00e00e01
+    if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
+        if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
             if (!extractEpisodeByPattern(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode)[^a-z0-9]*[0-9][0-9]?",details,idx)) { #00x00 
 
                 ##remove 264 before trying pure numeric detection
@@ -1791,7 +1911,7 @@ date,nonDate) {
 #nonDate[1]=bit before date, nonDate[2]=bit after date
 # or empty array
 function extractDate(line,date,nonDate,\
-y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s) {
+y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
 
     textMonth = 0;
     delete date;
@@ -2055,7 +2175,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 idx,file,bestUrl,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,total_merge_cycles) {
+ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned) {
 
     startTime = systime();
     numFiles=0;
@@ -2069,6 +2189,8 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles) {
    
 
     for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
+
+        begin_search(idx,"");
 
         g_elapsedTime = g_elapsedTime - systime();
         thisTime = -systime();
@@ -2196,8 +2318,32 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles) {
     clean_globals();
 }
 
+function begin_search(idx,method) {
+    if (method == "" ) {
+        # reset search methods tried for start of new item
+        g_search_types_tried = "";
+
+    } else {
+
+        if (index(g_search_types_tried,method)) {
+            return 0;
+        }
+        if (g_search_types_tried != "") {
+            # reset any variales set by the failed method
+            gTitle[idx] = "";
+        }
+        g_search_types_tried = g_search_types_tried " " method;
+        DEBUG("Search method = "method);
+        return 1;
+    }
+}
+
 function tv_search(idx,bestUrl,\
 tvDbSeriesPage) {
+
+    if (!begin_search(idx,"tv_search")) {
+        return;
+    }
 
     if (bestUrl == "" && g_imdb[idx] != "" ) {
         bestUrl = g_imdb[idx];
@@ -2227,7 +2373,9 @@ tvDbSeriesPage) {
 
         tvDbSeriesPage = search_tv_series_names(idx,gTitle[idx]);
         if (tvDbSeriesPage != "") {
-            get_tv_series_info(idx,tvDbSeriesPage);
+            if (!get_tv_series_info(idx,tvDbSeriesPage) ) {
+                return movie_search(idx,bestUrl);
+            }
             bestUrl = get_imdb_url_from_tv_website(idx);
             scrapeIMDBTitlePage(idx,bestUrl);
             if (g_category[idx] == "M" ) {
@@ -2246,7 +2394,9 @@ tvDbSeriesPage) {
                     return movie_search(idx,bestUrl);
                 }
                 tvDbSeriesPage = get_tv_series_api_url(searchTvByImdbId(idx,extractImdbId(bestUrl)));
-                get_tv_series_info(idx,tvDbSeriesPage);
+                if (!get_tv_series_info(idx,tvDbSeriesPage) ) {
+                    return movie_search(idx,bestUrl);
+                }
             }
         }
     }
@@ -2255,6 +2405,11 @@ tvDbSeriesPage) {
 function movie_search(idx,bestUrl,\
 name,name_no_tags,i,\
 search_regex_key,search_order_key,search_order,s) {
+
+    if (!begin_search(idx,"movie_search")) {
+        return;
+    }
+
     # search online info using film basename looking for imdb link
     # -----------------------------------------------------------------------------
 
@@ -3085,8 +3240,8 @@ url,id2,premier_mdy,date,nondate,regex) {
                 id2 = scanPageForMatch(url,regex,0);
                 if (id2 == "" ) {
                     #no joy - try web search
-                    url=gTitle[idx] " "premier" site:thetvdb.com intitle:\"Series Info\"";
-                    url="http://www.bing.com/search?q="url;
+                    url=gTitle[idx] " "premier_mdy" site:thetvdb.com intitle:\"Series Info\"";
+                    url="http://www.bing.com/search?q="url; #for some reason yahoo index of thetvdb is rubbish
                     id2=scanPageForMatch(url,regex,0);
                 }
                 if (id2 != "" ) {
@@ -3107,7 +3262,7 @@ url,id2,premier_mdy,date,nondate,regex) {
             if (id2) g_imdb2tv[imdbid] = id2;
         }
 
-        DEBUG("imdb id "id" =>  "g_tv_plugin"["id2"]");
+        DEBUG("imdb id "imdbid" =>  "g_tv_plugin"["id2"]");
     }
     return id2;
 }
@@ -3161,7 +3316,7 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-previousTagXXX,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp) {
+currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp) {
 
     if (sep == "") sep = "<";
 
@@ -3179,7 +3334,6 @@ previousTagXXX,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_
 
     split(line,lines,"<");
 
-    ##previousTag = info["@LAST"];
     currentTag = info["@CURRENT"];
 
     start=1;
@@ -3193,7 +3347,6 @@ previousTagXXX,currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_
 
         # lines[i] = tag>text
 
-        ##previousTag = "";
         #split <tag>text  [ or </tag>parenttext ]
         split(lines[i],parts,">");
 
@@ -3215,14 +3368,12 @@ if (0) {
 
             # end tag
             #if end tag, remove it from currentTag
-            ##previousTag = currentTag;
             sub(tag"$","",currentTag);
 
 
         } else {
 
             # start tag
-            ##previousTag = currentTag;
             currentTag = currentTag "/" tag;
 
             #If merging element values add a sepearator
@@ -3235,7 +3386,6 @@ if (0) {
 
             # end tag
             #if end tag, remove it from currentTag
-            ##previousTag = currentTag;
             #sub(tag"$","",currentTag);
             currentTag = substr(currentTag,1,length(currentTag)-length(tag));
 
@@ -3243,7 +3393,6 @@ if (0) {
         } else if (tag ~ /^[A-Za-z0-9_]+$/ ) {
 
             # start tag
-            ##previousTag = currentTag;
             currentTag = currentTag "/" tag;
 
             #If merging element values add a sepearator
@@ -3278,7 +3427,6 @@ if (0) {
 
     }
     info["@CURRENT"] = currentTag;
-    ##info["@LAST"] = previousTag;
 }
 
 # Return 3 if a possible Title is a very good match for titleIn
@@ -3912,28 +4060,30 @@ function scrape_set(idx,site) {
     g_scraped[idx] = g_scraped[idx] "," site;
 }
 
-function get_tv_series_info(idx,tvDbSeriesUrl) {
+function get_tv_series_info(idx,tvDbSeriesUrl,\
+result) {
 
     DEBUG("get_tv_series_info [" tvDbSeriesUrl "]");
     if (!scrape_check(idx,g_tv_plugin".tv") ) {
         scrape_set(idx,g_tv_plugin".tv");
 
         if (g_tv_plugin == "THETVDB") {
-            get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
+            result = get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
         } else if (g_tv_plugin == "TVRAGE") {
-            get_tv_series_info_rage(idx,tvDbSeriesUrl);
+            result = get_tv_series_info_rage(idx,tvDbSeriesUrl);
         } else {
             plugin_error();
         }
     } 
-    DEBUG("end get_tv_series_info");
+    DEBUG("end get_tv_series_info = " result);
+    return result;
 }
 
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 function get_tv_series_info_tvdb(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,imdbLink,bannerApiUrl) {
+seriesInfo,episodeInfo,imdbLink,bannerApiUrl,result) {
 
 
     fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
@@ -3958,6 +4108,7 @@ seriesInfo,episodeInfo,imdbLink,bannerApiUrl) {
         gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
         gEpTitle[idx]=episodeInfo["/Data/Episode/EpisodeName"];
         g_epplot[idx] = seriesInfo["/Data/Episode/Overview"];
+        result = 1;
     }
 
     if ("/Data/Series/id" in seriesInfo) {
@@ -3984,11 +4135,11 @@ seriesInfo,episodeInfo,imdbLink,bannerApiUrl) {
 
     if (imdbLink == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at www.thetvdb.com");
-        return "";
     } else {
         DEBUG("get_tv_series_info returns imdb url ["imdbLink"]");
         g_imdb[idx] = imdbLink;
     }
+    return result;
 }
 
 function tvDbImageUrl(path) {
@@ -4024,7 +4175,7 @@ xml,filter,r) {
 }
 
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,sid,url,e) {
+seriesInfo,episodeInfo,filter,sid,url,e,result) {
 
     delete filter;
 
@@ -4045,9 +4196,11 @@ seriesInfo,episodeInfo,filter,sid,url,e) {
         gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
         url=episodeInfo[e"/link"];
         g_epplot[idx] = scrape_one_item("tvrageplot",url,">Episode Summary</h",0,"<a ",0);
+        result = 1;
     } else {
         WARNING("Error getting episode xml");
     }
+    return result;
 }
 
 function clean_xml_path(xmlpath,xml,\
@@ -4534,13 +4687,7 @@ poster_ref) {
 #or internally in a common folder.
 # Note if poster may be url<tab>referer_url
 function download_image(field_id,url,idx,\
-    poster_ref,havePoster,with_media_path,internal_path,urls,referer,wget_args,copy_file,get_it,script_arg) {
-
-    #Check for posters stored locally with the film. these  will never be overwritten if
-    # catalog_poster_location = internal [ the default]
-#    with_media_path = local_poster_path(idx,1);
-
-    #We will possibly be updating or fetching the poster..
+    poster_ref,havePoster,internal_path,urls,referer,wget_args,get_it,script_arg) {
 
     DEBUG("Looking for new poster...");
 
@@ -5844,8 +5991,8 @@ main() {
     set +e
     echo '[INFO] catalog version '$VERSION' $Id$'
     sed 's/^/\[INFO\] os version /' /proc/version
-    if [ -f /mnt/syb8634/VERSION ] ; then
-        sed -rn '/./ s/^/\[INFO\] nmt version /p' /mnt/syb8634/VERSION
+    if is_nmt ; then
+        sed -rn '/./ s/^/\[INFO\] nmt version /p' /???/*/VERSION
     fi
     catalog DEBUG "$@" 
     x=$?

@@ -26,6 +26,13 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
 VERSION=20090721-1BETA
+
+for d in /mnt/syb8634 /nmt/apps ; do
+    if [ -f $d/MIN_FIRMWARE_VER ] ; then
+        NMT_APP_DIR=$d
+    fi
+done
+
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 #   Fixed temp file location
@@ -1974,7 +1981,7 @@ stop_screensaver() {
 # something sometimes changes /tmp permissions so only root can write
 TMP=/tmp
 is_nmt=N
-if [ -f /mnt/syb8634/VERSION  ] ; then
+if [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER  ] ; then
     TMP=/share/tmp
     mkdir -p $TMP
     is_nmt=Y
@@ -1994,8 +2001,8 @@ main() {
     INFO "unpak version $VERSION"
     INFO "script_folder [$script_folder]"
     sed 's/^/\[INFO\]/' /proc/version
-    if [ -f /mnt/syb8634/VERSION ] ; then
-        sed -rn '/./ s/^/\[INFO\] nmt version /p' /mnt/syb8634/VERSION
+    if [ $is_nmt == "Y" ] ; then
+        sed -rn '/./ s/^/\[INFO\] nmt version /p' $NMT_APP_DIR/VERSION
     fi
 
     env | grep -iv password | log_stream DEBUG env

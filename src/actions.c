@@ -197,12 +197,6 @@ void delete_queue_delete() {
         g_delete_queue=NULL;
     }
 }
-void clean_params() {
-    query_remove("idlist");
-    query_remove("view");
-    query_remove("action");
-    query_remove("select");
-}
 
 void send_command(char *source,char *remote_cmd) {
     char *cmd;
@@ -225,14 +219,11 @@ void remove_row(int delete_mode) {
     //TODO: Should also remove the id from idlist. - use regex?
 
     hashtable_destroy(source_id_hash,1,1);
-    if (count_unchecked() == 0) {
-        // No more remaining go back to main view
-        clean_params();
-    }
 }
 
 void do_actions() {
 
+    int go_main_menu_if_all_removed=0;
     char *view=query_val("view");
     char *action=query_val("action");
     //char *select=query_val("select");
@@ -353,11 +344,13 @@ void do_actions() {
 
 TRACE;
             remove_row(DELETE_MODE_DELETE);
+            go_main_menu_if_all_removed = 1;
 
         } else if (allow_delist() && strcmp(action,"Remove_From_List") == 0) {
 
 TRACE;
             remove_row(DELETE_MODE_REMOVE);
+            go_main_menu_if_all_removed = 1;
 
         }
 
@@ -368,6 +361,13 @@ TRACE;
     if (*query_val("form")) {
 
         clear_selection();
+        if (go_main_menu_if_all_removed && *query_val("view") && count_unchecked() == 0) {
+            // No more remaining go back to main view
+            query_remove("idlist");
+            query_remove("view");
+            query_remove("action");
+            query_remove("select");
+        }
 
     }
 }

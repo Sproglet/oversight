@@ -7,6 +7,12 @@
 set -eu
 VERSION=20090605-1BETA
 
+for d in /mnt/syb8634 /nmt/apps ; do
+    if [ -f $d/MIN_FIRMWARE_VER ] ; then
+        NMT_APP_DIR=$d
+    fi
+done
+
 NMT_INSTALL_HELP() {
     cat <<HERE
 This provides some functions to aid installing/uninstalling.
@@ -89,12 +95,12 @@ LOAD_SETTINGS() {
     . /tmp/setting.txt.sh
 }
 
-NMT_INSTALL_STARTSH="/opt/sybhttpd/localhost.drives/HARD_DISK/start_app.sh"
+NMT_INSTALL_STARTSH="/share/start_app.sh"
 NMT_INSTALL_MARKER="#M_A_R_K_E_R_do_not_remove_me"
 
 #This is the standard NMT script which will be modified to launch the community install script.
 #Dont change this otherwise the community script may get launched twice.
-NMT_INSTALL_STANDARD_SCRIPT="/mnt/syb8634/etc/ftpserver.sh"
+NMT_INSTALL_STANDARD_SCRIPT="$NMT_APP_DIR/etc/ftpserver.sh"
 
 #--------------------------------------------------------------------------
 #
@@ -350,9 +356,9 @@ cat <<HERE
     env
     date
     uptime
-    cat /mnt/syb8634/VERSION
+    cat $NMT_APP_DIR/VERSION
     grep ^VERSION "$1/"*
-    /mnt/syb8634/bin/nzbget -v
+    $NMT_APP_DIR/bin/nzbget -v
     egrep -iv '(^#|^$|username|password)' /share/.nzbget/nzbget.conf
     sed -r 's/(passwd|password)=.*/\1=XXX/' /tmp/setting.txt | egrep -v '(wlan|audio|BTPD|hostname)'
     crontab -u root -l 
@@ -363,7 +369,7 @@ cat <<HERE
     ls -Rl "$1"
     ls -l /share/start_app.sh
     cat /share/start_app.sh
-    awk "/^start()/,/^stop()/ 1" /mnt/syb8634/etc/ftpserver.sh
+    awk "/^start()/,/^stop()/ 1" $NMT_APP_DIR/etc/ftpserver.sh
     for i in *cgi ; do echo CGI \$i ; ./\$i | head -5 ; done
     ls -Rl /tmp/local*8883
     ps  | grep " nmt" 

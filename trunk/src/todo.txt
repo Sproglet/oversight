@@ -1,3 +1,14 @@
+check issues 93 against 1408.avi 
+check issue 86 hyphen search
+check issue 83 seg fault deleting last item
+complete issue 81 : catalog pruning using awk code from old script.
+
+cape_wrate no info at thetvdb but info at tvrage. allow failover between tv searches.
+but we need to go back to thetvdb for the banners 
+
+
+code issue 79 - episode plots. - needs skin change.
+
 Change dbrow from dynamic to fixed  or fixed/extensible
 
 trying to work out why tv form doesnt work

@@ -4,24 +4,28 @@
 #!Compressed with
 #!sed -r 's/^[  ]+/ /;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' catalog.sh.full > catalog.sh
 #!note [    ] is [<space><tab>]
+#!blank lines kept to preserve line numbers reported in errors.
 #!If not compressed then awk will report "bad address" error on some platforms.
 #
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
 # of global arrays causing memory problems.
 
 # AWK funnies
-# Sometimes awk doesnt seem to do a string compare when both values look like numbers.
+# Sometimes awk seems to do a string compare when both values look like numbers.
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
 #
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20090913-1BETA
+
+#Thanks to Jorge for pointing out C200 changes.
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
         NMT_APP_DIR=$d
     fi
 done
+
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
 # Added more checking around nfo name
@@ -31,16 +35,12 @@ done
 # Pushing limits of awks usability. Next time I'll use <insert any other scripting language here>
 # Also sometimes lines are left in for debugging
 #
-#TODO When parsing file time if month is later, or month same and date later,  then current then year--
 #TODO should check write permissions to nfo file - not urgent
-#Error displaying titles for Leon Wall-E etc. special chars.
-#
-# TODO move away from expecting g_imdb[x] to be IMDB url. It is now sometimes thetvdb.
-
-
+#TODO Error displaying titles for Leon Wall-E etc. special chars.
 # (c) Andy Lord andy@lordy.org.uk #License GPLv3
 
 DEBUG=1
+#Find install folder
 EXE=$0
 while [ -L "$EXE" ] ; do
     EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
@@ -51,7 +51,6 @@ APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 is_nmt() {
     [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER ] 
 }
-
 
 NMT=0
 if is_nmt ; then
@@ -74,6 +73,8 @@ fi
 AWK=awk
 
 #Get newer gzip and wget
+# nmt /bin/wget is buggy
+# nmt busybox gzip is not graceful for passthru of uncompressed data
 if [ -d "$APPDIR/bin" ] ; then
     export PATH="$APPDIR/bin:$PATH"
 fi
@@ -84,9 +85,9 @@ PERMS() {
     chown -R $uid:$gid "$@" || true
 }
 
-# something sometimes changes /tmp permissions so only root can write
 tmp_root=/tmp/oversight
 if is_nmt ; then
+    # on nmt something sometimes changes /tmp permissions so only root can write
     tmp_root=/share/tmp/oversight
 fi
 
@@ -179,7 +180,10 @@ Other options
     PARALLEL_SCAN  - Allow multiple scans with RESCAN or NEWSCAN keyword
     NOACTIONS      - Do not run any actions and hide Delete actions from overview.
     STDOUT         - Write to stdout (if not present output goes to log file)
-    REFRESH_POSTERS - Fetch new posters for each scanned item.
+    GET_POSTERS    - Download posters
+    REFRESH_POSTERS- Fetch new posters for each scanned item.
+    GET_FANART     - Download fanart
+    REFRESH_FANART - Fetch new fanart for each scanned item.
 USAGE
     exit 0
 fi
@@ -907,9 +911,8 @@ f,fmax) {
     gLS_TIME_POS=0; 
 
     if (1 in folderArray) {
-        fmax = 0 ; 
-        for(f in folderArray) fmax++;
 
+        fmax = hash_size(folderArray);
 
         findLSFormat();
 
@@ -1321,6 +1324,7 @@ url,triedTitles,txt,linksRequired) {
         url=searchHeuristicsForImdbLink(tolower(basename(gFolder[idx])),triedTitles,linksRequired);
     }
 
+    DEBUG("searchInternetForImdbLink=["url"]");
     return url;
 }
 
@@ -1647,7 +1651,7 @@ function grandparent(f) {
 # present - this is to allow for detached devices. (sort of)
 function remove_absent_files_from_new_db(db,\
     tmp_db,dbfields,\
-    list,f,q,maxCommandLength,dbline,keep,\
+    list,f,maxCommandLength,dbline,keep,\
     gp,blacklist_re,blacklist_dir,timer) {
     list="";
     maxCommandLength=3999;
@@ -1807,7 +1811,7 @@ function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 }
 
 function checkTvFilenameFormat(idx,\
-details,line,dirs,d,dirCount,ePos) {
+details,line,dirs,d,dirCount,ePos,dirLevels) {
 
     line = gMovieFiles[idx];
 
@@ -1816,34 +1820,28 @@ details,line,dirs,d,dirCount,ePos) {
    #DEBUG("CHECK TV "line);
    line = remove_format_tags(line);
 
-    if (extractEpisode(line,idx,details)) {
-       INFO("Found TV info in file name:"line);
-    } else {
-       DEBUG("failed level 0 check tv ["line"]");
+   split(gFolder[idx],dirs,"/");
+   dirCount=hash_size(dirs);
+   dirLevels=2;
 
-       split(gFolder[idx],dirs,"/");
-       dirCount=0;
-       for(d in dirs) dirCount++;
+   # After extracting the title text we look for matching tv programs
+   # We only look at abbreviations if the title did NOT use the folder name.
+   # The assumption is the people abbreviate file names but not folder names.
+   g_search_abbreviations=1;
 
-       if (dirCount == 0 ) return 0;
-
-       line=dirs[dirCount]"/"line;
+   for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 
        if (extractEpisode(line,idx,details)) {
-           INFO("Found TV Info in dir/file:"line);
-        } else {
-           DEBUG("failed level 1 check tv ["line"]");
-           if (dirCount == 1 ) return 0;
-           line=dirs[dirCount-1]"/"line;
-           if (extractEpisode(line,idx,details)) {
-               INFO("Found TV Info in dir1/dir2/file:"line);
-           } else {
-               DEBUG("failed level 2 check tv ["line"]");
-               return 0;
-           }
+           break;
        }
-    }
-    DEBUG("CONTINUE CHECK TV "line);
+       if (d == dirLevels) {
+           INFO("No tv series-episode format in ["line"]");
+           return 0;
+       }
+       line=dirs[dirCount-d]"/"line;
+       g_search_abbreviations = 0;
+   }
+   INFO("Found tv info in file name:"line);
 
     adjustTitle(idx,details[TITLE],"filename");
 
@@ -1874,18 +1872,22 @@ function extractEpisodeByPatterns(line,details,idx) {
     #Note if looking at entire path name folders are seperated by /
 
     line = tolower(line);
-    if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","s[0-9][0-9]?","[/ .]?e[0-9]+e[0-9]+",details,idx)) {  # s00e00e01
-    if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
+    if (!extractEpisodeByPattern(line,0,"","s[0-9][0-9]?","[/ .]?e[0-9]+e[0-9]+",details,idx)) {  # s00e00e01
+    if (!extractEpisodeByPattern(line,0,"","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
         if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
             if (!extractEpisodeByPattern(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode)[^a-z0-9]*[0-9][0-9]?",details,idx)) { #00x00 
 
-                ##remove 264 before trying pure numeric detection
-                #if (index(line,"x264")) {
-                    #gsub(/\<x264\>/,"x-264",line);
-                #}
-                if (!extractEpisodeByPattern(line,1,"[^-0-9]","([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details,idx)) { # ...name101...
+                #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
+                if (!extractEpisodeByDates(idx,line,details)) {
 
-                    return 0;
+                    ##remove 264 before trying pure numeric detection
+                    #if (index(line,"x264")) {
+                        #gsub(/\<x264\>/,"x-264",line);
+                    #}
+                    if (!extractEpisodeByPattern(line,1,"[^-0-9]","([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details,idx)) { # ...name101...
+
+                        return 0;
+                    }
                 }
             }
         }
@@ -1925,8 +1927,8 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
     s="[-_. /]";
     m1or2 = "(" m1 "|" m2 ")";
     d1or2 = "(" d1 "|" d2 ")";
-    mword="[A-Za-z]+";
-    #mword=tolower("("g_months_short"|"g_months_long")");
+    #mword="[A-Za-z]+";
+    mword=tolower("("g_months_short"|"g_months_long")");
 
     d = m = y = 0;
     if  (match(line,y4 s m1or2 s d1or2)) {
@@ -2074,10 +2076,8 @@ tvdbid,episodeInfo,d,m,y,match_date,result,filter) {
 function extractEpisode(line,idx,details,        d,dir) {
 
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-    if (!extractEpisodeByDates(idx,line,details)) {
-        if (!extractEpisodeByPatterns(line,details,"")) {
-            return 0;
-        }
+    if (!extractEpisodeByPatterns(line,details,"")) {
+        return 0;
     }
 
    DEBUG("Extracted title ["details[TITLE] "]");
@@ -2086,19 +2086,23 @@ function extractEpisode(line,idx,details,        d,dir) {
         #File starts with season number eg. ^<season><episode>..." so title must be in folder name.
 
         split(gFolder[idx],dir,"/"); # split folder
-        for(d in dir ) { ; } # Count
-
-        details[TITLE] = clean_title(dir[d]);
-        DEBUG("Using parent folder for title ["details[TITLE] "]");
-        sub(/(S[0-9]|Series|Season) *[0-9]+.*/,"",details[TITLE]);
+        d=hash_size(dir);
+        details[TITLE] = remove_season(clean_title(dir[d]));
         if (details[TITLE] == "" ) {
             # Looks like an intermediate Season folder. Get the parent folder.
             details[TITLE] = clean_title(dir[d-1]);
             DEBUG("Using grandparent folder for title ["details[TITLE] "]");
+        } else {
+            DEBUG("Using parent folder for title ["details[TITLE] "]");
         }
     }
 
     return 1;
+}
+
+function remove_season(t) {
+    sub(/(S|Series *|Season *)[0-9]+.*/,"",t);
+    return clean_title(t);
 }
 
 #This would be easier using sed submatches.
@@ -2204,7 +2208,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned) {
         file=gMovieFiles[idx];
         if (file == "" ) continue;
 
-        INFO("\n\t---\t---\t\t---\t\t---\n");
+        INFO("\n\t===\t===\t\t===\t\t===\n");
         INFO("Start item "idx": ["file"]");
 
         DEBUG("folder :["gFolder[idx]"]");
@@ -2306,7 +2310,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned) {
             }
         }
     }
-    INFO("\n\t---\t\t---\t\t---\t\t---\n");
+    INFO("\n\t===\t\t===\t\t===\t\t===\n");
     # At the end we always make sure merge_files_and_do_actions has been called
     # at least once as this loads the database and carries out any file actions
     if (total_merge_cycles == 0 || ready_to_merge_count) {
@@ -2397,7 +2401,9 @@ tvDbSeriesPage) {
                 if (!get_tv_series_info(idx,tvDbSeriesPage) ) {
                     return movie_search(idx,bestUrl);
                 }
-            }
+            } else {
+                return movie_search(idx,bestUrl);
+            }   
         }
     }
 }
@@ -2475,9 +2481,9 @@ search_regex_key,search_order_key,search_order,s) {
     if (bestUrl != "") {
 
         scrapeIMDBTitlePage(idx,bestUrl);
+        # fallback to tv search doesnt make sense here - we have no season / episode info
         if (g_category[idx] == "T" ) {
-            INFO("Fallback to tv search");
-            return tv_search(idx,bestUrl);
+            INFO("Unidentifed TV format???");
         }
 
     }
@@ -2810,7 +2816,9 @@ tvDbSeriesPage,alternateTitles,cache_key) {
     DEBUG("search_tv_series_names: bytitles="tvDbSeriesPage);
     if (tvDbSeriesPage) {
         g_search_hits[g_tv_plugin]++;
-    } else {
+
+    } else if ( g_search_abbreviations ) {
+
         # Abbreviation search
         g_search_total[g_tv_plugin".tvabbrev"]++;
 
@@ -2876,14 +2884,22 @@ initial) {
     dump(0,"abbrev["abbrev"]",alternateTitles);
 }
 
-function copyHash(a1,a2,i) {
-    delete a1 ; mergeHash(a1,a2) ;
+function hash_copy(a1,a2) {
+    delete a1 ; hash_merge(a1,a2) ;
 }
-function mergeHash(a1,a2,i) {
+function hash_merge(a1,a2,\
+i) {
     for(i in a2) a1[i] = a2[i];
 }
-function addHash(a1,a2,i) {
+function hash_add(a1,a2,\
+i) {
     for(i in a2) a1[i] += a2[i];
+}
+function hash_size(h,\
+s,i){
+    s = 0 ; 
+    for(i in h) s++;
+    return s;
 }
 
 function search1TvId(idx,title,\
@@ -2932,7 +2948,7 @@ t,count,tmpTitles,origTitles,dummy,baseline,found,query,baseline,link_count) {
     dump(2,"pre-usenet",titles);
 
     # save for later as titles and filteredTitles may be the same hash
-    copyHash(origTitles,titles);
+    hash_copy(origTitles,titles);
 
     # First get a dummy item to compare
     dummy=rand()systime()rand();
@@ -3018,12 +3034,12 @@ function selectBestOfBestTitle(idx,titles,\
 id,bestId,bestFirstAired,ages,count) {
     INFO("TODO:Refine selection rules here. May user should choose");
     dump(0,"closely matched titles",titles);
-    for(id in titles) count++;
+    count=hash_size(titles);
 
     if (count == 0) {
         bestId = "";
     } else if (count == 1) {
-        bestId = id;
+        bestId = firstIndex(titles);
     } else {
 
         INFO("For now just getting the most recent first aired for s"g_season[idx]"e"g_episode[idx]);
@@ -3056,7 +3072,7 @@ bestScore,potentialTitle,potentialMatches,origTitles,titleScore,count) {
     dump(0,"pre tvdb check",titleInHash);
 
     #Make a safe copy in case titleInHash is the same as titleOutHash
-    copyHash(origTitles,titleInHash);
+    hash_copy(origTitles,titleInHash);
 
     for(potentialTitle in titleInHash) {
         titleScore[potentialTitle] = searchTv(potentialTitle,requiredTags,potentialMatches);
@@ -3241,8 +3257,9 @@ url,id2,premier_mdy,date,nondate,regex) {
                 if (id2 == "" ) {
                     #no joy - try web search
                     url=gTitle[idx] " "premier_mdy" site:thetvdb.com intitle:\"Series Info\"";
-                    url="http://www.bing.com/search?q="url; #for some reason yahoo index of thetvdb is rubbish
-                    id2=scanPageForMatch(url,regex,0);
+                    #url="http://www.bing.com/search?q="url; #for some reason yahoo index of thetvdb is rubbish
+                    #id2=scanPageForMatch(url,regex,0);
+                    id2 = scanPageForMatch(search_url(g_link_search_engines,url,10),regex,0);
                 }
                 if (id2 != "" ) {
                     id2=substr(id2,5);
@@ -3541,7 +3558,7 @@ function filterSimilarTitles(title,titleHashIn,titleHashOut,\
 i,score,bestScore,tmpTitles) {
 
     #Save a copy in case titleHashIn = titleHashOut
-    copyHash(tmpTitles,titleHashIn);
+    hash_copy(tmpTitles,titleHashIn);
 
     #Build score hash
     for(i in titleHashIn) {
@@ -3876,22 +3893,28 @@ maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
 #which works for google,yahoo and msn for now.
 #Searching is more intensive now and it is easy to get google rejecting searches based on traffic.
 #So we apply round-robin (google,yahoo,msn) to avoid getting blacklisted.
-# msn search results are similar to google for this purpose.
 # Both yahoo and msn have uk servers that are different to generic server.
 # Google is using load balancing (from my UK perspective)
 #Also the wget function will also sleep based on domain of url
+
+# Google is MILES ahead of yahoo and bing for the kind of searching oversight is doing.
+# its a shame that it will blacklist repeat searches very quickly.
+#
+# For example of yahoo lameness
+# http://uk.search.yahoo.com/search?p=102+minutes+that+changed+america+%2Bimdb
+#
 function search_url(search_engines,q,num) {
     #return "http://www.scroogle.org/cgi-bin/nbbw.cgi?Gw="q;
     ++g_web_search_count;
     if (!(g_web_search_count in search_engines )) g_web_search_count=1;
 
-#    if (search_engines[g_web_search_count] == "google") {
-#        return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
-#
-#    } else if (search_engines[g_web_search_count] == "googleie") {
-#        return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
-#
-#    } else
+    if (search_engines[g_web_search_count] == "google") {
+        return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
+
+    } else if (search_engines[g_web_search_count] == "googleie") {
+        return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
+
+    } else
     if (search_engines[g_web_search_count] == "yahoouk") {
         return "http://uk.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
 
@@ -3901,13 +3924,16 @@ function search_url(search_engines,q,num) {
     } else if (search_engines[g_web_search_count] == "yahoo") {
         return "http://search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
 
-#    } else if (search_engines[g_web_search_count] == "msn") {
-#        gsub(/inurl%/,"site%",q);
-#        return "http://search.msn.com/results.aspx?q="q;
-#
-#    } else if (search_engines[g_web_search_count] == "msnuk") {
-#        gsub(/inurl%/,"site%",q);
-#        return "http://search.msn.co.uk/results.aspx?q="q;
+    } else if (search_engines[g_web_search_count] == "aol") {
+        return "http://search.aol.com/aol/search?q="q; # (num==""?"":"&n="num);
+
+    } else if (search_engines[g_web_search_count] == "msn") {
+        gsub(/inurl%/,"site%",q);
+        return "http://search.msn.com/results.aspx?q="q;
+
+    } else if (search_engines[g_web_search_count] == "msnuk") {
+        gsub(/inurl%/,"site%",q);
+        return "http://search.msn.co.uk/results.aspx?q="q;
 
     } else {
         ERROR("Unknown search engine "g_web_search_count" ["search_engines[g_web_search_count]"]");
@@ -4309,11 +4335,10 @@ function adjustTitle(idx,newTitle,source) {
     }
 
     if (!(source in gTitlePriority)) {
-        ERROR("Bad value ["source"] passed to adjustTitle");
-        return;
-    }
 
-    if (gTitle[idx] == "" || gTitlePriority[source] - gTitlePriority[g_title_source[idx]] > 0) {
+        ERROR("Bad value ["source"] passed to adjustTitle");
+
+    } else if (gTitle[idx] == "" || gTitlePriority[source] - gTitlePriority[g_title_source[idx]] > 0) {
         if (newTitle != gTitle[idx] ) {
             DEBUG("title changed from "g_title_source[idx]":["gTitle[idx]"] to "source":["newTitle"]");
         } else {
@@ -4766,7 +4791,7 @@ function download_image(field_id,url,idx,\
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
 function getNiceMoviePosters(idx,imdb_id,\
-search_url,poster_url,backdrop_url,referer_url,txt,xml) {
+search_url,poster_url,backdrop_url,referer_url,txt,xml,f) {
     DEBUG("Poster check imdb_id = "imdb_id);
 
     search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id;
@@ -4884,7 +4909,7 @@ f,line,count,linematches,linecount,regex_text,remain) {
                     DEBUG(regex" match "linecount" in "line);
                 }
 
-                addHash(matches,linematches);
+                hash_add(matches,linematches);
                 count += linecount;
                 if (max > 0) {
                     remain -= count;
@@ -5972,6 +5997,7 @@ url) {
     HTML_LOG(0,"it "url);
 }
 
+
 #ENDAWK
 
 ' JOBID=$JOBID PID=$$ NOW=`date +%Y%m%d%H%M%S` \
@@ -5998,8 +6024,7 @@ main() {
     x=$?
     set -e
 
-    clean_old_tmp
-    rm -fr "$tmp_dir"
+    rm -fr -- "$tmp_dir"
     chown -R $uid:$gid $INDEX_DB* "$APPDIR/tmp"
     return $x
 }
@@ -6008,17 +6033,14 @@ main() {
 
 
 clean_old_tmp() {
-    #also clean logs of aborted processes.
-    for i in `ls $tmp_root` ; do
-        if [ ! -d /proc/$i ] ; then
-            rm -fr $tmp_root/$i
-        fi
+    find "$tmp_root" -mtime +2 | while IFS= read f ; do
+        rm -fr -- "$f"
     done
 }
 
 
 clean_logs() {
-    find "$APPDIR/logs" -name \*.log -mtime +1 | while IFS= read f ; do
+    find "$APPDIR/logs" -name \*.log -mtime +2 | while IFS= read f ; do
         rm -f -- "$f"
     done
 }

@@ -63,8 +63,8 @@ catalog_user="nmt"
 catalog_group="nmt"
 # Comma seperated list of search providers. All are used esp during initial scan to avoid getting blacklisted.
 # Google is quick to block with initial scans so it is only used for deep searches.
-#catalog_search_engines="GOOGLE,MSN,YAHOO,MSNUK,YAHOOUK"
-catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
+#catalog_search_engines="GOOGLE,MSN,YAHOO,MSNUK,YAHOOUK,YAHOOAU"
+catalog_search_engines="GOOGLE,GOOGLEIE"
 catalog_deep_search_engines="GOOGLE,GOOGLEIE"
 #
 # Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods

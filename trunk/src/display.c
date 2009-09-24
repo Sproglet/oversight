@@ -301,39 +301,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *encoded_path = url_encode(path);
     int show_link = 1;
 
-    static int auto_prune=-2;
-    if (auto_prune == -2) auto_prune = *oversight_val("ovs_auto_prune") == '1';
 
-    if (!exists(path) ) {
-
-
-        char *parent_dir = util_dirname(path);
-        char *grandparent_dir = util_dirname(parent_dir);
-
-        char *name = util_basename(path);
-
-        HTML_LOG(3,"path[%s]",path);
-        HTML_LOG(3,"parent_dir[%s]",parent_dir);
-        HTML_LOG(3,"grandparent_dir[%s]",grandparent_dir);
-        HTML_LOG(3,"name[%s]",name);
-
-        show_link=0;
-        if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
-
-            //media present - file gone!
-            db_remove_row(rowid);
-            ovs_asprintf(&result,"removed %s",name);
-
-        } else {
-
-            //media gone or auto_prune disabled
-            //ovs_asprintf(&result,"<font class=error>%s</font>",name);
-            font_class="class=error";
-        }
-        FREE(name);
-        FREE(parent_dir);
-        FREE(grandparent_dir);
-    }
 
     if (show_link) {
 
@@ -1670,6 +1638,57 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 
     if (file) FREE(file);
     HTML_LOG(1,"end template");
+}
+
+
+TODO ; get grid must cycle through the items first BEFORE drawing them
+   for each item it must  call check_and_prune_item and only add if result is 1.
+
+Also tv_listing and movie_listing should call this function too. 
+
+int check_and_prune_item(DbRowId *rowid,char *path) {
+
+    int result = 0;
+    static int auto_prune=-2;
+    if (auto_prune == -2) auto_prune = *oversight_val("ovs_auto_prune") == '1';
+
+    if (nmt_mount(path) ) {
+
+        if (exists(path) ) {
+
+            result = 1;
+
+        } else {
+
+            char *parent_dir = util_dirname(path);
+            char *grandparent_dir = util_dirname(parent_dir);
+
+            char *name = util_basename(path);
+
+            HTML_LOG(3,"path[%s]",path);
+            HTML_LOG(3,"parent_dir[%s]",parent_dir);
+            HTML_LOG(3,"grandparent_dir[%s]",grandparent_dir);
+            HTML_LOG(3,"name[%s]",name);
+
+            show_link=0;
+            if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
+
+                //media present - file gone!
+                db_remove_row(rowid);
+                ovs_asprintf(&result,"removed %s",name);
+
+            } else {
+
+                //media gone or auto_prune disabled
+                //ovs_asprintf(&result,"<font class=error>%s</font>",name);
+                font_class="class=error";
+            }
+            FREE(name);
+            FREE(parent_dir);
+            FREE(grandparent_dir);
+        }
+    }
+    return result;
 }
 
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {

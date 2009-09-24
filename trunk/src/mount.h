@@ -1,4 +1,4 @@
 #ifndef __OVS_MOUNT_H__
 #define __OVS_MOUNT_H__
-void nmt_mount (char *file);
+int nmt_mount (char *file);
 #endif

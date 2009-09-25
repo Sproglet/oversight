@@ -9,13 +9,14 @@ It is aimed at users that regularly download content to their internal hard driv
 http://oversight.googlecode.com/svn/trunk/screenshots/ovs-fanart.png
 
 
-There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_Comparison jukeboxes] for the NMT platform now. Selecting the right one can be challenging. Especially if you start with ones that are not suitable.
+There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_Comparison jukeboxes] for the NMT platform now. Selecting the right one can be challenging. Especially if you start with ones that are not suitable for your own usage patterns.
 
 Here I have listed the main strengths and weaknesses of Oversight.
 
 =Advantages of Oversight==
 
   * No PC needed to scan and update media.
+  * Easy to install and use - as no PC is required this makes installation very clean.
   * Automatic addition of new media without any extra work.
   * Auto mount and playback from multiple NAS( including ISOs)
   * All content from different sources displayed in a single view. (Some might consider this a weakness if they really want separate jukeboxes) 

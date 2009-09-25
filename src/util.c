@@ -24,6 +24,7 @@
 // All folders have . and ..
 int is_empty_dir(char *dname)
 {
+    int result = 0;
     int i=0;
     DIR *d = opendir(dname);
     if (d) {
@@ -33,7 +34,9 @@ int is_empty_dir(char *dname)
         }
         closedir(d);
     }
-    return i >= 3;
+    result =  i <= 2;
+    HTML_LOG(0,"is_empty_dir[%s]=%d",dname,result);
+    return result;
 }
 
 // String hashfunction - used by string_string_hashtable()

@@ -8,24 +8,38 @@ It is aimed at users that regularly download content to their internal hard driv
 
 http://oversight.googlecode.com/svn/trunk/screenshots/ovs-fanart.png
 
-Its main strengths are 
 
-  * No PC requirement
-  * No Need to set up shares
-  * No editing XSL (powerful but yuk)
-  * Automatically watch folders for new content
+There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_Comparison jukeboxes] for the NMT platform now. Selecting the right one can be challenging. Especially if you start with ones that are not suitable.
+
+Here I have listed the main strengths and weaknesses of Oversight.
+
+=Advantages of Oversight==
+
+  * No PC needed to scan and update media.
+  * Automatic addition of new media without any extra work.
   * Auto mount and playback from multiple NAS( including ISOs)
-  * Everything in one view.
-  * Remote play - Click on browser - starts playing on TV.
-  * No Renaming of files. It has a built in scanner/scraper that works with scene releases as well as home backups.
-  * Read-Only - Does not write to media folders so can run along side other Jukeboxes.
-  * Does not require MyIHome service.
-  * Auto-hides deleted files.
+  * All content from different sources displayed in a single view. (Some might consider this a weakness if they really want separate jukeboxes) 
+  * Wide variety of file naming formats detected. 
+  * Scene names detected. No need to rename those downloads.
   * Mark shows as watched.
   * Delete files using gui.
+  * Sort and filter views dynamically. Filters can be combined.. eg Unwatched Movies beginning with 'T', or Watched Tv Shows beginning with 'M'.
+  * Read-Only - Does not write to media folders so can run along side other Jukeboxes.
+  * Does not depend on MyIHome service.
+  * Remote play - Click on browser - starts playing on TV.
   * Proper SD support. I have an SD tv! So it's not just an after thought that requires extra setting up. Downside is that HD may not look great. I try to test HD modes on PC Browser but need feedback from others until I buy a TV.
+  * Dynamic hiding/removal of deleted files.
+  * Avoids timeout issues with disconnected media archives.
+  * NZBGet post-processing scripts. - Oversight installs a script that automatically adds new media to the Oversight Catalog. This script also has many features.
 
-It's a jukebox for people that just want to watch stuff and dont want to mess about too much with settings.
+=Disadvantages of Oversight=
+  * Detailed Scraping. Actor Bios, Names of Producers, and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.
+  * Looks. Oversight has a basic skin which I will improve over time however features like reflection and 'dvd boxing' etc are unlikely to appear.
+  * Media attribute detection. Currently display of framerates etc is not supported.
+
+=Disadvantages of Oversight - to be resolved in the near future =
+  * Multi-lingual support (I plan to address this in later releases)
+
 
 By default it shows the most recently downloaded content first. When combined with automated nzb downloading this provides an environment that can automatically record series and announce when new content is ready for viewing, much like a PVR. 
 

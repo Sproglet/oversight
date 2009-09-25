@@ -110,27 +110,28 @@ char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_r
     char *tmp;
     char *k,*v;
     char *result = NULL;
-    char *good = get_theme_image_tag("ok","");
-    char *bad = get_theme_image_tag("cancel","");
-    itr = hashtable_loop_init(mounts) ;
-    while(hashtable_loop_more(itr,&k,&v)) {
-        if (v) {
-            if (util_starts_with(k,NETWORK_SHARE)) {
-                k += strlen(NETWORK_SHARE);
+    if (mounts) {
+        char *good = get_theme_image_tag("ok","");
+        char *bad = get_theme_image_tag("cancel","");
+        itr = hashtable_loop_init(mounts) ;
+        while(hashtable_loop_more(itr,&k,&v)) {
+            if (v) {
+                if (util_starts_with(k,NETWORK_SHARE)) {
+                    k += strlen(NETWORK_SHARE);
+                }
+                ovs_asprintf(&tmp,"%s<tr><td>%s</td><td class=mount%s>%s</td></tr>",
+                        NVL(result),k,v,(*v=='1'?good:bad));
+                FREE(result);
+                result = tmp;
             }
-            ovs_asprintf(&tmp,"%s<tr><td>%s</td><td class=mount%s>%s</td></tr>",
-                    NVL(result),k,v,(*v=='1'?good:bad));
-            FREE(result);
-            result = tmp;
         }
+        FREE(good);
+        FREE(bad);
     }
-    FREE(good);
-    FREE(bad);
-    if (result) {
-        ovs_asprintf(&tmp,"<table><tr><th>NAS</th><th>Status</th></tr>%s</table>",result);
-        FREE(result);
-        result = tmp;
-    }
+    ovs_asprintf(&tmp,"<table><tr><th>NAS</th><th>Status</th></tr>%s</table>",NVL(result));
+    FREE(result);
+    result = tmp;
+
     return result;
 }
 

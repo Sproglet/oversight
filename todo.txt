@@ -1,5 +1,9 @@
 Check why Russell Peters Outsource - one black one green
 
+tvrage failover.
+Big Brother looks yuk again.
+blank tv titles in F and G
+
 IMDB Movie director search is broken
 
 tvrage search - the episode title is not displayed in gui.

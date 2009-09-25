@@ -1653,12 +1653,19 @@ int check_and_prune_item(DbRowId *rowid,char *path) {
 }
 
 // Delist a file if it's grandparent folder is present and not empty.
-int delisted(DbRowId *rowid) {
+// This is deleted from the db, which will be reflected in the next page draw.
+int delisted(DbRowId *rowid)
+{
 
     char *path = rowid->file;
     int result = 0;
     static int auto_prune=-2;
-    if (auto_prune == -2) auto_prune = *oversight_val("ovs_auto_prune") == '1';
+    if (auto_prune == -2) {
+TRACE;
+        auto_prune = *oversight_val("ovs_auto_prune") == '1';
+        HTML_LOG(0,"auto delist = %d",auto_prune);
+    }
+TRACE;
 
     if (auto_prune && !exists(path)) {
         char *parent_dir = util_dirname(path);
@@ -1666,13 +1673,15 @@ int delisted(DbRowId *rowid) {
 
         char *name = util_basename(path);
 
-        HTML_LOG(1,"path[%s]",path);
-        HTML_LOG(1,"parent_dir[%s]",parent_dir);
-        HTML_LOG(1,"grandparent_dir[%s]",grandparent_dir);
-        HTML_LOG(1,"name[%s]",name);
+        HTML_LOG(0,"path[%s]",path);
+        HTML_LOG(0,"parent_dir[%s]",parent_dir);
+        HTML_LOG(0,"grandparent_dir[%s]",grandparent_dir);
+        HTML_LOG(0,"grandparent_dir[%s] exists = %d",grandparent_dir,exists(grandparent_dir));
+        HTML_LOG(0,"name[%s]",name);
 
         if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
 
+            HTML_LOG(0,"removing %s",name);
             //media present - file gone!
             db_remove_row(rowid);
             HTML_LOG(0,"removed %s",name);
@@ -1683,7 +1692,23 @@ int delisted(DbRowId *rowid) {
         FREE(parent_dir);
         FREE(grandparent_dir);
     }
+    HTML_LOG(0,"delisted [%s] = %d",path,result);
     return result;
+}
+
+// Return 1 if this row and all of its linked items are delisted.
+int all_linked_rows_delisted(DbRowId *rowid)
+{
+    int all_delisted=1;
+    DbRowId *r;
+
+TRACE;
+    for(r = rowid ; r != NULL ; r = r->linked) {
+        if (!delisted(r)) {
+            all_delisted = 0;
+        }
+    }
+    return all_delisted;
 }
 
 // Generate the HTML for the grid. 
@@ -1800,11 +1825,12 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
     int total=0;
     // Create space for pruned rows
+TRACE;
     DbRowId **prunedRows = CALLOC(items_per_page+1,sizeof(DbRowId *));
     for ( i = start ; total < items_per_page && i < numids ; i++ ) {
         DbRowId *rid = row_ids[i];
         if (rid) {
-            if (!delisted(rid)) {
+            if (!all_linked_rows_delisted(rid)) {
                 prunedRows[total++] = rid;
             }
         }

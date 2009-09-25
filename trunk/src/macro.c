@@ -7,6 +7,7 @@
 #include <sys/types.h>
 
 #include "hashtable.h"
+#include "hashtable_loop.h"
 #include "util.h"
 #include "oversight.h"
 #include "db.h"
@@ -16,6 +17,7 @@
 #include "gaya_cgi.h"
 #include "macro.h"
 #include "dbfield.h"
+#include "mount.h"
 
 #define MACRO_VARIABLE_PREFIX '$'
 #define MACRO_QUERY_PREFIX '?'
@@ -98,6 +100,36 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
 
         result  = file_to_url(fanart);
         FREE(fanart);
+    }
+    return result;
+}
+
+char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    struct hashtable *mounts = mount_points_hash();
+    struct hashtable_itr *itr;
+    char *tmp;
+    char *k,*v;
+    char *result = NULL;
+    char *good = get_theme_image_tag("ok","");
+    char *bad = get_theme_image_tag("cancel","");
+    itr = hashtable_loop_init(mounts) ;
+    while(hashtable_loop_more(itr,&k,&v)) {
+        if (v) {
+            if (util_starts_with(k,NETWORK_SHARE)) {
+                k += strlen(NETWORK_SHARE);
+            }
+            ovs_asprintf(&tmp,"%s<tr><td>%s</td><td class=mount%s>%s</td></tr>",
+                    NVL(result),k,v,(*v=='1'?good:bad));
+            FREE(result);
+            result = tmp;
+        }
+    }
+    FREE(good);
+    FREE(bad);
+    if (result) {
+        ovs_asprintf(&tmp,"<table><tr><th>NAS</th><th>Status</th></tr>%s</table>",result);
+        FREE(result);
+        result = tmp;
     }
     return result;
 }
@@ -1406,6 +1438,7 @@ void macro_init() {
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
+        hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
         //HTML_LOG(1,"end macro init");
     }
 }

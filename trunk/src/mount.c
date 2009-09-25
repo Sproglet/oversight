@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "util.h"
 #include "vasprintf.h"
@@ -8,6 +9,7 @@
 #include "hashtable.h"
 #include "oversight.h"
 #include "config.h"
+#include "network.h"
 
 int ping_link(char *link);
 
@@ -16,19 +18,47 @@ int ping_link(char *link);
  */
 static struct hashtable *mount_points = NULL;
 
+struct hashtable *mount_points_hash()
+{
+    return mount_points;
+}
+
 void add_mount_point(char *p,char *val) {
     if (hashtable_search(mount_points,p) == NULL) {
-        HTML_LOG(1,"Adding mount point [%s]",p);
+        HTML_LOG(1,"Adding mount point [%s] = %s",p,val);
         hashtable_insert(mount_points,STRDUP(p),val);
     } else {
         HTML_LOG(1,"Already added mount point [%s]",p);
     }
 }
 
+char *network_mount_point(char *file) {
+
+    char *path = NULL;
+    if (!util_starts_with(file,NETWORK_SHARE)) { 
+        return NULL;
+    }
+    // file =  "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/def.avi
+
+    char *rest = strchr(file+strlen(NETWORK_SHARE)+1,'/');
+    // eg end of "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/<<<
+    //
+    if (rest ) {
+        ovs_asprintf(&path,"%.*s",rest-file,file);
+    }   
+TRACE ; HTML_LOG(1,"network_mount_point [%s]=[%s]",file,path);
+
+    return path;
+}
+
+
 // Only look at the standard NMT NETWORK media mount points.
 void get_mount_points() {
     if (mount_points == NULL) {
         mount_points = string_string_hashtable(16); //let the OS clean this up at the end
+
+// No need to actually read mtab here - we will try to mount items as we read the database file.
+#if 0
         FILE *fp = fopen("/etc/mtab","r");
         if (fp) {
 #define BUFSIZE 200
@@ -39,6 +69,7 @@ void get_mount_points() {
 
                     char *q = p+strlen(NETWORK_SHARE);
 
+                    //seek to end of path skipping escapes.
                     while(*q) {
                        if (*q == '\\' && q[1] ) {
                            q += 2; 
@@ -57,6 +88,7 @@ void get_mount_points() {
             }
             fclose(fp);
         }
+#endif
     }
 }
 
@@ -85,38 +117,38 @@ int tried_mounting(char *path,int *mount_status) {
 
 
 
-int nmt_mount (char *file) {
+
+int nmt_mount (char *file)
+{
 
     int result = 0;
 
-HTML_LOG(1,"mount [%s]",file);
+HTML_LOG(0,"mount [%s]",file);
 
     if (!util_starts_with(file,NETWORK_SHARE)) { 
 
+        // Assume anything not in NETWORK_SHARE is mounted.
         result = 1;
 
     } else {
 
-        // eg "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/def.avi
+TRACE;
 
-        char *rest = strchr(file+strlen(NETWORK_SHARE)+1,'/');
-        // eg end of "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/<<<
+        char *path = network_mount_point(file);
 
-TRACE ; HTML_LOG(1,"mount rest [%s]",rest);
+        if (path) {
 
-        if (rest) {
-            *rest = '\0';
-            char *path = STRDUP(file);
-            // eg "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc"
+TRACE;
+            // check if weve tried mounting. result is set if we have.
+            if (tried_mounting(path,&result)) {
 
-TRACE ; HTML_LOG(1,"mount path [%s]",path);
+                // Nothing here - just for breakpoints / trace
+TRACE;
 
-            *rest = '/';
-
-            if (!tried_mounting(path,&result)) {
+            } else {
 
                 char *share_name = util_basename(path);
-TRACE ; HTML_LOG(1,"mount share_name [%s]",share_name);
+TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
                 // eg "abc"
 
                 char *key=STRDUP("servname?");
@@ -178,16 +210,46 @@ TRACE ; HTML_LOG(1,"mount link [%s]",link);
                         }
                         if (cmd) {
 
-                            if (util_system(cmd) == 0) {
+                            long t = time(NULL);
+                            int mount_result = util_system(cmd);
 
-                                add_mount_point(path,"1");
+                            // Mount prints detailed error to stdout but just returns exit codes
+                            // 0(OK) , 1(Bad args?) OR  0xFF00 (Something else).
+                            // So we cant tell exactly why it failed without scraping
+                            // stdout.
+                            // Eg if mount display 'Device or resource Busy' it doesnt return EBUSY(16)
+                            //
+                            // Also trying to use native mount() function is hard work
+                            // (it does kernel space work but not other stuff - update /etc/mtab etc?)
+                            //
+                            // So I've taken a big liberty here and assumed that if the mount returns
+                            // immediately that it worked.
+                            // This obviously is risky of the mount failed due to bad parameters.
+                            //
+
+
+                            switch(mount_result) {
+                            case 0:
                                 result = 1;
-
-                            } else {
+                                break;
+                            case 0xFF00:
+                                // some mount error occured. If it occured in less than 1 second
+                                // just assume its a device busy and continue happily assuming it
+                                // is already mounted.
+                                if (time(NULL) - t <= 5) {
+                                    HTML_LOG(0,"mount [%s] failed quickly - assume all is ok",serv_link);
+                                    result = 1;
+                                } else {
+                                    HTML_LOG(0,"mount [%s] failed slowly - assume the worst ",serv_link);
+                                    result = 0;
+                                }
+                                break;
+                            default:
+                                HTML_LOG(0,"mount [%s] unknown error - assume the worst ",serv_link);
                                 //even though mount failed - add it to the list to avoid repeat attempts.
-                                add_mount_point(path,"0");
-
+                                result = 0;
                             }
+                            add_mount_point(path,(result?"1":"0"));
 
                             FREE(cmd);
                         }
@@ -204,6 +266,7 @@ TRACE ; HTML_LOG(1,"mount link [%s]",link);
         }
 
     }
+    HTML_LOG(0,"mount [%s] = [%d]",file,result);
     return result;
 }
 
@@ -213,6 +276,7 @@ int ping_link(char *link)
     char *host;
     char *end=NULL;
     int result = 0;
+TRACE;
     if (util_starts_with(link,"nfs://") ) {
         link += 6;
         end = strchr(link,':');
@@ -222,12 +286,50 @@ int ping_link(char *link)
         end = strchr(link,'/');
     }
     if (end) {
-        ovs_asprintf(&host,"*.s",end-link,link);
+        ovs_asprintf(&host,"%.*s",end-link,link);
 
-        result = ping(host);
+        result = ping(host,0);
 
         FREE(host);
 
     }
     return result;
+}
+
+// Return true if the file is mounted. This also caches the last 
+// network path checked to avoid the hash lookup in nmt_mount()->tried_mounting() .
+int nmt_mount_quick (char *file)
+{
+    static int last_result = -1;
+    static char *last_mount_point = NULL;
+
+    // always assume local and USB devices are auto-mounted by the system
+    if (!util_starts_with(file,NETWORK_SHARE) ) {
+        return 1;
+    } 
+
+    // Check if the file has the same mount point as previous file if so - smae result
+    if (last_mount_point) {
+        if (util_starts_with(file,last_mount_point) ) {
+            return last_result;
+        } else {
+            //if the mount point is different - clear previous results to force mount attempt.
+            FREE(last_mount_point);
+            last_mount_point = NULL;
+        }
+    }
+    if (last_mount_point == NULL) {
+
+        // Try to mount the file - this will first ping the device to avoid timeouts.
+        last_result = nmt_mount(file);
+        last_mount_point = STRDUP(file);
+
+        char *p = network_mount_point(file);
+        if (p) {
+            // Terminate at mount path but include trailing '/' to avoid shares matching substrings of other shares
+            last_mount_point[strlen(p)+1] = '\0';
+            FREE(p);
+        }
+    }
+    return last_result;
 }

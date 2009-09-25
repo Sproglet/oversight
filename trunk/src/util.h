@@ -49,6 +49,7 @@ int nmt_uid();
 int nmt_gid();
 
 void *MALLOC(unsigned long bytes);
+void *CALLOC(size_t count,size_t bytes);
 void *REALLOC(void *p,unsigned long bytes);
 char *STRDUP(char *s);
 char *util_tolower(char *s);
@@ -91,6 +92,7 @@ void util_rmdir(char *path,char *name);
 #define PRINTSPAN(p,q) do { if (q>p) printf("%.*s",((q)-(p)),(p)); } while(0)
 #define PRINTNSTR(n,p) do { if (n) printf("%.*s",(n),(p)); } while(0)
 #define UNSET -2
+#define UNSET_PTR ((void *)(-2))
 
 int exists_file_in_dir(char *dir,char *name);
 Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);

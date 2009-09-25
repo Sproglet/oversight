@@ -16,6 +16,7 @@
 #include "oversight.h"
 #include "hashtable_loop.h"
 #include "network.h"
+#include "mount.h"
 
 #define DB_ROW_BUF_SIZE 4000
 #define QUICKPARSE
@@ -1036,14 +1037,6 @@ char *is_nmt_network_share(char *mtab_line) {
 // Extract ip from mtab and try to ping it - corrupts buffer.
 int is_pingable(char *mtab_line) {
 
-    static long ping_millis = -1;
-    if (ping_millis == -1) {
-        if (!config_check_long(g_oversight_config,"ovs_nas_timeout",&ping_millis)) {
-            ping_millis=100;
-            HTML_LOG(0,"ping timeout defaulting to %ldms",ping_millis);
-        }
-    }
-
     char *ip = mtab_line;
     while (*ip && !isdigit(*ip)) ip++;
     if (!*ip) {
@@ -1055,9 +1048,9 @@ int is_pingable(char *mtab_line) {
 
     *ipend='\0';
     HTML_LOG(1,"pinging [%s]",ip);
-    int result = ping(ip,ping_millis);
+    int result = ping(ip,0);
     HTML_LOG(0,"ping [%s] = %d",ip,result);
-    return result ==1;
+    return result;
 }
 
 //
@@ -1371,68 +1364,80 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
             filter_ticks -= clock();
 
             if (rowid.file) {
+                int keeprow=1;
+
+                // If there were any  deletes queued for shared resources, revoke them
+                // as they are in use by this item.
                 delete_queue_unqueue(&rowid,rowid.nfo);
                 delete_queue_unqueue(&rowid,rowid.poster);
                 delete_queue_unqueue(&rowid,rowid.fanart);
 
-                switch(rowid.category) {
-                    case 'T': g_episode_total++; break;
-                    case 'M': g_movie_total++; break;
-                    default: g_other_media_total++; break;
-                }
+                // Check the device is mounted - if not skip it.
+                if (!nmt_mount_quick(rowid.file)){
 
-                int keeprow=1;
+                    HTML_LOG(1,"Path not mounted [%s]",rowid.file);
+                    keeprow=0;
 
-                if (rowid.genre) {
-                    get_genre_from_string(rowid.genre,&g_genre_hash);
-                }
+                } else {
 
-                //get_first_two_letters(rowid.title);
+                    switch(rowid.category) {
+                        case 'T': g_episode_total++; break;
+                        case 'M': g_movie_total++; break;
+                        default: g_other_media_total++; break;
+                    }
 
-                unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
-                g_title_letter_count[toupper(first_letter)]++;
 
-                if (first_letter) {
-                    if (title_filter_start == '0' ) {
-                        // Non alpahbetic
-                        if (first_letter >= 'A' && first_letter <= 'Z') {
+                    if (rowid.genre) {
+                        get_genre_from_string(rowid.genre,&g_genre_hash);
+                    }
+
+                    //get_first_two_letters(rowid.title);
+
+                    unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
+                    g_title_letter_count[toupper(first_letter)]++;
+
+                    if (first_letter) {
+                        if (title_filter_start == '0' ) {
+                            // Non alpahbetic
+                            if (first_letter >= 'A' && first_letter <= 'Z') {
+                                keeprow = 0;
+                            }
+                        } else if (first_letter < title_filter_start || first_letter > title_filter_end) {
                             keeprow = 0;
                         }
-                    } else if (first_letter < title_filter_start || first_letter > title_filter_end) {
-                        keeprow = 0;
                     }
-                }
 
-                if (genre_filter && *genre_filter) {
-                    if (!strstr(rowid.genre,genre_filter)) {
-                        HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
-                        keeprow=0;
+                    if (genre_filter && *genre_filter) {
+                        if (!strstr(rowid.genre,genre_filter)) {
+                            HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
+                            keeprow=0;
+                        }
                     }
-                }
 
-                if (keeprow && name_filter && *name_filter) {
-                    int match= regexec(&pattern,rowid.title,0,NULL,0);
-                    if (match != 0 ) {
-                        HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
-                        keeprow=0;
+                    if (keeprow && name_filter && *name_filter) {
+                        int match= regexec(&pattern,rowid.title,0,NULL,0);
+                        if (match != 0 ) {
+                            HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
+                            keeprow=0;
+                        }
                     }
-                }
-                if (keeprow) {
-                    switch(media_type) {
-                        case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
-                        case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
+                    if (keeprow) {
+                        switch(media_type) {
+                            case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
+                            case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
+                        }
                     }
-                }
 
-                if (keeprow) {
-                    switch(watched) {
-                        case DB_WATCHED_FILTER_NO : if (rowid.watched != 0 ) keeprow=0 ; break;
-                        case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) keeprow=0 ; break;
+                    if (keeprow) {
+                        switch(watched) {
+                            case DB_WATCHED_FILTER_NO : if (rowid.watched != 0 ) keeprow=0 ; break;
+                            case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) keeprow=0 ; break;
+                        }
                     }
-                }
-                if (keeprow) {
-                    if (num_ids != ALL_IDS && !in_idlist(rowid.id,num_ids,ids)) {
-                        keeprow = 0;
+                    if (keeprow) {
+                        if (num_ids != ALL_IDS && !in_idlist(rowid.id,num_ids,ids)) {
+                            keeprow = 0;
+                        }
                     }
                 }
 

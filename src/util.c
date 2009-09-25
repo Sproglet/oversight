@@ -546,7 +546,23 @@ void *REALLOC(void *ptr,unsigned long bytes) {
     return p;
 }
 
-void *MALLOC(unsigned long bytes) {
+void *CALLOC(size_t count,size_t bytes)
+{
+    void *p = NULL;
+
+    if (count * bytes) {
+        if ((p = calloc(count,bytes)) == NULL) {
+            fprintf(stderr,"Memory exhausted on calloc(%d,%d)\n",count,bytes);
+            printf("Memory exhausted on calloc(%d,%d)\n",count,bytes);
+            exit(1);
+        }
+    }
+
+    return p;
+}
+
+void *MALLOC(unsigned long bytes)
+{
     void *p = NULL;
 
     if (bytes) {
@@ -752,7 +768,7 @@ int util_system(char *cmd) {
     int result;
     HTML_LOG(1,"system %s",cmd);
     result = system(cmd);
-    HTML_LOG(1,"system result %d",result);
+    HTML_LOG(0,"system result %d",result);
     return result;
 }
 

@@ -3123,9 +3123,15 @@ requiredTagNames,allTitles) {
     delete closeTitles;
 
     if (g_tv_plugin == "THETVDB") {
-        searchTv2_tvdb(title,requiredTagList,allTitles);
+
+        url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",title);
+        filter_search_results(url,title,"Series","SeriesName","seriesid",requiredTagList,allTitles);
+
     } else if (g_tv_plugin == "TVRAGE") {
-        searchTv2_rage(title,requiredTagList,allTitles);
+
+        url="http://www.tvrage.com/feeds/search.php?show="title;
+        filter_search_results(url,title,"show","name","showid",requiredTagList,allTitles);
+
     } else {
         plugin_error();
     }
@@ -3155,22 +3161,6 @@ url) {
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
-function searchTv2_tvdb(title,requiredTagNames,allTitles,\
-url) {
-
-    url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",title);
-
-    filter_search_results(url,title,"Series","SeriesName","seriesid",requiredTagNames,allTitles);
-}
-
-function searchTv2_rage(title,requiredTagNames,allTitles,\
-url) {
-
-    url="http://www.tvrage.com/feeds/search.php?show="title;
-    filter_search_results(url,title,"show","name","showid",requiredTagNames,allTitles);
-}
-
-
 function filter_search_results(url,title,seriesTag,nameTag,idTag,requiredTagNames,allTitles,\
 f,line,info,currentId,currentName,add,i,seriesStart,seriesEnd) {
 
@@ -3483,6 +3473,9 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
 
     sub(/^[Tt]he /,"",possible_title);
     sub(/^[Tt]he /,"",titleIn);
+
+    sub(/ [Tt]he$/,"",possible_title);
+    sub(/ [Tt]he$/,"",titleIn);
 
     if (substr(titleIn,2) == substr(possible_title,2)) {
         DEBUG("Checking ["titleIn"] against ["possible_title"]");
@@ -4105,6 +4098,12 @@ result) {
     return result;
 }
 
+function setFirst(array,field,value) {
+    if (array[field] == "") {
+        array[field] = value;
+    }
+}
+
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
@@ -4113,6 +4112,21 @@ seriesInfo,episodeInfo,imdbLink,bannerApiUrl,result) {
 
 
     fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
+    if ("/Data/Series/id" in seriesInfo) {
+
+        setFirst(g_imdb,idx,extractImdbLink(seriesInfo["/Data/Series/IMDB_ID"]));
+        #Refine the title.
+        adjustTitle(idx,seriesInfo["/Data/Series/SeriesName"],"thetvdb");
+
+        g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
+        setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
+        setFirst(g_plot,idx,seriesInfo["/Data/Series/Overview"]);
+        setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
+        gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
+        g_rating[idx] = seriesInfo["/Data/Series/Rating"];
+        setFirst(g_poster,idx,tvDbImageUrl(seriesInfo["/Data/Series/poster"]));
+    }
+
 
     bannerApiUrl = tvDbSeriesUrl;
 
@@ -4123,47 +4137,20 @@ seriesInfo,episodeInfo,imdbLink,bannerApiUrl,result) {
 
         get_episode_xml(tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo);
 
-    }
-
-    if (g_imdb[idx]=="" ) {
-
-        imdbLink = extractImdbLink(seriesInfo["/Data/Series/IMDB_ID"]);
-    }
-
-    if ("/Data/Episode/id" in episodeInfo) {
-        gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
-        gEpTitle[idx]=episodeInfo["/Data/Episode/EpisodeName"];
-        g_epplot[idx] = seriesInfo["/Data/Episode/Overview"];
-        result = 1;
-    }
-
-    if ("/Data/Series/id" in seriesInfo) {
-        #Refine the title.
-        adjustTitle(idx,seriesInfo["/Data/Series/SeriesName"],"thetvdb");
-
-        g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
-        g_premier[idx]=formatDate(seriesInfo["/Data/Series/FirstAired"]);
-
-
-        g_plot[idx] = seriesInfo["/Data/Series/Overview"];
-        if (g_genre[idx] == "" ) {
-            g_genre[idx] = seriesInfo["/Data/Series/Genre"];
+        if ("/Data/Episode/id" in episodeInfo) {
+            setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]));
+            setFirst(gEpTitle,idx,episodeInfo["/Data/Episode/EpisodeName"]);
+            setFirst(g_epplot,idx,seriesInfo["/Data/Episode/Overview"]);
+            result = 1;
         }
-        gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
-        g_rating[idx] = seriesInfo["/Data/Series/Rating"];
     }
 
     getTvDbSeasonBanner(idx,bannerApiUrl,"en");
-    if (g_poster[idx] == "" ) {
-        g_poster[idx] = tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
-        DEBUG("Series poster = "g_poster[idx]);
-    }
 
-    if (imdbLink == "" ) {
+    if (g_imdb[idx] == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at www.thetvdb.com");
     } else {
-        DEBUG("get_tv_series_info returns imdb url ["imdbLink"]");
-        g_imdb[idx] = imdbLink;
+        DEBUG("get_tv_series_info returns imdb url ["g_imdb[idx]"]");
     }
     return result;
 }
@@ -4209,7 +4196,7 @@ seriesInfo,episodeInfo,filter,sid,url,e,result) {
         adjustTitle(idx,seriesInfo["/Show/name"],g_tv_plugin);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         sid=seriesInfo["/Show/showid"];
-        g_premier[idx]=formatDate(seriesInfo["/Show/started"]);
+        setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
     } else {
         WARNING("Error getting series xml");
     }
@@ -4258,8 +4245,16 @@ if ( 0 ) {
 }
 
 function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
-f,line,start_tag,end_tag,found,t,last_tag,isnum) {
+f,found) {
 
+   f = getUrl(url,filelabel,1);
+   DEBUG("fetch_xml_single_child ["url"] path = "xmlpath);
+   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout);
+   DEBUG("fetch_xml_single_child ["url"]="found);
+   return found;
+}
+function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
+line,start_tag,end_tag,found,t,last_tag,isnum) {
 
    delete xmlout;
    found=0;
@@ -4270,14 +4265,11 @@ f,line,start_tag,end_tag,found,t,last_tag,isnum) {
    start_tag="<"last_tag">";
    end_tag="</"last_tag">";
 
-   DEBUG("fetch_xml_single_child ["url"] path = "xmlpath" tag="last_tag);
-
    for(t in tagfilters) {
        DEBUG("filter ["t"]=["tagfilters[t]"]");
        isnum[t] = (tagfilters[t] ~ "^[0-9]+$" );
    }
 
-   f = getUrl(url,filelabel,1);
     if (f != "") {
         FS="\n";
 
@@ -4313,7 +4305,6 @@ f,line,start_tag,end_tag,found,t,last_tag,isnum) {
         }
         close(f);
     }
-    DEBUG("fetch_xml_single_child ["url"]="found);
     return found;
 }
 
@@ -4397,6 +4388,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     INFO("iso title for "isoPath" = ["f"]");
     gsub(/[Ww]in32/,"",f);
     return clean_title(f);
+    close(tmpFile);
 }
 
 function extractImdbLink(text,\
@@ -4804,6 +4796,8 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f) {
     #<image type="backdrop" size="original" url="http://images.themoviedb.org/backdrops/35204/Transformers_1.jpg" imdb_id="35204"/>
     #
     f=getUrl(search_url,"moviedb",0);
+
+    #scan_xml_single_child(f,"/OpenSearchDescription/movies/movie/images",tagfilters,xmlout,\
     if (f != "") {
         FS="\n";
         while((getline txt < f) > 0 && (poster_url == "" || backdrop_url == "") ) {
@@ -4905,7 +4899,7 @@ f,line,count,linematches,linecount,regex_text,remain) {
                 linecount = getMatches(line,regex,remain,linematches);
 
                 #DEBUG2(regex" match "linecount" in "line);
-                if (index(regex,"motech")) {
+                if (index(regex,"id=")) {
                     DEBUG(regex" match "linecount" in "line);
                 }
 

@@ -126,6 +126,7 @@ select { background-color:black; color:yellow; font-weight:bold; border=0; borde
 .dummy {}
 .recent { font-size:[:FONT_SIZE:]; }
 td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
+th { color:yellow; }
 
 font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
 

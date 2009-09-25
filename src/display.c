@@ -299,55 +299,49 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     nmt_mount(path);
 
     char *encoded_path = url_encode(path);
-    int show_link = 1;
 
 
+    if (!g_dimension->local_browser && browsing_from_lan()) {
 
-    if (show_link) {
+        if (*oversight_val("ovs_tv_play_via_pc") == '1') {
+            //If using a browser then VOD tags dont work. Make this script load the file into gaya
+            //Note we send the view and idlist parameters so that we can render the original page 
+            //in the brower after the infomation is sent to gaya.
 
-
-        if (!g_dimension->local_browser && browsing_from_lan()) {
-
-            if (*oversight_val("ovs_tv_play_via_pc") == '1') {
-                //If using a browser then VOD tags dont work. Make this script load the file into gaya
-                //Note we send the view and idlist parameters so that we can render the original page 
-                //in the brower after the infomation is sent to gaya.
-
-                //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
-                //The script than captures this after clicking via do_actions,
-                //this sends a url to gaya which points back to this script again but will just contain
-                //small text to auto load a file using <a onfocusload> and <body onloadset>
-                char *params =NULL;
-                ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
-                //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-                result = get_self_link_with_font(params,font_class,title,font_class);
-                FREE(params);
-
-            } else {
-                ovs_asprintf(&result,"<font class=%s>%s</font>",font_class,title);
-            }
+            //This works by adding a parameter REMOTE_VOD_PREFIX1=filename
+            //The script than captures this after clicking via do_actions,
+            //this sends a url to gaya which points back to this script again but will just contain
+            //small text to auto load a file using <a onfocusload> and <body onloadset>
+            char *params =NULL;
+            ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
+            //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
+            result = get_self_link_with_font(params,font_class,title,font_class);
+            FREE(params);
 
         } else {
+            ovs_asprintf(&result,"<font class=%s>%s</font>",font_class,title);
+        }
 
-            ovs_asprintf(&vod," %s name=\"%s\" %s ",vod_attr(file),href_name,href_attr);
+    } else {
 
-            if (add_to_playlist) {
-                //Build playlist array for this entry.
-                if (rowid->playlist_names == NULL) rowid->playlist_names = array_new(free);
-                if (rowid->playlist_paths == NULL) rowid->playlist_paths = array_new(free);
-                array_add(rowid->playlist_names,util_basename(file));
-                array_add(rowid->playlist_paths,STRDUP(path));
-            }
+        ovs_asprintf(&vod," %s name=\"%s\" %s ",vod_attr(file),href_name,href_attr);
+
+        if (add_to_playlist) {
+            //Build playlist array for this entry.
+            if (rowid->playlist_names == NULL) rowid->playlist_names = array_new(free);
+            if (rowid->playlist_paths == NULL) rowid->playlist_paths = array_new(free);
+            array_add(rowid->playlist_names,util_basename(file));
+            array_add(rowid->playlist_paths,STRDUP(path));
+        }
 
 
-            if (font_class != NULL && *font_class ) {
+        if (font_class != NULL && *font_class ) {
 
-                ovs_asprintf(&result,"<a href=\"file://%s\" %s><font class=\"%s\">%s%s</font></a>",
-                        encoded_path,vod,font_class,title,t2);
-            } else {
-                ovs_asprintf(&result,"<a href=\"file://%s\" %s>%s%s</a>",
-                        encoded_path,vod,title,t2);
-            }
+            ovs_asprintf(&result,"<a href=\"file://%s\" %s><font class=\"%s\">%s%s</font></a>",
+                    encoded_path,vod,font_class,title,t2);
+        } else {
+            ovs_asprintf(&result,"<a href=\"file://%s\" %s>%s%s</a>",
+                    encoded_path,vod,title,t2);
         }
     }
 
@@ -1641,16 +1635,9 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 }
 
 
-TODO ; get grid must cycle through the items first BEFORE drawing them
-   for each item it must  call check_and_prune_item and only add if result is 1.
-
-Also tv_listing and movie_listing should call this function too. 
-
 int check_and_prune_item(DbRowId *rowid,char *path) {
 
     int result = 0;
-    static int auto_prune=-2;
-    if (auto_prune == -2) auto_prune = *oversight_val("ovs_auto_prune") == '1';
 
     if (nmt_mount(path) ) {
 
@@ -1660,42 +1647,52 @@ int check_and_prune_item(DbRowId *rowid,char *path) {
 
         } else {
 
-            char *parent_dir = util_dirname(path);
-            char *grandparent_dir = util_dirname(parent_dir);
-
-            char *name = util_basename(path);
-
-            HTML_LOG(3,"path[%s]",path);
-            HTML_LOG(3,"parent_dir[%s]",parent_dir);
-            HTML_LOG(3,"grandparent_dir[%s]",grandparent_dir);
-            HTML_LOG(3,"name[%s]",name);
-
-            show_link=0;
-            if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
-
-                //media present - file gone!
-                db_remove_row(rowid);
-                ovs_asprintf(&result,"removed %s",name);
-
-            } else {
-
-                //media gone or auto_prune disabled
-                //ovs_asprintf(&result,"<font class=error>%s</font>",name);
-                font_class="class=error";
-            }
-            FREE(name);
-            FREE(parent_dir);
-            FREE(grandparent_dir);
         }
     }
     return result;
 }
 
-char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
+// Delist a file if it's grandparent folder is present and not empty.
+int delisted(DbRowId *rowid) {
+
+    char *path = rowid->file;
+    int result = 0;
+    static int auto_prune=-2;
+    if (auto_prune == -2) auto_prune = *oversight_val("ovs_auto_prune") == '1';
+
+    if (auto_prune && !exists(path)) {
+        char *parent_dir = util_dirname(path);
+        char *grandparent_dir = util_dirname(parent_dir);
+
+        char *name = util_basename(path);
+
+        HTML_LOG(1,"path[%s]",path);
+        HTML_LOG(1,"parent_dir[%s]",parent_dir);
+        HTML_LOG(1,"grandparent_dir[%s]",grandparent_dir);
+        HTML_LOG(1,"name[%s]",name);
+
+        if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
+
+            //media present - file gone!
+            db_remove_row(rowid);
+            HTML_LOG(0,"removed %s",name);
+            result = 1;
+
+        }
+        FREE(name);
+        FREE(parent_dir);
+        FREE(grandparent_dir);
+    }
+    return result;
+}
+
+// Generate the HTML for the grid. 
+// Note that the row_ids have alredy been pruned to only contain the items
+// for the current page.
+char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     
-    int items_per_page = rows * cols;
-    int start = page * items_per_page;
-    int end = start + items_per_page;
+    int start = 0;
+    int end = numids;
     int centre_row = rows/2;
     int centre_col = cols/2;
     int r,c;
@@ -1788,6 +1785,33 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     FREE(width_attr);
     return result;
 }
+
+char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
+    // first loop through the selected rowids that we expect to draw.
+    // If there are any that need pruning - remove them from the database and get another one.
+    // This will possibly cause a temporary inconsistency in page numbering but
+    // as we have just updated the database it will be correct on the next page draw.
+    //
+    // Note the db load routing should already filter out items that cant be mounted,
+    // otherwise this can cause horrible timeouts.
+    int i;
+    int items_per_page = rows * cols;
+    int start = page * items_per_page;
+
+    int total=0;
+    // Create space for pruned rows
+    DbRowId **prunedRows = CALLOC(items_per_page+1,sizeof(DbRowId *));
+    for ( i = start ; total < items_per_page && i < numids ; i++ ) {
+        DbRowId *rid = row_ids[i];
+        if (rid) {
+            if (!delisted(rid)) {
+                prunedRows[total++] = rid;
+            }
+        }
+    }
+    return render_grid(page,rows,cols,total,prunedRows);
+}
+
 
 /* Convert 234 to TVID/text message regex */
 char *get_tvid( char *sequence ) {

@@ -28,6 +28,8 @@
 
 #include "gaya_cgi.h"
 
+long ping_timeout();
+
 /**
  * Ping: reference <Unix network programming>, volume 1, third edition.
  */
@@ -91,6 +93,9 @@ int ping (char *host,long timeout_millis)
 {
 	#define BUF_SIZE	1500
 	#define ICMP_REQUEST_DATA_LEN 56
+    if (timeout_millis == 0) {
+        timeout_millis = ping_timeout();
+    }
 
 	struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_RAW, IPPROTO_ICMP, 5);
 	if (ai == NULL)
@@ -148,41 +153,6 @@ int ping (char *host,long timeout_millis)
         FD_SET(sockfd,&set);
         ret = select(1+sockfd,&set,NULL,NULL,&timeout);
 #else
-        char recv_buf[BUF_SIZE];
-        char control_buf[BUF_SIZE];
-        //The proper way - except setsockopt timeout doesnt work on NMT
-		struct msghdr msg;
-		struct iovec iov;
-		iov.iov_base = recv_buf;
-		iov.iov_len = sizeof(recv_buf);
-		msg.msg_name = (char *)calloc(1, ai->ai_addrlen);
-		msg.msg_iov = &iov;
-		msg.msg_iovlen = 1;
-		msg.msg_control = control_buf;
-		msg.msg_namelen = ai->ai_addrlen;
-		msg.msg_controllen = sizeof(control_buf);
-
-        
-        if (sel_val == 1) {
-            return -5; // timeout
-        } else if (sel_val == 1
-
-		if ((len = recvmsg(sockfd, &msg, 0)) <= 0) {
-			ret = -5;
-		} else {
-			struct ip *ip = (struct ip *) recv_buf;
-			int header_len = ip->ip_hl << 2;
-
-			struct icmp *icmp = (struct icmp *) (recv_buf + header_len);
-			int icmp_payload_len = len - header_len;
-			if ((ip->ip_p == IPPROTO_ICMP) && (icmp_payload_len >= 16) &&
-				(icmp->icmp_type == ICMP_ECHOREPLY) && (icmp->icmp_id == pid)) {
-				ret = 1;
-			} else {
-				ret = -6;
-			}
-		}
-		free(msg.msg_name);
 #endif
 
 	}
@@ -190,5 +160,20 @@ int ping (char *host,long timeout_millis)
 	free(ai);
 	close(sockfd);
 
+    HTML_LOG(0,"ping %s within %dms = %d",host,timeout_millis,ret);
+
 	return ret;
 }
+
+long ping_timeout()
+{
+    static long ping_millis = -1;
+    if (ping_millis == -1) {
+        if (!config_check_long(g_oversight_config,"ovs_nas_timeout",&ping_millis)) {
+            ping_millis=100;
+            HTML_LOG(0,"ping timeout defaulting to %ldms",ping_millis);
+        }
+    }
+    return ping_millis;
+}
+

@@ -2199,7 +2199,8 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned) {
         g_elapsedTime = g_elapsedTime - systime();
         thisTime = -systime();
 
-        report_status(g_progress[1]" item "(g_item_count++));
+        #report_status(g_progress[1]" item "(g_item_count++));
+        report_status("item "(g_item_count++));
 
         bestUrl="";
 

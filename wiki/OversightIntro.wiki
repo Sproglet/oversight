@@ -27,12 +27,14 @@ Here I have listed the main strengths and weaknesses of Oversight.
   * Sort and filter views dynamically. Filters can be combined.. eg Unwatched Movies beginning with 'T', or Watched Tv Shows beginning with 'M'.
   * Read-Only - Does not write to media folders so can run along side other Jukeboxes.
   * Does not depend on MyIHome service.
+  * Interface works both on TV and browser.
   * Remote play - Click on browser - starts playing on TV.
   * Proper SD support. I have an SD tv! So it's not just an after thought that requires extra setting up. Downside is that HD may not look great. I try to test HD modes on PC Browser but need feedback from others until I buy a TV.
   * Dynamic hiding/removal of deleted files.
   * Avoids timeout issues with disconnected media archives.
   * NZBGet post-processing scripts. - Oversight installs a script that automatically adds new media to the Oversight Catalog. This script also has many features.
-
+  * Crossview: If you have two NMT, and install Oversight on each, then you can see all media in a single Oversight session. No need to switch sources or jukeboxes.
+ 
 =Disadvantages of Oversight=
   * Multi-lingual support (I plan to address this in later releases)
   * Detailed Scraping. Actor Bios, Names of Producers, Cleaners and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.

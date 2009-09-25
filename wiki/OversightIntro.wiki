@@ -35,8 +35,9 @@ Here I have listed the main strengths and weaknesses of Oversight.
 
 =Disadvantages of Oversight=
   * Multi-lingual support (I plan to address this in later releases)
-  * Detailed Scraping. Actor Bios, Names of Producers, and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.
+  * Detailed Scraping. Actor Bios, Names of Producers, Cleaners and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.
   * Looks. Oversight has a basic skin which I will improve over time however features like reflection and 'dvd boxing' etc are unlikely to appear.
+  * Skins. Oversight has a skin capability but this is relatively new and non-standard. There are not many skins.
   * Media attribute detection. Currently display of framerates etc is not supported.
 
 

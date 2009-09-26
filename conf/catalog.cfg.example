@@ -75,14 +75,14 @@ catalog_tv_plugins="THETVDB,TVRAGE"
 
 #scene names
 catalog_movie_search_regex1="^[-a-z0-9.]+$"
-catalog_movie_search_order1="ONLINE_NFO,IMDBLINKS,IMDBFIRST"
+catalog_movie_search_order1="ONLINE_NFO,IMDBFIRST,IMDBLINKS"
 #something with the year in it.
 catalog_movie_search_regex2=" .(20|19)[0-9][0-9]"
-catalog_movie_search_order2="IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+catalog_movie_search_order2="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 
 # 10 characters or more - search for most frequently occuring imdb reference first
 catalog_movie_search_regex3=".........."
-catalog_movie_search_order3="IMDBLINKS,ONLINE_NFO,IMDBFIRST"
+catalog_movie_search_order3="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 
 # Short titles - best try a simple search first.
 catalog_movie_search_regex4="."

@@ -734,8 +734,8 @@ END{
         print "last scan at " strftime(systime()) > g_timestamp_file;
         close(g_timestamp_file);
         unlock(g_scan_lock_file);
+        remove_absent_files_from_new_db(INDEX_DB);
     }
-    remove_absent_files_from_new_db(INDEX_DB);
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
@@ -1339,7 +1339,9 @@ txt) {
 
     #Remove the cd1 partb bit.
     if (idx in gMultiPartTagPos) {
-        txt = substr(txt,1,gMultiPartTagPos[idx]-1);
+        txt = substr(txt,1,gMultiPartTagPos[idx]);
+        sub(/(part|cd|)[1a]$/,"",txt);
+        DEBUG("MultiPart Suffix removed = ["txt"]");
     }
 
     return txt;
@@ -1691,58 +1693,59 @@ function remove_absent_files_from_new_db(db,\
                         gp = grandparent(f);
                         if (exists(gp)) {
                             keep=0;
-                            g_absent_file_count++;
                         }
                     }
                 }
                 if (keep) {
                     print dbline > tmp_db;
+                    g_kept_file_count++;
                 } else {
                     INFO("Removing "f);
+                    g_absent_file_count++;
                 }
             }
         }
         close(tmp_db);
         close(db);
-        INFO("UNCHANGED:"g_kept_file_count);
-        INFO("NOT FOUND:"g_absent_file_count);
+        INFO("unchanged:"g_kept_file_count);
+        INFO("removed:"g_absent_file_count);
         #system("mv "quoteFile(tmp_db)" "quoteFile(db));
         unlock(g_db_lock_file);
     }
 }
 
-function determineFileStatus(f,list,newDbFile,\
-cmd,i,line) {
-    INFO("Checking batch");
-    cmd="ls -d -- " list " > " f " 2>&1"
-    #DEBUG("######### "cmd" #############");
-    system(cmd);
-    FS="\n";
-    while((getline line < f ) > 0 ) {
-
-        if (line == "" ) continue;
-
-        if ((i=index(line,": No such file or directory")) > 0 || (i=index(line,": Not a directory")) > 0) {
-            line = substr(line,1,i-1);
-            i = index(line,"/");
-            line = substr(line,i);
-
-            INFO("de-listing ["line"]");
-            g_absent_file_count++;
-
-        } else if (gMovieFilePresent[line] == 0) {
-
-            #DEBUG("KEEPING ["$0"]");
-            if (line in g_index_line) {
-                print g_index_line[line] > newDbFile;
-                g_kept_file_count++;
-            } else {
-                WARNING("["line"] not present in index");
-            }
-        }
-    }
-    close(f);
-}
+#function determineFileStatus(f,list,newDbFile,\
+#cmd,i,line) {
+#    INFO("Checking batch");
+#    cmd="ls -d -- " list " > " f " 2>&1"
+#    #DEBUG("######### "cmd" #############");
+#    system(cmd);
+#    FS="\n";
+#    while((getline line < f ) > 0 ) {
+#
+#        if (line == "" ) continue;
+#
+#        if ((i=index(line,": No such file or directory")) > 0 || (i=index(line,": Not a directory")) > 0) {
+#            line = substr(line,1,i-1);
+#            i = index(line,"/");
+#            line = substr(line,i);
+#
+#            INFO("de-listing ["line"]");
+#            g_absent_file_count++;
+#
+#        } else if (gMovieFilePresent[line] == 0) {
+#
+#            #DEBUG("KEEPING ["$0"]");
+#            if (line in g_index_line) {
+#                print g_index_line[line] > newDbFile;
+#                g_kept_file_count++;
+#            } else {
+#                WARNING("["line"] not present in index");
+#            }
+#        }
+#    }
+#    close(f);
+#}
 
 
 function getPath(name,localPath) {
@@ -2421,6 +2424,7 @@ search_regex_key,search_order_key,search_order,s) {
     # -----------------------------------------------------------------------------
 
     name=cleanSuffix(idx);
+    name_no_parts = remove_part_suffix(idx);
     name_no_tags=remove_format_tags(name);
 
     #Read search order definitions from config file.
@@ -2448,17 +2452,15 @@ search_regex_key,search_order_key,search_order,s) {
 
             if (search_order[s] == "ONLINE_NFO") {
 
-                bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
-                if (bestUrl == "" && gParts[idx] != "" ) {
-                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name,remove_part_suffix(idx));
+                bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_parts);
+                if (bestUrl == "" && gParts[idx] != "" && name != name_no_parts ) {
+                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
                 }
-                if (bestUrl == "") {
-                    if (name_no_tags != name) {
-                        #Add a dot on the end to stop binsearch false matching sub words.
-                        #eg binsearch will find "a-bcd" given "a-b" to prevent this 
-                        # change a-b to "a-b."
-                        bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".");
-                    }
+                if (bestUrl == "" && name_no_tags != name) {
+                    #Add a dot on the end to stop binsearch false matching sub words.
+                    #eg binsearch will find "a-bcd" given "a-b" to prevent this 
+                    # change a-b to "a-b."
+                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".");
                 }
 
             } else if (search_order[s] == "IMDB") {
@@ -2600,6 +2602,7 @@ url) {
     if (url == "") {
         url=searchOnlineNfoLinksForImdbAlternateFilter(name,"+nfo","");
     }
+    return url;
 }
 
 function searchOnlineNfoLinksForImdbAlternateFilter(name,additionalKeywords,minSize,\
@@ -4571,9 +4574,9 @@ function getUrl(url,capture_label,cache,referer,\
         if (wget(url,f,referer) ==0) {
             if (cache) {
                 gUrlCache[url]=f;
-                DEBUG(label" Fetched & Cached ["url"] to ["f"]");
+                #DEBUG(label" Fetched & Cached ["url"] to ["f"]");
             } else {
-                DEBUG(label" Fetched ["url"] into ["f"]"); 
+                #DEBUG(label" Fetched ["url"] into ["f"]"); 
             }
         } else {
             ERROR(label" Failed getting ["url"] into ["f"]");

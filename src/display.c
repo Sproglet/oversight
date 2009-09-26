@@ -1673,18 +1673,16 @@ TRACE;
 
         char *name = util_basename(path);
 
-        HTML_LOG(0,"path[%s]",path);
-        HTML_LOG(0,"parent_dir[%s]",parent_dir);
-        HTML_LOG(0,"grandparent_dir[%s]",grandparent_dir);
-        HTML_LOG(0,"grandparent_dir[%s] exists = %d",grandparent_dir,exists(grandparent_dir));
-        HTML_LOG(0,"name[%s]",name);
+        HTML_LOG(1,"path[%s]",path);
+        HTML_LOG(1,"parent_dir[%s]",parent_dir);
+        HTML_LOG(1,"grandparent_dir[%s]",grandparent_dir);
+        HTML_LOG(1,"grandparent_dir[%s] exists = %d",grandparent_dir,exists(grandparent_dir));
+        HTML_LOG(1,"name[%s]",name);
 
         if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
 
-            HTML_LOG(0,"removing %s",name);
             //media present - file gone!
             db_remove_row(rowid);
-            HTML_LOG(0,"removed %s",name);
             result = 1;
 
         }
@@ -1692,7 +1690,7 @@ TRACE;
         FREE(parent_dir);
         FREE(grandparent_dir);
     }
-    HTML_LOG(0,"delisted [%s] = %d",path,result);
+    HTML_LOG(1-result,"delisted [%s] = %d",path,result);
     return result;
 }
 

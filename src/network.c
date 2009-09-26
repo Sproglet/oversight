@@ -96,6 +96,7 @@ int ping (char *host,long timeout_millis)
     if (timeout_millis == 0) {
         timeout_millis = ping_timeout();
     }
+    HTML_LOG(0,"ping %s within %ldms...",host,timeout_millis);
 
 	struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_RAW, IPPROTO_ICMP, 5);
 	if (ai == NULL)
@@ -111,18 +112,6 @@ int ping (char *host,long timeout_millis)
     long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
 
 	struct timeval timeout = {timeout_secs, timeout_usecs };
-
-
-#ifndef USE_SELECT
-    int res;
-	if ((res = setsockopt(sockfd, IPPROTO_ICMP, SO_SNDTIMEO, &timeout, sizeof(struct timeval))) != 0) {
-        HTML_LOG(0,"Error %d/%d setting timeout",res,errno);
-    }
-	if ((res = setsockopt(sockfd, IPPROTO_ICMP, SO_RCVTIMEO, &timeout, sizeof(struct timeval))) != 0) {
-        HTML_LOG(0,"Error %d/%d setting timeout",res,errno);
-    }
-#endif
-
 
 	/* don't need special permissions any more */
 	setuid(getuid());
@@ -144,23 +133,22 @@ int ping (char *host,long timeout_millis)
 	if (sendto(sockfd, send_buf, len, 0, ai->ai_addr, ai->ai_addrlen) <= 0) {
 		ret = -4;
 	} else {
-#ifdef USE_SELECT
         //Slight risk is that we are not looking at the return packet. But chances 
         //are anything that responds within the shot timeouts required for oversight
         //(100ms) is in working order.
         fd_set set;
         FD_ZERO(&set);
         FD_SET(sockfd,&set);
-        ret = select(1+sockfd,&set,NULL,NULL,&timeout);
-#else
-#endif
 
+        if (select(1+sockfd,&set,NULL,NULL,&timeout) == 1) {
+            ret = 0;
+        }
 	}
 
 	free(ai);
 	close(sockfd);
 
-    HTML_LOG(0,"ping %s within %dms = %d",host,timeout_millis,ret);
+    HTML_LOG(0,"ping %s within %dms = %d = %s",host,timeout_millis,ret,(ret?"bad":"good"));
 
 	return ret;
 }

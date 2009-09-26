@@ -33,6 +33,7 @@
                             </tr>
                             <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
                             <tr><Td>[:MOVIE_LISTING:]</td></tr>
+                            <tr><td>[:INCLUDE_TEMPLATE(submit_btn):]</td></tr>
                         </table>
                     </td>
                 </tr>

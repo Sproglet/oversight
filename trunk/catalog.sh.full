@@ -332,6 +332,9 @@ function plugin_error(p) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    split("THETVDB,TVRAGE",g_tv_plugin,",");
+    g_search_yahoo = "http://search.yahoo.com/search?p=";
+    g_search_bing = "http://www.bing.com/search?q=";
     g_batch_size=50;
     g_tvdb_use_episode_api=1;
     g_cvs_sep=" *, *";
@@ -1292,16 +1295,17 @@ function folderIsRelevant(dir) {
 }
 
 function searchInternetForFirstImdbPage(name_no_tags,qualifier,\
-keywords) {
+keywords,i1,i2) {
 
     keywords = textToSearchKeywords(name_no_tags,0);
 
-    return scanPageForMatch(search_url(g_link_search_engines,keywords"+"qualifier,10),g_imdb_regex,0);
-
-
-    # The following - catalog tries to do weighting but this ignores any relevancy
-    # assumed by the order of the search results. We might have to ditch this.
-    #return scanGoogleForBestMatch(g_link_search_engines,keywords"+%2Bimdb",g_imdb_regex,"search4imdb",2);
+    i1=search_url(g_search_yahoo+keywords"+"qualifier,g_imdb_regex,0);
+    i2=search_url(g_search_bing+keywords"+"qualifier,g_imdb_regex,0);
+    if (i1 == i2) {
+        return i1;
+    } else {
+        INFO("No Consensus on direct search "i1 " != "i2);
+    }
 }
 
 # If no direct urls found. Search using file names.
@@ -1711,7 +1715,7 @@ function remove_absent_files_from_new_db(db,\
         close(db);
         INFO("unchanged:"g_kept_file_count);
         INFO("removed:"g_absent_file_count);
-        #system("mv "quoteFile(tmp_db)" "quoteFile(db));
+        system("mv "quoteFile(tmp_db)" "quoteFile(db));
         unlock(g_db_lock_file);
     }
 }
@@ -2182,7 +2186,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 idx,file,bestUrl,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status) {
+ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status,p,plugin) {
 
     startTime = systime();
     numFiles=0;
@@ -2247,19 +2251,22 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status) {
 
         scanned = 0;
         tv_status = 0; #0=nothing 1=found series only 2=found episode also
-        if (checkTvFilenameFormat("THETVDB",idx)) {
 
-            if (UPDATE_TV)  {
-                tv_status = tv_search("THETVDB",idx,bestUrl);
-                DEBUG("THETVDB tv_status "tv_status);
-                DEBUG("THETVDB g_episode "g_episode[idx]);
-                if (tv_status == 1 && g_episode[idx] ~ "^[0-9]+$" ) {
-                    # we found a show but no episode - try tv rage
-                    tv_status = tv_search("TVRAGE",idx,bestUrl);
-                    DEBUG("TVRAGE tv_status "tv_status);
-                    DEBUG("TVRAGE g_episode "g_episode[idx]);
+        for (p in g_tv_plugin) {
+            plugin = g_tv_plugin[p];
+
+            # checkTvFilenameFormat also uses the plugin to detect daily formats.
+            # so if ellen.2009.03.13 is rejected at tvdb it is still passed by tvrage.
+            if (checkTvFilenameFormat(plugin,idx)) {
+
+                if (UPDATE_TV)  {
+                    tv_status = tv_search(plugin,idx,bestUrl);
+                    if (tv_status == 0 || g_episode[idx] !~ "^[0-9]+$" ) {
+                        #no point in trying other tv plugins
+                        break;
+                    }
+                    scanned= (tv_status != 0);
                 }
-                scanned=1;
             }
         }
         DEBUG("premovie tv_status "tv_status);
@@ -2494,11 +2501,12 @@ search_regex_key,search_order_key,search_order,s) {
         scrapeIMDBTitlePage(idx,bestUrl);
         # fallback to tv search doesnt make sense here - we have no season / episode info
         if (g_category[idx] == "T" ) {
-            INFO("Unidentifed TV format???");
+            WARNING("Unidentifed TV show ???");
+        } else {
+            getNiceMoviePosters(idx,extractImdbId(bestUrl));
         }
 
     }
-    getNiceMoviePosters(idx,extractImdbId(bestUrl));
 }
 
 function tv2imdb(idx,\
@@ -2661,7 +2669,7 @@ choice,i,url) {
 # example
 # searchOnlineNfoLinksForImdb(idx,"http://www.bintube.com","/?q=","/nfo/pid/[0-9a-f]+") 
 function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosToScan,inurlFind,inurlReplace,
-nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id,count) {
+nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id,count,result) {
 
     INFO("Online nfo search for "name);
 
@@ -2679,22 +2687,22 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
 
     #Note wget has a bug when using -O flag. Only one file is redirected.
     wgetWorksWithMultipleUrlRedirects=0;
-    if (wgetWorksWithMultipleUrlRedirects) {
-        nfo2="";
-        for(nfo in nfoPaths) {
-            nfo2 = nfo2 "\t" domain nfo;
-            if (inurlFind != "") {
-                sub(inurlFind,inurlReplace,nfo2);
-            }
-        }
-        sub(/[&]amp;/,"\\&",nfo2);
-        if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
-            scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
-        }
-        for(id in imdbIds) {
-            totalImdbIds[id] += imdbIds[id];
-        }
-    } else {
+#    if (wgetWorksWithMultipleUrlRedirects) {
+#        nfo2="";
+#        for(nfo in nfoPaths) {
+#            nfo2 = nfo2 "\t" domain nfo;
+#            if (inurlFind != "") {
+#                sub(inurlFind,inurlReplace,nfo2);
+#            }
+#        }
+#        sub(/[&]amp;/,"\\&",nfo2);
+#        if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
+#            scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
+#        }
+#        for(id in imdbIds) {
+#            totalImdbIds[id] += imdbIds[id];
+#        }
+#    } else {
         for(nfo in nfoPaths) {
             nfo2 = domain nfo;
             if (inurlFind != "") {
@@ -2710,27 +2718,31 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
                 totalImdbIds[id] += imdbIds[id];
             }
         }
-    }
+#    }
 
-    #return most frequent match
-    count = bestScores(totalImdbIds,totalImdbIds,0)+0;
-    if (count == 1) {
-
-        bestId = firstIndex(totalImdbIds);
-        INFO("best imdb link ["domain"] = "bestId);
-        return extractImdbLink(bestId);
-
-    } else if (count == 0) {
-
-        INFO("No matches");
-        return "";
-
+    if (hash_size(totalImdbIds) > 3 ) {
+        INFO("Too many nfo results from online search");
     } else {
 
-        INFO("To many matches with the same number of occurrences. Discarding results");
-        return "";
-    }
+        #return most frequent match
+        count = bestScores(totalImdbIds,totalImdbIds,0)+0;
+        if (count == 1) {
 
+            bestId = firstIndex(totalImdbIds);
+            INFO("best imdb link ["domain"] = "bestId);
+            result = extractImdbLink(bestId);
+
+        } else if (count == 0) {
+
+            INFO("No matches");
+
+        } else {
+
+            INFO("To many matches with the same number of occurrences. Discarding results");
+        }
+    }
+    DEBUG("searchOnlineNfoLinksForImdb ["queryPath"] = ["result"]");
+    return result;
 }
 
 # Search for imdb ids in any pages referenced by the nfo file.
@@ -2857,7 +2869,7 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key) {
             tvDbSeriesPage = searchTvDbTitles(plugin,idx,title);
 
             if (tvDbSeriesPage) {
-                g_search_hits[g_tv_plugin".tvabbrev"]++;
+                g_search_hits[plugin".tvabbrev"]++;
                 g_abbrev_cache[cache_key] = tvDbSeriesPage;
                 INFO("Caching abbreviation "cache_key" = "tvDbSeriesPage);
             }
@@ -3258,14 +3270,13 @@ url,id2,premier_mdy,date,nondate,regex,link) {
                 url = "http://thetvdb.com/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
                 id2 = scanPageForMatch(url,regex,0);
                 if (id2 == "" ) {
-                    #no joy - try web search
-                    url="intitle:\""gTitle[idx]"\" "premier_mdy" site:thetvdb.com intitle:\"Series Info\"";
-                    url="http://www.bing.com/search?q="url; #for some reason yahoo index of thetvdb is rubbish
+                    #no joy - try web search - for some reason yahoo index of thetvdb is rubbish
+                    url=g_search_bing"intitle:\""gTitle[idx]"\" "premier_mdy" site:thetvdb.com intitle:\"Series Info\"";
                     id2=scanPageForMatch(url,regex,0);
                 }
                 if (id2 == "" ) {
-                    url="intitle:\""gTitle[idx]"\" site:thetvdb.com intitle:\"Series Info\"";
-                    url="http://www.bing.com/search?q="url; #for some reason yahoo index of thetvdb is rubbish
+                    #no joy - try web search - for some reason yahoo index of thetvdb is rubbish
+                    url=g_search_bing"intitle:\""gTitle[idx]"\" site:thetvdb.com intitle:\"Series Info\"";
                     id2=scanPageForMatch(url,regex,0);
                 }
                 if (id2 != "" ) {
@@ -3447,14 +3458,14 @@ if (0) {
             sub(/^< *[^ ]+ */,"",all_attr); #remove tag
             sub(/ *>$/,"",all_attr);
             split(all_attr,attr_pairs," "); #split into a=b c=d e=d
-            DEBUG("Parse Attr ["all_attr"]");
+            #DEBUG("Parse Attr ["all_attr"]");
             for(a in attr_pairs) {
                 split(attr_pairs[a],attr_name_val,"="); #split a=b into a,b
                 if (2 in attr_name_val) {
                     sub(/^"/,"",attr_name_val[2]);
                     sub(/"$/,"",attr_name_val[2]);
                     info[currentTag"#"attr_name_val[1]]=attr_name_val[2];
-                    DEBUG("Parse Attr ["currentTag"#"attr_name_val[1]"]=["info[currentTag"#"attr_name_val[1]]"]");
+                    #DEBUG("Parse Attr ["currentTag"#"attr_name_val[1]"]=["info[currentTag"#"attr_name_val[1]]"]");
                 }
             }
 
@@ -3474,7 +3485,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
     matchLevel = 0;
     yearOrCountry="";
 
-        DEBUG("Checking ["titleIn"] against ["possible_title"]");
+    DEBUG("Checking ["titleIn"] against ["possible_title"]");
 
     # Conan O Brien is a really tricky show to match on!
     # Its a daily,
@@ -3505,9 +3516,9 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
     sub(/ [Tt]he$/,"",possible_title);
     sub(/ [Tt]he$/,"",titleIn);
 
-    if (substr(titleIn,2) == substr(possible_title,2)) {
-        DEBUG("Checking ["titleIn"] against ["possible_title"]");
-    }
+#    if (substr(titleIn,2) == substr(possible_title,2)) {
+#        DEBUG("Checking ["titleIn"] against ["possible_title"]");
+#    }
     if (yearOrCountry != "") {
         DEBUG("Qualified title "possible_title);
     }
@@ -3559,11 +3570,12 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
             matchLevel = 5;
             INFO("match for ["titleIn"] containing ["possible_title"]");
         }
-    } else if ( index(possible_title,"Show With "titleIn) ) {
+    } else if ( index(possible_title,"Show With "titleIn) || index(possible_title,titleIn" Show")) {
 
         # The blah blah Show With Some Person might just be known as "Some Person"
         # eg The Tonight Show With Jay Leno
         matchLevel = 4;
+
     }
     DEBUG("["titleIn"] vs ["possible_title"] = "matchLevel);
     return matchLevel;
@@ -4232,8 +4244,8 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi) {
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         sid=seriesInfo["/Show/showid"];
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
-        url=episodeInfo["/Show/showlink"];
-        g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2",0);
+        url=seriesInfo["/Show/showlink"];
+        g_plot[idx] = scrape_one_item("tvrage_plot",url,"id='"'"'iconn1",0,"iconn2",0);
         result ++;
 
         e="/Show/Episodelist/Season/episode";

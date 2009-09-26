@@ -2,9 +2,10 @@
 #! $Id$
 #!This is a compacted file. If looking for the source see catalog.sh.full
 #!Compressed with
-#!sed -r 's/^[  ]+/ /;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' catalog.sh.full > catalog.sh
+#!sed -r 's/^[  ]+//;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' catalog.sh.full > catalog.sh
 #!note [    ] is [<space><tab>]
 #!blank lines kept to preserve line numbers reported in errors.
+#!All leading white space trimmed so make sure lines ending in \ have any mandatory white space included.
 #!If not compressed then awk will report "bad address" error on some platforms.
 #
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
@@ -1299,13 +1300,22 @@ keywords,i1,i2) {
 
     keywords = textToSearchKeywords(name_no_tags,0);
 
-    i1=search_url(g_search_yahoo+keywords"+"qualifier,g_imdb_regex,0);
-    i2=search_url(g_search_bing+keywords"+"qualifier,g_imdb_regex,0);
-    if (i1 == i2) {
-        return i1;
-    } else {
-        INFO("No Consensus on direct search "i1 " != "i2);
+    i1=scanPageForMatch(g_search_bing keywords"+"qualifier,g_imdb_regex,0);
+    if (i1 != "" ) {
+        i2=scanPageForMatch(g_search_yahoo keywords"+"qualifier,g_imdb_regex,0);
     }
+    return check_same("firstimdb",i1,i2);
+}
+
+function check_same(label,a,b) {
+    if ( a != b ) {
+        INFO(label": No Consensus on search ["a"] != ["b"]");
+    } else if (a == "") {
+        INFO(label": No results");
+    } else {
+        return a;
+    }
+    return "";
 }
 
 # If no direct urls found. Search using file names.
@@ -2216,7 +2226,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status,p,plugi
         file=gMovieFiles[idx];
         if (file == "" ) continue;
 
-        DIV("Start item "idx": ["file"]");
+        DIV("Start item "(g_item_count)": ["file"]");
 
         DEBUG("folder :["gFolder[idx]"]");
         if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
@@ -3975,24 +3985,32 @@ function search_url(search_engines,q,num) {
 }
 
 # Search a google page for most frequently occuring imdb link
-function searchForIMDB(keywords,linkThreshold) {
+function searchForIMDB(keywords,linkThreshold,\
+i1,i2) {
     #We want imdb links but not from imdb themselves as this skews the results.
     #Also keeping the number of results down helps focus on early matches.
-    return scanGoogleForBestMatch(g_link_search_engines,keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de",g_imdb_regex,"search4imdb",linkThreshold);
+    keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
+
+    i1 = scanUrlForBestMatch(g_search_yahoo keywords,g_imdb_regex,"search4imdb",linkThreshold);
+    if (i1 != "" ) {
+        i2 = scanUrlForBestMatch(g_search_bing keywords,g_imdb_regex,"search4imdb",linkThreshold);
+    }
+    return check_same("search4imdb",i1,i2);
+    #url = web_search_to_url(search_engines,keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de",20);
+    #return scanUrlForBestMatch(url,g_imdb_regex,"search4imdb",linkThreshold);
 }
 
 # This will try each of the search engines in turn. Google has a habit of locking out IP with lots of searches.
-function web_search_to_file(search_engines,keywords,num,label,cache,\
-f,x) {
+function web_search_to_url(search_engines,keywords,num,\
+url,x) {
     for(x in search_engines) {
-        f = getUrl(search_url(search_engines,keywords,num),label,cache);
-        if (f != "") {
-             return f;
+        url = getUrl(search_url(search_engines,keywords,num));
+        if (url != "") {
+             return url;
         }
     }
     return "";
 }
-
 
 #Search google page extracting all occurences that match a regex, and return the most
 #popular match.
@@ -4001,10 +4019,10 @@ f,x) {
 #captureLabel = label for temporary file
 #threshold = minimum required occurences of matching text.
 
-function scanGoogleForBestMatch(search_engines,keywords,pattern,captureLabel,threshold,\
+function scanUrlForBestMatch(url,pattern,captureLabel,threshold,\
 f,iurl,start,nextStart,matchList,bestUrl,x,html) {
 
-    f = web_search_to_file(search_engines,keywords,20,captureLabel,0);
+    f = getUrl(url,captureLabel,0);
     if (f != "") {
         FS="\n";
 
@@ -4172,10 +4190,10 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
 
 
         bannerApiUrl = tvDbSeriesUrl;
+        sub(/en.xml/,"banners.xml",bannerApiUrl);
         getTvDbSeasonBanner(idx,bannerApiUrl,"en");
 
         # For twin episodes just use the first episode number for lookup by adding 0
-        sub(/en.xml/,"banners.xml",bannerApiUrl);
 
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
 

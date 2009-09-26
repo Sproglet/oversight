@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
+#include <dirent.h>
 
 #include "util.h"
 #include "vasprintf.h"
@@ -11,7 +13,21 @@
 #include "config.h"
 #include "network.h"
 
+// Mounted and working
+#define MOUNT_STATUS_OK "1"
+
+// Unpingable or something else nasty
+#define MOUNT_STATUS_BAD "0"
+
+// In mtab but might be good or stale
+#define MOUNT_STATUS_IN_MTAB "?"
+
+// Not in mtab
+#define MOUNT_STATUS_NOT_IN_MTAB "-"
+
 int ping_link(char *link);
+int check_accessible(char *path,int timeout_secs);
+int nmt_mount_share(char *path,char *current_mount_status);
 
 /*
  * Attempt to quickly mount a file or if the file is not available fail quickly.
@@ -23,12 +39,15 @@ struct hashtable *mount_points_hash()
     return mount_points;
 }
 
-void add_mount_point(char *p,char *val) {
-    if (hashtable_search(mount_points,p) == NULL) {
+void set_mount_status(char *p,char *val) {
+    char *current = hashtable_search(mount_points,p);
+    if (current == NULL) {
         HTML_LOG(1,"Adding mount point [%s] = %s",p,val);
         hashtable_insert(mount_points,STRDUP(p),val);
-    } else {
-        HTML_LOG(1,"Already added mount point [%s]",p);
+    } else if ( strcmp(current,val) != 0) {
+        hashtable_remove(mount_points,p,1);
+        HTML_LOG(1,"mount point [%s] status changed from [%s] to [%s]",p,current,val);
+        hashtable_insert(mount_points,STRDUP(p),val);
     }
 }
 
@@ -57,8 +76,7 @@ void get_mount_points() {
     if (mount_points == NULL) {
         mount_points = string_string_hashtable(16); //let the OS clean this up at the end
 
-// No need to actually read mtab here - we will try to mount items as we read the database file.
-#if 0
+#if 1
         FILE *fp = fopen("/etc/mtab","r");
         if (fp) {
 #define BUFSIZE 200
@@ -82,7 +100,7 @@ void get_mount_points() {
 
                     *q = '\0';
 
-                    add_mount_point(p,"1");
+                    set_mount_status(p,MOUNT_STATUS_IN_MTAB);
                 }
 
             }
@@ -92,27 +110,21 @@ void get_mount_points() {
     }
 }
 
-// 1 if tried mounting before - status returned via mount_status
-int tried_mounting(char *path,int *mount_status) {
 
-    char *mount_status_str;
+// 1 if tried mounting before - status returned via mount_status
+char *get_mount_status(char *path) {
+
+    char *result;
     if (mount_points == NULL) {
+
         get_mount_points();
     }
-    mount_status_str = hashtable_search(mount_points,path) ;
-
-    if (mount_status_str == NULL) {
-        HTML_LOG(1,"%s is not mounted",path);
-        return 0;
-    } else if (*mount_status_str == '0') {
-        HTML_LOG(1,"already tried to mount %s",path);
-        *mount_status = 0;
-        return 1;
-    } else {
-        HTML_LOG(3,"already mounted %s",path);
-        *mount_status = 1;
-        return 1;
+    result = hashtable_search(mount_points,path) ;
+    if (result == NULL) {
+        result = MOUNT_STATUS_NOT_IN_MTAB;
     }
+    HTML_LOG(3,"mount status [%s]=[%s]",path,result);
+    return result;
 }
 
 
@@ -133,140 +145,175 @@ HTML_LOG(0,"mount [%s]",file);
     } else {
 
 TRACE;
-
         char *path = network_mount_point(file);
 
         if (path) {
 
 TRACE;
             // check if weve tried mounting. result is set if we have.
-            if (tried_mounting(path,&result)) {
-
-                // Nothing here - just for breakpoints / trace
-TRACE;
-
+            char *mount_status = get_mount_status(path);
+            
+            if (strcmp(mount_status,MOUNT_STATUS_OK) == 0) {
+                result = 1;
+            } else if (strcmp(mount_status,MOUNT_STATUS_BAD) == 0) {
+                result = 0;
             } else {
+                // MOUNT_STATUS_IN_MTAB or MOUNT_STATUS_NOT_IN_MTAB
 
-                char *share_name = util_basename(path);
-TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
-                // eg "abc"
-
-                char *key=STRDUP("servname?");
-                char *last=key+strlen(key)-1;
-                char index = 0;
-                char c;
-
-                // Look for variable servname1, servname2 etc.
-                // for one that is called "abc"
-                for(c = '0' ; c <= '9' ; c++ ) {
-                    *last = c;
-                    if (strcmp(setting_val(key),share_name) == 0) {
-                        index = c;
-                        break;
-                    }
-                }
-TRACE ; HTML_LOG(1,"mount index [%d=%c]",index,index);
-                if (index) {
-                    FREE(key);
-                    ovs_asprintf(&key,"servlink%c",index);
-
-                    char *serv_link = setting_val(key);
-                    // Look for corresponding variable servlinkN
-TRACE ; HTML_LOG(1,"mount servlink [%s]",serv_link);
-                    FREE(key);
-
-                    ovs_asprintf(&key,"link%c",index);
-                    char *link = setting_val(key);
-TRACE ; HTML_LOG(1,"mount link [%s]",link);
-
-                    if (!ping_link(link)) {
-
-                        add_mount_point(path,"0");
-
-                    } else {
-
-                        char *user=regextract1(serv_link,"smb.user=([^&]+)",1,0);
-    TRACE ; HTML_LOG(1,"mount user [%s]",user);
-
-                        char *passwd=regextract1(serv_link,"smb.passwd=([^&]+)",1,0);
-    TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
-
-                        char *cmd = NULL;
-                        if (util_starts_with(link,"nfs://")) {
-
-                            // link = nfs://host:/share
-                            // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
-                            ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\"",
-                                    path,link+6,path);
-
-                        } else if (util_starts_with(link,"smb://")) {
-
-                            // link = smb://host/share
-                            // mount -t cifs -o username=,password= //host/share /path/to/network
-                            ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\"",
-                                    path,user,passwd,link+4,path);
-                        } else {
-                            html_error("Dont know how to mount [%s]",serv_link);
-                        }
-                        if (cmd) {
-
-                            long t = time(NULL);
-                            int mount_result = util_system(cmd);
-
-                            // Mount prints detailed error to stdout but just returns exit codes
-                            // 0(OK) , 1(Bad args?) OR  0xFF00 (Something else).
-                            // So we cant tell exactly why it failed without scraping
-                            // stdout.
-                            // Eg if mount display 'Device or resource Busy' it doesnt return EBUSY(16)
-                            //
-                            // Also trying to use native mount() function is hard work
-                            // (it does kernel space work but not other stuff - update /etc/mtab etc?)
-                            //
-                            // So I've taken a big liberty here and assumed that if the mount returns
-                            // immediately that it worked.
-                            // This obviously is risky of the mount failed due to bad parameters.
-                            //
-
-
-                            switch(mount_result) {
-                            case 0:
-                                result = 1;
-                                break;
-                            case 0xFF00:
-                                // some mount error occured. If it occured in less than 1 second
-                                // just assume its a device busy and continue happily assuming it
-                                // is already mounted.
-                                if (time(NULL) - t <= 5) {
-                                    HTML_LOG(0,"mount [%s] failed quickly - assume all is ok",serv_link);
-                                    result = 1;
-                                } else {
-                                    HTML_LOG(0,"mount [%s] failed slowly - assume the worst ",serv_link);
-                                    result = 0;
-                                }
-                                break;
-                            default:
-                                HTML_LOG(0,"mount [%s] unknown error - assume the worst ",serv_link);
-                                //even though mount failed - add it to the list to avoid repeat attempts.
-                                result = 0;
-                            }
-                            add_mount_point(path,(result?"1":"0"));
-
-                            FREE(cmd);
-                        }
-
-                        FREE(user);
-                        FREE(passwd);
-                    }
-
-                }
-                FREE(key);
-                FREE(share_name);
+                result = nmt_mount_share(path,mount_status);
             }
+
             FREE(path);
         }
 
     }
     HTML_LOG(0,"mount [%s] = [%d]",file,result);
+    return result;
+}
+
+int nmt_mount_share(char *path,char *current_mount_status)
+{
+    int result = 0;
+
+    char *share_name = util_basename(path);
+TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
+    // eg "abc"
+
+    char *key=STRDUP("servname?");
+    char *last=key+strlen(key)-1;
+    char index = 0;
+    char c;
+
+    // Look for variable servname1, servname2 etc.
+    // for one that is called "abc"
+    for(c = '0' ; c <= '9' ; c++ ) {
+        *last = c;
+        if (strcmp(setting_val(key),share_name) == 0) {
+            index = c;
+            break;
+        }
+    }
+TRACE ; HTML_LOG(1,"mount index [%d=%c]",index,index);
+    if (index) {
+        FREE(key);
+        ovs_asprintf(&key,"servlink%c",index);
+
+        char *serv_link = setting_val(key);
+        // Look for corresponding variable servlinkN
+TRACE ; HTML_LOG(1,"mount servlink [%s]",serv_link);
+        FREE(key);
+
+        ovs_asprintf(&key,"link%c",index);
+        char *link = setting_val(key);
+TRACE ; HTML_LOG(1,"mount link [%s]",link);
+
+        if (!ping_link(link)) {
+
+            set_mount_status(path,MOUNT_STATUS_BAD);
+
+        } else if (strcmp(current_mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
+
+            char *user=regextract1(serv_link,"smb.user=([^&]+)",1,0);
+TRACE ; HTML_LOG(1,"mount user [%s]",user);
+
+            char *passwd=regextract1(serv_link,"smb.passwd=([^&]+)",1,0);
+TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
+
+            char *cmd = NULL;
+            if (util_starts_with(link,"nfs://")) {
+
+                // link = nfs://host:/share
+                // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
+                ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\"",
+                        path,link+6,path);
+
+            } else if (util_starts_with(link,"smb://")) {
+
+                // link = smb://host/share
+                // mount -t cifs -o username=,password= //host/share /path/to/network
+                ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\"",
+                        path,user,passwd,link+4,path);
+            } else {
+                html_error("Dont know how to mount [%s]",serv_link);
+            }
+            if (cmd) {
+
+                long t = time(NULL);
+                int mount_result = util_system(cmd);
+
+                // Mount prints detailed error to stdout but just returns exit codes
+                // 0(OK) , 1(Bad args?) OR  0xFF00 (Something else).
+                // So we cant tell exactly why it failed without scraping
+                // stdout.
+                // Eg if mount display 'Device or resource Busy' it doesnt return EBUSY(16)
+                //
+                // Also trying to use native mount() function is hard work
+                // (it does kernel space work but not other stuff - update /etc/mtab etc?)
+                //
+                // So I've taken a big liberty here and assumed that if the mount returns
+                // immediately that it worked.
+                // This obviously is risky of the mount failed due to bad parameters.
+                //
+
+
+                switch(mount_result) {
+                case 0:
+                    result = 1;
+                    break;
+                case 0xFF00:
+                    // some mount error occured. If it occured in less than 1 second
+                    // just assume its a device busy and continue happily assuming it
+                    // is already mounted.
+                    if (time(NULL) - t <= 5) {
+                        HTML_LOG(0,"mount [%s] failed quickly - assume all is ok",serv_link);
+                        result = 1;
+                    } else {
+                        HTML_LOG(0,"mount [%s] failed slowly - assume the worst ",serv_link);
+                        result = 0;
+                    }
+                    break;
+                default:
+                    HTML_LOG(0,"mount [%s] unknown error - assume the worst ",serv_link);
+                    //even though mount failed - add it to the list to avoid repeat attempts.
+                    result = 0;
+                }
+                set_mount_status(path,(result ? MOUNT_STATUS_OK : MOUNT_STATUS_BAD));
+
+                FREE(cmd);
+            }
+
+            FREE(user);
+            FREE(passwd);
+
+        } else if (strcmp(current_mount_status,MOUNT_STATUS_IN_MTAB) == 0) {
+            // Its pingable but now we check it is accessible.
+            result = check_accessible(path,5);
+        } else {
+            // shouldnt get here
+            assert(0);
+        }
+
+    }
+    FREE(key);
+    FREE(share_name);
+    return result;
+}
+
+// Now we have done a ping check and the device should be mounted.
+// It is still possible it is a stale mtab entry - eg nfs server is stopped.
+int check_accessible(char *path,int timeout_secs)
+{
+    int result = 0;
+    time_t now = time(NULL);
+    DIR *d = opendir(path);
+    closedir(d);
+    if (time(NULL) - now > timeout_secs) {
+        HTML_LOG(0,"mount [%s] too slow to open folder");
+    } else {
+        HTML_LOG(0,"mount [%s] ok");
+        result = 1;
+    }
+    set_mount_status(path,(result ? MOUNT_STATUS_OK : MOUNT_STATUS_BAD));
     return result;
 }
 
@@ -288,7 +335,7 @@ TRACE;
     if (end) {
         ovs_asprintf(&host,"%.*s",end-link,link);
 
-        result = ping(host,0);
+        result = (ping(host,0) == 0);
 
         FREE(host);
 
@@ -297,7 +344,7 @@ TRACE;
 }
 
 // Return true if the file is mounted. This also caches the last 
-// network path checked to avoid the hash lookup in nmt_mount()->tried_mounting() .
+// network path checked to avoid the hash lookup in nmt_mount()->get_mount_status() .
 int nmt_mount_quick (char *file)
 {
     static int last_result = -1;

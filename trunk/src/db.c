@@ -1038,18 +1038,21 @@ char *is_nmt_network_share(char *mtab_line) {
 int is_pingable(char *mtab_line) {
 
     char *ip = mtab_line;
-    while (*ip && !isdigit(*ip)) ip++;
-    if (!*ip) {
-        HTML_LOG(0,"IP not found in [%s]",mtab_line);
-        return 0;
-    }
-    char *ipend = ip;
-    while (*ipend && (isdigit(*ipend) || *ipend == '.')) ipend++;
+    // 192.168.88.13:/space /opt/sybhttpd/localhost.drives/NETWORK_SHARE/space nfs ....
+    // or
+    // \134\134192.168.88.6\134share /opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc cifs rw,mand,nodiratime,unc=\\192.168.88.6\share,
 
+
+    // Skip octal format esp space (\040),tab (\011), newline (\012) and backslash (\134) 
+    while (*ip == '\\' ) {
+      ip +=  4;
+    }
+    char  *ipend = ip;
+    while(strchr("\\/:",*ipend) == NULL) {
+        ipend++;
+    }
     *ipend='\0';
-    HTML_LOG(1,"pinging [%s]",ip);
-    int result = ping(ip,0);
-    HTML_LOG(0,"ping [%s] = %d",ip,result);
+    int result = (ping(ip,0) == 0);
     return result;
 }
 

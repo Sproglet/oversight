@@ -2023,7 +2023,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
         d = date[3];
 
         #search for matching shownames and pick the one that has an episode for the given date.
-        search1TvId(plugin,idx,title,closeTitles);
+        possible_tv_titles(plugin,title,closeTitles);
 
         DEBUG("Checking the following series for "title" "y"/"m"/"d);
         dump(0,"date check",closeTitles);
@@ -2415,7 +2415,7 @@ tvDbSeriesPage,result) {
         #Get a better title using link from nfo to scrape epguides  with.
         scrapeIMDBTitlePage(idx,bestUrl);
         if (g_category[idx] != "M" ) {
-            tvDbSeriesPage = get_tv_series_api_url(plugin,imdb2tvid(plugin,idx,extractImdbId(bestUrl)));
+            tvDbSeriesPage = get_tv_series_api_url(plugin,find_tvid(plugin,idx,extractImdbId(bestUrl)));
             result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
         }
 
@@ -2443,7 +2443,7 @@ tvDbSeriesPage,result) {
             if (bestUrl != "") {
                 scrapeIMDBTitlePage(idx,bestUrl);
                 if (g_category[idx] != "M" ) {
-                    tvDbSeriesPage = get_tv_series_api_url(plugin,imdb2tvid(plugin,idx,extractImdbId(bestUrl)));
+                    tvDbSeriesPage = get_tv_series_api_url(plugin,find_tvid(plugin,idx,extractImdbId(bestUrl)));
                     result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
                 }
             }   
@@ -2956,8 +2956,7 @@ s,i){
     return s;
 }
 
-function search1TvId(plugin,idx,title,closeTitles,\
-best,filter) {
+function possible_tv_titles(plugin,title,closeTitles) {
 
     if (plugin == "THETVDB" ) {
         searchTv(plugin,title,"FirstAired,Overview",closeTitles);
@@ -3269,10 +3268,23 @@ i,c) {
     }
 }
 
+function scan_tv_via_search_engine(regex,keywords,premier_mdy,\
+url,id2) {
+    
+    if (premier_mdy != "") {
+        url=keywords " " premier_mdy;
+        id2 = scanPageForMatch(g_search_bing" "keywords " \"" premier_mdy"\"",regex,0);
+    }
+    if (id2 == "" ) {
+        id2 = scanPageForMatch(g_search_bing" "keywords ,regex,0);
+    }
+    return id2;
+}
+
 # IN imdb id tt0000000
 # RETURN tvdb id
-function imdb2tvid(plugin,idx,imdbid,\
-url,id2,premier_mdy,date,nondate,regex,link,key) {
+function find_tvid(plugin,idx,imdbid,\
+url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -3283,47 +3295,55 @@ url,id2,premier_mdy,date,nondate,regex,link,key) {
 
         } else {
 
-            if (extractDate(g_premier[idx],date,nondate)) {
-                premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
-            }
+            # First try API search or direct imdb search 
             if(plugin == "THETVDB") {
                 regex="[&?;]id=[0-9]+";
                 #first try api search
                 url = "http://thetvdb.com/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
                 id2 = scanPageForMatch(url,regex,0);
-                if (id2 == "" ) {
-                    #no joy - try web search - for some reason yahoo index of thetvdb is rubbish
-                    url=g_search_bing"intitle:\""gTitle[idx]"\" "premier_mdy" site:thetvdb.com intitle:\"Series Info\"";
-                    id2=scanPageForMatch(url,regex,0);
-                }
-                if (id2 == "" ) {
-                    #no joy - try web search - for some reason yahoo index of thetvdb is rubbish
-                    url=g_search_bing"intitle:\""gTitle[idx]"\" site:thetvdb.com intitle:\"Series Info\"";
-                    id2=scanPageForMatch(url,regex,0);
-                }
                 if (id2 != "" ) {
                     id2=substr(id2,5);
                 }
-            } else if(plugin == "TVRAGE") {
+            }
 
-                #no api search - try web search directly
-                url=gTitle[idx] " "premier_mdy" site:tvrage.com intitle:\"Television series\"";
-                link = scanPageForMatch(search_url(g_link_search_engines,url,10),"tvrage.com/[^\"]+",0);
-                if (link == "" ) {
-                    url=gTitle[idx] " site:tvrage.com intitle:\"Television series\"";
-                    link = scanPageForMatch(search_url(g_link_search_engines,url,10),"tvrage.com/[^\"]+",0);
-                }
-                DEBUG(plugin" LINK = "link);
-                if (link != "" ) {
-                    id2 = scanPageForMatch("http://www."link,"/shows/[0-9]+/episode",0);
-                    DEBUG(plugin" ID2 = "id2);
-                    if (match(id2,/[0-9]+/) ) {
-                        id2=substr(id2,RSTART,RLENGTH);
+            if (id2 == "" ) {
+                # Now try title search
+                possible_tv_titles(plugin,gTitle[idx],closeTitles);
+                id2 = selectBestOfBestTitle(plugin,gTitle[idx],closeTitles);
+            }
+
+            if (id2 == "" ) {
+
+                extractDate(g_premier[idx],date,nondate);
+
+                if(plugin == "THETVDB") {
+
+                    regex="[&?;]id=[0-9]+";
+
+                    if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
+
+                    id2 = scan_tv_via_search_engine(regex,gTitle[idx]" site:thetvdb.com intitle:\"Series Info\"",premier_mdy);
+                    if (id2 != "" ) {
+                        id2=substr(id2,5);
                     }
+
+                } else if(plugin == "TVRAGE") {
+
+                    regex="tvrage.com/[^\"]+";
+
+                    if (1 in date) premier_mdy=sprintf("%s %02d, %d",g_month_en[0+date[2]],date[3],date[1]);
+
+                    link = scan_tv_via_search_engine(regex,gTitle[idx]" site:tvrage.com intitle:\"Television series\"",premier_mdy);
+                    if (link != "" ) {
+                        id2 = scanPageForMatch("http://www."link,"/shows/[0-9]+/episode",0);
+                        DEBUG(plugin" ID2 = "id2);
+                        if (match(id2,/[0-9]+/) ) {
+                            id2=substr(id2,RSTART,RLENGTH);
+                        }
+                    }
+                } else {
+                    plugin_error(plugin);
                 }
-                # lost  site:tvrage.com intitle:"Television series" intitle:summary inurl:shows
-            } else {
-                plugin_error(plugin);
             }
             if (id2) g_imdb2tv[key] = id2;
         }
@@ -3338,10 +3358,10 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles) {
 
     if (g_imdb[idx]) {
         imdb_id = extractImdbId(g_imdb[idx]);
-        tvdbid = imdb2tvid(plugin,idx,imdb_id);
+        tvdbid = find_tvid(plugin,idx,imdb_id);
     }
     if (tvdbid == "") {
-        search1TvId(plugin,idx,title,closeTitles);
+        possible_tv_titles(plugin,title,closeTitles);
         tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
     }
     if (tvdbid != "") {
@@ -3860,6 +3880,8 @@ function clean_title(t) {
     gsub(/[&]/," and ",t);
     gsub(/['"'"']/,"",t);
 
+    sub(/\([12][0-9][0-9][0-9]\)/,"",t); #remove year
+
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
     #this has to be done in two stages otherwise the collapsing prevents the next match.
@@ -4349,7 +4371,6 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
 function clean_xml_path(xmlpath,xml,\
 t,currentTag,lastTag) {
 
-if ( 1 ) {
     #This is the proper way to remove the element
     #delete the current child - its slow
     for(t in xml) {
@@ -4357,16 +4378,6 @@ if ( 1 ) {
             delete xml[t];
         }
     }
-
-} else {
-
-    #alternatively remove ALL xml data but keep the @CURRENT elements
-    #so that the XML paths are preserved.
-    currentTag=xml["@CURRENT"];
-    delete xml;
-    xml["@CURRENT"] = currentTag;
-
-}
 
     # TODO delete this bit - just checking self modifying loops work ok
     # for(t in xml) { if (index(t,xmlpath) == 1) { ERROR("Bad loop"); exit; } }
@@ -4453,6 +4464,7 @@ function adjustTitle(idx,newTitle,source) {
         gTitlePriority["THETVDB"]=4;
         gTitlePriority["TVRAGE"]=4;
     }
+     newTitle = clean_title(newTitle);
 
     if (!(source in gTitlePriority)) {
 

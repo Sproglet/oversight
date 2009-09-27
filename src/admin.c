@@ -25,9 +25,10 @@ void display_admin() {
         
         display_template("default","settings",0,NULL);
 
-    } else if (strcmp(action,"rescan_confirm") == 0) {
+#define CONFIRM_PREFIX "confirm_"
+    } else if (util_starts_with(action,CONFIRM_PREFIX)) {
         
-        display_template("default","rescan",0,NULL);
+        display_template("default",action+strlen(CONFIRM_PREFIX),0,NULL);
 
     } else {
 

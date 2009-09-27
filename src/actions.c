@@ -245,7 +245,14 @@ void do_actions() {
 
     if (allow_admin() && strcmp(view,"admin")==0 ) {
 
-        if (strcmp(action,"rescan_request") == 0) {
+        if (strcmp(action,"reinstall") == 0) {
+
+            char *cmd;
+            ovs_asprintf(&cmd,"%s/oversight-install.cgi install",appDir());
+            util_system(cmd);
+            FREE(cmd);
+
+        } else if (strcmp(action,"rescan_request") == 0) {
 
             int parallel_scan = 0;
             char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");

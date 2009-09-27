@@ -3274,12 +3274,14 @@ i,c) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function imdb2tvid(plugin,idx,imdbid,\
-url,id2,premier_mdy,date,nondate,regex,link) {
+url,id2,premier_mdy,date,nondate,regex,link,key) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
-        if (imdbid in g_imdb2tv) {
 
-            id2 = g_imdb2tv[imdbid];
+        key = plugin"/"imdbid;
+        if (key in g_imdb2tv) {
+
+            id2 = g_imdb2tv[key];
 
         } else {
 
@@ -3325,7 +3327,7 @@ url,id2,premier_mdy,date,nondate,regex,link) {
             } else {
                 plugin_error(plugin);
             }
-            if (id2) g_imdb2tv[imdbid] = id2;
+            if (id2) g_imdb2tv[key] = id2;
         }
 
         DEBUG("imdb id "imdbid" =>  "plugin"["id2"]");

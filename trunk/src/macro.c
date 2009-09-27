@@ -120,8 +120,8 @@ char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_r
     char *k,*v;
     char *result = NULL;
     if (mounts) {
-        char *good = get_theme_image_tag("ok","");
-        char *bad = get_theme_image_tag("cancel","");
+        char *good = get_theme_image_tag("ok"," class=nasstatus ");
+        char *bad = get_theme_image_tag("cancel"," class=nasstatus ");
         itr = hashtable_loop_init(mounts) ;
         while(hashtable_loop_more(itr,&k,&v)) {
             if (v) {

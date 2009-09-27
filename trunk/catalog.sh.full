@@ -4313,7 +4313,7 @@ function set_eptitle(idx,title) {
         gEpTitle[idx] = title;
         INFO("Setting episode title ["title"]");
 
-    } else if (title != "" && gEpTitle[idx] ~ /^[Ee]pisode [0-9]+$/ ) {
+    } else if (title != "" && title !~ /^Episode [0-9]+$/ && gEpTitle[idx] ~ /^Episode [0-9]+$/ ) {
 
         INFO("Overiding episode title ["gEpTitle[idx]"] with ["title"]");
         gEpTitle[idx] = title;

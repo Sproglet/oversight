@@ -86,7 +86,7 @@ catalog_movie_search_order3="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 
 # Short titles - best try a simple search first.
 catalog_movie_search_regex4="."
-catalog_movie_search_order4="IMDB,IMDBLINKS,ONLINE_NFO"
+catalog_movie_search_order4="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 
 #scene tags - dont use ones that are normal words.
 catalog_config_version=1

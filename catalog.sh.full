@@ -3268,7 +3268,7 @@ i,c) {
     }
 }
 
-function scan_tv_via_search_engine(regex,keywords,premier_mdy,\
+function scan_tv_via_search_engine(regex,keywords,premier_mdy,year,\
 url,id2) {
     
     if (premier_mdy != "") {
@@ -3276,7 +3276,7 @@ url,id2) {
         id2 = scanPageForMatch(g_search_bing" "keywords " \"" premier_mdy"\"",regex,0);
     }
     if (id2 == "" ) {
-        id2 = scanPageForMatch(g_search_bing" "keywords ,regex,0);
+        id2 = scanPageForMatch(g_search_bing" "keywords " "year ,regex,0);
     }
     return id2;
 }
@@ -3306,11 +3306,11 @@ url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles) {
                 }
             }
 
-            if (id2 == "" ) {
-                # Now try title search
-                possible_tv_titles(plugin,gTitle[idx],closeTitles);
-                id2 = selectBestOfBestTitle(plugin,gTitle[idx],closeTitles);
-            }
+#            if (id2 == "" ) {
+#                # Now try title search
+#                possible_tv_titles(plugin,gTitle[idx],closeTitles);
+#                id2 = selectBestOfBestTitle(plugin,gTitle[idx],closeTitles);
+#            }
 
             if (id2 == "" ) {
 
@@ -3322,7 +3322,7 @@ url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles) {
 
                     if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
 
-                    id2 = scan_tv_via_search_engine(regex,gTitle[idx]" site:thetvdb.com intitle:\"Series Info\"",premier_mdy);
+                    id2 = scan_tv_via_search_engine(regex,gTitle[idx]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,g_year[idx]);
                     if (id2 != "" ) {
                         id2=substr(id2,5);
                     }
@@ -3333,7 +3333,7 @@ url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles) {
 
                     if (1 in date) premier_mdy=sprintf("%s %02d, %d",g_month_en[0+date[2]],date[3],date[1]);
 
-                    link = scan_tv_via_search_engine(regex,gTitle[idx]" site:tvrage.com intitle:\"Television series\"",premier_mdy);
+                    link = scan_tv_via_search_engine(regex,gTitle[idx]" site:tvrage.com intitle:\"Television series\" ",premier_mdy,g_year[idx]);
                     if (link != "" ) {
                         id2 = scanPageForMatch("http://www."link,"/shows/[0-9]+/episode",0);
                         DEBUG(plugin" ID2 = "id2);

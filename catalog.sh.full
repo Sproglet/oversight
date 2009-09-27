@@ -4201,7 +4201,10 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
         g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
         g_plot[idx] = seriesInfo["/Data/Series/Overview"];
-        setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
+
+        #Dont use thetvdb genre - its too confusing when mixed with imdb movie genre
+        #setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
+
         gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
         g_rating[idx] = seriesInfo["/Data/Series/Rating"];
         setFirst(g_poster,idx,tvDbImageUrl(seriesInfo["/Data/Series/poster"]));
@@ -5159,7 +5162,7 @@ title,y,poster_imdb_url) {
             }
 
             #IMDB Genre takes precedence
-            if (index(line,"Genre:")) {
+            if (g_genre[idx] == "" && index(line,"Genre:")) {
                 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0));
                 sub(/ +more */,"",g_genre[idx]);
             }
@@ -5332,9 +5335,6 @@ line,out,ending) {
             }
         }
         line = remove_tags(line);
-        if (index(line,"tvrageplot")) {
-            DEBUG("scrape_until "label":+"line);
-        }
         out = out " " line;
     }
     gsub(/ +/," ",out);

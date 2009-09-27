@@ -262,8 +262,8 @@ function pad_episode(e) {
 
 function timestamp(label,x) {
 
-    if (index(x,g_tk) ) sub(g_tk,"",x);
-    if (index(x,g_tk2) ) sub(g_tk2,"",x);
+    if (index(x,g_tk) ) gsub(g_tk,"",x);
+    if (index(x,g_tk2) ) gsub(g_tk2,"",x);
 
     if (systime() != g_last_ts) {
         g_last_ts=systime();
@@ -743,9 +743,17 @@ END{
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
-function merge_files_and_do_actions(indexToMergeHash) {
+function merge_files_and_do_actions(indexToMergeHash,\
+doit) {
 
-    if (g_opt_dry_run) {
+    for(doit in indexToMergeHash) {
+        break;
+    }
+
+    if (doit == "" ) {
+        INFO("Nothing to merge");
+
+    } else if (g_opt_dry_run) {
 
         INFO("Database update skipped - dry run");
 
@@ -761,7 +769,10 @@ function merge_files_and_do_actions(indexToMergeHash) {
         replace_database_with_new();
 
         unlock(g_db_lock_file);
+
+        delete indexToMergeHash;
     }
+
 }
 
 function is_locked(lock_file,\
@@ -855,7 +866,6 @@ function set_db_fields() {
     ID=db_field("_id","ID","",0);
 
     WATCHED=db_field("_w","Watched","watched") ;
-    ACTION=db_field("_a","Next Operation","",0); # ACTION Tell catalog.sh to do something with this entry (ie delete)
     PARTS=db_field("_pt","PARTS","");
     FILE=db_field("_F","FILE","filenameandpath");
     NAME=db_field("_N","NAME","");
@@ -2062,13 +2072,15 @@ episodeInfo,url) {
 
     
     url="http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-";
-    fetchXML(url,episodeInfo);
+    fetchXML(url,"epbydate",episodeInfo);
 
-    if ( episodeInfo["/Data/Error"] != "" ) {
+    if ( "/Data/Error" in episodeInfo ) {
         ERROR(episodeInfo["/Data/Error"]);
         tvdbid="";
     }
     if (tvdbid != "") {
+        dump(0,"ep by date",episodeInfo);
+
         gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
         details[SEASON]=episodeInfo["/Data/Episode/SeasonNumber"];
         details[EPISODE]=episodeInfo["/Data/Episode/EpisodeNumber"];
@@ -2208,11 +2220,10 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
 idx,file,bestUrl,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status,p,plugin) {
+ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
     startTime = systime();
     numFiles=0;
-    total_merge_cycles=0;
     for ( idx in gMovieFiles) {
         numFiles++;
     }
@@ -2279,6 +2290,7 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status,p,plugi
 
             # checkTvFilenameFormat also uses the plugin to detect daily formats.
             # so if ellen.2009.03.13 is rejected at tvdb it is still passed by tvrage.
+            DIV("checkTvFilenameFormat "plugin);
             if (checkTvFilenameFormat(plugin,idx)) {
 
                 if (UPDATE_TV)  {
@@ -2342,25 +2354,23 @@ ready_to_merge,ready_to_merge_count,total_merge_cycles,scanned,tv_status,p,plugi
         DEBUG("ready_to_merge_batch_size = "ready_to_merge_batch_size);
         DEBUG("ready_to_merge_count = "ready_to_merge_count);
         if (ready_to_merge_batch_size != 0 ) {
-            if ( ready_to_merge_count - ready_to_merge_batch_size > 0 ) {
+            if (  ready_to_merge_count - ready_to_merge_batch_size > 0 ) {
                 merge_files_and_do_actions(ready_to_merge);
-                delete ready_to_merge;
                 ready_to_merge_count=0;
-                total_merge_cycles++;
             }
         }
     }
     # At the end we always make sure merge_files_and_do_actions has been called
     # at least once as this loads the database and carries out any file actions
-    if (total_merge_cycles == 0 || ready_to_merge_count) {
+    if (ready_to_merge_count) {
         DIV("merge");
         merge_files_and_do_actions(ready_to_merge);
-        delete ready_to_merge;
         ready_to_merge_count=0;
     }
 
     clean_globals();
 }
+
 function DIV(x) {
     INFO("\n\t===\n\t"x"\n\t===\n");
 }
@@ -2374,10 +2384,6 @@ function begin_search(idx,method) {
 
         if (index(g_search_types_tried,method)) {
             return 0;
-        }
-        if (g_search_types_tried != "") {
-            # reset any variales set by the failed method
-            DIV("switch to "method);
         }
         g_search_types_tried = g_search_types_tried " " method;
         DEBUG("Search method = "method);
@@ -2394,6 +2400,7 @@ tvDbSeriesPage,result) {
     if (!begin_search(idx,plugin)) {
         return 0;
     }
+    DIV("tv_search "plugin);
 
     if (bestUrl == "" && g_imdb[idx] != "" ) {
         bestUrl = g_imdb[idx];
@@ -4163,7 +4170,9 @@ result) {
     } else {
         plugin_error(plugin);
     }
-    DEBUG("end get_tv_series_info "plugin" = "(result==2?"Full Episode Info":(result?"Series Only":"Not Found")));
+    DEBUG("Title:["gTitle[idx]"] "g_season[idx]"x"g_episode[idx]" date:"gAirDate[idx]);
+    DEBUG("Episode:["gEpTitle[idx]"]");
+    DEBUG("end get_tv_series_info "plugin" = "result"="(result==2?"Full Episode Info":(result?"Series Only":"Not Found")));
     return result;
 }
 
@@ -4211,9 +4220,18 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
 
             if ("/Data/Episode/id" in episodeInfo) {
                 setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]));
-                setFirst(gEpTitle,idx,episodeInfo["/Data/Episode/EpisodeName"]);
+
+                set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"]);
+
                 setFirst(g_epplot,idx,seriesInfo["/Data/Episode/Overview"]);
-                result ++;
+
+                if (gEpTitle[idx] != "" ) {
+                   if ( gEpTitle[idx] !~ /^Episode [0-9]+$/ ) {
+                       result ++;
+                   } else {
+                       INFO("Due to Episode title of ["gEpTitle[idx]"] Demoting result to force another TV plugin search");
+                   }
+                }
             }
         }
     }
@@ -4259,9 +4277,24 @@ xml,filter,r) {
     }
 }
 
+function set_eptitle(idx,title) {
+    if (gEpTitle[idx] == "" ) {
+
+        gEpTitle[idx] = title;
+        INFO("Setting episode title ["title"]");
+
+    } else if (title != "" && gEpTitle[idx] ~ /^[Ee]pisode [0-9]+$/ ) {
+
+        INFO("Overiding episode title ["gEpTitle[idx]"] with ["title"]");
+        gEpTitle[idx] = title;
+    } else {
+        INFO("Keeping episode title ["gEpTitle[idx]"] ignoring ["title"]");
+    }
+}
+
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,sid,url,e,result,pi) {
+seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
 
     pi="TVRAGE";
     result = 0;
@@ -4280,10 +4313,18 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi) {
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
             #TODO Scrape page at "http://www.tvrage.com/shows/id-2445/" for Creator , plot 
             if (get_episode_xml(pi,tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
-                gEpTitle[idx]=episodeInfo[e"/title"];
+
+                set_eptitle(idx,episodeInfo[e"/title"]);
+
                 gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
                 url=episodeInfo[e"/link"];
-                g_epplot[idx] = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"<a ",0);
+
+                if (g_epplot[idx] == "" ) {
+                    p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"<a ",0);
+                    if (p != "" && index(p,"There is no summary") == 0) {
+                        g_epplot[idx] = p;
+                    }
+                }
                 result ++;
             } else {
                 WARNING("Error getting episode xml");
@@ -4613,10 +4654,16 @@ i,j,code,newcode) {
 
 # Make two urls point to the same cache page.
 function equate_urls(u1,u2) {
+
+    INFO("equate ["u1"] =\n\t ["u2"]");
+
     if (u1 in gUrlCache) {
-        gUrlCache[u2]=u1;
+
+        gUrlCache[u2]=gUrlCache[u1];
+
     } else if (u2 in gUrlCache) {
-        gUrlCache[u1]=u2;
+
+        gUrlCache[u1]=gUrlCache[u2];
     }
 }
 

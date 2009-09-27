@@ -25,6 +25,7 @@
 
 static struct hashtable *macros = NULL;
 char *get_variable(char *vname);
+char *image_path(char *template_name,char *name);
 
 long get_current_page() {
     long page;
@@ -88,18 +89,26 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
 
             if (default_wallpaper) {
 
-                // Use default wallpaper
+                fanart = image_path(template_name,default_wallpaper);
 
-                if (g_dimension->scanlines == 0 ) {
-                    ovs_asprintf(&fanart,"%s/templates/%s/sd/%s",appDir(),template_name,default_wallpaper);
-                } else {
-                    ovs_asprintf(&fanart,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,default_wallpaper);
-                }
             }
         }
 
         result  = file_to_url(fanart);
         FREE(fanart);
+    }
+    return result;
+}
+
+char *image_path(char *template_name,char *name)
+{
+    char *result = NULL;
+    // Use default wallpaper
+
+    if (g_dimension->scanlines == 0 ) {
+        ovs_asprintf(&result,"%s/templates/%s/sd/%s",appDir(),template_name,name);
+    } else {
+        ovs_asprintf(&result,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,name);
     }
     return result;
 }
@@ -933,6 +942,19 @@ char *macro_fn_icon_link(char *template_name,char *call,Array *args,int num_rows
     return result;
 }
 
+// write an image url
+char *macro_fn_image_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+    if (args && args->size == 1) {
+        char *tmp = image_path(template_name,args->array[0]);
+        result = file_to_url(tmp);
+        FREE(tmp);
+    } else {
+        ovs_asprintf(&result,"%s(image base name)",call);
+    }
+    return result;
+}
+
 // Display an icon
 char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
@@ -1440,6 +1462,7 @@ void macro_init() {
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
+        hashtable_insert(macros,"IMAGE",macro_fn_image_url);
         //HTML_LOG(1,"end macro init");
     }
 }

@@ -333,7 +333,6 @@ function plugin_error(p) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
-    split("THETVDB,TVRAGE",g_tv_plugin,",");
     g_search_yahoo = "http://search.yahoo.com/search?p=";
     g_search_bing = "http://www.bing.com/search?q=";
     g_batch_size=50;
@@ -569,6 +568,9 @@ END{
     g_status_file=APPDIR"/catalog.status";
 
     load_catalog_settings();
+
+    split(g_settings["catalog_tv_plugins"],g_tv_plugin,g_cvs_sep);
+
     if (g_settings["catalog_fetch_posters"] == "yes") {
         GET_POSTERS=1;
     }
@@ -1330,24 +1332,24 @@ function check_same(label,a,b) {
 
 # If no direct urls found. Search using file names.
 function searchInternetForImdbLink(idx,\
-url,triedTitles,txt,linksRequired) {
+url,txt,linksRequired) {
 
     linksRequired = 0+g_settings["catalog_imdb_links_required"];
     
     txt = basename(gMovieFiles[idx]);
     if (tolower(txt) != "dvd_volume" ) {
-        url=searchHeuristicsForImdbLink(txt,triedTitles,linksRequired);
+        url=searchHeuristicsForImdbLink(txt,linksRequired);
     }
 
     if (url == "" && match(gMovieFiles[idx],gExtRegexIso)) {
         txt = getIsoTitle(gFolder[idx]"/"gMovieFiles[idx]);
         if (length(txt) - 3 > 0 ) {
-            url=searchHeuristicsForImdbLink(txt,triedTitles,linksRequired);
+            url=searchHeuristicsForImdbLink(txt,linksRequired);
         }
     }
 
     if (url == "" && folderIsRelevant(gFolder[idx])) {
-        url=searchHeuristicsForImdbLink(tolower(basename(gFolder[idx])),triedTitles,linksRequired);
+        url=searchHeuristicsForImdbLink(tolower(basename(gFolder[idx])),linksRequired);
     }
 
     DEBUG("searchInternetForImdbLink=["url"]");
@@ -1382,7 +1384,7 @@ heuristicId,keywords) {
 }
 
 
-function searchHeuristicsForImdbLink(text,triedTitles,linksRequired,\
+function searchHeuristicsForImdbLink(text,linksRequired,\
 bestUrl,k,text_no_underscore) {
 
     mergeSearchKeywords(text,k);
@@ -1394,20 +1396,20 @@ bestUrl,k,text_no_underscore) {
         mergeSearchKeywords(text_no_underscore,k);
     }
 
-    bestUrl = searchArrayForIMDB(k,linksRequired,triedTitles);
+    bestUrl = searchArrayForIMDB(k,linksRequired);
 
     return bestUrl;
 }
 
 # Try all of the array indexs(not values) in web search for imdb link.
 # Try with and without tv tags
-function searchArrayForIMDB(k,linkThreshold,triedTitles,\
+function searchArrayForIMDB(k,linkThreshold,\
 bestUrl,keywords,keywordsSansEpisode) {
 
     g_search_total["direct"]++;
 
     DEBUG("direct search...");
-    bestUrl = searchArrayForIMDB2(k,linkThreshold,triedTitles);
+    bestUrl = searchArrayForIMDB2(k,linkThreshold);
 
     if (bestUrl == "") {
         # Remove episode tags and try again
@@ -1416,7 +1418,7 @@ bestUrl,keywords,keywordsSansEpisode) {
                 keywordsSansEpisode[keywords]=1;
             }
         }
-        bestUrl = searchArrayForIMDB2(keywordsSansEpisode,linkThreshold,triedTitles);
+        bestUrl = searchArrayForIMDB2(keywordsSansEpisode,linkThreshold);
     }
     if (bestUrl != "") {
         g_search_hits["direct"]++;
@@ -1426,20 +1428,16 @@ bestUrl,keywords,keywordsSansEpisode) {
     return bestUrl;
 }
 
-function searchArrayForIMDB2(k,linkThreshold,triedTitles,\
+function searchArrayForIMDB2(k,linkThreshold,\
 bestUrl,keywords) {
     # Try simple keyword searches with imdb keywords added.
     for(keywords in k) {
         DEBUG("direct search ["keywords"]...");
-        if (keywords in triedTitles) {
-            INFO("Already tried ["keywords"]");
-        } else {
-            INFO("direct search ["keywords"]");
-            bestUrl = searchForIMDB(keywords,linkThreshold);
-            if (bestUrl != "") {
-                INFO("direct search : Found ["bestUrl"]with direct search ["keywords"]");
-                return bestUrl;
-            }
+        INFO("direct search ["keywords"]");
+        bestUrl = searchForIMDB(keywords,linkThreshold);
+        if (bestUrl != "") {
+            INFO("direct search : Found ["bestUrl"]with direct search ["keywords"]");
+            return bestUrl;
         }
     }
     return "";
@@ -4006,20 +4004,25 @@ function search_url(search_engines,q,num) {
 
 # Search a google page for most frequently occuring imdb link
 function searchForIMDB(keywords,linkThreshold,\
-i1,i2) {
-    #We want imdb links but not from imdb themselves as this skews the results.
-    #Also keeping the number of results down helps focus on early matches.
-    keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
+i1,i2,result) {
+    if (!(keywords in g_imdb_link_search)) {
 
-    i1 = scanUrlForBestMatch(g_search_yahoo keywords,g_imdb_regex,"search4imdb",linkThreshold);
-    return i1;
+        INFO("Begin IMDBLink Search ["keywords"]");
+        #We want imdb links but not from imdb themselves as this skews the results.
+        #Also keeping the number of results down helps focus on early matches.
+        keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
 
-#    if (i1 != "" ) {
-#        i2 = scanUrlForBestMatch(g_search_bing keywords,g_imdb_regex,"search4imdb",linkThreshold);
-#    }
-    return check_same("search4imdb",i1,i2);
-    #url = web_search_to_url(search_engines,keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de",20);
-    #return scanUrlForBestMatch(url,g_imdb_regex,"search4imdb",linkThreshold);
+        i1 = scanUrlForBestMatch(g_search_yahoo keywords,g_imdb_regex,"search4imdb",linkThreshold);
+        g_imdb_link_search[keywords] = i1;
+
+#        if (i1 != "" ) {
+#            i2 = scanUrlForBestMatch(g_search_bing keywords,g_imdb_regex,"search4imdb",linkThreshold);
+#        }
+#        g_imdb_link_search[keywords] = check_same("search4imdb",i1,i2);
+    }
+    result = g_imdb_link_search[keywords];
+
+    INFO("IMDBLink Search ["keywords"] => ["result"]");
 }
 
 # This will try each of the search engines in turn. Google has a habit of locking out IP with lots of searches.

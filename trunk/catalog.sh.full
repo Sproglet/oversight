@@ -5055,10 +5055,6 @@ f,line,count,linematches,linecount,regex_text,remain) {
                 linecount = getMatches(line,regex,remain,linematches);
 
                 #DEBUG2(regex" match "linecount" in "line);
-                if (index(regex,"id=")) {
-                    DEBUG(regex" match "linecount" in "line);
-                }
-
                 hash_add(matches,linematches);
                 count += linecount;
                 if (max > 0) {

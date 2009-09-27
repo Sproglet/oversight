@@ -2402,7 +2402,7 @@ char *get_status() {
     if (result == NULL) {
 
         if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
-            result = STRDUP("[ Catalog update pending ]");
+            result = STRDUP("[ Catalog update ... ]");
         } else if (db_full_size() == 0 ) {
             result = STRDUP("[ Video index is empty. Select setup icon and scan the media drive ]");
         }

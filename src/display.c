@@ -1768,6 +1768,8 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
         for ( c = 0 ; c < cols ; c++ ) {
             i = start + c * rows + r ;
 
+            HTML_LOG(0,"grid col %d",c);
+
             int left_scroll = (page_before && c == 0);
             int right_scroll = (page_after && c == cols-1 );
             int centre_cell = (r == centre_row && c == centre_col);

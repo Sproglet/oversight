@@ -15,7 +15,7 @@
   }
         </script>
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
         [:FORM_START:]
 <center>
         <table id=main width=100% heigth=100%>

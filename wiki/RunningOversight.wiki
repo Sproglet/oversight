@@ -2,22 +2,20 @@
 
 <wiki:toc max_depth="2" />
 
-= Starting Oversight =
-
-== Viewing on the TV ==
+= TV Interface =
 
 To view the Oversight Page on the TV - select the Web Services on the NMT Menu then select the TV option.
 
-== Viewing in a browser ==
+= Browser Interface =
 
 To view Oversight in a browser window. Go to http://<ip address on NMT>:8883/oversight/oversight.cgi
 
 
-== Accessing the Setup Page ==
+= Setup Page =
 
 The setup page can be accessed by cliking on the Setup icon http://oversight.googlecode.com/svn/trunk/images/nav/set1/configure.png
 
-== Running Your First Scan ==
+= Your First Scan =
 
 Before you run your first scan you must add your media sources to *either* the scan paths *or* the watch paths.
 

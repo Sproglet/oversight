@@ -18,7 +18,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090913-1BETA
+VERSION=20090921-1BETA
 
 #Thanks to Jorge for pointing out C200 changes.
 for d in /mnt/syb8634 /nmt/apps ; do
@@ -314,14 +314,22 @@ i,n,v,option) {
             #gsub(/ *[,] */,",",v);
 
             if (n in g_settings) {
-                if (g_settings[n] != v ) {
-                    INFO("Overriding "n": "g_settings[n]" -> "v);
+
+                if (index(n,"catalog_movie_search") == 1) {
+
+                    INFO("Ignoring user setings for "n);
+
+                } else {
+                    if (g_settings[n] != v ) {
+                        INFO("Overriding "n": "g_settings[n]" -> "v);
+                    }
+                    g_settings[n] = v;
                 }
             } else {
                 g_settings_orig[n]=v;
+                g_settings[n] = v;
             }
-            g_settings[n] = v;
-            INFO(n"=["v"]");
+            INFO(n"=["g_settings[n]"]");
         }
     }
     close(file_name);
@@ -2384,7 +2392,7 @@ function begin_search(idx,method) {
             return 0;
         }
         g_search_types_tried = g_search_types_tried " " method;
-        DEBUG("Search method = "method);
+        DIV("Search method = "method);
         return 1;
     }
 }
@@ -4045,6 +4053,7 @@ i1,i2,result) {
     result = g_imdb_link_search[keywords];
 
     INFO("IMDBLink Search ["keywords"] => ["result"]");
+    return result;
 }
 
 # This will try each of the search engines in turn. Google has a habit of locking out IP with lots of searches.

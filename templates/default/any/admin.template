@@ -5,8 +5,8 @@
         <title>Oversight Admin Menu [:HOSTNAME:]</title>
         <style type="text/css">
 
-td.mount1 { color:green; }
-td.mount0 { color:red; }
+td.mount1 { color:white; }
+td.mount0 { color:white; }
 img.nasstatus { width:15; height:15; }
 
             [:INCLUDE_TEMPLATE(css):]

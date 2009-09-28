@@ -28,29 +28,32 @@ If you want Oversight to regularly check the source for new content, add the sou
 
 *Do not add the source to both.* - I'll check for this soon.
 
-==Source on Internal HDD ==
-To add a folder on the Internal HDD just enter the path to the folder.. 
-{{{
-E.g /share/Video
-}}}
-==Source on USB ==
-
-To add a folder on USB enter the path to the folder. This can be just the USB device name with a leading '/'
-
-{{{
-E.g. /USB_DRIVE_A-1
-}}}
-== Source on a NAS ==
-
-To add a folder on a network drive, you must first define the source in the standard NMT Network Sources setup window, and make sure you can browse to it OK. Then add the source to Oversight's scan_paths _or_ watch_paths, _without any leading slash._ . If it is a specific folder on the shared drive then also add '/' followed by the folder name
-{{{
-E.g. nas1/Videos
-}}}
 By default Oversight is initially configured to scan the following folders (used by the 'nzbget' post-processing script)
 
   * /share/Complete
   * /share/Tv
   * /share/Movies
+
+==Source on Internal HDD ==
+To add a folder on the Internal HDD just enter the path to the folder. E.g. 
+{{{
+/share/Video
+}}}
+
+==Source on USB ==
+
+To add a folder on USB enter the path to the folder. This can be just the USB device name with a leading '/'. E.g.
+{{{
+/USB_DRIVE_A-1
+}}}
+
+== Source on a NAS ==
+
+To add a folder on a network drive, you must first define the source in the standard NMT Network Sources setup window, and make sure you can browse to it OK. Then add the source to Oversight's scan_paths _or_ watch_paths, _without any leading slash._ . If it is a specific folder on the shared drive then also add '/' followed by the folder name. E.g.
+{{{
+nas1/Videos
+}}}
+
 
 
 After you have set up the folders click the Scan option http://oversight.googlecode.com/svn/trunk/images/nav/set1/rescan.png to start a background scan.

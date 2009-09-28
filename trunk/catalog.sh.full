@@ -343,7 +343,7 @@ function plugin_error(p) {
 BEGIN {
     g_search_yahoo = "http://search.yahoo.com/search?p=";
     g_search_bing = "http://www.bing.com/search?q=";
-    g_batch_size=50;
+    g_batch_size=25;
     g_tvdb_use_episode_api=1;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;

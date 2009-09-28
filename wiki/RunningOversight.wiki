@@ -1,5 +1,6 @@
 #sidebar TableOfContents
-How to Start Oversight 
+
+<wiki:toc max_depth="2" />
 
 = Starting Oversight =
 

@@ -3879,6 +3879,8 @@ letter) {
     return letter;
 }
 
+# This is used in tv comparison functions for qualified matches so it must not remove any country
+# or year designation
 function clean_title(t) {
     if (index(t,"&") && index(t,";")) {
         gsub(/[&]amp;/,"and",t);
@@ -3888,7 +3890,6 @@ function clean_title(t) {
     gsub(/[&]/," and ",t);
     gsub(/['"'"']/,"",t);
 
-    sub(/\([12][0-9][0-9][0-9]\)/,"",t); #remove year
 
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
@@ -4218,6 +4219,10 @@ function setFirst(array,field,value) {
     }
 }
 
+function remove_year(t) {
+    sub(/ *\([12][0-9][0-9][0-9]\)/,"",t); #remove year
+    return t;
+}
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
@@ -4232,7 +4237,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
 
         setFirst(g_imdb,idx,extractImdbLink(seriesInfo["/Data/Series/IMDB_ID"]));
         #Refine the title.
-        adjustTitle(idx,seriesInfo["/Data/Series/SeriesName"],"thetvdb");
+        adjustTitle(idx,remove_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb");
 
         g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
@@ -4340,7 +4345,7 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
     delete filter;
 
     if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo)) {
-        adjustTitle(idx,seriesInfo["/Show/name"],pi);
+        adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         sid=seriesInfo["/Show/showid"];
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));

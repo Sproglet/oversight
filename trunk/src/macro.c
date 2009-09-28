@@ -128,8 +128,11 @@ char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_r
                 if (util_starts_with(k,NETWORK_SHARE)) {
                     k += strlen(NETWORK_SHARE);
                 }
-                ovs_asprintf(&tmp,"%s<tr><td>%s</td><td class=mount%s>%s</td></tr>",
-                        NVL(result),k,v,(*v=='1'?good:bad));
+                // We also show - unknown mount status as good - keep things simple
+                ovs_asprintf(&tmp,"%s<tr><td class=mount%s>%s %s</td></tr>",
+                        NVL(result),v,(*v=='0'?bad:good),k);
+                //ovs_asprintf(&tmp,"%s<tr><td>%s</td><td class=mount%s>%s</td></tr>",
+                        //NVL(result),k,v,(*v=='1'?good:bad));
                 FREE(result);
                 result = tmp;
             }
@@ -137,7 +140,7 @@ char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_r
         FREE(good);
         FREE(bad);
     }
-    ovs_asprintf(&tmp,"<table><tr><th>NAS</th><th>Status</th></tr>%s</table>",NVL(result));
+    ovs_asprintf(&tmp,"<table><tr><th>NAS Status</th></tr>%s</table>",NVL(result));
     FREE(result);
     result = tmp;
 

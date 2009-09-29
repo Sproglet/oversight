@@ -1667,7 +1667,7 @@ kept_count,updated_count,f,dbline,dbline2,dbfields,idx) {
 
 function grandparent(f) {
     sub(/\/$/,"",f); # remove vobsub indicator
-    sub(/\/[^\/]+\/[^\/]+/,"",f);
+    sub(/\/[^\/]+\/[^\/]+$/,"",f);
     return f;
 }
 
@@ -1698,12 +1698,12 @@ function remove_absent_files_from_new_db(db,\
 
             f = dbfields[FILE,1];
 
+            keep=1;
             
             if (blacklist_re != "" && f ~ "NETWORK_SHARE("blacklist_re")" ) {
                 WARNING("Skipping "f" - blacklisted device");
             } else {
 
-                keep=1;
                 timer = systime();
                 if (!exists(f) ) {
                     if (timer-systime() > 15) {
@@ -1723,13 +1723,13 @@ function remove_absent_files_from_new_db(db,\
                         }
                     }
                 }
-                if (keep) {
-                    print dbline > tmp_db;
-                    g_kept_file_count++;
-                } else {
-                    INFO("Removing "f);
-                    g_absent_file_count++;
-                }
+            }
+            if (keep) {
+                print dbline > tmp_db;
+                g_kept_file_count++;
+            } else {
+                INFO("Removing "f);
+                g_absent_file_count++;
             }
         }
         close(tmp_db);
@@ -5678,7 +5678,7 @@ function hasContent(f) {
     return test("-s",f);
 }
 function exists(f) {
-    return test("-f",f);
+    return test("-e",f);
 }
 function isDirectory(f) {
     return test("-d",f);

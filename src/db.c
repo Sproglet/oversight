@@ -665,7 +665,8 @@ DbRowId *read_and_parse_row(
     for(;;) {
 
         switch(next) {
-        case EOF: goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
+        case EOF:
+            goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
         case '\n' : case '\r' : case '\0': // EOL terminators
             if (state == STATE_VAR) {
                 *p = '\0';
@@ -719,16 +720,18 @@ DbRowId *read_and_parse_row(
             }
             break;
         default:
-            // Add the character
-            *p++ = next;
-#if 1 //this should not really be commented out - could allow buffere overflow
-            if (p >= end ) {
-                // Name variable. This shouldnt happen - truncate
-                p--;
-                *p = '\0';
-                break;
+            if (state != STATE_START) {
+                // Add the character
+                *p++ = next;
+                if (p >= end ) {
+                    // Name variable. This shouldnt happen - truncate
+                    p--;
+                    *p = '\0';
+                    break;
+                }
+            } else {
+                HTML_LOG(0,"Found %c[%d]",next,next);
             }
-#endif
         }
         next = getc(fp);
     }
@@ -1356,7 +1359,6 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
             title_filter_end=*(unsigned char *)(title_filter+strlen(title_filter)-1);
             HTML_LOG(0,"Title Filter [%c-%c]",title_filter_start,title_filter_end);
         }
-
 
 
         while (eof == 0) {

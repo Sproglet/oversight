@@ -18,7 +18,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090928-1BETA
+VERSION=20090929-1BETA
 
 #Thanks to Jorge for pointing out C200 changes.
 for d in /mnt/syb8634 /nmt/apps ; do
@@ -2237,12 +2237,12 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
     eta="";
    
+    g_elapsedTime = 0;
 
     for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
 
         begin_search(idx,"");
 
-        g_elapsedTime = g_elapsedTime - systime();
         thisTime = -systime();
 
         #report_status(g_progress[1]" item "(g_item_count++));
@@ -2339,7 +2339,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
             relocate_files(idx);
 
             thisTime += systime() ;
-            g_elapsedTime += systime();
+            g_elapsedTime += thisTime;
             g_total ++;
 
             if (g_opt_dry_run) {
@@ -3283,9 +3283,9 @@ url,id2) {
         url=keywords " " premier_mdy;
         id2 = scanPageForMatch(g_search_bing" "keywords " \"" premier_mdy"\"",regex,0);
     }
-    if (id2 == "" ) {
-        id2 = scanPageForMatch(g_search_bing" "keywords " "year ,regex,0);
-    }
+#    if (id2 == "" ) {
+#        id2 = scanPageForMatch(g_search_bing" "keywords " "year ,regex,0);
+#    }
     return id2;
 }
 
@@ -4953,7 +4953,7 @@ function download_image(field_id,url,idx,\
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
 function getNiceMoviePosters(idx,imdb_id,\
-search_url,poster_url,backdrop_url,referer_url,txt,xml,f) {
+search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
     DEBUG("Poster check imdb_id = "imdb_id);
 
     search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id;
@@ -4996,7 +4996,8 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f) {
             
     if (poster_url == "") {
 #        if (1) {
-            search_url = tolower(g_full_imdb_title[idx]);
+            #search_url = tolower(g_full_imdb_title[idx]);
+            search_url = tolower(gTitle[idx]"-"g_year[idx]);
             gsub(/[^a-z0-9]+/,"-",search_url);
             sub(/-$/,"",search_url);
             referer_url = "http://www.motechposters.com/title/"search_url"/";
@@ -5006,13 +5007,13 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f) {
 #        }
         DEBUG("Got motech referer "referer_url);
         if (referer_url != "" ) {
-            poster_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
-            if (poster_url != ""  && index(poster_url,"thumb.jpg") == 0 ) {
-                poster_url="http://www.motechposters.com" poster_url;
+            tmp_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
+            if (tmp_url != ""  && index(tmp_url,"thumb.jpg") == 0 ) {
+                poster_url="http://www.motechposters.com" tmp_url;
 
                 poster_url=poster_url"\t"referer_url;
                 DEBUG("Got motech poster "poster_url);
-            }
+            } 
         }
         
     }

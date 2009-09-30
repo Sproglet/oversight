@@ -1,0 +1,6 @@
+catalog_film_folder_fmt:Rename format for films.Available fields are: ,{:TITLE},{:GENRE:} ,{:CERT:} ,{:YEAR:} ,{:NAME:} is original file name.  ,{:INFO:} is any additional info from the file name.  ,{:BASE:} is original file name without extension.,{:EXT:}
+catalog_tv_file_fmt:Rename format for TV shows.Available fields are as for FILM_FOLDER_FMT but also: {:SEASON:} ,{:EPISODE:} ,{:0SEASON:} ,{:0EPISODE:} ,{:EPTITLE:}
+catalog_nfo_write:Enable writing of info files in the given format.|never|if_none_exists|overwrite
+catalog_nfo_format:Enable writing of info files in the given format.|flat|xmbc
+catalog_user:Unix user account used by catalog process.
+catalog_group:Unix group used by catalog process.

@@ -1,0 +1,13 @@
+<!-- Default Buttons Template  $Id:$ -->
+<table width=100%>
+    <tr>
+    [:SELECT_MARK_SUBMIT:]
+    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
+    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
+    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
+    </tr>
+</table>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

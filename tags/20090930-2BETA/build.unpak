@@ -1,0 +1,6 @@
+FILES="unpak.sh unpak.cfg.example catalog.sh catalog.cfg.example"
+#!/bin/sh -x
+./squeeze
+chmod 775 *cgi *.sh
+../nmt-scripts/build unpak "$@" $FILES
+#./bundle.unpak

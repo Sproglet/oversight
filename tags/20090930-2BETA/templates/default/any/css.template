@@ -1,0 +1,189 @@
+.dummy { color:red; }
+
+#menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
+html,body { height:100%; margin:0; padding:0; border:none; }
+#main { height:99%; width:100%; border:none; margin:0; padding:0; }
+
+td.gc_fresh { background-color:#AA00AA; border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
+td.gc { border-width:2px; }
+td.gc_fresh_small { font-size:10pt; }
+td.gc_small { font-size:10pt; }
+
+body.menu_background0 { color:white ; background-color:black; }
+body.menu_background1 { color:yellow ; background-color:black; }
+
+body.tv_background0 { color:white ; background-color:black; }
+body.tv_background1 { color:yellow ; background-color:black; }
+
+body.movie_background0 { color:white ; background-color:black; }
+body.movie_background1 { color:yellow ; background-color:black; }
+
+body.admin_background0 { color:white ; background-color:#000044; }
+body.admin_background1 { color:yellow ; background-color:#000044; }
+
+font.Delete {color:#FF9966; font-weight:normal; }
+font.Ignore {color:#777;}
+font.Mark {color:#AAA;}
+font.Unmark {color:#DDF;}
+font.Remove_From_List {color:orange;}
+
+/* Admin Settings */ .dummy { color:red; }
+.optionrow { background-color:#666666;}
+.optionrow0 { background-color:#222222;}
+.optionrow1 { background-color:#333333;}
+
+img { border: 0px solid black; }
+
+
+/* Normal view */
+.dummy { color:red; }
+
+.gridTW0_0 { color:white; background-color:#101055; }
+.gridTW0_1 { color:white; background-color:#101066; }
+.gridMW0_0 { color:white; background-color:#105510; }
+.gridMW0_1 { color:white; background-color:#106610; }
+.gridW0_0 { color:white; background-color:#551010; }
+.gridW0_1 { color:white; background-color:#661010; }
+
+img.fresh { 
+    border-width: 2px;
+    color:yellow;
+    border-color:yellow;
+}
+.dummy { color:red; }
+
+td.fresh { color:yellow; font-weight:bold; font-style:italic; }
+a.fresh { color:yellow; font-weight:bold; font-style:italic; }
+font.fresh { color:yellow; font-weight:bold; font-style:italic; }
+
+.recent {color:white; font-style:italic; }
+.watchedX { color:#888888 ; background-color:#550000; font-style:italic; }
+.watched { color:7777777 ; font-style:italic; }
+.error { color:red ; font-style:italic; font-weight:bold; }
+.delete { background-color:red ; }
+
+.gridTW1_1 { color:#555555; background-color:#101066; }
+.gridTW1_0 { color:#555555; background-color:#101055; }
+.gridMW1_1 { color:#555555; background-color:#105510; }
+.gridMW1_0 { color:#555555; background-color:#106610; }
+.gridW1_1 { color:#555555; background-color:#551010; }
+.gridW1_0 { color:#555555; background-color:#661010; }
+
+table.header {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+.XXXheader {background-color:#000005; }
+.XXXfooter {background-color:black; }
+.overview_poster1 { text-align:center; width:1%; }
+.overview_poster0 { text-align:center;  width:100%;}
+table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+
+.yellowbutton { color:#FFFF55; background-color:black; font-weight:bold ; text-decoration:none; }
+a.yellowbutton { color:black ; }
+
+.bluebutton { color:#5555FF; background-color:black; font-weight:normal ; text-decoration:none; }
+a.bluebutton { color:black ; }
+
+.greenbutton { color:#55FF55; background-color:black; font-weight:normal ; text-decoration:none; }
+a.greenbutton { color:black ; }
+
+.redbutton { color:#FF5555; background-color:black; font-weight:normal ; text-decoration:none; }
+a.redbutton { color:black ; }
+
+/* TV or movie view */ .dummy { color:red; }
+table.detail   { margin:0; border-spacing:1px; padding:1px ; }
+table.listing {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; }
+table.squashed {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; }
+
+/* Admin page */ .dummy { color:red; }
+
+.match {color:#FF7777; font-weight:bold; }
+a { color:white ; text-decoration:none; }
+td.endtable { background-color:blue; }
+
+/* Movie Page */ .dummy { color:red; }
+
+td.filelistXXX { text-align:center; background-color:#070707; }
+td.filelist { text-align:center; }
+td.list0 {
+                filter:alpha(opacity=60);
+                opacity:0.6;
+                background-color:black;
+                color:white;
+}
+td.list1 {
+    background-color:black-alpha3;
+}
+.proper { color: yellow; size:small; }
+.repack { color: yellow; size:small; }
+a.movie { color:#aaaaff; }
+.label { color:red }
+.right { text-align:right; }
+
+input { background-color:black; color:yellow; font-weight:bold; border=0; }
+select { background-color:black; color:yellow; font-weight:bold; border=0; border-color:red; font-size:small; }
+
+.dummy {}
+.recent { font-size:[:FONT_SIZE:]; }
+td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
+th { color:yellow; }
+
+font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
+
+/* watched/Unwatched tv */ .dummy {color:red;}
+
+td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+.eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
+
+.epdate { color:#AAAAFF; }
+
+h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
+.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
+
+.label { color:red }
+.scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
+
+.info0 {
+    color:white;
+                filter:alpha(opacity=100);
+                opacity:1;
+}
+.info1 {
+    color:white;
+}
+
+.transparent_fanart1_local0 {
+                filter:alpha(opacity=70);
+                opacity:0.7;
+                background-color:black;
+                color:white;
+}
+
+.transparent_fanart1_local1 {
+    background-color:black-alpha2;
+}
+
+.transparent_fanart0_local0 {
+    background-color:black;
+    color:white;
+}
+
+.transparent_fanart0_local1 {
+    background-color:black;
+}
+
+tr.fanart0 {
+    vertical-align:middle;
+}
+
+tr.fanart1 {
+    vertical-align:bottom;
+}
+
+
+<!--
+vi:ts=4:sw=4:et:syntax=css
+-->

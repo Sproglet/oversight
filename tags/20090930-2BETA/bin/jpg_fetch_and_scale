@@ -1,0 +1,157 @@
+#!/bin/sh 
+
+# $Id:$
+#
+# Call libjpeb commands to resize a backdrop
+
+OVS_HOME=/share/Apps/oversight
+
+export LD_LIBRARY_PATH="$OVS_HOME/bin:$LD_LIBRARY_PATH"
+
+export PATH="$OVS_HOME/bin:$PATH"
+
+TMP=/share/Apps/oversight/tmp
+if [ ! -d $TMP ] ; then 
+    TMP=/tmp
+fi
+
+
+jpg_resize() {
+
+    # resize a jpeg to Sd or Hd backdrop
+
+    input="$1"
+    type="$2"
+    tv_mode="$3"
+    input_width="$4"
+
+    case "$type" in 
+        fanart)
+            case "$tv_mode" in 
+                hd) new_width=${input_width:-1280} ;; #add 1300
+                sd) new_width=${input_width:-900} ;; # 800 also 624 or 720!
+                *) echo "unknown tv_mode $tv_mode usage $0 file.jpg poster|fanart hd|sd [width]" ; exit 1 ;;
+            esac
+            suffix=".$tv_mode.jpg"
+            ;;
+        poster)
+            new_width=300
+            suffix=".jpg"
+            ;;
+        *)
+            echo "unknown type $type usage $0 file.jpg poster|fanart hd|sd [width]"
+            exit 1
+            ;;
+        esac
+
+    #get real width
+    old_width=`rdjpgcom -verbose "$input" | awk '/^JPEG image is/ { w=$4 ; sub(/w/,"",w) ; print w ; }'`
+
+    output=`echo "$input" | sed "s/\.jpg$/$suffix/"`
+
+    #scale it
+    echo djpeg -scale $new_width/$old_width "$input to $output"
+    if [ $new_width == $old_width ] ; then
+        ln -f "$input" "$output"
+    else
+        #Could use a pipe but input may = output so use tmp file.
+        djpeg -scale $new_width/$old_width "$input" > $TMP/$$ && cjpeg $TMP/$$ > "$output" && rm $TMP/$$
+        perms "$output"
+    fi
+}
+
+if [ -z "$3" ] ; then
+	echo "usage $0 [poster|fanart] url file wget options"
+	exit 1
+fi
+
+perms() {
+    chown nmt:nmt "$@"
+}
+
+fetch_resize() {
+    calling_pid="$1"; shift;
+    type="$1" ; shift; # poster or fanart
+    url="$1" ; shift;
+    file="$1" ; shift ;
+
+    if wget -O "$file" "$@" "$url"  ; then
+        perms $file
+        if [ -s "$file" ] ; then
+            case "$type" in
+                fanart)
+                    jpg_resize "$file" $type hd
+                    jpg_resize "$file" $type sd
+                    ;;
+                poster)
+                    jpg_resize "$file" $type sd
+                    ;;
+            esac
+        else
+            rm -f "$file"
+        fi
+    else
+        rm -f "$file"
+    fi
+}
+
+Q=$TMP/resize.queue
+
+add_queue() {
+    args=
+    for i in "$@" ; do
+        i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
+        args="$args $i"
+    done
+    echo "$args" >> $Q.pending
+    chmod 666 "$Q.pending"
+    INFO "Queued $args"
+}
+
+
+pid_file=$Q.pid
+running() {
+    if [ -f $pid_file ] ; then
+        if [ -d /proc/`cat $pid_file` ] ; then
+            return 0
+        else
+            rm -f "$pid_file"
+        fi
+    fi
+    return 1
+}
+
+INFO() {
+    echo "[INFO] jpeg queue : $@"
+}
+
+
+# Due to memory limits we process one request at a time.
+if running ; then
+    add_queue  "$@"
+else
+    echo $$ > $pid_file
+
+    add_queue  "$@"
+
+    while [ -f "$Q.pending" ] ; do
+
+        mv "$Q.pending" "$Q.tmp"
+        cat "$Q.tmp" >> "$Q.processing"
+        chmod 666 "$Q.processing"
+        rm "$Q.tmp"
+
+        while FS= read line ; do
+
+            INFO " Unqueued : $line"
+            eval fetch_resize $line
+
+        done < "$Q.processing"
+
+        rm -f "$Q.processing"
+
+    done
+
+    rm -f $pid_file
+fi
+

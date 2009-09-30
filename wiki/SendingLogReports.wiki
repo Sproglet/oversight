@@ -6,8 +6,9 @@ As the software matures hopefully this will happen less often.
 
 <wiki:toc max_depth="1" />
 
-=Scan Logs - send these you have problems with adding or updating content=
+=Scan Logs=
 
+Send these you have problems with adding or updating content.
 
 To send scan logs:
 
@@ -22,7 +23,9 @@ To send scan logs:
 If you are a super-smarty pants, you have look in the logs and have a good idea *what* is causing oversight to trip up you could even raise  [http://code.google.com/p/oversight/issues/list a new defect] and attach the logs directly. To do this, You only need to work out 'what' is causing the trouble not 'why' :) 
 Eg if scanning always fails on a particular file name, then that information along with the filename and the logs is enough.
 
-= GUI Logs - send these if odd things happen in the user interface using the PC browser =
+= GUI Logs =
+
+Send these if odd things happen in the user interface using the PC browser.
 
 Send 'gui' logs if you think files have scanned OK but you are getting odd things happen in the user interface.
 
@@ -35,7 +38,9 @@ To send GUI logs:
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
 
 
-= TV Logs - send these if odd things happen only via the TV interface - not PC=
+= TV Logs =
+
+Send these if odd things happen only via the TV interface - not PC
 
 To get the page that is sent to gaya/tv, you must
   # first edit oversight.cgi with a [http://www.networkedmediatank.com/wiki/index.php/Unix_Friendly_Text_Editor unix friendly editor], and comment out the line 'rm -f -- "$html" "$err" by putting a '#' in the first column.
@@ -45,3 +50,15 @@ To get the page that is sent to gaya/tv, you must
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
 
 If the issue is with the play button on the remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 
+
+= Check Log =
+
+Send this if you have scanning issues but you have no scan logs!
+
+To send a check log :
+  # Go to the standard NMT File Browser
+  # Go to Apps -> oversight
+  # Press the Blue button on the remote
+  # Select oversight-install.html
+  # Select 'Check Install'
+  # Send the check.log file.

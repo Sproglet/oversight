@@ -289,7 +289,7 @@ char *macro_fn_checkbox(char *template_name,char *call,Array *args,int num_rows,
         for(i = 3 ; i < args->size ; i++ ) {
             char *tmp;
             char *val = args->array[i];
-            if (val && *val) {
+            if (val && *val && strcmp(val,"\"\"") != 0 ) {
                 ovs_asprintf(&tmp,"%s%s<input type=checkbox name=\"%s%s\" %s>%s",
                     NVL(result),(first==1?"":sep),htmlname,val,checked,val);
                 first = 0;

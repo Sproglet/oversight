@@ -18,7 +18,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090930-1BETA
+VERSION=20090930-2BETA
 
 #Thanks to Jorge for pointing out C200 changes.
 for d in /mnt/syb8634 /nmt/apps ; do
@@ -769,14 +769,16 @@ doit) {
 
     } else if (lock(g_db_lock_file)) {
 
-        DB_SIZE = copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW,indexToMergeHash);
+        ## clear new file
+        print > INDEX_DB_NEW;
+        close(INDEX_DB_NEW);
+
+        copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW,indexToMergeHash);
 
         #new files are added first and removed from file_to_db list.
         add_new_scanned_files_to_database(indexToMergeHash,INDEX_DB_NEW);
 
-        close(INDEX_DB_NEW);
-
-        replace_database_with_new();
+        replace_database_with_new(INDEX_DB_NEW);
 
         unlock(g_db_lock_file);
 
@@ -845,13 +847,13 @@ names,i) {
     }
 } 
 
-function replace_database_with_new() {
+function replace_database_with_new(newdb) {
 
     INFO("Replace Database");
 
     system("cp -f "quoteFile(INDEX_DB)" "quoteFile(INDEX_DB_OLD));
 
-    touch_and_move(INDEX_DB_NEW,INDEX_DB);
+    touch_and_move(newdb,INDEX_DB);
 
     set_permissions(quoteFile(INDEX_DB)"*");
 }
@@ -958,7 +960,7 @@ tempFile,folderNameNext,i,currentFolder) {
 
     DEBUG("Finding LS Format");
 
-    tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
+    tempFile=NEW_CAPTURE_FILE("LS")
     exec(LS" -Rl /proc/"JOBID" > "tempFile );
     FS=" ";
     folderNameNext=1;
@@ -987,6 +989,7 @@ tempFile,folderNameNext,i,currentFolder) {
         }
     }
     close(tempFile);
+
 }
 
 # Input is ls -lR or ls -l
@@ -1247,13 +1250,13 @@ i,firstName) {
         # That is done during the scrape stage by "checkTvFilenameFormat". This is just a quick way.
         # It makes sure the character 2 digits before is not E,X or 0-9. It will fail the name is cd001 
         if (!(substr(name,i,1) ~ "[2-9]")) {
-            DEBUG("no match on [2-9]"substr(name,i,1));
+            DEBUG2("no match on [2-9]"substr(name,i,1));
             return 0;
         }
         #continue 
     } else if (substr(firstName,i,1) ~ "[Aa]") {
         if (!(substr(name,i,1) ~ "[A-Fa-f]")) {
-            DEBUG("no match on [A-Fa-f]"substr(name,i,1));
+            DEBUG2("no match on [A-Fa-f]"substr(name,i,1));
             return 0;
         }
         #continue 
@@ -1277,7 +1280,7 @@ nfo,lcNfo) {
     if (match(lcNfo,pattern)) {
         nfo=substr(nfo,1,RSTART-1) replace substr(nfo,RSTART+RLENGTH);
         gNfoDefault[idx] = getPath(nfo,gFolder[idx]);
-        DEBUG("Storing default nfo path ["gNfoDefault[idx]"]");
+        DEBUG2("Storing default nfo path ["gNfoDefault[idx]"]");
         return 1;
     } else {
         return 0;
@@ -1610,26 +1613,33 @@ fields,f,i,fileRe) {
 }
 
 function copyUntouchedToNewDatabase(db_file,new_db_file,indexToMergeHash,\
-kept_count,updated_count,f,dbline,dbline2,dbfields,idx) {
+kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
 
     kept_count=0;
     updated_count=0;
 
     INFO("read_database");
 
+
     FS="\n";
+    close(db_file);
     while((getline dbline < db_file) > 0 ) {
+
+        total_lines++;
 
         if ( substr(dbline,1,1) != "\t" ) { continue; }
 
         parseDbRow(dbline,dbfields,1);
 
         f = dbfields[FILE,1];
+
+        INFO("read ["f"]");
         
         if (f in gMovieFilePresent) {
 
             idx=gMovieFilePresent[f];
             if (idx != -1 ) {
+                # Update the old entry with the new data
                 dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1],dbfields[INDEXTIME,1]);
                 updated_count++;
                 print dbline2"\t" >> new_db_file;
@@ -1661,7 +1671,10 @@ kept_count,updated_count,f,dbline,dbline2,dbfields,idx) {
     close(db_file);
 
     close(new_db_file);
-    INFO("kept "kept_count" updated "updated_count" records from main database");
+
+    delete gMovieFilePresent;
+
+    INFO("Existing database: size:"total_lines" untouched "kept_count" updated "updated_count);
     return kept_count+updated_count;
 }
 
@@ -1690,6 +1703,7 @@ function remove_absent_files_from_new_db(db,\
         g_kept_file_count=0;
         g_absent_file_count=0;
 
+        close(db);
         while((getline dbline < db ) > 0) {
 
             if ( substr(dbline,1,1) != "\t" ) { continue; }
@@ -1697,6 +1711,7 @@ function remove_absent_files_from_new_db(db,\
             parseDbRow(dbline,dbfields,1);
 
             f = dbfields[FILE,1];
+            INFO("Prune ? ["f"]");
 
             keep=1;
             
@@ -1736,44 +1751,10 @@ function remove_absent_files_from_new_db(db,\
         close(db);
         INFO("unchanged:"g_kept_file_count);
         INFO("removed:"g_absent_file_count);
-        system("mv "quoteFile(tmp_db)" "quoteFile(db));
+        replace_database_with_new(tmp_db);
         unlock(g_db_lock_file);
     }
 }
-
-#function determineFileStatus(f,list,newDbFile,\
-#cmd,i,line) {
-#    INFO("Checking batch");
-#    cmd="ls -d -- " list " > " f " 2>&1"
-#    #DEBUG("######### "cmd" #############");
-#    system(cmd);
-#    FS="\n";
-#    while((getline line < f ) > 0 ) {
-#
-#        if (line == "" ) continue;
-#
-#        if ((i=index(line,": No such file or directory")) > 0 || (i=index(line,": Not a directory")) > 0) {
-#            line = substr(line,1,i-1);
-#            i = index(line,"/");
-#            line = substr(line,i);
-#
-#            INFO("de-listing ["line"]");
-#            g_absent_file_count++;
-#
-#        } else if (gMovieFilePresent[line] == 0) {
-#
-#            #DEBUG("KEEPING ["$0"]");
-#            if (line in g_index_line) {
-#                print g_index_line[line] > newDbFile;
-#                g_kept_file_count++;
-#            } else {
-#                WARNING("["line"] not present in index");
-#            }
-#        }
-#    }
-#    close(f);
-#}
-
 
 function getPath(name,localPath) {
     if (substr(name,1,1) == "/" ) {
@@ -2622,7 +2603,6 @@ function clean_globals() {
 
     gMovieFileCount = 0;
     INFO("Reset scanned files store");
-    delete gMovieFilePresent;
 }
 
 function cleanSuffix(idx,\
@@ -4749,9 +4729,9 @@ i,referer) {
 
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 function wget(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) {
+args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,retry,result) {
 
-    args=" --no-check-certificate -q -U \""g_user_agent"\" -w 3 -t 5 ";
+    args=" --no-check-certificate -q -U \""g_user_agent"\" -w 10 ";
     if (referer == "") {
         referer = get_referer(url);
     }
@@ -4795,7 +4775,16 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile) 
     # cmd = get_sleep_command(url,same_domain_delay) cmd;
 
     DEBUG("WGET ["url"]");
-    return exec(cmd);
+    result = exec(cmd);
+    if (result != 0) {
+        # Sometimes the website returns an error that stops wget from retrying.
+        # make one attempt to get the page in this case.
+        retry=5;
+        INFO("Retrying in "retry);
+        system("sleep "retry);
+        result = exec(cmd);
+    }
+    return result;
 }
 
 # Slow down queries to avoid blacklist.
@@ -4925,7 +4914,7 @@ function download_image(field_id,url,idx,\
         url=urls[1];
         referer=urls[2];
 
-        wget_args=" -q -O "quoteFile(internal_path);
+        wget_args=" -w 10 -q -O "quoteFile(internal_path);
 
         DEBUG("Poster url = "url);
         if (referer == "" ) {
@@ -5914,7 +5903,7 @@ row,est,nfo) {
     row=row"\t"TVCOM"\t"gTvCom[i];
     row=row"\t"EPTITLE"\t"gEpTitle[i];
     nfo="";
-    DEBUG("NFO:"gNfoDefault[i]);
+    DEBUG2("NFO:"gNfoDefault[i]);
 
     if (g_settings["catalog_nfo_write"] != "never" || exists(gNfoDefault[i]) ) {
         nfo=gNfoDefault[i];
@@ -5934,7 +5923,8 @@ row,est,nfo) {
 function add_new_scanned_files_to_database(indexToMergeHash,output_file,\
 i,row,fields,f,inf) {
 
-    report_status("Merging");
+    report_status("New Records: " hash_size(indexToMergeHash));
+
     gMaxDatabaseId++;
 
     for(i in indexToMergeHash) {

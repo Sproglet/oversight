@@ -2,8 +2,8 @@
 #sidebar TableOfContents
 Here is a summry of the most user-facing known issues with the latest beta:
 
-  # Automatic scanning may not be working - for a workaround see http://www.networkedmediatank.com/showthread.php?tid=17637&pid=249190#pid249190
-  # Re-installing nzbget will stop Oversight unpacking - to fix you must re-install Oversight (either via CSI , or simply go to the Oversight folder using the TV browser, then select file mode, and click oversight-installer.html)
+  # Mark as wathced - the submit button is missing.
+  # Re-installing nzbget will stop Oversight unpacking - to fix you must re-install Oversight (Click the re-install option in the admin pages)
   # Certain film titles are interpreted as TV shows. eg 1408. Oversight starts looking at the folder name for more tv information instead of searching for movie information eg. /share/Movies/102.minutes.that.changed.america.avi vs /share/Tv/Lost/102.pilot.avi. For now an nfo with imdb id should help.
 
 For a full list of issues see http://code.google.com/p/oversight/issues/list

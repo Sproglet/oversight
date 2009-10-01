@@ -41,6 +41,7 @@ Here I have listed the main strengths and weaknesses of Oversight.
   * Looks. Oversight has a basic skin which I will improve over time however features like reflection and 'dvd boxing' etc are unlikely to appear.
   * Skins. Oversight has a skin capability but this is relatively new and non-standard. There are not many skins.
   * Media attribute detection. Currently display of framerates etc is not supported.
+  * TV Series in ISO Images not supported. (This is on the roadmap)
 
 
 By default it shows the most recently downloaded content first. When combined with automated nzb downloading this provides an environment that can automatically record series and announce when new content is ready for viewing, much like a PVR. 

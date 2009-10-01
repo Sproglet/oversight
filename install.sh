@@ -226,9 +226,9 @@ NMT_LINE_REMOVE() {
 NMT_INSTALL_WS() {
 
     #Escape meta-chars
-    n=`echo "$1" | sed -r 's/([][.*()^$\\])/\\\\\1/g'`
+    #n=`echo "$1" | sed -r 's/([][.*()^$\\])/\\\\\1/g'`
     
-    ws=`grep -i "services_name.=$n\$" /tmp/setting.txt | head -1 | sed 's/services_name//;s/=.*//'`
+    ws=`grep -i "services_name.=$1\$" /tmp/setting.txt | head -1 | sed 's/services_name//;s/=.*//'`
     if [ -n "$ws" ] ; then
         if [ -z "$2" ] ; then
             pflash set services_name$ws ""

@@ -1,0 +1,59 @@
+#!/bin/sh
+
+if [ -d /cygdrive/c ] ; then
+    net use a: '\\192.168.88.11\share' 1234  /user:nmt
+#    net use b: '\\192.168.88.6\share' 1234  /user:nmt
+    dest_prefix=/cygdrive
+else
+    dest_prefix=/mnt
+fi
+
+PUSH() {
+    echo updating drives : "$@"
+
+    echo compacting script
+    ./util/squeeze
+    chmod 775 *cgi *.sh
+
+
+    for i in "$@" ; do
+	case "$i" in
+	all|q)
+		mode=$i
+		;;
+	*)
+
+            echo Drive $i
+            root=$dest_prefix/$i/Apps/oversight/.
+
+            ls -l $root/oversight.cgi
+
+            cp -av oversight *.full *.cgi *.css *.sh help $root/.
+            cp -av conf/*example conf/.*defaults $root/conf/.
+
+            echo scripts ...
+            case "$mode" in
+
+
+            all)
+                echo images...
+                cp -a bin/ templates/ $root/.
+                ;;
+
+            esac
+
+            echo clear cache ...
+            rm -f $root/tmp/cache/*
+            ls -l $root/oversight.cgi
+
+        esac
+    done
+}
+
+if [ -z "$*" ] ;then
+    echo "cygwin usage $0 [all|q] drive drive..."
+    echo "linux usage $0 [all|q] mount ..."
+else
+    PUSH "$@"
+fi
+

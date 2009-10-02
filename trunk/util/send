@@ -1,0 +1,31 @@
+#!/bin/sh
+# ftp port is firewalled.
+
+arch=$1 ; shift
+d=$1 ; shift
+
+usage() {
+    echo "$0 100|110|200 folder files"
+    exit
+}
+
+if ( ifconfig || ipconfig ) 2>/dev/null | grep 192.168.88 ; then
+    case "$arch" in
+        100) ip=192.168.88.6  ; user=ftpuser ;;
+        110) ip=192.168.88.11  ; user=ftpuser ;;
+        200) ip=192.168.88.7  ; user=nmt ;;
+        *) usage ;;
+    esac
+else
+    ip=lordy.org.uk
+fi
+
+ftp -n  <<HERE
+open $ip
+user $user 1234
+cd $d
+bin
+hash
+prompt
+mput $@ 
+HERE

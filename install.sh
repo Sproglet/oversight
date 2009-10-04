@@ -7,9 +7,12 @@
 set -eu
 VERSION=20090605-1BETA
 
+NMT_APP_DIR=
+nmt_version=unknown
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
         NMT_APP_DIR=$d
+        nmt_version=`cat $NMT_APP_DIR/VERSION`
     fi
 done
 
@@ -317,6 +320,11 @@ NMT_CRON_DEL() {
         crontab /tmp/crontab.$$.new -u $1 && cronclean
     fi
 }
+
+NMT_VERSION() {
+    echo $nmt_version
+}
+
 
 TEST1() {
     NMT_INSTALL google "#Google "

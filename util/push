@@ -8,6 +8,11 @@ else
     dest_prefix=/mnt
 fi
 
+CP() {
+    dest="$1" ; shift;
+    tar -cf - --exclude=.svn --exclude=\*~ "$@" | ( cd "$dest" ; tar xvf - )
+}
+
 PUSH() {
     echo updating drives : "$@"
 
@@ -26,21 +31,13 @@ PUSH() {
             echo Drive $i
             root=$dest_prefix/$i/Apps/oversight/.
 
-            ls -l $root/oversight.cgi
+            CP "$root" *.full *.cgi *.sh help bin/nmt*/oversight
+            CP "$root" conf/*example conf/.*defaults 
 
-            cp -av oversight *.full *.cgi *.css *.sh help $root/.
-            cp -av conf/*example conf/.*defaults $root/conf/.
-
-            echo scripts ...
-            case "$mode" in
-
-
-            all)
-                echo images...
-                cp -a bin/ templates/ $root/.
-                ;;
-
-            esac
+            if [ "$mode" = "all" ] ; then
+                CP "$root" templates
+                CP "$root" bin
+            fi
 
             echo clear cache ...
             rm -f $root/tmp/cache/*

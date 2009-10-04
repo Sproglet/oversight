@@ -26,6 +26,29 @@ if [ ! -d $TMPDIR ] ; then
     fi
 fi
 
+# ------- GET NMT Version and set NMT specific paths if applicable ---------
+
+NMT_APP_DIR=
+nmt_version=unknown
+#Thanks to Jorge for pointing out C200 changes.
+for d in /mnt/syb8634 /nmt/apps ; do
+    if [ -f $d/MIN_FIRMWARE_VER ] ; then
+        NMT_APP_DIR=$d
+        nmt_version=`cat $NMT_APP_DIR/VERSION`
+    fi
+done
+
+case "$nmt_version" in
+    *-408)
+        export PATH="$APPDIR/bin/nmt200:$PATH"
+        ;;
+    *-402|*-403)
+        export PATH="$APPDIR/bin/nmt100:$PATH"
+        ;;
+esac
+
+# -----------------------------------------------------
+
 CMD_BUF="$TMPDIR/cmd"
 LOCK="$TMPDIR/oversight.lck"
 PENDING_FILE="$TMPDIR/cmd.pending"
@@ -320,10 +343,20 @@ case "$1" in
         ;;
 
     REBOOTFIX)
+        # NMT find siliently fails with -mtime and -newer
+        if [ ! -L "$APPDIR/bin/nmt100/find" ] ; then
+            ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
+        fi
+
+        # Restore website link
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
+
+        # Restore cronjobs
         "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
         freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
         add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
+
+        # Delete any catalog 2 oversight messages
         rm -f "$APPDIR/catalog.status"
         ;;
 

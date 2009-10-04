@@ -1,6 +1,17 @@
 #Grab imdb files.
 
-dbdir=download
+
+user=nmt:nmt
+
+DIRNAME() {
+    echo "$1" | sed 's/\/.*//'
+}
+
+dbdir=`DIRNAME "$0"`
+dbdir=$( cd $dbdir ; pwd )
+dbdir="$dbdir/download"
+mkdir -p "$dbdir" && chown -R $user $dbdir
+
 
 update() {
     files='aka-titles
@@ -26,14 +37,14 @@ update() {
         for m in $mirrors ; do
             echo checking $m $f.list
             if wget -N $m/$f.list.gz > $tmp 2>&1  ; then
-                echo ====
-                cat $tmp
-                echo ====
+                #echo ====
+                #cat $tmp
+                #echo ====
                 echo
                 if grep "gz.*saved" $tmp ; then
                     echo unzipping $f.list
                     cat $f.list.gz | gunzip > $f.list
-                    chown nmt:nmt $f.list.gz $f.list || true
+                    chown $user $f.list.gz $f.list || true
                 fi
                 break
             fi
@@ -51,6 +62,7 @@ usage() {
     $0 rating "title" Year" 
     $0 countries "title" Year" 
 HERE
+exit 1
 }
 
 tab="	"
@@ -132,6 +144,8 @@ plot() {
 }
 ' $dbdir/plot.list
 }
+
+if [ -z "$1" ] ; then usage ; fi
 
 fn="$1" ; shift;
 case "$fn" in

@@ -2263,12 +2263,16 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                             rid,
                             rid->episode);
                 } else {
+                    char *ep = rid->episode;
+                    if (ep == NULL || !*ep ) {
+                        ep = "play";
+                    }
                     episode_col = vod_link(
                             rid,
-                            rid->episode,"",
+                            ep,"",
                             rid->db->source,
                             rid->file,
-                            rid->episode,
+                            ep,
                             "",
                             watched_style(rid,i%2));
                 }

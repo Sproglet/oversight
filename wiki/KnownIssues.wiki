@@ -5,6 +5,6 @@ Here is a summry of the most user-facing known issues with the latest beta:
   # Mark as wathced - the submit button is missing.
   # Re-installing nzbget will stop Oversight unpacking - to fix you must re-install Oversight (Click the re-install option in the admin pages)
   # Certain film titles are interpreted as TV shows. eg 1408. Oversight starts looking at the folder name for more tv information instead of searching for movie information eg. /share/Movies/102.minutes.that.changed.america.avi vs /share/Tv/Lost/102.pilot.avi. For now an nfo with imdb id should help.
-  # Some SMB Shares do not mount porperly. See http://code.google.com/p/oversight/issues/detail?id=123
+  # Some SMB Shares do not mount properly. See http://code.google.com/p/oversight/issues/detail?id=123
 
 For a full list of issues see http://code.google.com/p/oversight/issues/list

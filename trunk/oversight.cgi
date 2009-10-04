@@ -1,17 +1,24 @@
 #!/bin/sh
 # oversight launcher - once out of beta this will be replaced with a direct call
 
-ROOT=/share/Apps/oversight
-html=$ROOT/tmp/$$.html
-err=$ROOT/tmp/$$.err
+OVS_ROOT=/share/Apps/oversight
+html=$OVS_ROOT/tmp/$$.html
+err=$OVS_ROOT/tmp/$$.err
 
 case "$1" in 
     *admin*)
-        chown nmt:nmt $ROOT/* $ROOT/conf/* $ROOT/db/* $ROOT/db/*/* >/dev/null 2>&1  
+        chown nmt:nmt $OVS_ROOT/* $OVS_ROOT/conf/* $OVS_ROOT/db/* $OVS_ROOT/db/*/* >/dev/null 2>&1  
         ;;
 esac
 
-if /share/Apps/oversight/oversight "$@" > "$html" 2>"$err" ; then
+ARCH=nmt100
+case "$CPU_MODEL" in
+    74K) ARCH=nmt200;;
+esac
+
+export PATH="$OVS_ROOT/bin/$ARCH:$OVS_ROOT/bin:$PATH"
+
+if oversight "$@" > "$html" 2>"$err" ; then
     cat "$html"
     rm -f -- "$html" "$err"
 else

@@ -7,6 +7,8 @@
 #!blank lines kept to preserve line numbers reported in errors.
 #!All leading white space trimmed so make sure lines ending in \ have any mandatory white space included.
 #!If not compressed then awk will report "bad address" error on some platforms.
+#!
+#! See util/squeeze
 #
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
 # of global arrays causing memory problems.
@@ -20,10 +22,13 @@ set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20090930-2BETA
 
+NMT_APP_DIR=
+nmt_version=unknown
 #Thanks to Jorge for pointing out C200 changes.
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
         NMT_APP_DIR=$d
+        nmt_version=`cat $NMT_APP_DIR/VERSION`
     fi
 done
 
@@ -50,7 +55,7 @@ APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
 APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 
 is_nmt() {
-    [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER ] 
+    [ -n "$NMT_APP_DIR" ]
 }
 
 NMT=0
@@ -74,11 +79,20 @@ fi
 AWK=awk
 
 #Get newer gzip and wget
+# nmt busybox wget is primitive.
 # nmt /bin/wget is buggy
 # nmt busybox gzip is not graceful for passthru of uncompressed data
 if [ -d "$APPDIR/bin" ] ; then
+
     export PATH="$APPDIR/bin:$PATH"
+
+    case "$nmt_version" in
+        *-408) export PATH="$APPDIR/bin/nmt200:$PATH" ;;
+        *-40[23]) export PATH="$APPDIR/bin/nmt100:$PATH" ;;
+    esac
 fi
+
+
 
 set +e
 
@@ -386,7 +400,7 @@ new_list,f,i,j,dir,newfile,newdir) {
         if (dir) {
             DEBUG("Checking "dir" for changed content");
             f=NEW_CAPTURE_FILE("NEWFOLDERS");
-            exec("touch "quoteFile(f)" ; cd "quoteFile(dir)" && "APPDIR"/bin/busybox find . -newer "quoteFile(timestamp_file)" > "quoteFile(f));
+            exec("touch "quoteFile(f)" ; cd "quoteFile(dir)" && find . -newer "quoteFile(timestamp_file)" > "quoteFile(f));
 DEBUG("end find");
             while((getline newfile < f) > 0) {
 DEBUG("find line "newfile);
@@ -613,7 +627,7 @@ END{
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
     split(g_settings["catalog_cert_country_list"],gCertificateCountries,",");
 
-    gExtList1="avi|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
+    gExtList1="avi|divx|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
     gExtList2="img|iso";
 
     gExtList1=tolower(gExtList1) "|" toupper(gExtList1);
@@ -2206,7 +2220,7 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 ############### GET IMDB URL FROM NFO ########################################
 
 function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
-idx,file,bestUrl,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
+idx,file,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
     startTime = systime();
@@ -2979,7 +2993,7 @@ result) {
 #IN titles - hased by show ID
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
 function filterTitlesFoundOnUsenetEngineWithSpecificText(titles,usenet_query_url,filteredTitles,\
-t,count,tmpTitles,origTitles,dummy,baseline,found,query,baseline,link_count) {
+t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 
     found = 0;
     dump(2,"pre-usenet",titles);
@@ -4728,6 +4742,7 @@ i,referer) {
 }
 
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
+# Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,retry,result) {
 
@@ -4745,7 +4760,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
 
     args=args" --header=\"Accept-Encoding: gzip,deflate\" "
     downloadedFile=quoteFile(file".gz");
-    unzip_cmd=" && gzip -d -c -f "downloadedFile" > "htmlFile" && rm "downloadedFile;
+    unzip_cmd=" && ( gunzip -c "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
 
     gsub(/ /,"+",url);
 

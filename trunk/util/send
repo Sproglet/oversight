@@ -9,16 +9,17 @@ usage() {
     exit
 }
 
-if ( ifconfig || ipconfig ) 2>/dev/null | grep 192.168.88 ; then
+if ( ifconfig || ipconfig ) 2>/dev/null | grep -q 192.168.88 ; then
     case "$arch" in
-        100) ip=192.168.88.6  ; user=ftpuser ;;
-        110) ip=192.168.88.11  ; user=ftpuser ;;
+        100) ip=192.168.88.11  ; user=ftpuser ;;
         200) ip=192.168.88.7  ; user=nmt ;;
         *) usage ;;
     esac
 else
     ip=lordy.org.uk
 fi
+
+echo "Sending $@ to $ip:$d"
 
 ftp -n  <<HERE
 open $ip

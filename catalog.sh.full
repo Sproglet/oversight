@@ -20,7 +20,7 @@
 #
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20090930-2BETA
+VERSION=20091007-1BETA
 
 NMT_APP_DIR=
 nmt_version=unknown

@@ -10,9 +10,12 @@ For non-NMT users, or stubborn, frugal NMT users read on..
 
 = Installation =
 
-Download unpak-BETA.zip and install unpak.sh , unpak.cfg.example catalog.sh and catalog.cfg.example in the same folder where the original unpak.sh is. 
+Download unpak-BETA.zip 
+http://nmt-mini-installer.googlecode.com/svn/downloads/oversight/unpak-BETA.zip
 
-The files should be
+and install unpak.sh and catalog.sh in the same folder where the original unpak.sh is. 
+
+The file heirachy should be
 
   * unpak.sh
   * conf/.unpak.cfg.defaults #defaults for all new settings
@@ -26,10 +29,11 @@ The files should be
 
 Also for NMT platform :
 
-  * bin/wget
-  * bin/gzip
+  * bin/jpeg_fetch_and_scale - grabs posters and fanart.
+  * bin/nmt100/ - contains libjpeg and gnu versions of some apps
+  * bin/nmt200/ - contains libjpeg and gnu versions of some apps
 
-These 'gnu' version or wget and gzip are slightly easier to work with than their busybox equivalents.
+These 'gnu' version of wget and gzip are slightly easier to work with than their busybox equivalents.
 
 = Configuration =
 

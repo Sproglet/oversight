@@ -1,0 +1,51 @@
+<!-- Default Fanart Movie Template  $Id:$ -->
+    <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(default.jpg):] >
+<table id="main" width=100% >
+    <tr valign="bottom">
+        <td>
+        [:FORM_START:]
+            <table width=100%>
+                <tr valign=top>
+                    <td>
+                    [:INCLUDE_TEMPLATE(buttons):]
+                    </td>
+                </tr>
+            </table>
+
+            <table>
+
+                <tr class=fanart[:$ovs_display_fanart:]>
+                    <td width=1% class=left align=left>[:POSTER:]</td>
+                </tr>
+            </table>
+
+            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+                <tr>
+                    <td >
+                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+                            <tr>
+                                <td class=title><font class=title>[:$%TITLE:][ (:$%YEAR:)]</font></td>
+                                <td class=right width=20%><font class=info[:IS_GAYA:]>[:EXTERNAL_URL:][:SOURCE:]</font></td>
+                            </tr>
+                            <tr>
+                                <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
+                                <td class=right>[:RATING_STARS(5):][:RATING:]</td>
+                            </tr>
+                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:]>[:PLOT:]</font></td><tr>
+                            <tr><Td>[:MOVIE_LISTING:]</td></tr>
+                            <tr><td>
+                                [:INCLUDE_TEMPLATE(submit_btn):]
+                            </td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        [:PLAY_TVID:]
+        </td>
+    </tr>
+</table>
+    </body>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

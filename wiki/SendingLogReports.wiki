@@ -13,7 +13,7 @@ Send these you have problems with adding or updating content.
 To send scan logs:
 
   # (on the TV/NMT go to Setup/NMT Applications) and make sure SMB/Samba service is started.
-  # On your PC, open windows explorer and in the address bar type \\192.168.x.y where 192.168.x.y is the IP address of your NMT.
+  # Assuming you have a windows PC go to the Run dialog (Start->Run) and enter  \\192.168.x.y where 192.168.x.y is the IP address of your NMT. ( You can also put this is the address bar of Windows Explorer - it will probably NOT work with 3rd party browsers)
   # Browse to Apps\oversight\
   # Right click on the logs folder and zip it (send to Compressed Folder/Winzip/7zip/Winrar etc)
   # Email the new compressed file to me. nmt at lordy dot org period uk.

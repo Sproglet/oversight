@@ -1,5 +1,5 @@
 #!/bin/sh
-./squeeze
+./util/squeeze
 chmod 775 *cgi *.sh
 ../nmt-scripts/build `basename "$PWD"` "$@" oversight.cgi \
 oversight *.sh *.cgi *.full conf/*.example conf/.*defaults images imdb/imdb.sh imdb/download/.keep templates help/*.help db \

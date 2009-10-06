@@ -588,6 +588,7 @@ END{
     g_item_count = 0;
 
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
+    g_wget_opts=" -t 2 -w 4 -T 4 -q ";
 
     for(i in g_settings) {
         g_settings_orig[i] = g_settings[i];
@@ -2105,7 +2106,7 @@ episodeInfo,url) {
     return 0;
 }
 function extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details,\
-tvdbid,episodeInfo,d,m,y,match_date,result,filter) {
+episodeInfo,match_date,result,filter) {
 
     result=0;
     match_date=sprintf("%4d-%02d-%02d",y,m,d);
@@ -3294,7 +3295,7 @@ url,id2) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,idx,imdbid,\
-url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles) {
+url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles,filter,showInfo) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -3339,18 +3340,14 @@ url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles) {
 
                 } else if(plugin == "TVRAGE") {
 
-                    regex="tvrage.com/[^\"]+";
-
-                    if (1 in date) premier_mdy=sprintf("%s %02d, %d",g_month_en[0+date[2]],date[3],date[1]);
-
-                    link = scan_tv_via_search_engine(regex,gTitle[idx]" site:tvrage.com intitle:\"Television series\" ",premier_mdy,g_year[idx]);
-                    if (link != "" ) {
-                        id2 = scanPageForMatch("http://www."link,"/shows/[0-9]+/episode",0);
-                        DEBUG(plugin" ID2 = "id2);
-                        if (match(id2,/[0-9]+/) ) {
-                            id2=substr(id2,RSTART,RLENGTH);
-                        }
+                    filter["/Results/show/name"] = gTitle[idx];
+                    filter["/Results/show/started"] = g_year[idx];
+                    
+                    if (fetch_xml_single_child("http://www.tvrage.com/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
+                        INFO("Looking at tv rage "showInfo["/Results/show/name"]);
+                        id2 = showInfo["/Results/show/showid"];
                     }
+
                 } else {
                     plugin_error(plugin);
                 }
@@ -4754,7 +4751,7 @@ i,referer) {
 function wget(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,retry,result) {
 
-    args=" --no-check-certificate -q -U \""g_user_agent"\" -w 10 ";
+    args=" --no-check-certificate -q -U \""g_user_agent"\" "g_wget_opts;
     if (referer == "") {
         referer = get_referer(url);
     }
@@ -4788,24 +4785,36 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
         }
     }
 
-    cmd = "wget -O "downloadedFile" "args" "url" "unzip_cmd  ;
-    #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
-    # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
+    if (url in g_url_blacklist) {
 
-    # Set this between 1 and 4 to throttle speed of requests to the same domain
+        WARNING("Skipping url ["url"] due to previous error");
+        result = 1;
 
-    same_domain_delay=0;
-    # cmd = get_sleep_command(url,same_domain_delay) cmd;
+    } else {
 
-    DEBUG("WGET ["url"]");
-    result = exec(cmd);
-    if (result != 0) {
-        # Sometimes the website returns an error that stops wget from retrying.
-        # make one attempt to get the page in this case.
-        retry=5;
-        INFO("Retrying in "retry);
-        system("sleep "retry);
+        cmd = "wget -O "downloadedFile" "args" "url" "unzip_cmd  ;
+        #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
+        # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
+
+        # Set this between 1 and 4 to throttle speed of requests to the same domain
+
+        same_domain_delay=0;
+        # cmd = get_sleep_command(url,same_domain_delay) cmd;
+
+        DEBUG("WGET ["url"]");
         result = exec(cmd);
+        if (result != 0) {
+            # Sometimes the website returns an error that stops wget from retrying.
+            # make one attempt to get the page in this case.
+            retry=5;
+            INFO("Retrying in "retry);
+            system("sleep "retry);
+            result = exec(cmd);
+            if (result != 0) {
+                g_url_blacklist[url] = 1;
+                WARNING("Blacklisting url ["url"]");
+            }
+        }
     }
     return result;
 }
@@ -4937,7 +4946,10 @@ function download_image(field_id,url,idx,\
         url=urls[1];
         referer=urls[2];
 
-        wget_args=" -w 10 -q -O "quoteFile(internal_path);
+        # -t retries - oversight runs the command twice so halve number of retries.
+        # -w time between retries.
+        # -T network timeouts
+        wget_args=g_wget_opts" -O "quoteFile(internal_path);
 
         DEBUG("Poster url = "url);
         if (referer == "" ) {
@@ -5066,7 +5078,13 @@ f,line,count,linematches,linecount,regex_text,remain) {
 
     # this is a hack - to speed things up look for any fixed text portion of the regex
     regex_text=regex;
-    sub(/[][.?\\*(|].*/,"",regex_text);
+
+    # awk on C200 has a weird bug that cant compile 
+    #sub(/[][?\\*(|.].*/,"",regex_text);
+    #but can compile
+    #sub(/[][?.\\*(|].*/,"",regex_text);
+
+    sub(/[][?\\*(|.].*/,"",regex_text);
     INFO("Looking for fixed text ["regex_text"] before regex ["regex"]");
 
     count=0;

@@ -23,6 +23,8 @@ The scan_paths and the watch_paths are comma separated lists of media sources..
 
 eg /share/Video,/USB_DRIVE_A-1,MYNAS
 
+The NMT runs Linux which (unlike Windows) has case sensitive filenames. This means that /share/Video and /share/video are not the same.
+
 For a single 'one-off' scan, you should add the source to the 'scan_paths'
 If you want Oversight to regularly check the source for new content, add the source to the 'watch_paths'.
 
@@ -39,6 +41,8 @@ To add a folder on the Internal HDD just enter the path to the folder. E.g.
 {{{
 /share/Video
 }}}
+
+All paths on the internal HDD must start with '/share/'
 
 ==Source on USB ==
 

@@ -6,9 +6,20 @@
 
 OVS_HOME=/share/Apps/oversight
 
-export LD_LIBRARY_PATH="$OVS_HOME/bin:$LD_LIBRARY_PATH"
-
 export PATH="$OVS_HOME/bin:$PATH"
+
+ARCH=
+case "`uname -a`" in 
+    *-sigma\ )
+        ARCH=nmt100
+        case "$CPU_MODEL" in
+            74K) ARCH=nmt200;;
+        esac
+        export PATH="$OVS_HOME/bin/$ARCH:$PATH"
+        export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
+        ;;
+esac
+
 
 TMP=/share/Apps/oversight/tmp
 if [ ! -d $TMP ] ; then 

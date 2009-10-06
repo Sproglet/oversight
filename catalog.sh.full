@@ -510,7 +510,7 @@ f,result,line) {
 }
 
 function nmt_mount_share(s,settings,\
-path,link_details,remote,cmd,mount_root) {
+path,link_details,remote,cmd,mount_root,result) {
 
 
     mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
@@ -550,7 +550,15 @@ path,link_details,remote,cmd,mount_root) {
         ERROR("Dont know how to mount "link_details["link"]);
         path="";
     }
-    if (exec(cmd) != 0) {
+    t = systime();
+    result = exec(cmd);
+    if (result == 255 && systime() - t <= 1 ) {
+        # if you try to double mount smb share you get error 255. Which is a meaningless error really.
+        # Just assume it worked if it happened quickly.
+        INFO("Ignoring mount error");
+        result=0;
+    }
+    if (result) {
         DEBUG("Unable to mount share "link_details["link"]);
         path="";
     }

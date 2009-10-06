@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh
 
 # $Id:$
 #
@@ -10,7 +10,7 @@ export PATH="$OVS_HOME/bin:$PATH"
 
 ARCH=
 case "`uname -a`" in 
-    *-sigma\ )
+    *sigma\ *)
         ARCH=nmt100
         case "$CPU_MODEL" in
             74K) ARCH=nmt200;;
@@ -19,6 +19,8 @@ case "`uname -a`" in
         export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
         ;;
 esac
+
+echo $LD_LIBRARY_PATH
 
 
 TMP=/share/Apps/oversight/tmp

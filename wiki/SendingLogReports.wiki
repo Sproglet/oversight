@@ -61,4 +61,4 @@ To send a check log :
   # Press the Blue button on the remote
   # Select oversight-install.html
   # Select 'Check Install'
-  # Send the check.log file.
+  # Send the Apps/oversight/logs/check.log file. 

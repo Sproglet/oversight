@@ -781,11 +781,17 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
 
             if (is_fanart ) {
                 char *file;
+                char *modifier=".hd.jpg";
+
                 if (g_dimension->scanlines == 0 ) {
-                    file = replace_all(path,"\\.jpg$",".sd.jpg",0);
-                } else {
-                    file = replace_all(path,"\\.jpg$",".hd.jpg",0);
+
+                    if (g_dimension->is_pal ) {
+                        modifier=".pal.jpg";
+                    } else {
+                        modifier=".sd.jpg";
+                    }
                 }
+                file = replace_all(path,"\\.jpg$",modifier,0);
                 FREE(path);
                 path = file;
             }

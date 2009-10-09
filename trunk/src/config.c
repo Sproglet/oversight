@@ -361,7 +361,6 @@ long get_scanlines(int *is_pal) {
 void config_read_dimensions() {
 
     char scanlines_str[9];
-    int is_pal;
     int pal_fixed = 0;
 
     
@@ -374,9 +373,9 @@ void config_read_dimensions() {
     g_dimension->local_browser = (addr == NULL || strcmp(addr,"127.0.0.1") == 0);
     //g_dimension->local_browser = 1;
 
-    g_dimension->scanlines = get_scanlines(&is_pal);
+    g_dimension->scanlines = get_scanlines(&(g_dimension->is_pal));
 
-    html_comment("scanlines=[%ld] ispal = %d",g_dimension->scanlines,is_pal);
+    html_comment("scanlines=[%ld] ispal = %d",g_dimension->scanlines,g_dimension->is_pal);
 
     sprintf(scanlines_str,"%ld",g_dimension->scanlines);
 
@@ -409,7 +408,7 @@ void config_read_dimensions() {
         html_comment("rows = %d\n",g_dimension->rows);
         g_dimension->poster_menu_img_height = lines * 1.0 / ( g_dimension->rows + 2 ) ;
 
-        if (is_pal) {
+        if (g_dimension->is_pal) {
             // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed
             pal_fixed = 1;
         }
@@ -427,7 +426,7 @@ void config_read_dimensions() {
 
     g_dimension->movie_img_width = g_dimension->movie_img_height * 2 / 3;
     g_dimension->tv_img_width = g_dimension->tv_img_height * 2 / 3;
-    if (is_pal) {
+    if (g_dimension->is_pal) {
         g_dimension->movie_img_height *= ( 576.0 / 480 );
         g_dimension->tv_img_height *= ( 576.0 / 480 );
     }

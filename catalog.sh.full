@@ -279,6 +279,9 @@ function timestamp(label,x) {
     if (index(x,g_tk) ) gsub(g_tk,"",x);
     if (index(x,g_tk2) ) gsub(g_tk2,"",x);
 
+    if (index(x,"password=") ) sub("password=([^,]+)","password=xxx",x);
+    if (index(x,"pwd=") ) sub("pwd=([^,]+)","pwd=xxx",x);
+
     if (systime() != g_last_ts) {
         g_last_ts=systime();
         g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
@@ -588,7 +591,7 @@ END{
     g_item_count = 0;
 
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
-    g_wget_opts=" -t 2 -w 4 -T 4 -q ";
+    g_wget_opts=" -t 2 -w 2 -T 10 -q ";
 
     for(i in g_settings) {
         g_settings_orig[i] = g_settings[i];
@@ -6101,12 +6104,14 @@ i,folderCount,moveDown) {
             moveDown++;
         } else if (ARGV[i] == "REFRESH_POSTERS" )  {
             REFRESH_POSTERS=1;
+            GET_POSTERS=1;
             moveDown++;
         } else if (ARGV[i] == "GET_FANART" )  {
             GET_FANART=1;
             moveDown++;
         } else if (ARGV[i] == "REFRESH_FANART" )  {
             REFRESH_FANART=1;
+            GET_FANART=1;
             moveDown++;
         } else if (ARGV[i] == "NEWSCAN" )  {
             NEWSCAN=1;

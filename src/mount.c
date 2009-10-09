@@ -308,9 +308,9 @@ int check_accessible(char *path,int timeout_secs)
     DIR *d = opendir(path);
     closedir(d);
     if (time(NULL) - now > timeout_secs) {
-        HTML_LOG(0,"mount [%s] too slow to open folder");
+        HTML_LOG(0,"mount [%s] too slow to open folder",path);
     } else {
-        HTML_LOG(0,"mount [%s] ok");
+        HTML_LOG(0,"mount [%s] ok",path);
         result = 1;
     }
     set_mount_status(path,(result ? MOUNT_STATUS_OK : MOUNT_STATUS_BAD));

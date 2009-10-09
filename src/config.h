@@ -6,6 +6,7 @@
 
 typedef struct dimension_str {
     int tv_mode;
+    int is_pal;
     long scanlines;
     long poster_mode;
     long title_bar; //dynamic title bar.

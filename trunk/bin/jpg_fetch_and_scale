@@ -68,7 +68,7 @@ HERE
     # We always resize even if the dimensions are unchanged because it makes file size much smaller
     INFO "$input | $o | $output" 
     # Remove it first in case it was a hard link to the original file.
-    if djpeg "$input" | pnmscalefixed $o | cjpeg >  $TMP/$$.jpg && rm -f "$output" && mv $TMP/$$.jpg "$output"  ; then
+    if djpeg -dct fast "$input" | pnmscalefixed $o | cjpeg -dct fast -quality 65 >  $TMP/$$.jpg && rm -f "$output" && mv $TMP/$$.jpg "$output"  ; then
         perms "$output"
     else
         ERROR "Unable to generate $output from $input using $o"

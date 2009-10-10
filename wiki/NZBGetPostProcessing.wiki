@@ -1,0 +1,20 @@
+#summary One-sentence summary of this page.
+
+= NZBGet Post Processing =
+
+Oversight installs a comprehensive nzbget post processing script:
+
+This script has two parts:
+
+  # unpak.sh - does par repair and unpacking.
+  # catalog.sh - tries to identify TV and Movie downloads.
+
+The post processing workflow is as follows:
+
+  #. nzbget downloads the file in /share/Downloads
+  #. unpak.sh, unpacks the file and will do a par-repair if that fails.
+  #. unpak.sh then moves *all* completed files to /share/Complete (movies, tv, games, etc)
+  #. If you do specified an nzbget category when uploading the nzb file, then it is moved to /share/Complete/category and post-processing stops.
+  #. If you did not specify a category, then unpak.sh will check to see if the newsgroups in the nzb file contain any flagged words and if so move the file to the configured location and post processing will stop. (eg "erotica", and "sounds" are configured by default )
+  # At this stage post processing will hand over to the catalog.sh script which will try to identify the file as a TV Show or a Movie.
+  # If identified catalog.sh will then move it to the Tv or Movie location as configured in Oversight->Setup->Renaming

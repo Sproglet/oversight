@@ -13,6 +13,7 @@ Everyone
 
 Advanced
 
+  * NZBGetPostProcessing
   * UnpackingScriptsOnly
   * PreviousVersions
   * SearchMethods

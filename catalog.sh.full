@@ -26,6 +26,7 @@ set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20091007-1BETA
 
+
 NMT_APP_DIR=
 nmt_version=unknown
 #Thanks to Jorge for pointing out C200 changes.
@@ -289,8 +290,9 @@ function timestamp(label,x) {
     if (index(x,g_tk) ) gsub(g_tk,"",x);
     if (index(x,g_tk2) ) gsub(g_tk2,"",x);
 
-    if (index(x,"password=") ) sub("password=([^,]+)","password=xxx",x);
+    if (index(x,"password.?=") ) sub("password=([^,]+)","password=xxx",x);
     if (index(x,"pwd=") ) sub("pwd=([^,]+)","pwd=xxx",x);
+    if (index(x,"passwd=") ) sub("passwd=([^,]+)","passwd=xxx",x);
 
     if (systime() != g_last_ts) {
         g_last_ts=systime();
@@ -601,7 +603,7 @@ END{
     g_item_count = 0;
 
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
-    g_wget_opts=" -t 2 -w 2 -T 10 -q ";
+    g_wget_opts=" -t 2 -w 2 -q ";
 
     g_plot_file=APPDIR"/plot.db";
     g_plot_app=quoteArg(APPDIR"/bin/plot.sh");
@@ -616,7 +618,6 @@ END{
     g_abc="abcdefghijklmnopqrstuvwxyz"; # slight rearrange - probably makes no diff
     g_ABC=toupper(g_abc);
     g_tagstartchar=g_ABC g_abc":_";
-    INFO("g_tagstartchar= "g_tagstartchar);
 
     load_catalog_settings();
 
@@ -663,13 +664,13 @@ END{
     gExtList2=tolower(gExtList2) "|" toupper(gExtList2);
 
     gExtRegexIso="\\.("gExtList2")$";
-    INFO(gExtRegexIso);
+    #INFO(gExtRegexIso);
 
     gExtRegEx1="\\.("gExtList1")$";
-    INFO(gExtRegEx1);
+    #INFO(gExtRegEx1);
 
     gExtRegExAll="\\.("gExtList1"|"gExtList2")$";
-    INFO(gExtRegExAll);
+    #INFO(gExtRegExAll);
 
     split(g_settings["catalog_title_country_list"],gTitleCountries,g_cvs_sep);
 
@@ -1106,7 +1107,6 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
                 gFolderMediaCount[currentFolder]=0;
                 gFolderInfoCount[currentFolder]=0;
                 gFolderCount[currentFolder]=0;
-                DEBUG("Clear folder count ["currentFolder"]");
             }
 
         } else if (!skipFolder) {
@@ -1181,7 +1181,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
 
             } else if (match(lc,gExtRegEx1)) {
 
-                DEBUG("gFolderMediaCount[currentFolder]="gFolderMediaCount[currentFolder]);
+                #DEBUG("gFolderMediaCount[currentFolder]="gFolderMediaCount[currentFolder]);
                 #Only add it if previous one is not part of same file.
                 if (gFolderMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
                   if ( checkMultiPart(scan_line,gMovieFileCount) ) {
@@ -4496,7 +4496,7 @@ line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type
 
                     if (!(t in xmlout) ) {
 
-                        INFO("Could not find "t" in element");
+                        #INFO("Could not find "t" in element");
                         found =0 ; break;
                     
                     } else if (this_type == string_type) {
@@ -4581,10 +4581,12 @@ function extractImdbId(text,\
 id) {
     if (match(text,g_imdb_regex)) {
         id = substr(text,RSTART,RLENGTH);
-        DEBUG("Extracted IMDB Id ["id"]");
+        #DEBUG("Extracted IMDB Id ["id"]");
     } else if (match(text,"Title.[0-9]+\\>")) {
         id = "tt" substr(text,RSTART+8,RLENGTH-8);
-        DEBUG("Extracted IMDB Id ["id"]");
+        #DEBUG("Extracted IMDB Id ["id"]");
+    } else {
+        WARNING("Failed to extract imdb id from ["text"]");
     }
     if (id != "" && length(id) != 9) {
         id = sprintf("tt%07d",substr(id,3));
@@ -4986,9 +4988,9 @@ function download_image(field_id,url,idx,\
     poster_ref = internal_poster_reference(field_id,idx);
     internal_path = getPath(poster_ref,gFolder[idx]);
 
-    DEBUG("internal_path = ["internal_path"]");
-    DEBUG("poster_ref = ["poster_ref"]");
-    DEBUG("new poster url = "url);
+    #DEBUG("internal_path = ["internal_path"]");
+    #DEBUG("poster_ref = ["poster_ref"]");
+    #DEBUG("new poster url = "url);
 
     get_it = 0;
 
@@ -5007,14 +5009,20 @@ function download_image(field_id,url,idx,\
             }
         }
         g_image_inspected[internal_path]=1;
-    } else {
-        INFO("Already got "internal_path);
     }
 
-    if (get_it ) {
+    if (get_it == 0 ) {
+
+        INFO("Skipping "poster_ref);
+
+    } else if (get_it == 2 ) {
+
+        INFO("Already got "poster_ref);
+
+    } else if (get_it == 1 ) {
 
 
-        INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
+        INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "poster_ref);
 
         rm(internal_path,1);
 
@@ -5307,7 +5315,7 @@ title,y,poster_imdb_url) {
                 g_plot[idx] = scrape_until("iplot",f,"</div>",0);
                 sub(/\|.*/,"",g_plot[idx]);
                 sub(/full (summary|synopsis).*/,"",g_plot[idx]);
-                DEBUG("imdb plot "g_plot[idx]);
+                #DEBUG("imdb plot "g_plot[idx]);
             }
 
             #IMDB Genre takes precedence
@@ -5476,7 +5484,6 @@ f,line,out,found) {
 function scrape_until(label,f,end_text,inclusive,\
 line,out,ending) {
     ending = 0;
-    INFO("scrape_until "label":end at ["end_text"]");
     while(!ending && (getline line< f) > 0) {
         if (index(line,end_text)) {
             ending=1;
@@ -5488,7 +5495,7 @@ line,out,ending) {
         out = out " " line;
     }
     gsub(/ +/," ",out);
-    INFO("scrape_until "label":=["out"]");
+    INFO("scrape_until "label"/"end_text":=["out"]");
     return trim(out);
 }
 
@@ -6317,6 +6324,13 @@ url) {
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
 }
+
+tidy() {
+    rm -f "$APPDIR/catalog.status"
+    clean_old_tmp
+}
+
+trap tidy 1 2 3 6
 
 main() {
 

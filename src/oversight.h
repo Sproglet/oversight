@@ -37,7 +37,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20091007-1BETA"
+#define OVS_VERSION "20091009-1BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"
@@ -57,6 +57,9 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define SELF_URL ""
 #define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
 #define NETWORK_SYMLINK "/opt/sybhttpd/default/.network"
+
+#define NON_EMPTY_STR(str) ((str) && (*(str)))
+#define EMPTY_STR(str) ((str) == NULL || (*(str)) == '\0')
 
 char *get_mounted_path(char *source,char *path);
 

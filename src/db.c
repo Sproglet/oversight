@@ -10,6 +10,7 @@
 #include <ctype.h>
 
 #include "db.h"
+#include "dbplot.h"
 #include "actions.h"
 #include "dbfield.h"
 #include "gaya_cgi.h"
@@ -140,13 +141,15 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
         )
 {
 
-    Db *db = MALLOC(sizeof(Db));
+    Db *db = CALLOC(1,sizeof(Db));
 
     if (filename == NULL) {
         db->path = get_mounted_path(source,"/share/Apps/oversight/index.db");
     } else {
         db->path =  STRDUP(filename);
     }
+    db->plot_file = replace_all(db->path,"index.db","plot.db",0);
+
     db->source= STRDUP(source);
 
     ovs_asprintf(&(db->backup),"%s.old",db->path);
@@ -319,7 +322,7 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                     *type = FIELD_TYPE_STR;
                 }
             }else if (name[2] == 'p') { // _ep
-                *offset=&(rowid->episode_plot);
+                *offset=&(rowid->episode_plot_key);
                 *type = FIELD_TYPE_STR;
             }
             break;
@@ -385,7 +388,7 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
             break;
         case 'P':
                 if (name[2] == '\0') {
-                *offset=&(rowid->plot);
+                *offset=&(rowid->plot_key);
                 *type = FIELD_TYPE_STR;
                 }
             break;
@@ -624,8 +627,9 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATEIMDB,fmt_date_static(rid->airdate_imdb));
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,rid->eptitle);
     fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,rid->nfo);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,rid->fanart);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,rid->fanart);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot_key);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,rid->episode_plot_key);
     fprintf(fp,"\t\n");
     fflush(fp);
 }
@@ -759,6 +763,8 @@ DbRowId *db_rowid_init(DbRowId *rowid,Db *db) {
     rowid->db = db;
     rowid->season = -1;
     rowid->category='?';
+    rowid->plot_offset = PLOT_POSITION_UNSET;
+    rowid->episode_plot_offset = PLOT_POSITION_UNSET;
     return rowid;
 }
 DbRowId *db_rowid_new(Db *db) {
@@ -1490,9 +1496,14 @@ void db_free(Db *db) {
     if (db->locked_by_this_code) {
         db_unlock(db);
     }
+    if (db->plot_fp) {
+        fclose(db->plot_fp);
+        db->plot_fp = NULL;
+    }
 
     FREE(db->source);
     FREE(db->path);
+    FREE(db->plot_file);
     FREE(db->lockfile);
     FREE(db->backup);
     FREE(db);
@@ -1518,7 +1529,7 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     FREE(rid->url);
     FREE(rid->parts);
     FREE(rid->fanart);
-    FREE(rid->plot);
+    FREE(rid->plot_key);
     FREE(rid->eptitle);
     FREE(rid->eptitle_imdb);
     FREE(rid->additional_nfo);

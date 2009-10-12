@@ -2,11 +2,22 @@
 
 # $Id:$
 #
-# Call libjpeb commands to resize a backdrop
+# run commands to resize a backdrop
+# this requires
+# libjpeg commands cpeg and djpeg 
+# netpbm commands pamscalefixed
+#
+# Note it requires a lot of cpu esp on embedded machines.
+# on NMT it typically requires about 6 seconds per resize operation.
+#
+# For this reason all covers are processed first, then fanart is done 
+# afterwards. 
 
 OVS_HOME=/share/Apps/oversight
 
 export PATH="$OVS_HOME/bin:$PATH"
+
+thread=0
 
 ARCH=
 if [ -f /mnt/syb8634/MIN_FIRMWARE_VER ] ;then
@@ -41,7 +52,8 @@ jpg_resize() {
             case "$tv_mode" in 
                 hd)   o="-width=1280 -height=720" ;;
                 sd) o="-width=685 -height=460" ;;
-                pal)  o="-width=685 -height=522" ;; # There is a a/r bug in gaya for pal display
+                #pal)  o="-width=685 -height=522" ;; # There is a a/r bug in gaya for pal display
+                pal)  o="-width=685 -height=542" ;; # Also further height added due to display on my tv
             esac
             suffix=".$tv_mode.jpg"
             ;;
@@ -66,20 +78,15 @@ HERE
 
     #Could use a pipe but input may = output so use tmp file.
     # We always resize even if the dimensions are unchanged because it makes file size much smaller
-    INFO "$input | $o | $output" 
+    INFO "$o to $output" 
     # Remove it first in case it was a hard link to the original file.
-    if djpeg -dct fast "$input" | pnmscalefixed $o | cjpeg -dct fast -quality 65 >  $TMP/$$.jpg && rm -f "$output" && mv $TMP/$$.jpg "$output"  ; then
+    tmpf=`thread_prefix`.jpg
+    if djpeg -dct fast "$input" | pnmscalefixed $o | cjpeg -dct fast -quality 65 >  $tmpf && rm -f "$output" && mv "$tmpf" "$output"  ; then
         perms "$output"
     else
         ERROR "Unable to generate $output from $input using $o"
     fi
 }
-
-if [ "$1" != "start" -a -z "$3" ] ; then
-	echo "usage $0 [poster|fanart] url file wget options"
-	echo "usage $0 start"
-	exit 1
-fi
 
 perms() {
     chown nmt:nmt "$@"
@@ -91,27 +98,20 @@ fetch_resize() {
     url="$1" ; shift;
     file="$1" ; shift ;
 
+    INFO ""
     INFO "Processing : $type $url $file"
 
     if wget -O "$file" "$@" "$url"  ; then
         perms $file
         if [ -s "$file" ] ; then
-            #resize_wait
             resize_img "$type" "$file"  # &
         else
             rm -f "$file"
             ERROR "Failed wget -O $file $@ $url"
         fi
     else
-        rm -f "$file"
+        rm -f "$file" 
     fi
-}
-
-resize_wait() {
-   while running $Q.resizing ; do
-       sleep 2
-   done
-   echo $$ > $Q.resizing
 }
 
 resize_img() {
@@ -120,8 +120,10 @@ resize_img() {
     case "$type" in
         fanart)
             jpg_resize "$file" $type hd
-            jpg_resize "$file" $type pal
             jpg_resize "$file" $type sd
+            if [ $get_pal -eq 1 ] ; then
+                jpg_resize "$file" $type pal
+            fi
             ;;
         poster)
             jpg_resize "$file" $type sd
@@ -134,16 +136,21 @@ Q=$TMP/resize.queue
 
 add_queue() {
     args=
+    type="$2"
     for i in "$@" ; do
         i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
         args="$args $i"
     done
-    echo "$args" >> $Q.pending
-    chmod 666 "$Q.pending"
+    mkdir -p "$Q.$type"
+    perms "$Q.$type"
+    echo "$args" >> "$Q.$type/$$"
+    chmod 666 "$Q.$type/$$"
+    perms "$Q.$type/$$"
     INFO "Queued $args"
 }
 
 
+# Manage a pid / lock file
 running() {
     if [ -f $1 ] ; then
         if [ -d /proc/`cat $1` ] ; then
@@ -156,47 +163,148 @@ running() {
 }
 
 INFO() {
-    echo "[INFO]`date +%H:%M:%S` jpeg queue : $@"
+    echo "[INFO] `date +%H:%M:%S` IMAGES-$thread : $@"
 }
 
 ERROR() {
-    echo "[ERROR]`date +%H:%M:%S` jpeg queue : $@"
+    echo "[ERROR] `date +%H:%M:%S` IMAGES-$thread : $@"
+}
+
+process_queue() {
+
+    folder="$1"
+    loop=$2
+    r=1 # error return code
+    tmpf="`thread_prefix`.cmd"
+
+    cd $folder
+    for f in * ; do
+
+        if  [ -f "$f" ] && mv "$f" "$tmpf" ; then
+
+            INFO "got file $folder/$f into $tmpf"
+
+            r=0 # set OK return code
+
+            while read line ; do
+                eval fetch_resize $line
+            done < "$tmpf"
+
+            rm -f "$tmpf"
+
+        fi
+        if [ $loop -eq 0 ] ; then break ; fi
+    done
+    return $r
+
 }
 
 
-pid_file=$Q.pid
-# Due to memory limits we process one request at a time.
-if running $pid_file ; then
-    add_queue  "$@"
-else
-    echo $$ > $pid_file
+#caculate in real time to track $$
+thread_group() {
+    echo "$TMP/.thread"
+}
 
+thread_prefix() {
+    echo "`thread_group`.$thread"
+}
+
+# A thread will process as many posters as it can, then look for one fanart 
+# if anything was found it repeats the cycle otherwise it exists.
+start_thread() {
+    thread="$$.$1"
+    INFO "Thread starting"
+    echo $$ > `thread_prefix`.pid
+    while process_queue "$Q.poster" 1 || process_queue "$Q.fanart" 0 ; do
+        true
+    done
+    INFO "Thread stopping"
+    rm -f `thread_prefix`.pid
+}
+
+wc_l() {
+    awk 'END { print NR; }'
+}
+
+numthreads() {
+    nt=0
+    for f in "`thread_group`"*.pid ; do
+        if running "$f" ; then
+            nt=$(( $nt + 1 ))
+        fi
+    done
+    echo $nt
+}
+
+tidy() {
+    INFO "Thread abort"
+    rm -f "`thread_prefix`"*
+
+}
+
+
+# Synchronise threads
+synchronise() {
+    sync_file="`thread_group`.sync"
+    case "$1" in
+        1)
+            while running "$sync_file" ; do
+                sleep 1
+            done
+            echo "$$" > "$sync_file"
+            ;;
+        0)  rm -f "$sync_file"
+            ;;
+    esac
+}
+
+    
+startup() {
+
+    maxthreads=2
+
+    synchronise 1
+    tc=`numthreads`
+    INFO "thread count = $tc"
+    while [ $tc -lt $maxthreads ] ; do
+        start_thread $tc.`date +%H%M%S` &
+        tc=$(( $tc + 1 ))
+        sleep 2
+    done
+    synchronise 0
+}
+
+check_pal() {
+    location_file=$TMP/.location
+    location=`$OVS_HOME/bin/locate.sh $location_file`
+    tv_file="$OVS_HOME/conf/tv.txt"
+    if grep -q "^$location:" $tv_file ; then
+        if egrep -v "^$location:.*(pal|secam)" ; then
+            get_pal=0
+        fi
+    fi
+}
+
+if [ "$1" != "start" -a -z "$3" ] ; then
+	echo "usage $0 [poster|fanart] url file wget options"
+	echo "usage $0 start"
+	exit 1
+fi
+
+get_pal=1
+## If you really want pal backdrops but are not getting them comment out the following line
+check_pal
+
+trap tidy 1 2 3 6
+
+if [ "$1" == "STOP" ] ; then
+   
+    kill `cat $TMP/.thread.*`
+
+else
     if [ -n "$*" ] ; then
         add_queue  "$@"
     fi
-
-    if [ `cat $pid_file` == $$ ] ; then 
-
-        while [ -f "$Q.pending" ] ; do
-
-            mv "$Q.pending" "$Q.tmp"
-            cat "$Q.tmp" >> "$Q.processing"
-            chmod 666 "$Q.processing"
-            rm "$Q.tmp"
-
-            while FS= read line ; do
-
-                eval fetch_resize $line
-
-            done < "$Q.processing"
-
-            rm -f "$Q.processing"
-
-
-        done
-
-        rm -f $pid_file
-        INFO "Shutting down"
-    fi
+    # Due to memory limits we process one request at a time.
+    startup
 fi
-

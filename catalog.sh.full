@@ -1,4 +1,8 @@
 #!/bin/sh
+#
+# TODO Check Already go fanart internal name appearing after url is queued.!!!
+#
+#
 #! $Id$
 #!This is a compacted file. If looking for the source see catalog.sh.full
 #!Compressed with
@@ -117,6 +121,12 @@ if [ ! -s "$INDEX_DB" ] ; then
     PERMS "$INDEX_DB"
 fi
 
+PLOT_DB="$APPDIR/plot.db"
+if [ ! -s "$PLOT_DB" ] ; then
+    touch "$PLOT_DB"
+    PERMS "$PLOT_DB"
+fi
+
 CONF_FILE="$APPDIR/conf/catalog.cfg"
 DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
 
@@ -170,8 +180,8 @@ if [ -z "$*" ] ; then
     cat<<USAGE
     usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [DEBUG] [REBUILD] [NOACTIONS] [RESCAN] [NEWSCAN]
              [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN]
-             [GET_POSTERS] [REFRESH_POSTERS]
-             [GET_FANART] [REFRESH_FANART]
+             [GET_POSTERS] [UPDATE_POSTERS]
+             [GET_FANART] [UPDATE_FANART]
              ..folders..
 ____________________________________________________________________________________________________________________    
 To simply index all files in a folder:
@@ -196,9 +206,9 @@ Other options
     NOACTIONS      - Do not run any actions and hide Delete actions from overview.
     STDOUT         - Write to stdout (if not present output goes to log file)
     GET_POSTERS    - Download posters
-    REFRESH_POSTERS- Fetch new posters for each scanned item.
+    UPDATE_POSTERS- Fetch new posters for each scanned item.
     GET_FANART     - Download fanart
-    REFRESH_FANART - Fetch new fanart for each scanned item.
+    UPDATE_FANART - Fetch new fanart for each scanned item.
 USAGE
     exit 0
 fi
@@ -376,8 +386,8 @@ BEGIN {
     UPDATE_MOVIES=1;
     GET_POSTERS=0;
     GET_FANART=0;
-    REFRESH_POSTERS=0;
-    REFRESH_FANART=0;
+    UPDATE_POSTERS=0;
+    UPDATE_FANART=0;
     get_folders_from_args(FOLDER_ARR);
 }
 
@@ -403,7 +413,7 @@ new_list,f,i,j,dir,newfile,newdir) {
         if (dir) {
             DEBUG("Checking "dir" for changed content");
             f=NEW_CAPTURE_FILE("NEWFOLDERS");
-            exec("touch "quoteFile(f)" ; cd "quoteFile(dir)" && find . -newer "quoteFile(timestamp_file)" > "quoteFile(f));
+            exec("touch "quoteArg(f)" ; cd "quoteArg(dir)" && find . -newer "quoteArg(timestamp_file)" > "quoteArg(f));
 DEBUG("end find");
             while((getline newfile < f) > 0) {
 DEBUG("find line "newfile);
@@ -513,7 +523,7 @@ f,result,line) {
 }
 
 function nmt_mount_share(s,settings,\
-path,link_details,remote,cmd,mount_root,result) {
+path,link_details,remote,cmd,mount_root,result,t) {
 
 
     mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
@@ -593,6 +603,9 @@ END{
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
     g_wget_opts=" -t 2 -w 2 -T 10 -q ";
 
+    g_plot_file=APPDIR"/plot.db";
+    g_plot_app=quoteArg(APPDIR"/bin/plot.sh");
+
     for(i in g_settings) {
         g_settings_orig[i] = g_settings[i];
     }
@@ -600,6 +613,10 @@ END{
     g_db_lock_file=APPDIR"/catalog.lck";
     g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
+    g_abc="abcdefghijklmnopqrstuvwxyz"; # slight rearrange - probably makes no diff
+    g_ABC=toupper(g_abc);
+    g_tagstartchar=g_ABC g_abc":_";
+    INFO("g_tagstartchar= "g_tagstartchar);
 
     load_catalog_settings();
 
@@ -848,7 +865,7 @@ attempts,sleep,backoff) {
             print PID > lock_file;
             close(lock_file);
             INFO("Locked "lock_file);
-            set_permissions(quoteFile(lock_file));
+            set_permissions(quoteArg(lock_file));
             return 1;
         }
         sleep=backoff[attempts];
@@ -861,7 +878,7 @@ attempts,sleep,backoff) {
 
 function unlock(lock_file) {
     INFO("Unlocked "lock_file);
-    system("rm -f -- "quoteFile(lock_file));
+    system("rm -f -- "quoteArg(lock_file));
     report_status("");
 }
 
@@ -877,11 +894,11 @@ function replace_database_with_new(newdb) {
 
     INFO("Replace Database");
 
-    system("cp -f "quoteFile(INDEX_DB)" "quoteFile(INDEX_DB_OLD));
+    system("cp -f "quoteArg(INDEX_DB)" "quoteArg(INDEX_DB_OLD));
 
     touch_and_move(newdb,INDEX_DB);
 
-    set_permissions(quoteFile(INDEX_DB)"*");
+    set_permissions(quoteArg(INDEX_DB)"*");
 }
 
 function set_permissions(shellArg) {
@@ -1033,7 +1050,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
         gsub(/\/+$/,"",root); 
     }
 
-    quotedRoot=quoteFile(root);
+    quotedRoot=quoteArg(root);
 
     extRe="\\.[^.]+$";
 
@@ -1287,7 +1304,7 @@ i,firstName) {
         }
         #continue 
     } else {
-        DEBUG("no match on [^0-9][Aa1]");
+        DEBUG2("no match on [^0-9][Aa1]");
         return 0;
     }
 
@@ -1598,10 +1615,12 @@ f,line,imdbContentPosition) {
         close(f);
 
     }
-    if (g_category[idx] == "T" && g_premier[idx] == "" ) {
-        g_premier[idx] = remove_tags(scanPageForMatch(url"/releaseinfo","BusinessThisDay.*"));
-        DEBUG("IMDB Premier = "g_premier[idx]);
-    }
+# Dont need premier anymore - this was for searching from imdb to tv database
+# we just use the year instead.
+#    if (g_category[idx] == "T" && g_premier[idx] == "" ) {
+#        g_premier[idx] = remove_tags(scanPageForMatch(url"/releaseinfo","BusinessThisDay.*",1));
+#        DEBUG("IMDB Premier = "g_premier[idx]);
+#    }
     DEBUG("IMDB Category = "g_category[idx] );
 }
 
@@ -1659,17 +1678,19 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
 
         f = dbfields[FILE,1];
 
-        INFO("read ["f"]");
         
         if (f in gMovieFilePresent) {
 
             idx=gMovieFilePresent[f];
             if (idx != -1 ) {
+                INFO("update ["f"]");
                 # Update the old entry with the new data
                 dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1],dbfields[INDEXTIME,1]);
                 updated_count++;
                 print dbline2"\t" >> new_db_file;
+                update_plots(g_plot_file,idx);
                 delete indexToMergeHash[idx];
+                #make sure we dont add it later.
                 gMovieFilePresent[f] = -1;
             }
 
@@ -1737,7 +1758,7 @@ function remove_absent_files_from_new_db(db,\
             parseDbRow(dbline,dbfields,1);
 
             f = dbfields[FILE,1];
-            INFO("Prune ? ["f"]");
+            #INFO("Prune ? ["f"]");
 
             keep=1;
             
@@ -1765,12 +1786,15 @@ function remove_absent_files_from_new_db(db,\
                     }
                 }
             }
+
+
             if (keep) {
                 print dbline > tmp_db;
                 g_kept_file_count++;
             } else {
                 INFO("Removing "f);
                 g_absent_file_count++;
+                
             }
         }
         close(tmp_db);
@@ -1778,6 +1802,7 @@ function remove_absent_files_from_new_db(db,\
         INFO("unchanged:"g_kept_file_count);
         INFO("removed:"g_absent_file_count);
         replace_database_with_new(tmp_db);
+        system(g_plot_app" compact "quoteArg(g_plot_file)" "quoteArg(INDEX_DB));
         unlock(g_db_lock_file);
     }
 }
@@ -1798,7 +1823,7 @@ function getPath(name,localPath) {
 ##### PRUNING DELETED ENTRIES FROM INDEX ###############################
 
 #Return single quoted file name. Inner quotes are backslash escaped.
-function quoteFile(f) {
+function quoteArg(f) {
     gsub(g_quote,g_quote "\\"g_quote g_quote,f);
     return g_quote f g_quote;
 }
@@ -1990,7 +2015,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
 
     } else {
 
-        DEBUG("No date format found for ["line"]");
+        DEBUG2("No date format found for ["line"]");
         return 0;
     }
     datePart = substr(line,RSTART,RLENGTH);
@@ -2027,7 +2052,7 @@ function extractEpisodeByDates(plugin,idx,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
 
     result=0;
-    DEBUG("extractEpisodeByDates "plugin" "line);
+    DEBUG2("extractEpisodeByDates "plugin" "line);
     if (extractDate(line,date,nonDate)) {
         rest=nonDate[2];
         title = clean_title(nonDate[1]);
@@ -2073,7 +2098,9 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
             details[ADDITIONAL_INFO]=clean_title(rest);
         }
     }
-    DEBUG("end extractEpisodeByDates "plugin" = "result);
+    if (result) {
+        INFO("end extractEpisodeByDates "plugin" = "result);
+    }
     return result;
 }
 
@@ -2248,7 +2275,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
     for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
 
-        begin_search(idx,"");
+        begin_search("");
 
         thisTime = -systime();
 
@@ -2262,7 +2289,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
         file=gMovieFiles[idx];
         if (file == "" ) continue;
 
-        DIV("Start item "(g_item_count)": ["file"]");
+        DIV0("Start item "(g_item_count)": ["file"]");
 
         DEBUG("folder :["gFolder[idx]"]");
         if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
@@ -2384,11 +2411,14 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
     clean_globals();
 }
 
-function DIV(x) {
+function DIV0(x) {
     INFO("\n\t===\n\t"x"\n\t===\n");
 }
+function DIV(x) {
+    INFO("\t===\t"x"\t===");
+}
 
-function begin_search(idx,method) {
+function begin_search(method) {
     if (method == "" ) {
         # reset search methods tried for start of new item
         g_search_types_tried = "";
@@ -2410,7 +2440,7 @@ tvDbSeriesPage,result) {
 
     result=0;
 
-    if (!begin_search(idx,plugin)) {
+    if (!begin_search(plugin)) {
         return 0;
     }
     DIV("tv_search "plugin);
@@ -2472,7 +2502,7 @@ function movie_search(idx,bestUrl,\
 name,name_no_tags,name_no_parts,i,\
 search_regex_key,search_order_key,search_order,s) {
 
-    if (!begin_search(idx,"movie_search")) {
+    if (!begin_search("movie_search")) {
         return;
     }
 
@@ -2589,7 +2619,7 @@ date,nonDate,premier,url,key) {
 function clean_globals() {
     delete gMovieFiles;
     delete g_scraped;
-    delete g_full_imdb_title;
+    delete g_imdb_title;
     delete gNfoDefault;
     delete gFolderMediaCount;
     delete gFolderInfoCount;
@@ -2852,7 +2882,7 @@ foundId,line) {
     INFO("scanNfoForImdbLink ["nfoFile"]");
     g_search_total["nfo"]++;
 
-    if (system("test -f "quoteFile(nfoFile)) == 0) {
+    if (system("test -f "quoteArg(nfoFile)) == 0) {
         FS="\n";
         while(foundId=="" && (getline line < nfoFile) > 0 ) {
 
@@ -3282,23 +3312,23 @@ i,c) {
     }
 }
 
-function scan_tv_via_search_engine(regex,keywords,premier_mdy,year,\
-url,id2) {
-    
-    if (premier_mdy != "") {
-        url=keywords " " premier_mdy;
-        id2 = scanPageForMatch(g_search_bing" "keywords " \"" premier_mdy"\"",regex,0);
-    }
-#    if (id2 == "" ) {
-#        id2 = scanPageForMatch(g_search_bing" "keywords " "year ,regex,0);
-#    }
-    return id2;
-}
+#ALL# function scan_tv_via_search_engine(regex,keywords,premier_mdy,year,\
+#ALL# url,id2) {
+#ALL#     
+#ALL#     if (premier_mdy != "") {
+#ALL#         url=keywords " " premier_mdy;
+#ALL#         id2 = scanPageForMatch(g_search_bing" "keywords " \"" premier_mdy"\"",regex,0);
+#ALL#     }
+#ALL# #    if (id2 == "" ) {
+#ALL# #        id2 = scanPageForMatch(g_search_bing" "keywords " "year ,regex,0);
+#ALL# #    }
+#ALL#     return id2;
+#ALL# }
 
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,idx,imdbid,\
-url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles,filter,showInfo) {
+url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -3320,30 +3350,38 @@ url,id2,premier_mdy,date,nondate,regex,link,key,closeTitles,filter,showInfo) {
                 }
             }
 
-#            if (id2 == "" ) {
-#                # Now try title search
-#                possible_tv_titles(plugin,gTitle[idx],closeTitles);
-#                id2 = selectBestOfBestTitle(plugin,gTitle[idx],closeTitles);
-#            }
-
             if (id2 == "" ) {
 
+                # search for series name directly using raw(ish) imdb name
                 extractDate(g_premier[idx],date,nondate);
 
                 if(plugin == "THETVDB") {
 
-                    regex="[&?;]id=[0-9]+";
+                    #allow for titles "The Office (US)" or "The Office" and 
+                    # hope the start year is enough to differentiate.
+                    filter["/Data/Series/SeriesName"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
+                    filter["/Data/Series/FirstAired"] = "~:^"g_year[idx]"-";
 
-                    if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
-
-                    id2 = scan_tv_via_search_engine(regex,gTitle[idx]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,g_year[idx]);
-                    if (id2 != "" ) {
-                        id2=substr(id2,5);
+                    url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",gTitle[idx]);
+                    if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo)) {
+                        INFO("Looking at tvdb "showInfo["/Data/Series/SeriesName"]);
+                        id2 = showInfo["/Data/Series/seriesid"];
                     }
+
+#                    regex="[&?;]id=[0-9]+";
+#
+#                    if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
+#
+#                    id2 = scan_tv_via_search_engine(regex,gTitle[idx]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,g_year[idx]);
+#                    if (id2 != "" ) {
+#                        id2=substr(id2,5);
+#                    }
 
                 } else if(plugin == "TVRAGE") {
 
-                    filter["/Results/show/name"] = gTitle[idx];
+                    #allow for titles "The Office (US)" or "The Office" and 
+                    # hope the start year is enough to differentiate.
+                    filter["/Results/show/name"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
                     filter["/Results/show/started"] = g_year[idx];
                     
                     if (fetch_xml_single_child("http://www.tvrage.com/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
@@ -3413,7 +3451,7 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp) {
+currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,tagStart) {
 
     if (sep == "") sep = "<";
 
@@ -3443,14 +3481,15 @@ currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp) 
     for(i = start ; i in lines ; i++ ) {
 
         # lines[i] = tag>text
+        # lines[i] = tag attr >text
 
         #split <tag>text  [ or </tag>parenttext ]
         split(lines[i],parts,">");
 
-        # tag1 text1 OR
-        # /tag1 midtext OR
-        # tag2 text2 OR
-        # /tag2 
+        # part[1] = tag 
+        # part[1] = tag attr1
+        # part[2] = text
+
 
         tag = parts[1];
         text = parts[2];
@@ -3460,26 +3499,7 @@ currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp) 
             tag=substr(tag,1,sp-1);
         }
 
-if (0) {
-        if (substr(tag,1,1) == "/" ) {
-
-            # end tag
-            #if end tag, remove it from currentTag
-            sub(tag"$","",currentTag);
-
-
-        } else {
-
-            # start tag
-            currentTag = currentTag "/" tag;
-
-            #If merging element values add a sepearator
-            if (info[currentTag] != "") {
-                info[currentTag] = info[currentTag] sep;
-            }
-        }
-} else {
-        if (substr(tag,1,1) == "/" && tag ~ /^\/[A-Za-z0-9_]+$/ ) {
+        if (index(tag,"/") == 1 && index(g_tagstartchar,substr(tag,2,1)))  { # was tag ~ /^\/[A-Za-z0-9_]+$/ ) 
 
             # end tag
             #if end tag, remove it from currentTag
@@ -3487,21 +3507,24 @@ if (0) {
             currentTag = substr(currentTag,1,length(currentTag)-length(tag));
 
 
-        } else if (tag ~ /^[A-Za-z0-9_]+$/ ) {
-
-            # start tag
-            currentTag = currentTag "/" tag;
-
-            #If merging element values add a sepearator
-            if (info[currentTag] != "") {
-                info[currentTag] = info[currentTag] sep;
-            }
         } else {
+            tagStart=substr(tag,1,1);
+            if (index(g_tagstartchar,tagStart)) {
 
-            #dont recognise tag - add to text
-            info[currentTag] = info[currentTag] tag;
+                # start tag
+                currentTag = currentTag "/" tag;
+                #INFO("tag ["currentTag"]");
+
+                #If merging element values add a sepearator
+                if (info[currentTag] != "") {
+                    info[currentTag] = info[currentTag] sep;
+                }
+            } else {
+
+                #dont recognise tag - add to text
+                info[currentTag] = info[currentTag] tag;
+            }
         }
-}
 
         info[currentTag] = info[currentTag] text;
 
@@ -3917,7 +3940,11 @@ function remove_tags(line) {
 }
 
 function de_emphasise(html) {
-    gsub(/<(\/|)(b|em|strong|wbr)>/,"",html); #remove emphasis tags
+    gsub(/<(\/|)(b|em|strong)>/,"",html); #remove emphasis tags
+    if (index(html,"wbr")) {
+        # Note yahoo will sometimes break an imdb tag with a space and wbr eg. tt1234 <wbr>567
+        gsub(/ *<(\/|)wbr>/,"",html); #remove emphasis tags
+    }
     gsub(/<[^\/][^<]+[\/]>/,"",html); #remove single tags eg <wbr />
     return html;
 }
@@ -4218,6 +4245,9 @@ result) {
 function setFirst(array,field,value) {
     if (array[field] == "") {
         array[field] = value;
+        print "["field"] set to ["value"]";
+    } else {
+        print "["field"] already set to ["array[field]"] ignoring ["value"]";
     }
 }
 
@@ -4244,6 +4274,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
         g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
         g_plot[idx] = seriesInfo["/Data/Series/Overview"];
+        DEBUG("tvdb plot "g_plot[idx]);
 
         #Dont use thetvdb genre - its too confusing when mixed with imdb movie genre
         #setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
@@ -4269,7 +4300,9 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
 
                 set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"]);
 
-                setFirst(g_epplot,idx,seriesInfo["/Data/Episode/Overview"]);
+                DEBUG("tvdb epplot :["g_epplot[idx]"]");
+                setFirst(g_epplot,idx,episodeInfo["/Data/Episode/Overview"]);
+                DEBUG("tvdb epplot :["g_epplot[idx]"]");
 
                 if (gEpTitle[idx] != "" ) {
                    if ( gEpTitle[idx] !~ /^Episode [0-9]+$/ ) {
@@ -4353,6 +4386,7 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
         url=seriesInfo["/Show/showlink"];
         g_plot[idx] = scrape_one_item("tvrage_plot",url,"id='"'"'iconn1",0,"iconn2",0);
+        DEBUG("rage plot "g_plot[idx]);
         result ++;
 
         e="/Show/Episodelist/Season/episode";
@@ -4369,6 +4403,7 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
                     p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"<a ",0);
                     if (p != "" && index(p,"There is no summary") == 0) {
                         g_epplot[idx] = p;
+                        DEBUG("rage epplot :"g_epplot[idx]);
                     }
                 }
                 result ++;
@@ -4385,18 +4420,21 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
 }
 
 function clean_xml_path(xmlpath,xml,\
-t,currentTag,lastTag) {
+t,xmlpathSlash,xmlpathHash) {
 
     #This is the proper way to remove the element
     #delete the current child - its slow
+    xmlpathSlash=xmlpath"/";
+    xmlpathHash=xmlpath"#";
+
+    #index function is faster than substr
     for(t in xml) {
         if (index(t,xmlpath) == 1) {
-            delete xml[t];
+            if (t == xmlpath || index(t,xmlpathSlash) == 1 || index(t,xmlpathHash) == 1) {
+                delete xml[t];
+            }
         }
     }
-
-    # TODO delete this bit - just checking self modifying loops work ok
-    # for(t in xml) { if (index(t,xmlpath) == 1) { ERROR("Bad loop"); exit; } }
 }
 
 function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
@@ -4409,10 +4447,14 @@ f,found) {
    return found;
 }
 function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
-line,start_tag,end_tag,found,t,last_tag,isnum) {
+line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type,string_type,this_type) {
 
    delete xmlout;
    found=0;
+
+   number_type=1;
+   regex_type=2;
+   string_type=3;
 
    last_tag = xmlpath;
    sub(/.*\//,"",last_tag);
@@ -4422,7 +4464,14 @@ line,start_tag,end_tag,found,t,last_tag,isnum) {
 
    for(t in tagfilters) {
        DEBUG("filter ["t"]=["tagfilters[t]"]");
-       isnum[t] = (tagfilters[t] ~ "^[0-9]+$" );
+       if (tagfilters[t] ~ "^[0-9]+$" ) {
+           filter_type[t] = number_type;
+       } else if (substr(tagfilters[t],1,2) == "~:") {
+           regex[t] = substr(tagfilters[t],3);
+           filter_type[t] = regex_type;
+       } else {
+           filter_type[t] = string_type;
+       }
    }
 
     if (f != "") {
@@ -4435,19 +4484,44 @@ line,start_tag,end_tag,found,t,last_tag,isnum) {
 
             parseXML(line,xmlout);
 
+            
+
             if (index(line,end_tag) > 0) {
+
+                #dump(0,"xml",xmlout);
 
                 found=1;
                 for(t in tagfilters) {
-                    if (isnum[t]) {
+                    this_type = filter_type[t];
+
+                    if (!(t in xmlout) ) {
+
+                        INFO("Could not find "t" in element");
+                        found =0 ; break;
+                    
+                    } else if (this_type == string_type) {
+                        if (xmlout[t] != tagfilters[t] ) {
+                            #DEBUG("Filter block "t" \""xmlout[t]"\" != \""tagfilters[t]"\"");
+                            found=0;break;
+                        }
+
+                    } else if (this_type == number_type) {
+
                         if (xmlout[t] - tagfilters[t] != 0) {
                             #DEBUG("Filter block "t" "xmlout[t]" != "tagfilters[t]);
                             found=0;break;
                         }
-                    } else if (xmlout[t] != tagfilters[t] ) {
-                        #DEBUG("Filter block "t" \""xmlout[t]"\" != \""tagfilters[t]"\"");
-                        found=0;break;
+                    } else if (this_type == regex_type) {
+
+                        if ( xmlout[t] !~ regex[t] ) {
+                            DEBUG("Filter block "t" "xmlout[t]" !~ "regex[t]);
+                            found=0;break;
+                        }
+                    } else {
+                        ERROR("Bad type "this_type);
+                        exit;
                     }
+
                 }
 
                 if (found) {
@@ -4455,11 +4529,13 @@ line,start_tag,end_tag,found,t,last_tag,isnum) {
                     break;
                 }
 
-                clean_xml_path(xmlpath,xmlout);
             }
 
         }
         close(f);
+    }
+    if (!found) {
+        clean_xml_path(xmlpath,xmlout);
     }
     return found;
 }
@@ -4530,7 +4606,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     isoPart=tmp_dir"/bytes."JOBID".2";
     delete outputText;
 
-    if (exec("dd if="quoteFile(isoPath)" of="isoPart" bs=1024 count=10 skip=32") != 0) {
+    if (exec("dd if="quoteArg(isoPath)" of="isoPart" bs=1024 count=10 skip=32") != 0) {
         return 0;
     }
 
@@ -4763,11 +4839,11 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
         args=args" --referer=\""referer"\" ";
     }
 
-    targetFile=quoteFile(file);
+    targetFile=quoteArg(file);
     htmlFile=targetFile;
 
     args=args" --header=\"Accept-Encoding: gzip,deflate\" "
-    downloadedFile=quoteFile(file".gz");
+    downloadedFile=quoteArg(file".gz");
     unzip_cmd=" && ( gunzip -c "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
 
     gsub(/ /,"+",url);
@@ -4784,7 +4860,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
     url="";
     for(i in urls) {
         if (urls[i] != "") {
-            url = url " "quoteFile(urls[i])" ";
+            url = url " "quoteArg(urls[i])" ";
         }
     }
 
@@ -4919,26 +4995,26 @@ function download_image(field_id,url,idx,\
     #Get the poster if we havent fetched it already.
     havePoster = hasContent(internal_path);
 
-    if (!g_image_requested[internal_path]) {
+    if (!(internal_path in g_image_inspected)) {
         if (!havePoster) {
             get_it = 1;
         } else {
             #note images are fetched aynchronously - we should touch the file really.
             if (field_id == POSTER) {
-                get_it = REFRESH_POSTERS;
+                get_it = UPDATE_POSTERS;
             } else if (field_id == FANART) {
-                get_it = REFRESH_FANART;
+                get_it = UPDATE_FANART;
             }
         }
+        g_image_inspected[internal_path]=1;
     } else {
         INFO("Already got "internal_path);
     }
 
     if (get_it ) {
 
-        g_image_requested[internal_path]=1;
 
-        INFO((REFRESH_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
+        INFO((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "internal_path);
 
         rm(internal_path,1);
 
@@ -4952,7 +5028,7 @@ function download_image(field_id,url,idx,\
         # -t retries - oversight runs the command twice so halve number of retries.
         # -w time between retries.
         # -T network timeouts
-        wget_args=g_wget_opts" -O "quoteFile(internal_path);
+        wget_args=g_wget_opts" -O "quoteArg(internal_path);
 
         DEBUG("Poster url = "url);
         if (referer == "" ) {
@@ -4971,7 +5047,7 @@ function download_image(field_id,url,idx,\
             script_arg="fanart";
         }
 
-        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteFile(url)" "quoteFile(internal_path)" "wget_args" &");
+        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &");
     }
 
     return poster_ref;
@@ -5023,7 +5099,7 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
             
     if (poster_url == "") {
 #        if (1) {
-            #search_url = tolower(g_full_imdb_title[idx]);
+            #search_url = tolower(g_imdb_title[idx]);
             search_url = tolower(gTitle[idx]"-"g_year[idx]);
             gsub(/[^a-z0-9]+/,"-",search_url);
             sub(/-$/,"",search_url);
@@ -5175,8 +5251,20 @@ title,y,poster_imdb_url) {
         if (index(line,"<title>")) {
             title = extractTagText(line,"title");
             DEBUG("Title found ["title "] current title ["gTitle[idx]"]");
-            g_full_imdb_title[idx]=title;
-            title=checkIMDBTvTitle(idx,title);
+
+            # Get the almost raw Imdb title. This may have ampersand which 
+            # helps to differentiate shows. This is more important if
+            # later on we need to # do a lookup from imdb back to a tvdatabase site eg
+            # Brothers & Sisters != Brothers and Sisters.
+            #
+            # It is not so important when mapping filenames to tv shows. in that
+            # case we need to be more flexible ( see expand_url() and similarTitles() )
+            g_imdb_title[idx]=extract_imdb_title_category(idx,title);
+
+            title=clean_title(g_imdb_title[idx]);
+            if (adjustTitle(idx,title,"imdb")) {
+                gOriginalTitle[idx] = gTitle[idx];
+            }
         }
         if (index(line,"pagecontent")) {
             imdbContentPosition="body";
@@ -5251,35 +5339,36 @@ title,y,poster_imdb_url) {
     return imdbContentPosition;
 }
 
-function checkIMDBTvTitle(idx,title,\
-semicolon,quote,quotePos,title2) {
+function extract_imdb_title_category(idx,title,\
+semicolon,quote) {
+    # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
     g_category[idx]="M";
     if (substr(title,1,1) == "&" ) {
         semicolon=index(title,";");
         if (semicolon > 0 ) { 
-            quote=substr(title,1,semicolon);
-            DEBUG("Imdb tv quote = <"quote">");
-            title2=substr(title,semicolon+1);
-            DEBUG("Imdb tv title = <"title2">");
-            quotePos = index(title2,quote);
-            if (quotePos > 0 ) {
-                #rest=substr(title2,quotePos+length(quote));
-                #if (match(/^ \([0-9]{4}\)$/,rest)) {
-                    title=substr(title2,1,quotePos-1);
-                    g_category[idx]="T";
-                #}
-            }
+
+            quote=substr(title,2,semicolon-1);
+            gsub("."quote,"",title);
+            g_category[idx]="T";
+
+#            quote=substr(title,1,semicolon);
+#            title2=substr(title,semicolon+1);
+#            quotePos = index(title2,quote);
+#            if (quotePos > 0 ) {
+#                #rest=substr(title2,quotePos+length(quote));
+#                #if (match(/^ \([0-9]{4}\)$/,rest)) {
+#                    title=substr(title2,1,quotePos-1);
+#                    g_category[idx]="T";
+#                #}
+#            }
         }
     }
 
     #Remove the year
     gsub(/ \((19|20)[0-9][0-9](\/I|)\) *(\([A-Z]+\)|)$/,"",title);
 
-    title=clean_title(title);
-    if (adjustTitle(idx,title,"imdb")) {
-        gOriginalTitle[idx] = gTitle[idx];
-    }
+    DEBUG("Imdb title = ["title"]");
     return title;
 }
 
@@ -5565,7 +5654,7 @@ function removeContent(cmd,x,quiet,quick) {
     if (!quiet) {
         INFO("Deleting "x);
     }
-    cmd=cmd quoteFile(x)" 2>/dev/null ";
+    cmd=cmd quoteArg(x)" 2>/dev/null ";
     if (quick) {
         return "(" cmd ") & ";
     } else {
@@ -5628,7 +5717,7 @@ function preparePath(f) {
 #        return ret;
 #    }
 #    return 0;
-    f = quoteFile(f);
+    f = quoteArg(f);
     return system("if [ ! -e "f" ] ; then mkdir -p "f" && rmdir -- "f" ; fi");
 }
 
@@ -5655,8 +5744,8 @@ function moveFile(oldName,newName,\
     if (!changeable(oldName) ) {
         return 1;
     }
-    new=quoteFile(newName);
-    old=quoteFile(oldName);
+    new=quoteArg(newName);
+    old=quoteArg(oldName);
     if (g_opt_dry_run) {
         if (match(oldName,gExtRegExAll) && system("test -f "old) == 0) {
             print "dryrun: from "old
@@ -5693,8 +5782,8 @@ function moveFolder(i,oldName,newName,\
    } else if (!changeable(oldName) ) {
        return 1;
    } else {
-       new=quoteFile(newName);
-       old=quoteFile(oldName);
+       new=quoteArg(newName);
+       old=quoteArg(oldName);
        if (g_opt_dry_run) { 
            print "dryrun: from "old"/* to "new"/";
            return 0;
@@ -5718,7 +5807,7 @@ function isDirectory(f) {
     return test("-d",f);
 }
 function test(t,f) {
-    return system("test "t" "quoteFile(f)) == 0;
+    return system("test "t" "quoteArg(f)) == 0;
 }
 
 #Write a .nfo file if one didnt exist. This will make it easier 
@@ -5795,7 +5884,7 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
     }
     if(nfoAdded) {
         close(nfo);
-        set_permissions(quoteFile(nfo));
+        set_permissions(quoteArg(nfo));
     }
 }
 
@@ -5955,9 +6044,16 @@ row,est,nfo) {
     }
     row=row"\t"NFO"\t"nfo;
     #row=row"\t"FANART"\t"g_fanart[i];
-    row=row"\t"PLOT"\t"g_plot[i];
-    row=row"\t"EPPLOT"\t"g_epplot[i];
+    row=row"\t"PLOT"\t"plot_tag(i);
+    row=row"\t"EPPLOT"\t"epplot_tag(i);
     return row;
+}
+
+function epplot_tag(idx) {
+    return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@"g_episode[idx]"@_";
+}
+function plot_tag(idx) {
+    return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@@_";
 }
 
 # IN indexToMergeHash - hash whose indexes are the items we want to add during this iteration.
@@ -5982,6 +6078,8 @@ i,row,fields,f,inf) {
 
         print row"\t" >> output_file;
 
+        update_plots(g_plot_file,i);
+
         generate_nfo_file(g_settings["catalog_nfo_format"],row);
 
         if(DBG-2 >= 0) {
@@ -5999,8 +6097,24 @@ i,row,fields,f,inf) {
     }
     close(output_file);
 }
+
+function update_plots(pfile,idx,\
+id) {
+    id=extractImdbId(g_imdb[idx]);
+    if (id != "") {
+        INFO("updating plots for "id);
+
+        if (g_plot[idx] != "" ) {
+            exec(g_plot_app" update "quoteArg(pfile)" "id" "g_season[idx]" \"\" "quoteArg(g_plot[idx]));
+        }
+        if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
+            exec(g_plot_app" update "quoteArg(pfile)" "id" "g_season[idx]" "g_episode[idx]" "quoteArg(g_epplot[idx]));
+        }
+    }
+}
+
 function touch_and_move(x,y) {
-    system("touch "quoteFile(x)" ; mv "quoteFile(x)" "quoteFile(y));
+    system("touch "quoteArg(x)" ; mv "quoteArg(x)" "quoteArg(y));
 }
 
 #--------------------------------------------------------------------
@@ -6102,15 +6216,15 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "GET_POSTERS" )  {
             GET_POSTERS=1;
             moveDown++;
-        } else if (ARGV[i] == "REFRESH_POSTERS" )  {
-            REFRESH_POSTERS=1;
+        } else if (ARGV[i] == "UPDATE_POSTERS" )  {
+            UPDATE_POSTERS=1;
             GET_POSTERS=1;
             moveDown++;
         } else if (ARGV[i] == "GET_FANART" )  {
             GET_FANART=1;
             moveDown++;
-        } else if (ARGV[i] == "REFRESH_FANART" )  {
-            REFRESH_FANART=1;
+        } else if (ARGV[i] == "UPDATE_FANART" )  {
+            UPDATE_FANART=1;
             GET_FANART=1;
             moveDown++;
         } else if (ARGV[i] == "NEWSCAN" )  {

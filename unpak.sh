@@ -25,7 +25,7 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #TODO Cope with par,zip combos. Currently it will try to repair rather than unzip-repair
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
-VERSION=20090721-1BETA
+VERSION=20091011-1BETA
 
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
@@ -1977,22 +1977,6 @@ stop_screensaver() {
     fi
 }
 
-##################################################################################
-# something sometimes changes /tmp permissions so only root can write
-TMP=/tmp
-is_nmt=N
-if [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER  ] ; then
-    TMP=/share/tmp
-    mkdir -p $TMP
-    is_nmt=Y
-    chown nmt:nmt $TMP
-fi
-
-#Some global settings
-finished_nzb_folder="processed"
-finished_nzb_ext=".processed"
-gTmpFile="$TMP/unpak.$$"
-flatten="=@="
 #
 ##################################################################################
 # main SCRIPT
@@ -2116,6 +2100,29 @@ main() {
     fi
 }
 
+script_name=$(BASENAME "$0" "")
+
+script_folder=$( cd $(DIRNAME "$0") ; pwd )
+
+##################################################################################
+# something sometimes changes /tmp permissions so only root can write
+TMP=/tmp
+is_nmt=N
+if [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER  ] ; then
+    TMP=/share/tmp
+    if [ -w $script_folder/tmp ] ; then
+        TMP=$script_folder/tmp
+    fi
+    mkdir -p $TMP
+    is_nmt=Y
+    chown nmt:nmt $TMP
+fi
+
+#Some global settings
+finished_nzb_folder="processed"
+finished_nzb_ext=".processed"
+gTmpFile="$TMP/unpak.$$"
+flatten="=@="
 ###################### Parameters #####################################
 
 # Parameters passed to script by nzbget:
@@ -2192,10 +2199,6 @@ case $mode in
         fi
 esac
 
-
-script_name=$(BASENAME "$0" "")
-
-script_folder=$( cd $(DIRNAME "$0") ; pwd )
 
 log_dir=$script_folder/logs
 

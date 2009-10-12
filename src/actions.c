@@ -10,8 +10,18 @@
 #include "display.h"
 #include "hashtable_loop.h"
 
+// If a paramter begins with this prefix then the remaining part 
+// of the parameter name is passed as an option to the catalog.sh command
 #define RESCAN_OPT_PREFIX "rescan_opt_"
+
+// If a parameter begins with RESCAN_DIR_PREFIX then the remaining
+// part of the name is passed as a scan folder to the catalog.sh command
 #define RESCAN_DIR_PREFIX "rescan_dir_"
+
+// If a parameter begins with RESCAN_OPT_GROUP_PREFIX then the VALUE
+// is passed as an option to the catalog.sh command
+// This is to allow for radio buttons.
+#define RESCAN_OPT_GROUP_PREFIX "rescan_opt_@group"
 struct hashtable *get_newly_selected_ids_by_source();
 struct hashtable *get_newly_deselected_ids_by_source();
 int count_unchecked();
@@ -257,25 +267,38 @@ void do_actions() {
             int parallel_scan = 0;
             char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");
             char *k;
+            char *v;
+            
+            // get all parameters with RESCAN_OPT_PREFIX
+            // these are passed to the command line for both parallel and sequential scans
             struct hashtable_itr *itr = hashtable_loop_init(g_query);
-            while (hashtable_loop_more(itr,&k,NULL)) {
+            while (hashtable_loop_more(itr,&k,&v)) {
 
                 if (util_starts_with(k,RESCAN_OPT_PREFIX)) {
                     char *tmp;
-                    ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_OPT_PREFIX));
+                    char *opt;
+                    if (util_starts_with(k,RESCAN_OPT_GROUP_PREFIX)) {
+                        opt = v;
+                    } else {
+                        opt = k+strlen(RESCAN_OPT_PREFIX);
+                    }
+                    ovs_asprintf(&tmp,"%s %s",cmd,opt);
                     FREE(cmd);
                     cmd = tmp;
-                    if (strcmp(k, RESCAN_OPT_PREFIX "PARALLEL_SCAN" ) == 0 ) {
+                    if (strcmp(opt, RESCAN_OPT_PREFIX "PARALLEL_SCAN" ) == 0 ) {
                         parallel_scan = 1;
                     }
                 }
             }
             
+            // get all parameters with RESCAN_DIR_PREFIX
+            // If PARALLEL scan then the command is executed once for each folder.
+            // otherwise all folders are passed together.
             itr = hashtable_loop_init(g_query);
             while (hashtable_loop_more(itr,&k,NULL)) {
                 if (util_starts_with(k,RESCAN_DIR_PREFIX)) {
                     char *tmp;
-                    ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_OPT_PREFIX));
+                    ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_DIR_PREFIX));
                     if (parallel_scan) {
                         send_command("*",tmp);
                         FREE(tmp);

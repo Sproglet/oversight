@@ -43,45 +43,37 @@ jpg_resize() {
     # resize a jpeg to Sd or Hd backdrop
 
     input="$1"
-    type="$2"
-    tv_mode="$3"
+    output="$2"
+
+    #This is the initial - approx scale down factor passed to djpeg for performance
+    #it is not the final image size.
+    #for example we know that going from hd to sd is roughly 1/2 so we first scale by that
+    initial_scale="$3"
 
     o=
-    case "$type" in 
-        fanart)
-            case "$tv_mode" in 
-                hd)   o="-width=1280 -height=720" ;;
-                sd) o="-width=685 -height=460" ;;
-                #pal)  o="-width=685 -height=522" ;; # There is a a/r bug in gaya for pal display
-                pal)  o="-width=685 -height=542" ;; # Also further height added due to display on my tv
-            esac
-            suffix=".$tv_mode.jpg"
-            ;;
-        poster)
-            o="-width=300"
-            suffix=".jpg"
-            ;;
+    case "$output" in 
+        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=70 ;;
+        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=70 ;;
+        */_fa/*.pal.jpg)
+            # Pal is created from the SD but we need to improve the quality
+            o="-width=685 -height=542" ; q=90 ;;
+        */_J/*.jpg) o="-width=300" ; q=70 ;;
+        *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac
-
-    if [  X == "X$o" ] ; then
-        cat <<HERE
-  unknown type $type
-  usage: $0 file.jpg poster hd 
-         $0 file.jpg fanart hd|sd|pal [width]
-HERE
-        exit 1
-    fi
-
-    
-    output=`echo "$input" | sed "s/\.jpg$/$suffix/"`
-
 
     #Could use a pipe but input may = output so use tmp file.
     # We always resize even if the dimensions are unchanged because it makes file size much smaller
     INFO "$o to $output" 
     # Remove it first in case it was a hard link to the original file.
-    tmpf=`thread_prefix`.jpg
-    if djpeg -dct fast "$input" | pnmscalefixed $o | cjpeg -dct fast -quality 70 >  $tmpf && rm -f "$output" && mv "$tmpf" "$output"  ; then
+    tmpjpg=`thread_prefix`.jpg
+    tmppnm=`thread_prefix`.pnm
+
+    # we do the usual djpeg | pnmscale | cjpeg  but keep the pnm files so we can reuse them for other sizes.
+    # also input and output may be the same so we use intermediate file rather than pipes.
+    # this may also give better performance on embedded machines.
+    if ( cat "$input.pnm" 2>/dev/null || djpeg -dct fast -scale $initial_scale "$input" ) |\
+             pnmscalefixed $o > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
+       cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
         perms "$output"
     else
         ERROR "Unable to generate $output from $input using $o"
@@ -101,35 +93,35 @@ fetch_resize() {
     INFO ""
     INFO "Processing : $type $url $file"
 
-    if wget -O "$file" "$@" "$url"  ; then
+    if wget -O "$file" "$@" "$url" && [ -s "$file" ]  ; then
         perms $file
-        if [ -s "$file" ] ; then
-            resize_img "$type" "$file"  # &
-        else
-            rm -f "$file"
-            ERROR "Failed wget -O $file $@ $url"
-        fi
+        resize_img "$type" "$file"  # &
     else
         rm -f "$file" 
+        ERROR "Failed wget -O $file $@ $url"
     fi
 }
 
+# $1 = fanart | poster
+# $2 = source file
 resize_img() {
-    type="$1" ; shift; # poster or fanart
-    file="$1" ; shift ;
-    case "$type" in
+
+    base=`echo "$2" | sed -r 's/\.(jpg|png)$//'`
+
+    case "$1" in
         fanart)
-            jpg_resize "$file" $type hd
-            jpg_resize "$file" $type sd
+            jpg_resize "$2" "$base.hd.jpg" "1/1"
+            jpg_resize "$base.hd.jpg" "$base.sd.jpg" "1/2"
             if [ $get_pal -eq 1 ] ; then
-                jpg_resize "$file" $type pal
+                jpg_resize "$base.sd.jpg" "$base.pal.jpg" "1/1"
             fi
             ;;
         poster)
-            jpg_resize "$file" $type sd
+            # assuming covers are high quality we can start with 50% reduction in djpeg stage
+            jpg_resize "$2" "$2" "3/5"
             ;;
     esac
-    rm -f "$Q.resizing"
+    rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm"
 }
 
 Q=$TMP/resize.queue
@@ -172,30 +164,34 @@ ERROR() {
 
 process_queue() {
 
-    folder="$1"
-    loop=$2
-    r=1 # error return code
-    tmpf="`thread_prefix`.cmd"
+    pq_folder="$1"
+    pq_loop=$2
+    pq_count=0 
+    pq_args="`thread_prefix`.cmd"
 
-    cd $folder
+    INFO "Begin Processing $1"
+
+    cd $pq_folder
     for f in * ; do
 
-        if  [ -f "$f" ] && mv "$f" "$tmpf" ; then
+        if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
 
-            INFO "got file $folder/$f into $tmpf"
+            INFO "got image queue file $pq_folder/$f"
 
-            r=0 # set OK return code
 
-            while read line ; do
+            while FS= read line ; do
                 eval fetch_resize $line
-            done < "$tmpf"
+            done < "$pq_args"
 
-            rm -f "$tmpf"
+            rm -f "$pq_args"
 
+            pq_count=$(( $pq_count + 1 ))
         fi
-        if [ $loop -eq 0 ] ; then break ; fi
+        if [ $pq_loop -eq 0 ] ; then break ; fi
     done
-    return $r
+    INFO "End Processing $1 : $pq_count files"
+    # If no files then return error code.
+    [ $pq_count -gt 0 ]
 
 }
 

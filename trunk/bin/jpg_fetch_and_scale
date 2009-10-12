@@ -81,7 +81,7 @@ HERE
     INFO "$o to $output" 
     # Remove it first in case it was a hard link to the original file.
     tmpf=`thread_prefix`.jpg
-    if djpeg -dct fast "$input" | pnmscalefixed $o | cjpeg -dct fast -quality 65 >  $tmpf && rm -f "$output" && mv "$tmpf" "$output"  ; then
+    if djpeg -dct fast "$input" | pnmscalefixed $o | cjpeg -dct fast -quality 70 >  $tmpf && rm -f "$output" && mv "$tmpf" "$output"  ; then
         perms "$output"
     else
         ERROR "Unable to generate $output from $input using $o"
@@ -212,13 +212,14 @@ thread_prefix() {
 # A thread will process as many posters as it can, then look for one fanart 
 # if anything was found it repeats the cycle otherwise it exists.
 start_thread() {
-    thread="$$.$1"
-    INFO "Thread starting"
-    echo $$ > `thread_prefix`.pid
+    eval pid=\$\$
+    thread=$pid.$1
+    INFO "Thread $pid starting ($$)"
+    echo $pid > `thread_prefix`.pid
     while process_queue "$Q.poster" 1 || process_queue "$Q.fanart" 0 ; do
         true
     done
-    INFO "Thread stopping"
+    INFO "Thread $pid stopping ($$)"
     rm -f `thread_prefix`.pid
 }
 
@@ -251,7 +252,7 @@ synchronise() {
             while running "$sync_file" ; do
                 sleep 1
             done
-            echo "$$" > "$sync_file"
+            echo "$pid" > "$sync_file"
             ;;
         0)  rm -f "$sync_file"
             ;;
@@ -267,7 +268,7 @@ startup() {
     tc=`numthreads`
     INFO "thread count = $tc"
     while [ $tc -lt $maxthreads ] ; do
-        start_thread $tc.`date +%H%M%S` &
+        ( $0 SPAWN $tc.`date +%H%M%S` & )
         tc=$(( $tc + 1 ))
         sleep 2
     done
@@ -285,9 +286,9 @@ check_pal() {
     fi
 }
 
-if [ "$1" != "start" -a -z "$3" ] ; then
+if [ -z "$1" ] ; then
 	echo "usage $0 [poster|fanart] url file wget options"
-	echo "usage $0 start"
+	echo "usage $0 START"
 	exit 1
 fi
 
@@ -297,14 +298,24 @@ check_pal
 
 trap tidy 1 2 3 6
 
-if [ "$1" == "STOP" ] ; then
-   
-    kill `cat $TMP/.thread.*`
+case "$1" in
 
-else
-    if [ -n "$*" ] ; then
-        add_queue  "$@"
-    fi
-    # Due to memory limits we process one request at a time.
-    startup
-fi
+    STOP)
+        kill `cat $TMP/.thread.*`
+        ;;
+
+    START)
+        startup
+        ;;
+
+    SPAWN)
+        start_thread "$2"
+        ;;
+
+    *)
+        if [ -n "$*" ] ; then
+            add_queue  "$@"
+        fi
+        startup
+        ;;
+esac

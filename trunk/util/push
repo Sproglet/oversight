@@ -31,8 +31,8 @@ PUSH() {
             echo Drive $i
             root=$dest_prefix/$i/Apps/oversight/.
 
-            CP "$root" *.full *.cgi *.sh help bin/nmt*/oversight bin/jpg_*
-            CP "$root" conf/*example conf/.*defaults 
+            CP "$root" *.full *.cgi *.sh help bin/nmt*/oversight bin/jpg_* bin/plot.sh
+            CP "$root" conf/*example conf/.*defaults conf/tv.txt
 
             if [ "$mode" = "all" ] ; then
                 CP "$root" templates

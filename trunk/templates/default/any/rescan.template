@@ -36,18 +36,18 @@
                     </td>
                     <td align=left>
                         <input type=checkbox name=rescan_opt_GET_POSTERS checked>Get Posters
-                        <input type=checkbox name=rescan_opt_REFRESH_POSTERS>Overwrite Posters
+                        <input type=checkbox name=rescan_opt_UPDATE_POSTERS>Overwrite Posters
                         <br>
                         <input type=checkbox name=rescan_opt_GET_FANART checked>Get Fanart
-                        <input type=checkbox name=rescan_opt_REFRESH_FANART>Overwrite Fanart
+                        <input type=checkbox name=rescan_opt_UPDATE_FANART>Overwrite Fanart
                         <hr>
 <!--
                         <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>
                         <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
                         <hr>
 -->
-                        <input type=radio name=rescan_opt_RESCAN checked>Full Scan<br>
-                        <input type=radio name=rescan_opt_NEWSCAN>New Items Only<br>
+                        <input type=radio name=rescan_opt_group1 value=RESCAN checked>Full Scan<br>
+                        <input type=radio name=rescan_opt_group1 value=NEWSCAN>New Items Only<br>
                     </td>
                 </tr>
                 <tr>

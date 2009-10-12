@@ -14,6 +14,7 @@
 #include "util.h"
 #include "array.h"
 #include "db.h"
+#include "dbplot.h"
 #include "dboverview.h"
 #include "oversight.h"
 #include "hashtable.h"
@@ -1673,7 +1674,11 @@ TRACE;
     }
 TRACE;
 
+    HTML_LOG(0,"auto delist precheck [%s]",path);
     if (auto_prune && !exists(path)) {
+        
+        HTML_LOG(0,"auto delist check [%s]",path);
+
         char *parent_dir = util_dirname(path);
         char *grandparent_dir = util_dirname(parent_dir);
 
@@ -1703,22 +1708,21 @@ TRACE;
 // Return 1 if this row and all of its linked items are delisted.
 int all_linked_rows_delisted(DbRowId *rowid)
 {
-    int all_delisted=1;
     DbRowId *r;
 
 TRACE;
     for(r = rowid ; r != NULL ; r = r->linked) {
         if (!delisted(r)) {
-            all_delisted = 0;
+            return 0;
         }
     }
-    return all_delisted;
+    return 1;
 }
 
 // Generate the HTML for the grid. 
 // Note that the row_ids have alredy been pruned to only contain the items
 // for the current page.
-char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
+char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,int page_before,int page_after) {
     
     int start = 0;
     int end = numids;
@@ -1726,12 +1730,10 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     int centre_col = cols/2;
     int r,c;
 
-    int page_before = (page > 0);
-    int page_after = (end < numids);
 
     if (end > numids) end = numids;
 
-    HTML_LOG(0,"grid page %ld rows %d cols %d",page,rows,cols);
+    HTML_LOG(0,"render page %ld rows %d cols %d",page,rows,cols);
 
 #if 0
     HTML_LOG(0,"input size = %d",numids);
@@ -1832,6 +1834,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     int total=0;
     // Create space for pruned rows
 TRACE;
+    HTML_LOG(0,"get_grid page %ld rows %d cols %d",page,rows,cols);
     DbRowId **prunedRows = CALLOC(items_per_page+1,sizeof(DbRowId *));
     for ( i = start ; total < items_per_page && i < numids ; i++ ) {
         DbRowId *rid = row_ids[i];
@@ -1841,7 +1844,9 @@ TRACE;
             }
         }
     }
-    return render_grid(page,rows,cols,total,prunedRows);
+    int page_before = (page > 0);
+    int page_after = (numids >= i);
+    return render_grid(page,rows,cols,total,prunedRows,page_before,page_after);
 }
 
 
@@ -2222,6 +2227,110 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
     }
 }
 
+// Add a javascript function to return a plot string.
+// returns number of characters in javascript.
+int plot_fn(char *buf,long fn_id,char *fn_fmt,char *text) {
+    int result;
+    char *plot = text;
+    if (strchr(plot,'\'')) {
+        plot = replace_all(text,"'","\\'",0);
+    }
+    result = sprintf(buf,fn_fmt,fn_id,plot);
+    if (plot != text) {
+        FREE(plot);
+    }
+    return result;
+}
+
+/**
+ * Create a number of javascript functions that each return the 
+ * plot for a given row.
+ * The funtions are named using the address location of the data  structure.
+ * eg plot12234() { return 'He came, he saw , he conquered'; }
+ */
+char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
+
+    // get titles from plot.db
+HTML_LOG(0,"num rows = %d",num_rows);
+    get_plot_offsets_and_text(num_rows,sorted_rows,1);
+
+    char *javascript_plot_format = "function plot%ld() { show('%s'); }\n" ;
+    int javascript_plot_format_len = strlen(javascript_plot_format);
+
+    char *header = "<script type=\"text/javascript\">\
+    var title = 1;\
+    function show(x)\
+    {\
+        if (title == 1) title = document.getElementById('tvplot').firstChild;\
+        title.nodeValue = x;\
+    }\
+    ";
+
+    char *footer = "\n</script>\n";
+    int len = strlen(header)+strlen(footer)+100; // space for <script></script> tags
+
+    int i;
+
+TRACE;
+    // Space for main plot
+    for(i = 0 ; i < num_rows ; i++ ) {
+        if (sorted_rows[i]->plot_text) {
+            len += 5+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->plot_text));
+            break;
+        }
+    }
+TRACE;
+    // Space for each episode plot
+    for(i = 0 ; i < num_rows ; i++ ) {
+        len += 5+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->episode_plot_text));
+    }
+TRACE;
+
+    char *script = MALLOC(len);
+    char *script_p = script;
+
+    script_p += sprintf(script_p,"%s",header);
+
+TRACE;
+    // Main plot function
+    for(i = 0 ; i < num_rows ; i++ ) {
+        DbRowId *rid = sorted_rows[i];
+        if (rid->plot_text) {
+            script_p += plot_fn(script_p,0,javascript_plot_format,NVL(rid->plot_text));
+            break;
+        }
+    }
+TRACE;
+HTML_LOG(0,"num rows = %d",num_rows);
+    // Episode Plots
+    for(i = 0 ; i < num_rows ; i++ ) {
+TRACE;
+        DbRowId *rid = sorted_rows[i];
+        script_p += plot_fn(script_p,(long)rid,javascript_plot_format,NVL(rid->episode_plot_text));
+
+    }
+TRACE;
+    script_p += sprintf(script_p,"%s",footer);
+    return script;
+}
+char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
+    char *result = NULL;
+    ovs_asprintf(&result," %s=\"%s%ld();\" %s=\"%s0();\"",
+            on_event,function_name_prefix,function_id,
+            off_event,function_name_prefix);
+    return result;
+}
+
+// These are attributes of the href
+char *focus_event_fn(char *function_name_prefix,long function_id) {
+    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus","onblur");
+}
+
+// These are attributes of the cell text
+char *mouse_event_fn(char *function_name_prefix,long function_id) {
+    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover","onmouseout");
+}
+
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 {
     int r,c;
@@ -2245,6 +2354,10 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     if (!config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
         old_date_format="-%d&nbsp;%b&nbsp;%y";
     }
+
+    char *script = get_plot_script(num_rows,sorted_rows);
+
+    printf("%s",script);
 
     if (num_rows/cols < rows ) {
         rows = (num_rows+cols-1) / cols;
@@ -2273,14 +2386,16 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
+                    char *href_attr = focus_event_fn("plot",(long)rid);
                     episode_col = vod_link(
                             rid,
                             ep,"",
                             rid->db->source,
                             rid->file,
                             ep,
-                            "",
+                            NVL(href_attr),
                             watched_style(rid,i%2));
+                    FREE(href_attr);
                 }
 
                 // Title
@@ -2341,12 +2456,16 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                 char td_class[10];
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
+
+                char *td_plot_attr = mouse_event_fn("plot",(long)rid);
+
                 ovs_asprintf(&tmp,
-                        "%s<td class=%s width=%d%%>%s</td>" 
+                        "%s<td class=%s width=%d%% %s>%s</td>" 
                         "<td class=%s width=%d%%><font %s>%s%s</font><font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
                         td_class,
                         width1,
+                        td_plot_attr,
                         episode_col,
                         td_class,
                         width2,
@@ -2355,6 +2474,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                         title_txt,
                         (*date_buf?date_buf:"")
                         );
+                FREE(td_plot_attr);
                 FREE(title_txt);
                 FREE(episode_col);
                 FREE(row_text);
@@ -2414,7 +2534,7 @@ char *get_status() {
         if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
             result = STRDUP("[ Catalog update ... ]");
         } else if (db_full_size() == 0 ) {
-            result = STRDUP("[ Video index is empty. Select setup icon and scan the media drive ]");
+            result = STRDUP("No Videos indexed. In [Setup] select media sources and rescan.");
         }
     }
 

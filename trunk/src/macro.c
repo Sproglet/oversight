@@ -11,6 +11,7 @@
 #include "util.h"
 #include "oversight.h"
 #include "db.h"
+#include "dbplot.h"
 #include "display.h"
 #include "dboverview.h"
 #include "display.h"
@@ -193,7 +194,9 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 }
 
 char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
     *free_result=0;
+    char *result = NULL;
     int max = g_dimension->max_plot_length;
     if (args && args->size > 0) {
         char *max_str=args->array[0];
@@ -208,20 +211,14 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
         }
     } 
 
-    if (max == 0 || max > strlen(sorted_rows[0]->plot) ) {
-
-        return sorted_rows[0]->plot;
-
-    } else {
-
-        char *out = STRDUP(sorted_rows[0]->plot);
-        out[max] = '\0';
+    result = get_main_plot_static(sorted_rows[0]);
+    if (result && max > 0 && max < strlen(result)) {
         if (max > 10) {
-            strcpy(out+max-4,"...");
+            strcpy(result+max-4,"...");
         }
-        *free_result=1;
-        return out;
+        result[max] = '\0';
     }
+    return result;
 }
 
 // TODO - Sort needs to default to Sort By Age. Add extra option to auto_option_list - default value.

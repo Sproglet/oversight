@@ -30,8 +30,8 @@ typedef struct Dbrowid_struct {
 
     //only populate if view=tv or movie
     char *url;
-    char *plot;
-    char *episode_plot;
+    char *plot_key;
+    char *episode_plot_key;
     char *fanart;
     char *parts;
     char *episode;
@@ -55,6 +55,10 @@ typedef struct Dbrowid_struct {
     Array *playlist_paths;
     Array *playlist_names;
 
+    long plot_offset;
+    long episode_plot_offset;
+    char *plot_text;
+    char *episode_plot_text;
 
 } DbRowId;
 
@@ -75,6 +79,8 @@ typedef struct Db_struct {
     char *lockfile; // ..../catalog.lck
     char *backup;   // backup path ....index.db.old
     int locked_by_this_code;
+    char *plot_file; // ..../plot.db (auto computed from source)
+    FILE *plot_fp;    // File pointer to plotfile
 
 } Db;
 

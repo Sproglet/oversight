@@ -652,7 +652,7 @@ END{
     ACTION_DELETE_MEDIA="d";
     ACTION_DELETE_ALL="D";
 
-    g_settings["catalog_format_tags"]="\\<("tolower(g_settings["catalog_format_tags"])")\\>";
+    g_settings["catalog_format_tags"]="\\<("tolower(g_settings["catalog_format_tags"])")";
 
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
     split(g_settings["catalog_cert_country_list"],gCertificateCountries,",");
@@ -2623,6 +2623,7 @@ function clean_globals() {
     delete gMovieFiles;
     delete g_scraped;
     delete g_imdb_title;
+    delete g_motech_title;
     delete gNfoDefault;
     delete gFolderMediaCount;
     delete gFolderInfoCount;
@@ -5140,11 +5141,7 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
             
     if (poster_url == "") {
 #        if (1) {
-            #search_url = tolower(g_imdb_title[idx]);
-            search_url = tolower(gTitle[idx]"-"g_year[idx]);
-            gsub(/[^a-z0-9]+/,"-",search_url);
-            sub(/-$/,"",search_url);
-            referer_url = "http://www.motechposters.com/title/"search_url"/";
+            referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/";
 #        } else {
 #            search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
 #            referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
@@ -5214,6 +5211,13 @@ f,line,count,linematches,linecount,regex_text,remain) {
         remain=max;
 
         while(((getline line < f) > 0)  ) {
+
+            # Quick hack to find Title?0012345 as tt0012345  because altering the regex
+            # itself is more work - for example the results will come back as two different 
+            # counts. 
+            if (index(line,"/Title?") ) {
+                gsub(/\/Title\?/,"/tt",line);
+            }
 
             if (regex_text == "" || index(line,regex_text)) {
 
@@ -5300,6 +5304,10 @@ title,y,poster_imdb_url) {
             #
             # It is not so important when mapping filenames to tv shows. in that
             # case we need to be more flexible ( see expand_url() and similarTitles() )
+            g_motech_title[idx]=tolower(title);
+            gsub(/[^a-z0-9]+/,"-",g_motech_title[idx]);
+            gsub(/-$/,"",g_motech_title[idx]);
+
             g_imdb_title[idx]=extract_imdb_title_category(idx,title);
 
             title=clean_title(g_imdb_title[idx]);

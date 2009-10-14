@@ -1,5 +1,5 @@
 #Configuration for catalog.sh - must be unix format
-# $Id: catalog.cfg.example 131 2009-08-15 15:17:11Z lordylordy $ 
+# $Id: catalog.cfg.example 432 2009-10-12 23:17:25Z lordylordy $ 
 #
 ##----------------------------------------------------------------------------------------
 # Rename format.
@@ -36,7 +36,7 @@ catalog_fetch_posters="yes"
 catalog_fetch_fanart="yes"
 catalog_poster_prefix="ovs_"
 
-catalog_format_tags="dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdscr,blu720p,blu1080p,bluray,dvdrip,brrip,dsrip,img,hdtv,pal,ntsc,pdtv,r5,repost,screener,workprint,ws,x264,xvid,yenc,alt,par2"
+catalog_format_tags="dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd\>,dvdscr,blu720p,blu1080p,bluray,dvdrip,brrip,dsrip,img,hdtv,pal\>,ntsc\>,pdtv,r5,repost,screener,workprint,ws\>,x264,xvid,yenc,par2"
 
 
 catalog_scan_paths="/share/Video,/share/Movies,/share/Tv,/share/Complete"
@@ -66,11 +66,12 @@ catalog_group="nmt"
 #catalog_search_engines="GOOGLE,MSN,YAHOO,MSNUK,YAHOOUK,YAHOOAU"
 catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
 catalog_tv_plugins="THETVDB,TVRAGE"
-#
+
 # Here the order of search methods can be selected based on the file name.
 # Note that the IMDBFIRST search will always find something and can give false +ve
 # so only use for short titles where other search methods might get confused.
 # Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods
+# 
 
 #scene names
 catalog_movie_search_regex1="^[-a-z0-9.]+$"
@@ -87,4 +88,5 @@ catalog_movie_search_order3="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 catalog_movie_search_regex4="."
 catalog_movie_search_order4="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 
+#scene tags - dont use ones that are normal words.
 catalog_config_version=1

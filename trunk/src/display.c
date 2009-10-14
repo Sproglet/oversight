@@ -681,7 +681,7 @@ char *check_path(char *a,char *b,char *c,char *d) {
     return p;
 }
 
-char *internal_image_path_static(DbRowId *rid,int is_fanart) {
+char *internal_image_path_static(DbRowId *rid,ImageType image_type) {
     // No pictures on filesystem - look in db
     // first build the name 
     // TV shows = ovs:fieldid/prefix title _ year _ season.jpg
@@ -691,7 +691,7 @@ char *internal_image_path_static(DbRowId *rid,int is_fanart) {
     static char path[INTERNAL_IMAGE_PATH_LEN];
     char *p = path;
     p += sprintf(p,"ovs:%s/%s",
-            (is_fanart?DB_FLDID_FANART:DB_FLDID_POSTER),
+            (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
             catalog_val("catalog_poster_prefix"));
     char *t=rid->title;
 
@@ -727,13 +727,13 @@ char *internal_image_path_static(DbRowId *rid,int is_fanart) {
 }
 
 
-char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
+char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) {
 
     char *path = NULL;
     DbRowId *rid = sorted_rows[0];
     char *modifier="";
 
-    if (is_fanart) {
+    if (image_type == FANART_IMAGE) {
         modifier="fanart.";
     }
 
@@ -762,8 +762,8 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
 
     if (path == NULL) path=check_path(file,modifier,"png","");
 
-    if (path == NULL) path=check_path(dir,"/",(is_fanart?modifier:"poster."),"jpg");
-    if (path == NULL) path=check_path(dir,"/",(is_fanart?modifier:"poster."),"png");
+    if (path == NULL) path=check_path(dir,"/",(image_type == FANART_IMAGE?modifier:"poster."),"jpg");
+    if (path == NULL) path=check_path(dir,"/",(image_type == FANART_IMAGE?modifier:"poster."),"png");
 
     FREE(file);
     FREE(dir);
@@ -773,15 +773,15 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
 
         // look in internal db
 
-        path = internal_image_path_static(rid,is_fanart);
+        path = internal_image_path_static(rid,image_type);
 
 
         if (path) {
+            char *file;
             char *mounted_path = get_path(rid,path);
             path = mounted_path;
 
-            if (is_fanart ) {
-                char *file;
+            if (image_type == FANART_IMAGE ) {
                 char *modifier=".hd.jpg";
 
                 if (g_dimension->scanlines == 0 ) {
@@ -795,6 +795,12 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
                 file = replace_all(path,"\\.jpg$",modifier,0);
                 FREE(path);
                 path = file;
+            } else if (image_type == THUMB_IMAGE ) {
+                char *thumb = replace_all(path,"\\.jpg$",".thumb.jpg",0);
+                if (exists(thumb)) {
+                    FREE(path);
+                    path = thumb;
+                }
             }
         }
     }
@@ -803,7 +809,7 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart) {
 
 }
 
-char * get_poster_image_tag(DbRowId *rowid,char *attr) {
+char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type) {
 
     assert(rowid);
     assert(attr);
@@ -811,7 +817,7 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr) {
     
     char *newattr=attr;
 
-    char *path = get_picture_path(1,&rowid,0);
+    char *path = get_picture_path(1,&rowid,image_type);
     if (path) {
 
         if (rowid->watched) {
@@ -1086,24 +1092,6 @@ int unwatched_count(DbRowId *rid) {
     return i;
 }
 
-char *mouse_or_focus_event(char *title,char *source,char *on_event,char *off_event) {
-    char *result = NULL;
-    if (source && *source != '*') {
-        ovs_asprintf(&result," %s=\"show('%s [%s]');\" %s=\"show('_');\"",on_event,title,source,off_event);
-    } else {
-        ovs_asprintf(&result," %s=\"show('%s');\" %s=\"show('_');\"",on_event,title,off_event);
-    }
-    return result;
-}
-
-char *focus_event(char *title,char *source) {
-    return mouse_or_focus_event(title,source,"onfocus","onblur");
-}
-
-char *mouse_event(char *title,char *source) {
-    return mouse_or_focus_event(title,source,"onmouseover","onmouseout");
-}
-
 char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
 
     char *title = NULL;
@@ -1118,7 +1106,7 @@ char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,cha
         watched_style(row_id,grid_toggle)
         );
 
-    title = get_poster_image_tag(row_id,attr);
+    title = get_poster_image_tag(row_id,attr,THUMB_IMAGE);
     FREE(attr);
 
     *font_class = "class=fc";
@@ -1223,6 +1211,53 @@ char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char 
     return title;
 }
 
+char *get_simple_title(DbRowId *row_id) {
+    char *title;
+    char *source=row_id->db->source;
+    int show_source = (source && *source != '*');
+
+    char *source_start,*source_end;
+    source_start = source_end = "";
+    if (show_source) {
+        source_start=" [";
+        source_end="]";
+    }
+
+    if (row_id->category=='T') {
+        int unwatched = unwatched_count(row_id);
+        int total = group_count(row_id);
+        ovs_asprintf(&title,"%s S%d (%d/%d)%s%s%s",row_id->title,row_id->season,unwatched,total,
+                source_start,(show_source?source:""),source_end);
+
+    } else if (row_id->year) {
+
+        ovs_asprintf(&title,"%s (%d)%s%s%s",row_id->title,row_id->year,
+                source_start,(show_source?source:""),source_end);
+
+    } else {
+
+        ovs_asprintf(&title,"%s%s%s%s",row_id->title,
+                source_start,(show_source?source:""),source_end);
+    }
+    return title;
+}
+char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
+    char *result = NULL;
+    ovs_asprintf(&result," %s=\"%s%ld();\" %s=\"%s0();\"",
+            on_event,function_name_prefix,function_id,
+            off_event,function_name_prefix);
+    return result;
+}
+
+// These are attributes of the href
+char *focus_event_fn(char *function_name_prefix,long function_id) {
+    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus","onblur");
+}
+
+// These are attributes of the cell text
+char *mouse_event_fn(char *function_name_prefix,long function_id) {
+    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover","onmouseout");
+}
 
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell) {
@@ -1299,18 +1334,11 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     if (g_dimension->title_bar && !*select) {
 
-        char *simple_title;
-        if (row_id->category=='T') {
-            ovs_asprintf(&simple_title,"%s S%d",row_id->title,row_id->season);
-        } else if (row_id->year) {
-            ovs_asprintf(&simple_title,"%s (%d)",row_id->title,row_id->year);
-        } else {
-            ovs_asprintf(&simple_title,"%s",row_id->title);
-        }
+        char *simple_title = get_simple_title(row_id);
 
-        focus_ev = focus_event(simple_title,row_id->db->source);
+        focus_ev = focus_event_fn("title",(long)row_id);
         if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event(simple_title,row_id->db->source);
+            mouse_ev = mouse_event_fn("title",(long)row_id);
         }
         FREE(simple_title);
     }
@@ -1405,17 +1433,15 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
 #define MACRO_STR_END "]"
 #define MACRO_STR_START_INNER ":"
 #define MACRO_STR_END_INNER ":"
-/*
- * if mode=0 only replace simple variables in the buffer.
- * if mode=1 replace complex variables and push to stdout. this is for more complex multi-line macros
- * */
 int template_replace(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
+    // first replace simple variables in the buffer.
     char *newline=template_replace_only(template_name,input,num_rows,sorted_row_ids);
     if (newline != input) {
         HTML_LOG(0,"old line [%s]",input);
         HTML_LOG(0,"new line [%s]",newline);
     }
+    // if replace complex variables and push to stdout. this is for more complex multi-line macros
     int count = template_replace_and_emit(template_name,newline,num_rows,sorted_row_ids);
     if (newline !=input) FREE(newline);
     return count;
@@ -1621,9 +1647,9 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
             int count = 0; 
             buffer[HTML_BUF_SIZE] = '\0';
             char *p=buffer;
-            while(*p == ' ') {
-                p++;
-            }
+//            while(*p == ' ') {
+//                p++;
+//            }
             if ((count=template_replace(template_name,p,num_rows,sorted_row_ids)) != 0 ) {
                 HTML_LOG(4,"macro count %d",count);
             }
@@ -1668,13 +1694,11 @@ int delisted(DbRowId *rowid)
     int result = 0;
     static int auto_prune=-2;
     if (auto_prune == -2) {
-TRACE;
         auto_prune = *oversight_val("ovs_auto_prune") == '1';
         HTML_LOG(0,"auto delist = %d",auto_prune);
     }
-TRACE;
 
-    HTML_LOG(0,"auto delist precheck [%s]",path);
+    HTML_LOG(1,"auto delist precheck [%s]",path);
     if (auto_prune && !exists(path)) {
         
         HTML_LOG(0,"auto delist check [%s]",path);
@@ -1719,17 +1743,61 @@ TRACE;
     return 1;
 }
 
+void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids) {
+    int i,r,c;
+    //
+    printf("<script type=\"text/javascript\">\n\
+    var title = 1;\n\
+    function showt(x)\n\
+    {\n\
+        if (title == 1) title = document.getElementById('menutitle').firstChild;\n\
+        title.nodeValue = x;\n\
+    }\n\
+    function title0() { showt('_'); }\n");
+
+    for ( r = 0 ; r < rows ; r++ ) {
+        for ( c = 0 ; c < cols ; c++ ) {
+            i = c * rows + r ;
+            if ( i < numids ) {
+                char *title = get_simple_title(row_ids[i]);
+                printf("function title%ld() { showt('%s'); }\n",(long)(row_ids[i]),title);
+                FREE(title);
+            }
+        }
+    }
+    printf("</script>\n");
+}
+
 // Generate the HTML for the grid. 
 // Note that the row_ids have alredy been pruned to only contain the items
 // for the current page.
 char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,int page_before,int page_after) {
     
-    int start = 0;
     int end = numids;
     int centre_row = rows/2;
     int centre_col = cols/2;
     int r,c;
 
+    int table_per_row = 0;
+    char *table_start,*table_end,*row_start,*row_end;
+    char *table_id;
+
+    ovs_asprintf(&table_id,"<table class=overview_poster%d %s>%s",
+            g_dimension->poster_mode,
+            (g_dimension->poster_mode?"":"width=100%"),
+            (table_per_row?"<tr>":""));
+
+    if (table_per_row) {
+       table_start = "";
+       table_end =  "";
+       row_start = table_id;
+       row_end = "</tr></table>";
+    } else {
+       table_start = table_id;
+       table_end = "</table>";
+       row_start = "<tr>";
+       row_end = "</tr>";
+    }
 
     if (end > numids) end = numids;
 
@@ -1749,7 +1817,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
 
     char *result=NULL;
-    int i = start;
+    int i;
     char *width_attr;
     char *tmp;
 
@@ -1760,21 +1828,25 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
     if (g_dimension->poster_mode) {
         ovs_asprintf(&width_attr," width=%dpx height=%dpx ",
-            g_dimension->poster_menu_img_width,
-            g_dimension->poster_menu_img_height);
+            g_dimension->poster_menu_img_width+4,
+            g_dimension->poster_menu_img_height+4);
     } else {
         ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
     }
+    // First output the javascript functions - diretly to stdout - lazy.
+    write_titlechanger(rows,cols,numids,row_ids);
+
+    // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
 
 
         HTML_LOG(0,"grid row %d",r);
-        ovs_asprintf(&tmp,"%s<tr>\n",(result?result:""));
+        ovs_asprintf(&tmp,"%s%s\n",(result?result:""),row_start);
         FREE(result);
         result=tmp;
 
         for ( c = 0 ; c < cols ; c++ ) {
-            i = start + c * rows + r ;
+            i = c * rows + r ;
 
             HTML_LOG(0,"grid col %d",c);
 
@@ -1784,7 +1856,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(i-start,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                item = get_item(i,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             } else {
                 item = get_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }
@@ -1795,7 +1867,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
             HTML_LOG(1,"grid end col %d",c);
         }
         
-        ovs_asprintf(&tmp,"%s</tr>\n",result);
+        ovs_asprintf(&tmp,"%s%s\n",result,row_end);
         FREE(result);
         result=tmp;
         HTML_LOG(1,"grid end row %d",r);
@@ -1807,11 +1879,12 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     } else {
         w="";
     }
-    ovs_asprintf(&tmp,"<center><table class=overview_poster%d %s>\n%s\n</table></center>\n",
-            g_dimension->poster_mode,
-            w,
-            (result?result:"<tr><td>No results</td><tr>")
+    ovs_asprintf(&tmp,"<center>%s\n%s\n%s</center>\n",
+            table_start,
+            (result?result:"<tr><td>No results</td><tr>"), //bug here may need to add table tags
+             table_end
     );
+    FREE(table_id);
     FREE(result);
     result=tmp;
 
@@ -2251,7 +2324,6 @@ int plot_fn(char *buf,long fn_id,char *fn_fmt,char *text) {
 char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
 
     // get titles from plot.db
-HTML_LOG(0,"num rows = %d",num_rows);
     get_plot_offsets_and_text(num_rows,sorted_rows,1);
 
     char *javascript_plot_format = "function plot%ld() { show('%s'); }\n" ;
@@ -2271,7 +2343,6 @@ HTML_LOG(0,"num rows = %d",num_rows);
 
     int i;
 
-TRACE;
     // Space for main plot
     for(i = 0 ; i < num_rows ; i++ ) {
         if (sorted_rows[i]->plot_text) {
@@ -2279,19 +2350,16 @@ TRACE;
             break;
         }
     }
-TRACE;
     // Space for each episode plot
     for(i = 0 ; i < num_rows ; i++ ) {
         len += 5+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->episode_plot_text));
     }
-TRACE;
 
     char *script = MALLOC(len);
     char *script_p = script;
 
     script_p += sprintf(script_p,"%s",header);
 
-TRACE;
     // Main plot function
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
@@ -2300,35 +2368,15 @@ TRACE;
             break;
         }
     }
-TRACE;
 HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
-TRACE;
         DbRowId *rid = sorted_rows[i];
         script_p += plot_fn(script_p,(long)rid,javascript_plot_format,NVL(rid->episode_plot_text));
 
     }
-TRACE;
     script_p += sprintf(script_p,"%s",footer);
     return script;
-}
-char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
-    char *result = NULL;
-    ovs_asprintf(&result," %s=\"%s%ld();\" %s=\"%s0();\"",
-            on_event,function_name_prefix,function_id,
-            off_event,function_name_prefix);
-    return result;
-}
-
-// These are attributes of the href
-char *focus_event_fn(char *function_name_prefix,long function_id) {
-    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus","onblur");
-}
-
-// These are attributes of the cell text
-char *mouse_event_fn(char *function_name_prefix,long function_id) {
-    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover","onmouseout");
 }
 
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
@@ -2461,7 +2509,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
                 ovs_asprintf(&tmp,
                         "%s<td class=%s width=%d%% %s>%s</td>" 
-                        "<td class=%s width=%d%%><font %s>%s%s</font><font class=epdate>%s</font></td>\n",
+                        "<td class=%s width=%d%% %s><font %s>%s%s</font><font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
                         td_class,
                         width1,
@@ -2469,6 +2517,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                         episode_col,
                         td_class,
                         width2,
+                        td_plot_attr,
                         watched_style(rid,i%2),
                         (network_icon?network_icon:""),
                         title_txt,
@@ -2532,7 +2581,7 @@ char *get_status() {
     if (result == NULL) {
 
         if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
-            result = STRDUP("[ Catalog update ... ]");
+            result = STRDUP("Scanning...");
         } else if (db_full_size() == 0 ) {
             result = STRDUP("No Videos indexed. In [Setup] select media sources and rescan.");
         }

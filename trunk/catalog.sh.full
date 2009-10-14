@@ -290,9 +290,9 @@ function timestamp(label,x) {
     if (index(x,g_tk) ) gsub(g_tk,"",x);
     if (index(x,g_tk2) ) gsub(g_tk2,"",x);
 
-    if (index(x,"password.?=") ) sub("password=([^,]+)","password=xxx",x);
-    if (index(x,"pwd=") ) sub("pwd=([^,]+)","pwd=xxx",x);
-    if (index(x,"passwd=") ) sub("passwd=([^,]+)","passwd=xxx",x);
+    if (index(x,"password") ) sub("password.?=([^,]+)","password=xxx",x);
+    if (index(x,"pwd") ) sub("pwd=([^,]+)","pwd=xxx",x);
+    if (index(x,"passwd") ) sub("passwd=([^,]+)","passwd=xxx",x);
 
     if (systime() != g_last_ts) {
         g_last_ts=systime();
@@ -373,7 +373,7 @@ BEGIN {
     g_search_yahoo = "http://search.yahoo.com/search?p=";
     g_search_bing = "http://www.bing.com/search?q=";
     g_batch_size=25;
-    g_tvdb_use_episode_api=1;
+    g_tvdb_user_per_episode_api=1;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;
     yes="yes";
@@ -860,7 +860,7 @@ function lock(lock_file,\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
-    split("10,10,20,30,60,120,300,600,1200,1200,1200,1200",backoff,",");
+    split("10,10,20,30,60,120,300,600,600,600,600,600,600,600,600,600,600,1200",backoff,",");
     for(attempts=1 ; (attempts in backoff) ; attempts++) {
         if (!is_locked(lock_file)) {
             print PID > lock_file;
@@ -1901,12 +1901,14 @@ details,line,dirs,d,dirCount,ePos,dirLevels) {
        line=dirs[dirCount-d]"/"line;
        g_search_abbreviations = 0;
    }
-   INFO("Found tv info in file name:"line);
 
     adjustTitle(idx,details[TITLE],"filename");
 
+
     g_season[idx]=details[SEASON];
     g_episode[idx]=details[EPISODE];
+
+    INFO("Found tv info in file name:"line" title:["gTitle[idx]"] ["g_season[idx]"] x ["g_episode[idx]"]");
 
     # If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
     # Then prior to any DB lookups we just use the first integer (episode+0)
@@ -2388,16 +2390,17 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
             #Batch updates so that user sees some progress
             ready_to_merge[idx]=1;
             ready_to_merge_count++
-        } else {
-            INFO("Skipping item "g_file[idx]);
-        }
-        DEBUG("ready_to_merge_batch_size = "ready_to_merge_batch_size);
-        DEBUG("ready_to_merge_count = "ready_to_merge_count);
-        if (ready_to_merge_batch_size != 0 ) {
-            if (  ready_to_merge_count - ready_to_merge_batch_size > 0 ) {
-                merge_files_and_do_actions(ready_to_merge);
-                ready_to_merge_count=0;
+
+            DEBUG("ready_to_merge_batch_size = "ready_to_merge_batch_size);
+            DEBUG("ready_to_merge_count = "ready_to_merge_count);
+            if (ready_to_merge_batch_size != 0 ) {
+                if (  ready_to_merge_count - ready_to_merge_batch_size > 0 ) {
+                    merge_files_and_do_actions(ready_to_merge);
+                    ready_to_merge_count=0;
+                }
             }
+        } else {
+            INFO("Skipping item "gMovieFiles[idx]);
         }
     }
     # At the end we always make sure merge_files_and_do_actions has been called
@@ -2901,7 +2904,7 @@ foundId,line) {
 function search_tv_series_names(plugin,idx,title,\
 tvDbSeriesPage,alternateTitles,title_key,cache_key) {
 
-    title_key = plugin"/"title;
+    title_key = plugin"/"gFolder[idx]"/"title;
     if (title_key in g_tvDbIndex) {
         DEBUG(plugin" use previous mapping "title_key" -> ["g_tvDbIndex[title_key]"]");
        return g_tvDbIndex[title_key]; 
@@ -3213,12 +3216,12 @@ requiredTagNames,allTitles,url) {
     if (plugin == "THETVDB") {
 
         url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",title);
-        filter_search_results(url,title,"Series","SeriesName","seriesid",requiredTagList,allTitles);
+        filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",requiredTagList,allTitles);
 
     } else if (plugin == "TVRAGE") {
 
         url="http://www.tvrage.com/feeds/search.php?show="title;
-        filter_search_results(url,title,"show","name","showid",requiredTagList,allTitles);
+        filter_search_results(url,title,"/Results/show","name","showid",requiredTagList,allTitles);
 
     } else {
         plugin_error(plugin);
@@ -3249,12 +3252,16 @@ url) {
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
-function filter_search_results(url,title,seriesTag,nameTag,idTag,requiredTagNames,allTitles,\
-f,line,info,currentId,currentName,add,i,seriesStart,seriesEnd) {
+function filter_search_results(url,title,seriesPath,nameTag,idTag,requiredTagNames,allTitles,\
+f,line,info,currentId,currentName,add,i,seriesStart,seriesEnd,count,filter_count) {
 
     f = getUrl(url,"tvdb_search",1);
+    count = 0;
+    filter_count = 0;
 
     if (f != "") {
+        seriesTag = seriesPath;
+        sub(/.*\//,"",seriesTag);
         seriesStart="<"seriesTag">";
         seriesEnd="</"seriesTag">";
         FS="\n";
@@ -3263,25 +3270,26 @@ f,line,info,currentId,currentName,add,i,seriesStart,seriesEnd) {
             #DEBUG("IN:"line);
 
             if (index(line,seriesStart) > 0) {
-                #This also removes the top level /Data tag in the XML reference
-                delete info;
+                clean_xml_path(seriesPath,info);
             }
 
             parseXML(line,info);
 
             if (index(line,seriesEnd) > 0) {
 
-                dump(2,"xmlinfo",info);
+#dump(0,"@@filter_search_results@@",info);
 
-                currentName = info["/"seriesTag"/"nameTag];
+                currentName = info[seriesPath"/"nameTag];
 
-                currentId = info["/"seriesTag"/"idTag];
+                currentId = info[seriesPath"/"idTag];
+                count ++;
 
                 add=1;
                 for( i in requiredTagNames ) {
                     if (! ( "/"seriesTag"/"requiredTagNames[i] in info ) ) {
                         DEBUG("["currentName"] rejected due to missing "requiredTagNames[i]" tag");
                         add=0;
+                        filter_count++;
                         break;
                     }
                 }
@@ -3289,14 +3297,15 @@ f,line,info,currentId,currentName,add,i,seriesStart,seriesEnd) {
                 if (add) {
                     allTitles[currentId] = currentName;
                 }
-                delete info;
+                clean_xml_path(seriesPath,info);
 
             }
         }
         close(f);
     }
-    dump(1,"search["title"]",allTitles);
+    dump(0,"search["title"]",allTitles);
     #filterSimilarTitles is called by the calling function
+    INFO("Search results : Found "count" removed "filter_count);
 }
 
 function dump(lvl,label,array,\
@@ -3328,7 +3337,7 @@ i,c) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,idx,imdbid,\
-url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo) {
+url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -3354,16 +3363,22 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo) {
 
                 # search for series name directly using raw(ish) imdb name
                 extractDate(g_premier[idx],date,nondate);
+                # We do a fuzzy year search esp for programs that have a pilot in the
+                # year before episode 1
+                #
+                # This may cause a false match if two series with exactly the same name
+                # started within two years of one another.
+                year_range="("(g_year[idx]-1)"|"g_year[idx]"|"(g_year[idx]+1)")";
 
                 if(plugin == "THETVDB") {
 
                     #allow for titles "The Office (US)" or "The Office" and 
                     # hope the start year is enough to differentiate.
                     filter["/Data/Series/SeriesName"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
-                    filter["/Data/Series/FirstAired"] = "~:^"g_year[idx]"-";
+                    filter["/Data/Series/FirstAired"] = "~:^"year_range"-";
 
                     url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",gTitle[idx]);
-                    if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo)) {
+                    if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo,1)) {
                         INFO("Looking at tvdb "showInfo["/Data/Series/SeriesName"]);
                         id2 = showInfo["/Data/Series/seriesid"];
                     }
@@ -3382,7 +3397,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo) {
                     #allow for titles "The Office (US)" or "The Office" and 
                     # hope the start year is enough to differentiate.
                     filter["/Results/show/name"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
-                    filter["/Results/show/started"] = g_year[idx];
+                    filter["/Results/show/started"] = "~:"year_range;
                     
                     if (fetch_xml_single_child("http://www.tvrage.com/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
                         INFO("Looking at tv rage "showInfo["/Results/show/name"]);
@@ -3423,7 +3438,11 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles) {
 function get_tv_series_api_url(plugin,tvdbid) {
     if (tvdbid != "") {
         if (plugin == "THETVDB") {
-            return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/en.xml";
+            if (g_tvdb_user_per_episode_api) {
+                return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/en.xml";
+            } else {
+                return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/all/en.xml";
+            }
         } else if (plugin == "TVRAGE") {
             return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
         }
@@ -3451,34 +3470,43 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,tagStart) {
+currentTag,i,j,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,tagStart,slash,tag_data_count) {
+
+    if (index(line,"<?")) return;
 
     if (sep == "") sep = "<";
 
     # Carriage returns mess up parsing
-    gsub(/\r/,"",line);
-    gsub(/\n/,"",line);
+    i = index(line,"\r");
+    if (i) line = substr(line,1,i-1);
+
+    i = index(line,"\n");
+    if (i) line = substr(line,1,i-1);
 
 
     #break at each tag/endtag
     # <tag1>text1</tag1>midtext<tag2>text2</tag2> becomes
+    # BLANK
     # tag1>text1
     # /tag1>midtext
     # tag2>text2
     # /tag2>
 
-    split(line,lines,"<");
+    tag_data_count = split(line,lines,"<");
 
     currentTag = info["@CURRENT"];
+#DEBUG("@@xml@@entry currentTag is = ["currentTag"]");
 
-    start=1;
-    if (substr(line,1,1) != "<") {
+    if (tag_data_count  && currentTag ) {
         #If the line starts with text then add it to the current tag.
         info[currentTag] = info[currentTag] lines[1];
-        start = 2;
+        #first item is blank
     }
 
-    for(i = start ; i in lines ; i++ ) {
+#DEBUG("@@xml@@line="line);
+
+    for(i = 2 ; i <= tag_data_count ; i++ ) {
+#DEBUG("@@xml@@start loop  currentTag is = ["currentTag"]");
 
         # lines[i] = tag>text
         # lines[i] = tag attr >text
@@ -3499,34 +3527,35 @@ currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,t
             tag=substr(tag,1,sp-1);
         }
 
-        if (index(tag,"/") == 1 && index(g_tagstartchar,substr(tag,2,1)))  { # was tag ~ /^\/[A-Za-z0-9_]+$/ ) 
+        slash = index(tag,"/");
+        if (slash == 1 )  {
 
             # end tag
-            #if end tag, remove it from currentTag
-            #sub(tag"$","",currentTag);
+
             currentTag = substr(currentTag,1,length(currentTag)-length(tag));
+#DEBUG("@@xml@@end tag =["tag "] currentTag now = ["currentTag"]");
 
 
-        } else {
-            tagStart=substr(tag,1,1);
-            if (index(g_tagstartchar,tagStart)) {
+        } else if (slash == 0 ) {
 
-                # start tag
-                currentTag = currentTag "/" tag;
-                #INFO("tag ["currentTag"]");
 
-                #If merging element values add a sepearator
-                if (info[currentTag] != "") {
-                    info[currentTag] = info[currentTag] sep;
-                }
-            } else {
+#DEBUG("@@xml@@start tag =["tag "] currentTag was = ["currentTag"]");
+             currentTag = currentTag "/" tag;
+#DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]");
 
-                #dont recognise tag - add to text
-                info[currentTag] = info[currentTag] tag;
+             #If merging element values add a sepearator
+            if (currentTag in info) {
+                text = sep text;
             }
+        } else {
+#DEBUG("@@xml@@ignore tag ="tag);
+            # ignore <aaa/>
         }
 
-        info[currentTag] = info[currentTag] text;
+        if (text) {
+#DEBUG("@@xml@@add currentTag["currentTag"] +=  ["text"]");
+            info[currentTag] = info[currentTag] text;
+        }
 
         #parse attributes.
         if (index(parts[1],"=")) {
@@ -3547,7 +3576,9 @@ currentTag,start,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,t
 
         }
 
+#DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]");
     }
+#DEBUG("@@xml@@exit currentTag is = ["currentTag"]");
     info["@CURRENT"] = currentTag;
 }
 
@@ -3688,8 +3719,8 @@ i,score,bestScore,tmpTitles) {
     }
     bestScore = score[firstIndex(titleHashOut)];
     if (bestScore == "" ) bestScore = -1;
-    DEBUG("Filtered titles with score = "bestScore);
 
+    INFO("Filtered titles with score = "bestScore);
     dump(0,"filtered["title"]=",titleHashOut);
 
     if (bestScore == 0 ) {
@@ -4165,17 +4196,15 @@ function get_episode_url(plugin,seriesUrl,season,episode,\
 episodeUrl ) {
     episodeUrl = seriesUrl;
     if (plugin == "THETVDB") {
-if (g_tvdb_use_episode_api) {
-        #Note episode may be 23,24 so convert to number.
-        if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",episodeUrl)) {
+        if (g_tvdb_user_per_episode_api) {
+            #Note episode may be 23,24 so convert to number.
+            if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",episodeUrl)) {
+                return episodeUrl;
+            }
+        } else {
+            #same url
             return episodeUrl;
         }
-} else {
-        #get everything
-        if (sub(/en.xml$/,"all/en.xml",episodeUrl)) {
-            return episodeUrl;
-        }
-}
     } else if (plugin == "TVRAGE") {
         #same url
         return episodeUrl;
@@ -4192,13 +4221,13 @@ episodeUrl,filter,result) {
     if (episodeUrl != "") {
         if (plugin == "THETVDB") {
 
-if (g_tvdb_use_episode_api) {
-            result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
-} else {
-            filter["/Data/Episode/SeasonNumber"] = season;
-            filter["/Data/Episode/EpisodeNumber"] = episode;
-            result = fetch_xml_single_child(episodeUrl,plugin"-episode","/Data/Episode",filter,episodeInfo);
-}
+            if (g_tvdb_user_per_episode_api) {
+                result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
+            } else {
+                filter["/Data/Episode/SeasonNumber"] = season;
+                filter["/Data/Episode/EpisodeNumber"] = episode;
+                result = fetch_xml_single_child(episodeUrl,plugin"-episode","/Data/Episode",filter,episodeInfo);
+            }
 
         } else if (plugin == "TVRAGE" ) {
             filter["/Show/Episodelist/Season#no"] = season;
@@ -4260,11 +4289,13 @@ function remove_year(t) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,bannerApiUrl,result) {
+seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
 
     result=0;
-    fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
+    
+    #fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
+    fetch_xml_single_child(tvDbSeriesUrl,"thetvdb-series","/Data/Series",empty_filter,seriesInfo);
     if ("/Data/Series/id" in seriesInfo) {
 
         setFirst(g_imdb,idx,extractImdbLink(seriesInfo["/Data/Series/IMDB_ID"]));
@@ -4286,7 +4317,8 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
 
 
         bannerApiUrl = tvDbSeriesUrl;
-        sub(/en.xml/,"banners.xml",bannerApiUrl);
+        sub(/(all.|)en.xml$/,"banners.xml",bannerApiUrl);
+
         getTvDbSeasonBanner(idx,bannerApiUrl,"en");
 
         # For twin episodes just use the first episode number for lookup by adding 0
@@ -4305,14 +4337,16 @@ seriesInfo,episodeInfo,bannerApiUrl,result) {
                 DEBUG("tvdb epplot :["g_epplot[idx]"]");
 
                 if (gEpTitle[idx] != "" ) {
-                   if ( gEpTitle[idx] !~ /^Episode [0-9]+$/ ) {
-                       result ++;
-                   } else {
+                   if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {
                        INFO("Due to Episode title of ["gEpTitle[idx]"] Demoting result to force another TV plugin search");
+                   } else {
+                       result ++;
                    }
                 }
             }
         }
+    } else {
+        WARNING("Failed to find ID in XML");
     }
 
 
@@ -4386,7 +4420,6 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
         url=seriesInfo["/Show/showlink"];
         g_plot[idx] = scrape_one_item("tvrage_plot",url,"id='"'"'iconn1",0,"iconn2",0);
-        DEBUG("rage plot "g_plot[idx]);
         result ++;
 
         e="/Show/Episodelist/Season/episode";
@@ -4427,6 +4460,8 @@ t,xmlpathSlash,xmlpathHash) {
     xmlpathSlash=xmlpath"/";
     xmlpathHash=xmlpath"#";
 
+#DEBUG("@@ clean_xml_path ["xmlpath"]");
+
     #index function is faster than substr
     for(t in xml) {
         if (index(t,xmlpath) == 1) {
@@ -4437,16 +4472,16 @@ t,xmlpathSlash,xmlpathHash) {
     }
 }
 
-function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
+function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,dbg_level,\
 f,found) {
 
    f = getUrl(url,filelabel,1);
    DEBUG("fetch_xml_single_child ["url"] path = "xmlpath);
-   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout);
+   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout,dbg_level);
    DEBUG("fetch_xml_single_child ["url"]="found);
    return found;
 }
-function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
+function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,dbg_level,\
 line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type,string_type,this_type) {
 
    delete xmlout;
@@ -4484,11 +4519,8 @@ line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type
 
             parseXML(line,xmlout);
 
-            
-
             if (index(line,end_tag) > 0) {
 
-                #dump(0,"xml",xmlout);
 
                 found=1;
                 for(t in tagfilters) {
@@ -4514,18 +4546,17 @@ line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type
                     } else if (this_type == regex_type) {
 
                         if ( xmlout[t] !~ regex[t] ) {
-                            DEBUG("Filter block "t" "xmlout[t]" !~ "regex[t]);
+                            #DEBUG("Filter block "t" "xmlout[t]" !~ "regex[t]);
                             found=0;break;
                         }
                     } else {
                         ERROR("Bad type "this_type);
                         exit;
                     }
-
                 }
 
                 if (found) {
-                    DEBUG("Filter passed");
+                    DEBUG("Filter matched.");
                     break;
                 }
 
@@ -4536,7 +4567,9 @@ line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type
     }
     if (!found) {
         clean_xml_path(xmlpath,xmlout);
-    }
+#    } else {
+#dump(0,"@@xml:single child:",xmlout);
+}
     return found;
 }
 
@@ -4885,16 +4918,16 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
         DEBUG("WGET ["url"]");
         result = exec(cmd);
         if (result != 0) {
-            # Sometimes the website returns an error that stops wget from retrying.
-            # make one attempt to get the page in this case.
-            retry=5;
-            INFO("Retrying in "retry);
-            system("sleep "retry);
-            result = exec(cmd);
-            if (result != 0) {
+#            # Sometimes the website returns an error that stops wget from retrying.
+#            # make one attempt to get the page in this case.
+#            retry=5;
+#            INFO("Retrying in "retry);
+#            system("sleep "retry);
+#            result = exec(cmd);
+#            if (result != 0) {
                 g_url_blacklist[url] = 1;
                 WARNING("Blacklisting url ["url"]");
-            }
+#            }
         }
     }
     return result;
@@ -5036,7 +5069,7 @@ function download_image(field_id,url,idx,\
         # -t retries - oversight runs the command twice so halve number of retries.
         # -w time between retries.
         # -T network timeouts
-        wget_args=g_wget_opts" -O "quoteArg(internal_path);
+        wget_args=g_wget_opts;
 
         DEBUG("Poster url = "url);
         if (referer == "" ) {
@@ -5478,7 +5511,7 @@ f,line,out,found) {
     if (found != 1) {
         ERROR("Cant find ["start_text"] in "label":"url);
     }
-    DEBUG("scrape_one_item "label" out ["out"]");
+    #DEBUG("scrape_one_item "label" out ["out"]");
     return out;
 }
 function scrape_until(label,f,end_text,inclusive,\
@@ -6196,11 +6229,11 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "REBUILD" ) {
             REBUILD=1;
             moveDown++;
-        } else if (ARGV[i] == "DEBUG" ) {
+        } else if (ARGV[i] ~ "^DEBUG[0-9]$" ) {
+            DBG=substr(ARGV[i],length(ARGV[i])) + 0;
+            print("DBG = "DBG);
             DBG=1;
-            moveDown++;
-        } else if (ARGV[i] == "DEBUG2" ) {
-            DBG=2;
+            print("DBG = "DBG);
             moveDown++;
         } else if (ARGV[i] == "STDOUT" ) {
             STDOUT=1;
@@ -6341,7 +6374,7 @@ main() {
     if is_nmt ; then
         sed -rn '/./ s/^/\[INFO\] nmt version /p' /???/*/VERSION
     fi
-    catalog DEBUG "$@" 
+    catalog DEBUG$DEBUG "$@" 
     x=$?
     set -e
 

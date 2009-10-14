@@ -1226,8 +1226,13 @@ char *get_simple_title(DbRowId *row_id) {
     if (row_id->category=='T') {
         int unwatched = unwatched_count(row_id);
         int total = group_count(row_id);
-        ovs_asprintf(&title,"%s S%d (%d/%d)%s%s%s",row_id->title,row_id->season,unwatched,total,
-                source_start,(show_source?source:""),source_end);
+        if (unwatched == 0 ) {
+            ovs_asprintf(&title,"%s S%d [%d]%s%s%s",row_id->title,row_id->season,total,
+                    source_start,(show_source?source:""),source_end);
+        } else {
+            ovs_asprintf(&title,"%s S%d [%d of %d]%s%s%s",row_id->title,row_id->season,unwatched,total,
+                    source_start,(show_source?source:""),source_end);
+        }
 
     } else if (row_id->year) {
 

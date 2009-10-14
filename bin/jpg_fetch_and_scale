@@ -52,12 +52,19 @@ jpg_resize() {
 
     o=
     case "$output" in 
-        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=70 ;;
-        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=70 ;;
+
+        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=75 ;;
+
+        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=75 ;;
+
         */_fa/*.pal.jpg)
-            # Pal is created from the SD but we need to improve the quality
+            # Pal is created from the SD but we need to maintain the quality
             o="-width=685 -height=542" ; q=90 ;;
-        */_J/*.jpg) o="-width=300" ; q=70 ;;
+
+        */_J/*.thumb.jpg) o="-width=150" ; q=75 ;;
+
+        */_J/*.jpg) o="-width=300" ; q=75 ;;
+
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac
 
@@ -118,10 +125,11 @@ resize_img() {
             ;;
         poster)
             # assuming covers are high quality we can start with 50% reduction in djpeg stage
-            jpg_resize "$2" "$2" "3/5"
+            jpg_resize "$2" "$2" "1/2"
+            jpg_resize "$2" "$base.thumb.jpg" "1/2"
             ;;
     esac
-    rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm"
+    rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm" "$base.thumb.jpg.pnm"
 }
 
 Q=$TMP/resize.queue
@@ -145,10 +153,13 @@ add_queue() {
 # Manage a pid / lock file
 running() {
     if [ -f $1 ] ; then
-        if [ -d /proc/`cat $1` ] ; then
-            return 0
-        else
-            rm -f "$1"
+        pid=`cat "$1" 2>/dev/null`
+        if [ -n "$pid" ] ; then
+            if [ -d /proc/$pid ] ; then
+                return 0
+            else
+                rm -f "$1"
+            fi
         fi
     fi
     return 1

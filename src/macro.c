@@ -84,7 +84,7 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
             default_wallpaper = args->array[0];
         }
 
-        char *fanart = get_picture_path(num_rows,sorted_rows,1);
+        char *fanart = get_picture_path(num_rows,sorted_rows,FANART_IMAGE);
 
         if (!fanart || !exists(fanart)) {
 
@@ -160,7 +160,7 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
 
     } else if (args && args->size  == 1) {
 
-        result = get_poster_image_tag(rid,args->array[0]);
+        result = get_poster_image_tag(rid,args->array[0],POSTER_IMAGE);
 
     } else if (!args || args->size == 0 ) {
 
@@ -180,7 +180,7 @@ char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,Db
             }
             ovs_asprintf(&attr," height=%d width=%d  ",height,width);
 
-            result =  get_poster_image_tag(rid,attr);
+            result =  get_poster_image_tag(rid,attr,POSTER_IMAGE);
             FREE(attr);
         } 
 

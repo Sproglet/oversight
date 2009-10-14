@@ -10,6 +10,8 @@
 #define REMOTE_VOD_PREFIX2 "vod.ovs." 
 #define REMOTE_VOD_PREFIX1 "remote.vod.ovs."
 
+typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
+
 void display_menu();
 
 FILE *playlist_open();
@@ -23,7 +25,7 @@ void display_dynamic_styles();
 char *add_hidden(char *names);
 char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char *v2,char *text2);
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
-char * get_poster_image_tag(DbRowId *rowid,char *attr);
+char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type);
 char *get_theme_image_tag(char *image_name,char *attr);
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids);
 char *ovs_icon_type();
@@ -41,7 +43,7 @@ void display_confirm(char *name,char *val_ok,char *val_cancel);
 char *file_to_url(char *path);
 char *get_path(DbRowId *rid,char *path);
 char *vod_attr(char *file);
-char *get_picture_path(int num_rows,DbRowId **sorted_rows,int is_fanart);
+char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type);
 void create_file_to_url_symlink();
 char *auto_option_list(char *name,char *firstItem,struct hashtable *vals);
 char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals);

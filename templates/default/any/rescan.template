@@ -22,7 +22,7 @@
             <p> To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here},style="color=red;"):]
             <p>This will return immediately and start a background scan of the listed paths.
             This should complete in 15-60 minutes depending on number of videos. Other running applications also affects overall scan speed.
-            <p>Images are downloaded at a slower rate so film titles may appear before covers.
+            <p>Covers are downloaded independently so may appear later. Fanart will appear last.
             </td>
             </tr>
             </table>

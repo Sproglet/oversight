@@ -1109,7 +1109,14 @@ char *macro_fn_exit_button(char *template_name,char *call,Array *args,int num_ro
 char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (!*query_val("select") && allow_mark()) {
-        result = get_theme_image_link("select=Mark","tvid=EJECT","mark","");
+        if (g_dimension->local_browser) {
+            char *tag=get_theme_image_tag("mark",NULL);
+            ovs_asprintf(&result,
+                    "<a href=\"javascript:alert('Select item then Use remote [9] to [w]atch,[8] to [u]nwatch')\">%s</a>",tag);
+            FREE(tag);
+        } else {
+            result = get_theme_image_link("select=Mark","","mark","");
+        }
     }
     return result;
 }
@@ -1117,7 +1124,14 @@ char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_ro
 char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (!*query_val("select") && (allow_delete() || allow_delist())) {
-        result = get_theme_image_link("select=Delete","tvid=CLEAR","delete","");
+        if (g_dimension->local_browser) {
+            char *tag=get_theme_image_tag("delete",NULL);
+            ovs_asprintf(&result,
+                "<a href=\"javascript:alert('Select item then Use remote [DELETE/CLEAR] button')\">%s</a>",tag);
+            FREE(tag);
+        } else {
+            result = get_theme_image_link("select=Delete","","delete","");
+        }
     }
     return result;
 }

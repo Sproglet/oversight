@@ -25,6 +25,8 @@
 struct hashtable *get_newly_selected_ids_by_source();
 struct hashtable *get_newly_deselected_ids_by_source();
 int count_unchecked();
+// Add val=src1(id|..)src2(id|..) to hash table.
+void merge_id_by_source(struct hashtable *h,char *val);
 
 //True if there was post data.
 int has_post_data() {
@@ -357,7 +359,35 @@ void do_actions() {
 
     } else if (*action) {
 
-        if (allow_mark() && strcmp(action,"Mark") == 0) {
+        char *actionids = query_val("actionids");
+        if (actionids && *actionids) {
+
+            struct hashtable *source_id_hash = string_string_hashtable(16);
+            merge_id_by_source(source_id_hash,actionids);
+
+            if (allow_mark() && strcmp(action,"watch")) {
+
+                db_set_fields(DB_FLDID_WATCHED,"1",source_id_hash,DELETE_MODE_NONE);
+
+            } else if (allow_mark() && strcmp(action,"unwatch")) {
+
+                db_set_fields(DB_FLDID_WATCHED,"0",source_id_hash,DELETE_MODE_NONE);
+
+            } else if (allow_delete() && strcmp(action,"delete")) {
+
+                db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_DELETE);
+
+            } else if (allow_delist() && strcmp(action,"delist")) {
+
+                db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_REMOVE);
+
+            }
+            hashtable_destroy(source_id_hash,1,1);
+            query_remove("action");
+            query_remove("actionids");
+
+        } else if (allow_mark() && strcmp(action,"Mark") == 0) {
+
 
             struct hashtable *source_id_hash = NULL;
             
@@ -425,7 +455,8 @@ int checkbox_just_removed(char *name) {
 }
 
 // Add val=src1(id|..)src2(id|..) to hash table.
-void merge_id_by_source(struct hashtable *h,char *val) {
+void merge_id_by_source(struct hashtable *h,char *val)
+{
 
     Array *sources = split(val,")",0);
 

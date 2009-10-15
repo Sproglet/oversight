@@ -325,7 +325,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
     } else {
 
-        ovs_asprintf(&vod," %s name=\"%s\" %s ",vod_attr(file),href_name,href_attr);
+        ovs_asprintf(&vod," %s name=\"%s?1\" %s ",vod_attr(file),href_name,href_attr);
 
         if (add_to_playlist) {
             //Build playlist array for this entry.
@@ -1265,7 +1265,7 @@ char *mouse_event_fn(char *function_name_prefix,long function_id) {
 }
 
 char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
-        int left_scroll,int right_scroll,int centre_cell) {
+        int left_scroll,int right_scroll,int centre_cell,char *idlist) {
 
     //TODO:Highlight matched bit
     HTML_LOG(2,"Item %d = %s %s %s",cell_no,row_id->db->source,row_id->title,row_id->file);
@@ -1357,13 +1357,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
-    char *idlist = build_id_list(row_id);
-
-//    if (g_dimension->local_browser && g_dimension->title_bar) {
-//        first_space=strchr(title,' ');
-//        if (first_space) *first_space='\0';
-//    }
-
     if (*select) {
 
         cell_text = STRDUP(title);
@@ -1426,7 +1419,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
     if (cell_background_image && *cell_background_image) FREE(cell_background_image);
 
     FREE(cell_text);
-    FREE(idlist);
     FREE(title); // first_space points inside of title
     return result;
 }
@@ -1748,24 +1740,19 @@ TRACE;
     return 1;
 }
 
-void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids) {
+void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char **idlist) {
     int i,r,c;
-    //
-    printf("<script type=\"text/javascript\">\n\
-    var title = 1;\n\
-    function showt(x)\n\
-    {\n\
-        if (title == 1) title = document.getElementById('menutitle').firstChild;\n\
-        title.nodeValue = x;\n\
-    }\n\
-    function title0() { showt('_'); }\n");
+
+    printf("<script type=\"text/javascript\">\n");
 
     for ( r = 0 ; r < rows ; r++ ) {
         for ( c = 0 ; c < cols ; c++ ) {
             i = c * rows + r ;
             if ( i < numids ) {
+
                 char *title = get_simple_title(row_ids[i]);
-                printf("function title%ld() { showt('%s'); }\n",(long)(row_ids[i]),title);
+                // Write the call to the show function and also tract the idlist;
+                printf("function title%ld() { showt('%s','%s'); }",(long)(row_ids[i]),title,idlist[i]);
                 FREE(title);
             }
         }
@@ -1838,8 +1825,22 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     } else {
         ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
     }
+
+    char **idlist = CALLOC(rows*cols,sizeof(char *));
+
+    // Create the idlist for each item
+    for ( r = 0 ; r < rows ; r++ ) {
+        for ( c = 0 ; c < cols ; c++ ) {
+            i = c * rows + r ;
+            if (i < numids) {
+                idlist[i] = build_id_list(row_ids[i]);
+            }
+        }
+    }
+
+
     // First output the javascript functions - diretly to stdout - lazy.
-    write_titlechanger(rows,cols,numids,row_ids);
+    write_titlechanger(rows,cols,numids,row_ids,idlist);
 
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
@@ -1861,7 +1862,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(i,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                item = get_item(i,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell,idlist[i]);
             } else {
                 item = get_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }
@@ -1878,6 +1879,15 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         HTML_LOG(1,"grid end row %d",r);
 
     }
+    //
+    // Free all of the idlists
+    for ( r = 0 ; r < rows ; r++ ) {
+        for ( c = 0 ; c < cols ; c++ ) {
+            i = c * rows + r ;
+            FREE(idlist[i]);
+        }
+    }
+
     char *w;
     if (!g_dimension->poster_mode) {
         w="width=100%";

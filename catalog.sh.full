@@ -3379,7 +3379,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
                     filter["/Data/Series/FirstAired"] = "~:^"year_range"-";
 
                     url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",gTitle[idx]);
-                    if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo,1)) {
+                    if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo)) {
                         INFO("Looking at tvdb "showInfo["/Data/Series/SeriesName"]);
                         id2 = showInfo["/Data/Series/seriesid"];
                     }
@@ -3471,7 +3471,7 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-currentTag,i,j,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,tagStart,slash,tag_data_count) {
+currentTag,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash,tag_data_count) {
 
     if (index(line,"<?")) return;
 
@@ -4473,16 +4473,16 @@ t,xmlpathSlash,xmlpathHash) {
     }
 }
 
-function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,dbg_level,\
+function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
 f,found) {
 
    f = getUrl(url,filelabel,1);
    DEBUG("fetch_xml_single_child ["url"] path = "xmlpath);
-   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout,dbg_level);
+   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout);
    DEBUG("fetch_xml_single_child ["url"]="found);
    return found;
 }
-function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,dbg_level,\
+function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
 line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type,string_type,this_type) {
 
    delete xmlout;
@@ -4861,10 +4861,26 @@ i,referer) {
     return referer;
 }
 
-#Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,retry,result) {
+i,urls,tmpf,qf) {
+    split(url,urls,"\t");
+    tmpf = file ".tmp";
+    qf = quoteArg(tmpf);
+
+    for(i in urls) {
+        if (urls[i] != "") {
+        if (wget2(urls[i],tmpf,referer) == 0) {
+            exec("cat "qf" >> "quoteArg(file));
+        }
+        system("rm -f "qf);
+    }
+}
+
+#Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
+# Note nmt wget has a bug when using -O flag. Only one file is redirected.
+function wget2(url,file,referer,\
+args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result) {
 
     args=" --no-check-certificate -q -U \""g_user_agent"\" "g_wget_opts;
     if (referer == "") {
@@ -4892,13 +4908,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
 
     #d=tmp_dir"/wget."PID;
 
-    split(url,urls,"\t");
-    url="";
-    for(i in urls) {
-        if (urls[i] != "") {
-            url = url " "quoteArg(urls[i])" ";
-        }
-    }
+    url=quoteArg(url);
 
     if (url in g_url_blacklist) {
 
@@ -4919,16 +4929,8 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,urls,i,same_domain_delay,targetFile,r
         DEBUG("WGET ["url"]");
         result = exec(cmd);
         if (result != 0) {
-#            # Sometimes the website returns an error that stops wget from retrying.
-#            # make one attempt to get the page in this case.
-#            retry=5;
-#            INFO("Retrying in "retry);
-#            system("sleep "retry);
-#            result = exec(cmd);
-#            if (result != 0) {
-                g_url_blacklist[url] = 1;
-                WARNING("Blacklisting url ["url"]");
-#            }
+            g_url_blacklist[url] = 1;
+            WARNING("Blacklisting url ["url"]");
         }
     }
     return result;

@@ -13,12 +13,15 @@
     if (title == 1) title = document.getElementById('menutitle').firstChild;
     title.nodeValue = x;
   }
+function showkey() {
+    alert('pressed');
+}
         </script>
     </head>
     <!--
 <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
 -->
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+    <body onkeypress="showkey()" [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
         [:FORM_START:]
 <center>
         <table id=main width=100% heigth=100%>
@@ -46,6 +49,64 @@
             </table>
         </td></tr><tr><td>
             <center>
+
+<script type="text/javascript">
+var title = 1;
+var g_idlist = '';
+var g_title = '';
+function ovs_test() { alert('test'); }
+
+function ovs_del() {
+    if (g_idlist) {
+        if (confirm("Delist/Delete "+g_title+"?")) {
+            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
+                alert("deleting items "+g_idlist);
+                action('delete');
+            } else {
+                alert("delisting items "+g_idlist);
+                action('delist');
+            }
+        }
+    }
+}
+function ovs_watched() {
+    if (g_idlist) {
+        if (confirm("Set "+g_title+"\n as WATCHED?")) {
+            action('watch');
+        }
+    }
+}
+function ovs_unwatched() {
+    if (g_idlist) {
+        if (confirm("Set "+g_title+"\nas NOT watched?")) {
+            action('unwatch');
+        }
+    }
+}
+
+function action(a) {
+    var sep;
+    alert(a + ":" + g_idlist);
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+
+function showt(title_text,idlist)
+{
+   if (idlist != '') g_idlist = idlist;
+   if (title == 1) title = document.getElementById('menutitle').firstChild;
+   g_title = title_text;
+   title.nodeValue = g_title;
+}
+
+function title0() { showt('_',''); }
+</script>
+
             [:GRID:] 
             </center>
         </td></tr><tr><td>
@@ -55,8 +116,8 @@
                     [<td align=center>:BACK_BUTTON:</td>]
                     [<td align=center>:EXIT_BUTTON:</td>]
                     <td align=center>[:HOME_BUTTON:]</td>
-                    [<td align=center>:MARK_BUTTON:</td>]
-                    [<td align=center>:DELETE_BUTTON:</td>]
+                    <td align=center>[:DELETE_BUTTON:]</td>
+                    <td align=center>[:MARK_BUTTON:]</td>
                     [<td align=center>:SELECT_MARK_SUBMIT:</td>]
                     [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
                     [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
@@ -67,6 +128,9 @@
         </td></tr></table>
 </center>
         </form>
+        <a href="javascript:ovs_del();" tvid="CLEAR"></a>
+        <a href="javascript:ovs_unwatched();" tvid="8"></a>
+        <a href="javascript:ovs_watched();" tvid="9"></a>
     </body>
 </html>
 <!--

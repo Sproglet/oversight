@@ -1248,15 +1248,21 @@ char *get_simple_title(DbRowId *row_id) {
 }
 char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
     char *result = NULL;
-    ovs_asprintf(&result," %s=\"%s%ld();\" %s=\"%s0();\"",
-            on_event,function_name_prefix,function_id,
-            off_event,function_name_prefix);
+    if (off_event != NULL) {
+        ovs_asprintf(&result," %s=\"%s%ld();\" %s=\"%s0();\"",
+                on_event,function_name_prefix,function_id,
+                off_event,function_name_prefix);
+    } else {
+        ovs_asprintf(&result," %s=\"%s%ld();\"",
+                on_event,function_name_prefix,function_id);
+    }
     return result;
 }
 
 // These are attributes of the href
-char *focus_event_fn(char *function_name_prefix,long function_id) {
-    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus","onblur");
+char *focus_event_fn(char *function_name_prefix,long function_id,int defocus) {
+    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus",
+            (defocus?"onblur":NULL));
 }
 
 // These are attributes of the cell text
@@ -1341,7 +1347,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
         char *simple_title = get_simple_title(row_id);
 
-        focus_ev = focus_event_fn("title",(long)row_id);
+        focus_ev = focus_event_fn("title",(long)row_id,0);
         if (!g_dimension->local_browser) {
             mouse_ev = mouse_event_fn("title",(long)row_id);
         }
@@ -1752,7 +1758,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
 
                 char *title = get_simple_title(row_ids[i]);
                 // Write the call to the show function and also tract the idlist;
-                printf("function title%ld() { showt('%s','%s'); }",(long)(row_ids[i]),title,idlist[i]);
+                printf("function title%ld() { showt('%s','%s'); }\n",(long)(row_ids[i]),title,idlist[i]);
                 FREE(title);
             }
         }
@@ -2317,13 +2323,21 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-int plot_fn(char *buf,long fn_id,char *fn_fmt,char *text) {
+int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *text) {
     int result;
     char *plot = text;
     if (strchr(plot,'\'')) {
-        plot = replace_all(text,"'","\\'",0);
+        char *tmp = replace_all(plot,"'","\\'",0);
+        if (plot != text) FREE(plot);
+        plot = tmp;
     }
-    result = sprintf(buf,fn_fmt,fn_id,plot);
+    if (strstr(plot,"&quot;")) {
+        char *tmp = replace_all(plot,"&quot;","\\'",0);
+        if (plot != text) FREE(plot);
+        plot = tmp;
+    }
+
+    result = sprintf(buf,fn_fmt,fn_id,id,plot);
     if (plot != text) {
         FREE(plot);
     }
@@ -2341,17 +2355,11 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     // get titles from plot.db
     get_plot_offsets_and_text(num_rows,sorted_rows,1);
 
-    char *javascript_plot_format = "function plot%ld() { show('%s'); }\n" ;
+    char *javascript_plot_format = "function plot%ld() { show('%ld','%s'); }\n" ;
     int javascript_plot_format_len = strlen(javascript_plot_format);
 
-    char *header = "<script type=\"text/javascript\">\
-    var title = 1;\
-    function show(x)\
-    {\
-        if (title == 1) title = document.getElementById('tvplot').firstChild;\
-        title.nodeValue = x;\
-    }\
-    ";
+    char *header = "<script type=\"text/javascript\">\n";
+
 
     char *footer = "\n</script>\n";
     int len = strlen(header)+strlen(footer)+100; // space for <script></script> tags
@@ -2379,7 +2387,7 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            script_p += plot_fn(script_p,0,javascript_plot_format,NVL(rid->plot_text));
+            script_p += plot_fn(script_p,0,javascript_plot_format,0,NVL(rid->plot_text));
             break;
         }
     }
@@ -2387,7 +2395,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        script_p += plot_fn(script_p,(long)rid,javascript_plot_format,NVL(rid->episode_plot_text));
+        script_p += plot_fn(script_p,(long)rid,javascript_plot_format,rid->id,NVL(rid->episode_plot_text));
 
     }
     script_p += sprintf(script_p,"%s",footer);
@@ -2449,7 +2457,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
-                    char *href_attr = focus_event_fn("plot",(long)rid);
+                    char *href_attr = focus_event_fn("plot",(long)rid,1);
                     episode_col = vod_link(
                             rid,
                             ep,"",

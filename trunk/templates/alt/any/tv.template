@@ -5,17 +5,71 @@
         <title>Oversight ([:HOSTNAME:]):  [:TITLE:] Season [:SEASON:] </title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
+/* watched/Unwatched tv */ .dummy {color:red;}
+
+td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+.eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
+
+.epdate { color:#AAAAFF; }
         </style>
+
+    [:INCLUDE_TEMPLATE(tv[:$ovs_display_fanart:]):]
         <script type="text/javascript">
-  var title = 1;
-  function show(x)
+var g_idlist=1;
+var title = 1;
+function ovs_del() {
+    if (g_idlist) {
+        if (confirm("Delist/Delete "+g_title+"?")) {
+            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
+                action('delete');
+            } else {
+                action('delist');
+            }
+        }
+    }
+}
+function ovs_watched() {
+    if (g_idlist) {
+        if (confirm("Set "+g_title+"\n as WATCHED?")) {
+            action('watch');
+        }
+    }
+}
+function ovs_unwatched() {
+    if (g_idlist) {
+        if (confirm("Set "+g_title+"\nas NOT watched?")) {
+            action('unwatch');
+        }
+    }
+}
+
+function action(a) {
+    var sep;
+    alert(a + ":" + g_idlist);
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+  function show(idlist,plot_text)
   {
+    g_idlist = idlist;
     if (title == 1) title = document.getElementById('tvplot').firstChild;
-    title.nodeValue = x;
+    title.nodeValue = plot_text;
   }
         </script>
-    </head>
-    [:INCLUDE_TEMPLATE(tv[:$ovs_display_fanart:]):]
+
+    <a href="javascript:ovs_del()" tvid="CLEAR"></a>
+    <a href="http://google.com" tvid="7"></a>
+    <a href="javascript:ovs_unwatched()" tvid="8"></a>
+    <a href="javascript:ovs_watched()" tvid="9"></a>
+</body>
 </html>
 
 <!--

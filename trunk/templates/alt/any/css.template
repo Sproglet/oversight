@@ -1,6 +1,5 @@
 .dummy { color:red; }
 
-#menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
 html,body { height:100%; margin:0; padding:0; border:none; }
 #main { height:99%; width:100%; border:none; margin:0; padding:0; }
 
@@ -9,17 +8,10 @@ td.gc { border-width:2px; }
 td.gc_fresh_small { font-size:10pt; }
 td.gc_small { font-size:10pt; }
 
-body.menu_background0 { color:white ; background-color:black; }
-body.menu_background1 { color:yellow ; background-color:black; }
-
-body.tv_background0 { color:white ; background-color:black; }
-body.tv_background1 { color:yellow ; background-color:black; }
-
-body.movie_background0 { color:white ; background-color:black; }
-body.movie_background1 { color:yellow ; background-color:black; }
-
+/*
 body.admin_background0 { color:white ; background-color:#000044; }
 body.admin_background1 { color:yellow ; background-color:#000044; }
+*/ .dummy { color:red; }
 
 font.Delete {color:#FF9966; font-weight:normal; }
 font.Ignore {color:#777;}
@@ -27,23 +19,13 @@ font.Mark {color:#AAA;}
 font.Unmark {color:#DDF;}
 font.Remove_From_List {color:orange;}
 
-/* Admin Settings */ .dummy { color:red; }
+/* Admin Settings
 .optionrow { background-color:#666666;}
 .optionrow0 { background-color:#222222;}
 .optionrow1 { background-color:#333333;}
+*/ .dummy { color:red; }
 
 img { border: 0px solid black; }
-
-
-/* Normal view */
-.dummy { color:red; }
-
-.gridTW0_0 { color:white; background-color:#101055; }
-.gridTW0_1 { color:white; background-color:#101066; }
-.gridMW0_0 { color:white; background-color:#105510; }
-.gridMW0_1 { color:white; background-color:#106610; }
-.gridW0_0 { color:white; background-color:#551010; }
-.gridW0_1 { color:white; background-color:#661010; }
 
 img.fresh { 
     border-width: 2px;
@@ -57,7 +39,6 @@ a.fresh { color:yellow; font-weight:bold; font-style:italic; }
 font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 
 .recent {color:white; font-style:italic; }
-.watchedX { color:#888888 ; background-color:#550000; font-style:italic; }
 .watched { color:7777777 ; font-style:italic; }
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { background-color:red; }
@@ -65,21 +46,9 @@ font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 .cancel { ; }
 .mark { ; }
 
-.gridTW1_1 { color:#555555; background-color:#101066; }
-.gridTW1_0 { color:#555555; background-color:#101055; }
-.gridMW1_1 { color:#555555; background-color:#105510; }
-.gridMW1_0 { color:#555555; background-color:#106610; }
-.gridW1_1 { color:#555555; background-color:#551010; }
-.gridW1_0 { color:#555555; background-color:#661010; }
 
 table.header {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
-.XXXheader {background-color:#000005; }
-.XXXfooter {background-color:black; }
-.overview_poster1 { text-align:center; width:1%; }
-.overview_poster0 { text-align:center;  width:100%;}
-table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
-table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 
 .yellowbutton { color:#FFFF55; background-color:black; font-weight:bold ; text-decoration:none; }
 a.yellowbutton { color:black ; }
@@ -106,7 +75,6 @@ td.endtable { background-color:blue; }
 
 /* Movie Page */ .dummy { color:red; }
 
-td.filelistXXX { text-align:center; background-color:#070707; }
 td.filelist { text-align:center; }
 td.list0 {
                 filter:alpha(opacity=60);
@@ -123,26 +91,14 @@ a.movie { color:#aaaaff; }
 .label { color:red }
 .right { text-align:right; }
 
-Xinput { color:black; background-color:#0077DD; font-weight:bold; border=0; }
-Xselect { color:black; background-color:#0077DD; font-weight:bold; border=0; border-color:#0077DD; font-size:small; }
 input { background-color:black; color:#88CCFF; font-weight:bold; border=0; }
 select { background-color:black; color:#88CCFF; font-weight:bold; border=0; border-color:#88CCFF; font-size:small; }
 
-.dummy {}
 .recent { font-size:[:FONT_SIZE:]; }
 td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
 
 font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
 
-/* watched/Unwatched tv */ .dummy {color:red;}
-
-td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
-td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
-td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
-td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
-.eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
-
-.epdate { color:#AAAAFF; }
 
 h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
 .title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }

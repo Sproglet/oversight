@@ -1574,7 +1574,11 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
 void db_set_fields_by_source(
         char *field_id,char *new_value,char *source,char *idlist,int delete_mode) {
 
-HTML_LOG(1," begin db init");
+    HTML_LOG(0," begin db_set_fields_by_source [%s][%s] [%s] -> [%s] delete mode = %d",
+        source,idlist,field_id,new_value,delete_mode);
+
+    int affected_total=0;
+    int dbsize=0;
 
     Db *db = db_init(NULL,source);
 
@@ -1593,8 +1597,6 @@ HTML_LOG(1," begin db init");
     char buf[DB_ROW_BUF_SIZE+1];
 
     regmatch_t pmatch[5];
-
-HTML_LOG(1," begin db_set_fields_by_source ids %s(%s) %s=%s ",source,idlist,field_id,new_value);
 
     ovs_asprintf(&regex_text,"\t%s\t([^\t]+)\t",field_id);
     util_regcomp(&regex_ptn,regex_text,0);
@@ -1628,6 +1630,7 @@ HTML_LOG(1," begin open db");
                     assert( buf[DB_ROW_BUF_SIZE] == '\0' );
 
 
+                    dbsize++;
 
                     if (regexec(&id_regex_ptn,buf,0,NULL,0) != 0 ) {
 
@@ -1635,23 +1638,25 @@ HTML_LOG(1," begin open db");
                         fprintf(db_out,"%s",buf);
 
                     } else if (delete_mode == DELETE_MODE_REMOVE) {
+                        affected_total++;
                             // do nothing. line is not written 
                     } else if (delete_mode == DELETE_MODE_DELETE) {
                         DbRowId rid;
                         parse_row(ALL_IDS,NULL,0,buf,db,&rid);
                         delete_media(&rid,1);
                         db_rowid_free(&rid,0);
+                        affected_total++;
 
                     } else if ( regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
                         // Field is present - change it
                         int spos=pmatch[1].rm_so;
                         int epos=pmatch[1].rm_eo;
 
-HTML_LOG(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
+                        HTML_LOG(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
 
-                        buf[spos]='\0';
-
-                        fprintf(db_out,"%s%s%s",buf,new_value,buf+epos);
+                        HTML_LOG(0,"%.*s[[%s]]%s",spos,buf,new_value,buf+epos);
+                        fprintf(db_out,"%.*s%s%s",spos,buf,new_value,buf+epos);
+                        affected_total++;
 
                     } else {
                         // field not present - we could append the field at this stage.
@@ -1673,7 +1678,7 @@ HTML_LOG(1," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epo
         db_unlock(db);
         db_free(db);
     }
-HTML_LOG(1," end db_set_fields_by_source");
+    HTML_LOG(0," end db_set_fields_by_source - number of records change = %d of %d",affected_total,dbsize);
     regfree(&regex_ptn);
     regfree(&id_regex_ptn);
     FREE(regex_text);
@@ -1697,11 +1702,11 @@ void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_sourc
     char *source;
     char *idlist;
 
-HTML_LOG(1," begin db_set_fields");
+    HTML_LOG(0," begin db_set_fields [%s] -> [%s]",field_id,new_value);
     for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
         db_set_fields_by_source(field_id,new_value,source,idlist,delete_mode);
     }
-HTML_LOG(1," end db_set_fields");
+    HTML_LOG(1," end db_set_fields");
 }
 
 void get_genre_from_string(char *gstr,struct hashtable **h) {

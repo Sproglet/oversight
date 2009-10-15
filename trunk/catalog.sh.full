@@ -1096,7 +1096,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
             } else if(unpak_nmt_pin_root != "" && index(currentFolder,unpak_nmt_pin_root) == 1) {
                 skipFolder=1;
                 INFO("SKIPPING "currentFolder);
-            } else if (currentFolder in gFolderCount) {
+            } else if (currentFolder in g_fldrCount) {
 
                 WARNING("Already visited "currentFolder);
                 skipFolder=1;
@@ -1104,9 +1104,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
 
             } else {
                 skipFolder=0;
-                gFolderMediaCount[currentFolder]=0;
-                gFolderInfoCount[currentFolder]=0;
-                gFolderCount[currentFolder]=0;
+                g_fldrMediaCount[currentFolder]=0;
+                g_fldrInfoCount[currentFolder]=0;
+                g_fldrCount[currentFolder]=0;
             }
 
         } else if (!skipFolder) {
@@ -1143,8 +1143,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
             if (substr(perms,1,1) != "-") {
                 if (substr(perms,1,1) == "d") {
                     #Directory
-                    if (currentFolder in gFolderCount) {
-                        gFolderCount[currentFolder]++;
+                    if (currentFolder in g_fldrCount) {
+                        g_fldrCount[currentFolder]++;
                     }
 
                     DEBUG("Folder ["scan_line"]");
@@ -1181,9 +1181,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
 
             } else if (match(lc,gExtRegEx1)) {
 
-                #DEBUG("gFolderMediaCount[currentFolder]="gFolderMediaCount[currentFolder]);
+                #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
                 #Only add it if previous one is not part of same file.
-                if (gFolderMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
+                if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
                   if ( checkMultiPart(scan_line,gMovieFileCount) ) {
                       #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                       #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
@@ -1201,8 +1201,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
             } else if (match(lc,"\\.nfo$")) {
 
                 nfo=currentFolder"/"scan_line;
-                gFolderInfoCount[currentFolder]++;
-                gFolderInfoName[currentFolder]=nfo;
+                g_fldrInfoCount[currentFolder]++;
+                g_fldrInfoName[currentFolder]=nfo;
                 gDate[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
             }
 
@@ -1249,11 +1249,11 @@ function storeMovie(idx,file,folder,timeStamp) {
         idx = 0;
     }
 
-    gFolderMediaCount[folder]++;
+    g_fldrMediaCount[folder]++;
 
-    gFolder[idx]=folder;
-    gMovieFiles[idx] = file;
-    DEBUG("Storing ["gFolder[idx]"]["gMovieFiles[idx]"]");
+    g_fldr[idx]=folder;
+    g_media[idx] = file;
+    DEBUG("Storing ["g_fldr[idx]"]["g_media[idx]"]");
 
     #used when pruning the old index.
     gMovieFilePresent[folder"/"file] = idx;
@@ -1266,7 +1266,7 @@ function storeMovie(idx,file,folder,timeStamp) {
 # multiPartRegex : regex that matches the part tag of the file
 function checkMultiPart(name,count,\
 i,firstName) {
-    firstName=gMovieFiles[count-1];
+    firstName=g_media[count-1];
 
     #DEBUG("Multipart check ["firstName"] vs ["name"]");
     if (length(firstName) != length(name)) {
@@ -1318,11 +1318,11 @@ i,firstName) {
 function setNfo(idx,pattern,replace,\
 nfo,lcNfo) {
     #Add a lookup to nfo file
-    nfo=gMovieFiles[idx];
+    nfo=g_media[idx];
     lcNfo = tolower(nfo);
     if (match(lcNfo,pattern)) {
         nfo=substr(nfo,1,RSTART-1) replace substr(nfo,RSTART+RLENGTH);
-        gNfoDefault[idx] = getPath(nfo,gFolder[idx]);
+        gNfoDefault[idx] = getPath(nfo,g_fldr[idx]);
         DEBUG2("Storing default nfo path ["gNfoDefault[idx]"]");
         return 1;
     } else {
@@ -1345,16 +1345,16 @@ function exec(cmd, err) {
 function folderIsRelevant(dir) {
 
     DEBUG("Check parent folder relation to media ["dir"]");
-        if ( !(dir in gFolderCount) || gFolderCount[dir] == "") { 
+        if ( !(dir in g_fldrCount) || g_fldrCount[dir] == "") { 
             DEBUG("unknown folder ["dir"]" );
             return 0;
         }
     #Ensure the folder was scanned and also it has 2 or fewer sub folders (VIDEO_TS,AUDIO_TS)
-    if (gFolderCount[dir] - 2 > 0 ) {
+    if (g_fldrCount[dir] - 2 > 0 ) {
         DEBUG("Too many sub folders - general folder");
         return 0;
     }
-   if (gFolderMediaCount[dir] - 2 > 0 ) {
+   if (g_fldrMediaCount[dir] - 2 > 0 ) {
        DEBUG("Too much media  general folder");
        return 0;
    }
@@ -1390,20 +1390,20 @@ url,txt,linksRequired) {
 
     linksRequired = 0+g_settings["catalog_imdb_links_required"];
     
-    txt = basename(gMovieFiles[idx]);
+    txt = basename(g_media[idx]);
     if (tolower(txt) != "dvd_volume" ) {
         url=searchHeuristicsForImdbLink(txt,linksRequired);
     }
 
-    if (url == "" && match(gMovieFiles[idx],gExtRegexIso)) {
-        txt = getIsoTitle(gFolder[idx]"/"gMovieFiles[idx]);
+    if (url == "" && match(g_media[idx],gExtRegexIso)) {
+        txt = getIsoTitle(g_fldr[idx]"/"g_media[idx]);
         if (length(txt) - 3 > 0 ) {
             url=searchHeuristicsForImdbLink(txt,linksRequired);
         }
     }
 
-    if (url == "" && folderIsRelevant(gFolder[idx])) {
-        url=searchHeuristicsForImdbLink(tolower(basename(gFolder[idx])),linksRequired);
+    if (url == "" && folderIsRelevant(g_fldr[idx])) {
+        url=searchHeuristicsForImdbLink(tolower(basename(g_fldr[idx])),linksRequired);
     }
 
     DEBUG("searchInternetForImdbLink=["url"]");
@@ -1416,7 +1416,7 @@ txt) {
     #This could affect the search adversely, esp if the film name is abbreviated.
     # Too much information is lost. eg coa-v-xvid will eventually become just v
     #so we do this last. 
-    txt = tolower(basename(gMovieFiles[idx]));
+    txt = tolower(basename(g_media[idx]));
 
     #Remove the cd1 partb bit.
     if (idx in gMultiPartTagPos) {
@@ -1873,14 +1873,14 @@ function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 function checkTvFilenameFormat(plugin,idx,\
 details,line,dirs,d,dirCount,ePos,dirLevels) {
 
-    line = gMovieFiles[idx];
+    line = g_media[idx];
 
     #First get season and episode information
 
    #DEBUG("CHECK TV "line);
    line = remove_format_tags(line);
 
-   split(gFolder[idx],dirs,"/");
+   split(g_fldr[idx],dirs,"/");
    dirCount=hash_size(dirs);
    dirLevels=2;
 
@@ -2168,7 +2168,7 @@ d,dir) {
 
         #File starts with season number eg. ^<season><episode>..." so title must be in folder name.
 
-        split(gFolder[idx],dir,"/"); # split folder
+        split(g_fldr[idx],dir,"/"); # split folder
         d=hash_size(dir);
         details[TITLE] = remove_season(clean_title(dir[d]));
         if (details[TITLE] == "" ) {
@@ -2266,7 +2266,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
     startTime = systime();
     numFiles=0;
-    for ( idx in gMovieFiles) {
+    for ( idx in g_media) {
         numFiles++;
     }
     INFO("Processing "numFiles" items in batches of "ready_to_merge_batch_size);
@@ -2288,12 +2288,12 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
         scanNfo=0;
 
-        file=gMovieFiles[idx];
+        file=g_media[idx];
         if (file == "" ) continue;
 
         DIV0("Start item "(g_item_count)": ["file"]");
 
-        DEBUG("folder :["gFolder[idx]"]");
+        DEBUG("folder :["g_fldr[idx]"]");
         if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
             WARNING("Skipping unknown file ["file"]");
             continue;
@@ -2307,11 +2307,11 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
                DEBUG("Using default info to find url");
                scanNfo = 1;
 
-            } else if (gFolderMediaCount[gFolder[idx]] == 1 && gFolderInfoCount[gFolder[idx]] == 1 && exists(gFolderInfoName[gFolder[idx]])) {
+            } else if (g_fldrMediaCount[g_fldr[idx]] == 1 && g_fldrInfoCount[g_fldr[idx]] == 1 && exists(g_fldrInfoName[g_fldr[idx]])) {
 
-               DEBUG("Using single nfo "gFolderInfoName[gFolder[idx]]" to find url in folder ["gFolder[idx]"] for item "idx);
+               DEBUG("Using single nfo "g_fldrInfoName[g_fldr[idx]]" to find url in folder ["g_fldr[idx]"] for item "idx);
 
-               gNfoDefault[idx] = gFolderInfoName[gFolder[idx]];
+               gNfoDefault[idx] = g_fldrInfoName[g_fldr[idx]];
                scanNfo = 1;
            }
         }
@@ -2400,7 +2400,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
                 }
             }
         } else {
-            INFO("Skipping item "gMovieFiles[idx]);
+            INFO("Skipping item "g_media[idx]);
         }
     }
     # At the end we always make sure merge_files_and_do_actions has been called
@@ -2620,16 +2620,16 @@ date,nonDate,premier,url,key) {
 # incremental scanner. so everything was loaded into memory for speed
 # however this is bead when doing the initial scan of a NAS etc.
 function clean_globals() {
-    delete gMovieFiles;
+    delete g_media;
     delete g_scraped;
     delete g_imdb_title;
     delete g_motech_title;
     delete gNfoDefault;
-    delete gFolderMediaCount;
-    delete gFolderInfoCount;
-    delete gFolderInfoName;
-    delete gFolderCount;
-    delete gFolder;
+    delete g_fldrMediaCount;
+    delete g_fldrInfoCount;
+    delete g_fldrInfoName;
+    delete g_fldrCount;
+    delete g_fldr;
     delete gParts;
     delete gMultiPartTagPos;
     delete gCertRating;
@@ -2667,7 +2667,7 @@ function clean_globals() {
 
 function cleanSuffix(idx,\
 name) {
-    name=gMovieFiles[idx];
+    name=g_media[idx];
     # remove extension
     sub(/\.[^.]+$/,"",name);
     # name=remove_format_tags(name);
@@ -2905,7 +2905,7 @@ foundId,line) {
 function search_tv_series_names(plugin,idx,title,\
 tvDbSeriesPage,alternateTitles,title_key,cache_key) {
 
-    title_key = plugin"/"gFolder[idx]"/"title;
+    title_key = plugin"/"g_fldr[idx]"/"title;
     if (title_key in g_tvDbIndex) {
         DEBUG(plugin" use previous mapping "title_key" -> ["g_tvDbIndex[title_key]"]");
        return g_tvDbIndex[title_key]; 
@@ -2924,7 +2924,7 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key) {
         # Abbreviation search
         g_search_total[plugin".tvabbrev"]++;
 
-        cache_key=gFolder[idx]"@"title;
+        cache_key=g_fldr[idx]"@"title;
 
         if(cache_key in g_abbrev_cache) {
 
@@ -3087,7 +3087,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 # This should only be called fairly late in the selection process.
 # It returns the newest item. It may not be a valid thing to do
 # but if we end up having to chose between two films with no other
-# information should eiathe make a choice OR give up.
+# information should either make a choice OR give up.
 # The relative age is just a metric that can be compared between films
 # eg IMDBID is a rough relative age indicator.
 # For other databases we may need to get the actual air date.
@@ -3471,18 +3471,12 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-currentTag,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash,tag_data_count) {
+currentTag,i,j,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash,tag_data_count,prevTag) {
 
     if (index(line,"<?")) return;
 
     if (sep == "") sep = "<";
 
-    # Carriage returns mess up parsing
-    i = index(line,"\r");
-    if (i) line = substr(line,1,i-1);
-
-    i = index(line,"\n");
-    if (i) line = substr(line,1,i-1);
 
 
     #break at each tag/endtag
@@ -3523,6 +3517,15 @@ currentTag,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash,t
         tag = parts[1];
         text = parts[2];
 
+        if (i == tag_data_count) {
+            # Carriage returns mess up parsing
+            j = index(text,"\r");
+            if (j) text = substr(text,1,j-1);
+
+            j = index(text,"\n");
+            if (j) text = substr(text,1,j-1);
+        }
+
         if ((sp=index(tag," ")) != 0) {
             #Remove attributes Possible bug if space before element name
             tag=substr(tag,1,sp-1);
@@ -3532,14 +3535,22 @@ currentTag,i,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash,t
         if (slash == 1 )  {
 
             # end tag
+            # prevTag only tracks the last tag added so we can only use it once to go back
+            # A fuller implementation could maintain a tag stack to avoid the overhead of the
+            # substr() but this is probably not where the bottleneck is for this function?
 
-            currentTag = substr(currentTag,1,length(currentTag)-length(tag));
+            if (prevTag) {
+                currentTag=prevTag;
+                prevTag="";
+            } else {
+                currentTag = substr(currentTag,1,length(currentTag)-length(tag));
+            }
 #DEBUG("@@xml@@end tag =["tag "] currentTag now = ["currentTag"]");
 
 
         } else if (slash == 0 ) {
 
-
+            prevTag=currentTag;
 #DEBUG("@@xml@@start tag =["tag "] currentTag was = ["currentTag"]");
              currentTag = currentTag "/" tag;
 #DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]");
@@ -4863,18 +4874,21 @@ i,referer) {
 
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget(url,file,referer,\
-i,urls,tmpf,qf) {
+i,urls,tmpf,qf,r) {
     split(url,urls,"\t");
     tmpf = file ".tmp";
     qf = quoteArg(tmpf);
 
+    r=1;
     for(i in urls) {
         if (urls[i] != "") {
         if (wget2(urls[i],tmpf,referer) == 0) {
             exec("cat "qf" >> "quoteArg(file));
+            r=0;
         }
         system("rm -f "qf);
     }
+    return r;
 }
 
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
@@ -4963,10 +4977,10 @@ domain,remaining_gap) {
 function local_poster_path(idx,must_exist,\
     p,ext,e) {
     split(".jpg,.JPG",ext,",");
-    p = gFolder[idx] "/" gMovieFiles[idx];
-    if (gMovieFiles[idx] ~ "/$") {
+    p = g_fldr[idx] "/" g_media[idx];
+    if (g_media[idx] ~ "/$") {
         #VIDEO TS  /path/film/VIDEO_TS  look for /path/film/film.jpg
-        p = gFolder[idx] "/" gMovieFiles[idx] gMovieFiles[idx];
+        p = g_fldr[idx] "/" g_media[idx] g_media[idx];
         sub(/\/$/,"",p);
     } else {
         # normal file /path/film.avi look for /path/film.jpg
@@ -5022,7 +5036,7 @@ function download_image(field_id,url,idx,\
     #Note for internal posters the reference contains a sub path.
     # (relative to database folder ovs: )
     poster_ref = internal_poster_reference(field_id,idx);
-    internal_path = getPath(poster_ref,gFolder[idx]);
+    internal_path = getPath(poster_ref,g_fldr[idx]);
 
     #DEBUG("internal_path = ["internal_path"]");
     #DEBUG("poster_ref = ["poster_ref"]");
@@ -5556,7 +5570,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     fileType="";
     if (RENAME_TV == 1 && g_category[i] == "T") {
 
-        oldName=gFolder[i]"/"gMovieFiles[i];
+        oldName=g_fldr[i]"/"g_media[i];
         newName=g_settings["catalog_tv_file_fmt"];
         newName = substitute("SEASON",g_season[i],newName);
         newName = substitute("EPISODE",g_episode[i],newName);
@@ -5574,7 +5588,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
     } else if (RENAME_FILM==1 && g_category[i] == "M") {
 
-        oldName=gFolder[i];
+        oldName=g_fldr[i];
         newName=g_settings["catalog_film_folder_fmt"];
         fileType="folder";
 
@@ -5584,18 +5598,18 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     if (newName != "" && newName != oldName) {
 
         if (fileType == "file") {
-            newName = substitute("NAME",gMovieFiles[i],newName);
-            if (match(gMovieFiles[i],"\.[^.]+$")) {
-                #DEBUG("BASE EXT="gMovieFiles[i] " AT "RSTART);
-                newName = substitute("BASE",substr(gMovieFiles[i],1,RSTART-1),newName);
-                newName = substitute("EXT",substr(gMovieFiles[i],RSTART),newName);
+            newName = substitute("NAME",g_media[i],newName);
+            if (match(g_media[i],"\.[^.]+$")) {
+                #DEBUG("BASE EXT="g_media[i] " AT "RSTART);
+                newName = substitute("BASE",substr(g_media[i],1,RSTART-1),newName);
+                newName = substitute("EXT",substr(g_media[i],RSTART),newName);
             } else {
-                #DEBUG("BASE EXT="gMovieFiles[i] "]");
-                newName = substitute("BASE",gMovieFiles[i],newName);
+                #DEBUG("BASE EXT="g_media[i] "]");
+                newName = substitute("BASE",g_media[i],newName);
                 newName = substitute("EXT","",newName);
             }
         }
-        newName = substitute("DIR",gFolder[i],newName);
+        newName = substitute("DIR",g_fldr[i],newName);
         newName = substitute("TITLE",gTitle[i],newName);
         newName = substitute("YEAR",g_year[i],newName);
         newName = substitute("CERT",gCertRating[i],newName);
@@ -5616,7 +5630,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                gMovieFilePresent[newName]=i;
 
                g_file[i]="";
-               gFolder[i]=newName;
+               g_fldr[i]=newName;
            } else {
 
                # Move media file
@@ -5627,19 +5641,19 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                delete gMovieFilePresent[oldName];
                gMovieFilePresent[newName]=i;
 
-               gFolderMediaCount[gFolder[i]]--;
+               g_fldrMediaCount[g_fldr[i]]--;
                g_file[i]=newName;
                
-               oldFolder=gFolder[i];
+               oldFolder=g_fldr[i];
 
                newFolder=newName;
                sub(/\/[^\/]+$/,"",newFolder);
 
                #Update new folder location
-               gFolder[i]=newFolder;
+               g_fldr[i]=newFolder;
 
-               gMovieFiles[i]=newName;
-               sub(/.*\//,"",gMovieFiles[i]);
+               g_media[i]=newName;
+               sub(/.*\//,"",g_media[i]);
 
                # Move nfo file
                if(exists(gNfoDefault[i])) {
@@ -5823,11 +5837,11 @@ function moveFolder(i,oldName,newName,\
    if (!(folderIsRelevant(oldName))) {
        WARNING("["oldName"] not renamed as it was not listed in the arguments");
        return 1;
-   } else if ( gFolderCount[oldName] - 2*(isDvdDir(gMovieFiles[i])) > 0 ) {
-       WARNING("["oldName"] not renamed to ["newName"] due to "gFolderCount[oldName]" sub folders");
+   } else if ( g_fldrCount[oldName] - 2*(isDvdDir(g_media[i])) > 0 ) {
+       WARNING("["oldName"] not renamed to ["newName"] due to "g_fldrCount[oldName]" sub folders");
        return 1;
-   } else if (gFolderMediaCount[oldName] - 1 > 0) {
-       WARNING("["oldName"] not renamed to ["newName"] due to "gFolderMediaCount[oldName]" media files");
+   } else if (g_fldrMediaCount[oldName] - 1 > 0) {
+       WARNING("["oldName"] not renamed to ["newName"] due to "g_fldrMediaCount[oldName]" media files");
        return 1;
    } else if (!changeable(oldName) ) {
        return 1;
@@ -5993,7 +6007,7 @@ t) {
     t = gTitle[idx];
     # If no title set - just use the filename
     if (t == "") {
-        t = gMovieFiles[idx];
+        t = g_media[idx];
         sub(/\/$/,"",t);
         sub(/.*\//,"",t); #remove path
         t = remove_format_tags(t);
@@ -6016,20 +6030,20 @@ function createIndexRow(i,db_index,watched,index_time,\
 row,est,nfo) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
-    est=file_time(gFolder[i]"/unpak.log");
+    est=file_time(g_fldr[i]"/unpak.log");
     if (est == "") {
-        est=file_time(gFolder[i]"/unpak.txt");
+        est=file_time(g_fldr[i]"/unpak.txt");
     }
     if (est == "") {
         est = g_file_time[i];
     }
 
     if (g_file[i] == "" ) {
-        g_file[i]=getPath(gMovieFiles[i],gFolder[i]);
+        g_file[i]=getPath(g_media[i],g_fldr[i]);
     }
     gsub(/\/\/+/,"/",g_file[i]);
 
-    if ((g_file[i] in gFolderCount ) && gFolderCount[g_file[i]]) {
+    if ((g_file[i] in g_fldrCount ) && g_fldrCount[g_file[i]]) {
         DEBUG("Adjusting file for video_ts");
         g_file[i] = g_file[i] "/";
     }
@@ -6119,10 +6133,10 @@ i,row,fields,f,inf) {
 
     for(i in indexToMergeHash) {
 
-        f=gMovieFiles[i];
+        f=g_media[i];
 
-        DEBUG("Adding to db:"i"["gTitle[i]"]["gMovieFiles[i]"]");
-        if (gMovieFiles[i] == "") continue;
+        DEBUG("Adding to db:"i"["gTitle[i]"]["g_media[i]"]");
+        if (g_media[i] == "") continue;
 
         row=createIndexRow(i,-1,0,"");
 

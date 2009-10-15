@@ -29,22 +29,11 @@ body.menu_background1 { color:yellow ; background-color:black; }
 table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
         </style>
-        <script type="text/javascript">
-  var title = 1;
-  function show(x)
-  {
-    if (title == 1) title = document.getElementById('menutitle').firstChild;
-    title.nodeValue = x;
-  }
-function showkey() {
-    alert('pressed');
-}
-        </script>
     </head>
     <!--
 <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
 -->
-    <body onkeypress="showkey()" [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
         [:FORM_START:]
 <center>
         <table id=main width=100% heigth=100%>
@@ -72,7 +61,27 @@ function showkey() {
             </table>
         </td></tr><tr><td>
             <center>
-
+            [:GRID:] 
+            </center>
+        </td></tr><tr><td>
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td width=10%>[:LEFT_BUTTON:]</td>
+                    [<td align=center>:BACK_BUTTON:</td>]
+                    [<td align=center>:EXIT_BUTTON:</td>]
+                    <td align=center>[:HOME_BUTTON:]</td>
+                    <td align=center>[:DELETE_BUTTON:]</td>
+                    <td align=center>[:MARK_BUTTON:]</td>
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
+                    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
+                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                </tr>
+            </table>
+        </td></tr></table>
+</center>
+        </form>
 <script type="text/javascript">
 var title = 1;
 var g_idlist = '';
@@ -126,31 +135,10 @@ function showt(title_text,idlist)
 
 function title0() { showt('_',''); }
 </script>
-
-            [:GRID:] 
-            </center>
-        </td></tr><tr><td>
-            <table class=footer width=100%>
-                <tr valign=top>
-                    <td width=10%>[:LEFT_BUTTON:]</td>
-                    [<td align=center>:BACK_BUTTON:</td>]
-                    [<td align=center>:EXIT_BUTTON:</td>]
-                    <td align=center>[:HOME_BUTTON:]</td>
-                    <td align=center>[:DELETE_BUTTON:]</td>
-                    <td align=center>[:MARK_BUTTON:]</td>
-                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
-                    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
-                    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
-                    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
-                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
-                </tr>
-            </table>
-        </td></tr></table>
-</center>
-        </form>
-        <a href="javascript:ovs_del();" tvid="CLEAR"></a>
-        <a href="javascript:ovs_unwatched();" tvid="8"></a>
-        <a href="javascript:ovs_watched();" tvid="9"></a>
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="88"></a>
+<a href="javascript:ovs_watched();" tvid="99"></a>
+<a href="javascript:ovs_test();" tvid="66"></a>
     </body>
 </html>
 <!--

@@ -2541,10 +2541,12 @@ search_regex_key,search_order_key,search_order,s) {
 
             if (search_order[s] == "ONLINE_NFO") {
 
-                bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_parts);
+                bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
+
                 if (bestUrl == "" && gParts[idx] != "" && name != name_no_parts ) {
-                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name);
+                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_parts);
                 }
+
                 if (bestUrl == "" && name_no_tags != name) {
                     #Add a dot on the end to stop binsearch false matching sub words.
                     #eg binsearch will find "a-bcd" given "a-b" to prevent this 

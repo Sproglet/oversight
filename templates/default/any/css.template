@@ -4,10 +4,22 @@
 html,body { height:100%; margin:0; padding:0; border:none; }
 #main { height:99%; width:100%; border:none; margin:0; padding:0; }
 
-td.gc_fresh { background-color:#AA00AA; border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
-td.gc { border-width:2px; }
-td.gc_fresh_small { font-size:10pt; }
-td.gc_small { font-size:10pt; }
+img { border: 0px solid black; }
+td.poster         { background-color:#AA00AA; border-color:red;     border-width:2px; padding:1px; margin:1px; }
+td.poster_fresh   { background-color:#AA00AA; border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
+td.poster_watched { border-width:2px; border-color:red; padding:1px; margin:1px; }
+
+td.poster_unknown { }
+td.poster_fresh_unknown { }
+td.poster_watched_unknown { }
+
+img.poster { border: 1px solid white; }
+img.poster_fresh { border: 2px solid green; }
+img.poster_watched { border: 0px solid black; }
+
+td.fresh_small { font-size:10pt; }
+td.normal_small { font-size:10pt; }
+td.watched_small { font-size:10pt; }
 
 body.menu_background0 { color:white ; background-color:black; }
 body.menu_background1 { color:yellow ; background-color:black; }
@@ -32,7 +44,6 @@ font.Remove_From_List {color:orange;}
 .optionrow0 { background-color:#222222;}
 .optionrow1 { background-color:#333333;}
 
-img { border: 0px solid black; }
 
 
 /* Normal view */

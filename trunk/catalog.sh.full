@@ -4894,12 +4894,17 @@ i,urls,tmpf,qf,r) {
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget2(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result) {
+args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,default_referer) {
 
     args=" --no-check-certificate -q -U \""g_user_agent"\" "g_wget_opts;
-    if (referer == "") {
-        referer = get_referer(url);
+    default_referer = get_referer(url);
+    if (!check_domain_ok(default_referer)) {
+        return 1;
     }
+    if (referer == "") {
+        referer = default_referer;
+    }
+
     if (referer != "") {
         DEBUG2("Referer = "referer);
         args=args" --referer=\""referer"\" ";
@@ -5026,7 +5031,7 @@ poster_ref) {
 #or internally in a common folder.
 # Note if poster may be url<tab>referer_url
 function download_image(field_id,url,idx,\
-    poster_ref,havePoster,internal_path,urls,referer,wget_args,get_it,script_arg) {
+    poster_ref,havePoster,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
 
     DEBUG("Looking for new poster...");
 
@@ -5089,8 +5094,9 @@ function download_image(field_id,url,idx,\
         wget_args=g_wget_opts;
 
         DEBUG("Poster url = "url);
+        default_referer = get_referer(url);
         if (referer == "" ) {
-            referer = get_referer(url);
+            referer = default_referer;
         }
         if (referer != "" ) {
             DEBUG("Referer = "referer);
@@ -5105,10 +5111,23 @@ function download_image(field_id,url,idx,\
             script_arg="fanart";
         }
 
-        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &");
+        if (check_domain_ok(default_referer)) {
+
+        
+            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &");
+        }
     }
 
     return poster_ref;
+}
+
+function check_domain_ok(url) {
+    if (!(url in g_domain_status)) {
+        if ((g_domain_status[url] = system("wget -O /dev/null "quoteArg(default_referer)) == 0) == 0) {
+            WARNING("Error with domain ["url"]");
+        }
+    }
+    return g_domain_status[url];
 }
 
 #movie db - search direct for imdbid then extract picture

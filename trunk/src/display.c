@@ -636,12 +636,41 @@ char *file_style_small(DbRowId *rowid,int grid_toggle) {
 
     return grid_class;
 }
+// Item is marked watched if all linked rows are watched.
+int is_watched(DbRowId *rowid) {
+    int result=1;
+    for( ; rowid ; rowid = rowid->linked ) {
+        if (rowid->watched == 0) {
+            result=0;
+            break;
+        }
+    }
+    return result;
+}
+
+
 int is_fresh(DbRowId *rowid) {
     int result=0;
-    long fresh_days;
-    if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
-        if (internal_time2epoc(rowid->date) + fresh_days*24*60*60 > time(NULL)) {
-            result=1;
+    static long fresh_time = -1;
+
+    if (fresh_time == -1 ) {
+
+        long fresh_days;
+        fresh_time = 0;
+        if (config_check_long(g_oversight_config,"ovs_new_days",&fresh_days)) {
+            fresh_time = time(NULL) -fresh_days*24*60*60 ;
+        } else {
+            fresh_time = 0;
+        }
+    }
+
+    // Item is marked fresh if any row is fresh
+    if (fresh_time > 0) {
+        for( ; rowid ; rowid = rowid -> linked ) {
+            if (internal_time2epoc(rowid->date) > fresh_time) {
+                result=1;
+                break;
+            }
         }
     }
     return result;
@@ -649,7 +678,7 @@ int is_fresh(DbRowId *rowid) {
 
 char *watched_style(DbRowId *rowid,int grid_toggle) {
 
-    if (rowid->watched) {
+    if (is_watched(rowid)) {
         return " class=watched ";
     } else if (is_fresh(rowid) ) {
         return " class=fresh ";
@@ -659,7 +688,7 @@ char *watched_style(DbRowId *rowid,int grid_toggle) {
 }
 char *watched_style_small(DbRowId *rowid,int grid_toggle) {
 
-    if (rowid->watched) {
+    if (is_watched(rowid)) {
         return " class=watched_small ";
     } else if (is_fresh(rowid) ) {
         return " class=fresh_small ";
@@ -816,20 +845,11 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type) {
     assert(attr);
     char *result = NULL;
     
-    char *newattr=attr;
-
     char *path = get_picture_path(1,&rowid,image_type);
     if (path) {
 
-        if (rowid->watched) {
-            ovs_asprintf(&newattr," %s %s ",attr,watched_style(rowid,0));
-        }
+        result = get_local_image_link(path,rowid->title,attr);
 
-        result = get_local_image_link(path,rowid->title,newattr);
-
-        if (newattr != attr) {
-            FREE(newattr);
-        }
         FREE(path);
     }
     return result;
@@ -1021,6 +1041,12 @@ char *movie_listing(DbRowId *rowid) {
 
     db_rowid_dump(rowid);
 
+    char *tmp = build_id_list(rowid);
+    printf("<script type=\"text/javascript\">\ng_title='%s';\ng_idlist='%s';\n</script>\n",
+            rowid->title,tmp);
+    FREE(tmp);
+
+
     char *select = query_val("select");
     char *style = watched_style(rowid,0);
     if (*select) {
@@ -1093,29 +1119,57 @@ int unwatched_count(DbRowId *rid) {
     return i;
 }
 
+typedef enum { WATCHED , NORMAL , FRESH } ViewStatus;
+
+int get_view_status(DbRowId *rowid) {
+    ViewStatus status = NORMAL;
+    if (is_watched(rowid)) {
+        status = WATCHED;
+    } else if (is_fresh(rowid)) {
+        status = FRESH;
+    }
+    return status;
+}
+
 char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
+    ViewStatus status = get_view_status(row_id);
 
 
     char *attr;
 
+    // *font_class and *grid_class are returned to the caller to set the <a><font> class and the <td>
+    switch(status) {
+        case NORMAL:  *grid_class = "class=poster"; break;
+        case FRESH:   *grid_class = "class=poster_fresh"; break;
+        case WATCHED: *grid_class = "class=poster_watched"; break;
+        default:
+             assert(0);
+    }
+    *font_class = *grid_class;
+
+
+    // The class is reused here to set the image tag
+    // They just happen to have the same name - maybe there is a more css friendly way to do this!
     ovs_asprintf(&attr," width=%d height=%d %s ",
         g_dimension->poster_menu_img_width,
         g_dimension->poster_menu_img_height,
-        watched_style(row_id,grid_toggle)
-        );
+        *font_class);
 
     title = get_poster_image_tag(row_id,attr,THUMB_IMAGE);
-    FREE(attr);
 
-    *font_class = "class=fc";
-    if (is_fresh(row_id)) {
-        *grid_class = "class=gc_fresh";
-    } else {
-        *grid_class = "class=gc";
+/*
+ * if (status != WATCHED ) {
+        char *tmp;
+        ovs_asprintf(&tmp,"<nobr>%s<table border=1><tr><td %s_bar width=1px>.</td></tr></table></nobr>",
+                title,*grid_class);
+        FREE(title);
+        title=tmp;
     }
+    */
+    FREE(attr);
     return title;
 }
 
@@ -1126,14 +1180,13 @@ char *get_poster_mode_item_unknown(DbRowId *row_id,int grid_toggle,char **font_c
     if (strlen(title) > 20) {
         strcpy(title+18,"..");
     }
-    if (is_fresh(row_id)) {
-        *grid_class = "class=gc_fresh_small";
+    if (is_watched(row_id)) {
+        *grid_class = "class=poster_watched_unknown";
+    } else if (is_fresh(row_id)) {
+        *grid_class = "class=poster_fresh_unknown";
     } else {
-        *grid_class = "class=gc_small";
+        *grid_class = "class=poster_unknown";
     }
-    *font_class = watched_style(row_id,grid_toggle);
-    *grid_class = file_style(row_id,grid_toggle);
-
     *font_class = watched_style_small(row_id,grid_toggle);
     return title;
 }

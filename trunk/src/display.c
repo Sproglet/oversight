@@ -25,6 +25,7 @@
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
+void util_free_char_array(int size,char **a);
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 
@@ -1887,12 +1888,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     }
     //
     // Free all of the idlists
-    for ( r = 0 ; r < rows ; r++ ) {
-        for ( c = 0 ; c < cols ; c++ ) {
-            i = c * rows + r ;
-            FREE(idlist[i]);
-        }
-    }
+    util_free_char_array(rows*cols,idlist);
 
     char *w;
     if (!g_dimension->poster_mode) {
@@ -2323,8 +2319,8 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *episode,char *text) {
-    int result;
+char *plot_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *text) {
+    char *result = NULL;
     char *plot = text;
     if (strchr(plot,'\'')) {
         char *tmp = replace_all(plot,"'","\\'",0);
@@ -2337,11 +2333,21 @@ int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *episode,char *text) {
         plot = tmp;
     }
 
-    result = sprintf(buf,fn_fmt,fn_id,id,episode,plot);
+    ovs_asprintf(&result,"%sfunction plot%ld() { show('%s','%s','%s'); }\n",
+            NVL(script_so_far),fn_id,idlist,episode,plot);
     if (plot != text) {
         FREE(plot);
     }
     return result;
+}
+
+void util_free_char_array(int size,char **a)
+{
+    int i;
+    for(i = 0 ; i < size ; i++ ) {
+        FREE(a[i]);
+    }
+    FREE(a);
 }
 
 /**
@@ -2352,44 +2358,27 @@ int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *episode,char *text) {
  */
 char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
 
+    char *result = NULL;
+
+    int i;
+    char *tmp;
+
     // get titles from plot.db
     get_plot_offsets_and_text(num_rows,sorted_rows,1);
 
-    char *javascript_plot_format = "function plot%ld() { show('%ld','%s','%s'); }\n" ;
-    int javascript_plot_format_len = strlen(javascript_plot_format);
-
-    char *header = "<script type=\"text/javascript\">\n";
-
-
-    char *footer = "\n</script>\n";
-    int len = strlen(header)+strlen(footer)+100; // space for <script></script> tags
-
-    int i;
-
-    // Space for main plot
+    // build the idlist
+    char **idlist = CALLOC(num_rows,sizeof(char *));
     for(i = 0 ; i < num_rows ; i++ ) {
-        if (sorted_rows[i]->plot_text) {
-            len += 50+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->plot_text));
-            break;
-        }
+        idlist[i] = build_id_list(sorted_rows[i]);
     }
-    // Space for each episode plot
-    for(i = 0 ; i < num_rows ; i++ ) {
-        len += 50+javascript_plot_format_len
-            + strlen(NVL(sorted_rows[i]->episode))
-            + strlen(NVL(sorted_rows[i]->episode_plot_text));
-    }
-
-    char *script = MALLOC(len);
-    char *script_p = script;
-
-    script_p += sprintf(script_p,"%s",header);
 
     // Main plot function
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            script_p += plot_fn(script_p,0,javascript_plot_format,0,"",NVL(rid->plot_text));
+            tmp = plot_fn(result,0,"","",NVL(rid->plot_text));
+            FREE(result);
+            result = tmp;
             break;
         }
     }
@@ -2397,11 +2386,19 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        script_p += plot_fn(script_p,(long)rid,javascript_plot_format,rid->id,NVL(rid->episode),NVL(rid->episode_plot_text));
+        tmp = plot_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text));
+        FREE(result);
+        result = tmp;
 
     }
-    script_p += sprintf(script_p,"%s",footer);
-    return script;
+
+    ovs_asprintf(&tmp,"<script type=\"text/javascript\">\n%s\n</script>\n",result);
+    FREE(result);
+    result = tmp;
+
+    util_free_char_array(num_rows,idlist);
+
+    return result;
 }
 
 char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)

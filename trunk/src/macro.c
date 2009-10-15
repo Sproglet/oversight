@@ -1112,7 +1112,7 @@ char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_ro
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("mark",NULL);
             ovs_asprintf(&result,
-                    "<a href=\"javascript:alert('Select item then Use remote [9] to [w]atch,[8] to [u]nwatch')\">%s</a>",tag);
+                    "<a href=\"javascript:alert('Select item then remote\n[9] to [w]atch,\n[8] to [u]nwatch')\">%s</a>",tag);
             FREE(tag);
         } else {
             result = get_theme_image_link("select=Mark","","mark","");
@@ -1127,7 +1127,7 @@ char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("delete",NULL);
             ovs_asprintf(&result,
-                "<a href=\"javascript:alert('Select item then Use remote [DELETE/CLEAR] button')\">%s</a>",tag);
+                "<a href=\"javascript:alert('Select item then remote\n[DELETE/CLEAR] button')\">%s</a>",tag);
             FREE(tag);
         } else {
             result = get_theme_image_link("select=Delete","","delete","");

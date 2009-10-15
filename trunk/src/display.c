@@ -2323,7 +2323,7 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *text) {
+int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *episode,char *text) {
     int result;
     char *plot = text;
     if (strchr(plot,'\'')) {
@@ -2337,7 +2337,7 @@ int plot_fn(char *buf,long fn_id,char *fn_fmt,int id,char *text) {
         plot = tmp;
     }
 
-    result = sprintf(buf,fn_fmt,fn_id,id,plot);
+    result = sprintf(buf,fn_fmt,fn_id,id,episode,plot);
     if (plot != text) {
         FREE(plot);
     }
@@ -2355,7 +2355,7 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     // get titles from plot.db
     get_plot_offsets_and_text(num_rows,sorted_rows,1);
 
-    char *javascript_plot_format = "function plot%ld() { show('%ld','%s'); }\n" ;
+    char *javascript_plot_format = "function plot%ld() { show('%ld','%s','%s'); }\n" ;
     int javascript_plot_format_len = strlen(javascript_plot_format);
 
     char *header = "<script type=\"text/javascript\">\n";
@@ -2369,13 +2369,15 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     // Space for main plot
     for(i = 0 ; i < num_rows ; i++ ) {
         if (sorted_rows[i]->plot_text) {
-            len += 5+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->plot_text));
+            len += 50+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->plot_text));
             break;
         }
     }
     // Space for each episode plot
     for(i = 0 ; i < num_rows ; i++ ) {
-        len += 5+javascript_plot_format_len + strlen(NVL(sorted_rows[i]->episode_plot_text));
+        len += 50+javascript_plot_format_len
+            + strlen(NVL(sorted_rows[i]->episode))
+            + strlen(NVL(sorted_rows[i]->episode_plot_text));
     }
 
     char *script = MALLOC(len);
@@ -2387,7 +2389,7 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            script_p += plot_fn(script_p,0,javascript_plot_format,0,NVL(rid->plot_text));
+            script_p += plot_fn(script_p,0,javascript_plot_format,0,"",NVL(rid->plot_text));
             break;
         }
     }
@@ -2395,7 +2397,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        script_p += plot_fn(script_p,(long)rid,javascript_plot_format,rid->id,NVL(rid->episode_plot_text));
+        script_p += plot_fn(script_p,(long)rid,javascript_plot_format,rid->id,NVL(rid->episode),NVL(rid->episode_plot_text));
 
     }
     script_p += sprintf(script_p,"%s",footer);

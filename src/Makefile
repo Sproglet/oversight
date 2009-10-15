@@ -7,6 +7,7 @@ ifeq ($(ARCH),200)
 		CROSS=/mips-4.3/
 		CC=$(CROSS)/bin/mips-linux-gnu-gcc
 		LD=$(CROSS)/bin/mips-linux-gnu-gcc
+		STRIP=$(CROSS)/bin/mips-linux-gnu-strip
 		CFLAGS_ARCH=-EL
 		LDFLAGS_ARCH=-EL
 		BADARCH=100
@@ -14,6 +15,7 @@ else
 		CROSS=/cross-gcc/mipsel-linux-uclibc
 		CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 		LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
+		STRIP=$(CROSS)/bin/mipsel-linux-uclibc-strip
 		BADARCH=200
 endif
 else
@@ -55,6 +57,7 @@ $(ARCH):
 $(TARGET):  $(OBJS)
 	ctags -R .
 	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
+	$(STRIP) $(TARGET)
 	cp $(TARGET) $(EXE)
 	sleep 1
 

@@ -6,7 +6,6 @@
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
-    </head>
     [:INCLUDE_TEMPLATE(movie[:$ovs_display_fanart:]):]
 </html>
 <!--

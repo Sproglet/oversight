@@ -1,4 +1,8 @@
 <!-- Default Fanart Movie Template  $Id:$ -->
+<style type="text/css">
+body.movie_background1 { color:yellow ; background-color:black; }
+</style>
+    </head>
     <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(default.jpg):] >
 <table id="main" width=100% >
     <tr valign="bottom">

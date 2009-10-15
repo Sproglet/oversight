@@ -1,4 +1,8 @@
 <!-- Default Tv Template  $Id:$ -->
+<style type="text/css">
+body.tv_background0 { color:white ; background-color:black; }
+</style>
+</head>
 <body height=100% focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(lightwave.jpg):] >
 [:FORM_START:]
 <table id=main width=100%>
@@ -47,7 +51,6 @@
     </tr>
 </table>
 </form>
-</body>
 
 <!--
 vi:ts=4:sw=4:et:syntax=html

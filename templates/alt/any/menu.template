@@ -5,6 +5,29 @@
         <title>Oversight Menu [:HOSTNAME:]</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
+.gridTW0_0 { color:white; background-color:#101055; }
+.gridTW0_1 { color:white; background-color:#101066; }
+.gridMW0_0 { color:white; background-color:#105510; }
+.gridMW0_1 { color:white; background-color:#106610; }
+.gridW0_0 { color:white; background-color:#551010; }
+.gridW0_1 { color:white; background-color:#661010; }
+body.menu_background0 { color:white ; background-color:black; }
+body.menu_background1 { color:yellow ; background-color:black; }
+#menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
+
+/*
+.gridTW1_1 { color:#555555; background-color:#101066; }
+.gridTW1_0 { color:#555555; background-color:#101055; }
+.gridMW1_1 { color:#555555; background-color:#105510; }
+.gridMW1_0 { color:#555555; background-color:#106610; }
+.gridW1_1 { color:#555555; background-color:#551010; }
+.gridW1_0 { color:#555555; background-color:#661010; }
+*/ .dummy { color:red; }
+
+.overview_poster1 { text-align:center; width:1%; }
+.overview_poster0 { text-align:center;  width:100%;}
+table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
         </style>
         <script type="text/javascript">
   var title = 1;
@@ -60,10 +83,8 @@ function ovs_del() {
     if (g_idlist) {
         if (confirm("Delist/Delete "+g_title+"?")) {
             if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
-                alert("deleting items "+g_idlist);
                 action('delete');
             } else {
-                alert("delisting items "+g_idlist);
                 action('delist');
             }
         }

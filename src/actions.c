@@ -362,22 +362,24 @@ void do_actions() {
         char *actionids = query_val("actionids");
         if (actionids && *actionids) {
 
+            HTML_LOG(0,"actionids=[%s]",actionids);
+
             struct hashtable *source_id_hash = string_string_hashtable(16);
             merge_id_by_source(source_id_hash,actionids);
 
-            if (allow_mark() && strcmp(action,"watch")) {
+            if (allow_mark() && strcmp(action,"watch") == 0) {
 
                 db_set_fields(DB_FLDID_WATCHED,"1",source_id_hash,DELETE_MODE_NONE);
 
-            } else if (allow_mark() && strcmp(action,"unwatch")) {
+            } else if (allow_mark() && strcmp(action,"unwatch") == 0) {
 
                 db_set_fields(DB_FLDID_WATCHED,"0",source_id_hash,DELETE_MODE_NONE);
 
-            } else if (allow_delete() && strcmp(action,"delete")) {
+            } else if (allow_delete() && strcmp(action,"delete") == 0) {
 
                 db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_DELETE);
 
-            } else if (allow_delist() && strcmp(action,"delist")) {
+            } else if (allow_delist() && strcmp(action,"delist") == 0) {
 
                 db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_REMOVE);
 

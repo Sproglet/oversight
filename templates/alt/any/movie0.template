@@ -1,4 +1,8 @@
 <!-- Default Movie Template  $Id:$ -->
+<style type="text/css">
+body.movie_background0 { color:white ; background-color:black; }
+</style>
+</head>
 <body focuscolor=yellow focustext=black height=100% [class=movie_background:IS_GAYA:]  [background=:FANART_URL(lightwave.jpg):] >
     [:FORM_START:]
 <table id="main" width=100% >

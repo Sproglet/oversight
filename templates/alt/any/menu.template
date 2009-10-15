@@ -107,7 +107,6 @@ function ovs_unwatched() {
 
 function action(a) {
     var sep;
-    alert(a + ":" + g_idlist);
     if (window.location.href.indexOf('?') == -1 ) {
         sep='?';
     } else {

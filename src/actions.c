@@ -163,7 +163,6 @@ void delete_media(DbRowId *rid,int delete_related) {
     *f='/';
 }
 
-static struct hashtable *g_delete_queue = NULL;
 
 void delete_queue_add(DbRowId *rid,char *path) {
 

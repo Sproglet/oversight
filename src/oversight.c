@@ -227,34 +227,39 @@ TRACE;
             build_playlist(num_rows,sorted_rows);
         }
     }
-    html_comment("cleanup");
 
-TRACE;
+    // When troubleshooting we should clean up properly as this may reveal
+    // malloc errors. 
+    // But otherwise just let the OS reclaim everything.
+    if(0) {
+        html_comment("cleanup");
+    TRACE;
 
-    delete_queue_delete();
-TRACE;
-    free_sorted_rows(rowsets,sorted_rows);
-TRACE;
+        delete_queue_delete();
+    TRACE;
+        free_sorted_rows(rowsets,sorted_rows);
+    TRACE;
 
-    /*
-    html_comment("dump shit");
-    html_hashtable_dump(3,"ovs cfg",oversight_config);
-    html_hashtable_dump(3,"catalog cfg",catalog_config);
-    html_hashtable_dump(3,"settings",nmt_settings);
-    */
-    hashtable_destroy(g_oversight_config,1,1);
+        /*
+        html_comment("dump shit");
+        html_hashtable_dump(3,"ovs cfg",oversight_config);
+        html_hashtable_dump(3,"catalog cfg",catalog_config);
+        html_hashtable_dump(3,"settings",nmt_settings);
+        */
+        hashtable_destroy(g_oversight_config,1,1);
 
-    hashtable_destroy(g_catalog_config,1,1);
+        hashtable_destroy(g_catalog_config,1,1);
 
-    hashtable_destroy(g_nmt_settings,1,1);
+        hashtable_destroy(g_nmt_settings,1,1);
 
-    hashtable_destroy(g_query,1,0);
+        hashtable_destroy(g_query,1,0);
 
-    /*
-    hashtable database_list= open_databases(g_query);
+        /*
+        hashtable database_list= open_databases(g_query);
 
-    display_page(g_query,database_list);
-    */
+        display_page(g_query,database_list);
+        */
+    }
 
     html_comment("end");
 

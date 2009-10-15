@@ -651,7 +651,11 @@ DbRowId *read_and_parse_row(
     char value[DB_VAL_BUF_SIZE];
     char *value_end=value+DB_VAL_BUF_SIZE;
 
-    register char next;
+    char term[256];
+    memset(term,0,256);
+    term['\t'] = term['\n'] = term['\r'] = term['\0'] = 1;
+
+    register int next;
 
     //initially point p at the value buffer.
     //This initial value is discarded but it removes the need to 
@@ -666,75 +670,96 @@ DbRowId *read_and_parse_row(
         if (fgets(value,DB_VAL_BUF_SIZE,fp) == NULL) break;
     }
 
+    // OK this is a bit nasty. 
+    // There are a few nested loops and some are for every character in the file
+    // In a normal worled we can check condition in the loop test, but this impacts
+    // performance. 
+    // We really want to switch loops with each state transition, and without testing in 
+    // the loop itself. This means ... goto.
+    // Or named break or longjump. etc.
+
+    // This outer loop eats characters until we hit a tab, eol or eof.
     for(;;) {
 
-        switch(next) {
-        case EOF:
-            goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
-        case '\n' : case '\r' : case '\0': // EOL terminators
-            if (state == STATE_VAR) {
-                *p = '\0';
-                HTML_LOG(3,"parsed field %s=%s",name,value);
-                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
-                state = STATE_START;
+
+        // Control should only get here if state = STATE_START
+        if (state == STATE_START) {
+            while(next != EOF  && !term[next] ) {
+                HTML_LOG(0,"Skip %c[%d]",next,next);
+                next = getc(fp);
             }
-            goto eol;
-        case '\t':
-            switch(state) {
-                case STATE_START:
+        }
 
-                    state=STATE_NAME;
-                    p=name;
-                    end=name_end;
-                    break;
+        if (next == EOF) {
+            goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
+        } else if (!term[next]) {
+            // Not state != STATE_START if we get here
+            // Add the character
+            *p++ = next;
+            if (p >= end ) {
+                // Name variable. This shouldnt happen - truncate
+                p--;
+                *p = '\0';
+                break;
+            }
+        } else {
+            switch(next) {
 
-                case STATE_NAME:
 
-                    //switch to STATE_VAR
-
-                    *p = '\0';
-                    state=STATE_VAR;
-                    p=value;
-                    end=value_end;
-                    HTML_LOG(3,"name[%s]",name);
-                    break;
-
-                case STATE_VAR:
-                    //switch to STATE_VAR if TAB is followed by _ (start of a name)
-                    next = getc(fp);
-                    if (next != '_' ) {
-                        //If plot contains <tab> allow it if it is NOT followed by _
-                        //which is the prefix for out html vars. This is a nasty hack due 
-                        //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
-                        ungetc(next,fp);
-                    } else {
+                case '\n' : case '\r' : case '\0': // EOL terminators
+                    if (state == STATE_VAR) {
                         *p = '\0';
-                        HTML_LOG(3,"val[%s]",value);
+                        HTML_LOG(3,"parsed field %s=%s",name,value);
                         db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
+                        state = STATE_START;
+                    }
+                    goto eol;
+                case '\t':
+                    switch(state) {
+                        case STATE_START:
 
-                        state=STATE_NAME;
-                        p=name;
-                        end=name_end;
-                        *p++='_';
+                            state=STATE_NAME;
+                            p=name;
+                            end=name_end;
+                            break;
+
+                        case STATE_NAME:
+
+                            //switch to STATE_VAR
+
+                            *p = '\0';
+                            state=STATE_VAR;
+                            p=value;
+                            end=value_end;
+                            HTML_LOG(3,"name[%s]",name);
+                            break;
+
+                        case STATE_VAR:
+                            //switch to STATE_VAR if TAB is followed by _ (start of a name)
+                            next = getc(fp);
+                            if (next != '_' ) {
+                                //If plot contains <tab> allow it if it is NOT followed by _
+                                //which is the prefix for out html vars. This is a nasty hack due 
+                                //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
+                                ungetc(next,fp);
+                            } else {
+                                *p = '\0';
+                                HTML_LOG(3,"val[%s]",value);
+                                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
+
+                                state=STATE_NAME;
+                                p=name;
+                                end=name_end;
+                                *p++='_';
+                            }
+                            break;
+                        default:
+                            assert(0);
+                            break;
                     }
                     break;
-                default:
-                    assert(0);
-                    break;
-            }
-            break;
-        default:
-            if (state != STATE_START) {
-                // Add the character
-                *p++ = next;
-                if (p >= end ) {
-                    // Name variable. This shouldnt happen - truncate
-                    p--;
-                    *p = '\0';
-                    break;
-                }
-            } else {
-                HTML_LOG(0,"Found %c[%d]",next,next);
+            default:
+                assert(0);
             }
         }
         next = getc(fp);
@@ -1379,9 +1404,11 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
                 // If there were any  deletes queued for shared resources, revoke them
                 // as they are in use by this item.
-                delete_queue_unqueue(&rowid,rowid.nfo);
-                delete_queue_unqueue(&rowid,rowid.poster);
-                delete_queue_unqueue(&rowid,rowid.fanart);
+                if (g_delete_queue != NULL) {
+                    delete_queue_unqueue(&rowid,rowid.nfo);
+                    delete_queue_unqueue(&rowid,rowid.poster);
+                    delete_queue_unqueue(&rowid,rowid.fanart);
+                }
 
                 // Check the device is mounted - if not skip it.
                 if (!nmt_mount_quick(rowid.file)){

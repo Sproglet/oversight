@@ -2,16 +2,14 @@
 
 html,body { height:100%; margin:0; padding:0; border:none; }
 #main { height:99%; width:100%; border:none; margin:0; padding:0; }
+table.main { border:0px ; padding:0px ; margin: 0px ; border-width:0px }
+td.main { border:0px ; padding:0px ; margin: 0px ; border-width:0px }
 
 img { border: 0px solid black; }
 
-img.poster       { border-color:white; border-width:2px; padding:1px; margin:1px; }
-img.poster_fresh { border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
+.poster       { border-color:white; border-width:0px; padding:0px; margin:0px; }
+.poster_fresh { border-color:#AAAA00; border-width:2px; padding:1px; margin:1px; }
 img.poster_watched { }
-
-td.poster { border-width:2px; border-color:red; padding:1px; margin:1px; }
-td.poster_fresh { background-color:#AA00AA; border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
-td.poster_watched { border-width:2px; border-color:red; padding:1px; margin:1px; }
 
 td.poster_bar {  background-color:#AA00AA; }
 td.poster_fresh_bar { background-color:green; }

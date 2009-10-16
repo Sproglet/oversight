@@ -1112,7 +1112,7 @@ char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_ro
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("mark",NULL);
             ovs_asprintf(&result,
-                    "<a href=\"javascript:alert('Select item then remote\n[9] to [w]atch,\n[8] to [u]nwatch')\">%s</a>",tag);
+                    "<a href=\"javascript:alert('Select item then remote\n[99] to [w]atch,\n[88] to [u]nwatch')\">%s</a>",tag);
             FREE(tag);
         } else {
             result = get_theme_image_link("select=Mark","","mark","");
@@ -1361,6 +1361,43 @@ char *macro_fn_font_size(char *template_name,char *call,Array *args,int num_rows
 char *macro_fn_title_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return numeric_constant_macro(g_dimension->title_size,args);
 }
+char *macro_fn_body_width(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    long value = g_dimension->scanlines ;
+    switch(value) {
+        case 0:
+        if (g_dimension->is_pal) {
+            value = 700;
+        } else {
+            value = 685;
+        }
+        break;
+        case 720:
+            value = 1096;
+            break;
+
+    }
+
+    return numeric_constant_macro(value,args);
+}
+char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    long value = g_dimension->scanlines ;
+    switch(value) {
+        case 0:
+        if (g_dimension->is_pal) {
+            value = 500;
+        } else {
+            value = 400;
+        }
+        break;
+        case 720:
+            value = 648;
+            break;
+
+    }
+
+    return numeric_constant_macro(value,args);
+}
+
 char *macro_fn_scanlines(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return numeric_constant_macro(g_dimension->scanlines,args);
 }
@@ -1460,6 +1497,8 @@ void macro_init() {
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
+        hashtable_insert(macros,"BODY_WIDTH",macro_fn_body_width);
+        hashtable_insert(macros,"BODY_HEIGHT",macro_fn_body_height);
         hashtable_insert(macros,"EDIT_CONFIG",macro_fn_edit_config);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"TVIDS",macro_fn_tvids);

@@ -4,9 +4,10 @@ body.movie_background1 { color:yellow ; background-color:black; }
 </style>
     </head>
     <body focuscolor=yellow focustext=black [class=movie_background:IS_GAYA:]  [background=:FANART_URL(default.jpg):] >
-<table id="main" width=100% >
-    <tr valign="bottom">
-        <td>
+
+<table class=main>
+<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:]px>
+
         [:FORM_START:]
             <table width=100%>
                 <tr valign=top>
@@ -16,15 +17,10 @@ body.movie_background1 { color:yellow ; background-color:black; }
                 </tr>
             </table>
 
-            <table>
-
-                <tr class=fanart[:$ovs_display_fanart:]>
-                    <td width=1% class=left align=left>[:POSTER:]</td>
-                </tr>
-            </table>
 
             <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                 <tr>
+                    <td width=1% class=left align=left>[:POSTER:]</td>
                     <td >
                         <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>

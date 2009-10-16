@@ -24,13 +24,13 @@ function ovs_del() {
     }
 }
 function ovs_watched() {
-    if (confirm("Set episode "+g_title+"\n as WATCHED?")) {
+    if (confirm("Mark "+g_title+"\n as WATCHED?")) {
         action('watch');
     }
 }
 
 function ovs_unwatched() {
-    if (confirm("Set episode"+g_title+"\nas NOT watched?")) {
+    if (confirm("Mark "+g_title+"\nas NOT watched?")) {
         action('unwatch');
     }
 }
@@ -48,8 +48,8 @@ function action(a) {
 </script>
 
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
-<a href="javascript:ovs_unwatched();" tvid="8"></a>
-<a href="javascript:ovs_watched();" tvid="9"></a>
+<a href="javascript:ovs_unwatched();" tvid="88"></a>
+<a href="javascript:ovs_watched();" tvid="99"></a>
 </body>
 </html>
 <!--

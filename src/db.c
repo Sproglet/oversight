@@ -1736,6 +1736,8 @@ void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_sourc
     HTML_LOG(1," end db_set_fields");
 }
 
+#define GENRE_SEP(c) ((c) == '|' || (c) == ' ' || (c) == ',')
+
 void get_genre_from_string(char *gstr,struct hashtable **h) {
 
     char *p;
@@ -1745,18 +1747,15 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
     }
 
     for(;;) {
-        //while (*gstr == ' ' ) gstr++; // eat space
 
-        while (*gstr && strchr("|, ",*gstr) ) { gstr++; } // eat sep
-
-        //while (*gstr == ' ' ) gstr++; // eat space - ltrim
+        while (GENRE_SEP(*gstr)) { gstr++; } // eat sep
 
         if (!*gstr) {
             break;
         }
 
         p = gstr;
-        while ( *p && strchr("|, ",*p) == NULL) { p++; } // find end sep
+        while ( *p && !GENRE_SEP(*p)) { p++; } // find end sep
 
         //while ( p > gstr && p[-1] == ' ' ) p--; // rtrim
 

@@ -24,8 +24,13 @@ struct hashtable {
 };
 
 /*****************************************************************************/
+#if 0
 unsigned int
 hash(struct hashtable *h, void *k);
+
+#else
+#define hash(h,k) ((h)->hashfn(k))
+#endif
 
 /*****************************************************************************/
 /* indexFor */

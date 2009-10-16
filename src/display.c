@@ -530,7 +530,7 @@ char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,cha
     return attr;
 }
 
-char *get_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scroll,int centre_cell) {
+char *get_empty(char *width_attr,char *height_attr,int grid_toggle,int left_scroll,int right_scroll,int centre_cell) {
 
     char *attr;
 
@@ -538,8 +538,8 @@ char *get_empty(char *width_attr,int grid_toggle,int left_scroll,int right_scrol
 
     char *result;
 
-    ovs_asprintf(&result,"\t\t<td %s class=empty%d><a href=\"\" %s></a>\n",
-            width_attr,grid_toggle,attr);
+    ovs_asprintf(&result,"\t\t<td %s %s class=empty%d><a href=\"\" %s></a>\n",
+            width_attr,height_attr,grid_toggle,attr);
 
     FREE(attr);
     return result;
@@ -1281,21 +1281,25 @@ char *get_simple_title(DbRowId *row_id) {
         int unwatched = unwatched_count(row_id);
         int total = group_count(row_id);
         if (unwatched == 0 ) {
-            ovs_asprintf(&title,"%s S%d [%d]%s%s%s",row_id->title,row_id->season,total,
+            ovs_asprintf(&title,"%s S%d [%d]%s%s%s",row_id->title,row_id->season,
+                    total,
                     source_start,(show_source?source:""),source_end);
         } else {
-            ovs_asprintf(&title,"%s S%d [%d of %d]%s%s%s",row_id->title,row_id->season,unwatched,total,
+            ovs_asprintf(&title,"%s S%d [%d of %d]%s%s%s",row_id->title,row_id->season,
+                    unwatched,total,
                     source_start,(show_source?source:""),source_end);
         }
 
     } else if (row_id->year) {
 
-        ovs_asprintf(&title,"%s (%d)%s%s%s",row_id->title,row_id->year,
+        ovs_asprintf(&title,"%s (%d) %s %s%s%s",row_id->title,row_id->year,
+                NVL(row_id->certificate),
                 source_start,(show_source?source:""),source_end);
 
     } else {
 
-        ovs_asprintf(&title,"%s%s%s%s",row_id->title,
+        ovs_asprintf(&title,"%s %s %s%s%s",row_id->title,
+                NVL(row_id->certificate),
                 source_start,(show_source?source:""),source_end);
     }
     return title;
@@ -1324,7 +1328,7 @@ char *mouse_event_fn(char *function_name_prefix,long function_id) {
     return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover","onmouseout");
 }
 
-char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
+char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,int grid_toggle,
         int left_scroll,int right_scroll,int centre_cell,char *idlist) {
 
     //TODO:Highlight matched bit
@@ -1362,10 +1366,21 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
         }
         if (displaying_text) {
 
-            //Reduce amount of text in link - to fix gaya navigation
-            if (link_first_word_only) first_space = strchr(title,' ');
+            if (link_first_word_only) {
+                // Add a horizontal image to stop cell shrinkage.
+                char *tmp;
+                ovs_asprintf(&tmp,"%s<br><img src=\"images/1h.jpg\" %s height=1px>",title,width_attr);
+                FREE(title);
+                title = tmp;
+                //
+                //Reduce amount of text in link - to fix gaya navigation
+                first_space = strchr(title,' ');
+            }
 
-            // Display alternate image
+            // Display alternate image - this has to be a cell background image
+            // so ewe can overlay text on it. as NTM does not have relative positioning
+            // the alternative is to render the page and then use javascript to inspect
+            // the cell coordinates and then overlay the text. yuk
             switch (row_id->category) {
                 case 'T':
                     cell_background_image=icon_source("tv"); break;
@@ -1467,10 +1482,11 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,int grid_toggle,
 
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s%s %s %s %s >%s%s%s</td>",
+    ovs_asprintf(&result,"\t<td %s%s %s %s %s %s >%s%s%s</td>",
             (cell_background_image?"background=":""),
             (cell_background_image?cell_background_image:""),
-            width_attr,grid_class,mouse_ev,cell_text,
+            width_attr,height_attr,
+            grid_class,mouse_ev,cell_text,
             (first_space?" ":""),
             (first_space?first_space+1:""));
 
@@ -1871,6 +1887,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     char *result=NULL;
     int i;
     char *width_attr;
+    char *height_attr;
     char *tmp;
 
     if (numids < rows * cols ) {
@@ -1879,11 +1896,12 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     }
 
     if (g_dimension->poster_mode) {
-        ovs_asprintf(&width_attr," width=%dpx height=%dpx ",
-            g_dimension->poster_menu_img_width+4,
-            g_dimension->poster_menu_img_height+4);
+        ovs_asprintf(&width_attr," width=%dpx ", g_dimension->poster_menu_img_width+4);
+
+        ovs_asprintf(&height_attr," height=%dpx ", g_dimension->poster_menu_img_height+4);
     } else {
         ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
+        height_attr=STRDUP("");
     }
 
     char **idlist = CALLOC(rows*cols,sizeof(char *));
@@ -1922,9 +1940,9 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(i,row_ids[i],width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell,idlist[i]);
+                item = get_item(i,row_ids[i],width_attr,height_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell,idlist[i]);
             } else {
-                item = get_empty(width_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                item = get_empty(width_attr,height_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
             }
             ovs_asprintf(&tmp,"%s%s\n",result,item);
             FREE(result);

@@ -55,6 +55,11 @@ create_hashtable(unsigned int minsize,
 }
 
 /*****************************************************************************/
+// ALL #defined away this function. I spend too much time looking at hash functions
+// and then see this.
+//  see hashtable.h for macro replacement
+//
+#if 0
 unsigned int
 hash(struct hashtable *h, void *k)
 {
@@ -67,6 +72,9 @@ hash(struct hashtable *h, void *k)
     i ^=  ((i >> 10) | (i << 22)); /* >>> */
     return i;
 }
+
+
+#endif
 
 /*****************************************************************************/
 static int

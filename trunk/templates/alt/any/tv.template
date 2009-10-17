@@ -18,12 +18,14 @@ td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):
 
     [:INCLUDE_TEMPLATE(tv[:$ovs_display_fanart:]):]
 
+[:MENU_TVID:]
+[:PLAY_TVID:]
 <script type="text/javascript">
 
 var g_idlist='';
-var title = 1;
+var titlecell = document.getElementById('tvplot').firstChild;
 var g_epno='';
-
+var g_info='';
 
 function ovs_del() {
     if (g_epno != '') {
@@ -36,6 +38,9 @@ function ovs_del() {
         }
     }
 }
+function ovs_info() {
+    alert(g_info);
+}
 function ovs_watched() {
     if (g_epno != '') {
         if (confirm("Mark episode "+g_epno+"\n as watched?")) {
@@ -44,6 +49,8 @@ function ovs_watched() {
     }
 }
 function ovs_test() { alert('test'); }
+function ovs_test2() { alert(g_epno); }
+
 function ovs_unwatched() {
     if (g_epno != '') {
         if (confirm("Mark episode"+g_epno+"\nas NOT watched?")) {
@@ -62,16 +69,19 @@ function action(a) {
 
     location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
 }
-function show(idlist,epno,plot_text)
+function show(idlist,epno,plot_text,info)
 {
     g_idlist = idlist;
     g_epno = epno;
-    if (title == 1) title = document.getElementById('tvplot').firstChild;
-    title.nodeValue = plot_text;
+    g_info = info;
+    titlecell.nodeValue = plot_text;
 }
 </script>
 
+<a href="javascript:ovs_info();" tvid="INFO"></a>
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_test();" tvid="11"></a>
+<a href="javascript:ovs_test2();" tvid="22"></a>
 <a href="javascript:ovs_unwatched();" tvid="88"></a>
 <a href="javascript:ovs_watched();" tvid="99"></a>
 </body>

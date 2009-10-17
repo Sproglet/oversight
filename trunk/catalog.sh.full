@@ -164,16 +164,7 @@ RENAME_TV=0
 RENAME_FILM=0
 STDOUT=0
 
-full_path() {
-    if [ -d "$1" ] ; then
-        (cd "$1" ; pwd )
-    else
-        BASE=$( sed -r "s,[^/]+$,.," "$1" )
-        FILE=$( sed -r "s,.*/,," "$1" )
-        BASE=$(cd "$BASE" ; pwd )
-        echo "$BASE/$FILE"
-    fi
-}
+START_DIR="$PWD"
 
 check_missing_settings
 
@@ -428,9 +419,7 @@ DEBUG("find line "newfile);
                 # remove /./
                 gsub(/\/\.\//,"/",newdir);
 
-DEBUG("isDirectory "newdir);
-
-                if (isDirectory(newdir) ) {
+                if (is_dir(newdir) ) {
                     DEBUG("Changed content - "newdir);
                 } else {
                     newdir=dirname(newdir);
@@ -724,23 +713,30 @@ END{
 
 
     for(f in FOLDER_ARR) {
-        if (FOLDER_ARR[f] ~ /^[^\/.]/ ) {
+        if (FOLDER_ARR[f] ~ /^[^\/.]/  ) {
             # Assume it is a share
             share_name=FOLDER_ARR[f];
             sub(/\/.*/,"",share_name);
 
             if (!(share_name in g_share_name_to_folder)) {
                 g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings);
-            DEBUG("share name "share_name" = "g_share_name_to_folder[share_name]);
+                DEBUG("share name "share_name" = "g_share_name_to_folder[share_name]);
             }
-            g_share_map[FOLDER_ARR[f]] = share_name;
-
-            FOLDER_ARR[f] = nmt_get_share_path(FOLDER_ARR[f]);
-            DEBUG("Share folder "FOLDER_ARR[f]);
-        } else {
-            DEBUG("Folder "FOLDER_ARR[f]);
+            if (g_share_name_to_folder[share_name]) {
+                g_share_map[FOLDER_ARR[f]] = share_name;
+                FOLDER_ARR[f] = nmt_get_share_path(FOLDER_ARR[f]);
+            } else {
+                
+                FOLDER_ARR[f] = "'$START_DIR'/"FOLDER_ARR[f];
+                if (!exists(FOLDER_ARR[f])) {
+                    INFO(FOLDER_ARR[f]" not a share or file");
+                    delete FOLDER_ARR[f];
+                }
+            }
         }
     }
+
+    for(f in FOLDER_ARR) INFO("Folder "FOLDER_ARR[f]);
 
     if (NEWSCAN) {
         get_new_folders(FOLDER_ARR,g_timestamp_file);
@@ -842,7 +838,7 @@ pid) {
     if (pid == "" ) {
        DEBUG("Not Locked = "pid);
        return 0;
-    } else if (isDirectory("/proc/"pid)) {
+    } else if (is_dir("/proc/"pid)) {
         if (pid == PID ) {
             DEBUG("Locked by this process "pid);
             return 0;
@@ -990,9 +986,7 @@ f,fmax) {
 
         for(f=1 ; f <= fmax ; f++ ) {
 
-            g_progress[1]="folder "f"/"fmax;
-
-            report_status("Scan "g_progress[1]);
+            report_status("... ");
             scan_contents(folderArray[f],scan_options);
         }
 
@@ -1835,7 +1829,7 @@ function grandparent_folder_exists(line) {
     gsub(/\/+/,"/",line); #remove /a//b/c
 
     if (!(line in g_folder_exists) ) {
-        g_folder_exists[line] = isDirectory(line);
+        g_folder_exists[line] = is_dir(line);
     }
 
     return g_folder_exists[line];
@@ -2281,7 +2275,6 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
         thisTime = -systime();
 
-        #report_status(g_progress[1]" item "(g_item_count++));
         report_status("item "(g_item_count++));
 
         bestUrl="";
@@ -2337,12 +2330,12 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
                 if (UPDATE_TV)  {
                     tv_status = tv_search(plugin,idx,bestUrl);
+                    scanned= (tv_status != 0);
                     #if (tv_status == 0 || g_episode[idx] !~ "^[0-9]+$" ) 
                     if (g_episode[idx] !~ "^[0-9]+$" ) {
                         #no point in trying other tv plugins
                         break;
                     }
-                    scanned= (tv_status != 0);
                     if (tv_status == 2 ) break;
                 }
             }
@@ -4884,9 +4877,10 @@ i,urls,tmpf,qf,r) {
     r=1;
     for(i in urls) {
         if (urls[i] != "") {
-        if (wget2(urls[i],tmpf,referer) == 0) {
-            exec("cat "qf" >> "quoteArg(file));
-            r=0;
+            if (wget2(urls[i],tmpf,referer) == 0) {
+                exec("cat "qf" >> "quoteArg(file));
+                r=0;
+            }
         }
         system("rm -f "qf);
     }
@@ -5054,7 +5048,10 @@ function download_image(field_id,url,idx,\
     #Get the poster if we havent fetched it already.
     havePoster = hasContent(internal_path);
 
+    DEBUG("internal_path = "internal_path " havePoster="havePoster);
+
     if (!(internal_path in g_image_inspected)) {
+DEBUG("internal_path not seen before ");
         if (!havePoster) {
             get_it = 1;
         } else {
@@ -5064,6 +5061,7 @@ function download_image(field_id,url,idx,\
             } else if (field_id == FANART) {
                 get_it = UPDATE_FANART;
             }
+DEBUG("getit = " get_it);
         }
         g_image_inspected[internal_path]=1;
     }
@@ -5125,7 +5123,7 @@ function download_image(field_id,url,idx,\
 
 function check_domain_ok(url) {
     if (!(url in g_domain_status)) {
-        if ((g_domain_status[url] = system("wget -O /dev/null "quoteArg(default_referer)) == 0) == 0) {
+        if ((g_domain_status[url] = system("wget -q -O /dev/null "quoteArg(url)) == 0) == 0) {
             WARNING("Error with domain ["url"]");
         }
     }
@@ -5618,6 +5616,8 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     }
     if (newName != "" && newName != oldName) {
 
+        oldFolder=g_fldr[i];
+
         if (fileType == "file") {
             newName = substitute("NAME",g_media[i],newName);
             if (match(g_media[i],"\.[^.]+$")) {
@@ -5665,7 +5665,6 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                g_fldrMediaCount[g_fldr[i]]--;
                g_file[i]=newName;
                
-               oldFolder=g_fldr[i];
 
                newFolder=newName;
                sub(/\/[^\/]+$/,"",newFolder);
@@ -5715,6 +5714,11 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                moveFolder(i,oldFolder,newFolder);
            }
         }
+
+        if (is_dir(oldFolder) && is_empty(oldFolder)) {
+            system("rmdir "quoteArg(oldFolder));
+        }
+
     } else {
         # Name unchanged
         if (g_opt_dry_run) {
@@ -5888,7 +5892,10 @@ function hasContent(f) {
 function exists(f) {
     return test("-e",f);
 }
-function isDirectory(f) {
+function is_empty(d) {
+    return system("ls -a "quoteArg(d)" | egrep -v '^\.\.?$'") != 0;
+}
+function is_dir(f) {
     return test("-d",f);
 }
 function test(t,f) {
@@ -6424,7 +6431,7 @@ main() {
     set -e
 
     rm -fr -- "$tmp_dir"
-    chown -R $uid:$gid $INDEX_DB* "$APPDIR/tmp"
+    chown -R $uid:$gid $INDEX_DB* "$APPDIR/tmp" || true
     return $x
 }
 

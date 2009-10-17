@@ -21,7 +21,7 @@ export PATH="$OVS_ROOT/bin/$ARCH:$OVS_ROOT/bin:$PATH"
 
 if oversight "$@" > "$html" 2>"$err" ; then
     cat "$html"
-    #rm -f -- "$html" "$err"
+    rm -f -- "$html" "$err"
 else
     echo "Content-Type: text/html"
     echo

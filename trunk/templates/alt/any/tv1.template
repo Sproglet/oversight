@@ -4,11 +4,11 @@ body.tv_background1 { color:yellow ; background-color:black; }
 </style>
 </head>
 <body height=100% focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(default.jpg):] >
-<table class=main>
-<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:]px>
+<table class=main width=100%>
+<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
 
 [:FORM_START:]
-<table>
+<table width=100%>
 
     <tr valign=top>
         <td colspan=2>
@@ -18,7 +18,7 @@ body.tv_background1 { color:yellow ; background-color:black; }
     <tr valign=bottom>
         <td class=center width=1%>[:POSTER:]</td>
 
-        <td>
+        <td width=100%>
             <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                 <tr>
                     <td class=title><font class=title>[:TITLE:]</font></td>
@@ -42,7 +42,6 @@ body.tv_background1 { color:yellow ; background-color:black; }
                     </td>
                 </tr>
             </table>
-        [:PLAY_TVID:]
         </td>
     </tr>
 </table>

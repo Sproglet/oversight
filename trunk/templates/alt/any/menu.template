@@ -84,7 +84,7 @@ table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; bo
 </center>
         </form>
 <script type="text/javascript">
-var title = 1;
+var title = document.getElementById('menutitle').firstChild;
 var g_idlist = '';
 var g_title = '';
 function ovs_test() { alert('test'); }
@@ -129,7 +129,6 @@ function action(a) {
 function showt(title_text,idlist)
 {
    if (idlist != '') g_idlist = idlist;
-   if (title == 1) title = document.getElementById('menutitle').firstChild;
    g_title = title_text;
    title.nodeValue = g_title;
 }

@@ -61,6 +61,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NON_EMPTY_STR(str) ((str) && (*(str)))
 #define EMPTY_STR(str) ((str) == NULL || (*(str)) == '\0')
+#define IFEMPTY(s,alt) (EMPTY_STR(s)?(alt):(s))
 
 char *get_mounted_path(char *source,char *path);
 

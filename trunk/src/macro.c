@@ -1083,6 +1083,13 @@ char *macro_fn_back_button(char *template_name,char *call,Array *args,int num_ro
     return result;
 }
 
+char *macro_fn_menu_tvid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+    char *url = self_url("view=&idlist=");
+    ovs_asprintf(&result,"<a href=\"%s\" TVID=TAB ></a>",url);
+    FREE(url);
+    return result;
+}
 char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
 
@@ -1380,22 +1387,30 @@ char *macro_fn_body_width(char *template_name,char *call,Array *args,int num_row
     return numeric_constant_macro(value,args);
 }
 char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    long value = g_dimension->scanlines ;
-    switch(value) {
-        case 0:
-        if (g_dimension->is_pal) {
-            value = 500;
-        } else {
-            value = 400;
-        }
-        break;
-        case 720:
-            value = 648;
+    char* value = "100%";
+
+    if (g_dimension->local_browser) {
+
+        switch(g_dimension->scanlines) {
+            case 0:
+            if (g_dimension->is_pal) {
+                value = "500px";
+            } else {
+                value = "400px";
+            }
             break;
+            case 720:
+                value = "648px";
+                break;
+        }
 
+    } else {
+        value="100%";
     }
+    *free_result = 0;
+    return value;
 
-    return numeric_constant_macro(value,args);
+    //return numeric_constant_macro(value,args);
 }
 
 char *macro_fn_scanlines(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -1480,6 +1495,8 @@ void macro_init() {
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"RIGHT_BUTTON",macro_fn_right_button);
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
+        hashtable_insert(macros,"MENU_TVID",macro_fn_menu_tvid);
+        hashtable_insert(macros,"TAB_TVID",macro_fn_menu_tvid);
         hashtable_insert(macros,"HOME_BUTTON",macro_fn_home_button);
         hashtable_insert(macros,"EXIT_BUTTON",macro_fn_exit_button);
         hashtable_insert(macros,"MARK_BUTTON",macro_fn_mark_button);

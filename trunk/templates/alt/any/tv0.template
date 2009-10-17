@@ -43,7 +43,6 @@ body.tv_background0 { color:white ; background-color:black; }
                                 </td>
                             </tr>
                         </table>
-                    [:PLAY_TVID:]
                     </td>
                 </tr>
             </table>

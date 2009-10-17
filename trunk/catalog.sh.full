@@ -1,18 +1,13 @@
 #!/bin/sh
-#
-# TODO Check Already go fanart internal name appearing after url is queued.!!!
-#
-#
 #! $Id$
 #!This is a compacted file. If looking for the source see catalog.sh.full
-#!Compressed with
-#!sed -r 's/^[  ]+//;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' catalog.sh.full > catalog.sh
-#!note [    ] is [<space><tab>]
-#!blank lines kept to preserve line numbers reported in errors.
-#!All leading white space trimmed so make sure lines ending in \ have any mandatory white space included.
 #!If not compressed then awk will report "bad address" error on some platforms.
 #!
-#! See util/squeeze
+#!blank lines kept to preserve line numbers reported in errors.
+#!All leading white space trimmed so make sure lines ending in \ have any mandatory white space included.
+#!
+#! See end of file for Compress command.
+
 #
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
 # of global arrays causing memory problems.
@@ -20,8 +15,6 @@
 # AWK funnies
 # Sometimes awk seems to do a string compare when both values look like numbers.
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
-#
-#
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20091007-1BETA
@@ -281,9 +274,11 @@ function timestamp(label,x) {
     if (index(x,g_tk) ) gsub(g_tk,"",x);
     if (index(x,g_tk2) ) gsub(g_tk2,"",x);
 
-    if (index(x,"password") ) sub("password.?=([^,]+)","password=xxx",x);
-    if (index(x,"pwd") ) sub("pwd=([^,]+)","pwd=xxx",x);
-    if (index(x,"passwd") ) sub("passwd=([^,]+)","passwd=xxx",x);
+    if (index(x,"d=") ) {
+        sub("password.?=([^,]+)","password=xxx",x);
+        sub("pwd=([^,]+)","pwd=xxx",x);
+        sub("passwd=([^,]+)","passwd=xxx",x);
+    }
 
     if (systime() != g_last_ts) {
         g_last_ts=systime();
@@ -1987,25 +1982,25 @@ function extractEpisodeByPatterns(plugin,line,details,idx) {
 
     line = tolower(line);
     if (!extractEpisodeByPattern(line,0,"","s[0-9][0-9]?","[/ .]?e[0-9]+e[0-9]+",details,idx)) {  # s00e00e01
-    if (!extractEpisodeByPattern(line,0,"","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
-        if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
-            if (!extractEpisodeByPattern(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode)[^a-z0-9]*[0-9][0-9]?",details,idx)) { #00x00 
+        if (!extractEpisodeByPattern(line,0,"","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
+            if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
+                if (!extractEpisodeByPattern(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode)[^a-z0-9]*[0-9][0-9]?",details,idx)) { #00x00 
 
-                #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-                if (!extractEpisodeByDates(plugin,idx,line,details)) {
+                    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
+                    if (!extractEpisodeByDates(plugin,idx,line,details)) {
 
-                    ##remove 264 before trying pure numeric detection
-                    #if (index(line,"x264")) {
-                        #gsub(/\<x264\>/,"x-264",line);
-                    #}
-                    if (!extractEpisodeByPattern(line,1,"[^-0-9]","([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details,idx)) { # ...name101...
+                        ##remove 264 before trying pure numeric detection
+                        #if (index(line,"x264")) {
+                            #gsub(/\<x264\>/,"x-264",line);
+                        #}
+                        if (!extractEpisodeByPattern(line,1,"[^-0-9]","([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details,idx)) { # ...name101...
 
-                        return 0;
+                            return 0;
+                        }
                     }
                 }
             }
         }
-    }
     }
 
    #Note 4 digit season/episode matcing [12]\d\d\d will fail because of confusion with years.
@@ -3046,10 +3041,10 @@ function hash_merge(a1,a2,\
 i) {
     for(i in a2) a1[i] = a2[i];
 }
-function hash_add(a1,a2,\
-i) {
-    for(i in a2) a1[i] += a2[i];
-}
+#function hash_add(a1,a2,\
+#i) {
+#    for(i in a2) a1[i] += a2[i];
+#}
 function hash_size(h,\
 s,i){
     s = 0 ; 
@@ -4202,7 +4197,7 @@ url,x) {
 #threshold = minimum required occurences of matching text.
 
 function scanUrlForBestMatch(url,pattern,captureLabel,threshold,\
-f,iurl,start,nextStart,matchList,bestUrl,x,html) {
+f,start,matchList,bestUrl,x,html) {
 
     f = getUrl(url,captureLabel,0);
     if (f != "") {
@@ -4225,25 +4220,7 @@ f,iurl,start,nextStart,matchList,bestUrl,x,html) {
 #                DEBUG(l" "match(x[i],pattern)" <"x[i]);
 #                l+=length(x[i])+1;
 #            }
-
-            start=0;
-
-            # TODO REplace with split loop
-            while (match(substr(html,start+1),pattern) > 0) {
-                
-                iurl=substr(html,start+RSTART,RLENGTH);
-                nextStart=start+RSTART+RLENGTH;
-
-                DEBUG("Possible match "iurl);
-
-                if ( matchList[iurl] == "" ) {
-                    matchList[iurl]=0;
-                }
-                matchList[iurl]++;
-
-                start = nextStart;
-
-            }
+            capture_regex(html,pattern,0,matchList);
         }
         close(f);
     }
@@ -5381,10 +5358,8 @@ f,line,count,linematches,linecount,regex_text,remain) {
 
             if (regex_text == "" || index(line,regex_text)) {
 
-                linecount = getMatches(line,regex,remain,linematches);
+                linecount = capture_regex(line,regex,remain,matches);
 
-                #DEBUG2(regex" match "linecount" in "line);
-                hash_add(matches,linematches);
                 count += linecount;
                 if (max > 0) {
                     remain -= count;
@@ -5400,46 +5375,30 @@ f,line,count,linematches,linecount,regex_text,remain) {
     return count;
 }
 
-function getMatches(line,regex,max,matches,\
-getMore,start,count,m) {
+function capture_regex(line,regex,max,matches,\
+start,count,m,flag,fcount,i,parts) {
     count =0 ;
-    delete matches;
 
+    #something that should not appear normally!
+    flag="@_%-£=£-%_@"
 
-# getMore = 1;
-# start=0;
-#    while (getMore && match(substr(line,start+1),regex) != 0) {
-#        matches[substr(line,RSTART+start,RLENGTH)]++;
-#
-#        count++;
-#        if (max > 0 ) {
-#            getMore = (max-count) > 0;
-#        }
-#
-#        start += RSTART+RLENGTH;
-#    }
-
-    while(line != "" && match(line,regex)) {
-        m = substr(line,RSTART,RLENGTH);
-
-        if (index(regex,"motech")) {
-            DEBUG("match ["m"]");
-        }
-
-        matches[m]++;
-        line=substr(line,RSTART+RLENGTH);
+    gsub(regex,flag "&" flag , line );
+    fcount = split(line,parts,flag);
+    for(i=2 ; i-fcount < 0 ; i += 2 ) {
+        matches[parts[i]]++;
         count++;
         if (max > 0 ) {
             if (count - max >= 0) {
                 break;
             }
         }
-    } 
+    }
 
     if (index(regex,"motech")) {
-    dump(0,count " linematches",matches);
-    }
-    dump(3,count " linematches",matches);
+        dump(0,count " linematches",matches);
+    }  else 
+        dump(3,count " linematches",matches);
+
     return count;
 }
 
@@ -6608,4 +6567,26 @@ fi
 if [ -f "$APPDIR/oversight.sh" ] ; then
     $APPDIR/oversight.sh CLEAR_CACHE
 fi
+#!#- awk script is compressed using the following: (this file is called util/squeeze)
+#!#- sed -r '
+#!#- 
+#!#- #collapse all leading space [ ] is [<space><tab>]
+#!#- s/^[ 	]+//;
+#!#- 
+#!#- #collapse indented comments
+#!#- /^ +#/ {s/.*//};
+#!#- 
+#!#- #remove trailing comments after ; or {
+#!#- s/[;{] #.*//;
+#!#- 
+#!#- #collapse comment lines - except shebangs
+#!#- /^#[^!]/ {s/.*//};
+#!#- 
+#!#- #collapse blank lines - keep them for line number reporting
+#!#- /^$/ {s/.*//}
+#!#- 
+#!#- #remove trailing semi-colon  except for bash case ;;
+#!#- /; *$/ {s/([^;]);$/\1/}
+#!#- 
+#!#- ' catalog.sh.full > catalog.sh
 # vi:syntax=awk:sw=4:et:ts=4

@@ -287,23 +287,29 @@ void exec_old_cgi(int argc,char **argv) {
 }
 
 
-char *get_mounted_path(char *source,char *path) {
+char *get_mounted_path(char *source,char *path,int *freeit)
+{
 
     char *new = NULL;
     assert(source);
     assert(path);
 
+    *freeit=0;
     if (*source == '*' ) {
-        new = STRDUP(path);
+        new = path;
     } else if (strchr(source,'/')) {
-        new = STRDUP(path);
-    } else if (strncmp(path,"/share/",7) != 0) {
-        new = STRDUP(path);
+        //source contains /
+        new = path;
+    } else if (!util_starts_with(path,"/share/")) {
+        // not in the /share/ folder
+        new = path;
     } else {
         // Source = xxx 
         // [pop-nfs][/share/Apps/oversight/... becomes
         // /opt/sybhttpd/localhost.drives/NETWORK_SHARE/pop-nfs/Apps/oversight/...
         ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
+        HTML_LOG(0,"mounted path[%s]",new);
+        *freeit=1;
     }
     return new;
 }

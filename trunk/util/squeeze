@@ -1,6 +1,27 @@
 
 SQUEEZE() {
-    sed -r 's/^[ 	]+//;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' "$1" > "$2"
+    sed -r '
+
+#collapse all leading space 
+s/^[ 	]+//;
+
+#collapse indented comments
+/^ +#/ {s/.*//};
+
+#remove trailing comments
+s/([;{]) #.*/\1/;
+
+#collapse comment lines - except shebangs
+/^#[^!]/ {s/.*//};
+
+#collapse blank lines - keep them for line number reporting
+/^$/ {s/.*//}
+
+#remove trailing semi-colon  except for bash case ;;
+/;$/ {s/([^;]);$/\1/}
+
+' "$1" > "$2"
+
     #sed -r 's/^[ 	]+/ /;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' "$1" > "$2"
     #sed -r 's/^[ 	]+/ /;/^ #/ d;/^#[^!]/ d;/^$/ d' "$1" > "$2"
 }

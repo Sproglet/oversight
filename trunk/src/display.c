@@ -39,11 +39,12 @@ char *get_play_tvid(char *text) {
 }
 
 // Return a full path 
-char *get_path(DbRowId *rid,char *path) {
+char *get_path(DbRowId *rid,char *path,int *freepath) {
 
     char *mounted_path=NULL;
 
     char *path_relative_to_host_nmt=NULL;
+
     assert(path);
     if (path[0] == '/' ) {
 
@@ -60,14 +61,18 @@ char *get_path(DbRowId *rid,char *path) {
        FREE(d);
     }
 
-    mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt);
+    int free2;
+    mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt,&free2);
 
-    if (path_relative_to_host_nmt != path) {
+    // Free intermediate result if necessary
+    if (path_relative_to_host_nmt != path && path_relative_to_host_nmt != mounted_path) {
         FREE(path_relative_to_host_nmt);
     }
+    *freepath =  (mounted_path != path);
 
     return mounted_path;
 }
+
 
 
 
@@ -292,12 +297,13 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     assert(font_class);
 
     char *vod=NULL;
+    int freepath;
 
     int add_to_playlist= has_category(rowid) && !is_dvd(rowid->file);
     char *result=NULL;
 
     HTML_LOG(1,"VOD file[%s]",file);
-    char *path = get_path(rowid,file);
+    char *path = get_path(rowid,file,&freepath);
     HTML_LOG(1,"VOD path[%s]",path);
 
     nmt_mount(path);
@@ -350,7 +356,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     }
 
     FREE(encoded_path);
-    FREE(path);
+    if (freepath) FREE(path);
     FREE(vod);
     return result;
 }
@@ -769,9 +775,10 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
         modifier="fanart.";
     }
 
+    int freefile;
     // First check the filesystem. We do this via the mounted path.
     // This requires that the remote file is already mounted.
-    char *file = get_path(rid,rid->file);
+    char *file = get_path(rid,rid->file,&freefile);
     char *dir = util_dirname(file);
 
     // Find position of file extension.
@@ -797,7 +804,7 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
     if (path == NULL) path=check_path(dir,"/",(image_type == FANART_IMAGE?modifier:"poster."),"jpg");
     if (path == NULL) path=check_path(dir,"/",(image_type == FANART_IMAGE?modifier:"poster."),"png");
 
-    FREE(file);
+    if (freefile) FREE(file);
     FREE(dir);
 
 
@@ -807,11 +814,10 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
 
         path = internal_image_path_static(rid,image_type);
 
-
         if (path) {
-            char *file;
-            char *mounted_path = get_path(rid,path);
-            path = mounted_path;
+            int freepath=0;
+            char *file=NULL;
+            path = get_path(rid,path,&freepath);
 
             if (image_type == FANART_IMAGE ) {
                 char *modifier=".hd.jpg";
@@ -825,20 +831,24 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
                     }
                 }
                 file = replace_all(path,"\\.jpg$",modifier,0);
-                FREE(path);
-                path = file;
             } else if (image_type == THUMB_IMAGE ) {
-                char *thumb = replace_all(path,"\\.jpg$",".thumb.jpg",0);
-                if (exists(thumb)) {
-                    FREE(path);
-                    path = thumb;
+                file = replace_all(path,"\\.jpg$",".thumb.jpg",0);
+                if (!exists(file)) {
+                    FREE(file);
+                    file = NULL;
                 }
+            }
+            if (file != NULL) {
+                if (freepath) FREE(path);
+                path = file;
+            } else {
+                HTML_LOG(0,"FReepath=%d path=[%s]",freepath,path);
+                if (!freepath && path) path=STRDUP(path);
             }
         }
     }
 
     return path;
-
 }
 
 char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type) {
@@ -1765,7 +1775,8 @@ int check_and_prune_item(DbRowId *rowid,char *path) {
 int delisted(DbRowId *rowid)
 {
 
-    char *path = rowid->file;
+    int freepath;
+    char *path = get_path(rowid,rowid->file,&freepath);
     int result = 0;
     static int auto_prune=-2;
     if (auto_prune == -2) {
@@ -1776,7 +1787,7 @@ int delisted(DbRowId *rowid)
     HTML_LOG(1,"auto delist precheck [%s]",path);
     if (auto_prune && !exists(path)) {
         
-        HTML_LOG(0,"auto delist check [%s]",path);
+        HTML_LOG(0,"auto delist check [%s][%s]",rowid->db->source,path);
 
         char *parent_dir = util_dirname(path);
         char *grandparent_dir = util_dirname(parent_dir);
@@ -1801,6 +1812,7 @@ int delisted(DbRowId *rowid)
         FREE(grandparent_dir);
     }
     HTML_LOG(1-result,"delisted [%s] = %d",path,result);
+    if (freepath) FREE(path);
     return result;
 }
 
@@ -1809,7 +1821,6 @@ int all_linked_rows_delisted(DbRowId *rowid)
 {
     DbRowId *r;
 
-TRACE;
     for(r = rowid ; r != NULL ; r = r->linked) {
         if (!delisted(r)) {
             return 0;

@@ -41,7 +41,7 @@ char *get_self_link(char *params,char *attr,char *title);
 char *get_self_link_with_font(char *params,char *attr,char *title,char *font_class);
 void display_confirm(char *name,char *val_ok,char *val_cancel);
 char *file_to_url(char *path);
-char *get_path(DbRowId *rid,char *path);
+char *get_path(DbRowId *rid,char *path,int *freepath);
 char *vod_attr(char *file);
 char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type);
 void create_file_to_url_symlink();

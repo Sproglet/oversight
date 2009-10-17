@@ -171,6 +171,58 @@ TRACE;
     return result;
 }
 
+// link = smb://host/share
+//
+char *wins_resolve(char *link) {
+    char *iplink = NULL;
+    static char *nbtscan_outfile = NULL;
+    static char *workgroup = NULL;
+
+    if (workgroup == NULL ) {
+       workgroup = setting_val("workgroup");
+    }
+    if (nbtscan_outfile  == NULL ) {
+        ovs_asprintf(&nbtscan_outfile,"%s/conf/wins.txt",appDir());
+    }
+
+    char *host = link + 6;
+    char *hostend = strchr(host,'/');
+    *hostend = '\0';
+
+
+    FILE *fp = fopen(nbtscan_outfile,"r");
+    if (fp) {
+#define WINS_BUFSIZE 200
+        char buf[WINS_BUFSIZE];
+        while(fgets(buf,WINS_BUFSIZE,fp)) {
+            HTML_LOG(0,"Check wins %s",buf);
+            char *p;
+            // Look for host in output of nbtscan (which is run by the catalog process)
+            // 1.1.1.1<space>WORKGROUP\host<space>
+            if ((p=strstr(buf,workgroup)) != NULL && p[-1] == ' ') {
+                p += strlen(workgroup);
+                if (*p == '\\' && util_starts_with(p+1,host) ) {
+                    p += strlen(host)+1;
+                    if (*p == ' ' ) {
+                        // found it - get ip address from the start.
+                        char *sp = strchr(buf,' ');
+                        if (sp) {
+                            *sp = '\0';
+                            ovs_asprintf(&iplink,"smb://%s/%s",buf,hostend+1);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    fclose(fp);
+
+    *hostend = '/';
+    HTML_LOG(0,"New ip based link = [%s]",iplink);
+    return iplink;
+}
+
 int nmt_mount_share(char *path,char *current_mount_status)
 {
     int result = 0;
@@ -205,9 +257,23 @@ TRACE ; HTML_LOG(1,"mount servlink [%s]",serv_link);
 
         ovs_asprintf(&key,"link%c",index);
         char *link = setting_val(key);
+        char *iplink = link;
 TRACE ; HTML_LOG(1,"mount link [%s]",link);
 
-        if (!ping_link(link)) {
+        int reachable = 0;
+        if (ping_link(link) ) {
+            reachable = 1;
+        } else {
+            if (util_starts_with(link,"smb:") && strchr(link,'.') == NULL) {
+                iplink = wins_resolve(link);
+                if (ping_link(iplink) ) {
+                    reachable = 1;
+                }
+            }
+        }
+
+
+        if (!reachable) {
 
             set_mount_status(path,MOUNT_STATUS_BAD);
 
@@ -220,19 +286,19 @@ TRACE ; HTML_LOG(1,"mount user [%s]",user);
 TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
 
             char *cmd = NULL;
-            if (util_starts_with(link,"nfs://")) {
+            if (util_starts_with(iplink,"nfs://")) {
 
-                // link = nfs://host:/share
+                // iplink = nfs://host:/share
                 // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
                 ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\"",
-                        path,link+6,path);
+                        path,iplink+6,path);
 
-            } else if (util_starts_with(link,"smb://")) {
+            } else if (util_starts_with(iplink,"smb://")) {
 
                 // link = smb://host/share
                 // mount -t cifs -o username=,password= //host/share /path/to/network
                 ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\"",
-                        path,user,passwd,link+4,path);
+                        path,user,passwd,iplink+4,path);
             } else {
                 html_error("Dont know how to mount [%s]",serv_link);
             }
@@ -291,6 +357,9 @@ TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
         } else {
             // shouldnt get here
             assert(0);
+        }
+        if (iplink != link ) {
+            FREE(iplink);
         }
 
     }

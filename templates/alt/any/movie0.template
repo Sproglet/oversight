@@ -7,7 +7,7 @@ body.movie_background0 { color:white ; background-color:black; }
     [:FORM_START:]
 <table id="main" width=100% >
     <tr valign="middle">
-        <td>
+        <td align="center" border=0 height=[:BODY_HEIGHT:]px>
             <table width=100%>
                 <tr valign=top>
                     <td colspan=2>

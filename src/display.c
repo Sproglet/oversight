@@ -22,6 +22,8 @@
 #include "macro.h"
 #include "mount.h"
     
+#define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
+
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
@@ -2390,7 +2392,7 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-char *plot_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *text) {
+char *plot_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *text,char *info) {
     char *result = NULL;
     char *plot = text;
     if (strchr(plot,'\'')) {
@@ -2404,8 +2406,10 @@ char *plot_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *te
         plot = tmp;
     }
 
-    ovs_asprintf(&result,"%sfunction plot%ld() { show('%s','%s','%s'); }\n",
-            NVL(script_so_far),fn_id,idlist,episode,plot);
+    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s','%s','%s'); }\n",
+            NVL(script_so_far),fn_id,idlist,episode,
+            IFEMPTY(plot,"(no plot info)"),
+            info);
     if (plot != text) {
         FREE(plot);
     }
@@ -2447,7 +2451,7 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            tmp = plot_fn(result,0,"","",NVL(rid->plot_text));
+            tmp = plot_fn(result,0,"","",NVL(rid->plot_text),"");
             FREE(result);
             result = tmp;
             break;
@@ -2457,7 +2461,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        tmp = plot_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text));
+        tmp = plot_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file);
         FREE(result);
         result = tmp;
 
@@ -2527,7 +2531,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
-                    char *href_attr = focus_event_fn("plot",(long)rid,1);
+                    char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,(long)rid,1);
                     episode_col = vod_link(
                             rid,
                             ep,"",
@@ -2598,7 +2602,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
 
-                char *td_plot_attr = mouse_event_fn("plot",(long)rid);
+                char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,(long)rid);
 
                 ovs_asprintf(&tmp,
                         "%s<td class=%s width=%d%% %s>%s</td>" 

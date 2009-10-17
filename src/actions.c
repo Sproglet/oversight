@@ -167,16 +167,23 @@ void delete_media(DbRowId *rid,int delete_related) {
 void delete_queue_add(DbRowId *rid,char *path) {
 
     if (path) {
-        char *real_path=get_path(rid,path);
+        int freepath;
+        char *real_path=get_path(rid,path,&freepath);
 
         if (g_delete_queue == NULL) {
             g_delete_queue = string_string_hashtable(16);
         }
         if (hashtable_search(g_delete_queue,real_path)) {
-            FREE(real_path);
+            if(freepath) {
+                FREE(real_path);
+            }
         } else {
             HTML_LOG(0,"delete_queue: pending delete [%s]",real_path);
-            hashtable_insert(g_delete_queue,real_path,"1");
+            if(freepath) {
+                hashtable_insert(g_delete_queue,real_path,"1");
+            } else {
+                hashtable_insert(g_delete_queue,STRDUP(real_path),"1");
+            }
         }
     }
 }
@@ -185,11 +192,12 @@ void delete_queue_add(DbRowId *rid,char *path) {
 //Remove the filename from the delete queue
 void delete_queue_unqueue(DbRowId *rid,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
-        char *real_path = get_path(rid,path);
+        int freepath;
+        char *real_path = get_path(rid,path,&freepath);
         if (hashtable_remove(g_delete_queue,real_path,1) ) {
             HTML_LOG(0,"delete_queue: unqueuing [%s] in use",real_path);
         }
-        FREE(real_path);
+        if (freepath) FREE(real_path);
     }
 }
 
@@ -211,14 +219,17 @@ void delete_queue_delete() {
 
 void send_command(char *source,char *remote_cmd) {
     char *cmd;
-    char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh");
+    int freepath;
+    char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh",&freepath);
     ovs_asprintf(&cmd,"\"%s\" SAY %s",script,remote_cmd);
 
     HTML_LOG(0,"send command:%s",cmd);
 
     system(cmd);
 
-    FREE(script);
+    if (freepath) {
+        FREE(script);
+    }
     FREE(cmd);
 }
 

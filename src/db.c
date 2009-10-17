@@ -140,11 +140,15 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
         char *source       // logical name or tag - local="*"
         )
 {
+    int freepath;
 
     Db *db = CALLOC(1,sizeof(Db));
 
     if (filename == NULL) {
-        db->path = get_mounted_path(source,"/share/Apps/oversight/index.db");
+        db->path = get_mounted_path(source,"/share/Apps/oversight/index.db",&freepath);
+        if (!freepath) {
+            db->path = STRDUP(db->path);
+        }
     } else {
         db->path =  STRDUP(filename);
     }

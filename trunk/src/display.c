@@ -28,6 +28,8 @@ char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *bu
 char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
 void util_free_char_array(int size,char **a);
+char *get_date_static(DbRowId *rid);
+DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 
@@ -848,6 +850,8 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
         }
     }
 
+    if (dot) *dot = saved;
+
     return path;
 }
 
@@ -907,11 +911,16 @@ char *icon_link(char *name) {
         if (name[strlen(name)-1] == '/') {
             result = container_icon("video_ts","vob");
         } else {
-            char *ext = name + strlen(name) - 3;
-            if (strcasecmp(ext,"iso")==0 || strcasecmp(ext,"img") == 0 || strcasecmp(ext,"mkv") == 0) {
-                result = container_icon(ext,ext);
-            } else if (strcasecmp(ext,"avi") != 0) {
-                ovs_asprintf(&result,"<font size=\"-1\">[%s]</font>",ext);
+            //char *ext = name + strlen(name) - 5;
+            char *ext = strrchr(name,'.');
+            if (ext != NULL) {
+                ext++;
+                char *p;
+                if ((p = strstr("|iso|img|mkv|avi|",ext)) != NULL && p[-1] == '|' && p[strlen(ext)] == '|' ) {
+                    result = container_icon(ext,ext);
+                } else if (strcasecmp(ext,"avi") != 0) {
+                    ovs_asprintf(&result,"<font size=\"-1\">[%s]</font>",ext);
+                }
             }
         }
     }
@@ -2000,8 +2009,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     // as we have just updated the database it will be correct on the next page draw.
     //
     // Note the db load routing should already filter out items that cant be mounted,
-    // otherwise this can cause horrible timeouts.
-    int i;
+    // otherwise this can cause timeouts.
     int items_per_page = rows * cols;
     int start = page * items_per_page;
 
@@ -2009,17 +2017,10 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     // Create space for pruned rows
 TRACE;
     HTML_LOG(0,"get_grid page %ld rows %d cols %d",page,rows,cols);
-    DbRowId **prunedRows = CALLOC(items_per_page+1,sizeof(DbRowId *));
-    for ( i = start ; total < items_per_page && i < numids ; i++ ) {
-        DbRowId *rid = row_ids[i];
-        if (rid) {
-            if (!all_linked_rows_delisted(rid)) {
-                prunedRows[total++] = rid;
-            }
-        }
-    }
+    DbRowId **prunedRows = filter_delisted(start,numids,row_ids,items_per_page,&total);
+    
     int page_before = (page > 0);
-    int page_after = (numids >= i);
+    int page_after = (numids >= total);
     return render_grid(page,rows,cols,total,prunedRows,page_before,page_after);
 }
 
@@ -2401,29 +2402,48 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
     }
 }
 
+char *clean_js_string(char *in) {
+    char *out = in;
+
+    if (in != NULL) {
+        if (strchr(out,'\'')) {
+            char *tmp = replace_all(out,"'","\\'",0);
+            if (out != in) FREE(out);
+            out = tmp;
+        }
+        if (strstr(out,"&quot;")) {
+            char *tmp = replace_all(out,"&quot;","\\'",0);
+            if (out != in) FREE(out);
+            out = tmp;
+        }
+    }
+    return out;
+}
+
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-char *plot_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *text,char *info) {
+char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *plot,char *info,char *eptitle_or_genre,char *date) {
     char *result = NULL;
-    char *plot = text;
-    if (strchr(plot,'\'')) {
-        char *tmp = replace_all(plot,"'","\\'",0);
-        if (plot != text) FREE(plot);
-        plot = tmp;
-    }
-    if (strstr(plot,"&quot;")) {
-        char *tmp = replace_all(plot,"&quot;","\\'",0);
-        if (plot != text) FREE(plot);
-        plot = tmp;
-    }
 
-    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s','%s','%s'); }\n",
-            NVL(script_so_far),fn_id,idlist,episode,
-            IFEMPTY(plot,"(no plot info)"),
-            info);
-    if (plot != text) {
-        FREE(plot);
-    }
+    char *js_plot = clean_js_string(plot);
+    char *js_info = clean_js_string(info);
+    char *js_eptitle = clean_js_string(eptitle_or_genre);
+    char *js_date = clean_js_string(date);
+
+
+    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s','%s','%s','%s%s'); }\n",
+            NVL(script_so_far),fn_id,
+                idlist,
+                episode,
+                IFEMPTY(js_plot,"(no plot info)"),
+                js_info,
+                NVL(js_eptitle),NVL(js_date));
+
+    if (js_plot != plot) FREE(js_plot);
+    if (js_info != info) FREE(js_info);
+    if (js_eptitle != eptitle_or_genre) FREE(js_eptitle);
+    if (js_date != plot) FREE(js_date);
+
     return result;
 }
 
@@ -2436,13 +2456,30 @@ void util_free_char_array(int size,char **a)
     FREE(a);
 }
 
+char *best_eptitle(DbRowId *rid,int *free_title) {
+
+    *free_title=0;
+    char *title=rid->eptitle;
+    if (title == NULL || !*title) {
+        title=rid->eptitle_imdb;
+    }
+    if (title == NULL || !*title) {
+        title=rid->additional_nfo;
+    }
+    if (title == NULL || !*title) {
+        title=util_basename(rid->file);
+        *free_title=1;
+    }
+    return title;
+}
+
 /**
  * Create a number of javascript functions that each return the 
  * plot for a given row.
  * The funtions are named using the address location of the data  structure.
  * eg plot12234() { return 'He came, he saw , he conquered'; }
  */
-char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
+char *create_episode_js_fn(int num_rows,DbRowId **sorted_rows) {
 
     char *result = NULL;
 
@@ -2462,7 +2499,7 @@ char *get_plot_script(int num_rows,DbRowId **sorted_rows) {
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            tmp = plot_fn(result,0,"","",NVL(rid->plot_text),"");
+            tmp = ep_js_fn(result,0,"","",NVL(rid->plot_text),"",rid->genre,NULL);
             FREE(result);
             result = tmp;
             break;
@@ -2472,8 +2509,12 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        tmp = plot_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file);
+        char *date = get_date_static(rid);
+        int free_title;
+        char *title = best_eptitle(rid,&free_title);
+        tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file,title,date);
         FREE(result);
+        if (free_title) FREE(title);
         result = tmp;
 
     }
@@ -2487,31 +2528,76 @@ HTML_LOG(0,"num rows = %d",num_rows);
     return result;
 }
 
-char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
+char *get_date_static(DbRowId *rid)
+{
+    static char *old_date_format=NULL;
+    static char *recent_date_format=NULL;
+    // Date format
+    if (recent_date_format == NULL && !config_check_str(g_oversight_config,"ovs_date_format",&recent_date_format)) {
+        recent_date_format=" - %d %b";
+    }
+    if (old_date_format == NULL && !config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
+        old_date_format=" -%d %b %y";
+    }
+
+#define DATE_BUF_SIZ 40
+    static char date_buf[DATE_BUF_SIZ];
+
+
+    OVS_TIME date=rid->airdate;
+    if (date<=0) {
+        date=rid->airdate_imdb;
+    }
+    *date_buf='\0';
+    if (date > 0) {
+
+        char *date_format=NULL;
+        if  (year(epoc2internal_time(time(NULL))) != year(date)) {  
+            date_format = old_date_format;
+        } else {
+            date_format = recent_date_format;
+        }
+
+        strftime(date_buf,DATE_BUF_SIZ,date_format,internal_time2tm(date,NULL));
+    }
+    return date_buf;
+}
+
+DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num)
+{
+
+    int i;
+    int total = 0;
+
+    DbRowId **new_list = CALLOC(max_new+1,sizeof(DbRowId *));
+
+    for ( i = start ; total < max_new && i < num_rows ; i++ ) {
+        DbRowId *rid = row_ids[i];
+        if (rid) {
+            if (!all_linked_rows_delisted(rid)) {
+                new_list[total++] = rid;
+            }
+        }
+    }
+    *new_num = total;
+    return new_list;
+}
+
+char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 {
     int r,c;
 
     char *select=query_val("select");
 
     char *listing=NULL;
-#define DATE_BUF_SIZ 40
-    char date_buf[DATE_BUF_SIZ];
-    char *old_date_format=NULL;
-    char *recent_date_format=NULL;
 
     int width2=100/cols; //text and date
     int width1=4; //episode width
     width2 -= width1;
 
-    // Date format
-    if (!config_check_str(g_oversight_config,"ovs_date_format",&recent_date_format)) {
-        recent_date_format="- %d %b";
-    }
-    if (!config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
-        old_date_format="-%d&nbsp;%b&nbsp;%y";
-    }
 
-    char *script = get_plot_script(num_rows,sorted_rows);
+
+    char *script = create_episode_js_fn(num_rows,sorted_rows);
 
     printf("%s",script);
 
@@ -2528,7 +2614,6 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
             int i = c * rows + r;
             if (i < num_rows) {
 
-                char *title=NULL;
                 char *episode_col = NULL;
 
                 DbRowId *rid = sorted_rows[i];
@@ -2554,53 +2639,21 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                     FREE(href_attr);
                 }
 
-                // Title
-                int free_title=0;
-                title=rid->eptitle;
-                if (title == NULL || !*title) {
-                    title=rid->eptitle_imdb;
-                }
-                if (title == NULL || !*title) {
-                    title=rid->additional_nfo;
-                }
-                if (title == NULL || !*title) {
-                    title=util_basename(rid->file);
-                    free_title=1;
-                }
-
-                //TODO truncate episode length here - 37 chars?
-                
                 char *title_txt=NULL;
                 int is_proper = util_strreg(rid->file,"proper",REG_ICASE) != NULL;
                 int is_repack = util_strreg(rid->file,"repack",REG_ICASE) != NULL;
                 char *icon_text = icon_link(rid->file);
 
-                ovs_asprintf(&title_txt,"%s%s%s&nbsp;%s",
-                        title,
+                ovs_asprintf(&title_txt,"%s%s&nbsp;%s",
                         (is_proper?"&nbsp;<font class=proper>[pr]</font>":""),
                         (is_repack?"&nbsp;<font class=repack>[rpk]</font>":""),
                         (icon_text?icon_text:""));
-                if (free_title) FREE(title);
                 FREE(icon_text);
 
 
                 //Date
-                OVS_TIME date=rid->airdate;
-                if (date<=0) {
-                    date=rid->airdate_imdb;
-                }
-                *date_buf='\0';
-                if (date > 0) {
+                char *date_buf=get_date_static(rid);
 
-                    char *date_format=NULL;
-                    if  (year(epoc2internal_time(time(NULL))) != year(date)) {  
-                        date_format = old_date_format;
-                    } else {
-                        date_format = recent_date_format;
-                    }
-
-                    date=strftime(date_buf,DATE_BUF_SIZ,date_format,internal_time2tm(date,NULL));
-                }
 
                 //network icon
                 char *network_icon=NULL;
@@ -2663,6 +2716,19 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     FREE(listing);
     return result;
 }
+
+char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
+{
+    int pruned_num_rows;
+    DbRowId **pruned_rows;
+
+
+    pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
+    char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
+    FREE(pruned_rows);
+    return result;
+}
+
 char *get_status() {
     char *result=NULL;
 #define MSG_SIZE 20

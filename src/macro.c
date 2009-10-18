@@ -500,8 +500,15 @@ char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_row
     int cols=0;
     HTML_LOG(1,"macro_fn_tv_listing");
     if (!get_rows_cols(call,args,&rows,&cols)) {
-        rows = 16;
-        cols = 2;
+        char sl[20];
+        long rl=0,cl=0;
+        sprintf(sl,"%ld",g_dimension->scanlines);
+        config_check_long_indexed(g_oversight_config,"ovs_tv_rows",sl,&rl);
+        config_check_long_indexed(g_oversight_config,"ovs_tv_cols",sl,&cl);
+        //rows = atoi(oversight_val("ovs_tv_rows"));
+        //cols = atoi(oversight_val("ovs_tv_cols"));
+        if (rl) rows = rl ; else rows = 10;
+        if (cl) cols = cl ; else cols = 4 + 2 * (g_dimension->scanlines > 600 );
     }
     return tv_listing(num_rows,sorted_rows,rows,cols);
 }
@@ -1394,7 +1401,7 @@ char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_ro
         switch(g_dimension->scanlines) {
             case 0:
             if (g_dimension->is_pal) {
-                value = "500px";
+                value = "490px";
             } else {
                 value = "400px";
             }

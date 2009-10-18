@@ -3,3 +3,5 @@ ovs_movie_poster_height[720]:Movie Poster height(720)|360
 ovs_tv_poster_height[720]:TV Poster height(720)|360
 ovs_max_plot_length[720]:Maximum Plot Length (720)|600
 ovs_certificate_size[720]:Certificate Size(720)|30
+ovs_tv_rows[720]:Number of Episode Rows|10
+ovs_tv_cols[720]:Number of Episode Columns|6

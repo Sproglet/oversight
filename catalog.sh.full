@@ -3519,7 +3519,8 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-currentTag,i,j,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash,tag_data_count,prevTag) {
+currentTag,i,j,tag,text,lines,parts,a,sp,slash,tag_data_count,prevTag,\
+attr,a_name,a_val,eq,attr_pairs) {
 
     if (index(line,"<?")) return;
 
@@ -3618,20 +3619,21 @@ currentTag,i,j,tag,text,lines,parts,all_attr,attr_pairs,attr_name_val,a,sp,slash
         }
 
         #parse attributes.
+        
         if (index(parts[1],"=")) {
-            all_attr=parts[1];
-            sub(/^< *[^ ]+ */,"",all_attr); #remove tag
-            sub(/ *>$/,"",all_attr);
-            split(all_attr,attr_pairs," "); #split into a=b c=d e=d
-            #DEBUG("Parse Attr ["all_attr"]");
+            DEBUG("Parsing attributes");
+            capture_regex(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=(\"[^\"]+\"|[^ ]+)",0,attr_pairs);
             for(a in attr_pairs) {
-                split(attr_pairs[a],attr_name_val,"="); #split a=b into a,b
-                if (2 in attr_name_val) {
-                    sub(/^"/,"",attr_name_val[2]);
-                    sub(/"$/,"",attr_name_val[2]);
-                    info[currentTag"#"attr_name_val[1]]=attr_name_val[2];
-                    #DEBUG("Parse Attr ["currentTag"#"attr_name_val[1]"]=["info[currentTag"#"attr_name_val[1]]"]");
+                attr=attr_pairs[a];
+                eq=index(attr,"=");
+                a_name=substr(attr,1,eq-1);
+                a_val=substr(attr,eq+1);
+                if (index(a_val,"\"")) {
+                    sub(/^"/,"",a_val);
+                    sub(/"$/,"",a_val);
                 }
+                info[currentTag"#"a_name]=a_val;
+                DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]");
             }
 
         }
@@ -5375,19 +5377,26 @@ f,line,count,linematches,linecount,regex_text,remain) {
     return count;
 }
 
+# Find all occurences of a regular expression within a string, and return in an array.
 function capture_regex(line,regex,max,matches,\
-start,count,m,flag,fcount,i,parts) {
+count,flag,fcount,i,parts) {
     count =0 ;
 
     #something that should not appear normally!
-    flag="@_%-£=£-%_@"
+    flag="@%-£~"
+
+    #Make sure we use a safe flag
+    while (index(line,flag) ) {
+        WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
+        flag = flag "@"; #dodgy line but should work!
+    }
 
     gsub(regex,flag "&" flag , line );
     fcount = split(line,parts,flag);
     for(i=2 ; i-fcount < 0 ; i += 2 ) {
         matches[parts[i]]++;
         count++;
-        if (max > 0 ) {
+        if (max+0 > 0 ) {
             if (count - max >= 0) {
                 break;
             }

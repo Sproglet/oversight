@@ -56,6 +56,7 @@ td.filelist { text-align:center; }
 
 var g_idlist='';
 var titlecell = document.getElementById('tvplot').firstChild;
+var genrecell = document.getElementById('genre').firstChild;
 var g_epno='';
 var g_info='';
 
@@ -101,12 +102,17 @@ function action(a) {
 
     location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
 }
-function show(idlist,epno,plot_text,info)
+function show(idlist,epno,plot_text,info,eptitle)
 {
     g_idlist = idlist;
     g_epno = epno;
     g_info = info;
     titlecell.nodeValue = plot_text;
+    if (epno != '' ) {
+        genrecell.nodeValue = epno + ' : ' + eptitle;
+    } else {
+        genrecell.nodeValue = eptitle;
+    }
 }
 </script>
 

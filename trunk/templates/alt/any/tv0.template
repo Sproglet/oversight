@@ -26,15 +26,16 @@ body.tv_background0 { color:white ; background-color:black; }
                                 <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
                             </tr>
                             <tr>
-                                <td align=left><font class=info[:IS_GAYA:]>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
-                                <td align=right>[:RATING_STARS(5):][:RATING:]</td>
+                                <td align=left><font class=info[:IS_GAYA:] id=genre> [:GENRE:]</font></td>
+                                <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
                             </tr>
                             <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:] id=tvplot>[:PLOT:]</font></td><tr>
                         </table>
                     </td>
                 </tr>
-                <tr valign=top height=1px>
+                <tr valign=top >
                     <td colspan=2>
+                        <div>
                         <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
                                 <td class=filelist align=center>
@@ -43,6 +44,7 @@ body.tv_background0 { color:white ; background-color:black; }
                                 </td>
                             </tr>
                         </table>
+                        </div>
                     </td>
                 </tr>
             </table>

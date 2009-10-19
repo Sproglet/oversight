@@ -16,11 +16,13 @@ body.tv_background1 { color:yellow ; background-color:black; }
             [:INCLUDE_TEMPLATE(buttons):]
         </td>
     </tr>
-    <tr valign=bottom>
-        <td class=center width=1%>[:POSTER:]</td>
+</table>
+<table width=100% class=main >
+    <tr valign=bottom class=main>
+        <td class=main width=1%>[:POSTER:]</td>
 
-        <td width=100%>
-            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+        <td width=100% class=main>
+            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:]  width=100%>
                 <tr>
                     <td class=title><font class=title>[:TITLE:]</font></td>
                     <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
@@ -33,10 +35,9 @@ body.tv_background1 { color:yellow ; background-color:black; }
             </table>
         </td>
     </tr>
-    <tr valign=bottom >
-        <td colspan=2>
-            <div>
-            <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+    <tr valign=bottom class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] >
+        <td colspan=2 >
+            <table width=100%>
                 <tr>
                     <td class=filelist align=center>
                     [:TV_LISTING:]
@@ -44,7 +45,6 @@ body.tv_background1 { color:yellow ; background-color:black; }
                     </td>
                 </tr>
             </table>
-            </div>
         </td>
     </tr>
 </table>

@@ -68,7 +68,7 @@ void util_regcomp(regex_t *re,char *pattern,int flags);
 int util_rename(char *old,char *new);
 int util_system(char *cmd);
 
-#define FREE(x) do { free(x) ; x = NULL ;  } while(0)
+#define FREE(x) do { if (x) free(x) ; x = NULL ;  } while(0)
 
 #define DB_CHECK do {\
     html_log(0," DBCHECK %s %d",__FILE__,__LINE__);\
@@ -84,7 +84,7 @@ void util_rmdir(char *path,char *name);
 }while(0);
 
 #define TRACE do {\
-    if (0 && !g_dimension->local_browser) {\
+    if (1 && !g_dimension->local_browser) {\
         HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
     }\
 }while(0);

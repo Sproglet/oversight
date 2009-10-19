@@ -44,7 +44,7 @@ font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
 // g_idlist and g_title are set by the movie_listing code in oversight
 
 function ovs_del() {
-    if (confirm("Delist/Delete episode "+g_title+"?")) {
+    if (confirm("Delete ["+g_title+"]?")) {
         if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
             action('delete');
         } else {

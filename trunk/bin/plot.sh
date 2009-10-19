@@ -49,7 +49,7 @@ plot() {
             grep -q "$tag" "$file"
             ;;
         compact)
-            prune "$@" "$file" "$compact_ref"
+            prune "$file" "$compact_ref"
             ;;
             
         *)
@@ -86,7 +86,7 @@ END {
     reffile="'"$reffile"'";
     g_pid="'$$'";
 
-    g_plotpattern="_@[0-9a-zA-Z]+@[0-9]*@[0-9]*@_";
+    g_plotpattern="_@[0-9a-zA-Z]+@[0-9]*@[0-9a-z]*@_";
 
 
     extract_plot_tags(reffile,keep);

@@ -90,3 +90,6 @@ catalog_movie_search_order4="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 
 #scene tags - dont use ones that are normal words.
 catalog_config_version=1
+# Cache info downloaded from web - approx 50k per movie.
+# This speeds up full scans but ratings may become outdated
+catalog_cache_film_info="no"

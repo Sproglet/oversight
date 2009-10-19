@@ -36,10 +36,10 @@
                     </td>
                     <td align=left>
                         <input type=checkbox name=rescan_opt_GET_POSTERS checked>Get Posters
-                        <input type=checkbox name=rescan_opt_UPDATE_POSTERS>Overwrite Posters
+                        <input type=checkbox name=rescan_opt_UPDATE_POSTERS>Overwrite Posters (slow)
                         <br>
                         <input type=checkbox name=rescan_opt_GET_FANART checked>Get Fanart
-                        <input type=checkbox name=rescan_opt_UPDATE_FANART>Overwrite Fanart
+                        <input type=checkbox name=rescan_opt_UPDATE_FANART>Overwrite Fanart (slow)
                         <hr>
 <!--
                         <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>

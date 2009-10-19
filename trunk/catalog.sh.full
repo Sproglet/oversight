@@ -330,7 +330,7 @@ i,n,v,option) {
 
             if (n in g_settings) {
 
-                if (index(n,"catalog_movie_search") == 1) {
+                if (index(n,"catalog_movie_search") == 1 || n="catalog_format_tags" ) {
 
                     INF("Ignoring user setings for "n);
 
@@ -356,6 +356,7 @@ function plugin_error(p) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_start_time = systime();
     g_search_yahoo = "http://search.yahoo.com/search?p=";
     g_search_bing = "http://www.bing.com/search?q=";
     g_batch_size=25;
@@ -641,9 +642,9 @@ END{
     g_item_count = 0;
 
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
-    g_wget_opts="-T 10 -t 2 -w 2 -q ";
+    g_wget_opts="-T 20 -t 2 -w 2 -q ";
 
-    g_plot_file=APPDIR"/plot.db";
+    g_plot_file="'"$PLOT_DB"'";
     g_plot_app=quoteArg(APPDIR"/bin/plot.sh");
 
     for(i in g_settings) {
@@ -787,7 +788,6 @@ END{
         }
     }
 
-    for(f in FOLDER_ARR) INF("Folder "FOLDER_ARR[f]);
 
     if (NEWSCAN) {
         get_new_folders(FOLDER_ARR,g_timestamp_file);
@@ -795,10 +795,11 @@ END{
     }
 
     for(f in FOLDER_ARR) {
-       DEBUG("Folder:\t"FOLDER_ARR[f]);
+        INF("Folder "f"="FOLDER_ARR[f]);
     }
 
-    if (1 in FOLDER_ARR) {
+
+    if (hash_size(FOLDER_ARR)) {
 
         gMovieFileCount = 0;
         gMaxDatabaseId = 0;
@@ -951,8 +952,9 @@ function replace_database_with_new(newdb) {
 
 function set_permissions(shellArg) {
     if (ENVIRON["USER"] != '$uid' ) {
-        system("chown '$uid:$gid' "shellArg);
+        return system("chown '$uid:$gid' "shellArg);
     }
+    return 0;
 }
 
 function capitalise(text) {
@@ -1023,25 +1025,25 @@ function db_field(key,name,tag) {
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fmax) {
+f,fcount) {
 
     #Need to make sure the ls format is as "standard"
     gLS_FILE_POS=0;
     gLS_TIME_POS=0; 
 
-    if (1 in folderArray) {
 
-        fmax = hash_size(folderArray);
+    findLSFormat();
 
-        findLSFormat();
+    for(f in folderArray ) {
 
-        for(f=1 ; f <= fmax ; f++ ) {
+        fcount++;
 
-            report_status("... ");
+        if (folderArray[f]) {
+            report_status("folder "fcount);
             scan_contents(folderArray[f],scan_options);
         }
-
     }
+
 }
 
 function findLSFormat(\
@@ -2320,8 +2322,6 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
     eta="";
    
-    g_elapsedTime = 0;
-
     for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
 
         begin_search("");
@@ -2421,7 +2421,9 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
             relocate_files(idx);
 
             thisTime += systime() ;
-            g_elapsedTime += thisTime;
+            g_process_time += thisTime;
+            g_elapsed_time = systime() - g_start_time;
+
             g_total ++;
 
             if (g_opt_dry_run) {
@@ -2431,7 +2433,8 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
             #lang_test(idx);
 
             DEBUG("processed in "thisTime"s");
-            DEBUG(sprintf("%d items in %ds = %.1fs per item",g_total,g_elapsedTime,(g_elapsedTime/g_total)));
+            DEBUG(sprintf("CORE: %d items in %ds = %.1fs per item",g_total,g_process_time,(g_process_time/g_total)));
+            DEBUG(sprintf("ELAPSED:          %ds = %.1fs per item",g_elapsed_time,(g_elapsed_time/g_total)));
 
             #Batch updates so that user sees some progress
             ready_to_merge[idx]=1;
@@ -3621,10 +3624,10 @@ attr,a_name,a_val,eq,attr_pairs) {
         #parse attributes.
         
         if (index(parts[1],"=")) {
-            DEBUG("Parsing attributes");
+            #DEBUG("Parsing attributes on " parts[1]);
             capture_regex(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=(\"[^\"]+\"|[^ ]+)",0,attr_pairs);
-            for(a in attr_pairs) {
-                attr=attr_pairs[a];
+            for(attr in attr_pairs) {
+                #DEBUG("Attr ["attr"]");
                 eq=index(attr,"=");
                 a_name=substr(attr,1,eq-1);
                 a_val=substr(attr,eq+1);
@@ -3633,7 +3636,7 @@ attr,a_name,a_val,eq,attr_pairs) {
                     sub(/"$/,"",a_val);
                 }
                 info[currentTag"#"a_name]=a_val;
-                DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]");
+                #DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]");
             }
 
         }
@@ -4415,22 +4418,24 @@ function tvDbImageUrl(path) {
 function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
 xml,filter,r) {
 
-    r="/Banners/Banner";
-    delete filter;
-    filter[r"/Language"] = language;
-    filter[r"/BannerType"] = "season";
-    filter[r"/Season"] = g_season[idx];
-    if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-        g_poster[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
-        DEBUG("Season Poster URL = "g_poster[idx]);
-    }
+    if (getting_poster(idx,0) || getting_fanart(idx,0)) {
+        r="/Banners/Banner";
+        delete filter;
+        filter[r"/Language"] = language;
+        filter[r"/BannerType"] = "season";
+        filter[r"/Season"] = g_season[idx];
+        if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
+            g_poster[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
+            DEBUG("Season Poster URL = "g_poster[idx]);
+        }
 
-    delete filter;
-    filter[r"/Language"] = language;
-    filter[r"/BannerType"] = "fanart";
-    if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-        g_fanart[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
-        DEBUG("Fanart URL = "g_fanart[idx]);
+        delete filter;
+        filter[r"/Language"] = language;
+        filter[r"/BannerType"] = "fanart";
+        if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
+            g_fanart[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
+            DEBUG("Fanart URL = "g_fanart[idx]);
+        }
     }
 }
 
@@ -4707,7 +4712,7 @@ function extractImdbLink(text,\
 t) {
     t = extractImdbId(text);
     if (t != "") {
-        t = "http://www.imdb.com/title/"t;
+        t = "http://www.imdb.com/title/"t"/"; # Adding the / saves a redirect
     }
     return t;
 }
@@ -4858,6 +4863,28 @@ function equate_urls(u1,u2) {
     }
 }
 
+#imdb files dont change much - apart from rating. Keep them forever
+#to get new ratings then delete cache
+#if file cant be created return blank
+function persistent_cache(fname,\
+dir) {
+    dir=APPDIR"/cache";
+    if (g_cache_ok == 0) { #first time check
+        g_cache_ok=2; #bad
+        system("mkdir -p "quoteArg(dir));
+        if (set_permissions(quoteArg(dir)"/.") == 0) {
+            g_cache_ok=1; #good
+        }
+    }
+    
+    if (g_cache_ok == 1) { # good
+        INF("Using persistent cache");
+        return dir"/"fname;
+    } else if (g_cache_ok == 2) { # bad
+        return "";
+    }
+}
+    
 function getUrl(url,capture_label,cache,referer,\
     f,label) {
     
@@ -4876,9 +4903,18 @@ function getUrl(url,capture_label,cache,referer,\
         f = gUrlCache[url];
     }
 
-    if (f =="" || !exists(f)) {
+    if (g_settings["catalog_cache_film_info"] == "yes") {
+        if (url ~ ".imdb.com/title/tt[0-9]+$" ) {
+            f = persistent_cache(extractImdbId(url));
+            cache=1;
+        }
+    }
 
+    if (f =="" ) {
         f=NEW_CAPTURE_FILE(capture_label);
+    }
+    if (!exists(f)) {
+
         if (wget(url,f,referer) ==0) {
             if (cache) {
                 gUrlCache[url]=f;
@@ -5060,11 +5096,45 @@ poster_ref) {
     return "ovs:" field_id "/" g_settings["catalog_poster_prefix"] poster_ref ".jpg";
 }
 
+function getting_fanart(idx,lg) {
+    return getting_image(idx,FANART,GET_FANART,UPDATE_FANART,lg);
+}
+
+function getting_poster(idx,lg) {
+    return getting_image(idx,POSTER,GET_POSTERS,UPDATE_POSTERS,lg);
+}
+
+function getting_image(idx,image_field_id,get_image,update_image,lg,\
+f,poster_ref,internal_path) {
+
+    poster_ref = internal_poster_reference(image_field_id,idx);
+    internal_path = getPath(poster_ref,g_fldr[idx]);
+
+    if (internal_path in g_image_inspected) {
+        if(lg) INF("Already looked at "poster_ref);
+        return 0;
+    } else if (update_image) {
+        if(lg) INF("Force Update of "poster_ref);
+        return 1;
+    } else if (!get_image) {
+        if(lg) INF("Skipping "poster_ref);
+        return 0;
+    } else if (hasContent(internal_path)) {
+        if(lg) INF("Already have "poster_ref);
+        return 0;
+    } else {
+        if(lg) INF("Getting "poster_ref);
+        return 1;
+    }
+}
+    
 # Check for locally held poster otherwise fetch one. This may be help locally(with media)
 #or internally in a common folder.
 # Note if poster may be url<tab>referer_url
 function download_image(field_id,url,idx,\
-    poster_ref,havePoster,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
+    poster_ref,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
+
+    if (url == "") return "";
 
     DEBUG("Looking for new poster...");
 
@@ -5081,42 +5151,14 @@ function download_image(field_id,url,idx,\
     #DEBUG("new poster url = "url);
 
     get_it = 0;
-
-    #Get the poster if we havent fetched it already.
-    havePoster = hasContent(internal_path);
-
-    DEBUG("internal_path = "internal_path " havePoster="havePoster);
-
-    if (!(internal_path in g_image_inspected)) {
-DEBUG("internal_path not seen before ");
-        if (!havePoster) {
-            get_it = 1;
-        } else {
-            #note images are fetched aynchronously - we should touch the file really.
-            if (field_id == POSTER) {
-                get_it = UPDATE_POSTERS;
-            } else if (field_id == FANART) {
-                get_it = UPDATE_FANART;
-            }
-DEBUG("getit = " get_it);
-        }
-        g_image_inspected[internal_path]=1;
+    if (field_id == POSTER) {
+        get_it = getting_poster(idx,1);
+    } else if (field_id == FANART) {
+        get_it = getting_fanart(idx,1);
     }
 
-    if (get_it == 0 ) {
+    if (get_it ) {
 
-        INF("Skipping "poster_ref);
-
-    } else if (get_it == 2 ) {
-
-        INF("Already got "poster_ref);
-
-    } else if (get_it == 1 ) {
-
-
-        INF((UPDATE_POSTERS==1?"Forced ":" ") (havePoster?"Updating":"Fetching")" poster "poster_ref);
-
-        rm(internal_path,1);
 
         #create the folder.
         preparePath(internal_path);
@@ -5130,7 +5172,7 @@ DEBUG("getit = " get_it);
         # -T network timeouts
         wget_args=g_wget_opts;
 
-        DEBUG("Poster url = "url);
+        DEBUG("Image url = "url);
         default_referer = get_referer(url);
         if (referer == "" ) {
             referer = default_referer;
@@ -5150,9 +5192,10 @@ DEBUG("getit = " get_it);
 
         if (check_domain_ok(default_referer)) {
 
-        
+            rm(internal_path,1);
             exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &");
         }
+        g_image_inspected[internal_path]=1;
     }
 
     return poster_ref;
@@ -5236,74 +5279,75 @@ function getNiceMoviePosters(idx,imdb_id,\
 search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
 
 
-    DEBUG("Poster check imdb_id = "imdb_id);
+    if (getting_poster(idx,0) || getting_fanart(idx,0)) {
 
-    #poster_url = bingimg(gTitle[idx]" "g_year[idx]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
+        DEBUG("Poster check imdb_id = "imdb_id);
 
-    search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id;
+        #poster_url = bingimg(gTitle[idx]" "g_year[idx]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
-    #look for first instance of
-    #<image type="poster" size="mid" url="http://images.themoviedb.org/posters/30022/Transformers_v1_mid.jpg" imdb_id="30022"/>
-    #scale image to ???
+        search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id;
 
-    #Fanart - look for 
-    #<image type="backdrop" size="original" url="http://images.themoviedb.org/backdrops/35204/Transformers_1.jpg" imdb_id="35204"/>
-    #
-    f=getUrl(search_url,"moviedb",0);
+        #look for first instance of
+        #<image type="poster" size="mid" url="http://images.themoviedb.org/posters/30022/Transformers_v1_mid.jpg" imdb_id="30022"/>
+        #scale image to ???
 
-    #scan_xml_single_child(f,"/OpenSearchDescription/movies/movie/images",tagfilters,xmlout,\
-    if (f != "") {
-        FS="\n";
-        while((getline txt < f) > 0 && (poster_url == "" || backdrop_url == "") ) {
-            delete xml;
-            parseXML(txt,xml);
+        #Fanart - look for 
+        #<image type="backdrop" size="original" url="http://images.themoviedb.org/backdrops/35204/Transformers_1.jpg" imdb_id="35204"/>
+        #
+        f=getUrl(search_url,"moviedb",0);
 
-            if (poster_url == "") {
-                if (xml["/image#type"] == "poster") {
-                    if (xml["/image#size"] == "mid") {
-                        poster_url=url_encode(html_decode(xml["/image#url"]));
+        #scan_xml_single_child(f,"/OpenSearchDescription/movies/movie/images",tagfilters,xmlout,\
+        if (f != "") {
+            FS="\n";
+            while((getline txt < f) > 0 && (poster_url == "" || backdrop_url == "") ) {
+                delete xml;
+                parseXML(txt,xml);
+
+                if (poster_url == "") {
+                    if (xml["/image#type"] == "poster") {
+                        if (xml["/image#size"] == "mid") {
+                            poster_url=url_encode(html_decode(xml["/image#url"]));
+                        }
                     }
                 }
-            }
 
-            if (backdrop_url == "") {
-                if (xml["/image#type"] == "backdrop") {
-                    if (xml["/image#size"] == "original") {
-                        backdrop_url=url_encode(html_decode(xml["/image#url"]));
+                if (backdrop_url == "") {
+                    if (xml["/image#type"] == "backdrop") {
+                        if (xml["/image#size"] == "original") {
+                            backdrop_url=url_encode(html_decode(xml["/image#url"]));
+                        }
                     }
                 }
-            }
 
+            }
+            close(f);
         }
-        close(f);
-    }
+                
+        if (poster_url == "") {
+    #        if (1) {
+                referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/";
+    #        } else {
+    #            search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
+    #            referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
+    #        }
+            DEBUG("Got motech referer "referer_url);
+            if (referer_url != "" ) {
+                tmp_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
+                if (tmp_url != ""  && index(tmp_url,"thumb.jpg") == 0 ) {
+                    poster_url="http://www.motechposters.com" tmp_url;
+
+                    poster_url=poster_url"\t"referer_url;
+                    DEBUG("Got motech poster "poster_url);
+                } 
+            }
             
-    if (poster_url == "") {
-#        if (1) {
-            referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/";
-#        } else {
-#            search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
-#            referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
-#        }
-        DEBUG("Got motech referer "referer_url);
-        if (referer_url != "" ) {
-            tmp_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
-            if (tmp_url != ""  && index(tmp_url,"thumb.jpg") == 0 ) {
-                poster_url="http://www.motechposters.com" tmp_url;
-
-                poster_url=poster_url"\t"referer_url;
-                DEBUG("Got motech poster "poster_url);
-            } 
         }
-        
+        INF("movie poster ["poster_url"]");
+        g_poster[idx]=poster_url;
+
+        INF("movie backdrop ["backdrop_url"]");
+        g_fanart[idx]=backdrop_url;
     }
-    INF("movie poster ["poster_url"]");
-    g_poster[idx]=poster_url;
-
-    INF("movie backdrop ["backdrop_url"]");
-    g_fanart[idx]=backdrop_url;
-
-    return poster_url;
 }
 
 # Scan a page for matches to regular expression
@@ -5890,15 +5934,6 @@ function rename_related(oldName,newName,\
 }
 
 function preparePath(f) {
-#    if ((ret=system("mkdir -p "quotedFile)) != 0) {
-#        ERR("Failed to prepare "quotedFile" :file exists?");
-#        return ret;
-#    }
-#    if ((ret=system("rmdir "quotedFile)) != 0) {
-#        ERR("Failed to prepare "quotedFile" :rm error "ret);
-#        return ret;
-#    }
-#    return 0;
     f = quoteArg(f);
     return system("if [ ! -e "f" ] ; then mkdir -p "f" && rmdir -- "f" ; fi");
 }
@@ -6203,7 +6238,6 @@ row,est,nfo) {
     }
     row=row"\t"SEASON"\t"g_season[i];
     row=row"\t"EPISODE"\t"g_episode[i];
-    #row=row"\t"POSTER"\t"g_poster[i];
     row=row"\t"GENRE"\t"g_genre[i];
     row=row"\t"RATING"\t"g_rating[i];
 
@@ -6231,15 +6265,20 @@ row,est,nfo) {
         gsub(/.*\//,"",nfo);
     }
     row=row"\t"NFO"\t"nfo;
-    #row=row"\t"FANART"\t"g_fanart[i];
     row=row"\t"PLOT"\t"plot_tag(i);
     row=row"\t"EPPLOT"\t"epplot_tag(i);
     return row;
 }
 
 function epplot_tag(idx) {
-    return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@"g_episode[idx]"@_";
+
+    if (g_category[idx] ==  "T" ) {
+        return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@"g_episode[idx]"@_";
+    } else {
+        return "";
+    }
 }
+
 function plot_tag(idx) {
     return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@@_";
 }
@@ -6287,16 +6326,18 @@ i,row,fields,f,inf) {
 }
 
 function update_plots(pfile,idx,\
-id) {
+id,cmd) {
     id=extractImdbId(g_imdb[idx]);
     if (id != "") {
         INF("updating plots for "id);
 
+        cmd=g_plot_app" update "quoteArg(pfile)" "quoteArg(id)" "quoteArg(g_season[idx]);
+
         if (g_plot[idx] != "" ) {
-            exec(g_plot_app" update "quoteArg(pfile)" "id" "g_season[idx]" \"\" "quoteArg(g_plot[idx]));
+            exec(cmd" \"\" "quoteArg(g_plot[idx]));
         }
         if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
-            exec(g_plot_app" update "quoteArg(pfile)" "id" "g_season[idx]" "g_episode[idx]" "quoteArg(g_epplot[idx]));
+            exec(cmd" "quoteArg(g_episode[idx])" "quoteArg(g_epplot[idx]));
         }
     }
 }

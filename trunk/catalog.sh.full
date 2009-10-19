@@ -840,8 +840,8 @@ END{
         print "last scan at " strftime(systime()) > g_timestamp_file;
         close(g_timestamp_file);
         unlock(g_scan_lock_file);
-        remove_absent_files_from_new_db(INDEX_DB);
     }
+    remove_absent_files_from_new_db(INDEX_DB);
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
@@ -1829,7 +1829,9 @@ function remove_absent_files_from_new_db(db,\
                         }
                     } else {
                         gp = grandparent(f);
+                        INF("gp = ["gp"]");
                         if (is_dir(gp)) {
+                            INF("is a folder - removing "f);
                             keep=0;
                         }
                     }
@@ -2801,7 +2803,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
 
     INF("Online nfo search for "name);
 
-    if (length(name) <= 1) {
+    if (length(name) <= 4) {
         INF("name too short ");
         return "";
     }
@@ -4998,12 +5000,12 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
 
     url=quoteArg(url);
 
-    if (url in g_url_blacklist) {
-
-        WARNING("Skipping url ["url"] due to previous error");
-        result = 1;
-
-    } else {
+#ALL#    if (url in g_url_blacklist) {
+#ALL#
+#ALL#        WARNING("Skipping url ["url"] due to previous error");
+#ALL#        result = 1;
+#ALL#
+#ALL#    } else {
 
         cmd = "wget -O "downloadedFile" "args" "url" "unzip_cmd  ;
         #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
@@ -5017,10 +5019,11 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
         DEBUG("WGET ["url"]");
         result = exec(cmd);
         if (result != 0) {
-            g_url_blacklist[url] = 1;
-            WARNING("Blacklisting url ["url"]");
+#ALL#            g_url_blacklist[url] = 1;
+#ALL#            WARNING("Blacklisting url ["url"]");
+            rm(downloadedFile,1);
         }
-    }
+#ALL#    }
     return result;
 }
 
@@ -5373,7 +5376,7 @@ matches,i) {
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scanPageForMatches(url,regex,max,cache,referer,matches,\
-f,line,count,linematches,linecount,regex_text,remain) {
+f,line,count,linematches,linecount,regex_text,remain,is_imdb) {
 
     delete matches;
 
@@ -5392,6 +5395,9 @@ f,line,count,linematches,linecount,regex_text,remain) {
     INF("Looking for fixed text ["regex_text"] before regex ["regex"]");
 
     count=0;
+
+    is_imdb = (regex == g_imdb_regex );
+
     if (f != "" ) {
 
         FS="\n";
@@ -5402,7 +5408,7 @@ f,line,count,linematches,linecount,regex_text,remain) {
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
             # itself is more work - for example the results will come back as two different 
             # counts. 
-            if (index(line,"/Title?") ) {
+            if (is_imdb && index(line,"/Title?") ) {
                 gsub(/\/Title\?/,"/tt",line);
             }
 
@@ -6044,8 +6050,11 @@ function is_empty(d) {
 function is_dir(f) {
     return test("-d",f);
 }
-function is_file_or_folder(f) {
-    return (is_file(f) || is_dir(f));
+function is_file_or_folder(f,\
+r) {
+    r = (is_file(f) || is_dir(f));
+    if (!r) INF(f" is neither file or folder");
+    return r;
 }
 
 function test(t,f) {

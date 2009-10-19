@@ -617,7 +617,7 @@ char *util_hostname() {
     return hostname;
 }
 void query_remove(char *name) {
-    HTML_LOG(1,"Removing query item [%s]",name);
+    HTML_LOG(0,"Removing query item [%s]",name);
     if (hashtable_remove(g_query,name,1) == NULL) {
         HTML_LOG(5,"query item not present [%s]",name);
     }

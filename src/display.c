@@ -1388,11 +1388,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
         if (displaying_text) {
 
             if (link_first_word_only) {
-                // Add a horizontal image to stop cell shrinkage.
-                char *tmp;
-                ovs_asprintf(&tmp,"%s<br><img src=\"images/1h.jpg\" %s height=1px>",title,width_attr);
-                FREE(title);
-                title = tmp;
                 //
                 //Reduce amount of text in link - to fix gaya navigation
                 first_space = strchr(title,' ');
@@ -1426,7 +1421,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
         *first_space='\0';
     }
 
-    HTML_LOG(1,"dbg: details [%s]",title);
+    HTML_LOG(0,"dbg: details [%s]",title);
 
 
     char *cell_text=NULL;
@@ -1501,16 +1496,24 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
     }
 
 
+    // Add a horizontal image to stop cell shrinkage.
+    char *add_spacer = "";
+    if (in_poster_mode() && displaying_text) {
+        ovs_asprintf(&add_spacer,"<br><img src=\"images/1h.jpg\" %s height=1px>",width_attr);
+    }
+
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s%s %s %s %s %s >%s%s%s</td>",
+    ovs_asprintf(&result,"\t<td %s%s %s %s %s %s >%s%s%s%s</td>",
             (cell_background_image?"background=":""),
             (cell_background_image?cell_background_image:""),
             width_attr,height_attr,
             grid_class,mouse_ev,cell_text,
             (first_space?" ":""),
-            (first_space?first_space+1:""));
+            (first_space?first_space+1:""),
+            add_spacer);
 
+    if (add_spacer && *add_spacer) FREE(add_spacer);
     if (mouse_ev && *mouse_ev) FREE(mouse_ev);
     if (focus_ev && *focus_ev) FREE(focus_ev);
     if (cell_background_image && *cell_background_image) FREE(cell_background_image);
@@ -2442,7 +2445,7 @@ char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *p
     if (js_plot != plot) FREE(js_plot);
     if (js_info != info) FREE(js_info);
     if (js_eptitle != eptitle_or_genre) FREE(js_eptitle);
-    if (js_date != plot) FREE(js_date);
+    if (js_date != date) FREE(js_date);
 
     return result;
 }
@@ -2509,21 +2512,29 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
+TRACE;
         char *date = get_date_static(rid);
-        int free_title;
+TRACE;
+        int free_title=0;
         char *title = best_eptitle(rid,&free_title);
+TRACE;
         tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file,title,date);
+TRACE;
         FREE(result);
+TRACE;
         if (free_title) FREE(title);
         result = tmp;
 
     }
+TRACE;
 
     ovs_asprintf(&tmp,"<script type=\"text/javascript\">\n%s\n</script>\n",result);
     FREE(result);
     result = tmp;
 
+TRACE;
     util_free_char_array(num_rows,idlist);
+TRACE;
 
     return result;
 }

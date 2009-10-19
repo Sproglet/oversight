@@ -19,9 +19,9 @@ body.movie_background1 { color:yellow ; background-color:black; }
 
 
             <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
-                <tr>
-                    <td width=1% class=left align=left>[:POSTER:]</td>
-                    <td >
+                <tr class=main>
+                    <td width=1% class=main align=left>[:POSTER:]</td>
+                    <td class=main >
                         <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
                             <tr>
                                 <td class=title><font class=title>[:$%TITLE:][ (:$%YEAR:)]</font></td>

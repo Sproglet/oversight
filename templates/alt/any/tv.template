@@ -26,14 +26,20 @@ td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):
 }
 
 .transparent_fanart1_local0 {
-                filter:alpha(opacity=70);
-                opacity:0.7;
-                background-color:black;
-                color:white;
+    filter:alpha(opacity=70);
+    opacity:0.7;
+    background-color:black;
+    color:white;
+    margin:0px;
+    padding:0px;
+    border:0px;
 }
 
 .transparent_fanart1_local1 {
     background-color:black-alpha2;
+    margin:0px;
+    padding:0px;
+    border:0px;
 }
 
 .transparent_fanart0_local0 {
@@ -62,7 +68,7 @@ var g_info='';
 
 function ovs_del() {
     if (g_epno != '') {
-        if (confirm("Delist/Delete episode "+g_epno+"?")) {
+        if (confirm("Delete ["+g_epno+"]"+g_info+"?")) {
             if (confirm("Also Delete\nthis episodes\nmedia FILES\n?!!!")) {
                 action('delete');
             } else {

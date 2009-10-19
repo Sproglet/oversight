@@ -511,10 +511,9 @@ f,result,line) {
 
 # We could use smbclient.cgi but this would unmount other drives.
 function nmt_mount_share(s,settings,\
-path,link_details,mount_root,p,newlink,usr,pwd,lnk) {
+path,link_details,p,newlink,usr,pwd,lnk) {
 
-    mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
-    path = mount_root s;
+    path = g_mount_root s;
 
     if (is_mounted(path)) {
 
@@ -638,6 +637,7 @@ share,share_path,rest) {
 
 END{
 
+    g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
     g_winsfile = APPDIR"/conf/wins.txt";
     g_item_count = 0;
 
@@ -778,7 +778,7 @@ END{
                     FOLDER_ARR[f] = nmt_get_share_path(FOLDER_ARR[f]);
                 } else {
                     
-                    FOLDER_ARR[f] = "'$START_DIR'/"FOLDER_ARR[f];
+                    FOLDER_ARR[f] = "'"$START_DIR"'/"FOLDER_ARR[f];
                     if (!is_file_or_folder(FOLDER_ARR[f])) {
                         INF(FOLDER_ARR[f]" not a share or file");
                         delete FOLDER_ARR[f];
@@ -841,7 +841,9 @@ END{
         close(g_timestamp_file);
         unlock(g_scan_lock_file);
     }
-    remove_absent_files_from_new_db(INDEX_DB);
+    if (hash_size(FOLDER_ARR)) {
+        remove_absent_files_from_new_db(INDEX_DB);
+    }
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
@@ -1675,22 +1677,26 @@ f,line,imdbContentPosition) {
 ##### LOADING INDEX INTO DB_ARR[] ###############################
 
 #Used by generate nfo
-function parseDbRow(row,arr,file_count,\
-fields,f,i,fileRe) {
-    split(row,fields,"\t");
-    for(i in fields) {
-        if (i%2 == 0) {
-            arr[fields[i],file_count] = fields[i+1];
-        }
+function parseDbRow(row,arr,\
+fields,f,i,fileRe,fnum) {
+    fnum = split(row,fields,"\t");
+    for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
+        arr[fields[i]] = fields[i+1];
     }
-#    for(i=2 ; (i in fields) ; i += 2 ) {
-#        arr[fields[i],file_count] = fields[i+1];
-#    }
-    f=arr[FILE,file_count];
+    f=arr[FILE];
     if (index(f,"//")) {
         gsub(/\/\/+/,"/",f);
-        arr[FILE,file_count] = f;
     }
+    while (index(f,"/./")) {
+        gsub(/\/\.\//,"/",f);
+    }
+    arr[FILE] = f;
+}
+
+function get_name_dir_fields(arr,\
+f) {
+
+    f =  arr[FILE];
 
     if (isDvdDir(f)) {
         fileRe="/[^/]+/$"; # /path/to/name/[VIDEO_TS]
@@ -1699,8 +1705,8 @@ fields,f,i,fileRe) {
     }
 
     if (match(f,fileRe)) {
-        arr[NAME,file_count] = substr(f,RSTART+1);
-        arr[DIR,file_count] = substr(f,1,RSTART-1);
+        arr[NAME] = substr(f,RSTART+1);
+        arr[DIR] = substr(f,1,RSTART-1);
     }
 }
 
@@ -1719,11 +1725,12 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
 
         total_lines++;
 
-        if ( substr(dbline,1,1) != "\t" ) { continue; }
+        if ( index(dbline,"\t") != 1 ) { continue; }
 
-        parseDbRow(dbline,dbfields,1);
+        parseDbRow(dbline,dbfields);
+        get_name_dir_fields(dbfields);
 
-        f = dbfields[FILE,1];
+        f = dbfields[FILE];
 
         
         if (f in gMovieFilePresent) {
@@ -1732,7 +1739,7 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
             if (idx != -1 ) {
                 INF("update ["f"]");
                 # Update the old entry with the new data
-                dbline2 = createIndexRow(idx,dbfields[ID,1],dbfields[WATCHED,1],dbfields[INDEXTIME,1]);
+                dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],dbfields[INDEXTIME]);
                 updated_count++;
                 print dbline2"\t" >> new_db_file;
                 update_plots(g_plot_file,idx);
@@ -1740,16 +1747,16 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
                 #make sure we dont add it later.
                 gMovieFilePresent[f] = -1;
             } else {
-                INF("Duplicate ["dbfields[DIR,1]"]/"dbfields[NAME,1]);
+                INF("Duplicate ["dbfields[DIR]"]/"dbfields[NAME]);
             }
 
-        } else if ( dbfields[DIR,1] ~ g_settings["catalog_ignore_paths"] ) {
+        } else if ( dbfields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
-            INF("Removing Ignored Path ["dbfields[DIR,1]"]/"dbfields[NAME,1]);
+            INF("Removing Ignored Path ["dbfields[DIR]"]/"dbfields[NAME]);
 
-        } else if ( dbfields[NAME,1] ~ g_settings["catalog_ignore_names"] ) {
+        } else if ( dbfields[NAME] ~ g_settings["catalog_ignore_names"] ) {
 
-            INF("Removing Ignored Name "dbfields[DIR,1]"/["dbfields[NAME,1]"]");
+            INF("Removing Ignored Name "dbfields[DIR]"/["dbfields[NAME]"]");
 
         } else {
 
@@ -1757,11 +1764,11 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
             print dbline >> new_db_file;
         }
         # sanity check
-        if ( dbfields[FILE,1] == "" ) {
+        if ( dbfields[FILE] == "" ) {
             ERR("Blank file for ["dbline"]");
         }
-        if (dbfields[ID,1] - gMaxDatabaseId > 0) {
-            gMaxDatabaseId = dbfields[ID,1];
+        if (dbfields[ID] - gMaxDatabaseId > 0) {
+            gMaxDatabaseId = dbfields[ID];
         }
     }
     close(db_file);
@@ -1774,10 +1781,35 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
     return kept_count+updated_count;
 }
 
-function grandparent(f) {
-    sub(/\/$/,"",f); # remove vobsub indicator
-    sub(/\/[^\/]+\/[^\/]+$/,"",f);
-    return f;
+function next_folder(path,base,\
+path_parts,base_parts,bpcount,pcount) {
+    if (index(path,base) == 1) {
+
+        bpcount = split(base,base_parts,"/");
+        if (base_parts[bpcount] == "" ) bpcount--; # ignore trailing /
+
+        pcount = split(path,path_parts,"/");
+
+        # if the base includes part of a folder name then return that folder name
+        # otherwie return the next folder name.
+        # so /opt/sy.../USB_DRIVE_  returns USB_DRIVE_A-1
+        # but /opt/sy../NETWORK_DRIVE/ returns the mount folder abcd
+        if (path_parts[bpcount] == base_parts[bpcount] ) {
+            return base "/" path_parts[bpcount+1];
+        } else {
+            sub(/\/[^\/]+$/,"",base);
+            return base "/" path_parts[bpcount];
+        }
+    }
+    return "";
+}
+
+
+function mount_point(p) {
+    if (index(gp,"/share/") == 1) return "/share";
+    if ( index(gp,g_mount_root) == 1 || index(gp,"/USB_DRIVE_") == 1 || index(gp,"/opt/sybhttpd/localhost.drives/USB_DRIVE_") == 1 ) {
+        return next_folder(gp,g_mount_root);
+    }
 }
 
 # Re-instate old pruning test with extra folder check for absent media
@@ -1802,16 +1834,16 @@ function remove_absent_files_from_new_db(db,\
         close(db);
         while((getline dbline < db ) > 0) {
 
-            if ( substr(dbline,1,1) != "\t" ) { continue; }
+            if ( index(dbline,"\t") != 1 ) { continue; }
 
-            parseDbRow(dbline,dbfields,1);
+            parseDbRow(dbline,dbfields);
 
-            f = dbfields[FILE,1];
+            f = dbfields[FILE];
             #INF("Prune ? ["f"]");
 
             keep=1;
             
-            if (blacklist_re != "" && f ~ "NETWORK_SHARE("blacklist_re")" ) {
+            if (blacklist_re != "" && f ~ "NETWORK_SHARE/("blacklist_re")" ) {
                 WARNING("Skipping "f" - blacklisted device");
             } else {
 
@@ -1828,10 +1860,16 @@ function remove_absent_files_from_new_db(db,\
                             DEBUG("re = "blacklist_re);
                         }
                     } else {
-                        gp = grandparent(f);
-                        INF("gp = ["gp"]");
-                        if (is_dir(gp)) {
-                            INF("is a folder - removing "f);
+                        gp = mount_point(f);
+                        if (gp != "/share" ) {
+                            #if gp folder is present then delete
+                            if (is_dir(gp) && !is_empty(gp)) {
+                                keep=0;
+                            } else {
+                                INF("Not mounted?");
+                            }
+                        } else {
+                            # just delete it.
                             keep=0;
                         }
                     }
@@ -6038,7 +6076,7 @@ function is_file(f,\
 tmp,err) {
     err = (getline tmp < f );
     if (err == -1) {
-        INF("["f"] doesnt exist");
+        DEBUG("["f"] doesnt exist");
     } else {
         close(f);
     }
@@ -6048,7 +6086,7 @@ function is_empty(d) {
     return system("ls -a "quoteArg(d)" | egrep -v '^\.\.?$'") != 0;
 }
 function is_dir(f) {
-    return test("-d",f);
+    return test("-d",f"/.");
 }
 function is_file_or_folder(f,\
 r) {
@@ -6071,11 +6109,12 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
     if (g_settings["catalog_nfo_write"] == "never" ) {
         return;
     }
-    parseDbRow(dbrow,dbOne,1);
+    parseDbRow(dbrow,dbOne);
+    get_name_dir_fields(dbOne);
 
-    DEBUG("NFO = "dbOne[NFO,1]);
-    DEBUG("DIR = "dbOne[DIR,1]);
-    nfo=getPath(dbOne[NFO,1],dbOne[DIR,1]);
+    DEBUG("NFO = "dbOne[NFO]);
+    DEBUG("DIR = "dbOne[DIR]);
+    nfo=getPath(dbOne[NFO],dbOne[DIR]);
 
     DEBUG("nfo = "nfo);
 
@@ -6101,17 +6140,17 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
         DEBUG("Creating ["nfoFormat"] "nfo);
 
         if (nfoFormat == "xmbc") {
-            if (dbOne[CATEGORY,1] =="M") {
+            if (dbOne[CATEGORY] =="M") {
 
-                if (dbOne[URL,1] != "") {
-                    dbOne[IMDBID,1] = extractImdbId(dbOne[URL,1]);
+                if (dbOne[URL] != "") {
+                    dbOne[IMDBID] = extractImdbId(dbOne[URL]);
                 }
 
                 startXmbcNfo(nfo);
                 writeXmbcTag(dbOne,"movie",movie,nfo);
                 nfoAdded=1;
 
-            } else if (dbOne[CATEGORY,1] == "T") {
+            } else if (dbOne[CATEGORY] == "T") {
 
                 startXmbcNfo(nfo);
                 writeXmbcTag(dbOne,"tvshow",tvshow,nfo);
@@ -6121,12 +6160,11 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
         } else {
             #Flat
             print "#Auto Generated NFO" > nfo;
-            for (i in dbOne) {
-                if (dbOne[i] != "") {
-                    fieldId = substr(i,1,length(i)-2);
+            for (fieldId in dbOne) {
+                if (dbOne[fieldId] != "") {
                     fieldName=g_db_field_name[fieldId];
                     if (fieldName != "") {
-                        print fieldName"\t: "dbOne[i] > nfo;
+                        print fieldName"\t: "dbOne[fieldId] > nfo;
                     }
                 }
             }
@@ -6145,24 +6183,23 @@ function startXmbcNfo(nfo) {
 }
 #dbOne = single row of index.db
 function writeXmbcTag(dbOne,tag,children,nfo,\
-idxPair,fieldId,text,attr,childTag) {
+fieldId,text,attr,childTag) {
     print "<"tag">" > nfo;
 
     #Define any additional tag attributes here.
     attr["movie","id"]="moviedb=\"imdb\"";
 
-    for (idxPair in dbOne) {
+    for (fieldId in dbOne) {
 
-        text=dbOne[idxPair];
+        text=dbOne[fieldId];
 
         if (text != "") {
-            fieldId = substr(idxPair,1,length(idxPair)-2);
             if (index(children,fieldId)) {
                 childTag=gDbFieldId2Tag[fieldId];
                 if (childTag != "") {
                     if (childTag == "thumb") {
 #                       if (g_settings["catalog_poster_location"] == "with_media" ) {
-#                            #print "\t<"childTag">file://"dbOne[DIR,1]"/"text"</"childTag">" > nfo;
+#                            #print "\t<"childTag">file://"dbOne[DIR]"/"text"</"childTag">" > nfo;
 #                            print "\t<"childTag">file://./"xmlEscape(text)"</"childTag">" > nfo;
 #                        } else {
                             print "\t<!-- Poster location not exported catalog_poster_location="g_settings["catalog_poster_location"]" -->" > nfo;
@@ -6228,12 +6265,26 @@ row,est,nfo) {
     if (g_file[i] == "" ) {
         g_file[i]=getPath(g_media[i],g_fldr[i]);
     }
-    gsub(/\/\/+/,"/",g_file[i]);
+
+
+
+    # remove /./ from path - while req for ab/././cd
+    while (gsub("/\\./","/",g_file[i]) ) 
+       continue; 
+
+
+
+
+    #remove // from path
+    gsub("//+","/",g_file[i]);
+
+
 
     if ((g_file[i] in g_fldrCount ) && g_fldrCount[g_file[i]]) {
         DEBUG("Adjusting file for video_ts");
         g_file[i] = g_file[i] "/";
     }
+
 
     if (db_index == -1 ) {
         row="\t"ID"\t"(++gMaxDatabaseId);

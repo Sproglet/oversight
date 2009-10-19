@@ -393,7 +393,7 @@ function report_status(msg) {
 
 function get_new_folders(folder_list,timestamp_file,\
 new_list,f,i,j,dir,newfile,newdir) {
-    if (!exists(timestamp_file)) {
+    if (!is_file(timestamp_file)) {
         return;
     }
     DEBUG("Checking for changed content");
@@ -779,7 +779,7 @@ END{
                 } else {
                     
                     FOLDER_ARR[f] = "'$START_DIR'/"FOLDER_ARR[f];
-                    if (!exists(FOLDER_ARR[f])) {
+                    if (!is_file_or_folder(FOLDER_ARR[f])) {
                         INF(FOLDER_ARR[f]" not a share or file");
                         delete FOLDER_ARR[f];
                     }
@@ -881,7 +881,7 @@ doit) {
 
 function is_locked(lock_file,\
 pid) {
-    if (!exists(lock_file)) return 0;
+    if (!is_file(lock_file)) return 0;
 
     pid="";
     if ((getline pid < lock_file) >= 0) {
@@ -1816,7 +1816,7 @@ function remove_absent_files_from_new_db(db,\
             } else {
 
                 timer = systime();
-                if (!exists(f) ) {
+                if (!is_file_or_folder(f) ) {
                     if (timer-systime() > 15) {
                         # error accessing nas - blacklist this path.
                         blacklist_dir = f;
@@ -1829,7 +1829,7 @@ function remove_absent_files_from_new_db(db,\
                         }
                     } else {
                         gp = grandparent(f);
-                        if (exists(gp)) {
+                        if (is_dir(gp)) {
                             keep=0;
                         }
                     }
@@ -2348,12 +2348,12 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
         if (g_settings["catalog_nfo_read"] != "no") {
 
-            if (exists(gNfoDefault[idx])) {
+            if (is_file(gNfoDefault[idx])) {
 
                DEBUG("Using default info to find url");
                scanNfo = 1;
 
-            } else if (g_fldrMediaCount[g_fldr[idx]] == 1 && g_fldrInfoCount[g_fldr[idx]] == 1 && exists(g_fldrInfoName[g_fldr[idx]])) {
+            } else if (g_fldrMediaCount[g_fldr[idx]] == 1 && g_fldrInfoCount[g_fldr[idx]] == 1 && is_file(g_fldrInfoName[g_fldr[idx]])) {
 
                DEBUG("Using single nfo "g_fldrInfoName[g_fldr[idx]]" to find url in folder ["g_fldr[idx]"] for item "idx);
 
@@ -4418,7 +4418,7 @@ function tvDbImageUrl(path) {
 function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
 xml,filter,r) {
 
-    if (getting_poster(idx,0) || getting_fanart(idx,0)) {
+    if (getting_poster(idx,1) || getting_fanart(idx,1)) {
         r="/Banners/Banner";
         delete filter;
         filter[r"/Language"] = language;
@@ -4904,7 +4904,7 @@ function getUrl(url,capture_label,cache,referer,\
     }
 
     if (g_settings["catalog_cache_film_info"] == "yes") {
-        if (url ~ ".imdb.com/title/tt[0-9]+$" ) {
+        if (url ~ ".imdb.com/title/tt[0-9]+/?$" ) {
             f = persistent_cache(extractImdbId(url));
             cache=1;
         }
@@ -4913,7 +4913,7 @@ function getUrl(url,capture_label,cache,referer,\
     if (f =="" ) {
         f=NEW_CAPTURE_FILE(capture_label);
     }
-    if (!exists(f)) {
+    if (!is_file(f)) {
 
         if (wget(url,f,referer) ==0) {
             if (cache) {
@@ -5062,7 +5062,7 @@ function local_poster_path(idx,must_exist,\
     }
 
     for(e in ext) {
-        if (exists(p ext[e] )) {
+        if (is_file(p ext[e] )) {
             INF("Found local poster path "p ext[e]);
             return p ext[e];
         }
@@ -5152,9 +5152,9 @@ function download_image(field_id,url,idx,\
 
     get_it = 0;
     if (field_id == POSTER) {
-        get_it = getting_poster(idx,1);
+        get_it = getting_poster(idx,0);
     } else if (field_id == FANART) {
-        get_it = getting_fanart(idx,1);
+        get_it = getting_fanart(idx,0);
     }
 
     if (get_it ) {
@@ -5202,6 +5202,10 @@ function download_image(field_id,url,idx,\
 }
 
 function check_domain_ok(url) {
+    if (url ~ "images.themoviedb.org" ) {
+        return 1;
+    }
+
     if (!(url in g_domain_status)) {
         if ((g_domain_status[url] = system("wget "g_wget_opts" -O /dev/null "quoteArg(url)) == 0) == 0) {
             WARNING("Error with domain ["url"]");
@@ -5279,7 +5283,7 @@ function getNiceMoviePosters(idx,imdb_id,\
 search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
 
 
-    if (getting_poster(idx,0) || getting_fanart(idx,0)) {
+    if (getting_poster(idx,1) || getting_fanart(idx,1)) {
 
         DEBUG("Poster check imdb_id = "imdb_id);
 
@@ -5813,7 +5817,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                sub(/.*\//,"",g_media[i]);
 
                # Move nfo file
-               if(exists(gNfoDefault[i])) {
+               if(is_file(gNfoDefault[i])) {
 
                    nfoName = newName;
                    sub(/\.[^.]+$/,"",nfoName);
@@ -6014,14 +6018,25 @@ function moveFolder(i,oldName,newName,\
    }
 }
 
-function hasContent(f) {
-    return test("-s",f);
+function hasContent(f,\
+tmp,err) {
+    err = (getline tmp < f );
+    if (err != -1) close(f);
+    return (err == 1 );
 }
+
 function isnmt() {
-    return exists("'"$NMT_APP_DIR"'/MIN_FIRMWARE_VER");
+    return is_file("'"$NMT_APP_DIR"'/MIN_FIRMWARE_VER");
 }
-function exists(f) {
-    return test("-e",f);
+function is_file(f,\
+tmp,err) {
+    err = (getline tmp < f );
+    if (err == -1) {
+        INF("["f"] doesnt exist");
+    } else {
+        close(f);
+    }
+    return (err != -1 );
 }
 function is_empty(d) {
     return system("ls -a "quoteArg(d)" | egrep -v '^\.\.?$'") != 0;
@@ -6029,6 +6044,10 @@ function is_empty(d) {
 function is_dir(f) {
     return test("-d",f);
 }
+function is_file_or_folder(f) {
+    return (is_file(f) || is_dir(f));
+}
+
 function test(t,f) {
     return system("test "t" "quoteArg(f)) == 0;
 }
@@ -6051,11 +6070,11 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
 
     DEBUG("nfo = "nfo);
 
-    if (exists(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
+    if (is_file(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
         DEBUG("nfo already exists - skip writing");
         return;
     }
-    DEBUG("nfo exists = "exists(nfo));
+    DEBUG("nfo exists = "is_file(nfo));
 
     DEBUG("nfo style = "nfoFormat);
     
@@ -6066,7 +6085,7 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
     }
 
 
-    if (nfo != "" && !exists(nfo)) {
+    if (nfo != "" && !is_file(nfo)) {
 
         #sub(/[nN][Ff][Oo]$/,g_settings["catalog_nfo_extension"],nfo);
 
@@ -6260,7 +6279,7 @@ row,est,nfo) {
     nfo="";
     DEBUG2("NFO:"gNfoDefault[i]);
 
-    if (g_settings["catalog_nfo_write"] != "never" || exists(gNfoDefault[i]) ) {
+    if (g_settings["catalog_nfo_write"] != "never" || is_file(gNfoDefault[i]) ) {
         nfo=gNfoDefault[i];
         gsub(/.*\//,"",nfo);
     }

@@ -68,9 +68,11 @@ var g_info='';
 
 function ovs_del() {
     if (g_epno != '') {
-        if (confirm("Delete ["+g_epno+"]"+g_info+"?")) {
-            if (confirm("Also Delete\nthis episodes\nmedia FILES\n?!!!")) {
-                action('delete');
+        if (confirm("Remove ["+g_epno+"]?")) {
+            if (confirm("Also Delete "+g_info)) {
+                if(confirm("Deleting media files") ) {
+                    action('delete');
+                }
             } else {
                 action('delist');
             }

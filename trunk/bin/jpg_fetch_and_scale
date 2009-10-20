@@ -17,6 +17,9 @@ OVS_HOME=/share/Apps/oversight
 
 export PATH="$OVS_HOME/bin:$PATH"
 
+uid=nmt
+gid=nmt
+
 thread=0
 
 ARCH=
@@ -87,8 +90,9 @@ jpg_resize() {
     fi
 }
 
+
 perms() {
-    chown nmt:nmt "$@"
+    chown $uid:$gid "$@"
 }
 
 fetch_resize() {

@@ -343,8 +343,8 @@ i,n,v,option) {
             } else {
                 g_settings_orig[n]=v;
                 g_settings[n] = v;
+                INF(n"=["g_settings[n]"]");
             }
-            INF(n"=["g_settings[n]"]");
         }
     }
     close(file_name);
@@ -354,11 +354,19 @@ function plugin_error(p) {
     ERR("Unknown plugin "p);
 }
 
+function get_alt_website(testurl,newurlregex,\
+i,links) {
+    scanPageForMatches(testurl,newurlregex,0,0,"",links);
+    bestScores(links,links,0);
+    for(i in links) {
+        return i;
+    }
+}
+
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
     g_start_time = systime();
-    g_search_yahoo = "http://search.yahoo.com/search?p=";
-    g_search_bing = "http://www.bing.com/search?q=";
+
     g_batch_size=25;
     g_tvdb_user_per_episode_api=1;
     g_cvs_sep=" *, *";
@@ -636,13 +644,13 @@ share,share_path,rest) {
 
 
 END{
+    g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
+    g_wget_opts="-T 20 -t 2 -w 2 -q ";
+
 
     g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
     g_winsfile = APPDIR"/conf/wins.txt";
     g_item_count = 0;
-
-    g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
-    g_wget_opts="-T 20 -t 2 -w 2 -q ";
 
     g_plot_file="'"$PLOT_DB"'";
     g_plot_app=quoteArg(APPDIR"/bin/plot.sh");
@@ -727,6 +735,16 @@ END{
     if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0;
 
     CAPTURE_PREFIX=tmp_dir"/catalog."
+
+    g_search_yahoo = "http://search.yahoo.com/search?p=";
+    g_search_bing = "http://www.bing.com/search?q=";
+
+    #bypass yahoo redirection - may save 1s per search - every bit helps when building the index.
+    g_search_yahoo2 = get_alt_website(g_search_yahoo"test","http://[a-z.]+search.yahoo.com/search");
+    if (g_search_yahoo2) {
+        g_search_yahoo = g_search_yahoo2"?p=";
+        INF("local yahoo search = "g_search_yahoo);
+    }
 
     THIS_YEAR=substr(NOW,1,4);
 
@@ -1678,23 +1696,23 @@ f,line,imdbContentPosition) {
 
 #Used by generate nfo
 function parseDbRow(row,arr,\
-fields,f,i,fileRe,fnum) {
+fields,f,i,fnum) {
     fnum = split(row,fields,"\t");
     for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
         arr[fields[i]] = fields[i+1];
     }
     f=arr[FILE];
-    if (index(f,"//")) {
-        gsub(/\/\/+/,"/",f);
-    }
     while (index(f,"/./")) {
         gsub(/\/\.\//,"/",f);
+    }
+    while (index(f,"//")) {
+        gsub(/\/\/+/,"/",f);
     }
     arr[FILE] = f;
 }
 
 function get_name_dir_fields(arr,\
-f) {
+f,fileRe) {
 
     f =  arr[FILE];
 
@@ -1805,10 +1823,10 @@ path_parts,base_parts,bpcount,pcount) {
 }
 
 
-function mount_point(p) {
-    if (index(gp,"/share/") == 1) return "/share";
-    if ( index(gp,g_mount_root) == 1 || index(gp,"/USB_DRIVE_") == 1 || index(gp,"/opt/sybhttpd/localhost.drives/USB_DRIVE_") == 1 ) {
-        return next_folder(gp,g_mount_root);
+function mount_point(d) {
+    if (index(d,"/share/") == 1) return "/share";
+    if ( index(d,g_mount_root) == 1 || index(d,"/USB_DRIVE_") == 1 || index(d,"/opt/sybhttpd/localhost.drives/USB_DRIVE_") == 1 ) {
+        return next_folder(d,g_mount_root);
     }
 }
 
@@ -2695,7 +2713,8 @@ date,nonDate,premier,url,key) {
 
             url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "premier;
         
-            g_tv2imdb[key] = scanPageForMatch(search_url(g_link_search_engines,url,10),g_imdb_regex,0);
+            # Bing better than yahoo here!
+            g_tv2imdb[key] = scanPageForMatch(g_search_bing url,g_imdb_regex,0);
         }
         g_imdb[idx] = g_tv2imdb[key];
     }
@@ -3562,7 +3581,7 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 #sep is used if merging repeated element values together
 function parseXML(line,info,sep,\
-currentTag,i,j,tag,text,lines,parts,a,sp,slash,tag_data_count,prevTag,\
+currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,prevTag,\
 attr,a_name,a_val,eq,attr_pairs) {
 
     if (index(line,"<?")) return;
@@ -4146,61 +4165,74 @@ maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
     }
 }
 
-#Note the seach is assumed to have the format <h3><a= ...>Result title</a></h3>....
-#which works for google,yahoo and msn for now.
-#Searching is more intensive now and it is easy to get google rejecting searches based on traffic.
-#So we apply round-robin (google,yahoo,msn) to avoid getting blacklisted.
-# Both yahoo and msn have uk servers that are different to generic server.
-# Google is using load balancing (from my UK perspective)
-#Also the wget function will also sleep based on domain of url
-
-# Google is MILES ahead of yahoo and bing for the kind of searching oversight is doing.
-# its a shame that it will blacklist repeat searches very quickly.
-#
-# For example of yahoo lameness
-# http://uk.search.yahoo.com/search?p=102+minutes+that+changed+america+%2Bimdb
-#
-function search_url(search_engines,q,num) {
-    #return "http://www.scroogle.org/cgi-bin/nbbw.cgi?Gw="q;
-    ++g_web_search_count;
-    if (!(g_web_search_count in search_engines )) g_web_search_count=1;
-
-    if (search_engines[g_web_search_count] == "google") {
-        return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
-
-    } else if (search_engines[g_web_search_count] == "googleie") {
-        return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
-
-    } else
-    if (search_engines[g_web_search_count] == "yahoouk") {
-        return "http://uk.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
-
-    } else if (search_engines[g_web_search_count] == "yahooau") {
-        return "http://au.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
-
-    } else if (search_engines[g_web_search_count] == "yahoo") {
-        return "http://search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
-
-    } else if (search_engines[g_web_search_count] == "aol") {
-        return "http://search.aol.com/aol/search?q="q; # (num==""?"":"&n="num);
-
-    } else if (search_engines[g_web_search_count] == "msn") {
-        gsub(/inurl%/,"site%",q);
-        return "http://search.msn.com/results.aspx?q="q;
-
-    } else if (search_engines[g_web_search_count] == "msnuk") {
-        gsub(/inurl%/,"site%",q);
-        return "http://search.msn.co.uk/results.aspx?q="q;
-
-    } else {
-        ERR("Unknown search engine "g_web_search_count" ["search_engines[g_web_search_count]"]");
-        exit;
-    }
-}
+#Dep# # This will try each of the search engines in turn. Google has a habit of locking out IP with lots of searches.
+#Dep# function web_search_to_url(search_engines,keywords,num,\
+#Dep# url,x) {
+#Dep#     for(x in search_engines) {
+#Dep#         url = getUrl(search_url(search_engines,keywords,num));
+#Dep#         if (url != "") {
+#Dep#              return url;
+#Dep#         }
+#Dep#     }
+#Dep#     return "";
+#Dep# }
+#Dep# 
+#Dep# #Note the seach is assumed to have the format <h3><a= ...>Result title</a></h3>....
+#Dep# #which works for google,yahoo and msn for now.
+#Dep# #Searching is more intensive now and it is easy to get google rejecting searches based on traffic.
+#Dep# #So we apply round-robin (google,yahoo,msn) to avoid getting blacklisted.
+#Dep# # Both yahoo and msn have uk servers that are different to generic server.
+#Dep# # Google is using load balancing (from my UK perspective)
+#Dep# #Also the wget function will also sleep based on domain of url
+#Dep# 
+#Dep# # Google is MILES ahead of yahoo and bing for the kind of searching oversight is doing.
+#Dep# # its a shame that it will blacklist repeat searches very quickly.
+#Dep# #
+#Dep# # For example of yahoo lameness
+#Dep# # http://uk.search.yahoo.com/search?p=102+minutes+that+changed+america+%2Bimdb
+#Dep# #
+#Dep# function search_url(search_engines,q,num) {
+#Dep#     #return "http://www.scroogle.org/cgi-bin/nbbw.cgi?Gw="q;
+#Dep#     ++g_web_search_count;
+#Dep#     if (!(g_web_search_count in search_engines )) g_web_search_count=1;
+#Dep# 
+#Dep#     if (search_engines[g_web_search_count] == "google") {
+#Dep#         return "http://www.google.com/search?q="q; # (num==""?"":"&num="num);
+#Dep# 
+#Dep#     } else if (search_engines[g_web_search_count] == "googleie") {
+#Dep#         return "http://www.google.ie/search?q="q; # (num==""?"":"&num="num);
+#Dep# 
+#Dep#     } else
+#Dep#     if (search_engines[g_web_search_count] == "yahoouk") {
+#Dep#         return "http://uk.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
+#Dep# 
+#Dep#     } else if (search_engines[g_web_search_count] == "yahooau") {
+#Dep#         return "http://au.search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
+#Dep# 
+#Dep#     } else if (search_engines[g_web_search_count] == "yahoo") {
+#Dep#         return "http://search.yahoo.com/search?p="q; # (num==""?"":"&n="num);
+#Dep# 
+#Dep#     } else if (search_engines[g_web_search_count] == "aol") {
+#Dep#         return "http://search.aol.com/aol/search?q="q; # (num==""?"":"&n="num);
+#Dep# 
+#Dep#     } else if (search_engines[g_web_search_count] == "msn") {
+#Dep#         gsub(/inurl%/,"site%",q);
+#Dep#         return "http://search.msn.com/results.aspx?q="q;
+#Dep# 
+#Dep#     } else if (search_engines[g_web_search_count] == "msnuk") {
+#Dep#         gsub(/inurl%/,"site%",q);
+#Dep#         return "http://search.msn.co.uk/results.aspx?q="q;
+#Dep# 
+#Dep#     } else {
+#Dep#         ERR("Unknown search engine "g_web_search_count" ["search_engines[g_web_search_count]"]");
+#Dep#         exit;
+#Dep#     }
+#Dep# }
+#Dep# 
 
 # Search a google page for most frequently occuring imdb link
 function searchForIMDB(keywords,linkThreshold,\
-i1,i2,result) {
+i1,result) {
     if (!(keywords in g_imdb_link_search)) {
 
         INF("Begin IMDBLink Search ["keywords"]");
@@ -4208,30 +4240,15 @@ i1,i2,result) {
         #Also keeping the number of results down helps focus on early matches.
         keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
 
+        # bing is not very good here.
         i1 = scanUrlForBestMatch(g_search_yahoo keywords,g_imdb_regex,"search4imdb",linkThreshold);
         g_imdb_link_search[keywords] = i1;
 
-#        if (i1 != "" ) {
-#            i2 = scanUrlForBestMatch(g_search_bing keywords,g_imdb_regex,"search4imdb",linkThreshold);
-#        }
-#        g_imdb_link_search[keywords] = check_same("search4imdb",i1,i2);
     }
     result = g_imdb_link_search[keywords];
 
     INF("IMDBLink Search ["keywords"] => ["result"]");
     return result;
-}
-
-# This will try each of the search engines in turn. Google has a habit of locking out IP with lots of searches.
-function web_search_to_url(search_engines,keywords,num,\
-url,x) {
-    for(x in search_engines) {
-        url = getUrl(search_url(search_engines,keywords,num));
-        if (url != "") {
-             return url;
-        }
-    }
-    return "";
 }
 
 #Search google page extracting all occurences that match a regex, and return the most
@@ -5146,7 +5163,7 @@ function getting_poster(idx,lg) {
 }
 
 function getting_image(idx,image_field_id,get_image,update_image,lg,\
-f,poster_ref,internal_path) {
+poster_ref,internal_path) {
 
     poster_ref = internal_poster_reference(image_field_id,idx);
     internal_path = getPath(poster_ref,g_fldr[idx]);
@@ -5248,8 +5265,12 @@ function check_domain_ok(url) {
     }
 
     if (!(url in g_domain_status)) {
-        if ((g_domain_status[url] = system("wget "g_wget_opts" -O /dev/null "quoteArg(url)) == 0) == 0) {
+        if (system("wget "g_wget_opts" -O /dev/null "quoteArg(url)) && \
+            system("wget "g_wget_opts" -O /dev/null "quoteArg(url)"/favicon.ico" ) ) {
             WARNING("Error with domain ["url"]");
+            g_domain_status[url]=0;
+        } else {
+            g_domain_status[url]=1;
         }
     }
     return g_domain_status[url];
@@ -5414,7 +5435,7 @@ matches,i) {
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scanPageForMatches(url,regex,max,cache,referer,matches,\
-f,line,count,linematches,linecount,regex_text,remain,is_imdb) {
+f,line,count,linecount,regex_text,remain,is_imdb) {
 
     delete matches;
 
@@ -5708,6 +5729,7 @@ l,cert,c) {
                 #Update certificate
                 gCertCountry[idx] = cert[1];
                 gCertRating[idx] = cert[2];
+                gsub(/%20/," ",gCertRating[idx]);
                 DEBUG("IMDB: set certificate ["gCertCountry[idx]"]["gCertRating[idx]"]");
                 return;
             }
@@ -5983,7 +6005,7 @@ function rename_related(oldName,newName,\
 
 function preparePath(f) {
     f = quoteArg(f);
-    return system("if [ ! -e "f" ] ; then mkdir -p "f" && rmdir -- "f" ; fi");
+    return system("if [ ! -e "f" ] ; then mkdir -p "f" && chown '$uid:$gid' "f"/.. &&  rmdir -- "f" ; fi");
 }
 
 #This is used to double check we are only manipulating files that meet certain criteria.
@@ -6103,7 +6125,7 @@ function test(t,f) {
 #to rebuild the DB_ARR at a later date. Esp if the file names are no
 #longer appearing in searches.
 function generate_nfo_file(nfoFormat,dbrow,\
-movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
+movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
 
     nfoAdded=0;
     if (g_settings["catalog_nfo_write"] == "never" ) {
@@ -6113,6 +6135,9 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,i,nfoAdded,episodedetails) {
     get_name_dir_fields(dbOne);
 
     DEBUG("NFO = "dbOne[NFO]);
+
+    if (dbOne[NFO] == "" ) return;
+
     DEBUG("DIR = "dbOne[DIR]);
     nfo=getPath(dbOne[NFO],dbOne[DIR]);
 
@@ -6315,27 +6340,35 @@ row,est,nfo) {
     if (gOriginalTitle[i] != "" && gOriginalTitle[i] != gTitle[i] ) {
         row=row"\t"ORIG_TITLE"\t"gOriginalTitle[i];
     }
-    row=row"\t"SEASON"\t"g_season[i];
-    row=row"\t"EPISODE"\t"g_episode[i];
+    if (g_season[i] != "") row=row"\t"SEASON"\t"g_season[i];
+    if (g_episode[i] != "") row=row"\t"EPISODE"\t"g_episode[i];
+
     row=row"\t"GENRE"\t"g_genre[i];
     row=row"\t"RATING"\t"g_rating[i];
 
 
     row=row"\t"YEAR"\t"g_year[i];
     row=row"\t"FILE"\t"g_file[i];
-    row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i];
-    row=row"\t"PARTS"\t"gParts[i];
-    row=row"\t"URL"\t"g_imdb[i];
+
+    if (gAdditionalInfo[i]) row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i];
+
+    if (gParts[i]) row=row"\t"PARTS"\t"gParts[i];
+
+    if (g_imdb[i]) row=row"\t"URL"\t"g_imdb[i];
+
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
-    row=row"\t"DIRECTOR"\t"g_director[i];
+    if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i];
+
     row=row"\t"FILETIME"\t"g_file_time[i];
     row=row"\t"DOWNLOADTIME"\t"est;
     #row=row"\t"SEARCH"\t"g_search[i];
-    row=row"\t"PROD"\t"gProdCode[i]; #todo remove without affecting load loop in oversight.cgi
-    row=row"\t"AIRDATE"\t"gAirDate[i];
+    #row=row"\t"PROD"\t"gProdCode[i]; #todo remove without affecting load loop in oversight.cgi
 
-    row=row"\t"TVCOM"\t"gTvCom[i];
-    row=row"\t"EPTITLE"\t"gEpTitle[i];
+
+    if (gAirDate[i]) row=row"\t"AIRDATE"\t"gAirDate[i];
+
+    #row=row"\t"TVCOM"\t"gTvCom[i];
+    ig (gEpTitle[i]) row=row"\t"EPTITLE"\t"gEpTitle[i];
     nfo="";
     DEBUG2("NFO:"gNfoDefault[i]);
 
@@ -6343,7 +6376,9 @@ row,est,nfo) {
         nfo=gNfoDefault[i];
         gsub(/.*\//,"",nfo);
     }
-    row=row"\t"NFO"\t"nfo;
+    if (is_file(g_fldr[i]"/"nfo)) {
+        row=row"\t"NFO"\t"nfo;
+    }
     row=row"\t"PLOT"\t"plot_tag(i);
     row=row"\t"EPPLOT"\t"epplot_tag(i);
     return row;

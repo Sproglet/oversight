@@ -1421,9 +1421,6 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
         *first_space='\0';
     }
 
-    HTML_LOG(0,"dbg: details [%s]",title);
-
-
     char *cell_text=NULL;
     char *focus_ev = "";
     char *mouse_ev = "";
@@ -2133,33 +2130,44 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     HTML_LOG(1,"Crossview = %ld",crossview);
 
     //Tvid filter = this as the form 234
+    HTML_LOG(0,"begin hdump");
     html_hashtable_dump(0,"query",g_query);
+    HTML_LOG(0,"end hdump");
+
+TRACE;
 
     char *regex = get_tvid(query_val(QUERY_PARAM_REGEX));
 
     if (regex == NULL || !*regex) {
+TRACE;
         //Check regex entered via text box
 
         if (*query_val("searcht") && *query_val(QUERY_PARAM_SEARCH_MODE)) {
             regex=util_tolower(query_val("searcht"));
         }
     }
+TRACE;
     HTML_LOG(3,"Regex filter = %s",regex);
 
     // Watched filter
     // ==============
     int watched = DB_WATCHED_FILTER_ANY;
+TRACE;
     char *watched_param=query_val(QUERY_PARAM_WATCHED_FILTER);
 
+TRACE;
     if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
+TRACE;
 
         watched=DB_WATCHED_FILTER_YES;
 
     } else if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
+TRACE;
 
         watched=DB_WATCHED_FILTER_NO;
     }
 
+TRACE;
     HTML_LOG(1,"Watched filter = %ld",watched);
 
     // Tv/Film filter
@@ -2168,16 +2176,19 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
     int media_type=DB_MEDIA_TYPE_ANY;
 
     if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
+TRACE;
 
         media_type=DB_MEDIA_TYPE_TV; 
 
     } else if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
+TRACE;
 
         media_type=DB_MEDIA_TYPE_FILM; 
 
     }
     HTML_LOG(1,"Media type = %d",media_type);
 
+TRACE;
     
     DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
 

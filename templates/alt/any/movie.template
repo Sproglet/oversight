@@ -44,9 +44,11 @@ font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
 // g_idlist and g_title are set by the movie_listing code in oversight
 
 function ovs_del() {
-    if (confirm("Delete ["+g_title+"]?")) {
-        if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
-            action('delete');
+    if (confirm("Remove ["+g_title+"]?")) {
+        if (confirm("Also delete  "+g_title+" files ?!!!")) {
+            if(confirm("Deleting media files") ) {
+                action('delete');
+            } 
         } else {
             action('delist');
         }

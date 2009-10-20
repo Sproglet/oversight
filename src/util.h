@@ -61,6 +61,7 @@ char *catalog_val(char *name);
 char *setting_val(char *name);
 char *oversight_val(char *name);
 char *unpak_val(char *name);
+void query_update(char *name,char *new);
 void query_remove(char *name);
 char *util_basename(char *file);
 int util_starts_with(char *a,char *b);
@@ -84,7 +85,7 @@ void util_rmdir(char *path,char *name);
 }while(0);
 
 #define TRACE do {\
-    if (1 && !g_dimension->local_browser) {\
+    if (0 && !g_dimension->local_browser) {\
         HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
     }\
 }while(0);

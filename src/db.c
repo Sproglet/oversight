@@ -142,8 +142,10 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
 {
     int freepath;
 
+TRACE;
     Db *db = CALLOC(1,sizeof(Db));
 
+TRACE;
     if (filename == NULL) {
         db->path = get_mounted_path(source,"/share/Apps/oversight/index.db",&freepath);
         if (!freepath) {
@@ -152,14 +154,19 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
     } else {
         db->path =  STRDUP(filename);
     }
+TRACE;
     db->plot_file = replace_all(db->path,"index.db","plot.db",0);
 
+TRACE;
     db->source= STRDUP(source);
 
+TRACE;
     ovs_asprintf(&(db->backup),"%s.old",db->path);
 
+TRACE;
     db->lockfile = replace_all(db->path,"index.db","catalog.lck",0);
 
+TRACE;
     db->locked_by_this_code=0;
     return db;
 }
@@ -1017,16 +1024,20 @@ void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_ty
         int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
 
     HTML_LOG(1,"begin db_scan_and_add_rowset");
+TRACE;
     if (db_to_be_scanned(name)) {
+TRACE;
 
         Db *db = db_init(path,name);
 
         if (db) {
+TRACE;
 
             int this_db_size=0;
             DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
 
             if ( r != NULL ) {
+TRACE;
 
                 (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbRowSet*));
                 (*row_set_ptr)[(*rowset_count_ptr)++] = r;
@@ -1111,12 +1122,14 @@ DbRowSet **db_crossview_scan_titles(
         use_folder_titles = *oversight_val("ovs_use_folders_as_title") == '1';
     }
 
+TRACE;
     HTML_LOG(1,"begin db_crossview_scan_titles");
     // Add information from the local database
     db_scan_and_add_rowset(
         localDbPath(),"*",
         name_filter,media_type,watched,
         &rowset_count,&rowsets);
+TRACE;
 
     if (crossview) {
         //get iformation from any remote databases

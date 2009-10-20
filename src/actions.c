@@ -26,8 +26,9 @@ struct hashtable *get_newly_selected_ids_by_source(int *totalp);
 struct hashtable *get_newly_deselected_ids_by_source(int *totalp);
 int count_unchecked();
 // Add val=src1(id|..)src2(id|..) to hash table.
-int merge_id_by_source(struct hashtable *h,char *val);
+int idlist_to_idhash(struct hashtable *h,char *val);
 int idcount(char *idlist);
+void update_idlist(struct hashtable *source_id_hash_removed);
 
 //True if there was post data.
 int has_post_data() {
@@ -55,10 +56,7 @@ void clear_selection() {
 
     query_remove("form");
     query_remove("select");
-    query_remove("actionids");
-    if (strcmp(query_val("action"),"Cancel") !=0) {
-        query_remove("action");
-    }
+    query_remove("action");
     struct hashtable_itr *itr;
     Array *a = array_new(NULL);
     char *k,*v;
@@ -235,22 +233,8 @@ void send_command(char *source,char *remote_cmd) {
     FREE(cmd);
 }
 
-
-int remove_row(int delete_mode)
-{
-    int total;
-    struct hashtable *source_id_hash = NULL;
-    source_id_hash = get_newly_selected_ids_by_source(&total);
-    db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,delete_mode);
-    //TODO: Should also remove the id from idlist. - use regex?
-
-    hashtable_destroy(source_id_hash,1,1);
-    return total;
-}
-
 void do_actions() {
 
-    int go_main_menu_if_all_removed=0;
     char *view=query_val("view");
     char *action=query_val("action");
     //char *select=query_val("select");
@@ -375,6 +359,7 @@ void do_actions() {
     } else if (*action) {
 
         int total_deleted = 0;
+        struct hashtable *changed_source_id_hash = NULL;
 
         char *actionids = query_val("actionids");
         if (actionids && *actionids) {
@@ -385,63 +370,84 @@ void do_actions() {
 
             HTML_LOG(0,"actionids=[%s]",actionids);
 
-            struct hashtable *source_id_hash = string_string_hashtable(16);
-            total_changed = merge_id_by_source(source_id_hash,actionids);
+            changed_source_id_hash = string_string_hashtable(16);
+
+            total_changed = idlist_to_idhash(changed_source_id_hash,actionids);
 
             if (allow_mark() && strcmp(action,"watch") == 0) {
 
-                db_set_fields(DB_FLDID_WATCHED,"1",source_id_hash,DELETE_MODE_NONE);
+                db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
+                query_remove("action");
 
             } else if (allow_mark() && strcmp(action,"unwatch") == 0) {
 
-                db_set_fields(DB_FLDID_WATCHED,"0",source_id_hash,DELETE_MODE_NONE);
+                db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
+                query_remove("action");
 
             } else if (allow_delete() && strcmp(action,"delete") == 0) {
 
-                db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_DELETE);
+                db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_DELETE);
                 total_deleted = total_changed;
+                if (total_deleted > 0) {
+                    update_idlist(changed_source_id_hash);
+                }
+                query_remove("action");
 
             } else if (allow_delist() && strcmp(action,"delist") == 0) {
 
-                db_set_fields(DB_FLDID_ACTION,NULL,source_id_hash,DELETE_MODE_REMOVE);
+                db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_REMOVE);
                 total_deleted = total_changed;
+                if (total_deleted > 0) {
+                    update_idlist(changed_source_id_hash);
+                }
+                query_remove("action");
 
             }
-            hashtable_destroy(source_id_hash,1,1);
+            query_remove("actionids");
+            hashtable_destroy(changed_source_id_hash,1,1);
 
         } else if (allow_mark() && strcmp(action,"Mark") == 0) {
 
 
             int total_changed = 0;
-            struct hashtable *source_id_hash = NULL;
             
-            source_id_hash = get_newly_selected_ids_by_source(&total_changed);
-            db_set_fields(DB_FLDID_WATCHED,"1",source_id_hash,DELETE_MODE_NONE);
-            hashtable_destroy(source_id_hash,1,1);
+            changed_source_id_hash = get_newly_selected_ids_by_source(&total_changed);
+            db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
+            hashtable_destroy(changed_source_id_hash,1,1);
 
-            source_id_hash = get_newly_deselected_ids_by_source(&total_changed);
-            db_set_fields(DB_FLDID_WATCHED,"0",source_id_hash,DELETE_MODE_NONE);
-            hashtable_destroy(source_id_hash,1,1);
+            changed_source_id_hash = get_newly_deselected_ids_by_source(&total_changed);
+            db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
+            hashtable_destroy(changed_source_id_hash,1,1);
+            query_remove("action");
 
 
         } else if (allow_delete() && strcmp(action,"Delete") == 0) {
 
 TRACE;
-            total_deleted = remove_row(DELETE_MODE_DELETE);
-            go_main_menu_if_all_removed = 1;
+            changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+            db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_DELETE);
+            if (total_deleted > 0) {
+                update_idlist(changed_source_id_hash);
+            }
+            hashtable_destroy(changed_source_id_hash,1,1);
+            query_remove("action");
 
         } else if (allow_delist() && strcmp(action,"Remove_From_List") == 0) {
 
 TRACE;
-            total_deleted = remove_row(DELETE_MODE_REMOVE);
-            go_main_menu_if_all_removed = 1;
+            changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+            db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_REMOVE);
+            if (total_deleted > 0) {
+                update_idlist(changed_source_id_hash);
+            }
+            hashtable_destroy(changed_source_id_hash,1,1);
+            query_remove("action");
 
         }
 
         // If in the tv  or movie view and all items have been deleted - go to the main view
-        if (total_deleted > 0 && *query_val("view") && total_deleted >= idcount(query_val("idlist")) ) {
+        if (!*query_val("idlist")) {
             HTML_LOG(0,"Going back to main view");
-            query_remove("idlist");
             query_remove("view");
             query_remove("select");
         }
@@ -450,11 +456,86 @@ TRACE;
 
     html_hashtable_dump(0,"post action query",g_query);
 
-    if (*query_val("form") || *query_val("action")) {
+
+    if (*query_val("form") ) {
 
         clear_selection();
 
     }
+}
+
+// Collpase hash table with Key = source name value = "id1|id2|id3"
+// to a string with format val=src1(id|..)src2(id|..)
+// opposite function is idlist_to_idhash()
+char *idhash_to_idlist(struct hashtable *source_id_hash) {
+    char *out = NULL;
+    struct hashtable_itr *itr;
+    char *name,*ids;
+    for(itr=hashtable_loop_init(source_id_hash) ; hashtable_loop_more(itr,&name,&ids) ; ) {
+        char *tmp;
+        ovs_asprintf(&tmp,"%s%s(%s)",
+                NVL(out),
+                name,
+                ids);
+        FREE(out);
+        out = tmp;
+    }
+    HTML_LOG(0,"hash to list = [%s]",out);
+    return out;
+}
+
+void update_idlist(struct hashtable *source_id_hash_removed)
+{
+
+    HTML_LOG(0,"pre update idlist = [%s]",query_val("idlist"));
+
+    if (*query_val("idlist")) {
+
+        struct hashtable *source_id_hash_current = string_string_hashtable(16);
+        idlist_to_idhash(source_id_hash_current,query_val("idlist"));
+
+        struct hashtable_itr *itr;
+        char *source;
+        char *removed_ids;
+
+        for(itr=hashtable_loop_init(source_id_hash_removed) ; hashtable_loop_more(itr,&source,&removed_ids) ; ) {
+            HTML_LOG(0,"Removing ids %s(%s)",source,removed_ids);
+            char *oldids = hashtable_remove(source_id_hash_current,source,1);
+            HTML_LOG(0,"Existing ids (%s)",oldids);
+
+            if (oldids != NULL) {
+
+                char *regex;
+                ovs_asprintf(&regex,"\\<(%s)(\\||$)",removed_ids);
+
+                char *keepids = replace_all(oldids,regex,"",0);
+                HTML_LOG(0,"Remaining ids (%s)",keepids);
+
+                // removing 1 from 1|2|3 will leave 2|3
+                // removing 2 from 1|2|3 will leave 1|3
+                // removing 3 from 1|2|3 will leave 1|2|
+                if (*keepids) {
+                    char *last = keepids+strlen(keepids)-1;
+                    if (*last == '|') {
+                        *last = '\0';
+                        HTML_LOG(0,"Remaining ids (%s)",keepids);
+                    }
+                }
+                FREE(regex);
+                FREE(oldids);
+
+                if (!EMPTY_STR(keepids)) {
+
+                    hashtable_insert(source_id_hash_current,STRDUP(source),keepids);
+                }
+            }
+
+        }
+        //Update the html parameter
+        query_update("idlist",idhash_to_idlist(source_id_hash_current));
+        hashtable_destroy(source_id_hash_current,1,1);
+    }
+    HTML_LOG(0,"post update idlist = [%s]",query_val("idlist"));
 }
 
 // count the number if ids in an idlist format [source(id1|id2|..id3)][...][...]
@@ -494,13 +575,15 @@ int checkbox_just_removed(char *name) {
 }
 
 // Add val=src1(id|..)src2(id|..) to hash table.
-int merge_id_by_source(struct hashtable *h,char *val)
+// Key = source name value = "id1|id2|id3"
+// opposite function is idhash_to_idlist()
+int idlist_to_idhash(struct hashtable *h,char *val)
 {
 
     Array *sources = split(val,")",0);
     int total=0;
 
-    array_print("merge_id_by_source",sources);
+    array_print("idlist_to_idhash",sources);
 
     if (sources) {
         int i;
@@ -512,7 +595,7 @@ int merge_id_by_source(struct hashtable *h,char *val)
 
                 Array *source_ids = split(source_idlist_str,"(",0);
 
-                array_print("merge_id_by_source source ",source_ids);
+                array_print("idlist_to_idhash source ",source_ids);
 
                 assert(source_ids && source_ids->size ==2);
 
@@ -546,7 +629,7 @@ int merge_id_by_source(struct hashtable *h,char *val)
     }
     return total;
 
-HTML_LOG(1," end merge_id_by_source");
+HTML_LOG(1," end idlist_to_idhash");
 }
 
 
@@ -607,7 +690,7 @@ struct hashtable *get_newly_selected_ids_by_source(int *totalp)
 
             name += strlen(CHECKBOX_PREFIX);
 
-            total += merge_id_by_source(h,name);
+            total += idlist_to_idhash(h,name);
 
         }
     }
@@ -634,7 +717,7 @@ struct hashtable *get_newly_deselected_ids_by_source(int *totalp)
             HTML_LOG(1,"checkbox removed [%s]",name);
             name += strlen("orig_"CHECKBOX_PREFIX);
 
-            total += merge_id_by_source(h,name);
+            total += idlist_to_idhash(h,name);
 
         }
     }

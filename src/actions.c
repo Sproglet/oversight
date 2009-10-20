@@ -286,7 +286,7 @@ void do_actions() {
                     ovs_asprintf(&tmp,"%s %s",cmd,opt);
                     FREE(cmd);
                     cmd = tmp;
-                    if (strcmp(opt, RESCAN_OPT_PREFIX "PARALLEL_SCAN" ) == 0 ) {
+                    if (strcmp(opt,"PARALLEL_SCAN" ) == 0 ) {
                         parallel_scan = 1;
                     }
                 }

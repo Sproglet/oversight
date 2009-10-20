@@ -367,7 +367,7 @@ i,links) {
 BEGIN {
     g_start_time = systime();
 
-    g_batch_size=25;
+    g_batch_size=30;
     g_tvdb_user_per_episode_api=1;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;
@@ -865,7 +865,7 @@ END{
 }
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
-function merge_files_and_do_actions(indexToMergeHash,\
+function merge_into_index(indexToMergeHash,\
 doit) {
 
     for(doit in indexToMergeHash) {
@@ -1153,6 +1153,15 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
 
         if (!match(substr(perms,2,9),"^[-rwxsSt]+$") ) {
             #Just entered a folder
+
+            # If the folder has changed and we have more than n items then process them
+            # this is to save memory. As this removes stored data we only do this if we 
+            # change folder. This ensures we process multipart files together.
+            if (gMovieFileCount > g_batch_size ) {
+                identify_and_catalog_scanned_files();
+            }
+
+
            currentFolder = scan_line;
            sub(/\/*:$/,"",currentFolder);
            DEBUG("Folder = "currentFolder);
@@ -1280,11 +1289,12 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
                 gMovieFileCount++;
             }
         }
+
     }
 
     close(tempFile);
 
-    identify_and_catalog_scanned_files(g_batch_size);
+    identify_and_catalog_scanned_files();
 
     DEBUG("Finished Scanning "root);
 }
@@ -1308,14 +1318,6 @@ function csv2re(text) {
 
 function storeMovie(idx,file,folder,timeStamp) {
 
-    # If the folder has changed and we have more than 100 items then process them
-    # this is to save memory.
-    if (folder != g_last_stored_folder && idx > 100 ) {
-        g_last_stored_folder = folder;
-        identify_and_catalog_scanned_files(g_batch_size);
-        idx = 0;
-    }
-
     g_fldrMediaCount[folder]++;
 
     g_fldr[idx]=folder;
@@ -1323,7 +1325,7 @@ function storeMovie(idx,file,folder,timeStamp) {
     DEBUG("Storing ["g_fldr[idx]"]["g_media[idx]"]");
 
     #used when pruning the old index.
-    gMovieFilePresent[folder"/"file] = idx;
+    gMovieFilePresent[clean_path(folder"/"file)] = idx;
     g_file_time[idx] = timeStamp;
 }
 
@@ -1696,19 +1698,22 @@ f,line,imdbContentPosition) {
 
 #Used by generate nfo
 function parseDbRow(row,arr,\
-fields,f,i,fnum) {
+fields,i,fnum) {
     fnum = split(row,fields,"\t");
     for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
         arr[fields[i]] = fields[i+1];
     }
-    f=arr[FILE];
+    arr[FILE] = clean_path(arr[FILE]);
+}
+
+function clean_path(f) {
     while (index(f,"/./")) {
         gsub(/\/\.\//,"/",f);
     }
     while (index(f,"//")) {
         gsub(/\/\/+/,"/",f);
     }
-    arr[FILE] = f;
+    return f;
 }
 
 function get_name_dir_fields(arr,\
@@ -1765,16 +1770,16 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
                 #make sure we dont add it later.
                 gMovieFilePresent[f] = -1;
             } else {
-                INF("Duplicate ["dbfields[DIR]"]/"dbfields[NAME]);
+                INF("Duplicate ["dbfields[FILE]"]");
             }
 
         } else if ( dbfields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
-            INF("Removing Ignored Path ["dbfields[DIR]"]/"dbfields[NAME]);
+            INF("Removing Ignored Path ["dbfields[FILE]"]");
 
         } else if ( dbfields[NAME] ~ g_settings["catalog_ignore_names"] ) {
 
-            INF("Removing Ignored Name "dbfields[DIR]"/["dbfields[NAME]"]");
+            INF("Removing Ignored Name "dbfields[FILE]"]");
 
         } else {
 
@@ -2367,16 +2372,13 @@ function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,de
 
 ############### GET IMDB URL FROM NFO ########################################
 
-function identify_and_catalog_scanned_files(ready_to_merge_batch_size,\
-idx,file,bestUrl,scanNfo,startTime,thisTime,numFiles,eta,\
+function identify_and_catalog_scanned_files(\
+idx,file,bestUrl,scanNfo,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
-    startTime = systime();
-    numFiles=0;
-    for ( idx in g_media) {
-        numFiles++;
-    }
-    INF("Processing "numFiles" items in batches of "ready_to_merge_batch_size);
+    numFiles=hash_size(g_media);
+
+    INF("Processing "numFiles" items");
 
     eta="";
    
@@ -2498,24 +2500,15 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
             ready_to_merge[idx]=1;
             ready_to_merge_count++
 
-            DEBUG("ready_to_merge_batch_size = "ready_to_merge_batch_size);
-            DEBUG("ready_to_merge_count = "ready_to_merge_count);
-            if (ready_to_merge_batch_size != 0 ) {
-                if (  ready_to_merge_count - ready_to_merge_batch_size > 0 ) {
-                    merge_files_and_do_actions(ready_to_merge);
-                    ready_to_merge_count=0;
-                }
-            }
         } else {
             INF("Skipping item "g_media[idx]);
         }
     }
-    # At the end we always make sure merge_files_and_do_actions has been called
+    # At the end we always make sure merge_into_index has been called
     # at least once as this loads the database and carries out any file actions
     if (ready_to_merge_count) {
         DIV("merge");
-        merge_files_and_do_actions(ready_to_merge);
-        ready_to_merge_count=0;
+        merge_into_index(ready_to_merge);
     }
 
     clean_globals();
@@ -5845,8 +5838,8 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
         #Remove characters windows doesnt like
         gsub(/[\\:*\"<>|]/,"_",newName); #"
-        #Remove double slahses
-        gsub(/\/\/+/,"/",newName);
+
+        newName = clean_path(newName);
 
         if (newName != oldName) {
            if (fileType == "folder") {
@@ -6098,7 +6091,7 @@ function is_file(f,\
 tmp,err) {
     err = (getline tmp < f );
     if (err == -1) {
-        DEBUG("["f"] doesnt exist");
+        #DEBUG("["f"] doesnt exist");
     } else {
         close(f);
     }

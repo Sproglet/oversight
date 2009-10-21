@@ -724,11 +724,10 @@ char *macro_fn_source(char *template_name,char *call,Array *args,int num_rows,Db
     char *result = NULL;
     if (num_rows) {
         DbRowId *r=sorted_rows[0];
-        if (r->db && r->db->source) {
-            if (*(r->db->source) != '*') {
-                result = add_network_icon(r->db->source,r->db->source);
-            }
-        }
+        int freeit;
+        char *share = share_name(r,&freeit);
+        result = add_network_icon(r,share);
+        if (freeit) FREE(share);
     }
     return result;
 }

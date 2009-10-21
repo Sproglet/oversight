@@ -113,8 +113,7 @@ td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
 
 
 
-h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
-.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
+h1,.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
 
 .label { color:red }
 .scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }

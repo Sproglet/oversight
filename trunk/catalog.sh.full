@@ -1225,7 +1225,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) 
 
                     DEBUG("Folder ["scan_line"]");
 
-                    if (scan_line == "VIDEO_TS") {
+                    if (scan_line == "VIDEO_TS" && is_file(currentFolder"/VIDEO_TS/VTS_01_0.VOB") ) {
 
                         if (match(currentFolder,"/[^/]+$")) {
                             f = substr(currentFolder,RSTART+1);
@@ -6361,7 +6361,7 @@ row,est,nfo) {
     if (gAirDate[i]) row=row"\t"AIRDATE"\t"gAirDate[i];
 
     #row=row"\t"TVCOM"\t"gTvCom[i];
-    ig (gEpTitle[i]) row=row"\t"EPTITLE"\t"gEpTitle[i];
+    if (gEpTitle[i]) row=row"\t"EPTITLE"\t"gEpTitle[i];
     nfo="";
     DEBUG2("NFO:"gNfoDefault[i]);
 

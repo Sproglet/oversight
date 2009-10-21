@@ -1,10 +1,10 @@
 <!-- Default Fanart Tv Template  $Id:$ -->
 <style type="text/css">
-body.tv_background1 { color:yellow ; background-color:black; }
+body { color:yellow ; background-color:black; }
 .listing {align:
 </style>
 </head>
-<body height=100% focuscolor=yellow focustext=black [class=tv_background:IS_GAYA:] [background=:FANART_URL(default.jpg):] >
+<body height=100% focuscolor=yellow focustext=black [background=:FANART_URL(default.jpg):] >
 <table class=main width=100%>
 <tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
 

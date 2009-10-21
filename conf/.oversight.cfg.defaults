@@ -1,4 +1,4 @@
-# $Id: oversight.cfg.example 151 2009-08-29 18:13:59Z lordylordy $ 
+# $Id: oversight.cfg.example 449 2009-10-18 02:52:48Z lordylordy $ 
 ovs_config_version=1
 ovs_log_level=0
 ovs_new_days=3
@@ -10,7 +10,7 @@ ovs_tv_play_via_pc=1
 ovs_icon_set="set1"
 ovs_icon_type="png"
 ovs_crossview=0
-ovs_display_fanart=0
+ovs_display_fanart=1
 ovs_skin_name="alt"
 ovs_title_bar="poster_mode"
 ovs_auto_prune=1
@@ -67,3 +67,6 @@ ovs_poster_mode_height[1080]=0
 ovs_tv_rows[1080]=10
 ovs_tv_cols[1080]=6
 
+ovs_font_size_plot="100"
+ovs_font_size_eptitle="90"
+ovs_font_size_epdate="90"

@@ -13,9 +13,9 @@ td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):
 td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
 .proper { color: yellow; size:small; }
 .repack { color: yellow; size:small; }
-.eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
+.eptitle { font-size:100% ; font-weight:normal; font-size:[:$ovs_font_size_eptitle:]%; }
 
-.epdate { color:#AAAAFF; }
+.epdate { color:#AAAAFF; font-size:[:$ovs_font_size_epdate:]%; }
 .info0 {
     color:white;
                 filter:alpha(opacity=100);
@@ -50,7 +50,7 @@ td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):
 .transparent_fanart0_local1 {
     background-color:black;
 }
-font.plot { font-size:[:FONT_SIZE(-2):] ; font-weight:normal; }
+font.plot { font-size:[:$ovs_font_size_plot:]% ; font-weight:normal; }
 td.filelist { text-align:center; }
         </style>
 

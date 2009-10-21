@@ -235,26 +235,43 @@ FILE *playlist_open() {
     return fp;
 }
 
-char *add_network_icon(char *source,char *text) {
+char *share_name(DbRowId *r,int *freeme) {
+    char *out = NULL;
+    *freeme = 0;
+    if (*(r->db->source) != '*' ) {
+        out = r->db->source;
+    } else if (util_starts_with(r->file,NETWORK_SHARE)) {
+        char *p = r->file + strlen(NETWORK_SHARE);
+        char *q = strchr(p,'/');
+        if (q == NULL) {
+            out = p;
+        } else {
+            ovs_asprintf(&out,"%.*s",q-p,p);
+            *freeme = 1;
+        }
+    }
+    return out;
+}
 
-    assert(source);
-    assert(text);
+char *add_network_icon(DbRowId *r,char *text) {
+
     char *icon;
     char *result=NULL;
 
-    if (*source == '*' ) {
+    if (*(r->db->source) == '*' && !util_starts_with(r->file,NETWORK_SHARE)) {
 
-        icon =  get_theme_image_tag("harddisk"," width=20 height=15 ");
+        //icon =  get_theme_image_tag("harddisk"," width=20 height=15 ");
+        //ovs_asprintf(&result,"%s %s",icon,text);
+        //FREE(icon);
 
     } else {
 
         icon =  get_theme_image_tag("network"," width=20 height=15 ");
+        ovs_asprintf(&result,"%s%s%s",icon,(text?" ":""),NVL(text));
+        FREE(icon);
 
     }
 
-    ovs_asprintf(&result,"%s %s",icon,text);
-
-    FREE(icon);
     return result;
 
 }
@@ -1278,7 +1295,7 @@ char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char 
     config_check_long(g_oversight_config,"ovs_crossview",&crossview);
     if (crossview == 1 && *(row_id->db->source) != '*') {
         HTML_LOG(2,"dbg: add network icon");
-       char *tmp =add_network_icon(row_id->db->source,title);
+       char *tmp =add_network_icon(row_id,title);
        FREE(title);
        title = tmp;
     }
@@ -1532,8 +1549,8 @@ int template_replace(char *template_name,char *input,int num_rows,DbRowId **sort
     // first replace simple variables in the buffer.
     char *newline=template_replace_only(template_name,input,num_rows,sorted_row_ids);
     if (newline != input) {
-        HTML_LOG(0,"old line [%s]",input);
-        HTML_LOG(0,"new line [%s]",newline);
+        HTML_LOG(2,"old line [%s]",input);
+        HTML_LOG(2,"new line [%s]",newline);
     }
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
     int count = template_replace_and_emit(template_name,newline,num_rows,sorted_row_ids);
@@ -2436,7 +2453,7 @@ char *clean_js_string(char *in) {
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *plot,char *info,char *eptitle_or_genre,char *date) {
+char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *plot,char *info,char *eptitle_or_genre,char *date,char *share) {
     char *result = NULL;
 
     char *js_plot = clean_js_string(plot);
@@ -2444,14 +2461,14 @@ char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *p
     char *js_eptitle = clean_js_string(eptitle_or_genre);
     char *js_date = clean_js_string(date);
 
-
-    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s','%s','%s','%s%s'); }\n",
+    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s','%s','%s','%s%s%s%s%s'); }\n",
             NVL(script_so_far),fn_id,
                 idlist,
                 episode,
                 IFEMPTY(js_plot,"(no plot info)"),
                 js_info,
-                NVL(js_eptitle),NVL(js_date));
+                NVL(js_eptitle),NVL(js_date),
+                (share?" [":""),NVL(share),(share?"]":""));
 
     if (js_plot != plot) FREE(js_plot);
     if (js_info != info) FREE(js_info);
@@ -2513,7 +2530,7 @@ char *create_episode_js_fn(int num_rows,DbRowId **sorted_rows) {
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            tmp = ep_js_fn(result,0,"","",NVL(rid->plot_text),"",rid->genre,NULL);
+            tmp = ep_js_fn(result,0,"","",NVL(rid->plot_text),"",rid->genre,NULL,NULL);
             FREE(result);
             result = tmp;
             break;
@@ -2523,21 +2540,20 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-TRACE;
         char *date = get_date_static(rid);
-TRACE;
         int free_title=0;
         char *title = best_eptitle(rid,&free_title);
-TRACE;
-        tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file,title,date);
-TRACE;
+
+        int freeshare=0;
+        char *share = share_name(rid,&freeshare);
+
+        tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file,title,date,share);
         FREE(result);
-TRACE;
         if (free_title) FREE(title);
+        if (freeshare) FREE(share);
         result = tmp;
 
     }
-TRACE;
 
     ovs_asprintf(&tmp,"<script type=\"text/javascript\">\n%s\n</script>\n",result);
     FREE(result);
@@ -2662,8 +2678,15 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
                 }
 
                 char *title_txt=NULL;
-                int is_proper = util_strreg(rid->file,"proper",REG_ICASE) != NULL;
-                int is_repack = util_strreg(rid->file,"repack",REG_ICASE) != NULL;
+
+                int is_proper = (strstr(rid->file,"proper") ||
+                                 strstr(rid->file,"Proper") ||
+                                 strstr(rid->file,"PROPER"));
+
+                int is_repack = (strstr(rid->file,"repack") ||
+                                 strstr(rid->file,"Repack") ||
+                                 strstr(rid->file,"REPACK"));
+
                 char *icon_text = icon_link(rid->file);
 
                 ovs_asprintf(&title_txt,"%s%s&nbsp;%s",
@@ -2678,10 +2701,7 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
 
                 //network icon
-                char *network_icon=NULL;
-                if (*(rid->db->source) != '*') {
-                    network_icon = add_network_icon(rid->db->source,"");
-                }
+                char *network_icon = add_network_icon(rid,"");
 
                 //Put Episode/Title/Date together in new cell.
                 char td_class[10];

@@ -305,7 +305,7 @@ fi
 
 get_pal=1
 ## If you really want pal backdrops but are not getting them comment out the following line
-check_pal
+# check_pal
 
 trap tidy 1 2 3 6
 

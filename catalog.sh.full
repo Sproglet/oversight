@@ -2822,8 +2822,8 @@ choice,i,url) {
 
             # search binsearch.info 
             url = searchOnlineNfoLinksForImdb(name,\
-                "http://www.binsearch.info",\
-                "/index.php?q=\"QUERY\""additionalKeywords"&minsize="minSize"&max=50&adv_age=999&adv_sort=date&adv_nfo=on&postdate=on",\
+                "https://www.binsearch.info",\
+                "/index.php?q=\"QUERY\""additionalKeywords"&minsize="minSize"&max=20&adv_age=999&adv_sort=date&adv_nfo=on&postdate=on&hideposter=on&hidegroup=on",\
                 "/viewNFO[^\"]+",20,"","");
 
 # ngindex search not accurate enough

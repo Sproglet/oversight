@@ -2993,7 +2993,7 @@ foundId,line) {
         FS="\n";
         while(foundId=="" && (getline line < nfoFile) > 0 ) {
 
-            foundId = extractImdbLink(line);
+            foundId = extractImdbLink(line,1);
 
         }
         close(nfoFile);
@@ -4709,7 +4709,7 @@ function adjustTitle(idx,newTitle,source) {
     }
 }
 
-function extractImdbId(text,\
+function extractImdbId(text,quiet,\
 id) {
     if (match(text,g_imdb_regex)) {
         id = substr(text,RSTART,RLENGTH);
@@ -4717,7 +4717,7 @@ id) {
     } else if (match(text,"Title.[0-9]+\\>")) {
         id = "tt" substr(text,RSTART+8,RLENGTH-8);
         #DEBUG("Extracted IMDB Id ["id"]");
-    } else {
+    } else if (!quiet) {
         WARNING("Failed to extract imdb id from ["text"]");
     }
     if (id != "" && length(id) != 9) {
@@ -4758,9 +4758,9 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     close(tmpFile);
 }
 
-function extractImdbLink(text,\
+function extractImdbLink(text,quiet,\
 t) {
-    t = extractImdbId(text);
+    t = extractImdbId(text,quiet);
     if (t != "") {
         t = "http://www.imdb.com/title/"t"/"; # Adding the / saves a redirect
     }

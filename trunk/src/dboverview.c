@@ -332,7 +332,7 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
     overview_array_dump(3,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
     HTML_LOG(2,"sorted %d items",hashtable_count(overview));
-    overview_array_dump(0,"ovw sorted",ids);
+    overview_array_dump(2,"ovw sorted",ids);
 
     return ids;
 }

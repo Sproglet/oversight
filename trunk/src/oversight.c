@@ -231,7 +231,7 @@ TRACE;
     // When troubleshooting we should clean up properly as this may reveal
     // malloc errors. 
     // But otherwise just let the OS reclaim everything.
-    if(0) {
+    if(1) {
         html_comment("cleanup");
     TRACE;
 
@@ -308,8 +308,9 @@ char *get_mounted_path(char *source,char *path,int *freeit)
         // [pop-nfs][/share/Apps/oversight/... becomes
         // /opt/sybhttpd/localhost.drives/NETWORK_SHARE/pop-nfs/Apps/oversight/...
         ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
-        HTML_LOG(0,"mounted path[%s]",new);
+        HTML_LOG(1,"mounted path[%s]",new);
         *freeit=1;
+TRACE;
     }
     return new;
 }

@@ -43,6 +43,9 @@ char *get_play_tvid(char *text) {
 // Return a full path 
 char *get_path(DbRowId *rid,char *path,int *freepath) {
 
+TRACE;
+
+    *freepath = 0;
     char *mounted_path=NULL;
 
     char *path_relative_to_host_nmt=NULL;
@@ -52,25 +55,32 @@ char *get_path(DbRowId *rid,char *path,int *freepath) {
 
         path_relative_to_host_nmt = path;
 
-    } else if (strncmp(path,"ovs:",4) == 0) {
+    } else if (util_starts_with(path,"ovs:")) {
 
         ovs_asprintf(&path_relative_to_host_nmt,"%s/db/global/%s",appDir(),path+4);
+        *freepath = 1;
 
     } else {
 
         char *d=util_dirname(rid->file);
        ovs_asprintf(&path_relative_to_host_nmt,"%s/%s",d,path);
        FREE(d);
+       *freepath = 1;
     }
 
     int free2;
     mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt,&free2);
+TRACE;
+    if (free2) {
+        *freepath = 1;
+    }
+TRACE;
 
     // Free intermediate result if necessary
     if (path_relative_to_host_nmt != path && path_relative_to_host_nmt != mounted_path) {
         FREE(path_relative_to_host_nmt);
     }
-    *freepath =  (mounted_path != path);
+TRACE;
 
     return mounted_path;
 }
@@ -323,7 +333,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
     HTML_LOG(1,"VOD file[%s]",file);
     char *path = get_path(rowid,file,&freepath);
-    HTML_LOG(1,"VOD path[%s]",path);
+    HTML_LOG(0,"VOD path[%s]",path);
 
     nmt_mount(path);
 
@@ -724,10 +734,14 @@ char *watched_style_small(DbRowId *rowid,int grid_toggle) {
     }
 }
 
-char *check_path(char *a,char *b,char *c,char *d) {
+char *check_path(char *format, ... ) {
     char *p;
+    va_list args;
+    va_start(args,format);
+    ovs_vasprintf(&p,format,args);
 
-    ovs_asprintf(&p,"%s%s%s%s",a,b,c,d);
+    va_end(args);
+
     if (!exists(p)) {
         HTML_LOG(1,"%s doesnt exist",p);
         FREE(p);
@@ -745,7 +759,8 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type) {
     // films  = ovs:fieldid/prefix title _ year _  imdbid.jpg
     //
 #define INTERNAL_IMAGE_PATH_LEN 200
-    static char path[INTERNAL_IMAGE_PATH_LEN];
+    static char path[INTERNAL_IMAGE_PATH_LEN+1];
+    path[INTERNAL_IMAGE_PATH_LEN] = '\0';
     char *p = path;
     p += sprintf(p,"ovs:%s/%s",
             (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
@@ -780,6 +795,7 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type) {
         }
     }
     HTML_LOG(2,"internal_image_path_static [%s] = [%s]",rid->title,path);
+    assert(path[INTERNAL_IMAGE_PATH_LEN] == '\0');
     return path;
 }
 
@@ -798,34 +814,29 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
     // First check the filesystem. We do this via the mounted path.
     // This requires that the remote file is already mounted.
     char *file = get_path(rid,rid->file,&freefile);
+TRACE;
     char *dir = util_dirname(file);
 
     // Find position of file extension.
     char *dot = NULL;
-    char saved='\0';;
 
     // First look for file.modifier.jpg file.modifier.png
     if (rid->ext != NULL) { 
         dot = strrchr(file,'.');
         if (dot) {
-
             dot++;
-            saved=*dot;
-            *dot = '\0';
         }
     }
 
+    path=check_path("%.*s%sjpg",dot-file,file,modifier);
 
-    path=check_path(file,modifier,"jpg","");
+    if (path == NULL) path=check_path("%.*s%spng",dot-file,file,modifier);
 
-    if (path == NULL) path=check_path(file,modifier,"png","");
-
-    if (path == NULL) path=check_path(dir,"/",(image_type == FANART_IMAGE?modifier:"poster."),"jpg");
-    if (path == NULL) path=check_path(dir,"/",(image_type == FANART_IMAGE?modifier:"poster."),"png");
+    if (path == NULL) path=check_path("%s/%sjpg",dir,(image_type == FANART_IMAGE?modifier:"poster."));
+    if (path == NULL) path=check_path("%s/%spng",dir,(image_type == FANART_IMAGE?modifier:"poster."));
 
     if (freefile) FREE(file);
     FREE(dir);
-
 
     if (path == NULL) {
 
@@ -835,10 +846,11 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
 
         if (path) {
             int freepath=0;
-            char *file=NULL;
             path = get_path(rid,path,&freepath);
+TRACE;
 
             if (image_type == FANART_IMAGE ) {
+TRACE;
                 char *modifier=".hd.jpg";
 
                 if (g_dimension->scanlines == 0 ) {
@@ -849,25 +861,28 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
                         modifier=".sd.jpg";
                     }
                 }
-                file = replace_all(path,"\\.jpg$",modifier,0);
+                char *tmp = replace_all(path,"\\.jpg$",modifier,0);
+                if(freepath) FREE(path);
+                path = tmp;
+
             } else if (image_type == THUMB_IMAGE ) {
-                file = replace_all(path,"\\.jpg$",".thumb.jpg",0);
-                if (!exists(file)) {
-                    FREE(file);
-                    file = NULL;
+TRACE;
+                char *tmp = replace_all(path,"\\.jpg$",".thumb.jpg",0);
+                if (exists(tmp)) {
+                    if(freepath) FREE(path);
+                    path = tmp;
+                } else {
+                    FREE(tmp);
+                    if(!freepath && path) {
+                        path=STRDUP(path);
+                    }
                 }
             }
-            if (file != NULL) {
-                if (freepath) FREE(path);
-                path = file;
-            } else {
-                HTML_LOG(0,"FReepath=%d path=[%s]",freepath,path);
-                if (!freepath && path) path=STRDUP(path);
-            }
+TRACE;
+            HTML_LOG(0,"FReepath=%d path=[%s]",freepath,path);
         }
     }
-
-    if (dot) *dot = saved;
+TRACE;
 
     return path;
 }
@@ -876,15 +891,20 @@ char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type) {
 
     assert(rowid);
     assert(attr);
+TRACE;
     char *result = NULL;
     
     char *path = get_picture_path(1,&rowid,image_type);
+TRACE;
     if (path) {
+TRACE;
 
         result = get_local_image_link(path,rowid->title,attr);
+TRACE;
 
         FREE(path);
     }
+TRACE;
     return result;
 }
 
@@ -1173,6 +1193,7 @@ char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,cha
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
+TRACE;
     ViewStatus status = get_view_status(row_id);
 
 
@@ -1197,6 +1218,7 @@ char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,cha
         *font_class);
 
     title = get_poster_image_tag(row_id,attr,THUMB_IMAGE);
+TRACE;
 
 /*
  * if (status != WATCHED ) {
@@ -1208,6 +1230,7 @@ char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,cha
     }
     */
     FREE(attr);
+TRACE;
     return title;
 }
 
@@ -1402,7 +1425,9 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
             title = get_poster_mode_item_unknown(row_id,grid_toggle,&font_class,&grid_class);
             displaying_text=1;
         }
+TRACE;
         if (displaying_text) {
+TRACE;
 
             if (link_first_word_only) {
                 //
@@ -1410,6 +1435,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
                 first_space = strchr(title,' ');
             }
 
+TRACE;
             // Display alternate image - this has to be a cell background image
             // so ewe can overlay text on it. as NTM does not have relative positioning
             // the alternative is to render the page and then use javascript to inspect
@@ -1423,6 +1449,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
                 default:
                     cell_background_image=icon_source("video"); break;
             }
+TRACE;
         }
 
     } else {
@@ -1437,6 +1464,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
         }
         *first_space='\0';
     }
+TRACE;
 
     char *cell_text=NULL;
     char *focus_ev = "";
@@ -1452,6 +1480,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
         }
         FREE(simple_title);
     }
+TRACE;
 
     char *title_change_attr;
     ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), focus_ev);
@@ -1462,6 +1491,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
 
     HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
+TRACE;
     if (*select) {
 
         cell_text = STRDUP(title);
@@ -1486,6 +1516,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
 
     } else {
 
+TRACE;
 
         char cellId[9];
 
@@ -2032,7 +2063,6 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
 
     int total=0;
     // Create space for pruned rows
-TRACE;
     HTML_LOG(0,"get_grid page %ld rows %d cols %d",page,rows,cols);
     DbRowId **prunedRows = filter_delisted(start,numids,row_ids,items_per_page,&total);
     

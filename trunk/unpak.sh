@@ -29,7 +29,8 @@ VERSION=20091011-1BETA
 
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
-        NMT_APP_DIR=$d
+        NMT_APP_DIR="$d"
+        NMT_APP_BIN="$d/bin"
     fi
 done
 
@@ -209,14 +210,16 @@ load_nzbget_settings_pre_v7() {
 
 WHICH() {
     # search path 
-    for d in `echo "$unpak_nzbget_bin" | sed 's/\/nzbget$//' ` `echo $PATH | sed 's/:/ /g'` ; do
+    for d in "$NMT_APP_BIN" `echo "$unpak_nzbget_bin" | sed 's/\/nzbget$//' ` `echo $PATH | sed 's/:/ /g'` ; do
         if [ -f "$d/$1" ] ; then
             INFO "Using $d/$1"
             echo "$d/$1"
             return 0
+        else
+            INFO "$1 not in $d"
         fi
     done
-    WARNING "can not find $d"
+    WARNING "can not find $1"
     return 0
 }
 
@@ -281,10 +284,6 @@ get_nzbpath_pre_v7() {
                 echo lock $NZBOP_LOCKFILE
             fi
         done
-    fi
-    if [ -n "${NZBOP_LOCKFILE:-}" ] ; then
-        pid=`cat "$NZBOP_LOCKFILE" 2>/dev/null || true`
-        echo from lock pid = $pid
     fi
     if [ -z "$pid" ] ; then
         #pidof doesnt tell us the oldest process. so look at proc/*/status for name and ppid=1

@@ -1137,56 +1137,66 @@ TRACE;
         //TODO there may be a long time out if trying to access an unmounted device.
         //Better to scan /etc/mtab for shares then do a quick ping first.
         //make m=ping timeout configurable.
-        if(1) {
-            FILE *fp = fopen("/etc/mtab","r");
-            if (fp) {
+
+#if 0
+        // Get crossview mounts via mtab - unpredictable
+        FILE *fp = fopen("/etc/mtab","r");
+        if (fp) {
 #define MNT_BUF_SZ 999
-                char mnt_buf[MNT_BUF_SZ];
-                while(fgets(mnt_buf,MNT_BUF_SZ,fp)) {
+            char mnt_buf[MNT_BUF_SZ];
+            while(fgets(mnt_buf,MNT_BUF_SZ,fp)) {
 
-                    char *mount_point = is_nmt_network_share(mnt_buf);
-                    if (mount_point) {
-                        if (is_pingable(mnt_buf)) {
-                            //Terminate the mount point string
-                            //Note could use * in formatting instead of modifying buffer.
-                            char *space_b4_mount_type = next_space(mount_point);
-                            if (space_b4_mount_type) {
-                                char *path;
-                                *space_b4_mount_type='\0';
-                                char *name = mount_point + strlen(NETWORK_SHARE);
+                char *mount_point = is_nmt_network_share(mnt_buf);
+                if (mount_point) {
+                    if (is_pingable(mnt_buf)) {
+                        //Terminate the mount point string
+                        //Note could use * in formatting instead of modifying buffer.
+                        char *space_b4_mount_type = next_space(mount_point);
+                        if (space_b4_mount_type) {
+                            char *path;
+                            *space_b4_mount_type='\0';
+                            char *name = mount_point + strlen(NETWORK_SHARE);
 
-                                ovs_asprintf(&path,"%s/Apps/oversight/index.db",mount_point);
-                                if (is_file(path)) {
+                            ovs_asprintf(&path,"%s/Apps/oversight/index.db",mount_point);
+                            if (is_file(path)) {
 
-                                    HTML_LOG(0,"crossview [%s]",path);
-                                    db_scan_and_add_rowset(
-                                        path,name,
-                                        name_filter,media_type,watched,
-                                        &rowset_count,&rowsets);
+                                HTML_LOG(0,"crossview [%s]",path);
+                                db_scan_and_add_rowset(
+                                    path,name,
+                                    name_filter,media_type,watched,
+                                    &rowset_count,&rowsets);
 
-                                } else {
-                                    HTML_LOG(0,"crossview search [%s] doesnt exist",path);
-                                }
-                                FREE(path);
+                            } else {
+                                HTML_LOG(0,"crossview search [%s] doesnt exist",path);
                             }
-
+                            FREE(path);
                         }
+
                     }
-
                 }
-                fclose(fp);
+
             }
-        } else {
-            DIR *d = opendir(NETWORK_SHARE);
-            if (d) {
-                struct dirent dent,*p;
-                while((readdir_r(d,&dent,&p)) == 0) {
+            fclose(fp);
+        }
+#endif
+#if 1
+    // Get crossview mounts by looking a folder names in NETWORK_SHARE
+    // may cause timeouts.
+    DIR *d = opendir(NETWORK_SHARE);
+    if (d) {
+        struct dirent dent,*p;
+        while((readdir_r(d,&dent,&p)) == 0 && p != NULL) {
 
-                    char *path=NULL;
-                    char *name=dent.d_name;
+            char *path=NULL;
+            char *name=dent.d_name;
 
-                    ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
 
+            if (*name != '.') {
+                HTML_LOG(0,"crossview looking at [%s]",name);
+
+                ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
+
+                if (nmt_mount(path)) {
                     if (is_file(path)) {
 
                         HTML_LOG(0,"crossview [%s]",path);
@@ -1198,18 +1208,19 @@ TRACE;
                     } else {
                         HTML_LOG(0,"crossview search [%s] doesnt exist",path);
                     }
-                    FREE(path);
+                } else {
+                    HTML_LOG(0,"crossview search - could not mount [%s] ",path);
                 }
-                closedir(d);
+                FREE(path);
             }
         }
+        closedir(d);
     }
-    //Save the first row as the default row to edit.
+#endif
+    }
+    //Save the first row as the default row to edit. - when the editor comes!
     if (g_first_row == NULL && rowsets && rowsets[0]->rows ) {
         g_first_row = rowsets[0]->rows;
-        HTML_LOG(0,"First row=[%s]",g_first_row->title);
-        HTML_LOG(0,"First row=[%s]",db_get_field("_T"));
-        HTML_LOG(0,"First row=[%s]",db_rowid_get_field(g_first_row,"_T"));
         HTML_LOG(0,"First row=[%s]",g_first_row->title);
     }
 

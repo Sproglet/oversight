@@ -27,7 +27,7 @@
 
 int ping_link(char *link);
 int check_accessible(char *path,int timeout_secs);
-int nmt_mount_share(char *path,char *current_mount_status);
+static int nmt_mount_share(char *path,char *current_mount_status);
 
 /*
  * Attempt to quickly mount a file or if the file is not available fail quickly.
@@ -57,7 +57,7 @@ char *network_mount_point(char *file) {
     if (!util_starts_with(file,NETWORK_SHARE)) { 
         return NULL;
     }
-    // file =  "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/def.avi
+    // file =  "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/def.avi 
 
     char *rest = strchr(file+strlen(NETWORK_SHARE)+1,'/');
     // eg end of "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc/<<<
@@ -130,6 +130,7 @@ char *get_mount_status(char *path) {
 
 
 
+// See also nmt_mount_quick()
 int nmt_mount (char *file)
 {
 
@@ -152,12 +153,17 @@ TRACE;
 TRACE;
             // check if weve tried mounting. result is set if we have.
             char *mount_status = get_mount_status(path);
+            HTML_LOG(0,"mount status=%s",mount_status);
+TRACE;
             
             if (strcmp(mount_status,MOUNT_STATUS_OK) == 0) {
+TRACE;
                 result = 1;
             } else if (strcmp(mount_status,MOUNT_STATUS_BAD) == 0) {
+TRACE;
                 result = 0;
             } else {
+TRACE;
                 // MOUNT_STATUS_IN_MTAB or MOUNT_STATUS_NOT_IN_MTAB
 
                 result = nmt_mount_share(path,mount_status);
@@ -171,18 +177,25 @@ TRACE;
     return result;
 }
 
-// link = smb://host/share
-//
+// input host based link
+// output ip based link
 char *wins_resolve(char *link) {
     char *iplink = NULL;
     static char *nbtscan_outfile = NULL;
     static char *workgroup = NULL;
+    static int updated_wins_file=0;
 
     if (workgroup == NULL ) {
        workgroup = setting_val("workgroup");
     }
     if (nbtscan_outfile  == NULL ) {
         ovs_asprintf(&nbtscan_outfile,"%s/conf/wins.txt",appDir());
+    }
+    if (!updated_wins_file && !exists(nbtscan_outfile)) {
+        char *cmd;
+        ovs_asprintf(&cmd,"nbtscan %s/24 > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",setting_val("eth_gateway"),appDir(),appDir());
+        system(cmd);
+        updated_wins_file=1;
     }
 
     char *host = link + 6;
@@ -199,37 +212,29 @@ char *wins_resolve(char *link) {
             char *p;
             // Look for host in output of nbtscan (which is run by the catalog process)
             // 1.1.1.1<space>WORKGROUP\host<space>
-            if ((p=strstr(buf,workgroup)) != NULL && p[-1] == ' ') {
-                p += strlen(workgroup);
-                if (*p == '\\' && util_starts_with(p+1,host) ) {
-                    p += strlen(host)+1;
-                    if (*p == ' ' ) {
-                        // found it - get ip address from the start.
-                        char *sp = strchr(buf,' ');
-                        if (sp) {
-                            *sp = '\0';
-                            ovs_asprintf(&iplink,"smb://%s/%s",buf,hostend+1);
-                            break;
-                        }
+            if ((p=delimited_substring(buf,' ',workgroup,'\\',0,0)) != NULL) {
+                p += 1+strlen(workgroup);
+                if (util_starts_with(p,host) && p[strlen(host)] == ' ' ) {
+                    // found it - get ip address from the start.
+                    char *sp = strchr(buf,' ');
+                    if (sp) {
+                        ovs_asprintf(&iplink,"smb://%.*s/%s",sp-buf,buf,hostend+1);
+                        break;
                     }
                 }
             }
         }
+        fclose(fp);
     }
-    fclose(fp);
 
     *hostend = '/';
     HTML_LOG(0,"New ip based link = [%s]",iplink);
     return iplink;
 }
 
-int nmt_mount_share(char *path,char *current_mount_status)
-{
-    int result = 0;
-
-    char *share_name = util_basename(path);
-TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
-    // eg "abc"
+// given share name find the name of the pflash setting that holds it
+// eg servname3, servname6 and return the last character '3' or '6'
+static char get_link_index(char *share_name) {
 
     char *key=STRDUP("servname?");
     char *last=key+strlen(key)-1;
@@ -245,65 +250,146 @@ TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
             break;
         }
     }
-TRACE ; HTML_LOG(1,"mount index [%d=%c]",index,index);
+    FREE(key);
+
+HTML_LOG(0,"mount index [%d=%c]",index,index);
+
+    return index;
+
+}
+
+// extract user from eg servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+char *get_link_user(char *servlink) {
+    char *user=NULL;
+    if (strstr(servlink,"smb.user")) {
+        user = regextract1(servlink,"smb.user=([^&]+)",1,0);
+    }
+TRACE ;
+    HTML_LOG(1,"mount user [%s]",user);
+    return user;
+}
+
+// extract password from eg servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+char *get_link_passwd(char *servlink) {
+    char *passwd=NULL;
+    if (strstr(servlink,"smb.passwd")) {
+        passwd = regextract1(servlink,"smb.passwd=([^&]+)",1,0);
+    }
+TRACE ;
+    HTML_LOG(1,"mount passwd [%s]",passwd);
+    return passwd;
+}
+
+// given servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+// extract 
+char *get_pingable_link(char *servlink) {
+
+    char *amp;
+
+    char *result=NULL;
+    char *link=NULL;
+
+    HTML_LOG(0,"get pingable link for [%s]",servlink);
+
+    amp = strchr(servlink,'&');
+    if (amp) {
+
+        ovs_asprintf(&link,"%.*s",amp-servlink,servlink);
+
+TRACE ; HTML_LOG(0,"mount link [%s]",link);
+
+        if (ping_link(link) ) {
+            result = link;
+        } else if (util_starts_with(link,"smb:") && strchr(link,'.') == NULL) {
+            char  *iplink = wins_resolve(link);
+            FREE(link);
+            link = iplink;
+
+            if (link != NULL) {
+                if (ping_link(link) ) {
+                    result = link;
+                }
+            }
+        }
+    }
+    if (result != link ) {
+        FREE(link);
+    }
+    HTML_LOG(0,"pingable link [%s]",result);
+    return result;
+}
+char *get_mount_command(char *link,char *path,char *user,char *passwd) {
+   char *cmd = NULL;
+    if (util_starts_with(link,"nfs://")) {
+
+        // iplink = nfs://host:/share
+        // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
+        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\"",
+                path,link+6,path);
+
+    } else if (util_starts_with(link,"smb://")) {
+
+
+
+        // link = smb://host/share
+        // mount -t cifs -o username=,password= //host/share /path/to/network
+        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\"",
+                path,user,passwd,link+4,path);
+    } else {
+        html_log(0,"Dont know how to mount [%s]",link);
+    }
+    return cmd;
+}
+ 
+//
+// Return 1 if path can be mounted.
+// the share name is the folder after the NETWORK_SHARE sub folder.
+// Then the nmt settings are inspected to get the full mount definition.
+//
+// First try to ping the host.
+//
+// If that doesnt work and using SMB/cifs then try to use nbtscan to
+// resolve wins names.
+//
+// The current_mount_status is passed in case the share is alread present
+// in /etc/mtab. If it is not - try to mount it, if it is, then check for timeouts.
+static int nmt_mount_share(char *path,char *current_mount_status)
+{
+    int result = 0;
+
+    char *share_name = util_basename(path);
+TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
+    // eg "abc"
+
+TRACE ;
+    char index = get_link_index(share_name);
+
     if (index) {
-        FREE(key);
+        char *key;
         ovs_asprintf(&key,"servlink%c",index);
 
         char *serv_link = setting_val(key);
         // Look for corresponding variable servlinkN
-TRACE ; HTML_LOG(1,"mount servlink [%s]",serv_link);
+TRACE ; HTML_LOG(0,"mount servlink [%s]",serv_link);
         FREE(key);
 
-        ovs_asprintf(&key,"link%c",index);
-        char *link = setting_val(key);
-        char *iplink = link;
-TRACE ; HTML_LOG(1,"mount link [%s]",link);
+        char *link = get_pingable_link(serv_link);
 
-        int reachable = 0;
-        if (ping_link(link) ) {
-            reachable = 1;
-        } else {
-            if (util_starts_with(link,"smb:") && strchr(link,'.') == NULL) {
-                iplink = wins_resolve(link);
-                if (ping_link(iplink) ) {
-                    reachable = 1;
-                }
-            }
-        }
-
-
-        if (!reachable) {
+        if (!link) {
 
             set_mount_status(path,MOUNT_STATUS_BAD);
-
+TRACE;
         } else if (strcmp(current_mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
 
-            char *user=regextract1(serv_link,"smb.user=([^&]+)",1,0);
-TRACE ; HTML_LOG(1,"mount user [%s]",user);
+            char *user = get_link_user(serv_link);
+            char *passwd = get_link_passwd(serv_link);
 
-            char *passwd=regextract1(serv_link,"smb.passwd=([^&]+)",1,0);
-TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
+            char *cmd = get_mount_command(link,path,user,passwd);
 
-            char *cmd = NULL;
-            if (util_starts_with(iplink,"nfs://")) {
+            FREE(user);
+            FREE(passwd);
 
-                // iplink = nfs://host:/share
-                // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
-                ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\"",
-                        path,iplink+6,path);
-
-            } else if (util_starts_with(iplink,"smb://")) {
-
-                // link = smb://host/share
-                // mount -t cifs -o username=,password= //host/share /path/to/network
-                ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\"",
-                        path,user,passwd,iplink+4,path);
-            } else {
-                html_error("Dont know how to mount [%s]",serv_link);
-            }
-            if (cmd) {
-
+            if (cmd ) {
                 long t = time(NULL);
                 int mount_result = util_system(cmd);
 
@@ -319,9 +405,6 @@ TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
                 // So I've taken a big liberty here and assumed that if the mount returns
                 // immediately that it worked.
                 // This obviously is risky of the mount failed due to bad parameters.
-                //
-
-
                 switch(mount_result) {
                 case 0:
                     result = 1;
@@ -331,15 +414,15 @@ TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
                     // just assume its a device busy and continue happily assuming it
                     // is already mounted.
                     if (time(NULL) - t <= 5) {
-                        HTML_LOG(0,"mount [%s] failed quickly - assume all is ok",serv_link);
+                        HTML_LOG(0,"mount [%s] failed quickly - assume all is ok",cmd);
                         result = 1;
                     } else {
-                        HTML_LOG(0,"mount [%s] failed slowly - assume the worst ",serv_link);
+                        HTML_LOG(0,"mount [%s] failed slowly - assume the worst ",cmd);
                         result = 0;
                     }
                     break;
                 default:
-                    HTML_LOG(0,"mount [%s] unknown error - assume the worst ",serv_link);
+                    HTML_LOG(0,"mount [%s] unknown error - assume the worst ",cmd);
                     //even though mount failed - add it to the list to avoid repeat attempts.
                     result = 0;
                 }
@@ -348,9 +431,6 @@ TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
                 FREE(cmd);
             }
 
-            FREE(user);
-            FREE(passwd);
-
         } else if (strcmp(current_mount_status,MOUNT_STATUS_IN_MTAB) == 0) {
             // Its pingable but now we check it is accessible.
             result = check_accessible(path,5);
@@ -358,12 +438,8 @@ TRACE ; HTML_LOG(1,"mount passwd [%s]",passwd);
             // shouldnt get here
             assert(0);
         }
-        if (iplink != link ) {
-            FREE(iplink);
-        }
-
+        FREE(link);
     }
-    FREE(key);
     FREE(share_name);
     return result;
 }
@@ -389,7 +465,7 @@ int check_accessible(char *path,int timeout_secs)
 // link = smb://host/... or nfs://host:/...
 int ping_link(char *link)
 {
-    char *host;
+    char *host=NULL;
     char *end=NULL;
     int result = 0;
 TRACE;
@@ -406,6 +482,7 @@ TRACE;
 
         result = (ping(host,0) == 0);
 
+        HTML_LOG(0,"ping link [%s] host[%s] = %d",link,host,result);
         FREE(host);
 
     }
@@ -424,7 +501,7 @@ int nmt_mount_quick (char *file)
         return 1;
     } 
 
-    // Check if the file has the same mount point as previous file if so - smae result
+    // Check if the file has the same mount point as previous file if so - same result
     if (last_mount_point) {
         if (util_starts_with(file,last_mount_point) ) {
             return last_result;

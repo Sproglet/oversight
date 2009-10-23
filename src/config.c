@@ -27,9 +27,10 @@ int browsing_from_lan() {
         } else {
             char *ip = getenv("REMOTE_ADDR");
             if (ip) {
-                if (strncmp(ip,"192.168.",8) == 0 ||
-                    strncmp(ip,"10.",3) == 0 ||
-                    util_strreg(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.",0) != NULL ) {
+                if (util_starts_with(ip,"192.168.") ||
+                    util_starts_with(ip,"10.")  ||
+                    ( util_starts_with(ip,"172.")  &&
+                    util_strreg(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.",0) != NULL ) ) {
                     result = 1;
                 }
             }

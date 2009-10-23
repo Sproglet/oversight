@@ -1,7 +1,7 @@
 ovs_new_days:Highlight as new if video newer than this number of days|1|2|3|4|5|6|7|10|14|30
 #ovs_icon_set:Name of Icon set|set1|none
 #ovs_icon_type:Type of icons|png|gif|jpg
-ovs_crossview:View content on another mounted NMT|1|0
+ovs_crossview:Merge oversight view from another NMT player in the network share list.|0|1
 ovs_tv_play_via_pc:Start tv playback from browser|1|0
 ovs_display_rating:Display Ratings|1|0
 ovs_display_certificate:Display Certificates|1|0

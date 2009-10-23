@@ -38,7 +38,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20091022-1BETA"
+#define OVS_VERSION "20091023-1BETA"
 
 #define QUERY_PARAM_TYPE_FILTER "_tf"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"

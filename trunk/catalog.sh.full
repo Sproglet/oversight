@@ -17,7 +17,7 @@
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091007-1BETA
+VERSION=20091023-1BETA
 
 
 NMT_APP_DIR=
@@ -1872,7 +1872,7 @@ function remove_absent_files_from_new_db(db,\
 
                 timer = systime();
                 if (!is_file_or_folder(f) ) {
-                    if (timer-systime() > 15) {
+                    if (systime()-timer > 10) {
                         # error accessing nas - blacklist this path.
                         blacklist_dir = f;
                         if (match(f,"NETWORK_SHARE/[^\/]+/")) {

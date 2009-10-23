@@ -1,0 +1,69 @@
+<!-- Default Rescan Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Rescan</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Oversight Configuration</h1>
+
+        <form action="?" enctype="multipart/form-data" method="POST">
+            <input type=hidden name=form value="1">
+
+            <center>
+            <table>
+            <tr>
+            <td>
+            <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
+            <p>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
+            <p> To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here},style="color=red;"):]
+            <p>This will return immediately and start a background scan of the listed paths.
+            This should complete in 15-60 minutes depending on number of videos. Other running applications also affects overall scan speed.
+            <p>Covers are downloaded independently so may appear later. Fanart will appear last.
+            </td>
+            </tr>
+            </table>
+
+            <table>
+                <tr>
+                    <td>
+                        [:CHECKBOX(rescan_dir_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
+                        <hr>
+                        <input type=checkbox name=rescan_opt_PARALLEL_SCAN>Scan in parallel
+                    </td>
+                    <td align=left>
+                        <input type=checkbox name=rescan_opt_GET_POSTERS checked>Get Posters
+                        <input type=checkbox name=rescan_opt_UPDATE_POSTERS>Overwrite Posters (slow)
+                        <br>
+                        <input type=checkbox name=rescan_opt_GET_FANART checked>Get Fanart
+                        <input type=checkbox name=rescan_opt_UPDATE_FANART>Overwrite Fanart (slow)
+                        <hr>
+<!--
+                        <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>
+                        <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
+                        <hr>
+-->
+                        <input type=radio name=rescan_opt_group1 value=RESCAN checked>Full Scan<br>
+                        <input type=radio name=rescan_opt_group1 value=NEWSCAN>New Items Only<br>
+                    </td>
+                </tr>
+                <tr>
+                    <td align=center colspan=2>
+                        <input type=submit name=action value="rescan_request">
+                        <input type=submit name=action value="Cancel">
+                    </td>
+                </tr>
+            </table>
+            </center>
+
+            <input type=hidden name=old_action value="[:$?action:]">
+            <input type=hidden name=view value="[:$?view:]">
+        </form>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

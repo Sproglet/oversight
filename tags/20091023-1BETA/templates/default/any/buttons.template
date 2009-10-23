@@ -1,0 +1,10 @@
+<!-- Default Buttons Template  $Id:$ -->
+    [:BACK_BUTTON:]
+    [:EXIT_BUTTON:]
+    [:HOME_BUTTON:]
+    [:MARK_BUTTON:]
+    [:DELETE_BUTTON:]
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

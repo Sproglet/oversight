@@ -1,0 +1,204 @@
+# $Id$ 
+# These are example settings. They can be copied to unpak.cfg and 
+# modified is necessary.
+# If you are running on the NMT Popcorn Hour and feeling lazy you can
+# probably use all of the default settings here.. although you may want 
+# to change "unpak_nmt_pin" if you play to use the PIN:FOLDER....
+#
+# Keywords with 'nmt' contain nmt specific enhancements. In some cases
+# they may still be useful for other platforms. 
+#########################################################################
+# IMPORTANT SETTINGS  : Read Carefully After Installing
+#########################################################################
+
+#Uncomment to force unpak to use a particular nzbget. If not set it uses
+# the nzbget that invoked it. You will need to set if running unpak.sh
+#manually at the command line.
+#unpak_nzbget_bin="/share/Apps/NZBget/bin/nzbget"
+
+#Uncomment to force unpak to use a particular config file. If not set it uses
+#the config file of the calling nzbget. You will need to set if running unpak.sh
+#manually at the command line.
+#unpak_nzbget_conf="/share/Apps/NZBget/.nzbget/nzbget.conf"
+
+#If not using NMT platform, uncomment set the follow 
+#unpak_unrar_bin="/path/to/unrar"
+
+#If not using NMT platform, uncomment set the follow 
+#unpak_par2_bin="/path/to/par2"
+
+
+#By default the script will attempt to do par repairs IF nzbget is NOT doing them.
+#The main reason to do parrepair externally is that the script will only attempt a
+#par repair if an unrar fails. This can save quite a bit of time especially on slow CPU
+#machines.
+#To take advantage of this the following settings should be configured in nzbget.conf 
+#and nzbget restarted.
+
+# -- EITHER --(download all Pars right away before unrar attempt)
+
+#    ParCheck=no  
+#    LoadPars=all 
+
+# -- OR --(unrar and if it fails go back and get all remaining pars )
+
+#    ParCheck=no  
+#    LoadPars=one or none
+#    AllowReProcess=yes  
+# -----------------------
+#For security could uncomment the following
+#export PATH=/usr/bin:/bin:/usr/local/bin
+
+#########################################################################
+# CATEGORIES AND FOLDERS
+#########################################################################
+#
+# THE DEFAULT CONFIGURATION WILL PUT ANY FILES FLAGGED AS EROTICA IN THE FOLDER
+# ../Complete/Other/2/4/6/8. 
+# (see unpak_subfolder_by_newsgroup_2,'unpak_nmt_pin_root' and 'unpak_nmt_pin' )
+#
+# Destination Folder (can be absolute or Relative to the DestDir in nzbget.conf)
+#This was previously '../Completed' but now its better to use the Root folder
+#as unsorted stuff goes in the Unsorted folder.
+unpak_completed_dir="../Complete"  #Default location for completed downloads
+#For specific Movie and Tv destinations see catalog.cfg
+
+#
+#########################################################################
+# LESSER SETTINGS / TWEAKS  : Read If Not Behaving As Required
+#########################################################################
+# Log debug messages
+unpak_debug_mode=0
+
+
+# Before unraring check volume sizes and rar headers. Set to 1 to avoid
+# unpacking rars where it is obvious they are broken, in which case the 
+# script can be configured to get the pars (see ParCheck=no above)
+# Set to 0 if you may want partial extract attempts. eg (collection of mp3s)
+unpak_sanity_check_rar_files=1
+
+# Rename img-files to iso (1, 0)
+unpak_rename_img_to_iso=1
+
+# Log Notification of changes to this script.
+unpak_check_for_new_versions=1
+
+# Delete rar-files after successfully unpacking
+# 1=Delete (recommended), 0=dont delete.
+unpak_delete_rar_files=1
+
+
+# Delete completed NZBs older that given age(days). 0 = dont delete.
+# This will only delete NZBs that nzbget has previously called this script against. 
+unpak_max_nzbfile_age=30
+
+# How many times to keep unpacking nested rar files.
+# 1 = just do top level rars.
+unpak_nested_unrar_depth=3
+
+
+# This script alters its behaviour automatically according to the ParCheck setting in nzbget.conf.
+# If ParCheck=yes in nzbget.conf then the script will not do an external parcheck.
+# If ParCheck=no in nzbget.conf then the script WILL do an external parcheck.
+# Ie it nzbget is not parchecking then the script WILL check if needed.
+# To disable ALL parChecking even if ParCheck=no then set 'unpak_disable_external_par_repair=1'
+# This is not recommended unless you have some other ParRepair solution. 
+unpak_disable_external_par_repair=0
+
+
+#Remove paused PAR files from the queue if unrar is successful
+# Ignored if unpak_disable_external_par_repair=1
+unpak_external_par_repair_tidy_queue=1
+
+#Pause nzbget whilst the script is running.
+#(Note nzbget 0.5 has PostPauseQueue setting which is preferred)
+unpak_pause_nzbget=0
+
+
+#Pause nzbget whilst unpacking. Set to 1 if you have v fast connection (10Mbps or better)
+#otherwise leave on 0 ? 
+unpak_pause_nzbget_during_unrar=0
+
+
+#Par repair is a bit more cpu intensive. Enable if you have > 10Mbps
+pause_nzbget_during_par2repair=0
+
+
+#Only attempt par repairs if they will complete in the given amount of minutes (0=always repair)
+unpak_maximum_par_repair_minutes=300
+
+
+######################################################################
+# Pin Folder Settings
+######################################################################
+# THIS HACK IS INTENDED FOR EMBEDDED DEVICES THAT HAVE NO DIRECT SEARCH
+# OR INDEXING CAPABILITIES.
+# DO NOT RELY ON IT FOR CHILD-LOCK/PRIVACY IF YOU HAVE BETTER OPTIONS. 
+# eg FILE PERMISSIONS/PARENTAL LOCK
+#
+# IT IS NOT PRETTY.
+# IT IS NOT SECURE.
+# IT IS BETTER THAN NOTHING - MAYBE.
+# IT MAY NOT WORK ALL THE TIME.
+#
+# THIS IS TRIVIAL TO EXPLOIT USING ANY SEARCH/FIND COMMAND VIA OS INTERFACE.
+# ESPECIALLY IF THE FOLDER IS SHARED IT CAN BE FOUND EASILY.
+#
+# SOME MEDIA PLAYERS ALSO REMEMBER THE LAST FOLDER VISITED.
+# -------------------------------------------------------------------------
+# There is no parental control on the PCH at time of writing.
+# To help guard agaist accidental viewing of unsuitable material
+# I created a PIN folder. Inside this folder the script will create 
+# a heirachy nested folders, each with more folders in.
+# Knowing the pin allows you to navigate the folders.
+#
+# For example if
+#
+#   $unpak_nmt_pin_root=/share/Other and the pin is 2468
+#
+# then when the download is complete it is moved to
+#
+#   /share/Other/2/4/6/8
+#
+# -------------------------------------------------------------------------
+# FOR REAL SECURITY USE SUITABLE FILE PERMISSIONS / PARENTAL LOCK(when it comes).
+# -------------------------------------------------------------------------
+unpak_nmt_pin_root=/share/~Other
+
+
+# This is the PIN. CHANGE THE FOLLOWING SEQUENCE* to be your 'pin'.
+# It should be a string of digits any reasonable length, (eg 3-6)
+# although more than 5 can be a pain to navigate via remote.
+# Note I've removed '0' from the digit options, so the folder names correspond to thier position.
+# this means the PIN can be keyed directly on the remote. So avoid PINs containing '0'.
+unpak_nmt_pin="2468" 
+
+
+# The following setting will add an asterisk to every folder in the PIN FOLDER.
+# A side effect of this is that the Long Folder Names do not appear in SAMBA
+# only short names will appear via SMB.
+# Again this is not any kind of security you should rely on.
+# PS Yes it has a typo :)
+unpak_nmt_pin_folder_scramble_windows_share=1
+
+#Uncomment to move content to different folders based on newsgroups
+#PIN:FOLDER will be automatically replaced with the Pin Folder location
+#defined by $unpak_nmt_pin_root and $unpak_nmt_pin
+unpak_auto_categorisation_from_newsgroups=1
+unpak_subfolder_by_newsgroup_0="erotica:PIN:FOLDER"
+unpak_subfolder_by_newsgroup_1="sounds:/share/Music"
+unpak_subfolder_by_newsgroup_2="pictures:Pictures"
+
+unpak_video_extension="avi|mkv|mp4|m2ts|ts|xmv|mpg|mpeg|mov|m4v|wmv"
+#Set this to delete sample files. They are only deleted if other media is present.
+#Format: *=wildcard |=OR <=start of word >=end of word.
+unpak_delete_samples="*<sample>*|*<samp>*"
+#Set this to delete files that match the given pattern. Case insensitive.
+#Format: *=wildcard |=OR <=start of word >=end of word.
+unpak_delete_files="*.nzb|*.sfv|*.url|*.damaged|_brokenlog.txt|*.par2|*.queued|unpak.*"
+
+#If set then a fake null keypress is sent to temporarily disable screensaver during processing.
+unpak_nmt_disable_screensaver=1
+
+#---------------------------------------------------------------------------
+unpak_settings_version=1 #Dont change this

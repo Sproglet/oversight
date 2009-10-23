@@ -866,7 +866,7 @@ TRACE;
                 path = tmp;
 
             } else if (image_type == THUMB_IMAGE ) {
-TRACE;
+
                 char *tmp = replace_all(path,"\\.jpg$",".thumb.jpg",0);
                 if (exists(tmp)) {
                     if(freepath) FREE(path);
@@ -878,11 +878,8 @@ TRACE;
                     }
                 }
             }
-TRACE;
-            HTML_LOG(0,"FReepath=%d path=[%s]",freepath,path);
         }
     }
-TRACE;
 
     return path;
 }
@@ -1994,7 +1991,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     for ( r = 0 ; r < rows ; r++ ) {
 
 
-        HTML_LOG(0,"grid row %d",r);
+        HTML_LOG(1,"grid row %d",r);
         ovs_asprintf(&tmp,"%s%s\n",(result?result:""),row_start);
         FREE(result);
         result=tmp;
@@ -2002,7 +1999,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         for ( c = 0 ; c < cols ; c++ ) {
             i = c * rows + r ;
 
-            HTML_LOG(0,"grid col %d",c);
+            HTML_LOG(1,"grid col %d",c);
 
             int left_scroll = (page_before && c == 0);
             int right_scroll = (page_after && c == cols-1 );

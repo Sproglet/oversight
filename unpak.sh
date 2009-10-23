@@ -25,7 +25,7 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #TODO Cope with par,zip combos. Currently it will try to repair rather than unzip-repair
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
-VERSION=20091011-1BETA
+VERSION=20091023-1BETA
 
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then

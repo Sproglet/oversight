@@ -1138,48 +1138,36 @@ TRACE;
         //Better to scan /etc/mtab for shares then do a quick ping first.
         //make m=ping timeout configurable.
 
-#if 0
-        // Get crossview mounts via mtab - unpredictable
-        FILE *fp = fopen("/etc/mtab","r");
-        if (fp) {
-#define MNT_BUF_SZ 999
-            char mnt_buf[MNT_BUF_SZ];
-            while(fgets(mnt_buf,MNT_BUF_SZ,fp)) {
-
-                char *mount_point = is_nmt_network_share(mnt_buf);
-                if (mount_point) {
-                    if (is_pingable(mnt_buf)) {
-                        //Terminate the mount point string
-                        //Note could use * in formatting instead of modifying buffer.
-                        char *space_b4_mount_type = next_space(mount_point);
-                        if (space_b4_mount_type) {
-                            char *path;
-                            *space_b4_mount_type='\0';
-                            char *name = mount_point + strlen(NETWORK_SHARE);
-
-                            ovs_asprintf(&path,"%s/Apps/oversight/index.db",mount_point);
-                            if (is_file(path)) {
-
-                                HTML_LOG(0,"crossview [%s]",path);
-                                db_scan_and_add_rowset(
-                                    path,name,
-                                    name_filter,media_type,watched,
-                                    &rowset_count,&rowsets);
-
-                            } else {
-                                HTML_LOG(0,"crossview search [%s] doesnt exist",path);
-                            }
-                            FREE(path);
-                        }
-
-                    }
-                }
-
-            }
-            fclose(fp);
-        }
-#endif
 #if 1
+    // Get crossview mounts by looking at pflash settings servnameN=name
+        char *settingname,*name;
+        struct hashtable_itr *itr;
+        for (itr=hashtable_loop_init(g_nmt_settings) ; hashtable_loop_more(itr,&settingname,&name) ; ) {
+            if (util_starts_with(settingname,"servname") && settingname[9] == '\0' ) {
+
+                char *path=NULL;
+                HTML_LOG(0,"crossview looking at %s=[%s]",settingname,name);
+                ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
+
+                if (nmt_mount(path)) {
+                    if (is_file(path)) {
+
+                        HTML_LOG(0,"crossview [%s]",path);
+                        db_scan_and_add_rowset(
+                            path,name,
+                            name_filter,media_type,watched,
+                            &rowset_count,&rowsets);
+
+                    } else {
+                        HTML_LOG(0,"crossview search [%s] doesnt exist",path);
+                    }
+                } else {
+                    HTML_LOG(0,"crossview search - could not mount [%s] ",path);
+                }
+                FREE(path);
+            }
+        }
+#else
     // Get crossview mounts by looking a folder names in NETWORK_SHARE
     // may cause timeouts.
     DIR *d = opendir(NETWORK_SHARE);

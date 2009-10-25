@@ -17,7 +17,7 @@
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091023-1BETA
+VERSION=20091025-1BETA
 
 
 NMT_APP_DIR=
@@ -5034,7 +5034,8 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
 
     args=args" --header=\"Accept-Encoding: gzip,deflate\" "
     downloadedFile=quoteArg(file".gz");
-    unzip_cmd=" && ( gunzip -c "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
+    #some devices have gzip not gunzip and vice versa
+    unzip_cmd=" && ( gunzip -c "downloadedFile" || gzip -c -d "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
 
     gsub(/ /,"+",url);
 

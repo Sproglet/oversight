@@ -231,7 +231,7 @@ TRACE;
     // When troubleshooting we should clean up properly as this may reveal
     // malloc errors. 
     // But otherwise just let the OS reclaim everything.
-    if(1) {
+    if(0) {
         html_comment("cleanup");
     TRACE;
 

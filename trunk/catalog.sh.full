@@ -17,7 +17,7 @@
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091025-1BETA
+VERSION=20091026-1BETA
 
 
 NMT_APP_DIR=
@@ -740,7 +740,7 @@ END{
     g_search_bing = "http://www.bing.com/search?q=";
 
     #bypass yahoo redirection - may save 1s per search - every bit helps when building the index.
-    g_search_yahoo2 = get_alt_website(g_search_yahoo"test","http://[a-z.]+search.yahoo.com/search");
+    g_search_yahoo2 = get_alt_website(g_search_yahoo"test","http://[^.]*.?search.yahoo.com/search");
     if (g_search_yahoo2) {
         g_search_yahoo = g_search_yahoo2"?p=";
         INF("local yahoo search = "g_search_yahoo);

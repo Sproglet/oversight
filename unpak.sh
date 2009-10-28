@@ -1158,7 +1158,7 @@ unrar_one() {
                 if grep -q '^All OK' "$rar_std_out" ; then
                     ls -l "$dirname/$unrar_tmp_dir" | log_stream DEBUG "rarcontents"
                     #Extract all lines with filenames from unrar log and add to delete queue
-                    if [ $unpak_delete_rar_files -eq 1 -o $is_inner_rar ] ; then
+                    if [ $unpak_delete_rar_files -eq 1 -o $is_inner_rar -eq 1 ] ; then
                         sed -n "s#^Extracting from ../\(.*\)#$dirname/\1#p" "$rar_std_out" >> "$delete_queue"
                     fi
 

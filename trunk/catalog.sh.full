@@ -17,7 +17,7 @@
 #Ive tried to isolate but cant, so most number comparisons are eg.  "x - y > 0" instead of "x > y"
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091026-1BETA
+VERSION=20091028-1BETA
 
 
 NMT_APP_DIR=
@@ -5017,9 +5017,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
 
     args=" --no-check-certificate -q -U \""g_user_agent"\" "g_wget_opts;
     default_referer = get_referer(url);
-    if (!check_domain_ok(default_referer)) {
-        return 1;
-    }
+#ALL    if (!check_domain_ok(default_referer)) {
+#ALL        return 1;
+#ALL    }
     if (referer == "") {
         referer = default_referer;
     }
@@ -5242,34 +5242,34 @@ function download_image(field_id,url,idx,\
             script_arg="fanart";
         }
 
-        if (check_domain_ok(default_referer)) {
 
-            rm(internal_path,1);
-            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &");
-        }
+        rm(internal_path,1);
+        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &");
         g_image_inspected[internal_path]=1;
     }
 
     return poster_ref;
 }
 
-function check_domain_ok(url) {
-    if (url ~ "images.themoviedb.org" ) {
-        return 1;
-    }
+#ALL# Deprecated
+#ALL# function check_domain_ok(url) {
+#ALL#     if (url ~ "images.themoviedb.org" ) {
+#ALL#         return 1;
+#ALL#     }
+#ALL# 
+#ALL#     if (!(url in g_domain_status)) {
+#ALL#         if (system("wget "g_wget_opts" -O /dev/null "quoteArg(url)) && \
+#ALL#             system("wget "g_wget_opts" -O /dev/null "quoteArg(url)"/favicon.ico" ) ) {
+#ALL#             WARNING("Error with domain ["url"]");
+#ALL#             g_domain_status[url]=0;
+#ALL#         } else {
+#ALL#             g_domain_status[url]=1;
+#ALL#         }
+#ALL#     }
+#ALL#     return g_domain_status[url];
+#ALL# }
 
-    if (!(url in g_domain_status)) {
-        if (system("wget "g_wget_opts" -O /dev/null "quoteArg(url)) && \
-            system("wget "g_wget_opts" -O /dev/null "quoteArg(url)"/favicon.ico" ) ) {
-            WARNING("Error with domain ["url"]");
-            g_domain_status[url]=0;
-        } else {
-            g_domain_status[url]=1;
-        }
-    }
-    return g_domain_status[url];
-}
-
+#ALL# To be implemented - maybe
 #ALL# # q = query terms
 #ALL# # wdivh = required width div height ratio (approx)
 #ALL# # dimAfterLink is whether dimension occurs after link in the search results.

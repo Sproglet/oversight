@@ -110,6 +110,8 @@ ref,start,id) {
     close(f);
 }
 
+# Go through each line of the plot file, if the plot
+# is in the "keep" array, keep the line.
 function prune_plotfile(f,keep,\
 ref,start,id,tmpf,kept_count,removed_count) {
 
@@ -117,6 +119,7 @@ ref,start,id,tmpf,kept_count,removed_count) {
 
     kept_count = removed_count = 0;
 
+    printf "" > tmpf;
     while ((getline plot < f ) > 0) {
 
         if (match(plot,"^"g_plotpattern) > 0) {

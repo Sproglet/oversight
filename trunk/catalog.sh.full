@@ -2694,17 +2694,11 @@ date,nonDate,premier,url,key) {
     DEBUG("tv2imdb start=["g_imdb[idx]"]");
     if (g_imdb[idx] == "") {
     
-        key=gTitle[idx]"+"g_premier[idx];
+        key=gTitle[idx]"+"g_year[idx];
         DEBUG("tv2imdb key=["key"]");
         if (!(key in g_tv2imdb)) {
 
-            if (extractDate(g_premier[idx],date,nonDate)) {
-                premier = sprintf("\"%d %s %d\"",date[3],g_month_en[0+date[2]],date[1]);
-                DEBUG("premier="premier);
-            }
-
-
-            url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "premier;
+            url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "g_year[idx];
         
             # Bing better than yahoo here!
             g_tv2imdb[key] = scanPageForMatch(g_search_bing url,g_imdb_regex,0);

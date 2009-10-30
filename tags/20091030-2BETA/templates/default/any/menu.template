@@ -1,0 +1,71 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+        <script type="text/javascript">
+  var title = 1;
+  function show(x)
+  {
+    if (title == 1) title = document.getElementById('menutitle').firstChild;
+    title.nodeValue = x;
+  }
+        </script>
+    </head>
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+        [:FORM_START:]
+<center>
+        <table id=main width=100% heigth=100%>
+        <tr><td>
+            <table class=header width=100%>
+                <tr>
+                    <td rowspan=2>
+                        <font size=3>Oversight</font>
+                        <br>
+                        <font size=2>[:VERSION:] [:HOSTNAME:]</font>
+                    </td>
+                    <td>[:TITLE_SELECT:]</td>
+                    <td>[:TITLE2_SELECT:]</td>
+                    <td>[:GENRE_SELECT:]</td>
+                    <td>[:MEDIA_SELECT:]</td>
+                    <td>[:WATCHED_SELECT:]</td>
+                    <td>[:SORT_TYPE_TOGGLE:]</td>
+                    <td>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</td>
+                    <td>[:SETUP_BUTTON:]</td>
+                    [<td>:HELP_BUTTON:</td>]
+                </tr>
+                <tr>
+                    <td colspan=8 id=menutitle align=center>&nbsp;</td>
+                </tr>
+            </table>
+        </td></tr><tr><td>
+            <center>
+            [:GRID:] 
+            </center>
+        </td></tr><tr><td>
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td width=10%>[:LEFT_BUTTON:]</td>
+                    [<td align=center>:BACK_BUTTON:</td>]
+                    [<td align=center>:EXIT_BUTTON:</td>]
+                    <td align=center>[:HOME_BUTTON:]</td>
+                    [<td align=center>:MARK_BUTTON:</td>]
+                    [<td align=center>:DELETE_BUTTON:</td>]
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center class=delete>:SELECT_DELETE_SUBMIT:</td>]
+                    [<td align=center class=delist>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=cancel>:SELECT_CANCEL_SUBMIT:</td>]
+                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                </tr>
+            </table>
+        </td></tr></table>
+</center>
+        </form>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

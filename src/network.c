@@ -158,7 +158,7 @@ long ping_timeout()
     static long ping_millis = -1;
     if (ping_millis == -1) {
         if (!config_check_long(g_oversight_config,"ovs_nas_timeout",&ping_millis)) {
-            ping_millis=100;
+            ping_millis=500;
             HTML_LOG(0,"ping timeout defaulting to %ldms",ping_millis);
         }
     }

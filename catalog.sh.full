@@ -647,7 +647,7 @@ share,share_path,rest) {
 
 END{
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
-    g_wget_opts="-T 20 -t 2 -w 2 -q ";
+    g_wget_opts="-T 20 -t 2 -w 2 -q --no-check-certificate ";
 
 
     g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
@@ -864,7 +864,7 @@ END{
     if (hash_size(FOLDER_ARR)) {
         if (lock(g_db_lock_file)) {
             remove_absent_files_from_new_db(INDEX_DB);
-            system(g_plot_app" compact "quoteArg(g_plot_file)" "quoteArg(db));
+            system(g_plot_app" compact "quoteArg(g_plot_file)" "quoteArg(INDEX_DB));
             unlock(g_db_lock_file);
         }
     }
@@ -5013,7 +5013,7 @@ i,urls,tmpf,qf,r) {
 function wget2(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,default_referer) {
 
-    args=" --no-check-certificate -q -U \""g_user_agent"\" "g_wget_opts;
+    args=" -U \""g_user_agent"\" "g_wget_opts;
     default_referer = get_referer(url);
 #ALL    if (!check_domain_ok(default_referer)) {
 #ALL        return 1;
@@ -5365,6 +5365,9 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
                     if (xml["/image#type"] == "poster") {
                         if (xml["/image#size"] == "mid") {
                             poster_url=url_encode(html_decode(xml["/image#url"]));
+                            if (exec("wget "g_wget_opts" --spider "poster_url) != 0 ) {
+                                poster_url="";
+                            }
                         }
                     }
                 }
@@ -5373,6 +5376,9 @@ search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
                     if (xml["/image#type"] == "backdrop") {
                         if (xml["/image#size"] == "original") {
                             backdrop_url=url_encode(html_decode(xml["/image#url"]));
+                            if (exec("wget "g_wget_opts" --spider "backdrop_url) != 0 ) {
+                                backdrop_url="";
+                            }
                         }
                     }
                 }
@@ -6645,7 +6651,7 @@ url) {
 #ENDAWK
 
 ' JOBID=$JOBID PID=$$ NOW=`date +%Y%m%d%H%M%S` \
-    DAY=`date +%a` \
+    DAY=`date +%a.%P` \
     "LS=$LS" \
     "APPDIR=$APPDIR" \
     "CONF_FILE=$CONF_FILE" \

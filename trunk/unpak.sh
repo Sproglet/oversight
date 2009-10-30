@@ -1470,7 +1470,9 @@ tidy_nonrar_files() {
     DEBUG "tidy_nonrar_files"
     joinfiles ".0001.ts"
 
-    delete_extended_glob_pattern "$unpak_delete_files"
+    if ! par_set ; then
+        delete_extended_glob_pattern "$unpak_delete_files"
+    fi
 
     if [ "$unpak_rename_img_to_iso" -eq 1 ] ; then
         ls *.img 2>/dev/null | exec_file_list "mv \1 \2\3.iso" ""
@@ -1637,11 +1639,22 @@ delete_files() {
     fi
 }
 
+#more than 50% pars
+par_set() {
+    par_count=`ls *[Pp][Aa][Rr]2 | line_count`
+    all_count=`ls | line_count`
+    [ $(( $par_count * 2 )) -gt $all_count ]
+}
+
+media_count() {
+ list_extended_glob_pattern "*($unpak_video_extension)" | line_count
+}
+
 #Delete sample files if there are other media files present.
 delete_samples() {
     DEBUG "unpak_delete_samples=[$unpak_delete_samples]"
     if [ -n "$unpak_delete_samples" ] ; then
-        all_media=$( list_extended_glob_pattern "*($unpak_video_extension)" | line_count )
+        all_media=$( media_count )
         sample_media=$( list_extended_glob_pattern "($unpak_delete_samples)($unpak_video_extension)" | line_count )
         DEBUG all_media $all_media sample_media $sample_media
         if [ "$sample_media" -gt 0 -a "$all_media" -gt "$sample_media" ] ; then

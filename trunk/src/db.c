@@ -161,7 +161,7 @@ TRACE;
     db->source= STRDUP(source);
 
 TRACE;
-    ovs_asprintf(&(db->backup),"%s.old",db->path);
+    ovs_asprintf(&(db->backup),"%s.%s",db->path,util_day_static());
 
 TRACE;
     db->lockfile = replace_all(db->path,"index.db","catalog.lck",0);
@@ -1653,11 +1653,15 @@ void db_set_fields_by_source(
 
     if (db && db_lock(db)) {
 HTML_LOG(1," begin open db");
-        FILE *db_in = fopen(db->path,"r");
+        int free_inpath;
+        char *inpath = get_mounted_path(db->source,db->path,&free_inpath);
+
+        FILE *db_in = fopen(inpath,"r");
 
         if (db_in) {
             char *tmpdb;
             ovs_asprintf(&tmpdb,"/share/Apps/oversight/index.db.tmp.%d",getpid());
+            int rename=0;
 
             FILE *db_out = fopen(tmpdb,"w");
 
@@ -1711,13 +1715,23 @@ HTML_LOG(1," begin open db");
 
                 }
                 fclose(db_out);
+                rename=1;
             }
 
             fclose(db_in);
-            util_rename(db->path,db->backup);
-            util_rename(tmpdb,db->path);
+            if (rename) {
+                int free_backup;
+                char *backup=get_mounted_path(db->source,db->backup,&free_backup);
+
+                util_rename(inpath,backup);
+                util_rename(tmpdb,inpath);
+
+                if (free_backup) FREE(backup);
+
+            }
             FREE(tmpdb);
         }
+        if (free_inpath) FREE(inpath);
         db_unlock(db);
         db_free(db);
     }

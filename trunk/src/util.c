@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "util.h"
 #include "hashtable.h"
@@ -799,4 +800,13 @@ Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys) {
 }
 
 
+char *util_day_static()
+{
+#define DAY_SIZE 20
+    static char day[DAY_SIZE+1];
+    time_t t;
+    time(&t);
+    strftime(day,DAY_SIZE,"%b",localtime(&t));
+    return day;
+}
 

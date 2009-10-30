@@ -2554,15 +2554,21 @@ char *create_episode_js_fn(int num_rows,DbRowId **sorted_rows) {
     }
 
     // Main plot function
+    char *main_plot="(no plot info)";
+    char *main_genre="";
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
         if (rid->plot_text) {
-            tmp = ep_js_fn(result,0,"","",NVL(rid->plot_text),"",rid->genre,NULL,NULL);
-            FREE(result);
-            result = tmp;
+            main_plot = rid->plot_text;
+            main_genre = rid->genre;
             break;
         }
     }
+
+    tmp = ep_js_fn(result,0,"","",NVL(main_plot),"",NVL(main_genre),NULL,NULL);
+    FREE(result);
+    result = tmp;
+
 HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {

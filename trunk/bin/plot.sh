@@ -12,9 +12,16 @@
 
 tab="	"
 
+# this should be passed by catalog.sh
+if [ -z "$OVERSIGHT_ID" ] ; then
+    OVERSIGHT_ID="nmt:nmt"
+fi
+
 # like mv but keep perms on original file
 replace() {
-    cat "$1" > "$2" && rm -f "$1"
+    b="$2.`date +%a`"
+    cp "$2" "$b" && chown "$OVERSIGHT_ID" "$b"
+    cat "$1" > "$2" && rm -f "$1" && chown "$OVERSIGHT_ID" "$2"
 }
 
 plot() {
@@ -94,17 +101,25 @@ END {
     prune_plotfile(plotfile,keep);
 }
 
+#get hash of plot ids from the input file.
 function extract_plot_tags(f,keep,\
-ref,start,id) {
+ref,start,id,m,i,count,parts) {
 
     while ((getline ref < f ) > 0) {
-        start=1
 
-        while (match(substr(ref,start),g_plotpattern) > 0) {
+        #Get a unique marker
+        m = "%@£@%";
+        while (index(ref,m)) m = m "£%";
 
-            id=substr(ref,RSTART+start-1,RLENGTH);
-            keep[id]=1;
-            start += RSTART + RLENGTH;
+        #surround the matches with the marker
+        gsub(g_plotpattern,m"&"m,ref);
+
+        #now splt at the marker
+        count=split(ref,parts,m);
+
+        #All even items are the regex matches.
+        for(i=2 ; i <= count ; i+=2) {
+            keep[parts] = 1;
         }
     }
     close(f);

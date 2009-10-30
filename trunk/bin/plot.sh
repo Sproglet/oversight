@@ -19,7 +19,7 @@ fi
 
 # like mv but keep perms on original file
 replace() {
-    b="$2.`date +%a`"
+    b="$2.`date +%a.%P`"
     cp "$2" "$b" && chown "$OVERSIGHT_ID" "$b"
     cat "$1" > "$2" && rm -f "$1" && chown "$OVERSIGHT_ID" "$2"
 }
@@ -86,7 +86,12 @@ HERE
 prune() {
     plotfile="$1"
     reffile="$2"
+
+    #pwd
+    #ls -l /share/Apps/oversight
+
     awk '
+#BEGINAWK
 
 END {
     plotfile="'"$plotfile"'";
@@ -95,16 +100,28 @@ END {
 
     g_plotpattern="_@[0-9a-zA-Z]+@[0-9]*@[0-9a-z]*@_";
 
+    inf("Plotfile=["plotfile"]");
+    inf("Reffile=["reffile"]");
 
+    
     extract_plot_tags(reffile,keep);
 
     prune_plotfile(plotfile,keep);
 }
 
+function inf(x) {
+    print "[INFO] "x;
+}
+
+function err(x) {
+    print "[ERROR] "x;
+}
+
 #get hash of plot ids from the input file.
 function extract_plot_tags(f,keep,\
-ref,start,id,m,i,count,parts) {
+ref,m,i,count,parts) {
 
+    inf("Extract plot tags from "f);
     while ((getline ref < f ) > 0) {
 
         #Get a unique marker
@@ -119,7 +136,10 @@ ref,start,id,m,i,count,parts) {
 
         #All even items are the regex matches.
         for(i=2 ; i <= count ; i+=2) {
-            keep[parts] = 1;
+            if (!(parts[i] in keep)) {
+                inf("keep["parts[i]"]");
+                keep[parts[i]] = 1;
+            }
         }
     }
     close(f);
@@ -128,14 +148,15 @@ ref,start,id,m,i,count,parts) {
 # Go through each line of the plot file, if the plot
 # is in the "keep" array, keep the line.
 function prune_plotfile(f,keep,\
-ref,start,id,tmpf,kept_count,removed_count) {
+id,tmpf,kept_count,removed_count,plot,err) {
 
+    inf("Prune plots in "f " using "tmpf);
     tmpf=f"."g_pid;
 
     kept_count = removed_count = 0;
 
     printf "" > tmpf;
-    while ((getline plot < f ) > 0) {
+    while ((err = (getline plot < f )) > 0) {
 
         if (match(plot,"^"g_plotpattern) > 0) {
 
@@ -149,14 +170,19 @@ ref,start,id,tmpf,kept_count,removed_count) {
             }
         }
     }
-    close(f);
+    if (err == 0 ) close(f);
     close(tmpf);
     print "plot compact: kept "kept_count" : removed "removed_count;
 }
 
+#ENDAWK
 ' </dev/null
 
-replace "$plotfile.$$" "$plotfile"
+    #echo ====
+    #ls -l /share/Apps/oversight
+    #echo ====
+    #echo replace "$plotfile.$$" "$plotfile"
+    replace "$plotfile.$$" "$plotfile"
 
 }
 

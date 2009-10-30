@@ -806,7 +806,7 @@ char *util_day_static()
     static char day[DAY_SIZE+1];
     time_t t;
     time(&t);
-    strftime(day,DAY_SIZE,"%b",localtime(&t));
+    strftime(day,DAY_SIZE,"%a.%P",localtime(&t));
     return day;
 }
 

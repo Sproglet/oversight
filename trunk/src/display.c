@@ -2460,23 +2460,7 @@ void build_playlist(int num_rows,DbRowId **sorted_rows)
     }
 }
 
-char *clean_js_string(char *in) {
-    char *out = in;
 
-    if (in != NULL) {
-        if (strchr(out,'\'')) {
-            char *tmp = replace_all(out,"'","\\'",0);
-            if (out != in) FREE(out);
-            out = tmp;
-        }
-        if (strstr(out,"&quot;")) {
-            char *tmp = replace_all(out,"&quot;","\\'",0);
-            if (out != in) FREE(out);
-            out = tmp;
-        }
-    }
-    return out;
-}
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.

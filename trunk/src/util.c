@@ -810,3 +810,33 @@ char *util_day_static()
     return day;
 }
 
+void replace_char(char *string,char in,char out) {
+    if (string) {
+        char *p = string;
+        while ((p = strchr(p,in)) != NULL) {
+            *p = out;
+        }
+    }
+}
+
+char *clean_js_string(char *in)
+{
+    char *out = in;
+
+    if (in != NULL) {
+        if (strchr(out,'\'')) {
+            char *tmp = replace_all(out,"'","\\'",0);
+            if (out != in) FREE(out);
+            out = tmp;
+        }
+        if (strstr(out,"&quot;")) {
+            char *tmp = replace_all(out,"&quot;","\\'",0);
+            if (out != in) FREE(out);
+            out = tmp;
+        }
+        replace_char(out,'\r',' ');
+        replace_char(out,'\n',' ');
+
+    }
+    return out;
+}

@@ -199,7 +199,7 @@ TRACE;
 
 char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    *free_result=0;
+    *free_result=1;
     char *result = NULL;
     int max = g_dimension->max_plot_length;
     if (args && args->size > 0) {
@@ -215,7 +215,14 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
         }
     } 
 
-    result = get_main_plot_static(sorted_rows[0]);
+
+    result = STRDUP(get_main_plot(sorted_rows[0]));
+    char *clean = clean_js_string(result);
+    if (clean != result) {
+        FREE(result);
+        result = clean;
+    }
+
     if (result && max > 0 && max < strlen(result)) {
         if (max > 10) {
             strcpy(result+max-4,"...");

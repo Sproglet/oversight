@@ -98,3 +98,4 @@ void util_rmdir(char *path,char *name);
 int exists_file_in_dir(char *dir,char *name);
 Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);
 #endif
+char *util_day_static();

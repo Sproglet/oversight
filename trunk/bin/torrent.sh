@@ -1,9 +1,40 @@
 #!/bin/sh -eu
 # $Id$ 
 
-download_dir=/share/Download
-seed_dir=/share/Complete
-unpak=/share/Apps/oversight/unpak.sh
+load_settings() {
+
+    cfg="$1"
+    case "$cfg" in
+        /*) true;;
+        *) cfg="$CONFDIR/$cfg" ;;
+    esac
+
+    INFO "load_unpak_settings [$cfg]"
+
+    if [ -n "$cfg" ] ; then
+        #If there is no sample cfg - create one
+        if [ ! -f "$cfg" ] ; then
+            cp "$cfg.example" "$cfg"
+            echo "Create $cfg file from example"
+        fi
+
+        if [ -f "$cfg" ] ; then
+            . "$cfg"
+            else
+                echo "Settings in $cfg ignored. Not compatible"
+            fi
+        else
+            echo "Using Default Settings"
+        fi
+    fi
+}
+
+CONFDIR=$APPDIR/conf
+unpak=$APPDIR/unpak.sh
+
+load_settings "$APPDIR/conf/.torrent.cfg.defaults"
+load_settings "$APPDIR/conf/torrent.cfg"
+
 
 # IN $1=torrent id
 unpak_index_torrent() {
@@ -70,19 +101,19 @@ unpak_all() {
 list_newly_completed_torrents() {
     for t in `bt_list_completed_torrents` ; do
         d=`bt_get_outer_path "$t"`
-        if [ "$d" -ef "$download_dir" ] ; then
+        if [ "$d" -ef "$p2p_download_dir" ] ; then
             echo $t
         fi
     done
 }
 
-#If a torrent has its own folder then use seed_dir else create a folder for it
+#If a torrent has its own folder then use p2p_seed_dir else create a folder for it
 get_outer_seeding_path() {
 
     if [ -n "`bt_get_inner_folder_name "$1"`" ] ; then
-        echo "$seed_dir"
+        echo "$p2p_seed_dir"
     else
-        echo "$seed_dir/bt_`bt_get_name "$1"`"
+        echo "$p2p_seed_dir/bt_`bt_get_name "$1"`"
     fi
 }
 
@@ -178,14 +209,12 @@ calc_upload_slots_standard() {
 }
 
 set_nmt_settings() {
-    slots_per_torrent="`calc_upload_slots_kbytes 80 10`"
+    slots_per_torrent="`calc_upload_slots_kbytes $p2p_upload_kBps $p2p_slot_kBps`"
     bt_shutdown
     echo "slots_per_torrent=$slots_per_torrent"
     bt_set_global_seed_ratio 1.0
-    g_global_peers=100
-    g_active_count=2
-    bt_set_peers_global $g_global_peers
-    bt_set_peers_per_torrent $(( $g_global_peers / $g_active_count ))
+    bt_set_peers_global $p2p_total_peers
+    bt_set_peers_per_torrent $(( $p2p_total_peers / $p2p_active_torrents ))
     bt_set_upload_slots_per_torrent $slots_per_torrent
     bt_startup
 }

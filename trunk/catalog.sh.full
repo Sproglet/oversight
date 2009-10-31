@@ -3797,6 +3797,11 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
             matchLevel = 5;
             INF("match for ["titleIn"] containing ["possible_title"]");
         }
+    } else if ( index(possible_title,"Late Night With "titleIn)) {
+        # Late Night With Some Person might just be known as "Some Person"
+        # eg The Tonight Show With Jay Leno
+        matchLevel = 4;
+
     } else if ( index(possible_title,"Show With "titleIn)) {
 
         # The blah blah Show With Some Person might just be known as "Some Person"
@@ -3903,6 +3908,8 @@ possible_title,names,i,ltitle) {
 
         if (abbrevMatch(ltitle,possible_title)) {
             alternateTitles[possible_title]="abbreviation-initials";
+        } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
+            alternateTitles[possible_title]="abbreviation-double";
         } else if (abbrevContraction(ltitle,possible_title)) {
             alternateTitles[possible_title]="abbreviation-contraction";
         }
@@ -4010,7 +4017,7 @@ found,regex,initials,initial_regex) {
         initials = initial_regex = get_initials(possible_title);
         gsub(//,".*",initial_regex);
         if (abbrev !~ initial_regex ) {
-            INF("Cantraction ["abbrev"] does not contain show ["possible_title"] initials ["initials"] so reject");
+            INF("Contraction ["abbrev"] does not contain show ["possible_title"] initials ["initials"] so reject");
             found = 0;
         }
     }

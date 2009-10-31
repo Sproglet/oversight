@@ -8,7 +8,7 @@ while [ -L "$EXE" ] ; do
     EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
 done
 APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}" ; pwd )
+export APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 TVMODE=`cat /tmp/tvmode`
 
 CONF=$APPDIR/conf/catalog.cfg

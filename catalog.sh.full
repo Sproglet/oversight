@@ -6453,12 +6453,15 @@ id,cmd) {
         cmd=g_plot_app" update "quoteArg(pfile)" "quoteArg(id)" "quoteArg(g_season[idx]);
 
         if (g_plot[idx] != "" ) {
-            INF("updating main plot ");
-            exec(cmd" \"\" "quoteArg(g_plot[idx]));
+            cmd = cmd" \"\" "quoteArg(g_plot[idx]);
+            INF("updating main plot :"cmd);
+            exec(cmd);
         }
+
         if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
-            INF("updating episode plot ");
-            exec(cmd" "quoteArg(g_episode[idx])" "quoteArg(g_epplot[idx]));
+            cmd = cmd" "quoteArg(g_episode[idx])" "quoteArg(g_epplot[idx]);
+            INF("updating episode plot :"cmd);
+            exec(cmd);
         }
     }
 }

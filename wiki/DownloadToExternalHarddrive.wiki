@@ -1,0 +1,5 @@
+#sidebar TableOfContents
+
+To download content to an external HDD you must change the  film_folder_fmt and tv_file_fmt settings in oversight->admin->renaming.
+
+For content other than movies or tv shows, also change the oversight->admin->Nzbget unpacking->completed_dir to be the full path to a folder on the external HDD.

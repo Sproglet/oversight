@@ -10,7 +10,6 @@ Everyone
   * KnownIssues
   * IncrementalScans
   * FrequentlyAskedQuestions
-  * DownloadToExternalHarddrive
 
 Advanced
 

@@ -1,0 +1,7 @@
+#!/bin/sh
+./util/squeeze
+chmod 775 *cgi *.sh
+../nmt-scripts/build `basename "$PWD"` "$@" oversight.cgi \
+*.sh *.cgi *.full conf/*.example conf/.*defaults images imdb/imdb.sh imdb/download/.keep templates help/*.help db \
+	logs/.keep tmp/.keep *.html bin cache/.keep
+#./bundle.unpak

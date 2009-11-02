@@ -1,0 +1,2563 @@
+#!/bin/sh --
+#TODO Make sure playlist.htm is in order.
+#TODO Option for main table to be by column or by row.
+#TODO Readd code to use parent folder if title is blank?
+
+# Convert script from DOS
+
+if [ $? != 0 ]; then            #
+    set -e                      #
+    sed 's/.$//' "$0" > /tmp/$$ #
+    cat /tmp/$$ > "$0"          #
+    rm /tmp/$$                  #
+    exec /bin/sh "$0" "$@"      #
+    exit                        #
+fi                              #
+
+OWNER=nmt:nmt
+
+DECODE() {
+    echo "$1" | sed 's/%20/ /g'
+}
+
+case "X$1" in
+    X*jpg) echo "Content-Type: image/jpeg" ; echo ; x=`DECODE "$1"` ; exec cat "$x" ;;
+    X*png) echo "Content-Type: image/png" ; echo ; x=`DECODE "$1"` ; exec cat "$x" ;;
+    X*gif) echo "Content-Type: image/gif" ; echo ; x=`DECODE "$1"` ; exec cat "$x" ;;
+esac
+
+# REAL SCRIPT FOLLOWS
+#--------------------------------------------------------------------------
+#!/bin/sh
+# 30/11/2008
+# TV AWK INTERFACE
+# This CGI script is horrendous. My comment!
+# Pushing limits of awks usability. Next time I'll use the PHP Processor.
+
+# (c) Andy Lord andy@lordy.org.uk
+#License GPLv3
+
+
+DEBUG=1 #Debug also disables the cache
+VERSION=20090502-1BETA
+HOSTNAME=`hostname`
+
+EXE=$0
+while [ -L "$EXE" ] ; do
+    EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
+done
+HOME=$( echo $EXE | sed -r 's|[^/]+$||' )
+
+cd "${HOME:-.}"
+HOME="$PWD"
+
+TMPDIR="$HOME/tmp"
+if [ ! -d $TMPDIR ] ; then
+    mkdir -p $TMPDIR
+    chown $OWNER:$GROUP $TMPDIR
+fi
+
+CACHE_DIR="$TMPDIR/cache"
+
+appname=oversight
+
+unpak_bin="$HOME/$appname.sh"
+
+METHOD=POST
+UPLOAD_DIR=/share/
+
+INDEX_DB="$HOME/index.db"
+
+#Processes GET or POST parameters and also outputs them to stdout 
+# <name>=<value>
+#so display stage can use them.
+MAIN_PAGE() {
+    # Do this outside of awk so we can see script errors in the browser.
+    echo "Content-Type: text/html"
+    echo
+    echo "<html><head><style type=\"text/css\">"
+    cat "$HOME/oversight.css" #css link tag broken i think
+    Q="'"
+    CATALOG_RUNNING=0
+    if [ -f "$HOME/catalog.lck" ] ; then
+        if [ -d "/proc/`cat $HOME/catalog.lck`" ] ; then
+            CATALOG_RUNNING=1
+        fi
+    fi
+    if [ -f "$TMPDIR/cmd.pending" ] ; then
+        CATALOG_PENDING=1
+    fi
+
+        awk '
+# This is read if query["view"] == movie or tv
+# source_start/source_end are populated with the start/end indices of the new data added by the source
+function appendDatabaseOverview(regexFilter,source_start,source_end,source,overview_file,db_size,db,\
+i) {
+    FS="\t" ;
+
+    db_size+=0; #awk converting to a string at some point!
+
+    source_start[source] = source_end[source] = db_size;
+
+    h_comment("Reading overview file "overview_file" source =["source"] with filter ["regexFilter"]");
+
+    while((getline < overview_file) > 0) {
+
+        #h_comment("XX "$0);
+        if (source=="*" && substr($0,1,1) == "\t") gLocalCount++;
+
+        #This is just a quick filter. There will be false positives due to meta data matching the regex
+        if (match(tolower($0),regexFilter) == 0) continue;
+
+        #reject line if it has any actions against it
+        if (index($0,"\t"ACTION"\t0\t") == 0 ) continue;
+
+        if (index($0,gWatchedFilter) == 0) continue;
+
+        db_size=load_index(regexFilter,source,db,db_size);
+        #h_comment("title["db_size"] = " db[TITLE,(db_size-1)]);
+    }
+    close(overview_file);
+    source_end[source]=db_size;
+    h_comment("DB INDEX: for ["source"] = "db_size" from " source_start[source] " to " source_end[source] );
+    h_comment("Local size = "gLocalCount);
+    return db_size;
+}
+
+function sourceHome(s) {
+    return sourceRoot(s) "Apps/oversight/";
+}
+function sourceRoot(s) {
+    if (s == "*" || s == "" ) {
+        return "/share/";
+    } else {
+        return "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"s"/";
+    }
+}
+
+function appendMountedDatabaseOverview(regexFilter,source_start,source_end,db_size,db,\
+f) {
+    f = "/tmp/oversight."PID;
+    system("ls /opt/sybhttpd/localhost.drives/NETWORK_SHARE/*/Apps/oversight/index.db.idx 2>/dev/null > "f);
+    while((getline < f) > 0) {
+        if (match($0,"NETWORK_SHARE/[^/]+")) {
+            source = substr($0,RSTART,RLENGTH);
+            source = substr(source,index(source,"/")+1);
+            h_comment(" pre size["source"] = "db_size);
+            db_size = appendDatabaseOverview(regexFilter,source_start,source_end,source,$0,db_size,db);
+            h_comment(" total size = "db_size);
+        }
+    }
+    close(f);
+    system("rm -f -- "f);
+    for(f in source_start) h_comment("Source="f);
+    return db_size;
+}
+
+function appendDatabase(idlist,source,db,db_size,\
+db_file) {
+
+    regexFilter="\t"ID"\t("idlist")\t";
+    db_file = sourceHome(source)"index.db";
+
+    h_comment("Append database regex filter = "regexFilter);
+    h_comment("source = ["source"] file = "db_file);
+
+    
+    FS="\t" ;
+
+    while((getline < db_file) > 0) {
+        if (match($0,regexFilter) && index($0,"\t"ACTION"\t0\t")) {
+
+            parse_index_merge(db,db_size);
+
+            db[SOURCE,db_size] = source;
+            db[DIR,db_size]=db[FILE,db_size];
+            sub(/\/[^\/]*$/,"",db[DIR,db_size]);
+            db_size++;
+
+        }
+    }
+    h_comment("DB:" db_size );
+    return db_size;
+}
+
+function START_PRE_FORM() {
+
+    db_size=0;
+
+    ID="_id";
+
+    OVERVIEW_DETAILIDLIST="_did" ;
+    OVERVIEW_EXT_LIST = "_ext";
+
+    SOURCE="_src";
+    WATCHED="_w";
+    ACTION="_a"; # Tell catalog.sh to do something with this entry (ie delete)
+    PARTS="_pt";
+    #DB fields - must start with _ so grepping the index log for \tfield\tvalue will be (reasonably) safe. but must be URL safe too.
+    FILE="_F";
+    NAME="_N";
+    DIR="_D";
+    AKA="_K";
+    CATEGORY="_C";
+    ADDITIONAL_INFO="_ai";
+    DATE="_D";
+    YEAR="_Y";
+    TITLE="_T";
+
+    SEASON="_s";
+    EPISODE="_e";
+    SEASON0="0_s";
+    EPISODE0="0_e";
+
+    GENRE="_G";
+    RATING="_r";
+    CERT="_R";
+    PLOT="_P";
+    URL="_U";
+    POSTER="_J"; #JPEG
+    DOWNLOADTIME="_DT"; 
+    INDEXTIME="_IT"; 
+    FILETIME="_FT"; 
+    PROD="_p";
+    AIRDATE="_ad";
+    TVCOM="_tc";
+    EPTITLE="_et";
+    EPTITLEIMDB="_eti";
+    AIRDATEIMDB="_adi";
+    NFO="_nfo";
+
+    #Query variables.
+    QTYPE_FILTER="_tf";
+    QWATCHED_FILTER="_wf";
+    QSORT="s";
+    QORDER="o";
+    QREG_FILTER="_rf";
+    QSEARCH_MODE="_sm";
+    CAPTURE_PREFIX = "/tmp/awk." PID ;
+
+    NMT_PLAYLIST="/tmp/playlist.htm";
+    printf "" > NMT_PLAYLIST;
+    CHECKBOX_PREFIX="cb_";
+
+}
+
+function shellEscape(t) {
+    gsub(/[][ *?"'"'"'()]/,"\\\\&",t);
+    return t;
+}
+
+# Called after form parameters have been processed.
+function selectDatabase(source_start,source_end,db,db_size,\
+    i,source,idlist,gIndexFilter,at) {
+
+    if (query[QSORT] == "") { query[QSORT] = INDEXTIME };
+
+    if (query[QORDER] == "") {
+        query[QORDER] = -1 ; #timestamps
+        if (query[QSORT] == TITLE ) query[QORDER] = 1 ;
+    }
+
+    h_comment("View = "query["view"]);
+    if (query["view"] == "admin" ) {
+        #do nothing
+    } else if (query["view"] == "tv" || query["view"] == "movie" ) {
+
+        idlist_by_source(query["idlist"],idlist);
+
+        for(source in idlist) {
+            db_size=appendDatabase(idlist[source],source,db,db_size);
+        }
+
+
+    } else {
+
+        gIndexFilter="\t";
+        if (query[QTYPE_FILTER] != "" ) {
+            gIndexFilter="\t"CATEGORY"\t"query[QTYPE_FILTER]"{0,1}\t";
+        }
+
+        gWatchedFilter="\t";
+        if (query[QWATCHED_FILTER] != "" ) {
+            gWatchedFilter="\t"WATCHED"\t"(query[QWATCHED_FILTER] == "W")"\t";
+        }
+
+        gFilterRegex="";
+        if (query[QREG_FILTER] != "" ) {
+            gFilterRegex = "\\<";
+            for(i = 1 ; i <= length(query[QREG_FILTER]) ; i++) {
+                gFilterRegex = gFilterRegex num2regex[substr(query[QREG_FILTER],i,1)]; 
+            }
+            h_comment("Tvid Filter " query[QREG_FILTER] " == "gFilterRegex);
+        } else if (query["searcht"] != "" && query[QSEARCH_MODE] ) {
+            gFilterRegex=tolower(query["searcht"]);
+        }
+
+        db_size=0;
+        db_size=appendDatabaseOverview(gFilterRegex,source_start,source_end,"*",g_db_fname".idx",db_size,db);
+        if (ovs_crossview) {
+            db_size=appendMountedDatabaseOverview(gFilterRegex,source_start,source_end,db_size,db);
+        }
+        #showDatabase("just read",db_size,db);
+    }
+    return db_size;
+}
+
+function showDatabase(label,db_size,db,\
+i) {
+    h_comment(label);
+    for(i = 0; i < db_size ; i++ ) {
+        h_comment("source["db[SOURCE,i]"]: title["i"] = "db[TITLE,i]);
+    }
+}
+
+#At the moment we only have one source per idlist but this may change if we start merging tv seasons 
+#from different sources into one page.  # eg. s1(1|2|3)s2(4|5|6)
+# input
+#  "s1(1|2|3)s2(4|5|6)"
+# output 
+#  source_idlist_hash["s1"]="1|2|3"
+#  source_idlist_hash["s2"]="4|5|6"
+#
+function idlist_by_source(idlist_query,source_idlist_hash,\
+at,by_source,s,source,ids) {
+
+    h_comment("splitting ["idlist_query"]");
+
+    split(idlist_query,by_source,")");
+
+    for(s in by_source) {
+        if (by_source[s] != "" ) {
+            h_comment("splitting ["by_source[s]"]");
+            at = index(by_source[s],"(");
+            source = substr(by_source[s],1,at-1);
+            ids=substr(by_source[s],at+1);
+            source_idlist_hash[source]=ids;
+            h_comment("source ["source"]=["ids"]");
+        }
+    }
+}
+
+function exec(cmd) {
+    h_comment("SYSTEM : "cmd);
+    return system(cmd);
+}
+
+function doFormActions(\
+    selectedIdList,s,idlist,page,affected_sources) {
+
+    if (query["searchb"] == "Hide" ) {
+        delete query[QSEARCH_MODE];
+        delete query["searchb"];
+    }
+    if (query["share"] != "" ) {
+        #TODO review
+        #These are pre-defined shares. They are mounted at their standard location using NMT mounter.
+        exec(HOME"/oversight.sh SHARE \""query["share"]"\"");
+        quit(0);
+    } else if (allow_admin && query["view"] == "admin" ) {
+
+        action=query["action"];
+
+        if (action == "clearcache") {
+            exec(CLEAR_CACHE_CMD);
+
+        } else if (action == "list_defined_share") {
+            readFlash();
+
+        } else if (action == "add_defined_share") {
+            #Look for remote oversight installs in the standard places and add them.
+            split(query["share_list"],shares,"\r");
+            for ( i in shares) {
+                print "<!-- ws link "shares[i]" -->";
+                exec(HOME"/install.sh NMT_INSTALL_WS \"Oversight on "shares[i]"\" \"http://127.0.0.1:8883/oversight/oversight.cgi?share="shares[i]"\"");
+            }
+            delete query["share_list"];
+
+        } else if (action == "add_current_share") {
+
+            #Look for remote oversight installs in the standard places and add them.
+            exec(HOME"/oversight.sh FIND_REMOTE");
+
+        } else if (action == "rescan") {
+
+            exec(SEND_COMMAND_TEXT("catalog.sh RESCAN"));
+
+        } else if (match(action,"(check|checkbeta|install|undo)")) {
+
+            gUpgradeResult=(exec(HOME"/oversight.sh UPGRADE "action) == 0);
+            if (action != "undo" ) {
+                getline < HOME"/VERSION.dl";
+                gNewVersion=$0;
+            }
+
+        } else if (match(action,"^[Ss]ave.[Ss]ettings")) {
+
+            for (option_name in query) {
+                if (match(option_name,"^option_")) {
+                    real_name=substr(option_name,index(option_name,"_")+1);
+                    value=query[option_name];
+                    oldvalue=query["orig_"option_name];
+                    if (value != oldvalue ) {
+                        system(sprintf("cd \"%s\" && ./options.sh SET \"%s\" %s \"%s\" ",HOME,query["file"],real_name,value));
+                    }
+                }
+            }
+            if (query["file"] == "oversight.cfg" ) {
+                exec(CLEAR_CACHE_CMD);
+            }
+
+
+        }
+
+    } else {
+        if (query["select"] != ""  ) {
+
+            h_comment("<!-- allow_mark ="allow_mark" allow_delete="allow_delete" action="query["action"]" -->");
+
+            if (allow_mark && query["action"] == "Mark" ) {
+
+                getNewlySelectedIdListBySource(idlist);
+                setSelectRecordFields(idlist,WATCHED,1,affected_sources);
+
+                getNewlyDeSelectedIdListBySource(idlist);
+                setSelectRecordFields(idlist,WATCHED,0,affected_sources);
+
+                rebuildSources(affected_sources);
+
+            } else if (allow_delete && query["action"] == "Delete" ) {
+
+                getNewlySelectedIdListBySource(idlist);
+                setSelectRecordFields(idlist,ACTION,"D",affected_sources);
+                rebuildSources(affected_sources);
+                remove_ids_from_query(idlist); 
+
+            } else if (allow_delist && query["action"] == "Remove_From_List" ) {
+
+                getNewlySelectedIdListBySource(idlist);
+                deleteSelectedRecords(idlist,affected_sources);
+                rebuildSources(affected_sources);
+                remove_ids_from_query(idlist); 
+            }
+        }
+    }
+    
+    if (g_has_post_data) {
+        clearSelection();
+    }
+}
+
+function isCheckbox(i) {
+    if (query[i]!="on") {
+      return 0;
+  } else if ( match(i,"^"CHECKBOX_PREFIX".*\\([0-9|]+\\)$")) {
+        return 1;
+  } else if ( match(i,"^orig_"CHECKBOX_PREFIX".*\\([0-9|]+\\)$")) {
+        return 1;
+  } else if ( match(i,"^option_") || match(i,"^orig_option_") ) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+function clearSelection() {
+    delete query["select"];
+    delete query["action"];
+    for(i in query) {
+        if (isCheckbox(i)) {
+            delete query[i];
+        }
+    }
+}
+
+
+# Escape regex meta chars.
+function re_escape(txt) {
+    gsub(/[]|*()]/,"\\\\&",txt);
+    return txt;
+}
+
+# Remove select ids from the idlist. - obsoleted?
+# alters query["idlist"]
+function remove_ids_from_query(idlist,\
+i,ids,id,istart,q,s_re) {
+
+    q=query["idlist"];
+    h_comment("idlist="query["idlist"]);
+    if (query["view"] != "" && query["idlist"] != "" ) {
+        for(s in idlist) {
+            h_comment("removing ["s"] ["idlist[s]"]");
+            #first escape meta-chars in s
+            s_re=re_escape(s);
+
+            # Eg if removing x from source s1
+            # s1(x|b) -> s1(b)
+            # s1(b|x) -> s1(b)
+            # s1(a|x|b -> s1(a|b)
+            # s1(x) -> ""
+
+            split(idlist[s],ids,"|");
+            for(i in ids) {
+                id=ids[i];
+                h_comment("match(\"" q  "\",\"" s_re  "\\([^(]*\\<" id  "\\>\")");
+                if (match(q,s_re"\\([^(]*\\<"id"\\>")) {
+                    h_comment("RSTART="RSTART" RLENGTH="RLENGTH);
+
+                    istart=RSTART+RLENGTH-length(id);
+                    q=substr(q,1,istart-1) substr(q,RSTART+RLENGTH);
+                }
+            }
+            #If the source is now empty - remove it.
+            gsub(/\|+/,"|",q);  #source(1||3) -> source(1|3)
+            gsub(/\(\|/,"(",q); #source(|2|3) -> source(2|3)
+            gsub(/\|\)/,")",q); #source(1|2|) -> source(1|2)
+            sub(s_re"\\(\\)","",q);
+        }
+    }
+    h_comment("modified idlist="q);
+    query["idlist"] = q;
+}
+
+function deleteSelectedRecords(idlist,rebuildSource,\
+f,src,id,ids) {
+    for(src in idlist) {
+        if (idlist[src] != "") {
+            f=sourceHome(src)"index.db";
+            exec(sprintf("sed -ir \"/\t"ID"\t(%s)\t/ d\" \"%s\"",idlist[src],f));
+            rebuildSource[src]=1;
+
+#            split(idlist[src],ids,"|");
+#            for(id in ids) {
+#                #remove Num from  <tab>ID<tab>Num  or <tab>ID<tab>num1|num2|Num
+#                #Also replace || with | , <tab>| or |<tab> with <tab>
+#                exec(sprintf("sed -ir \"s/(\t"OVERVIEW_DETAILIDLIST"\t(|[0-9|]+\\|))%s\\>/\\1/;s/\\|\\|+/\\|/g;s/\t\\|/\t/;s/\\|\t/\t/\" \"%s.idx\"",idlist[src],f));
+#            }
+#            exec(CLEAR_CACHE_CMD);
+        }
+    }
+}
+
+# 0 = success
+function setSelectRecordFields(idlist,fieldName,fieldValue,rebuildSource,\
+f,h,src) {
+    
+    for(src in idlist) {
+        if (idlist[src] != "") {
+            # remove select ids from the idlist
+
+            h=sourceHome(src);
+            f=f "index.db";
+
+            exec(sprintf("sed -ir \"/\t%s\t(%s)\t/ s/(\t%s\t)[^\t]+\t/\\1%s\t/\" \"%s\"",ID,idlist[src],fieldName,fieldValue,f));
+            rebuildSource[src]=1;
+        }
+    }
+}
+function rebuildSources(source_list,\
+s,h) {
+    for(src in source_list) {
+        h=sourceHome(src);
+
+        #Run lightweight synchronous update so gui is correct.
+        exec("su nmt -s /bin/sh -c \""h"/catalog.sh REBUILD NOACTIONS\" ");
+        exec(CLEAR_CACHE_CMD);
+
+        #Run proper background update to delete files etc.
+        exec(SEND_COMMAND_TEXT("catalog.sh REBUILD ",src));
+    }
+}
+
+#Get all paramter names that have just been changed to CHECKED. 
+#This is not the same as getting ones that are enabled.
+#If there were already enabled they will not be in the list
+function getNewlySelectedIdListBySource(selectedIdList,\
+    i,idlist) {
+    delete selectedIdList;
+    for(i in query) {
+        if (query[i] == "on" && isCheckbox(i) && match(i,"^"CHECKBOX_PREFIX) && !("orig_"i in query)) {
+            h_comment("checkbox ["i"] just enabled");
+            merge_idlist_by_source(substr(i,length(CHECKBOX_PREFIX)+1),selectedIdList);
+        } else {
+            h_comment("checkbox ["i"] not enabled");
+        }
+    }
+}
+
+# given a idlist source(id1|id2|..|idn) merge into array of |separated strings indexed by source.
+# at some point idlist_by_source will becomre more complicated to deal with
+# s1(1|2|3)s2(4|5|6)
+function merge_idlist_by_source(idlist,selectedIdList,\
+idlist_arr,s,t) {
+    idlist_by_source(idlist,idlist_arr);
+    for(s in idlist_arr) {
+       t=selectedIdList[s];
+       if (t == "" ) t=idlist_arr[s] ;
+       else t = t "|" idlist_arr[s];
+       selectedIdList[s] = t;
+       h_comment("List ["s"] = ["selectedIdList[s]"]");
+    }
+}
+#Get all paramter names that have just been changed from CHECKED. 
+#This is not the same as getting ones that are disabled.
+#If there were already disabled they will not be in the list
+function getNewlyDeSelectedIdListBySource(selectedIdList,\
+    i,s,idlist,idlist_arr) {
+    delete selectedIdList;
+    for(i in query) {
+        if (query[i] == "on" && isCheckbox(i) && match(i,"^orig_"CHECKBOX_PREFIX) && !(substr(i,6) in query )) {
+           h_comment("checkbox ["i"] just disabled");
+           merge_idlist_by_source(substr(i,length("orig_"CHECKBOX_PREFIX)+1),selectedIdList);
+       } else {
+           h_comment("checkbox ["i"] not disabled");
+       }
+    }
+}
+
+#------------------------------------------------------------------------
+#----------------ADD HTML RENDERING BELOW -------------------------------
+# start_page() is called after backend commands have been run.
+# end_page() is called after all capture files have been processed.
+#------------------------------------------------------------------------
+#This is automatically called at the end of each capture block.
+# CAPTURE_LABEL is the label of the block that has just finished.
+# Alternatively use gLAST_FILENAME if a direct file was used.
+function CAPTURE_END() {
+    
+    #Reset FS. INDEX_DB overrides this.
+    if ( FNR == 1  && FS != " " ) { FS=" " ; $0 = $0 };
+
+}
+
+function continueDynamicStyles() {
+    print ".dummy {};" #bug in gaya - ignores style after comment
+    print ".recent { font-size:"(gFontSize)"; }";
+    print "td { font-size:"gFontSize"; font-family:\"arial\";  }"
+
+    if (query["view"] == "movie" || query["view"] == "tv" ) {
+        print "font.plot { font-size:"(gFontSize-2)" ; font-weight:normal; }" 
+        #Unwatched tv
+        #watched tv
+        print "td.ep10 { background-color:#222222; font-weight:bold; font-size:"(gFontSize-2)"; }"
+        print "td.ep11 { background-color:#111111; font-weight:bold; font-size:"(gFontSize-2)"; }"
+        print "td.ep00 { background-color:#004400; font-weight:bold; font-size:"(gFontSize-2)"; }"
+        print "td.ep01 { background-color:#003300; font-weight:bold; font-size:"(gFontSize-2)"; }"
+        print ".eptitle { font-size:100% ; font-weight:normal; font-size:"(gFontSize-2)"; }"
+
+        print "h1 { text-align:center; font-size:"gTitleSize"; font-weight:bold; color:#FFFF00; }"
+        print ".label { color:red }";
+    } else {
+        print ".scanlines"scanlines" {color:#FFFF55; font-weight:bold; }"
+    }
+}
+
+#Add the code to start your page in the start_page() function.
+function start_page() {
+
+    #Finish styles first. css links dont work properly.
+
+    continueDynamicStyles();
+    print "</style><meta name=\"robots\" content=\"nofollow\" ><title>OverSight Index ("g_hostname")</title>"
+
+    #Dynamic styles - indicate I dont fully understand CSS yet :)
+
+    if (query["view"] == "movie" || query["view"] == "tv" ) {
+        startCell="0";
+    } else {
+        if (query[QREG_FILTER] == "") {
+            #move cursor to middle of table
+            startCell="centreCell";
+        } else {
+            #move cursor to 5jkl
+            startCell="filter5";
+        }
+    }
+    print "</head><body onloadset="startCell" focuscolor=yellow focustext=black class=local"g_local_browser" >";
+
+    h_form_start();
+}
+
+function copy_db(source,dest,idx,\
+    _i) {
+    for(_i in source) {
+        dest[_i,idx] = source[_i];
+    }
+}
+
+#Split line by tabs, then each tab has name=value so set
+# output_arr[name]=value
+#if index2 is defined then set
+# output_arr[name,index2]=value
+
+function parse_index(output_arr, _i) {
+
+    #print "<br>"$0;
+    for(_i = 2 ; _i <= NF ; _i+=2 ) { 
+        if ($(_i) != "") output_arr[$(_i)] = $(_i+1);
+        #print "<br>"$(_i)"="$(_i+1);
+    }
+}
+
+function parse_index_merge(output_arr,index2, _i) {
+
+    for(_i = 2 ; _i <= NF ; _i+=2 ) { 
+        if ( $(_i) != "") output_arr[$(_i),index2] = $(_i+1);
+    }
+}
+
+function load_index(regexFilter,source,db,db_size,\
+_tmpdb,m,pt,addItem) {
+
+    if (regexFilter == "" ) {
+
+        addItem=1;
+        parse_index_merge(db,db_size);
+
+    } else {
+
+        addItem=0;
+        parse_index(_tmpdb);
+
+        RLENGTH=-1;
+
+        h_comment("["tolower(_tmpdb[TITLE])"] vs ["regexFilter"]");
+        if (match(tolower(_tmpdb[TITLE]),regexFilter) ) {
+
+            if (RLENGTH > 0) {
+
+                #Allow for initial no word match
+                db["rstart",db_size] = RSTART;
+                db["rlength",db_size] = RLENGTH;
+                copy_db(_tmpdb,db,db_size);
+                addItem=1;
+            }
+        }
+    }
+    if (addItem) {
+        db[SOURCE,db_size] = source;
+        db_size++;
+    }
+
+    if (0 && DEBUG) {
+        for(jj in db) {
+            if (index(jj,SUBSEP db_size)) {
+                split(jj,jjj,SUBSEP);
+                h_comment("db "jjj[1] "," jjj[2] " = "db[jj]);
+            }
+        }
+    }
+
+    return db_size+0;
+}
+
+#Convert a file name to its mounted name. For remote browsers
+function getMountedPath(source,file) {
+    h_comment("Get mounted path ["source"]["file"]");
+    if (source == "*" ) {
+        return file;
+    } else if (index(source,"/") == 0 ) {
+        # /share/xxx -> /opt/sybhttpd/localhost.drives/NETWORK_DRIVE/source/xxx
+        # /opt/sybhttpd/localhost.drives/HARD_DISK/xxx -> /opt/sybhttpd/localhost.drives/NETWORK_DRIVE/source/xxx
+        if (substr(file,1,7) == "/share/") {
+            file=sourceRoot(source) substr(file,8);
+        }
+    }
+    h_comment("=["file"]");
+    return file;
+}
+
+#Replace start of file path with what client is expecting to see.
+function mountedPath(file,src,dst) {
+    if (substr(file,1,length(src)) == src) {
+        return dst substr(file,length(src)+1);
+    } else {
+        return file;
+    }
+}
+
+function vod_link(title,src,file,vod_name,vod_number,hrefAttr,class,\
+    f,name,_VOD,isIso) {
+
+    if (substr(file,length(file)) == "/") {
+        #VIDEO_TS folder
+        _VOD=" file=c ZCD=2 "hrefAttr;
+        file=substr(file,1,length(file)-1);
+        isIso=1;
+    } else if (match(tolower(file),"[.](iso|img)$")) {
+        _VOD=" file=c ZCD=2 "hrefAttr;
+    } else {
+        _VOD=" vod file=c "hrefAttr;
+    }
+    gsub(/\|/,"<br>",title);
+    #gsub(/\./," ",title);
+
+    name=file;
+
+    file=getMountedPath(src,file);
+
+    gsub(/.*\//,"",name);
+    if (!isIso) {
+        if (playListStarted == 0 ) {
+            printf name "%s|0|0|file://%s|" ,name,file > NMT_PLAYLIST;
+            playListStarted = 1;
+        } else {
+            printf name "%s|0|0|file://%s|" ,name,file >> NMT_PLAYLIST;
+        }
+    }
+
+
+    f=url_encode(file);
+    if (class != "") {
+        return href("file://"f,"name=\""vod_name"\" "_VOD,"<font class=\""class"\">"title"</font>");
+    } else {
+        return href("file://"f,"name=\""vod_name"\" "_VOD,title);
+    }
+}
+
+#Add the code to end your page in the end_page() function.
+function end_page(source_start,source_end,db_size,db) {
+
+
+    if (query["view"] == "admin" ) {
+
+        show_admin(query["action"]);
+
+    } else if (query["view"] == "tv" || query["view"] == "movie" ) {
+
+        end_movie_page(source_start,source_end,0,db_size,db);
+
+    } else {
+
+        end_table_page(source_start,source_end,db_size,db);
+
+    }
+
+}
+
+function title_link(db,idx) {
+       return "<h1><center>"\
+       db[TITLE,idx] \
+       (db[CATEGORY,idx] == "T" ? " S"db[SEASON,idx] : "" ) \
+       (db[YEAR,idx]?"("db[YEAR,idx]")":"") \
+       certificateImage(db[CERT,idx],gCertAttr) \
+       ((!g_local_browser && db[URL,idx] != "" ) ?  "<a href=\""db[URL,idx]"\" >" localImageLink(HOME"/images/imdb.gif","imdb",gButtonAttr) "</a>" : "" )\
+       "</center></h1>";
+}
+
+function end_movie_page(source_start,source_end,idx,db_size,db) {
+
+    print "<table width=100% >";
+    print "<tr valign=top>";
+
+    printPosterCell(idx);
+
+    if ( query["view"] == "movie" ) {
+        print "<td>";
+        programDetailsTable(db,idx);
+        print "<hr>";
+        movie_listing(db,idx);
+        print "</td>";
+    } else {
+        print "<td>";
+        programDetailsTable(db,idx);
+        print "</td>";
+        print "</tr>";
+        print "<tr>";
+        print "<td class=filelist align=center colspan=2>";
+        tv_listing(db,db_size,idx,2);
+        print "</td>"
+    }
+    print "</tr>";
+    print "</table>";
+    showSelectControls(0,0,0);
+
+    print "</form>";
+    print "</body>";
+
+    # Play button - play the list built by the MOVIEFILES clause.
+    print href("file:///tmp/playlist.htm?start_url=","vod=playlist tvid=\"_PLAY\"","");
+}
+
+function getPath(name,localPath) {
+    if (substr(name,1,1) == "/" ) {
+        #absolute
+        return name;
+    } else if (substr(name,1,4) == "ovs:" ) {
+        #Paths with ovs:  are relative to oversight folder and are shared between items.(global)
+        return HOME"/db/global/"substr(name,5);
+    } else {
+        #Other paths are relative to video folder.
+        return localPath"/"name;
+    }
+}
+function printPosterCell(idx,\
+    url) {
+    # Get path to poster.
+
+    if (db[POSTER,idx] != "") {
+        url=getPath(db[POSTER,idx],db[DIR,idx]);
+        url=getMountedPath(db[SOURCE,idx],url);
+    }
+    print "<td width=30%>";
+    if (db[CATEGORY,idx] == "M") {
+        print localImageLink(url,db[TITLE,idx],gMoviePosterAttr);
+    } else {
+        print localImageLink(url,db[TITLE,idx],gTvPosterAttr);
+    }
+    print "</td>";
+}
+
+function certificateImage(c,imgAttr  , c1) {
+    c1 = tolower(c);
+    sub(/usa:/,"us:",c1);
+    sub(/:/,"/",c1);
+    
+    return localImageLink(HOME"/images/cert/"c1".png",c,imgAttr);
+}
+
+function programDetailCell(label,txt,tdclass,\
+plot) {
+    gsub(/ /,"\\&nbsp;",label);
+    if(0) {
+        print "<tr><td class="tdclass" width=20% align=right>"label"</td><td class="tdclass">"txt"</td></tr>";
+    } else {
+        print "<tr><td class="tdclass" width=100% align=left><font class=label>"label" :</font>&nbsp;"txt"</td></tr>";
+    }
+}
+
+function ratingTxt(rating,\
+r,r2,txt,i,attr) {
+    r = rating+0;
+    attr="width=16 heigth=16";
+    txt=""
+    for(i=1;i<=10;i++) {
+        r2="10"
+        if (i > int(r)+1 ) {
+            r2="0";
+        } else if (i == int(r+1) && r != int(r)) {
+            r2=int(10*r)%10;
+        }
+        txt = txt localImageLink(HOME"/images/stars/star"r2".png","",attr);
+    }
+    return txt "&nbsp;&nbsp;" rating;
+}
+
+function programDetailsTable(db,idx,\
+plot,g) {
+    print title_link(db,idx);
+    print "<table class=detail width=100%>";
+    g=db[GENRE,idx];
+    gsub(/ \|/,",",g);
+    programDetailCell("Genre",g,"list0");
+
+    programDetailCell("Rating",ratingTxt(db[RATING,idx]),"list1");
+
+    plot=db[PLOT,idx];
+    if (length(plot) > gPlotLength) plot=substr(plot,1,gPlotLength-3)"...";
+    programDetailCell("Plot","<font class=plot>"plot"</font>","list1");
+
+    print "</table>";
+}
+
+function iconLink(name) {
+    
+    name=tolower(substr(name,length(name)-2));
+    if (substr(name,length(name)) == "/") {
+        return container_icon("video_ts",name);
+    } else if (index("iso|img|mkv",name)) {
+        return container_icon(name,name);
+    } else if (name != "avi" ) {
+        return "<font size=\"-1\">["name"]</font>";
+    }
+}
+
+function container_icon(pngName,name,\
+t) {
+    t = gPrecomputeTag[iconName];
+    if (t == "") {
+        t = gPrecomputeTag[iconName] = localImageLink(HOME"/images/"pngName".png","("name")","width=30 alt=\"["name"]\" style=\"background-color:#AAAAAA\" ");
+    }
+    return t;
+}
+
+function themeImageTag(iconName, buttonAttr,\
+t) {
+    t = gPrecomputeTag[iconName];
+    if (t == "") {
+        if (buttonAttr == "" ) buttonAttr = gButtonAttr;
+        t = gPrecomputeTag[iconName] = "<img alt=\""iconName"\" border=0 src="iconSrc(iconName)" "buttonAttr" />";
+    }
+    return t;
+}
+
+function themeImageLink(queryString,hrefAttr,iconName,buttonAttr) {
+    return selfLinkMulti(queryString,hrefAttr,themeImageTag(iconName,buttonAttr));
+}
+
+function localImageLink(path,alt,attrs)  {
+    return "<img alt=\""alt"\" border=0 src="localImageSrc(path)" "attrs" />";
+}
+function confirm(name,val_ok,img_ok,val_cancel,img_cancel) {
+    return "<table width=100%><tr><td align=center>"themeImageInputButton(name,val_ok,img_ok)"</td><td align=center>"themeImageInputButton(name,val_cancel,img_cancel)"</td></tr>";
+}
+
+function themeImageInputButton(name,value,imageName,attrs,\
+txt)  {
+    txt=imageName;
+    gsub(/[^a-zA-Z0-9]/," ",txt);
+    if (1 || g_local_browser) {
+        return "<input type=submit name=\""name"\" value=\""value"\" />";
+    } else {
+        return "<input type=image name=\""name"\" value=\""value"\" alt=\""imageName"\" border=0 src="iconSrc(imageName)" "attrs" /><br>"txt;
+    }
+}
+function localImageSrc(path)  {
+    if (substr(path,1,g_def_webpath_ln) == g_def_webpath) {
+        return "\"" substr(path,g_def_webpath_ln+1)"\"";
+    } else if (g_local_browser ) {
+        return "\"file://"path"\"";
+    } else {
+        return "\""SELF"?"path"\"";
+    }
+}
+function iconSrc(imageName)  {
+    return localImageSrc(HOME"/images/"g_icon_set"/"imageName"."g_icon_type);
+}
+
+function movie_listing(db,idx,\
+    parts,style,p,d,otherSize,src,playBtn) {
+
+    style=watchedStyle(db,idx,0);
+
+    d=db[DIR,idx];
+
+    f=substr(db[FILE,idx],length(d)+2);
+    h_comment("FILE "f);
+
+    src=db[SOURCE,0];
+
+    if (query["select"] != "") {
+        print selectCheckbox(db,idx,db[ID,idx],db[FILE,idx]);
+    } else {
+        if (db[PARTS,0] != "") {
+            print href("file:///tmp/playlist.htm?start_url=","vod=playlist tvid=\"_PLAY\"",themeImageTag("player_play"))"<br>";
+            otherSize="width=30 height=30";
+        } else {
+            otherSize=gButtonAttr;
+        }
+            
+        playBtn=themeImageTag("player_play",otherSize);
+        print vod_link(f playBtn,src,db[FILE,idx],0,0,"onkeyleftset=up onkeyupset=upquick",style);
+        split(db[PARTS,0],parts,"/");
+        for(p in parts) {
+            print "<br>"vod_link(parts[p] playBtn,src,d"/"parts[p],p,p,"",style);
+        }
+    }
+}
+
+#Loop through index files
+function tv_listing(db,db_size,idx,cols, \
+    _count,_episode,i,r,c,rowTxt,eptitle,vodTxt,actualIndex) {
+
+    #Get the list of episodes and sort.
+    #if we were filtering by anything else it would go here.
+    _count = 0;
+
+    for(i=0 ; i < db_size; i++) {
+        _episode[_count++] = i;
+        h_comment("i = ["i"] _count=["_count"] db_size=["db_size"]");
+    }
+    h_comment("IN COUNT:"db_size);
+    h_comment("Season:"query["season"]);
+    h_comment("OUT COUNT:"_count);
+
+    heapsort(db,_count,EPISODE0,1,_episode);
+
+    rows=int((_count-1)/cols)+1;
+
+    print "<table width=100% class=\"listing\" >";
+    for(r=0 ; r < rows ; r++) {
+
+        rowTxt = "<tr>";
+        for(c=0 ; c < cols ; c++) {
+
+            i = c*rows + r;
+
+            if (i < _count) {
+
+                actualIndex=_episode[i];
+
+                if (query["select"] == "") {
+                    width1="6%" ; width3="35%";
+                } else {
+                    width1="8%" ; width3="38%";
+                }
+                rowTxt=rowTxt "<td class=ep"db[WATCHED,actualIndex](i%2)" width="width1" >";
+                #rowTxt=rowTxt "<td width=6% >";
+                if (query["select"] == "") {
+                    vodTxt="#"db[EPISODE0,actualIndex];
+                    attr = "";
+                    if (r == 0 ) {
+                        attr = attr " onkeyupset=upquick "; 
+                        if (c  == 0 ) { attr = attr " onkeyleftset=up "; }
+                    }
+                    rowTxt=rowTxt vod_link(vodTxt,db[SOURCE,actualIndex],db[FILE,actualIndex], i,i,attr,watchedStyle(db,actualIndex,(i%2)));
+                } else {
+                    vodTxt=db[EPISODE0,actualIndex];
+                    rowTxt=rowTxt selectCheckbox(db,actualIndex,db[ID,actualIndex],vodTxt);
+                }
+                rowTxt=rowTxt "</td>";
+
+                airdate=db[AIRDATE,actualIndex];
+                if (airdate=="") {
+                    airdate=db[AIRDATEIMDB,actualIndex];
+                }
+
+                airdate=shortenMonth(airdate);
+                #airdate=mon2num(airdate);
+
+                airdate=trim(airdate);
+
+                #Shorten
+                if (match(airdate,"(19|20|21)[0-9][0-9]$")) {
+                    airdate=substr(airdate,1,RSTART-1)substr(airdate,RSTART+2,RLENGTH-2);
+                }
+                #Remove the year
+                if (SD_TV) {
+                    if (match(airdate,"[0-9][0-9]$")) {
+                        airdate=substr(airdate,1,RSTART-1);
+                    }
+                }
+
+                gsub(/ +$/,"",airdate);
+                gsub(/ /,".",airdate);
+
+                rowTxt=rowTxt "<td class=ep"db[WATCHED,actualIndex](i%2)" align=right >"tolower(airdate)"</td>";
+
+                eptitle = db[EPTITLE,actualIndex];
+                if (eptitle == "" ) {
+                    eptitle = db[EPTITLEIMDB,actualIndex];
+                    if (eptitle == "" ) {
+                        eptitle = db[ADDITIONAL_INFO,actualIndex];
+                        if (eptitle == "" ) {
+                            eptitle = db[FILE,actualIndex];
+                            sub(/.*\//,"",eptitle);
+                        }
+                    }
+                }
+                if (length(eptitle) > 37) {
+                    eptitle=substr(eptitle,1,35)"..";
+                }
+
+                if (match(tolower(db[FILE,actualIndex]),"\\<proper\\>")) {
+                    eptitle=eptitle"&nbsp;<font class=proper>[pr]</proper>";
+                }
+                if (match(tolower(db[FILE,actualIndex]),"\\<repack\\>")) {
+                    eptitle=eptitle"&nbsp;<font class=repack>[rpk]</repack>";
+                }
+                eptitle = eptitle "&nbsp;" iconLink(db[FILE,actualIndex]);
+                rowTxt=rowTxt "<td width="width3"><font class=eptitle> "eptitle"</font></td>\n";
+            }
+        }
+        #Pad table
+        if (db_size < 2) {
+            for(c = db_size ; c < 2 ; c++ ) {
+                rowTxt=rowTxt "<td class=ep01 width="width1">&nbsp;</td>";
+                rowTxt=rowTxt "<td class=ep01>&nbsp;</td>";
+                rowTxt=rowTxt "<td class=eptitle width="width3">&nbsp;</td>";
+            }
+        }
+        rowTxt=rowTxt "</tr>";
+        if (rowTxt == "<tr></tr>" ) {
+            break;
+        } else {
+            print rowTxt;
+        }
+    }
+    print "</table>";
+}
+
+#Returns style for file which is extension + 0=unwatched or 1=watched eg mkv1
+function getFileStyle(db,idx,gridToggle) {
+    return "grid" db[CATEGORY,idx] "W" db[WATCHED,idx] "_" gridToggle ;
+}
+    
+function trim(s) {
+    sub(/^ +/,"",s);
+    sub(/ +$/,"",s);
+    return s;
+}
+
+function shortenMonth(d) {
+    sub(/January/,"Jan",d);
+    sub(/February/,"Feb",d);
+    sub(/March/,"Mar",d);
+    sub(/April/,"Apr",d);
+    sub(/June/,"Jun",d);
+    sub(/July/,"Jul",d);
+    sub(/August/,"Aug",d);
+    sub(/September/,"Sep",d);
+    sub(/October/,"Oct",d);
+    sub(/November/,"Nov",d);
+    sub(/December/,"Dec",d);
+    return d;
+}
+
+# Sort across all sources.
+# Start with the local ordered list (*-).
+# for each remote list (Rn)  call get_sort_order to get the natural order of items.
+# then merge the two orders together to create a new order.
+# Eg db list   = *-D,*-E,*-A,*-B,*-C,R1-DD,R1-BB,R2-A,R2-Z
+# initial #TITLE#  3,  4,  0,  1,  2,    1,    0,   0,   1
+# order_arr        2,  3,  4,  0   1,    1,    0,   0,   1
+# order_arr with start offset
+#                  2,  3,  4,  0   1,    6,    5,   7,   8
+
+# 
+# TODO Isolate single overview file as special case.
+function get_full_sort_order(source_start,source_end,db_size,db,field,order,order_arr,\
+s,order_arr2,order_size2,order_size,i,p,pos,s1,s2,x) {
+
+    # First get each overview in order. (with start_offset applied)
+
+    for(s in source_start) {
+        order_size2 = get_sort_order(s,source_start,source_end,db_size,db,field,order,order_arr2);
+        #for(i=source_start[s] ;  i < source_end[s] ; i++ ) h_comment("PRE MERGE ORDER["s"] "i"="order_arr2[i]"="db[SOURCE,order_arr2[i]]":"db[TITLE,order_arr2[i]]);
+    }
+    #for(i=0 ; i < db_size ; i++ ) h_comment("PRE MERGE ORDER ALL "i"="order_arr2[i]"="db[SOURCE,order_arr2[i]]":"db[TITLE,order_arr2[i]]);
+
+    # Now step through the fields of all overviews. Each one that is least is added to a new order array.
+    for(s in source_start) {
+        pos[s]=source_start[s];
+    }
+
+    s1 = s2 = "";
+    do {
+        s1="";
+        s2="";
+        for(s in source_start) {
+            
+            if(0+pos[s] < source_end[s]) {
+                if (s1 == "" ) { 
+                    s1= s;
+                } else {
+                    s2= s;
+                    x = 0+compare(db,field,order,order_arr2,pos[s1],order_arr2,pos[s2]);
+                    if (x < 0) {
+                        # Keep s1 as the best
+                    } else {
+                        s1 = s2;
+                    }
+                }
+            }
+        }
+        if (s1 != "" ) {
+            # h_comment("SET order_arr["order_size"]=pos["s1"] = "pos[s1]"="db[SOURCE,order_arr2[pos[s1]]]":"db[TITLE,order_arr2[pos[s1]]]);
+            order_arr[order_size++] = order_arr2[pos[s1]++];
+        }
+    } while (s2 != "");
+    # Add all of remaining array
+    if ( s1 != "" ) {
+        p=pos[s1];
+        while(p < source_end[s1]) {
+            order_arr[order_size++] = order_arr2[p++];
+        }
+    }
+
+    #for(i=0 ; i < order_size ; i++ ) h_comment("POST MERGE ORDER "i"="order_arr[i]"="db[SOURCE,order_arr[i]]":"db[TITLE,order_arr[i]]);
+
+    return order_size;
+}
+
+function merge_sort_arrays(db_size,db,field,order,order_size,order_arr,order_size2,order_arr2,\
+p1,p2,order_arr3,order_size3,i,x) {
+
+    order_size3=0;
+    while((p1<order_size)&&(p2<order_size2)) {
+
+        x = 0+compare(db,field,order,order_arr,p1,order_arr2,p2);
+        if (x > 0) {
+            order_arr3[order_size3++] = order_arr[p1++];
+        } else {
+            order_arr3[order_size3++] = order_arr2[p2++];
+        }
+
+    }
+    while(p1<order_size) {
+        order_arr3[order_size3++] = order_arr[p1++];
+    }
+    while(p2<order_size2) {
+        order_arr3[order_size3++] = order_arr2[p2++];
+    }
+
+    # Copy over new arry
+    for(i=0; i < order_size3 ; i++ ) {
+        order_arr[i] = order_arr3[i];
+    }
+    return order_size3;
+}
+
+# Start with the local ordered list (*-).
+# Eg db list   = *-D,*-E,*-A,*-B,*-C
+# initial #TITLE#  3,  4,  0,  1,  2
+# order_arr        2,  3,  4,  0   1
+# Each overview array has its own index built independanlty but we want to see them
+# all together in the same array.
+# Because db holds multiple overview lists, we also add the start offset to the order_arr
+function get_sort_order(source,source_start,source_end,db_size,db,field,order,order_arr,\
+f,i,pos,maxPos,start,end,sz) {
+    f="#"field"#";
+    #Reverse the order index created by catalog.sh add_overview_index()
+
+    start = source_start[source]+0;
+    end = source_end[source]+0;
+
+    h_comment("XX sort ["start"-"end"] by "f" order "order);
+
+    #db[f,i] is the position of item i in the overall sort order for the entire index.
+    # some of this idex may not have been read in.
+
+    #order_arr will become an array that maps the sort order back to an element index.
+
+    #Because we may be looking at an arbitrary slice of the overall index.
+    # First we make the current index consecutive starting from 0
+    collapse_sort_index(db,start,end,f,order);
+
+    for (i = start ; i < end ; i++ ) {
+        pos=db[f,i]; #local indexed position
+        order_arr[start+pos]=i;
+    }
+
+    h_comment("order size["source"] = "(end-start));
+
+    if (0 && DEBUG) {
+        for (i = start ; i < end ; i++ ) {
+            h_comment(i"="db[TITLE,order_arr[i]]);
+        }
+    }
+
+    return end-start;
+}
+
+# Because we may be looking at an arbitrary slice of the overall index.
+# First we make the current index consecutive starting from 0
+# returns  number of items set.
+function collapse_sort_index(db,start,end,index_field,order,\
+minpos,maxpos,pos,i,p,new_sort_idx,db_idx,sort_idx) {
+
+    #Find max,min and a sparse array of positions
+    minpos=maxpos=-1;
+    for(db_idx = start ; db_idx < end ; db_idx++ ) {
+        p = db[index_field,db_idx];
+        if (minpos == -1 || p < minpos ) minpos = p+0;
+        if (maxpos == -1 || p > maxpos ) maxpos = p+0;
+        sort_idx = db[index_field,db_idx];
+        pos[sort_idx] = db_idx;
+    }
+
+    h_comment("maxpos="maxpos);
+    h_comment("minpos="minpos);
+
+    #Now collapse sparse array of positions to sequential array starting from 0
+    new_sort_idx = 0;
+
+    if (order == 1) {
+        for(sort_idx = minpos ; sort_idx <= maxpos ; sort_idx++ ) {
+            if (sort_idx in pos) {
+                db[index_field,pos[sort_idx]] = new_sort_idx++;
+            }
+        }
+    } else {
+        for(sort_idx = maxpos ; sort_idx >= minpos ; sort_idx-- ) {
+            if (sort_idx in pos) {
+                db[index_field,pos[sort_idx]] = new_sort_idx++;
+            }
+        }
+    }
+    if (new_sort_idx != (end-start)) {
+        h_comment("************* Somthing went wrong collapsing index. "new_sort_idx "," start "," end );
+    }
+    return new_sort_idx;
+}
+
+function end_table_page(source_start,source_end,db_size,db,\
+_P,f,o,order_arr) {
+
+    #showDatabase("end_table_page",db_size,db);
+    db_size = get_full_sort_order(source_start,source_end,db_size,db,query[QSORT],query[QORDER],order_arr);
+    #showDatabase("post get_full_sort_order",db_size,db);
+
+    #page
+    _P=query["p"];
+    if (_P == "" ) { _P = 0 };
+
+    showMainTable(db_size,db,order_arr,gRows,gCols,_P);
+
+    print "</form>";
+    print "</body>";
+}
+
+# Return a url to same page but with two value changed.
+function selfUrl(nameValuePairs, url,i) {
+
+    n=nameValuePairs;
+    gsub(/=[^&]*/,"",n);
+    if (!(n in selfLinkArray)) {
+        selfLinkArray[n]=selfUrl2(n);
+    }
+    url=selfLinkArray[n];
+    #h_comment(" SELF "nameValuePairs" = "n" = "url"..");
+    return url (url == SELF ? "?" : "&" ) nameValuePairs;
+}
+
+function selfUrl2(appendedNames, url,varname,b) {
+
+    url=SELF;
+
+    appendedNames = "&"appendedNames"&";
+
+    for(varname in query) {
+        #Only keep quey variables that are not in appendedNames and are not also blank.
+        #exclude colour because it represents an action not a state??
+        #Double index for v slight opt.
+        #exclude option_ and orig_option_ as they are POST variables (used for settings)
+        if (varname != "colour" && index(appendedNames,"&"varname"&") == 0) {
+            if (query[varname] != "") {
+                if (index(varname,"option_") == 0 ) {
+                    url=url "&" varname"="query[varname];
+                }
+            }
+        } 
+    }
+    sub(/[&]/,"?",url);
+    return url;
+}
+
+function selfLinkMultiJs(nameValuePairs,attributes,title) {
+    return "<a href=\"javascript: location.replace('"'"'" selfUrl(nameValuePairs) "'"'"');\" "attributes" >"title"</a>";
+}
+function selfLinkMulti(nameValuePairs,attributes,title) {
+
+    #Changed to javascript to stop remote recursive crawling by other NMTs
+    #return selfLinkMultiJs(nameValuePairs,attributes,title);
+    return "<a href=\"" selfUrl(nameValuePairs) "\" "attributes" >"title"</a>";
+
+}
+
+function selfLinkMultiWithFont(nameValuePairs,attributes,title,fontClass) {
+    return selfLinkMulti(nameValuePairs,attributes,"<font class="fontClass">"title"</font>");
+}
+#Javascript version. Mainly to stop excessive crawling
+function selfLinkMultiJsWithFont(nameValuePairs,attributes,title,fontClass) {
+    return selfLinkMultiJs(nameValuePairs,attributes,"<font class="fontClass">"title"</font>");
+}
+
+function href(link,attr,text) {
+    return "<a href="link" "attr" >"text"</a>";
+}
+function jshref(link,attr,text) {
+    return "<a href=\"javascript: location.replace('"'"'"link"'"'"')\" "attr" >"text"</a>";
+}
+
+function showMainTable(db_size,db,idx,rows,cols,page,\
+display_index,display_count) {
+
+    display_count = get_displayable_cells(db_size,db,idx,rows,cols,page,display_index);
+
+    show_table_header(db_size,db);
+
+    if (display_count < rows * cols ) {
+        rows = int( (display_count-1) / cols)+1;
+    }
+
+
+    showTableContents(db_size,db,display_count,display_index,rows,cols,page);
+    showSelectControls(page,page>0,display_count>rows*cols);
+}
+
+function showStatus(db_size) {
+    if (g_catalog_running == 1 ) {
+        print "Catalog update in progress";
+    } else if (g_catalog_pending == 1 ) {
+        print "Catalog update pending...";
+    } else if (gLocalCount == 0) {
+    #!isFiltered() &&  (db_size == 0 || db_size == "" ) && gWatchedFilter=="\t" ) 
+        print "Video index is empty. Select setup Icon and scan the internal Hard Drive.";
+        #print "The Video index has not been built. Select the setup Icon " themeImageLink("view=admin&action=ask","TVID=SETUP","configure") "and perform a scan of the internal Hard Drive";
+    }
+}
+
+
+function getTvidLookup(ch2tvid) {
+    ch2tvid["0"]=0 ; 
+    ch2tvid["1"]=1;
+    ch2tvid["2"]=ch2tvid["a"]=ch2tvid["b"]=ch2tvid["c"]=2;
+    ch2tvid["3"]=ch2tvid["d"]=ch2tvid["e"]=ch2tvid["f"]=3;
+    ch2tvid["4"]=ch2tvid["g"]=ch2tvid["h"]=ch2tvid["i"]=4;
+    ch2tvid["5"]=ch2tvid["j"]=ch2tvid["k"]=ch2tvid["l"]=5;
+    ch2tvid["6"]=ch2tvid["m"]=ch2tvid["n"]=ch2tvid["o"]=6;
+    ch2tvid["7"]=ch2tvid["p"]=ch2tvid["q"]=ch2tvid["r"]=ch2tvid["s"]=7;
+    ch2tvid["8"]=ch2tvid["t"]=ch2tvid["u"]=ch2tvid["v"]=8;
+    ch2tvid["9"]=ch2tvid["w"]=ch2tvid["x"]=ch2tvid["y"]=ch2tvid["z"]=9;
+}
+
+#Build tvid codes of 2 digits or more. these correspond to direct keypad entry.
+function buildTvidList(db_size,db,filterSoFar,\
+regLengthSoFar,addedTvids, i,ch2tvid,code,w,remainingWord,titleWords,depth,d,depthm) {
+    i=i;
+    h_comment(f" PreTvid "db_size" in "(systime()-tt)); tt=systime();
+    getTvidLookup(ch2tvid);
+
+    regLengthSoFar = length(filterSoFar);
+
+    h_comment("Building list :"db_size);
+
+    #pre-compute most of link and then use @x@x@ as a place holder.
+    tvidlink = selfLinkMulti("p=0&"QREG_FILTER"="filterSoFar "@X@X@" ,"tvid=\"@X@X@\"",""); 
+
+    tvidMinDepth=1
+
+    for(i = 0 ; i < db_size ; i++ ) {
+        split(tolower(db[TITLE,i]),titleWords," ");
+        for(w in titleWords) {
+            remainingWord=substr(titleWords[w],regLengthSoFar+1,g_max_tvid_len);
+
+            if (!(remainingWord in seenWordFragment)) {
+                if(length(remainingWord) >= tvidMinDepth) {
+
+                    if (length(remainingWord) < g_max_tvid_len ) {
+                        depthm = length(remainingWord);
+                    } else {
+                        depthm = g_max_tvid_len;
+                    }
+                    # we dont want 1 digit tvids as the are already drawn so make sure 
+                    # we start with length(remainingWord) > 3 
+                    #ie given abc - 'a' is already in main keypad. so we want codes ab and abc..
+                    code="";
+                    split(remainingWord,letters,"");
+                    for(depth = 1 ; depth <= depthm ; depth ++ ) {
+                        code=code ch2tvid[letters[depth]];
+                        if (!(code in addedTvids)) {
+                            tvidlink2=tvidlink;
+                            gsub(/@X@X@/,code,tvidlink2);
+                            print tvidlink2;
+                            addedTvids[code]=1;
+                        }
+                    }
+                }
+                seenWordFragment[remainingWord]=1;
+            }
+        }
+    }
+    h_comment(f" PostTvid "db_size" in "(systime()-tt)); tt=systime();
+    #for(i in tvids) { h_comment("tvids: "i" count "tvids[i]); }
+}
+
+function selectCheckbox(db,idx,idList,text,\
+selected,nm) {
+    if (query["select"] != "") {
+
+        nm = CHECKBOX_PREFIX db[SOURCE,idx]"("idList")";
+
+        if ( db[WATCHED,idx] == 1 ) {
+           if (query["select"] == "Mark") {
+               selected = "CHECKED";
+           }
+        }
+        if (selected) {
+        return "\
+<input type=checkbox name=\""nm"\" CHECKED >\n\
+<input type=hidden name=\"orig_"nm"\" value=on >\n\
+<font class="query["select"]">"text"</font>";
+        } else {
+        return "\
+<input type=checkbox name=\""nm"\"  >\n\
+<font class="query["select"]">"text"</font>";
+        }
+    } else {
+        return "<font class=Ignore>"text"</font>";
+    }
+}
+
+function showSelectControls(page,prevPage,nextPage) {
+    print "<table class=footer width=100% ><tr valign=top>";
+    print "<td width=10%>"pageControl(page,prevPage,-1,"pgup","left")"</td>";
+    if (query["view"] != "" && query["select"] == "" ) {
+        print "<td align=center>"themeImageLink("view=&idlist=","name=up","back")"</td>";
+    }
+    #Dont hijack home key
+    print "<td align=center>";
+
+    if (query["view"] == "" ) {
+       if ( g_query_string == "" && g_local_browser ) {
+           print href("/start.cgi","name=home",themeImageTag("exit"))"</td>";
+        } else {
+            print href(HOME_URL,"name=home TVID=HOME",themeImageTag("home"))"</td>";
+        }
+    }
+    if (query["select"] == "") {
+        if (allow_mark) print "<td align=center>"themeImageLink("select=Mark","tvid=EJECT","mark")"</td>";
+
+        if (allow_delete || allow_delist) {
+            print "<td align=center>"themeImageLink("select=Delete","tvid=CLEAR","delete")"</td>";
+        }
+        #print "<td align=center><a href=\"./zebedee.cgi\">"localImageLink(HOME"/images/network_icon.png","Zebedee",gButtonAttr)"</a></td>";
+        #print "<td align=center><a href=\"./tvnzb.cgi\">"localImageLink(HOME"/images/tv_icon.png","TvNzB",gButtonAttr)"</a></td>";
+    } else {
+        if (query["select"] == "Mark" ) {
+            print "<td>"themeImageInputButton("action","Mark","mark")"</td>"
+        }
+        if (query["select"] == "Delete" ) {
+            if (allow_delete) print "<td>"themeImageInputButton("action","Delete","delete_data")"</td>"
+            if (allow_delist) print "<td>"themeImageInputButton("action","Remove_From_List","remove_from_list")"</td>"
+        }
+        #print "<td><input type=submit name=select value=Cancel ></td>"
+        print "<td>"themeImageInputButton("select","Cancel","cancel")"</td>"
+    }
+    print "<td align=right width=10%>"pageControl(page,nextPage,1,"pgdn","right")"</td>";
+    print "</tr></table>";
+    print selfLinkMulti("view=&idlist=","name=upquick onfocusload",""); #This is between cells
+}
+
+function showSortCells(  order,sortField,sortText) {
+
+    typeFilter=query[QTYPE_FILTER];
+
+    if (typeFilter=="" ) { typeFilter="M" ; typeText="TV<br>Film"; }
+    else if ( typeFilter == "T" ) { typeFilter="M" ; typeText="<b><u>TV</u></b><br>Film"; }
+    else if (typeFilter=="M") { typeFilter="T" ; typeText="TV<br><b><u>Film</u></b>"; }
+
+    watchedFilter=query[QWATCHED_FILTER];
+    if (watchedFilter=="" ) { watchedFilter="W" ; watchedText="Unmarked<br>Marked"; }
+    else if (watchedFilter == "U" ) { watchedFilter="W" ; watchedText="<b><u>Unmarked</u></b><br>Marked"; }
+    else if (watchedFilter=="W") { watchedFilter="U" ; watchedText="Unmarked<br><b><u>Marked</u></b>"; }
+
+    sortField=query[QSORT];
+
+    if (sortField == TITLE ) {
+       sortText="<b><u>Name</u></b><br>Age";
+       sortField=INDEXTIME;
+       order = -1;
+    } else {
+       sortText="Name<br><b><u>Age</u></b>";
+       sortField=TITLE;
+       order = 1;
+    }
+
+
+    print "<td class=redbutton>";
+    print h_colour_button("red","p=0&"QTYPE_FILTER"="typeFilter,typeText);
+
+    print "</td><td>";
+    print h_colour_button("green","p=0&"QWATCHED_FILTER"="watchedFilter,watchedText);
+    print "</td><td>";
+
+    print h_colour_button("blue","p=0&"QSORT"="sortField"&"QORDER"="order,sortText);
+    print "</td>";
+}
+
+function h_colour_button(colour,nameValuePairs,text) {
+    return selfLinkMulti(nameValuePairs"&colour="colour,"tvid=\""colour"\"", "<font class=\""colour"button\">"text"</font>");
+}
+
+function isFiltered() {
+    return (query[QSEARCH_MODE]!="" || query[QREG_FILTER] != "");
+}
+
+function show_filter_bar() {
+
+    if (!isFiltered()) {
+        print themeImageLink("p=0&"QSEARCH_MODE"=1","","find");
+    } else {
+        regLength = length(query[QREG_FILTER]);
+
+        if (g_local_browser) {
+            print "Use numbers to search";
+            print themeImageLink("p=0&"QSEARCH_MODE"=&"QREG_FILTER"=","","start-small","width=20 height=20"); 
+            print "<font class=keypad>["query[QREG_FILTER]"]</font>";
+            print themeImageLink("p=0&"QSEARCH_MODE"=&"QREG_FILTER"="substr(query[QREG_FILTER],1,regLength-1),"","left-small","width=20 height=20"); 
+
+        } else {
+            print "<input type=text name=searcht value=\""query["searcht"]"\">";
+            addHidden(QSEARCH_MODE);
+            print "<input type=submit name=searchb value=Search >";
+            print "<input type=submit name=searchb value=Hide >";
+        }
+    }
+}
+
+function show_table_header(db_size,db) {
+    #print "<center>";
+    print "<table class=header width=100%><tr>"
+
+    if (query[QTYPE_FILTER] == "M" ) {
+        banner("Films");
+    } else if (query[QTYPE_FILTER] == "T" ) {
+        banner("TV Shows");
+    } else {
+        banner("All Video");
+    }
+    #printf "Page %d",page+1;
+    showSortCells();
+    print "<td>";
+    show_filter_bar();
+    if (g_local_browser && query["select"]=="") {
+        buildTvidList(db_size,db,query[QREG_FILTER]);
+    }
+    print "</td>";
+    print "<td>"; showStatus(db_size); print "</td>";
+    print "<td>"; print themeImageLink("view=admin&action=ask","TVID=SETUP","configure"); print "</td>";
+    print "</tr></table>"
+    #print "</center>";
+}
+function banner(text,\
+x) {
+    print "<td align=left width=20%>";
+    print "<font size=\"6\">"text"</font>";
+    x="V2."substr(g_version,3);
+    sub(/BETA/,"b",x);
+
+    print "<br><font size=\"2\">"x" "g_hostname"</font>";
+    print "</td>";
+}
+
+#Returns array of incdices of displayable cells for the given page. (in output_idx)
+#and array size (function result)
+#If the array size > rows * cols then there is a next page.
+function get_displayable_cells(db_size,db,idx,rows,cols,page,output_idx,\
+    pg,selected,items_per_page,page_start,page_end,_I,displayed,direct_index) {
+
+    _I=0;
+    items_per_page = rows*cols;
+
+    # We loop through all pages until we get to the required page. This is necessary because the filters
+    #will dynamically change the page contents.
+    displayed=0;
+    selected=0;
+
+    page_start=items_per_page*page;
+    page_end = page_start+items_per_page;
+
+    #We also check the following page so we know when to display a [Next Page] link.
+    for(_I = 0 ; _I < db_size ; _I++ ) {
+        direct_index=idx[_I];
+        #Note pattern matching has already filtered index so displayable is just concerned with
+        #whether it is tv or Movie.
+        if (displayable(db,direct_index)) {
+            if (selected >= page_start && selected <= page_end) {
+               output_idx[displayed++] = direct_index;
+            }
+            #This test is done before selected is incremented so that we always get one more item than necessary.
+            #this allows us to know if there are more pages to follow and thus display next page arrow.
+            if (selected >= page_end) {
+                break;
+            }
+            selected++;
+        }
+    }
+    return displayed;
+}
+
+
+function pageControl(page,on,offset,tvidName,imageBaseName) {
+   if (query["select"] != "") return "";
+   if (on) {
+       return themeImageLink("p="(page+offset),"tvid="tvidName" name="tvidName"1 onfocusload",imageBaseName);
+   } else if (query["view"] == "") {
+       return themeImageTag(imageBaseName"-off");
+   }
+}
+
+function showTableContents(db_size,db,count,idxArr,rows,cols,page,\
+_R,_C,_I,centreRow,centreCell,w) {
+
+    print "<table class=\"overview\" width=\"100%\" >";
+
+    w=sprintf(" width=%d%%",100/cols);
+
+    _I=0;
+    # We loop through all pages until we get to the required page. This is necessary because the filters
+    #will dynamically change the page contents.
+    for (_R=0 ; _R<rows ; _R++ ) {
+        centreRow = (_R == int(rows/2));
+        print "<tr>";
+        for (_C=0 ; _C<cols ; _C++ ) {
+
+            _I = _C * rows + _R;
+            if (_I < count) {
+
+               leftScroll=(page>0 && _C==0);
+               rightScroll=(count > rows*cols && _C+1==cols);
+               centreCell=centreRow && _C == int(cols/2);
+
+               displayItem(db_size,db,idxArr,_I,w,(_R+_C)%2,leftScroll,rightScroll,centreCell);
+           } else {
+               # Draw empty cell
+               printf "<td%s></td>",w;
+           }
+       }
+       print "</tr>";
+   }
+   print "</table>";
+}
+
+# Additional filtering should be added here. Eg film only/tv only etc.
+function displayable(db,direct_index,\
+    t) {
+
+    #Note Unsorted will display under both Movies and TV
+    t=query[QTYPE_FILTER]db[CATEGORY,direct_index];
+    return (t!="MT" && t != "TM" );
+}
+
+function displayItem(db_size,db,idxArr,i,widthAttr,gridToggle,leftScroll,rightScroll,centreCell,\
+    link,_title,_tmp,_url,attr,n,idList,j,s,t,rs,rl,idx,extensions,e,ext,gridClass,fontClass,src) {
+
+    idx = idxArr[i];
+
+    _title=db[TITLE,idx];
+    if (gFilterRegex != "") {
+        
+        rs=db["rstart",idx];
+        rl=db["rlength",idx];
+        _title = substr(_title,1,rs-1) "<font class=match>" substr(_title,rs,rl) "</font>" substr(_title,rs+rl);
+    }
+
+    # Add Certificate if available.
+    cert=db[CERT,idx];
+    if ( (_tmp=index(cert,":")) > 1  ) {
+        cert = " ("substr(cert,_tmp+1)")";
+    } else {
+        cert="";
+    }
+
+    src=db[SOURCE,idx];
+
+    #Get extension letter. .. i=iso / m=mkv / a=avi
+    if (query["select"] == "" ) {
+        split(db[OVERVIEW_EXT_LIST,idx],extensions,"|");
+        ext = "";
+        for(e in extensions) {
+            ext = ext  iconLink(extensions[e]);
+            #ext = ext "[" extensions[e] "]";
+        }
+        ext="&nbsp;"ext;
+    }
+
+    attr="";
+    if (centreCell) {
+        attr=" name=\"centreCell\" ";
+    }
+    if (leftScroll) {
+        attr=attr " onkeyleftset=pgup1";
+    }
+
+    if (rightScroll) {
+        attr=attr " onkeyrightset=pgdn1";
+    }
+
+    gridClass = getFileStyle(db,idx,gridToggle);
+    fontClass = watchedStyle(db,idx,gridToggle);
+    idList = src"("db[OVERVIEW_DETAILIDLIST,idx]")";
+
+    if (db[CATEGORY,idx] == "T") {
+
+        t=url_encode(db[TITLE,idx]);
+        s=db[SEASON,idx];
+        if (s != "" ) {
+            _title = _title " S" s;
+        }
+        _title = addNetworkIcon(src, trimTitle(_title) cert ext);
+
+        epCount = idList;
+
+        h_comment("Getting episode count from ["epCount"]");
+
+        #Get num episodes by counting | in url
+        gsub(/[^|]+/,"",epCount);
+        if (epCount != "" ) {
+            _title=_title "&nbsp;<font color=#AAFFFF size=-1>x" (length(epCount)+1)"</font>";
+        }
+
+        link=selfLinkMultiWithFont("view=tv&idlist="idList,attr" class="gridClass,_title, fontClass);
+
+    } else if (db[CATEGORY,idx] == "M") {
+
+        _title = addNetworkIcon(src, trimTitle(_title) cert ext);
+
+        link=selfLinkMultiWithFont("view=movie&idlist="idList, attr" class="gridClass, _title, fontClass);
+
+    } else {
+
+        #Move cursor to middle if no regex filtering ( first char is just @ so gui can change layout for rest of search)
+        if (centreCell && query[QREG_FILTER]=="") {
+            n="centreCell";
+        } else {
+            n=i;
+        }
+        _title = addNetworkIcon(src, trimTitle(_title) ext);
+
+        h_comment("FILE = "db[FILE,idx]);
+        link = vod_link(_title,src,db[FILE,idx],n,i,attr,fontClass);
+    }
+
+    printf "\t<td%s class=\"%s\">\n",widthAttr,gridClass;
+    if (query["select"] != "") {
+        print selectCheckbox(db,idx,db[OVERVIEW_DETAILIDLIST,idx],_title);
+    } else {
+        print link;
+    }
+    print "</td>";
+
+}
+
+function addNetworkIcon(src,txt) {
+    if (ovs_crossview == 0) {
+        return txt;
+    } else if (src == "*" ) {
+        return themeImageTag("harddisk","width=20 height=15") txt;
+    } else {
+        return themeImageTag("network","width=20 height=15") txt;
+    }
+}
+
+function font(c,t) { return "<font class="c">"t"</font>"; }
+
+function watchedStyle(db,idx,gridToggle) {
+    if (db[WATCHED,idx])
+        return "watched";
+    else if (NOW - db[INDEXTIME,idx] < ovs_new_days*1000000 )
+        return "fresh";
+    #else if (NOW - db[INDEXTIME,idx] < ovs_recent_days*1000000 )
+        #return "recent";
+    else 
+        return getFileStyle(db,idx,gridToggle);
+}
+
+function trimTitle(t) {
+    if (length(t) > 50 ) {
+        t=substr(t,1,48) " ..";
+    }
+
+#    while (match(t,"[a-zA-Z0-9]{15,}")) {
+#        t=substr(t,1,RSTART+7)"-"substr(t,RSTART+8);
+#    }
+    return t;
+
+}
+
+function quit(q) {
+    quitting=1;
+    quitCode=q;
+    exit(q);
+}
+
+function html_encode(text) {
+    gsub(/</,"\\\&lt;",text);
+    gsub(/>/,"\\\&gt;",text);
+    gsub(/[&]/,"\\\&amp;",text);
+    gsub(/\"/,"\\\&quot;",text);
+    gsub(/'"'"'/,"\\\&#39;",text);
+    return text;
+}
+
+function url_encode(text) {
+
+    if (index(text,"%")) { gsub(/[%]/,"%25",text); }
+    if (index(text,"?")) { gsub(/[?]/,"%3F",text); }
+    if (index(text,"&")) { gsub(/[&]/,"%26",text); }
+    if (index(text," ")) { gsub(/ /,"%20",text); }
+    if (index(text,":")) { gsub(/:/,"%3A",text); }
+    if (index(text,"=")) { gsub(/=/,"%3D",text); }
+    #if (index(text,"(")) { gsub(/\(/,"%40",text); }
+    #if (index(text,")")) { gsub(/\)/,"%41",text); }
+    if (index(text,"[")) { gsub(/\[/,"%5B",text); }
+    if (index(text,"]")) { gsub(/\]/,"%5D",text); }
+    if (index(text,"+")) { gsub(/[+]/,"%43",text); }
+
+    return text;
+}
+
+function url_decode(str, _I,_START) {
+  _START=1;
+  while ((_I=index(substr(str,_START),"%")) > 0) {
+      _I  = (_START-1)+_I;
+      c=substr(str,_I+1,2); # hex digits
+      c=sprintf("%d",0+( "0x" c )) # Decimal
+      c=sprintf("%c",0+c) # Char
+      str = substr(str,1,_I-1) c substr(str,_I+3);
+      _START = _I+1;
+  }
+  return str;
+}
+
+function parse_query_string(str,dest,\
+i,j) {
+    # Note that each nzb action has format annn=action 
+    # and if there is a a_nnnn=Go then nnnn is the current action.
+    # However this may be changed to a mult-action format.
+    split(str,clauses,"&");
+    for(i in clauses) {
+        #TODO Slight bug - cant cope with multi - values.
+        eq=index(clauses[i],"=");
+        dest[url_decode(substr(clauses[i],1,eq-1))]=url_decode(substr(clauses[i],eq+1));
+    }
+}
+
+function replace(str,old,new,repeat,   i,_start,_ol,_nl) {
+    h_comment("REPLACE ["str"]["old"]["new"]"); 
+    _start=0;
+    _ol=length(old);
+    _nl=length(new);
+    while ((i=index(substr(str,_start+1),old)) > 0) {
+        str=substr(str,1,_start+i-1) new substr(str,_start+i+_ol);
+        _start += _nl;
+        if (repeat == "") { break; }
+    }
+    h_comment("REPLACE OUT ["str"]"); 
+    return str;
+}
+
+function SEND_COMMAND_TEXT(cmd,source) {
+    return "\""sourceHome(source) "oversight.sh\" SAY "cmd;
+}
+
+function setDisplayParams(tvmode) {
+    #########################################################
+    # Set rows, cols and font size according to your TV code.
+
+
+    SD_TV = 0;
+    if (!g_local_browser || tvmode == 6 || tvmode == 10 || tvmode == 13 ) {
+        scanlines=720;
+    } else if (tvmode <= 5 || (tvmode >= 7 && tvmode <= 9 ) || (tvmode >= 30 && tvmode <= 31) ) {
+        scanlines=0;
+        SD_TV=1;
+    } else {
+        scanlines=1080;
+    }
+    HD_TV = !SD_TV;
+
+    gFontSize=ovs_font_size[scanlines];
+    gTitleSize=ovs_title_size[scanlines]
+    gRows=ovs_rows[scanlines];
+    gCols=ovs_cols[scanlines];
+    gMoviePosterAttr="width="ovs_movie_poster_width[scanlines];
+    gTvPosterAttr="width="ovs_tv_poster_width[scanlines];
+    gPlotLength=ovs_max_plot_length[scanlines];
+    gButtonAttr="width="ovs_button_size[scanlines]" height="ovs_button_size[scanlines];
+    gCertAttr="width="ovs_certificate_size[scanlines]" height="ovs_certificate_size[scanlines];
+}
+
+# Note we dont call the real init code until after the command line variables are read.
+BEGIN {
+    g_remote_addr=ENVIRON["REMOTE_ADDR"];
+    g_query_string=ENVIRON["QUERY_STRING"];
+    g_has_post_data=0;
+    g_local_browser=(g_remote_addr == "127.0.0.1" )
+    loadConfig();
+
+    getline < "/tmp/tvmode" ;
+    tvmode=$0;
+
+    g_icon_set="nav/set1";
+    g_icon_type="png";
+
+    g_hostname="'"$HOSTNAME"'";
+    g_version="'"$VERSION"'";
+    g_catalog_pending="'"$CATALOG_PENDING"'";
+    g_catalog_running="'"$CATALOG_RUNNING"'";
+    HOME="'$HOME'";
+    print "<!-- Generated at "strftime()" -->";
+    print "<!-- nfo read "catalog_nfo_read "-->";
+    print "<!-- nfo fmt "catalog_nfo_format "-->";
+    print "<!-- poster "catalog_poster_location "-->";
+    print "<!-- Scan path "catalog_scan_paths "-->";
+    g_ticks=systime();
+    g_hdd_mount="/opt/sybhttpd/localhost.drives/HARD_DISK";
+    g_def_webpath="/opt/sybhttpd/default";
+    g_def_webpath_ln=length(g_def_webpath);
+
+    SELF="";
+
+    ####################################
+    # Set depth of Tvid search ahead. Bigger numbers slow down
+    # page render but allow more letters in jump
+    g_max_tvid_len = 2;
+
+    #================================
+
+    num2regex[1]="([1])";
+    num2regex[2]="([2abc])";
+    num2regex[3]="([3def])";
+    num2regex[4]="([4ghi])";
+    num2regex[5]="([5jkl])";
+    num2regex[6]="([6mno])";
+    num2regex[7]="([7pqrs])";
+    num2regex[8]="([8tuv])";
+    num2regex[9]="([9wxyz])";
+
+    g_http_method=toupper(ENVIRON["HTTP_METHOD"])
+    POSTER_FILE="_poster.jpg";
+
+    CLEAR_CACHE_CMD = " \""HOME"/oversight.sh\" CLEAR_CACHE ";
+
+    INITIAL_ARGC=ARGC;
+
+    parse_query_string(g_query_string,query);
+
+    allow_mark = ovs_wan_mark;
+
+    allow_delete = ovs_wan_delete;
+
+    allow_delist = ovs_wan_delist;
+
+    allow_admin = ovs_wan_admin;
+
+    if (g_local_browser ||\
+       substr(g_remote_addr,1,8) == "192.168." ||\
+       substr(g_remote_addr,1,3) == "10." ||\
+       match(g_remote_addr,"^172\\.([0-9]|[12][0-9]|3[01])\\.") ) {
+       allow_delist=allow_delete=allow_admin=allow_mark=1;
+
+   }
+   PID='$$' ;
+
+   NOW="'"`date +%Y%m%d%H%M%S`"'" ;
+
+   g_http_method="'"$METHOD"'" ;
+
+   DEBUG="'"$DEBUG"'" ;
+
+   g_db_fname="'"$INDEX_DB"'";
+
+   readFormData(q2);
+
+   #Merge post data with Get data.
+   for(q in q2) {
+       query[q]=q2[q];
+   }
+
+   setDisplayParams(tvmode);
+
+    HOME_URL=SELF"?";
+
+    if (1 || DEBUG) {
+        for (i in ENVIRON) { print "<!-- ENV:" i "=" ENVIRON[i] "-->"; }
+        for (i in query) { print "<!-- QUERY:" i "=" query[i] "-->"; }
+    }
+   doFormActions();
+   db_size=0;
+   db_size=selectDatabase(g_source_start,g_source_end,db,db_size);
+
+   start_page();
+}
+END {
+    if (quitting) {
+        system(""); #flush
+        exit quitCode;
+    }
+    h_comment("\t\t FINISHED "FILENAME" in " (systime()-g_ticks)  ); g_ticks=systime();
+    end_page(g_source_start,g_source_end,0+db_size,db);
+    h_comment("\t\t FINISHED END in " (systime()-g_ticks)  ); g_ticks=systime();
+}
+
+# Process the POST data into query string. No need to change this block
+#this needs a re-write
+function readFormData(query,
+    formPostData,crlf,unix,in_data,start_data,filename,name,cmd) {
+
+   START_PRE_FORM();
+    
+    formPostData=ENVIRON["TEMP_FILE"];
+    if (formPostData == "" ) return;
+
+    boundary=ENVIRON["POST_BOUNDARY"]
+    urlEncodedInPostData = ( g_http_method=="POST" && ENVIRON["POST_TYPE"] == "application/x-www-form-urlencoded" );
+    
+    crlf=1
+    unix=0
+    in_data=-1;
+    start_data=-2;
+    filename="";
+    name="";
+    g_has_post_data=1;
+
+    while((getline < formPostData ) > 0 ) {
+        if ( counter >= 0 ) {  counter++  ; }
+
+        print "<!-- POST : "$0" -->";
+
+        if ( urlEncodedInPostData ) {
+            gsub(/[^:]+:/,"");
+            parse_query_string($0,query);
+
+        } else if ( index($1,boundary) ) {
+
+            #Process outging item
+            if (filename != "" ) {
+                close(filename);
+                cmd=sprintf("chown %s \"%s\"",ENVIRON["UPLOAD_OWNER"],filename);
+                system(cmd);
+            } else if (name != "") {
+                if(name in query) {
+                    #If name appears multiple times - separate with \r
+                    query[name]=query[name] "\r" value;
+                } else {
+                    query[name]=value;
+                }
+            }
+
+            #Start next item
+            counter=0;
+            filename="";
+            name="";
+            value="";
+
+        } else if (counter==1 && index($0,"Content-Disposition: form-data; name=")==1 ) {
+
+            if (match($3,"name=\"[^\"]+\"")) {
+                name=substr($3,RSTART+6,RLENGTH-7);
+                value="";
+            }
+            format=crlf;
+            filename="";
+
+            if (match($0,"filename=\".*\"")) {
+
+                filename=substr($0,RSTART+10,RLENGTH-11);
+                if (filename != "") {
+                    filename=sprintf("%s/%s",ENVIRON["UPLOAD_DIR"],filename);
+                    printf "" > filename; #Clobber
+                }
+            }
+        } else if (counter==2 && index($0,"Content-Type: application") == 1) {
+
+            format=unix;
+            #print "CONTENT: $0"
+
+        } else if (counter>0 && match($0,"^\r$")) {
+
+            #print "END OF HEADER";
+            counter=start_data; 
+
+        } else if ( counter<0 ) {
+
+            if (format==crlf ) {
+                llen=length($0);
+                if (substr($0,llen) == "\r") {
+                    $0=substr($0,1,llen-1);
+                }
+            }
+
+          if (filename != "") {
+              printf "%s\n",$0 >> filename;
+          } else if (counter == start_data) {
+              value=$0;
+          } else {
+              value=value "\n" $0;
+          }
+          counter=in_data;
+          #print "DATA";
+        }
+    }
+}
+
+#---------------------------------------------------------------------
+#-------------------------HTML FUNCTIONS -----------------------------
+#---------------------------------------------------------------------
+function h_form_start(\
+url) {
+    #printf "<form action=\"%s\" enctype=\"multipart/form-data\" method=\"%s\">\n",selfUrl(""),g_http_method;
+    if (query["view"] == "admin") url="?" # clear QUERY_STRING
+    else url = "" #keep QUERY_STRING- eg when marking or deleting maintain current view.
+    print "<form action=\""url"\" enctype=\"multipart/form-data\" method=" g_http_method ">";
+    addHidden("cache,idlist,view,page,sort,order,"QTYPE_FILTER","QREG_FILTER","QWATCHED_FILTER);
+}
+
+function addHidden(nameList,\
+    names,i) {
+    split(nameList,names,",");
+    for(i in names) {
+        if (query[names[i]] != "" ) {
+            print "<input type=hidden name=\""names[i]"\" value=\""query[names[i]]"\">";
+        }
+    }
+}
+
+function h_comment(msg) {
+    #print "<!-- " html_encode(msg) "-->"
+    if (DEBUG) {
+        print "<!-- " msg "-->"
+    }
+}
+
+#---------------------------------------------------------------------
+# HEAPSORT from wikipedia --------------------------------------------
+#---------------------------------------------------------------------
+# Adapted to sorts the data via the index array.
+function heapsort (db,count, fieldName,fieldOrder,idx,\
+    end,tmp) {
+    heapify(db,count,fieldName,fieldOrder,idx);
+    end=count-1;
+    while (end > 0) {
+        tmp=idx[0];idx[0]=idx[end];idx[end]=tmp;
+        end--;
+        siftdown(db,fieldName,fieldOrder,idx,0,end);
+    }
+}
+function heapify (db,count, fieldName,fieldOrder,idx,\
+    start) {
+    start=int((count-2)/2)
+    while (start >= 0) {
+        siftdown(db,fieldName,fieldOrder,idx,start,count-1);
+        start--;
+    }
+}
+function siftdown (db,fieldName,fieldOrder,idx,start,end,\
+    root,child,tmp) {
+    root=start;
+    while(root*2+1 <= end) {
+        child=root*2+1
+        if (child+1 <=end && compare(db,fieldName,fieldOrder,idx,child,idx,child+1) <= 0) {
+            child++;
+        }
+        if (compare(db,fieldName,fieldOrder,idx,root,idx,child) > 0) {
+            return
+        }
+        tmp=idx[root];idx[root]=idx[child];idx[child]=tmp;
+        root=child;
+    }
+}
+#Return true if idx1 < idx2 (if idx1 >= idx2 return 0)
+function compare(db,fieldName,fieldOrder,idxarr1,idx1,idxarr2,idx2) {
+
+    if  (db[fieldName,idxarr1[idx1]] > db[fieldName,idxarr2[idx2]]) {
+       return fieldOrder;
+   } else {
+       return -fieldOrder;
+   }
+}
+
+function readFlash(\
+i) {
+    while((getline < "/tmp/setting.txt") > 0) {
+        if ((i = index($0,"=")) > 0) {
+            gSetting[substr($0,1,i-1)] = substr($0,i+1);
+        }
+    }
+}
+
+function show_admin(action,\
+cfg) {
+
+    if (!allow_admin) {
+        print "admin disabled";
+    } else if (action == "ask" || action == "Cancel" ) {
+
+        print "<h1 class=admin>"themeImageLink("view=&idlist=&action=","","back")"Oversight Configuration</h1>";
+
+        if (g_catalog_running == 1 ) {
+            print "<h3>Catalog is updating...</h3>";
+        } else if (g_catalog_pending == 1 ) {
+            print "<h3>Catalog update requested...</h3>";
+        }
+
+        print "<table width=100%><tr>";
+        
+        print "<td width=50%>";
+
+        print cfgLink("oversight.cfg","help","","Oversight Jukebox Settings General");
+
+        print "<br>"themeImageTag("display");
+        print "<br>" cfgLink("oversight.cfg","sd.help","class=scanlines0","Display Settings (Standard Def)");
+        print "<br>" cfgLink("oversight.cfg","720.help","class=scanlines720","Display Settings (720 and PC)");
+        print "<br>" cfgLink("oversight.cfg","1080.help","class=scanlines1080","Display Settings (1080+)");
+
+        print "<br>"themeImageTag("security");
+        print cfgLink("oversight.cfg","secure.help","","Access Settings");
+
+        print "</td><td width=50%>";
+
+        print themeImageTag("catalog");
+        print cfgLink("catalog.cfg","help","","Catalog Settings : Indexing and Renaming");
+        print "<br>"selfLinkMulti("action=rescan_confirm","","Rescan internal HDD");
+        print "<br>"themeImageTag("unpak");
+        print  cfgLink("unpak.cfg","help","","Unpak Settings : Unpacking and Repairing");
+        print "<br>"themeImageTag("shares");
+        print  selfLinkMulti("action=list_defined_share","","Add Previously Defined Network Shares");
+        print "<br>"selfLinkMulti("action=clearcache_confirm","","Delete Web Cache");
+
+        print "</td></tr>";
+        print "<tr><td>";
+
+        print themeImageTag("upgrade");
+        print selfLinkMulti("action=check","","Check for new upgrade");
+        #print "<br>"selfLinkMulti("action=undo","","Undo last upgrade");
+        print "<br>"selfLinkMulti("action=checkbeta","","Check for beta version");
+
+        print "</td></tr></table>";
+
+    } else if (match(action,"^settings")) {
+        cfg=query["file"];
+        helpSuffix=query["help"];
+
+        system(sprintf("cd \"%s\" && ./options.sh TABLE2 \"%s.%s\" \"%s\" HIDE_VAR_PREFIX=1",HOME,cfg,helpSuffix,cfg));
+        print confirm("action","Save Settings","save_settings","Cancel","cancel");
+
+        addHidden("file");
+    } else if (match(action,"^check")) {
+
+        betaInvolved = (index(tolower(gNewVersion g_version),"beta") > 0) ;
+
+        if (gUpgradeResult) { 
+            if (gNewVersion == g_version) {
+                print "<br>You have the latest version: "gNewVersion;
+                if (betaInvolved) {
+                    print "<br>"selfLinkMulti("action=install","","install anyway");
+                }
+                print "<br>"selfLinkMulti("action=ask","","Cancel");
+
+            } else if (gNewVersion < g_version && !betaInvolved) {
+                print "<br>You appear to have an advanced version. If you still want the public version use the normal application installation procedure";
+                print "<br>"selfLinkMulti("action=ask","","Cancel");
+            } else if (index(gNewVersion,"ERROR")) {
+                print "<br> Unable to access latest version";
+                print "<br>"selfLinkMulti("action=ask","","Cancel");
+            } else {
+                print "<br>Upgrade version "gNewVersion" available" confirm("action","install","install","Cancel","cancel");
+            }
+        } else {
+            print "<br>An error occured looking for upgrades. Web site may be down or internet connectivity lost.";
+            print "<br>"selfLinkMulti("action=ask","","Cancel");
+        }
+            
+    } else if (action == "install") {
+
+        if (gUpgradeResult) { 
+            print "<br>Upgrade operation succeed. Enjoy!!.";
+            print "<br>"selfLinkMulti("action=ask","","OK");
+            print "<p>if you find files are not being deleted. Please reinstall using the full installer."
+        } else {
+            print "<br>Upgrade may have failed.";
+            print "<br>"selfLinkMulti("action=ask","","Cancel");
+        }
+
+    } else if (action == "undo") {
+
+        if (gUpgradeResult) { 
+            print "<br>Undo operation succeed. Please report any issue and version.";
+            print "<br>"selfLinkMulti("action=ask","","OK");
+            print "<p>if you find files are not being deleted. Please reinstall using the full installer."
+        } else {
+            print "<br>Undo operation may have failed.";
+            print "<br>"selfLinkMulti("action=ask","","Cancel");
+        }
+    } else if (action == "list_defined_share" ) {
+        for(i in gSetting) {
+            if (match(i,"servname")) {
+                print "<br><input type=checkbox name=share_list value="gSetting[i]">"gSetting[i];
+            }
+        }
+
+        print confirm("action","add_defined_share","add_defined_share","Cancel","cancel");
+
+    } else if (action == "add_current_share" || action == "add_defined_share" ) {
+        print "<br>Go to <a href=/webservices_list.html> Webservices</a> to browse remote OverSight Database";
+
+    } else if (action == "clearcache_confirm" ) {
+        print confirm("action","clearcache","clear_cache","Cancel","cancel");
+
+    } else if (action == "rescan_confirm" ) {
+        print "Scan paths: "catalog_scan_paths "<p>This will return immediately and start a background scan which will complete in 15-30 minutes (depending on number of videos)." confirm("action","rescan","rescan","Cancel","cancel");
+
+    } else {
+
+        if (action == "rescan" ) print "A rescan has been scheduled";
+        else if (action == "clearcache" ) print "The web cache has been cleared";
+        else print action " completed";
+
+        print themeImageLink("action=ask","","back");
+    }
+    print "</form></body>";
+}
+
+function cfgLink(cfg,hlpSuffix,attr,label) {
+    return selfLinkMulti("action=settings&file="cfg"&help="hlpSuffix,attr,label);
+}
+
+
+function loadConfig() {
+    '"`cat $HOME/oversight.cfg`"'
+    '"`cat $HOME/catalog.cfg`"'
+}
+
+' </dev/null
+}
+
+CACHE_ENABLED=0
+
+case "$TEMP_FILE$DEBUG" in
+    0) #No Post Parameters and DEBUG is off
+        case "$QUERY_STRING" in
+            *cache=0*|*=admin*|*remote=*) ;;
+            *)
+            if grep -ql 'ovs_enable_web_cache=1' "$HOME/oversight.cfg" ; then
+                CACHE_ENABLED=1
+            fi
+            ;;
+        esac
+        ;;
+esac
+
+CACHE_ENABLED=0
+PLAYLIST=/tmp/playlist.htm
+
+ERROR_PAGE() {
+        echo "</style><font color=red>ERROR (see $1) </font><br><pre>"
+        sed '2 a\
+<font color=red>ERROR ('"$1"') </font><br><pre>
+$ a\
+</pre>' "$1"
+        #TODO REMOVE rm -f -- "$1"
+}
+
+html=$TMPDIR/oversight.html
+if [ "$CACHE_ENABLED" -eq 1 ] ; then
+    cacheId="$REMOTE_ADDR-$HOSTNAME-$QUERY_STRING" 
+    case "$cacheId" in 
+        */*) cacheId=`echo "$cacheId" | sed 's,/,_,g'` ;;
+    esac
+    cachedPage="$CACHE_DIR/page-$cacheId" 
+    cachedList="$CACHE_DIR/list-$cacheId" 
+
+    if [ ! -f "$cachedPage" ]; then
+        if [ ! -d "$CACHE_DIR" ] ; then
+            mkdir -p "$CACHE_DIR" 
+            chown $OWNER "$CACHE_DIR"
+        fi
+        if MAIN_PAGE > "$cachedPage" 2>&1 ; then
+            cp "$PLAYLIST" "$cachedList"
+            chown $OWNER "$cachedPage" "$cachedList"
+        else
+            mv "$cachedPage" "$cachedPage.err"
+            rm -f -- "$cachedList"
+        fi
+    fi
+    if [ -f "$cachedPage" ]; then
+        cat "$cachedPage"
+        cp "$cachedPage" "$html"
+        cp "$cachedList" "$PLAYLIST"
+    else
+        ERROR_PAGE "$cachedPage.err"
+    fi
+else
+  if ! MAIN_PAGE > "$html" 2>&1 ; then
+     ERROR_PAGE "$html" && rm -f -- "$html"
+  else 
+     cat "$html" && rm -f -- "$html"
+  fi
+fi
+
+# vi:sw=4:et:ts=4

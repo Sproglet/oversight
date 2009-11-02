@@ -28,7 +28,7 @@ body { color:white ; background-color:black; }
                                 <td align=left><font class=info>[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
                                 <td class=right>[:RATING_STARS(5):][:RATING:]</td>
                             </tr>
-                            <tr><td colspan=2 align=left><hr><font class=plot>[:PLOT:]</font></td><tr>
+                            <tr><td colspan=2 align=left><hr><font class=plot>&nbsp;[:PLOT:]</font></td><tr>
                             <tr><td>[:MOVIE_LISTING:]</td></tr>
                             <tr><td>
                                 [:INCLUDE_TEMPLATE(submit_btn):]

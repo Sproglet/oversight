@@ -26,10 +26,10 @@ body { color:white ; background-color:black; }
                                 <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
                             </tr>
                             <tr>
-                                <td align=left><font class=info[:IS_GAYA:] id=genre> [:GENRE:]</font></td>
+                                <td align=left><font class=info[:IS_GAYA:] id=genre>&nbsp;[:GENRE:]</font></td>
                                 <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
                             </tr>
-                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:] id=tvplot>[:PLOT:]</font></td><tr>
+                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:] id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
                         </table>
                     </td>
                 </tr>

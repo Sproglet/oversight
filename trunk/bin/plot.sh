@@ -150,8 +150,8 @@ ref,m,i,count,parts) {
 function prune_plotfile(f,keep,\
 id,tmpf,kept_count,removed_count,plot,err) {
 
-    inf("Prune plots in "f " using "tmpf);
     tmpf=f"."g_pid;
+    inf("Prune plots in "f " using "tmpf);
 
     kept_count = removed_count = 0;
 

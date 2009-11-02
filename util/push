@@ -10,7 +10,7 @@ fi
 
 CP() {
     dest="$1" ; shift;
-    tar -cf - --exclude=.svn --exclude=\*~ "$@" | ( cd "$dest" && tar xvf - )
+    tar -cf - --exclude=.svn --exclude=\*~ "$@" | ( cd "$dest/." && tar xvf - )
 }
 
 PUSH() {

@@ -17,7 +17,7 @@
 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091028-1BETA
+VERSION=20091031-3BETA
 
 
 NMT_APP_DIR=
@@ -6445,7 +6445,7 @@ close(output_file)
 }
 
 function update_plots(pfile,idx,\
-id,cmd) {
+id,cmd,cmd2) {
 id=extractImdbId(g_imdb[idx])
 if (id != "") {
 INF("updating plots for "id)
@@ -6453,15 +6453,15 @@ INF("updating plots for "id)
 cmd=g_plot_app" update "quoteArg(pfile)" "quoteArg(id)" "quoteArg(g_season[idx])
 
 if (g_plot[idx] != "" ) {
-cmd = cmd" \"\" "quoteArg(g_plot[idx])
-INF("updating main plot :"cmd)
-exec(cmd)
+cmd2 = cmd" "quoteArg("")" "quoteArg(g_plot[idx])
+INF("updating main plot :"cmd2)
+exec(cmd2)
 }
 
 if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
-cmd = cmd" "quoteArg(g_episode[idx])" "quoteArg(g_epplot[idx])
-INF("updating episode plot :"cmd)
-exec(cmd)
+cmd2 = cmd" "quoteArg(g_episode[idx])" "quoteArg(g_epplot[idx])
+INF("updating episode plot :"cmd2)
+exec(cmd2)
 }
 }
 }

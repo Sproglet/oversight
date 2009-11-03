@@ -1,6 +1,7 @@
+#labels Featured
 #sidebar TableOfContents
 
-Q1. How can I get oversight to rename and move Films that were already on the PCH *before* I installed oversight?
+*Q1. How can I get oversight to rename and move Films that were already on the PCH _before_ I installed oversight?*
 
 A with telnet you can do
 
@@ -9,8 +10,16 @@ A with telnet you can do
 I would only do this if Oversight is getting all of the film names correct, otherwise they will end up in a wrongly named folder.
 (This is one reason Oversight doesnt change the name of the actual movie avi file yet, I will only add that once Oversight becomes more accurate)
 
-Q2. How do I download to an external hard drive?
+
+
+*Q2. How do I download to an external hard drive?*
 
 A. To download content to an external HDD you must change the film_folder_fmt and tv_file_fmt settings in oversight->admin->renaming.
 
 For content other than movies or tv shows, also change the oversight->admin->Nzbget unpacking->completed_dir to be the full path to a folder on the external HDD. 
+
+*Q3. how to default to sort by name instead of age?*
+
+A. This will become an configurable option soon. In the mean time, You can change the initial default by editing the web service in the main NTM setup screen to be.
+
+http://127.0.0.1:8883/oversight/oversight.cgi?s=_T

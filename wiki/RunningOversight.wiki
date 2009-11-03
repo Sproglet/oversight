@@ -53,11 +53,17 @@ To add a folder on USB enter the path to the folder. This can be just the USB de
 
 == Source on a NAS ==
 
-To add a folder on a network drive, you must first define the source in the standard NMT Network Sources setup window, and make sure you can browse to it OK. Then add the source to Oversight's scan_paths _or_ watch_paths, _without any leading slash._ . If it is a specific folder on the shared drive then also add '/' followed by the folder name. E.g.
+To add a folder on a network drive, you must first define the source in the standard NMT Network Sources setup window, and make sure you can browse to it OK. 
+For example the following link shows a network source called 'test' pointing to a server called TRACY-SNG and the folder on the share is called Videos.
+
+http://www.networkedmediatank.com/wiki/index.php/Network_Share#NMT_Samba_.28SMB.29_Share_Setup
+(image linked from networkedmediatank.com wiki)
+
+Once the share has been set up, Then add the source name (in this case 'test' ) to Oversight's scan_paths _or_ watch_paths, _without any leading slash._ . This will scan the folder 'Videos'. If a specific folder on the shared drive is required then also add '/' followed by the folder name. E.g.
 {{{
-nas1/Videos
+test/Movies
 }}}
+will now scan smb://TRACY-SNG/Videos/Movies
 
 
-
-After you have set up the folders click the Scan option http://oversight.googlecode.com/svn/trunk/images/nav/set1/rescan.png to start a background scan.
+After you have set up the folders click the 'Rescan All Media' option http://oversight.googlecode.com/svn/trunk/images/nav/set1/rescan.png to start a background scan.

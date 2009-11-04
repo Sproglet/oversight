@@ -10,24 +10,25 @@ For non-NMT users, or stubborn, frugal NMT users read on..
 
 = Installation =
 
-Download unpak-BETA.zip 
-http://nmt-mini-installer.googlecode.com/svn/downloads/oversight/unpak-BETA.zip
-
-and install unpak.sh and catalog.sh in the same folder where the original unpak.sh is. 
-
+Download and unpak latest oversight. Keep the following files and delete the others,
+ 
 The file heirachy should be
 
   * unpak.sh
+
   * conf/.unpak.cfg.defaults #defaults for all new settings
   * conf/unpak.cfg # your file - copy from unpak.cfg.example
   * conf/unpak.cfg.example #initial file for 1st time users
 
   * catalog.sh
+
   * conf/.catalog.cfg.defaults #defaults for all new settings
   * conf/catalog.cfg # your file - copy from unpak.cfg.example
   * conf/catalog.cfg.example #initial file for 1st time users
 
-Also for NMT platform :
+  * bin/plot.sh
+
+Also for NMT platform L:
 
   * bin/jpeg_fetch_and_scale - grabs posters and fanart.
   * bin/nmt100/ - contains libjpeg and gnu versions of some apps

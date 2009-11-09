@@ -47,6 +47,12 @@ Anything between the eipsode text and the extension is stored as additional info
 
 Best format is the Show Name (as per thetvdb.com )
 
+=NFO Files=
+
+when Oversight cannot correctly recognise a file, you can help it along by creating an NFO file. This file should 
+  * contain the IMDB id of the movie or TV show. For example for the film Predator the file must contain the text 'tt0093773'.
+  * have the same filename as the main movie but with a different extension. eg if you have Predator in a file called 'Predator 720p.avi' then the nfo file should be called 'Predator 720p.nfo' 
+
 =Images=
 
 The scanning process downloads its own posters and fanrt to an internal folder, however you can use you own posters if you put them in the same folder as the media.

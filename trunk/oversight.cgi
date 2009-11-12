@@ -19,6 +19,18 @@ esac
 
 export PATH="$OVS_ROOT/bin/$ARCH:$OVS_ROOT/bin:$PATH"
 
+#The first time the script runs it will replace itself with the oversight binary file.
+#To re-instate this wrapper script (eg for debugging) copy oversight.cgi.safe to oversight.cgi
+
+REPLACE_BINARY() {
+    sed 's/^REPLACE_BINARY$/#REPLACE_BINARY/' "$0" > "$0.safe"
+    cat "$OVS_ROOT/bin/$ARCH/oversight" > "$0"
+}
+
+#Uncomment the following line
+REPLACE_BINARY
+
+
 if oversight "$@" > "$html" 2>"$err" ; then
     cat "$html"
     rm -f -- "$html" "$err"

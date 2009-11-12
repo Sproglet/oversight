@@ -2,18 +2,20 @@
 #sidebar TableOfContents
 
 
-Oversight is a minimalistic Jukebox that runs on the NMT platform, with unique features such as Usenet downloader post processing. 
+Oversight is a minimalistic Jukebox that runs on the NMT platform.
 
-It is aimed at users that regularly download content to their internal hard drive, and who want to quickly identify and access the most recently downloaded material.
+It is aimed at users that
+ 
+  * regularly download content to their internal hard drive, and
+  * want to quickly identify and access the most recently downloaded material.
 
 http://oversight.googlecode.com/svn/trunk/screenshots/ovs-fanart.png
-
 
 There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_Comparison jukeboxes] for the NMT platform now. Selecting the right one can be challenging. Especially if you start with ones that are not suitable for your own usage patterns.
 
 Here I have listed the main strengths and weaknesses of Oversight.
 
-=Advantages of Oversight==
+=Oversight Strengths=
 
   * No PC needed to scan and update media.
   * Easy to install and use - as no PC is required this makes installation very clean.
@@ -35,7 +37,8 @@ Here I have listed the main strengths and weaknesses of Oversight.
   * NZBGet post-processing scripts. - Oversight installs a script that automatically adds new media to the Oversight Catalog. This script also has many features.
   * Crossview: If you have two NMT, and install Oversight on each, then you can see all media in a single Oversight session. No need to switch sources or jukeboxes.
  
-=Disadvantages of Oversight=
+=Oversight Weaknesses=
+  * No post scan tweaking of plots etc. - This will be implemented soon.
   * Multi-lingual support (I plan to address this in later releases)
   * Detailed Scraping. Actor Bios, Names of Producers, Cleaners and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.
   * Looks. Oversight has a basic skin which I will improve over time however features like reflection and 'dvd boxing' etc are unlikely to appear.

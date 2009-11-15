@@ -662,9 +662,18 @@ DbRowId *read_and_parse_row(
     char value[DB_VAL_BUF_SIZE];
     char *value_end=value+DB_VAL_BUF_SIZE;
 
+#ifdef TERM_ARRAY
     char term[256];
     memset(term,0,256);
     term['\t'] = term['\n'] = term['\r'] = term['\0'] = 1;
+
+#define TERM(c) ( term[c] )
+
+#else
+
+#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' )))
+
+#endif
 
     register int next;
 
@@ -695,7 +704,7 @@ DbRowId *read_and_parse_row(
 
         // Control should only get here if state = STATE_START
         if (state == STATE_START) {
-            while(next != EOF  && !term[next] ) {
+            while(next != EOF  && !TERM(next) ) {
                 HTML_LOG(0,"Skip %c[%d]",next,next);
                 next = getc(fp);
             }
@@ -703,7 +712,7 @@ DbRowId *read_and_parse_row(
 
         if (next == EOF) {
             goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
-        } else if (!term[next]) {
+        } else if (!TERM(next)) {
             // Not state != STATE_START if we get here
             // Add the character
             *p++ = next;

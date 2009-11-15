@@ -282,13 +282,17 @@ get_period() {
     startms=$(( $2 + $3 ))
     ms=$startms
 
-    for i in `seq 0 $1` ; do
+    i=0
+
+    while [ "$i" -le "$1" ] ; then
 
         if [ $(( $i % $startms )) -eq 0 -a $i -ne $startms ] ; then
 
             ms="$ms,$i"
 
         fi
+
+        i=$(( $i + 1 ))
 
     done
     echo $ms

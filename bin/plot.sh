@@ -137,7 +137,7 @@ ref,m,i,count,parts) {
         #All even items are the regex matches.
         for(i=2 ; i <= count ; i+=2) {
             if (!(parts[i] in keep)) {
-                inf("keep["parts[i]"]");
+                #inf("keep["parts[i]"]");
                 keep[parts[i]] = 1;
             }
         }

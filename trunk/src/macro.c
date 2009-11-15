@@ -580,12 +580,15 @@ char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,Db
         "<font color=green>Unpak</font> scripts</font></td>"
         "<td><form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\">"
         "<input type=\"hidden\" name=\"cmd\" value=\"_s-xclick\">"
-        "<input type=\"hidden\" name=\"hosted_button_id\" value=\"2496882\">"
-        "<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
+        //"<input type=\"hidden\" name=\"hosted_button_id\" value=\"2496882\">"
+        //"<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
+        "<input type=\"hidden\" name=\"hosted_button_id\" value=\"9700071\">"
+        "<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/GB/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"PayPal - The safer, easier way to pay online.\">"
         "<img alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
         "</form></td>";
         *free_result=0;
     }
+
     return p;
 }
 

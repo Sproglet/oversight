@@ -8,7 +8,7 @@ err=$OVS_ROOT/tmp/$$.err
 case "$1" in 
     *admin*)
         chown nmt:nmt $OVS_ROOT/* $OVS_ROOT/conf/* $OVS_ROOT/db/* $OVS_ROOT/db/*/* /share/tmp >/dev/null 2>&1  
-        chmod 777 /share/tmp /tmp 2>&1
+        chmod 777 /share/tmp /tmp $OVS_ROOT/tmp 2>&1
         ;;
 esac
 

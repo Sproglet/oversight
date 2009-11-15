@@ -3,12 +3,8 @@
 
 nzb_launch_dir="$OLDPWD"
 #--------------------------------------------------------------------------
-#!/bin/sh 
-# $Id$
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-
-
 
 #
 # unpak.sh - 
@@ -25,8 +21,7 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #TODO Cope with par,zip combos. Currently it will try to repair rather than unzip-repair
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
-VERSION=20091023-1BETA
-
+NMT_APP_DIR=
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
         NMT_APP_DIR="$d"
@@ -1323,7 +1318,7 @@ quote_file() {
 
 # $1=file $2=re for extension
 BASENAME() {
-    echo "$1" | sed "s:.*/::;s:$2\$::"
+    echo "$1" | sed "s:.*/::;s:${2:-}\$::"
 }
 DIRNAME() {
     #Add ./ to any path that doesnt start with / or .  
@@ -1501,16 +1496,6 @@ tidy_nzb_files() {
         log_stream DETAIL "old nzb" < "$gTmpFile.nzb"
         sed "s/^/rm '/;s/$/'/" "$gTmpFile.nzb" | sh
         rm -f "$gTmpFile.nzb"
-    fi
-}
-
-#Notification of changes to unpak.sh.
-version_check() {
-    if [ "$unpak_check_for_new_versions" -eq 1 ] ; then
-        latest=$(wget -O- http://www.prodynamic.co.uk/nmt/unpak/unpak.version 2>/dev/null || true)
-        if [ -n "$latest" -a "$latest" != "$VERSION" ] ; then
-            INFO "Version $latest is available (current = $VERSION )"
-        fi
     fi
 }
 
@@ -1886,6 +1871,7 @@ relocate() {
         else
             #Everything else 
             unpak_completed_dir=`prepare_target_folder`
+            INFO "Moving $arg_download_dir to $unpak_completed_dir"
             mv "$arg_download_dir" "$unpak_completed_dir/."
             cd "$unpak_completed_dir/$b"
             #run_catalog "$unpak_completed_dir/$b" RENAME STDOUT
@@ -1919,6 +1905,7 @@ create_resume_file() {
     if [ "$is_nmt" = "Y" ] ; then
         echo "chown -R nmt:nmt ." >> "$file"
     fi
+    chmod ugo+x "$file"
     cat "$file" | log_stream INFO
 }
 
@@ -1934,7 +1921,7 @@ run_catalog() {
     shift
     if [ -f "$script_folder/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
-        JOBID=$$ "$script_folder/catalog.sh" "$folder" GET_POSTERS GET_FANART "$@" #| log_stream INFO catalog:
+        JOBID="$log_name" "$script_folder/catalog.sh" "$folder" GET_POSTERS GET_FANART "$@" #| log_stream INFO catalog:
         #create_resume_file "$folder/unpak.resume" "$script_folder/catalog.sh" "$folder" "$@"
     else
         INFO "Catalog script not present in $script_folder"
@@ -1994,7 +1981,7 @@ stop_screensaver() {
 # main SCRIPT
 ##################################################################################
 main() {
-    INFO "unpak version $VERSION"
+    INFO 'unpak version $Id$ '
     INFO "script_folder [$script_folder]"
     sed 's/^/\[INFO\]/' /proc/version
     if [ $is_nmt == "Y" ] ; then
@@ -2041,7 +2028,6 @@ main() {
           exit 1 ;;
     esac
 
-    # version_check
     #---------------------------------------------------------
 
     case $mode in
@@ -2120,14 +2106,13 @@ script_folder=$( cd $(DIRNAME "$0") ; pwd )
 # something sometimes changes /tmp permissions so only root can write
 TMP=/tmp
 is_nmt=N
-if [ -f $NMT_APP_DIR/MIN_FIRMWARE_VER  ] ; then
-    TMP=/share/tmp
-    if [ -w $script_folder/tmp ] ; then
-        TMP=$script_folder/tmp
+if [ -n "$NMT_APP_DIR" ] ; then
+    TMP=$script_folder/tmp
+    if ! mkdir -p "$TMP" ; then
+        TMP=/tmp
     fi
-    mkdir -p $TMP
     is_nmt=Y
-    chown nmt:nmt $TMP
+    chown nmt:nmt "$TMP"
 fi
 
 #Some global settings
@@ -2161,6 +2146,7 @@ arg_par_check="2"
 arg_nzb_state="1"  
 arg_par_fail="0" 
 arg_category=""
+log_name=$$
 mode=${1:-}
 case $mode in 
     torrent_seeding)
@@ -2208,15 +2194,17 @@ case $mode in
             arg_nzb_state="$5"  
             arg_par_fail="$6" 
             arg_category="${7:-}"
+            log_name="`BASENAME "$arg_download_dir" | sed -r 's/ +/_/g'`.$$"
         fi
 esac
 
+echo B
 
 log_dir=$script_folder/logs
 
 mkdir -p $log_dir
 
-log_file=$log_dir/unpak.$$.log
+log_file="$log_dir/unpak.$log_name.log"
 
 
 clean_logs() {
@@ -2232,6 +2220,7 @@ clean_logs "$log_dir"
 cd "$arg_download_dir"
 create_resume_file unpak.resume "$script_folder/unpak.sh" "$@"
 
+INFO "TMP=[$TMP]"
 
 load_unpak_settings "$unpak_default_settings"
 

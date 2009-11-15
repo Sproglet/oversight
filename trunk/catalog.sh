@@ -15,9 +15,10 @@
 
 
 
+
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091031-3BETA
+VERSION=20091102-1BETA
 
 
 NMT_APP_DIR=
@@ -103,10 +104,10 @@ chown -R $OVERSIGHT_ID "$@" || true
 tmp_root=/tmp/oversight
 if is_nmt ; then
 
-tmp_root=/share/tmp/oversight
+tmp_root="$APPDIR/tmp"
 fi
 
-tmp_dir=$tmp_root/$$
+tmp_dir="$tmp_root/$JOBID"
 rm -fr "$tmp_dir"
 mkdir -p $tmp_dir
 PERMS $tmp_dir
@@ -277,9 +278,9 @@ if (index(x,g_tk) ) gsub(g_tk,"",x)
 if (index(x,g_tk2) ) gsub(g_tk2,"",x)
 
 if (index(x,"d=") ) {
-sub("password.?=([^,]+)","password=xxx",x)
+sub("password.?=([^,]+)","password=***",x)
 sub("pwd=([^,]+)","pwd=xxx",x)
-sub("passwd=([^,]+)","passwd=xxx",x)
+sub("passwd=([^,]+)","passwd=***",x)
 }
 
 if (systime() != g_last_ts) {
@@ -369,6 +370,9 @@ return i
 BEGIN {
 g_start_time = systime()
 
+g_tv_check_urls["TVRAGE"]="http://tvrage.com"
+g_tv_check_urls["THETVDB"]="http://thetvdb.com"
+
 g_batch_size=30
 g_tvdb_user_per_episode_api=1
 g_cvs_sep=" *, *"
@@ -387,6 +391,7 @@ GET_POSTERS=0
 GET_FANART=0
 UPDATE_POSTERS=0
 UPDATE_FANART=0
+
 get_folders_from_args(FOLDER_ARR)
 }
 
@@ -401,53 +406,53 @@ set_permissions(g_status_file)
 }
 }
 
-function get_new_folders(folder_list,timestamp_file,\
-new_list,f,i,j,dir,newfile,newdir) {
-if (!is_file(timestamp_file)) {
-return
-}
-DEBUG("Checking for changed content")
-for( i in folder_list ) {
-dir=folder_list[i]
-if (dir) {
-DEBUG("Checking "dir" for changed content")
-f=NEW_CAPTURE_FILE("NEWFOLDERS")
-exec("touch "quoteArg(f)" ; cd "quoteArg(dir)" && find . -newer "quoteArg(timestamp_file)" > "quoteArg(f))
-DEBUG("end find")
-while((getline newfile < f) > 0) {
-DEBUG("find line "newfile)
 
 
 
-#
-
-newdir=dir"/"newfile
-
-gsub(/\/\.\//,"/",newdir)
-
-if (is_dir(newdir) ) {
-DEBUG("Changed content - "newdir)
-} else {
-newdir=dirname(newdir)
-DEBUG("Changed content - "dir"/"newfile" > "newdir)
-}
-new_list[newdir]=1
-}
-DEBUG("close find "f)
-close(f)
-} else {
-DEBUG("Ignoring blank "dir)
-}
-}
 
 
-delete folder_list
-i=1
-for(j in new_list) {
-folder_list[i++] = j
-}
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function get_mounts(mtab,\
 line,parts,f) {
@@ -738,15 +743,8 @@ if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0
 
 CAPTURE_PREFIX=tmp_dir"/catalog."
 
-g_search_yahoo = "http://search.yahoo.com/search?p="
+g_search_yahoo = get_local_yahoo()
 g_search_bing = "http://www.bing.com/search?q="
-
-
-g_search_yahoo2 = get_alt_website(g_search_yahoo"test","http://[^.]*.?search.yahoo.com/search")
-if (g_search_yahoo2) {
-g_search_yahoo = g_search_yahoo2"?p="
-INF("local yahoo search = "g_search_yahoo)
-}
 
 THIS_YEAR=substr(NOW,1,4)
 
@@ -782,42 +780,26 @@ exit
 g_timestamp_file=APPDIR"/.lastscan"
 
 
-if (isnmt()) {
-for(f in FOLDER_ARR) {
-if (FOLDER_ARR[f] ~ /^[^\/.]/  ) {
+replace_share_names(FOLDER_ARR)
 
-share_name=FOLDER_ARR[f]
-sub(/\/.*/,"",share_name)
-
-if (!(share_name in g_share_name_to_folder)) {
-g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings)
-DEBUG("share name "share_name" = "g_share_name_to_folder[share_name])
-}
-if (g_share_name_to_folder[share_name]) {
-g_share_map[FOLDER_ARR[f]] = share_name
-FOLDER_ARR[f] = nmt_get_share_path(FOLDER_ARR[f])
-} else {
-
-FOLDER_ARR[f] = "'"$START_DIR"'/"FOLDER_ARR[f]
-if (!is_file_or_folder(FOLDER_ARR[f])) {
-INF(FOLDER_ARR[f]" not a share or file")
-delete FOLDER_ARR[f]
-}
-}
-}
-}
-}
+make_paths_absolute(FOLDER_ARR)
 
 
 if (NEWSCAN) {
-get_new_folders(FOLDER_ARR,g_timestamp_file)
-scan_options="-l"
+get_files(INDEX_DB,g_scanned)
+
+
 }
 
 for(f in FOLDER_ARR) {
 INF("Folder "f"="FOLDER_ARR[f])
 }
 
+gLS_FILE_POS=0
+gLS_TIME_POS=0
+findLSFormat()
+
+plugin_check()
 
 if (hash_size(FOLDER_ARR)) {
 
@@ -856,6 +838,7 @@ WARNING("Undefined setting "i" referenced")
 
 rm(g_status_file)
 
+
 if (RESCAN == 1 || NEWSCAN == 1) {
 print "last scan at " strftime(systime()) > g_timestamp_file
 close(g_timestamp_file)
@@ -869,6 +852,74 @@ unlock(g_db_lock_file)
 }
 }
 }
+
+function get_local_yahoo(\
+url,url2) {
+
+url="http://search.yahoo.com/search?p="
+
+url2 = get_alt_website(url"test","http://[^.]*.?search.yahoo.com/search")
+if (url2) {
+url = url2"?p="
+INF("local yahoo search = "url)
+}
+return url
+}
+
+function replace_share_names(folders,\
+f,share_name) {
+if (isnmt()) {
+
+
+for(f in folders) {
+if (folders[f] ~ /^[^\/.]/  ) {
+
+share_name=folders[f]
+sub(/\/.*/,"",share_name)
+
+if (!(share_name in g_share_name_to_folder)) {
+g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings)
+DEBUG("share name "share_name" = "g_share_name_to_folder[share_name])
+}
+if (g_share_name_to_folder[share_name]) {
+g_share_map[folders[f]] = share_name
+folders[f] = nmt_get_share_path(folders[f])
+} else {
+
+folders[f] = START_DIR"/"folders[f]
+if (!is_file_or_folder(folders[f])) {
+INF(folders[f]" not a share or file")
+delete folders[f]
+}
+}
+}
+}
+}
+}
+
+function make_paths_absolute(folders,\
+f) {
+
+for(f in folders) {
+
+if (index(folders[f],".") == 1) {
+folders[f] = START_DIR"/"folders[f]
+}
+folders[f] = clean_path(folders[f])
+}
+}
+
+function plugin_check(\
+p,plugin) {
+for (p in g_tv_plugin) {
+plugin = g_tv_plugin[p]
+if (getUrl(g_tv_check_urls[plugin],"test",0) == "" ) {
+WARNING("Removing plugin "plugin)
+delete g_tv_plugin[p]
+}
+}
+}
+
 
 
 function merge_into_index(indexToMergeHash,\
@@ -1054,12 +1105,6 @@ function scan_folder_for_new_media(folderArray,scan_options,\
 f,fcount) {
 
 
-gLS_FILE_POS=0
-gLS_TIME_POS=0; 
-
-
-findLSFormat()
-
 for(f in folderArray ) {
 
 fcount++
@@ -1072,47 +1117,39 @@ scan_contents(folderArray[f],scan_options)
 
 }
 
+
 function findLSFormat(\
-tempFile,folderNameNext,i,currentFolder) {
+tempFile,i,procfile) {
 
 DEBUG("Finding LS Format")
 
+procfile="/proc/"PID"/fd"
 tempFile=NEW_CAPTURE_FILE("LS")
-exec(LS" -Rl /proc/"JOBID" > "tempFile )
-FS=" "
-folderNameNext=1
 
-while((getline < tempFile) > 0 ) {
-if (folderNameNext) {
-currentFolder = $0
-sub(/\/*:/,"",currentFolder)
-DEBUG("Folder = "currentFolder)
-folderNameNext=0
-} else if ($0 == "" ) {
-folderNameNext=1
-}  else {
-if (substr(currentFolder,1,5) == "/proc" ) {
-if (index($0,"fd") && match($0,"\\<fd\\>")) {
-INF("LS Format "$0)
+
+exec(LS" -ld "procfile" > "tempFile )
+FS=" "
+
+while ((getline < tempFile) > 0 ) {
 for(i=1 ; i - NF <= 0 ; i++ ) {
-if ($i == "fd") gLS_FILE_POS=i
+if ($i == procfile) gLS_FILE_POS=i
 if (index($i,":")) gLS_TIME_POS=i
 }
-DEBUG("File position at "gLS_FILE_POS)
-DEBUG("Time position at "gLS_TIME_POS)
 break
-} 
-}
-}
 }
 close(tempFile)
+INF("ls -l file position at "gLS_FILE_POS)
+INF("ls -l time position at "gLS_TIME_POS)
 
+}
+function dir_contains(dir,pattern) {
+return exec("ls \""dir" 2>/dev/null | egrep \""pattern"\"" ) ==0
 }
 
 
 function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words) {
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts) {
 
 DEBUG("PreScanning "root)
 if (root == "") return
@@ -1221,7 +1258,6 @@ pos=indexFrom(scan_line,scan_words[i],pos+length(scan_words[i-1]))
 scan_line=substr(scan_line,pos)
 lc=tolower(scan_line)
 
-
 if (substr(perms,1,1) != "-") {
 if (substr(perms,1,1) == "d") {
 
@@ -1231,21 +1267,57 @@ g_fldrCount[currentFolder]++
 
 DEBUG("Folder ["scan_line"]")
 
-if (scan_line == "VIDEO_TS" && is_file(currentFolder"/VIDEO_TS/VTS_01_0.VOB") ) {
+
+if (lc == "video_ts" && dir_contains(currentFolder"/"scan_line,"[Vv][Oo][Bb]$") ) {
 
 if (match(currentFolder,"/[^/]+$")) {
 f = substr(currentFolder,RSTART+1)
 d = substr(currentFolder,1,RSTART-1)
 }
 
-storeMovie(gMovieFileCount,f"/",d,calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW))
-setNfo(gMovieFileCount,"/$",".nfo")
-gMovieFileCount++
+ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW)
+storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo")
 skipFolder=1
 }
 }
-continue
+
+} else {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if (index(scan_line,"/") && match(scan_line,"[^/]/")) {
+
+i = match(scan_line,".*[^/]/")
+
+currentFolder = clean_path( root "/" substr(scan_line,1,RLENGTH-1) )
+scan_line = substr(scan_line,RLENGTH+1)
+lc = tolower(scan_line)
+INF("Looking at direct file argument ["currentFolder"/"scan_line"]")
 }
+
 
 
 if (match(lc,gExtRegexIso)) {
@@ -1289,10 +1361,9 @@ gDate[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW)
 }
 
 if (store) {
-
-storeMovie(gMovieFileCount,scan_line,currentFolder,calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW))
-setNfo(gMovieFileCount,"\\.[^.]+$",".nfo")
-gMovieFileCount++
+ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW)
+storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
+}
 }
 }
 
@@ -1322,7 +1393,10 @@ gsub(/ *, */,"|",text)
 return "("text")"
 }
 
-function storeMovie(idx,file,folder,timeStamp) {
+function storeMovie(idx,file,folder,timeStamp,nfoReplace,nfoExt,\
+path) {
+
+path=clean_path(folder"/"file)
 
 g_fldrMediaCount[folder]++
 
@@ -1331,8 +1405,12 @@ g_media[idx] = file
 DEBUG("Storing ["g_fldr[idx]"]["g_media[idx]"]")
 
 
-gMovieFilePresent[clean_path(folder"/"file)] = idx
+gMovieFilePresent[path] = idx
 g_file_time[idx] = timeStamp
+
+setNfo(gMovieFileCount,nfoReplace,nfoExt)
+
+gMovieFileCount++
 }
 
 
@@ -1405,9 +1483,10 @@ return 0
 }
 }
 
-function exec(cmd, err) {
+function exec(cmd,\
+err) {
 
-
+DEBUG("SYSTEM : [["cmd"]]")
 if ((err=system(cmd)) != 0) {
 ERR("Return code "err" executing "cmd) 
 }
@@ -1713,6 +1792,11 @@ arr[FILE] = clean_path(arr[FILE])
 }
 
 function clean_path(f) {
+if (index(f,"../")) {
+while (gsub(/\/[^\/]+\/\.\.\//,"/",f) ) {
+continue
+}
+}
 while (index(f,"/./")) {
 gsub(/\/\.\//,"/",f)
 }
@@ -1839,6 +1923,31 @@ if (index(d,"/share/") == 1) return "/share"
 if ( index(d,g_mount_root) == 1 || index(d,"/USB_DRIVE_") == 1 || index(d,"/opt/sybhttpd/localhost.drives/USB_DRIVE_") == 1 ) {
 return next_folder(d,g_mount_root)
 }
+}
+
+function short_path(path) {
+if (index(path,g_mount_root) == 1) {
+path = substr(path,length(g_mount_root)+1)
+}
+return path
+}
+
+function scanned(path,files) {
+return (short_path(path) in files)
+}
+
+function get_files(db,files,\
+dbline,dbfields,err) {
+
+while((err = (getline dbline < db )) > 0) {
+
+if ( index(dbline,"\t") != 1 ) { continue; }
+
+parseDbRow(dbline,dbfields)
+
+files[short_path(dbfields[FILE])] = 1
+}
+if (err == 0 ) close(db)
 }
 
 
@@ -2403,6 +2512,11 @@ if (file == "" ) continue
 
 DIV0("Start item "(g_item_count)": ["file"]")
 
+if (NEWSCAN && scanned(file,g_scanned)) {
+INF("Already Scanned "file)
+continue
+}
+
 DEBUG("folder :["g_fldr[idx]"]")
 if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
 WARNING("Skipping unknown file ["file"]")
@@ -2693,7 +2807,7 @@ getNiceMoviePosters(idx,extractImdbId(bestUrl))
 }
 
 function tv2imdb(idx,\
-date,nonDate,premier,url,key) {
+url,key) {
 
 DEBUG("tv2imdb start=["g_imdb[idx]"]")
 if (g_imdb[idx] == "") {
@@ -3707,7 +3821,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
 matchLevel = 0
 yearOrCountry=""
 
-DEBUG("Checking ["titleIn"] against ["possible_title"]")
+
 
 
 
@@ -4523,7 +4637,7 @@ g_year[idx] = substr(seriesInfo["/Show/started"],8,4)
 sid=seriesInfo["/Show/showid"]
 setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
 url=seriesInfo["/Show/showlink"]
-g_plot[idx] = scrape_one_item("tvrage_plot",url,"id='"'"'iconn1",0,"iconn2",0)
+g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0)
 result ++
 
 e="/Show/Episodelist/Season/episode"
@@ -4537,7 +4651,8 @@ gAirDate[idx]=formatDate(episodeInfo[e"/airdate"])
 url=episodeInfo[e"/link"]
 
 if (g_epplot[idx] == "" ) {
-p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"<a ",0)
+
+p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1)
 if (p != "" && index(p,"There is no summary") == 0) {
 g_epplot[idx] = p
 DEBUG("rage epplot :"g_epplot[idx])
@@ -5022,9 +5137,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
 
 args=" -U \""g_user_agent"\" "g_wget_opts
 default_referer = get_referer(url)
-
-
-
+if (!check_domain_ok(default_referer)) {
+return 1
+}
 if (referer == "") {
 referer = default_referer
 }
@@ -5257,22 +5372,25 @@ return poster_ref
 }
 
 
+function check_domain_ok(url,\
+start,tries,timeout) {
 
+if (!(url in g_domain_status)) {
+start=systime()
+tries=2
+timeout=5
+if (system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "quoteArg(url)"/favicon.ico") ) {
+g_domain_status[url]=1
+} else if (systime() - start  >= tries * timeout ) {
+WARNING("Error with domain ["url"]")
+g_domain_status[url]=0
+} else {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+g_domain_status[url]=1
+}
+}
+return g_domain_status[url]
+}
 
 
 
@@ -5749,7 +5867,7 @@ f,line,out,found) {
 f=getUrl(url,label,0)
 if (f) {
 while((getline line < f) > 0 ) {
-if (index(line,start_text)) {
+if (match(line,start_text)) {
 
 out = scrape_until(label,f,end_text,end_include)
 if (start_include) {
@@ -5773,19 +5891,44 @@ function scrape_until(label,f,end_text,inclusive,\
 line,out,ending) {
 ending = 0
 while(!ending && (getline line< f) > 0) {
-if (index(line,end_text)) {
+if (match(line,end_text)) {
 ending=1
 if (!inclusive) {
 break
 }
 }
-line = remove_tags(line)
 out = out " " line
 }
 gsub(/ +/," ",out)
+out =remove_html_section(out,"script")
+out =remove_html_section(out,"style")
+out = remove_tags(out)
 INF("scrape_until "label"/"end_text":=["out"]")
 return trim(out)
 }
+
+
+function remove_html_section(input,tag,\
+out,tag_start,tag_end,start_pos,end_pos,tail) {
+
+out=input 
+
+tag_start="<"tag
+
+tag_end="</"tag">"
+
+while((start_pos=index(out,tag_start)) > 0) {
+tail=""
+end_pos=index(out,tag_end)
+if (end_pos > 0 ) {
+tail = substr(out,end_pos+length(tag)+3)
+}
+INF("removing "substr(out,start_pos,end_pos-start_pos))
+out = substr(out,1,start_pos-1) tail
+}
+return out
+}
+
 
 function relocating_files(i) {
 return (RENAME_TV == 1 && g_category[i] == "T") ||(RENAME_FILM==1 && g_category[i] == "M")
@@ -5826,6 +5969,8 @@ fileType="folder"
 } else {
 return
 }
+
+
 if (newName != "" && newName != oldName) {
 
 oldFolder=g_fldr[i]
@@ -5888,6 +6033,7 @@ g_media[i]=newName
 sub(/.*\//,"",g_media[i])
 
 
+DEBUG("Checking nfo file ["gNfoDefault[i]"]")
 if(is_file(gNfoDefault[i])) {
 
 nfoName = newName
@@ -5898,6 +6044,7 @@ if (nfoName == newName ) {
 return
 }
 
+DEBUG("Moving nfo file ["gNfoDefault[i]"] to ["nfoName"]")
 if (moveFile(gNfoDefault[i],nfoName) != 0) {
 return
 }
@@ -5907,6 +6054,7 @@ gDate[nfoName]=gDate[gNfoDefault[i]]
 delete gDate[gNfoDefault[i]]
 
 gNfoDefault[i] = nfoName
+DEBUG("Moved nfo file ["gNfoDefault[i]"]")
 }
 }
 
@@ -5994,7 +6142,7 @@ return str
 
 function rename_related(oldName,newName,\
 extensions,ext,oldBase,newBase) {
-split("srt idx sub",extensions," ")
+split("srt idx sub nfo",extensions," ")
 
 oldBase = oldName
 sub(/\....$/,".",oldBase)
@@ -6060,33 +6208,45 @@ return substr(f,length(f)) == "/"
 
 
 function moveFolder(i,oldName,newName,\
-cmd,new,old,ret,isDvdDir) {
+cmd,new,old,ret,isDvdDir,err) {
+
+ret=1
+err=""
 
 if (!(folderIsRelevant(oldName))) {
-WARNING("["oldName"] not renamed as it was not listed in the arguments")
-return 1
+
+err="not listed in the arguments"
+
 } else if ( g_fldrCount[oldName] - 2*(isDvdDir(g_media[i])) > 0 ) {
-WARNING("["oldName"] not renamed to ["newName"] due to "g_fldrCount[oldName]" sub folders")
-return 1
+
+err= g_fldrCount[oldName]" sub folders"
+
 } else if (g_fldrMediaCount[oldName] - 1 > 0) {
-WARNING("["oldName"] not renamed to ["newName"] due to "g_fldrMediaCount[oldName]" media files")
-return 1
+
+err = g_fldrMediaCount[oldName]" media files"
+
 } else if (!changeable(oldName) ) {
-return 1
+
+err="un changable folder"
+
 } else {
 new=quoteArg(newName)
 old=quoteArg(oldName)
 if (g_opt_dry_run) { 
 print "dryrun: from "old"/* to "new"/"
-return 0
+ret = 0
 } else {
 INF("move folder:"old"/* --> "new"/")
-cmd="mkdir -p "new" ;  mv "old"/* "new" ; mv "old"/.[^.]* "new" 2>/dev/null ; rmdir "old
+cmd="mkdir -p "new" ;  mv "old"/* "new" ; mv "old"/.[^.]* "new" ; rmdir "old
+err = "unknown error"
 ret = exec(cmd)
-system("rmdir "old" 2>/dev/null")
+exec("rmdir "old" 2>/dev/null" )
+}
+}
+if (ret != 0) {
+WARNING("folder contents ["oldName"] not renamed to ["newName"] : "err)
 }
 return ret
-}
 }
 
 function hasContent(f,\
@@ -6485,7 +6645,7 @@ return CAPTURE_FILE
 
 function clean_capture_files() {
 INF("Clean up")
-exec("rm -f -- \""CAPTURE_PREFIX JOBID "\".* ")
+exec("rm -f -- "quoteArg(CAPTURE_PREFIX JOBID) ".* ")
 }
 function INF(x) {
 timestamp("[INFO]",x)
@@ -6660,8 +6820,9 @@ HTML_LOG(0,"it "url)
 
 
 
-' JOBID=$JOBID PID=$$ NOW=`date +%Y%m%d%H%M%S` \
+' JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
 DAY=`date +%a.%P` \
+"START_DIR=$START_DIR" \
 "LS=$LS" \
 "APPDIR=$APPDIR" \
 "CONF_FILE=$CONF_FILE" \

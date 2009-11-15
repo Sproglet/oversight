@@ -1,4 +1,3 @@
-#labels Featured
 #sidebar TableOfContents
 Here is a summry of the most user-facing known issues with the latest beta:
 

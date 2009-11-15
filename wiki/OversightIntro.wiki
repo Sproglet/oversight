@@ -11,6 +11,8 @@ It is aimed at users that
 
 http://oversight.googlecode.com/svn/trunk/screenshots/ovs-fanart.png
 
+http://oversight.googlecode.com/svn/trunk/screenshots/ovs2-tv.png
+
 There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_Comparison jukeboxes] for the NMT platform now. Selecting the right one can be challenging. Especially if you start with ones that are not suitable for your own usage patterns.
 
 Here I have listed the main strengths and weaknesses of Oversight.

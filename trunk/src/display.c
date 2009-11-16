@@ -2650,6 +2650,7 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     int width1=4; //episode width
     width2 -= width1;
 
+    HTML_LOG(0,"pruned_tv_listing");
 
 
     char *script = create_episode_js_fn(num_rows,sorted_rows);
@@ -2782,6 +2783,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     DbRowId **pruned_rows;
 
 
+    html_log(-1,"tv_listing");
     pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
     FREE(pruned_rows);

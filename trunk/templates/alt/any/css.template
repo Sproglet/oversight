@@ -11,12 +11,6 @@ img { border: 0px solid black; }
 .poster_fresh { border-color:#AAAA00; border-width:2px; padding:1px; margin:1px; }
 img.poster_watched { }
 
-/*
-td.Xposter_bar {  background-color:#AA00AA; }
-td.Xposter_fresh_bar { background-color:green; }
-td.Xposter_watched_bar { background-color:gray; }
-*/ .dummy { color:red; }
-
 a.poster { color:white; font-weight:bold; font-style:italic; }
 a.poster_fresh { color:white; font-weight:bold; font-style:italic; }
 a.poster_watched { color:#88AA88; font-weight:bold; font-style:italic; }
@@ -28,12 +22,6 @@ td.poster_watched_unknown { }
 td.gc_small { font-size:10pt; }
 td.gc_fresh_small { font-size:10pt; }
 td.gc_watched_small { font-size:10pt; }
-
-
-/*
-body.admin_background0 { color:white ; background-color:#000044; }
-body.admin_background1 { color:yellow ; background-color:#000044; }
-*/ .dummy { color:red; }
 
 font.Delete {color:#FF9966; font-weight:normal; }
 font.Ignore {color:#777;}
@@ -117,18 +105,6 @@ h1,.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color
 
 .label { color:red }
 .scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
-
-
-/*
-tr.fanart0 {
-    vertical-align:middle;
-}
-
-tr.fanart1 {
-    vertical-align:bottom;
-}
-*/ .dummy { color:red; }
-
 
 <!--
 vi:ts=4:sw=4:et:syntax=css

@@ -88,6 +88,10 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 #define USE_SELECT
 // If USE_SELECT then select() is used for timeout rather than the original setsockopt/recvmsg
 // This is because setsockopt SO_SNDTIMEO does not work on NMT.
+//
+// TODO Implement version that creates a socket to portmap (NFS) or 445(Windows)
+// http://www.developerweb.net/forum/showthread.php?p=13486
+//
 
 int ping (char *host,long timeout_millis)
 {

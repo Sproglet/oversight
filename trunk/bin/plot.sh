@@ -117,28 +117,46 @@ function err(x) {
     print "[ERROR] "x;
 }
 
-#get hash of plot ids from the input file.
+function getField(id,line,\
+out,offset,i) {
+    offset = length(id)+2;
+    id = "\t"id"\t";
+
+    if ( match(line,id "[^\t]+") ) {
+        out=substr(line,RSTART+offset,RLENGTH-offset);
+    }
+    inf("["id"] = ["out"]");
+    return out;
+
+}
+
+
+# compute all of the plot keys from the ttids , seasons and episodes in the file.
 function extract_plot_tags(f,keep,\
 ref,m,i,count,parts) {
 
     inf("Extract plot tags from "f);
     while ((getline ref < f ) > 0) {
 
-        #Get a unique marker
-        m = "%@£@%";
-        while (index(ref,m)) m = m "£%";
+        url=getField("_U",ref);
+        if (length(url) > 9 && match(url,"tt[0-9]+")) {
+            url = substr(url,RSTART,RLENGTH);
+            inf("shortened to ["url"]");
+        }
 
-        #surround the matches with the marker
-        gsub(g_plotpattern,m"&"m,ref);
+        if (url != "" ) {
 
-        #now splt at the marker
-        count=split(ref,parts,m);
+            cat=getField("_C",ref);
 
-        #All even items are the regex matches.
-        for(i=2 ; i <= count ; i+=2) {
-            if (!(parts[i] in keep)) {
-                #inf("keep["parts[i]"]");
-                keep[parts[i]] = 1;
+            if (cat == "T") {
+
+                season=getField("_s",ref);
+                episode=getField("_e",ref);
+
+                keep["_@"url"@"season"@@_"] = 1;
+                keep["_@"url"@"season"@"episode"@_"] = 1;
+            } else {
+                keep["_@"url"@@@_"] = 1;
             }
         }
     }

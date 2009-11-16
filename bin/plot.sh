@@ -125,7 +125,7 @@ out,offset,i) {
     if ( match(line,id "[^\t]+") ) {
         out=substr(line,RSTART+offset,RLENGTH-offset);
     }
-    inf("["id"] = ["out"]");
+    #inf("["id"] = ["out"]");
     return out;
 
 }
@@ -141,7 +141,7 @@ ref,m,i,count,parts) {
         url=getField("_U",ref);
         if (length(url) > 9 && match(url,"tt[0-9]+")) {
             url = substr(url,RSTART,RLENGTH);
-            inf("shortened to ["url"]");
+            #inf("shortened to ["url"]");
         }
 
         if (url != "" ) {

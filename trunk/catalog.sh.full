@@ -750,6 +750,7 @@ END{
 
     g_search_yahoo = get_local_yahoo();
     g_search_bing = "http://www.bing.com/search?q=";
+    g_search_google = "http://www.google.com/search?q=";
 
     THIS_YEAR=substr(NOW,1,4);
 
@@ -1532,24 +1533,21 @@ function folderIsRelevant(dir) {
 }
 
 function scanWWWForFirstImdbPage(name_no_tags,qualifier,\
-keywords,i1,i2) {
+keywords,i1,i2,i3) {
 
     keywords = textToSearchKeywords(name_no_tags,0);
 
     i1=scanPageForMatch(g_search_bing keywords"+"qualifier,g_imdb_regex,0);
-    if (i1 != "" ) {
-        i2=scanPageForMatch(g_search_yahoo keywords"+"qualifier,g_imdb_regex,0);
-    }
-    return check_same("firstimdb",i1,i2);
-}
-
-function check_same(label,a,b) {
-    if ( a != b ) {
-        INF(label": No Consensus on search ["a"] != ["b"]");
-    } else if (a == "") {
-        INF(label": No results");
-    } else {
-        return a;
+    i2=scanPageForMatch(g_search_yahoo keywords"+"qualifier,g_imdb_regex,0);
+    if (i1 == i2 ) {
+       return i1;
+    } else if (i1 != i2 && "" != i1 i2 ) {
+        # Difference of opinion - try google.
+        i3=scanPageForMatch(g_search_google keywords"+"qualifier,g_imdb_regex,0);
+        if (i3 != "" ) {
+            if (i3 == i1 ) return i1;
+            if (i3 == i2 ) return i2;
+        }
     }
     return "";
 }
@@ -6537,7 +6535,7 @@ row,est,nfo) {
     if (gAdditionalInfo[i]) row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i];
 
 
-    if (g_imdb[i]) row=row"\t"URL"\t"extractImdbId(g_imdb[i]);
+    if (g_imdb[i]) row=row"\t"URL"\t"extractImdbId(g_imdb[i],1);
 
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
     if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i];
@@ -6600,7 +6598,7 @@ i,row,fields,f,inf) {
 
 function update_plots(pfile,idx,\
 id,cmd,cmd2) {
-    id=extractImdbId(g_imdb[idx]);
+    id=extractImdbId(g_imdb[idx],1);
     if (id != "") {
         INF("updating plots for "id);
 

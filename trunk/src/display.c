@@ -785,8 +785,20 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type) {
         p+= sprintf(p,"_%d_%d.jpg",rid->year,rid->season);
     } else {
         char *imdbid=NULL;
-        if (rid->url != NULL && (imdbid = strstr(rid->url,"/tt")) && isdigit(imdbid[3])) {
-            p += sprintf(p,"_%d_%.9s.jpg",rid->year,imdbid+1);
+TRACE;
+        if (!EMPTY_STR(rid->url ) ) {
+           if ( util_starts_with(rid->url,"tt")) {
+               imdbid = rid->url;
+           } else {
+               imdbid = strstr(rid->url,"/tt");
+               if (imdbid && isdigit(imdbid[3])) imdbid ++;
+           }
+        }
+TRACE;
+        HTML_LOG(0,"imdbid=[%s]",imdbid);
+        if (imdbid) {
+           p += sprintf(p,"_%d_%.9s.jpg",rid->year,imdbid);
+            HTML_LOG(0,"path=[%s]",path);
         } else {
             // Blank it all out
             *path = '\0';

@@ -794,7 +794,7 @@ if (NEWSCAN) {
 get_files(INDEX_DB,g_scanned)
 
 
-dump(0,"scanned",g_scanned)
+
 }
 
 for(f in FOLDER_ARR) {
@@ -1415,7 +1415,10 @@ g_fldrMediaCount[folder]++
 
 g_fldr[idx]=folder
 g_media[idx] = file
+
+if (!scanned(path,g_scanned)) {
 DEBUG("Storing ["g_fldr[idx]"]["g_media[idx]"]")
+}
 
 
 gMovieFilePresent[path] = idx
@@ -2521,8 +2524,6 @@ begin_search("")
 
 thisTime = -systime()
 
-report_status("item "(g_item_count++))
-
 bestUrl=""
 
 scanNfo=0
@@ -2530,13 +2531,15 @@ scanNfo=0
 file=g_media[idx]
 if (file == "" ) continue
 
-DIV0("Start item "(g_item_count)": ["file"]")
-DEBUG("folder :["g_fldr[idx]"]")
-
 if (NEWSCAN && scanned(g_fldr[idx]"/"file,g_scanned)) {
-INF("Already Scanned "file)
+DEBUG("Already scanned "file)
 continue
 }
+
+report_status("item "(g_item_count++))
+
+DIV0("Start item "(g_item_count)": ["file"]")
+DEBUG("folder :["g_fldr[idx]"]")
 
 if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
 WARNING("Skipping unknown file ["file"]")

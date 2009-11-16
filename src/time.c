@@ -1,41 +1,42 @@
 #include <stdio.h>
 #include "time.h"
 
+static void copy_internal_time2tm(OVS_TIME t1,struct tm *t);
+
 inline OVS_TIME time_ordinal(struct tm *t) {
 // Return some long that represents time. mktime() is ideal but a bit slow on PCH
 // we just need a number we can sort on and compare
 #ifdef OVS_USE_FAST_TIME
+#ifdef OVS_FAST_TIME_HAS_SECONDS
     // maxint is 2147483647
     // Binary layout is YYYY YYYYYYMM MMdddddh hhhhmmmm mmssssss
     // Note the year pushes us to more than 32 bits as we need more than 6 bits for the year.
-    return ((((((((((t->tm_year & 0x7F) << 4)+t->tm_mon) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min)<<6)+t->tm_sec;
-    //max 59 + 60*(59 + 60 * (23 + 24 * ( 30 + 31 * (11 + 12 * 5 ))));
-    //  = 32140799
+    return ((((((((((t->tm_year & 0x3FF) << 4)+t->tm_mon) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min)<<6)+t->tm_sec;
+#else
+
+    // Remove seconds from timestamp format.
+    // Binary layout is YYYYYY YYYYMMMM dddddhhh hhmmmmmm
+    return ((((((((t->tm_year & 0x3FF) << 4)+t->tm_mon) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min;
+#endif
 #else
     return mktime(t);
 #endif
 }
 
-// Difference in days between two times
 OVS_TIME epoc2internal_time(time_t t1) {
 #ifdef OVS_USE_FAST_TIME
-   
     struct tm *t=gmtime(&t1);
     return time_ordinal(t);
 #else
     return t1;
 #endif
 }
+
 time_t internal_time2epoc(OVS_TIME t1) {
 #ifdef OVS_USE_FAST_TIME
     struct tm t;
-    // Binary layout is YYYY YYYYYYMM MMdddddh hhhhmmmm mmssssss
-    t.tm_sec = t1 & 0x3F;
-    t.tm_min = ( t1 >> 6) & 0x3F;
-    t.tm_hour = ( t1 >> (6+6)) & 0x1F;
-    t.tm_mday = ( ( t1 >> (6+6+5)) & 0x1F  );
-    t.tm_mon = ( t1 >> (6+6+5+5)) & 0xF  ;
-    t.tm_year = ( t1 >> (6+6+5+5+4)) & 0x7F  ;
+
+    copy_internal_time2tm(t1,&t);
     return mktime(&t);
 #else
     return t1;
@@ -48,18 +49,36 @@ struct tm *internal_time2tm(OVS_TIME t1,struct tm *t)
         t = &t_static;
     }
 #ifdef OVS_USE_FAST_TIME
+    copy_internal_time2tm(t1,t);
+#else
+    localtime_r(&t1,t);
+#endif
+    return t;
+}
+static void copy_internal_time2tm(OVS_TIME t1,struct tm *t) {
+#ifdef OVS_USE_FAST_TIME
+#ifdef OVS_FAST_TIME_HAS_SECONDS
     // Binary layout is YYYY YYYYYYMM MMdddddh hhhhmmmm mmssssss
     t->tm_sec = t1 & 0x3F;
     t->tm_min = ( t1 >> 6) & 0x3F;
     t->tm_hour = ( t1 >> (6+6)) & 0x1F;
     t->tm_mday = ( ( t1 >> (6+6+5)) & 0x1F  );
     t->tm_mon = ( t1 >> (6+6+5+5)) & 0xF  ;
-    t->tm_year = ( t1 >> (6+6+5+5+4)) & 0x7F  ;
+    t->tm_year = ( t1 >> (6+6+5+5+4)) & 0x3FF  ;
 #else
-    localtime_r(&t1,t);
+    // Binary layout is YYYYYY YYYYMMMM dddddhhh hhmmmmmm
+    t->tm_sec = 0;
+    t->tm_min = t1  & 0x3F;
+    t->tm_hour = ( t1 >> (6)) & 0x1F;
+    t->tm_mday = ( ( t1 >> (6+5)) & 0x1F  );
+    t->tm_mon = ( t1 >> (6+5+5)) & 0xF  ;
+    t->tm_year = ( t1 >> (6+5+5+4)) & 0x3FF  ;
 #endif
-    return t;
+#else
+    assert(0);
+#endif
 }
+
 
 char *fmt_timestamp_static(OVS_TIME t1)
 {

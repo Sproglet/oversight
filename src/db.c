@@ -332,9 +332,9 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                     *offset=&(rowid->eptitle_imdb);
                     *type = FIELD_TYPE_STR;
                 }
-            }else if (name[2] == 'p') { // _ep
-                *offset=&(rowid->episode_plot_key);
-                *type = FIELD_TYPE_STR;
+//            }else if (name[2] == 'p') { // _ep
+//                *offset=&(rowid->episode_plot_key);
+//                *type = FIELD_TYPE_STR;
             }
             break;
         case 'f':
@@ -397,12 +397,12 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                     *type = FIELD_TYPE_STR;
                 }
             break;
-        case 'P':
-                if (name[2] == '\0') {
-                *offset=&(rowid->plot_key);
-                *type = FIELD_TYPE_STR;
-                }
-            break;
+//        case 'P':
+//                if (name[2] == '\0') {
+//                *offset=&(rowid->plot_key);
+//                *type = FIELD_TYPE_STR;
+//                }
+//            break;
         case 'r':
             if (name[2] == '\0') {
                 *offset=&(rowid->rating);
@@ -613,6 +613,7 @@ void set_title_as_folder(DbRowId *rowid)
 #define STATE_NAME 0
 #define STATE_VAR 1
 
+//changes here should be reflected in catalog.sh.full:createIndexRow()
 void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%ld",DB_FLDID_ID,rid->id);
     fprintf(fp,"\t%s\t%c",DB_FLDID_CATEGORY,rid->category);
@@ -622,7 +623,7 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%d",DB_FLDID_SEASON,rid->season);
     fprintf(fp,"\t%s\t%.1lf",DB_FLDID_RATING,rid->rating);
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPISODE,rid->episode);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_POSTER,rid->poster);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_POSTER,rid->poster);
     fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,rid->genre);
     fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,rid->parts);
     fprintf(fp,"\t%s\t%d",DB_FLDID_YEAR,rid->year);
@@ -630,6 +631,9 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_ADDITIONAL_INFO,rid->additional_nfo);
     fprintf(fp,"\t%s\t%s",DB_FLDID_URL,rid->url);
     fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,rid->certificate);
+    if (rid->director) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR,NVL(rid->director));
+    }
     fprintf(fp,"\t%s\t%s",DB_FLDID_FILETIME,fmt_timestamp_static(rid->filetime));
     fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(rid->downloadtime));
     //fprintf(fp,"\t%s\t%s",DB_FLDID_PROD,rid->prod);
@@ -639,8 +643,8 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,rid->eptitle);
     fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,rid->nfo);
     //fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,rid->fanart);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot_key);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,rid->episode_plot_key);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot_key);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,rid->episode_plot_key);
     fprintf(fp,"\t\n");
     fflush(fp);
 }

@@ -20,7 +20,6 @@ set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20091102-1BETA
 
-
 NMT_APP_DIR=
 nmt_version=unknown
 
@@ -105,6 +104,12 @@ tmp_root=/tmp/oversight
 if is_nmt ; then
 
 tmp_root="$APPDIR/tmp"
+fi
+
+
+
+if [ -z "${JOBID:-}" ] ; then
+JOBID=$$
 fi
 
 tmp_dir="$tmp_root/$JOBID"
@@ -607,7 +612,7 @@ return path
 
 function wins_resolve(link,\
 line,host,ip,newlink,hostend,cmd) {
-cmd = "nbtscan "g_tmp_settings["eth_gateway"]"/24 > "quoteArg(g_winsfile)
+cmd = "nbtscan "g_tmp_settings["eth_gateway"]"/24 > "qa(g_winsfile)
 DEBUG(cmd)
 exec(cmd);;
 if(match(link,"smb://[^/]+")) {
@@ -660,7 +665,7 @@ g_winsfile = APPDIR"/conf/wins.txt"
 g_item_count = 0
 
 g_plot_file="'"$PLOT_DB"'"
-g_plot_app=quoteArg(APPDIR"/bin/plot.sh")
+g_plot_app=qa(APPDIR"/bin/plot.sh")
 
 for(i in g_settings) {
 g_settings_orig[i] = g_settings[i]
@@ -789,6 +794,7 @@ if (NEWSCAN) {
 get_files(INDEX_DB,g_scanned)
 
 
+dump(0,"scanned",g_scanned)
 }
 
 for(f in FOLDER_ARR) {
@@ -847,7 +853,7 @@ unlock(g_scan_lock_file)
 if (hash_size(FOLDER_ARR)) {
 if (lock(g_db_lock_file)) {
 remove_absent_files_from_new_db(INDEX_DB)
-system(g_plot_app" compact "quoteArg(g_plot_file)" "quoteArg(INDEX_DB))
+system(g_plot_app" compact "qa(g_plot_file)" "qa(INDEX_DB))
 unlock(g_db_lock_file)
 }
 }
@@ -991,7 +997,7 @@ if (!is_locked(lock_file)) {
 print PID > lock_file
 close(lock_file)
 INF("Locked "lock_file)
-set_permissions(quoteArg(lock_file))
+set_permissions(qa(lock_file))
 return 1
 }
 sleep=backoff[attempts]
@@ -1004,7 +1010,7 @@ return 0
 
 function unlock(lock_file) {
 INF("Unlocked "lock_file)
-system("rm -f -- "quoteArg(lock_file))
+system("rm -f -- "qa(lock_file))
 report_status("")
 }
 
@@ -1020,11 +1026,11 @@ function replace_database_with_new(newdb,currentdb,olddb) {
 
 INF("Replace Database")
 
-system("cp -f "quoteArg(currentdb)" "quoteArg(olddb))
+system("cp -f "qa(currentdb)" "qa(olddb))
 
 touch_and_move(newdb,currentdb)
 
-set_permissions(quoteArg(currentdb)" "quoteArg(olddb))
+set_permissions(qa(currentdb)" "qa(olddb))
 }
 
 function set_permissions(shellArg) {
@@ -1070,8 +1076,10 @@ EPISODE=db_field("_e","Episode","episode")
 GENRE=db_field("_G","Genre","genre") 
 RATING=db_field("_r","Rating","rating")
 CERT=db_field("_R","CERT","mpaa")
+
 PLOT=db_field("_P","Plot","plot")
-EPPLOT=db_field("_ep","Plot","plot")
+
+
 URL=db_field("_U","URL","url")
 POSTER=db_field("_J","Poster","thumb")
 FANART=db_field("_fa","Fanart","fanart")
@@ -1143,7 +1151,7 @@ INF("ls -l time position at "gLS_TIME_POS)
 
 }
 function dir_contains(dir,pattern) {
-return exec("ls \""dir" 2>/dev/null | egrep \""pattern"\"" ) ==0
+return exec("ls "qa(dir)" 2>/dev/null | egrep "qa(pattern) ) ==0
 }
 
 
@@ -1161,7 +1169,7 @@ if (root != "/" ) {
 gsub(/\/+$/,"",root); 
 }
 
-quotedRoot=quoteArg(root)
+quotedRoot=qa(root)
 
 extRe="\\.[^.]+$"
 
@@ -1312,10 +1320,15 @@ if (index(scan_line,"/") && match(scan_line,"[^/]/")) {
 
 i = match(scan_line,".*[^/]/")
 
-currentFolder = clean_path( root "/" substr(scan_line,1,RLENGTH-1) )
+currentFolder = substr(scan_line,1,RLENGTH-1)
+if ( index(currentFolder,"/") != 1 ) {
+currentFolder =  root "/" currentFolder
+}
+currentFolder = clean_path( currentFolder )
+
 scan_line = substr(scan_line,RLENGTH+1)
 lc = tolower(scan_line)
-INF("Looking at direct file argument ["currentFolder"/"scan_line"]")
+INF("Looking at direct file argument ["currentFolder"]["scan_line"]")
 }
 
 
@@ -1515,7 +1528,7 @@ return 0
 return 1
 }
 
-function searchInternetForFirstImdbPage(name_no_tags,qualifier,\
+function scanWWWForFirstImdbPage(name_no_tags,qualifier,\
 keywords,i1,i2) {
 
 keywords = textToSearchKeywords(name_no_tags,0)
@@ -1539,7 +1552,7 @@ return ""
 }
 
 
-function searchInternetForImdbLink(idx,\
+function scanWWWForImdbLink(idx,\
 url,txt,linksRequired) {
 
 linksRequired = 0+g_settings["catalog_imdb_links_required"]
@@ -1560,7 +1573,7 @@ if (url == "" && folderIsRelevant(g_fldr[idx])) {
 url=searchHeuristicsForImdbLink(tolower(basename(g_fldr[idx])),linksRequired)
 }
 
-DEBUG("searchInternetForImdbLink=["url"]")
+DEBUG("scanWWWForImdbLink=["url"]")
 return url
 }
 
@@ -1932,8 +1945,15 @@ path = substr(path,length(g_mount_root)+1)
 return path
 }
 
-function scanned(path,files) {
-return (short_path(path) in files)
+function scanned(path,files,\
+) {
+path = short_path(path)
+if (path in files) {
+return 1
+} else {
+INF("["path"] not found in scanned files")
+return 0
+}
 }
 
 function get_files(db,files,\
@@ -2048,7 +2068,7 @@ return localPath"/"name
 
 
 
-function quoteArg(f) {
+function qa(f) {
 gsub(g_quote,g_quote "\\"g_quote g_quote,f)
 return g_quote f g_quote
 }
@@ -2511,13 +2531,13 @@ file=g_media[idx]
 if (file == "" ) continue
 
 DIV0("Start item "(g_item_count)": ["file"]")
+DEBUG("folder :["g_fldr[idx]"]")
 
-if (NEWSCAN && scanned(file,g_scanned)) {
+if (NEWSCAN && scanned(g_fldr[idx]"/"file,g_scanned)) {
 INF("Already Scanned "file)
 continue
 }
 
-DEBUG("folder :["g_fldr[idx]"]")
 if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
 WARNING("Skipping unknown file ["file"]")
 continue
@@ -2705,7 +2725,7 @@ result = 0
 
 
 
-bestUrl=searchInternetForImdbLink(idx)
+bestUrl=scanWWWForImdbLink(idx)
 if (bestUrl != "") {
 scrapeIMDBTitlePage(idx,bestUrl)
 if (g_category[idx] != "M" ) {
@@ -2731,8 +2751,13 @@ return
 
 
 name=cleanSuffix(idx)
+INF("name=["name"]")
+
 name_no_parts = remove_part_suffix(idx)
+INF("name_no_parts=["name_no_parts"]")
+
 name_no_tags=remove_format_tags(name)
+INF("name_no_tags=["name_no_tags"]")
 
 
 for(i = 1 ; i < 5 ; i++ ) {
@@ -2776,15 +2801,15 @@ bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".")
 
 
 
-bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"))
+bestUrl=scanWWWForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"))
 
 } else if (search_order[s] == "IMDBFIRST") {
 
-bestUrl=searchInternetForFirstImdbPage(name_no_tags,url_encode("+imdb"))
+bestUrl=scanWWWForFirstImdbPage(name_no_tags,url_encode("+imdb"))
 
 } else if (search_order[s] == "IMDBLINKS") {
 
-bestUrl=searchInternetForImdbLink(idx)
+bestUrl=scanWWWForImdbLink(idx)
 
 } else {
 ERR("Unknown search method "search_order[s])
@@ -2883,16 +2908,18 @@ INF("Reset scanned files store")
 function cleanSuffix(idx,\
 name) {
 name=g_media[idx]
+if(name !~ "/$") {
 
-sub(/\.[^.]+$/,"",name)
-
-
-
+sub(/\.[^.\/]+$/,"",name)
 
 
 
 
 
+
+
+
+}
 name=trimAll(name)
 return name
 }
@@ -3101,7 +3128,7 @@ foundId=""
 INF("scanNfoForImdbLink ["nfoFile"]")
 g_search_total["nfo"]++
 
-if (system("test -f "quoteArg(nfoFile)) == 0) {
+if (system("test -f "qa(nfoFile)) == 0) {
 FS="\n"
 while(foundId=="" && (getline line < nfoFile) > 0 ) {
 
@@ -4653,6 +4680,7 @@ url=episodeInfo[e"/link"]
 if (g_epplot[idx] == "" ) {
 
 p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1)
+sub(/ *There are no foreign summaries.*/,"",p)
 if (p != "" && index(p,"There is no summary") == 0) {
 g_epplot[idx] = p
 DEBUG("rage epplot :"g_epplot[idx])
@@ -4860,7 +4888,7 @@ tmpFile=tmp_dir"/bytes."JOBID
 isoPart=tmp_dir"/bytes."JOBID".2"
 delete outputText
 
-if (exec("dd if="quoteArg(isoPath)" of="isoPart" bs=1024 count=10 skip=32") != 0) {
+if (exec("dd if="qa(isoPath)" of="isoPart" bs=1024 count=10 skip=32") != 0) {
 return 0
 }
 
@@ -5041,8 +5069,8 @@ dir) {
 dir=APPDIR"/cache"
 if (g_cache_ok == 0) {
 g_cache_ok=2
-system("mkdir -p "quoteArg(dir))
-if (set_permissions(quoteArg(dir)"/.") == 0) {
+system("mkdir -p "qa(dir))
+if (set_permissions(qa(dir)"/.") == 0) {
 g_cache_ok=1
 }
 }
@@ -5115,13 +5143,13 @@ function wget(url,file,referer,\
 i,urls,tmpf,qf,r) {
 split(url,urls,"\t")
 tmpf = file ".tmp"
-qf = quoteArg(tmpf)
+qf = qa(tmpf)
 
 r=1
 for(i in urls) {
 if (urls[i] != "") {
 if (wget2(urls[i],tmpf,referer) == 0) {
-exec("cat "qf" >> "quoteArg(file))
+exec("cat "qf" >> "qa(file))
 r=0
 }
 }
@@ -5149,11 +5177,11 @@ DEBUG2("Referer = "referer)
 args=args" --referer=\""referer"\" "
 }
 
-targetFile=quoteArg(file)
+targetFile=qa(file)
 htmlFile=targetFile
 
 args=args" --header=\"Accept-Encoding: gzip,deflate\" "
-downloadedFile=quoteArg(file".gz")
+downloadedFile=qa(file".gz")
 
 unzip_cmd=" && ( gunzip -c "downloadedFile" || gzip -c -d "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile
 
@@ -5167,7 +5195,7 @@ args = args " -c "
 
 
 
-url=quoteArg(url)
+url=qa(url)
 
 
 
@@ -5364,7 +5392,7 @@ script_arg="fanart"
 
 
 rm(internal_path,1)
-exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "quoteArg(url)" "quoteArg(internal_path)" "wget_args" &")
+exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &")
 g_image_inspected[internal_path]=1
 }
 
@@ -5379,7 +5407,7 @@ if (!(url in g_domain_status)) {
 start=systime()
 tries=2
 timeout=5
-if (system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "quoteArg(url)"/favicon.ico") ) {
+if (system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url)"/favicon.ico") ) {
 g_domain_status[url]=1
 } else if (systime() - start  >= tries * timeout ) {
 WARNING("Error with domain ["url"]")
@@ -5792,40 +5820,37 @@ return title
 
 
 function scrapeIMDBAka(idx,line,\
-l,akas,a,c,exclude,e,eEeE) {
+l,akas,a,c,exclude,e,eEeE,br) {
 
 if (gOriginalTitle[idx] != gTitle[idx] ) return 
+
+br=substr("()",1,1)
 
 l=substr(line,index(line,"</h")+5)
 split(l,akas,"<br>")
 for(a in akas) {
+akas[a] = remove_tags(akas[a])
 DEBUG("Checking aka ["akas[a]"]")
 for(c in gTitleCountries ) {
-if (index(akas[a],"("gTitleCountries[c]":")) {
-
-
-DEBUG("Ignoring aka section")
-return
-eEeE=")"
-}
-if (index(akas[a],"("gTitleCountries[c]")")) {
-
-split("longer version|season title|poster|working|literal|IMAX|promotional|long title|script title|closing credits|informal alternative",exclude,"|")
-for(e in exclude) {
-if (index(akas[a],exclude[e])) {
+if (index(akas[a],br gTitleCountries[c]":")) {
 
 
 DEBUG("Ignoring aka section")
 return
 }
+if (index(akas[a],br gTitleCountries[c]")")) {
+
+if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|script title|closing credits|informal alternative")) {
+
+
+DEBUG("Ignoring aka section")
+return
 }
 
 akas[a]=substr(akas[a],1,index(akas[a]," (")-1)
 akas[a]=clean_title(akas[a])
-sub(/ \(.*/,"",akas[a])
 adjustTitle(idx,akas[a],"imdb_aka"); 
 return
-
 }
 }
 }
@@ -6076,7 +6101,7 @@ moveFolder(i,oldFolder,newFolder)
 }
 
 if (is_dir(oldFolder) && is_empty(oldFolder)) {
-system("rmdir "quoteArg(oldFolder))
+system("rmdir "qa(oldFolder))
 }
 
 } else {
@@ -6103,7 +6128,7 @@ if (!changeable(x)) return 1
 if (!quiet) {
 INF("Deleting "x)
 }
-cmd=cmd quoteArg(x)" 2>/dev/null "
+cmd=cmd qa(x)" 2>/dev/null "
 if (quick) {
 return "(" cmd ") & "
 } else {
@@ -6157,7 +6182,7 @@ moveFile(oldBase extensions[ext],newBase extensions[ext])
 }
 
 function preparePath(f) {
-f = quoteArg(f)
+f = qa(f)
 return system("if [ ! -e "f" ] ; then mkdir -p "f" && chown '$OVERSIGHT_ID' "f"/.. &&  rmdir -- "f" ; fi")
 }
 
@@ -6184,8 +6209,8 @@ new,old,ret) {
 if (!changeable(oldName) ) {
 return 1
 }
-new=quoteArg(newName)
-old=quoteArg(oldName)
+new=qa(newName)
+old=qa(oldName)
 if (g_opt_dry_run) {
 if (match(oldName,gExtRegExAll) && system("test -f "old) == 0) {
 print "dryrun: from "old
@@ -6230,8 +6255,8 @@ err = g_fldrMediaCount[oldName]" media files"
 err="un changable folder"
 
 } else {
-new=quoteArg(newName)
-old=quoteArg(oldName)
+new=qa(newName)
+old=qa(oldName)
 if (g_opt_dry_run) { 
 print "dryrun: from "old"/* to "new"/"
 ret = 0
@@ -6270,7 +6295,7 @@ close(f)
 return (err != -1 )
 }
 function is_empty(d) {
-return system("ls -a "quoteArg(d)" | egrep -v '^\.\.?$'") != 0
+return system("ls -a "qa(d)" | egrep -v '^\.\.?$'") != 0
 }
 function is_dir(f) {
 return test("-d",f"/.")
@@ -6278,12 +6303,12 @@ return test("-d",f"/.")
 function is_file_or_folder(f,\
 r) {
 r = (is_file(f) || is_dir(f))
-if (!r) INF(f" is neither file or folder")
+if (!r) WARNING(f" is neither file or folder")
 return r
 }
 
 function test(t,f) {
-return system("test "t" "quoteArg(f)) == 0
+return system("test "t" "qa(f)) == 0
 }
 
 
@@ -6363,7 +6388,7 @@ nfoAdded=1
 }
 if(nfoAdded) {
 close(nfo)
-set_permissions(quoteArg(nfo))
+set_permissions(qa(nfo))
 }
 }
 
@@ -6440,6 +6465,7 @@ return ""
 }
 }
 
+
 function createIndexRow(i,db_index,watched,index_time,\
 row,est,nfo) {
 
@@ -6455,20 +6481,7 @@ est = g_file_time[i]
 if (g_file[i] == "" ) {
 g_file[i]=getPath(g_media[i],g_fldr[i])
 }
-
-
-
-
-while (gsub("/\\./","/",g_file[i]) ) 
-continue; 
-
-
-
-
-
-gsub("//+","/",g_file[i])
-
-
+g_file[i] = clean_path(g_file[i])
 
 if ((g_file[i] in g_fldrCount ) && g_fldrCount[g_file[i]]) {
 DEBUG("Adjusting file for video_ts")
@@ -6506,20 +6519,22 @@ if (gOriginalTitle[i] != "" && gOriginalTitle[i] != gTitle[i] ) {
 row=row"\t"ORIG_TITLE"\t"gOriginalTitle[i]
 }
 if (g_season[i] != "") row=row"\t"SEASON"\t"g_season[i]
+
+row=row"\t"RATING"\t"g_rating[i]
+
 if (g_episode[i] != "") row=row"\t"EPISODE"\t"g_episode[i]
 
 row=row"\t"GENRE"\t"g_genre[i]
-row=row"\t"RATING"\t"g_rating[i]
 
+if (gParts[i]) row=row"\t"PARTS"\t"gParts[i]
 
 row=row"\t"YEAR"\t"g_year[i]
 row=row"\t"FILE"\t"g_file[i]
 
 if (gAdditionalInfo[i]) row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i]
 
-if (gParts[i]) row=row"\t"PARTS"\t"gParts[i]
 
-if (g_imdb[i]) row=row"\t"URL"\t"g_imdb[i]
+if (g_imdb[i]) row=row"\t"URL"\t"extractImdbId(g_imdb[i])
 
 row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i]
 if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i]
@@ -6544,22 +6559,7 @@ gsub(/.*\//,"",nfo)
 if (is_file(g_fldr[i]"/"nfo)) {
 row=row"\t"NFO"\t"nfo
 }
-row=row"\t"PLOT"\t"plot_tag(i)
-row=row"\t"EPPLOT"\t"epplot_tag(i)
 return row
-}
-
-function epplot_tag(idx) {
-
-if (g_category[idx] ==  "T" ) {
-return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@"g_episode[idx]"@_"
-} else {
-return ""
-}
-}
-
-function plot_tag(idx) {
-return "_@"extractImdbId(g_imdb[idx])"@"g_season[idx]"@@_"
 }
 
 
@@ -6584,22 +6584,13 @@ row=createIndexRow(i,-1,0,"")
 
 print row"\t" >> output_file
 
+
 update_plots(g_plot_file,i)
 
-generate_nfo_file(g_settings["catalog_nfo_format"],row)
 
-if(DBG-2 >= 0) {
-split(row,fields,"\t")
-for(f=1; (f in fields) ; f++) {
-if (f%2) {
-if(fields[f] != "" ) {
-DEBUG2(inf"=["fields[f]"]")
-}
-} else {
-inf=g_db_field_name[fields[f]]; 
-}
-}
-}
+
+row = row "\t"PLOT"\t"g_plot[i]
+generate_nfo_file(g_settings["catalog_nfo_format"],row)
 }
 close(output_file)
 }
@@ -6610,16 +6601,16 @@ id=extractImdbId(g_imdb[idx])
 if (id != "") {
 INF("updating plots for "id)
 
-cmd=g_plot_app" update "quoteArg(pfile)" "quoteArg(id)" "quoteArg(g_season[idx])
+cmd=g_plot_app" update "qa(pfile)" "qa(id)" "qa(g_season[idx])
 
 if (g_plot[idx] != "" ) {
-cmd2 = cmd" "quoteArg("")" "quoteArg(g_plot[idx])
+cmd2 = cmd" "qa("")" "qa(g_plot[idx])
 INF("updating main plot :"cmd2)
 exec(cmd2)
 }
 
 if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
-cmd2 = cmd" "quoteArg(g_episode[idx])" "quoteArg(g_epplot[idx])
+cmd2 = cmd" "qa(g_episode[idx])" "qa(g_epplot[idx])
 INF("updating episode plot :"cmd2)
 exec(cmd2)
 }
@@ -6627,7 +6618,7 @@ exec(cmd2)
 }
 
 function touch_and_move(x,y) {
-system("touch "quoteArg(x)" ; mv "quoteArg(x)" "quoteArg(y))
+system("touch "qa(x)" ; mv "qa(x)" "qa(y))
 }
 
 
@@ -6645,7 +6636,7 @@ return CAPTURE_FILE
 
 function clean_capture_files() {
 INF("Clean up")
-exec("rm -f -- "quoteArg(CAPTURE_PREFIX JOBID) ".* ")
+exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* ")
 }
 function INF(x) {
 timestamp("[INFO]",x)
@@ -6876,11 +6867,6 @@ done
 
 clean_logs
 
-
-
-if [ -z "${JOBID:-}" ] ; then
-JOBID=$$
-fi
 
 
 

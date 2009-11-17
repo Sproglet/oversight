@@ -2194,7 +2194,7 @@ case $mode in
             arg_nzb_state="$5"  
             arg_par_fail="$6" 
             arg_category="${7:-}"
-            log_name="`BASENAME "$arg_download_dir" | sed -r 's/ +/_/g'`.$$"
+            log_name="`BASENAME "$arg_download_dir" | sed -r 's/[^A-Za-z0-9]+/./g'`.$$"
         fi
 esac
 

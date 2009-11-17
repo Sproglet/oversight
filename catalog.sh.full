@@ -269,6 +269,7 @@ catalog() {
 
 #Pad episode but dont assume its a number .eg 03a for Big Brother
 #BEGINAWK
+#!catalog
 function pad_episode(e) {
     if (match(e,"^[0-9][0-9]")) {
         return e;
@@ -373,6 +374,7 @@ i,links) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();
 
     g_tv_check_urls["TVRAGE"]="http://tvrage.com";
@@ -411,6 +413,7 @@ function report_status(msg) {
     }
 }
 
+# Deperecated - get folders newer than timestamp
 #ALL# function get_new_folders(folder_list,timestamp_file,\
 #ALL# new_list,f,i,j,dir,newfile,newdir) {
 #ALL#     if (!is_file(timestamp_file)) {
@@ -758,11 +761,14 @@ END{
 
     if (RESCAN == 1 || NEWSCAN == 1) {
         if (!(1 in FOLDER_ARR)) {
+            # Get default folder list
 
             if (NEWSCAN == 1) {
+                # Get watch folders only
                 INF("Scanning watch paths");
                 folder_list=g_settings["catalog_watch_paths"];
             } else {
+                # Get all folders only
                 INF("Scanning default and watch paths");
                 folder_list=g_settings["catalog_scan_paths"];
                 if (g_settings["catalog_watch_paths"] != "") {
@@ -792,10 +798,8 @@ END{
 
 
     if (NEWSCAN) {
-        get_files(INDEX_DB,g_scanned);
-        #get_new_folders(FOLDER_ARR,g_timestamp_file);
-        #scan_options="-l";
-        #dump(0,"scanned",g_scanned);
+        get_files(INDEX_DB);
+        #get_new_folders(FOLDER_ARR,g_timestamp_file); # deprecated
     }
 
     for(f in FOLDER_ARR) {
@@ -852,7 +856,8 @@ END{
         unlock(g_scan_lock_file);
     }
     if (hash_size(FOLDER_ARR)) {
-        if (lock(g_db_lock_file)) {
+        if (lock(g_db_lock_file,1)) {
+            #if we cant get the lock assume other task will prune anyway.
             remove_absent_files_from_new_db(INDEX_DB);
             system(g_plot_app" compact "qa(g_plot_file)" "qa(INDEX_DB));
             unlock(g_db_lock_file);
@@ -988,7 +993,7 @@ pid) {
     }
 }
 
-function lock(lock_file,\
+function lock(lock_file,fastfail,\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
@@ -1001,6 +1006,7 @@ attempts,sleep,backoff) {
             set_permissions(qa(lock_file));
             return 1;
         }
+        if (fastfail) break;
         sleep=backoff[attempts];
         WARNING("Failed to get exclusive lock. Retry in "sleep" seconds.");
         system("sleep "sleep);
@@ -1152,7 +1158,7 @@ tempFile,i,procfile) {
 
 }
 function dir_contains(dir,pattern) {
-    return exec("ls "qa(dir)" 2>/dev/null | egrep "qa(pattern) ) ==0;
+    return exec("ls "qa(dir)" 2>/dev/null | egrep -q "qa(pattern) ) ==0;
 }
 
 # Input is ls -lR or ls -l
@@ -1160,7 +1166,7 @@ function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts) {
 
-    DEBUG("PreScanning "root);
+    DEBUG("Scanning "root);
     if (root == "") return;
 
     tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
@@ -1177,8 +1183,6 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     #We use ls -R instead of find to get a sorted list.
     #There may be some issue with this.
 
-    #First file /proc/$$ is to check ls format
-    DEBUG("Scanning "quotedRoot);
     # We want to list a file which may be a file, folder or symlink.
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
@@ -1242,7 +1246,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             lc=tolower(scan_line);
 
             if ( lc ~ g_settings["catalog_ignore_names"] ) {
-                INF("Ignore name "scan_line);
+                DEBUG("Ignore name "scan_line);
                 continue;
             }
 
@@ -1417,8 +1421,8 @@ path) {
     g_fldr[idx]=folder;
     g_media[idx] = file;
 
-    if (!scanned(path,g_scanned)) {
-        DEBUG("Storing ["g_fldr[idx]"]["g_media[idx]"]");
+    if (!in_db(path)) {
+        DEBUG("Storing");
     }
 
     #used when pruning the old index.
@@ -1503,7 +1507,7 @@ nfo,lcNfo) {
 function exec(cmd,\
 err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   DEBUG("SYSTEM : [["cmd"]]");
+   #DEBUG("SYSTEM : [["cmd"]]");
    if ((err=system(cmd)) != 0) {
       ERR("Return code "err" executing "cmd) ;
   }
@@ -1532,18 +1536,17 @@ function folderIsRelevant(dir) {
    return 1;
 }
 
-function scanWWWForFirstImdbPage(name_no_tags,qualifier,\
-keywords,i1,i2,i3) {
+function scanWWWForFirstImdbPage(qualifier,\
+i1,i2,i3) {
 
-    keywords = textToSearchKeywords(name_no_tags,0);
 
-    i1=scanPageForMatch(g_search_bing keywords"+"qualifier,g_imdb_regex,0);
-    i2=scanPageForMatch(g_search_yahoo keywords"+"qualifier,g_imdb_regex,0);
+    i1=scanPageForMatch(g_search_bing qualifier,g_imdb_regex,0);
+    i2=scanPageForMatch(g_search_yahoo qualifier,g_imdb_regex,0);
     if (i1 == i2 ) {
        return i1;
     } else if (i1 != i2 && "" != i1 i2 ) {
         # Difference of opinion - try google.
-        i3=scanPageForMatch(g_search_google keywords"+"qualifier,g_imdb_regex,0);
+        i3=scanPageForMatch(g_search_google qualifier,g_imdb_regex,0);
         if (i3 != "" ) {
             if (i3 == i1 ) return i1;
             if (i3 == i2 ) return i2;
@@ -1946,29 +1949,36 @@ function short_path(path) {
     return path;
 }
 
-function scanned(path,files,\
+function in_db(path,verbose,\
 ) {
     path = short_path(path);
-    if (path in files) {
+    if (path in g_scanned) {
+        if (verbose) INF("["path"] already scanned");
         return 1;
     } else {
-        INF("["path"] not found in scanned files");
+        INF("["path"] not in db");
         return 0;
     }
 }
 
-function get_files(db,files,\
+function add_file(path) {
+    g_scanned[short_path(path)]++;
+}
+
+function get_files(db,\
 dbline,dbfields,err) {
 
+    delete g_scanned;
     while((err = (getline dbline < db )) > 0) {
 
         if ( index(dbline,"\t") != 1 ) { continue; }
 
         parseDbRow(dbline,dbfields);
 
-        files[short_path(dbfields[FILE])] = 1;
+        add_file(dbfields[FILE]);
     }
     if (err == 0 ) close(db);
+    dump(0,"scanned",g_scanned);
 }
 
 # Re-instate old pruning test with extra folder check for absent media
@@ -1978,13 +1988,15 @@ dbline,dbfields,err) {
 # present - this is to allow for detached devices. (sort of)
 function remove_absent_files_from_new_db(db,\
     tmp_db,dbfields,\
-    list,f,maxCommandLength,dbline,keep,\
+    list,f,shortf,maxCommandLength,dbline,keep,\
     gp,blacklist_re,blacklist_dir,timer) {
     list="";
     maxCommandLength=3999;
 
     INF("Pruning...");
     tmp_db = db "." JOBID ".tmp";
+
+    get_files(db);
 
     if (lock(g_db_lock_file)) {
         g_kept_file_count=0;
@@ -1998,11 +2010,24 @@ function remove_absent_files_from_new_db(db,\
             parseDbRow(dbline,dbfields);
 
             f = dbfields[FILE];
+            shortf = short_path(f);
             #INF("Prune ? ["f"]");
 
             keep=1;
-            
-            if (blacklist_re != "" && f ~ "NETWORK_SHARE/("blacklist_re")" ) {
+
+            if (g_scanned[shortf] == 0 ) {
+
+                #For duplicate files we want to keep the first one as this is the one 
+                #that gets updated during a rescan. So ig g_scanned(f) > 1 then
+                # set it to 0 at the end of this loop. Then the next duplicate will 
+                # trigger this code.
+
+                keep = 0;
+                WARNING("Skipping "f" - duplicate");
+
+
+            } else if (blacklist_re != "" && f ~ "NETWORK_SHARE/("blacklist_re")" ) {
+
                 WARNING("Skipping "f" - blacklisted device");
             } else {
 
@@ -2043,6 +2068,12 @@ function remove_absent_files_from_new_db(db,\
                 INF("Removing "f);
                 g_absent_file_count++;
                 
+            }
+            if (g_scanned[shortf] - 1 > 0) {
+                #For duplicate files we want to keep the first one as this is the one 
+                #that gets updated during a rescan. So ig g_scanned(f) > 1 then
+                # set it to 0. Then the next duplicate will trigger delete code.
+                g_scanned[shortf] = 0;
             }
         }
         close(tmp_db);
@@ -2393,8 +2424,11 @@ episodeInfo,match_date,result,filter) {
     filter["/Show/Episodelist/Season/episode/airdate"] = match_date;
     if (fetch_xml_single_child(get_tv_series_api_url("TVRAGE",tvdbid),"bydate","/Show/Episodelist/Season/episode",filter,episodeInfo)) {
         gAirDate[idx]=formatDate(match_date);
-        details[SEASON]=episodeInfo["/Show/Episodelist/Season/episode/seasonnum"];
-        details[EPISODE]=episodeInfo["/Show/Episodelist/Season/episode/epnum"];
+        details[SEASON] = episodeInfo["/Show/Episodelist/Season#no"] ;
+        details[EPISODE] = episodeInfo["/Show/Episodelist/Season/episode/seasonnum"] ;
+
+        #details[SEASON]=episodeInfo["/Show/Episodelist/Season/episode/seasonnum"];
+        #details[EPISODE]=episodeInfo["/Show/Episodelist/Season/episode/epnum"];
         details[ADDITIONAL_INF]=episodeInfo["/Show/Episodelist/Season/episode/title"];
         result=1;
     }
@@ -2529,8 +2563,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
         file=g_media[idx];
         if (file == "" ) continue;
 
-        if (NEWSCAN && scanned(g_fldr[idx]"/"file,g_scanned)) {
-            DEBUG("Already scanned "file);
+        if (NEWSCAN && in_db(g_fldr[idx]"/"file,1)) {
             continue;
         }
 
@@ -2742,7 +2775,7 @@ tvDbSeriesPage,result) {
 
 function movie_search(idx,bestUrl,\
 name,name_no_tags,name_no_parts,i,\
-search_regex_key,search_order_key,search_order,s) {
+search_regex_key,search_order_key,search_order,s,keywords) {
 
     if (!begin_search("movie_search")) {
         return;
@@ -2759,6 +2792,7 @@ search_regex_key,search_order_key,search_order,s) {
 
     name_no_tags=remove_format_tags(name);
     INF("name_no_tags=["name_no_tags"]");
+    keywords = textToSearchKeywords(name_no_tags,0);
 
     #Read search order definitions from config file.
     for(i = 1 ; i < 5 ; i++ ) {
@@ -2802,11 +2836,11 @@ search_regex_key,search_order_key,search_order,s) {
 
                 #This is a web search of imdb site returning the first match.
 
-                bestUrl=scanWWWForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"));
+                bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("site:imdb.com"));
 
             } else if (search_order[s] == "IMDBFIRST") {
 
-                bestUrl=scanWWWForFirstImdbPage(name_no_tags,url_encode("+imdb"));
+                bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("+imdb"));
 
             } else if (search_order[s] == "IMDBLINKS") {
 
@@ -2835,17 +2869,17 @@ search_regex_key,search_order_key,search_order,s) {
 function tv2imdb(idx,\
 url,key) {
 
-    DEBUG("tv2imdb start=["g_imdb[idx]"]");
     if (g_imdb[idx] == "") {
     
         key=gTitle[idx]"+"g_year[idx];
         DEBUG("tv2imdb key=["key"]");
         if (!(key in g_tv2imdb)) {
 
-            url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "g_year[idx];
+            url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons "g_year[idx];
         
+            
             # Bing better than yahoo here!
-            g_tv2imdb[key] = scanPageForMatch(g_search_bing url,g_imdb_regex,0);
+            g_tv2imdb[key] = scanWWWForFirstImdbPage(url); #scanPageForMatch(g_search_bing url,g_imdb_regex,0);
         }
         g_imdb[idx] = g_tv2imdb[key];
     }
@@ -3146,7 +3180,7 @@ foundId,line) {
 ############### GET IMDB PAGE FROM URL ########################################
 
 function search_tv_series_names(plugin,idx,title,\
-tvDbSeriesPage,alternateTitles,title_key,cache_key) {
+tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds) {
 
     title_key = plugin"/"g_fldr[idx]"/"title;
     if (title_key in g_tvDbIndex) {
@@ -3178,20 +3212,20 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key) {
 
             searchAbbreviationAgainstTitles(title,alternateTitles);
 
-            if (filterTitlesByTvDbPresence(plugin,alternateTitles,"FirstAired,Overview",alternateTitles) - 1 > 0 ) {
+            if (filterTitlesByTvDbPresence(plugin,alternateTitles,"FirstAired,Overview",showIds) - 1 > 0 ) {
 
-                filterTitlesFoundOnUsenetWithSpecificText(alternateTitles,cleanSuffix(idx),alternateTitles);
+                filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds);
 
-            }
 
-            title = selectBestOfBestTitle(plugin,idx,alternateTitles);
+                title = selectBestOfBestTitle(plugin,idx,showIds);
 
-            tvDbSeriesPage = searchTvDbTitles(plugin,idx,title);
+                tvDbSeriesPage = searchTvDbTitles(plugin,idx,title);
 
-            if (tvDbSeriesPage) {
-                g_search_hits[plugin".tvabbrev"]++;
-                g_abbrev_cache[cache_key] = tvDbSeriesPage;
-                INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
+                if (tvDbSeriesPage) {
+                    g_search_hits[plugin".tvabbrev"]++;
+                    g_abbrev_cache[cache_key] = tvDbSeriesPage;
+                    INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
+                }
             }
         }
     }
@@ -3262,7 +3296,7 @@ function possible_tv_titles(plugin,title,closeTitles) {
 
 # Given a bunch of titles keep the ones where the filename has been posted with that title
 #IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(idx)
-#IN titles - hased by show ID
+#IN titles hash(showId=>title)
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
 #
 # Two engines are used bintube and binsearch in case
@@ -3301,7 +3335,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     for(t in titles) {
         #Just count the number of table links
         query = usenet_query_url;
-        sub(/QUERY/,t,query);
+        sub(/QUERY/,titles[t],query);
         link_count = scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles);
         DEBUG("number of links "link_count);
         if (link_count-baseline > 0) {
@@ -3365,6 +3399,9 @@ id,xml) {
 # The above rules are also dependent on time of scan so have to be careful.
 # Another one, for conan obrien use thetvdb get episode by date api call to differentiate between shows.
 # This is all yucky edge case stuff. And its not coded. In the mean time I will just return the first element :)
+# @param plugin - thetvdb  or tvrage
+# @param idx - the current item being processed
+# @param titles - hash of show titles keyed by show id.
 function selectBestOfBestTitle(plugin,idx,titles,\
 bestId,bestFirstAired,ages,count) {
     INF("TODO:Refine selection rules here. May user should choose");
@@ -3391,37 +3428,40 @@ bestId,bestFirstAired,ages,count) {
     return bestId;
 }
 
-# Search tvDb for a munber of different titles and return the ones that have the highest similarity scores.
+# Search tvDb for different titles and return the ones that have the highest similarity scores.
 # This multiple search is used when an abbbrevation gives 2 or more possible titles.
 # eg trh = The Real Hustle or The Road Home 
 # We then hope we can weed out sime titles through various means starting with lack of requiredTags eg. Overview and FirstAired 
-# IN titleInHash - the title we are looking for. hashed by title value=1
+# IN titleInHash - the title we are looking for. hashed by title => any thing
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
-# OUT closeTitles - hash of matching titles. hashed by showid => title
+# OUT showIdHash - hash of matching titles. hashed by showid => title
 # RETURNS number of matches
-function filterTitlesByTvDbPresence(plugin,titleInHash,requiredTags,titleOutHash,\
-bestScore,potentialTitle,potentialMatches,origTitles,titleScore,count) {
+function filterTitlesByTvDbPresence(plugin,titleInHash,requiredTags,showIdHash,\
+bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
     bestScore=-1;
     count=0;
 
     dump(0,"pre tvdb check",titleInHash);
 
-    #Make a safe copy in case titleInHash is the same as titleOutHash
+    #Make a safe copy in case titleInHash is the same as showIdHash
     hash_copy(origTitles,titleInHash);
 
-    for(potentialTitle in titleInHash) {
-        titleScore[potentialTitle] = searchTv(plugin,potentialTitle,requiredTags,potentialMatches);
+    delete showIdHash;
+
+    for(potentialTitle in origTitles) {
+        INF("Checking potential title "potentialTitle);
+        score = searchTv(plugin,potentialTitle,requiredTags,potentialMatches);
+        if (score - bestScore >= 0 ) {
+            if (score - bestScore > 0 ) delete showIdHash;
+            hash_merge(showIdHash,potentialMatches);
+            dump(0,"filtered matches so far:",showIdHash);
+            bestScore = score;
+        }
     }
-    bestScores(titleScore,titleScore,0);
 
     #copy to output
-    delete titleOutHash;
-    for(potentialTitle in titleScore) {
-        titleOutHash[potentialTitle] = origTitles[potentialTitle];
-        count++;
-    }
-    dump(0,"post tvdb check",titleOutHash);
-    return count;
+    dump(0,"post filterTitle",showIdHash);
+    return hash_size(showIdHash);
 }
 # Search tvDb and return titles hashed by seriesId
 # Series are only considered if they have the tags listed in requiredTags
@@ -3721,6 +3761,12 @@ attr,a_name,a_val,eq,attr_pairs) {
 
     if (sep == "") sep = "<";
 
+
+    if (index(line,g_sigma) ) { 
+        INF("Sigma:"line);
+        gsub(g_sigma,"e",line);
+        INF("Sigma:"line);
+    }
 
 
     #break at each tag/endtag
@@ -4761,7 +4807,11 @@ line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type
         FS="\n";
 
         while((getline line < f) > 0 ) {
+
+
             if (index(line,start_tag) > 0) {
+                # start of new child we are interested in. Clear all existing
+                # child info. But keep parent info.
                 clean_xml_path(xmlpath,xmlout);
             }
 
@@ -5821,7 +5871,7 @@ semicolon,quote) {
 # against alternative titles that are further down the list.
 
 function scrapeIMDBAka(idx,line,\
-l,akas,a,c,exclude,e,eEeE,br) {
+l,akas,a,c,br) {
 
     if (gOriginalTitle[idx] != gTitle[idx] ) return ;
 
@@ -5949,7 +5999,7 @@ out,tag_start,tag_end,start_pos,end_pos,tail) {
         if (end_pos > 0 ) {
             tail = substr(out,end_pos+length(tag)+3);
         }
-        INF("removing "substr(out,start_pos,end_pos-start_pos));
+        #INF("removing "substr(out,start_pos,end_pos-start_pos));
         out = substr(out,1,start_pos-1) tail;
     }
     return out;
@@ -6568,7 +6618,7 @@ row,est,nfo) {
 # IN db_size = Size of the database
 # IN added_to_db - index=file value=idx
 function add_new_scanned_files_to_database(indexToMergeHash,output_file,\
-i,row,fields,f,inf) {
+i,row,f) {
 
     report_status("New Records: " hash_size(indexToMergeHash));
 
@@ -6580,6 +6630,8 @@ i,row,fields,f,inf) {
 
         DEBUG("Adding to db:"i"["gTitle[i]"]["g_media[i]"]");
         if (g_media[i] == "") continue;
+
+        add_file(g_fldr[i]"/"g_media[i]);
 
         row=createIndexRow(i,-1,0,"");
 
@@ -6605,15 +6657,15 @@ id,cmd,cmd2) {
         cmd=g_plot_app" update "qa(pfile)" "qa(id)" "qa(g_season[idx]);
 
         if (g_plot[idx] != "" ) {
-            cmd2 = cmd" "qa("")" "qa(g_plot[idx]);
+            cmd2 = cmd" "qa("");
             INF("updating main plot :"cmd2);
-            exec(cmd2);
+            exec(cmd2" "qa(g_plot[idx]));
         }
 
         if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
-            cmd2 = cmd" "qa(g_episode[idx])" "qa(g_epplot[idx]);
+            cmd2 = cmd" "qa(g_episode[idx]);
             INF("updating episode plot :"cmd2);
-            exec(cmd2);
+            exec(cmd2" "qa(g_epplot[idx]));
         }
     }
 }
@@ -6830,7 +6882,7 @@ tidy() {
     clean_old_tmp
 }
 
-trap tidy 1 2 3 6
+trap "rm -f $APPDIR/catalog.status" INT TERM EXIT
 
 main() {
 

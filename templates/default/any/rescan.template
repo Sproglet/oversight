@@ -46,8 +46,8 @@
                         <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
                         <hr>
 -->
-                        <input type=radio name=rescan_opt_group1 value=RESCAN checked>Full Scan<br>
-                        <input type=radio name=rescan_opt_group1 value=NEWSCAN>New Items Only<br>
+                        <input type=radio name=rescan_opt_@group1 value=RESCAN>Full Scan<br>
+                        <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>New Items Only<br>
                     </td>
                 </tr>
                 <tr>

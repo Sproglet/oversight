@@ -1,3 +1,10 @@
+
+# TVRage Scanning:
+# Test Conan O Brien - Series Selection
+# Test Greek - Sigma filtering
+# Test House - tv2imdb using bing,yahoo,google match
+# Test bs301-dot.mkv against Rage and TvDb - deep abbreviation search.
+
 GENRE ERROR!!!!!!
 
 Check why Russell Peters Outsource - one black one green

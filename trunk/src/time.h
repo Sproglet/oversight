@@ -3,14 +3,9 @@
 #include <time.h>
 
 #define OVS_USE_FAST_TIME 1
-//#define OVS_FAST_TIME_HAS_SECONDS 1
 
 #ifdef OVS_USE_FAST_TIME
-#ifdef OVS_FAST_TIME_HAS_SECONDS
-#define OVS_TIME unsigned long long
-#else
 #define OVS_TIME unsigned long
-#endif
 #else
 #define OVS_TIME time_t
 #endif

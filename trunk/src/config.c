@@ -10,6 +10,13 @@
 #include "gaya_cgi.h"
 #include "vasprintf.h"
 
+int isSeries100() {
+    return EMPTY_STR(getenv("CPU_MODEL"));
+}
+int isSeries200() {
+    return !isSeries100();
+}
+
 int in_poster_mode() {
     return g_dimension->poster_mode != 0 ;
 }
@@ -339,14 +346,14 @@ long get_scanlines(int *is_pal) {
 
     if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 || tv_mode_int == 16 ) {
         scanlines = 720;
-    } else if (tv_mode_int <= 5 || ( tv_mode_int >= 7 && tv_mode_int <= 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
+    } else if (tv_mode_int <= 5 || ( tv_mode_int == 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
         scanlines = 0;
     } else {
         scanlines = 1080;
     }
 
     // Note that NMT A series does not have a true 1080p but scales up 720
-    if (scanlines == 1080) {
+    if (scanlines == 1080 && isSeries100() ) {
         scanlines = 720;
     }
 

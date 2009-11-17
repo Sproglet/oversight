@@ -221,6 +221,10 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
         if (*val_ptr < 0 ) {
             HTML_LOG(1,"bad date %d/%02d/%02d = %s",y,m,d,asctime(&t));
         }
+        HTML_LOG(0,"date[%d/%d/%d]=[%s]=[%lx]",y,m,d,buffer,*val_ptr);
+        HTML_LOG(0,"date sec[%X] nosec[%X]",
+    0L+((((((((((t.tm_year & 0x3FFL) << 4L)+t.tm_mon) << 5)+t.tm_mday) << 5)+t.tm_hour)<<6)+t.tm_min)<<6)+t.tm_sec,
+    0L+((((((((t.tm_year & 0x3FFL) << 4L)+t.tm_mon) << 5)+t.tm_mday) << 5)+t.tm_hour)<<6)+t.tm_min);
         return 1;
     }
     return 0;
@@ -256,7 +260,6 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
         if (*val_ptr < 0 ) {
             HTML_LOG(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
         }
-        //*val_ptr = S+60*(M+60*(H+24*(d+32*(m+12*(y-1970)))));
         return 1;
     }
     return 0;

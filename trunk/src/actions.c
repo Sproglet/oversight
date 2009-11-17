@@ -266,7 +266,7 @@ void do_actions() {
         } else if (strcmp(action,"rescan_request") == 0) {
 
             int parallel_scan = 0;
-            char *cmd = STRDUP("JOBID=scan.$$ catalog.sh NOWRITE_NFO ");
+            char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");
             char *k;
             char *v;
             

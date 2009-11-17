@@ -269,6 +269,7 @@ $AWK '
 
 
 
+#!catalog
 function pad_episode(e) {
 if (match(e,"^[0-9][0-9]")) {
 return e
@@ -373,6 +374,7 @@ return i
 
 
 BEGIN {
+g_sigma="Σ"
 g_start_time = systime()
 
 g_tv_check_urls["TVRAGE"]="http://tvrage.com"
@@ -410,6 +412,7 @@ INF("status:"msg)
 set_permissions(g_status_file)
 }
 }
+
 
 
 
@@ -759,10 +762,13 @@ scan_options="-Rl"
 if (RESCAN == 1 || NEWSCAN == 1) {
 if (!(1 in FOLDER_ARR)) {
 
+
 if (NEWSCAN == 1) {
+
 INF("Scanning watch paths")
 folder_list=g_settings["catalog_watch_paths"]
 } else {
+
 INF("Scanning default and watch paths")
 folder_list=g_settings["catalog_scan_paths"]
 if (g_settings["catalog_watch_paths"] != "") {
@@ -794,8 +800,7 @@ make_paths_absolute(FOLDER_ARR)
 if (NEWSCAN) {
 get_files(INDEX_DB,g_scanned)
 
-
-
+dump(0,"scanned",g_scanned)
 }
 
 for(f in FOLDER_ARR) {
@@ -852,7 +857,8 @@ close(g_timestamp_file)
 unlock(g_scan_lock_file)
 }
 if (hash_size(FOLDER_ARR)) {
-if (lock(g_db_lock_file)) {
+if (lock(g_db_lock_file,1)) {
+
 remove_absent_files_from_new_db(INDEX_DB)
 system(g_plot_app" compact "qa(g_plot_file)" "qa(INDEX_DB))
 unlock(g_db_lock_file)
@@ -988,7 +994,7 @@ return 0
 }
 }
 
-function lock(lock_file,\
+function lock(lock_file,fastfail,\
 attempts,sleep,backoff) {
 attempts=0
 sleep=10
@@ -1001,6 +1007,7 @@ INF("Locked "lock_file)
 set_permissions(qa(lock_file))
 return 1
 }
+if (fastfail) break
 sleep=backoff[attempts]
 WARNING("Failed to get exclusive lock. Retry in "sleep" seconds.")
 system("sleep "sleep)
@@ -1152,7 +1159,7 @@ INF("ls -l time position at "gLS_TIME_POS)
 
 }
 function dir_contains(dir,pattern) {
-return exec("ls "qa(dir)" 2>/dev/null | egrep "qa(pattern) ) ==0
+return exec("ls "qa(dir)" 2>/dev/null | egrep -q "qa(pattern) ) ==0
 }
 
 
@@ -1160,7 +1167,7 @@ function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts) {
 
-DEBUG("PreScanning "root)
+DEBUG("Scanning "root)
 if (root == "") return
 
 tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
@@ -1177,8 +1184,6 @@ extRe="\\.[^.]+$"
 
 
 
-
-DEBUG("Scanning "quotedRoot)
 
 
 
@@ -1242,7 +1247,7 @@ g_fldrCount[currentFolder]=0
 lc=tolower(scan_line)
 
 if ( lc ~ g_settings["catalog_ignore_names"] ) {
-INF("Ignore name "scan_line)
+DEBUG("Ignore name "scan_line)
 continue
 }
 
@@ -1417,8 +1422,8 @@ g_fldrMediaCount[folder]++
 g_fldr[idx]=folder
 g_media[idx] = file
 
-if (!scanned(path,g_scanned)) {
-DEBUG("Storing ["g_fldr[idx]"]["g_media[idx]"]")
+if (!in_db(path)) {
+DEBUG("Storing")
 }
 
 
@@ -1503,7 +1508,7 @@ return 0
 function exec(cmd,\
 err) {
 
-DEBUG("SYSTEM : [["cmd"]]")
+
 if ((err=system(cmd)) != 0) {
 ERR("Return code "err" executing "cmd) 
 }
@@ -1532,18 +1537,17 @@ return 0
 return 1
 }
 
-function scanWWWForFirstImdbPage(name_no_tags,qualifier,\
-keywords,i1,i2,i3) {
+function scanWWWForFirstImdbPage(qualifier,\
+i1,i2,i3) {
 
-keywords = textToSearchKeywords(name_no_tags,0)
 
-i1=scanPageForMatch(g_search_bing keywords"+"qualifier,g_imdb_regex,0)
-i2=scanPageForMatch(g_search_yahoo keywords"+"qualifier,g_imdb_regex,0)
+i1=scanPageForMatch(g_search_bing qualifier,g_imdb_regex,0)
+i2=scanPageForMatch(g_search_yahoo qualifier,g_imdb_regex,0)
 if (i1 == i2 ) {
 return i1
 } else if (i1 != i2 && "" != i1 i2 ) {
 
-i3=scanPageForMatch(g_search_google keywords"+"qualifier,g_imdb_regex,0)
+i3=scanPageForMatch(g_search_google qualifier,g_imdb_regex,0)
 if (i3 != "" ) {
 if (i3 == i1 ) return i1
 if (i3 == i2 ) return i2
@@ -1946,13 +1950,14 @@ path = substr(path,length(g_mount_root)+1)
 return path
 }
 
-function scanned(path,files,\
+function in_db(path,verbose,\
 ) {
 path = short_path(path)
-if (path in files) {
+if (path in g_scanned) {
+if (verbose) INF("["path"] already scanned")
 return 1
 } else {
-INF("["path"] not found in scanned files")
+INF("["path"] not in db")
 return 0
 }
 }
@@ -2393,8 +2398,11 @@ match_date=sprintf("%4d-%02d-%02d",y,m,d)
 filter["/Show/Episodelist/Season/episode/airdate"] = match_date
 if (fetch_xml_single_child(get_tv_series_api_url("TVRAGE",tvdbid),"bydate","/Show/Episodelist/Season/episode",filter,episodeInfo)) {
 gAirDate[idx]=formatDate(match_date)
-details[SEASON]=episodeInfo["/Show/Episodelist/Season/episode/seasonnum"]
-details[EPISODE]=episodeInfo["/Show/Episodelist/Season/episode/epnum"]
+details[SEASON] = episodeInfo["/Show/Episodelist/Season#no"] 
+details[EPISODE] = episodeInfo["/Show/Episodelist/Season/episode/seasonnum"] 
+
+
+
 details[ADDITIONAL_INF]=episodeInfo["/Show/Episodelist/Season/episode/title"]
 result=1
 }
@@ -2529,8 +2537,7 @@ scanNfo=0
 file=g_media[idx]
 if (file == "" ) continue
 
-if (NEWSCAN && scanned(g_fldr[idx]"/"file,g_scanned)) {
-DEBUG("Already scanned "file)
+if (NEWSCAN && in_db(g_fldr[idx]"/"file,1)) {
 continue
 }
 
@@ -2742,7 +2749,7 @@ return result
 
 function movie_search(idx,bestUrl,\
 name,name_no_tags,name_no_parts,i,\
-search_regex_key,search_order_key,search_order,s) {
+search_regex_key,search_order_key,search_order,s,keywords) {
 
 if (!begin_search("movie_search")) {
 return
@@ -2759,6 +2766,7 @@ INF("name_no_parts=["name_no_parts"]")
 
 name_no_tags=remove_format_tags(name)
 INF("name_no_tags=["name_no_tags"]")
+keywords = textToSearchKeywords(name_no_tags,0)
 
 
 for(i = 1 ; i < 5 ; i++ ) {
@@ -2802,11 +2810,11 @@ bestUrl = searchOnlineNfoLinksForImdbAlternate(name_no_tags".")
 
 
 
-bestUrl=scanWWWForFirstImdbPage(name_no_tags,url_encode("site:imdb.com"))
+bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("site:imdb.com"))
 
 } else if (search_order[s] == "IMDBFIRST") {
 
-bestUrl=scanWWWForFirstImdbPage(name_no_tags,url_encode("+imdb"))
+bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("+imdb"))
 
 } else if (search_order[s] == "IMDBLINKS") {
 
@@ -2835,17 +2843,17 @@ getNiceMoviePosters(idx,extractImdbId(bestUrl))
 function tv2imdb(idx,\
 url,key) {
 
-DEBUG("tv2imdb start=["g_imdb[idx]"]")
 if (g_imdb[idx] == "") {
 
 key=gTitle[idx]"+"g_year[idx]
 DEBUG("tv2imdb key=["key"]")
 if (!(key in g_tv2imdb)) {
 
-url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" "g_year[idx]
+url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons "g_year[idx]
 
 
-g_tv2imdb[key] = scanPageForMatch(g_search_bing url,g_imdb_regex,0)
+
+g_tv2imdb[key] = scanWWWForFirstImdbPage(url)
 }
 g_imdb[idx] = g_tv2imdb[key]
 }
@@ -3146,7 +3154,7 @@ return foundId
 
 
 function search_tv_series_names(plugin,idx,title,\
-tvDbSeriesPage,alternateTitles,title_key,cache_key) {
+tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds) {
 
 title_key = plugin"/"g_fldr[idx]"/"title
 if (title_key in g_tvDbIndex) {
@@ -3178,13 +3186,12 @@ INF("Fetched abbreviation "cache_key" = "tvDbSeriesPage)
 
 searchAbbreviationAgainstTitles(title,alternateTitles)
 
-if (filterTitlesByTvDbPresence(plugin,alternateTitles,"FirstAired,Overview",alternateTitles) - 1 > 0 ) {
+if (filterTitlesByTvDbPresence(plugin,alternateTitles,"FirstAired,Overview",showIds) - 1 > 0 ) {
 
-filterTitlesFoundOnUsenetWithSpecificText(alternateTitles,cleanSuffix(idx),alternateTitles)
+filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds)
 
-}
 
-title = selectBestOfBestTitle(plugin,idx,alternateTitles)
+title = selectBestOfBestTitle(plugin,idx,showIds)
 
 tvDbSeriesPage = searchTvDbTitles(plugin,idx,title)
 
@@ -3192,6 +3199,7 @@ if (tvDbSeriesPage) {
 g_search_hits[plugin".tvabbrev"]++
 g_abbrev_cache[cache_key] = tvDbSeriesPage
 INF("Caching abbreviation "cache_key" = "tvDbSeriesPage)
+}
 }
 }
 }
@@ -3301,7 +3309,7 @@ DEBUG("number of links for no match "baseline)
 for(t in titles) {
 
 query = usenet_query_url
-sub(/QUERY/,t,query)
+sub(/QUERY/,titles[t],query)
 link_count = scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles)
 DEBUG("number of links "link_count)
 if (link_count-baseline > 0) {
@@ -3365,6 +3373,9 @@ dump(1,"Age indicators",ageHash)
 
 
 
+
+
+
 function selectBestOfBestTitle(plugin,idx,titles,\
 bestId,bestFirstAired,ages,count) {
 INF("TODO:Refine selection rules here. May user should choose")
@@ -3399,8 +3410,8 @@ return bestId
 
 
 
-function filterTitlesByTvDbPresence(plugin,titleInHash,requiredTags,titleOutHash,\
-bestScore,potentialTitle,potentialMatches,origTitles,titleScore,count) {
+function filterTitlesByTvDbPresence(plugin,titleInHash,requiredTags,showIdHash,\
+bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
 bestScore=-1
 count=0
 
@@ -3409,19 +3420,22 @@ dump(0,"pre tvdb check",titleInHash)
 
 hash_copy(origTitles,titleInHash)
 
-for(potentialTitle in titleInHash) {
-titleScore[potentialTitle] = searchTv(plugin,potentialTitle,requiredTags,potentialMatches)
+delete showIdHash
+
+for(potentialTitle in origTitles) {
+INF("Checking potential title "potentialTitle)
+score = searchTv(plugin,potentialTitle,requiredTags,potentialMatches)
+if (score - bestScore >= 0 ) {
+if (score - bestScore > 0 ) delete showIdHash
+hash_merge(showIdHash,potentialMatches)
+dump(0,"filtered matches so far:",showIdHash)
+bestScore = score
 }
-bestScores(titleScore,titleScore,0)
+}
 
 
-delete titleOutHash
-for(potentialTitle in titleScore) {
-titleOutHash[potentialTitle] = origTitles[potentialTitle]
-count++
-}
-dump(0,"post tvdb check",titleOutHash)
-return count
+dump(0,"post filterTitle",showIdHash)
+return hash_size(showIdHash)
 }
 
 
@@ -3721,6 +3735,12 @@ if (index(line,"<?")) return
 
 if (sep == "") sep = "<"
 
+
+if (index(line,g_sigma) ) { 
+INF("Sigma:"line)
+gsub(g_sigma,"e",line)
+INF("Sigma:"line)
+}
 
 
 
@@ -4761,7 +4781,11 @@ if (f != "") {
 FS="\n"
 
 while((getline line < f) > 0 ) {
+
+
 if (index(line,start_tag) > 0) {
+
+
 clean_xml_path(xmlpath,xmlout)
 }
 
@@ -5821,7 +5845,7 @@ return title
 
 
 function scrapeIMDBAka(idx,line,\
-l,akas,a,c,exclude,e,eEeE,br) {
+l,akas,a,c,br) {
 
 if (gOriginalTitle[idx] != gTitle[idx] ) return 
 
@@ -5949,7 +5973,7 @@ end_pos=index(out,tag_end)
 if (end_pos > 0 ) {
 tail = substr(out,end_pos+length(tag)+3)
 }
-INF("removing "substr(out,start_pos,end_pos-start_pos))
+
 out = substr(out,1,start_pos-1) tail
 }
 return out
@@ -6605,15 +6629,15 @@ INF("updating plots for "id)
 cmd=g_plot_app" update "qa(pfile)" "qa(id)" "qa(g_season[idx])
 
 if (g_plot[idx] != "" ) {
-cmd2 = cmd" "qa("")" "qa(g_plot[idx])
+cmd2 = cmd" "qa("")
 INF("updating main plot :"cmd2)
-exec(cmd2)
+exec(cmd2" "qa(g_plot[idx]))
 }
 
 if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
-cmd2 = cmd" "qa(g_episode[idx])" "qa(g_epplot[idx])
+cmd2 = cmd" "qa(g_episode[idx])
 INF("updating episode plot :"cmd2)
-exec(cmd2)
+exec(cmd2" "qa(g_epplot[idx]))
 }
 }
 }
@@ -6830,7 +6854,7 @@ rm -f "$APPDIR/catalog.status"
 clean_old_tmp
 }
 
-trap tidy 1 2 3 6
+trap "rm -f $APPDIR/catalog.status" INT TERM EXIT
 
 main() {
 

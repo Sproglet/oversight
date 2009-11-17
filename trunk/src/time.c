@@ -7,17 +7,9 @@ inline OVS_TIME time_ordinal(struct tm *t) {
 // Return some long that represents time. mktime() is ideal but a bit slow on PCH
 // we just need a number we can sort on and compare
 #ifdef OVS_USE_FAST_TIME
-#ifdef OVS_FAST_TIME_HAS_SECONDS
-    // maxint is 2147483647
-    // Binary layout is YYYY YYYYYYMM MMdddddh hhhhmmmm mmssssss
-    // Note the year pushes us to more than 32 bits as we need more than 6 bits for the year.
-    return ((((((((((t->tm_year & 0x3FF) << 4)+t->tm_mon) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min)<<6)+t->tm_sec;
-#else
-
-    // Remove seconds from timestamp format.
+    // Remove seconds from timestamp format. must fit 32 otherwise high bits lost.
     // Binary layout is YYYYYY YYYYMMMM dddddhhh hhmmmmmm
     return ((((((((t->tm_year & 0x3FF) << 4)+t->tm_mon) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min;
-#endif
 #else
     return mktime(t);
 #endif
@@ -57,23 +49,14 @@ struct tm *internal_time2tm(OVS_TIME t1,struct tm *t)
 }
 static void copy_internal_time2tm(OVS_TIME t1,struct tm *t) {
 #ifdef OVS_USE_FAST_TIME
-#ifdef OVS_FAST_TIME_HAS_SECONDS
-    // Binary layout is YYYY YYYYYYMM MMdddddh hhhhmmmm mmssssss
-    t->tm_sec = t1 & 0x3F;
-    t->tm_min = ( t1 >> 6) & 0x3F;
-    t->tm_hour = ( t1 >> (6+6)) & 0x1F;
-    t->tm_mday = ( ( t1 >> (6+6+5)) & 0x1F  );
-    t->tm_mon = ( t1 >> (6+6+5+5)) & 0xF  ;
-    t->tm_year = ( t1 >> (6+6+5+5+4)) & 0x3FF  ;
-#else
     // Binary layout is YYYYYY YYYYMMMM dddddhhh hhmmmmmm
+    // Remove seconds from timestamp format. must fit 32 otherwise high bits lost.
     t->tm_sec = 0;
     t->tm_min = t1  & 0x3F;
     t->tm_hour = ( t1 >> (6)) & 0x1F;
     t->tm_mday = ( ( t1 >> (6+5)) & 0x1F  );
     t->tm_mon = ( t1 >> (6+5+5)) & 0xF  ;
     t->tm_year = ( t1 >> (6+5+5+4)) & 0x3FF  ;
-#endif
 #else
     assert(0);
 #endif

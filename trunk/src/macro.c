@@ -448,15 +448,14 @@ char *macro_fn_season(char *template_name,char *call,Array *args,int num_rows,Db
 }
 char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    time_t c;
     char *year = NULL;
     DbRowId *rid = sorted_rows[0];
     int year_num = 0;
    
     if (rid->category == 'T' ) {
 
-       c = rid->airdate;
-        struct tm *t = localtime(&c);
+        HTML_LOG(0,"airdate[%s]=[%x]",rid->file,rid->airdate);
+        struct tm *t = internal_time2tm(rid->airdate,NULL);
         year_num = t->tm_year+1900;
 
     } else if (rid->category == 'M' ) {
@@ -464,15 +463,11 @@ char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRo
         year_num = rid->year;
 
     } else {
-        c = rid->date;
-        struct tm *t = localtime(&c);
+        struct tm *t = internal_time2tm(rid->date,NULL);
         year_num = t->tm_year+1900;
     }
 
-    // TODO This is a logical bug - need to stop using uniz time functions to support dates before 1970
-    if (year_num > 1970) {
-        ovs_asprintf(&year,"%d",year_num);
-    }
+    ovs_asprintf(&year,"%d",year_num);
     return year;
 }
 
@@ -1196,7 +1191,11 @@ char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_r
         char *url=sorted_rows[0]->url;
         if (url != NULL) {
             char *image=get_theme_image_tag("upgrade"," alt=External ");
-            ovs_asprintf(&result,"<a href=\"%s\">%s</a>",url,image);
+            char *website="";
+            if (util_starts_with(url,"tt")) {
+                website = "http://www.imdb.com/title/";
+            }
+            ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
             FREE(image);
         }
     }

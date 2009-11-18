@@ -853,7 +853,7 @@ END{
 
         g_tk = apply(g_tk);
         g_tk2 = apply(g_tk2);
-        scan_folder_for_new_media(FOLDER_ARR,scan_options);
+        g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
 
         clean_capture_files();
@@ -886,7 +886,7 @@ END{
         close(g_timestamp_file);
         unlock(g_scan_lock_file);
     }
-    if (hash_size(FOLDER_ARR)) {
+    if (g_grand_total) {
         if (lock(g_db_lock_file,1)) {
             #if we cant get the lock assume other task will prune anyway.
             remove_absent_files_from_new_db(INDEX_DB);
@@ -1149,7 +1149,7 @@ function db_field(key,name,tag) {
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fcount) {
+f,fcount,total) {
 
 
     for(f in folderArray ) {
@@ -1158,9 +1158,11 @@ f,fcount) {
 
         if (folderArray[f]) {
             report_status("folder "fcount);
-            scan_contents(folderArray[f],scan_options);
+            total += scan_contents(folderArray[f],scan_options);
         }
     }
+
+    return 0+total;
 
 }
 
@@ -1196,7 +1198,7 @@ function dir_contains(dir,pattern) {
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,last_stored_name) {
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,last_stored_name,total) {
 
     DEBUG("Scanning "root);
     if (root == "") return;
@@ -1246,6 +1248,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             # this is to save memory. As this removes stored data we only do this if we 
             # change folder. This ensures we process multipart files together.
             if (gMovieFileCount > g_batch_size ) {
+                total += gMovieFileCount;
                 identify_and_catalog_scanned_files();
             }
 
@@ -1422,9 +1425,11 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     close(tempFile);
 
+    total += gMovieFileCount;
     identify_and_catalog_scanned_files();
 
     DEBUG("Finished Scanning "root);
+    return 0+total;
 }
 
 # Convert a glob pattern to a regular exp.
@@ -3259,20 +3264,20 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
             searchAbbreviationAgainstTitles(title,alternateTitles);
 
-            if (filterTitlesByTvDbPresence(plugin,alternateTitles,showIds) - 1 > 0 ) {
+            filterTitlesByTvDbPresence(plugin,alternateTitles,showIds);
+            if (hash_size(showIds)+0 > 1) {
 
                 filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds);
+            }
 
+            tvdbid = selectBestOfBestTitle(plugin,idx,showIds);
 
-                tvdbid = selectBestOfBestTitle(plugin,idx,showIds);
+            tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
 
-                tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
-
-                if (tvDbSeriesPage) {
-                    g_search_hits[plugin".tvabbrev"]++;
-                    g_abbrev_cache[cache_key] = tvDbSeriesPage;
-                    INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
-                }
+            if (tvDbSeriesPage) {
+                g_search_hits[plugin".tvabbrev"]++;
+                g_abbrev_cache[cache_key] = tvDbSeriesPage;
+                INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
             }
         }
     }
@@ -3503,9 +3508,8 @@ bestId,bestFirstAired,ages,count) {
 # OUT showIdHash - hash of matching titles. hashed by showid => title
 # RETURNS number of matches
 function filterTitlesByTvDbPresence(plugin,titleInHash,showIdHash,\
-bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
+bestScore,potentialTitle,potentialMatches,origTitles,score) {
     bestScore=-1;
-    count=0;
 
     dump(0,"pre tvdb check",titleInHash);
 
@@ -3527,7 +3531,6 @@ bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
 
     #copy to output
     dump(0,"post filterTitle",showIdHash);
-    return 0+ hash_size(showIdHash);
 }
 # Search tvDb and return titles hashed by seriesId
 # Series are only considered if they have the tags listed in requiredTags

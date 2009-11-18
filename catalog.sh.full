@@ -1028,7 +1028,7 @@ function lock(lock_file,fastfail,\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
-    split("10,10,20,30,60,120,300,600,600,600,600,600,600,600,600,600,600,1200",backoff,",");
+    split("10,10,20,30,60,120,300,600,600,600,600,1200",backoff,",");
     for(attempts=1 ; (attempts in backoff) ; attempts++) {
         if (!is_locked(lock_file)) {
             print PID > lock_file;
@@ -1037,7 +1037,7 @@ attempts,sleep,backoff) {
             set_permissions(qa(lock_file));
             return 1;
         }
-        if (fastfail) break;
+        if (fastfail != 0) break;
         sleep=backoff[attempts];
         WARNING("Failed to get exclusive lock. Retry in "sleep" seconds.");
         system("sleep "sleep);
@@ -1518,7 +1518,7 @@ i) {
         return 0;
     }
 
-    INF("Found multi part file - linked with "firstName);
+    INF("Found multi part file - linked with "lastNameSeen);
     gParts[count-1] = (gParts[count-1] =="" ? "" : gParts[count-1]"/" ) name;
     gMultiPartTagPos[count-1] = i;
     return 1;
@@ -1573,22 +1573,24 @@ function folderIsRelevant(dir) {
 }
 
 function scanWWWForFirstImdbPage(qualifier,\
-i1,i2,i3) {
+i1,i2,i3,ret) {
 
 
+    id1("imdbfirst "+qualifier);
     i1=scanPageForMatch(g_search_bing qualifier,g_imdb_regex,0);
     i2=scanPageForMatch(g_search_yahoo qualifier,g_imdb_regex,0);
     if (i1 == i2 ) {
-       return i1;
+       ret= i1;
     } else if (i1 != i2 && "" != i1 i2 ) {
         # Difference of opinion - try google.
         i3=scanPageForMatch(g_search_google qualifier,g_imdb_regex,0);
         if (i3 != "" ) {
-            if (i3 == i1 ) return i1;
-            if (i3 == i2 ) return i2;
+            if (i3 == i1 ) ret = i1;
+            else if (i3 == i2 ) ret = i2;
         }
     }
-    return "";
+    id0(ret);
+    return ret;
 }
 
 # If no direct urls found. Search using file names.
@@ -2406,11 +2408,11 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
                 if (result) {
                     INF(":) Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d);
                     details[TVID]=tvdbid;
-                    id0();
+                    id0(result);
                     break;
                 }
             }
-            id0();
+            id0(result);
         }
         if (result == 0) {
             INF(":( Couldnt find episode "y"/"m"/"d" - using file information");
@@ -2881,7 +2883,10 @@ search_regex_key,search_order_key,search_order,s,keywords) {
 
             } else if (search_order[s] == "IMDBFIRST") {
 
-                bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("+imdb"));
+                bestUrl=scanWWWForFirstImdbPage(name"+"url_encode("+imdb"));
+                if (bestUrl == "" && keywords != name) {
+                    bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("+imdb"));
+                }
 
             } else if (search_order[s] == "IMDBLINKS") {
 
@@ -3329,9 +3334,10 @@ function id1(x) {
     g_indent="\t"g_indent;
 }
 
-function id0() {
+function id0(x) {
     g_indent=substr(g_indent,2);
-    INF("<End "g_idstack[--g_idtos]);
+    
+    INF("<End "g_idstack[--g_idtos]"=" ( (x!="") ? "=["x"]" : ""));
 }
 
 function possible_tv_titles(plugin,title,closeTitles,\
@@ -3516,7 +3522,7 @@ bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
             hash_merge(showIdHash,potentialMatches);
             bestScore = score;
         }
-        id0();
+        id0(score);
     }
 
     #copy to output
@@ -4097,7 +4103,7 @@ i,score,bestScore,tmpTitles) {
         delete titleHashOut;
     }
 
-    id0();
+    id0(bestScore);
 
     return 0+ bestScore;
 }
@@ -4143,7 +4149,7 @@ possible_title,names,i,ltitle) {
 
     ltitle = tolower(titleIn);
 
-    DEBUG("Checking "titleIn" for abbeviations on menu page - "letter);
+    id1("Checking "titleIn" for abbeviations on menu page - "letter);
 
     if (ltitle == "" ) return ;
 
@@ -4157,8 +4163,6 @@ possible_title,names,i,ltitle) {
 
         possible_title = clean_title(possible_title);
 
-        id1(possible_title);
-
         if (abbrevMatch(ltitle,possible_title)) {
             alternateTitles[possible_title]="abbreviation-initials";
         } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
@@ -4167,8 +4171,8 @@ possible_title,names,i,ltitle) {
             alternateTitles[possible_title]="abbreviation-contraction";
         }
 
-        id0();
     }
+    id0();
 }
 
 #split title into words then see how many words or initials we can match.
@@ -4485,68 +4489,29 @@ maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
 
 # Search a google page for most frequently occuring imdb link
 function searchForIMDB(keywords,linkThreshold,\
-i1,result) {
+i1,result,matchList,bestUrl) {
+    id1("Search ["keywords"]");
     if (!(keywords in g_imdb_link_search)) {
 
-        INF("Begin IMDBLink Search ["keywords"]");
         #We want imdb links but not from imdb themselves as this skews the results.
         #Also keeping the number of results down helps focus on early matches.
         keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
 
         # bing is not very good here.
-        i1 = scanUrlForBestMatch(g_search_yahoo keywords,g_imdb_regex,"search4imdb",linkThreshold);
+        scanPageForMatches(g_search_yahoo keywords,g_imdb_regex,0,0,"",matchList);
+        # Find the url with the highest count for each index.
+        #To help stop false matches we requre at least two occurences.
+        bestUrl=getMax(matchList,linkThreshold,1,0);
+        if (bestUrl != "") {
+            i1 = extractImdbLink(bestUrl);
+        }
         g_imdb_link_search[keywords] = i1;
 
     }
     result = g_imdb_link_search[keywords];
 
-    INF("IMDBLink Search ["keywords"] => ["result"]");
+    id0(result);
     return result;
-}
-
-#Search google page extracting all occurences that match a regex, and return the most
-#popular match.
-#url = google url
-#pattern = regular expression to search for
-#captureLabel = label for temporary file
-#threshold = minimum required occurences of matching text.
-
-function scanUrlForBestMatch(url,pattern,captureLabel,threshold,\
-f,start,matchList,bestUrl,x,html) {
-
-    f = getUrl(url,captureLabel,0);
-    if (f != "") {
-        FS="\n";
-
-        DEBUG2("Looking for "pattern" in "f);
-
-        while((getline html < f) > 0 ) {
-
-            #print("GOOGLE:["html"]");
-            html = de_emphasise(html);
-
-
-            #x=html;gsub(/</,"\n| <",x);DEBUG(x);
-
-
-#            split(html,x,"<");
-#            l=1;
-#            for(i=1 ; i in x ; i++ ) {
-#                DEBUG(l" "match(x[i],pattern)" <"x[i]);
-#                l+=length(x[i])+1;
-#            }
-            capture_regex(html,pattern,0,matchList);
-        }
-        close(f);
-    }
-    # Find the url with the highest count for each index.
-    #To help stop false matches we requre at least two occurences.
-    bestUrl=getMax(matchList,threshold,1,0);
-    if (bestUrl != "") {
-        return extractImdbLink(bestUrl);
-    } else  {
-        return "";
-    }
 }
 
 function get_episode_url(plugin,seriesUrl,season,episode,\
@@ -5705,6 +5670,7 @@ matches,i) {
 
     # Return first one
     for(i in matches) {
+        INF(url"=["i"]");
         return i;
     }
 }
@@ -5730,7 +5696,7 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
     #sub(/[][?.\\*(|].*/,"",regex_text);
 
     sub(/[][?\\*(|.].*/,"",regex_text);
-    INF("Looking for fixed text ["regex_text"] before regex ["regex"]");
+    #INF("Looking for fixed text ["regex_text"] before regex ["regex"]");
 
     count=0;
 
@@ -5743,6 +5709,7 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
 
         while(((getline line < f) > 0)  ) {
 
+            line = de_emphasise(line);
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
             # itself is more work - for example the results will come back as two different 
             # counts. 
@@ -5773,6 +5740,11 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
 }
 
 # Find all occurences of a regular expression within a string, and return in an array.
+# IN Line to match against.
+# IN regex to match with.
+# IN max = max occurences (0 = all)
+# IN/OUT matches is updated with (text=>num occurrences)
+# OUT total number of occurences.
 function capture_regex(line,regex,max,matches,\
 count,flag,fcount,i,parts) {
     count =0 ;

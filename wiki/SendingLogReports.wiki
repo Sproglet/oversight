@@ -31,12 +31,22 @@ Send 'gui' logs if you think files have scanned OK but you are getting odd thing
 
 To send GUI logs:
 
+  # Open Oversight in the PC. 
+  # Go back to the page that is causing problems. 
+  # if using Internet Explorer or Firefox, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
+  # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
+  # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
+
+== Debug GUI logs ==
+
+It may be that I specifically ask for _debug_ GUI logs. These contain more comments in the HTML code, however the comments often interfere with the HTML  and the normal browser display will not appear, but the extra log details will still be present in the browser. To generate a debug gui log:
+
   # Open Oversight in the PC. Go to Oversight->Setup->Oversight Jukebox Settings General and set log level to '1' (NO MORE!), and save , 
   # now go back to the page that is causing problems. 
   # if using Internet Explorer or Firefox, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
   # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
-
+  # Change the log level back to 0. If you have trouble with the GUI (because of the extra logging interfering with the display) you will have to edit the file /share/Apps/oversight/logs/oversight.cfg using an editor.
 
 = TV Logs =
 

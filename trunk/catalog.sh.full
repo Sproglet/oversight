@@ -16,6 +16,36 @@
 # Sometimes awk seems to do a string compare when both values look like numbers.
 #Ive tried to isolate but cant, its something to do with parameter passing I think. 
 # anyway most number comparisons are eg.  "x - y > 0" instead of "x > y"
+#
+# Watch out when logging results of a function. This may turn a numeric result into a string.
+# this is a bug in busybox awk which can cause a variable to be cast to a string just by using (not assign)
+# it as a string.
+# Combined with "0" evaluating to true, this can cause real headaches. eg
+# function a() {
+#   return 0;
+# }
+#
+# function b(tmp) {
+#   tmp= a();
+#   print "result="tmp;
+#   return tmp;
+# }
+# function c(tmp) {
+#   tmp= b();
+#   print "result="tmp;
+#   return tmp;
+# }
+#
+# BEGIN {
+#   if (c()) print "WTF"
+# }
+#
+# Two ways to avoid.
+#    Force numeric return. eg return tmp+0 
+#    Force numeric compare (if(....!=0)  or if (0+xxxx)
+#
+#  I have a script in th nmt-script project called alint.sh this will check for this.
+# 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20091102-1BETA
@@ -293,7 +323,7 @@ function timestamp(label,x) {
         g_last_ts=systime();
         g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
     }
-    print label" '$LOG_TAG' "g_last_ts_str x;
+    print label" '$LOG_TAG' "g_last_ts_str g_indent x;
 }
 
 function DEBUG(x) {
@@ -374,6 +404,7 @@ i,links) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_indent="";
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();
 
@@ -529,7 +560,7 @@ f,result,line) {
     }
     close(f);
     DEBUG("is mounted "path" = "result);
-    return result;
+    return 0+ result;
 }
 
 # We could use smbclient.cgi but this would unmount other drives.
@@ -1105,6 +1136,7 @@ function set_db_fields() {
     NFO=db_field("_nfo","NFO","nfo");
 
     IMDBID=db_field("_imdb","IMDBID","id");
+    TVID=db_field("_tvid","TVID","id");
 }
 
 
@@ -1164,7 +1196,7 @@ function dir_contains(dir,pattern) {
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts) {
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,last_stored_name) {
 
     DEBUG("Scanning "root);
     if (root == "") return;
@@ -1289,7 +1321,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         }
 
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
-                        storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo");
+
+                        last_stored_name = storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo");
                         skipFolder=1;
                     }
                 }
@@ -1356,7 +1389,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
                     #Only add it if previous one is not part of same file.
                     if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
-                      if ( checkMultiPart(scan_line,gMovieFileCount) ) {
+                      if ( checkMultiPart(last_stored_name,scan_line,gMovieFileCount) ) {
                           #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                           #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
                           if ( !setNfo(gMovieFileCount-1,".(|cd|disk|disc|part)[1-9]" extRe,".nfo") ) {
@@ -1380,7 +1413,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
-                    storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
+                    last_stored_name = storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
                 }
             }
         }
@@ -1416,52 +1449,55 @@ path) {
 
     path=clean_path(folder"/"file);
 
-    g_fldrMediaCount[folder]++;
-
-    g_fldr[idx]=folder;
-    g_media[idx] = file;
-
-    if (!in_db(path)) {
+    if (in_db(path)) {
+        #DEBUG("Skipping");
+    } else {
         DEBUG("Storing");
+
+        g_fldrMediaCount[folder]++;
+
+        g_fldr[idx]=folder;
+        g_media[idx] = file;
+
+
+        #used when pruning the old index.
+        gMovieFilePresent[path] = idx;
+        g_file_time[idx] = timeStamp;
+
+        setNfo(gMovieFileCount,nfoReplace,nfoExt);
+
+        gMovieFileCount++;
     }
-
-    #used when pruning the old index.
-    gMovieFilePresent[path] = idx;
-    g_file_time[idx] = timeStamp;
-
-    setNfo(gMovieFileCount,nfoReplace,nfoExt);
-
-    gMovieFileCount++;
+    return file;
 }
 
 #Check if a filename is similar to the previous stored filename.
 # lcName         : lower case file name
 # count          : next index in array
 # multiPartRegex : regex that matches the part tag of the file
-function checkMultiPart(name,count,\
-i,firstName) {
-    firstName=g_media[count-1];
+function checkMultiPart(lastNameSeen,name,count,\
+i) {
 
-    #DEBUG("Multipart check ["firstName"] vs ["name"]");
-    if (length(firstName) != length(name)) {
-        #DEBUG("length ["firstName"] != ["name"]");
+    #DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
+    if (length(lastNameSeen) != length(name)) {
+        #DEBUG("length ["lastNameSeen"] != ["name"]");
         return 0;
     }
-    if (firstName == name) return 0;
+    if (lastNameSeen == name) return 0;
 
-    for(i=1 ; i - length(firstName) <= 0 ; i++ ) {
-        if (substr(firstName,i,1) != substr(name,i,1)) {
+    for(i=1 ; i - length(lastNameSeen) <= 0 ; i++ ) {
+        if (substr(lastNameSeen,i,1) != substr(name,i,1)) {
             break;
         }
     }
     DEBUG2("difference at character "i);
 
-    if (substr(firstName,i+1) != substr(name,i+1)) {
-        DEBUG("no match last bit ["substr(firstName,i+1)"] != ["substr(name,i+1)"]");
+    if (substr(lastNameSeen,i+1) != substr(name,i+1)) {
+        DEBUG("no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
         return 0;
     }
 
-    if (substr(firstName,i-1,2) ~ "[^0-9]1" || substr(firstName,i-2,3) ~ "[^EeXx0-9][0-9]1" ) {
+    if (substr(lastNameSeen,i-1,2) ~ "[^0-9]1" || substr(lastNameSeen,i-2,3) ~ "[^EeXx0-9][0-9]1" ) {
         # Avoid matching tv programs e0n x0n 11n
         # At this stage we have not done full filename analysis to determine if it matches a tv program
         # That is done during the scrape stage by "checkTvFilenameFormat". This is just a quick way.
@@ -1471,7 +1507,7 @@ i,firstName) {
             return 0;
         }
         #continue 
-    } else if (substr(firstName,i,1) ~ "[Aa]") {
+    } else if (substr(lastNameSeen,i,1) ~ "[Aa]") {
         if (!(substr(name,i,1) ~ "[A-Fa-f]")) {
             DEBUG2("no match on [A-Fa-f]"substr(name,i,1));
             return 0;
@@ -1511,7 +1547,7 @@ err) {
    if ((err=system(cmd)) != 0) {
       ERR("Return code "err" executing "cmd) ;
   }
-  return err;
+  return 0+ err;
 }
 
 #A folder is relevant if it is tightly associated with the media it contains.
@@ -2151,6 +2187,7 @@ function checkTvFilenameFormat(plugin,idx,\
 details,line,dirs,d,dirCount,ePos,dirLevels) {
 
     line = g_media[idx];
+    g_tvid[idx]="";
 
     #First get season and episode information
 
@@ -2198,6 +2235,7 @@ details,line,dirs,d,dirCount,ePos,dirLevels) {
     }
 
 
+    g_tvid[idx] = details[TVID];
     g_category[idx] = "T";
     gAdditionalInfo[idx] = details[ADDITIONAL_INF];
 
@@ -2349,6 +2387,8 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
 
         for (tvdbid in closeTitles) {
 
+            id1("Checking "tvdbid);
+
             if (get_tv_series_info(plugin,idx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
                 if (plugin == "THETVDB" ) {
@@ -2365,9 +2405,12 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
                 }
                 if (result) {
                     INF(":) Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d);
+                    details[TVID]=tvdbid;
+                    id0();
                     break;
                 }
             }
+            id0();
         }
         if (result == 0) {
             INF(":( Couldnt find episode "y"/"m"/"d" - using file information");
@@ -2380,7 +2423,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
     if (result) {
         INF("end extractEpisodeByDates "plugin" = "result);
     }
-    return result;
+    return 0+ result;
 }
 
 # If a line looks like show.name.2009-06-16 then look for episode by date. It requires that
@@ -2432,7 +2475,7 @@ episodeInfo,match_date,result,filter) {
         details[ADDITIONAL_INF]=episodeInfo["/Show/Episodelist/Season/episode/title"];
         result=1;
     }
-    return result;
+    return 0+ result;
 }
 
 function extractEpisode(plugin,line,idx,details,\
@@ -2554,7 +2597,6 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
         begin_search("");
 
-        thisTime = -systime();
 
         bestUrl="";
 
@@ -2563,19 +2605,20 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
         file=g_media[idx];
         if (file == "" ) continue;
 
-        if (NEWSCAN && in_db(g_fldr[idx]"/"file,1)) {
+        DIV0("Start item "(g_item_count)": ["file"]");
+        if (NEWSCAN && in_db(g_fldr[idx]"/"file)) {
             continue;
         }
 
-        report_status("item "(g_item_count++));
+        report_status("item "(++g_item_count));
 
-        DIV0("Start item "(g_item_count)": ["file"]");
         DEBUG("folder :["g_fldr[idx]"]");
 
         if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
             WARNING("Skipping unknown file ["file"]");
             continue;
         }
+        thisTime = -systime();
 
 
         if (g_settings["catalog_nfo_read"] != "no") {
@@ -2614,6 +2657,10 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
             if (checkTvFilenameFormat(plugin,idx)) {
 
                 if (UPDATE_TV)  {
+                    #g_imdb[idx] may have been set by a date lookup
+                    if (bestUrl == "" && g_imdb[idx] != "" ) {
+                        bestUrl = g_imdb[idx];
+                    }
                     tv_status = tv_search(plugin,idx,bestUrl);
                     scanned= (tv_status != 0);
                     #if (tv_status == 0 || g_episode[idx] !~ "^[0-9]+$" ) 
@@ -2664,9 +2711,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
 
             #lang_test(idx);
 
-            DEBUG("processed in "thisTime"s");
-            DEBUG(sprintf("CORE: %d items in %ds = %.1fs per item",g_total,g_process_time,(g_process_time/g_total)));
-            DEBUG(sprintf("ELAPSED:          %ds = %.1fs per item",g_elapsed_time,(g_elapsed_time/g_total)));
+            DEBUG(sprintf("processed in %ds net av:%.1f gross av:%.1f" thisTime,(g_process_time/g_total),(g_elapsed_time/g_total)));
 
             #Batch updates so that user sees some progress
             ready_to_merge[idx]=1;
@@ -2710,8 +2755,8 @@ function begin_search(method) {
 }
 
 # 0=nothing found 1=series but no episode 2=series+episode
-function tv_search(plugin,idx,bestUrl,\
-tvDbSeriesPage,result) {
+function tv_search(plugin,idx,imdbUrl,\
+tvDbSeriesPage,result,tvid) {
 
     result=0;
 
@@ -2720,57 +2765,53 @@ tvDbSeriesPage,result) {
     }
     DIV("tv_search "plugin);
 
-    if (bestUrl == "" && g_imdb[idx] != "" ) {
-        bestUrl = g_imdb[idx];
-    }
-    # TV
-    # There are different ways to get imdburl for tv show.
-    # via nfo or determine via epguides/thetvdb search
-    # If imdb url is provided via nfo we should use that to get epguides link
-    # rather than using epguides link to get imdb link
-    if (bestUrl != "") {
+    #This will succedd if we already have the tvid when doing the checkTvFilenameFormat
+    #checkTvFilenameFormat() may fetch the tvid while doing a date check for daily shows.
+    tvDbSeriesPage = get_tv_series_api_url(plugin,g_tvid[idx]);
 
-        # start with IMDB then go to tv site
-
-        #Get a better title using link from nfo to scrape epguides  with.
-        scrapeIMDBTitlePage(idx,bestUrl);
-        if (g_category[idx] != "M" ) {
-            tvDbSeriesPage = get_tv_series_api_url(plugin,find_tvid(plugin,idx,extractImdbId(bestUrl)));
-            result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
-        }
-
-
-    } else {
-
-        # use name to find page on tv web site.
-
+    if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
+        # do not know tvid nor imdbid - use the title to search tv indexes.
         tvDbSeriesPage = search_tv_series_names(plugin,idx,gTitle[idx]);
-        if (tvDbSeriesPage != "") {
-            result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
-            if (result) {
-                bestUrl = tv2imdb(idx);
-                scrapeIMDBTitlePage(idx,bestUrl);
-                if (g_category[idx] == "M" ) {
-                    DEBUG("Error getting IMDB ID from tv - looks like a movie??");
-                    result = 0;
-                }
-            }
-        } else {
+    }
 
-            # Couldnt find tv website. Name might not be obvious - search google for imdb references.
-            # TODO This should filter out movie results.
-            bestUrl=scanWWWForImdbLink(idx);
-            if (bestUrl != "") {
-                scrapeIMDBTitlePage(idx,bestUrl);
-                if (g_category[idx] != "M" ) {
-                    tvDbSeriesPage = get_tv_series_api_url(plugin,find_tvid(plugin,idx,extractImdbId(bestUrl)));
-                    result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
-                }
-            }   
+    if (tvDbSeriesPage != "" ) { 
+        # We know the TV id - use this to get the imdb id
+        result = get_tv_series_info(plugin,idx,tvDbSeriesPage); #this may set imdb url
+        if (result) {
+            if (g_imdb[idx] != "") {
+                # we also know the imdb id
+                scrapeIMDBTitlePage(idx,g_imdb[idx]);
+            } else {
+                # use the tv id to find the imdb id
+                scrapeIMDBTitlePage(idx,tv2imdb(idx));
+            }
         }
+    } else {
+        # dont know the tvid
+        if (imdbUrl == "") {
+            # If we get here we dont know the tvid nor imdbid and a lookup by title has also failed
+            # At this stage we use the file name to search the web for an imdb url.
+            # TODO This should filter out movie results.
+            imdbUrl=scanWWWForImdbLink(idx);
+        }
+        if (imdbUrl != "") {
+            # but do know imdbid - use the imdb id to find the tv id
+            scrapeIMDBTitlePage(idx,imdbUrl);
+            if (g_category[idx] != "M" ) {
+                # find the tvid - this can miss if the tv plugin api does not have imdb lookup
+                tvid = find_tvid(plugin,idx,extractImdbId(imdbUrl));
+                tvDbSeriesPage = get_tv_series_api_url(plugin,tvid);
+                result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
+            }
+        }
+    }
+    
+    if (g_category[idx] == "M" ) {
+        DEBUG("Error getting IMDB ID from tv - looks like a movie??");
+        result = 0;
     }
     INF("tv_search "plugin" = "result);
-    return result;
+    return 0+ result;
 }
 
 function movie_search(idx,bestUrl,\
@@ -2916,6 +2957,7 @@ function clean_globals() {
     delete gTitle;
     delete gOriginalTitle;
     delete gAdditionalInfo;
+    delete g_tvid;
     delete g_imdb_poster_url;
     delete g_file;
     delete g_file_time;
@@ -3152,7 +3194,7 @@ i,bestScore,count,tmp,isHigher) {
     }
     dump(0,"post best",outHash);
     INF("count = "count);
-    return count;
+    return 0+ count;
 }
 
 #returns imdb url
@@ -3180,7 +3222,7 @@ foundId,line) {
 ############### GET IMDB PAGE FROM URL ########################################
 
 function search_tv_series_names(plugin,idx,title,\
-tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds) {
+tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
     title_key = plugin"/"g_fldr[idx]"/"title;
     if (title_key in g_tvDbIndex) {
@@ -3212,14 +3254,14 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds) {
 
             searchAbbreviationAgainstTitles(title,alternateTitles);
 
-            if (filterTitlesByTvDbPresence(plugin,alternateTitles,"FirstAired,Overview",showIds) - 1 > 0 ) {
+            if (filterTitlesByTvDbPresence(plugin,alternateTitles,showIds) - 1 > 0 ) {
 
                 filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds);
 
 
-                title = selectBestOfBestTitle(plugin,idx,showIds);
+                tvdbid = selectBestOfBestTitle(plugin,idx,showIds);
 
-                tvDbSeriesPage = searchTvDbTitles(plugin,idx,title);
+                tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
 
                 if (tvDbSeriesPage) {
                     g_search_hits[plugin".tvabbrev"]++;
@@ -3278,19 +3320,33 @@ function hash_size(h,\
 s,i){
     s = 0 ; 
     for(i in h) s++;
-    return s;
+    return 0+ s;
 }
 
-function possible_tv_titles(plugin,title,closeTitles) {
+function id1(x) {
+    g_idstack[g_idtos++] = x;
+    INF(">Begin " x);
+    g_indent="\t"g_indent;
+}
+
+function id0() {
+    g_indent=substr(g_indent,2);
+    INF("<End "g_idstack[--g_idtos]);
+}
+
+function possible_tv_titles(plugin,title,closeTitles,\
+ret) {
 
     if (plugin == "THETVDB" ) {
-        searchTv(plugin,title,"FirstAired,Overview",closeTitles);
+        ret = searchTv(plugin,title,"FirstAired,Overview",closeTitles);
     } else if (plugin == "TVRAGE" ) {
-        searchTv(plugin,title,"started,origin_country",closeTitles);
+        ret = searchTv(plugin,title,"started,origin_country",closeTitles);
     } else {
         plugin_error(plugin);
     } 
+    g_indent=substr(g_indent,2);
     dump(0,"searchTv out",closeTitles);
+    return ret;
 
 }
 
@@ -3308,7 +3364,7 @@ result) {
    if (result == 0 ) {
         result = filterTitlesFoundOnUsenetEngineWithSpecificText(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles);
    }
-   return result;
+   return 0+ result;
 }
 
 # Given a bunch of titles keep the ones where the filename has been posted with that title
@@ -3335,12 +3391,15 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     for(t in titles) {
         #Just count the number of table links
         query = usenet_query_url;
-        sub(/QUERY/,titles[t],query);
+        sub(/QUERY/,clean_title(titles[t]),query);
         link_count = scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles);
         DEBUG("number of links "link_count);
         if (link_count-baseline > 0) {
             count[t] = link_count;
             found=1;
+        }
+        if (link_count == 0 ) {
+            scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles,1);
         }
     }
 
@@ -3358,7 +3417,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     } else {
         INF("No results found using "usenet_query_url);
     }
-    return found;
+    return 0+ found;
 }
 
 # This should only be called fairly late in the selection process.
@@ -3376,13 +3435,14 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 function getRelativeAge(plugin,idx,titleHash,ageHash,\
 id,xml) {
    for(id in titleHash) {
-        get_episode_xml(plugin,get_tv_series_api_url(plugin,id),g_season[idx],g_episode[idx],xml);
-        if (plugin == "THETVDB") {
-            ageHash[id] = xml["/Data/Episode/FirstAired"];
-        } else if (plugin == "TVRAGE" ) {
-            ageHash[id] = xml["/Show/Episodelist/Season/episode/airdate"];
-        } else {
-            plugin_error(plugin);
+        if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),g_season[idx],g_episode[idx],xml)) {
+            if (plugin == "THETVDB") {
+                ageHash[id] = xml["/Data/Episode/FirstAired"];
+            } else if (plugin == "TVRAGE" ) {
+                ageHash[id] = xml["/Show/Episodelist/Season/episode/airdate"];
+            } else {
+                plugin_error(plugin);
+            }
         }
     }
     dump(1,"Age indicators",ageHash);
@@ -3436,7 +3496,7 @@ bestId,bestFirstAired,ages,count) {
 # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
 # OUT showIdHash - hash of matching titles. hashed by showid => title
 # RETURNS number of matches
-function filterTitlesByTvDbPresence(plugin,titleInHash,requiredTags,showIdHash,\
+function filterTitlesByTvDbPresence(plugin,titleInHash,showIdHash,\
 bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
     bestScore=-1;
     count=0;
@@ -3449,19 +3509,19 @@ bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
     delete showIdHash;
 
     for(potentialTitle in origTitles) {
-        INF("Checking potential title "potentialTitle);
-        score = searchTv(plugin,potentialTitle,requiredTags,potentialMatches);
+        id1("Checking potential title "potentialTitle);
+        score = possible_tv_titles(plugin,potentialTitle,potentialMatches);
         if (score - bestScore >= 0 ) {
             if (score - bestScore > 0 ) delete showIdHash;
             hash_merge(showIdHash,potentialMatches);
-            dump(0,"filtered matches so far:",showIdHash);
             bestScore = score;
         }
+        id0();
     }
 
     #copy to output
     dump(0,"post filterTitle",showIdHash);
-    return hash_size(showIdHash);
+    return 0+ hash_size(showIdHash);
 }
 # Search tvDb and return titles hashed by seriesId
 # Series are only considered if they have the tags listed in requiredTags
@@ -3486,14 +3546,14 @@ score) {
             }
         }
     }
-    return score;
+    return 0+ score;
 }
 
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
 function searchTv2(plugin,title,requiredTagList,closeTitles,\
 requiredTagNames,allTitles,url) {
 
-    DEBUG("searchTv2 Checking ["title"]" );
+    DEBUG("searchTv2 Checking ["plugin"/"title"]" );
     split(requiredTagList,requiredTagNames,",");
     delete closeTitles;
 
@@ -3510,7 +3570,7 @@ requiredTagNames,allTitles,url) {
     } else {
         plugin_error(plugin);
     }
-    return filterSimilarTitles(title,allTitles,closeTitles);
+    return 0+ filterSimilarTitles(title,allTitles,closeTitles);
 }
 
 #If the search engine differentiates between &/and or obrien o brien then we need multiple searches.
@@ -3596,11 +3656,11 @@ function dump(lvl,label,array,\
 i,c) {
     if (DBG-lvl >= 0)   {
         for(i in array) {
-            DEBUG(label":"i"=["array[i]"]");
+            DEBUG("  "label":"i"=["array[i]"]");
             c++;
         }
         if (c == 0 ) {
-            DEBUG(label":<empty>");
+            DEBUG("  "label":<empty>");
         }
     }
 }
@@ -3748,7 +3808,7 @@ f,line,result) {
         close(f);
         result = 1;
     }
-    return result;
+    return 0+ result;
 }
 
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
@@ -3998,7 +4058,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
 
     }
     DEBUG("["titleIn"] vs ["possible_title"] = "matchLevel);
-    return matchLevel;
+    return 0+ matchLevel;
 }
 
 #Given a title - scan an array or potential titles and return the best matches along with a score
@@ -4010,6 +4070,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
 function filterSimilarTitles(title,titleHashIn,titleHashOut,\
 i,score,bestScore,tmpTitles) {
 
+    id1("Find similar "title);
     #Save a copy in case titleHashIn = titleHashOut
     hash_copy(tmpTitles,titleHashIn);
 
@@ -4036,7 +4097,9 @@ i,score,bestScore,tmpTitles) {
         delete titleHashOut;
     }
 
-    return bestScore;
+    id0();
+
+    return 0+ bestScore;
 }
 
 # Return the list of names in the epguide menu indexed by link
@@ -4067,7 +4130,7 @@ url,title,link,links,i,count2) {
         }
     }
     DEBUG("Loaded "count2" names");
-    return count2;
+    return 0+ count2;
 }
 
 # Search epGuide menu page for all titles that match the possible abbreviation.
@@ -4094,6 +4157,8 @@ possible_title,names,i,ltitle) {
 
         possible_title = clean_title(possible_title);
 
+        id1(possible_title);
+
         if (abbrevMatch(ltitle,possible_title)) {
             alternateTitles[possible_title]="abbreviation-initials";
         } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
@@ -4101,6 +4166,8 @@ possible_title,names,i,ltitle) {
         } else if (abbrevContraction(ltitle,possible_title)) {
             alternateTitles[possible_title]="abbreviation-contraction";
         }
+
+        id0();
     }
 }
 
@@ -4143,7 +4210,7 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
     if (found) {
         INF(possible_title " abbreviated by ["abbrev"]");
     }
-    return found;
+    return 0+ found;
 }
 
 
@@ -4211,7 +4278,7 @@ found,regex,initials,initial_regex) {
     }
 
         
-    return found;
+    return 0+ found;
 }
 
 function epguideInitial(title,\
@@ -4530,8 +4597,8 @@ episodeUrl,filter,result) {
     } else {
         INF("cant determine episode url from "seriesUrl);
     }
-    DEBUG("get_episode_xml="result);
-    return result;
+    DEBUG("get_episode_xml="(result+0));
+    return 0+ result;
 }
 
 function scrape_check(idx,site) {
@@ -4558,7 +4625,7 @@ result) {
     DEBUG("Title:["gTitle[idx]"] "g_season[idx]"x"g_episode[idx]" date:"gAirDate[idx]);
     DEBUG("Episode:["gEpTitle[idx]"]");
     DEBUG("end get_tv_series_info "plugin" = "result"="(result==2?"Full Episode Info":(result?"Series Only":"Not Found")));
-    return result;
+    return 0+ result;
 }
 
 function setFirst(array,field,value) {
@@ -4615,23 +4682,24 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
 
-            get_episode_xml("THETVDB",tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo);
+            if (get_episode_xml("THETVDB",tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
 
-            if ("/Data/Episode/id" in episodeInfo) {
-                setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]));
+                if ("/Data/Episode/id" in episodeInfo) {
+                    setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]));
 
-                set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"]);
+                    set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"]);
 
-                DEBUG("tvdb epplot :["g_epplot[idx]"]");
-                setFirst(g_epplot,idx,episodeInfo["/Data/Episode/Overview"]);
-                DEBUG("tvdb epplot :["g_epplot[idx]"]");
+                    DEBUG("tvdb epplot :["g_epplot[idx]"]");
+                    setFirst(g_epplot,idx,episodeInfo["/Data/Episode/Overview"]);
+                    DEBUG("tvdb epplot :["g_epplot[idx]"]");
 
-                if (gEpTitle[idx] != "" ) {
-                   if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {
-                       INF("Due to Episode title of ["gEpTitle[idx]"] Demoting result to force another TV plugin search");
-                   } else {
-                       result ++;
-                   }
+                    if (gEpTitle[idx] != "" ) {
+                       if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {
+                           INF("Due to Episode title of ["gEpTitle[idx]"] Demoting result to force another TV plugin search");
+                       } else {
+                           result ++;
+                       }
+                    }
                 }
             }
         }
@@ -4645,7 +4713,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
     } else {
         DEBUG("get_tv_series_info returns imdb url ["g_imdb[idx]"]");
     }
-    return result;
+    return 0+ result;
 }
 
 function tvDbImageUrl(path) {
@@ -4718,6 +4786,15 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
             #TODO Scrape page at "http://www.tvrage.com/shows/id-2445/" for Creator , plot 
             if (get_episode_xml(pi,tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
+                #DEBUG("tmp=["tmp"]"(tmp?1:0));
+                #DEBUG("tmp=0["(tmp==0)"]");
+                #DEBUG("tmp=\"0\"["(tmp=="0")"]");
+                #DEBUG("tmp!=0["(tmp!=0)"]");
+                #DEBUG("tmp!=\"0\"["(tmp!="0")"]");
+                #DEBUG("tmp len["length(tmp)"]");
+                #DEBUG("tmp idx0["index("0",tmp)"]");
+                #DEBUG("tmp idx0["index(tmp,"0")"]");
+                #DEBUG("tmp+0=["tmp+0"]"((tmp+0)?1:0));
 
                 set_eptitle(idx,episodeInfo[e"/title"]);
 
@@ -4725,8 +4802,8 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
                 url=episodeInfo[e"/link"];
 
                 if (g_epplot[idx] == "" ) {
-                    #p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"<a ",0);
-                    p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);
+                    #p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);
+                    p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"^<br>$|<a href",1);
                     sub(/ *There are no foreign summaries.*/,"",p);
                     if (p != "" && index(p,"There is no summary") == 0) {
                         g_epplot[idx] = p;
@@ -4743,7 +4820,7 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
         WARNING("Error getting series xml");
     }
 
-    return result;
+    return 0+ result;
 }
 
 function clean_xml_path(xmlpath,xml,\
@@ -4772,8 +4849,8 @@ f,found) {
    f = getUrl(url,filelabel,1);
    DEBUG("fetch_xml_single_child ["url"] path = "xmlpath);
    found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout);
-   DEBUG("fetch_xml_single_child ["url"]="found);
-   return found;
+   DEBUG("fetch_xml_single_child ["url"]="(found+0));
+   return 0+ found;
 }
 function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
 line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type,string_type,this_type) {
@@ -4868,7 +4945,7 @@ line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type
 #    } else {
 #dump(0,"@@xml:single child:",xmlout);
 }
-    return found;
+    return 0+ found;
 }
 
 # returns 1 if title adjusted or is the same.
@@ -5231,7 +5308,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
     targetFile=qa(file);
     htmlFile=targetFile;
 
-    args=args" --header=\"Accept-Encoding: gzip,deflate\" "
+    args=args" --header=\"Accept-Encoding: gzip\" "
     downloadedFile=qa(file".gz");
     #some devices have gzip not gunzip and vice versa
     unzip_cmd=" && ( gunzip -c "downloadedFile" || gzip -c -d "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
@@ -5272,7 +5349,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
             rm(downloadedFile,1);
         }
 #ALL#    }
-    return result;
+    return 0+ result;
 }
 
 # Slow down queries to avoid blacklist.
@@ -5348,11 +5425,11 @@ poster_ref) {
 }
 
 function getting_fanart(idx,lg) {
-    return getting_image(idx,FANART,GET_FANART,UPDATE_FANART,lg);
+    return 0+ getting_image(idx,FANART,GET_FANART,UPDATE_FANART,lg);
 }
 
 function getting_poster(idx,lg) {
-    return getting_image(idx,POSTER,GET_POSTERS,UPDATE_POSTERS,lg);
+    return 0+ getting_image(idx,POSTER,GET_POSTERS,UPDATE_POSTERS,lg);
 }
 
 function getting_image(idx,image_field_id,get_image,update_image,lg,\
@@ -5636,7 +5713,7 @@ matches,i) {
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scanPageForMatches(url,regex,max,cache,referer,matches,\
+function scanPageForMatches(url,regex,max,cache,referer,matches,verbose,\
 f,line,count,linecount,regex_text,remain,is_imdb) {
 
     delete matches;
@@ -5673,6 +5750,9 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
                 gsub(/\/Title\?/,"/tt",line);
             }
 
+            if (verbose) DEBUG("scanindex = "index(line,regex_text));
+            if (verbose) DEBUG(line);
+
             if (regex_text == "" || index(line,regex_text)) {
 
                 linecount = capture_regex(line,regex,remain,matches);
@@ -5689,7 +5769,7 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
         close(f);
     }
     dump(2,count" matches",matches);
-    return count;
+    return 0+ count;
 }
 
 # Find all occurences of a regular expression within a string, and return in an array.
@@ -5723,7 +5803,7 @@ count,flag,fcount,i,parts) {
     }  else 
         dump(3,count " linematches",matches);
 
-    return count;
+    return 0+ count;
 }
 
 
@@ -6274,7 +6354,7 @@ function moveFile(oldName,newName,\
         if ((ret=preparePath(newName)) == 0) {
             ret = exec("mv "old" "new);
         }
-       return ret;
+       return 0+ ret;
    }
 }
 
@@ -6322,7 +6402,7 @@ function moveFolder(i,oldName,newName,\
    if (ret != 0) {
        WARNING("folder contents ["oldName"] not renamed to ["newName"] : "err);
    }
-   return ret;
+   return 0+ ret;
 }
 
 function hasContent(f,\
@@ -6333,7 +6413,7 @@ tmp,err) {
 }
 
 function isnmt() {
-    return is_file("'"$NMT_APP_DIR"'/MIN_FIRMWARE_VER");
+    return 0+ is_file("'"$NMT_APP_DIR"'/MIN_FIRMWARE_VER");
 }
 function is_file(f,\
 tmp,err) {
@@ -6349,7 +6429,7 @@ function is_empty(d) {
     return system("ls -a "qa(d)" | egrep -v '^\.\.?$'") != 0;
 }
 function is_dir(f) {
-    return test("-d",f"/.");
+    return 0+ test("-d",f"/.");
 }
 function is_file_or_folder(f,\
 r) {
@@ -6649,23 +6729,28 @@ i,row,f) {
 }
 
 function update_plots(pfile,idx,\
-id,cmd,cmd2) {
+id,key,cmd,cmd2) {
     id=extractImdbId(g_imdb[idx],1);
     if (id != "") {
         INF("updating plots for "id);
 
-        cmd=g_plot_app" update "qa(pfile)" "qa(id)" "qa(g_season[idx]);
+        key=qa(id)" "qa(g_season[idx]);
 
-        if (g_plot[idx] != "" ) {
+        cmd=g_plot_app" update "qa(pfile)" "key;
+
+        if (g_plot[idx] != "" && !(key in g_updated_plots) ) {
             cmd2 = cmd" "qa("");
             INF("updating main plot :"cmd2);
             exec(cmd2" "qa(g_plot[idx]));
+            g_updated_plots[key]=1;
         }
 
-        if (g_category[idx] == "T" && g_epplot[idx] != "" ) {
+        key=key" "qa(g_episode[idx]);
+        if (g_category[idx] == "T" && g_epplot[idx] != "" && !(key in g_updated_plots) ) {
             cmd2 = cmd" "qa(g_episode[idx]);
             INF("updating episode plot :"cmd2);
             exec(cmd2" "qa(g_epplot[idx]));
+            g_updated_plots[key]=1;
         }
     }
 }

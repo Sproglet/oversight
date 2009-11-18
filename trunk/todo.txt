@@ -4,6 +4,7 @@
 # Test Greek - Sigma filtering
 # Test House - tv2imdb using bing,yahoo,google match
 # Test bs301-dot.mkv against Rage and TvDb - deep abbreviation search.
+# Test Heroes s04e01 - plot = Quick Reply
 
 GENRE ERROR!!!!!!
 

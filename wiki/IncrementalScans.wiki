@@ -23,3 +23,5 @@ Note in the next version of Oversight (est 21st November) incremental scans can 
   # In the Oversight GUI, _delist_ the item to be rescanned (dont _delete_ it!!)
   # Go to the Admin Screen, and select the Rescan Option
   # In the rescan screen select 'New Items Only', and Rescan.
+
+This method looks through all folders for files that are not in the index, so it may take 5 minutes or more.

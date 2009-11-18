@@ -1028,7 +1028,7 @@ function lock(lock_file,fastfail,\
 attempts,sleep,backoff) {
 attempts=0
 sleep=10
-split("10,10,20,30,60,120,300,600,600,600,600,600,600,600,600,600,600,1200",backoff,",")
+split("10,10,20,30,60,120,300,600,600,600,600,1200",backoff,",")
 for(attempts=1 ; (attempts in backoff) ; attempts++) {
 if (!is_locked(lock_file)) {
 print PID > lock_file
@@ -1037,7 +1037,7 @@ INF("Locked "lock_file)
 set_permissions(qa(lock_file))
 return 1
 }
-if (fastfail) break
+if (fastfail != 0) break
 sleep=backoff[attempts]
 WARNING("Failed to get exclusive lock. Retry in "sleep" seconds.")
 system("sleep "sleep)
@@ -1518,7 +1518,7 @@ DEBUG2("no match on [^0-9][Aa1]")
 return 0
 }
 
-INF("Found multi part file - linked with "firstName)
+INF("Found multi part file - linked with "lastNameSeen)
 gParts[count-1] = (gParts[count-1] =="" ? "" : gParts[count-1]"/" ) name
 gMultiPartTagPos[count-1] = i
 return 1
@@ -1573,22 +1573,24 @@ return 1
 }
 
 function scanWWWForFirstImdbPage(qualifier,\
-i1,i2,i3) {
+i1,i2,i3,ret) {
 
 
+id1("imdbfirst "+qualifier)
 i1=scanPageForMatch(g_search_bing qualifier,g_imdb_regex,0)
 i2=scanPageForMatch(g_search_yahoo qualifier,g_imdb_regex,0)
 if (i1 == i2 ) {
-return i1
+ret= i1
 } else if (i1 != i2 && "" != i1 i2 ) {
 
 i3=scanPageForMatch(g_search_google qualifier,g_imdb_regex,0)
 if (i3 != "" ) {
-if (i3 == i1 ) return i1
-if (i3 == i2 ) return i2
+if (i3 == i1 ) ret = i1
+else if (i3 == i2 ) ret = i2
 }
 }
-return ""
+id0(ret)
+return ret
 }
 
 
@@ -2406,11 +2408,11 @@ plugin_error(plugin)
 if (result) {
 INF(":) Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d)
 details[TVID]=tvdbid
-id0()
+id0(result)
 break
 }
 }
-id0()
+id0(result)
 }
 if (result == 0) {
 INF(":( Couldnt find episode "y"/"m"/"d" - using file information")
@@ -2881,7 +2883,10 @@ bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("site:imdb.com"))
 
 } else if (search_order[s] == "IMDBFIRST") {
 
+bestUrl=scanWWWForFirstImdbPage(name"+"url_encode("+imdb"))
+if (bestUrl == "" && keywords != name) {
 bestUrl=scanWWWForFirstImdbPage(keywords"+"url_encode("+imdb"))
+}
 
 } else if (search_order[s] == "IMDBLINKS") {
 
@@ -3329,9 +3334,10 @@ INF(">Begin " x)
 g_indent="\t"g_indent
 }
 
-function id0() {
+function id0(x) {
 g_indent=substr(g_indent,2)
-INF("<End "g_idtos[--g_idtos])
+
+INF("<End "g_idstack[--g_idtos]"=" ( (x!="") ? "=["x"]" : ""))
 }
 
 function possible_tv_titles(plugin,title,closeTitles,\
@@ -3516,7 +3522,7 @@ if (score - bestScore > 0 ) delete showIdHash
 hash_merge(showIdHash,potentialMatches)
 bestScore = score
 }
-id0()
+id0(score)
 }
 
 
@@ -4097,7 +4103,7 @@ DEBUG("all zero score - discard them all to trigger another match method")
 delete titleHashOut
 }
 
-id0()
+id0(bestScore)
 
 return 0+ bestScore
 }
@@ -4485,68 +4491,29 @@ return maxName
 
 
 function searchForIMDB(keywords,linkThreshold,\
-i1,result) {
+i1,result,matchList,bestUrl) {
+id1("Search ["keywords"]")
 if (!(keywords in g_imdb_link_search)) {
 
-INF("Begin IMDBLink Search ["keywords"]")
 
 
 keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de"
 
 
-i1 = scanUrlForBestMatch(g_search_yahoo keywords,g_imdb_regex,"search4imdb",linkThreshold)
+scanPageForMatches(g_search_yahoo keywords,g_imdb_regex,0,0,"",matchList)
+
+
+bestUrl=getMax(matchList,linkThreshold,1,0)
+if (bestUrl != "") {
+i1 = extractImdbLink(bestUrl)
+}
 g_imdb_link_search[keywords] = i1
 
 }
 result = g_imdb_link_search[keywords]
 
-INF("IMDBLink Search ["keywords"] => ["result"]")
+id0(result)
 return result
-}
-
-
-
-
-
-
-
-
-function scanUrlForBestMatch(url,pattern,captureLabel,threshold,\
-f,start,matchList,bestUrl,x,html) {
-
-f = getUrl(url,captureLabel,0)
-if (f != "") {
-FS="\n"
-
-DEBUG2("Looking for "pattern" in "f)
-
-while((getline html < f) > 0 ) {
-
-
-html = de_emphasise(html)
-
-
-
-
-
-
-
-
-
-
-
-capture_regex(html,pattern,0,matchList)
-}
-close(f)
-}
-
-
-bestUrl=getMax(matchList,threshold,1,0)
-if (bestUrl != "") {
-return extractImdbLink(bestUrl)
-} else  {
-return ""
-}
 }
 
 function get_episode_url(plugin,seriesUrl,season,episode,\
@@ -5705,6 +5672,7 @@ scanPageForMatches(url,regex,1,cache,referer,matches)
 
 
 for(i in matches) {
+INF(url"=["i"]")
 return i
 }
 }
@@ -5730,7 +5698,7 @@ regex_text=regex
 
 
 sub(/[][?\\*(|.].*/,"",regex_text)
-INF("Looking for fixed text ["regex_text"] before regex ["regex"]")
+
 
 count=0
 
@@ -5743,6 +5711,7 @@ remain=max
 
 while(((getline line < f) > 0)  ) {
 
+line = de_emphasise(line)
 
 
 
@@ -5771,6 +5740,11 @@ close(f)
 dump(2,count" matches",matches)
 return 0+ count
 }
+
+
+
+
+
 
 
 function capture_regex(line,regex,max,matches,\

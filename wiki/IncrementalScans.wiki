@@ -15,3 +15,11 @@ In the mean time you can manually rescan if you have telnet installed.
   # type 'cd /share/Apps/oversight'
   # type './catalog.sh /path/to/new/media/folder'
   # Or to rescan AND get new posters type './catalog.sh UPDATE_POSTERS /path/to/new/media/folder'
+
+----
+
+Note in the next version of Oversight (est 21st November) incremental scans can be performed as follows:
+
+  # In the Oversight GUI, _delist_ the item to be rescanned (dont _delete_ it!!)
+  # Go to the Admin Screen, and select the Rescan Option
+  # In the rescan screen select 'New Items Only', and Rescan.

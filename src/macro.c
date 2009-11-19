@@ -216,8 +216,13 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
     } 
 
 
-    result = STRDUP(get_main_plot(sorted_rows[0]));
-    char *clean = clean_js_string(result);
+TRACE;
+    result = STRDUP(NVL(get_plot(sorted_rows[0],PLOT_MAIN)));
+TRACE;
+    HTML_LOG(1,"plot[%s]",result);
+
+    //char *clean = clean_js_string(result);
+    char *clean = result;
     if (clean != result) {
         FREE(result);
         result = clean;
@@ -229,6 +234,7 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
         }
         result[max] = '\0';
     }
+TRACE;
     return result;
 }
 
@@ -505,6 +511,7 @@ char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_row
     int rows=0;
     int cols=0;
     HTML_LOG(1,"macro_fn_tv_listing");
+TRACE;
     if (!get_rows_cols(call,args,&rows,&cols)) {
         char sl[20];
         long rl=0,cl=0;

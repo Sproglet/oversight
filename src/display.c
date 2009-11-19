@@ -1028,6 +1028,12 @@ char *add_one_source_to_idlist(DbRowId *row_id,char *current_idlist,int *mixed_s
     return idlist;
 }
 
+/*
+ * Go through all Ids that are linked and create an id list of the form.
+ * source(id1|id2|id3)source2(id4|id5|id6)
+ * In the menu view all rows with the same season are linked.
+ * in the tv view , rows with the same file are linked.
+ */
 char *build_id_list(DbRowId *row_id) {
 
     int mixed_sources=0;
@@ -2291,19 +2297,6 @@ TRACE;
     return numrows;
 }
 
-void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids) {
-
-TRACE;
-    FREE(sorted_row_ids);
-
-    //finished now - so we could just let os free
-TRACE;
-    db_free_rowsets_and_dbs(rowsets);
-TRACE;
-}
-
-
-
 void set_tvid_increments(int *tvid_val) {
     memset(tvid_val,0,256);
     tvid_val['1']=1;
@@ -2540,26 +2533,36 @@ char *create_episode_js_fn(int num_rows,DbRowId **sorted_rows) {
     int i;
     char *tmp;
 
+TRACE;
     // get titles from plot.db
     get_plot_offsets_and_text(num_rows,sorted_rows,1);
 
+TRACE;
     // build the idlist
     char **idlist = CALLOC(num_rows,sizeof(char *));
     for(i = 0 ; i < num_rows ; i++ ) {
         idlist[i] = build_id_list(sorted_rows[i]);
     }
+TRACE;
 
-    // Main plot function
-    char *main_plot="(no plot info)";
-    char *main_genre="";
+    // Find the first plot and genre
+    char *main_plot=NULL;
+    char *main_genre=NULL;
+
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        if (rid->plot_text) {
-            main_plot = rid->plot_text;
+        if (!main_plot && !EMPTY_STR(rid->plottext[PLOT_MAIN])) {
+            main_plot = rid->plottext[PLOT_MAIN];
+        }
+        if (!main_genre && !EMPTY_STR(rid->genre)) {
             main_genre = rid->genre;
-            break;
         }
     }
+
+    if (!main_plot) main_plot = "(no plot info)";
+    if (!main_genre) main_genre = "";
+
+TRACE;
 
     tmp = ep_js_fn(result,0,"","",NVL(main_plot),"",NVL(main_genre),NULL,NULL);
     FREE(result);
@@ -2576,7 +2579,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
         int freeshare=0;
         char *share = share_name(rid,&freeshare);
 
-        tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->episode_plot_text),rid->file,title,date,share);
+        tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->plottext[PLOT_EPISODE]),rid->file,title,date,share);
         FREE(result);
         if (free_title) FREE(title);
         if (freeshare) FREE(share);
@@ -2662,10 +2665,13 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     int width1=4; //episode width
     width2 -= width1;
 
+TRACE;
     HTML_LOG(0,"pruned_tv_listing");
 
 
+TRACE;
     char *script = create_episode_js_fn(num_rows,sorted_rows);
+TRACE;
 
     printf("%s",script);
 

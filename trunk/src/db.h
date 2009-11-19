@@ -7,6 +7,9 @@
 #include "dbfield.h"
 #include "time.h"
 
+typedef enum { PLOT_MAIN=0 , PLOT_EPISODE=1 } PlotType;
+#define PLOT_TYPE_COUNT 2
+
 typedef struct Dbrowid_struct {
 
     long id;
@@ -30,8 +33,14 @@ typedef struct Dbrowid_struct {
 
     //only populate if view=tv or movie
     char *url;
-    char *plot_key;
-    char *episode_plot_key;
+
+    /*
+     * plot_key is derived from URL tt0000000
+     * movie plot_key[MAIN]=_@tt0000000@@@_
+     * tv plot_key[MAIN]=_@tt0000000@season@@_
+     * tv plot_key[EPPLOT]=_@tt0000000@season@episode@_
+     */
+    char *plotkey[2];
     char *fanart;
     char *parts;
     char *episode;
@@ -55,10 +64,8 @@ typedef struct Dbrowid_struct {
     Array *playlist_paths;
     Array *playlist_names;
 
-    long plot_offset;
-    long episode_plot_offset;
-    char *plot_text;
-    char *episode_plot_text;
+    long plotoffset[2];
+    char *plottext[2];
 
 } DbRowId;
 

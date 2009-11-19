@@ -805,14 +805,16 @@ eol:
 }
 
 DbRowId *db_rowid_init(DbRowId *rowid,Db *db) {
+    int i;
     memset(rowid,0,sizeof(DbRowId));
     rowid->rating=0;
 
     rowid->db = db;
     rowid->season = -1;
     rowid->category='?';
-    rowid->plot_offset = PLOT_POSITION_UNSET;
-    rowid->episode_plot_offset = PLOT_POSITION_UNSET;
+    for(i = 0 ; i < PLOT_TYPE_COUNT ; i++ ) {
+        rowid->plotoffset[i] = PLOT_POSITION_UNSET;
+    }
     return rowid;
 }
 DbRowId *db_rowid_new(Db *db) {
@@ -1231,12 +1233,18 @@ TRACE;
 void db_free_rowsets_and_dbs(DbRowSet **rowsets) {
     if (rowsets) {
         DbRowSet **r;
+TRACE;
         for(r = rowsets ; *r ; r++ ) {
+TRACE;
             Db *db = (*r)->db;
             db_rowset_free(*r);
+TRACE;
             db_free(db);
+TRACE;
         }
+TRACE;
         FREE(rowsets);
+TRACE;
     }
 }
 
@@ -1568,6 +1576,7 @@ void db_free(Db *db) {
 
 void db_rowid_free(DbRowId *rid,int free_base) {
 
+    int i;
     assert(rid);
 
 //    HTML_LOG(0,"%s %lu %lu",rid->title,rid,rid->file);
@@ -1584,7 +1593,10 @@ void db_rowid_free(DbRowId *rid,int free_base) {
     FREE(rid->url);
     FREE(rid->parts);
     FREE(rid->fanart);
-    FREE(rid->plot_key);
+    for(i = 0 ; i < PLOT_TYPE_COUNT ; i++ ) {
+        FREE(rid->plotkey[i]);
+        FREE(rid->plottext[i]);
+    }
     FREE(rid->eptitle);
     FREE(rid->eptitle_imdb);
     FREE(rid->additional_nfo);

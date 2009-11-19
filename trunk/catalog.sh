@@ -714,7 +714,7 @@ g_tagstartchar=g_ABC g_abc":_"
 
 load_catalog_settings()
 
-split(g_settings["catalog_tv_plugins"],g_tv_plugin,g_cvs_sep)
+split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep)
 
 if (g_settings["catalog_fetch_posters"] == "yes") {
 GET_POSTERS=1
@@ -853,7 +853,7 @@ unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"]
 
 g_tk = apply(g_tk)
 g_tk2 = apply(g_tk2)
-scan_folder_for_new_media(FOLDER_ARR,scan_options)
+g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options)
 
 
 clean_capture_files()
@@ -886,7 +886,7 @@ print "last scan at " strftime(systime()) > g_timestamp_file
 close(g_timestamp_file)
 unlock(g_scan_lock_file)
 }
-if (hash_size(FOLDER_ARR)) {
+if (g_grand_total) {
 if (lock(g_db_lock_file,1)) {
 
 remove_absent_files_from_new_db(INDEX_DB)
@@ -954,11 +954,11 @@ folders[f] = clean_path(folders[f])
 
 function plugin_check(\
 p,plugin) {
-for (p in g_tv_plugin) {
-plugin = g_tv_plugin[p]
+for (p in g_tv_plugin_list) {
+plugin = g_tv_plugin_list[p]
 if (getUrl(g_tv_check_urls[plugin],"test",0) == "" ) {
 WARNING("Removing plugin "plugin)
-delete g_tv_plugin[p]
+delete g_tv_plugin_list[p]
 }
 }
 }
@@ -1149,7 +1149,7 @@ return key
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fcount) {
+f,fcount,total) {
 
 
 for(f in folderArray ) {
@@ -1158,9 +1158,11 @@ fcount++
 
 if (folderArray[f]) {
 report_status("folder "fcount)
-scan_contents(folderArray[f],scan_options)
+total += scan_contents(folderArray[f],scan_options)
 }
 }
+
+return 0+total
 
 }
 
@@ -1196,7 +1198,7 @@ return exec("ls "qa(dir)" 2>/dev/null | egrep -q "qa(pattern) ) ==0
 
 function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,last_stored_name) {
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total) {
 
 DEBUG("Scanning "root)
 if (root == "") return
@@ -1246,7 +1248,7 @@ if (!match(substr(perms,2,9),"^[-rwxsSt]+$") ) {
 
 
 if (gMovieFileCount > g_batch_size ) {
-identify_and_catalog_scanned_files()
+total += identify_and_catalog_scanned_files()
 }
 
 
@@ -1322,7 +1324,7 @@ d = substr(currentFolder,1,RSTART-1)
 
 ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW)
 
-last_stored_name = storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo")
+storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo")
 skipFolder=1
 }
 }
@@ -1389,7 +1391,7 @@ gDate[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW
 
 
 if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
-if ( checkMultiPart(last_stored_name,scan_line,gMovieFileCount) ) {
+if ( checkMultiPart(scan_line,gMovieFileCount) ) {
 
 
 if ( !setNfo(gMovieFileCount-1,".(|cd|disk|disc|part)[1-9]" extRe,".nfo") ) {
@@ -1413,7 +1415,7 @@ gDate[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW)
 
 if (store) {
 ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW)
-last_stored_name = storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
+storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
 }
 }
 }
@@ -1422,9 +1424,10 @@ last_stored_name = storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.
 
 close(tempFile)
 
-identify_and_catalog_scanned_files()
+total += identify_and_catalog_scanned_files()
 
 DEBUG("Finished Scanning "root)
+return 0+total
 }
 
 
@@ -1449,10 +1452,7 @@ path) {
 
 path=clean_path(folder"/"file)
 
-if (in_db(path)) {
-
-} else {
-DEBUG("Storing")
+DEBUG("Storing " path)
 
 g_fldrMediaCount[folder]++
 
@@ -1461,22 +1461,25 @@ g_media[idx] = file
 
 
 
+
+if (! (NEWSCAN == 1  &&  in_db(path))) {
 gMovieFilePresent[path] = idx
+}
 g_file_time[idx] = timeStamp
 
 setNfo(gMovieFileCount,nfoReplace,nfoExt)
 
 gMovieFileCount++
 }
-return file
-}
 
 
 
 
 
-function checkMultiPart(lastNameSeen,name,count,\
-i) {
+function checkMultiPart(name,count,\
+lastNameSeen,i) {
+
+lastNameSeen = g_media[count-1]
 
 
 if (length(lastNameSeen) != length(name)) {
@@ -1493,7 +1496,7 @@ break
 DEBUG2("difference at character "i)
 
 if (substr(lastNameSeen,i+1) != substr(name,i+1)) {
-DEBUG("no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]")
+
 return 0
 }
 
@@ -1503,18 +1506,18 @@ if (substr(lastNameSeen,i-1,2) ~ "[^0-9]1" || substr(lastNameSeen,i-2,3) ~ "[^Ee
 
 
 if (!(substr(name,i,1) ~ "[2-9]")) {
-DEBUG2("no match on [2-9]"substr(name,i,1))
+
 return 0
 }
 
 } else if (substr(lastNameSeen,i,1) ~ "[Aa]") {
 if (!(substr(name,i,1) ~ "[A-Fa-f]")) {
-DEBUG2("no match on [A-Fa-f]"substr(name,i,1))
+
 return 0
 }
 
 } else {
-DEBUG2("no match on [^0-9][Aa1]")
+
 return 0
 }
 
@@ -2016,7 +2019,7 @@ parseDbRow(dbline,dbfields)
 add_file(dbfields[FILE])
 }
 if (err == 0 ) close(db)
-dump(0,"scanned",g_scanned)
+
 }
 
 
@@ -2189,15 +2192,13 @@ function checkTvFilenameFormat(plugin,idx,\
 details,line,dirs,d,dirCount,ePos,dirLevels) {
 
 line = g_media[idx]
-g_tvid[idx]=""
 
 
 
 
 line = remove_format_tags(line)
 
-split(g_fldr[idx],dirs,"/")
-dirCount=hash_size(dirs)
+dirCount = split(g_fldr[idx],dirs,"/")
 dirLevels=2
 
 
@@ -2238,6 +2239,7 @@ DEBUG("Double Episode : "g_episode[idx])
 
 
 g_tvid[idx] = details[TVID]
+g_tvid_plugin[idx] = plugin
 g_category[idx] = "T"
 gAdditionalInfo[idx] = details[ADDITIONAL_INF]
 
@@ -2587,7 +2589,7 @@ return 1
 
 function identify_and_catalog_scanned_files(\
 idx,file,bestUrl,scanNfo,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin) {
+ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total) {
 
 numFiles=hash_size(g_media)
 
@@ -2607,10 +2609,11 @@ scanNfo=0
 file=g_media[idx]
 if (file == "" ) continue
 
-DIV0("Start item "(g_item_count)": ["file"]")
 if (NEWSCAN && in_db(g_fldr[idx]"/"file)) {
 continue
 }
+
+DIV0("Start item "(g_item_count)": ["file"]")
 
 report_status("item "(++g_item_count))
 
@@ -2650,12 +2653,13 @@ bestUrl = scanNfoForImdbLink(gNfoDefault[idx])
 scanned = 0
 tv_status = 0
 
-for (p in g_tv_plugin) {
-plugin = g_tv_plugin[p]
+for (p in g_tv_plugin_list) {
+plugin = g_tv_plugin_list[p]
 
 
 
 DIV("checkTvFilenameFormat "plugin)
+g_tvid_plugin[idx] = g_tvid[idx]=""
 if (checkTvFilenameFormat(plugin,idx)) {
 
 if (UPDATE_TV)  {
@@ -2676,6 +2680,7 @@ if (tv_status == 2 ) break
 }
 DEBUG("premovie tv_status "tv_status)
 if (tv_status == 0 && UPDATE_MOVIES) {
+g_tvid_plugin[idx] = g_tvid[idx]=""
 movie_search(idx,bestUrl)
 scanned=1
 }
@@ -2731,6 +2736,7 @@ merge_into_index(ready_to_merge)
 }
 
 clean_globals()
+return 0+total
 }
 
 function DIV0(x) {
@@ -2818,7 +2824,7 @@ return 0+ result
 
 function movie_search(idx,bestUrl,\
 name,name_no_tags,name_no_parts,i,\
-search_regex_key,search_order_key,search_order,s,keywords) {
+search_regex_key,search_order_key,search_order,s,keywords,search_order_size) {
 
 if (!begin_search("movie_search")) {
 return
@@ -2848,14 +2854,14 @@ search_order_key="catalog_movie_search_order"i
 if (!(search_order_key in g_settings)) {
 ERR("Missing setting "search_order_key)
 } else {
-split(g_settings[search_order_key],search_order," *, *")
+search_order_size = split(g_settings[search_order_key],search_order," *, *")
 break
 }
 }
 delete search_order
 }
 
-for(s in search_order) {
+for( s = 1 ; s <= search_order_size ; s++ ) {
 if (bestUrl == "") {
 
 DIV("Search Phase: "search_order[s])
@@ -2921,11 +2927,9 @@ key=gTitle[idx]"+"g_year[idx]
 DEBUG("tv2imdb key=["key"]")
 if (!(key in g_tv2imdb)) {
 
-url=gTitle[idx] " +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons "g_year[idx]
+url=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons "
 
-
-
-g_tv2imdb[key] = scanWWWForFirstImdbPage(url)
+g_tv2imdb[key] = scanWWWForFirstImdbPage(url); 
 }
 g_imdb[idx] = g_tv2imdb[key]
 }
@@ -2962,6 +2966,7 @@ delete gProdCode
 delete gTitle
 delete gOriginalTitle
 delete gAdditionalInfo
+delete g_tvid_plugin
 delete g_tvid
 delete g_imdb_poster_url
 delete g_file
@@ -3176,7 +3181,7 @@ for (i in inHash) return inHash[i]
 function bestScores(inHash,outHash,textMode,\
 i,bestScore,count,tmp,isHigher) {
 
-dump(1,"pre best",inHash)
+
 count = 0
 for(i in inHash) {
 if (textMode) {
@@ -3259,10 +3264,11 @@ INF("Fetched abbreviation "cache_key" = "tvDbSeriesPage)
 
 searchAbbreviationAgainstTitles(title,alternateTitles)
 
-if (filterTitlesByTvDbPresence(plugin,alternateTitles,showIds) - 1 > 0 ) {
+filterTitlesByTvDbPresence(plugin,alternateTitles,showIds)
+if (hash_size(showIds)+0 > 1) {
 
 filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds)
-
+}
 
 tvdbid = selectBestOfBestTitle(plugin,idx,showIds)
 
@@ -3272,7 +3278,6 @@ if (tvDbSeriesPage) {
 g_search_hits[plugin".tvabbrev"]++
 g_abbrev_cache[cache_key] = tvDbSeriesPage
 INF("Caching abbreviation "cache_key" = "tvDbSeriesPage)
-}
 }
 }
 }
@@ -3503,9 +3508,8 @@ return bestId
 
 
 function filterTitlesByTvDbPresence(plugin,titleInHash,showIdHash,\
-bestScore,potentialTitle,potentialMatches,origTitles,score,count) {
+bestScore,potentialTitle,potentialMatches,origTitles,score) {
 bestScore=-1
-count=0
 
 dump(0,"pre tvdb check",titleInHash)
 
@@ -3527,7 +3531,6 @@ id0(score)
 
 
 dump(0,"post filterTitle",showIdHash)
-return 0+ hash_size(showIdHash)
 }
 
 
@@ -4063,7 +4066,6 @@ matchLevel = 4
 matchLevel = 4
 
 }
-DEBUG("["titleIn"] vs ["possible_title"] = "matchLevel)
 return 0+ matchLevel
 }
 
@@ -4083,6 +4085,7 @@ hash_copy(tmpTitles,titleHashIn)
 
 for(i in titleHashIn) {
 score[i] = similarTitles(title,titleHashIn[i])
+DEBUG("["title"] vs ["i":"titleHashIn[i]"] = "score[i])
 }
 
 
@@ -4149,7 +4152,7 @@ possible_title,names,i,ltitle) {
 
 ltitle = tolower(titleIn)
 
-DEBUG("Checking "titleIn" for abbeviations on menu page - "letter)
+id1("Checking "titleIn" for abbeviations on menu page - "letter)
 
 if (ltitle == "" ) return 
 
@@ -4163,8 +4166,6 @@ sub(/\(.*/,"",possible_title)
 
 possible_title = clean_title(possible_title)
 
-id1(possible_title)
-
 if (abbrevMatch(ltitle,possible_title)) {
 alternateTitles[possible_title]="abbreviation-initials"
 } else if (abbrevMatch(ltitle ltitle,possible_title)) {
@@ -4173,8 +4174,8 @@ alternateTitles[possible_title]="abbreviation-double"
 alternateTitles[possible_title]="abbreviation-contraction"
 }
 
-id0()
 }
+id0()
 }
 
 
@@ -4746,7 +4747,7 @@ g_year[idx] = substr(seriesInfo["/Show/started"],8,4)
 sid=seriesInfo["/Show/showid"]
 setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
 url=seriesInfo["/Show/showlink"]
-g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0)
+g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1)
 result ++
 
 e="/Show/Episodelist/Season/episode"
@@ -4770,7 +4771,7 @@ url=episodeInfo[e"/link"]
 
 if (g_epplot[idx] == "" ) {
 
-p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"^<br>$|<a href",1)
+p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"^<br>$|<a href",1,0)
 sub(/ *There are no foreign summaries.*/,"",p)
 if (p != "" && index(p,"There is no summary") == 0) {
 g_epplot[idx] = p
@@ -4917,7 +4918,8 @@ return 0+ found
 
 
 
-function adjustTitle(idx,newTitle,source) {
+function adjustTitle(idx,newTitle,source,\
+oldSrc,newSrc) {
 
 if (!("filename" in gTitlePriority)) {
 
@@ -4933,21 +4935,20 @@ gTitlePriority["TVRAGE"]=4
 }
 newTitle = clean_title(newTitle)
 
+oldSrc=g_title_source[idx]":["gTitle[idx]"] "
+newSrc=source":["newTitle"] "
+
 if (!(source in gTitlePriority)) {
 
 ERR("Bad value ["source"] passed to adjustTitle")
 
 } else if (gTitle[idx] == "" || gTitlePriority[source] - gTitlePriority[g_title_source[idx]] > 0) {
-if (newTitle != gTitle[idx] ) {
-DEBUG("title changed from "g_title_source[idx]":["gTitle[idx]"] to "source":["newTitle"]")
-} else {
-DEBUG("title "g_title_source[idx]":["gTitle[idx]"] matches "source":["newTitle"]")
-}
+DEBUG(oldSrc" promoted to "newSrc)
 gTitle[idx] = newTitle
 g_title_source[idx] = source
 return 1
 } else {
-DEBUG("title kept as "g_title_source[idx]":["gTitle[idx]"] instead of "source":["newTitle"]")
+DEBUG("current title "oldSrc "outranks " newSrc)
 return 0
 }
 }
@@ -5861,8 +5862,8 @@ if (g_genre[idx] == "" && index(line,"Genre:")) {
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
 sub(/ +more */,"",g_genre[idx])
 }
-if (g_rating[idx] == "" && index(line,"/10</b>") ) {
-g_rating[idx]=0+extractTagText(line,"b")
+if (g_rating[idx] == "" && index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
+g_rating[idx]=0+substr(line,RSTART,RLENGTH-3)
 DEBUG("IMDB: Got Rating = ["g_rating[idx]"]")
 }
 if (index(line,"certificates")) {
@@ -5991,10 +5992,10 @@ return
 }
 
 
-function scrape_one_item(label,url,start_text,start_include,end_text,end_include,\
+function scrape_one_item(label,url,start_text,start_include,end_text,end_include,cache,\
 f,line,out,found) {
 
-f=getUrl(url,label,0)
+f=getUrl(url,label,cache)
 if (f) {
 while((getline line < f) > 0 ) {
 if (match(line,start_text)) {
@@ -6705,6 +6706,15 @@ close(output_file)
 function update_plots(pfile,idx,\
 id,key,cmd,cmd2) {
 id=extractImdbId(g_imdb[idx],1)
+if (id == "") {
+
+id=g_tvid_plugin[idx]g_tvid[idx]
+}
+if (id == "") {
+
+id = "ovs:"idx
+}
+
 if (id != "") {
 INF("updating plots for "id)
 

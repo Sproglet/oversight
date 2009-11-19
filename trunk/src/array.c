@@ -36,12 +36,16 @@ void array_free(Array *a) {
             for(i = 0 ; i < a->size ; i++ ) {
                 if (a->array[i]) {
                     (*free_fn)(a->array[i]);
+                    if (free_fn == free ) { 
+                        a->array[i] = NULL;
+                    }
                 }
             }
         }
         if (a->array) {
             FREE(a->array);
         }
+        a->size = 0;
     }
 }
 

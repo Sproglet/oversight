@@ -2112,7 +2112,7 @@ if [ -n "$NMT_APP_DIR" ] ; then
         TMP=/tmp
     fi
     is_nmt=Y
-    chown nmt:nmt "$TMP"
+    chown nmt:nmt "$TMP" || true
 fi
 
 #Some global settings

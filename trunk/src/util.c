@@ -598,16 +598,15 @@ char *util_tolower(char *s) {
 char *STRDUP(char *s) {
     char *p = NULL;
 
-    if (s) {
+    assert(s);
     
-        p = strdup(s);
-        if (p == NULL) {
-            fprintf(stderr,"Memory exhausted on strdup\n");
-            printf("Memory exhausted on strdup\n");
-            exit(1);
-        }
-
+    p = strdup(s);
+    if (p == NULL) {
+        fprintf(stderr,"Memory exhausted on strdup\n");
+        printf("Memory exhausted on strdup\n");
+        exit(1);
     }
+
     return p;
 }
 char *util_hostname() {
@@ -735,6 +734,10 @@ char *util_basename(char *file) {
     return s;
 }
 int util_starts_with(char *a,char *b) {
+    if (a == NULL || b == NULL ) {
+        HTML_LOG(0,"util_starts_with error (%s,%s)",a,b);
+        return 0;
+    }
     while(*a == *b) {
         if (*b == '\0') return 1;
         a++;

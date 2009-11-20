@@ -1747,7 +1747,16 @@ exec_file_list() {
     rm -f -- "$gTmpFile.sh"
 }
 
-no_rars() { ! ls *.rar > /dev/null 2>&1 ; }
+no_rars() {
+    if ls *.rar > /dev/null 2>&1 ; then
+
+        INFO "rar files present"
+        return 1
+    else
+        INFO "No rar files"
+        return 0
+    fi
+}
 
 set_pass() { gPass=$1 ; INFO "PASS $1" ; }
 

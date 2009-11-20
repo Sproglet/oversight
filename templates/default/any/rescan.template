@@ -32,22 +32,22 @@
                     <td>
                         [:CHECKBOX(rescan_dir_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
                         <hr>
-                        <input type=checkbox name=rescan_opt_PARALLEL_SCAN>Scan in parallel
+                        <input type=checkbox name=rescan_opt_PARALLEL_SCAN>scan in parallel
                     </td>
                     <td align=left>
-                        <input type=checkbox name=rescan_opt_GET_POSTERS checked>Get Posters
-                        <input type=checkbox name=rescan_opt_UPDATE_POSTERS>Overwrite Posters (slow)
+                        <input type=checkbox name=rescan_opt_GET_POSTERS checked>get posters
+                        <input type=checkbox name=rescan_opt_UPDATE_POSTERS>overwrite posters (slow)
                         <br>
-                        <input type=checkbox name=rescan_opt_GET_FANART checked>Get Fanart
-                        <input type=checkbox name=rescan_opt_UPDATE_FANART>Overwrite Fanart (slow)
+                        <input type=checkbox name=rescan_opt_GET_FANART checked>get fanart
+                        <input type=checkbox name=rescan_opt_UPDATE_FANART>overwrite fanart (slow)
                         <hr>
 <!--
                         <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>
                         <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
                         <hr>
 -->
-                        <input type=radio name=rescan_opt_@group1 value=RESCAN>Full Scan<br>
-                        <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>New Items Only<br>
+                        <input type=radio name=rescan_opt_@group1 value=RESCAN>full scan<br>
+                        <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>only new or unknown items<br>
                     </td>
                 </tr>
                 <tr>

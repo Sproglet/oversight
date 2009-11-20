@@ -1931,26 +1931,22 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     int centre_col = cols/2;
     int r,c;
 
-    int table_per_row = 0;
     char *table_start,*table_end,*row_start,*row_end;
     char *table_id;
 
-    ovs_asprintf(&table_id,"<table class=overview_poster%d %s>%s",
-            g_dimension->poster_mode,
-            (g_dimension->poster_mode?"":"width=100%"),
-            (table_per_row?"<tr>":""));
+    int cell_margin=2;
 
-    if (table_per_row) {
-       table_start = "";
-       table_end =  "";
-       row_start = table_id;
-       row_end = "</tr></table>";
+    if (g_dimension->poster_mode) {
+        ovs_asprintf(&table_id,"<table class=overview_poster1 height=%dpx>",
+                2*(g_dimension->poster_menu_img_height+cell_margin));
     } else {
-       table_start = table_id;
-       table_end = "</table>";
-       row_start = "<tr>";
-       row_end = "</tr>";
+        ovs_asprintf(&table_id,"<table class=overview_poster0 width=100%>");
     }
+
+   table_start = table_id;
+   table_end = "</table>";
+   row_start = "<tr>";
+   row_end = "</tr>";
 
     if (end > numids) end = numids;
 
@@ -1981,9 +1977,9 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     }
 
     if (g_dimension->poster_mode) {
-        ovs_asprintf(&width_attr," width=%dpx ", g_dimension->poster_menu_img_width+4);
+        ovs_asprintf(&width_attr," width=%dpx ", g_dimension->poster_menu_img_width+cell_margin);
 
-        ovs_asprintf(&height_attr," height=%dpx ", g_dimension->poster_menu_img_height+4);
+        ovs_asprintf(&height_attr," height=%dpx ", g_dimension->poster_menu_img_height+cell_margin);
     } else {
         ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
         height_attr=STRDUP("");

@@ -1,17 +1,8 @@
 
 # TVRage Scanning:
-    # Test Conan O Brien - Series Selection
-    # Test Greek - Sigma filtering
-    # Test House - tv2imdb using bing,yahoo,google match
-    # Test bs301-dot.mkv against Rage and TvDb - deep abbreviation search.
-    # Test Heroes s04e01 - plot = Quick Reply
-    # # Check multipart code.
 #
-    # tv_listing - no listing rendering conan obrian see index.db.conan
-    # tv_listing - flash forward half page display - destop flashforward.html
+# New moviedb api
     #
-    # vplot 45 of 45
-    # star trek everywhere
 # short paths in index db - check play functions
 
 GENRE ERROR!!!!!!

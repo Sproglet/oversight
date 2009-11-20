@@ -37,7 +37,7 @@ table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; bo
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
         [:FORM_START:]
 <center>
-        <table id=main width=100% heigth=100%>
+        <table id=main width=100% height=100%>
         <tr><td>
             <table class=header width=100%>
                 <tr>

@@ -13,6 +13,15 @@
 # For this reason all covers are processed first, then fanart is done 
 # afterwards. 
 
+# --------------------------------------------------------------
+# maxthreads determines how many instances of the script run.
+# This will fetch and resize images while the main catalog script
+# scrapes details.
+# for NMT platform use either 1 or 2. 
+
+maxthreads=1
+
+
 OVS_HOME=/share/Apps/oversight
 
 export PATH="$OVS_HOME/bin:$PATH"
@@ -273,7 +282,6 @@ synchronise() {
     
 startup() {
 
-    maxthreads=2
 
     synchronise 1
     tc=`numthreads`

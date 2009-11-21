@@ -752,7 +752,8 @@ char *check_path(char *format, ... ) {
     return p;
 }
 
-char *internal_image_path_static(DbRowId *rid,ImageType image_type) {
+char *internal_image_path_static(DbRowId *rid,ImageType image_type)
+{
     // No pictures on filesystem - look in db
     // first build the name 
     // TV shows = ovs:fieldid/prefix title _ year _ season.jpg

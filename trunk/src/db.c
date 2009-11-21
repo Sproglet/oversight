@@ -1441,9 +1441,9 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                 // If there were any  deletes queued for shared resources, revoke them
                 // as they are in use by this item.
                 if (g_delete_queue != NULL) {
+
                     delete_queue_unqueue(&rowid,rowid.nfo);
-                    delete_queue_unqueue(&rowid,rowid.poster);
-                    delete_queue_unqueue(&rowid,rowid.fanart);
+                    remove_internal_images_from_delete_queue(&rowid);
                 }
 
                 // Check the device is mounted - if not skip it.
@@ -1708,13 +1708,14 @@ HTML_LOG(1," begin open db");
                         // No match - emit
                         fprintf(db_out,"%s",buf);
 
-                    } else if (delete_mode == DELETE_MODE_REMOVE) {
-                        affected_total++;
-                            // do nothing. line is not written 
-                    } else if (delete_mode == DELETE_MODE_DELETE) {
+                    } else if (delete_mode == DELETE_MODE_REMOVE || delete_mode == DELETE_MODE_DELETE) {
+
                         DbRowId rid;
                         parse_row(ALL_IDS,NULL,0,buf,db,&rid);
-                        delete_media(&rid,1);
+                        add_internal_images_to_delete_queue(&rid);
+                        if (delete_mode == DELETE_MODE_DELETE) {
+                            delete_media(&rid,1);
+                        }
                         db_rowid_free(&rid,0);
                         affected_total++;
 

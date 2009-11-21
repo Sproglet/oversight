@@ -50,4 +50,5 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals);
 char *add_network_icon(DbRowId *r,char *text);
 char *share_name(DbRowId *r,int *freeme);
 char *skin_name();
+char *internal_image_path_static(DbRowId *rid,ImageType image_type);
 #endif

@@ -86,7 +86,6 @@ table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; bo
 var title = document.getElementById('menutitle').firstChild;
 var g_idlist = '';
 var g_title = '';
-function ovs_test() { alert('test'); }
 
 function ovs_del() {
     if (g_idlist) {
@@ -134,10 +133,11 @@ function showt(title_text,idlist)
 
 function title0() { showt('_',''); }
 </script>
+<!-- tvids -->
+[:TVIDS:]
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
-<a href="javascript:ovs_unwatched();" tvid="88"></a>
-<a href="javascript:ovs_watched();" tvid="99"></a>
-<a href="javascript:ovs_test();" tvid="66"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
     </body>
 </html>
 <!--

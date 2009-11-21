@@ -46,7 +46,13 @@ td.fresh { color:yellow; font-weight:bold; font-style:italic; }
 a.fresh { color:yellow; font-weight:bold; font-style:italic; }
 font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 
+.watched { color:red; }
 .watched { color:#88AA88 ; font-style:italic; }
+td.ep11 { color:red; }
+.ep11 { color:red; }
+a.link.watched { color:red; }
+a.watched { color:red; }
+Xfont.watched { color:#FFAAAA; }
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { background-color:red; }
 .delist { background-color:yellow; }

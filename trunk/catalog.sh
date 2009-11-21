@@ -326,7 +326,9 @@ g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts)
 print label" '$LOG_TAG' "g_last_ts_str g_indent x
 }
 
-function TODO(x) { DEBUG("TODO:"x); }
+function TODO(x) {
+DEBUG("TODO:"x)
+}
 
 function DEBUG(x) {
 
@@ -689,7 +691,7 @@ return share_path
 
 END{
 g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+"
-g_wget_opts="-T 20 -t 2 -w 2 -q --no-check-certificate "
+g_wget_opts="-T 20 -t 2 -w 2 -q --no-check-certificate --ignore-length "
 
 
 g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
@@ -787,11 +789,6 @@ g_search_google = "http://www.google.com/search?q="
 THIS_YEAR=substr(NOW,1,4)
 
 scan_options="-Rl"
-
-x=" {[a]} [{b}]" ; INF("remove "x"="remove_brackets(x))
-x="a{b{c}}d{e}f" ; INF("remove "x"="remove_brackets(x))
-x="a[b[c]]d[e]f" ; INF("remove "x"="remove_brackets(x))
-x="a{b[}de]f" ; INF("remove "x"="remove_brackets(x))
 
 if (RESCAN == 1 || NEWSCAN == 1) {
 if (!(1 in FOLDER_ARR)) {
@@ -3950,7 +3947,7 @@ info[currentTag] = info[currentTag] text
 
 if (slash == 0 && index(parts[1],"=")) {
 
-capture_regex(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=(\"[^\"]+\"|[^ ]+)",0,attr_pairs)
+capture_regex(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs)
 for(attr in attr_pairs) {
 
 eq=index(attr,"=")
@@ -4878,7 +4875,7 @@ strings[t] = tagfilters[t]
 
 function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
 numbers,strings,regexs,\
-line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type,string_type,this_type) {
+line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 
 delete xmlout
 found=0
@@ -5618,7 +5615,7 @@ return g_domain_status[url]
 
 
 function getNiceMoviePosters(idx,imdb_id,\
-search_url,poster_url,backdrop_url,referer_url,txt,xml,f,tmp_url) {
+poster_url,backdrop_url) {
 
 
 if (getting_poster(idx,1) || getting_fanart(idx,1)) {
@@ -5627,51 +5624,27 @@ DEBUG("Poster check imdb_id = "imdb_id)
 
 
 
-search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_tk2"/"imdb_id
-
-
-
-
-
-
-
-#
-f=getUrl(search_url,"moviedb",0)
-
-
-if (f != "") {
-FS="\n"
-while((getline txt < f) > 0 && (poster_url == "" || backdrop_url == "") ) {
-delete xml
-parseXML(txt,xml)
-
-if (poster_url == "") {
-if (xml["/image#type"] == "poster") {
-if (xml["/image#size"] == "mid") {
-poster_url=url_encode(html_decode(xml["/image#url"]))
-if (exec("wget "g_wget_opts" --spider "poster_url) != 0 ) {
-poster_url=""
-}
-}
-}
+if (poster_url == "" && getting_poster(idx,1) ) {
+poster_url = get_moviedb_img(imdb_id,"poster","mid")
 }
 
-if (backdrop_url == "") {
-if (xml["/image#type"] == "backdrop") {
-if (xml["/image#size"] == "original") {
-backdrop_url=url_encode(html_decode(xml["/image#url"]))
-if (exec("wget "g_wget_opts" --spider "backdrop_url) != 0 ) {
-backdrop_url=""
-}
-}
-}
-}
-
-}
-close(f)
+if (getting_fanart(idx,1) ) {
+backdrop_url = get_moviedb_img(imdb_id,"backdrop","original")
 }
 
 if (poster_url == "") {
+poster_url = get_motech_img(idx)
+}
+INF("movie poster ["poster_url"]")
+g_poster[idx]=poster_url
+
+INF("movie backdrop ["backdrop_url"]")
+g_fanart[idx]=backdrop_url
+}
+}
+
+function get_motech_img(idx,\
+referer_url,url,url2) {
 
 referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/"
 
@@ -5680,22 +5653,82 @@ referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/"
 
 DEBUG("Got motech referer "referer_url)
 if (referer_url != "" ) {
-tmp_url=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0)
-if (tmp_url != ""  && index(tmp_url,"thumb.jpg") == 0 ) {
-poster_url="http://www.motechposters.com" tmp_url
+url2=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0)
+if (url2 != ""  && index(url2,"thumb.jpg") == 0 ) {
+url="http://www.motechposters.com" url2
 
-poster_url=poster_url"\t"referer_url
-DEBUG("Got motech poster "poster_url)
+url=url"\t"referer_url
+DEBUG("Got motech poster "url)
 } 
 }
+return url
+}
+
+
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+function get_moviedb_img(imdb_id,type,size,\
+search_url,txt,xml,f,bestId,url,url2,parse,id) {
+
+search_url="http://api.themoviedb.org/2.1/Movie.getImages/en/xml/"g_tk2"/"imdb_id
+
+
+
+id1("get_moviedb_img "imdb_id" "type" "size)
+f=getUrl(search_url,"moviedb",0)
+
+
+bestId=0
+if (f != "") {
+FS="\n"
+parse=0
+while((getline txt < f) > 0 ) {
+INF(txt)
+if (match(txt,"<(poster|backdrop)") ) {
+
+parse = 0
+if (index(txt,"<"type)) {
+delete xml
+parseXML(txt,xml)
+id=xml["/"type"#id"]
+dump(0,type,xml)
+parse=(bestId == 0 || id+0 < bestId)
+INF("id="id" parse = "parse)
+}
+
+} else if (parse && index(txt,"<image") ) {
+
+delete xml
+parseXML(txt,xml)
+dump(0,"image",xml)
+if (xml["/image#size"] == size ) {
+url2=url_encode(html_decode(xml["/image#url"]))
+if (exec("wget "g_wget_opts" --spider "url2) == 0 ) {
+url = url2
+bestId = id
+INF(url)
+}
+}
+}
 
 }
-INF("movie poster ["poster_url"]")
-g_poster[idx]=poster_url
-
-INF("movie backdrop ["backdrop_url"]")
-g_fanart[idx]=backdrop_url
+close(f)
 }
+id0(url)
+return url
 }
 
 
@@ -5795,7 +5828,6 @@ while (index(line,flag) ) {
 WARNING("Regex flag clash "flag)
 flag = flag "@"
 }
-
 gsub(regex,flag "&" flag , line )
 fcount = split(line,parts,flag)
 for(i=2 ; i-fcount < 0 ; i += 2 ) {

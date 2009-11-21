@@ -19,10 +19,12 @@
             <td>
             <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
             <p>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
-            <p> To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here},style="color=red;"):]
+            <p>To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here},style="color=red;"):]
+            <p>
             <p>This will return immediately and start a background scan of the listed paths.
-            This should complete in 15-60 minutes depending on number of videos. Other running applications also affects overall scan speed.
-            <p>Covers are downloaded independently so may appear later. Fanart will appear last.
+            <p>Scan speed is approx 300 new files per hour. x2 if getting fanart.
+            Other applications may also affects overall scan speed.
+            <p>Covers and fanart are downloaded independently so may appear later.
             </td>
             </tr>
             </table>

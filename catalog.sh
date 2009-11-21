@@ -353,8 +353,8 @@ option = substr(option,1,i)
 sub(/ *= */,"=",option)
 option=trim(option)
 
-sub("=[\""g_quote"]","=",option)
-sub("[\""g_quote"]$","",option)
+sub("=["g_quote2"]","=",option)
+sub("["g_quote2"]$","",option)
 if (match(option,"^[A-Za-z0-9_]+=")) {
 n=substr(option,1,RLENGTH-1)
 v=substr(option,RLENGTH+1)
@@ -413,6 +413,8 @@ g_opt_dry_run=0
 yes="yes"
 no="no"
 g_quote="'"'"'"
+g_quote2="\"'"'"'"
+g_nonquote_regex = "[^"g_quote2"]"
 
 
 g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+\\>"
@@ -4770,6 +4772,18 @@ url=seriesInfo["/Show/showlink"]
 g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1)
 result ++
 
+
+if(g_imdb[idx] == "") {
+url = scanPageForMatch(url,g_nonquote_regex"+/links/",1)
+if (url != "" ) {
+url = scanPageForMatch("http://www.tvrage.com"url, "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1)
+if (url != "" ) {
+g_imdb[idx] = scanPageForMatch(url,g_imdb_regex,1)
+}
+}
+}
+
+
 e="/Show/Episodelist/Season/episode"
 if (g_episode[idx] ~ "^[0-9,]+$" ) {
 
@@ -4840,7 +4854,30 @@ found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout)
 id0(found)
 return 0+ found
 }
+
+
+function reset_filters(tagfilters,numbers,strings,regexs,\
+t) {
+for(t in tagfilters) {
+DEBUG("filter ["t"]=["tagfilters[t]"]")
+
+if (tagfilters[t] ~ "^[0-9]+$" ) {
+numbers[t] = tagfilters[t]
+
+} else if (substr(tagfilters[t],1,2) == "~:") {
+
+regexs[t] = substr(tagfilters[t],3)
+
+} else {
+
+strings[t] = tagfilters[t]
+
+}
+}
+}
+
 function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
+numbers,strings,regexs,\
 line,start_tag,end_tag,found,t,last_tag,filter_type,regex,number_type,regex_type,string_type,this_type) {
 
 delete xmlout
@@ -4856,17 +4893,12 @@ sub(/.*\//,"",last_tag)
 start_tag="<"last_tag">"
 end_tag="</"last_tag">"
 
-for(t in tagfilters) {
-DEBUG("filter ["t"]=["tagfilters[t]"]")
-if (tagfilters[t] ~ "^[0-9]+$" ) {
-filter_type[t] = number_type
-} else if (substr(tagfilters[t],1,2) == "~:") {
-regex[t] = substr(tagfilters[t],3)
-filter_type[t] = regex_type
-} else {
-filter_type[t] = string_type
-}
-}
+reset_filters(tagfilters,numbers,strings,regexs)
+
+dump(0,"numbers",numbers)
+dump(0,"strings",strings)
+dump(0,"regexs",regexs)
+
 
 if (f != "") {
 FS="\n"
@@ -4884,37 +4916,21 @@ parseXML(line,xmlout)
 
 if (index(line,end_tag) > 0) {
 
-
 found=1
-for(t in tagfilters) {
-this_type = filter_type[t]
 
-if (!(t in xmlout) ) {
-
-
+for(t in numbers) {
+if (!(t in xmlout) || (xmlout[t] - numbers[t] != 0) ) {
 found =0 ; break
-
-} else if (this_type == string_type) {
-if (xmlout[t] != tagfilters[t] ) {
-
-found=0;break
 }
-
-} else if (this_type == number_type) {
-
-if (xmlout[t] - tagfilters[t] != 0) {
-
-found=0;break
 }
-} else if (this_type == regex_type) {
-
-if ( xmlout[t] !~ regex[t] ) {
-
-found=0;break
+for(t in strings) {
+if (!(t in xmlout) || (xmlout[t]"" != strings[t] ) ) {
+found =0 ; break
 }
-} else {
-ERR("Bad type "this_type)
-exit
+}
+for(t in regexs) {
+if (!(t in xmlout) || (xmlout[t] !~ regexs[t] ) ) {
+found =0 ; break
 }
 }
 

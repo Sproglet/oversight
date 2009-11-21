@@ -148,8 +148,6 @@ void delete_media(DbRowId *rid,int delete_related) {
     }
 
     //Delete the following files at the end if not used.
-    delete_queue_add(rid,rid->fanart);
-    delete_queue_add(rid,rid->poster);
     delete_queue_add(rid,rid->nfo);
 
     if(names_to_delete && names_to_delete->size) {
@@ -162,6 +160,52 @@ void delete_media(DbRowId *rid,int delete_related) {
     HTML_LOG(1,"%s %d end delete_media",__FILE__,__LINE__);
     *f='/';
 }
+
+/*
+ * Return list of images for this item - list will NOT free itself
+ * The images will be passed to the delete queue.
+ */
+static void insert_image_list(DbRowId *rid,Array *a) {
+
+    char *poster = internal_image_path_static(rid,POSTER_IMAGE);
+    HTML_LOG(0,"poster[%s]",poster);
+    if (poster) {
+        array_add(a,STRDUP(poster));
+        array_add(a,replace_all(poster,"\\.jpg$",".thumb.jpg",0));
+    }
+
+    char *fanart = internal_image_path_static(rid,FANART_IMAGE);
+    HTML_LOG(0,"fanart[%s]",fanart);
+    if (fanart) {
+        array_add(a,STRDUP(fanart));
+        array_add(a,replace_all(fanart,"\\.jpg$",".hd.jpg",0));
+        array_add(a,replace_all(fanart,"\\.jpg$",".sd.jpg",0));
+        array_add(a,replace_all(fanart,"\\.jpg$",".pal.jpg",0));
+    }
+}
+
+void remove_internal_images_from_delete_queue(DbRowId *rid)
+{
+    int i;
+    Array *a = array_new(free);
+    insert_image_list(rid,a);
+    for(i=0 ; i < a->size ; i++ ) {
+        delete_queue_unqueue(rid,(char *)(a->array[i]));
+    }
+    array_free(a);
+}
+
+void add_internal_images_to_delete_queue(DbRowId *rid)
+{
+    int i;
+    Array *a = array_new(NULL); // memory is taken over by delete queue
+    insert_image_list(rid,a);
+    for(i=0 ; i < a->size ; i++ ) {
+        delete_queue_add(rid,(char *)(a->array[i]));
+    }
+    array_free(a);
+}
+
 
 
 void delete_queue_add(DbRowId *rid,char *path) {
@@ -178,7 +222,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
                 FREE(real_path);
             }
         } else {
-            HTML_LOG(0,"delete_queue: pending delete [%s]",real_path);
+            HTML_LOG(0,"delete_queue: pending delete item: [%s] of [%d:%s]",real_path,rid->id,rid->title);
             if(freepath) {
                 hashtable_insert(g_delete_queue,real_path,"1");
             } else {
@@ -195,7 +239,7 @@ void delete_queue_unqueue(DbRowId *rid,char *path) {
         int freepath;
         char *real_path = get_path(rid,path,&freepath);
         if (hashtable_remove(g_delete_queue,real_path,1) ) {
-            HTML_LOG(0,"delete_queue: unqueuing [%s] in use",real_path);
+            HTML_LOG(0,"delete_queue: unqueuing [%s] in use by [%d:%s]",real_path,rid->id,rid->title);
         }
         if (freepath) FREE(real_path);
     }

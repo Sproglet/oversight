@@ -104,6 +104,6 @@ function action(a) {
 </script>
 
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
-<a href="javascript:ovs_unwatched();" tvid="8"></a>
-<a href="javascript:ovs_watched();" tvid="9"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
 

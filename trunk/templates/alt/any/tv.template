@@ -89,8 +89,6 @@ function ovs_watched() {
         }
     }
 }
-function ovs_test() { alert('test'); }
-function ovs_test2() { alert(g_epno); }
 
 function ovs_unwatched() {
     if (g_epno != '') {
@@ -126,10 +124,8 @@ function show(idlist,epno,plot_text,info,eptitle)
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
-<a href="javascript:ovs_test();" tvid="11"></a>
-<a href="javascript:ovs_test2();" tvid="22"></a>
-<a href="javascript:ovs_unwatched();" tvid="88"></a>
-<a href="javascript:ovs_watched();" tvid="99"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
 </body>
 </html>
 

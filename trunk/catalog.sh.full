@@ -45,6 +45,9 @@
 #    Force numeric compare (if(....!=0)  or if (0+xxxx)
 #
 #  I have a script in th nmt-script project called alint.sh this will check for this.
+#
+# TODO: For tvrage it may be better to scrape the printable page for episode info rather than the xml
+# as this has plot info to. However tvrage is a backup so low priority.
 # 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
@@ -390,9 +393,9 @@ function plugin_error(p) {
     ERR("Unknown plugin "p);
 }
 
-function get_alt_website(testurl,newurlregex,\
+function get_alt_website(testurl,fixed_text,newurlregex,\
 i,links) {
-    scanPageForMatches(testurl,newurlregex,0,0,"",links);
+    scanPageForMatches(testurl,fixed_text,newurlregex,0,0,"",links);
     bestScores(links,links,0);
     for(i in links) {
         return i;
@@ -404,9 +407,10 @@ BEGIN {
     g_indent="";
     g_sigma="Î£"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();
+    g_thetvdb_web="http://www.thetvdb.com";
 
-    g_tv_check_urls["TVRAGE"]="http://tvrage.com";
-    g_tv_check_urls["THETVDB"]="http://thetvdb.com";
+    g_tv_check_urls["TVRAGE"]="http://www.tvrage.com";
+    g_tv_check_urls["THETVDB"]=g_thetvdb_web;
 
     g_batch_size=30;
     g_tvdb_user_per_episode_api=1;
@@ -843,6 +847,8 @@ END{
 
     plugin_check();
 
+    unit_tests();
+
     if (hash_size(FOLDER_ARR)) {
 
         gMovieFileCount = 0;
@@ -892,12 +898,29 @@ END{
     }
 }
 
+function unit_tests() {
+    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[0-9]+",0,m);
+    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[a-z]+",0,m);
+    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[0-9]+",2,m);
+    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[a-z]+",2,m);
+}
+function test_regex_count(line,re,max,\
+m,p) {
+    id1("test_regex_count ["line"]["re"]["max"]");
+    get_regex_counts(line,re,max,m);
+    dump(0,"count",m);
+    get_regex_pos(line,re,max,m,p);
+    dump(0,"pos",m);
+    dump(0,"pos",p);
+    id0();
+}
+
 function get_local_yahoo(\
 url,url2) {
 
     url="http://search.yahoo.com/search?p=";
     #bypass yahoo redirection - may save 1s per search - every bit helps when building the index.
-    url2 = get_alt_website(url"test","http://[^.]*.?search.yahoo.com/search");
+    url2 = get_alt_website(url"test","/search","http://[^.]*.?search.yahoo.com/search");
     if (url2) {
         url = url2"?p=";
         INF("local yahoo search = "url);
@@ -1092,6 +1115,7 @@ function set_db_fields() {
     FILE=db_field("_F","FILE","filenameandpath");
     NAME=db_field("_N","NAME","");
     DIR=db_field("_D","DIR","");
+    EXT=db_field("_ext","EXT",""); # not a real field
 
 
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
@@ -1349,7 +1373,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                 # if its a folder or another if its a file.
 
 
-                if (index(scan_line,"/") && match(scan_line,"[^/]/")) { # these checks save cpu
+                if (match(scan_line,"[^/]/")) { 
                     # get the currentFolder from the file path
                     i = match(scan_line,".*[^/]/"); # use .*  to get the last path component
                     # Current folder should be root at this stage as ls -Rl will gather all file arguments first.
@@ -1571,13 +1595,13 @@ i1,i2,i3,ret) {
 
 
     id1("imdbfirst ["qualifier"]");
-    i1=scanPageForMatch(g_search_bing qualifier,g_imdb_regex,0);
-    i2=scanPageForMatch(g_search_yahoo qualifier,g_imdb_regex,0);
+    i1=scanPageForMatch(g_search_bing qualifier,"/tt",g_imdb_regex,0);
+    i2=scanPageForMatch(g_search_yahoo qualifier,"/tt",g_imdb_regex,0);
     if (i1 == i2 ) {
        ret= i1;
     } else if (i1 != i2 && "" != i1 i2 ) {
         # Difference of opinion - try google.
-        i3=scanPageForMatch(g_search_google qualifier,g_imdb_regex,0);
+        i3=scanPageForMatch(g_search_google qualifier,"/tt",g_imdb_regex,0);
         if (i3 != "" ) {
             if (i3 == i1 ) ret = i1;
             else if (i3 == i2 ) ret = i2;
@@ -2182,15 +2206,23 @@ function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
     }
 }
 
-function checkTvFilenameFormat(plugin,idx,\
-details,line,dirs,d,dirCount,ePos,dirLevels) {
+# IN plugin THETVDB/TVRAGE
+# IN idx - global arrays for current scrapped show
+# OUT more_info - bit yucky returns additional info
+#    currently more_info[1] indicates if abbrevation searches should be used when scraping later on.
+# RET 0 - no format found
+#     1 - tv format found - needs to be confirmed by scraping 
+#
+function checkTvFilenameFormat(plugin,idx,more_info,\
+details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
 
-    line = g_media[idx];
-
+    delete more_info;
     #First get season and episode information
 
+   id1("checkTvFilenameFormat "plugin);
+
    #DEBUG("CHECK TV "line);
-   line = remove_format_tags(line);
+   line = remove_format_tags(g_media[idx]);
 
    dirCount = split(g_fldr[idx],dirs,"/");
    dirLevels=2;
@@ -2198,79 +2230,122 @@ details,line,dirs,d,dirCount,ePos,dirLevels) {
    # After extracting the title text we look for matching tv programs
    # We only look at abbreviations if the title did NOT use the folder name.
    # The assumption is the people abbreviate file names but not folder names.
-   g_search_abbreviations=1;
+   more_info[1]=1; # enable abbrevation scraping for later
 
    for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 
-       if (extractEpisode(plugin,line,idx,details)) {
+       if (extractEpisodeByPatterns(plugin,line,details)) {
+#dep#  if (extractEpisode(plugin,line,idx,details)) 
+           ret = 1;
            break;
        }
        if (d == dirLevels) {
            INF("No tv series-episode format in ["line"]");
-           return 0;
+           break;
        }
        line=dirs[dirCount-d]"/"line;
-       g_search_abbreviations = 0;
+       more_info[1]=0; # disable abbrevation scrape
    }
 
-    adjustTitle(idx,details[TITLE],"filename");
 
-
-    g_season[idx]=details[SEASON];
-    g_episode[idx]=details[EPISODE];
-
-    INF("Found tv info in file name:"line" title:["gTitle[idx]"] ["g_season[idx]"] x ["g_episode[idx]"]");
-
-    # If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
-    # Then prior to any DB lookups we just use the first integer (episode+0)
-    # To avoid changing the e in the BigBrother d000e format first check its not at the end 
-    ePos = index(g_episode[idx],"e");
-    if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
-        gsub(/e/,",",g_episode[idx]);
-        DEBUG("Double Episode : "g_episode[idx]);
-
-    }
-
-
-    g_tvid[idx] = details[TVID];
-    g_tvid_plugin[idx] = plugin;
-    g_category[idx] = "T";
-    gAdditionalInfo[idx] = details[ADDITIONAL_INF];
-
-    # Now check the title.
-    #TODO
-    return 1;
-}
-
-function extractEpisodeByPatterns(plugin,line,details,idx) {
-
-    #Note if looking at entire path name folders are seperated by /
-
-    line = tolower(line);
-    if (!extractEpisodeByPattern(line,0,"","s[0-9][0-9]?","[/ .]?e[0-9]+e[0-9]+",details,idx)) {  # s00e00e01
-        if (!extractEpisodeByPattern(line,0,"","s?[0-9][0-9]?","[/ .]?[de][0-9]+[a-e]?",details,idx)) {  #s00e00 (allow d00a for BigBrother)
-            if (!extractEpisodeByPattern(line,1,"[^a-z0-9]","[0-9][0-9]?","[/ .]?x[0-9][0-9]?",details,idx)) { #00x00
-                if (!extractEpisodeByPattern(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode)[^a-z0-9]*[0-9][0-9]?",details,idx)) { #00x00 
-
-                    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-                    if (!extractEpisodeByDates(plugin,idx,line,details)) {
-
-                        ##remove 264 before trying pure numeric detection
-                        #if (index(line,"x264")) {
-                            #gsub(/\<x264\>/,"x-264",line);
-                        #}
-                        if (!extractEpisodeByPattern(line,1,"[^-0-9]","([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details,idx)) { # ...name101...
-
-                            return 0;
-                        }
-                    }
-                }
-            }
+   # try looking for mini series formats.
+   if (ret == 0 ) {
+       more_info[1]=1; # enable abbrevation scraping for later
+       INF("Mini series check");
+       line = remove_format_tags(g_media[idx]);
+       for(d=0 ; d-dirLevels <= 0  ; d++ ) {
+           if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
+              dump(0,"details",details);
+              ret = 1;
+              break;
+           }
+           if (d == dirLevels) {
+               INF("No mini-series format in ["line"]");
+               break;
+           }
+           line=dirs[dirCount-d]"/"line;
+           more_info[1]=0; # disable abbrevation scrape
         }
     }
 
+    if (ret == 1) {
+
+        adjustTitle(idx,details[TITLE],"filename");
+
+
+        g_season[idx]=details[SEASON];
+        g_episode[idx]=details[EPISODE];
+
+        INF("Found tv info in file name:"line" title:["gTitle[idx]"] ["g_season[idx]"] x ["g_episode[idx]"]");
+
+        # If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
+        # Then prior to any DB lookups we just use the first integer (episode+0)
+        # To avoid changing the e in the BigBrother d000e format first check its not at the end 
+        ePos = index(g_episode[idx],"e");
+        if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
+            gsub(/e/,",",g_episode[idx]);
+            DEBUG("Double Episode : "g_episode[idx]);
+
+        }
+
+
+        g_tvid[idx] = details[TVID];
+        g_tvid_plugin[idx] = plugin;
+        g_category[idx] = "T";
+        gAdditionalInfo[idx] = details[ADDITIONAL_INF];
+        # Now check the title.
+        #TODO
+    }
+    id0(ret);
+    return ret;
+}
+
+function extractEpisodeByPatterns(plugin,line,details,\
+ret,spec) {
+
+    #Note if looking at entire path name folders are seperated by /
+
+
+    line = tolower(line);
+    ret=1;
+
+    # s00e00e01
+    if (!episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)) {
+
+    # long forms season 1 ep  3
+    if (!episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
+
+    #s00e00 (allow d00a for BigBrother)
+    if (!episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)) {
+
+        #00x00
+    if (!episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)) {
+
+    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
+    #TODO blank idx passed. need to tidy up code here?
+    # extractEpisodeByDates is also called by other logic. 
+    # we need to be clear why idx is passed.
+    if (!extractEpisodeByDates(plugin,"",line,details)) {
+
+    ## just numbers.
+    ##remove 264 before trying pure numeric detection
+    #if (index(line,"x264")) {
+    #gsub(/\<x264\>/,"x-264",line);
+    #}
+    if (!episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)) { # ...name101...
+        ret=0;
+
+    #mini series formats - no season
+
+    } } } } } }
+
+    if (ret == 1) {
+        id1("extractEpisodeByPatterns: line["line"]");
+        dump(0,"details",details);
+        id0(ret);
+    }
    #Note 4 digit season/episode matcing [12]\d\d\d will fail because of confusion with years.
-    return 1;
+    return ret;
 }
 
 function formatDate(line,\
@@ -2428,7 +2503,7 @@ function extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details,\
 episodeInfo,url) {
 
     
-    url="http://thetvdb.com/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-";
+    url=g_thetvdb_web"/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-";
     fetchXML(url,"epbydate",episodeInfo);
 
     if ( "/Data/Error" in episodeInfo ) {
@@ -2444,7 +2519,7 @@ episodeInfo,url) {
         details[ADDITIONAL_INF]=episodeInfo["/Data/Episode/EpisodeName"];
         #TODO We can cache the above url for later use instead of fetching episode explicitly.
         # Setting this will help short circuit searching later.
-        equate_urls(url,"http://thetvdb.com/api/"g_tk"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
+        equate_urls(url,g_thetvdb_web"/api/"g_tk"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
         #g_imdb[idx]=get_tv_series_api_url(tvdbid);
         #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "g_imdb[idx]);
         #dump(0,"epinfo",episodeInfo);
@@ -2473,114 +2548,126 @@ episodeInfo,match_date,result,filter) {
     return 0+ result;
 }
 
-function extractEpisode(plugin,line,idx,details,\
-d,dir) {
-
-    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-    if (!extractEpisodeByPatterns(plugin,line,details,"")) {
-        return 0;
-    }
-
-   DEBUG("Extracted title ["details[TITLE] "]");
-    if (details[TITLE] == "" ) {
-
-        #File starts with season number eg. ^<season><episode>..." so title must be in folder name.
-
-        split(g_fldr[idx],dir,"/"); # split folder
-        d=hash_size(dir);
-        details[TITLE] = remove_season(clean_title(dir[d]));
-        if (details[TITLE] == "" ) {
-            # Looks like an intermediate Season folder. Get the parent folder.
-            details[TITLE] = clean_title(dir[d-1]);
-            DEBUG("Using grandparent folder for title ["details[TITLE] "]");
-        } else {
-            DEBUG("Using parent folder for title ["details[TITLE] "]");
-        }
-    }
-
-    return 1;
-}
+#dep#function extractEpisode(plugin,line,idx,details,\
+#dep#d,dir) {
+#dep#
+#dep#    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
+#dep#    if (!extractEpisodeByPatterns(plugin,line,details)) {
+#dep#        return 0;
+#dep#    }
+#dep#
+#dep#
+#dep#   DEBUG("Extracted title ["details[TITLE] "]");
+#dep#    if (details[TITLE] == "" ) {
+#dep#
+#dep#        #File starts with season number eg. ^<season><episode>..." so title must be in folder name.
+#dep#
+#dep#        # TODO: This logic is duplicated by the call to extractEpisode - review!!
+#dep#
+#dep#        split(g_fldr[idx],dir,"/"); # split folder
+#dep#        d=hash_size(dir);
+#dep#        details[TITLE] = remove_season(clean_title(dir[d]));
+#dep#        if (details[TITLE] == "" ) {
+#dep#            # Looks like an intermediate Season folder. Get the parent folder.
+#dep#            details[TITLE] = clean_title(dir[d-1]);
+#dep#            DEBUG("Using grandparent folder for title ["details[TITLE] "]");
+#dep#        } else {
+#dep#            DEBUG("Using parent folder for title ["details[TITLE] "]");
+#dep#        }
+#dep#    }
+#dep#
+#dep#    return 1;
+#dep#}
 
 function remove_season(t) {
     sub(/(S|Series *|Season *)[0-9]+.*/,"",t);
     return clean_title(t);
 }
 
+function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
+rtext,rstart,count,i,ret) {
+
+    count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart);
+    for(i = 1 ; i+0 <= count ; i++ ) {
+        if ((ret = extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,rstart[i],rtext[i],details)) != 0) {
+            INF("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
+            break;
+        }
+    }
+    return 0+ret;
+}
+
 #This would be easier using sed submatches.
 #More complex approach will fail on backtracking
-function extractEpisodeByPattern(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,idx,  \
-    tmpDetails,tmpTitle,ee) {
-    if (!match(line,prefixRe seasonRe episodeRe "\\>" )) {
-        return 0;
+function extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,reg_pos,reg_match,details,\
+tmpTitle,ee,ret) {
+
+    id1("extractEpisodeByPatternSingle:"reg_match);
+
+    delete details;
+
+    reg_pos += prefixReLen;
+    reg_len = length(reg_match)-prefixReLen;
+
+    details[TITLE] = substr(line,1,reg_pos-1);
+    details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len);
+
+    line=substr(reg_match,prefixReLen+1); # season episode
+
+    if (match(details[TITLE],": *")) {
+        details[TITLE] = substr(details[TITLE],RSTART+RLENGTH);
     }
-
-    DEBUG("ExtractEpisode: line["line"] re["prefixRe seasonRe episodeRe "\\>] match["substr(line,RSTART,RLENGTH)"]" );
-
-    RSTART += prefixReLen;
-    RLENGTH -= prefixReLen;
-
-    tmpDetails[TITLE] = substr(line,1,RSTART-1);
-    tmpDetails[ADDITIONAL_INF]=substr(line,RSTART+RLENGTH);
-
-    line=substr(line,RSTART,RLENGTH); # season episode
-
-    if (index(tmpDetails[TITLE],":") && match(tmpDetails[TITLE],": *")) {
-        tmpDetails[TITLE] = substr(tmpDetails[TITLE],RSTART+RLENGTH);
-    }
-   #Remove release group info
-   if (index(tmpDetails[TITLE],"-") && match(tmpDetails[TITLE],"^[a-z][a-z0-9]+[-]")) {
-       tmpTitle=substr(tmpDetails[TITLE],RSTART+RLENGTH);
+    #Remove release group info
+    if (match(details[TITLE],"^[a-z][a-z0-9]+[-]")) {
+       tmpTitle=substr(details[TITLE],RSTART+RLENGTH);
        if (tmpTitle != "" ) {
-           INF("Removed group was ["tmpDetails[TITLE]"] now ["tmpTitle"]");
-           tmpDetails[TITLE]=tmpTitle;
+           INF("Removed group was ["details[TITLE]"] now ["tmpTitle"]");
+           details[TITLE]=tmpTitle;
        }
-   }
+    }
 
-    tmpDetails[TITLE] = clean_title(tmpDetails[TITLE]);
+    details[TITLE] = clean_title(details[TITLE]);
     
-    DEBUG("ExtractEpisode: Title= ["tmpDetails[TITLE]"]");
+    DEBUG("ExtractEpisode: Title= ["details[TITLE]"]");
 
-    if (match(tmpDetails[ADDITIONAL_INF],gExtRegExAll) ) {
-        tmpDetails[EXT]=tmpDetails[ADDITIONAL_INF];
-        gsub(/\.[^.]*$/,"",tmpDetails[ADDITIONAL_INF]);
-        tmpDetails[EXT]=substr(tmpDetails[EXT],length(tmpDetails[ADDITIONAL_INF])+2);
+    if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
+        details[EXT]=details[ADDITIONAL_INF];
+        gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF]);
+        details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2);
     }
 
-    #Match the episode first to handle 3453 and 456
-    match(line,episodeRe "$" );
-    tmpDetails[EPISODE] = substr(line,RSTART,RLENGTH); 
 
-    if (tmpDetails[EPISODE] - 40 > 0 ) {
-        #Reject this could be 64(x264) or 80(hd1080)
-        return 0;
+    #Reject this could be 64(x264) or 80(hd1080)
+    if (line !~ "(x264|1080)$" ) {
+
+        #Match the episode first to handle 3453 and 456
+        match(line,episodeRe "$" );
+        details[EPISODE] = substr(line,RSTART,RLENGTH); 
+        if (seasonRe == "") {
+            details[SEASON] = 1; #mini-series without season qualifier
+        } else {
+            details[SEASON] = substr(line,1,RSTART-1);
+        }
+
+        gsub(/^[^0-9]+/,"",details[EPISODE]); #BigBrother non numeric episodes.
+        sub(/^0+/,"",details[EPISODE]);
+
+        gsub(/^[^0-9]+/,"",details[SEASON]);
+        sub(/^0+/,"",details[SEASON]);
+        ret=1;
     }
-
-    tmpDetails[SEASON] = substr(line,1,RSTART-1);
-
-    #gsub(/[^0-9]+/,"",tmpDetails[EPISODE]); #BigBrother
-    gsub(/^[^0-9]+/,"",tmpDetails[EPISODE]); #BigBrother non numeric episodes.
-    sub(/^0+/,"",tmpDetails[EPISODE]);
-
-    gsub(/^[^0-9]+/,"",tmpDetails[SEASON]);
-    sub(/^0+/,"",tmpDetails[SEASON]);
 
     #Return results
-    for(ee in tmpDetails) {
-        if (idx != "") {
-            details[ee,idx]=tmpDetails[ee];
-        } else {
-            details[ee]=tmpDetails[ee];
-        }
-       DEBUG("tv details "g_db_field_name[ee]"."idx" = "tmpDetails[ee]);
-    }
-    return 1;
+    if (ret != 1 ) delete details;
+    id0(ret);
+    return ret;
 }
 
 ############### GET IMDB URL FROM NFO ########################################
 
 function identify_and_catalog_scanned_files(\
 idx,file,fldr,bestUrl,scanNfo,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total) {
+ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total,more_info,search_abbreviations) {
 
     numFiles=hash_size(g_media);
 
@@ -2653,14 +2740,16 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total) {
             # so if ellen.2009.03.13 is rejected at tvdb it is still passed by tvrage.
             DIV("checkTvFilenameFormat "plugin);
             g_tvid_plugin[idx] = g_tvid[idx]="";
-            if (checkTvFilenameFormat(plugin,idx)) {
+
+            if (checkTvFilenameFormat(plugin,idx,more_info)) {
+                search_abbreviations = more_info[1];
 
                 if (UPDATE_TV)  {
                     #g_imdb[idx] may have been set by a date lookup
                     if (bestUrl == "" && g_imdb[idx] != "" ) {
                         bestUrl = g_imdb[idx];
                     }
-                    tv_status = tv_search(plugin,idx,bestUrl);
+                    tv_status = tv_search(plugin,idx,bestUrl,search_abbreviations);
                     scanned= (tv_status != 0);
                     #if (tv_status == 0 || g_episode[idx] !~ "^[0-9]+$" ) 
                     if (g_episode[idx] !~ "^[0-9]+$" ) {
@@ -2756,7 +2845,7 @@ function DIV(x) {
 #dep#}
 
 # 0=nothing found 1=series but no episode 2=series+episode
-function tv_search(plugin,idx,imdbUrl,\
+function tv_search(plugin,idx,imdbUrl,search_abbreviations,\
 tvDbSeriesPage,result,tvid) {
 
     result=0;
@@ -2764,7 +2853,7 @@ tvDbSeriesPage,result,tvid) {
 #dep#    if (!begin_search(plugin)) {
 #dep#        return 0;
 #dep#    }
-    id1("tv_search "plugin);
+    id1("tv_search ("plugin","idx","imdbUrl","search_abbreviations")");
 
     #This will succedd if we already have the tvid when doing the checkTvFilenameFormat
     #checkTvFilenameFormat() may fetch the tvid while doing a date check for daily shows.
@@ -2772,7 +2861,7 @@ tvDbSeriesPage,result,tvid) {
 
     if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
         # do not know tvid nor imdbid - use the title to search tv indexes.
-        tvDbSeriesPage = search_tv_series_names(plugin,idx,gTitle[idx]);
+        tvDbSeriesPage = search_tv_series_names(plugin,idx,gTitle[idx],search_abbreviations);
     }
 
     if (tvDbSeriesPage != "" ) { 
@@ -3104,7 +3193,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
         INF("query["queryPath"]");
 
         #Get all nfo links
-        scanPageForMatches(domain queryPath,nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
+        scanPageForMatches(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
 
         #Scan each link for imdb matches and tally
 
@@ -3133,7 +3222,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
                 }
                 sub(/[&]amp;/,"\\&",nfo2);
 
-                if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
+                if (scanPageForMatches(nfo2,"tt", g_imdb_regex ,0,1,"", imdbIds) == 0) {
                     scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
                 }
 
@@ -3173,9 +3262,9 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
 # This is really for amazon links in nfo files but might work for some other sites.
 function scanPageForIMDBviaLinksInNfo(url,imdbIds,\
 amzurl,amazon_urls,imdb_per_page,imdb_id) {
-    if (scanPageForMatches(url,"http://(www.|)amazon[ !#-;=?-~]+",0,1,"",amazon_urls)) {
+    if (scanPageForMatches(url, "amazon","http://(www.|)amazon[ !#-;=?-~]+",0,1,"",amazon_urls)) {
         for(amzurl in amazon_urls) {
-            if (scanPageForMatches(amzurl, g_imdb_regex ,0,1,"", imdb_per_page)) {
+            if (scanPageForMatches(amzurl, "/tt", g_imdb_regex ,0,1,"", imdb_per_page)) {
                 for(imdb_id in imdb_per_page) {
                     INF("Found "imdb_id" via amazon link");
                     imdbIds[imdb_id] += imdb_per_page[imdb_id];
@@ -3247,7 +3336,7 @@ foundId,line) {
 
 ############### GET IMDB PAGE FROM URL ########################################
 
-function search_tv_series_names(plugin,idx,title,\
+function search_tv_series_names(plugin,idx,title,search_abbreviations,\
 tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
     title_key = plugin"/"g_fldr[idx]"/"title;
@@ -3262,7 +3351,9 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
         DEBUG("search_tv_series_names: bytitles="tvDbSeriesPage);
         if (tvDbSeriesPage) {
 
-        } else if ( g_search_abbreviations ) {
+            # do nothing
+
+        } else if ( search_abbreviations ) {
 
             # Abbreviation search
 
@@ -3337,10 +3428,10 @@ function hash_merge(a1,a2,\
 i) {
     for(i in a2) a1[i] = a2[i];
 }
-#function hash_add(a1,a2,\
-#i) {
-#    for(i in a2) a1[i] += a2[i];
-#}
+function hash_add(a1,a2,\
+i) {
+    for(i in a2) a1[i] += a2[i];
+}
 function hash_size(h,\
 s,i){
     s = 0 ; 
@@ -3357,7 +3448,7 @@ function id1(x) {
 function id0(x) {
     g_indent=substr(g_indent,2);
     
-    INF("<End "g_idstack[--g_idtos]"=" ( (x!="") ? "=["x"]" : ""));
+    INF("<End "g_idstack[--g_idtos]"=[" ( (x!="") ? "=["x"]" : "") "]");
 }
 
 function possible_tv_titles(plugin,title,closeTitles,\
@@ -3410,7 +3501,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     dummy=rand()systime()rand();
     query = usenet_query_url;
     sub(/QUERY/,dummy,query);
-    baseline = scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles);
+    baseline = scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles);
 
     DEBUG("number of links for no match "baseline);
 
@@ -3418,14 +3509,14 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
         #Just count the number of table links
         query = usenet_query_url;
         sub(/QUERY/,clean_title(titles[t]),query);
-        link_count = scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles);
+        link_count = scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles);
         DEBUG("number of links "link_count);
         if (link_count-baseline > 0) {
             count[t] = link_count;
             found=1;
         }
         if (link_count == 0 ) {
-            scanPageForMatches(query,"</[Aa]>",0,1,"",tmpTitles,1);
+            scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles,1);
         }
     }
 
@@ -3579,7 +3670,7 @@ requiredTagNames,allTitles,url,ret) {
 
     if (plugin == "THETVDB") {
 
-        url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",title);
+        url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",title);
         filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",requiredTagList,allTitles);
 
     } else if (plugin == "TVRAGE") {
@@ -3719,8 +3810,8 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
             if(plugin == "THETVDB") {
                 regex="[&?;]id=[0-9]+";
                 #first try api search
-                url = "http://thetvdb.com/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
-                id2 = scanPageForMatch(url,regex,0);
+                url = g_thetvdb_web"/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
+                id2 = scanPageForMatch(url,"",regex,0);
                 if (id2 != "" ) {
                     id2=substr(id2,5);
                 }
@@ -3744,7 +3835,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
                     filter["/Data/Series/SeriesName"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
                     filter["/Data/Series/FirstAired"] = "~:^"year_range"-";
 
-                    url=expand_url("http://thetvdb.com//api/GetSeries.php?seriesname=",gTitle[idx]);
+                    url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",gTitle[idx]);
                     if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo)) {
                         INF("Looking at tvdb "showInfo["/Data/Series/SeriesName"]);
                         id2 = showInfo["/Data/Series/seriesid"];
@@ -3807,9 +3898,9 @@ function get_tv_series_api_url(plugin,tvdbid) {
     if (tvdbid != "") {
         if (plugin == "THETVDB") {
             if (g_tvdb_user_per_episode_api) {
-                return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/en.xml";
+                return g_thetvdb_web"/api/"g_tk"/series/"tvdbid"/en.xml";
             } else {
-                return "http://thetvdb.com/api/"g_tk"/series/"tvdbid"/all/en.xml";
+                return g_thetvdb_web"/api/"g_tk"/series/"tvdbid"/all/en.xml";
             }
         } else if (plugin == "TVRAGE") {
             return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
@@ -3947,7 +4038,7 @@ attr,a_name,a_val,eq,attr_pairs) {
         
         if (slash == 0 && index(parts[1],"=")) {
             #DEBUG("Parsing attributes on " parts[1]);
-            capture_regex(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs);
+            get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs);
             for(attr in attr_pairs) {
                 #DEBUG("Attr ["attr"]");
                 eq=index(attr,"=");
@@ -4017,7 +4108,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
         DEBUG("Qualified title "possible_title);
     }
     if (index(possible_title,titleIn) == 1) {
-        #TODO Note we could kee the 1 match levels here and below, but if so
+        #TODO Note we could keep the 1 match levels here and below, but if so
         #we should still go on to search abbreviations. For now easier to comment out.
         #The zero score will trigger the abbreviation code.
         # matchLevel = 1;
@@ -4058,7 +4149,7 @@ bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
     } else if (index(titleIn,possible_title) == 1) {
         #Check our title just has a country added
 
-        #TODO Note we could kee the 1 match levels here and above, but if so
+        #TODO Note we could keep the 1 match levels here and above, but if so
         #we should still go on to search abbreviations. For now easier to comment out.
         #The zero score will trigger the abbreviation code.
 
@@ -4131,7 +4222,7 @@ function getEpguideNames(letter,names,\
 url,title,link,links,i,count2) {
     url = "http://epguides.com/menu"letter;
 
-    scanPageForMatches(url,"<li>(|<b>)<a.*</li>",0,1,"",links);
+    scanPageForMatches(url,"<li>","<li>(|<b>)<a.*</li>",0,1,"",links);
     count2 = 0;
 
     for(i in links) {
@@ -4516,7 +4607,7 @@ i1,result,matchList,bestUrl) {
         keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
 
         # bing is not very good here.
-        scanPageForMatches(g_search_yahoo keywords,g_imdb_regex,0,0,"",matchList);
+        scanPageForMatches(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList);
         # Find the url with the highest count for each index.
         #To help stop false matches we requre at least two occurences.
         bestUrl=getMax(matchList,linkThreshold,1,0);
@@ -4552,7 +4643,7 @@ episodeUrl ) {
     return "";
 }
 
-#Get eposide info by changing base url - this should really use the id
+#Get episode info by changing base url - this should really use the id
 #but no time to refactor calling code at the moment.
 function get_episode_xml(plugin,seriesUrl,season,episode,episodeInfo,\
 episodeUrl,filter,result) {
@@ -4599,7 +4690,7 @@ function scrape_set(idx,site) {
 function get_tv_series_info(plugin,idx,tvDbSeriesUrl,\
 result) {
 
-    id1("get_tv_series_info "plugin" [" tvDbSeriesUrl "]");
+    id1("get_tv_series_info("plugin","idx"," tvDbSeriesUrl")");
 
     if (plugin == "THETVDB") {
         result = get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
@@ -4696,7 +4787,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
 
     if (g_imdb[idx] == "" ) {
-        WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at www.thetvdb.com");
+        WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at "g_thetvdb_web);
     } else {
         DEBUG("get_tv_series_info returns imdb url ["g_imdb[idx]"]");
     }
@@ -4771,11 +4862,11 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
 
         #get imdb link - via links page and then epguides.
         if(g_imdb[idx] == "") {
-            url = scanPageForMatch(url,g_nonquote_regex"+/links/",1);
+            url = scanPageForMatch(url,"/links/",g_nonquote_regex"+/links/",1);
             if (url != "" ) {
-                url = scanPageForMatch("http://www.tvrage.com"url, "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
+                url = scanPageForMatch("http://www.tvrage.com"url,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
                 if (url != "" ) {
-                    g_imdb[idx] = scanPageForMatch(url,g_imdb_regex,1);
+                    g_imdb[idx] = scanPageForMatch(url,"tt",g_imdb_regex,1);
                 }
             }
         }
@@ -4783,7 +4874,6 @@ seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
 
         e="/Show/Episodelist/Season/episode";
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
-            #TODO Scrape page at "http://www.tvrage.com/shows/id-2445/" for Creator , plot 
             if (get_episode_xml(pi,tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
                 #DEBUG("tmp=["tmp"]"(tmp?1:0));
                 #DEBUG("tmp=0["(tmp==0)"]");
@@ -5462,67 +5552,71 @@ poster_ref,internal_path) {
 function download_image(field_id,url,idx,\
     poster_ref,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
 
-    if (url == "") return "";
+    id1("download_image["field_id"]["url"]");
+    if (url != "") {
 
-    DEBUG("Looking for new poster...");
+        #Posters are all held in the same folder so
+        #need a name that is unique per movie or per season
 
-    #Posters are all held in the same folder so
-    #need a name that is unique per movie or per season
+        #Note for internal posters the reference contains a sub path.
+        # (relative to database folder ovs: )
+        poster_ref = internal_poster_reference(field_id,idx);
+        internal_path = getPath(poster_ref,g_fldr[idx]);
 
-    #Note for internal posters the reference contains a sub path.
-    # (relative to database folder ovs: )
-    poster_ref = internal_poster_reference(field_id,idx);
-    internal_path = getPath(poster_ref,g_fldr[idx]);
+        #DEBUG("internal_path = ["internal_path"]");
+        #DEBUG("poster_ref = ["poster_ref"]");
+        #DEBUG("new poster url = "url);
 
-    #DEBUG("internal_path = ["internal_path"]");
-    #DEBUG("poster_ref = ["poster_ref"]");
-    #DEBUG("new poster url = "url);
-
-    get_it = 0;
-    if (field_id == POSTER) {
-        get_it = getting_poster(idx,0);
-    } else if (field_id == FANART) {
-        get_it = getting_fanart(idx,0);
-    }
-
-    if (get_it ) {
-
-
-        #create the folder.
-        preparePath(internal_path);
-
-        split(url,urls,"\t");
-        url=urls[1];
-        referer=urls[2];
-
-        # -t retries - oversight runs the command twice so halve number of retries.
-        # -w time between retries.
-        # -T network timeouts
-        wget_args=g_wget_opts;
-
-        DEBUG("Image url = "url);
-        default_referer = get_referer(url);
-        if (referer == "" ) {
-            referer = default_referer;
-        }
-        if (referer != "" ) {
-            DEBUG("Referer = "referer);
-            wget_args = wget_args " --referer=\""referer"\" ";
-        }
-        wget_args = wget_args " -U \""g_user_agent"\" ";
-
-        # Script to fetch poster and create sd and hd versions
+        get_it = 0;
         if (field_id == POSTER) {
-            script_arg="poster";
-        } else {
-            script_arg="fanart";
+            get_it = getting_poster(idx,0);
+        } else if (field_id == FANART) {
+            get_it = getting_fanart(idx,0);
         }
 
+        INF("getting image = "get_it);
 
-        rm(internal_path,1);
-        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
-        g_image_inspected[internal_path]=1;
+        if (get_it ) {
+
+
+            #create the folder.
+            preparePath(internal_path);
+
+            split(url,urls,"\t");
+            url=urls[1];
+            referer=urls[2];
+
+            # -t retries - oversight runs the command twice so halve number of retries.
+            # -w time between retries.
+            # -T network timeouts
+            wget_args=g_wget_opts;
+
+            DEBUG("Image url = "url);
+            default_referer = get_referer(url);
+            if (referer == "" ) {
+                referer = default_referer;
+            }
+            if (referer != "" ) {
+                DEBUG("Referer = "referer);
+                wget_args = wget_args " --referer=\""referer"\" ";
+            }
+            wget_args = wget_args " -U \""g_user_agent"\" ";
+
+            # Script to fetch poster and create sd and hd versions
+            if (field_id == POSTER) {
+                script_arg="poster";
+            } else {
+                script_arg="fanart";
+            }
+
+
+            rm(internal_path,1);
+            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
+            g_image_inspected[internal_path]=1;
+        }
     }
+
+    id0(poster_ref);
 
     return poster_ref;
 }
@@ -5653,7 +5747,7 @@ referer_url,url,url2) {
     #}
     DEBUG("Got motech referer "referer_url);
     if (referer_url != "" ) {
-        url2=scanPageForMatch(referer_url,"/posters/[^\"]+jpg",0);
+        url2=scanPageForMatch(referer_url,"/posters","/posters/[^\"]+jpg",0);
         if (url2 != ""  && index(url2,"thumb.jpg") == 0 ) {
             url="http://www.motechposters.com" url2;
 
@@ -5727,42 +5821,40 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
 }
 
 # Scan a page for matches to regular expression
+# IN fixed_text, - fixed text to help speed up scan
 # matches = array of matches index 1,2,...
 # max = max number to match
 # returns match or empty.
-function scanPageForMatch(url,regex,cache,referer,\
-matches,i) {
-    scanPageForMatches(url,regex,1,cache,referer,matches);
+function scanPageForMatch(url,fixed_text,regex,cache,referer,\
+matches,i,ret) {
+    id1("scanPageForMatch["url"]["regex"]");
+    scanPageForMatches(url,fixed_text,regex,1,cache,referer,matches);
 
     # Return first one
     for(i in matches) {
-        INF(url"=["i"]");
-        return i;
+        ret= i;
+        break;
     }
+    id0(ret);
+    return ret;
 }
 
 # Scan a page for matches to regular expression
+# IN url to scan
+# IN fixed_text, - fixed text to help speed up scan
+# IN regex to scan for
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scanPageForMatches(url,regex,max,cache,referer,matches,verbose,\
-f,line,count,linecount,regex_text,remain,is_imdb) {
+function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbose,\
+f,line,count,linecount,remain,is_imdb,matches2) {
 
     delete matches;
 
     DEBUG("scan "url" for "regex);
     f=getUrl(url,"scan4match",cache,referer);
 
-    # this is a hack - to speed things up look for any fixed text portion of the regex
-    regex_text=regex;
-
-    # awk on C200 has a weird bug that cant compile 
-    #sub(/[][?\\*(|.].*/,"",regex_text);
-    #but can compile
-    #sub(/[][?.\\*(|].*/,"",regex_text);
-
-    sub(/[][?\\*(|.].*/,"",regex_text);
-    #INF("Looking for fixed text ["regex_text"] before regex ["regex"]");
+    INF("Looking for fixed text ["fixed_text"] before regex ["regex"]");
 
     count=0;
 
@@ -5783,12 +5875,13 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
                 gsub(/\/Title\?/,"/tt",line);
             }
 
-            if (verbose) DEBUG("scanindex = "index(line,regex_text));
+            if (verbose) DEBUG("scanindex = "index(line,fixed_text));
             if (verbose) DEBUG(line);
 
-            if (regex_text == "" || index(line,regex_text)) {
+            if (fixed_text == "" || index(line,fixed_text)) {
 
-                linecount = capture_regex(line,regex,remain,matches);
+                linecount = get_regex_counts(line,regex,remain,matches2);
+                hash_add(matches,matches2);
 
                 count += linecount;
                 if (max > 0) {
@@ -5805,29 +5898,83 @@ f,line,count,linecount,regex_text,remain,is_imdb) {
     return 0+ count;
 }
 
+# Split a line at regex boundaries.
+# used by get_regex_counts
+# IN s - line to split
+# IN regex - regular expression
+# OUT parts - index 1,2,3.. values text,match1,text,match2,...
+# RET number of parts.
+function chop(s,regex,parts,\
+flag) {
+    #first find split text that doesnt occur in the string.
+    flag="@%-£~";
+    while (index(s,flag) ) {
+        WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
+        flag = flag "@" flag; #dodgy line but should work!
+    }
+
+    # insert the split text around the regex boundaries
+    gsub(regex,flag "&" flag , s );
+    # now split at boundaries.
+    return split(s,parts,flag);
+}
+
+
+
+
 # Find all occurences of a regular expression within a string, and return in an array.
 # IN Line to match against.
 # IN regex to match with.
 # IN max = max occurences (0 = all)
-# IN/OUT matches is updated with (text=>num occurrences)
+# OUT matches is updated with (text=>num occurrences)
+# RET total number of occurences.
+function get_regex_counts(line,regex,max,matches) {
+    return 0+get_regex_count_or_pos("c",line,regex,max,matches);
+}
+# Find all occurences of a regular expression within a string, and return in an array.
+# IN mode : c=count matches  p=return match positions.
+# IN Line to match against.
+# IN regex to match with.
+# IN max = max occurences (0 = all)
+# OUT rtext is updated with (order=>match text)
+# OUT rstart  is updated with (order -> start pos)
+# RET total number of occurences.
+function get_regex_pos(line,regex,max,rtext,rstart) {
+    return 0+get_regex_count_or_pos("p",line,regex,max,rtext,rstart);
+}
+
+
+# Find all occurences of a regular expression within a string, and return in an array.
+# IN mode : c=count matches  p=return match positions.
+# IN Line to match against.
+# IN regex to match with.
+# IN max = max occurences (0 = all)
+# mode=c:
+# OUT rtext is updated with (mode=c:text=>num occurrences mode=p:order=>match text)
+# mode=p:
+# OUT rtext is updated with (order=>match text)
+# OUT rstart  is updated with (order -> start pos)
 # OUT total number of occurences.
-function capture_regex(line,regex,max,matches,\
-count,flag,fcount,i,parts) {
+function get_regex_count_or_pos(mode,line,regex,max,rtext,rstart,\
+count,fcount,i,parts,start) {
     count =0 ;
 
-    #something that should not appear normally!
-    flag="@%-£~";
+    delete rtext;
+    delete rstart;
 
-    #Make sure we use a safe flag
-    while (index(line,flag) ) {
-        WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
-        flag = flag "@"; #dodgy line but should work!
-    }
-    gsub(regex,flag "&" flag , line );
-    fcount = split(line,parts,flag);
+    fcount = chop(line,regex,parts);
+    start=1;
     for(i=2 ; i-fcount < 0 ; i += 2 ) {
-        matches[parts[i]]++;
         count++;
+        if (mode == "c") {
+            rtext[parts[i]]++;
+        } else {
+            rtext[count] = parts[i];
+
+            start += length(parts[i-1]);
+            rstart[count] = start;
+            start += length(parts[i]);
+        }
         if (max+0 > 0 ) {
             if (count - max >= 0) {
                 break;
@@ -5835,14 +5982,10 @@ count,flag,fcount,i,parts) {
         }
     }
 
-    if (index(regex,"motech")) {
-        dump(0,count " linematches",matches);
-    }  else 
-        dump(3,count " linematches",matches);
+    dump(3,"get_regex_count_or_pos:"mode,rtext);
 
-    return 0+ count;
+    return 0+count;
 }
-
 
 function scrapeIMDBLine(line,imdbContentPosition,idx,f,\
 title,y,poster_imdb_url) {

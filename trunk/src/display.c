@@ -2307,124 +2307,71 @@ void set_tvid_increments(int *tvid_val) {
     tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=9;
 }
 
+typedef struct tvid_struct {
+    char *sequence;
+    char *range;
+} Tvid ;
+
 #define TVID_MAX_LEN 2 //
 #define TVID_MAX 99  //must be 10 ^ TVID_MAX_LEN -1
-char *get_tvid_links(DbRowId **rowids) {
+char *get_tvid_links() {
+
+    // Pre compute format string for tvids.
+#define TVID_MARKER "@X@Y@"
+    char *params;
+    ovs_asprintf(&params,"p=0&"QUERY_PARAM_TITLE_FILTER"=%s",TVID_MARKER);
+
+    char *format_string = get_self_link(params,"tvid=\""TVID_MARKER"\"","");
+    FREE(params);
+
+    //As we want a printf format string - escape any %
+    if (strchr(format_string,'%') ) {
+        char *tmp = replace_all(format_string,"%","%%",0);
+        FREE(format_string);
+        format_string=tmp;
+    }
+    int format_memsize = strlen(format_string)+20;
+
+    char *tmp = replace_all(format_string,TVID_MARKER,"%s",0);
+    FREE(format_string);
+    format_string=tmp;
+
+    HTML_LOG(0,"Format string [%s]",format_string);
+
 
     char *result = NULL;
-    //if (g_dimension->local_browser && *query_val("select") == '\0')
-    if (*query_val("select") == '\0')
-    {
+    Tvid list[]={
+        {"1","0-9"} , 
+        {"2","A"} , {"22","B"} , {"222","C"} ,
+        {"3","D"} , {"33","E"} , {"333","F"} ,
+        {"4","G"} , {"44","H"} , {"444","I"} ,
+        {"5","J"} , {"55","K"} , {"555","L"} ,
+        {"6","M"} , {"66","N"} , {"666","O"} ,
+        {"7","P"} , {"77","Q"} , {"777","R"} , {"7777","S"} ,
+        {"8","T"} , {"88","U"} , {"888","V"} ,
+        {"9","W"} , {"99","X"} , {"999","Y"} , {"9999","Z"} ,
+        { NULL,NULL} } ;
 
-
-        int tvid_total=0;
-        char *current_tvid = query_val(QUERY_PARAM_REGEX);
-
-        // Tracks which tvid codes to output to html 0=dont output
-        char tvid_output[TVID_MAX+2];
-        memset(tvid_output,0,TVID_MAX+2); // initially no output
-
-        // Map character to tvid digit.
-        int tvid_val[256];
-        set_tvid_increments(tvid_val);
-
-        HTML_LOG(1,"tvid generation");
-
-        int current_tvid_len = strlen(current_tvid);
-
-        // Pre compute tvid link using @X@ as a placeholder
-#define TVID_MARKER "@X@Y@"
-        char *params;
-        ovs_asprintf(&params,"p=0&"QUERY_PARAM_REGEX"=%s"TVID_MARKER,current_tvid);
-
-        char *link_template = get_self_link(params,"tvid=\""TVID_MARKER"\"","");
-        FREE(params);
-
-        DbRowId **rowid_ptr;
-        for(rowid_ptr = rowids ; *rowid_ptr ; rowid_ptr++ ) {
-
-            DbRowId *rid = *rowid_ptr;
-
-            char *lc_title = util_tolower(rid->title);
-
-            Array *words = split(lc_title," ",0);
-
-            if (words) {
-                int w;
-                for(w = 0 ; w < words->size ; w++ ) {
-
-                    unsigned char *word = words->array[w];
-                    unsigned char *remaining_word = word + current_tvid_len;
-
-                    if (word+strlen((char *)word) > remaining_word) {
-                        //
-                        // no go through all remaining letters converting to tvid number
-                        // and set that tvid to be output. eg.
-                        // Say remaining word is "ost" of Lost. then we want tvids
-                        // o =>6
-                        // os => 67
-                        // ost => 678
-
-                        int i,tvid_index=0;
-                        for(i = 0 ; i < TVID_MAX_LEN && *remaining_word ; i++,remaining_word++ ) {
-                            tvid_index *= 10;
-                            tvid_index += tvid_val[*remaining_word];
-
-                            if (tvid_output[tvid_index] == 0) {
-                                tvid_total++;
-                                tvid_output[tvid_index] = 1;
-                            }
-
-                        }
-                    }
-
-                }
-            }
-
-            array_free(words);
-
-
-            FREE(lc_title);
-        }
-        // Now output all of the selected tvids.
-        result = malloc((strlen(link_template)+5)*tvid_total);
-        *result = '\0';
-
-        int i;
-        //char i_str[TVID_MAX_LEN+1];
-        char *p = result;
-
-        Array *link_parts=split(link_template,TVID_MARKER,0);
-        HTML_LOG(-1,"link [%s]",link_template);
-        // Split the link_template into two strings - before and after the TVID_MARKER
-
-        for(i = 1 ; i <= TVID_MAX ; i++ ) {
-            if (tvid_output[i]) {
-                int j;
-                p += sprintf(p,"%s",(char *)link_parts->array[0]);
-                for(j = 1 ; j <  link_parts->size ;  j++ ) {
-                    p += sprintf(p,"%d%s",i,(char *)link_parts->array[j]);
-                }
-                *p++ = '\n';
-                *p = '\0';
-
-                /*
-                sprintf(i_str,"%d",i);
-                char *link = replace_all(link_template,TVID_MARKER,i_str,0);
-                strcpy(p,link);
-                FREE(link);
-                p=strchr(p,'\0');
-                *p++ = '\n';
-                *p = '\0';
-                */
-            }
-        }
-        array_free(link_parts);
-        FREE(link_template);
-
+    int i;
+    for ( i = 0 ; list[i].sequence ; i++ ) {
+        HTML_LOG(0,"tvid = %s/%s",list[i].sequence,list[i].range);
+        continue;
     }
+    HTML_LOG(0,"size = %d",i);
+
+    result = CALLOC(i,format_memsize);
+
+    char *p = result;
+    for ( i = 0 ; list[i].sequence ; i++ ) {
+        p += sprintf(p,format_string,list[i].range,list[i].sequence);
+        *(p++) = '\n';
+        *p='\0';
+    }
+    HTML_LOG(0,"result = %s",result);
+
     return result;
 }
+
 long use_boxsets() {
     static long boxsets = -1;
     if(boxsets == -1) {

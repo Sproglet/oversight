@@ -30,7 +30,7 @@ char *get_theme_image_tag(char *image_name,char *attr);
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
-char *get_tvid_links(DbRowId **rowids);
+char *get_tvid_links();
 char *get_play_tvid(char *text);
 char *movie_listing(DbRowId *rowid);
 long use_boxsets();

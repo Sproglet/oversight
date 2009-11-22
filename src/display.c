@@ -2294,19 +2294,6 @@ TRACE;
     return numrows;
 }
 
-void set_tvid_increments(int *tvid_val) {
-    memset(tvid_val,0,256);
-    tvid_val['1']=1;
-    tvid_val['2']=tvid_val['a']=tvid_val['b']=tvid_val['c']=2;
-    tvid_val['3']=tvid_val['d']=tvid_val['e']=tvid_val['f']=3;
-    tvid_val['4']=tvid_val['g']=tvid_val['h']=tvid_val['i']=4;
-    tvid_val['5']=tvid_val['j']=tvid_val['k']=tvid_val['l']=5;
-    tvid_val['6']=tvid_val['m']=tvid_val['n']=tvid_val['o']=6;
-    tvid_val['7']=tvid_val['p']=tvid_val['q']=tvid_val['r']=tvid_val['s']=7;
-    tvid_val['8']=tvid_val['t']=tvid_val['u']=tvid_val['v']=8;
-    tvid_val['9']=tvid_val['w']=tvid_val['x']=tvid_val['y']=tvid_val['z']=9;
-}
-
 typedef struct tvid_struct {
     char *sequence;
     char *range;
@@ -2336,12 +2323,13 @@ char *get_tvid_links() {
     FREE(format_string);
     format_string=tmp;
 
-    HTML_LOG(0,"Format string [%s]",format_string);
+//    HTML_LOG(0,"Format string [%s]",format_string);
 
 
     char *result = NULL;
     Tvid list[]={
-        {"1","0-9"} , 
+        {"0","*"} , {"11","*"} , // reset
+        {"1","1"} ,  // db scan will get all non-alpha if this parameter is < A
         {"2","A"} , {"22","B"} , {"222","C"} ,
         {"3","D"} , {"33","E"} , {"333","F"} ,
         {"4","G"} , {"44","H"} , {"444","I"} ,
@@ -2352,9 +2340,10 @@ char *get_tvid_links() {
         {"9","W"} , {"99","X"} , {"999","Y"} , {"9999","Z"} ,
         { NULL,NULL} } ;
 
+    // Get size of array - probably a better C way.
     int i;
     for ( i = 0 ; list[i].sequence ; i++ ) {
-        HTML_LOG(0,"tvid = %s/%s",list[i].sequence,list[i].range);
+//        HTML_LOG(0,"tvid = %s/%s",list[i].sequence,list[i].range);
         continue;
     }
     HTML_LOG(0,"size = %d",i);
@@ -2367,7 +2356,7 @@ char *get_tvid_links() {
         *(p++) = '\n';
         *p='\0';
     }
-    HTML_LOG(0,"result = %s",result);
+//    HTML_LOG(0,"result = %s",result);
 
     return result;
 }

@@ -28,7 +28,6 @@
                         <font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>
                     <td>[:TITLE_SELECT:]</td>
-                    <td>[:TITLE2_SELECT:]</td>
                     <td>[:GENRE_SELECT:]</td>
                     <td>[:MEDIA_SELECT:]</td>
                     <td>[:WATCHED_SELECT:]</td>

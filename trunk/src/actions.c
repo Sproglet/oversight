@@ -57,11 +57,12 @@ void clear_selection() {
     query_remove("form");
     query_remove("select");
     query_remove("action");
+    query_remove("old_action");
     struct hashtable_itr *itr;
     Array *a = array_new(NULL);
     char *k,*v;
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&k,&v) ; ) {
-        if (is_checkbox(k,v) || util_starts_with(k,RESCAN_OPT_PREFIX)) {
+        if (is_checkbox(k,v) || util_starts_with(k,RESCAN_OPT_PREFIX) || util_starts_with(k,RESCAN_DIR_PREFIX)) {
             array_add(a,k);
         }
     }

@@ -115,6 +115,47 @@ char *image_path(char *template_name,char *name)
     return result;
 }
 
+char *macro_fn_web_status(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+
+    if (args == NULL || args->size == 0  || args->size > 2 ) {
+        *free_result=0;
+        result = "WEB_STATUS(url[,expected text])";
+    } else {
+        // If expected text is present prepare grep command to check wget output
+        char *expected_text = NULL;
+        if (args->size == 2 ) {
+            // wget | grep -q causes broken pipe unless wget has -q also.
+            ovs_asprintf(&expected_text," -O - | grep  -q \"%s\"",args->array[1]);
+        } else {
+            // otherwise silence wget.
+            expected_text = STRDUP(" -O /dev/null");
+        }
+
+        char *cmd;
+        char *user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
+
+        ovs_asprintf(&cmd,"/bin/wget -U \"%s\" -q -t 1 -T 5 --ignore-length \"%s%s\" %s",
+                user_agent,
+                (util_starts_with(args->array[0],"http")?"":"http://"),
+                args->array[0],
+                expected_text);
+
+        HTML_LOG(0,"web status cmd [%s]",cmd);
+        int ok = system(cmd) == 0;
+        HTML_LOG(0,"web status result (1=good) %d",ok);
+        FREE(cmd);
+        char *good = get_theme_image_tag("ok"," class=webstatus ");
+        char *bad = get_theme_image_tag("cancel"," class=webstatus ");
+        result = STRDUP((ok?good:bad));
+        FREE(good);
+        FREE(bad);
+        FREE(expected_text);
+    }
+
+    return result;
+}
+
 char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     struct hashtable *mounts = mount_points_hash();
     struct hashtable_itr *itr;
@@ -670,7 +711,7 @@ char *add_star(char *buf,char *star_path,int star_no) {
 }
 
 char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return get_tvid_links(sorted_rows);
+    return get_tvid_links();
 }
 
 char *get_rating_stars(DbRowId *rid,int num_stars)
@@ -1141,7 +1182,7 @@ char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_ro
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("mark",NULL);
             ovs_asprintf(&result,
-                    "<a href=\"javascript:alert('Select item then remote\n[99] to [w]atch,\n[88] to [u]nwatch')\">%s</a>",tag);
+                    "<a href=\"javascript:alert('Select item then remote\n[RED] to mark watched,\nGREEN for not watched')\">%s</a>",tag);
             FREE(tag);
         } else {
             result = get_theme_image_link("select=Mark","","mark","");
@@ -1559,6 +1600,7 @@ void macro_init() {
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
         hashtable_insert(macros,"IMAGE",macro_fn_image_url);
+        hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
         //HTML_LOG(1,"end macro init");
     }
 }

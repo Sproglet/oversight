@@ -4,6 +4,7 @@
 # New moviedb api
     #
 # short paths in index db - check play functions
+# check detection of series/s01/01-blah.avi Lie To Me/Season 1/01-pilot.avi
 
 GENRE ERROR!!!!!!
 

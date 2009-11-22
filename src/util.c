@@ -734,6 +734,8 @@ char *util_basename(char *file) {
     return s;
 }
 int util_starts_with(char *a,char *b) {
+    assert(a);
+    assert(b);
     if (a == NULL || b == NULL ) {
         HTML_LOG(0,"util_starts_with error (%s,%s)",a,b);
         return 0;

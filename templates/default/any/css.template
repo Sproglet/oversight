@@ -31,7 +31,7 @@ body.movie_background0 { color:white ; background-color:black; }
 body.movie_background1 { color:yellow ; background-color:black; }
 
 body.admin_background0 { color:white ; background-color:#000044; }
-body.admin_background1 { color:yellow ; background-color:#000044; }
+body.admin_background1 { color:white ; background-color:#000044; }
 
 font.Delete {color:#FF9966; font-weight:normal; }
 font.Ignore {color:#777;}

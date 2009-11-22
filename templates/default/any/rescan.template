@@ -9,25 +9,28 @@
         <style type="text/css">
 img.webstatus { width:15; height:15; }
 td.webstatus { font-size:90% ; }
-p { color:white; }
+a { color:yellow; }
+body { font-size:20; font-family:"arial"; color:white; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
-        <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Oversight Media Scan</h1>
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Media Scan</h1>
 
         <form action="?" enctype="multipart/form-data" method="POST">
             <input type=hidden name=form value="1">
 
             <center>
-            <table>
-            <tr>
-            <td>
-            Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
-            <br>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
-            <br>To change scan paths [:CONFIG_LINK(catalog.cfg,input.help,{click here},style="color=red;"):]
-            <p>
-            </td>
-            </tr>
+            <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
+            <p>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
+            <table width="70%">
+                <tr>
+                    <td align=center>
+                        [:CONFIG_LINK(catalog.cfg,input.help,{change scan paths},style="color=red;"):]
+                    </td>
+                    <td align=center>
+                        [:LINK(action=template_scan_status,{check internet databases}):]
+                    </td>
+                </tr>
             </table>
 
             <table>
@@ -53,55 +56,6 @@ p { color:white; }
                         <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>new/unknown media
                         <br>
                         <input type=radio name=rescan_opt_@group1 value=RESCAN>all media
-                    </td>
-                    <td>
-                        Web Database Status
-                        <table>
-                            <tr>
-                                <td>[:WEB_STATUS(www.imdb.com/favicon.ico):]</td>
-                                <td class=webstatus>IMDB -
-                                Plots &amp; Ratings</td>
-                            </tr>
-                            <tr>
-                                <td>[:WEB_STATUS(api.themoviedb.org/favicon.ico):]</td>
-                                <td class=webstatus>Movie Db -
-                                Lookup Index</td>
-                            </tr>
-                            <tr>
-                                <td>[:WEB_STATUS(images.themoviedb.org/posters/945/Transformers_7394f415_thumb.jpg):]</td>
-                                <td class=webstatus>Movie Db -
-                                Movie images</td>
-                            </tr>
-                            <tr>
-                                <td>[:WEB_STATUS(thetvdb.com/api/GetSeries.php?seriesname=FlashForward,FlashForward):]</td>
-                                <td class=webstatus>TvDb -
-                                Tv plots/images</td>
-                            </tr>
-                            <tr>
-                                <td>[:WEB_STATUS(services.tvrage.com/feeds/showinfo.php?sid=20798,FlashForward):]</td>
-                                <td class=webstatus>TvRage(api) -
-                                TV Plots</td>
-                            </tr>
-                        </table>
-                        <hr>
-                        Search Engine Status
-                        <table>
-                            <tr>
-                                <!-- Check that search engine has not blacklisted us -->
-                                <td>[:WEB_STATUS(www.bing.com/search?q=transformers+imdb,tt0418279):]</td>
-                                <td class=webstatus>Bing</td>
-                            </tr>
-                            <tr>
-                                <!-- Check that search engine has not blacklisted us -->
-                                <td>[:WEB_STATUS(search.yahoo.com/search?q=transformers,tt0418279):]</td>
-                                <td class=webstatus>Yahoo</td>
-                            </tr>
-                            <tr>
-                                <!-- Check that search engine has not blacklisted us -->
-                                <td>[:WEB_STATUS(www.google.co.uk/search?q=transformers,tt0418279):]</td>
-                                <td class=webstatus>Google</td>
-                            </tr>
-                        </table>
                     </td>
                 </tr>
                 <tr>

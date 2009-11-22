@@ -30,6 +30,11 @@ void display_admin() {
         
         display_template("default",action+strlen(CONFIRM_PREFIX),0,NULL);
 
+#define TEMPLATE_PREFIX "template_"
+    } else if (util_starts_with(action,TEMPLATE_PREFIX)) {
+        
+        display_template("default",action+strlen(TEMPLATE_PREFIX),0,NULL);
+
     } else {
 
         display_template("default","completed",0,NULL);

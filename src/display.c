@@ -152,18 +152,21 @@ char *self_url(char *new_params) {
 
     char *url = STRDUP(SELF_URL);
 
+    // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
 
         
         int param_name_len = strlen(param_name);
         char *p = NULL ;
 
-        if ( param_value && *param_value ) {
+        if (!EMPTY_STR(param_value)) {
             if (strcmp(param_name,"colour") != 0) {
                 if (strstr(param_name,"option_") == NULL) {
                     //
                     // search for pram_name in new_params
                     int add_param=1;
+
+                    // If the existing parameter name is also in the new parameter list then dont add it
                     if (new_params && *new_params) {
                         for (p = strstr(new_params,param_name); p ; p=strstr(p+1,param_name) ) {
 
@@ -2268,7 +2271,7 @@ TRACE;
     
     char *sort = DB_FLDID_TITLE;
 
-    config_check_str(g_query,"s",&sort);
+    config_check_str(g_query,QUERY_PARAM_SORT,&sort);
 TRACE;
 
     if (strcmp(query_val("view"),"tv") == 0) {
@@ -2612,6 +2615,9 @@ TRACE;
     char *script = create_episode_js_fn(num_rows,sorted_rows);
 TRACE;
 
+    int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == 1;
+    
+
     printf("%s",script);
 
     if (num_rows/cols < rows ) {
@@ -2652,6 +2658,12 @@ TRACE;
                     FREE(href_attr);
                 }
 
+                int free_eptitle=0;
+                char *episode_title = "";
+                if (show_episode_titles) {
+                    episode_title = best_eptitle(rid,&free_eptitle);
+                }
+
                 char *title_txt=NULL;
 
                 int is_proper = (strstr(rid->file,"proper") ||
@@ -2664,11 +2676,15 @@ TRACE;
 
                 char *icon_text = icon_link(rid->file);
 
-                ovs_asprintf(&title_txt,"%s%s&nbsp;%s",
+                ovs_asprintf(&title_txt,"%s%s%s&nbsp;%s",
+                        episode_title,
                         (is_proper?"&nbsp;<font class=proper>[pr]</font>":""),
                         (is_repack?"&nbsp;<font class=repack>[rpk]</font>":""),
                         (icon_text?icon_text:""));
                 FREE(icon_text);
+                if (free_eptitle) {
+                    FREE(episode_title);
+                }
 
 
                 //Date

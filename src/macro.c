@@ -1483,7 +1483,7 @@ char *macro_fn_edit_config(char *template_name,char *call,Array *args,int num_ro
         char *cmd;
 
         //Note this outputs directly to stdout so always returns null
-        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE2 \"help/%s.%s\" \"conf/.%s.defaults\" \"conf/%s\" HIDE_VAR_PREFIX=1",
+        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE \"help/%s.%s\" \"conf/.%s.defaults\" \"conf/%s\" HIDE_VAR_PREFIX=1",
                 appDir(),file,help_suffix,file,file);
 
         system(cmd);

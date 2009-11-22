@@ -42,6 +42,7 @@ OPTION_PARSE() {
 {
     print "<!-- "FILENAME " : " $0 "-->";
 }
+/^#/ { next }
 
 FILENAME ~ "help$" {
      addVal(clean($0),":",help,1);
@@ -85,12 +86,12 @@ function trim(x) {
 }
 function html_table(    i,n,current,sel,opts,optCount) {
     i=1;
-    print "<table class=options>";
+    print "<table class=\"options\" width=\"100%\" >";
 
     if (MODE=="TABLE") {
-    print "<tr class=optionrow><td width=20%>Option</td><td width=30%>Value</td><td width=50%>Description</td></tr>";
+    print "<tr class=\"optionrow\" ><th class=\"optionname\" width=20% >Option</td><th class=\"optionval\" width=40% >Value</td><th class=\"optionhelp\" width=40% >Description</td></tr>";
     } else {
-        print "<tr class=optionrow><td width=35%>Option</td><td width=65%>Description</td></tr>";
+        print "<tr class=\"optionrow\" ><th class=\"optionname\" >Option</td><th class=\"optionhelp\" >Description</td></tr>";
     }
 
     split(substr(order,2),ord,"|");
@@ -120,14 +121,21 @@ function html_table(    i,n,current,sel,opts,optCount) {
                     } else {
                         sel="";
                     }
-                    draw_choice = draw_choice sprintf("\t<option value=\"%s\" %s>%s</option>\n",opts[o],sel,opts[o]);
+                    # if the value = "display=>&htmlparam=val" then only display the "display" bit.
+                    display_text = opts[o];
+                    display_and_value=index(opts[o],"=>");
+                    if ( display_and_value ) {
+                        # just use the inital part for the displayed text.
+                        display_text = substr(display_text,1,display_and_value-1);
+                    }
+                    draw_choice = draw_choice sprintf("\t<option value=\"%s\" %s>%s</option>\n",opts[o],sel,display_text);
                 }
                 draw_choice = draw_choice "</select>";
             }
 
         }
         if (draw_choice == "") {
-            draw_choice = sprintf("<input type=text size=40 name=option_%s value=\"%s\" >",n,current);
+            draw_choice = sprintf("<input type=text size=20 name=option_%s value=\"%s\" >",n,current);
         }
 
         shortName=n;
@@ -139,13 +147,17 @@ function html_table(    i,n,current,sel,opts,optCount) {
 #            printf "(%s)",(n in val)?val[n]:"unset";
 #        }
         print "<input type=hidden name=orig_option_"n" value=\""val[n]"\" >";
-        if (mode == "TABLE") {
+
+        if (MODE == "TABLE") {
             print "</td><td class=optionval>";
         } else {
             print "<br>";
         }
+
         print draw_choice;
         print "<td class=optionhelp>"help[n]"</td></tr>";
+        q="'"'"'";
+        #print "<td class=optionhelp><a href=\"javascript:alert("q help[n] q");\" >?</a></td></tr>";
     }
     print "</table>";
 }

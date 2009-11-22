@@ -7,6 +7,7 @@
 #include "display.h"
 
 // for gaya_cgi.c
+void add_default_html_parameters(struct hashtable *query_hash);
 struct hashtable *parse_query_string(char *q,struct hashtable *);
 struct hashtable *read_post_data(char *post_filename);
 char *url_decode(char *str);

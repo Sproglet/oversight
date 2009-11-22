@@ -150,8 +150,14 @@ int main(int argc,char **argv) {
     //util_unittest();
     //config_unittest();
 
+    g_query = string_string_hashtable(16);
+
+    html_comment("default query ... ");
+    add_default_html_parameters(g_query);
+    html_hashtable_dump(0,"prequery",g_query);
+
     html_comment("read query ... ");
-    g_query=parse_query_string(getenv("QUERY_STRING"),NULL);
+    g_query=parse_query_string(getenv("QUERY_STRING"),g_query);
     html_hashtable_dump(0,"query",g_query);
 
     html_comment("read post ... ");

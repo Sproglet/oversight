@@ -5850,11 +5850,9 @@ function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbo
 f,line,count,linecount,remain,is_imdb,matches2) {
 
     delete matches;
+    id1("scanPageForMatches["url"]["fixed_text"]["regex"]["max"]");
 
-    DEBUG("scan "url" for "regex);
     f=getUrl(url,"scan4match",cache,referer);
-
-    INF("Looking for fixed text ["fixed_text"] before regex ["regex"]");
 
     count=0;
 
@@ -5895,6 +5893,7 @@ f,line,count,linecount,remain,is_imdb,matches2) {
         close(f);
     }
     dump(2,count" matches",matches);
+    id0(count);
     return 0+ count;
 }
 

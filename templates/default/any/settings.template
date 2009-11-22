@@ -6,11 +6,17 @@
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
+        <style type="text/css">
+td.optionname { font-size: 90% ; }
+td.optionhelp { font-size: 90% ; }
+table.options { width:100%; border=1; }
+th.optionname { width:10%; }
+th.optionval { width:20%; }
+th.optionhelp { width:60%; }
+        </style>
     </head>
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Configuration</h1>
-
-        <h2>[:$?title:]</h2>
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Configuration [:$?title:]</h1>
 
         <form action="?" enctype="multipart/form-data" method="POST">
 

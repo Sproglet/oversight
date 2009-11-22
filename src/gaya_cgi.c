@@ -12,7 +12,41 @@
 #include "util.h"
 #include "array.h"
 #include "hashtable_loop.h"
+#include "hashtable_utility.h"
 #include "vasprintf.h"
+
+/*
+ * Add the default query parameters from the oversight settings.
+ * Only settings with value DisplayName=>&html_param are added.
+ * eg. if a setting is Yes=>&_et=1 then
+ * - key(_et)=value(1) is added to the hash.
+ */
+#define OPTION_HTML_GET_FLAG "=>"
+void add_default_html_parameters(struct hashtable *query_hash) 
+{
+    char *k;
+    char *v;
+    struct hashtable_itr *itr;
+    for(itr = hashtable_loop_init(g_oversight_config); hashtable_loop_more(itr,&k,&v) ; ) {
+       if (!EMPTY_STR(v)) {
+            
+           char *p = strstr(v,OPTION_HTML_GET_FLAG);
+           if (p) {
+               p += strlen(OPTION_HTML_GET_FLAG);
+               // Split the value DisplayText=>htmlname=htmlval
+               char *equals=strchr(p,'=');
+               char *htmlname;
+               char *htmlval;
+               if (equals) {
+                   ovs_asprintf(&htmlname,"%.*s",equals-p,p);
+                   htmlval = STRDUP(equals+1);
+                   HTML_LOG(0,"Default url [%s]=[%s] (from config [%s]=[%s])",htmlname,htmlval,k,v);
+                   hashtable_insert(query_hash,htmlname,htmlval);
+               }
+           }
+       }
+   }
+}
 
 /*
 * Parse the query string into a hashtable
@@ -32,16 +66,22 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
         char *eq = strchr(qarr->array[i],'=');
         if (eq) {
             *eq = '\0';
-
             char *name=url_decode(qarr->array[i]);
+            *eq = '=';
             char *val=url_decode(eq+1);
+
             //printf("query [%s]=[%s]\n",name,val);
 
-            if (hashtable_insert(hashtable_in,name,val) ==0) {
-                fprintf(stderr," Error inserting [%s]=[%s]\n",name,val);
+            if ( hashtable_change(hashtable_in,name,val) ) {
+                HTML_LOG(3,"Changed [ %s ] = [ %s ]",name,val);
+            } else {
+                if (hashtable_insert(hashtable_in,name,val) ) {
+                    HTML_LOG(5,"Added [ %s ] = [ %s ]",name,val);
+                } else {
+                    fprintf(stderr," Error inserting [%s]=[%s]\n",name,val);
+                }
             }
 
-            *eq = '=';
         }
 
     }

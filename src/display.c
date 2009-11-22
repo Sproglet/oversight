@@ -315,7 +315,7 @@ char *vod_attr(char *file) {
 
 //T2 just to avoid c string handling in calling functions!
 char *vod_link(DbRowId *rowid,char *title ,char *t2,
-        char *source,char *file,char *href_name,char *href_attr,char *font_class){
+        char *source,char *file,char *href_name,char *href_attr,char *class){
 
     assert(title);
     assert(t2);
@@ -323,7 +323,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     assert(file);
     assert(href_name);
     assert(href_attr);
-    assert(font_class);
+    assert(class);
 
     char *vod=NULL;
     int freepath;
@@ -354,11 +354,11 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
             char *params =NULL;
             ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
             //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-            result = get_self_link_with_font(params,font_class,title,font_class);
+            result = get_self_link_with_font(params,class,title,class);
             FREE(params);
 
         } else {
-            ovs_asprintf(&result,"<font class=%s>%s</font>",font_class,title);
+            ovs_asprintf(&result,"<font class=\"%s\">%s</font>",class,title);
         }
 
     } else {
@@ -374,10 +374,10 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
         }
 
 
-        if (font_class != NULL && *font_class ) {
+        if (!EMPTY_STR(class)) {
 
-            ovs_asprintf(&result,"<a href=\"file://%s\" %s><font class=\"%s\">%s%s</font></a>",
-                    encoded_path,vod,font_class,title,t2);
+            ovs_asprintf(&result,"<a href=\"file://%s\" %s %s><font %s>%s%s</font></a>",
+                    encoded_path,vod,class,class,title,t2);
         } else {
             ovs_asprintf(&result,"<a href=\"file://%s\" %s>%s%s</a>",
                     encoded_path,vod,title,t2);
@@ -655,10 +655,16 @@ char *file_style(DbRowId *rowid,int grid_toggle) {
 
     static char grid_class[30];
 
-    sprintf(grid_class," class=grid%cW%d_%d ",
+    if (g_dimension->poster_mode) {
+        return " class=unwatched ";
+    } else {
+
+        /* Plan to depricate this one day */
+        sprintf(grid_class," class=grid%cW%d_%d ",
             rowid->category,
             rowid->watched!=0,
             grid_toggle & 1);
+    }
 
     return grid_class;
 }

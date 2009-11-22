@@ -5,25 +5,10 @@
         <title>Oversight Menu [:HOSTNAME:]</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-
-/* unwatched text menu colors */ .dummy { color:red; }
-.gridTW0_0 { color:white; background-color:#101055; }
-.gridTW0_1 { color:white; background-color:#101066; }
-.gridMW0_0 { color:white; background-color:#105510; }
-.gridMW0_1 { color:white; background-color:#106610; }
-.gridW0_0 { color:white; background-color:#551010; }
-.gridW0_1 { color:white; background-color:#661010; }
 body.menu_background0 { color:white ; background-color:black; }
 body.menu_background1 { color:yellow ; background-color:black; }
 #menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
 
-/* watched text menu colors */ .dummy { color:red; }
-.gridTW1_1 { color:#555555; background-color:#101066; }
-.gridTW1_0 { color:#555555; background-color:#101055; }
-.gridMW1_1 { color:#555555; background-color:#105510; }
-.gridMW1_0 { color:#555555; background-color:#106610; }
-.gridW1_1 { color:#555555; background-color:#551010; }
-.gridW1_0 { color:#555555; background-color:#661010; }
 
 .overview_poster1 { text-align:center; width:1%; }
 .overview_poster0 { text-align:center;  width:100%;}

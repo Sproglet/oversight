@@ -1,4 +1,5 @@
 .dummy { color:red; }
+a { color:white ; text-decoration:none; }
 
 html,body { height:100%; margin:0; padding:0; border:none; }
 #main { height:99%; width:100%; border:none; margin:0; padding:0; }
@@ -46,13 +47,10 @@ td.fresh { color:yellow; font-weight:bold; font-style:italic; }
 a.fresh { color:yellow; font-weight:bold; font-style:italic; }
 font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 
-.watched { color:red; }
-.watched { color:#88AA88 ; font-style:italic; }
-td.ep11 { color:red; }
-.ep11 { color:red; }
-a.link.watched { color:red; }
-a.watched { color:red; }
-Xfont.watched { color:#FFAAAA; }
+font.watched { color:#DD3333 ; font-style:italic; }
+font.unwatched { color:#77FF77 ; }
+
+
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { background-color:red; }
 .delist { background-color:yellow; }
@@ -82,7 +80,6 @@ table.listing {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; }
 /* Admin page */ .dummy { color:red; }
 
 .match {color:#FF7777; font-weight:bold; }
-a { color:white ; text-decoration:none; }
 td.endtable { background-color:blue; }
 
 /* Movie Page */ .dummy { color:red; }
@@ -112,6 +109,22 @@ h1,.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color
 .label { color:red }
 .scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
 
-<!--
+/* watched text menu colors */ .dummy { color:red; }
+.gridTW1_1 { color:#555555; background-color:#101066; }
+.gridTW1_0 { color:#555555; background-color:#101055; }
+.gridMW1_1 { color:#555555; background-color:#105510; }
+.gridMW1_0 { color:#555555; background-color:#106610; }
+.gridW1_1 { color:#555555; background-color:#551010; }
+.gridW1_0 { color:#555555; background-color:#661010; }
+
+/* unwatched text menu colors */ .dummy { color:red; }
+.gridTW0_0 { color:white; background-color:#101055; }
+.gridTW0_1 { color:white; background-color:#101066; }
+.gridMW0_0 { color:white; background-color:#105510; }
+.gridMW0_1 { color:white; background-color:#106610; }
+.gridW0_0 { color:white; background-color:#551010; }
+.gridW0_1 { color:white; background-color:#661010; }
+
+/*
 vi:ts=4:sw=4:et:syntax=css
--->
+*/

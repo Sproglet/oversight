@@ -126,6 +126,9 @@ function show(idlist,epno,plot_text,info,eptitle)
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
 <a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
 <a href="javascript:ovs_watched();" tvid="RED"></a>
+<!-- Title toggle -->
+<a href="?_et=[:IF([:$?_et:],,1):]" tvid="8"></a>
+<a href="?[:IF([:$?_et:],_et=,_et=1):]" tvid="9"></a>
 </body>
 </html>
 

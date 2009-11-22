@@ -82,7 +82,7 @@ jpg_resize() {
 
     #Could use a pipe but input may = output so use tmp file.
     # We always resize even if the dimensions are unchanged because it makes file size much smaller
-    INFO "$o to $output" 
+    # INFO "$o to $output" 
     # Remove it first in case it was a hard link to the original file.
     tmpjpg=`thread_prefix`.jpg
     tmppnm=`thread_prefix`.pnm
@@ -200,7 +200,7 @@ process_queue() {
 
         if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
 
-            INFO "got image queue file $pq_folder/$f"
+            #INFO "got image queue file $pq_folder/$f"
 
 
             while FS= read line ; do
@@ -213,7 +213,7 @@ process_queue() {
         fi
         if [ $pq_loop -eq 0 ] ; then break ; fi
     done
-    INFO "End Processing $1 : $pq_count files"
+    #INFO "End processing $1 : $pq_count files"
     # If no files then return error code.
     [ $pq_count -gt 0 ]
 

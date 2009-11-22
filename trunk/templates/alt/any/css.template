@@ -47,7 +47,7 @@ td.fresh { color:yellow; font-weight:bold; font-style:italic; }
 a.fresh { color:yellow; font-weight:bold; font-style:italic; }
 font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 
-font.watched { color:#DD3333 ; font-style:italic; }
+font.watched { color:#FF7777 ; }
 font.unwatched { color:#77FF77 ; }
 
 

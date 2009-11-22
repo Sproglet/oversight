@@ -42,7 +42,6 @@ DbRowId *read_and_parse_row(
         );
 int in_idlist(int id,int size,int *ids);
 void get_genre_from_string(char *gstr,struct hashtable **h);
-void get_first_two_letters(char *t);
 
 #define UNSET -2
 static int use_folder_titles = UNSET;
@@ -1421,7 +1420,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
         unsigned char title_filter_start='\0';
         unsigned char title_filter_end=255;
-        if (title_filter && *title_filter) {
+        if (title_filter && *title_filter && *title_filter != '*') {
             title_filter_start=*(unsigned char *)title_filter;
             title_filter_end=*(unsigned char *)(title_filter+strlen(title_filter)-1);
             HTML_LOG(0,"Title Filter [%c-%c]",title_filter_start,title_filter_end);
@@ -1465,13 +1464,11 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                         get_genre_from_string(rowid.genre,&g_genre_hash);
                     }
 
-                    //get_first_two_letters(rowid.title);
-
                     unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
                     g_title_letter_count[toupper(first_letter)]++;
 
                     if (first_letter) {
-                        if (title_filter_start == '0' ) {
+                        if (title_filter_start && title_filter_start < 'A' ) {
                             // Non alpahbetic
                             if (first_letter >= 'A' && first_letter <= 'Z') {
                                 keeprow = 0;
@@ -1836,28 +1833,6 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
 
             gstr = p;
         }
-    }
-}
-
-void get_first_two_letters(char *t) {
-    if (g_first_two_letters == NULL) {
-        g_first_two_letters = string_string_hashtable(20);
-    }
-
-    char *p = t;
-    char pair[3];
-    p = t-1;
-    while(p) {
-        p++;
-        if (!*p) break;
-        pair[0]=toupper(*p);
-        pair[1]=tolower(p[1]);
-        pair[2]='\0';
-        if (hashtable_search(g_first_two_letters,pair) == NULL) {
-            char *q=STRDUP(pair);
-            hashtable_insert(g_first_two_letters,q,q);
-        }
-        p = strchr(p,' ');
     }
 }
 

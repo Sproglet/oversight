@@ -381,6 +381,10 @@ char *macro_fn_other_media_total(char *template_name,char *call,Array *args,int 
     return result;
 }
 
+#if 1
+/*
+ * This is obsoleted. Direct tvid jumps used instead.
+ */
 void add_letter_range(struct hashtable *title,unsigned char start,unsigned char end,int max_group_size) {
     unsigned char ch;
     int size=0;
@@ -429,42 +433,27 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 
         struct hashtable *title = string_string_hashtable(30);
 
-#if 1
+#if 0
         add_letter_range(title,' ','@',25);
         add_letter_range(title,'A','Z',25);
 #else
 
 
-        hashtable_insert(title,"A","A");
-        hashtable_insert(title,"B","B");
-        hashtable_insert(title,"C","C");
-        hashtable_insert(title,"D","D");
-        hashtable_insert(title,"EF","EF");
-        hashtable_insert(title,"GH","GH");
-        hashtable_insert(title,"IK","IJK");
-        hashtable_insert(title,"L","L");
-        hashtable_insert(title,"M","M");
-        hashtable_insert(title,"NP","NOP");
-        hashtable_insert(title,"QR","QR");
-        hashtable_insert(title,"S","S");
-        hashtable_insert(title,"T","T");
-        hashtable_insert(title,"UZ","U-Z");
-        hashtable_insert(title,"0","0-9");
+        char c;
+        for(c = 'A' ; c <= 'Z' ; c++ ) {
+            char letter[2];
+            sprintf(letter,"%c",c);
+            hashtable_insert(title,STRDUP(letter),STRDUP(letter));
+        }
+        hashtable_insert(title,STRDUP("1"),STRDUP("1"));
 #endif
-        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"All",title);
+        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"*",title);
         hashtable_destroy(title,1,1);
     }
     *free_result = 0;
     return result;
 }
-char *macro_fn_title2_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    static char *result=NULL;
-    if (!result) {
-        result =  auto_option_list("t2","All",g_first_two_letters);
-    }
-    *free_result = 0;
-    return result;
-}
+#endif
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
@@ -1593,7 +1582,6 @@ void macro_init() {
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
         hashtable_insert(macros,"TITLE_SELECT",macro_fn_title_select);
-        hashtable_insert(macros,"TITLE2_SELECT",macro_fn_title2_select);
         hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);

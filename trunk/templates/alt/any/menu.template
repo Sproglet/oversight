@@ -47,7 +47,6 @@ table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; bo
                         <font size=2>[:VERSION:] [:HOSTNAME:]</font>
                     </td>
                     <td>[:TITLE_SELECT:]</td>
-                    <td>[:TITLE2_SELECT:]</td>
                     <td>[:GENRE_SELECT:]</td>
                     <td>[:MEDIA_SELECT:]</td>
                     <td>[:WATCHED_SELECT:]</td>

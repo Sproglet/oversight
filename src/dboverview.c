@@ -109,7 +109,7 @@ int db_overview_name_season_eqf(DbRowId *rid1,DbRowId *rid2) {
        }
     } else {
         //films are equal only if source and file are equal
-        return strcmp(rid1->file,rid2->file) && strcmp(rid1->db->source,rid2->db->source) ==0 ;
+        return strcmp(rid1->file,rid2->file)==0 && strcmp(rid1->db->source,rid2->db->source) ==0 ;
     }
 }
 // overview hash function based on titles and season only. This is used in non-boxset mode.

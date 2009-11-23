@@ -38,7 +38,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20091102-1BETA"
+#define OVS_VERSION "20091123-1BETA"
 
 #define QUERY_PARAM_EPISODE_TITLES "_et"
 #define QUERY_PARAM_TYPE_FILTER "_tf"

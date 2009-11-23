@@ -1818,7 +1818,7 @@ if (url == "" ) return
 id1("scrape imdb ["url"]")
 
 if (g_imdb[idx] == "") {
-g_imdb[idx] = url
+g_imdb[idx] = extractImdbId(url)
 }
 
 f=getUrl(url,"imdb_main",1)
@@ -2750,7 +2750,7 @@ search_abbreviations = more_info[1]
 if (UPDATE_TV)  {
 
 if (bestUrl == "" && g_imdb[idx] != "" ) {
-bestUrl = g_imdb[idx]
+bestUrl = extractImdbLink(g_imdb[idx])
 }
 tv_status = tv_search(plugin,idx,bestUrl,search_abbreviations)
 scanned= (tv_status != 0)
@@ -3882,7 +3882,7 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles) {
 
 id1("searchTvDbTitles")
 if (g_imdb[idx]) {
-imdb_id = extractImdbId(g_imdb[idx])
+imdb_id = g_imdb[idx]
 tvdbid = find_tvid(plugin,idx,imdb_id)
 }
 if (tvdbid == "") {
@@ -4736,7 +4736,7 @@ result=0
 fetch_xml_single_child(tvDbSeriesUrl,"thetvdb-series","/Data/Series",empty_filter,seriesInfo)
 if ("/Data/Series/id" in seriesInfo) {
 
-setFirst(g_imdb,idx,extractImdbLink(seriesInfo["/Data/Series/IMDB_ID"]))
+setFirst(g_imdb,idx,extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]))
 
 adjustTitle(idx,remove_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb")
 
@@ -4751,6 +4751,8 @@ DEBUG("tvdb plot "g_plot[idx])
 gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"]
 g_rating[idx] = seriesInfo["/Data/Series/Rating"]
 setFirst(g_poster,idx,tvDbImageUrl(seriesInfo["/Data/Series/poster"]))
+g_tvid_plugin[idx]="THETVDB"
+g_tvid[idx]=seriesInfo["/Data/Series/id"]
 result ++
 
 
@@ -4848,7 +4850,7 @@ INF("Keeping episode title ["gEpTitle[idx]"] ignoring ["title"]")
 
 
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,sid,url,e,result,pi,p) {
+seriesInfo,episodeInfo,filter,url,e,result,pi,p) {
 
 pi="TVRAGE"
 result = 0
@@ -4857,10 +4859,11 @@ delete filter
 if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo)) {
 adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi)
 g_year[idx] = substr(seriesInfo["/Show/started"],8,4)
-sid=seriesInfo["/Show/showid"]
 setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
 url=seriesInfo["/Show/showlink"]
 g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1)
+g_tvid_plugin[idx]="TVRAGE"
+g_tvid[idx]=seriesInfo["/Show/showid"]
 result ++
 
 
@@ -5509,7 +5512,7 @@ gsub(/[^-_a-zA-Z0-9]+/,"_",poster_ref)
 if (g_category[idx] == "T" ) {
 poster_ref = poster_ref "_" g_season[idx]
 } else {
-poster_ref = poster_ref "_" extractImdbId(g_imdb[idx])
+poster_ref = poster_ref "_" g_imdb[idx]
 }
 
 
@@ -6856,7 +6859,15 @@ row=row"\t"FILE"\t"substr(g_file[i],start)
 if (gAdditionalInfo[i]) row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i]
 
 
-if (g_imdb[i]) row=row"\t"URL"\t"extractImdbId(g_imdb[i],1)
+if (g_imdb[i] == "") {
+
+g_imdb[i]=g_tvid_plugin[i]"_"g_tvid[i]
+if (g_imdb[i] == "") {
+
+g_imdb[i]="ovs"PID"_"systime()
+}
+}
+row=row"\t"URL"\t"g_imdb[i]
 
 row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i]
 if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i]
@@ -6919,15 +6930,7 @@ close(output_file)
 
 function update_plots(pfile,idx,\
 id,key,cmd,cmd2,ep) {
-id=extractImdbId(g_imdb[idx],1)
-if (id == "") {
-
-id=g_tvid_plugin[idx]g_tvid[idx]
-}
-if (id == "") {
-
-id = "ovs:"idx
-}
+id=g_imdb[idx]
 
 if (id != "") {
 ep = g_episode[idx]

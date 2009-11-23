@@ -1,0 +1,58 @@
+<!-- Default Tv Template  $Id:$ -->
+<style type="text/css">
+body { color:white ; background-color:black; }
+</style>
+</head>
+<body height=100% focuscolor=yellow focustext=black [background=:FANART_URL(lightwave.jpg):] >
+[:FORM_START:]
+<table id=main width=100%>
+    <tr valign=center>
+        <td>
+            <table width=100%>
+                <tr valign=top>
+                    <td colspan=2>
+                        [:INCLUDE_TEMPLATE(buttons):]<br>
+                    </td>
+                </tr>
+                <tr valign=center height=1px>
+                    <td class=center width=1%>
+                        [:POSTER:]
+                    </td>
+
+                    <td>
+                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+                            <tr>
+                                <td class=title><font class=title>[:TITLE:]</font></td>
+                                <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
+                            </tr>
+                            <tr>
+                                <td align=left><font class=info[:IS_GAYA:] id=genre>&nbsp;[:GENRE:]</font></td>
+                                <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
+                            </tr>
+                            <tr><td colspan=2 align=left><hr><font class=info[:IS_GAYA:] id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr valign=top >
+                    <td colspan=2>
+                        <div>
+                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+                            <tr>
+                                <td class=filelist align=center>
+                                [:TV_LISTING:]
+                                [:INCLUDE_TEMPLATE(submit_btn):]<br>
+                                </td>
+                            </tr>
+                        </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</form>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

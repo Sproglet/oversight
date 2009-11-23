@@ -1,0 +1,130 @@
+.dummy { color:red; }
+a { color:white ; text-decoration:none; }
+
+html,body { height:100%; margin:0; padding:0; border:none; }
+#main { height:99%; width:100%; border:none; margin:0; padding:0; }
+table.main { height:100% ; border:0px ; padding:0px ; margin: 0px ; border-width:0px }
+.main { border:0px ; padding:0px ; margin: 0px ; border-width:0px }
+
+img { border: 0px solid black; }
+
+.poster       { border-color:white; border-width:0px; padding:0px; margin:0px; }
+.poster_fresh { border-color:#AAAA00; border-width:2px; padding:1px; margin:1px; }
+img.poster_watched { }
+
+a.poster { color:white; font-weight:bold; font-style:italic; }
+a.poster_fresh { color:white; font-weight:bold; font-style:italic; }
+a.poster_watched { color:#88AA88; font-weight:bold; font-style:italic; }
+
+td.poster_unknown { }
+td.poster_fresh_unknown { }
+td.poster_watched_unknown { }
+
+td.gc_small { font-size:10pt; }
+td.gc_fresh_small { font-size:10pt; }
+td.gc_watched_small { font-size:10pt; }
+
+font.Delete {color:#FF9966; font-weight:normal; }
+font.Ignore {color:#777;}
+font.Mark {color:#AAA;}
+font.Unmark {color:#DDF;}
+font.Remove_From_List {color:orange;}
+
+/* Admin Settings
+.optionrow { background-color:#666666;}
+.optionrow0 { background-color:#222222;}
+.optionrow1 { background-color:#333333;}
+*/ .dummy { color:red; }
+
+
+img.fresh { 
+    border-width: 2px;
+    color:yellow;
+    border-color:yellow;
+}
+
+td.fresh { color:yellow; font-weight:bold; font-style:italic; }
+a.fresh { color:yellow; font-weight:bold; font-style:italic; }
+font.fresh { color:yellow; font-weight:bold; font-style:italic; }
+
+font.watched { color:#FF7777 ; }
+font.unwatched { color:#77FF77 ; }
+
+
+.error { color:red ; font-style:italic; font-weight:bold; }
+.delete { background-color:red; }
+.delist { background-color:yellow; }
+.cancel { ; }
+.mark { ; }
+
+
+table.header {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+
+.yellowbutton { color:#FFFF55; background-color:black; font-weight:bold ; text-decoration:none; }
+a.yellowbutton { color:black ; }
+
+.bluebutton { color:#5555FF; background-color:black; font-weight:normal ; text-decoration:none; }
+a.bluebutton { color:black ; }
+
+.greenbutton { color:#55FF55; background-color:black; font-weight:normal ; text-decoration:none; }
+a.greenbutton { color:black ; }
+
+.redbutton { color:#FF5555; background-color:black; font-weight:normal ; text-decoration:none; }
+a.redbutton { color:black ; }
+
+/* TV or movie view */ .dummy { color:red; }
+table.detail   { margin:0; border-spacing:1px; padding:1px ; }
+table.listing {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; }
+
+/* Admin page */ .dummy { color:red; }
+
+.match {color:#FF7777; font-weight:bold; }
+td.endtable { background-color:blue; }
+
+/* Movie Page */ .dummy { color:red; }
+
+td.list0 {
+                filter:alpha(opacity=60);
+                opacity:0.6;
+                background-color:black;
+                color:white;
+}
+td.list1 {
+    background-color:black-alpha3;
+}
+a.movie { color:#aaaaff; }
+.label { color:red }
+.right { text-align:right; }
+
+input { background-color:black; color:#88CCFF; font-weight:bold; border=0; }
+select { background-color:black; color:#88CCFF; font-weight:bold; border=0; border-color:#88CCFF; font-size:small; }
+
+td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
+
+
+
+h1,.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
+
+.label { color:red }
+.scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
+
+/* watched text menu colors */ .dummy { color:red; }
+.gridTW1_1 { color:#555555; background-color:#101066; }
+.gridTW1_0 { color:#555555; background-color:#101055; }
+.gridMW1_1 { color:#555555; background-color:#105510; }
+.gridMW1_0 { color:#555555; background-color:#106610; }
+.gridW1_1 { color:#555555; background-color:#551010; }
+.gridW1_0 { color:#555555; background-color:#661010; }
+
+/* unwatched text menu colors */ .dummy { color:red; }
+.gridTW0_0 { color:white; background-color:#101055; }
+.gridTW0_1 { color:white; background-color:#101066; }
+.gridMW0_0 { color:white; background-color:#105510; }
+.gridMW0_1 { color:white; background-color:#106610; }
+.gridW0_0 { color:white; background-color:#551010; }
+.gridW0_1 { color:white; background-color:#661010; }
+
+/*
+vi:ts=4:sw=4:et:syntax=css
+*/

@@ -1,0 +1,81 @@
+<!-- Default Rescan Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Rescan</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+        <style type="text/css">
+img.webstatus { width:15; height:15; }
+td.webstatus { font-size:90% ; }
+a { color:yellow; }
+body { font-size:20; font-family:"arial"; color:white; }
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Media Scan</h1>
+
+        <form action="?" enctype="multipart/form-data" method="POST">
+            <input type=hidden name=form value="1">
+
+            <center>
+            <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
+            <p>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
+            <table width="70%">
+                <tr>
+                    <td align=center>
+                        [:CONFIG_LINK(catalog.cfg,input.help,{change scan paths},style="color=red;"):]
+                    </td>
+                    <td align=center>
+                        [:LINK(action=template_scan_status,{check internet databases}):]
+                    </td>
+                </tr>
+            </table>
+
+            <table>
+                <tr valign=top>
+                    <td>
+                        [:CHECKBOX(rescan_dir_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
+                        <hr>
+                        <input type=checkbox name=rescan_opt_PARALLEL_SCAN>scan in parallel
+                    </td>
+                    <td align=left>
+                        <table>
+                            <tr><td><input type=checkbox name=rescan_opt_GET_POSTERS checked>get posters</td></tr>
+                            <tr><td align=right><input type=checkbox name=rescan_opt_UPDATE_POSTERS>overwrite</td></tr>
+                            <tr><td><input type=checkbox name=rescan_opt_GET_FANART checked>get fanart</td></tr>
+                            <tr><td align=right><input type=checkbox name=rescan_opt_UPDATE_FANART>overwrite</td></tr>
+                        </table>
+                        <hr>
+<!--
+                        <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>
+                        <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
+                        <hr>
+-->
+                        <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>new/unknown media
+                        <br>
+                        <input type=radio name=rescan_opt_@group1 value=RESCAN>all media
+                    </td>
+                </tr>
+                <tr>
+                    <td align=center colspan=2>
+                        <input type=submit name=action value="rescan_request">
+                        <input type=submit name=action value="Cancel">
+                    </td>
+                </tr>
+            </table>
+            </center>
+            <p>This will return immediately and start a background scan of the listed paths.
+            Scan speed is approx 300 new files per hour. x2 if getting fanart.
+            Other applications may also affect overall scan speed.
+            Covers and fanart are downloaded independently so may appear later.
+
+            <input type=hidden name=old_action value="[:$?action:]">
+            <input type=hidden name=view value="[:$?view:]">
+        </form>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

@@ -31,7 +31,7 @@ body { color:yellow ; background-color:black; }
                     <td align=left><font class=info[:IS_GAYA:] id=genre>&nbsp;[:GENRE:]</font></td>
                     <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
                 </tr>
-                <tr><td colspan=2 align=left><hr><span class=plot[:IS_GAYA:] id=tvplot>&nbsp;[:PLOT:]</span></td><tr>
+                <tr><td colspan=2 align=left><hr><span class=font[:IS_GAYA:] id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
             </table>
         </td>
     </tr>

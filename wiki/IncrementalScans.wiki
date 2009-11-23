@@ -9,7 +9,7 @@ I plan to have a rescan button against a particular item.
 First we need an edit option to change IMDB Id., fanart & poster links.
 Then "save" or "save and rescan"
 
-In the mean time you can rescan a particular item as follows:
+In the mean time you can rescan a particular item as follows: (v20091123-3 or better)
 
   # In the Oversight GUI, _delist_ the item to be rescanned (dont _delete_ it!!)
   # Go to the Admin Screen, and select only the paths that contain your changed items, and select 'new items only'

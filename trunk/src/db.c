@@ -503,7 +503,7 @@ char * db_rowid_get_field(DbRowId *rowid,char *name) {
 }
 
 // This will take ownership of the val - freeing it if necessary.
-void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view,int copy) {
+void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
 
     void *offset;
     char type;
@@ -517,31 +517,25 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
 
     // Used to checl for trailing chars.
     char *tmps=NULL;
-    int free_val=!copy; //if copying dont free
 
     assert(name[0]=='_');
 
     switch(type) {
         case FIELD_TYPE_STR:
-            free_val=0;
-            *(char **)offset = (copy?COPY_STRING(val_len,val):val);
+            *(char **)offset = COPY_STRING(val_len,val);
             if (offset == &(rowid->file)) {
-#if 0
-                char *p = rowid->file + val_len;
-                char *first = p - 6; // search backwards up to 6 chars for extension
-                if (first < rowid->file ) first = rowid->file;
-                while(p > first) {
-                    if (*--p == '.') {
-                        rowid->ext = p+1;
-                        break;
-                    }
+                // Append Network share path
+                if (rowid->file[0] != '/') {
+                    char *tmp;
+                    ovs_asprintf(&tmp,"%s%s" , NETWORK_SHARE, rowid->file );
+                    FREE(rowid->file);
+                    rowid->file = tmp;
                 }
-#else
+                // set extension
                 char *p = strrchr(rowid->file,'.');
                 if (p) {
                     rowid->ext = p+1;
                 }
-#endif
             }
             break;
         case FIELD_TYPE_CHAR:
@@ -566,7 +560,6 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             HTML_LOG(0,"Bad field type [%c]",type);
             assert(0);
     }
-    if (free_val) FREE(val);
 }
 
 void set_title_as_folder(DbRowId *rowid)
@@ -625,7 +618,15 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,rid->genre);
     fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,rid->parts);
     fprintf(fp,"\t%s\t%d",DB_FLDID_YEAR,rid->year);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,rid->file);
+
+
+    // Remove Network share path
+    if (util_starts_with(rid->file,NETWORK_SHARE)) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,rid->file+strlen(NETWORK_SHARE));
+    } else {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,rid->file);
+    }
+
     fprintf(fp,"\t%s\t%s",DB_FLDID_ADDITIONAL_INFO,rid->additional_nfo);
     fprintf(fp,"\t%s\t%s",DB_FLDID_URL,rid->url);
     fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,rid->certificate);
@@ -647,6 +648,10 @@ void write_row(FILE *fp,DbRowId *rid) {
     fflush(fp);
 }
 
+// There are two functions to read the db - this one and parse_row()
+// They should be consolidated.
+// This one does a full table scan.
+//
 // TODO Change this back to static value and using copy_string() in db_rowid_set_field
 DbRowId *read_and_parse_row(
         DbRowId *rowid,
@@ -732,7 +737,7 @@ DbRowId *read_and_parse_row(
                     if (state == STATE_VAR) {
                         *p = '\0';
                         HTML_LOG(3,"parsed field %s=%s",name,value);
-                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
+                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
                         state = STATE_START;
                     }
                     goto eol;
@@ -767,7 +772,7 @@ DbRowId *read_and_parse_row(
                             } else {
                                 *p = '\0';
                                 HTML_LOG(3,"val[%s]",value);
-                                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view,1);
+                                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
 
                                 state=STATE_NAME;
                                 p=name;
@@ -800,6 +805,7 @@ eol:
 
         set_title_as_folder(rowid);
     }
+
     return rowid;
 }
 
@@ -850,6 +856,9 @@ void db_rowid_dump(DbRowId *rid) {
 
 
 #define ALL_IDS -1
+// There are two functions to parse a row. This one and read_and_parse_row().
+// The should be brought together at some point!
+// This function only reads the listed ids.
 int parse_row(
         int num_ids, // number of ids passed in the idlist parameter of the query string. if ALL_IDS then id list is ignored.
         int *ids,    // sorted array of ids passed in query string idlist to use as a filter.
@@ -929,7 +938,7 @@ got_value_end:
         //memcpy(value_copy,value_start,val_len+1);
 
 
-        db_rowid_set_field(rowid,name_start,value_start,val_len,1,1);
+        db_rowid_set_field(rowid,name_start,value_start,val_len,1);
 
 
         *name_end = *value_end = '\t';

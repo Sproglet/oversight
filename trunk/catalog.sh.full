@@ -51,7 +51,7 @@
 # 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091102-1BETA
+VERSION=20091123-1BETA
 
 NMT_APP_DIR=
 nmt_version=unknown
@@ -1854,6 +1854,9 @@ fields,i,fnum) {
     fnum = split(row,fields,"\t");
     for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
         arr[fields[i]] = fields[i+1];
+    }
+    if (index(arr[FILE],"/") != 1 ) {
+        arr[FILE] = g_mount_root arr[FILE];
     }
     arr[FILE] = clean_path(arr[FILE]);
 }
@@ -5538,7 +5541,7 @@ poster_ref,internal_path) {
         if(lg) INF("Skipping "poster_ref);
         return 0;
     } else if (hasContent(internal_path)) {
-        if(lg) INF("Already have "poster_ref);
+        if(lg) INF("Already have "poster_ref" ["internal_path"]");
         return 0;
     } else {
         if(lg) INF("Getting "poster_ref);
@@ -6347,7 +6350,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
            } else {
 
                # Move media file
-               if (moveFile(oldName,newName) != 0 ) {
+               if (moveFileIfPresent(oldName,newName) != 0 ) {
                    return;
                }
 
@@ -6356,7 +6359,6 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
                g_fldrMediaCount[g_fldr[i]]--;
                g_file[i]=newName;
-               
 
                newFolder=newName;
                sub(/\/[^\/]+$/,"",newFolder);
@@ -6380,7 +6382,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    }
 
                    DEBUG("Moving nfo file ["gNfoDefault[i]"] to ["nfoName"]");
-                   if (moveFile(gNfoDefault[i],nfoName) != 0) {
+                   if (moveFileIfPresent(gNfoDefault[i],nfoName) != 0) {
                        return;
                    }
                    if (!g_opt_dry_run) {
@@ -6393,15 +6395,6 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    }
                }
 
-               # Also move any poster file
-               if(g_poster[i] != "" && substr(g_poster[i],1,1)!= "/" && substr(g_poster[i],1,4) != "ovs:" ) {
-                   oldName=oldFolder"/"g_poster[i];
-                   newName=newFolder"/"g_poster[i];
-                   if (moveFile(oldName,newName) != 0 ) {
-                       return;
-                   }
-               }
-
                #Rename any other associated files (sub,idx etc) etc.
                rename_related(oldName,newName);
 
@@ -6410,7 +6403,10 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
            }
         }
 
+        INF("checking "qa(oldFolder));
         if (is_dir(oldFolder) && is_empty(oldFolder)) {
+
+            INF("removing "qa(oldFolder));
             system("rmdir "qa(oldFolder));
         }
 
@@ -6477,7 +6473,7 @@ function substitute(keyword,value,str,\
 
 function rename_related(oldName,newName,\
     extensions,ext,oldBase,newBase) {
-    split("srt idx sub nfo",extensions," ");
+    split("jpg png srt idx sub nfo",extensions," ");
 
     oldBase = oldName;
     sub(/\....$/,".",oldBase);
@@ -6486,7 +6482,7 @@ function rename_related(oldName,newName,\
     sub(/\....$/,".",newBase);
 
     for(ext in extensions) {
-        moveFile(oldBase extensions[ext],newBase extensions[ext]);
+        moveFileIfPresent(oldBase extensions[ext],newBase extensions[ext]);
     }
 
 }
@@ -6513,6 +6509,18 @@ function changeable(f) {
     return 1;
 }
 
+# 0 = OK or absent 1=BAD
+function moveFileIfPresent(oldName,newName,\
+    new,old,ret) {
+
+    if (is_file(oldName)) {
+        return moveFile(oldName,newName);
+    } else {
+        return 0;
+    }
+}
+
+# 0 = OK 1=BAD or missing
 function moveFile(oldName,newName,\
     new,old,ret) {
 
@@ -6522,10 +6530,8 @@ function moveFile(oldName,newName,\
     new=qa(newName);
     old=qa(oldName);
     if (g_opt_dry_run) {
-        if (match(oldName,gExtRegExAll) && system("test -f "old) == 0) {
-            print "dryrun: from "old
-            print "dryrun: to\t"new
-            print "dryrun:";
+        if (match(oldName,gExtRegExAll) && is_file(oldName)) {
+            print "dryrun: from "old" to "new;
         }
         return 0;
     } else {
@@ -6570,12 +6576,12 @@ function moveFolder(i,oldName,newName,\
        if (g_opt_dry_run) { 
            print "dryrun: from "old"/* to "new"/";
            ret = 0;
-       } else {
+       } else if (!is_empty(oldName)) {
            INF("move folder:"old"/* --> "new"/");
            cmd="mkdir -p "new" ;  mv "old"/* "new" ; mv "old"/.[^.]* "new" ; rmdir "old;
            err = "unknown error";
            ret = exec(cmd);
-           exec("rmdir "old" 2>/dev/null" );
+           system("rmdir "old" 2>/dev/null" );
        }
    }
    if (ret != 0) {
@@ -6777,7 +6783,7 @@ function file_time(f) {
 
 # changes here should be reflected in db.c:write_row()
 function createIndexRow(i,db_index,watched,index_time,\
-row,est,nfo,op) {
+row,est,nfo,op,start) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
     est=file_time(g_fldr[i]"/unpak.log");
@@ -6840,7 +6846,12 @@ row,est,nfo,op) {
     if (gParts[i]) row=row"\t"PARTS"\t"gParts[i];
 
     row=row"\t"YEAR"\t"g_year[i];
-    row=row"\t"FILE"\t"g_file[i];
+
+    start=1;
+    if (index(g_file[i],g_mount_root) == 1) {
+        start += length(g_mount_root);
+    }
+    row=row"\t"FILE"\t"substr(g_file[i],start);
 
     if (gAdditionalInfo[i]) row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i];
 

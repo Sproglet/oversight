@@ -2797,13 +2797,19 @@ char *get_status() {
 
     return result;
 }
+
 char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
 
-    char *attr;
-    if (g_dimension->local_browser) {
-        attr="onchange=\"location.assign(this.childNodes[this.selectedIndex].value)\"";
-    } else {
-        attr="onchange=\"location.assign(this.options[this.selectedIndex].value)\"";
+    static char *attr = NULL;
+    if (attr == NULL ) {
+        if (g_dimension->local_browser) {
+            ovs_asprintf(&attr,
+            // Note the gaya path requires the full script name here. 
+            // This becomes /HARD_DISK/Apps/oversight/oversight.cgi
+            "onchange=\"location.assign('%s'+this.childNodes[this.selectedIndex].value)\"", getenv("SCRIPT_NAME"));
+        } else {
+            attr="onchange=\"location.assign(this.options[this.selectedIndex].value)\"";
+        }
     }
     return option_list(name,attr,firstItem,vals);
 }
@@ -2828,12 +2834,6 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     //GAYA does seem to like passing just the options to the link
     //eg just "?a=b"
     //we have to pass a more substantial path. eg. .?a=b
-    char *link_prefix;
-    if (g_dimension->local_browser) {
-        link_prefix = "/oversight/oversight.cgi";
-    } else {
-        link_prefix = "/oversight/oversight.cgi";
-    }
 
     if (keys && keys->size) {
         int i;
@@ -2845,9 +2845,8 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
             char *v=hashtable_search(vals,k);
             char *link=join(link_parts,k);
             ovs_asprintf(&tmp,
-                "%s<option value=\"%s%s\" %s >%s</option>\n",
+                "%s<option value=\"%s\" %s >%s</option>\n",
                 (result?result:""),
-                link_prefix,
                 link,
                 (strcmp(selected,k)==0?"selected":""),
                 v);
@@ -2859,10 +2858,9 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     if (result) {
         char *tmp;
         char *link=join(link_parts,"");
-        ovs_asprintf(&tmp,"<select %s>\n<option value=\"%s%s\">%s</option>\n%s</select>",
+        ovs_asprintf(&tmp,"<select %s>\n<option value=\"%s\">%s</option>\n%s</select>",
                 //name,
                 attr,
-                link_prefix,
                 link,
                 firstItem,result);
         FREE(result);

@@ -14,7 +14,7 @@ In the mean time you can also rescan a particular item as follows: (v20091123-3 
   # Go to the Admin Screen, and select only the paths that contain your changed items, and select 'new items only'
   # Rescan.
 
-This method looks through all folders for files that are not in the index, so it may take 5 minutes or more.
+This method looks through all folders for files that are not in the index or are not categorized as a movie nor a tv show, so it may take 5 minutes or more.
 
 I plan to have a rescan button against a particular item. 
 First we need an edit option to change IMDB Id., fanart & poster links.

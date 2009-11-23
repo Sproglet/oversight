@@ -51,7 +51,7 @@
 # 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091123-1BETA
+VERSION=20091123-3BETA
 
 NMT_APP_DIR=
 nmt_version=unknown
@@ -6933,7 +6933,7 @@ id,key,cmd,cmd2,ep) {
         ep = g_episode[idx];
         INF("updating plots for "id"/"ep);
 
-        key=qa(id)" "qa(g_season[idx]);
+        key=qa(id)" "(g_category[idx]=="T"?qa(g_season[idx]):qa(""));
 
         cmd=g_plot_app" update "qa(pfile)" "key;
 

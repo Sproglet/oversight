@@ -18,8 +18,6 @@ A. To download content to an external HDD you must change the film_folder_fmt an
 
 For content other than movies or tv shows, also change the oversight->admin->Nzbget unpacking->completed_dir to be the full path to a folder on the external HDD. 
 
-*Q3. how to default to sort by name instead of age?*
+*Q3. Why does Oversight use 3 different search engines
 
-A. This will become an configurable option soon. In the mean time, You can change the initial default by editing the web service in the main NTM setup screen to be.
-
-http://127.0.0.1:8883/oversight/oversight.cgi?s=_T
+A. No one really ask this much, but it might cross their mind when using the site checker. To reduce false positives, some queries are performed against two different search engines. If they disagree, then a third engine is used for the casting vote. This has made searches much more accurate and reduced false positives. It is important that the search engines are not re-badged versions of one another or we'd get the same results.

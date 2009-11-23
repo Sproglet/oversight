@@ -8,7 +8,7 @@ Everyone
   * SendingLogReports
   * PruningFiles
   * KnownIssues
-  * IncrementalScans
+  * Scanning
   * FrequentlyAskedQuestions
 
 Advanced

@@ -2615,7 +2615,7 @@ TRACE;
     char *script = create_episode_js_fn(num_rows,sorted_rows);
 TRACE;
 
-    int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == 1;
+    int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == '1';
     
 
     printf("%s",script);

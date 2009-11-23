@@ -26,6 +26,6 @@ For posterity, the old way of doing it (via telnet) still works, but is not need
   # log in
   # type 'cd /share/Apps/oversight'
   # type './catalog.sh /path/to/new/media/folder'
-  # Or to rescan AND get new posters type './catalog.sh UPDATE_POSTERS /path/to/new/media/folder'
+  # Or to rescan AND get new posters type './catalog.sh UPDATE_POSTERS UPDATE_FANART /path/to/new/media/folder'
 
 See also [FullScans]

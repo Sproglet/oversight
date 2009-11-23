@@ -11,10 +11,6 @@ Then "save" or "save and rescan"
 
 In the mean time you can rescan a particular item as follows:
 
-
-
-Note in the next version of Oversight (est 21st November) incremental scans can be performed as follows:
-
   # In the Oversight GUI, _delist_ the item to be rescanned (dont _delete_ it!!)
   # Go to the Admin Screen, and select only the paths that contain your changed items, and select 'new items only'
   # Rescan.

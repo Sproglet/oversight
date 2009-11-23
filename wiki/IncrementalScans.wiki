@@ -9,19 +9,23 @@ I plan to have a rescan button against a particular item.
 First we need an edit option to change IMDB Id., fanart & poster links.
 Then "save" or "save and rescan"
 
-In the mean time you can manually rescan if you have telnet installed.
+In the mean time you can rescan a particular item as follows:
+
+
+
+Note in the next version of Oversight (est 21st November) incremental scans can be performed as follows:
+
+  # In the Oversight GUI, _delist_ the item to be rescanned (dont _delete_ it!!)
+  # Go to the Admin Screen, and select only the paths that contain your changed items, and select 'new items only'
+  # Rescan.
+
+This method looks through all folders for files that are not in the index, so it may take 5 minutes or more.
+
+----
+
+For posterity, the old way of doing it (via telnet) still works, but is not needed any more:
 
   # log in
   # type 'cd /share/Apps/oversight'
   # type './catalog.sh /path/to/new/media/folder'
   # Or to rescan AND get new posters type './catalog.sh UPDATE_POSTERS /path/to/new/media/folder'
-
-----
-
-Note in the next version of Oversight (est 21st November) incremental scans can be performed as follows:
-
-  # In the Oversight GUI, _delist_ the item to be rescanned (dont _delete_ it!!)
-  # Go to the Admin Screen, and select the Rescan Option
-  # In the rescan screen select 'New Items Only', and Rescan.
-
-This method looks through all folders for files that are not in the index, so it may take 5 minutes or more.

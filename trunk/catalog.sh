@@ -2412,6 +2412,7 @@ nonDate[1]=substr(line,1,RSTART-1)
 nonDate[2]=substr(line,RSTART+RLENGTH)
 
 split(datePart,date,s)
+DEBUG("Date1 ["date[1]"/"date[2]"/"date[3]"] in "line)
 d = date[d]
 m = date[m]
 y = date[y]
@@ -2419,6 +2420,7 @@ y = date[y]
 date[1]=y
 date[2]=tolower(trim(m))
 date[3]=d
+DEBUG("Date2 ["date[1]"/"date[2]"/"date[3]"] in "line)
 
 if ( textMonth == 1 ) {
 DEBUG("date[2]="date[2])
@@ -2429,10 +2431,11 @@ DEBUG(m"="date[2])
 return 0
 }
 }
+DEBUG("Date3 ["date[1]"/"date[2]"/"date[3]"] in "line)
 date[1] += 0
-date[2] += 0
+date[2] = 0 + date[2]
 date[3] += 0
-DEBUG("Found "date[1]"/"date[2]"/"date[3]" in "line)
+DEBUG("Found ["date[1]"/"date[2]"/"date[3]"] in "line)
 return 1
 }
 
@@ -2896,7 +2899,11 @@ result = get_tv_series_info(plugin,idx,tvDbSeriesPage)
 }
 
 if (g_category[idx] == "M" ) {
-DEBUG("Error getting IMDB ID from tv - looks like a movie??")
+WARNING("Error getting IMDB ID from tv - looks like a movie??")
+if (plugin == "TVRAGE") {
+WARNING("Please update the IMDB ID for this series at the TVRAGE website for improved scanning")
+}
+
 result = 0
 }
 id0(result)

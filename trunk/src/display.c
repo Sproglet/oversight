@@ -2912,7 +2912,7 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     Array *keys = util_hashtable_keys(vals,0);
     array_sort(keys,array_strcasecmp);
 
-    ovs_asprintf(&params,"p=&%s=" PLACEHOLDER,name);
+    ovs_asprintf(&params,"p=&idlist=&%s=" PLACEHOLDER,name);
     char *link=self_url(params);
     FREE(params);
     Array *link_parts = split(link,PLACEHOLDER,0);

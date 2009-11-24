@@ -1,0 +1,170 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+body.menu_background0 { color:white ; background-color:black; }
+body.menu_background1 { color:yellow ; background-color:black; }
+#menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
+
+
+.overview_poster1 { text-align:center; width:1%; }
+.overview_poster0 { text-align:center;  width:100%;}
+table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+
+.transparent_fanart1_local0 {
+    filter:alpha(opacity=70);
+    opacity:0.7;
+    background-color:black;
+    color:white;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+.transparent_fanart1_local1 {
+    background-color:black-alpha2;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+.transparent_fanart0_local0 {
+    background-color:black;
+    color:white;
+}
+
+.transparent_fanart0_local1 {
+    background-color:black;
+}
+.overview_poster1 {
+    background-color:black-alpha2;
+    margin:50px;
+    padding:50px;
+    border:1;
+}
+.overview_poster0 {
+    background-color:red;
+    filter:alpha(opacity=70);
+    opacity:0.7;
+    margin:20px;
+    padding:20px;
+    border:1;
+}
+
+        </style>
+    </head>
+    <!--
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
+-->
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] [background=:FANART_URL(default.jpg):] >
+        [:FORM_START:]
+<center>
+        <table id=main width=100% height=100%>
+        <tr><td>
+            <table class=header width=100%>
+                <tr>
+                    <td rowspan=2>
+                        <font size=3>Oversight</font>
+                        <br>
+                        <font size=2>[:VERSION:] [:HOSTNAME:]</font>
+                    </td>
+                    <td>[:TITLE_SELECT:]</td>
+                    <td>[:GENRE_SELECT:]</td>
+                    <td>[:MEDIA_SELECT:]</td>
+                    <td>[:WATCHED_SELECT:]</td>
+                    <td>[:SORT_TYPE_TOGGLE:]</td>
+                    <td>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</td>
+                    <td>[:SETUP_BUTTON:]</td>
+                </tr>
+                <tr>
+                    <td colspan=8 id=menutitle align=center>&nbsp;</td>
+                </tr>
+            </table>
+        </td></tr><tr><td >
+            <center>
+            [:GRID:] 
+            </center>
+        </td></tr><tr><td>
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td width=10%>[:LEFT_BUTTON:]</td>
+                    [<td align=center>:BACK_BUTTON:</td>]
+                    [<td align=center>:EXIT_BUTTON:</td>]
+                    <td align=center>[:HOME_BUTTON:]</td>
+                    <td align=center>[:DELETE_BUTTON:]</td>
+                    <td align=center>[:MARK_BUTTON:]</td>
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
+                    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
+                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                </tr>
+            </table>
+        </td></tr></table>
+</center>
+        </form>
+<script type="text/javascript">
+var title = document.getElementById('menutitle').firstChild;
+var g_idlist = '';
+var g_title = '';
+
+function ovs_del() {
+    if (g_idlist) {
+        if (confirm("Delist/Delete "+g_title+"?")) {
+            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
+                action('delete');
+            } else {
+                action('delist');
+            }
+        }
+    }
+}
+function ovs_watched() {
+    if (g_idlist) {
+        if (confirm("Mark "+g_title+" as watched?")) {
+            action('watch');
+        }
+    }
+}
+function ovs_unwatched() {
+    if (g_idlist) {
+        if (confirm("Mark "+g_title+"as NOT watched?")) {
+            action('unwatch');
+        }
+    }
+}
+
+function action(a) {
+    var sep;
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+
+function showt(title_text,idlist)
+{
+   if (idlist != '') g_idlist = idlist;
+   g_title = title_text;
+   title.nodeValue = g_title;
+}
+
+function title0() { showt('_',''); }
+</script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

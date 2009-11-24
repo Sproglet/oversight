@@ -210,15 +210,16 @@ TRACE;
         playlist_open();
 TRACE;
 
-        if (strcmp(view,"tv") == 0) {
+        if (strcmp(view,VIEW_MOVIE) == 0 ||
+                strcmp(view,VIEW_TV) == 0 ||
+                strcmp(view,VIEW_TVBOXSET) == 0 
+                ) {
 
-            display_template(skin_name,"tv",num_rows,sorted_rows);
-            build_playlist(num_rows,sorted_rows);
+            display_template(skin_name,view,num_rows,sorted_rows);
 
-        } else if (strcmp(view,"movie") == 0) {
-
-            display_template(skin_name,"movie",num_rows,sorted_rows);
-            build_playlist(num_rows,sorted_rows);
+            if (strcmp(view,VIEW_MOVIE) == 0 || strcmp(view,VIEW_TV) == 0 ) {
+                build_playlist(num_rows,sorted_rows);
+            }
 
         } else if (strcmp(view,"admin") == 0) {
 

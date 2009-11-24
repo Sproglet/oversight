@@ -38,7 +38,14 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 
-#define OVS_VERSION "20091123-3BETA"
+/*
+#define OVS_VERSION "20091123-5BETA"
+*/
+#define VIEW_TV "tv"
+#define VIEW_MOVIE "movie"
+#define VIEW_TVBOXSET "tvboxset"
+#define VIEW_MOVIEBOXSET "moviewboxset"
+#define VIEW_MIXED "mixed"
 
 #define QUERY_PARAM_EPISODE_TITLES "_et"
 #define QUERY_PARAM_TYPE_FILTER "_tf"

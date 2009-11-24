@@ -987,11 +987,7 @@ delete g_tv_plugin_list[p]
 function update_db(indexToMergeHash,\
 doit) {
 
-for(doit in indexToMergeHash) {
-break
-}
-
-if (doit == "" ) {
+if (hash_size(indexToMergeHash) == 0 ) {
 INF("Nothing to merge")
 
 } else if (g_opt_dry_run) {
@@ -1001,7 +997,7 @@ INF("Database update skipped - dry run")
 } else if (lock(g_db_lock_file)) {
 
 
-print > INDEX_DB_NEW
+printf "" > INDEX_DB_NEW
 close(INDEX_DB_NEW)
 
 copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW,indexToMergeHash)
@@ -1193,7 +1189,7 @@ procfile="/proc/"PID"/fd"
 tempFile=NEW_CAPTURE_FILE("LS")
 
 
-exec(LS" -ld "procfile" > "tempFile )
+exec(LS" -ld "procfile" > "qa(tempFile) )
 FS=" "
 
 while ((getline < tempFile) > 0 ) {
@@ -1237,8 +1233,8 @@ extRe="\\.[^.]+$"
 
 
 
-exec("( "LS" "scan_options" "quotedRoot"/ || "LS" "scan_options" "quotedRoot" ) > "tempFile )
-exec("ls -l "tempFile)
+exec("( "LS" "scan_options" "quotedRoot"/ || "LS" "scan_options" "quotedRoot" ) > "qa(tempFile) )
+exec("ls -l "qa(tempFile))
 currentFolder = root
 skipFolder=0
 folderNameNext=1

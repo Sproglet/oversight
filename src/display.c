@@ -30,6 +30,7 @@ char *icon_source(char *image_name);
 void util_free_char_array(int size,char **a);
 char *get_date_static(DbRowId *rid);
 DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
+char *get_drilldown_view(DbRowId *rid);
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 
@@ -1184,6 +1185,40 @@ char *movie_listing(DbRowId *rowid) {
 }
 
 
+// Count number of unique seasons in the list.
+int season_count(DbRowId *rid) {
+#define WORDS 8
+#define WORDBITS 16
+
+    // First push seasons into a set (bits)
+    int i=0;
+    int j=0;
+    unsigned long bitmask[WORDS];
+    memset(bitmask,0,WORDS * sizeof(long));
+
+    HTML_LOG(0,"Season count [%s]",rid->title);
+    for(  ; rid ; rid=rid->linked) {
+        if (rid->category == 'T') {
+            i=rid->season / WORDBITS;
+            j=rid->season % WORDBITS;
+            bitmask[i] |= (1 << j ); // allow for season 0 - prequels - pilots.
+            HTML_LOG(0,"%d -> [%d][%d]=%lx",rid->season,i,j,bitmask[i]);
+        }
+    }
+
+
+    // Now count total bits set.
+    int total=0;
+    for(i=0 ; i < WORDS ; i++ ) {
+        for(j=1 ; j ; j = j << 1 ) {
+           if (bitmask[i] & j ) total++;
+        }
+        HTML_LOG(0,"total at word %d -> %d",i,total);
+    }
+
+    return total;
+}
+
 int group_count(DbRowId *rid) {
     int i=0;
     for(  ; rid ; rid=rid->linked) {
@@ -1351,10 +1386,18 @@ char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char 
     return title;
 }
 
-char *get_simple_title(DbRowId *row_id) {
+
+char *get_simple_title(
+        DbRowId *row_id,
+        char *newview   // VIEW_TV , VIEW_MOVIE , VIEW_TVBOXSET , VIEW_MOVIEBOXSET , VIEW_MIXED
+        ) {
     char *title;
     char *source=row_id->db->source;
     int show_source = (source && *source != '*');
+
+    if (newview == NULL ) {
+        newview = get_drilldown_view(row_id);
+    }
 
     char *source_start,*source_end;
     source_start = source_end = "";
@@ -1363,7 +1406,11 @@ char *get_simple_title(DbRowId *row_id) {
         source_end="]";
     }
 
-    if (row_id->category=='T') {
+    if (strcmp(newview,VIEW_TVBOXSET) == 0) {
+
+        ovs_asprintf(&title,"%s Box Set [%d Seasons]",row_id->title,season_count(row_id));
+
+    } else if (row_id->category=='T') {
         int unwatched = unwatched_count(row_id);
         int total = group_count(row_id);
         if (unwatched == 0 ) {
@@ -1490,14 +1537,14 @@ TRACE;
         *first_space='\0';
     }
 TRACE;
-
+    char *newview = get_drilldown_view(row_id);
     char *cell_text=NULL;
     char *focus_ev = "";
     char *mouse_ev = "";
 
     if (g_dimension->title_bar && !*select) {
 
-        char *simple_title = get_simple_title(row_id);
+        char *simple_title = get_simple_title(row_id,newview);
 
         focus_ev = focus_event_fn("title",(long)row_id,0);
         if (!g_dimension->local_browser) {
@@ -1527,9 +1574,7 @@ TRACE;
 
         HTML_LOG(1,"dbg: id list... [%s]",idlist);
 
-        ovs_asprintf(&params,"view=%s&idlist=%s",
-                (row_id->category=='T'?"tv":"movie"),
-                idlist);
+        ovs_asprintf(&params,"view=%s&idlist=%s",newview,idlist);
         HTML_LOG(1,"dbg: params [%s]",params);
 
         
@@ -1591,6 +1636,48 @@ TRACE;
     FREE(cell_text);
     FREE(title); // first_space points inside of title
     return result;
+}
+
+char *get_drilldown_view(DbRowId *rid) {
+
+    DbRowId *rid2;
+    char *view=NULL;
+
+    switch (rid->category) {
+        case 'T':
+            view = VIEW_TV;
+            break;
+        case 'M': case 'F':
+            view = VIEW_MOVIE;
+            break;
+        default:
+            view = "unknown";
+            break;
+    }
+
+    for( rid2=rid->linked ; rid2 ; rid2=rid2->linked ) {
+
+        if (rid2->category != rid->category ) {
+            view = VIEW_MIXED;
+            break;
+        } else {
+            switch (rid2->category) {
+                case 'T':
+                    if (rid->season != rid2->season) {
+                        view=VIEW_TVBOXSET;
+                    }
+                    break;
+                case 'M': case 'F':
+                    // As soon as there are two linked movies its a box set
+                    view=VIEW_MOVIEBOXSET;
+                    break;
+                default:
+                    view=VIEW_MIXED;
+                    break;
+            }
+        }
+    }
+    return view;
 }
 
 char *template_replace_only(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids);
@@ -1921,7 +2008,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
             i = c * rows + r ;
             if ( i < numids ) {
 
-                char *title = get_simple_title(row_ids[i]);
+                char *title = get_simple_title(row_ids[i],NULL);
                 // Write the call to the show function and also tract the idlist;
                 printf("function title%ld() { showt('%s','%s'); }\n",(long)(row_ids[i]),title,idlist[i]);
                 FREE(title);
@@ -2274,7 +2361,7 @@ TRACE;
     config_check_str(g_query,QUERY_PARAM_SORT,&sort);
 TRACE;
 
-    if (strcmp(query_val("view"),"tv") == 0) {
+    if (strcmp(query_val("view"),VIEW_TV) == 0) {
 TRACE;
 
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);

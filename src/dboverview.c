@@ -209,7 +209,7 @@ TRACE;
     void *eq_fn;
     void *hash_fn;
 
-    if (strcmp(view,"tv") == 0 || strcmp(view,"movie") == 0) {
+    if (strcmp(view,VIEW_TV) == 0 || strcmp(view,VIEW_MOVIE) == 0) {
 TRACE;
 
         //At this level equality is based on file name. 
@@ -221,14 +221,14 @@ TRACE;
 
     } else if (use_boxsets()) {
 TRACE;
-        if (strcmp(view,"tvboxset") == 0) {
+        if (strcmp(view,VIEW_TVBOXSET) == 0) {
             // BoxSet equality function equates tv shows by name/season
             // if view=tv or file doesnt matter as we have already filtered down past this level
             // but if view = boxset then it matters
             hash_fn = db_overview_name_season_hashf;
             eq_fn = db_overview_name_season_eqf;
         } else {
-            // Overview equality function equates tv shows by name
+            // Main menu view Overview equality function equates tv shows by name
             hash_fn = db_overview_name_hashf;
             eq_fn = db_overview_name_eqf;
         }

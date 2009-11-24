@@ -2,6 +2,9 @@ CC=gcc
 
 
 ARCH=100
+VERFILE=verfile
+
+REV='"`cat verfile`"'
 ifdef WINDIR
 ifeq ($(ARCH),200) 
 		CROSS=/mips-4.3/
@@ -24,7 +27,7 @@ CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
 endif
 
-CFLAGS=-O2 -Wall -DOUT=$(OUT) $(CFLAGS_ARCH)
+CFLAGS=-O2 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o \
@@ -45,9 +48,18 @@ LIBS=-lm
 
 LDFLAGS=-g -Wall -O $(LIBS) $(LDFLAGS_ARCH)
 
-all: $(ARCH) $(TARGET) ftp
+all: $(ARCH) $(TARGET) 
+
+push: ftp
+
 
 $(OBJS): $(HEADERS) Makefile
+
+$(HEADERS): $(VERFILE)
+
+$(VERFILE):
+	echo r`../util/svnv oversight 1` > $(VERFILE)
+
 
 $(ARCH):
 	@if [ -f $(BADARCH) ] ; then echo "Do make clean" ; false ; fi

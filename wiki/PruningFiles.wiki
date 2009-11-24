@@ -3,33 +3,6 @@
 
 =Pruning=
 
-This page explains what happens to the index if you delete files manually...
+Oversight automatically removes deleted files from its database.
 
-Lets say you have Life Of Brian
-
-http://oversight.googlecode.com/svn/trunk/screenshots/prune0.png
-http://oversight.googlecode.com/svn/trunk/screenshots/prune1.png
-
-If you delete the file using PC or other method , the first time you revisit the link
-you will see
-
-http://oversight.googlecode.com/svn/trunk/screenshots/prune2.png 
-
-At this point Oversight has removed it from the index, and after that it will be gone...
-
-http://oversight.googlecode.com/svn/trunk/screenshots/prune3.png 
-
-This is not ideal, but is due to the way that some of the page layout has already been rendered before it encounters the removed item.
-
-Ideally it would be nice for the user not to see removed items at all. There are three approaches, I can think of:
-
-1. A manual rescan prunes out all deleted items. - Rescans take a long time, and until you do the rescan you will get 'could not play' errors - which is worse than the current solution. It also means more maintenance work. I want oversight to be as hands-free as possible.
-
-2. The pruning takes place whenever new media is added, or at regular intervals - Again, until the pruning occurs - you will get could not play errors.
-
-3. Oversight completely hides the removed entries dynamically , as the page is drawn - this will always be correct and the approach I will be taking - however it requires some code changes - so that only the items on the screen are checked (we dont want to check the existence of 600 files every time we draw a page). At preset, Oversight does the checks but they just come a bit too late in the sequence, so as an interim solution, I have to still put something on the screen where the file would have been. I will fix this but bear with me. I've thought through most of the options from both a performance and usability perspective but I just haven't had time to code it yet. It's still less work and effort than rescanning - just not as pretty or transparent.
-
-==USB/NAS removal==
-
-Note that Oversight will only prune files if their Grand Parent folder is present.
-This is to help ensure files are not pruned just because the NAS or USB device on which they reside is disconnected. It's not perfect but should work for most cases, and is simpler than trying to interrogate the mount table , esp if files are indexed via symlinks.
+However Oversight will only prune files if their Grand Parent folder is present. This is to help ensure files are not pruned just because the NAS or USB device on which they reside is disconnected. It's not perfect but should work for most cases, and is simpler than trying to interrogate the mount table , esp if files are indexed via symlinks. 

@@ -886,7 +886,9 @@ char *macro_fn_media_type(char *template_name,char *call,Array *args,int num_row
 char *macro_fn_version(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *version=OVS_VERSION;
-    version +=4;
+    if (strstr(version,"2009")) {
+        version +=4;
+    }
     return replace_all(version,"BETA","b",0);
 
 }

@@ -1,10 +1,4 @@
-
-# TVRage Scanning:
-#
-# New moviedb api
-    #
-# short paths in index db - check play functions
-# check detection of series/s01/01-blah.avi Lie To Me/Season 1/01-pilot.avi
+# box set view - main menus need to be removed - or they need to strip idlist.
 
 GENRE ERROR!!!!!!
 

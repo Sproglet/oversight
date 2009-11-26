@@ -1,4 +1,6 @@
-a{}
+
+/* Note gaya has css bug. Item after comments is ignored. Hence */a{}
+
 a { color:white ; text-decoration:none; }
 
 html,body { height:100%; margin:0; padding:0; border:none; }
@@ -46,38 +48,15 @@ table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 .bluebutton { color:#5555FF; background-color:black; font-weight:normal ; text-decoration:none; }
 a.bluebutton { color:black ; }
 
-/*
-
-.yellowbutton { color:#FFFF55; background-color:black; font-weight:bold ; text-decoration:none; }
-a.yellowbutton { color:black ; }
-
-.greenbutton { color:#55FF55; background-color:black; font-weight:normal ; text-decoration:none; }
-a.greenbutton { color:black ; }
-
-.redbutton { color:#FF5555; background-color:black; font-weight:normal ; text-decoration:none; }
-a.redbutton { color:black ; }
-
-*/
-
-/* TV or movie view */ .dummy { color:red; }
+/* TV or movie view */ a{}
 table.detail   { margin:0; border-spacing:1px; padding:1px ; }
 
-/* Admin page */ .dummy { color:red; }
+/* Admin page */ a{}
 
 .match {color:#FF7777; font-weight:bold; }
-td.endtable { background-color:blue; }
 
-/* Movie Page */ .dummy { color:red; }
+/* Movie Page */ a{}
 
-td.list0 {
-                filter:alpha(opacity=60);
-                opacity:0.6;
-                background-color:black;
-                color:white;
-}
-td.list1 {
-    background-color:black-alpha3;
-}
 a.movie { color:#aaaaff; }
 .label { color:red }
 .right { text-align:right; }
@@ -92,7 +71,6 @@ td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white;  }
 h1,.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF00; }
 
 .label { color:red }
-.scanlines[:SCANLINES:] {color:#FFFF55; font-weight:bold; }
 
 [:IF($@poster_mode):]
     .poster       { border-color:white; border-width:0px; padding:0px; margin:0px; }
@@ -111,23 +89,6 @@ h1,.title { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color
     .grid0 { background-color:#101055; }
     .grid1 { background-color:#106610; }
 
-    /* watched text menu colors */a{}
-
-    .gridTW1_1 { color:#555555; background-color:#101066; }
-    .gridTW1_0 { color:#555555; background-color:#101055; }
-    .gridMW1_1 { color:#555555; background-color:#105510; }
-    .gridMW1_0 { color:#555555; background-color:#106610; }
-    .gridW1_1 { color:#555555; background-color:#551010; }
-    .gridW1_0 { color:#555555; background-color:#661010; }
-
-    /* unwatched text menu colors */a{}
-
-    .gridTW0_0 { color:white; }
-    .gridTW0_1 { color:white; background-color:#101066; }
-    .gridMW0_0 { color:white; background-color:#105510; }
-    .gridMW0_1 { color:white; background-color:#106610; }
-    .gridW0_0 { color:white; background-color:#551010; }
-    .gridW0_1 { color:white; background-color:#661010; }
 [:ENDIF:]
 
 /*

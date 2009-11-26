@@ -1211,7 +1211,7 @@ int season_count(DbRowId *rid) {
             i=rid->season / WORDBITS;
             j=rid->season % WORDBITS;
             bitmask[i] |= (1 << j ); // allow for season 0 - prequels - pilots.
-            HTML_LOG(0,"%d -> [%d][%d]=%lx",rid->season,i,j,bitmask[i]);
+            //HTML_LOG(0,"%d -> [%d][%d]=%lx",rid->season,i,j,bitmask[i]);
         }
     }
 
@@ -1222,7 +1222,7 @@ int season_count(DbRowId *rid) {
         for(j=1 ; j ; j = j << 1 ) {
            if (bitmask[i] & j ) total++;
         }
-        HTML_LOG(0,"total at word %d -> %d",i,total);
+        //HTML_LOG(0,"total at word %d -> %d",i,total);
     }
 
     return total;

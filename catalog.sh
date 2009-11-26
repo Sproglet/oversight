@@ -929,7 +929,7 @@ return url
 }
 
 function replace_share_names(folders,\
-f,share_name,tmp) {
+f,share_name) {
 if (isnmt()) {
 
 
@@ -984,8 +984,7 @@ delete g_tv_plugin_list[p]
 
 
 
-function update_db(indexToMergeHash,\
-doit) {
+function update_db(indexToMergeHash) {
 
 if (hash_size(indexToMergeHash) == 0 ) {
 INF("Nothing to merge")
@@ -2300,7 +2299,7 @@ return ret
 }
 
 function extractEpisodeByPatterns(plugin,line,details,\
-ret,spec) {
+ret) {
 
 
 
@@ -2312,29 +2311,30 @@ id1("extractEpisodeByPatterns["line"]")
 ret=1
 
 
-if (!episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)) {
+if (episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)+0 == 0) {
 
 
-if (!episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)) {
+if (episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)+0 == 0) {
 
 
-if (!episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)) {
+if (episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)+0 == 0) {
 
 
-if (!episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)) {
-
-
-
-
-
-if (!extractEpisodeByDates(plugin,"",line,details)) {
+if (episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)+0 == 0) {
 
 
 
 
 
+if (extractEpisodeByDates(plugin,"",line,details)+0 == 0) {
 
-if (!episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)) {
+
+
+
+
+
+if (episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)+0 == 0) {
+
 ret=0
 
 
@@ -2348,7 +2348,7 @@ dump(0,"details",details)
 }
 id0(ret)
 
-return ret
+return 0+ret
 }
 
 function formatDate(line,\
@@ -5924,10 +5924,10 @@ return 0+ count
 function chop(s,regex,parts,\
 flag) {
 
-flag="@%-£~"
+flag="@~"
 while (index(s,flag) ) {
 WARNING("Regex flag clash "flag)
-flag = flag "@" flag
+flag = flag "£" flag
 }
 
 

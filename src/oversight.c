@@ -191,8 +191,8 @@ int main(int argc,char **argv) {
     DbRowSet **rowsets;
     DbRowId **sorted_rows;
 
-    html_comment("Get rows");
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
+    HTML_LOG(0,"Got %d rows",num_rows);
 
 TRACE;
 

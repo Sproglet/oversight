@@ -5,6 +5,7 @@
         <title>Oversight ([:HOSTNAME:]): [:TITLE:] [(:YEAR:)]</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
+table.listing {	margin:0; border-spacing:0; padding:0 ; border-width:0 ; }
 .info {
     color:white;
  filter:alpha(opacity=100);

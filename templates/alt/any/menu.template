@@ -5,21 +5,37 @@
         <title>Oversight Menu [:HOSTNAME:]</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-body.menu_background0 { color:white ; background-color:black; }
-body.menu_background1 { color:yellow ; background-color:black; }
+
+[:IF($@gaya):]
+    body.menu_background { color:yellow ; background-color:black; }
+[:ELSE:]
+    body.menu_background { color:white ; background-color:black; }
+[:ENDIF:]
+
 #menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
 
 
-.overview_poster1 { text-align:center; width:1%; }
-.overview_poster0 { text-align:center;  width:100%;}
-table.overview_poster1 {width:1%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
-table.overview_poster0 {width:100%; margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
+table.overview_poster {
+    margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
+}
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:100%;
+[:ENDIF:]
+}
         </style>
     </head>
     <!--
 <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
 -->
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] >
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background >
         [:FORM_START:]
 <center>
         <table id=main width=100% height=100%>

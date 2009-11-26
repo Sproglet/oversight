@@ -21,6 +21,7 @@
 #include "mount.h"
 
 #define MACRO_VARIABLE_PREFIX '$'
+#define MACRO_SPECIAL_PREFIX '@'
 #define MACRO_QUERY_PREFIX '?'
 #define MACRO_DBROW_PREFIX '%'
 
@@ -63,10 +64,16 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
     return result;
 }
 
+
 char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *result = NULL;
     char *default_wallpaper=NULL;
+
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
 
     if (*oversight_val("ovs_display_fanart") == '0' ) {
 
@@ -193,6 +200,11 @@ char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_r
 char *macro_fn_poster(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
 
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
+
     DbRowId *rid=sorted_rows[0];
 
     if (num_rows == 0) {
@@ -242,6 +254,12 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
 
     *free_result=1;
     char *result = NULL;
+
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
+
     int max = g_dimension->max_plot_length;
     if (args && args->size > 0) {
         char *max_str=args->array[0];
@@ -465,25 +483,48 @@ char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_r
 }
 
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result=0;
+
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
+
     return sorted_rows[0]->genre;
 }
 
 char *macro_fn_title(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = "?";
     *free_result=0;
-    return sorted_rows[0]->title;
+
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
+    if ( num_rows && sorted_rows && sorted_rows[0]->title ) {
+        result = sorted_rows[0]->title;
+    } 
+    return result;
 }
 
 char *macro_fn_season(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    char *season=NULL;;
-    if (sorted_rows[0]->season >=0) {
+    char *season=NULL;
+
+    if (num_rows && sorted_rows && sorted_rows[0]->season >=0) {
         ovs_asprintf(&season,"%d",sorted_rows[0]->season);
+        *free_result=1;
+    } else {
+        season = "?";
+        *free_result=0;
     }
     return season;
 }
 char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
     char *year = NULL;
     DbRowId *rid = sorted_rows[0];
     int year_num = 0;
@@ -509,6 +550,10 @@ char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRo
 
 char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *tmp=NULL;
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
 
     if (*oversight_val("ovs_display_certificate") == '1') {
         char *cert = util_tolower(sorted_rows[0]->certificate);
@@ -749,6 +794,10 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
     int num_stars=0;
     char *star_path=NULL;
 
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
     if (*oversight_val("ovs_display_rating") != '0') {
 
         if (args && args->size == 1 && sscanf(args->array[0],"%d",&num_stars) == 1 ) {
@@ -768,6 +817,10 @@ char *macro_fn_rating_stars(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_source(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
     if (num_rows) {
         DbRowId *r=sorted_rows[0];
         int freeit;
@@ -781,6 +834,10 @@ char *macro_fn_source(char *template_name,char *call,Array *args,int num_rows,Db
 char *macro_fn_rating(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
 
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
     if (*oversight_val("ovs_display_rating") != '0' && num_rows) {
 
         if (sorted_rows[0]->rating > 0.01) {
@@ -1226,6 +1283,10 @@ char *macro_fn_select_cancel_submit(char *template_name,char *call,Array *args,i
 }
 char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
+    if (num_rows == 0 || sorted_rows == NULL ) {
+        *free_result=0;
+        return "?";
+    }
     if (!g_dimension->local_browser){
         char *url=sorted_rows[0]->url;
         if (url != NULL) {
@@ -1248,7 +1309,7 @@ long numeric_constant_eval(long val,Array *args) {
         //int i;
         //for(i = 0 ; i < args->size ; i++ ) {
             char *p=args->array[0];
-            HTML_LOG(0,"start parsing [%s]",p);
+            HTML_LOG(1,"start parsing [%s]",p);
             int error=0;
 
             char op='+';
@@ -1258,7 +1319,7 @@ long numeric_constant_eval(long val,Array *args) {
                 char *numstr;
                 char *nextp;
                 //get the operator
-                HTML_LOG(0,"parsing [%s]",p);
+                HTML_LOG(1,"parsing [%s]",p);
 
                
 #if 0
@@ -1311,7 +1372,7 @@ long numeric_constant_eval(long val,Array *args) {
                     break;
                 }
 
-                HTML_LOG(0,"val[%ld] op[%c] num [%ld]",val,op,num2);
+                HTML_LOG(1,"val[%ld] op[%c] num [%ld]",val,op,num2);
 
                 // do the calculation
                 switch(op) {
@@ -1347,6 +1408,8 @@ void replace_variables(Array *args)
                 int free_result = 0;
                 char *endv = v+1;
                 if (*endv == MACRO_QUERY_PREFIX ) {
+                    endv++;
+                } else if (*endv == MACRO_SPECIAL_PREFIX ) {
                     endv++;
                 } else if (*endv == MACRO_DBROW_PREFIX ) {
                     free_result = 1;
@@ -1399,15 +1462,43 @@ char *numeric_constant_macro(long val,Array *args) {
 }
 
 
+/*
+ * Stack to manage output state.
+ */
+static long output_state_stack[100];
+static int output_state_tos=-1;
+long output_state() {
+    if (output_state_tos >= 0 ) {
+        return output_state_stack[output_state_tos];
+    } else {
+        return -1;
+    }
+}
+void output_state_push(long val) {
+    output_state_stack[++output_state_tos] = val;
+}
+long output_state_pop() {
+    if (output_state_tos >= 0 ) { 
+        return output_state_stack[output_state_tos--];
+    } else {
+        return -1;
+    }
+}
 char *macro_fn_if(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
     long l = numeric_constant_eval(0,args);
-    if (l) {
+    if (args == NULL || args->size == 1 ) {
+        // Single form [:IF:] - supresses all line output until [:ENDIF:] or [:ELSE:]
+        // Also returns NULL to remove itself from output.
+        output_state_push(l);
+    } else if (l) {
+        // [:IF(exp,replace):] - if exp is true - result is 'replace'
         HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[1]);
         if (args->size >= 2) {
             return STRDUP(args->array[1]);
         }
     } else {
+        // [:IF(exp,replace,replace2):] - if exp is false - result is 'replace2'
         HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[2]);
         if (args->size >= 3) {
             return STRDUP(args->array[2]);
@@ -1415,6 +1506,21 @@ char *macro_fn_if(char *template_name,char *call,Array *args,int num_rows,DbRowI
     }
     return NULL;
 }
+char *macro_fn_else(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    output_state_push(!output_state_pop());
+    return NULL;
+}
+char *macro_fn_endif(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result = NULL;
+    if (args && args->size ) {
+        *free_result=0;
+        result="ENDIF";
+    } else {
+        output_state_pop();
+    }
+    return result;
+}
+
 char *macro_fn_number(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
     return numeric_constant_macro(0,args);
@@ -1569,6 +1675,8 @@ void macro_init() {
         hashtable_insert(macros,"START_CELL",macro_fn_start_cell);
         hashtable_insert(macros,"NUMBER",macro_fn_number);
         hashtable_insert(macros,"IF",macro_fn_if);
+        hashtable_insert(macros,"ELSE",macro_fn_else);
+        hashtable_insert(macros,"ENDIF",macro_fn_endif);
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
@@ -1606,9 +1714,17 @@ char *get_variable(char *vname)
 
     char *result=NULL;
 
-    if (*vname == MACRO_QUERY_PREFIX ) {
+    if (*vname == MACRO_SPECIAL_PREFIX ) {
 
-        // query variable
+        if (strcmp(vname+1,"gaya") == 0) {
+            return g_dimension->local_browser ? "1" : "0" ; // $@gaya
+        } else if (strcmp(vname+1,"poster_mode") == 0) {
+            return ( g_dimension->poster_mode ? "1" : "0" ) ; // $@gaya
+        }
+
+    } else if (*vname == MACRO_QUERY_PREFIX ) {
+
+        // html query variable ?name=val
         result=query_val(vname+1);
 
     } else if (*vname == MACRO_DBROW_PREFIX ) {
@@ -1617,6 +1733,7 @@ char *get_variable(char *vname)
         char *fieldid = dbf_macro_to_fieldid(vname+1);
         if (fieldid) {
             HTML_LOG(0,"DBROW LOOKUP [%s]",fieldid);
+            // Get the value from the first row in the set
             result=db_get_field(fieldid);
         }
 

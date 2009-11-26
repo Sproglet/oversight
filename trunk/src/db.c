@@ -1443,7 +1443,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
             if (rowid.file) {
 
-                HTML_LOG(0,"XX read [%d][%s][%s]",rowid.id,rowid.title,rowid.file);
+                //HTML_LOG(0,"XX read [%d][%s][%s]",rowid.id,rowid.title,rowid.file);
 
                 int keeprow=1;
 
@@ -1495,7 +1495,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                         }
                     }
 
-                    if (keeprow) HTML_LOG(0,"xx genre ok");
+                    //if (keeprow) HTML_LOG(0,"xx genre ok");
 
                     if (keeprow && name_filter && *name_filter) {
                         int match= regexec(&pattern,rowid.title,0,NULL,0);
@@ -1504,14 +1504,14 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                             keeprow=0;
                         }
                     }
-                    if (keeprow) HTML_LOG(0,"xx name ok");
+                    //if (keeprow) HTML_LOG(0,"xx name ok");
                     if (keeprow) {
                         switch(media_type) {
                             case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
                             case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
                         }
                     }
-                    if (keeprow) HTML_LOG(0,"xx type ok");
+                    //if (keeprow) HTML_LOG(0,"xx type ok");
 
                     if (keeprow) {
                         switch(watched) {
@@ -1519,13 +1519,13 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                             case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) keeprow=0 ; break;
                         }
                     }
-                    if (keeprow) HTML_LOG(0,"xx watched ok");
+                    //if (keeprow) HTML_LOG(0,"xx watched ok");
                     if (keeprow) {
                         if (num_ids != ALL_IDS && !in_idlist(rowid.id,num_ids,ids)) {
                             keeprow = 0;
                         }
                     }
-                    if (keeprow) HTML_LOG(0,"xx id ok");
+                    //if (keeprow) HTML_LOG(0,"xx id ok");
                 }
 
                 if (keeprow) {

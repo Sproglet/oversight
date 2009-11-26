@@ -929,7 +929,7 @@ url,url2) {
 }
 
 function replace_share_names(folders,\
-f,share_name,tmp) {
+f,share_name) {
     if (isnmt()) {
         #If a pth does not begin with . or / then check if the first part is the 
         #name of an NMT network_share. If so - replace with the share path.
@@ -984,8 +984,7 @@ p,plugin) {
 
 
 #IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
-function update_db(indexToMergeHash,\
-doit) {
+function update_db(indexToMergeHash) {
 
     if (hash_size(indexToMergeHash) == 0 ) {
         INF("Nothing to merge");
@@ -2300,7 +2299,7 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
 }
 
 function extractEpisodeByPatterns(plugin,line,details,\
-ret,spec) {
+ret) {
 
     #Note if looking at entire path name folders are seperated by /
 
@@ -2312,29 +2311,30 @@ ret,spec) {
     ret=1;
 
     # s00e00e01
-    if (!episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)) {
+    if (episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)+0 == 0) {
 
     # long forms season 1 ep  3
-    if (!episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
+    if (episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)+0 == 0) { #00x00 
 
     #s00e00 (allow d00a for BigBrother)
-    if (!episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)) {
+    if (episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)+0 == 0) {
 
         #00x00
-    if (!episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)) {
+    if (episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)+0 == 0) {
 
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
     #TODO blank idx passed. need to tidy up code here?
     # extractEpisodeByDates is also called by other logic. 
     # we need to be clear why idx is passed.
-    if (!extractEpisodeByDates(plugin,"",line,details)) {
+    if (extractEpisodeByDates(plugin,"",line,details)+0 == 0) {
 
     ## just numbers.
     ##remove 264 before trying pure numeric detection
     #if (index(line,"x264")) {
     #gsub(/\<x264\>/,"x-264",line);
     #}
-    if (!episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)) { # ...name101...
+    if (episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)+0 == 0) { # ...name101...
+
         ret=0;
 
     #mini series formats - no season
@@ -2348,7 +2348,7 @@ ret,spec) {
     }
     id0(ret);
    #Note 4 digit season/episode matcing [12]\d\d\d will fail because of confusion with years.
-    return ret;
+    return 0+ret;
 }
 
 function formatDate(line,\
@@ -5924,10 +5924,10 @@ f,line,count,linecount,remain,is_imdb,matches2) {
 function chop(s,regex,parts,\
 flag) {
     #first find split text that doesnt occur in the string.
-    flag="@%-£~";
+    flag="@~";
     while (index(s,flag) ) {
         WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
-        flag = flag "@" flag; #dodgy line but should work!
+        flag = flag "£" flag; #dodgy line but should work!
     }
 
     # insert the split text around the regex boundaries

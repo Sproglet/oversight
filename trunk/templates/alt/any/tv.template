@@ -2,9 +2,21 @@
 <html>
     <head>
         <meta name="robots" content="nofollow">
-        <title>Oversight ([:HOSTNAME:]):  [:TITLE:] Season [:SEASON:] </title>
+        <title>Oversight ([:HOSTNAME:]):
+T
+ [:TITLE:]
+Season
+[:SEASON:] </title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
+
+table.listing {
+    margin:0;
+    border-spacing:0;
+    padding:0 ;
+    border-width:0 ;
+}
+
 /* watched/Unwatched tv */ .dummy {color:red;}
 
 td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
@@ -37,31 +49,14 @@ td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):
     font-size:[:$ovs_font_size_plot:]% ;
 }
 
-.transparent_fanart1_local0 {
-    filter:alpha(opacity=70);
-    opacity:0.7;
-    background-color:black;
-    color:white;
-    margin:0px;
-    padding:0px;
-    border:0px;
-}
+[:IF($ovs_display_fanart):]
 
-.transparent_fanart1_local1 {
-    background-color:black-alpha2;
-    margin:0px;
-    padding:0px;
-    border:0px;
-}
+[:IF($@gaya):]
 
-.transparent_fanart0_local0 {
-    background-color:black;
-    color:white;
-}
+[:ELSE:]
 
-.transparent_fanart0_local1 {
-    background-color:black;
-}
+[:ENDIF:]
+
 font.plot { font-size:[:$ovs_font_size_plot:]% ; font-weight:normal; }
 td.filelist { text-align:center; }
         </style>

@@ -328,7 +328,7 @@ void do_actions() {
                     } else {
                         opt = k+strlen(RESCAN_OPT_PREFIX);
                     }
-                    ovs_asprintf(&tmp,"%s %s",cmd,opt);
+                    ovs_asprintf(&tmp,"%s \"%s\"",cmd,opt);
                     FREE(cmd);
                     cmd = tmp;
                     if (strcmp(opt,"PARALLEL_SCAN" ) == 0 ) {
@@ -344,7 +344,7 @@ void do_actions() {
             while (hashtable_loop_more(itr,&k,NULL)) {
                 if (util_starts_with(k,RESCAN_DIR_PREFIX)) {
                     char *tmp;
-                    ovs_asprintf(&tmp,"%s %s",cmd,k+strlen(RESCAN_DIR_PREFIX));
+                    ovs_asprintf(&tmp,"%s \"%s\"",cmd,k+strlen(RESCAN_DIR_PREFIX));
                     if (parallel_scan) {
                         send_command("*",tmp);
                         FREE(tmp);

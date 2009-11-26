@@ -171,6 +171,7 @@ char *self_url(char *new_params) {
                     if (new_params && *new_params) {
                         for (p = strstr(new_params,param_name); p ; p=strstr(p+1,param_name) ) {
 
+
                             if ( ( p == new_params || p[-1] == '&' ) ) {
                                 // start of string is beginning or after &
                                char *end = p + param_name_len;
@@ -181,6 +182,9 @@ char *self_url(char *new_params) {
                                   break;
                                }
                             }
+                        }
+                        if (strcmp(param_name,"idlist") == 0) {
+                            HTML_LOG(0,"param list [%s] in [%s] gives %d",param_name,new_params,add_param);
                         }
                     }
                     if (add_param) {
@@ -571,7 +575,7 @@ char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,cha
     return attr;
 }
 
-char *get_empty(char *width_attr,char *height_attr,int grid_toggle,int left_scroll,int right_scroll,int centre_cell) {
+char *get_empty(char *width_attr,int grid_toggle,char *height_attr,int left_scroll,int right_scroll,int centre_cell) {
 
     char *attr;
 
@@ -655,34 +659,39 @@ char * get_local_image_link(char *path,char *alt_text,char *attr) {
 }
 
 
-char *file_style(DbRowId *rowid,int grid_toggle) {
+char *category(char cat) {
+    switch(cat) {
+        case 'T' : return "tv";
+        case 'M' : return "movie";
+        default : return "video";
+    }
+}
 
-    static char grid_class[30];
+char *file_style_custom(DbRowId *rowid,char *modifier) {
+
+    static char grid_class[50],c='\0';
 
     if (g_dimension->poster_mode) {
         return " class=unwatched ";
     } else {
 
         /* Plan to depricate this one day */
-        sprintf(grid_class," class=grid%cW%d_%d ",
-            rowid->category,
-            rowid->watched!=0,
-            grid_toggle & 1);
+        sprintf(grid_class," class=grid_%s%s%s ",
+                category(rowid->category),
+                (rowid->watched?"_watched":""),
+                modifier);
+        assert(c == 0);
     }
 
     return grid_class;
 }
-char *file_style_small(DbRowId *rowid,int grid_toggle) {
-
-    static char grid_class[30];
-
-    sprintf(grid_class," class=grid%cW%d_%d_small ",
-            rowid->category,
-            rowid->watched!=0,
-            grid_toggle & 1);
-
-    return grid_class;
+char *file_style(DbRowId *rowid) {
+    return file_style_custom(rowid,"");
 }
+char *file_style_small(DbRowId *rowid) {
+    return file_style_custom(rowid,"_small");
+}
+
 // Item is marked watched if all linked rows are watched.
 int is_watched(DbRowId *rowid) {
     int result=1;
@@ -723,24 +732,24 @@ int is_fresh(DbRowId *rowid) {
     return result;
 }
 
-char *watched_style(DbRowId *rowid,int grid_toggle) {
+char *watched_style(DbRowId *rowid) {
 
     if (is_watched(rowid)) {
         return " class=watched ";
     } else if (is_fresh(rowid) ) {
         return " class=fresh ";
     } else { 
-        return file_style(rowid,grid_toggle);
+        return file_style(rowid);
     }
 }
-char *watched_style_small(DbRowId *rowid,int grid_toggle) {
+char *watched_style_small(DbRowId *rowid) {
 
     if (is_watched(rowid)) {
         return " class=watched_small ";
     } else if (is_fresh(rowid) ) {
         return " class=fresh_small ";
     } else { 
-        return file_style_small(rowid,grid_toggle);
+        return file_style_small(rowid);
     }
 }
 
@@ -1126,13 +1135,13 @@ char *movie_listing(DbRowId *rowid) {
     db_rowid_dump(rowid);
 
     char *tmp = build_id_list(rowid);
-    printf("<script type=\"text/javascript\">\ng_title='%s';\ng_idlist='%s';\n</script>\n",
+    printf("<script type=\"text/javascript\"><!--\ng_title='%s';\ng_idlist='%s';\n--></script>\n",
             rowid->title,tmp);
     FREE(tmp);
 
 
     char *select = query_val("select");
-    char *style = watched_style(rowid,0);
+    char *style = watched_style(rowid);
     if (*select) {
         return select_checkbox(rowid,rowid->file);
     } else {
@@ -1249,7 +1258,7 @@ int get_view_status(DbRowId *rowid) {
     return status;
 }
 
-char *get_poster_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
+char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class) {
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
@@ -1294,7 +1303,7 @@ TRACE;
     return title;
 }
 
-char *get_poster_mode_item_unknown(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
+char *get_poster_mode_item_unknown(DbRowId *row_id,char **font_class,char **grid_class) {
     HTML_LOG(2,"dbg: unclassified : set details as title");
     // Unclassified
     char *title=STRDUP(row_id->title);
@@ -1308,17 +1317,17 @@ char *get_poster_mode_item_unknown(DbRowId *row_id,int grid_toggle,char **font_c
     } else {
         *grid_class = "class=poster_unknown";
     }
-    *font_class = watched_style_small(row_id,grid_toggle);
+    *font_class = watched_style_small(row_id);
     return title;
 }
 
-char *get_text_mode_item(DbRowId *row_id,int grid_toggle,char **font_class,char **grid_class) {
+char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class) {
     int tv_or_movie = has_category(row_id);
     // TEXT MODE
     HTML_LOG(2,"dbg: get text mode details ");
 
-    *font_class = watched_style(row_id,grid_toggle);
-    *grid_class = file_style(row_id,grid_toggle);
+    *font_class = watched_style(row_id);
+    *grid_class = file_style(row_id);
    
    char *tmp;
    char *title = trim_title(row_id->title);
@@ -1461,7 +1470,7 @@ char *mouse_event_fn(char *function_name_prefix,long function_id) {
     return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover","onmouseout");
 }
 
-char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,int grid_toggle,
+char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
         int left_scroll,int right_scroll,int centre_cell,char *idlist) {
 
     //TODO:Highlight matched bit
@@ -1486,7 +1495,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
 
     if (in_poster_mode() ) {
         displaying_text=0;
-        if (tv_or_movie && (title = get_poster_mode_item(row_id,grid_toggle,&font_class,&grid_class)) != NULL) {
+        if (tv_or_movie && (title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
 
             if (*title != '<' && !util_starts_with(title,"<img")) {
                 displaying_text=1;
@@ -1494,7 +1503,7 @@ char *get_item(int cell_no,DbRowId *row_id,char *width_attr,char *height_attr,in
             }
 
         } else {
-            title = get_poster_mode_item_unknown(row_id,grid_toggle,&font_class,&grid_class);
+            title = get_poster_mode_item_unknown(row_id,&font_class,&grid_class);
             displaying_text=1;
         }
 TRACE;
@@ -1527,7 +1536,7 @@ TRACE;
     } else {
         displaying_text=1;
 
-        title = get_text_mode_item(row_id,grid_toggle,&font_class,&grid_class);
+        title = get_text_mode_item(row_id,&font_class,&grid_class);
     }
     if (first_space) {
         // Truncate even more if the first space does not occur early enough in the title.
@@ -1619,11 +1628,16 @@ TRACE;
 
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s%s %s %s %s %s >%s%s%s%s</td>",
+    ovs_asprintf(&result,"\t<td %s%s %s %s class=grid%d %s >%s%s%s%s</td>",
             (cell_background_image?"background=":""),
             (cell_background_image?cell_background_image:""),
-            width_attr,height_attr,
-            grid_class,mouse_ev,cell_text,
+
+            width_attr,
+            height_attr,
+            grid_toggle,
+            mouse_ev,
+            
+            cell_text,
             (first_space?" ":""),
             (first_space?first_space+1:""),
             add_spacer);
@@ -1810,8 +1824,10 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
         if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL  ) {
 
             //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
-            PRINTSPAN(p,macro_start);
-            putc(*MACRO_STR_START,stdout);
+            if (output_state() ) {
+                PRINTSPAN(p,macro_start);
+                putc(*MACRO_STR_START,stdout);
+            }
             macro_end = macro_start;
 
         } else {
@@ -1822,24 +1838,28 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
 
             //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
             if (macro_start > p ) {
-                printf("%.*s",macro_start-p,p); 
+                if (output_state() ) {
+                    printf("%.*s",macro_start-p,p); 
+                }
             }
 
             count++;
             *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output && *macro_output) {
 
-                // Print bit before macro call
-                 PRINTSPAN(macro_start+1,macro_name_start-1);
-                 fflush(stdout);
+                 if (output_state() ) {
+                     // Print bit before macro call
+                     PRINTSPAN(macro_start+1,macro_name_start-1);
+                     fflush(stdout);
 
-                 printf("%s",macro_output);
+                     printf("%s",macro_output);
+                     fflush(stdout);
+
+                     // Print bit after macro call
+                     PRINTSPAN(macro_name_end+1,macro_end);
+                     fflush(stdout);
+                 }
                  if (free_result) FREE(macro_output);
-                 fflush(stdout);
-
-                 // Print bit after macro call
-                 PRINTSPAN(macro_name_end+1,macro_end);
-                 fflush(stdout);
              }
         }
 
@@ -1848,9 +1868,12 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
         macro_start=strstr(p,MACRO_STR_START);
 
     }
-    // Print the last bit
-    printf("%s",p);
-    fflush(stdout);
+
+    if (output_state() ) {
+        // Print the last bit
+        printf("%s",p);
+        fflush(stdout);
+    }
     return count;
 }
 
@@ -2001,7 +2024,7 @@ int all_linked_rows_delisted(DbRowId *rowid)
 void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char **idlist) {
     int i,r,c;
 
-    printf("<script type=\"text/javascript\">\n");
+    printf("<script type=\"text/javascript\"><!--\n");
 
     for ( r = 0 ; r < rows ; r++ ) {
         for ( c = 0 ; c < cols ; c++ ) {
@@ -2015,11 +2038,11 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
             }
         }
     }
-    printf("</script>\n");
+    printf("--></script>\n");
 }
 
 // Generate the HTML for the grid. 
-// Note that the row_ids have alredy been pruned to only contain the items
+// Note that the row_ids have already been pruned to only contain the items
 // for the current page.
 char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,int page_before,int page_after) {
     
@@ -2028,22 +2051,21 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     int centre_col = cols/2;
     int r,c;
 
-    char *table_start,*table_end,*row_start,*row_end;
+    char *table_start,*table_end;
     char *table_id;
 
     int cell_margin=2;
 
     if (g_dimension->poster_mode) {
-        ovs_asprintf(&table_id,"<table class=overview_poster1 height=%dpx>",
-                2*(g_dimension->poster_menu_img_height+cell_margin));
+        ovs_asprintf(&table_id,"<table class=overview_poster>");
+            //ovs_asprintf(&table_id,"<table class=overview_poster height=%dpx>",
+            //               2*(g_dimension->poster_menu_img_height+cell_margin));
     } else {
-        ovs_asprintf(&table_id,"<table class=overview_poster0 width=100%>");
+        ovs_asprintf(&table_id,"<table class=overview_poster width=100%%>");
     }
 
    table_start = table_id;
    table_end = "</table>";
-   row_start = "<tr>";
-   row_end = "</tr>";
 
     if (end > numids) end = numids;
 
@@ -2094,6 +2116,16 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         }
     }
 
+#if 0
+    for ( c = 0 ; c < cols ; c++ ) {
+        ovs_asprintf(&tmp,"%s<col class=\"grid_col%d\" >\n",NVL(result),(c&1));
+        FREE(result);
+        result = tmp;
+    }
+    ovs_asprintf(&tmp,"<colgroup>%s</colgroup>\n",NVL(result));
+    FREE(result);
+    result = tmp;
+#endif
 
     // First output the javascript functions - diretly to stdout - lazy.
     write_titlechanger(rows,cols,numids,row_ids,idlist);
@@ -2103,7 +2135,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
 
         HTML_LOG(1,"grid row %d",r);
-        ovs_asprintf(&tmp,"%s%s\n",(result?result:""),row_start);
+        ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
         FREE(result);
         result=tmp;
 
@@ -2118,18 +2150,24 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(i,row_ids[i],width_attr,height_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell,idlist[i]);
+                item = get_item(i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,centre_cell,idlist[i]);
             } else {
-                item = get_empty(width_attr,height_attr,(r+c) & 1,left_scroll,right_scroll,centre_cell);
+                // only draw empty cells if there are two or more rows
+                if (rows > 1) {
+                    item = get_empty(width_attr,(c+r)&1,height_attr,left_scroll,right_scroll,centre_cell);
+                } else {
+                    item = NULL;
+                }
+
             }
-            ovs_asprintf(&tmp,"%s%s\n",result,item);
+            ovs_asprintf(&tmp,"%s%s\n",result,NVL(item));
             FREE(result);
             FREE(item);
             result=tmp;
             HTML_LOG(1,"grid end col %d",c);
         }
         
-        ovs_asprintf(&tmp,"%s%s\n",result,row_end);
+        ovs_asprintf(&tmp,"%s</tr>\n",result);
         FREE(result);
         result=tmp;
         HTML_LOG(1,"grid end row %d",r);
@@ -2402,7 +2440,7 @@ char *get_tvid_links() {
     // Pre compute format string for tvids.
 #define TVID_MARKER "@X@Y@"
     char *params;
-    ovs_asprintf(&params,"p=0&"QUERY_PARAM_TITLE_FILTER"=%s",TVID_MARKER);
+    ovs_asprintf(&params,"idlist=&p=0&"QUERY_PARAM_TITLE_FILTER"=%s",TVID_MARKER);
 
     char *format_string = get_self_link(params,"tvid=\""TVID_MARKER"\"","");
     FREE(params);
@@ -2460,7 +2498,7 @@ char *get_tvid_links() {
 long use_boxsets() {
     static long boxsets = -1;
     if(boxsets == -1) {
-        if (!config_check_long(g_oversight_config,"ovs_boxsets",&boxsets)) {
+        if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&boxsets)) {
             boxsets = 0;
         }
     }
@@ -2616,7 +2654,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
 
     }
 
-    ovs_asprintf(&tmp,"<script type=\"text/javascript\">\n%s\n</script>\n",result);
+    ovs_asprintf(&tmp,"<script type=\"text/javascript\"><!--\n%s\n--></script>\n",result);
     FREE(result);
     result = tmp;
 
@@ -2741,7 +2779,7 @@ TRACE;
                             rid->file,
                             ep,
                             NVL(href_attr),
-                            watched_style(rid,i%2));
+                            watched_style(rid));
                     FREE(href_attr);
                 }
 
@@ -2799,7 +2837,7 @@ TRACE;
                         td_class,
                         width2,
                         td_plot_attr,
-                        watched_style(rid,i%2),
+                        watched_style(rid),
                         (network_icon?network_icon:""),
                         title_txt,
                         (*date_buf?date_buf:"")

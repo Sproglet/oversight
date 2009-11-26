@@ -22,6 +22,7 @@
 #define DB_ROW_BUF_SIZE 4000
 #define QUICKPARSE
 
+/*
 static long read_and_parse_row_ticks=0;
 static long assign_ticks=0;
 static long inner_date_ticks=0;
@@ -30,6 +31,7 @@ static long filter_ticks=0;
 static long discard_ticks=0;
 static long read_ticks=0;
 static long keep_ticks=0;
+*/
 char *copy_string(int len,char *s);
 DbRowId *db_rowid_new(Db *db);
 DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
@@ -249,9 +251,7 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
         t.tm_hour = H;
         t.tm_min = M;
         t.tm_sec = S;
-        inner_date_ticks -= clock();
         *val_ptr = time_ordinal(&t);
-        inner_date_ticks += clock();
         if (*val_ptr < 0 ) {
             HTML_LOG(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
         }
@@ -1045,7 +1045,7 @@ int db_to_be_scanned(char *name) {
 void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
         int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
 
-    HTML_LOG(1,"begin db_scan_and_add_rowset");
+    HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
 TRACE;
     if (db_to_be_scanned(name)) {
 TRACE;
@@ -1070,7 +1070,7 @@ TRACE;
             }
         }
     }
-    HTML_LOG(0,"end db_scan_and_add_rowset %d",*rowset_count_ptr);
+    HTML_LOG(0,"end db_scan_and_add_rowset[%s][%s]=%d",path,name,*rowset_count_ptr);
 }
 
 void clear_title_letter_count() {
@@ -1269,7 +1269,7 @@ int *extract_idlist(char *db_name,int *num_ids) {
     char *query = query_val("idlist");
     int *result = NULL;
 
-    HTML_LOG(1,"extract_idlist from [%s]",query);
+    HTML_LOG(0,"extract_idlist from [%s]",query);
 
     if (*query) {
         *num_ids = 0;
@@ -1303,11 +1303,12 @@ int *extract_idlist(char *db_name,int *num_ids) {
     }
 
     if (*num_ids == ALL_IDS) {
-        HTML_LOG(1,"db: name=%s searching all ids",db_name);
+        HTML_LOG(0,"idlist:db: name=%s searching all ids",db_name);
     } else {
         int i;
+        HTML_LOG(0,"idlist:db: name=%s searching %d ids",db_name,*num_ids);
         for(i  = 0 ; i < *num_ids ; i++ ) {
-            HTML_LOG(1,"db: name=%s id %d",db_name,result[i]);
+            HTML_LOG(0,"idlist:db: name=%s id %d",db_name,result[i]);
         }
     }
 
@@ -1367,7 +1368,7 @@ DbRowSet * db_scan_titles(
     DbRowSet *rowset = NULL;
 
     char *view=query_val("view");
-    int tv_or_movie_view = (strcmp(view,"tv")==0 || strcmp(view,"movie") == 0);
+    int tv_or_movie_view = (strcmp(view,VIEW_TV)==0 || strcmp(view,VIEW_MOVIE) == 0);
 
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);
@@ -1389,7 +1390,7 @@ DbRowSet * db_scan_titles(
             assert(1);
             return NULL;
         }
-        HTML_LOG(1,"filering by regex [%s]",name_filter);
+        HTML_LOG(0,"filtering by regex [%s]",name_filter);
     }
 
     char *watched_substring=NULL;
@@ -1438,12 +1439,12 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
         while (eof == 0) {
             total_rows++;
-            read_and_parse_row_ticks -= clock();
             read_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
-            read_and_parse_row_ticks += clock();
-            filter_ticks -= clock();
 
             if (rowid.file) {
+
+                HTML_LOG(0,"XX read [%d][%s][%s]",rowid.id,rowid.title,rowid.file);
+
                 int keeprow=1;
 
                 // If there were any  deletes queued for shared resources, revoke them
@@ -1494,6 +1495,8 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                         }
                     }
 
+                    if (keeprow) HTML_LOG(0,"xx genre ok");
+
                     if (keeprow && name_filter && *name_filter) {
                         int match= regexec(&pattern,rowid.title,0,NULL,0);
                         if (match != 0 ) {
@@ -1501,12 +1504,14 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                             keeprow=0;
                         }
                     }
+                    if (keeprow) HTML_LOG(0,"xx name ok");
                     if (keeprow) {
                         switch(media_type) {
                             case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
                             case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
                         }
                     }
+                    if (keeprow) HTML_LOG(0,"xx type ok");
 
                     if (keeprow) {
                         switch(watched) {
@@ -1514,29 +1519,28 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                             case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) keeprow=0 ; break;
                         }
                     }
+                    if (keeprow) HTML_LOG(0,"xx watched ok");
                     if (keeprow) {
                         if (num_ids != ALL_IDS && !in_idlist(rowid.id,num_ids,ids)) {
                             keeprow = 0;
                         }
                     }
+                    if (keeprow) HTML_LOG(0,"xx id ok");
                 }
 
                 if (keeprow) {
-                    keep_ticks -= clock();
                     row_count = db_rowset_add(rowset,&rowid);
-                    keep_ticks += clock();
                 } else {
-                    discard_ticks -= clock();
                     db_rowid_free(&rowid,0);
-                    discard_ticks += clock();
                 }
 
                 if (gross_size != NULL) {
                     (*gross_size)++;
                 }
             }
-            filter_ticks += clock();
         }
+
+        /*
         HTML_LOG(0,"read_and_parse_row_ticks %d",read_and_parse_row_ticks/1000);
         HTML_LOG(0,"inner_date_ticks %d",inner_date_ticks/1000);
         HTML_LOG(0,"date_ticks %d",date_ticks/1000);
@@ -1545,6 +1549,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
         HTML_LOG(0,"keep_ticks %d",keep_ticks/1000);
         HTML_LOG(0,"discard_ticks %d",discard_ticks/1000);
         HTML_LOG(0,"read_ticks %d",read_ticks/1000);
+        */
 
         HTML_LOG(0,"First total %d",total_rows);
         fclose(fp);

@@ -5,5 +5,6 @@
 
 void macro_init();
 char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_rows,int *free_result);
+long output_state();
 
 #endif

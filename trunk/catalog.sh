@@ -929,7 +929,7 @@ return url
 }
 
 function replace_share_names(folders,\
-f,share_name) {
+f,share_name,tmp) {
 if (isnmt()) {
 
 
@@ -944,15 +944,15 @@ g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings)
 DEBUG("share name "share_name" = "g_share_name_to_folder[share_name])
 }
 if (g_share_name_to_folder[share_name]) {
+
 g_share_map[folders[f]] = share_name
 folders[f] = nmt_get_share_path(folders[f])
-} else {
 
+} else if (START_DIR != "/share/Apps/oversight" && is_file_or_folder(START_DIR"/"folders[f])) {
 folders[f] = START_DIR"/"folders[f]
-if (!is_file_or_folder(folders[f])) {
-INF(folders[f]" not a share or file")
+} else {
+WARNING(folders[f]" not a share or file")
 delete folders[f]
-}
 }
 }
 }
@@ -2306,6 +2306,9 @@ ret,spec) {
 
 
 line = tolower(line)
+
+id1("extractEpisodeByPatterns["line"]")
+
 ret=1
 
 
@@ -2339,10 +2342,11 @@ ret=0
 } } } } } }
 
 if (ret == 1) {
-id1("extractEpisodeByPatterns: line["line"]")
+
 dump(0,"details",details)
-id0(ret)
+
 }
+id0(ret)
 
 return ret
 }
@@ -2589,13 +2593,18 @@ return clean_title(t)
 function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
 
+id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]")
 count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart)
+dump(0,"rtext",rtext)
+dump(0,"rstart",rstart)
+INF("count="count)
 for(i = 1 ; i+0 <= count ; i++ ) {
 if ((ret = extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,rstart[i],rtext[i],details)) != 0) {
-INF("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]")
+
 break
 }
 }
+id0(ret)
 return 0+ret
 }
 

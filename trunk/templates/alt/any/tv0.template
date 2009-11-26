@@ -1,6 +1,9 @@
 <!-- Default Tv Template  $Id:$ -->
 <style type="text/css">
 body { color:white ; background-color:black; }
+.transparent {
+    background-color:black;
+}
 </style>
 </head>
 <body height=100% focuscolor=yellow focustext=black [background=:FANART_URL(lightwave.jpg):] >
@@ -20,7 +23,7 @@ body { color:white ; background-color:black; }
                     </td>
 
                     <td>
-                        <table class=transparent_fanart[:$ovs_display_fanart:]_local[:IS_GAYA:] width=100%>
+                        <table class=transparent width=100%>
                             <tr>
                                 <td class=title><font class=title>[:TITLE:]</font></td>
                                 <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>

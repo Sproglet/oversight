@@ -1583,7 +1583,7 @@ TRACE;
 
         HTML_LOG(1,"dbg: id list... [%s]",idlist);
 
-        ovs_asprintf(&params,"view=%s&idlist=%s",newview,idlist);
+        ovs_asprintf(&params,"view=%s&p=&idlist=%s",newview,idlist);
         HTML_LOG(1,"dbg: params [%s]",params);
 
         

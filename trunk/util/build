@@ -1,8 +1,12 @@
-#!/bin/sh
+#!/bin/sh -e
+echo r`./util/svnv oversight 1` > src/verfile
+
+v="`cat src/verfile`"
+echo ======= $v ==========
+
 ./util/squeeze
 chmod 775 *cgi *.sh
 ( cd src && make ARCH=100 clean all && make ARCH=200 clean all )
-v=r`./util/svnv oversight 1`
 ../nmt-scripts/build `basename "$PWD"` "$v" oversight.cgi \
 *.sh *.cgi *.full conf/*.example conf/.*defaults images imdb/imdb.sh imdb/download/.keep templates help/*.help db \
 	logs/.keep tmp/.keep *.html bin cache/.keep

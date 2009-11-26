@@ -82,7 +82,7 @@ tester: $(HASH_OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(HASH_OBJECTS)
 
 tidy:
-	rm -f *.o $(ARCH) $(BADARCH)
+	rm -f *.o $(ARCH) $(BADARCH) $(VERFILE)
 
 clean: tidy
 	rm -f tester old_tester $(TARGET)

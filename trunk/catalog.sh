@@ -109,6 +109,7 @@ AWK="/share/Apps/gawk/bin/gawk"
 if [ ! -x "$AWK" ] ; then
 AWK=awk
 fi
+AWK="/usr/bin/awk"
 AWK=awk
 
 
@@ -2232,7 +2233,7 @@ more_info[1]=1
 
 for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 
-if (extractEpisodeByPatterns(plugin,line,details)) {
+if (extractEpisodeByPatterns(plugin,line,details)==1) {
 
 ret = 1
 break
@@ -2306,7 +2307,7 @@ ret) {
 
 line = tolower(line)
 
-id1("extractEpisodeByPatterns["line"]")
+
 
 ret=1
 
@@ -2326,9 +2327,7 @@ if (episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",detai
 
 
 
-if (extractEpisodeByDates(plugin,"",line,details)+0 == 0) {
-
-
+if (extractEpisodeByDates(plugin,"",line,details) +0 == 0) {
 
 
 
@@ -2339,14 +2338,19 @@ ret=0
 
 
 
-} } } } } }
+}
+}
+}
+}
+}
+}
 
 if (ret == 1) {
-
+id1("extractEpisodeByPatterns: line["line"]")
 dump(0,"details",details)
-
-}
 id0(ret)
+}
+
 
 return 0+ret
 }
@@ -2378,7 +2382,7 @@ y4="(20[01][0-9]|19[5-9][0-9])"
 m2="(0[1-9]|1[012])"
 m1=d1="[1-9]"
 d2="([012][0-9]|3[01])"
-s="[-_. /]"
+s="[-_. /]0*"
 m1or2 = "(" m1 "|" m2 ")"
 d1or2 = "(" d1 "|" d2 ")"
 
@@ -2416,7 +2420,7 @@ nonDate[1]=substr(line,1,RSTART-1)
 nonDate[2]=substr(line,RSTART+RLENGTH)
 
 split(datePart,date,s)
-DEBUG("Date1 ["date[1]"/"date[2]"/"date[3]"] in "line)
+
 d = date[d]
 m = date[m]
 y = date[y]
@@ -2424,7 +2428,7 @@ y = date[y]
 date[1]=y
 date[2]=tolower(trim(m))
 date[3]=d
-DEBUG("Date2 ["date[1]"/"date[2]"/"date[3]"] in "line)
+
 
 if ( textMonth == 1 ) {
 DEBUG("date[2]="date[2])
@@ -2435,7 +2439,7 @@ DEBUG(m"="date[2])
 return 0
 }
 }
-DEBUG("Date3 ["date[1]"/"date[2]"/"date[3]"] in "line)
+
 date[1] += 0
 date[2] = 0 + date[2]
 date[3] += 0
@@ -5922,7 +5926,7 @@ return 0+ count
 
 
 function chop(s,regex,parts,\
-flag) {
+flag,i) {
 
 flag="@~"
 while (index(s,flag) ) {
@@ -5931,9 +5935,20 @@ flag = flag "£" flag
 }
 
 
+
+
 gsub(regex,flag "&" flag , s )
 
-return split(s,parts,flag)
+
+
+
+i= split(s,parts,flag)
+
+
+
+
+
+return i+0
 }
 
 
@@ -5981,7 +5996,7 @@ delete rstart
 
 fcount = chop(line,regex,parts)
 start=1
-for(i=2 ; i-fcount < 0 ; i += 2 ) {
+for(i=2 ; i-fcount <= 0 ; i += 2 ) {
 count++
 if (mode == "c") {
 rtext[parts[i]]++

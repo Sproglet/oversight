@@ -182,7 +182,6 @@ int main(int argc,char **argv) {
     do_actions();
     html_comment("End Actions view=%s select=%s ==",query_val("view"),query_val("select"));
    
-
     // After actions get view again. This is in case we have just deleted the last item in 
     // a tv or moview view. Then we want to go back to the main view.
     view=query_val("view");  
@@ -192,6 +191,8 @@ int main(int argc,char **argv) {
     DbRowId **sorted_rows;
 
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
+    HTML_LOG(0,"Got %d rows",num_rows);
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     HTML_LOG(0,"Got %d rows",num_rows);
 
 TRACE;
@@ -205,10 +206,9 @@ TRACE;
 
     } else {
 TRACE;
-        html_comment("display template");
-
         playlist_open();
 TRACE;
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
 
         if (strcmp(view,VIEW_MOVIE) == 0 ||
                 strcmp(view,VIEW_TV) == 0 ||

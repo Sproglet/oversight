@@ -195,7 +195,7 @@ unpak_video_extension="avi|mkv|mp4|m2ts|ts|xmv|mpg|mpeg|mov|m4v|wmv"
 unpak_delete_samples="*<sample>*|*<samp>*"
 #Set this to delete files that match the given pattern. Case insensitive.
 #Format: *=wildcard |=OR <=start of word >=end of word.
-unpak_delete_files="*.nzb|*.sfv|*.url|*.damaged|_brokenlog.txt|*.par2|*.queued|unpak.*"
+unpak_delete_files="*.nzb|*.sfv|*.srr|*.url|*.damaged|_brokenlog.txt|*.par2|*.queued|unpak.*"
 
 #If set then a fake null keypress is sent to temporarily disable screensaver during processing.
 unpak_nmt_disable_screensaver=1

@@ -44,7 +44,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define VIEW_TV "tv"
 #define VIEW_MOVIE "movie"
 #define VIEW_TVBOXSET "tvboxset"
-#define VIEW_MOVIEBOXSET "moviewboxset"
+#define VIEW_MOVIEBOXSET "movieboxset"
 #define VIEW_MIXED "mixed"
 
 #define QUERY_PARAM_EPISODE_TITLES "_et"

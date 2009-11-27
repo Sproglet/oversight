@@ -1443,7 +1443,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
             if (rowid.file) {
 
-                //HTML_LOG(0,"XX read [%d][%s][%s]",rowid.id,rowid.title,rowid.file);
+                HTML_LOG(0,"xx read1 [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
 
                 int keeprow=1;
 
@@ -1529,6 +1529,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                 }
 
                 if (keeprow) {
+                    HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
                     row_count = db_rowset_add(rowset,&rowid);
                 } else {
                     db_rowid_free(&rowid,0);

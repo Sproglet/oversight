@@ -59,15 +59,15 @@ function ovs_del() {
     }
 }
 function ovs_watched() {
-    if (confirm("Mark "+g_title+"\n as WATCHED?")) {
+    //if (confirm("Mark "+g_title+"\n as WATCHED?")) {
         action('watch');
-    }
+    //}
 }
 
 function ovs_unwatched() {
-    if (confirm("Mark "+g_title+"\nas NOT watched?")) {
+    //if (confirm("Mark "+g_title+"\nas NOT watched?")) {
         action('unwatch');
-    }
+    //}
 }
 
 function action(a) {

@@ -109,8 +109,8 @@ AWK="/share/Apps/gawk/bin/gawk"
 if [ ! -x "$AWK" ] ; then
 AWK=awk
 fi
-AWK="/usr/bin/awk"
 AWK=awk
+AWK="/usr/bin/awk"
 
 
 
@@ -394,13 +394,20 @@ function plugin_error(p) {
 ERR("Unknown plugin "p)
 }
 
-function get_alt_website(testurl,fixed_text,newurlregex,\
-i,links) {
-scanPageForMatches(testurl,fixed_text,newurlregex,0,0,"",links)
+
+
+
+function get_local_search_engine(domain,context,param,\
+i,links,best_url) {
+best_url = domain context param
+scanPageForMatches(best_url "test",context,"http://[-_.a-z0-9/]+"context "\\>",0,0,"",links)
 bestScores(links,links,0)
 for(i in links) {
-return i
+best_url = i param
+break
 }
+INF("remapping "domain context param "=>" best_url)
+return best_url
 }
 
 
@@ -787,9 +794,16 @@ if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0
 
 CAPTURE_PREFIX=tmp_dir"/catalog."
 
-g_search_yahoo = get_local_yahoo()
+g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?p=")
+g_search_ask = get_local_search_engine("http://ask.com","/web","?q=")
 g_search_bing = "http://www.bing.com/search?q="
 g_search_google = "http://www.google.com/search?q="
+
+g_search_engine[0]=g_search_yahoo
+g_search_engine[1]=g_search_bing
+g_search_engine[2]=g_search_ask
+g_search_engine_count=3
+g_search_engine_current=0
 
 THIS_YEAR=substr(NOW,1,4)
 
@@ -921,7 +935,6 @@ url,url2) {
 
 url="http://search.yahoo.com/search?p="
 
-url2 = get_alt_website(url"test","/search","http://[^.]*.?search.yahoo.com/search")
 if (url2) {
 url = url2"?p="
 INF("local yahoo search = "url)
@@ -1586,13 +1599,16 @@ return 0
 return 1
 }
 
+
+
+
 function web_search_first_imdb_link(qualifier,\
 i1,i2,i3,ret) {
 
 
 id1("imdbfirst ["qualifier"]")
-i1=scanPageForMatch(g_search_bing qualifier,"/tt",g_imdb_regex,0)
-i2=scanPageForMatch(g_search_yahoo qualifier,"/tt",g_imdb_regex,0)
+i1=scanPageForMatch("SEARCH" qualifier,"/tt",g_imdb_regex,0)
+i2=scanPageForMatch("SEARCH" qualifier,"/tt",g_imdb_regex,0)
 if (i1 == i2 ) {
 ret= i1
 } else if (i1 != i2 && "" != i1 i2 ) {
@@ -2234,7 +2250,6 @@ more_info[1]=1
 for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 
 if (extractEpisodeByPatterns(plugin,line,details)==1) {
-
 ret = 1
 break
 }
@@ -2451,7 +2466,7 @@ function extractEpisodeByDates(plugin,idx,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
 
 result=0
-id1("extractEpisodeByDates "plugin" "line)
+
 if (extractDate(line,date,nonDate)) {
 rest=nonDate[2]
 title = clean_title(nonDate[1])
@@ -2502,7 +2517,7 @@ sub(/\....$/,"",rest)
 details[ADDITIONAL_INF]=clean_title(rest)
 }
 }
-id0(result)
+
 return 0+ result
 }
 
@@ -2558,37 +2573,6 @@ result=1
 return 0+ result
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function remove_season(t) {
 sub(/(S|Series *|Season *)[0-9]+.*/,"",t)
 return clean_title(t)
@@ -2597,25 +2581,25 @@ return clean_title(t)
 function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
 
-id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]")
+
 count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart)
-dump(0,"rtext",rtext)
-dump(0,"rstart",rstart)
-INF("count="count)
+
+
+
 for(i = 1 ; i+0 <= count ; i++ ) {
 if ((ret = extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,rstart[i],rtext[i],details)) != 0) {
-
+INF("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]")
 break
 }
 }
-id0(ret)
+
 return 0+ret
 }
 
 
 
 function extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,reg_pos,reg_match,details,\
-tmpTitle,ee,ret) {
+tmpTitle,ret,reg_len) {
 
 id1("extractEpisodeByPatternSingle:"reg_match)
 
@@ -2845,28 +2829,10 @@ INF("\t===\t"x"\t===")
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function tv_search(plugin,idx,imdbUrl,search_abbreviations,\
 tvDbSeriesPage,result,tvid) {
 
 result=0
-
-
-
 
 id1("tv_search ("plugin","idx","imdbUrl","search_abbreviations")")
 
@@ -2927,10 +2893,6 @@ function movie_search(idx,bestUrl,\
 name,name_no_br,name_no_tags,name_no_parts,i,\
 n,name_hash,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size) {
-
-
-
-
 
 id1("movie search")
 
@@ -3019,7 +2981,7 @@ TODO("url encode name.")
 if (index(name_try,"-") ) {
 name_try="\""name_try"\""
 }
-bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb"))
+bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title"))
 
 } else {
 ERR("Unknown search method "search_order[s])
@@ -4552,70 +4514,6 @@ return maxName
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function searchForIMDB(keywords,linkThreshold,\
 i1,result,matchList,bestUrl) {
 id1("Search ["keywords"]")
@@ -5864,6 +5762,25 @@ return ret
 
 
 
+#
+function search_url2file(url,cache,referer,\
+i,url2,f) {
+for(i = 0 ; i < 0+g_search_engine_count ; i++ ) {
+
+url2 = url
+
+sub(/^SEARCH/,g_search_engine[(g_search_engine_current++) % g_search_engine_count] , url2)
+
+f=getUrl(url2,"scan4match",cache,referer)
+
+if (f != "") break
+}
+return f
+}
+
+
+
+
 
 
 
@@ -5874,7 +5791,11 @@ f,line,count,linecount,remain,is_imdb,matches2) {
 delete matches
 id1("scanPageForMatches["url"]["fixed_text"]["regex"]["max"]")
 
+if (index(url,"SEARCH") == 1) {
+f = search_url2file(url,cache,referer)
+} else {
 f=getUrl(url,"scan4match",cache,referer)
+}
 
 count=0
 
@@ -6540,8 +6461,7 @@ return 1
 }
 
 
-function moveFileIfPresent(oldName,newName,\
-new,old,ret) {
+function moveFileIfPresent(oldName,newName) {
 
 if (is_file(oldName)) {
 return moveFile(oldName,newName)

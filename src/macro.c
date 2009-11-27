@@ -475,31 +475,28 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
-    if (!result) {
-        result = auto_option_list(DB_FLDID_GENRE,"All Genres",g_genre_hash);
-    }
-    *free_result = 0;
+    result = auto_option_list(DB_FLDID_GENRE,"All Genres",g_genre_hash);
+    *free_result = 0; // TODO : this should be freed but we'll leave until next release.
     return result;
 }
 
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
-        return "?";
+    char *genre = "?";
+    *free_result=0;
+
+    if (num_rows && sorted_rows && sorted_rows[0]->genre ) {
+        genre =sorted_rows[0]->genre;
     }
 
-    return sorted_rows[0]->genre;
+    return genre;
 }
 
 char *macro_fn_title(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
     char *result = "?";
     *free_result=0;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
-        return "?";
-    }
     if ( num_rows && sorted_rows && sorted_rows[0]->title ) {
         result = sorted_rows[0]->title;
     } 
@@ -508,14 +505,12 @@ char *macro_fn_title(char *template_name,char *call,Array *args,int num_rows,DbR
 
 char *macro_fn_season(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    char *season=NULL;
+    char *season="?";
+    *free_result=0;
 
     if (num_rows && sorted_rows && sorted_rows[0]->season >=0) {
         ovs_asprintf(&season,"%d",sorted_rows[0]->season);
         *free_result=1;
-    } else {
-        season = "?";
-        *free_result=0;
     }
     return season;
 }

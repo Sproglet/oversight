@@ -1683,7 +1683,7 @@ char *get_drilldown_view(DbRowId *rid) {
                     break;
                 case 'M': case 'F':
                     // As soon as there are two linked movies its a box set
-                    view=VIEW_MOVIEBOXSET;
+                    // view=VIEW_MOVIEBOXSET;
                     break;
                 default:
                     view=VIEW_MIXED;
@@ -2397,12 +2397,14 @@ TRACE;
     char *sort = DB_FLDID_TITLE;
 
     config_check_str(g_query,QUERY_PARAM_SORT,&sort);
+    int numrows = hashtable_count(overview);
 TRACE;
 
     if (strcmp(query_val("view"),VIEW_TV) == 0) {
 TRACE;
 
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+xx_dump_genre(__FILE__,__LINE__,numrows,sorted_row_ids);
 
     } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
 TRACE;
@@ -2418,9 +2420,10 @@ TRACE;
     }
 TRACE;
 
-    int numrows = hashtable_count(overview);
+xx_dump_genre(__FILE__,__LINE__,numrows,sorted_row_ids);
     //Free hash without freeing keys
     db_overview_hash_destroy(overview);
+xx_dump_genre(__FILE__,__LINE__,numrows,sorted_row_ids);
 
     if (sortedRowsPtr) *sortedRowsPtr = sorted_row_ids;
     if (rowSetsPtr) *rowSetsPtr = rowsets;
@@ -2616,18 +2619,23 @@ TRACE;
     char *main_plot=NULL;
     char *main_genre=NULL;
 
+    HTML_LOG(0,"xx Checking %d for genre",num_rows);
+
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        if (!main_plot && !EMPTY_STR(rid->plottext[PLOT_MAIN])) {
+        HTML_LOG(0,"xx Using genre %d=[%s]",rid->id,rid->genre);
+        if (EMPTY_STR(main_plot) && !EMPTY_STR(rid->plottext[PLOT_MAIN])) {
+            HTML_LOG(0,"xx Using plottext %d",rid->id);
             main_plot = rid->plottext[PLOT_MAIN];
         }
-        if (!main_genre && !EMPTY_STR(rid->genre)) {
+        if (EMPTY_STR(main_genre) && !EMPTY_STR(rid->genre)) {
             main_genre = rid->genre;
         }
     }
+    HTML_LOG(0,"xx genre = [%s]",main_genre);
 
-    if (!main_plot) main_plot = "(no plot info)";
-    if (!main_genre) main_genre = "";
+    if (EMPTY_STR(main_plot)) main_plot = "(no plot info)";
+    if (main_genre == NULL) main_genre = "no genre";
 
 TRACE;
 
@@ -2737,10 +2745,13 @@ TRACE;
 
 
 TRACE;
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     char *script = create_episode_js_fn(num_rows,sorted_rows);
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
 TRACE;
 
     int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == '1';
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     
 
     printf("%s",script);
@@ -2772,6 +2783,7 @@ TRACE;
                         ep = "play";
                     }
                     char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,(long)rid,1);
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
                     episode_col = vod_link(
                             rid,
                             ep,"",
@@ -2866,11 +2878,13 @@ TRACE;
             FREE(listing);
             listing=tmp;
         }
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     }
 
 
     char *result=NULL;
     ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     FREE(listing);
     return result;
 }
@@ -2882,8 +2896,11 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
 
     html_log(-1,"tv_listing");
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
+        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     FREE(pruned_rows);
     return result;
 }
@@ -2995,3 +3012,13 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     array_free(keys);
     return result;
 }
+
+void xx_dump_genre(char *file,int line,int num,DbRowId **rows) {
+    int i;
+    HTML_LOG(0,"xx genre dump [%s:%d] num=%d",file,line,num);
+    for(i = 0 ; i < num ; i++ ) {
+        DbRowId *rid = rows[i];
+        HTML_LOG(0,"%d[%s][%s]",rid->id,rid->title,rid->genre);
+    }
+}
+

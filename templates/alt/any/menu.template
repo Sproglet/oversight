@@ -100,16 +100,16 @@ function ovs_del() {
 }
 function ovs_watched() {
     if (g_idlist) {
-        if (confirm("Mark "+g_title+" as watched?")) {
+        //if (confirm("Mark "+g_title+" as watched?")) {
             action('watch');
-        }
+        //}
     }
 }
 function ovs_unwatched() {
     if (g_idlist) {
-        if (confirm("Mark "+g_title+"as NOT watched?")) {
+        //if (confirm("Mark "+g_title+"as NOT watched?")) {
             action('unwatch');
-        }
+        //}
     }
 }
 

@@ -51,4 +51,5 @@ char *add_network_icon(DbRowId *r,char *text);
 char *share_name(DbRowId *r,int *freeme);
 char *skin_name();
 char *internal_image_path_static(DbRowId *rid,ImageType image_type);
+void xx_dump_genre(char *file,int line,int num,DbRowId **rows);
 #endif

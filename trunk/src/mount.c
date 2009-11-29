@@ -212,7 +212,7 @@ char *wins_resolve(char *link) {
             char *p;
             // Look for host in output of nbtscan (which is run by the catalog process)
             // 1.1.1.1<space>WORKGROUP\host<space>
-            if ((p=delimited_substring(buf,' ',workgroup,'\\',0,0)) != NULL) {
+            if ((p=delimited_substring(buf," ",workgroup,"\\",0,0)) != NULL) {
                 p += 1+strlen(workgroup);
                 if (util_starts_with(p,host) && p[strlen(host)] == ' ' ) {
                     // found it - get ip address from the start.

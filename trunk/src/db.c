@@ -1273,7 +1273,7 @@ int *extract_idlist(char *db_name,int *num_ids) {
 
     if (*query) {
         *num_ids = 0;
-        char *p = delimited_substring(query,')',db_name,'(',1,0);
+        char *p = delimited_substring(query,")",db_name,"(",1,0);
         if (p) {
             p += strlen(db_name)+1;
             char *q = strchr(p,')');

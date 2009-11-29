@@ -22,6 +22,11 @@
 #include "macro.h"
 #include "mount.h"
     
+// When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
+// The old values are prefixed with @ before adding new ones.
+#define DRILLDOWN_CHAR '@'
+#define DRILL_DOWN_PARAM_NAMES "p,idlist,view"
+
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
@@ -31,6 +36,8 @@ void util_free_char_array(int size,char **a);
 char *get_date_static(DbRowId *rid);
 DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
 char *get_drilldown_view(DbRowId *rid);
+char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
+static char *get_drilldown_name(char *root_name,int num_prefix);
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 
@@ -152,16 +159,16 @@ char *self_url(char *new_params) {
     int first=1;
 
     char *url = STRDUP(SELF_URL);
+TRACE;
 
     // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
-
-        
-        int param_name_len = strlen(param_name);
-        char *p = NULL ;
+TRACE;
 
         if (!EMPTY_STR(param_value)) {
+TRACE;
             if (strcmp(param_name,"colour") != 0) {
+TRACE;
                 if (strstr(param_name,"option_") == NULL) {
                     //
                     // search for pram_name in new_params
@@ -169,48 +176,45 @@ char *self_url(char *new_params) {
 
                     // If the existing parameter name is also in the new parameter list then dont add it
                     if (new_params && *new_params) {
-                        for (p = strstr(new_params,param_name); p ; p=strstr(p+1,param_name) ) {
+                        if (delimited_substring(new_params,"&",param_name,"&=",1,1)) {
+TRACE;
 
-
-                            if ( ( p == new_params || p[-1] == '&' ) ) {
-                                // start of string is beginning or after &
-                               char *end = p + param_name_len;
-                               if (strchr("&=",*end)) {
-                                  // end of string is = or & or nul
-                                  // param_name is in new_params - we dont want this
-                                  add_param=0;
-                                  break;
-                               }
-                            }
-                        }
-                        if (strcmp(param_name,"idlist") == 0) {
-                            HTML_LOG(0,"param list [%s] in [%s] gives %d",param_name,new_params,add_param);
+                          // end of string is = or & or nul
+                          // param_name is in new_params - we dont want this
+                          add_param=0;
                         }
                     }
+TRACE;
                     if (add_param) {
                         char *new;
                         ovs_asprintf(&new,"%s%c%s=%s",url,(first?'?':'&'),param_name,param_value);
                         FREE(url);
                         url = new;
                         first=0;
+TRACE;
                     }
+TRACE;
                 }
+TRACE;
             }
+TRACE;
         }
+TRACE;
     }
+TRACE;
     // Now remove any blank params in the list
-    char *tmp=replace_all(new_params,"([a-zA-Z0-9_]+=(&|$))","",0);
+    char *tmp=replace_all(new_params,"([-.~@a-zA-Z0-9_]+=(&|$))","",0);
+TRACE;
 
     char *new;
     ovs_asprintf(&new,"%s%c%s",url,(first?'?':'&'),tmp);
+TRACE;
     FREE(url);
     FREE(tmp);
     
     return new;
 }
 
-#define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES "p,idlist,view"
 
 /*
  * True if param_name ~ ^DRILLDOWN_CHAR*root$
@@ -220,15 +224,16 @@ char *self_url(char *new_params) {
 
 int is_drilldown_of(char *param_name,char *root_name) 
 {
+    int result=0;
     char *p=param_name;
     while (*p && *p == DRILLDOWN_CHAR ) {
         p++;
     }
     if ( strcmp(p,root_name) ==0 ) {
-        return (p-param_name)+1;
-    } else {
-        return 0;
+        result = (p-param_name)+1;
     }
+    //HTML_LOG(0,"is_drilldown_of(%s,%s)=%d",param_name,root_name,result);
+    return result;
 }
 
 static char *self_url2(char *q1,char *q2)
@@ -251,10 +256,15 @@ static char *self_url2(char *q1,char *q2)
         full_query_string = q2;
     }
 
+TRACE;
     char *result = self_url(full_query_string);
+TRACE;
     if (free_full) {
+TRACE;
         FREE(full_query_string);
+TRACE;
     }
+TRACE;
 
     return result;
 }
@@ -280,6 +290,7 @@ char *drill_down_url(char *new_params,char *param_list)
      *    end for
      * end for
      */
+
     char *new_drilldown_params = NULL;
     Array *drilldown_root_names=split(param_list,",",0);
     int i;
@@ -290,17 +301,39 @@ char *drill_down_url(char *new_params,char *param_list)
                 struct hashtable_itr *itr;
                 char *qname;
                 char *qval;
+                int min_depth = 0; // we need to track the item with fewest DRILLDOWN_CHAR and remove it
+
+
                 for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
-                    if (is_drilldown_of(qname,param_name)) {
+                    int depth = is_drilldown_of(qname,param_name);
+                    if (depth) {
                         char *tmp;
                         if (new_drilldown_params == NULL) {
                             ovs_asprintf(&new_drilldown_params,"%c%s=%s",DRILLDOWN_CHAR,qname,qval);
                         } else {
-                            ovs_asprintf(&tmp,"%s&%c%s=%s",DRILLDOWN_CHAR,new_drilldown_params,qname,qval);
+                            ovs_asprintf(&tmp,"%s&%c%s=%s",new_drilldown_params,DRILLDOWN_CHAR,qname,qval);
                             FREE(new_drilldown_params);
-                            tmp = new_drilldown_params;
+                            new_drilldown_params = tmp;
+                        }
+
+                        // track item with fewest DRILLDOWN_CHAR
+                        if (depth < min_depth || min_depth == 0 ) {
+                            min_depth = depth;
                         }
                     }
+                }
+                // Find item with fewest prefix. If it is not in the new_params then remove it
+                if (min_depth) {
+                    char *top_name = get_drilldown_name(param_name,min_depth-1);
+
+                    if (!delimited_substring(new_params,"&",top_name,"&=",1,1)) {
+                        char *tmp;
+                        ovs_asprintf(&tmp,"%s&%s=",new_drilldown_params,top_name);
+                        FREE(new_drilldown_params);
+                        new_drilldown_params = tmp;
+                    }
+
+                    FREE(top_name);
                 }
             }
         }
@@ -311,11 +344,14 @@ char *drill_down_url(char *new_params,char *param_list)
      * Compute the new url
      */
     char *final = self_url2(new_params,new_drilldown_params);
+
     FREE(new_drilldown_params);
 
     return final;
 }
 
+// this is a link where existing @p,@view,@idlist parameters are moved back to
+// p,view,idlist // so that we can return the the previous screen.
 char *return_url(char *new_params,char *param_list) 
 {
 
@@ -352,28 +388,107 @@ char *return_url(char *new_params,char *param_list)
     if (drilldown_root_names) {
         for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
             char *param_name = drilldown_root_names->array[i];
+
             if (param_name) {
                 struct hashtable_itr *itr;
                 char *qname;
                 char *qval;
+
+                int max_depth = 0; // track the deepest level parameter to remove it
+
                 for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
 
-                    char *add_value=NULL;
                     int depth = is_drilldown_of(qname,param_name);
+
                     if (depth > 1) {
-                        char *oldname;
-                        ovs_asprintf(&oldname,"@%s",qname);
-                        add_value=NVL(hashtable_search(g_query,oldname));
-                        FREE(oldname);
-                    }
-                    if (add_value) {
                         char *tmp;
+
+                        char *new_name = qname + 1;
+
                         if (new_drilldown_params == NULL) {
-                            ovs_asprintf(&new_drilldown_params,"%s=%s",qname,add_value);
+                            ovs_asprintf(&new_drilldown_params,"%s=%s",new_name,qval);
                         } else {
-                            ovs_asprintf(&tmp,"%s&%s=%s",new_drilldown_params,qname,add_value);
+                            ovs_asprintf(&tmp,"%s&%s=%s",new_drilldown_params,new_name,qval);
                             FREE(new_drilldown_params);
-                            tmp = new_drilldown_params;
+                            new_drilldown_params = tmp;
+                        }
+
+                        if (depth > max_depth ) {
+                            max_depth = depth;
+                        }
+                    }
+                }
+                // Now remove the deepest eg.
+                // if p=1&@p=2&@@p=3 becomes p=2&@p=3 we need to add @@p=
+                if (max_depth > 0 ) {
+                    int num_prefix = max_depth - 1;
+                    char *last_name = get_drilldown_name(param_name,num_prefix);
+
+                    char *tmp;
+                    ovs_asprintf(&tmp,"%s&%s=",new_drilldown_params,last_name);
+                    FREE(new_drilldown_params);
+                    new_drilldown_params = tmp;
+                }
+
+
+
+            }
+        }
+    }
+    array_free(drilldown_root_names);
+    /*
+     * Compute the new url
+     */
+    char *final = self_url2(new_params,new_drilldown_params);
+    HTML_LOG(0,"return url = [%s]",final);
+    FREE(new_drilldown_params);
+
+    return final;
+}
+
+static char *get_drilldown_name(char *root_name,int num_prefix)
+{
+    char *name = MALLOC(num_prefix + strlen(root_name) + 5 ) ;
+    int i;
+    for( i = 0 ; i < num_prefix ; i++ ) {
+        name[i] = DRILLDOWN_CHAR;
+    }
+    strcpy(name+i,root_name);
+    return name;
+}
+
+/**
+ * link with all drilldown info removed
+ */
+char *final_url(char *new_params,char *param_list) 
+{
+
+    char *new_drilldown_params = NULL;
+    Array *drilldown_root_names=split(param_list,",",0);
+    int i;
+    if (drilldown_root_names) {
+        for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
+            char *param_name = drilldown_root_names->array[i];
+
+            if (param_name) {
+                struct hashtable_itr *itr;
+                char *qname;
+                char *qval;
+
+                for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
+
+                    int depth = is_drilldown_of(qname,param_name);
+
+                    if (depth) {
+                        // remove it
+                        char *tmp;
+
+                        if (new_drilldown_params == NULL) {
+                            ovs_asprintf(&new_drilldown_params,"%s=",qname);
+                        } else {
+                            ovs_asprintf(&tmp,"%s&%s=",new_drilldown_params,qname);
+                            FREE(new_drilldown_params);
+                            new_drilldown_params = tmp;
                         }
                     }
                 }
@@ -381,6 +496,7 @@ char *return_url(char *new_params,char *param_list)
         }
     }
     array_free(drilldown_root_names);
+TRACE;
     /*
      * Compute the new url
      */
@@ -453,7 +569,25 @@ char *return_link(char *params,char *attr,char *title) {
     HTML_LOG(1," begin drill down link for params[%s] attr[%s] title[%s]",params,attr,title);
 
     char *url = return_url(params,DRILL_DOWN_PARAM_NAMES);
-    HTML_LOG(2," end self link [%s]",url);
+    HTML_LOG(2," end drill down link [%s]",url);
+
+    ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
+
+    FREE(url);
+    return result;
+}
+// This is a link with all drill down parameters removed. This is for the final link
+// to play the file.
+char *final_link(char *params,char *attr,char *title) {
+    assert(params);
+    assert(attr);
+    assert(title);
+    char *result=NULL;
+
+    HTML_LOG(0," begin final link for params[%s] attr[%s] title[%s]",params,attr,title);
+
+    char *url = final_url(params,DRILL_DOWN_PARAM_NAMES);
+    HTML_LOG(2," end final link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
 
@@ -597,7 +731,9 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
             char *params =NULL;
             ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
             //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
-            result = get_self_link_with_font(params,class,title,class);
+            //
+            result = get_final_link_with_font(params,class,title,class);
+            //result = get_self_link_with_font(params,class,title,class); XX
             FREE(params);
 
         } else {
@@ -633,7 +769,10 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     return result;
 }
 
-char *get_drilldown_link_with_font(char *params,char *attr,char *title,char *font_attr) {
+// this is a link where existing p,view,idlist parameters are moved to @p,@view,@idlist 
+// so  after following this link we have enough info to generate a link to return
+char *get_drilldown_link_with_font(char *params,char *attr,char *title,char *font_attr)
+{
     assert(params);
     assert(attr);
     assert(title);
@@ -646,7 +785,26 @@ char *get_drilldown_link_with_font(char *params,char *attr,char *title,char *fon
     FREE(title2);
     return result;
 }
-char *get_self_link_with_font(char *params,char *attr,char *title,char *font_attr) {
+
+// This is a link with all drill down parameters removed. This is for the final link
+// to play the file.
+char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr)
+{
+    assert(params);
+    assert(attr);
+    assert(title);
+    assert(font_attr);
+    char *title2=NULL;
+
+    ovs_asprintf(&title2,"<font %s>%s</font>",font_attr,title);
+    char *result = final_link(params,attr,title2);
+
+    FREE(title2);
+    return result;
+}
+
+char *get_self_link_with_font(char *params,char *attr,char *title,char *font_attr)
+{
     assert(params);
     assert(attr);
     assert(title);
@@ -661,7 +819,8 @@ char *get_self_link_with_font(char *params,char *attr,char *title,char *font_att
 }
 
 
-void display_self_link(char *params,char *attr,char *title) {
+void display_self_link(char *params,char *attr,char *title)
+{
     char *tmp;
     tmp=get_self_link(params,attr,title);
     printf("%s",tmp);
@@ -669,7 +828,8 @@ void display_self_link(char *params,char *attr,char *title) {
 }
 
 
-char *get_remote_button(char *button_colour,char *params,char *text) {
+char *get_remote_button(char *button_colour,char *params,char *text)
+{
 
     assert(button_colour);
     assert(params);
@@ -692,7 +852,8 @@ char *get_remote_button(char *button_colour,char *params,char *text) {
 }
 
 
-char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char *v2,char *text2) {
+char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char *v2,char *text2)
+{
 
     assert(button_colour);
     assert(param_name);
@@ -1853,8 +2014,7 @@ TRACE;
 
         
 
-        cell_text = get_self_link_with_font(params,attr,title,font_class);
-        HTML_LOG(1,"dbg: get_self_link_with_font [%s]",cell_text);
+        cell_text = get_drilldown_link_with_font(params,attr,title,font_class);
 
         FREE(params);
 

@@ -377,19 +377,20 @@ int chomp(char *str) {
 // Return substr within buf if it is preceeded by prefix and followed by suffix.
 // if match_start is true the prefix is not required at the start.
 // if match_end is true the suffix is not required at the end.
-char *delimited_substring(char *buf,char prefix,char *substr,char suffix,int match_start,int match_end)
+char *delimited_substring(char *buf,char *prefix,char *substr,char *suffix,int match_start,int match_end)
 {
 
     assert(buf);
-    char *p,*rest;
+    char *p;
     int len = strlen(substr);
 
-    rest=buf;
-    while ((p=strstr(rest,substr))!= NULL ) {
+    p=buf;
 
-        if ((p == buf && match_start ) || ( p > buf && p[-1] == prefix ) ) {
+    while ((p=strstr(p,substr))!= NULL ) {
 
-            if ( (p[len] == '\0' && match_end ) || ( p[len] == suffix ) ) {
+        if (( p > buf && strchr(prefix,p[-1]) ) || (p == buf && match_start ) ) {
+
+            if ( (p[len] == '\0' && match_end ) || ( p[len] && strchr(suffix,p[len]) ) ) {
 
                 return p;
 

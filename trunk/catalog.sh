@@ -2328,7 +2328,7 @@ if (pat[i] == "DATE" ) {
 ret = extractEpisodeByDates(plugin,"",line,details)
 } else {
 split(pat[i],parts,"@")
-dump(0,"epparts",parts)
+
 ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details)
 }
 }
@@ -2555,7 +2555,7 @@ function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
 
 
-DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]")
+
 count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart)
 
 

@@ -18,6 +18,7 @@
 #include "display.h"
 #include "actions.h"
 #include "admin.h"
+#include "permissions.h"
 
 void exec_old_cgi(int argc,char **argv);
 
@@ -36,6 +37,7 @@ void load_configs () {
     html_comment("end load nmt settings");
 
 }
+
 
 #define PLAYLIST "/tmp/playlist.htm"
 void clear_playlist() {
@@ -192,8 +194,6 @@ int main(int argc,char **argv) {
 
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
     HTML_LOG(0,"Got %d rows",num_rows);
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
-    HTML_LOG(0,"Got %d rows",num_rows);
 
 TRACE;
 
@@ -208,8 +208,6 @@ TRACE;
 TRACE;
         playlist_open();
 TRACE;
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
-
         if (strcmp(view,VIEW_MOVIE) == 0 ||
                 strcmp(view,VIEW_TV) == 0 ||
                 strcmp(view,VIEW_TVBOXSET) == 0 
@@ -223,6 +221,7 @@ TRACE;
 
         } else if (strcmp(view,"admin") == 0) {
 
+            setPermissions();
             display_admin();
 
         } else {

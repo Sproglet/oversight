@@ -142,7 +142,7 @@ char *macro_fn_web_status(char *template_name,char *call,Array *args,int num_row
         char *cmd;
         char *user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
 
-        ovs_asprintf(&cmd,"/bin/wget -U \"%s\" -q -t 1 --dns-timeout 1 --connect-timeout 2 --read-timeout 7 --ignore-length \"%s%s\" %s",
+        ovs_asprintf(&cmd,"/bin/wget -U \"%s\" -q -t 1 --dns-timeout 2 --connect-timeout 4 --read-timeout 7 --ignore-length \"%s%s\" %s",
                 user_agent,
                 (util_starts_with(args->array[0],"http")?"":"http://"),
                 args->array[0],

@@ -1,0 +1,178 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+body.menu_background {
+    color:yellow ;
+    background-color:black;
+}
+
+#menutitle {
+    background-color:black;
+    font-size:12pt;
+    color:white;
+    text-align:center;
+    font-family:"arial";
+    font-weight:bold;
+}
+
+td.grid_background {
+    text-align:center;
+    background-color:black;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+[:IF($@poster_mode):]
+    .overview_poster {
+        background-color:black;
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
+}
+.transparent {
+    background-color:black;
+    margin:0px;
+    padding:0px;
+    border:0px;
+[:IF($@gaya):]
+    background-color:black-alpha2;
+[:ELSE:]
+    filter:alpha(opacity=70);
+    opacity:0.7;
+    color:white;
+[:ENDIF:]
+}
+
+        </style>
+    </head>
+    <!--
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background  >
+-->
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background background=[:FANART_URL(black_desert.jpg):] >
+        [:FORM_START:]
+<center>
+        <table id=main width=100% height=100%>
+        <tr><td>
+            <table class=header>
+                <tr>
+                    [<td align="center">:BACK_BUTTON:</td>]
+                    [<td align="center">:EXIT_BUTTON:</td>]
+                    <td align="center">[:HOME_BUTTON:]</td>
+                    <td align="center">[:DELETE_BUTTON:]</td>
+                    <td align="center">[:MARK_BUTTON:]</td>
+                    [<td align="center">:SELECT_MARK_SUBMIT:</td>]
+                </tr>
+            </table>
+        </td></tr><tr><td >
+            <center>
+            <table >
+                <tr>
+                    <table>
+                        <tr>
+                            <td id=menutitle align=center >&nbsp;</td>
+                        </tr>
+                    </table>
+                </tr>
+                <tr>
+                    <td >
+                        [:GRID:]
+                    </td >
+                </tr>
+                <tr>
+                    <td >
+                        <center><table class="transparent" ><tr><td>[:PLOT:]</td></tr></table></center>
+                    </td>
+                </tr>
+                <tr>
+                    <td >
+                        <table class=header width=100%>
+                            <tr>
+                                <td width=10%>[:LEFT_BUTTON:]</td>
+                                [<td align="center" class="cancel" width="26%">:SELECT_CANCEL_SUBMIT:</td>]
+                                [<td align="center" class="delist" width="26%">:SELECT_DELIST_SUBMIT:</td>]
+                                [<td align="center" class="delete" width="26%">:SELECT_DELETE_SUBMIT:</td>]
+                                <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            </center>
+            <div>
+        </td></tr><tr><td>
+            <!--
+<img src=[:FANART_URL:]  />
+-->
+        </td></tr></table>
+</center>
+        </form>
+<script type="text/javascript">
+var title = document.getElementById('menutitle').firstChild;
+var g_idlist = '';
+var g_title = '';
+
+function ovs_del() {
+    if (g_idlist) {
+        if (confirm("Delist/Delete "+g_title+"?")) {
+            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
+                action('delete');
+            } else {
+                action('delist');
+            }
+        }
+    }
+}
+function ovs_watched() {
+    if (g_idlist) {
+        if (confirm("Mark "+g_title+" as watched?")) {
+            action('watch');
+        }
+    }
+}
+function ovs_unwatched() {
+    if (g_idlist) {
+        if (confirm("Mark "+g_title+"as NOT watched?")) {
+            action('unwatch');
+        }
+    }
+}
+
+function action(a) {
+    var sep;
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+
+function showt(title_text,idlist)
+{
+   if (idlist != '') g_idlist = idlist;
+   g_title = title_text;
+   title.nodeValue = g_title;
+}
+
+function title0() { showt('_',''); }
+</script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

@@ -1,0 +1,142 @@
+<!-- Default Tv Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight ([:HOSTNAME:]):
+T
+ [:TITLE:]
+Season
+[:SEASON:] </title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+table.listing {
+    margin:0;
+    border-spacing:0;
+    padding:0 ;
+    border-width:0 ;
+}
+
+/* watched/Unwatched tv */ .dummy {color:red;}
+
+td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+.proper { color: yellow; size:small; }
+.repack { color: yellow; size:small; }
+.eptitle { font-size:100% ; font-weight:normal; font-size:[:$ovs_font_size_eptitle:]%; }
+
+.epdate { color:#AAAAFF; font-size:[:$ovs_font_size_epdate:]%; }
+.info0 {
+    color:white;
+                filter:alpha(opacity=100);
+                opacity:1;
+}
+.info1 {
+    color:white;
+}
+
+.plot0 {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+    filter:alpha(opacity=100);
+    opacity:1;
+    font-weight:normal;
+}
+.plot1 {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+}
+
+[:IF($ovs_display_fanart):]
+
+[:IF($@gaya):]
+
+[:ELSE:]
+
+[:ENDIF:]
+
+font.plot { font-size:[:$ovs_font_size_plot:]% ; font-weight:normal; }
+td.filelist { text-align:center; }
+        </style>
+
+    [:INCLUDE_TEMPLATE(tv[:$ovs_display_fanart:]):]
+
+[:MENU_TVID:]
+[:PLAY_TVID:]
+<script type="text/javascript">
+
+var g_idlist='';
+var titlecell = document.getElementById('tvplot').firstChild;
+var genrecell = document.getElementById('genre').firstChild;
+var g_epno='';
+var g_info='';
+
+function ovs_del() {
+    if (g_epno != '') {
+        if (confirm("Remove ["+g_epno+"]?")) {
+            if (confirm("Also Delete "+g_info)) {
+                if(confirm("Deleting media files") ) {
+                    action('delete');
+                }
+            } else {
+                action('delist');
+            }
+        }
+    }
+}
+function ovs_info() {
+    alert(g_info);
+}
+function ovs_watched() {
+    if (g_epno != '') {
+        //if (confirm("Mark episode "+g_epno+"\n as watched?")) {
+            action('watch');
+        //}
+    }
+}
+
+function ovs_unwatched() {
+    if (g_epno != '') {
+        //if (confirm("Mark episode"+g_epno+"\nas NOT watched?")) {
+            action('unwatch');
+        //}
+    }
+}
+
+function action(a) {
+    var sep;
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+function show(idlist,epno,plot_text,info,eptitle)
+{
+    g_idlist = idlist;
+    g_epno = epno;
+    g_info = info;
+    titlecell.nodeValue = plot_text;
+    if (epno != '' ) {
+        genrecell.nodeValue = epno + ' : ' + eptitle;
+    } else {
+        genrecell.nodeValue = eptitle;
+    }
+}
+</script>
+
+<a href="javascript:ovs_info();" tvid="INFO"></a>
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+<!-- Title toggle -->
+</body>
+</html>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

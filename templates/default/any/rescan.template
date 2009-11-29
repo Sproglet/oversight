@@ -28,7 +28,7 @@ body { font-size:20; font-family:"arial"; color:white; }
                         [:CONFIG_LINK(catalog.cfg,input.help,{change scan paths},style="color=red;"):]
                     </td>
                     <td align=center>
-                        [:LINK(action=template_scan_status,{check internet databases}):]
+                        [:LINK(action=template_scan_status,{site checker}):]
                     </td>
                 </tr>
             </table>

@@ -209,6 +209,188 @@ char *self_url(char *new_params) {
     return new;
 }
 
+#define DRILLDOWN_CHAR '@'
+#define DRILL_DOWN_PARAM_NAMES "p,idlist,view"
+
+/*
+ * True if param_name ~ ^DRILLDOWN_CHAR*root$
+ * eg. @@@p is_drilldown_of p
+ * @returns 0(no match) , 1=exact match , else 1+number of DRILLDOWN_CHAR
+ */
+
+int is_drilldown_of(char *param_name,char *root_name) 
+{
+    char *p=param_name;
+    while (*p && *p == DRILLDOWN_CHAR ) {
+        p++;
+    }
+    if ( strcmp(p,root_name) ==0 ) {
+        return (p-param_name)+1;
+    } else {
+        return 0;
+    }
+}
+
+static char *self_url2(char *q1,char *q2)
+{
+
+    int free_full=0;
+    char *full_query_string = NULL;
+    /**
+     * Now append the drilldown parameters to the actual parameters for this link
+     * It is expected that the actual parameters will not contain drilldown @ parameters.
+     */
+    if (!EMPTY_STR(q1)) {
+        if (EMPTY_STR(q2)) {
+            full_query_string = q1;
+        } else {
+            free_full=1;
+            ovs_asprintf(&full_query_string,"%s&%s",q1,q2);
+        }
+    } else {
+        full_query_string = q2;
+    }
+
+    char *result = self_url(full_query_string);
+    if (free_full) {
+        FREE(full_query_string);
+    }
+
+    return result;
+}
+/*
+ * 'new_params = query string selgment - ie p=1&q=2"
+ * @param_list = list of parameters whose old values are kept in the url.
+ *
+ * eg given
+ *
+ * 'p=1 & @p=2 & @@p = 3
+ *
+ * '@p=1 & @@p=2 & @@@p = 3   
+ *
+ */
+char *drill_down_url(char *new_params,char *param_list) 
+{
+    /*
+     * for each parameter name pname in param list
+     *    for each param Q in g_query do
+     *       if Q.name matches ^@*(pname)$  eg , (pname) , @(pname) , @@(pname) etc.
+     *          add @(Q.name)=(Q.value) to new parameter list.
+     *       end if 
+     *    end for
+     * end for
+     */
+    char *new_drilldown_params = NULL;
+    Array *drilldown_root_names=split(param_list,",",0);
+    int i;
+    if (drilldown_root_names) {
+        for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
+            char *param_name = drilldown_root_names->array[i];
+            if (param_name) {
+                struct hashtable_itr *itr;
+                char *qname;
+                char *qval;
+                for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
+                    if (is_drilldown_of(qname,param_name)) {
+                        char *tmp;
+                        if (new_drilldown_params == NULL) {
+                            ovs_asprintf(&new_drilldown_params,"%c%s=%s",DRILLDOWN_CHAR,qname,qval);
+                        } else {
+                            ovs_asprintf(&tmp,"%s&%c%s=%s",DRILLDOWN_CHAR,new_drilldown_params,qname,qval);
+                            FREE(new_drilldown_params);
+                            tmp = new_drilldown_params;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    array_free(drilldown_root_names);
+
+    /*
+     * Compute the new url
+     */
+    char *final = self_url2(new_params,new_drilldown_params);
+    FREE(new_drilldown_params);
+
+    return final;
+}
+
+char *return_url(char *new_params,char *param_list) 
+{
+
+    /*
+     * given parameter name p we want
+     * p=1&@p=2&@@p=3 to become p=2&@p=3
+     *
+     * for each parameter pname in param list
+     *    for each param Q in g_query do
+     *       if Q.name = pname 
+     *          if @name not in query then
+     *             add Q.name=<blank>
+     *          endif
+     *       else if Q matches ^@+param$  eg , @param , @@param etc.
+     *          add (Q.name)=((@Q).value) to new parameter list.
+     *       end if 
+     *    end for
+     * end for
+     *
+ * e.g
+ * '@p=1 & @@p=2 & @@@p = 3    new_params = p=5
+ *
+ * becomes
+ *
+ * 'p=1 & @p=2 & @@p = 3
+     * eg given 'p=1 & @p=2 & @@p = 3  AND new params p = 4 we want
+     *
+     * p = 2 & @p = 3 
+     * 
+     */
+    char *new_drilldown_params = NULL;
+    Array *drilldown_root_names=split(param_list,",",0);
+    int i;
+    if (drilldown_root_names) {
+        for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
+            char *param_name = drilldown_root_names->array[i];
+            if (param_name) {
+                struct hashtable_itr *itr;
+                char *qname;
+                char *qval;
+                for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
+
+                    char *add_value=NULL;
+                    int depth = is_drilldown_of(qname,param_name);
+                    if (depth > 1) {
+                        char *oldname;
+                        ovs_asprintf(&oldname,"@%s",qname);
+                        add_value=NVL(hashtable_search(g_query,oldname));
+                        FREE(oldname);
+                    }
+                    if (add_value) {
+                        char *tmp;
+                        if (new_drilldown_params == NULL) {
+                            ovs_asprintf(&new_drilldown_params,"%s=%s",qname,add_value);
+                        } else {
+                            ovs_asprintf(&tmp,"%s&%s=%s",new_drilldown_params,qname,add_value);
+                            FREE(new_drilldown_params);
+                            tmp = new_drilldown_params;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    array_free(drilldown_root_names);
+    /*
+     * Compute the new url
+     */
+    char *final = self_url2(new_params,new_drilldown_params);
+    FREE(new_drilldown_params);
+
+    return final;
+}
+
+
 char *get_self_link(char *params,char *attr,char *title) {
 
     assert(params);
@@ -226,6 +408,59 @@ char *get_self_link(char *params,char *attr,char *title) {
     FREE(url);
     return result;
 }
+
+/*
+ * This type of link renames any parameters that are superceeded. eg
+ * if p=1 and the drilldown link has p=2 then it becomes..
+ * p=2&@p=1
+ * this only happens for listed parameters.
+ * @params - parameter list 'p=1&q=2'
+ * @attr - <a> attributes.
+ * @title  <a>title</a>
+ */
+char *drill_down_link(char *params,char *attr,char *title) {
+    assert(params);
+    assert(attr);
+    assert(title);
+    char *result=NULL;
+
+    HTML_LOG(1," begin drill down link for params[%s] attr[%s] title[%s]",params,attr,title);
+
+    char *url = drill_down_url(params,DRILL_DOWN_PARAM_NAMES);
+    HTML_LOG(2," end self link [%s]",url);
+
+    ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
+
+    FREE(url);
+    return result;
+}
+
+/*
+ * This type of link undoes the effect of drill_down_url() ie.
+ * p=2&@p=1 becomes p=1
+ * this only happens for listed parameters.
+ * @params - parameter list 'p=1&q=2'
+ * @attr - <a> attributes.
+ * @title  <a>title</a>
+ * @param_list = list of parameters whose old values are kept in the url.
+ */
+char *return_link(char *params,char *attr,char *title) {
+    assert(params);
+    assert(attr);
+    assert(title);
+    char *result=NULL;
+
+    HTML_LOG(1," begin drill down link for params[%s] attr[%s] title[%s]",params,attr,title);
+
+    char *url = return_url(params,DRILL_DOWN_PARAM_NAMES);
+    HTML_LOG(2," end self link [%s]",url);
+
+    ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
+
+    FREE(url);
+    return result;
+}
+
 
 
 //void playlist_close() {
@@ -398,6 +633,19 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     return result;
 }
 
+char *get_drilldown_link_with_font(char *params,char *attr,char *title,char *font_attr) {
+    assert(params);
+    assert(attr);
+    assert(title);
+    assert(font_attr);
+    char *title2=NULL;
+
+    ovs_asprintf(&title2,"<font %s>%s</font>",font_attr,title);
+    char *result = drill_down_link(params,attr,title2);
+
+    FREE(title2);
+    return result;
+}
 char *get_self_link_with_font(char *params,char *attr,char *title,char *font_attr) {
     assert(params);
     assert(attr);
@@ -543,7 +791,22 @@ void display_footer(
     printf("Footer here");
 }
 
-char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr) {
+/*
+ * html code for an image link where url will drillup - ie remap @@param to @param
+ * and @param to param.
+ */
+char *get_theme_image_return_link(char *qlist,char *href_attr,char *image_name,char *button_attr)
+{
+    assert(qlist);
+    assert(image_name);
+
+    char  *tag=get_theme_image_tag(image_name,button_attr);
+    char *result = return_link(qlist,href_attr,tag);
+    FREE(tag);
+    return result;
+}
+char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr)
+{
     assert(qlist);
     assert(image_name);
 
@@ -552,7 +815,8 @@ char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *bu
     FREE(tag);
     return result;
 }
-void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr) {
+void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr)
+{
 
     assert(qlist);
     assert(image_name);
@@ -562,7 +826,8 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
     FREE(tag);
 }
 
-char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin) {
+char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin)
+{
     char *attr;
     ovs_asprintf(&attr,
             " %s%s%s %s ",
@@ -1205,7 +1470,7 @@ int season_count(DbRowId *rid) {
     unsigned long bitmask[WORDS];
     memset(bitmask,0,WORDS * sizeof(long));
 
-    HTML_LOG(0,"Season count [%s]",rid->title);
+    //HTML_LOG(0,"Season count [%s]",rid->title);
     for(  ; rid ; rid=rid->linked) {
         if (rid->category == 'T') {
             i=rid->season / WORDBITS;
@@ -2404,7 +2669,6 @@ TRACE;
 TRACE;
 
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
-xx_dump_genre(__FILE__,__LINE__,numrows,sorted_row_ids);
 
     } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
 TRACE;
@@ -2420,10 +2684,8 @@ TRACE;
     }
 TRACE;
 
-xx_dump_genre(__FILE__,__LINE__,numrows,sorted_row_ids);
     //Free hash without freeing keys
     db_overview_hash_destroy(overview);
-xx_dump_genre(__FILE__,__LINE__,numrows,sorted_row_ids);
 
     if (sortedRowsPtr) *sortedRowsPtr = sorted_row_ids;
     if (rowSetsPtr) *rowSetsPtr = rowsets;
@@ -2745,13 +3007,10 @@ TRACE;
 
 
 TRACE;
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     char *script = create_episode_js_fn(num_rows,sorted_rows);
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
 TRACE;
 
     int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == '1';
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     
 
     printf("%s",script);
@@ -2783,7 +3042,6 @@ TRACE;
                         ep = "play";
                     }
                     char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,(long)rid,1);
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
                     episode_col = vod_link(
                             rid,
                             ep,"",
@@ -2878,13 +3136,11 @@ TRACE;
             FREE(listing);
             listing=tmp;
         }
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     }
 
 
     char *result=NULL;
     ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     FREE(listing);
     return result;
 }
@@ -2896,11 +3152,8 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
 
     html_log(-1,"tv_listing");
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
-        xx_dump_genre(__FILE__,__LINE__,num_rows,sorted_rows);
     FREE(pruned_rows);
     return result;
 }

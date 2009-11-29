@@ -17,7 +17,7 @@ b { color:#55FF55; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=confirm_rescan,back):] Internet Resource Status</h1>
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=confirm_rescan,back):] Site Checker</h1>
 
 <center>
 <table width="100%">
@@ -33,10 +33,12 @@ b { color:#55FF55; }
                                 <td>[:WEB_STATUS(api.themoviedb.org/favicon.ico):]</td>
                                 <td><span class=resource>Movie Db</span>- Main Index</td>
                             </tr>
+<!--
                             <tr>
-                                <td>[:WEB_STATUS(images.themoviedb.org/posters/945/Transformers_7394f415_thumb.jpg):]</td>
+                                <td>XXXWEB_STATUS(images.themoviedb.org/posters/945/Transformers_7394f415_thumb.jpg):]</td>
                                 <td ><span class=resource>TheMovieDb</span>- Movie images</td>
                             </tr>
+-->
                             <tr>
                                 <td>[:WEB_STATUS(thetvdb.com/api/GetSeries.php?seriesname=FlashForward,FlashForward):]</td>
                                 <td><span class=resource>TheTvDb</span>- Tv plots &amp; images</td>

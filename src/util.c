@@ -377,8 +377,10 @@ int chomp(char *str) {
 // Return substr within buf if it is preceeded by prefix and followed by suffix.
 // if match_start is true the prefix is not required at the start.
 // if match_end is true the suffix is not required at the end.
-char *delimited_substring(char *buf,char prefix,char *substr,char suffix,int match_start,int match_end) {
+char *delimited_substring(char *buf,char prefix,char *substr,char suffix,int match_start,int match_end)
+{
 
+    assert(buf);
     char *p,*rest;
     int len = strlen(substr);
 
@@ -629,7 +631,8 @@ void query_update(char *name,char *new)
     hashtable_insert(g_query,name,new);
 }
      
-char *query_val(char *name) {
+char *query_val(char *name)
+{
     char *val;
     if (config_check_str(g_query,name,&val)) {
         return val;
@@ -637,7 +640,8 @@ char *query_val(char *name) {
         return "";
     }
 }
-char *catalog_val(char *name) {
+char *catalog_val(char *name)
+{
     char *val;
     if (config_check_str(g_catalog_config,name,&val)) {
         return val;
@@ -645,7 +649,8 @@ char *catalog_val(char *name) {
         return "";
     }
 }
-char *oversight_val(char *name) {
+char *oversight_val(char *name)
+{
     char *val;
     if (config_check_str(g_oversight_config,name,&val)) {
         return val;
@@ -653,7 +658,8 @@ char *oversight_val(char *name) {
         return "";
     }
 }
-char *setting_val(char *name) {
+char *setting_val(char *name)
+{
     char *val;
     if (config_check_str(g_nmt_settings,name,&val)) {
         return val;
@@ -661,7 +667,8 @@ char *setting_val(char *name) {
         return "";
     }
 }
-char *unpak_val(char *name) {
+char *unpak_val(char *name)
+{
     char *val;
 
     if (g_unpack_config == NULL) {
@@ -675,7 +682,8 @@ char *unpak_val(char *name) {
     }
 }
 // return parent dir of media file. ptr must be freed.
-char *util_dirname(char *file) {
+char *util_dirname(char *file)
+{
 
     char *result=NULL;
 
@@ -702,7 +710,8 @@ char *util_dirname(char *file) {
     return result;
 }
 // return basename of media file. ptr must be freed.
-char *util_basename(char *file) {
+char *util_basename(char *file)
+{
 //For a normal file return the file name, for a DVD VOB folder return parent folder.
     char *p,*s;
 
@@ -733,7 +742,8 @@ char *util_basename(char *file) {
 
     return s;
 }
-int util_starts_with(char *a,char *b) {
+int util_starts_with(char *a,char *b)
+{
     assert(a);
     assert(b);
     if (a == NULL || b == NULL ) {
@@ -748,7 +758,8 @@ int util_starts_with(char *a,char *b) {
     return *b == '\0';
 }
 
-void util_rmdir(char *path,char *name) {
+void util_rmdir(char *path,char *name)
+{
     char *full_path;
     ovs_asprintf(&full_path,"%s/%s",path,name);
     DIR *d = opendir(full_path);
@@ -768,7 +779,8 @@ void util_rmdir(char *path,char *name) {
     FREE(full_path);
 }
 
-int exists_file_in_dir(char *dir,char *name) {
+int exists_file_in_dir(char *dir,char *name)
+{
 
     char *filename;
     int result = 0;
@@ -779,7 +791,8 @@ int exists_file_in_dir(char *dir,char *name) {
     return result;
 }
 
-int util_system(char *cmd) {
+int util_system(char *cmd)
+{
     int result;
     HTML_LOG(1,"system %s",cmd);
     result = system(cmd);
@@ -787,7 +800,8 @@ int util_system(char *cmd) {
     return result;
 }
 
-Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys) {
+Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys)
+{
     if (h == NULL) return NULL;
     Array *a;
    
@@ -815,7 +829,8 @@ char *util_day_static()
     return day;
 }
 
-void replace_char(char *string,char in,char out) {
+void replace_char(char *string,char in,char out)
+{
     if (string) {
         char *p = string;
         while ((p = strchr(p,in)) != NULL) {

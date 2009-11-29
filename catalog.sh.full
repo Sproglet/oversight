@@ -8,6 +8,8 @@
 #!
 #! See end of file for Compress command.
 
+# TODO Any more memory errors remove nfo file generation.
+
 #
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
 # of global arrays causing memory problems.
@@ -96,6 +98,7 @@ if is_nmt ; then
     if [ -d /share/bin ] ; then
         PATH="/share/bin:$PATH" && export PATH
     fi
+    rm -f "/tmp/dns_cache"  # nmt brokenness
 else
     uid=root
     gid=None
@@ -801,8 +804,8 @@ END{
 
     g_search_engine[0]=g_search_yahoo;
     g_search_engine[1]=g_search_bing;
-    g_search_engine[2]=g_search_ask;
-    g_search_engine_count=3;
+    #g_search_engine[2]=g_search_ask; results too similar to google giving false +ves.
+    g_search_engine_count=2;
     g_search_engine_current=0;
 
     THIS_YEAR=substr(NOW,1,4);
@@ -929,18 +932,6 @@ END{
 #    dump(0,"pos",p);
 #    id0();
 #}
-
-function get_local_yahoo(\
-url,url2) {
-
-    url="http://search.yahoo.com/search?p=";
-    #bypass yahoo redirection - may save 1s per search - every bit helps when building the index.
-    if (url2) {
-        url = url2"?p=";
-        INF("local yahoo search = "url);
-    }
-    return url;
-}
 
 function replace_share_names(folders,\
 f,share_name) {
@@ -2039,11 +2030,12 @@ dbline,dbfields,err) {
 
         parseDbRow(dbline,dbfields);
 
-        # Only treat video as scanned if it was previously categorised.
-        # This allows rescans of bad files.
-        if (index("MT",dbfields[CATEGORY]) > 0) {
-            add_file(dbfields[FILE]);
-        }
+         add_file(dbfields[FILE]);
+#        # Only treat video as scanned if it was previously categorised.
+#        # This allows rescans of bad files.
+#        if (index("MT",dbfields[CATEGORY]) > 0) {
+#            add_file(dbfields[FILE]);
+#        }
     }
     if (err == 0 ) close(db);
     #dump(0,"scanned",g_scanned);
@@ -2179,20 +2171,6 @@ function qa(f) {
     return g_quote f g_quote;
 }
 
-function grandparent_folder_exists(line) {
-
-    sub(/\/[^\/]+\/[^\/]+$/,"/",line); # /a/b/c/d to /a/b
-
-    gsub(/\/+/,"/",line); #remove /a//b/c
-
-    if (!(line in g_folder_exists) ) {
-        g_folder_exists[line] = is_dir(line);
-    }
-
-    return g_folder_exists[line];
-}
-
-
 function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
     val,y,m,d,h,min) {
     # Calculate file time...
@@ -2315,7 +2293,7 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
 }
 
 function extractEpisodeByPatterns(plugin,line,details,\
-ret) {
+ret,p,pat,i,parts) {
 
     #Note if looking at entire path name folders are seperated by /
 
@@ -2324,43 +2302,38 @@ ret) {
 
     #id1("extractEpisodeByPatterns["line"]");
 
-    ret=1;
+    ret=0;
 
+    # Each pattern has format  prefix match len @ prefix regex @ series regex @ episode regex
+    # This mess is because awk regex dont have captures.
+    p=0
     # s00e00e01
-    if (episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)+0 == 0) {
+    pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+e[0-9]+";
+    # long forms season 1 ep  3
+    pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?";
+    #s00e00 (allow d00a for BigBrother)
+    pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[de/][0-9]+[a-e]?";
+    #00x00
+    pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?";
+    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
+    #TODO blank idx passed. need to tidy up code here?
+    # extractEpisodeByDates is also called by other logic. 
+    # we need to be clear why idx is passed.
+    pat[++p]="DATE";
+    ## just numbers.
+    pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]";
 
-        # long forms season 1 ep  3
-        if (episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)+0 == 0) { #00x00 
-
-            #s00e00 (allow d00a for BigBrother)
-            if (episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)+0 == 0) {
-
-                #00x00
-                if (episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)+0 == 0) {
-
-                    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-                    #TODO blank idx passed. need to tidy up code here?
-                    # extractEpisodeByDates is also called by other logic. 
-                    # we need to be clear why idx is passed.
-                    if (extractEpisodeByDates(plugin,"",line,details) +0 == 0) {
-
-                        ## just numbers.
-                        ##remove 264 before trying pure numeric detection
-                        #if (index(line,"x264")) { #gsub(/\<x264\>/,"x-264",line); #}
-                        if (episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)+0 == 0) { # ...name101...
-
-                            ret=0;
-
-    #mini series formats - no season
-
-                        }
-                    }
-                }
-            }
+    for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
+        if (pat[i] == "DATE" ) {
+            ret = extractEpisodeByDates(plugin,"",line,details);
+        } else {
+            split(pat[i],parts,"@");
+            dump(0,"epparts",parts);
+            ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details);
         }
     }
 
-    if (ret == 1) {
+    if (ret+0 != 0) {
         id1("extractEpisodeByPatterns: line["line"]");
         dump(0,"details",details);
         id0(ret);
@@ -2582,6 +2555,7 @@ function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
 
     #id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
+    DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
     count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart);
     #dump(0,"rtext",rtext);
     #dump(0,"rstart",rstart);
@@ -2601,43 +2575,50 @@ rtext,rstart,count,i,ret) {
 function extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,reg_pos,reg_match,details,\
 tmpTitle,ret,reg_len) {
 
+    ret = 0;
     id1("extractEpisodeByPatternSingle:"reg_match);
 
     delete details;
 
-    reg_pos += prefixReLen;
-    reg_len = length(reg_match)-prefixReLen;
+    if (reg_match ~ "([XxHh.]?264|1080)$" ) {
 
-    details[TITLE] = substr(line,1,reg_pos-1);
-    details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len);
+        DEBUG("ignoring ["reg_match"]");
 
-    line=substr(reg_match,prefixReLen+1); # season episode
-
-    if (match(details[TITLE],": *")) {
-        details[TITLE] = substr(details[TITLE],RSTART+RLENGTH);
-    }
-    #Remove release group info
-    if (match(details[TITLE],"^[a-z][a-z0-9]+[-]")) {
-       tmpTitle=substr(details[TITLE],RSTART+RLENGTH);
-       if (tmpTitle != "" ) {
-           INF("Removed group was ["details[TITLE]"] now ["tmpTitle"]");
-           details[TITLE]=tmpTitle;
-       }
-    }
-
-    details[TITLE] = clean_title(details[TITLE]);
-    
-    DEBUG("ExtractEpisode: Title= ["details[TITLE]"]");
-
-    if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
-        details[EXT]=details[ADDITIONAL_INF];
-        gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF]);
-        details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2);
-    }
+    } else {
 
 
-    #Reject this could be 64(x264) or 80(hd1080)
-    if (line !~ "(x264|1080)$" ) {
+        reg_pos += prefixReLen;
+        reg_len = length(reg_match)-prefixReLen;
+
+        details[TITLE] = substr(line,1,reg_pos-1);
+        details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len);
+
+        line=substr(reg_match,prefixReLen+1); # season episode
+
+        if (match(details[TITLE],": *")) {
+            details[TITLE] = substr(details[TITLE],RSTART+RLENGTH);
+        }
+        #Remove release group info
+        if (match(details[TITLE],"^[a-z][a-z0-9]+[-]")) {
+           tmpTitle=substr(details[TITLE],RSTART+RLENGTH);
+           if (tmpTitle != "" ) {
+               INF("Removed group was ["details[TITLE]"] now ["tmpTitle"]");
+               details[TITLE]=tmpTitle;
+           }
+        }
+
+        details[TITLE] = clean_title(details[TITLE]);
+        
+        DEBUG("ExtractEpisode: Title= ["details[TITLE]"]");
+
+        if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
+            details[EXT]=details[ADDITIONAL_INF];
+            gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF]);
+            details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2);
+        }
+
+
+        #Reject this could be 64(x264) or 80(hd1080)
 
         #Match the episode first to handle 3453 and 456
         match(line,episodeRe "$" );
@@ -2702,6 +2683,7 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total,more_info,s
             WARNING("Skipping unknown file ["file"]");
             continue;
         }
+
         thisTime = systime();
 
 
@@ -2967,7 +2949,7 @@ search_regex_key,search_order_key,search_order,s,search_order_size) {
                     #eg binsearch will find "a-bcd" given "a-b" to prevent this 
                     # change a-b to "a-b."
                     #bintube will ignore the dot.
-                    bestUrl = searchOnlineNfoLinksForImdbAlternate(name_try".");
+                    bestUrl = searchOnlineNfoImdbLinks(name_try".");
 
                 } else if (search_order[s] == "IMDB") {
 
@@ -3104,16 +3086,16 @@ name) {
 #These engines should take a file name as input and return a page with links to nfo files.
 #The resultant links are scraped for imdb ids.
 # Not newzleech not used as the search is too vague. bintube and binsearch have exact search.
-function searchOnlineNfoLinksForImdbAlternate(name,\
+function searchOnlineNfoImdbLinks(name,\
 url) {
-    url=searchOnlineNfoLinksForImdbAlternateFilter(name,"",150);
+    url=searchOnlineNfoImdbLinksFilter(name,"",150);
     if (url == "") {
-        url=searchOnlineNfoLinksForImdbAlternateFilter(name,"+nfo","");
+        url=searchOnlineNfoImdbLinksFilter(name,"+nfo","");
     }
     return url;
 }
 
-function searchOnlineNfoLinksForImdbAlternateFilter(name,additionalKeywords,minSize,\
+function searchOnlineNfoImdbLinksFilter(name,additionalKeywords,minSize,\
 choice,i,url) {
     g_nfo_search_choices = 2;
 
@@ -3352,7 +3334,7 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
                 filterTitlesByTvDbPresence(plugin,alternateTitles,showIds);
                 if (hash_size(showIds)+0 > 1) {
 
-                    filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds);
+                    filterUsenetTitles(showIds,cleanSuffix(idx),showIds);
                 }
 
                 tvdbid = selectBestOfBestTitle(plugin,idx,showIds);
@@ -3456,11 +3438,11 @@ ret) {
 # Two engines are used bintube and binsearch in case
 # a) one is unavailable.
 # b) binsearch has slightly better search of files within collections. eg if a series posted under one title.
-function filterTitlesFoundOnUsenetWithSpecificText(titles,filterText,filteredTitles,\
+function filterUsenetTitles(titles,filterText,filteredTitles,\
 result) {
-    result = filterTitlesFoundOnUsenetEngineWithSpecificText(titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles);
+result = filterUsenetTitles1(titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles);
    if (result == 0 ) {
-        result = filterTitlesFoundOnUsenetEngineWithSpecificText(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles);
+       result = filterUsenetTitles1(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles);
    }
    return 0+ result;
 }
@@ -3469,7 +3451,7 @@ result) {
 #IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(idx)
 #IN titles - hased by show ID
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
-function filterTitlesFoundOnUsenetEngineWithSpecificText(titles,usenet_query_url,filteredTitles,\
+function filterUsenetTitles1(titles,usenet_query_url,filteredTitles,\
 t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 
     found = 0;
@@ -4595,14 +4577,6 @@ episodeUrl,filter,result) {
     return 0+ result;
 }
 
-function scrape_check(idx,site) {
-    return (index(g_scraped[idx],site));
-}
-
-function scrape_set(idx,site) {
-    g_scraped[idx] = g_scraped[idx] "," site;
-}
-
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info(plugin,idx,tvDbSeriesUrl,\
 result) {
@@ -5300,7 +5274,7 @@ i,urls,tmpf,qf,r) {
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget2(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,default_referer) {
+args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 
     args=" -U \""g_user_agent"\" "g_wget_opts;
     default_referer = get_referer(url);
@@ -5348,9 +5322,6 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
 
         # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-        same_domain_delay=0;
-        # cmd = get_sleep_command(url,same_domain_delay) cmd;
-
         DEBUG("WGET ["url"]");
         result = exec(cmd);
         if (result != 0) {
@@ -5360,58 +5331,6 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,d
         }
 #ALL#    }
     return 0+ result;
-}
-
-# Slow down queries to avoid blacklist.
-function get_sleep_command(url,required_gap,\
-domain,remaining_gap) {
-
-    if (match(url,"https?://[a-z0-9A-Z.]+")) {
-        domain=substr(url,RSTART,RLENGTH);
-    }
-
-    g_search_count[domain]++;
-    if (index(domain,"epguide") || index(domain,"imdb")) {
-        return "";
-    }
-    remaining_gap=required_gap - (systime()-g_last_search_time[domain]);
-    if ( g_last_search_time[domain] > 0 && remaining_gap > 0 ) {
-
-        g_last_search_time[domain] = systime()+remaining_gap;
-        return "sleep "remaining_gap" ; ";
-    } else {
-        g_last_search_time[domain] = systime();
-        return "";
-    }
-}
-
-# Get the local poster path using the yamj convention
-function local_poster_path(idx,must_exist,\
-    p,ext,e) {
-    split(".jpg,.JPG",ext,",");
-    p = g_fldr[idx] "/" g_media[idx];
-    if (g_media[idx] ~ "/$") {
-        #VIDEO TS  /path/film/VIDEO_TS  look for /path/film/film.jpg
-        p = g_fldr[idx] "/" g_media[idx] g_media[idx];
-        sub(/\/$/,"",p);
-    } else {
-        # normal file /path/film.avi look for /path/film.jpg
-        sub(/\.[^.]+$/,"",p);
-    }
-
-    for(e in ext) {
-        if (is_file(p ext[e] )) {
-            INF("Found local poster path "p ext[e]);
-            return p ext[e];
-        }
-    }
-    if (must_exist) {
-        INF("No local poster path for "".jpg/.png/...");
-        return "";
-    } else {
-        INF("Setting default local poster path = "p);
-        return p ".jpg";
-    }
 }
 
 #Return reference to an internal poster location. eg
@@ -6104,7 +6023,7 @@ l,akas,a,c,br) {
             }
             if (index(akas[a],br gTitleCountries[c]")")) {
                 #We hit a matching AKA country ...
-                if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|script title|closing credits|informal alternative")) {
+                if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative")) {
                     #the qualifications again suggest that weve already passed a better match
                     # ignore rest of section.
                     DEBUG("Ignoring aka section");
@@ -6590,22 +6509,15 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
     parseDbRow(dbrow,dbOne);
     get_name_dir_fields(dbOne);
 
-    DEBUG("NFO = "dbOne[NFO]);
-
     if (dbOne[NFO] == "" ) return;
 
-    DEBUG("DIR = "dbOne[DIR]);
     nfo=getPath(dbOne[NFO],dbOne[DIR]);
 
-    DEBUG("nfo = "nfo);
 
     if (is_file(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
         DEBUG("nfo already exists - skip writing");
         return;
     }
-    DEBUG("nfo exists = "is_file(nfo));
-
-    DEBUG("nfo style = "nfoFormat);
     
     if (nfoFormat == "xmbc" ) {
         movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTOR","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";

@@ -8,6 +8,8 @@
 #!
 #! See end of file for Compress command.
 
+
+
 #
 
 
@@ -96,6 +98,7 @@ gid=nmt
 if [ -d /share/bin ] ; then
 PATH="/share/bin:$PATH" && export PATH
 fi
+rm -f "/tmp/dns_cache"  # nmt brokenness
 else
 uid=root
 gid=None
@@ -801,8 +804,8 @@ g_search_google = "http://www.google.com/search?q="
 
 g_search_engine[0]=g_search_yahoo
 g_search_engine[1]=g_search_bing
-g_search_engine[2]=g_search_ask
-g_search_engine_count=3
+
+g_search_engine_count=2
 g_search_engine_current=0
 
 THIS_YEAR=substr(NOW,1,4)
@@ -929,18 +932,6 @@ unlock(g_db_lock_file)
 
 
 
-
-function get_local_yahoo(\
-url,url2) {
-
-url="http://search.yahoo.com/search?p="
-
-if (url2) {
-url = url2"?p="
-INF("local yahoo search = "url)
-}
-return url
-}
 
 function replace_share_names(folders,\
 f,share_name) {
@@ -2039,11 +2030,12 @@ if ( index(dbline,"\t") != 1 ) { continue; }
 
 parseDbRow(dbline,dbfields)
 
-
-
-if (index("MT",dbfields[CATEGORY]) > 0) {
 add_file(dbfields[FILE])
-}
+
+
+
+
+
 }
 if (err == 0 ) close(db)
 
@@ -2179,20 +2171,6 @@ gsub(g_quote,g_quote "\\"g_quote g_quote,f)
 return g_quote f g_quote
 }
 
-function grandparent_folder_exists(line) {
-
-sub(/\/[^\/]+\/[^\/]+$/,"/",line)
-
-gsub(/\/+/,"/",line)
-
-if (!(line in g_folder_exists) ) {
-g_folder_exists[line] = is_dir(line)
-}
-
-return g_folder_exists[line]
-}
-
-
 function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 val,y,m,d,h,min) {
 
@@ -2315,7 +2293,7 @@ return ret
 }
 
 function extractEpisodeByPatterns(plugin,line,details,\
-ret) {
+ret,p,pat,i,parts) {
 
 
 
@@ -2324,43 +2302,38 @@ line = tolower(line)
 
 
 
-ret=1
-
-
-if (episodeExtract(line,0,"",         "s[0-9][0-9]?", "[/ .]?[e/][0-9]+e[0-9]+",details)+0 == 0) {
-
-
-if (episodeExtract(line,0,"\\<","(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?","[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?",details)+0 == 0) {
-
-
-if (episodeExtract(line,0,"",         "s?[0-9][0-9]?","[/ .]?[de/][0-9]+[a-e]?",details)+0 == 0) {
-
-
-if (episodeExtract(line,1,"[^a-z0-9]","[0-9][0-9]?",  "[/ .]?x[0-9][0-9]?",details)+0 == 0) {
-
-
-
-
-
-if (extractEpisodeByDates(plugin,"",line,details) +0 == 0) {
-
-
-
-
-if (episodeExtract(line,1,"[^-0-9]", "([1-9]|2[1-9]|1[0-8]|[03-9][0-9])","/?[0-9][0-9]",details)+0 == 0) {
-
 ret=0
 
 
 
-}
-}
-}
-}
+p=0
+
+pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+e[0-9]+"
+
+pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?"
+
+pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[de/][0-9]+[a-e]?"
+
+pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?"
+
+
+
+
+pat[++p]="DATE"
+
+pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]"
+
+for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
+if (pat[i] == "DATE" ) {
+ret = extractEpisodeByDates(plugin,"",line,details)
+} else {
+split(pat[i],parts,"@")
+dump(0,"epparts",parts)
+ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details)
 }
 }
 
-if (ret == 1) {
+if (ret+0 != 0) {
 id1("extractEpisodeByPatterns: line["line"]")
 dump(0,"details",details)
 id0(ret)
@@ -2582,6 +2555,7 @@ function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
 
 
+DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]")
 count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart)
 
 
@@ -2601,9 +2575,17 @@ return 0+ret
 function extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,reg_pos,reg_match,details,\
 tmpTitle,ret,reg_len) {
 
+ret = 0
 id1("extractEpisodeByPatternSingle:"reg_match)
 
 delete details
+
+if (reg_match ~ "([XxHh.]?264|1080)$" ) {
+
+DEBUG("ignoring ["reg_match"]")
+
+} else {
+
 
 reg_pos += prefixReLen
 reg_len = length(reg_match)-prefixReLen
@@ -2637,7 +2619,6 @@ details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2)
 
 
 
-if (line !~ "(x264|1080)$" ) {
 
 
 match(line,episodeRe "$" )
@@ -2702,6 +2683,7 @@ if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
 WARNING("Skipping unknown file ["file"]")
 continue
 }
+
 thisTime = systime()
 
 
@@ -2967,7 +2949,7 @@ if (search_order[s] == "ONLINE_NFO") {
 
 
 
-bestUrl = searchOnlineNfoLinksForImdbAlternate(name_try".")
+bestUrl = searchOnlineNfoImdbLinks(name_try".")
 
 } else if (search_order[s] == "IMDB") {
 
@@ -3104,16 +3086,16 @@ return name
 
 
 
-function searchOnlineNfoLinksForImdbAlternate(name,\
+function searchOnlineNfoImdbLinks(name,\
 url) {
-url=searchOnlineNfoLinksForImdbAlternateFilter(name,"",150)
+url=searchOnlineNfoImdbLinksFilter(name,"",150)
 if (url == "") {
-url=searchOnlineNfoLinksForImdbAlternateFilter(name,"+nfo","")
+url=searchOnlineNfoImdbLinksFilter(name,"+nfo","")
 }
 return url
 }
 
-function searchOnlineNfoLinksForImdbAlternateFilter(name,additionalKeywords,minSize,\
+function searchOnlineNfoImdbLinksFilter(name,additionalKeywords,minSize,\
 choice,i,url) {
 g_nfo_search_choices = 2
 
@@ -3352,7 +3334,7 @@ searchAbbreviationAgainstTitles(title,alternateTitles)
 filterTitlesByTvDbPresence(plugin,alternateTitles,showIds)
 if (hash_size(showIds)+0 > 1) {
 
-filterTitlesFoundOnUsenetWithSpecificText(showIds,cleanSuffix(idx),showIds)
+filterUsenetTitles(showIds,cleanSuffix(idx),showIds)
 }
 
 tvdbid = selectBestOfBestTitle(plugin,idx,showIds)
@@ -3456,11 +3438,11 @@ return ret
 
 
 
-function filterTitlesFoundOnUsenetWithSpecificText(titles,filterText,filteredTitles,\
+function filterUsenetTitles(titles,filterText,filteredTitles,\
 result) {
-result = filterTitlesFoundOnUsenetEngineWithSpecificText(titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles)
+result = filterUsenetTitles1(titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles)
 if (result == 0 ) {
-result = filterTitlesFoundOnUsenetEngineWithSpecificText(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles)
+result = filterUsenetTitles1(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles)
 }
 return 0+ result
 }
@@ -3469,7 +3451,7 @@ return 0+ result
 
 
 
-function filterTitlesFoundOnUsenetEngineWithSpecificText(titles,usenet_query_url,filteredTitles,\
+function filterUsenetTitles1(titles,usenet_query_url,filteredTitles,\
 t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 
 found = 0
@@ -4595,14 +4577,6 @@ id0(result)
 return 0+ result
 }
 
-function scrape_check(idx,site) {
-return (index(g_scraped[idx],site))
-}
-
-function scrape_set(idx,site) {
-g_scraped[idx] = g_scraped[idx] "," site
-}
-
 
 function get_tv_series_info(plugin,idx,tvDbSeriesUrl,\
 result) {
@@ -5300,7 +5274,7 @@ return r
 
 
 function wget2(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,same_domain_delay,targetFile,result,default_referer) {
+args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 
 args=" -U \""g_user_agent"\" "g_wget_opts
 default_referer = get_referer(url)
@@ -5348,9 +5322,6 @@ cmd = "wget -O "downloadedFile" "args" "url" "unzip_cmd
 
 
 
-same_domain_delay=0
-
-
 DEBUG("WGET ["url"]")
 result = exec(cmd)
 if (result != 0) {
@@ -5360,58 +5331,6 @@ rm(downloadedFile,1)
 }
 
 return 0+ result
-}
-
-
-function get_sleep_command(url,required_gap,\
-domain,remaining_gap) {
-
-if (match(url,"https?://[a-z0-9A-Z.]+")) {
-domain=substr(url,RSTART,RLENGTH)
-}
-
-g_search_count[domain]++
-if (index(domain,"epguide") || index(domain,"imdb")) {
-return ""
-}
-remaining_gap=required_gap - (systime()-g_last_search_time[domain])
-if ( g_last_search_time[domain] > 0 && remaining_gap > 0 ) {
-
-g_last_search_time[domain] = systime()+remaining_gap
-return "sleep "remaining_gap" ; "
-} else {
-g_last_search_time[domain] = systime()
-return ""
-}
-}
-
-
-function local_poster_path(idx,must_exist,\
-p,ext,e) {
-split(".jpg,.JPG",ext,",")
-p = g_fldr[idx] "/" g_media[idx]
-if (g_media[idx] ~ "/$") {
-
-p = g_fldr[idx] "/" g_media[idx] g_media[idx]
-sub(/\/$/,"",p)
-} else {
-
-sub(/\.[^.]+$/,"",p)
-}
-
-for(e in ext) {
-if (is_file(p ext[e] )) {
-INF("Found local poster path "p ext[e])
-return p ext[e]
-}
-}
-if (must_exist) {
-INF("No local poster path for "".jpg/.png/...")
-return ""
-} else {
-INF("Setting default local poster path = "p)
-return p ".jpg"
-}
 }
 
 
@@ -6104,7 +6023,7 @@ return
 }
 if (index(akas[a],br gTitleCountries[c]")")) {
 
-if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|script title|closing credits|informal alternative")) {
+if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative")) {
 
 
 DEBUG("Ignoring aka section")
@@ -6590,22 +6509,15 @@ return
 parseDbRow(dbrow,dbOne)
 get_name_dir_fields(dbOne)
 
-DEBUG("NFO = "dbOne[NFO])
-
 if (dbOne[NFO] == "" ) return
 
-DEBUG("DIR = "dbOne[DIR])
 nfo=getPath(dbOne[NFO],dbOne[DIR])
 
-DEBUG("nfo = "nfo)
 
 if (is_file(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
 DEBUG("nfo already exists - skip writing")
 return
 }
-DEBUG("nfo exists = "is_file(nfo))
-
-DEBUG("nfo style = "nfoFormat)
 
 if (nfoFormat == "xmbc" ) {
 movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTOR","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE","

@@ -11,9 +11,20 @@ echo ======= $v ==========
 
 ./util/squeeze
 chmod 775 *cgi *.sh
+
+label="$v$@"
+
 ( cd src && make ARCH=100 clean all && make ARCH=200 clean all )
-../nmt-scripts/build `basename "$PWD"` "$v$@" oversight.cgi \
+
+../nmt-scripts/build `basename "$PWD"` "$label" oversight.cgi \
 *.sh *.cgi *.full conf/*.example conf/.*defaults images imdb/imdb.sh imdb/download/.keep templates help/*.help db \
 	logs/.keep tmp/.keep *.html bin cache/.keep
-svn commit -m "release $v$@"
+
+echo "Do svn commit and tag - ctrl -c to stop"
+
+read x
+
+svn commit -m "release $label"
+
+$ svn copy https://oversight.googlecode.com/svn/trunk/  "https://oversight.googlecode.com/svn/tags/$label" -m "$label"
 #./bundle.unpak

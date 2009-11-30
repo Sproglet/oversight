@@ -22,6 +22,7 @@ void setPermissions()
     if (pwd != NULL) {
         chdir(appDir());
         permissions(pwd->pw_uid,pwd->pw_gid,"tmp");
+        permissions(pwd->pw_uid,pwd->pw_gid,"logs");
         permissions(pwd->pw_uid,pwd->pw_gid,".");
         permissions(pwd->pw_uid,pwd->pw_gid,"index.db");
         permissions(pwd->pw_uid,pwd->pw_gid,"plot.db");
@@ -33,4 +34,7 @@ void setPermissions()
     } else {
         HTML_LOG(0,"user [%s] not found",NMT_USER);
     }
+    // remove crappy dns cache that NMT have coded into wget.
+    // This causes problems when a site changes IP. (which happens fairly often)
+    unlink("/tmp/dns_cache");
 }

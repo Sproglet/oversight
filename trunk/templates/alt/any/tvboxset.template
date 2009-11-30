@@ -76,11 +76,15 @@ table.overview_poster {
             <center>
             <table >
                 <tr>
-                    <table>
-                        <tr>
-                            <td id=menutitle align=center >&nbsp;</td>
-                        </tr>
-                    </table>
+                    <td>
+                        <center>
+                            <table>
+                                <tr>
+                                    <td id=menutitle align=center >&nbsp;</td>
+                                </tr>
+                            </table>
+                        </center>
+                    </td>
                 </tr>
                 <tr>
                     <td >

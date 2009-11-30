@@ -2021,8 +2021,9 @@ function add_file(path) {
 }
 
 function get_files(db,\
-dbline,dbfields,err) {
+dbline,dbfields,err,count) {
 
+    id1("get_files");
     delete g_scanned;
     while((err = (getline dbline < db )) > 0) {
 
@@ -2036,9 +2037,11 @@ dbline,dbfields,err) {
 #        if (index("MT",dbfields[CATEGORY]) > 0) {
 #            add_file(dbfields[FILE]);
 #        }
+        count++;
     }
     if (err == 0 ) close(db);
     #dump(0,"scanned",g_scanned);
+    id0(count" files");
 }
 
 function remove_brackets(s) {
@@ -4816,6 +4819,7 @@ t,xmlpathSlash,xmlpathHash) {
 
 #DEBUG("@@ clean_xml_path ["xmlpath"]");
 
+    dump(0,"pre clean["xmlpath"]",xml);
     #index function is faster than substr
     for(t in xml) {
         if (index(t,xmlpath) == 1) {
@@ -4824,6 +4828,7 @@ t,xmlpathSlash,xmlpathHash) {
             }
         }
     }
+    dump(0,"post clean["xmlpath"]",xml);
 }
 
 function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\

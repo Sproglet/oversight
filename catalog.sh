@@ -2021,8 +2021,9 @@ if (NEWSCAN == 1) g_scanned[short_path(path)]++
 }
 
 function get_files(db,\
-dbline,dbfields,err) {
+dbline,dbfields,err,count) {
 
+id1("get_files")
 delete g_scanned
 while((err = (getline dbline < db )) > 0) {
 
@@ -2036,9 +2037,11 @@ add_file(dbfields[FILE])
 
 
 
+count++
 }
 if (err == 0 ) close(db)
 
+id0(count" files")
 }
 
 function remove_brackets(s) {

@@ -1,0 +1,71 @@
+<!-- Default Fanart Tv Template  $Id:$ -->
+<style type="text/css">
+body { color:yellow ; background-color:black; }
+
+.transparent {
+    background-color:black;
+    margin:0px;
+    padding:0px;
+    border:0px;
+[:IF($@gaya):]
+    background-color:black-alpha2;
+[:ELSE:]
+    filter:alpha(opacity=70);
+    opacity:0.7;
+    color:white;
+[:ENDIF:]
+}
+
+</style>
+</head>
+<body height=100% focuscolor=yellow focustext=black [background=:FANART_URL(default.jpg):] >
+<table class=main width=100%>
+<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
+
+[:FORM_START:]
+<table width=100%>
+
+    <tr valign=top>
+        <td colspan=2>
+            [:INCLUDE_TEMPLATE(buttons):]
+        </td>
+    </tr>
+</table>
+<table width=100% class=main >
+    <tr valign=bottom class=main>
+        <td class=main width=1%>[:POSTER:]</td>
+
+        <td width=100% class=main>
+            <table class=transparent  width=100%>
+                <tr>
+                    <td class=title><font class=title>[:TITLE:]</font></td>
+                    <td align=right><font class=info[:IS_GAYA:]>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
+                </tr>
+                <tr>
+                    <td align=left><font class=info[:IS_GAYA:] id=genre>&nbsp;[:GENRE:]</font></td>
+                    <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
+                </tr>
+                <tr><td colspan=2 align=left><hr><span class=font[:IS_GAYA:] id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
+            </table>
+        </td>
+    </tr>
+    <tr valign=bottom class=transparent >
+        <td colspan=2 >
+            <table width=100%>
+                <tr>
+                    <td class=filelist align=center>
+                    [:TV_LISTING:]
+                    [:INCLUDE_TEMPLATE(submit_btn):]
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</form>
+
+</td></tr></table>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

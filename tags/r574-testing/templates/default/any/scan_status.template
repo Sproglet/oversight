@@ -1,0 +1,84 @@
+<!-- Default Rescan Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Scan Status</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+        <style type="text/css">
+img.webstatus { width:20; height:20; }
+Xtd.webstatus { font-size:90% ; }
+p { font-size:90%; color:white; }
+a { color:yellow; }
+body { font-size:20; font-family:"arial"; color:white; }
+.resource { color:#55FF55 ; font-weight:bold; }
+b { color:#55FF55; }
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=confirm_rescan,back):] Site Checker</h1>
+
+<center>
+<table width="100%">
+<tr valign="top">
+<td align="center">
+                        <h2>Web Database Status</h2>
+                        <table>
+                            <tr>
+                                <td>[:WEB_STATUS(www.imdb.com/favicon.ico):]</td>
+                                <td ><span class=resource>IMDB</span> - Plots &amp; IMDB Ratings</td>
+                            </tr>
+                            <tr>
+                                <td>[:WEB_STATUS(api.themoviedb.org/favicon.ico):]</td>
+                                <td><span class=resource>Movie Db</span>- Main Index</td>
+                            </tr>
+<!--
+                            <tr>
+                                <td>XXXWEB_STATUS(images.themoviedb.org/posters/945/Transformers_7394f415_thumb.jpg):]</td>
+                                <td ><span class=resource>TheMovieDb</span>- Movie images</td>
+                            </tr>
+-->
+                            <tr>
+                                <td>[:WEB_STATUS(thetvdb.com/api/GetSeries.php?seriesname=FlashForward,FlashForward):]</td>
+                                <td><span class=resource>TheTvDb</span>- Tv plots &amp; images</td>
+                            </tr>
+                            <tr>
+                                <td>[:WEB_STATUS(services.tvrage.com/feeds/showinfo.php?sid=20798,FlashForward):]</td>
+                                <td><span class=resource>TvRage(api)</span>-
+                                TV Plots (backup)</td>
+                            </tr>
+                        </table>
+</td>
+<td align="center">
+                        <h2>Search Engine Status</h2>
+                       
+                        <table>
+                            <tr>
+                                <!-- Check that search engine has not blacklisted us -->
+                                <td>[:WEB_STATUS(www.bing.com/search?q=transformers+imdb,tt0418279):]</td>
+                                <td><span class=resource>Bing</span></td>
+                            </tr>
+                            <tr>
+                                <!-- Check that search engine has not blacklisted us -->
+                                <td>[:WEB_STATUS(search.yahoo.com/search?q=transformers,tt0418279):]</td>
+                                <td><span class=resource>Yahoo</span></td>
+                            </tr>
+                            <tr>
+                                <!-- Check that search engine has not blacklisted us -->
+                                <td>[:WEB_STATUS(www.google.co.uk/search?q=transformers,tt0418279):]</td>
+                                <td><span class=resource>Google</span></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <p>For best results <b>IMDB</b>, <b>TheMovieDb</b> and <b>TheTvDb</b> and <b>all three search engines</b> should be active. TvRage is used as a backup for TV Episode and Plot information.
+            <p>If any of the above search engines are down, check by trying a search on a PC <u>on the same network.</u>
+            <br>[:LINK(action=confirm_rescan,{Back To Rescan Panel}):]
+</center>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

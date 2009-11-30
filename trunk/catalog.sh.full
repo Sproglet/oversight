@@ -2058,7 +2058,7 @@ function remove_brackets(s) {
 function remove_absent_files_from_new_db(db,\
     tmp_db,dbfields,\
     list,f,shortf,maxCommandLength,dbline,keep,\
-    gp,blacklist_re,blacklist_dir,timer) {
+    gp,blacklist_re,blacklist_dir,timer,in_scanned_list) {
     list="";
     maxCommandLength=3999;
 
@@ -2084,7 +2084,9 @@ function remove_absent_files_from_new_db(db,\
 
             keep=1;
 
-            if (NEWSCAN == 1 && g_scanned[shortf] == 0 ) {
+            in_scanned_list = (shortf in g_scanned);
+
+            if (in_scanned_list == 1 && NEWSCAN == 1 && g_scanned[shortf] == 0 ) {
 
                 #For duplicate files we want to keep the first one as this is the one 
                 #that gets updated during a rescan. So ig g_scanned(f) > 1 then
@@ -2138,9 +2140,9 @@ function remove_absent_files_from_new_db(db,\
                 g_absent_file_count++;
                 
             }
-            if (NEWSCAN == 1 && g_scanned[shortf] - 1 > 0) {
+            if (in_scanned_list == 1 && NEWSCAN == 1 && g_scanned[shortf] - 1 > 0) {
                 #For duplicate files we want to keep the first one as this is the one 
-                #that gets updated during a rescan. So ig g_scanned(f) > 1 then
+                #that gets updated during a rescan. So if g_scanned(f) > 1 then
                 # set it to 0. Then the next duplicate will trigger delete code.
                 g_scanned[shortf] = 0;
             }

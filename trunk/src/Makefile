@@ -5,27 +5,36 @@ ARCH=100
 VERFILE=verfile
 
 REV='"`cat verfile`"'
+
 ifdef WINDIR
 ifeq ($(ARCH),200) 
-		CROSS=/mips-4.3/
-		CC=$(CROSS)/bin/mips-linux-gnu-gcc
-		LD=$(CROSS)/bin/mips-linux-gnu-gcc
-		STRIP=$(CROSS)/bin/mips-linux-gnu-strip
-		CFLAGS_ARCH=-EL
-		LDFLAGS_ARCH=-EL
-		BADARCH=100
+	CROSS_DIR=/mips-4.3/
+	CFLAGS_ARCH=-EL
+	LDFLAGS_ARCH=-EL
 else
-		CROSS=/cross-gcc/mipsel-linux-uclibc
-		CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
-		LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
-		STRIP=$(CROSS)/bin/mipsel-linux-uclibc-strip
-		BADARCH=200
+	CROSS_DIR=/cross-gcc/mipsel-linux-uclibc
 endif
 else
-CROSS=/usr/local/mips
-CC=$(CROSS)/bin/mipsel-linux-uclibc-gcc
-LD=$(CROSS)/bin/mipsel-linux-uclibc-gcc
+ifeq ($(ARCH),200) 
+	CROSS_DIR=/usr/local/mips-4.3
+	CFLAGS_ARCH=-EL
+	LDFLAGS_ARCH=-EL
+else
+	CROSS_DIR=/usr/local/mips
 endif
+endif
+
+ifeq ($(ARCH),200) 
+	BADARCH=100
+	CROSS_TYPE=mips-linux-gnu
+else
+	BADARCH=200
+	CROSS_TYPE=mipsel-linux-uclibc
+endif
+
+CC=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
+LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
+STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 
 CFLAGS=-O2 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
@@ -62,7 +71,7 @@ $(VERFILE):
 
 
 $(ARCH):
-	@if [ -f $(BADARCH) ] ; then echo "Do make clean" ; false ; fi
+	if [ -f $(BADARCH) ] ; then echo "Do make clean" ; false ; fi
 	touch $(ARCH)
 
 

@@ -1204,7 +1204,7 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
     // TV shows = ovs:fieldid/prefix title _ year _ season.jpg
     // films  = ovs:fieldid/prefix title _ year _  imdbid.jpg
     //
-#define INTERNAL_IMAGE_PATH_LEN 200
+#define INTERNAL_IMAGE_PATH_LEN 250
     static char path[INTERNAL_IMAGE_PATH_LEN+1];
     path[INTERNAL_IMAGE_PATH_LEN] = '\0';
     char *p = path;

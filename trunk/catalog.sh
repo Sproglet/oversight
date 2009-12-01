@@ -4874,7 +4874,6 @@ xmlpathHash=xmlpath"#"
 
 
 
-dump(0,"pre clean["xmlpath"]",xml)
 
 for(t in xml) {
 if (index(t,xmlpath) == 1) {
@@ -4883,7 +4882,6 @@ delete xml[t]
 }
 }
 }
-dump(0,"post clean["xmlpath"]",xml)
 }
 
 
@@ -4988,13 +4986,11 @@ break
 }
 
 }
-DEBUG("xx closing")
 close(f)
 }
 if (!found) {
 clean_xml_path(xmlpath,xmlout)
 }
-DEBUG("xx finishing")
 return 0+ found
 }
 

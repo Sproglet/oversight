@@ -4874,7 +4874,6 @@ t,xmlpathSlash,xmlpathHash) {
 
 #DEBUG("@@ clean_xml_path ["xmlpath"]");
 
-    dump(0,"pre clean["xmlpath"]",xml);
     #index function is faster than substr
     for(t in xml) {
         if (index(t,xmlpath) == 1) {
@@ -4883,7 +4882,6 @@ t,xmlpathSlash,xmlpathHash) {
             }
         }
     }
-    dump(0,"post clean["xmlpath"]",xml);
 }
 
 # certain paths can be ignored to reduce memory footprint.
@@ -4988,13 +4986,11 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
             }
 
         }
-        DEBUG("xx closing");
         close(f);
     }
     if (!found) {
         clean_xml_path(xmlpath,xmlout);
     }
-    DEBUG("xx finishing");
     return 0+ found;
 }
 

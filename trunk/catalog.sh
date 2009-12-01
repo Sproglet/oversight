@@ -720,6 +720,20 @@ for(i in g_settings) {
 g_settings_orig[i] = g_settings[i]
 }
 
+
+
+
+
+
+
+
+
+
+
+
+g_tmp_idx_prefix="tmp_"
+g_tmp_idx_count=0
+
 g_db_lock_file=APPDIR"/catalog.lck"
 g_scan_lock_file=APPDIR"/catalog.scan.lck"
 g_status_file=APPDIR"/catalog.status"
@@ -850,10 +864,6 @@ replace_share_names(FOLDER_ARR)
 make_paths_absolute(FOLDER_ARR)
 
 
-if (NEWSCAN) {
-get_files(INDEX_DB)
-
-}
 
 for(f in FOLDER_ARR) {
 INF("Folder "f"="FOLDER_ARR[f])
@@ -879,7 +889,7 @@ g_tk = apply(g_tk)
 g_tk2 = apply(g_tk2)
 g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options)
 
-delete g_scanned
+delete g_occurs
 delete g_updated_plots
 
 
@@ -1219,6 +1229,10 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
 DEBUG("Scanning "root)
 if (root == "") return
+
+if (NEWSCAN) {
+get_files(root,INDEX_DB)
+}
 
 tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
 
@@ -1896,6 +1910,9 @@ arr[DIR] = substr(f,1,RSTART-1)
 }
 }
 
+
+
+
 function copyUntouchedToNewDatabase(db_file,new_db_file,indexToMergeHash,\
 kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
 
@@ -2006,8 +2023,12 @@ return path
 
 function in_db(path,verbose,\
 ) {
+if (index(path,g_occurs_prefix) != 1) {
+ERR("Cannot check ["path"] occurs agains current prefix ["g_occurs_prefix"]")
+exit
+}
 path = short_path(path)
-if (path in g_scanned) {
+if (path in g_occurs) {
 if (verbose) INF("["path"] already scanned")
 return 1
 } else {
@@ -2017,17 +2038,23 @@ return 0
 }
 
 function add_file(path) {
-if (NEWSCAN == 1) g_scanned[short_path(path)]++
+if (NEWSCAN == 1) g_occurs[short_path(path)]++
 }
 
-function get_files(db,\
-dbline,dbfields,err,count) {
 
-id1("get_files")
-delete g_scanned
+
+function get_files(prefix,db,\
+dbline,dbfields,err,count,filter) {
+
+id1("get_files ["prefix"]")
+delete g_occurs
+g_occurs_prefix = prefix
+
+filter = "\t" FILE "\t" prefix
+
 while((err = (getline dbline < db )) > 0) {
 
-if ( index(dbline,"\t") != 1 ) { continue; }
+if ( index(dbline,filter) ) {
 
 parseDbRow(dbline,dbfields)
 
@@ -2038,6 +2065,7 @@ add_file(dbfields[FILE])
 
 
 count++
+}
 }
 if (err == 0 ) close(db)
 
@@ -2058,14 +2086,14 @@ return s
 function remove_absent_files_from_new_db(db,\
 tmp_db,dbfields,\
 list,f,shortf,maxCommandLength,dbline,keep,\
-gp,blacklist_re,blacklist_dir,timer) {
+gp,blacklist_re,blacklist_dir,timer,in_scanned_list) {
 list=""
 maxCommandLength=3999
 
 INF("Pruning...")
 tmp_db = db "." JOBID ".tmp"
 
-get_files(db)
+get_files("",db)
 
 if (lock(g_db_lock_file)) {
 g_kept_file_count=0
@@ -2084,7 +2112,9 @@ shortf = short_path(f)
 
 keep=1
 
-if (NEWSCAN == 1 && g_scanned[shortf] == 0 ) {
+in_scanned_list = (shortf in g_occurs)
+
+if (in_scanned_list == 1 && NEWSCAN == 1 && g_occurs[shortf] == 0 ) {
 
 
 
@@ -2138,11 +2168,11 @@ INF("Removing "f)
 g_absent_file_count++
 
 }
-if (NEWSCAN == 1 && g_scanned[shortf] - 1 > 0) {
+if (in_scanned_list == 1 && NEWSCAN == 1 && g_occurs[shortf] - 1 > 0) {
 
 
 
-g_scanned[shortf] = 0
+g_occurs[shortf] = 0
 }
 }
 close(tmp_db)
@@ -2328,7 +2358,7 @@ pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]"
 
 for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
 if (pat[i] == "DATE" ) {
-ret = extractEpisodeByDates(plugin,"",line,details)
+ret = extractEpisodeByDates(plugin,line,details)
 } else {
 split(pat[i],parts,"@")
 
@@ -2438,8 +2468,8 @@ DEBUG("Found ["date[1]"/"date[2]"/"date[3]"] in "line)
 return 1
 }
 
-function extractEpisodeByDates(plugin,idx,line,details,\
-date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
+function extractEpisodeByDates(plugin,line,details,\
+date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmpIdx) {
 
 result=0
 
@@ -2462,16 +2492,30 @@ for (tvdbid in closeTitles) {
 
 id1("Checking "tvdbid)
 
-if (get_tv_series_info(plugin,idx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
+
+
+#
+
+
+
+
+
+
+
+
+
+
+tmpIdx = g_tmp_idx_prefix (++g_tmp_idx_count)
+if (get_tv_series_info(plugin,tmpIdx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
 if (plugin == "THETVDB" ) {
 
 
-result = extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details)
+result = extractEpisodeByDates_TvDb(tmpIdx,tvdbid,y,m,d,details)
 
 } else if (plugin == "TVRAGE" ) {
 
-result = extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details)
+result = extractEpisodeByDates_rage(tmpIdx,tvdbid,y,m,d,details)
 
 } else {
 plugin_error(plugin)
@@ -3877,14 +3921,14 @@ return ""
 
 
 
-function fetchXML(url,label,xml,\
+function fetchXML(url,label,xml,ignorePaths,\
 f,line,result) {
 result = 0
 f=getUrl(url,label,1)
 if (f != "" ) {
 FS="\n"
 while((getline line < f) > 0 ) {
-parseXML(line,xml)
+parseXML(line,xml,ignorePaths)
 }
 close(f)
 result = 1
@@ -3894,7 +3938,9 @@ return 0+ result
 
 
 
-function parseXML(line,info,sep,\
+
+function parseXML(line,info,ignorePaths,\
+sep,\
 currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,prevTag,\
 attr,a_name,a_val,eq,attr_pairs) {
 
@@ -3902,6 +3948,10 @@ if (index(line,"<?")) return
 
 if (sep == "") sep = "<"
 
+if (ignorePaths != "") {
+gsub(/,/,"|",ignorePaths)
+ignorePaths = "^("ignorePaths")$"
+}
 
 if (index(line,g_sigma) ) { 
 INF("Sigma:"line)
@@ -3921,7 +3971,7 @@ INF("Sigma:"line)
 tag_data_count = split(line,lines,"<")
 
 currentTag = info["@CURRENT"]
-
+if (g_xx) DEBUG("@@xml@@entry currentTag is = ["currentTag"]")
 
 if (tag_data_count  && currentTag ) {
 
@@ -3929,10 +3979,11 @@ info[currentTag] = info[currentTag] lines[1]
 
 }
 
-
+if (g_xx) DEBUG("@@xml@@line="line)
 
 for(i = 2 ; i <= tag_data_count ; i++ ) {
 
+if (g_xx) DEBUG("@@xml@@start loop  currentTag is = ["currentTag"]")
 
 
 
@@ -3970,43 +4021,46 @@ if (slash == 1 )  {
 
 
 
-
-
-
-
 currentTag = substr(currentTag,1,length(currentTag)-length(tag))
 
-
+if (g_xx) DEBUG("@@xml@@end tag =["tag "] currentTag now = ["currentTag"]")
 
 
 } else if (slash == 0 ) {
 
 
+if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag was = ["currentTag"]")
 
 currentTag = currentTag "/" tag
 
+if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]")
 
 
 if (currentTag in info) {
 text = sep text
 }
+
 } else {
 
+if (g_xx) DEBUG("@@xml@@ignore tag ="tag)
 
 }
 
 if (text) {
+if (g_xx) DEBUG("@@xml@@ignorePaths=["ignorePaths"] currentTag ["currentTag"]")
+if (ignorePaths == "" || currentTag ~ ignorePaths) {
 
 info[currentTag] = info[currentTag] text
+}
 }
 
 
 
 if (slash == 0 && index(parts[1],"=")) {
-
+if (g_xx) DEBUG("Parsing attributes on " parts[1])
 get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs)
 for(attr in attr_pairs) {
-
+if (g_xx) DEBUG("Attr ["attr"]")
 eq=index(attr,"=")
 a_name=substr(attr,1,eq-1)
 a_val=substr(attr,eq+1)
@@ -4015,14 +4069,14 @@ sub(/^"/,"",a_val)
 sub(/"$/,"",a_val)
 }
 info[currentTag"#"a_name]=a_val
-
+if (g_xx) DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]")
 }
 
 }
 
-
+if (g_xx) DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]")
 }
-
+if (g_xx) DEBUG("@@xml@@exit currentTag is = ["currentTag"]")
 info["@CURRENT"] = currentTag
 }
 
@@ -4741,13 +4795,14 @@ INF("Keeping episode title ["gEpTitle[idx]"] ignoring ["title"]")
 
 
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,url,e,result,pi,p) {
+seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
 
 pi="TVRAGE"
 result = 0
 delete filter
 
-if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo)) {
+ignore="/Show/Episodelist"
+if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
 adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi)
 g_year[idx] = substr(seriesInfo["/Show/started"],8,4)
 setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
@@ -4819,6 +4874,7 @@ xmlpathHash=xmlpath"#"
 
 
 
+dump(0,"pre clean["xmlpath"]",xml)
 
 for(t in xml) {
 if (index(t,xmlpath) == 1) {
@@ -4827,14 +4883,16 @@ delete xml[t]
 }
 }
 }
+dump(0,"post clean["xmlpath"]",xml)
 }
 
-function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
+
+function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,ignorePaths,\
 f,found) {
 
 f = getUrl(url,filelabel,1)
 id1("fetch_xml_single_child ["url"] path = "xmlpath)
-found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout)
+found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths)
 id0(found)
 return 0+ found
 }
@@ -4860,7 +4918,8 @@ strings[t] = tagfilters[t]
 }
 }
 
-function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
+
+function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths,\
 numbers,strings,regexs,\
 line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 
@@ -4896,7 +4955,10 @@ if (index(line,start_tag) > 0) {
 clean_xml_path(xmlpath,xmlout)
 }
 
-parseXML(line,xmlout)
+
+
+parseXML(line,xmlout,ignorePaths)
+
 
 if (index(line,end_tag) > 0) {
 
@@ -4926,13 +4988,13 @@ break
 }
 
 }
+DEBUG("xx closing")
 close(f)
 }
 if (!found) {
 clean_xml_path(xmlpath,xmlout)
-
-
 }
+DEBUG("xx finishing")
 return 0+ found
 }
 

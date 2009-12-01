@@ -67,6 +67,13 @@ At present Posters should either
 The-Wrestler.jpg
 The-Wrestler.avi
 
+For Standard Definition NTSC the recommended size is 685 wide * 460 high
+
+The image size does not really matter as it is scaled to fit.
+The aspect ratio is approximately (1.5 x 1 eg 300x200 , 1500x1000 etc)
+
+I would go for 450 x 300 
+
 Eventually (not yet!) there will be a much looser assciation. If there is only one film in a folder then Oversight will assume any portrait image is the poster. (unless it has the word "fanart" in it's name)
 
 ==Fanart==
@@ -77,6 +84,18 @@ At present Fanart should either
 
 The-Wrestler.fanart.jpg
 The-Wrestler.avi
+
+
+The image sizes are :
+
+|| Video mode || Resolution ||
+|| SD NTSC || 685 x 460 ||
+|| SD PAL || 685 x 542 (note this will appear stretched in a normal image viewer, but this will compensate for a bug in the GAYA viewer) ||
+|| HD 720 || 1280 x 720 ||
+|| HD 1080 on A110 etc || 1280 x 720 ||
+|| HD 1080 on C200 || TBD ||
+
+
 
 Again this may change to automatically chose any landscape image in the same folder.
 

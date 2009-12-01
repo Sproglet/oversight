@@ -720,6 +720,20 @@ END{
         g_settings_orig[i] = g_settings[i];
     }
 
+    # code was originally written so that get_tv_series_info and get_episode_xml
+    # write into lots of global arrays g_Season, g_episode, gTitle , g_imdb etc etc,
+    # the idex being the item number.
+    # However sometimes we need to call these functions but we dont want to keep the results.
+    # (eg when tying to find which of Late night with Conan O Brien or Tonight Show with Conan Obrien
+    # showed on a particular date.). This will make get_tv_series_info calls to both shows initially.
+    #which then unfortunately writes results into the same global arrays.
+    # Really the code needs a re-write to use a single temporary local array, for a single item
+    # or a string even. This can then be inserted back into the global arrays when needed to be kept. 
+    # 
+    # Until code cleanup, best use a temporary index which is ignored by the main output loops.
+    g_tmp_idx_prefix="tmp_";
+    g_tmp_idx_count=0;
+
     g_db_lock_file=APPDIR"/catalog.lck";
     g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
@@ -850,10 +864,6 @@ END{
     make_paths_absolute(FOLDER_ARR);
 
 
-    if (NEWSCAN) {
-        get_files(INDEX_DB);
-        #get_new_folders(FOLDER_ARR,g_timestamp_file); # deprecated
-    }
 
     for(f in FOLDER_ARR) {
         INF("Folder "f"="FOLDER_ARR[f]);
@@ -879,7 +889,7 @@ END{
         g_tk2 = apply(g_tk2);
         g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
-        delete g_scanned;
+        delete g_occurs;
         delete g_updated_plots;
 
 
@@ -1219,6 +1229,10 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     DEBUG("Scanning "root);
     if (root == "") return;
+
+    if (NEWSCAN) {
+        get_files(root,INDEX_DB);
+    }
 
     tempFile=NEW_CAPTURE_FILE("MOVIEFILES");
 
@@ -1896,6 +1910,9 @@ f,fileRe) {
     }
 }
 
+# Go through old index.db 
+# if any file is in the new scan, add the updated entry to the new file (copying watched flags)
+# otherwise if it is not in the ignore list, add it directly to the new file
 function copyUntouchedToNewDatabase(db_file,new_db_file,indexToMergeHash,\
 kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
 
@@ -2006,8 +2023,12 @@ function short_path(path) {
 
 function in_db(path,verbose,\
 ) {
+    if (index(path,g_occurs_prefix) != 1) {
+        ERR("Cannot check ["path"] occurs agains current prefix ["g_occurs_prefix"]");
+        exit;
+    }
     path = short_path(path);
-    if (path in g_scanned) {
+    if (path in g_occurs) {
         if (verbose) INF("["path"] already scanned");
         return 1;
     } else {
@@ -2017,30 +2038,37 @@ function in_db(path,verbose,\
 }
 
 function add_file(path) {
-    if (NEWSCAN == 1) g_scanned[short_path(path)]++;
+    if (NEWSCAN == 1) g_occurs[short_path(path)]++;
 }
 
-function get_files(db,\
-dbline,dbfields,err,count) {
+# Get all of the files that have already been scanned that start with the 
+# same prefix.
+function get_files(prefix,db,\
+dbline,dbfields,err,count,filter) {
 
-    id1("get_files");
-    delete g_scanned;
+    id1("get_files ["prefix"]");
+    delete g_occurs;
+    g_occurs_prefix = prefix;
+
+    filter = "\t" FILE "\t" prefix;
+
     while((err = (getline dbline < db )) > 0) {
 
-        if ( index(dbline,"\t") != 1 ) { continue; }
+        if ( index(dbline,filter) ) {
 
-        parseDbRow(dbline,dbfields);
+            parseDbRow(dbline,dbfields);
 
-         add_file(dbfields[FILE]);
+             add_file(dbfields[FILE]);
 #        # Only treat video as scanned if it was previously categorised.
 #        # This allows rescans of bad files.
 #        if (index("MT",dbfields[CATEGORY]) > 0) {
 #            add_file(dbfields[FILE]);
 #        }
-        count++;
+            count++;
+        }
     }
     if (err == 0 ) close(db);
-    #dump(0,"scanned",g_scanned);
+    #dump(0,"scanned",g_occurs);
     id0(count" files");
 }
 
@@ -2065,7 +2093,7 @@ function remove_absent_files_from_new_db(db,\
     INF("Pruning...");
     tmp_db = db "." JOBID ".tmp";
 
-    get_files(db);
+    get_files("",db);
 
     if (lock(g_db_lock_file)) {
         g_kept_file_count=0;
@@ -2084,12 +2112,12 @@ function remove_absent_files_from_new_db(db,\
 
             keep=1;
 
-            in_scanned_list = (shortf in g_scanned);
+            in_scanned_list = (shortf in g_occurs);
 
-            if (in_scanned_list == 1 && NEWSCAN == 1 && g_scanned[shortf] == 0 ) {
+            if (in_scanned_list == 1 && NEWSCAN == 1 && g_occurs[shortf] == 0 ) {
 
-                #For duplicate files we want to keep the first one as this is the one 
-                #that gets updated during a rescan. So ig g_scanned(f) > 1 then
+                #For duplicate files we want to keep the first one (g_occurs[]=1) as this is the one 
+                #that gets updated during a rescan. So if g_occurs(f) > 1 then
                 # set it to 0 at the end of this loop. Then the next duplicate will 
                 # trigger this code.
 
@@ -2140,11 +2168,11 @@ function remove_absent_files_from_new_db(db,\
                 g_absent_file_count++;
                 
             }
-            if (in_scanned_list == 1 && NEWSCAN == 1 && g_scanned[shortf] - 1 > 0) {
+            if (in_scanned_list == 1 && NEWSCAN == 1 && g_occurs[shortf] - 1 > 0) {
                 #For duplicate files we want to keep the first one as this is the one 
-                #that gets updated during a rescan. So if g_scanned(f) > 1 then
+                #that gets updated during a rescan. So if g_occurs(f) > 1 then
                 # set it to 0. Then the next duplicate will trigger delete code.
-                g_scanned[shortf] = 0;
+                g_occurs[shortf] = 0;
             }
         }
         close(tmp_db);
@@ -2330,7 +2358,7 @@ ret,p,pat,i,parts) {
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" ) {
-            ret = extractEpisodeByDates(plugin,"",line,details);
+            ret = extractEpisodeByDates(plugin,line,details);
         } else {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
@@ -2440,8 +2468,8 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
     return 1;
 }
 
-function extractEpisodeByDates(plugin,idx,line,details,\
-date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
+function extractEpisodeByDates(plugin,line,details,\
+date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmpIdx) {
 
     result=0;
     #id1("extractEpisodeByDates "plugin" "line);
@@ -2464,16 +2492,30 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles) {
 
             id1("Checking "tvdbid);
 
-            if (get_tv_series_info(plugin,idx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
+            # This is nasty. We have to reuse some of the functions to get series and episode info.
+            # These write deirectly into gloabal arrays. So we have to use a 'made up' item index.
+            #
+            # The real fix is to change the functions to write into a single local multi-dimension array
+            # details["IMDB"] = tt0000
+            # details["SEASON"= = 4 etc
+
+            # and the output of this array is copied into the global arrays only if it is needed later
+            # otherwise it is discarded.
+
+            # However to minimise code changes at present we will use index 'TMP'count. 
+            # and make sure the main program ignores such index - I need a shower...
+
+            tmpIdx = g_tmp_idx_prefix (++g_tmp_idx_count);
+            if (get_tv_series_info(plugin,tmpIdx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
                 if (plugin == "THETVDB" ) {
 
                     #TODO We could get all the series info - this would be cached anyway.
-                    result = extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details);
+                    result = extractEpisodeByDates_TvDb(tmpIdx,tvdbid,y,m,d,details);
 
                 } else if (plugin == "TVRAGE" ) {
 
-                    result = extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details);
+                    result = extractEpisodeByDates_rage(tmpIdx,tvdbid,y,m,d,details);
 
                 } else {
                     plugin_error(plugin);
@@ -3879,14 +3921,14 @@ function get_tv_series_api_url(plugin,tvdbid) {
 
 #Load an xnl file into array - note duplicate elements are clobbered.
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
-function fetchXML(url,label,xml,\
+function fetchXML(url,label,xml,ignorePaths,\
 f,line,result) {
     result = 0;
     f=getUrl(url,label,1);
     if (f != "" ) {
         FS="\n";
         while((getline line < f) > 0 ) {
-            parseXML(line,xml);
+            parseXML(line,xml,ignorePaths);
         }
         close(f);
         result = 1;
@@ -3895,8 +3937,10 @@ f,line,result) {
 }
 
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
+# @ignorePaths = csv of paths to ignore
 #sep is used if merging repeated element values together
-function parseXML(line,info,sep,\
+function parseXML(line,info,ignorePaths,\
+sep,\
 currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,prevTag,\
 attr,a_name,a_val,eq,attr_pairs) {
 
@@ -3904,6 +3948,10 @@ attr,a_name,a_val,eq,attr_pairs) {
 
     if (sep == "") sep = "<";
 
+    if (ignorePaths != "") {
+        gsub(/,/,"|",ignorePaths);
+        ignorePaths = "^("ignorePaths")$";
+    }
 
     if (index(line,g_sigma) ) { 
         INF("Sigma:"line);
@@ -3923,7 +3971,7 @@ attr,a_name,a_val,eq,attr_pairs) {
     tag_data_count = split(line,lines,"<");
 
     currentTag = info["@CURRENT"];
-#DEBUG("@@xml@@entry currentTag is = ["currentTag"]");
+if (g_xx) DEBUG("@@xml@@entry currentTag is = ["currentTag"]");
 
     if (tag_data_count  && currentTag ) {
         #If the line starts with text then add it to the current tag.
@@ -3931,10 +3979,11 @@ attr,a_name,a_val,eq,attr_pairs) {
         #first item is blank
     }
 
-#DEBUG("@@xml@@line="line);
+if (g_xx) DEBUG("@@xml@@line="line);
 
     for(i = 2 ; i <= tag_data_count ; i++ ) {
-#DEBUG("@@xml@@start loop  currentTag is = ["currentTag"]");
+
+if (g_xx) DEBUG("@@xml@@start loop  currentTag is = ["currentTag"]");
 
         # lines[i] = tag>text
         # lines[i] = tag attr >text
@@ -3972,43 +4021,46 @@ attr,a_name,a_val,eq,attr_pairs) {
             # A fuller implementation could maintain a tag stack to avoid the overhead of the
             # substr() but this is probably not where the bottleneck is for this function?
 
-#ALL#            if (prevTag) {
-#ALL#                currentTag=prevTag;
-#ALL#                prevTag="";
-#ALL#            } else {
-                currentTag = substr(currentTag,1,length(currentTag)-length(tag));
-#ALL#            }
-#DEBUG("@@xml@@end tag =["tag "] currentTag now = ["currentTag"]");
+            currentTag = substr(currentTag,1,length(currentTag)-length(tag));
+
+if (g_xx) DEBUG("@@xml@@end tag =["tag "] currentTag now = ["currentTag"]");
 
 
         } else if (slash == 0 ) {
 
 #ALL#            prevTag=currentTag;
-#DEBUG("@@xml@@start tag =["tag "] currentTag was = ["currentTag"]");
+if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag was = ["currentTag"]");
+
              currentTag = currentTag "/" tag;
-#DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]");
+
+if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]");
 
              #If merging element values add a sepearator
             if (currentTag in info) {
                 text = sep text;
             }
+
         } else {
-#DEBUG("@@xml@@ignore tag ="tag);
+
+if (g_xx) DEBUG("@@xml@@ignore tag ="tag);
             # ignore <aaa/>
         }
 
         if (text) {
-#DEBUG("@@xml@@add currentTag["currentTag"] +=  ["text"]");
-            info[currentTag] = info[currentTag] text;
+if (g_xx) DEBUG("@@xml@@ignorePaths=["ignorePaths"] currentTag ["currentTag"]");
+            if (ignorePaths == "" || currentTag ~ ignorePaths) {
+#if (g_xx) DEBUG("@@xml@@currentTag now ["info[currentTag]"]");
+                info[currentTag] = info[currentTag] text;
+            }
         }
 
         #parse attributes.
         
         if (slash == 0 && index(parts[1],"=")) {
-            #DEBUG("Parsing attributes on " parts[1]);
+            if (g_xx) DEBUG("Parsing attributes on " parts[1]);
             get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs);
             for(attr in attr_pairs) {
-                #DEBUG("Attr ["attr"]");
+                if (g_xx) DEBUG("Attr ["attr"]");
                 eq=index(attr,"=");
                 a_name=substr(attr,1,eq-1);
                 a_val=substr(attr,eq+1);
@@ -4017,14 +4069,14 @@ attr,a_name,a_val,eq,attr_pairs) {
                     sub(/"$/,"",a_val);
                 }
                 info[currentTag"#"a_name]=a_val;
-                #DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]");
+                if (g_xx) DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]");
             }
 
         }
 
-#DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]");
+if (g_xx) DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]");
     }
-#DEBUG("@@xml@@exit currentTag is = ["currentTag"]");
+if (g_xx) DEBUG("@@xml@@exit currentTag is = ["currentTag"]");
     info["@CURRENT"] = currentTag;
 }
 
@@ -4743,13 +4795,14 @@ function set_eptitle(idx,title) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,url,e,result,pi,p) {
+seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
 
     pi="TVRAGE";
     result = 0;
     delete filter;
 
-    if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo)) {
+    ignore="/Show/Episodelist";
+    if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
         adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
@@ -4833,12 +4886,13 @@ t,xmlpathSlash,xmlpathHash) {
     dump(0,"post clean["xmlpath"]",xml);
 }
 
-function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,\
+# certain paths can be ignored to reduce memory footprint.
+function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,ignorePaths,\
 f,found) {
 
    f = getUrl(url,filelabel,1);
    id1("fetch_xml_single_child ["url"] path = "xmlpath);
-   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout);
+   found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths);
    id0(found);
    return 0+ found;
 }
@@ -4864,7 +4918,8 @@ t) {
    }
 }
 
-function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,\
+# certain paths can be ignored to reduce memory footprint.
+function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths,\
 numbers,strings,regexs,\
 line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 
@@ -4900,7 +4955,10 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
                 clean_xml_path(xmlpath,xmlout);
             }
 
-            parseXML(line,xmlout);
+            #g_xx = 1;
+
+            parseXML(line,xmlout,ignorePaths);
+            #g_xx = 0;
 
             if (index(line,end_tag) > 0) {
 
@@ -4930,13 +4988,13 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
             }
 
         }
+        DEBUG("xx closing");
         close(f);
     }
     if (!found) {
         clean_xml_path(xmlpath,xmlout);
-#    } else {
-#dump(0,"@@xml:single child:",xmlout);
-}
+    }
+    DEBUG("xx finishing");
     return 0+ found;
 }
 

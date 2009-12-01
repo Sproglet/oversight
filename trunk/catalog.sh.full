@@ -2276,7 +2276,6 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
    # try looking for mini series formats.
    if (ret == 0 ) {
        more_info[1]=1; # enable abbrevation scraping for later
-       INF("Mini series check");
        line = remove_format_tags(g_media[idx]);
        for(d=0 ; d-dirLevels <= 0  ; d++ ) {
            if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 

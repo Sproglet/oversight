@@ -107,30 +107,33 @@ void delete_file(char *dir,char *name) {
     FREE(path);
 }
 
+
 void delete_media(DbRowId *rid,int delete_related) {
 
-    char *f = strrchr(rid->file,'/');
+
     Array *names_to_delete=NULL;
+    char *dir = util_dirname(rid->file);
 
     HTML_LOG(1,"%s %d begin delete_media",__FILE__,__LINE__);
-    if (f[1] == '\0' ) {
+    if(is_dvd(rid->file)) {
+        // VIDEO_TS
         if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
             HTML_LOG(0,"folder doesnt look like dvd floder");
             return;
         }
-        util_rmdir(f,".");
+        util_rmdir(rid->file,".");
         names_to_delete = array_new(free);
     } else {
-        *f='/';
-        HTML_LOG(1,"delete [%s]",rid->file);
+
+        HTML_LOG(1,"delete main file [%s]",rid->file);
         unlink(rid->file);
-        *f='\0';
+
         names_to_delete = split(rid->parts,"/",0);
 
         if (delete_related) {
 
             struct dirent *dp;
-            DIR *d = opendir(rid->file);
+            DIR *d = opendir(dir);
             if (d != NULL) {
                 while((dp = readdir(d)) != NULL) {
                     if (util_starts_with(dp->d_name,"unpak.")) {
@@ -154,12 +157,17 @@ void delete_media(DbRowId *rid,int delete_related) {
     if(names_to_delete && names_to_delete->size) {
        int i=0;
        for(i= 0 ; i<names_to_delete->size ; i++) {
-           delete_file(rid->file,names_to_delete->array[i]);
+           delete_file(dir,names_to_delete->array[i]);
+
        }
     }
+
+    // Delete the folder only if it's empty.
+    delete_queue_add(rid,dir);
+
     array_free(names_to_delete);
+    FREE(dir);
     HTML_LOG(1,"%s %d end delete_media",__FILE__,__LINE__);
-    *f='/';
 }
 
 /*
@@ -213,6 +221,8 @@ void delete_queue_add(DbRowId *rid,char *path) {
 
     if (path) {
         int freepath;
+
+
         char *real_path=get_path(rid,path,&freepath);
 
         if (g_delete_queue == NULL) {
@@ -251,11 +261,25 @@ void delete_queue_delete() {
     struct hashtable_itr *itr;
     char *k;
 
+    HTML_LOG(0,"delete queue %x",g_delete_queue);
+
     if (g_delete_queue != NULL ) {
         
         for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,NULL) ; ) {
-            HTML_LOG(1,"delete_queue: deleting [%s]",k);
-            unlink(k);
+           if (is_file(k)) {
+               HTML_LOG(0,"delete_queue_delete: file [%s]",k);
+               unlink(k);
+           }
+        }
+        for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,NULL) ; ) {
+           if (is_dir(k)) {
+               if (count_chr(k,'/') > 2) {
+                   HTML_LOG(0,"delete_queue_delete: folder [%s]",k);
+                   rmdir(k); // silently fail if folder is not empty.
+               } else {
+                   HTML_LOG(0,"delete_queue_delete: skipping folder [%s]",k);
+               }
+           }
         }
         hashtable_destroy(g_delete_queue,1,0);
         g_delete_queue=NULL;

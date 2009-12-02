@@ -667,18 +667,6 @@ int has_category(DbRowId *rowid) {
     return (rowid->category == 'T' || rowid->category == 'M' );
 }
 
-int is_dvd(char *file) {
-    char *p = file + strlen(file);
-
-    if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
-
-        return 1;
-
-    } else {
-            
-        return 0;
-    }
-}
 
 
 char *vod_attr(char *file) {

@@ -710,6 +710,7 @@ char *util_dirname(char *file)
     }
     return result;
 }
+
 // return basename of media file. ptr must be freed.
 char *util_basename(char *file)
 {
@@ -763,21 +764,34 @@ void util_rmdir(char *path,char *name)
 {
     char *full_path;
     ovs_asprintf(&full_path,"%s/%s",path,name);
-    DIR *d = opendir(full_path);
-    if (d) {
-        struct dirent *dp;
-        while((dp = readdir(d)) != NULL) {
-            if(strcmp(dp->d_name,".") != 0 && strcmp(dp->d_name,"..") != 0) {
-                util_rmdir(full_path,dp->d_name);
+    if (is_dir(full_path)) {
+        DIR *d = opendir(full_path);
+        if (d) {
+            struct dirent *dp;
+            while((dp = readdir(d)) != NULL) {
+                if(strcmp(dp->d_name,".") != 0 && strcmp(dp->d_name,"..") != 0) {
+                    util_rmdir(full_path,dp->d_name);
+                }
             }
+            closedir(d);
+            HTML_LOG(1,"rmdir [%s]",full_path);
+            rmdir(full_path);
         }
-        closedir(d);
-        HTML_LOG(1,"rmdir [%s]",full_path);
     } else {
         HTML_LOG(1,"unlink [%s]",full_path);
         unlink(full_path);
     }
     FREE(full_path);
+}
+int count_chr(char *str,char c)
+{
+    int count = 0;
+    assert(str);
+    while((str=strchr(str,c)) != NULL) {
+        count++;
+        str++;
+    }
+    return count;
 }
 
 int exists_file_in_dir(char *dir,char *name)
@@ -860,4 +874,17 @@ char *clean_js_string(char *in)
 
     }
     return out;
+}
+int is_dvd(char *file)
+{
+    char *p = file + strlen(file);
+
+    if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
+
+        return 1;
+
+    } else {
+            
+        return 0;
+    }
 }

@@ -239,7 +239,8 @@ TRACE;
     // When troubleshooting we should clean up properly as this may reveal
     // malloc errors. 
     // But otherwise just let the OS reclaim everything.
-        delete_queue_delete();
+    HTML_LOG(0,"deleting...");
+    delete_queue_delete();
     TRACE;
     if(1) {
         html_comment("cleanup");

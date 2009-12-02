@@ -53,7 +53,7 @@ img.nasstatus { width:15; height:15; }
                 </table>
             </td>
             <td>[:ICON(reinstall):]</td>
-            <td align=left ><br>[:LINK(action=confirm_reinstall,Reinstall):]</td>
+            <td align=left >[:LINK(action=confirm_clear_cache,Clear NMT Cache):]<br>[:LINK(action=confirm_reinstall,Reinstall):]</td>
         </tr>
 
         <tr>

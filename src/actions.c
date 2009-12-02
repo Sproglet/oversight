@@ -332,6 +332,10 @@ void do_actions() {
             util_system(cmd);
             FREE(cmd);
 
+        } else if (strcmp(action,"clear_cache") == 0) {
+
+            util_rmdir("/mnt/.cache",".");
+
         } else if (strcmp(action,"rescan_request") == 0) {
 
             int parallel_scan = 0;

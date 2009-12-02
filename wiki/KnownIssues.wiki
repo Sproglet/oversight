@@ -1,7 +1,8 @@
 #sidebar TableOfContents
 Here is a summry of the most user-facing known issues with the latest beta:
 
-  # Mark as watched - the submit button is missing.
   # Re-installing nzbget will stop Oversight unpacking - to fix you must re-install Oversight (Click the re-install option in the admin pages)
+
+  # Ratings starts may not be show correctly on TV screen - Try clearing the image cache - Go to NMT Setup -> Maintenance - > file mode[BLUE] -> press [ENTER] 
 
 For a full list of issues see http://code.google.com/p/oversight/issues/list

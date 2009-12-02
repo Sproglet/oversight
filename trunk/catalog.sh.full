@@ -3949,7 +3949,7 @@ attr,a_name,a_val,eq,attr_pairs) {
 
     if (ignorePaths != "") {
         gsub(/,/,"|",ignorePaths);
-        ignorePaths = "^("ignorePaths")$";
+        ignorePaths = "^("ignorePaths")//>";
     }
 
     if (index(line,g_sigma) ) { 

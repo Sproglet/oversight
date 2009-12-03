@@ -2336,24 +2336,29 @@ ret,p,pat,i,parts) {
 
     ret=0;
 
-    # Each pattern has format  prefix match len @ prefix regex @ series regex @ episode regex
+    # Each pattern has format  prefix match len @ prefix regex @ series regex @ episode regex @ episode prefix
     # This mess is because awk regex dont have captures.
     p=0
     # s00e00e01
-    pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+e[0-9]+";
+    pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+[-e0-9]+@";
     # long forms season 1 ep  3
-    pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?";
+    pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?@";
+
+    # TV DVDs
+    pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(disc|dvd|d)[^a-z0-9]*[0-9][0-9]?@DVD";
+
     #s00e00 (allow d00a for BigBrother)
-    pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[de/][0-9]+[a-e]?";
+    pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[e/][0-9]+[a-e]?@";
+
     #00x00
-    pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?";
+    pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?@";
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
     #TODO blank idx passed. need to tidy up code here?
     # extractEpisodeByDates is also called by other logic. 
     # we need to be clear why idx is passed.
     pat[++p]="DATE";
     ## just numbers.
-    pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]";
+    pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@";
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" ) {
@@ -2362,6 +2367,9 @@ ret,p,pat,i,parts) {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
             ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details);
+            if (ret+0) {
+                details[EPISODE] = parts[5] details[EPISODE];
+            }
         }
     }
 
@@ -3958,6 +3966,8 @@ attr,a_name,a_val,eq,attr_pairs) {
         INF("Sigma:"line);
     }
 
+    if (g_xx) INF("@@xml@@parseXML:["line"]");
+
 
     #break at each tag/endtag
     # <tag1>text1</tag1>midtext<tag2>text2</tag2> becomes
@@ -4047,8 +4057,8 @@ if (g_xx) DEBUG("@@xml@@ignore tag ="tag);
 
         if (text) {
 if (g_xx) DEBUG("@@xml@@ignorePaths=["ignorePaths"] currentTag ["currentTag"]");
-            if (ignorePaths == "" || currentTag ~ ignorePaths) {
-#if (g_xx) DEBUG("@@xml@@currentTag now ["info[currentTag]"]");
+            if (ignorePaths == "" || currentTag !~ ignorePaths) {
+if (g_xx) DEBUG("@@xml@@adding");
                 info[currentTag] = info[currentTag] text;
             }
         }
@@ -4076,7 +4086,9 @@ if (g_xx) DEBUG("@@xml@@ignorePaths=["ignorePaths"] currentTag ["currentTag"]");
 if (g_xx) DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]");
     }
 if (g_xx) DEBUG("@@xml@@exit currentTag is = ["currentTag"]");
+
     info["@CURRENT"] = currentTag;
+if (g_xx) dump(0,"@@xml@@INFO",info);
 }
 
 # Return 3 if a possible Title is a very good match for titleIn
@@ -4646,6 +4658,12 @@ result) {
     } else {
         plugin_error(plugin);
     }
+#    ERR("UNCOMMENT THIS CODE");
+    if (g_episode[idx] ~ "^DVD[0-9]+$" ) {
+        result++;
+    }
+#    ERR("UNCOMMENT THIS CODE");
+
     DEBUG("Title:["gTitle[idx]"] "g_season[idx]"x"g_episode[idx]" date:"gAirDate[idx]);
     DEBUG("Episode:["gEpTitle[idx]"]");
 
@@ -4679,6 +4697,8 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
     #fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
     fetch_xml_single_child(tvDbSeriesUrl,"thetvdb-series","/Data/Series",empty_filter,seriesInfo);
     if ("/Data/Series/id" in seriesInfo) {
+
+        dump(0,"tvdb series",seriesInfo);
 
         setFirst(g_imdb,idx,extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]));
         #Refine the title.
@@ -4800,8 +4820,10 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
     result = 0;
     delete filter;
 
+    #g_xx = 1;
     ignore="/Show/Episodelist";
     if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
+        dump(0,"tvrage series",seriesInfo);
         adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
@@ -4859,6 +4881,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
     } else {
         WARNING("Error getting series xml");
     }
+    #g_xx = 0;
 
     return 0+ result;
 }
@@ -4952,10 +4975,8 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
                 clean_xml_path(xmlpath,xmlout);
             }
 
-            #g_xx = 1;
 
             parseXML(line,xmlout,ignorePaths);
-            #g_xx = 0;
 
             if (index(line,end_tag) > 0) {
 

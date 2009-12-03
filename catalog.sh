@@ -2276,7 +2276,6 @@ more_info[1]=0
 
 if (ret == 0 ) {
 more_info[1]=1
-INF("Mini series check")
 line = remove_format_tags(g_media[idx])
 for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) {
@@ -2341,20 +2340,25 @@ ret=0
 
 p=0
 
-pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+e[0-9]+"
+pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+[-e0-9]+@"
 
-pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?"
+pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?@"
 
-pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[de/][0-9]+[a-e]?"
 
-pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?"
+pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(disc|dvd|d)[^a-z0-9]*[0-9][0-9]?@DVD"
+
+
+pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[e/][0-9]+[a-e]?@"
+
+
+pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?@"
 
 
 
 
 pat[++p]="DATE"
 
-pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]"
+pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@"
 
 for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
 if (pat[i] == "DATE" ) {
@@ -2363,6 +2367,9 @@ ret = extractEpisodeByDates(plugin,line,details)
 split(pat[i],parts,"@")
 
 ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details)
+if (ret+0) {
+details[EPISODE] = parts[5] details[EPISODE]
+}
 }
 }
 
@@ -3950,7 +3957,7 @@ if (sep == "") sep = "<"
 
 if (ignorePaths != "") {
 gsub(/,/,"|",ignorePaths)
-ignorePaths = "^("ignorePaths")$"
+ignorePaths = "^("ignorePaths")//>"
 }
 
 if (index(line,g_sigma) ) { 
@@ -3958,6 +3965,8 @@ INF("Sigma:"line)
 gsub(g_sigma,"e",line)
 INF("Sigma:"line)
 }
+
+if (g_xx) INF("@@xml@@parseXML:["line"]")
 
 
 
@@ -4048,8 +4057,8 @@ if (g_xx) DEBUG("@@xml@@ignore tag ="tag)
 
 if (text) {
 if (g_xx) DEBUG("@@xml@@ignorePaths=["ignorePaths"] currentTag ["currentTag"]")
-if (ignorePaths == "" || currentTag ~ ignorePaths) {
-
+if (ignorePaths == "" || currentTag !~ ignorePaths) {
+if (g_xx) DEBUG("@@xml@@adding")
 info[currentTag] = info[currentTag] text
 }
 }
@@ -4077,7 +4086,9 @@ if (g_xx) DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"
 if (g_xx) DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]")
 }
 if (g_xx) DEBUG("@@xml@@exit currentTag is = ["currentTag"]")
+
 info["@CURRENT"] = currentTag
+if (g_xx) dump(0,"@@xml@@INFO",info)
 }
 
 
@@ -4647,6 +4658,12 @@ result = get_tv_series_info_rage(idx,tvDbSeriesUrl)
 } else {
 plugin_error(plugin)
 }
+
+if (g_episode[idx] ~ "^DVD[0-9]+$" ) {
+result++
+}
+
+
 DEBUG("Title:["gTitle[idx]"] "g_season[idx]"x"g_episode[idx]" date:"gAirDate[idx])
 DEBUG("Episode:["gEpTitle[idx]"]")
 
@@ -4680,6 +4697,8 @@ result=0
 
 fetch_xml_single_child(tvDbSeriesUrl,"thetvdb-series","/Data/Series",empty_filter,seriesInfo)
 if ("/Data/Series/id" in seriesInfo) {
+
+dump(0,"tvdb series",seriesInfo)
 
 setFirst(g_imdb,idx,extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]))
 
@@ -4801,8 +4820,10 @@ pi="TVRAGE"
 result = 0
 delete filter
 
+
 ignore="/Show/Episodelist"
 if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
+dump(0,"tvrage series",seriesInfo)
 adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi)
 g_year[idx] = substr(seriesInfo["/Show/started"],8,4)
 setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
@@ -4860,6 +4881,7 @@ WARNING("Error getting episode xml")
 } else {
 WARNING("Error getting series xml")
 }
+
 
 return 0+ result
 }
@@ -4954,9 +4976,7 @@ clean_xml_path(xmlpath,xmlout)
 }
 
 
-
 parseXML(line,xmlout,ignorePaths)
-
 
 if (index(line,end_tag) > 0) {
 

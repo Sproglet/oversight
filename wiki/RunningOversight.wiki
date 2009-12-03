@@ -62,14 +62,24 @@ http://www.networkedmediatank.com/wiki/images/1/1f/Setup_08.jpg
 
 Once the share has been set up, Then add the source name (in this case 'test' ) to Oversight's scan_paths _or_ watch_paths, _without any leading slash._ . 
 {{{
-test/Movies
+scan_paths=test
 }}}
+OR if you want Oversight to keep watching for new videos:
+{{{
+watch_paths=test
+}}}
+
 
 
 This will scan the folder 'Videos'. If a specific folder on the shared drive is required then also add '/' followed by the folder name. E.g.
 {{{
-test/Movies
+scan_paths=test/Movies
 }}}
+OR
+{{{
+watch_paths=test/Movies
+}}}
+
 will now scan smb://TRACY-SNG/Videos/Movies
 
 

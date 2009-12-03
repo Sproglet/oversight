@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta name="robots" content="nofollow">
-        <title>Oversight Menu [:HOSTNAME:]</title>
+        <title>Oversight Menu [:VERSION:] [:HOSTNAME:]</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -42,11 +42,6 @@ table.overview_poster {
         <tr><td>
             <table class=header width=100%>
                 <tr>
-                    <td rowspan=2>
-                        <font size=3>Oversight</font>
-                        <br>
-                        <font size=2>[:VERSION:] [:HOSTNAME:]</font>
-                    </td>
                     <td>[:TITLE_SELECT:]</td>
                     <td>[:GENRE_SELECT:]</td>
                     <td>[:MEDIA_SELECT:]</td>
@@ -56,7 +51,7 @@ table.overview_poster {
                     <td>[:SETUP_BUTTON:]</td>
                 </tr>
                 <tr>
-                    <td colspan=8 id=menutitle align=center>&nbsp;</td>
+                    <td colspan=7 id=menutitle align=center>&nbsp;</td>
                 </tr>
             </table>
         </td></tr><tr><td>

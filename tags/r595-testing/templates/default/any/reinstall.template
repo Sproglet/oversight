@@ -1,0 +1,39 @@
+<!-- Default Reinstall Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Reinstall</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Oversight Configuration</h1>
+
+        <form action="?" enctype="multipart/form-data" method="POST">
+            <input type=hidden name=form value="1">
+
+            <center>
+            <p>This will re-install oversight. Use this option after re-installing nzbget
+ or if scans do not start.
+
+            <table width=30%>
+                <tr>
+                    <td align=center colspan=2 class=delete>
+                        <input type=submit name=action value="reinstall">
+                    </td>
+                    <td align=center colspan=2>
+                        <input type=submit name=action value="Cancel">
+                    </td>
+                </tr>
+            </table>
+<p>If this does not fix the issue consider deleting conf/catalog.cfg conf/oversight.cfg
+
+            <input type=hidden name=old_action value="[:$?action:]">
+            <input type=hidden name=view value="[:$?view:]">
+        </form>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

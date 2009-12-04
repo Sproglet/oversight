@@ -1,0 +1,222 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:HOSTNAME:]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+body.menu_background {
+    color:yellow ;
+    background-color:black;
+}
+
+#Xmenutitle {
+    XXbackground-color:black;
+    font-size:12pt;
+    color:white;
+    text-align:center;
+    font-family:"arial";
+    font-weight:bold;
+}
+
+td.grid_background {
+    text-align:center;
+    background-color:black;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+[:IF($@poster_mode):]
+    .overview_poster {
+        background-color:black;
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
+}
+.transparent {
+    background-color:black;
+    margin:0px;
+    padding:0px;
+    border:0px;
+[:IF($@gaya):]
+    background-color:black-alpha2;
+[:ELSE:]
+    filter:alpha(opacity=70);
+    opacity:0.7;
+    color:white;
+[:ENDIF:]
+}
+
+        </style>
+    </head>
+
+[:IF($ovs_display_fanart):]
+
+    <body [onloadset=:START_CELL:] focuscolor=#FBB917 focustext=black class=menu_background background=[:FANART_URL(black_desert.jpg):] >
+    <table class=main width=100%>
+    <tr valign=bottom>
+
+[:ELSE:]
+
+    <body [onloadset=:START_CELL:] focuscolor="#FBB917" focustext="black" class="menu_background" >
+    <table class="main" width="100%">
+    <tr valign="middle">
+
+[:ENDIF:]
+
+        <td align="center" border="0" height="[:BODY_HEIGHT:]" >
+
+[:FORM_START:]
+    <center>
+        <table class="main" width="100%" height="100%">
+            <tr>
+                <td>
+                    <table class="header">
+                        <tr>
+                            [<td>:BACK_BUTTON:</td>]
+                            [<td>:EXIT_BUTTON:</td>]
+                            <td>[:HOME_BUTTON:]</td>
+[:IF($@gaya):]
+[:ELSE:]
+                            <td>[:DELETE_BUTTON:]</td>
+                            <td>[:MARK_BUTTON:]</td>
+[:ENDIF:]
+                            [<td>:SELECT_MARK_SUBMIT:</td>]
+                        </tr>
+                    </table>
+                </td>
+                <td align="right">
+                    [:EXTERNAL_URL:]
+                </td>
+            </tr>
+            <tr>
+                <td >
+                    <center>
+                        <table >
+                            <tr>
+                                <td>
+                                    <center>
+                                        <table>
+                                            <tr>
+                                                <td background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" align="center" >
+                                                    <span class="title" id="menutitle">&nbsp;</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </center>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td >
+                                    [:GRID:]
+                                </td >
+                            </tr>
+                            <tr>
+                                <td >
+                                    <center>
+[:IF($ovs_fade):]
+                                        <table background="/oversight/templates/alt/images/transfade[:$ovs_transparency:].png" >
+[:ELSE:]
+                                        <table background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
+                                            <tr>
+                                                <td>
+[:IF($ovs_fade):]
+<p>&nbsp;</p>
+[:ENDIF:]
+                                                    <span class="plot">[:PLOT:]</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </center>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td >
+                                    <table class=header width=100%>
+                                        <tr>
+                                            <td width=10%>[:LEFT_BUTTON:]</td>
+                                            [<td align="center" class="cancel" width="26%">:SELECT_CANCEL_SUBMIT:</td>]
+                                            [<td align="center" class="delist" width="26%">:SELECT_DELIST_SUBMIT:</td>]
+                                            [<td align="center" class="delete" width="26%">:SELECT_DELETE_SUBMIT:</td>]
+                                            <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </center>
+                </td>
+            </tr>
+        </table>
+    </center>
+</form>
+
+</td></tr></table>
+
+<script type="text/javascript">
+var title = document.getElementById('menutitle').firstChild;
+var g_idlist = '';
+var g_title = '';
+
+function ovs_del() {
+    if (g_idlist) {
+        if (confirm("Delist/Delete "+g_title+"?")) {
+            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
+                action('delete');
+            } else {
+                action('delist');
+            }
+        }
+    }
+}
+function ovs_watched() {
+    if (g_idlist) {
+        if (confirm("Mark "+g_title+" as watched?")) {
+            action('watch');
+        }
+    }
+}
+function ovs_unwatched() {
+    if (g_idlist) {
+        if (confirm("Mark "+g_title+"as NOT watched?")) {
+            action('unwatch');
+        }
+    }
+}
+
+function action(a) {
+    var sep;
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+
+function showt(title_text,idlist)
+{
+   if (idlist != '') g_idlist = idlist;
+   g_title = title_text;
+   title.nodeValue = g_title;
+}
+
+function title0() { showt('_',''); }
+</script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

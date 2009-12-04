@@ -749,7 +749,9 @@ char *get_rating_stars(DbRowId *rid,int num_stars)
     double rating = rid->rating;
     static char *star_path=NULL;
     if (!star_path) {
-        ovs_asprintf(&star_path,"/oversight/templates/%s/images/stars/star%%d.%s",
+        ovs_asprintf(&star_path,"%s%s/templates/%s/images/stars/star%%d.%s",
+                (g_dimension->local_browser?"file://":""),
+                (g_dimension->local_browser?appDir():""),
                 skin_name(),ovs_icon_type());
     }
 
@@ -1376,6 +1378,7 @@ long numeric_constant_eval(long val,Array *args) {
                     case '/': val /= num2; break;
                     case '*': val *= num2; break;
                     case '%': val %= num2; break;
+                    case '=': val = (val == num2 ); break;
 
                     default:
                         html_error("unexpected operator [%d]",*p);
@@ -1459,14 +1462,23 @@ char *numeric_constant_macro(long val,Array *args) {
 
 /*
  * Stack to manage output state.
+ * IF , and elseif push the expression value to TOS
+ * else negates TOS.
+ * There is also a value below TOS that indicates if a clause has fired for this 
+ * if-elseif-else-endif
  */
+#define IF_CLAUSE_FIRED output_state_stack[output_state_tos]
+#define IF_CLAUSE_VALUE output_state_stack[output_state_tos-1]
 static long output_state_stack[100];
 static int output_state_tos=-1;
 long output_state() {
-    if (output_state_tos >= 0 ) {
-        return output_state_stack[output_state_tos];
+    
+    //HTML_LOG(0,"[%d]if(%d) && fired=%d",output_state_tos,IF_CLAUSE_VALUE,IF_CLAUSE_FIRED);
+
+    if (output_state_tos >= 1 ) {
+        return (IF_CLAUSE_VALUE!=0 && IF_CLAUSE_FIRED == 1);
     } else {
-        return -1;
+        return 1;
     }
 }
 void output_state_push(long val) {
@@ -1479,13 +1491,25 @@ long output_state_pop() {
         return -1;
     }
 }
+
 char *macro_fn_if(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
     long l = numeric_constant_eval(0,args);
     if (args == NULL || args->size == 1 ) {
         // Single form [:IF:] - supresses all line output until [:ENDIF:] or [:ELSE:]
         // Also returns NULL to remove itself from output.
-        output_state_push(l);
+
+        int current_state = output_state();
+        //reserve two spaces on the stack
+        output_state_push(0);
+        output_state_push(0); 
+        if (current_state) {
+            IF_CLAUSE_VALUE = l;
+            if (l) { IF_CLAUSE_FIRED++; }
+        } else {
+            IF_CLAUSE_FIRED=2;
+        }
+        
     } else if (l) {
         // [:IF(exp,replace):] - if exp is true - result is 'replace'
         HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[1]);
@@ -1501,8 +1525,30 @@ char *macro_fn_if(char *template_name,char *call,Array *args,int num_rows,DbRowI
     }
     return NULL;
 }
+char *macro_fn_elseif(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    char *result = NULL;
+
+    if (args == NULL ||  args->size != 1 ) {
+        *free_result=0;
+        result="ELSEIF";
+    } else {
+        if (IF_CLAUSE_FIRED <= 1) {
+            long l = numeric_constant_eval(0,args);
+            IF_CLAUSE_VALUE = l;
+            if (l) { IF_CLAUSE_FIRED++; }
+        }
+    }
+    return result;
+}
+
 char *macro_fn_else(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    output_state_push(!output_state_pop());
+
+    if (IF_CLAUSE_FIRED <= 1) {
+        IF_CLAUSE_VALUE = !IF_CLAUSE_VALUE;
+        if (IF_CLAUSE_VALUE) { IF_CLAUSE_FIRED++; }
+    }
+
     return NULL;
 }
 char *macro_fn_endif(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -1512,6 +1558,7 @@ char *macro_fn_endif(char *template_name,char *call,Array *args,int num_rows,DbR
         result="ENDIF";
     } else {
         output_state_pop();
+        output_state_pop(); // This is the value that tracks if a clause fired
     }
     return result;
 }
@@ -1670,6 +1717,7 @@ void macro_init() {
         hashtable_insert(macros,"START_CELL",macro_fn_start_cell);
         hashtable_insert(macros,"NUMBER",macro_fn_number);
         hashtable_insert(macros,"IF",macro_fn_if);
+        hashtable_insert(macros,"ELSEIF",macro_fn_elseif);
         hashtable_insert(macros,"ELSE",macro_fn_else);
         hashtable_insert(macros,"ENDIF",macro_fn_endif);
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);

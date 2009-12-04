@@ -5,7 +5,7 @@ body { color:white ; background-color:black; }
 </head>
 <body focuscolor=yellow focustext=black height=100% [background=:FANART_URL(lightwave.jpg):] >
     [:FORM_START:]
-<table id="main" width=100% >
+<table class="main" width=100% >
     <tr valign="middle">
         <td align="center" border=0 height=[:BODY_HEIGHT:]px>
             <table width=100%>

@@ -11,8 +11,8 @@ body.menu_background {
     background-color:black;
 }
 
-#menutitle {
-    background-color:black;
+#Xmenutitle {
+    XXbackground-color:black;
     font-size:12pt;
     color:white;
     text-align:center;
@@ -54,71 +54,111 @@ table.overview_poster {
 
         </style>
     </head>
-    <!--
-<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background  >
--->
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background background=[:FANART_URL(black_desert.jpg):] >
-        [:FORM_START:]
-<center>
-        <table id=main width=100% height=100%>
-        <tr><td>
-            <table class=header>
-                <tr>
-                    [<td align="center">:BACK_BUTTON:</td>]
-                    [<td align="center">:EXIT_BUTTON:</td>]
-                    <td align="center">[:HOME_BUTTON:]</td>
-                    <td align="center">[:DELETE_BUTTON:]</td>
-                    <td align="center">[:MARK_BUTTON:]</td>
-                    [<td align="center">:SELECT_MARK_SUBMIT:</td>]
-                </tr>
-            </table>
-        </td></tr><tr><td >
-            <center>
-            <table >
-                <tr>
-                    <td>
-                        <center>
-                            <table>
-                                <tr>
-                                    <td id=menutitle align=center >&nbsp;</td>
-                                </tr>
-                            </table>
-                        </center>
-                    </td>
-                </tr>
-                <tr>
-                    <td >
-                        [:GRID:]
-                    </td >
-                </tr>
-                <tr>
-                    <td >
-                        <center><table class="transparent" ><tr><td>[:PLOT:]</td></tr></table></center>
-                    </td>
-                </tr>
-                <tr>
-                    <td >
-                        <table class=header width=100%>
+
+[:IF($ovs_display_fanart):]
+
+    <body [onloadset=:START_CELL:] focuscolor=#FBB917 focustext=black class=menu_background background=[:FANART_URL(black_desert.jpg):] >
+    <table class=main width=100%>
+    <tr valign=bottom>
+
+[:ELSE:]
+
+    <body [onloadset=:START_CELL:] focuscolor="#FBB917" focustext="black" class="menu_background" >
+    <table class="main" width="100%">
+    <tr valign="middle">
+
+[:ENDIF:]
+
+        <td align="center" border="0" height="[:BODY_HEIGHT:]" >
+
+[:FORM_START:]
+    <center>
+        <table class="main" width="100%" height="100%">
+            <tr>
+                <td>
+                    <table class="header">
+                        <tr>
+                            [<td>:BACK_BUTTON:</td>]
+                            [<td>:EXIT_BUTTON:</td>]
+                            <td>[:HOME_BUTTON:]</td>
+[:IF($@gaya):]
+[:ELSE:]
+                            <td>[:DELETE_BUTTON:]</td>
+                            <td>[:MARK_BUTTON:]</td>
+[:ENDIF:]
+                            [<td>:SELECT_MARK_SUBMIT:</td>]
+                        </tr>
+                    </table>
+                </td>
+                <td align="right">
+                    [:EXTERNAL_URL:]
+                </td>
+            </tr>
+            <tr>
+                <td >
+                    <center>
+                        <table >
                             <tr>
-                                <td width=10%>[:LEFT_BUTTON:]</td>
-                                [<td align="center" class="cancel" width="26%">:SELECT_CANCEL_SUBMIT:</td>]
-                                [<td align="center" class="delist" width="26%">:SELECT_DELIST_SUBMIT:</td>]
-                                [<td align="center" class="delete" width="26%">:SELECT_DELETE_SUBMIT:</td>]
-                                <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                                <td>
+                                    <center>
+                                        <table>
+                                            <tr>
+                                                <td background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" align="center" >
+                                                    <span class="title" id="menutitle">&nbsp;</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </center>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td >
+                                    [:GRID:]
+                                </td >
+                            </tr>
+                            <tr>
+                                <td >
+                                    <center>
+[:IF($ovs_fade):]
+                                        <table background="/oversight/templates/alt/images/transfade[:$ovs_transparency:].png" >
+[:ELSE:]
+                                        <table background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
+                                            <tr>
+                                                <td>
+[:IF($ovs_fade):]
+<p>&nbsp;</p>
+[:ENDIF:]
+                                                    <span class="plot">[:PLOT:]</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </center>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td >
+                                    <table class=header width=100%>
+                                        <tr>
+                                            <td width=10%>[:LEFT_BUTTON:]</td>
+                                            [<td align="center" class="cancel" width="26%">:SELECT_CANCEL_SUBMIT:</td>]
+                                            [<td align="center" class="delist" width="26%">:SELECT_DELIST_SUBMIT:</td>]
+                                            [<td align="center" class="delete" width="26%">:SELECT_DELETE_SUBMIT:</td>]
+                                            <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                                        </tr>
+                                    </table>
+                                </td>
                             </tr>
                         </table>
-                    </td>
-                </tr>
-            </table>
-            </center>
-            <div>
-        </td></tr><tr><td>
-            <!--
-<img src=[:FANART_URL:]  />
--->
-        </td></tr></table>
-</center>
-        </form>
+                    </center>
+                </td>
+            </tr>
+        </table>
+    </center>
+</form>
+
+</td></tr></table>
+
 <script type="text/javascript">
 var title = document.getElementById('menutitle').firstChild;
 var g_idlist = '';

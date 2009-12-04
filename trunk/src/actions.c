@@ -302,6 +302,20 @@ void send_command(char *source,char *remote_cmd) {
     FREE(cmd);
 }
 
+void delete_config(char *name) {
+    char *timestamp = timestamp_static();
+    char *tmp,*tmp2;
+    ovs_asprintf(&tmp,"%s/conf/%s",appDir(),name);
+    ovs_asprintf(&tmp2,"%s/conf/%s.%s",appDir(),name,timestamp);
+    if (rename(tmp,tmp2) != 0) {
+        HTML_LOG(0,"Error renaming [%s] to [%s]",tmp,tmp2);
+    } else {
+        HTML_LOG(0,"Renamed [%s] to [%s]",tmp,tmp2);
+    }
+    FREE(tmp);
+    FREE(tmp2);
+}
+
 void do_actions() {
 
     char *view=query_val("view");
@@ -331,6 +345,12 @@ void do_actions() {
             ovs_asprintf(&cmd,"%s/oversight-install.cgi install",appDir());
             util_system(cmd);
             FREE(cmd);
+
+        } else if (strcmp(action,"reset_defaults") == 0) {
+
+            delete_config("oversight.cfg");
+            delete_config("catalog.cfg");
+            delete_config("unpak.cfg");
 
         } else if (strcmp(action,"clear_cache") == 0) {
 

@@ -68,6 +68,8 @@ ovs_poster_mode_height[1080]=0
 ovs_tv_rows[1080]=10
 ovs_tv_cols[1080]=6
 
-ovs_font_size_plot="100"
+ovs_font_size_plot="130"
 ovs_font_size_eptitle="90"
 ovs_font_size_epdate="90"
+ovs_transparency="40"
+ovs_fade="1"

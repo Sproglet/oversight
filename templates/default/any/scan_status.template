@@ -8,12 +8,24 @@
         </style>
         <style type="text/css">
 img.webstatus { width:20; height:20; }
-Xtd.webstatus { font-size:90% ; }
-p { font-size:90%; color:white; }
-a { color:yellow; }
-body { font-size:20; font-family:"arial"; color:white; }
-.resource { color:#55FF55 ; font-weight:bold; }
-b { color:#55FF55; }
+p {
+ color:white;
+ }
+a {
+ color:yellow;
+ }
+body {
+ font-size:20;
+ font-family:"arial";
+ color:white;
+ }
+.resource {
+ color:#55FF55 ;
+ font-weight:bold;
+ }
+b {
+ color:#55FF55;
+ }
         </style>
     </head>
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >

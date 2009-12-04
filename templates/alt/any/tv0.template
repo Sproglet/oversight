@@ -6,9 +6,9 @@ body { color:white ; background-color:black; }
 }
 </style>
 </head>
-<body height=100% focuscolor=yellow focustext=black [background=:FANART_URL(lightwave.jpg):] >
+<body focuscolor=yellow focustext=black [background=:FANART_URL(lightwave.jpg):] >
 [:FORM_START:]
-<table id=main width=100%>
+<table class=main width=100%>
     <tr valign=center>
         <td>
             <table width=100%>

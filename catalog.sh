@@ -183,6 +183,7 @@ sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
 cat "$tmpFile" > "$CONF_FILE"
 rm -f "$tmpFile"
 fi
+. "$DEFAULTS_FILE"
 . "$CONF_FILE"
 
 check_missing_settings() {
@@ -629,11 +630,11 @@ sub(/^(nfs:\/\/|smb:)/,"",remote)
 
 if (link ~ "nfs:") {
 
-cmd = "mkdir -p "path" && mount -o soft,nolock,timeo=10 "remote" "path
+cmd = "mkdir -p "qa(path)" && mount -o soft,nolock,timeo=10 "qa(remote)" "qa(path)
 
 } else if (link ~ "smb:") {
 
-cmd = "mkdir -p "path" && mount -t cifs -o username="user",password="password" "remote" "path
+cmd = "mkdir -p "qa(path)" && mount -t cifs -o username="user",password="password" "qa(remote)" "qa(path)
 
 sub(/ username=,/," username=x,",cmd)
 
@@ -4736,9 +4737,7 @@ setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]))
 
 set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"])
 
-DEBUG("tvdb epplot :["g_epplot[idx]"]")
 setFirst(g_epplot,idx,episodeInfo["/Data/Episode/Overview"])
-DEBUG("tvdb epplot :["g_epplot[idx]"]")
 
 if (gEpTitle[idx] != "" ) {
 if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {

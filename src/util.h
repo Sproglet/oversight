@@ -101,4 +101,5 @@ Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);
 char *util_day_static();
 char *clean_js_string(char *in);
 int is_dvd(char *file);
+char *timestamp_static();
 #endif

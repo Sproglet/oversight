@@ -888,3 +888,14 @@ int is_dvd(char *file)
         return 0;
     }
 }
+
+char *timestamp_static()
+{
+#define DATE_BUF_SIZ 40
+    static char date[DATE_BUF_SIZ];
+    time_t t;
+    struct tm *timep;
+    timep = localtime(&t);
+    strftime(date,DATE_BUF_SIZ,"%Y%m%d-%H%M%S",timep);
+    return date;
+}

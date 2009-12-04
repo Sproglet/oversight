@@ -11,7 +11,7 @@ APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 #$3=value
 OPTION_SET() {
     vPatt=`echo "$2" | sed -r 's/([][])/\\\\\1/g'` #escape square brackets a[b] to a\[b\]
-    if grep -q "^$vPatt=" "$1" ; then
+    if [ -f "$1" ] && grep -q "^$vPatt=" "$1" ; then
         cp "$1" "$1.old"
 
         sed "s^$vPatt=.*$2="'"'"$3"'"' "$1.old" > "$1"
@@ -38,6 +38,20 @@ OPTION_TABLE2() {
 }
 
 OPTION_PARSE() {
+
+    for i in "$@" ; do
+        case "$i" in
+            *=*)
+                opts="$opts $i"
+                ;;
+            *)
+                if [ -f "$i" ] ; then
+                    opts="$opts $i"
+                fi
+                ;;
+        esac
+    done
+
     awk '
 {
     print "<!-- "FILENAME " : " $0 "-->";
@@ -218,7 +232,7 @@ END {
         print "ERROR";
     }
 }
-' "$@"
+' $opts
 }
 
 func=$1

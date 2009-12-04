@@ -1735,76 +1735,86 @@ char *get_poster_mode_item_unknown(DbRowId *row_id,char **font_class,char **grid
     return title;
 }
 
-char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class) {
+char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,char *newview) {
     int tv_or_movie = has_category(row_id);
     // TEXT MODE
     HTML_LOG(2,"dbg: get text mode details ");
 
     *font_class = watched_style(row_id);
     *grid_class = file_style(row_id);
+
+    char *title = trim_title(row_id->title);
    
-   char *tmp;
-   char *title = trim_title(row_id->title);
+    char *tmp;
+    if (strcmp(newview,VIEW_TVBOXSET) == 0) {
 
-   char *cert = row_id->certificate;
-   if ((tmp=strchr(cert,':')) != NULL) {
-       if (tmp[1] != '\0') {
-           ovs_asprintf(&cert,"(%s)",tmp+1);
-       } else {
-           cert = NULL;
+        ovs_asprintf(&tmp,"%s [%d Seasons]",title,season_count(row_id));
+        FREE(title);
+        title = tmp;
+
+    } else {
+
+       char *cert = row_id->certificate;
+       if ((tmp=strchr(cert,':')) != NULL) {
+           if (tmp[1] != '\0') {
+               ovs_asprintf(&cert,"(%s)",tmp+1);
+           } else {
+               cert = NULL;
+           }
        }
-   }
 
-    if (row_id->category == 'T' && row_id->season >= 1) {
-        //Add season
-        char *tmp;
-        ovs_asprintf(&tmp,"%s S%d",title,row_id->season);
-        FREE(title);
-        title=tmp;
-    }
-
-    if (tv_or_movie) {
-        HTML_LOG(2,"dbg: add certificate");
-        //Add certificate and extension
-        char *tmp;
-        char *ext_icons=build_ext_list(row_id);
-        HTML_LOG(2,"dbg: add extension [%s]",ext_icons);
-
-        ovs_asprintf(&tmp,"%s %s %s",
-                title,
-                (cert?cert:""),
-                (ext_icons?ext_icons:""));
-
-        FREE(title);
-        title=tmp;
-        if (cert != row_id->certificate) FREE(cert);
-        FREE(ext_icons);
-    }
-
-
-    if (row_id->category == 'T') {
-        HTML_LOG(2,"dbg: add episode count");
-        //Add episode count
-
-        int unwatched = unwatched_count(row_id);
-
-        if (unwatched) {
+        if (row_id->category == 'T' && row_id->season >= 1) {
+            //Add season
             char *tmp;
-            int total = group_count(row_id);
-            ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d of %d</font>",title,unwatched,total);
+            ovs_asprintf(&tmp,"%s S%d",title,row_id->season);
             FREE(title);
             title=tmp;
         }
-    }
 
-    long crossview=0;
-    config_check_long(g_oversight_config,"ovs_crossview",&crossview);
-    if (crossview == 1 && *(row_id->db->source) != '*') {
-        HTML_LOG(2,"dbg: add network icon");
-       char *tmp =add_network_icon(row_id,title);
-       FREE(title);
-       title = tmp;
+        if (tv_or_movie) {
+            HTML_LOG(2,"dbg: add certificate");
+            //Add certificate and extension
+            char *tmp;
+            char *ext_icons=build_ext_list(row_id);
+            HTML_LOG(2,"dbg: add extension [%s]",ext_icons);
+
+            ovs_asprintf(&tmp,"%s %s %s",
+                    title,
+                    (cert?cert:""),
+                    (ext_icons?ext_icons:""));
+
+            FREE(title);
+            title=tmp;
+            if (cert != row_id->certificate) FREE(cert);
+            FREE(ext_icons);
+        }
+
+
+        if (row_id->category == 'T') {
+            HTML_LOG(2,"dbg: add episode count");
+            //Add episode count
+
+            int unwatched = unwatched_count(row_id);
+
+            if (unwatched) {
+                char *tmp;
+                int total = group_count(row_id);
+                ovs_asprintf(&tmp,"%s&nbsp;<font color=#AAFFFF size=-1>x%d of %d</font>",title,unwatched,total);
+                FREE(title);
+                title=tmp;
+            }
+        }
+
+        long crossview=0;
+        config_check_long(g_oversight_config,"ovs_crossview",&crossview);
+        if (crossview == 1 && *(row_id->db->source) != '*') {
+            HTML_LOG(2,"dbg: add network icon");
+           char *tmp =add_network_icon(row_id,title);
+           FREE(title);
+           title = tmp;
+        }
     }
+    HTML_LOG(0,"title[%s] newview[%s] final title[%s]",row_id->title,newview,title);
 
     return title;
 }
@@ -1831,7 +1841,7 @@ char *get_simple_title(
 
     if (strcmp(newview,VIEW_TVBOXSET) == 0) {
 
-        ovs_asprintf(&title,"%s Box Set [%d Seasons]",row_id->title,season_count(row_id));
+        ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
 
     } else if (row_id->category=='T') {
         int unwatched = unwatched_count(row_id);
@@ -1907,6 +1917,8 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *first_space=NULL;
     int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
+    char *newview = get_drilldown_view(row_id);
+
     if (in_poster_mode() ) {
         displaying_text=0;
         if (tv_or_movie && (title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
@@ -1950,7 +1962,7 @@ TRACE;
     } else {
         displaying_text=1;
 
-        title = get_text_mode_item(row_id,&font_class,&grid_class);
+        title = get_text_mode_item(row_id,&font_class,&grid_class,newview);
     }
     if (first_space) {
         // Truncate even more if the first space does not occur early enough in the title.
@@ -1960,7 +1972,6 @@ TRACE;
         *first_space='\0';
     }
 TRACE;
-    char *newview = get_drilldown_view(row_id);
     char *cell_text=NULL;
     char *focus_ev = "";
     char *mouse_ev = "";
@@ -2956,10 +2967,15 @@ char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *p
     char *js_info = clean_js_string(info);
     char *js_eptitle = clean_js_string(eptitle_or_genre);
     char *js_date = clean_js_string(date);
+    char *episode_prefix = "";
+    if (!EMPTY_STR(episode) && !util_starts_with(episode,"DVD")) {
+        episode_prefix="Episode ";
+    }
 
-    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s','%s','%s','%s%s%s%s%s'); }\n",
+    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s%s','%s','%s','%s%s%s%s%s'); }\n",
             NVL(script_so_far),fn_id,
                 idlist,
+                episode_prefix,
                 episode,
                 IFEMPTY(js_plot,"(no plot info)"),
                 js_info,
@@ -3163,17 +3179,21 @@ TRACE;
 
     printf("%s",script);
 
+    HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
+    // Adjust rows to be squarish.
     if (num_rows/cols < rows ) {
         rows = (num_rows+cols-1) / cols;
     }
 
+    HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
     for(r=0 ; r < rows ; r++ ) {
         HTML_LOG(1,"tvlisting row %d",r);
         char *row_text = NULL;
         for(c = 0 ; c < cols ; c++ ) {
             HTML_LOG(1,"tvlisting col %d",c);
 
-            int i = c * rows + r;
+            //int i = c * rows + r;
+            int i = r * cols + c;
             if (i < num_rows) {
 
                 char *episode_col = NULL;

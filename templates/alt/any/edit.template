@@ -1,7 +1,7 @@
 <!-- Default Edit Template  $Id:$ -->
 <body focuscolor=yellow focustext=black height=100% [class=movie_background:IS_GAYA:]>
     [:FORM_START:]
-<table id="main" width=100% >
+<table class="main" width=100% >
     <tr valign="middle">
         <td>
             <table width=100%>

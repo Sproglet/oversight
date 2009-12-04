@@ -318,23 +318,24 @@ TRACE ; HTML_LOG(0,"mount link [%s]",link);
     HTML_LOG(0,"pingable link [%s]",result);
     return result;
 }
+
 char *get_mount_command(char *link,char *path,char *user,char *passwd) {
+
    char *cmd = NULL;
+
     if (util_starts_with(link,"nfs://")) {
 
         // iplink = nfs://host:/share
         // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
-        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\"",
-                path,link+6,path);
+        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\" 2> %s/logs/mnterr.log",
+                path,link+6,path,appDir());
 
     } else if (util_starts_with(link,"smb://")) {
 
-
-
         // link = smb://host/share
         // mount -t cifs -o username=,password= //host/share /path/to/network
-        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\"",
-                path,user,passwd,link+4,path);
+        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\" 2> %s/logs/mnterr.log",
+                path,user,passwd,link+4,path,appDir());
     } else {
         html_log(0,"Dont know how to mount [%s]",link);
     }

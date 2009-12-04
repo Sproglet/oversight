@@ -749,10 +749,14 @@ char *get_rating_stars(DbRowId *rid,int num_stars)
     double rating = rid->rating;
     static char *star_path=NULL;
     if (!star_path) {
-        ovs_asprintf(&star_path,"%s%s/templates/%s/images/stars/star%%d.%s",
-                (g_dimension->local_browser?"file://":""),
-                (g_dimension->local_browser?appDir():""),
-                skin_name(),ovs_icon_type());
+        if (g_dimension->local_browser) {
+            ovs_asprintf(&star_path,"file://%s/templates/%s/images/stars/star%%d.%s",
+                    appDir(),
+                    skin_name(),ovs_icon_type());
+        } else {
+            ovs_asprintf(&star_path,"/oversight/templates/%s/images/stars/star%%d.%s",
+                    skin_name(),ovs_icon_type());
+        }
     }
 
     if (rating > 10) rating=10;

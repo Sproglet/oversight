@@ -1,0 +1,159 @@
+<!-- Default Movie Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight ([:HOSTNAME:]): [:TITLE:] [(:YEAR:)]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+table.listing {
+ margin:0;
+ border-spacing:0;
+ padding:0;
+ border-width:0;
+}
+
+.info {
+    color:white;
+ filter:alpha(opacity=100);
+ opacity:1;
+}
+
+[:IF($ovs_fade):]
+[:ELSE:]
+.transparent {
+    margin:0px;
+    padding:0px;
+    border:0px;
+
+    [:IF($ovs_transparency=0):]
+        background-color:black;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSEIF($@gaya):]
+        [:IF($ovs_transparency=20):]
+            background-color:black-alpha3;
+        [:ELSEIF($ovs_transparency=40):]
+            background-color:black-alpha2;
+        [:ELSEIF($ovs_transparency=60):]
+            background-color:black-alpha1;
+        [:ELSEIF($ovs_transparency=80):]
+            background-color:black-alpha;
+        [:ENDIF:]
+    [:ELSE:]
+        background-image:url(/oversight/templates/alt/images/trans[:$ovs_transparency:].png);
+    [:ENDIF:]
+}
+[:ENDIF:]
+
+</style>
+
+<!-- Default Fanart Movie Template  $Id:$ -->
+<style type="text/css">
+body { color:yellow ; background-color:black; }
+</style>
+    </head>
+
+[:IF($ovs_display_fanart):]
+    <body focuscolor="yellow" focustext="black" [background=:FANART_URL(default.jpg):] >
+    <table class="main" width=100%>
+    <tr valign="bottom">
+[:ELSE:]
+    <body focuscolor=yellow focustext=black height=100% [background=:FANART_URL(lightwave.jpg):] >
+    <table class="main" width=100% >
+    <tr valign="middle">
+[:ENDIF:]
+
+    <td align="center" border=0 height=[:BODY_HEIGHT:]px >
+        [:FORM_START:]
+            <table width=100%>
+                <tr valign="top">
+                    <td>
+                    [:INCLUDE_TEMPLATE(buttons):]
+                    </td>
+                </tr>
+            </table>
+
+
+            <table class="main" width="100%"  >
+                <tr valign="bottom" >
+                    <td width=1% class="main" align=left>[:POSTER:]</td>
+                    <td class="main" >
+[:IF($ovs_fade):]
+                        <table width="100%" background="/oversight/templates/alt/images/transfade[:$ovs_transparency:].png" >
+[:ELSE:]
+                        <table width="100%" background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
+                            <tr>
+                                <td class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
+                                <td class="right" width=20%><font class="info">[:EXTERNAL_URL:][:SOURCE:]</font></td>
+                            </tr>
+                            <tr>
+                                <td align="left"><font id="genre">[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
+                                <td class="right">[:RATING_STARS(5):][:RATING:]</td>
+                            </tr>
+                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:]</span></td><tr>
+                            <tr><Td>[:MOVIE_LISTING:]</td></tr>
+                            <tr><td>
+                                [:INCLUDE_TEMPLATE(submit_btn):]
+                            </td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        [:PLAY_TVID:]
+    </td>
+    </tr>
+</table>
+    </body>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->
+
+<script type="text/javascript">
+
+// g_idlist and g_title are set by the movie_listing code in oversight
+
+function ovs_del() {
+    if (confirm("Remove ["+g_title+"]?")) {
+        if (confirm("Also delete  "+g_title+" files ?!!!")) {
+            if(confirm("Deleting media files") ) {
+                action('delete');
+            } 
+        } else {
+            action('delist');
+        }
+    }
+}
+function ovs_watched() {
+    //if (confirm("Mark "+g_title+"\n as WATCHED?")) {
+        action('watch');
+    //}
+}
+
+function ovs_unwatched() {
+    //if (confirm("Mark "+g_title+"\nas NOT watched?")) {
+        action('unwatch');
+    //}
+}
+
+function action(a) {
+    var sep;
+    if (window.location.href.indexOf('?') == -1 ) {
+        sep='?';
+    } else {
+        sep = '&';
+    }
+
+    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+}
+</script>
+
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+</body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

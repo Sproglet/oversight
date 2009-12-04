@@ -1,0 +1,5 @@
+ovs_poster_mode[0]:Display posters on main screen (Std.Def.)|1|0
+ovs_rows[0]:Number of rows on front page (text mode only)
+ovs_cols[0]:Number of columns on front page (text mode only)
+ovs_font_size[0]:Font Size(Std.Def.)|18
+ovs_button_size[0]:Button Size(Std Def.)|40

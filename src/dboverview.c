@@ -278,11 +278,11 @@ TRACE;
                     if (rid->date > match->date ) {
                         match->date = rid->date;
                     }
-
-                    //*If item is unwatched then set overview as unwatched.
-                    if (rid->watched == 0 ) {
-                       match->watched = 0;
-                    }
+//DELETE
+//DELETE                    //*If item is unwatched then set overview as unwatched.
+//DELETE                    if (rid->watched == 0 ) {
+//DELETE                       match->watched = 0;
+//DELETE                    }
 
                     // Add rid to linked list at match->linked
                     rid->linked = match->linked;

@@ -322,23 +322,27 @@ TRACE ; HTML_LOG(0,"mount link [%s]",link);
 char *get_mount_command(char *link,char *path,char *user,char *passwd) {
 
    char *cmd = NULL;
+   char *log;
+
+   ovs_asprintf(&log,"%s/logs/mnterr.log",appDir());
 
     if (util_starts_with(link,"nfs://")) {
 
         // iplink = nfs://host:/share
         // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
-        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\" 2> %s/logs/mnterr.log",
-                path,link+6,path,appDir());
+        ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\" 2> \"%s\"",
+                path,log,link+6,path,log);
 
     } else if (util_starts_with(link,"smb://")) {
 
         // link = smb://host/share
         // mount -t cifs -o username=,password= //host/share /path/to/network
-        ovs_asprintf(&cmd,"mkdir -p \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\" 2> %s/logs/mnterr.log",
-                path,user,passwd,link+4,path,appDir());
+        ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\" 2> \"%s\"",
+                path,log,user,passwd,link+4,path,log);
     } else {
         html_log(0,"Dont know how to mount [%s]",link);
     }
+    FREE(log);
     return cmd;
 }
  
@@ -469,19 +473,22 @@ int ping_link(char *link)
     char *host=NULL;
     char *end=NULL;
     int result = 0;
+    int port;
 TRACE;
     if (util_starts_with(link,"nfs://") ) {
         link += 6;
         end = strchr(link,':');
+        port=111; // assume nfs host has portmapper
 
     } else if (util_starts_with(link,"smb://")) {
         link += 6;
         end = strchr(link,'/');
+        port=445; //assume SMB on port 445
     }
     if (end) {
         ovs_asprintf(&host,"%.*s",end-link,link);
 
-        result = (ping(host,0) == 0);
+        result = (connect_service(host,0,port) == 0);
 
         HTML_LOG(0,"ping link [%s] host[%s] = %d",link,host,result);
         FREE(host);

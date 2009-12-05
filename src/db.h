@@ -136,4 +136,7 @@ void db_remove_row(DbRowId *rid);
 void db_delete_row_and_media(DbRowId *rid);
 Array *get_genres();
 char *db_get_field(char *fieldid);
+void dump_row(char *prefix,DbRowId *rid);
+void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows);
+void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[]);
 #endif

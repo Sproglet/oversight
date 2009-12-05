@@ -54,6 +54,24 @@ static uint16_t in_checkksum(uint16_t *addr, int len)
 	return (answer);
 }
 
+#if 0
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 200
+#endif
+int dump_addr(struct addrinfo *i)
+{
+    for( ; i ; i=i->ai_next) {
+        char hostname[NI_MAXHOST]="";
+        int e = getnameinfo(i->ai_addr,i->ai_addrlen,hostname,NI_MAXHOST,NULL,0,0);
+        if (e != 0 ) {
+            HTML_LOG(0,"Error in getnameinfo: %s\n", gai_strerror(e));
+        } else if (hostname[0]) {
+            HTML_LOG(0," found hostname [%s]\n", hostname);
+        }
+    }
+}
+#endif
+
 /**
  * FIXME: resolve_timeout
  */
@@ -70,10 +88,15 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 	int ret = getaddrinfo(host, port, &hints, &info);
 	if (ret != 0) {
 		if (info) {
+            HTML_LOG(0,"No address!!!!");
 			freeaddrinfo(info);
 			info = NULL;
 		}
 	}
+
+#if 0
+    dump_addr(info);
+#endif
 	return info;
 }
 
@@ -155,6 +178,87 @@ int ping (char *host,long timeout_millis)
     HTML_LOG(0,"ping %s within %dms = %d = %s",host,timeout_millis,ret,(ret?"bad":"good"));
 
 	return ret;
+}
+
+// connect to a port and disconnect
+// 0 = success
+int connect_service(char *host,long timeout_millis,int port)
+{
+    int ret = -1;
+	#define BUF_SIZE	1500
+	#define ICMP_REQUEST_DATA_LEN 56
+    if (timeout_millis == 0) {
+        timeout_millis = ping_timeout();
+    }
+    HTML_LOG(0,"connect_service %s:%d within %ldms...",host,port,timeout_millis);
+    long timeout_secs = timeout_millis / 1000;
+    long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
+
+	struct timeval timeout = {timeout_secs, timeout_usecs };
+
+
+    // The Address ai->ai_addr
+	struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP, 5);
+	if (ai == NULL)
+		return -2;
+
+
+
+    // The socket
+    //
+    int sockfd = socket(PF_INET,SOCK_STREAM,0);
+    if (sockfd < 0 ) {
+        HTML_LOG(0,"Socket error %d at line %d",errno,__LINE__);
+        return -2;
+    }
+
+    // Using http://www.developerweb.net/forum/showthread.php?t=3000
+    //
+    // Set socket non-blocking
+#if 1
+    int flags;
+    if ((flags = fcntl(sockfd,F_GETFL)) < 0 ) {
+        HTML_LOG(0,"Socket error %d at line %d",errno,__LINE__);
+        return -2;
+    }
+    if (fcntl(sockfd,F_SETFL, flags | O_NONBLOCK) < 0 ) {
+        HTML_LOG(0,"Socket error %d at line %d",errno,__LINE__);
+        return -2;
+    }
+#endif
+
+    // Connect to the socket
+    //
+    if (connect(sockfd,ai->ai_addr,ai->ai_addrlen) != 0) {
+        HTML_LOG(0,"Connect error %d at line %d",errno,__LINE__);
+
+    }
+
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(sockfd,&set);
+
+    if (select(1+sockfd,&set,NULL,NULL,&timeout) == 1) {
+        ret = 0;
+    }
+
+	free(ai);
+	close(sockfd);
+
+    HTML_LOG(0,"connect %s:%d within %dms = %d = %s",host,port,timeout_millis,ret,(ret?"bad":"good"));
+
+	return ret;
+}
+
+int nfs_ping(char *host,long timeout_millis)
+{
+    // Just check the port mapper
+    return connect_service(host,timeout_millis,111);
+}
+
+int cifs_ping(char *host,long timeout_millis)
+{
+    return connect_service(host,timeout_millis,445);
 }
 
 long ping_timeout()

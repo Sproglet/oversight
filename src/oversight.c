@@ -194,6 +194,7 @@ int main(int argc,char **argv) {
 
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
     HTML_LOG(0,"Got %d rows",num_rows);
+    dump_all_rows("sorted",num_rows,sorted_rows);
 
 TRACE;
 
@@ -213,11 +214,16 @@ TRACE;
                 strcmp(view,VIEW_TVBOXSET) == 0 
                 ) {
 
+            dump_all_rows("pre",num_rows,sorted_rows);
+
             display_template(skin_name,view,num_rows,sorted_rows);
 
             if (strcmp(view,VIEW_MOVIE) == 0 || strcmp(view,VIEW_TV) == 0 ) {
                 build_playlist(num_rows,sorted_rows);
-            }
+            } 
+
+            dump_all_rows("post",num_rows,sorted_rows);
+
 
         } else if (strcmp(view,"admin") == 0) {
 

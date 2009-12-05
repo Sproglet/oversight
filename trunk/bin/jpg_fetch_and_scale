@@ -65,17 +65,17 @@ jpg_resize() {
     o=
     case "$output" in 
 
-        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=75 ;;
+        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=85 ;;
 
-        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=75 ;;
+        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=85 ;;
 
         */_fa/*.pal.jpg)
             # Pal is created from the SD but we need to maintain the quality
             o="-width=685 -height=542" ; q=90 ;;
 
-        */_J/*.thumb.jpg) o="-width=150" ; q=75 ;;
+        */_J/*.thumb.jpg) o="-width=150" ; q=85 ;;
 
-        */_J/*.jpg) o="-width=300" ; q=75 ;;
+        */_J/*.jpg) o="-width=300" ; q=85 ;;
 
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac

@@ -151,6 +151,26 @@ td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
  filter:none;
 }
 
+#menutitle {
+ font-size:110%;
+ color:#FFCF2F;
+ text-align:center;
+ font-family:"arial";
+ font-weight:bold;
+}
+#unwatchedtotal { 
+ color:#44FF77;
+ font-family:"arial";
+ font-weight:bold;
+ font-size:110%;
+}
+#watchedtotal { 
+ color:#FF7777;
+ font-family:"arial";
+ font-weight:bold;
+ font-size:110%;
+}
+
 /*
 vi:ts=4:sw=4:et:syntax=css
 */a{}

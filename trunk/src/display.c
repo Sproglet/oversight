@@ -754,6 +754,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     FREE(encoded_path);
     if (freepath) FREE(path);
     FREE(vod);
+
     return result;
 }
 
@@ -1660,6 +1661,16 @@ int unwatched_count(DbRowId *rid) {
     return i;
 }
 
+int watched_count(DbRowId *rid) {
+    int i=0;
+    for(  ; rid ; rid=rid->linked) {
+        if (rid->watched ) {
+            i++;
+        }
+    }
+    return i;
+}
+
 typedef enum { WATCHED , NORMAL , FRESH } ViewStatus;
 
 int get_view_status(DbRowId *rowid) {
@@ -1844,17 +1855,9 @@ char *get_simple_title(
         ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
 
     } else if (row_id->category=='T') {
-        int unwatched = unwatched_count(row_id);
-        int total = group_count(row_id);
-        if (unwatched == 0 ) {
-            ovs_asprintf(&title,"%s S%d [%d]%s%s%s",row_id->title,row_id->season,
-                    total,
-                    source_start,(show_source?source:""),source_end);
-        } else {
-            ovs_asprintf(&title,"%s S%d [%d of %d]%s%s%s",row_id->title,row_id->season,
-                    unwatched,total,
-                    source_start,(show_source?source:""),source_end);
-        }
+
+        ovs_asprintf(&title,"%s S%d %s%s%s",row_id->title,row_id->season,
+            source_start,(show_source?source:""),source_end);
 
     } else if (row_id->year) {
 
@@ -2455,9 +2458,24 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
             i = c * rows + r ;
             if ( i < numids ) {
 
-                char *title = get_simple_title(row_ids[i],NULL);
-                // Write the call to the show function and also tract the idlist;
-                printf("function title%ld() { showt('%s','%s'); }\n",(long)(row_ids[i]),title,idlist[i]);
+                DbRowId *rid = row_ids[i];
+
+                int unwatched = unwatched_count(rid);
+                int watched = watched_count(rid);
+
+                char *title = get_simple_title(rid,NULL);
+                if (rid->category == 'T' ) {
+                    // Write the call to the show function and also tract the idlist;
+                    printf("function title%ld() { showt('%s','%s',%d,%d); }\n",
+                            (long)(rid),title,idlist[i],
+                            unwatched,
+                            watched
+                            );
+                } else {
+                    // Write the call to the show function and also tract the idlist;
+                    printf("function title%ld() { showt('%s','%s','-','-'); }\n",
+                            (long)(rid),title,idlist[i]);
+                }
                 FREE(title);
             }
         }
@@ -3323,6 +3341,19 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
     FREE(pruned_rows);
+
+#if 0
+    char *tmp;
+    ovs_asprintf(&tmp,"%s%s%s%s",result,
+            "<a href=\"file:///opt/sybhttpd/localhost.drives/HARD_DISK/Complete/Rome%20S01Disc1%20tvpinda.par2/Rome%20S01Disc1%20tvpinda/\" name=\"01\" onkeyleftset=\"media\" onkeyrightset=\"FILE_INDEX\" tvid=\"01\" alt=\"Rome S01Disc1 tvpinda     folder                    4 KB\" file=c  ZCD=2 fip=\"Rome S01Disc1 tvpinda\">NMT</a>",
+            "<a href=\"file://%2fshare%2fComplete%2fRome%20S01Disc1%20tvpinda.par2%2fRome%20S01Disc1%20tvpinda%2f\"  file=c ZCD=2 name=\"DVD1?1\"  onfocus=\"tvinf_4548760();\" onblur=\"tvinf_0();\"   class=unwatched >ME1</a>",
+            "<a href=\"file://%2fshare%2fComplete%2fRome%20S01Disc1%20tvpinda.par2%2fRome%20S01Disc1%20tvpinda%2f\"  file=c ZCD=2 name=\"DVD1?1\"  onfocus=\"tvinf_4548760();\" onblur=\"tvinf_0();\"   class=unwatched >ME2</a>"
+            );
+    FREE(result);
+    result=tmp;
+#endif
+
+
     return result;
 }
 

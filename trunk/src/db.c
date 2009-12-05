@@ -1060,6 +1060,7 @@ TRACE;
 
             if ( r != NULL ) {
 TRACE;
+                dump_all_rows2("rowset",r->size,r->rows);
 
                 (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbRowSet*));
                 (*row_set_ptr)[(*rowset_count_ptr)++] = r;
@@ -1102,29 +1103,6 @@ char *is_nmt_network_share(char *mtab_line) {
     }
     HTML_LOG(2,"mtab ignore[%s]",mtab_line);
     return NULL;
-}
-
-
-// Extract ip from mtab and try to ping it - corrupts buffer.
-int is_pingable(char *mtab_line) {
-
-    char *ip = mtab_line;
-    // 192.168.88.13:/space /opt/sybhttpd/localhost.drives/NETWORK_SHARE/space nfs ....
-    // or
-    // \134\134192.168.88.6\134share /opt/sybhttpd/localhost.drives/NETWORK_SHARE/abc cifs rw,mand,nodiratime,unc=\\192.168.88.6\share,
-
-
-    // Skip octal format esp space (\040),tab (\011), newline (\012) and backslash (\134) 
-    while (*ip == '\\' ) {
-      ip +=  4;
-    }
-    char  *ipend = ip;
-    while(strchr("\\/:",*ipend) == NULL) {
-        ipend++;
-    }
-    *ipend='\0';
-    int result = (ping(ip,0) == 0);
-    return result;
 }
 
 //
@@ -1504,7 +1482,6 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                             keeprow=0;
                         }
                     }
-                    //if (keeprow) HTML_LOG(0,"xx name ok");
                     if (keeprow) {
                         switch(media_type) {
                             case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
@@ -1849,5 +1826,36 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
             gstr = p;
         }
     }
+}
+
+void dump_row(char *prefix,DbRowId *rid)
+{
+    HTML_LOG(0,"xx %s  %d:T[%s]S[%d]E[%s]w[%d]",prefix,rid->id,rid->title,rid->season,rid->episode,rid->watched);
+}
+void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows)
+{
+#if 0
+    int i;
+    for(i = 0 ; i <  num_rows ; i ++ ) {
+        DbRowId *rid = sorted_rows[i];
+        dump_row(prefix,rid);
+        for( ; rid ; rid = rid->linked ) {
+            dump_row("linked:",rid);
+        }
+    }
+#endif
+}
+void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[])
+{
+#if 0
+    int i;
+    for(i = 0 ; i <  num_rows ; i ++ ) {
+        DbRowId *rid = sorted_rows+i;
+        dump_row(prefix,rid);
+        for( ; rid ; rid = rid->linked ) {
+            dump_row("linked:",rid);
+        }
+    }
+#endif
 }
 

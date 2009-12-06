@@ -3,6 +3,7 @@
     <head>
         <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]): [:TITLE:] [(:YEAR:)]</title>
+        <link rel="stylesheet" type="text/css" href="/oversight/templates/alt/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -12,38 +13,6 @@ table.listing {
  padding:0;
  border-width:0;
 }
-
-.info {
-    color:white;
- filter:alpha(opacity=100);
- opacity:1;
-}
-
-[:IF($ovs_fade):]
-[:ELSE:]
-.transparent {
-    margin:0px;
-    padding:0px;
-    border:0px;
-
-    [:IF($ovs_transparency=0):]
-        background-color:black;
-    [:ELSEIF($ovs_transparency=100):]
-    [:ELSEIF($@gaya):]
-        [:IF($ovs_transparency=20):]
-            background-color:black-alpha3;
-        [:ELSEIF($ovs_transparency=40):]
-            background-color:black-alpha2;
-        [:ELSEIF($ovs_transparency=60):]
-            background-color:black-alpha1;
-        [:ELSEIF($ovs_transparency=80):]
-            background-color:black-alpha;
-        [:ENDIF:]
-    [:ELSE:]
-        background-image:url(/oversight/templates/alt/images/trans[:$ovs_transparency:].png);
-    [:ENDIF:]
-}
-[:ENDIF:]
 
 </style>
 

@@ -28,6 +28,7 @@
 #define DRILL_DOWN_PARAM_NAMES "p,idlist,view"
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
+#define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
 
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
@@ -1691,7 +1692,6 @@ TRACE;
     ViewStatus status = get_view_status(row_id);
 
 
-    char *attr;
 
     // *font_class and *grid_class are returned to the caller to set the <a><font> class and the <td>
     switch(status) {
@@ -1704,6 +1704,8 @@ TRACE;
     *font_class = *grid_class;
 
 
+#if 0
+    char *attr;
     // The class is reused here to set the image tag
     // They just happen to have the same name - maybe there is a more css friendly way to do this!
     ovs_asprintf(&attr," width=%d height=%d %s ",
@@ -1712,18 +1714,12 @@ TRACE;
         *font_class);
 
     title = get_poster_image_tag(row_id,attr,THUMB_IMAGE);
+    FREE(attr);
+#else
+    title = get_poster_image_tag(row_id,*font_class,THUMB_IMAGE);
+#endif
 TRACE;
 
-/*
- * if (status != WATCHED ) {
-        char *tmp;
-        ovs_asprintf(&tmp,"<nobr>%s<table border=1><tr><td %s_bar width=1px>.</td></tr></table></nobr>",
-                title,*grid_class);
-        FREE(title);
-        title=tmp;
-    }
-    */
-    FREE(attr);
 TRACE;
     return title;
 }
@@ -1876,11 +1872,11 @@ char *get_simple_title(
 char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
     char *result = NULL;
     if (off_event != NULL) {
-        ovs_asprintf(&result," %s=\"%s%ld();\" %s=\"%s0();\"",
+        ovs_asprintf(&result," %s=\"%s%lx();\" %s=\"%s0();\"",
                 on_event,function_name_prefix,function_id,
                 off_event,function_name_prefix);
     } else {
-        ovs_asprintf(&result," %s=\"%s%ld();\"",
+        ovs_asprintf(&result," %s=\"%s%lx();\"",
                 on_event,function_name_prefix,function_id);
     }
     return result;
@@ -1898,7 +1894,8 @@ char *mouse_event_fn(char *function_name_prefix,long function_id) {
 }
 
 char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
-        int left_scroll,int right_scroll,int centre_cell,char *idlist) {
+        int left_scroll,int right_scroll,int centre_cell,char *idlist)
+{
 
     //TODO:Highlight matched bit
     HTML_LOG(2,"Item %d = %s %s %s",cell_no,row_id->db->source,row_id->title,row_id->file);
@@ -1983,9 +1980,9 @@ TRACE;
 
         char *simple_title = get_simple_title(row_id,newview);
 
-        focus_ev = focus_event_fn("title",(long)row_id,0);
+        focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,(long)cell_no,0);
         if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event_fn("title",(long)row_id);
+            mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,(long)cell_no);
         }
         FREE(simple_title);
     }
@@ -2055,12 +2052,12 @@ TRACE;
 
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s%s %s %s class=grid%d %s >%s%s%s%s</td>",
+    ovs_asprintf(&result,"\t<td %s%s class=grid%d %s >%s%s%s%s</td>",
             (cell_background_image?"background=":""),
             (cell_background_image?cell_background_image:""),
 
-            width_attr,
-            height_attr,
+            //width_attr,
+            //height_attr,
             grid_toggle,
             mouse_ev,
             
@@ -2466,15 +2463,15 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 char *title = get_simple_title(rid,NULL);
                 if (rid->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function title%ld() { showt('%s','%s',%d,%d); }\n",
-                            (long)(rid),title,idlist[i],
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%lx() { showt('%s','%s',%d,%d); }\n",
+                            (long)i,title,idlist[i],
                             unwatched,
                             watched
                             );
                 } else {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function title%ld() { showt('%s','%s','-','-'); }\n",
-                            (long)(rid),title,idlist[i]);
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%lx() { showt('%s','%s','-','-'); }\n",
+                            (long)i,title,idlist[i]);
                 }
                 FREE(title);
             }
@@ -3063,20 +3060,15 @@ TRACE;
     char *main_plot=NULL;
     char *main_genre=NULL;
 
-    HTML_LOG(0,"xx Checking %d for genre",num_rows);
-
     for(i = 0 ; i < num_rows ; i++ ) {
         DbRowId *rid = sorted_rows[i];
-        HTML_LOG(0,"xx Using genre %d=[%s]",rid->id,rid->genre);
         if (EMPTY_STR(main_plot) && !EMPTY_STR(rid->plottext[PLOT_MAIN])) {
-            HTML_LOG(0,"xx Using plottext %d",rid->id);
             main_plot = rid->plottext[PLOT_MAIN];
         }
         if (EMPTY_STR(main_genre) && !EMPTY_STR(rid->genre)) {
             main_genre = rid->genre;
         }
     }
-    HTML_LOG(0,"xx genre = [%s]",main_genre);
 
     if (EMPTY_STR(main_plot)) main_plot = "(no plot info)";
     if (main_genre == NULL) main_genre = "no genre";

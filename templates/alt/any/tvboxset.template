@@ -3,21 +3,13 @@
     <head>
         <meta name="robots" content="nofollow">
         <title>Oversight Menu [:HOSTNAME:]</title>
+        <link rel="stylesheet" type="text/css" href="/oversight/templates/alt/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
 body.menu_background {
     color:yellow ;
     background-color:black;
-}
-
-#Xmenutitle {
-    XXbackground-color:black;
-    font-size:12pt;
-    color:white;
-    text-align:center;
-    font-family:"arial";
-    font-weight:bold;
 }
 
 td.grid_background {
@@ -37,19 +29,6 @@ td.grid_background {
 
 table.overview_poster {
     margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
-}
-.transparent {
-    background-color:black;
-    margin:0px;
-    padding:0px;
-    border:0px;
-[:IF($@gaya):]
-    background-color:black-alpha2;
-[:ELSE:]
-    filter:alpha(opacity=70);
-    opacity:0.7;
-    color:white;
-[:ENDIF:]
 }
 
         </style>

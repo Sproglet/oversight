@@ -414,7 +414,7 @@ void config_read_dimensions() {
         if (g_dimension->scanlines) lines=g_dimension->scanlines;
 
         html_comment("rows = %d\n",g_dimension->rows);
-        g_dimension->poster_menu_img_height = lines * 1.0 / ( g_dimension->rows + 2 ) ;
+        g_dimension->poster_menu_img_height = lines * 1.0 / ( g_dimension->rows + 2.2 ) ;
 
         if (g_dimension->is_pal) {
             // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed

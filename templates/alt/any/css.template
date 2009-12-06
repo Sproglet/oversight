@@ -1,44 +1,4 @@
 
-/* Note gaya has css bug. Item after comments is ignored. Hence */a{}
-
-a { color:white ; text-decoration:none; }
-
-html { margin:0; padding:0; border:none; height:100%; }
-body { margin:0; padding:0; border:none; height:100%; }
-table.main {
- margin:0;
- padding:0;
- border:none;
- height:100%;
- border-collapse:collapse;
-}
-
-#main {
- height:99%;
- width:100%;
-}
-
-img {
- border: 0px solid black;
-}
-
-
-td.gc_small { font-size:10pt; }
-td.gc_fresh_small { font-size:10pt; }
-td.gc_watched_small { font-size:10pt; }
-
-font.Delete {color:#FF9966; font-weight:normal; }
-font.Ignore {color:#777;}
-font.Mark {color:#AAA;}
-font.Unmark {color:#DDF;}
-font.Remove_From_List {color:orange;}
-
-img.fresh { 
- border-width: 2px;
- color:#FBB917;
- border-color:#FBB917;
-}
-
 /* td.fresh,a.fresh,font.fresh */ a{}
 
 .fresh {
@@ -51,74 +11,33 @@ img.fresh {
  font-style:italic;
 }
 
-font.watched {
- color:#FF7777 ;
-}
-
-font.unwatched {
- color:#77FF77 ;
-}
-
-
-.error { color:red ; font-style:italic; font-weight:bold; }
-.delete { background-color:red; }
-.delist { background-color:yellow; }
-.cancel { ; }
-.mark { ; }
-
-#genre {
-    XXcolor:#66FFFF;
-    color:#76FFFF;
-    font-weight:bold;
-}
-
-table.header,table.footer {
- margin:0;
- border-spacing:1px;
- padding:0;
- border-width:0;
- }
-
-.bluebutton {
- color:#5555FF;
- background-color:black;
- font-weight:normal;
-  text-decoration:none;
- }
-a.bluebutton {
- color:black ;
-}
-
-/* TV or movie view */ a{}
-table.detail   { margin:0; border-spacing:1px; padding:1px ; }
-
-/* Admin page */ a{}
-
-.match {color:#FF7777; font-weight:bold; }
-
-/* Movie Page */ a{}
-
-.right { text-align:right; }
-
-input,select {
- background-color:black;
- color:#88CCFF;
- font-weight:bold;
- border=0;
- border-color:#88CCFF;
- font-size:small;
-}
-
-body { font-family:"arial"; color:white;  }
 td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
 
-.label { color:red }
 
 [:IF($@poster_mode):]
-    .poster_fresh { border-color:#AAAA00; border-width:2px; padding:1px; margin:1px; }
-    .poster       { border-color:white; border-width:0px; padding:0px; margin:0px; }
-    .poster_fresh { border-color:#AAAA00; border-width:2px; padding:1px; margin:1px; }
-    img.poster_watched { }
+    .poster_fresh {
+ border-color:#AAAA00;
+ border-width:2px;
+ padding:0px;
+ margin:0px;
+ width:[:EVAL($@poster_menu_img_width-2):]px;
+ height:[:EVAL($@poster_menu_img_height-2):]px;
+ }
+
+    .poster {
+ border:none;
+ padding:0px;
+ margin:0px;
+ width:[:$@poster_menu_img_width:]px;
+ height:[:$@poster_menu_img_height:]px;
+ }
+    img.poster_watched {
+ border:none;
+ padding:0px;
+ margin:0px;
+ width:[:$@poster_menu_img_width:]px;
+ height:[:$@poster_menu_img_height:]px;
+    }
 
     a.poster { color:white; font-weight:bold; font-style:italic; }
     a.poster_fresh { color:white; font-weight:bold; font-style:italic; }
@@ -157,16 +76,8 @@ td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
  font-weight:bold;
 }
 
-#menutitle {
- color:#FFCF2F;
-}
-#unwatchedtotal { 
- color:#44FF77;
-}
-#watchedtotal { 
- color:#FF7777;
-}
 
 /*
 vi:ts=4:sw=4:et:syntax=css
 */a{}
+

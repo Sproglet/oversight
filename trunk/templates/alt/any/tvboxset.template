@@ -161,68 +161,7 @@ table.overview_poster {
 
 </td></tr></table>
 
-<script type="text/javascript">
-var title = document.getElementById('menutitle').firstChild;
-var watchedNode = document.getElementById('watchedtotal').firstChild;
-var unwatchedNode = document.getElementById('unwatchedtotal').firstChild;
-
-var g_idlist = '';
-var g_title = '';
-
-function ovs_del() {
-    if (g_idlist) {
-        if (confirm("Delist/Delete "+g_title+"?")) {
-            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
-                action('delete');
-            } else {
-                action('delist');
-            }
-        }
-    }
-}
-function ovs_watched() {
-    if (g_idlist) {
-        action('watch');
-    }
-}
-function ovs_unwatched() {
-    if (g_idlist) {
-        action('unwatch');
-    }
-}
-
-function action(a) {
-    var sep;
-    if (window.location.href.indexOf('?') == -1 ) {
-        sep='?';
-    } else {
-        sep = '&';
-    }
-
-    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
-}
-
-function showt(title_text,idlist,unwatched,watched)
-{
-   if (idlist != '') g_idlist = idlist;
-   g_title = title_text;
-   if (unwatched == '-' ) {
-       title.nodeValue = g_title;
-       watchedNode.nodeValue = '';
-       unwatchedNode.nodeValue = '';
-    } else if (unwatched > 0 ) {
-       title.nodeValue = '';
-       watchedNode.nodeValue = '';
-       unwatchedNode.nodeValue = g_title;
-    } else {
-       title.nodeValue = ' ';
-       watchedNode.nodeValue = g_title;
-       unwatchedNode.nodeValue = ' ';
-    }
-}
-
-function title0() { showt('_','','',''); }
-</script>
+<script type="text/javascript" src="/oversight/templates/alt/js/menu.js"></script>
 <!-- tvids -->
 [:TVIDS:]
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>

@@ -26,7 +26,7 @@
 #define MACRO_DBROW_PREFIX '%'
 
 static struct hashtable *macros = NULL;
-char *get_variable(char *vname);
+char *get_variable(char *vname,int *free_result);
 char *image_path(char *template_name,char *name);
 
 long get_current_page() {
@@ -1120,12 +1120,14 @@ char *macro_fn_status(char *template_name,char *call,Array *args,int num_rows,Db
 
 char *macro_fn_help_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
+    char *tag=get_theme_image_tag("help",NULL);
     if (!g_dimension->local_browser) {
 #define PROJECT_HOME "http://code.google.com/p/oversight/wiki/OversightIntro"
-        char *tag=get_theme_image_tag("help",NULL);
         ovs_asprintf(&result,"<a href=\"" PROJECT_HOME"\" target=\"ovshelp\">%s</a>",tag);
-        FREE(tag);
+    } else {
+        ovs_asprintf(&result,"<a href=\"javascript:alert('[RED] mark\n[GREEN] unmark\n[DELETE] delete');\" >%s</a>",tag);
     }
+    FREE(tag);
     return result;
 }
 
@@ -1423,13 +1425,15 @@ void replace_variables(Array *args)
                 char tmp = *endv;
                 *endv = '\0'; //replace char following variable name
                 *v='\0'; //replace $ with null
-                char *replace=get_variable(v+1);
+
+                int free2;
+                char *replace=get_variable(v+1,&free2);
 
                 char *tmp2;
                 ovs_asprintf(&tmp2,"%s%s%s",NVL(newp),p,NVL(replace));
-                if (free_result) {
-                    FREE(replace);
-                }
+
+                if (free2) FREE(replace);
+
                 FREE(newp);
                 newp = tmp2;
 
@@ -1565,6 +1569,12 @@ char *macro_fn_endif(char *template_name,char *call,Array *args,int num_rows,DbR
         output_state_pop(); // This is the value that tracks if a clause fired
     }
     return result;
+}
+
+char *macro_fn_eval(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    *free_result = 1;
+    return numeric_constant_macro(0,args);
 }
 
 char *macro_fn_number(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
@@ -1746,6 +1756,7 @@ void macro_init() {
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
         hashtable_insert(macros,"IMAGE",macro_fn_image_url);
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
+        hashtable_insert(macros,"EVAL",macro_fn_eval);
         //HTML_LOG(1,"end macro init");
     }
 }
@@ -1756,17 +1767,28 @@ void macro_init() {
 // unpak_xxx = unpak config
 //
 
-char *get_variable(char *vname)
+char *get_variable(char *vname,int *free_result)
 {
 
+    *free_result = 0;
     char *result=NULL;
 
     if (*vname == MACRO_SPECIAL_PREFIX ) {
 
         if (strcmp(vname+1,"gaya") == 0) {
             return g_dimension->local_browser ? "1" : "0" ; // $@gaya
+
         } else if (strcmp(vname+1,"poster_mode") == 0) {
             return ( g_dimension->poster_mode ? "1" : "0" ) ; // $@gaya
+
+        } else if (strcmp(vname+1,"poster_menu_img_width") == 0) {
+            *free_result=1;
+            ovs_asprintf(&result,"%d",g_dimension->poster_menu_img_width);
+
+        } else if (strcmp(vname+1,"poster_menu_img_height") == 0) {
+            *free_result=1;
+            ovs_asprintf(&result,"%d",g_dimension->poster_menu_img_height);
+
         }
 
     } else if (*vname == MACRO_QUERY_PREFIX ) {
@@ -1812,9 +1834,8 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
 
     if (*call == MACRO_VARIABLE_PREFIX) {
 
-        free_result=0;
 
-        result=get_variable(call+1);
+        result=get_variable(call+1,free_result);
 
         if (result == NULL) {
 

@@ -104,11 +104,9 @@ table.overview_poster {
                                         <table>
                                             <tr>
                                                 <td background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" align="center" >
-                                                    <span class="title" id="menutitle">&nbsp;</span>
-                                                    <span id="unwatchedprefix">&nbsp;</span>
-                                                    <span id="unwatchedtotal">&nbsp;</span>
-                                                    <span id="watchedprefix">&nbsp;</span>
-                                                    <span id="watchedtotal">&nbsp;</span>
+                                                    <span class="boxtitle" id="menutitle">&nbsp;</span>
+                                                    <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
+                                                    <span class="boxtitle" id="watchedtotal">&nbsp;</span>
                                                 </td>
                                             </tr>
                                         </table>
@@ -184,16 +182,12 @@ function ovs_del() {
 }
 function ovs_watched() {
     if (g_idlist) {
-        if (confirm("Mark "+g_title+" as watched?")) {
-            action('watch');
-        }
+        action('watch');
     }
 }
 function ovs_unwatched() {
     if (g_idlist) {
-        if (confirm("Mark "+g_title+"as NOT watched?")) {
-            action('unwatch');
-        }
+        action('unwatch');
     }
 }
 

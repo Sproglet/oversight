@@ -260,39 +260,12 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
         return "?";
     }
 
-    int max = g_dimension->max_plot_length;
-    if (args && args->size > 0) {
-        char *max_str=args->array[0];
-        char *end;
-        if (max_str && *max_str) {
-            int tmp = strtol(max_str,&end,10);
-            if (*end) {
-                return "PLOT bad arg";
-            } else {
-                max = tmp;
-            }
-        }
-    } 
-
-
 TRACE;
     result = STRDUP(NVL(get_plot(sorted_rows[0],PLOT_MAIN)));
 TRACE;
     HTML_LOG(1,"plot[%s]",result);
 
     //char *clean = clean_js_string(result);
-    char *clean = result;
-    if (clean != result) {
-        FREE(result);
-        result = clean;
-    }
-
-    if (result && max > 0 && max < strlen(result)) {
-        if (max > 10) {
-            strcpy(result+max-4,"...");
-        }
-        result[max] = '\0';
-    }
 TRACE;
     return result;
 }
@@ -1192,7 +1165,11 @@ char *macro_fn_right_button(char *template_name,char *call,Array *args,int num_r
 char *macro_fn_back_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (*query_val("view") && !*query_val("select")) {
-        result = get_theme_image_return_link("view=&idlist=","name=up","back","");
+        char *attr = "";
+        if (args && args->size == 1) {
+            attr=args->array[0];
+        }
+        result = get_theme_image_return_link("view=&idlist=","name=up","back",attr);
     }
     return result;
 }

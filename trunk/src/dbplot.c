@@ -20,6 +20,7 @@
 #define MAX_PLOT_LENGTH 5500
 
 static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int start_row,int copy_plot_text);
+char *truncate_plot(char *plot,int *free_result);
 
 static char plot_buf[MAX_PLOT_LENGTH+1];
 
@@ -155,12 +156,44 @@ char *get_plot(DbRowId *rid,PlotType ptype)
 {
     
     if (rid->plottext[ptype] == NULL) {
+        int free_short_plot;
         set_plot_keys(rid);
         char *plot = NVL(get_plot_by_key_static(rid,PLOT_MAIN));
-        rid->plottext[ptype] =  STRDUP(plot);
+        char *short_plot = truncate_plot(plot,&free_short_plot);
+
+        if (free_short_plot) {
+            rid->plottext[ptype] =  short_plot;
+        } else {
+            rid->plottext[ptype] =  STRDUP(short_plot);
+        }
     }
     HTML_LOG(1,"plot=[%s]",rid->plottext[ptype]);
     return rid->plottext[ptype];
+}
+
+char *truncate_plot(char *plot,int *free_result)
+{
+    char *short_plot = plot;
+    *free_result = 0;
+    int max = g_dimension->max_plot_length;
+
+    if (plot != NULL || strlen(plot) > max) {
+
+        char *p = plot + max;
+        // search back to a full stop.
+        while (p > plot && strchr(".!?",*p) == NULL ) {
+            p--;
+        }
+        if (p == plot ) {
+            // oops gone too far. Just truncate with ellipse
+            ovs_asprintf(&short_plot,"%.*s...",max-3,plot);
+            *free_result = 1;
+        } else {
+            ovs_asprintf(&short_plot,"%.*s.",p-plot ,plot);
+            *free_result = 1;
+        }
+    }
+    return short_plot;
 }
 
 /**

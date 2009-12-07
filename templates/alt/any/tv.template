@@ -117,14 +117,14 @@ hr { color:#FBB917 }
     <table width=100%>
 
         <tr valign=top>
-            <td colspan=2>
+            <td colspan=2 >
                 [:INCLUDE_TEMPLATE(buttons):]
             </td>
         </tr>
     </table>
     <table width=100% class=main >
         <tr valign=bottom class=main>
-            <td class=main width=1%>[:POSTER:]</td>
+            <td class=main width=1% onmouseover="tvinf_0();" ><a href="#here" onfocus="tvinf_0();">[:POSTER:]</a></td>
 
             <td width=100% class=main>
 [:IF($ovs_fade):]
@@ -141,13 +141,15 @@ hr { color:#FBB917 }
                         <td align=left><font id=genre>&nbsp;[:GENRE:]</font></td>
                         <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
                     </tr>
+
+<!-- </table> <table width="100%" class="transparent" > -->
                     <tr><td colspan=2 align=left><hr><span class="plot" id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
                 </table>
             </td>
         </tr>
         <tr valign="bottom" >
-            <td colspan=2 background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
-                <table width=100%>
+            <td colspan=2 >
+                <table width=100% background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
                     <tr>
                         <td class=filelist align=center>
                         [:TV_LISTING:]

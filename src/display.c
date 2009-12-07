@@ -1883,14 +1883,15 @@ char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *
 }
 
 // These are attributes of the href
-char *focus_event_fn(char *function_name_prefix,long function_id,int defocus) {
+char *focus_event_fn(char *function_name_prefix,long function_id,int out_action) {
     return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus",
-            (defocus?"onblur":NULL));
+            (out_action?"onblur":NULL));
 }
 
 // These are attributes of the cell text
-char *mouse_event_fn(char *function_name_prefix,long function_id) {
-    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover","onmouseout");
+char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action) {
+    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover",
+            (out_action?"onmouseout":NULL));
 }
 
 char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
@@ -1980,9 +1981,9 @@ TRACE;
 
         char *simple_title = get_simple_title(row_id,newview);
 
-        focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,(long)cell_no,0);
+        focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,0);
         if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,(long)cell_no);
+            mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,0);
         }
         FREE(simple_title);
     }
@@ -2463,15 +2464,15 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 char *title = get_simple_title(rid,NULL);
                 if (rid->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%lx() { showt('%s','%s',%d,%d); }\n",
-                            (long)i,title,idlist[i],
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s',%d,%d); }\n",
+                            i+1,title,idlist[i],
                             unwatched,
                             watched
                             );
                 } else {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%lx() { showt('%s','%s','-','-'); }\n",
-                            (long)i,title,idlist[i]);
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s','-','-'); }\n",
+                            i+1,title,idlist[i]);
                 }
                 FREE(title);
             }
@@ -2987,7 +2988,7 @@ char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *p
         episode_prefix="Episode ";
     }
 
-    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%ld() { show('%s','%s%s','%s','%s','%s%s%s%s%s'); }\n",
+    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%lx() { show('%s','%s%s','%s','%s','%s%s%s%s%s'); }\n",
             NVL(script_so_far),fn_id,
                 idlist,
                 episode_prefix,
@@ -3090,7 +3091,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
         int freeshare=0;
         char *share = share_name(rid,&freeshare);
 
-        tmp = ep_js_fn(result,(long)rid,idlist[i],NVL(rid->episode),NVL(rid->plottext[PLOT_EPISODE]),rid->file,title,date,share);
+        tmp = ep_js_fn(result,i+1,idlist[i],NVL(rid->episode),NVL(rid->plottext[PLOT_EPISODE]),rid->file,title,date,share);
         FREE(result);
         if (free_title) FREE(title);
         if (freeshare) FREE(share);
@@ -3206,6 +3207,7 @@ TRACE;
             int i = r * cols + c;
             if (i < num_rows) {
 
+                int function_id = i+1;
                 char *episode_col = NULL;
 
                 DbRowId *rid = sorted_rows[i];
@@ -3219,7 +3221,7 @@ TRACE;
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
-                    char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,(long)rid,1);
+                    char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,0);
                     episode_col = vod_link(
                             rid,
                             ep,"",
@@ -3272,7 +3274,7 @@ TRACE;
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
 
-                char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,(long)rid);
+                char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,0);
 
                 ovs_asprintf(&tmp,
                         "%s<td class=%s width=%d%% %s>%s</td>" 

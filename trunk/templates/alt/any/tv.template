@@ -7,7 +7,7 @@ T
  [:TITLE:]
 Season
 [:SEASON:] </title>
-        <link rel="stylesheet" type="text/css" href="/oversight/templates/alt/css/default.css" />
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -81,18 +81,8 @@ body { color:yellow ; background-color:black; }
     [:IF($ovs_transparency=0):]
         background-color:black;
     [:ELSEIF($ovs_transparency=100):]
-    [:ELSEIF($@gaya):]
-        [:IF($ovs_transparency=20):]
-            background-color:black-alpha3;
-        [:ELSEIF($ovs_transparency=40):]
-            background-color:black-alpha2;
-        [:ELSEIF($ovs_transparency=60):]
-            background-color:black-alpha1;
-        [:ELSEIF($ovs_transparency=80):]
-            background-color:black-alpha;
-        [:ENDIF:]
     [:ELSE:]
-        background-image:url(/oversight/templates/alt/images/trans[:$ovs_transparency:].png);
+        background-image:url([:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png);
     [:ENDIF:]
 }
 
@@ -128,10 +118,10 @@ hr { color:#FBB917 }
 
             <td width=100% class=main>
 [:IF($ovs_fade):]
-                <table width="100%" background="/oversight/templates/alt/images/transfade[:$ovs_transparency:].png" >
+                <table width="100%" background="[:URL_BASE:]/templates/alt/images/transfade[:$ovs_transparency:].png" >
                     <tr><td>&nbsp;</td><td></td></tr>
 [:ELSE:]
-                <table width="100%" background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
+                <table width="100%" background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
 [:ENDIF:]
                     <tr>
                         <td class=title>[:TITLE:]</td>
@@ -149,7 +139,7 @@ hr { color:#FBB917 }
         </tr>
         <tr valign="bottom" >
             <td colspan=2 >
-                <table width=100% background="/oversight/templates/alt/images/trans[:$ovs_transparency:].png" >
+                <table width=100% background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
                     <tr>
                         <td class=filelist align=center>
                         [:TV_LISTING:]
@@ -167,7 +157,7 @@ hr { color:#FBB917 }
 
 [:MENU_TVID:]
 [:PLAY_TVID:]
-<script type="text/javascript" src="/oversight/templates/alt/js/tv.js"></script>
+<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/tv.js"></script>
 
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>

@@ -38,10 +38,8 @@ void load_configs () {
 
 }
 
-
-#define PLAYLIST "/tmp/playlist.htm"
 void clear_playlist() {
-    truncate(PLAYLIST,0);
+    truncate(NMT_PLAYLIST,0);
 }
 
 void cat(char *content,char *file) {

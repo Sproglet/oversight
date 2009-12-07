@@ -244,7 +244,6 @@ TRACE;
 
 void check_and_copy_plot(int copy_plot_text,DbRowId *rid,PlotType ptype,long fpos,char *buf) {
 
-    int max_plot_len = g_dimension->max_plot_length;
     char *key = rid->plotkey[ptype];
 
     if (key && util_starts_with(buf,key)) {
@@ -253,15 +252,10 @@ void check_and_copy_plot(int copy_plot_text,DbRowId *rid,PlotType ptype,long fpo
 
         if (copy_plot_text) {
             char *in = buf+strlen(key);
-            char *plot;
-            if (strlen(in) > max_plot_len ) {
-                if (max_plot_len > 10 ) {
-                    ovs_asprintf(&plot,"%.*s...",max_plot_len-4,in);
-                } else {
-                    ovs_asprintf(&plot,"%.*s",max_plot_len,in);
-                }
-            } else {
-                plot = STRDUP(in);
+            int free_plot;
+            char *plot = truncate_plot(in,&free_plot);
+            if (!free_plot) {
+                plot = STRDUP(plot);
             }
             rid->plottext[ptype] = plot;
         }

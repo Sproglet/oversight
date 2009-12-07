@@ -40,8 +40,6 @@ char *get_drilldown_view(DbRowId *rid);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
 
-#define NMT_PLAYLIST "/tmp/playlist.htm"
-
 char *get_play_tvid(char *text) {
     char *result;
     ovs_asprintf(&result,
@@ -159,17 +157,13 @@ char *self_url(char *new_params) {
 
     int first=1;
 
-    char *url = STRDUP(SELF_URL);
-TRACE;
+    char *url = STRDUP(CGI_URL);
 
     // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
-TRACE;
 
         if (!EMPTY_STR(param_value)) {
-TRACE;
             if (strcmp(param_name,"colour") != 0) {
-TRACE;
                 if (strstr(param_name,"option_") == NULL) {
                     //
                     // search for pram_name in new_params
@@ -178,38 +172,28 @@ TRACE;
                     // If the existing parameter name is also in the new parameter list then dont add it
                     if (new_params && *new_params) {
                         if (delimited_substring(new_params,"&",param_name,"&=",1,1)) {
-TRACE;
 
                           // end of string is = or & or nul
                           // param_name is in new_params - we dont want this
                           add_param=0;
                         }
                     }
-TRACE;
                     if (add_param) {
                         char *new;
                         ovs_asprintf(&new,"%s%c%s=%s",url,(first?'?':'&'),param_name,param_value);
                         FREE(url);
                         url = new;
                         first=0;
-TRACE;
                     }
-TRACE;
                 }
-TRACE;
             }
-TRACE;
         }
-TRACE;
     }
-TRACE;
     // Now remove any blank params in the list
     char *tmp=replace_all(new_params,"([-.~@a-zA-Z0-9_]+=(&|$))","",0);
-TRACE;
 
     char *new;
     ovs_asprintf(&new,"%s%c%s",url,(first?'?':'&'),tmp);
-TRACE;
     FREE(url);
     FREE(tmp);
     
@@ -1369,18 +1353,15 @@ char *ovs_icon_type() {
 
 char *container_icon(char *image_name,char *name) {
     char *path;
-    char *attr;
     char *name_br;
 
     ovs_asprintf(&path,"%s/templates/%s/images/%s.%s",appDir(),skin_name(),image_name,ovs_icon_type());
     ovs_asprintf(&name_br,"(%s)",name);
-    ovs_asprintf(&attr," width=30 alt=\"[%s]\" style=\"background-color:#AAAAAA\" ",name);
 
-    char *result = get_local_image_link(path,name_br,attr);
+    char *result = get_local_image_link(path,name_br,"class=\"codec\"");
 
     FREE(path);
     FREE(name_br);
-    FREE(attr);
     return result;
 }
 
@@ -3335,18 +3316,6 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
     pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
     FREE(pruned_rows);
-
-#if 0
-    char *tmp;
-    ovs_asprintf(&tmp,"%s%s%s%s",result,
-            "<a href=\"file:///opt/sybhttpd/localhost.drives/HARD_DISK/Complete/Rome%20S01Disc1%20tvpinda.par2/Rome%20S01Disc1%20tvpinda/\" name=\"01\" onkeyleftset=\"media\" onkeyrightset=\"FILE_INDEX\" tvid=\"01\" alt=\"Rome S01Disc1 tvpinda     folder                    4 KB\" file=c  ZCD=2 fip=\"Rome S01Disc1 tvpinda\">NMT</a>",
-            "<a href=\"file://%2fshare%2fComplete%2fRome%20S01Disc1%20tvpinda.par2%2fRome%20S01Disc1%20tvpinda%2f\"  file=c ZCD=2 name=\"DVD1?1\"  onfocus=\"tvinf_4548760();\" onblur=\"tvinf_0();\"   class=unwatched >ME1</a>",
-            "<a href=\"file://%2fshare%2fComplete%2fRome%20S01Disc1%20tvpinda.par2%2fRome%20S01Disc1%20tvpinda%2f\"  file=c ZCD=2 name=\"DVD1?1\"  onfocus=\"tvinf_4548760();\" onblur=\"tvinf_0();\"   class=unwatched >ME2</a>"
-            );
-    FREE(result);
-    result=tmp;
-#endif
-
 
     return result;
 }

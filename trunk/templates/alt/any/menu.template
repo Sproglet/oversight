@@ -3,7 +3,7 @@
     <head>
         <meta name="robots" content="nofollow">
         <title>Oversight Menu [:VERSION:] [:HOSTNAME:]</title>
-        <link rel="stylesheet" type="text/css" href="/oversight/templates/alt/css/default.css" />
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -85,7 +85,7 @@ table.overview_poster {
         </td></tr></table>
 </center>
         </form>
-<script type="text/javascript" src="/oversight/templates/alt/js/menu.js"></script>
+<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/menu.js"></script>
 <!-- tvids -->
 [:TVIDS:]
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>

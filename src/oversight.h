@@ -14,6 +14,7 @@
 #include "hashtable.h"
 #include "array.h"
 
+#define NMT_PLAYLIST "/tmp/playlist.htm"
 OVS_EXTERN(struct hashtable *g_query,NULL);
 OVS_EXTERN(struct hashtable *g_oversight_config,NULL);
 OVS_EXTERN(struct hashtable *g_unpack_config,NULL);
@@ -63,13 +64,14 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_MEDIA_TYPE_VALUE_TV "T"
 #define QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE "M"
 
-#define SELF_URL ""
 #define NETWORK_SHARE "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
 #define NETWORK_SYMLINK "/opt/sybhttpd/default/.network"
 
 #define NON_EMPTY_STR(str) ((str) && (*(str)))
 #define EMPTY_STR(str) ((str) == NULL || (*(str)) == '\0')
 #define IFEMPTY(s,alt) (EMPTY_STR(s)?(alt):(s))
+
+#define CGI_URL ""
 
 char *get_mounted_path(char *source,char *path,int *freeit);
 

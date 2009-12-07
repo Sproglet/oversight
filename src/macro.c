@@ -1186,7 +1186,7 @@ char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_ro
 
     if(!*query_val("select")) {
         char *tag=get_theme_image_tag("home",NULL);
-        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",SELF_URL,tag);
+        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",CGI_URL,tag);
         FREE(tag);
     }
 
@@ -1583,6 +1583,20 @@ char *macro_fn_body_width(char *template_name,char *call,Array *args,int num_row
 
     return numeric_constant_macro(value,args);
 }
+char *macro_fn_url_base(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    static char *base = NULL;
+    *free_result = 0;
+    if (base == NULL) {
+        if (g_dimension->local_browser) {
+            ovs_asprintf(&base,"file://%s",appDir());
+        } else {
+            base = "/oversight";
+        }
+    }
+    return base;
+}
+
 char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char* value = "100%";
 
@@ -1734,6 +1748,7 @@ void macro_init() {
         hashtable_insert(macros,"IMAGE",macro_fn_image_url);
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
         hashtable_insert(macros,"EVAL",macro_fn_eval);
+        hashtable_insert(macros,"URL_BASE",macro_fn_url_base);
         //HTML_LOG(1,"end macro init");
     }
 }

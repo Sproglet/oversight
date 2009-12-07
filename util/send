@@ -17,6 +17,7 @@ if ( ifconfig || ipconfig ) 2>/dev/null | grep -q 192.168.88 ; then
     esac
 else
     ip=lordy.org.uk
+    user=ftpuser 
 fi
 
 echo "Sending $@ to $ip:$d"

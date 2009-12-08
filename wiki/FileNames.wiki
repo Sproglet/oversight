@@ -53,6 +53,9 @@ when Oversight cannot correctly recognise a file, you can help it along by creat
   * contain the IMDB id of the movie or TV show. For example for the film Predator the file must contain the text 'tt0093773'.
   * have the same filename as the main movie but with a different extension. eg if you have Predator in a file called 'Predator 720p.avi' then the nfo file should be called 'Predator 720p.nfo' 
 
+After creating the nfo file 'De-list' the item and then rescan.
+[IncrementalScans More info on delisting]
+
 =Images=
 
 The scanning process downloads its own posters and fanrt to an internal folder, however you can use you own posters if you put them in the same folder as the media.

@@ -26,6 +26,9 @@ if [ ! -d $TMPDIR ] ; then
     fi
 fi
 
+WGET_BACKUP=/share/Apps/oversight/wget.original 
+WGET_RENAME=/bin/wget.real
+
 # ------- GET NMT Version and set NMT specific paths if applicable ---------
 
 NMT_APP_DIR=
@@ -40,12 +43,13 @@ done
 
 case "$nmt_version" in
     *-408)
-        export PATH="$APPDIR/bin/nmt200:$PATH"
+        BINDIR=$APPDIR/bin/nmt200
         ;;
     *-402|*-403)
-        export PATH="$APPDIR/bin/nmt100:$PATH"
+        BINDIR=$APPDIR/bin/nmt100
         ;;
 esac
+export PATH="$BINDIR:$PATH"
 
 # -----------------------------------------------------
 
@@ -357,6 +361,15 @@ case "$1" in
             ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
         fi
 
+
+        # Replace wget binary with oversight. This allows faster page load.
+        if ! /bin/wget -oversight 2>/dev/null  ; then
+            cp /bin/wget "$WGET_BACKUP"
+            mv /bin/wget "$WGET_RENAME"
+        fi
+        cp $BINDIR/oversight /bin/wget
+        chmod 777 /bin/wget
+
         # Restore website link
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
 
@@ -384,9 +397,9 @@ case "$1" in
         exit;;
     UNINSTALL)
         "$NMT" NMT_CRON_DEL root "$appname" 
-        "$NMT" NMT_CRON_DEL root "$appname" 
         "$NMT" NMT_CRON_DEL root "$appname.watch"
         rm -f "/opt/sybhttpd/default/oversight" "$PENDING_FILE" "$CMD_BUF.live"
+        mv "$WGET_RENAME" /bin/wget
         exit;;
     SAY)
         shift;

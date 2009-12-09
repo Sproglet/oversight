@@ -20,7 +20,7 @@
 #include "admin.h"
 #include "permissions.h"
 
-void exec_old_cgi(int argc,char **argv);
+//void exec_old_cgi(int argc,char **argv);
 
 // Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
 void load_configs () {
@@ -87,7 +87,7 @@ void gaya_auto_load(char *url_encoded_file) {
     FREE(name);
 }
 
-int main(int argc,char **argv) {
+int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
 
     g_start_clock = time(NULL);
@@ -133,7 +133,9 @@ int main(int argc,char **argv) {
 
 
 
-    printf("Content-Type: text/html\n\n");
+    if (send_content_type_header) {
+        printf("Content-Type: text/html\n\n");
+    }
 
     html_log_level_set(2);
 
@@ -287,6 +289,136 @@ TRACE;
     
 }
 
+/*
+ * If gaya has invoked oversight as wget then the parameter list looks like 
+ *
+ * -q -H --convert-links --header=Accept-Charset:iso-8859-1,utf-8;q=0.7,*;q=0.7
+ * -U Syabas/50-17-090204-15-HDD-403-000/15-HDD Firefox/0.8.0+ (gaya1 TV Res720x576;   Browser Res624x496-32bits;   Res720x576;   mac_addr=00:06:dc:43:c9:53)
+ *  -P /mnt/.cache/s
+ *  --tries=3s
+ *  --timeout=60s
+ *  -ncs
+ *  --keep-session-cookies
+ *  --save-cookies /mnt/.cache/coos
+ *  --load-cookies /mnt/.cache/coo
+ *  -x
+ *  -O /tmp/0
+ *  http://127.0.0.1:8883/oversight/oversight.cgi?_et=1&view=tv&idlist=*(643%7C649%7C647%7C645)
+ *
+ * We just want the argument to oversight  and the output file.
+ * eg.
+ *     _et=1&view=tv&idlist=*(643%7C649%7C647%7C645)
+ * and
+ *    /tmp/0
+ */
+#define SCRIPT_PATH ":8883/oversight/oversight.cgi"
+int oversight_instead_of_wget(char *script_path,int argc, char **argv) 
+{
+    int ret = -1;
+    char *output=NULL;
+
+    // Get the arguments.
+    if (*script_path == '?' ) {
+        setenv("QUERY_STRING",script_path+1,1);
+    }
+    setenv("SCRIPT_NAME",strchr(SCRIPT_PATH,'/'),1);
+    //Change stdout
+    int i;
+    for(i = 0 ; i < argc ; i++ ) {
+        if (strcmp(argv[i],"-O") == 0 && i < argc-1) {
+            output = argv[i+1];
+            break;
+        }
+    }
+
+    fprintf(stderr,"output=[%s]\n",output);
+    fprintf(stderr,"query string=[%s]\n",getenv("QUERY_STRING"));
+
+    if (output != NULL) {
+        // Change stdout and launch oversight
+        freopen(output,"w",stdout);
+    }
+       
+    char *args[2] ;
+    args[0]="oversight";
+    args[1]=NULL;
+    ret = oversight_main(1,args,0);
+    return ret;
+
+}
+
+int gaya_sent_post_data(int argc,char **argv) {
+    int ret=0;
+    // can skip arg0 and use 0 as -ve result
+    int i;
+    for(i = 0 ; i < argc ; i++ ) {
+        if (strcmp(argv[i],"--post-data") == 0) {
+            ret = i;
+            break;
+        }
+    }
+    fprintf(stderr,"gaya_sent_post_data=[%d]\n",ret);
+    return ret;
+}
+
+// returns query string following oversight URL or NULL if nothing sent
+char *gaya_sent_oversight_url(int argc,char **argv) {
+    int i;
+    char *p=NULL;
+    // can skip arg0 and use 0 as -ve result
+    for(i = 1 ; i < argc ; i++ ) {
+        if (argv[i][0] == 'h' && (p=strstr(argv[i],SCRIPT_PATH)) != NULL) {
+            p = p+strlen(SCRIPT_PATH);
+            break;
+        }
+    }
+    fprintf(stderr,"gaya_sent_oversight_url=[%s]",p);
+    return p;
+}
+
+
+int main(int argc,char **argv)
+{
+    int ret = -1;
+ 
+
+    if (strstr(argv[0],"wget") ) {
+
+        char *query_string = NULL;
+        if (argc == 2 && strcmp(argv[1],"-oversight") == 0 ) {
+
+            // Special case to allow scripts to test if wget is really oversight.
+            // wget -oversight will throw an error with the real wget.
+            fprintf(stderr,"Oversight version %s\n",OVS_VERSION);
+            ret = 0 ;
+
+        } else if ((query_string=gaya_sent_oversight_url(argc,argv)) != NULL 
+            && !gaya_sent_post_data(argc,argv)) {
+            // Oversight has been called as wget. 
+            // The normal CGI call sequence from gaya is 
+            // gaya -> wget -> sybhttpd -> cgi
+            // By replacing oversight with wget we try to short circuit this.
+            // gaya -> oversight
+            ret = oversight_instead_of_wget(query_string,argc,argv);
+
+        } else {
+            // just launch wget
+            char **args = CALLOC(argc+1,sizeof(char *));
+            int i;
+            for(i = 0 ; i < argc ; i++) {
+                args[i] = argv[i];
+            }
+            args[argc] = NULL;
+            ret = execv("/bin/wget.real",args);
+        }
+    } else {
+        // start oversight normally (original cgi entry point)
+        ret = oversight_main(argc,argv,1);
+    }
+    return ret;
+}
+
+#if 0
 void exec_old_cgi(int argc,char **argv) {
     char *old_cgi;
     char **args = MALLOC((argc+1) * sizeof(char *));
@@ -304,6 +436,7 @@ void exec_old_cgi(int argc,char **argv) {
         exit(e);
     }
 }
+#endif
 
 
 char *get_mounted_path(char *source,char *path,int *freeit)

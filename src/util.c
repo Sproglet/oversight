@@ -60,7 +60,8 @@ int stringcmp(void *a,void *b) {
     return strcmp(a,b) ==0;
 }
 
-struct hashtable *string_string_hashtable(int size) {
+struct hashtable *string_string_hashtable(int size)
+{
 
     return create_hashtable(size,stringhash,stringcmp);
 }
@@ -71,7 +72,8 @@ struct hashtable *string_string_hashtable(int size) {
  * If pattern is one character long then a simple
  * character split is used.
  */
-char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts) {
+char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts)
+{
 
     assert(s_in);
     assert(pattern);
@@ -148,7 +150,8 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts) {
 }
 
 #define BUFSIZE 256
-void util_regcomp(regex_t *re,char *pattern,int flags) {
+void util_regcomp(regex_t *re,char *pattern,int flags)
+{
 
     int status;
 
@@ -160,8 +163,9 @@ void util_regcomp(regex_t *re,char *pattern,int flags) {
         assert(1);
     }
 }
-/* return position of regex in a string. -1 if no match  */
-char *util_strreg(char *s,char *pattern,int reg_opts) {
+/* return position of regex in a string. NULL if no match  */
+char *util_strreg(char *s,char *pattern,int reg_opts)
+{
     assert(s);
     assert(pattern);
 
@@ -201,7 +205,8 @@ char *regextract1(char *s,char *pattern,int submatch,int reg_opts) {
 /*
  * Match a regular expression and return the submatch'ed braketed pair 0=the entire match
  */
-Array *regextract(char *s,char *pattern,int reg_opts) {
+Array *regextract(char *s,char *pattern,int reg_opts)
+{
 
     int submatch = 1;
     // count number of submatch brackets

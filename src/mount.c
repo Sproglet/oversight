@@ -474,7 +474,17 @@ int ping_link(char *link)
     char *end=NULL;
     int result = 0;
     int port;
+    static long connect_millis=-1;
 TRACE;
+
+    if (connect_millis == -1 ) {
+        connect_millis = 20;
+        char *p = oversight_val("ovs_nas_timeout");
+        if ( util_strreg(p,"^[0-9]$",0) ) {
+            connect_millis = atol(p);
+        }
+    }
+
     if (util_starts_with(link,"nfs://") ) {
         link += 6;
         end = strchr(link,':');
@@ -488,7 +498,7 @@ TRACE;
     if (end) {
         ovs_asprintf(&host,"%.*s",end-link,link);
 
-        result = (connect_service(host,0,port) == 0);
+        result = (connect_service(host,connect_millis,port) == 0);
 
         HTML_LOG(0,"ping link [%s] host[%s] = %d",link,host,result);
         FREE(host);

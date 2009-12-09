@@ -669,18 +669,7 @@ DbRowId *read_and_parse_row(
     char value[DB_VAL_BUF_SIZE];
     char *value_end=value+DB_VAL_BUF_SIZE;
 
-#ifdef TERM_ARRAY
-    char term[256];
-    memset(term,0,256);
-    term['\t'] = term['\n'] = term['\r'] = term['\0'] = 1;
-
-#define TERM(c) ( term[c] )
-
-#else
-
-#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' )))
-
-#endif
+#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
 
     register int next;
 
@@ -692,10 +681,86 @@ DbRowId *read_and_parse_row(
 
     int state=STATE_START;
 
+if (1 || g_dimension->local_browser == 0) {
     // Skip comment lines
     while ( (next = getc(fp) ) == '#' ) {
         if (fgets(value,DB_VAL_BUF_SIZE,fp) == NULL) break;
     }
+
+    // search for first tab
+    while(TERM(next) && next != EOF && next != '\t' ) next = getc(fp);
+
+    if (next == '\t' ) {
+
+        next = getc(fp);
+
+        if ( next == '_' ) {
+
+        // Loop starts at first character after _
+            do {
+
+                p=name;
+                *p++ = '_';
+                end = name_end;
+                next = getc(fp);
+                while(!TERM(next)) {
+                    *p++ = next;
+                    next = getc(fp);
+                }
+                *p = '\0';
+                //HTML_LOG(0,"parse name=[%s]",name);
+
+                if (next == '\t') {
+                    // "<tab> Name <tab>" expect value
+                    *value = '\0';
+                    p=value;
+                    end = value_end;
+                    next = getc(fp);
+
+                    for(;;) {
+                        // Read until we hit a TERM
+                        while(!TERM(next) ) {
+                            *p++ = next;
+                            next = getc(fp);
+                        }
+                        // "<tab> Name <tab>" value ? expect value
+                        //
+                        // If Term is a tab and NOT followed by _ then keep it as part of the value.
+                        // otherwise stop
+                        if (next != '\t' ) {
+                            break;
+                        } else {
+                            // "<tab> Name <tab>" value <tab>  # check if tab followed by _
+                            next = getc(fp);
+                            if (next == EOF) {
+                                break;
+                            } else if (next == '_') {
+
+                                // break and read next name
+                                break;
+                            } else {
+                                *p++ = '\t';
+                                *p++ = next;
+                            }
+                        }
+                    }
+
+                    *p = '\0';
+                    //HTML_LOG(0,"parse value=[%s]",value);
+                    if (*name && *value) {
+                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
+                    }
+                }
+
+            } while (next == '_');
+        }
+    }
+    *eof = (next == EOF);
+
+
+} else {
+
+
 
     // OK this is a bit nasty. 
     // There are a few nested loops and some are for every character in the file
@@ -712,7 +777,6 @@ DbRowId *read_and_parse_row(
         // Control should only get here if state = STATE_START
         if (state == STATE_START) {
             while(next != EOF  && !TERM(next) ) {
-                HTML_LOG(0,"Skip %c[%d]",next,next);
                 next = getc(fp);
             }
         }
@@ -798,9 +862,12 @@ eol:
     if (p) {
         *p = '\0';
     }
-    if (rowid->genre == NULL) {
-        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
-    }
+
+}
+
+//    if (rowid->genre == NULL) {
+//        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
+//    }
     if (use_folder_titles) {
 
         set_title_as_folder(rowid);

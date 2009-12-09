@@ -16,6 +16,7 @@ ovs_skin_name="alt"
 ovs_title_bar="poster_mode"
 ovs_auto_prune=1
 ovs_use_folders_as_titles=0
+ovs_nas_timeout=20
 
 ovs_poster_mode[0]=1
 ovs_rows[0]=9

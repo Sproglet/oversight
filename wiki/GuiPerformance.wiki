@@ -5,7 +5,7 @@ The oversight cgi script is written in C which helps it run faster than similar 
 
 Currently it renders a menu page to a PC browser in about 1 second for a database of about 500 files. TV/Gaya takes longer because the NMT is serving the page and drawing it.
 
-I have plans to make this even faster - by moving the plot information out of the main file.
+==timing==
 
 At present, if you load oversight menu and do 'view source' the html comments start with two numbers..
 cpu milli seconds / elapsed seconds.
@@ -39,6 +39,8 @@ Eg,
 }}}
 
 Here 621 items were scanned in 0.32s. This is the longest step of the page generation task. Once plots are moved out, I'm hoping this will drop below 0.2 seconds.
+
+== time functions ==
 
 There are some odd bits of code to tweak performance. For example rather than using the standard localtime()/mktime() functions to convert between struct tm and UNIX timestamps  I just pushed the time fields into different bits of a 'long long' variable.
 

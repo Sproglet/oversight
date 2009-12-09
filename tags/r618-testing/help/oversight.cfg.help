@@ -1,0 +1,19 @@
+ovs_new_days:Highlight as new if video newer than this number of days|1|2|3|4|5|6|7|10|14|30
+#ovs_icon_set:Name of Icon set|set1|none
+#ovs_icon_type:Type of icons|png|gif|jpg
+ovs_show_episode_titles:Display Episode Titles (select Home Icon after changing)|No|Yes=>_et=1
+ovs_show_repack:Identify Repacks and Propers (select Home Icon after changing)|1|0
+ovs_sort_order:Default Sort Order (select Home Icon after changing)|Age|Name=>s=_T
+ovs_tvboxsets:Use boxsets|1|0
+ovs_default_view:Default Media View (select Home Icon after changing)|All|Movies=>_tf=M|Tv=>_tf=T
+ovs_crossview:Merge oversight view from another NMT player in the network share list.|0|1
+ovs_tv_play_via_pc:Start tv playback from browser|1|0
+ovs_display_rating:Display Ratings|1|0
+ovs_display_certificate:Display Certificates|1|0
+ovs_display_fanart:Display fanart - Fan art must be previously downloaded by catalog.sh and also in skin|0|1
+ovs_title_bar:Display titles as cursor moves|poster_mode|never
+#ovs_skin_name:Name of skin (must be in templates folder)|default
+ovs_log_level:Amount of logging within html comments|0|1|2|3|4|5
+ovs_use_folders_as_titles:Display the containing folder name in place of the video title|0|1
+ovs_nas_timeout:Max time to detect NAS service in millis|20
+

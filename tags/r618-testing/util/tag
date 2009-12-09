@@ -1,0 +1,9 @@
+case "$1" in
+    2009*-?BETA)
+        svn copy https://oversight.googlecode.com/svn/trunk/ https://oversight.googlecode.com/svn/tags/$1
+        ;;
+    *)
+        echo "Create a subversion tag: $0 yyymmdd-nBETA"
+        ;;
+esac
+

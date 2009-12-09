@@ -18,7 +18,7 @@ th.optionhelp { width:60%; }
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Configuration [:$?title:]</h1>
 
-        <form action="?" enctype="multipart/form-data" method="POST">
+        [:FORM_START:]
 
             [:EDIT_CONFIG($?file,$?help):]
 

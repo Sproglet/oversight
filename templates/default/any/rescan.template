@@ -16,8 +16,7 @@ body { font-size:20; font-family:"arial"; color:white; }
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Media Scan</h1>
 
-        <form action="?" enctype="multipart/form-data" method="POST">
-            <input type=hidden name=form value="1">
+        [:FORM_START:]
 
             <center>
             <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>

@@ -846,13 +846,16 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     int free_url=0;
     char *url=NULL;
 
+    HTML_LOG(0,"%s:%d view=[%s] action=[%s]",__FILE__,__LINE__,query_val("view"),query_val("action"));
 TRACE;
     if (strcasecmp(query_val("view"),"admin") == 0) {
         char *action = query_val("action");
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;
         } else {
-            url="?"; // clear URL
+            url=cgi_url("");// clear URL
+            HTML_LOG(0,"action[%s]",url);
+            HTML_LOG(0,"cgi_url[%s]",cgi_url());
         } 
     } else {
 TRACE;

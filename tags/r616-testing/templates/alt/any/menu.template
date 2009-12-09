@@ -1,0 +1,98 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:VERSION:] [:HOSTNAME:]</title>
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+[:IF($@gaya):]
+    body.menu_background { color:yellow ; background-color:black; }
+[:ELSE:]
+    body.menu_background { color:white ; background-color:black; }
+[:ENDIF:]
+
+
+.status {
+    font-size:70%;
+}
+
+table.overview_poster {
+    margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
+}
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:100%;
+[:ENDIF:]
+}
+        </style>
+    </head>
+    <!--
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
+-->
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background >
+        [:FORM_START:]
+<center>
+        <table class=main width=100% height=100%>
+        <tr><td>
+            <table class=header width=100%>
+                <tr>
+                    <td>[:TITLE_SELECT:]</td>
+                    <td>[:GENRE_SELECT:]</td>
+                    <td>[:MEDIA_SELECT:]</td>
+                    <td>[:WATCHED_SELECT:]</td>
+                    <td>[:SORT_TYPE_TOGGLE:]</td>
+                    <td><span class="status">[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</span></td>
+                    <td>[:SETUP_BUTTON:]</td>
+                    <td>[:HELP_BUTTON:]</td>
+                </tr>
+                <tr>
+                    <td colspan=8 align=center >
+                        <span class=menutitle id="menutitle">&nbsp;</span>
+                        <span class=menutitle id="unwatchedtotal">&nbsp;</span>
+                        <span class=menutitle id="watchedtotal">&nbsp;</span>
+                    </td>
+                </tr>
+            </table>
+        </td></tr><tr><td>
+            <center>
+            [:GRID:] 
+            </center>
+        </td></tr><tr><td>
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td width=10%>[:LEFT_BUTTON:]</td>
+                    [<td align=center>:BACK_BUTTON:</td>]
+                    [<td align=center>:EXIT_BUTTON:</td>]
+                    <td align=center>[:HOME_BUTTON:]</td>
+                    <td align=center>[:DELETE_BUTTON:]</td>
+                    <td align=center>[:MARK_BUTTON:]</td>
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
+                    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
+                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                </tr>
+            </table>
+        </td></tr></table>
+</center>
+        </form>
+<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/menu.js"></script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

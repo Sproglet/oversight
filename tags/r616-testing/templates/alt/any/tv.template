@@ -1,0 +1,173 @@
+<!-- Default Tv Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight ([:HOSTNAME:]):
+T
+ [:TITLE:]
+Season
+[:SEASON:] </title>
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+table.listing {
+    margin:0;
+    border:none;
+    padding:0 ;
+}
+td {
+    margin:0px;
+    border:none;
+    padding:0px ;
+}
+table {
+    margin:0px;
+    border:none;
+    padding:0px ;
+    border-spacing: 0px;
+    border-collapse:collapse;
+}
+
+/* watched/Unwatched tv */ .a {}
+
+td.ep10 { background-color:#222222; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep11 { background-color:#111111; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep00 { background-color:#004400; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+td.ep01 { background-color:#003300; font-weight:bold; font-size:[:FONT_SIZE(-4):]; }
+.proper { color: yellow; size:small; }
+.repack { color: yellow; size:small; }
+.eptitle { font-size:100% ; font-weight:normal; font-size:[:$ovs_font_size_eptitle:]%; }
+
+.epdate { color:#AAAAFF; font-size:[:$ovs_font_size_epdate:]%; }
+.info {
+    color:white;
+    filter:alpha(opacity=100);
+    opacity:1;
+}
+
+.plot0 {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+    filter:alpha(opacity=100);
+    opacity:1;
+    font-weight:normal;
+}
+.plot1 {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+}
+.Xtitle {
+ text-align:left;
+ font-size:[:TITLE_SIZE:];
+ font-weight:bold;
+ color:#FBB917;
+}
+
+
+td.filelist {
+ text-align:center;
+}
+        </style>
+
+<style type="text/css">
+body { color:yellow ; background-color:black; }
+
+.transparent {
+    margin:0px;
+    padding:0px;
+    border:0px;
+
+    [:IF($ovs_transparency=0):]
+        background-color:black;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSE:]
+        background-image:url([:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png);
+    [:ENDIF:]
+}
+
+hr { color:#FBB917 }
+
+</style>
+</head>
+
+[:IF($ovs_display_fanart):]
+<body focuscolor=#FBB917 focustext=black [background=:FANART_URL(default.jpg):] >
+<table class=main width=100%>
+<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
+[:ELSE:]
+<body focuscolor=#FBB917 focustext=black  >
+<table class=main width=100%>
+<tr valign=middle><td align="center" border=0 height=[:BODY_HEIGHT:] >
+[:ENDIF:]
+
+
+
+[:FORM_START:]
+    <table width=100%>
+
+        <tr valign=top>
+            <td colspan=2 >
+                [:INCLUDE_TEMPLATE(buttons):]
+            </td>
+        </tr>
+    </table>
+    <table width=100% class=main >
+        <tr valign=bottom class=main>
+            <td class=main width=1% onmouseover="tvinf_0();" ><a href="#here" onfocus="tvinf_0();">[:POSTER:]</a></td>
+
+            <td width=100% class=main>
+[:IF($ovs_fade):]
+                <table width="100%" background="[:URL_BASE:]/templates/alt/images/transfade[:$ovs_transparency:].png" >
+                    <tr><td>&nbsp;</td><td></td></tr>
+[:ELSE:]
+                <table width="100%" background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
+                    <tr>
+                        <td class=title>[:TITLE:]</td>
+                        <td align=right><font class=info>[ S:SEASON:,][:YEAR:][:EXTERNAL_URL:]</font></td>
+                    </tr>
+                    <tr>
+                        <td align=left><font id=genre>&nbsp;[:GENRE:]</font></td>
+                        <td align=right>[:CERTIFICATE_IMAGE:][:RATING_STARS(5):][:RATING:]</td>
+                    </tr>
+
+<!-- </table> <table width="100%" class="transparent" > -->
+                    <tr><td colspan=2 align=left><hr><span class="plot" id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
+                </table>
+            </td>
+        </tr>
+        <tr valign="bottom" >
+            <td colspan=2 >
+                <table width=100% background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
+                    <tr>
+                        <td class=filelist align=center>
+                        [:TV_LISTING:]
+                        [:INCLUDE_TEMPLATE(submit_btn):]
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</form>
+
+</td></tr></table>
+
+
+[:MENU_TVID:]
+[:PLAY_TVID:]
+<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/tv.js"></script>
+
+
+<a href="javascript:ovs_info();" tvid="INFO"></a>
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+<!-- Title toggle -->
+</body>
+</html>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

@@ -1,0 +1,13 @@
+#labels Deprecated
+
+==wget wrapper==
+
+Normally when Gaya invokes a CGI script, the following steps occur:
+  # Gaya calls /bin/wget with the CGI url
+  # A new wget process connects to the internal web server (sybhttpd)
+  # Sybhttpd forks a new CGI script process.
+  # CGI script runs.
+
+Starting with r616 , oversight acts as a wrapper around /bin/wget. 
+Most calls immediate pass through to /bin/wget but if url contains 8883:/oversight/oversight.cgi then it is intercepted , and Oversight returns the results immediately to Gaya - bypassing wget and Sybhttpd
+Because the wrapper is a pure-C program , normal calls from Gaya to Wget have one extra step. However in practice this is a very quick handover to wget. And is relatively small overhead.

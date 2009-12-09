@@ -145,6 +145,20 @@ void td(char *attr,...) {
     va_end(ap);
 }
 
+// This used to be just "" but when replacing wget we need to send the full path
+char *cgi_url() {
+    static int first=1;
+    static char *url = NULL;
+    if (first) {
+        if (g_dimension->local_browser) {
+            url = getenv("SCRIPT_NAME");
+        } else {
+            url = "";
+        }
+        first=0;
+    }
+    return url;
+}
 
 // Merge the current query string with the parameters.
 // Keep the parameters that are not in the new parameter list and are also not blank
@@ -157,7 +171,7 @@ char *self_url(char *new_params) {
 
     int first=1;
 
-    char *url = STRDUP(CGI_URL);
+    char *url = STRDUP(cgi_url());
 
     // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
@@ -2109,20 +2123,25 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
 #define MACRO_STR_END_INNER ":"
 int template_replace(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
+TRACE;
+
     // first replace simple variables in the buffer.
     char *newline=template_replace_only(template_name,input,num_rows,sorted_row_ids);
     if (newline != input) {
         HTML_LOG(2,"old line [%s]",input);
         HTML_LOG(2,"new line [%s]",newline);
     }
+TRACE;
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
     int count = template_replace_and_emit(template_name,newline,num_rows,sorted_row_ids);
+TRACE;
     if (newline !=input) FREE(newline);
     return count;
 }
 
 char *template_replace_only(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
+TRACE;
     char *newline = input;
     char *macro_start = NULL;
     int count = 0;
@@ -2198,15 +2217,20 @@ char *template_replace_only(char *template_name,char *input,int num_rows,DbRowId
         macro_start=strstr(++macro_end,MACRO_STR_START);
 
     }
+TRACE;
     return newline;
 }
 int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
+TRACE;
     char *macro_start = NULL;
     int count = 0;
 
 
     char *p = input;
+    while(isspace(*p)) {
+        p++;
+    }
     macro_start = strstr(p,MACRO_STR_START);
     while (macro_start ) {
 
@@ -2240,7 +2264,9 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
 
             int free_result=0;
             *macro_name_end = '\0';
+TRACE;
             char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
+TRACE;
 
             //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
             if (macro_start > p ) {
@@ -2280,6 +2306,7 @@ int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRow
         printf("%s",p);
         fflush(stdout);
     }
+TRACE;
     return count;
 }
 
@@ -3167,6 +3194,8 @@ TRACE;
 TRACE;
 
     int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == '1';
+
+    int show_repacks = *oversight_val("ovs_show_repack") != '0';
     
 
     printf("%s",script);
@@ -3222,11 +3251,11 @@ TRACE;
 
                 char *title_txt=NULL;
 
-                int is_proper = (strstr(rid->file,"proper") ||
+                int is_proper = show_repacks && (strstr(rid->file,"proper") ||
                                  strstr(rid->file,"Proper") ||
                                  strstr(rid->file,"PROPER"));
 
-                int is_repack = (strstr(rid->file,"repack") ||
+                int is_repack = show_repacks && (strstr(rid->file,"repack") ||
                                  strstr(rid->file,"Repack") ||
                                  strstr(rid->file,"REPACK"));
 

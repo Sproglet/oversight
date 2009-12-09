@@ -85,7 +85,7 @@ void util_rmdir(char *path,char *name);
 }while(0);
 
 #define TRACE do {\
-    if (0 && !g_dimension->local_browser) {\
+    if (0) {\
         HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
     }\
 }while(0);

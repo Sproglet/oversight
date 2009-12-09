@@ -846,6 +846,7 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     int free_url=0;
     char *url=NULL;
 
+TRACE;
     if (strcasecmp(query_val("view"),"admin") == 0) {
         char *action = query_val("action");
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
@@ -854,11 +855,13 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
             url="?"; // clear URL
         } 
     } else {
+TRACE;
         //we dont want it in the URL after the form is submitted.
         //keep query string eg when marking deleting. Select is passed as post variable
         url=self_url("select=");
         free_url=1;
     }
+TRACE;
     char *hidden = add_hidden("idlist,view,page,sort,select,"
             QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
     char *result;
@@ -1186,7 +1189,7 @@ char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_ro
 
     if(!*query_val("select")) {
         char *tag=get_theme_image_tag("home",NULL);
-        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",CGI_URL,tag);
+        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",cgi_url(),tag);
         FREE(tag);
     }
 
@@ -1818,6 +1821,7 @@ char *get_variable(char *vname,int *free_result)
 char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
 
+TRACE;
     if (macros == NULL) macro_init();
 
     char *result = NULL;
@@ -1827,6 +1831,7 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
     if (*call == MACRO_VARIABLE_PREFIX) {
 
 
+TRACE;
         result=get_variable(call+1,free_result);
 
         if (result == NULL) {
@@ -1838,6 +1843,7 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
     } else {
 
         //Macro call
+TRACE;
 
         char *p = strchr(call,'(');
         if (p == NULL) {
@@ -1847,6 +1853,7 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
             if (q == NULL) {
                 html_error("missing ) for [%s]",call);
             } else {
+TRACE;
                 // Get the arguments
                 *q='\0';
                 args = split(p+1,",",0);
@@ -1862,9 +1869,11 @@ char *macro_call(char *template_name,char *call,int num_rows,DbRowId **sorted_ro
                 
 
         if (fn) {
+TRACE;
             //HTML_LOG(1,"begin macro [%s]",call);
             *free_result=1;
             result =  (*fn)(template_name,call,args,num_rows,sorted_rows,free_result);
+TRACE;
             //HTML_LOG(1,"end macro [%s]",call);
         } else {
             printf("?%s?",call);

@@ -21,10 +21,11 @@ export PATH="$OVS_ROOT/bin/$ARCH:$OVS_ROOT/bin:$PATH"
 bin="$OVS_ROOT/bin/$ARCH/oversight"
 cgi="$0"
 
+
 #The first time the script runs it will replace itself with the oversight binary file.
 #To re-instate this wrapper script (eg for debugging) copy oversight.cgi.safe to oversight.cgi
-
 REPLACE_BINARY() {
+
     sed 's/^REPLACE_BINARY$/#REPLACE_BINARY/' "$cgi" > "$cgi.safe"
     exec cat "$bin"  > "$cgi" # exec this to stop shell reading the binary file!
 }

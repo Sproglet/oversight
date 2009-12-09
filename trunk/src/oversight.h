@@ -71,8 +71,6 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define EMPTY_STR(str) ((str) == NULL || (*(str)) == '\0')
 #define IFEMPTY(s,alt) (EMPTY_STR(s)?(alt):(s))
 
-#define CGI_URL ""
-
 char *get_mounted_path(char *source,char *path,int *freeit);
 
 // Instead of converting timestamps to epoc time use a rough representation (see time_ordinal)

@@ -337,7 +337,7 @@ int is_local_browser() {
     if ((addr=getenv("REMOTE_ADDR")) != NULL) {
         return (strcmp(addr,"127.0.0.1") == 0);
     } else {
-        return 0;
+        return 1;
     }
 }
 

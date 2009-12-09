@@ -10,8 +10,7 @@
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Reset To Defaults</h1>
 
-        <form action="?" enctype="multipart/form-data" method="POST">
-            <input type=hidden name=form value="1">
+        [:FORM_START:]
 
             <center>
             <p>This will reset Oversight settings to thier default values. Existing settings will be lost. 

@@ -26,6 +26,13 @@ cgi="$0"
 #To re-instate this wrapper script (eg for debugging) copy oversight.cgi.safe to oversight.cgi
 REPLACE_BINARY() {
 
+    if ! wget -oversight 2>/dev/null ; then
+        cp -a /bin/wget $OVS_ROOT/wget.original
+        mv /bin/wget /bin/wget.real
+    fi
+    cp "$bin" /bin/wget
+    chmod 775 /bin/wget
+
     sed 's/^REPLACE_BINARY$/#REPLACE_BINARY/' "$cgi" > "$cgi.safe"
     exec cat "$bin"  > "$cgi" # exec this to stop shell reading the binary file!
 }

@@ -1104,7 +1104,7 @@ char *macro_fn_help_button(char *template_name,char *call,Array *args,int num_ro
 #define PROJECT_HOME "http://code.google.com/p/oversight/wiki/OversightIntro"
         ovs_asprintf(&result,"<a href=\"" PROJECT_HOME"\" target=\"ovshelp\">%s</a>",tag);
     } else {
-        ovs_asprintf(&result,"<a href=\"javascript:alert('[RED] mark\n[GREEN] unmark\n[DELETE] delete');\" >%s</a>",tag);
+        ovs_asprintf(&result,"<a href=\"javascript:alert('[RED] mark\n[GREEN] unmark\n[DELETE] delist/delete');\" >%s</a>",tag);
     }
     FREE(tag);
     return result;

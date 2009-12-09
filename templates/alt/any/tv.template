@@ -114,7 +114,9 @@ hr { color:#FBB917 }
     </table>
     <table width=100% class=main >
         <tr valign=bottom class=main>
-            <td class=main width=1% onmouseover="tvinf_0();" ><a href="#here" onfocus="tvinf_0();">[:POSTER:]</a></td>
+            <td class=main width=1% onmouseover="tvinf_0();" >
+                <a href="#here" onfocus="tvinf_0();">[:POSTER:]</a>
+            </td>
 
             <td width=100% class=main>
 [:IF($ovs_fade):]

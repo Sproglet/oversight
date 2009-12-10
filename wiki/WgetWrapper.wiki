@@ -1,13 +1,23 @@
-#labels Deprecated
-
 ==wget wrapper==
 
 Normally when Gaya invokes a CGI script, the following steps occur:
-  # Gaya calls /bin/wget with the CGI url
-  # A new wget process connects to the internal web server (sybhttpd)
-  # Sybhttpd forks a new CGI script process.
-  # CGI script runs.
 
-Starting with r616 , oversight acts as a wrapper around /bin/wget. 
-Most calls immediate pass through to /bin/wget but if url contains 8883:/oversight/oversight.cgi then it is intercepted , and Oversight returns the results immediately to Gaya - bypassing wget and Sybhttpd
-Because the wrapper is a pure-C program , normal calls from Gaya to Wget have one extra step. However in practice this is a very quick handover to wget. And is relatively small overhead.
+  # gaya starts wget
+  # wget connects to internal web server
+  # web server starts cgi process and gets output
+  # output is sent to wget.
+  # wget saves output in /tmp/0
+  # gaya reads html in /tmp/0 and renders it
+
+this testing release masquerades as the 'wget' binary. If it sees the request is for an oversight page then it intercepts it in writes the results to /tmp/0. Otherwise it is passed through to the original wget. So the new sequence for oversight.cgi is is :
+
+
+  # gaya starts wget (but its really oversight in disguise)
+  # oversight checks URL ~ oversight.cgi 
+  # write output to /tmp/0 
+  # gaya reads html in /tmp/0 and renders it
+
+This saves a full startup of wget , and the overhead of connecting to a web server.
+For other normal pages there is an extra step where oversight must start the real wget binary, however this is negligable compared to all the other stuff going on , esp as Oversight is a compiled binary.
+
+This technique can also be expanded to the gaya file browser. Watch this space but I think Oversight will soon be bundled with a significantly faster file browser than the standard one.

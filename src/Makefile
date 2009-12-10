@@ -40,7 +40,7 @@ CFLAGS=-O2 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o \
-	admin.o mount.o time.o network.o dbplot.o permissions.o
+	admin.o mount.o time.o network.o dbplot.o permissions.o gaya.o
 
 SRC=$(OBJS:.o=.c)
 

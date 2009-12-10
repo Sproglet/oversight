@@ -2323,7 +2323,7 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
     HTML_LOG(1,"begin template");
 
     char *file;
-    ovs_asprintf(&file,"%s/templates/%s/%s.template",appDir(),
+    ovs_asprintf(&file,"%s/templates/%s/%s/%s.template",appDir(),
             template_name,
             scanlines_to_text(g_dimension->scanlines),
             file_name);

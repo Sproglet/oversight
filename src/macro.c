@@ -19,6 +19,7 @@
 #include "macro.h"
 #include "dbfield.h"
 #include "mount.h"
+#include "gaya.h"
 
 #define MACRO_VARIABLE_PREFIX '$'
 #define MACRO_SPECIAL_PREFIX '@'
@@ -372,63 +373,11 @@ char *macro_fn_other_media_total(char *template_name,char *call,Array *args,int 
     return result;
 }
 
-#if 1
-/*
- * This is obsoleted. Direct tvid jumps used instead.
- */
-void add_letter_range(struct hashtable *title,unsigned char start,unsigned char end,int max_group_size) {
-    unsigned char ch;
-    int size=0;
-    char group_title[50] = "";
-    char group_range[3] = "";
-
-
-    for(ch = start ; ch <= end ; ch ++ ) {
-
-        int delta = g_title_letter_count[ch];
-        if (size+delta > max_group_size) {
-            // push current option group to option list and start a new one
-            if (size) {
-
-                HTML_LOG(1,"Adding range [%s][%s] at char %c/%d size %d",group_range,group_title,ch,ch,size);
-                hashtable_insert(title,STRDUP(group_range),STRDUP(group_title));
-                size=0;
-            }
-        }
-        if (size == 0) {
-            // Start range
-            group_range[0]=ch;
-            // Start title
-            sprintf(group_title,"%c",ch);
-        }
-        size += delta;
-        // update range
-        group_range[1]=ch;
-        group_range[2]='\0';
-        // update title
-        if (delta) {
-            if (ch != *group_range) {
-                sprintf(group_title+1,"-%c",ch);
-            }
-        }
-    }
-    if (size) {
-        HTML_LOG(0,"Adding end range [%s][%s] at char %c/%d size %d",group_range,group_title,end,end,size);
-        hashtable_insert(title,STRDUP(group_range),STRDUP(group_title));
-    }
-}
-
 char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
     if (!result) {
 
         struct hashtable *title = string_string_hashtable(30);
-
-#if 0
-        add_letter_range(title,' ','@',25);
-        add_letter_range(title,'A','Z',25);
-#else
-
 
         char c;
         for(c = 'A' ; c <= 'Z' ; c++ ) {
@@ -437,14 +386,13 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
             hashtable_insert(title,STRDUP(letter),STRDUP(letter));
         }
         hashtable_insert(title,STRDUP("1"),STRDUP("1"));
-#endif
+
         result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"*",title);
         hashtable_destroy(title,1,1);
     }
     *free_result = 0;
     return result;
 }
-#endif
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
@@ -1668,6 +1616,157 @@ char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows
     return get_play_tvid(text);
 }
 
+
+/*
+ <tr>
+    <td>
+        <table border="0" cellspacing="0" cellpadding="0" background="file:///opt/sybhttpd/localhost.images/sd/list_bar.
+png">
+            <tr>
+                <td width="40" height="35" align="right"><font size="2" color=user1><b>28</b></font></td>
+                <td width="40" align="right">
+                    <img src="file:///opt/sybhttpd/localhost.images/sd/list_folder.png" width="35" height="25">
+                </td>
+                <td width="290"><a href="http://localhost.drives:8883/HARD_DISK/Complete/house.s06e08.720p.hdtv.x264.imm
+erse.extra.par.s.nzb/?filter=3" name="28" onkeyleftset="media" onkeyrightset="FILE_INDEX" tvid="28" alt="house.s06e08.72
+0p.hdtv....text/plain                4 KB" file=c   fip="house.s06e08.720p.hdtv.x264.immerse.extra.par.s.nzb"><font size
+="2" color=user1><b><marquee behavior=focus width=290>&nbsp;&nbsp;house.s06e08.720p.hdtv.x264.immerse.extra.par.s.nzb</m
+arquee></b></font></a></td>
+                <td width="10"></td>
+            </tr>
+        </table>
+    </td>
+</tr>
+<tr><td height="2"></td></tr>
+*/
+
+char *get_gaya_row(int pos,Array *files,
+        int number_cell_width,int number_cell_height,int icon_cell_width,
+        int image_width,int image_height,
+        int name_width,
+        int space_width) {
+    char *tmp;
+
+    char *link;
+    char *name = files->array[pos];
+
+    char *link_content;
+    char *image;
+    ovs_asprintf(&link_content,
+        "<font size=\"2\" color=user1><b><marquee behavior=focus width=%d>&nbsp;&nbsp;%s</marquee></b></font>",
+        name_width,name+1);
+
+    if (*name == 'd' )  {
+        ovs_asprintf(&link,
+            "<a href=\"http://localhost.drives:8883%s/%s?filter=%s\" name=\"%d\" tvid=\"%d\" "
+            "onkeyleftset=\"media\" onkeyrightset=\"FILE_INDEX\" alt=\"%s\" file=c "
+            "fip=\"%s\">%s</a>",
+            get_gaya_folder(),name+1,get_gaya_filter(),pos,pos,name+1,name+1,link_content);
+        image=gaya_image("list_folder.png");
+
+    } else {
+        char  *dot = strrchr(files->array[pos],'.');
+        char *ext=util_tolower(dot);
+        if (delimited_substring("iso|avi|divx|mkv|mp4|ts|m2ts|xmv|mpe|movie|asf|vob|m2v|m2p|mpg|mpeg|mov|m4v|wmv","|",ext,"|",1,1)) {
+
+            image=gaya_image("list_folder.png");
+
+        } else if (delimited_substring("gif|jpg|jpeg|jpe|png|bmp","|",ext,"|",1,1)) {
+
+
+            image=gaya_image("list_folder.png");
+
+        } else if (delimited_substring("wav|m4a|mpga|mp2|mp3|pcm|ogg|wma|mp1|ac3|aac|mpa|pls|dts|flac","|",ext,"|",1,1)) {
+            image=gaya_image("list_folder.png");
+
+        } else {
+
+            image=gaya_image("list_folder.png");
+
+        }
+        FREE(ext);
+    }
+
+    ovs_asprintf(&tmp,
+    "<tr><td>"
+        "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" background=\"%s\"><tr>"
+        "<td width=\"%d\" height=\"%d\" align=\"right\"><font size=\"2\" color=user1><b>%d</b></font></td>"
+        "<td width=\"%d\" align=\"right\"><img src=\"%s\" width=\"%d\" height=\"%d\"></td>"
+        "<td width=\"%d\">%s</td>"
+        "<td width=\"10\"></td>"
+        "</tr></table>"
+    "</td></tr>"
+    "<tr><td weight=\"2\"></td></tr>",
+         gaya_image("list_bar.png"),
+         number_cell_width,number_cell_height,pos,
+         icon_cell_width,image,image_width,image_height,
+         name_width,link);
+
+    return tmp;
+        
+}
+
+char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result = 1;
+    char *result = NULL;
+
+    //args = row height, col1 width, col2width , col3 width , col4width
+
+    Array *files = gaya_get_files();
+
+    int page = get_gaya_page();
+
+    int arg=0;
+
+    int number_cell_width = atol(args->array[arg++]);
+    int number_cell_height = atol(args->array[arg++]);
+    int icon_cell_width=atol(args->array[arg++]);
+    int image_width=atol(args->array[arg++]);
+    int image_height=atol(args->array[arg++]);
+    int name_width=atol(args->array[arg++]);
+    int space_width=atol(args->array[arg++]);
+
+    int i = 0;
+    int start_file = page*9-9;
+    int end_file = page*9;
+    if (end_file > files->size) {
+        end_file = files->size;
+    }
+
+    for(i = start_file ; i< end_file ; i++ ) {
+        char *tmp;
+        ovs_asprintf(&tmp,"%s%s",NVL(result),get_gaya_row(i,files,
+                    number_cell_width,number_cell_height,icon_cell_width,
+                    image_width,image_height,
+                    name_width,space_width
+                    ));
+        FREE(result);
+        result = tmp;
+    }
+
+    return result;
+}
+
+char *macro_fn_gaya_folder(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result = 0;
+    return get_gaya_folder();
+}
+
+char *macro_fn_gaya_root_folder_name(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result = 1;
+    char *result = NULL;
+
+    char *f = get_gaya_folder();
+    f++; 
+
+    char *end = strchr(f,'/');
+    if (end == NULL) {
+        end = f + strlen(f);
+    }
+    ovs_asprintf(&result,"%.*s",end-f,f);
+    return result;
+}
+
 void macro_init() {
 
     if (macros == NULL) {
@@ -1755,6 +1854,9 @@ void macro_init() {
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
         hashtable_insert(macros,"EVAL",macro_fn_eval);
         hashtable_insert(macros,"URL_BASE",macro_fn_url_base);
+        hashtable_insert(macros,"GAYA_LIST_ROWS",macro_fn_gaya_list_rows);
+        hashtable_insert(macros,"GAYA_FOLDER",macro_fn_gaya_folder);
+        hashtable_insert(macros,"GAYA_ROOT_FOLDER_NAME",macro_fn_gaya_root_folder_name);
         //HTML_LOG(1,"end macro init");
     }
 }

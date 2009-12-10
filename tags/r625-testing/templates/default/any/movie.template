@@ -1,0 +1,14 @@
+<!-- Default Movie Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight ([:HOSTNAME:]): [:TITLE:] [(:YEAR:)]</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+    </head>
+    [:INCLUDE_TEMPLATE(movie[:$ovs_display_fanart:]):]
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

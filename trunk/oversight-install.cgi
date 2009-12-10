@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 # $Id$ 
 INSTALL_DIR=$( echo "$0" | sed -r 's/[^/]+$//' )
 INSTALL_DIR=$( cd "$INSTALL_DIR" ; pwd )

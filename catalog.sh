@@ -850,7 +850,7 @@ sub(/,+$/,"",folder_list)
 split(folder_list,FOLDER_ARR,g_cvs_sep)
 }
 if (PARALLEL_SCAN != 1 ) {
-if (!lock(g_scan_lock_file) ) {
+if (lock(g_scan_lock_file) == 0 ) {
 INF("Scan already in progress")
 exit
 }
@@ -1031,7 +1031,7 @@ delete indexToMergeHash
 
 function is_locked(lock_file,\
 pid) {
-if (!is_file(lock_file)) return 0
+if (is_file(lock_file) == 0) return 0
 
 pid=""
 if ((getline pid < lock_file) >= 0) {
@@ -1060,7 +1060,7 @@ attempts=0
 sleep=10
 split("10,10,20,30,60,120,300,600,600,600,600,1200",backoff,",")
 for(attempts=1 ; (attempts in backoff) ; attempts++) {
-if (!is_locked(lock_file)) {
+if (is_locked(lock_file) == 0) {
 print PID > lock_file
 close(lock_file)
 INF("Locked "lock_file)
@@ -2132,7 +2132,7 @@ WARNING("Skipping "f" - blacklisted device")
 } else {
 
 timer = systime()
-if (!is_file_or_folder(f) ) {
+if (is_file_or_folder(f) == 0 ) {
 if (systime()-timer > 10) {
 
 blacklist_dir = f
@@ -2386,7 +2386,7 @@ return 0+ret
 
 function formatDate(line,\
 date,nonDate) {
-if (!extractDate(line,date,nonDate)) {
+if (extractDate(line,date,nonDate) == 0) {
 return line
 }
 line=sprintf("%04d-%02d-%02d",date[1],date[2],date[3])
@@ -2734,7 +2734,7 @@ report_status("item "(++g_item_count))
 
 DEBUG("folder :["fldr"]")
 
-if (!isDvdDir(file) && !match(file,gExtRegExAll)) {
+if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
 WARNING("Skipping unknown file ["file"]")
 continue
 }
@@ -4405,7 +4405,7 @@ found = match(tolower(possible_title),regex)
 if (found) {
 
 
-if (!contractionPrerequisite(abbrev,possible_title)) {
+if (contractionPrerequisite(abbrev,possible_title) == 0) {
 INF(possible_title " rejected for abbrev ["abbrev"]")
 found = 0
 } else {
@@ -5304,7 +5304,7 @@ cache=1
 if (f =="" ) {
 f=NEW_CAPTURE_FILE(capture_label)
 }
-if (!is_file(f)) {
+if (is_file(f) == 0) {
 
 if (wget(url,f,referer) ==0) {
 if (cache) {
@@ -5358,7 +5358,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 
 args=" -U \""g_user_agent"\" "g_wget_opts
 default_referer = get_referer(url)
-if (!check_domain_ok(default_referer)) {
+if (check_domain_ok(default_referer) == 0) {
 return 1
 }
 if (referer == "") {
@@ -6379,7 +6379,7 @@ removeContent("rmdir -- ",x,quiet,quick)
 }
 function removeContent(cmd,x,quiet,quick) {
 
-if (!changeable(x)) return 1
+if (changeable(x) == 0) return 1
 
 if (!quiet) {
 INF("Deleting "x)
@@ -6473,7 +6473,7 @@ return 0
 function moveFile(oldName,newName,\
 new,old,ret) {
 
-if (!changeable(oldName) ) {
+if (changeable(oldName) == 0 ) {
 return 1
 }
 new=qa(newName)
@@ -6503,7 +6503,7 @@ cmd,new,old,ret,isDvdDir,err) {
 ret=1
 err=""
 
-if (!(folderIsRelevant(oldName))) {
+if (folderIsRelevant(oldName) == 0) {
 
 err="not listed in the arguments"
 
@@ -6515,7 +6515,7 @@ err= g_fldrCount[oldName]" sub folders"
 
 err = g_fldrMediaCount[oldName]" media files"
 
-} else if (!changeable(oldName) ) {
+} else if (changeable(oldName) == 0 ) {
 
 err="un changable folder"
 
@@ -6525,7 +6525,7 @@ old=qa(oldName)
 if (g_opt_dry_run) { 
 print "dryrun: from "old"/* to "new"/"
 ret = 0
-} else if (!is_empty(oldName)) {
+} else if (is_empty(oldName) == 0) {
 INF("move folder:"old"/* --> "new"/")
 cmd="mkdir -p "new" ;  mv "old"/* "new" ; mv "old"/.[^.]* "new" ; rmdir "old
 err = "unknown error"
@@ -6568,7 +6568,7 @@ return 0+ test("-d",f"/.")
 function is_file_or_folder(f,\
 r) {
 r = (is_file(f) || is_dir(f))
-if (!r) WARNING(f" is neither file or folder")
+if (r == 0) WARNING(f" is neither file or folder")
 return r
 }
 
@@ -7124,7 +7124,7 @@ x=$?
 set -e
 
 rm -fr -- "$tmp_dir"
-chown -R $OVERSIGHT_ID $INDEX_DB* "$APPDIR/tmp" || true
+chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$APPDIR/tmp" || true
 return $x
 }
 

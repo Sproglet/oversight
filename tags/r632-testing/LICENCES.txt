@@ -1,0 +1,28 @@
+This software uses lots of other stuff!
+
+libjpeg tools.
+
+netpbm tools.
+
+Crystal KDE Theme Icons
+http://www.everaldo.com/crystal/?action=license
+
+Blue Twiser KDE Wallpaper.
+
+Many Gnu utilities 
+
+Busybox
+http://www.busybox.net/license.html
+
+NBTSCAN
+http://unixwiz.net/tools/nbtscan.html
+
+All source is unchanged and can be found in standard project home pages.
+(minor teaks to get things cross-compiled for mips toolchain I use.)
+
+
+Probably other stuff I hadnt thought of.
+If any package authors have any questions 
+email me. oversight AT lordy dot org dot uk
+
+

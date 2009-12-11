@@ -1,0 +1,34 @@
+# get latest version
+# could also use svn info url but seems a bit slow for googlecode
+
+project="$1"
+add="$2"
+
+if [ -z "$project" ] ; then
+    echo "returns revsion number"
+    echo "usage: $0 projectname increment"
+    exit 1
+fi
+
+wget "http://code.google.com/p/$project/source/browse/" -q -O - | awk '
+BEGIN {
+    best=0;
+}
+
+{
+    gsub(/\<r[0-9]+/,"@~&@~",$0);
+    p=split($0,txt,"@~");
+    for(i=2;i <= p ; i += 2) {
+        r = substr(txt[i],2)+0;
+        if (r > best ) {
+            best = r;
+        }
+    }
+}
+
+END {
+    if (best > 0 ) {
+        print best+'"$add"';
+    }
+}
+'

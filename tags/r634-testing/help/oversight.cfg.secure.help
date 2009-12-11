@@ -1,0 +1,4 @@
+ovs_wan_admin:Allow administration over the Internet|0|1
+ovs_wan_delete:Allow deletion of media over the Internet|0|1
+ovs_wan_delist:Allow media to be remove from list over the Internet|1|0
+ovs_wan_mark:Allow media to be marked as watched over the Internet|1|0

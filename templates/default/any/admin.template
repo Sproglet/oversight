@@ -24,6 +24,7 @@ img.nasstatus { width:15; height:15; }
                 [:ICON(rescan):]
             </td>
             <td align=left width=28%>
+                Version  [:VERSION:]<br/>
                 [:CONFIG_LINK(oversight.cfg,help,General Settings):]<br>
                 [:LINK(action=confirm_rescan,Rescan All Media):]
             </td>

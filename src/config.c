@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "oversight.h"
 #include "util.h"
@@ -185,9 +186,7 @@ struct hashtable *config_load_fp(FILE *fp) {
 
     while((fgets(line,CFG_BUFSIZ,fp))) {
 
-        chomp(line);
-
-        if (util_strreg(line,"^\\s*#",0)) {
+        if ( (line[0] == ' ' || line[0] == '\t' || line[0] == '#' ) && util_strreg(line,"^\\s*#",0)) {
             //skip comment
         } else {
             char *key = NULL;
@@ -196,26 +195,40 @@ struct hashtable *config_load_fp(FILE *fp) {
 
             // key = value where value = X....X or just X (where X= ^space )
             // \x5b = [ \x5d = ]
-            if ((key = regextract1(line,"^[[:space:]]*([][A-Za-z0-9_.]+)[=:]",1,0)) != NULL ) {
+            //
+            char *p = line;
+            while (isspace(*p)) p++;
+            key = p;
+            while (isalnum(*p) || (*p && strchr("_.[]",*p))) {
+                p++;
+            }
+            char *key_end = p;
 
 
-                if ((val = regextract1(line,"[=:][[:space:]]*([^[:space:]]?.*[^[:space:]])[[:space:]]*$",1,0)) != NULL) {
-                    if (strlen(val)>=3 ) {
-                        if (strchr("\"'",*val)) {
-                            if (val[strlen(val)-1] == *val) {
-                                //remove quotes
-                                char *val2 = substring(val,1,strlen(val)-1);
-                                FREE(val);
-                                val = val2;
-                            }
-                        }
+            while(isspace(*p)) p++;
+            if (*p == '=' || *p == ':' ) {
+
+                p++;
+                while(isspace(*p)) p++;
+                val = p;
+                while(!isspace(*p)) p++;
+                char *val_end = p;
+
+                while(isspace(*p)) p++;
+
+                if (strchr("\n\r",*p)) {
+
+                    //remove quotes
+                    if (strchr("\"'",*val) && val_end[-1] == *val ) {
+                        val++;
+                        val_end --;
+                    }
+
+                    if (key && val && key_end > key ) {
+                        *key_end = *val_end = '\0';
+                        hashtable_insert(result,STRDUP(key),STRDUP(val));
                     }
                 }
-            }
-
-            if (key && val ) {
-                //fprintf(stderr,"cfg add [ %s ] = [ %s ]\n",key,val);
-                hashtable_insert(result,key,val);
             }
 
         }

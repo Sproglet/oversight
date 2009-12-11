@@ -484,6 +484,7 @@ int main(int argc,char **argv)
             // gaya -> oversight
             ret = oversight_instead_of_wget(query_string,argc,argv);
 
+#if 0
         } else if ((gaya_file_browsing(argc,argv)) && !gaya_sent_post_data(argc,argv)) {
 
             // Gaya has invoked wget with argument eg.  http://localhost.drives:8883/HARD_DISK/?filter=3&page=1
@@ -493,6 +494,7 @@ int main(int argc,char **argv)
             //          The directory browse "/?"
             gaya_set_output(argc,argv);
             gaya_list(gaya_url(argc,argv));
+#endif
 
         } else {
 

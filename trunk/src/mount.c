@@ -136,8 +136,6 @@ int nmt_mount (char *file)
 
     int result = 0;
 
-HTML_LOG(0,"mount [%s]",file);
-
     if (!util_starts_with(file,NETWORK_SHARE)) { 
 
         // Assume anything not in NETWORK_SHARE is mounted.
@@ -153,7 +151,6 @@ TRACE;
 TRACE;
             // check if weve tried mounting. result is set if we have.
             char *mount_status = get_mount_status(path);
-            HTML_LOG(0,"mount status=%s",mount_status);
 TRACE;
             
             if (strcmp(mount_status,MOUNT_STATUS_OK) == 0) {
@@ -173,7 +170,9 @@ TRACE;
         }
 
     }
-    HTML_LOG(0,"mount [%s] = [%d]",file,result);
+    if (result != 1) {
+        HTML_LOG(0,"Error: mount [%s] = [%d]",file,result);
+    }
     return result;
 }
 

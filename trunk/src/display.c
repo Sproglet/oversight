@@ -1976,9 +1976,9 @@ TRACE;
 
         char *simple_title = get_simple_title(row_id,newview);
 
-        focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,0);
+        focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
         if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,0);
+            mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
         }
         FREE(simple_title);
     }
@@ -3231,7 +3231,7 @@ TRACE;
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
-                    char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,0);
+                    char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
                     episode_col = vod_link(
                             rid,
                             ep,"",
@@ -3284,7 +3284,7 @@ TRACE;
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
 
-                char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,0);
+                char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
 
                 ovs_asprintf(&tmp,
                         "%s<td class=%s width=%d%% %s>%s</td>" 
@@ -3330,7 +3330,7 @@ TRACE;
 
 
     char *result=NULL;
-    ovs_asprintf(&result,"<table width=100%% class=listing>%s</table>",listing);
+    ovs_asprintf(&result,"<table width=100%% class=listing onblur=\"tv_inf0();\" >%s</table>",listing);
     FREE(listing);
     return result;
 }

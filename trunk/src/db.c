@@ -1417,7 +1417,8 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                     }
 
                     if (genre_filter && *genre_filter) {
-                        if (!strstr(rowid.genre,genre_filter)) {
+                        //HTML_LOG(0,"genre [%.*s]",10,rowid.genre);
+                        if (rowid.genre && !strstr(rowid.genre,genre_filter)) {
                             HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
                             keeprow=0;
                         }
@@ -1456,8 +1457,8 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                 }
 
                 if (keeprow) {
-                    //HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
                     row_count = db_rowset_add(rowset,&rowid);
+                    //HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
                 } else {
                     db_rowid_free(&rowid,0);
                 }

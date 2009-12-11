@@ -3414,7 +3414,7 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     ovs_asprintf(&params,"p=&idlist=&%s=" PLACEHOLDER,name);
     char *link=self_url(params);
     FREE(params);
-    Array *link_parts = split(link,PLACEHOLDER,0);
+    Array *link_parts = split(strchr(link,'?'),PLACEHOLDER,0);
     FREE(link);
 
     //GAYA does seem to like passing just the options to the link

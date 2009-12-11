@@ -19,6 +19,7 @@
 #include "actions.h"
 #include "admin.h"
 #include "permissions.h"
+#include "gaya.h"
 
 //void exec_old_cgi(int argc,char **argv);
 
@@ -135,6 +136,10 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     if (send_content_type_header) {
         printf("Content-Type: text/html\n\n");
+
+        printf("<!-- CGI -->\n");
+    } else {
+        printf("<!-- WGET -->\n");
     }
 
     html_log_level_set(2);
@@ -289,6 +294,32 @@ TRACE;
     
 }
 
+// Changes stdout to be -O wget parameter.
+// Returns index of output file argument or 0
+int gaya_set_output(int argc,char **argv)
+{
+    int ret = 0;
+    char *output = NULL;
+    //Change stdout
+    int i;
+    for(i = 0 ; i < argc ; i++ ) {
+        if (strcmp(argv[i],"-O") == 0 && i < argc-1) {
+            ret = i+1;
+            break;
+        }
+    }
+
+    fprintf(stderr,"output=[%s]\n",output);
+    fprintf(stderr,"query string=[%s]\n",getenv("QUERY_STRING"));
+
+    if (argv[ret] != NULL) {
+        // Change stdout and launch oversight
+        freopen(argv[ret],"w",stdout);
+    }
+    freopen("/tmp/0err","w",stderr);
+    return ret;
+}
+
 /*
  * If gaya has invoked oversight as wget then the parameter list looks like 
  *
@@ -312,32 +343,27 @@ TRACE;
  *    /tmp/0
  */
 #define SCRIPT_PATH ":8883/oversight/oversight.cgi"
+#define SCRIPT_NAME "http://127.0.0.1:8883/oversight/oversight.cgi"
 int oversight_instead_of_wget(char *script_path,int argc, char **argv) 
 {
     int ret = -1;
-    char *output=NULL;
+
+    gaya_set_output(argc,argv);
+
+    int i;
+    for (i = 0 ; i < argc ; i++ ) {
+        printf("<!-- %d:[%s] -->\n",i,argv[i]);
+    }
 
     // Get the arguments.
     if (*script_path == '?' ) {
         setenv("QUERY_STRING",script_path+1,1);
     }
-    setenv("SCRIPT_NAME",strchr(SCRIPT_PATH,'/'),1);
-    //Change stdout
-    int i;
-    for(i = 0 ; i < argc ; i++ ) {
-        if (strcmp(argv[i],"-O") == 0 && i < argc-1) {
-            output = argv[i+1];
-            break;
-        }
-    }
+    setenv("SCRIPT_NAME",SCRIPT_NAME,1);
+    setenv("REMOTE_ADDR","127.0.0.1",1);
 
-    fprintf(stderr,"output=[%s]\n",output);
-    fprintf(stderr,"query string=[%s]\n",getenv("QUERY_STRING"));
+    printf("<!-- QUERY_STRING:[%s] -->\n",getenv("QUERY_STRING"));
 
-    if (output != NULL) {
-        // Change stdout and launch oversight
-        freopen(output,"w",stdout);
-    }
        
     char *args[2] ;
     args[0]="oversight";
@@ -347,17 +373,42 @@ int oversight_instead_of_wget(char *script_path,int argc, char **argv)
 
 }
 
-int gaya_sent_post_data(int argc,char **argv) {
-    int ret=0;
-    // can skip arg0 and use 0 as -ve result
-    int i;
-    for(i = 0 ; i < argc ; i++ ) {
-        if (strcmp(argv[i],"--post-data") == 0) {
-            ret = i;
-            break;
+// 0=not browsing >0 browsing (index of url argument)
+int gaya_file_browsing(int argc,char **argv) {
+    static int ret = -1;
+    if (ret == -1 ) {
+        ret = 0;
+        int i;
+        for(i = 1 ; i < argc ; i++ ) {
+            if (argv[i][0] == 'h'
+                    && util_starts_with(argv[i],"http://localhost.drives:8883/")
+                    && strstr(argv[i],"Tv")
+                    && strstr(argv[i],"/?") ) {
+                ret= i;
+                break;
+            }
         }
     }
-    fprintf(stderr,"gaya_sent_post_data=[%d]\n",ret);
+    return ret;
+}
+
+// 0=no post data else = --post-data argument index 
+int gaya_sent_post_data(int argc,char **argv) {
+
+    static int ret= -1;
+
+    if (ret == -1) {
+        // can skip arg0 and use 0 as -ve result
+        int i;
+        ret = 0;
+        for(i = 0 ; i < argc ; i++ ) {
+            if (strcmp(argv[i],"--post-data") == 0) {
+                ret = i;
+                break;
+            }
+        }
+        fprintf(stderr,"gaya_sent_post_data=[%d]\n",ret);
+    }
     return ret;
 }
 
@@ -376,10 +427,38 @@ char *gaya_sent_oversight_url(int argc,char **argv) {
     return p;
 }
 
+// return http argument to wget 
+char *gaya_url(int argc,char **argv) {
+    static char *result = NULL;
+    int i;
+    for (i = 1 ; i < argc ; i++) {
+        if (argv[i][0] == 'h' && util_starts_with(argv[i],"http:") ) {
+            result = argv[i];
+            break;
+        }
+        
+    }
+    return result;
+}
+
+int run_wget(int argc,char **argv) {
+
+   char **args = CALLOC(argc+1,sizeof(char *));
+
+   int i;
+   for(i = 0 ; i < argc ; i++) {
+       args[i] = argv[i];
+   }
+   args[argc] = NULL;
+   return execv("/bin/wget.real",args);
+}
 
 int main(int argc,char **argv)
 {
     int ret = -1;
+
+    char *turbo_flag;
+    ovs_asprintf(&turbo_flag,"%s/conf/use.wget.wrapper",appDir());
  
 
     if (strstr(argv[0],"wget") ) {
@@ -392,6 +471,10 @@ int main(int argc,char **argv)
             fprintf(stderr,"Oversight version %s\n",OVS_VERSION);
             ret = 0 ;
 
+        } else if (!is_file(turbo_flag)) {
+
+            run_wget(argc,argv);
+
         } else if ((query_string=gaya_sent_oversight_url(argc,argv)) != NULL 
             && !gaya_sent_post_data(argc,argv)) {
             // Oversight has been called as wget. 
@@ -401,15 +484,21 @@ int main(int argc,char **argv)
             // gaya -> oversight
             ret = oversight_instead_of_wget(query_string,argc,argv);
 
+        } else if ((gaya_file_browsing(argc,argv)) && !gaya_sent_post_data(argc,argv)) {
+
+            // Gaya has invoked wget with argument eg.  http://localhost.drives:8883/HARD_DISK/?filter=3&page=1
+            // Important bits are
+            //          http://localhost.drives:8883/ 
+            //          The folder /HARD_DISK/
+            //          The directory browse "/?"
+            gaya_set_output(argc,argv);
+            gaya_list(gaya_url(argc,argv));
+
         } else {
-            // just launch wget
-            char **args = CALLOC(argc+1,sizeof(char *));
-            int i;
-            for(i = 0 ; i < argc ; i++) {
-                args[i] = argv[i];
-            }
-            args[argc] = NULL;
-            ret = execv("/bin/wget.real",args);
+
+            run_wget(argc,argv);
+            // Passthru to wget.real
+
         }
     } else {
         // start oversight normally (original cgi entry point)

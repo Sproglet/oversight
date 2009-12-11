@@ -15,7 +15,7 @@
 void show_page(char *folder,char * filter,int page);
 void set_gaya_filter(char *filter);
 
-void list(char *arg)
+void gaya_list(char *arg)
 {
 
     //arg = http://localhost.drives:8883/HARD_DISK/Complete/?filter=3&page=3

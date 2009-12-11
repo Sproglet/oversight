@@ -36,7 +36,7 @@ CC=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 
-CFLAGS=-O2 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
+CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 OBJS=oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o macro.o \

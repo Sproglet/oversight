@@ -595,14 +595,6 @@ void set_title_as_folder(DbRowId *rowid)
 
 #define DB_NAME_BUF_SIZE 10
 #define DB_VAL_BUF_SIZE 4000
-#define RESET 1
-#define RESET_AND_ADD 2
-
-#define VAL_SZ_INIT 30
-#define VAL_SZ_INC 50
-#define STATE_START -1
-#define STATE_NAME 0
-#define STATE_VAR 1
 
 //changes here should be reflected in catalog.sh.full:createIndexRow()
 void write_row(FILE *fp,DbRowId *rid) {
@@ -679,9 +671,6 @@ DbRowId *read_and_parse_row(
     register char *p=NULL;
     char *end=NULL;
 
-    int state=STATE_START;
-
-if (1 || g_dimension->local_browser == 0) {
     // Skip comment lines
     while ( (next = getc(fp) ) == '#' ) {
         if (fgets(value,DB_VAL_BUF_SIZE,fp) == NULL) break;
@@ -708,6 +697,7 @@ if (1 || g_dimension->local_browser == 0) {
                     next = getc(fp);
                 }
                 *p = '\0';
+                assert(p < end);
                 //HTML_LOG(0,"parse name=[%s]",name);
 
                 if (next == '\t') {
@@ -746,6 +736,7 @@ if (1 || g_dimension->local_browser == 0) {
                     }
 
                     *p = '\0';
+                    assert(p < end);
                     //HTML_LOG(0,"parse value=[%s]",value);
                     if (*name && *value) {
                         db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
@@ -756,114 +747,6 @@ if (1 || g_dimension->local_browser == 0) {
         }
     }
     *eof = (next == EOF);
-
-
-} else {
-
-
-
-    // OK this is a bit nasty. 
-    // There are a few nested loops and some are for every character in the file
-    // In a normal worled we can check condition in the loop test, but this impacts
-    // performance. 
-    // We really want to switch loops with each state transition, and without testing in 
-    // the loop itself. This means ... goto.
-    // Or named break or longjump. etc.
-
-    // This outer loop eats characters until we hit a tab, eol or eof.
-    for(;;) {
-
-
-        // Control should only get here if state = STATE_START
-        if (state == STATE_START) {
-            while(next != EOF  && !TERM(next) ) {
-                next = getc(fp);
-            }
-        }
-
-        if (next == EOF) {
-            goto eol; // Goto to avoid extra comparisons to break out of nested while/switch
-        } else if (!TERM(next)) {
-            // Not state != STATE_START if we get here
-            // Add the character
-            *p++ = next;
-            if (p >= end ) {
-                // Name variable. This shouldnt happen - truncate
-                p--;
-                *p = '\0';
-                break;
-            }
-        } else {
-            switch(next) {
-
-
-                case '\n' : case '\r' : case '\0': // EOL terminators
-                    if (state == STATE_VAR) {
-                        *p = '\0';
-                        HTML_LOG(3,"parsed field %s=%s",name,value);
-                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
-                        state = STATE_START;
-                    }
-                    goto eol;
-                case '\t':
-                    switch(state) {
-                        case STATE_START:
-
-                            state=STATE_NAME;
-                            p=name;
-                            end=name_end;
-                            break;
-
-                        case STATE_NAME:
-
-                            //switch to STATE_VAR
-
-                            *p = '\0';
-                            state=STATE_VAR;
-                            p=value;
-                            end=value_end;
-                            HTML_LOG(3,"name[%s]",name);
-                            break;
-
-                        case STATE_VAR:
-                            //switch to STATE_VAR if TAB is followed by _ (start of a name)
-                            next = getc(fp);
-                            if (next != '_' ) {
-                                //If plot contains <tab> allow it if it is NOT followed by _
-                                //which is the prefix for out html vars. This is a nasty hack due 
-                                //to bad choice of field sep. TODO Make sure catalog.sh filters tabs out of plots.
-                                ungetc(next,fp);
-                            } else {
-                                *p = '\0';
-                                HTML_LOG(3,"val[%s]",value);
-                                db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
-
-                                state=STATE_NAME;
-                                p=name;
-                                end=name_end;
-                                *p++='_';
-                            }
-                            break;
-                        default:
-                            assert(0);
-                            break;
-                    }
-                    break;
-            default:
-                assert(0);
-            }
-        }
-        next = getc(fp);
-    }
-eol:
-    if (next == EOF) {
-        *eof = 1;
-    }
-    if (p) {
-        *p = '\0';
-    }
-
-}
 
 //    if (rowid->genre == NULL) {
 //        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);

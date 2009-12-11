@@ -10,5 +10,6 @@ char *get_gaya_filter();
 void show_page(char *folder,char *filter,int page);
 char *gaya_image(char *image);
 Array *gaya_get_files();
+void gaya_list(char *arg);
 
 #endif

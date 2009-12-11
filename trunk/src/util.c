@@ -816,7 +816,7 @@ int util_system(char *cmd)
     int result;
     HTML_LOG(1,"system %s",cmd);
     result = system(cmd);
-    HTML_LOG(0,"system result %d",result);
+    HTML_LOG(0,"exec[%s]=%d",cmd,result);
     return result;
 }
 

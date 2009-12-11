@@ -1,0 +1,47 @@
+check issues 93 against 1408.avi 
+check issue 86 hyphen search
+check issue 83 seg fault deleting last item
+complete issue 81 : catalog pruning using awk code from old script.
+
+cape_wrate no info at thetvdb but info at tvrage. allow failover between tv searches.
+but we need to go back to thetvdb for the banners 
+
+
+code issue 79 - episode plots. - needs skin change.
+
+Change dbrow from dynamic to fixed  or fixed/extensible
+
+trying to work out why tv form doesnt work
+
+Changed from poster to text mode and got segmentation fault.
+=============================================================
+Hunt down Battlestar Bug!
+=============================================================
+ext field is incorrect for vob dirs
+
+if a path starts with
+/opt/sybhttpd/localhost.drives/NETWORK_SHARE/XXX or 
+/share/.oversight_mounts/XXX
+
+then look up address in /etc/mtab and try to ping it.
+If it is not present try to mount it
+  use options soft,intr,timeo=100
+
+If it is present try to ping it:
+    if it is not pingable then set fot = error
+else
+   create auto-mounting vod link
+fi
+
+add word boundary search in pc mode
+
+
+write file prune functions
+1. add code to call resize script in catalog.
+2. add code in oversight to pick correct artwork.
+
+add box set view - use  menu view with either ID filter OR tv name filter. and modify overview
+eq/hash functions = view=0 (tv name is same) view=box (tv name,series) is same.
+
+follow YAMJ convention for fanart.
+Make sure fanart can find default != poster image.

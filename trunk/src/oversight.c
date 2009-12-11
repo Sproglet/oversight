@@ -137,9 +137,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     if (send_content_type_header) {
         printf("Content-Type: text/html\n\n");
 
-        printf("<!-- CGI -->\n");
+        printf("<!-- CGI:%s -->\n",OVS_VERSION);
     } else {
-        printf("<!-- WGET -->\n");
+        printf("<!-- WGET:%s -->\n",OVS_VERSION);
     }
 
     html_log_level_set(2);
@@ -350,10 +350,12 @@ int oversight_instead_of_wget(char *script_path,int argc, char **argv)
 
     gaya_set_output(argc,argv);
 
+#if 0
     int i;
     for (i = 0 ; i < argc ; i++ ) {
         printf("<!-- %d:[%s] -->\n",i,argv[i]);
     }
+#endif
 
     // Get the arguments.
     if (*script_path == '?' ) {

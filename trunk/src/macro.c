@@ -1652,6 +1652,7 @@ char *get_gaya_row(int pos,Array *files,
 
     char *link_content;
     char *image;
+
     ovs_asprintf(&link_content,
         "<font size=\"2\" color=user1><b><marquee behavior=focus width=%d>&nbsp;&nbsp;%s</marquee></b></font>",
         name_width,name+1);
@@ -1661,46 +1662,32 @@ char *get_gaya_row(int pos,Array *files,
             "<a href=\"http://localhost.drives:8883%s/%s?filter=%s\" name=\"%d\" tvid=\"%d\" "
             "onkeyleftset=\"media\" onkeyrightset=\"FILE_INDEX\" alt=\"%s\" file=c "
             "fip=\"%s\">%s</a>",
-            get_gaya_folder(),name+1,get_gaya_filter(),pos,pos,name+1,name+1,link_content);
+            get_gaya_short_folder(),name+1,get_gaya_filter(),pos,pos,name+1,name+1,link_content);
         image=gaya_image("list_folder.png");
 
     } else {
-        char  *dot = strrchr(files->array[pos],'.');
-        char *ext=util_tolower(dot);
-        if (delimited_substring("iso|avi|divx|mkv|mp4|ts|m2ts|xmv|mpe|movie|asf|vob|m2v|m2p|mpg|mpeg|mov|m4v|wmv","|",ext,"|",1,1)) {
-
-            image=gaya_image("list_folder.png");
-
-        } else if (delimited_substring("gif|jpg|jpeg|jpe|png|bmp","|",ext,"|",1,1)) {
-
-
-            image=gaya_image("list_folder.png");
-
-        } else if (delimited_substring("wav|m4a|mpga|mp2|mp3|pcm|ogg|wma|mp1|ac3|aac|mpa|pls|dts|flac","|",ext,"|",1,1)) {
-            image=gaya_image("list_folder.png");
-
-        } else {
-
-            image=gaya_image("list_folder.png");
-
-        }
-        FREE(ext);
+        image=gaya_get_file_image(name+1);
+        ovs_asprintf(&link,"%s",link_content);
     }
+    FREE(link_content);
 
     ovs_asprintf(&tmp,
-    "<tr><td>"
-        "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" background=\"%s\"><tr>"
-        "<td width=\"%d\" height=\"%d\" align=\"right\"><font size=\"2\" color=user1><b>%d</b></font></td>"
-        "<td width=\"%d\" align=\"right\"><img src=\"%s\" width=\"%d\" height=\"%d\"></td>"
-        "<td width=\"%d\">%s</td>"
-        "<td width=\"10\"></td>"
-        "</tr></table>"
-    "</td></tr>"
-    "<tr><td weight=\"2\"></td></tr>",
+    "<tr><td>\n"
+        "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" background=\"%s\"><tr>\n"
+        "<td width=\"%d\" height=\"%d\" align=\"right\"><font size=\"2\" color=user1><b>%d</b></font></td>\n"
+        "<td width=\"%d\" align=\"right\"><img src=\"%s\" width=\"%d\" height=\"%d\"></td>\n"
+        "<td width=\"%d\">%s</td>\n"
+        "<td width=\"10\"></td>\n"
+        "</tr></table>\n"
+    "</td></tr>\n\n"
+    "<tr><td weight=\"2\"></td></tr>\n\n",
          gaya_image("list_bar.png"),
          number_cell_width,number_cell_height,pos,
          icon_cell_width,image,image_width,image_height,
          name_width,link);
+
+    FREE(image);
+    FREE(link);
 
     return tmp;
         
@@ -1714,10 +1701,12 @@ char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num
 
     Array *files = gaya_get_files();
 
-    int page = get_gaya_page();
-
     int arg=0;
 
+    if (args == NULL || args->size != 7 ) {
+        *free_result = 0;
+        return "GAYA_LIST_ROWS(number_cell_w,number_cell_h,icon_cell_w,image_w,image_h,name_w,space_w)";
+    }
     int number_cell_width = atol(args->array[arg++]);
     int number_cell_height = atol(args->array[arg++]);
     int icon_cell_width=atol(args->array[arg++]);
@@ -1727,20 +1716,23 @@ char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num
     int space_width=atol(args->array[arg++]);
 
     int i = 0;
-    int start_file = page*9-9;
-    int end_file = page*9;
-    if (end_file > files->size) {
-        end_file = files->size;
-    }
+    int start_file = gaya_first_file();
+    int end_file = gaya_last_file();
 
-    for(i = start_file ; i< end_file ; i++ ) {
+    HTML_LOG(0,"Files from %d to %d",start_file,end_file);
+    for(i = start_file ; i<= end_file ; i++ ) {
         char *tmp;
-        ovs_asprintf(&tmp,"%s%s",NVL(result),get_gaya_row(i,files,
+        char *new_row = 
+            get_gaya_row(i-1,files,
                     number_cell_width,number_cell_height,icon_cell_width,
                     image_width,image_height,
-                    name_width,space_width
-                    ));
+                    name_width,space_width);
+
+        HTML_LOG(0,"ROW[%s]",new_row);
+
+        ovs_asprintf(&tmp,"%s%s",NVL(result),new_row);
         FREE(result);
+        FREE(new_row);
         result = tmp;
     }
 
@@ -1749,14 +1741,14 @@ char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num
 
 char *macro_fn_gaya_folder(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result = 0;
-    return get_gaya_folder();
+    return get_gaya_short_folder();
 }
 
 char *macro_fn_gaya_root_folder_name(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result = 1;
     char *result = NULL;
 
-    char *f = get_gaya_folder();
+    char *f = get_gaya_short_folder();
     f++; 
 
     char *end = strchr(f,'/');
@@ -1870,24 +1862,69 @@ void macro_init() {
 char *get_variable(char *vname,int *free_result)
 {
 
+    int convert_int = 0;
+    int int_val=0;
+
     *free_result = 0;
     char *result=NULL;
 
     if (*vname == MACRO_SPECIAL_PREFIX ) {
 
-        if (strcmp(vname+1,"gaya") == 0) {
-            return g_dimension->local_browser ? "1" : "0" ; // $@gaya
+        if (util_starts_with(vname+1,"gaya")) {
+
+            if (strcmp(vname+1,"gaya") == 0) {
+
+                convert_int=1;
+                int_val = g_dimension->local_browser;
+
+            } else if (strcmp(vname+1,"gaya_page") == 0) {
+
+                convert_int=1;
+                int_val = get_gaya_page();
+
+            } else if (strcmp(vname+1,"gaya_file_total") == 0) {
+
+                convert_int=1;
+                int_val = gaya_file_total();
+
+            } else if (strcmp(vname+1,"gaya_prev_page") == 0) {
+
+                convert_int=1;
+                int_val = gaya_prev_page();
+
+            } else if (strcmp(vname+1,"gaya_next_page") == 0) {
+
+                convert_int=1;
+                int_val = gaya_next_page();
+
+            } else if (strcmp(vname+1,"gaya_first_file") == 0) {
+
+                convert_int=1;
+                int_val = gaya_first_file();
+
+            } else if (strcmp(vname+1,"gaya_last_file") == 0) {
+
+                convert_int=1;
+                int_val = gaya_last_file();
+
+            } else if (strcmp(vname+1,"gaya_prev_file") == 0) {
+
+                convert_int=1;
+                int_val = gaya_prev_file();
+            }
 
         } else if (strcmp(vname+1,"poster_mode") == 0) {
             return ( g_dimension->poster_mode ? "1" : "0" ) ; // $@gaya
 
         } else if (strcmp(vname+1,"poster_menu_img_width") == 0) {
-            *free_result=1;
-            ovs_asprintf(&result,"%d",g_dimension->poster_menu_img_width);
+
+            convert_int=1;
+            int_val = g_dimension->poster_menu_img_width;
 
         } else if (strcmp(vname+1,"poster_menu_img_height") == 0) {
-            *free_result=1;
-            ovs_asprintf(&result,"%d",g_dimension->poster_menu_img_height);
+
+            convert_int=1;
+            int_val = g_dimension->poster_menu_img_height;
 
         }
 
@@ -1918,6 +1955,10 @@ char *get_variable(char *vname,int *free_result)
 
         result = unpak_val(vname);
 
+    }
+    if (convert_int) {
+        ovs_asprintf(&result,"%d",int_val);
+        *free_result = 1;
     }
 
     return result;

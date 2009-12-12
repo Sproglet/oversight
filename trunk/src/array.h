@@ -21,7 +21,7 @@ void array_free(Array *a );
 
 
 Array *split(char *s,char *pattern,int reg_opts);
-Array *splitc(char *s,char c);
+Array *splitstr(char *s_in,char *sep);
 int array_strcasecmp(const void *a,const void *b);
 void array_sort(Array *a,int (*fn)(const void *,const void *));
 char *join(Array *a,char *sep);

@@ -24,7 +24,6 @@ img.nasstatus { width:15; height:15; }
                 [:ICON(rescan):]
             </td>
             <td align=left width=28%>
-                Version  [:VERSION:]<br/>
                 [:CONFIG_LINK(oversight.cfg,help,General Settings):]<br>
                 [:LINK(action=confirm_rescan,Rescan All Media):]
             </td>
@@ -90,6 +89,7 @@ img.nasstatus { width:15; height:15; }
                     <br>Load Av:[:SYS_LOAD_AVG:]
                 </td>
                 <td>
+                    Version  [:VERSION:]<br>
                     Movies:[:MOVIE_TOTAL:]
                     <br>Episodes:[:EPISODE_TOTAL:]
                     <br>Other:[:OTHER_MEDIA_TOTAL:]

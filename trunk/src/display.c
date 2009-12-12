@@ -39,6 +39,7 @@ DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,i
 char *get_drilldown_view(DbRowId *rid);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
+char *remove_blank_params(char *input);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -146,16 +147,15 @@ void td(char *attr,...) {
 }
 
 // This used to be just "" but when replacing wget we need to send the full path
-char *cgi_url() {
-    static int first=1;
-    static char *url = NULL;
-    if (first) {
-        if (g_dimension->local_browser) {
-            url = getenv("SCRIPT_NAME");
-        } else {
-            url = "";
-        }
-        first=0;
+char *cgi_url(int full) {
+    char *url = NULL;
+    //HTML_LOG(0,"local_browser = [%d]",g_dimension->local_browser);
+    if (g_dimension->local_browser || full) {
+        url = getenv("SCRIPT_NAME");
+        //HTML_LOG(0,"cgi_url = SCRIPT_NAME = [%s]",url);
+    } else {
+        url = "";
+        //HTML_LOG(0,"cgi_url = [%s]",url);
     }
     return url;
 }
@@ -171,13 +171,13 @@ char *self_url(char *new_params) {
 
     int first=1;
 
-    char *url = STRDUP(cgi_url());
+    char *url = STRDUP(cgi_url(0));
 
     // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
 
         if (!EMPTY_STR(param_value)) {
-            if (strcmp(param_name,"colour") != 0) {
+            if (param_name[0] != 'c' || strcmp(param_name,"colour") != 0) {
                 if (strstr(param_name,"option_") == NULL) {
                     //
                     // search for pram_name in new_params
@@ -204,14 +204,51 @@ char *self_url(char *new_params) {
         }
     }
     // Now remove any blank params in the list
-    char *tmp=replace_all(new_params,"([-.~@a-zA-Z0-9_]+=(&|$))","",0);
+    //char *tmp=replace_all(new_params,"([-.~@a-zA-Z0-9_]+=(&|$))","",0);
+    //char *tmp = remove_blank_params(new_params);
 
+    char *tmp;
     char *new;
-    ovs_asprintf(&new,"%s%c%s",url,(first?'?':'&'),tmp);
+    ovs_asprintf(&tmp,"%s%c%s",url,(first?'?':'&'),new_params);
     FREE(url);
-    FREE(tmp);
-    
+    new = tmp;
+
+    tmp = remove_blank_params(new);
+    FREE(new);
+    new = tmp;
+
     return new;
+}
+
+char *remove_blank_params(char *input)
+{
+    char *in = input;
+    char *p;
+    char *out = STRDUP(in);
+    p = out;
+    for(;;) {
+        *p = *in;
+        if ( ( *p == '\0' || *p == '&' ) && ( p[-1] == '=' ) ) {
+            //HTML_LOG(0,"removing from [%.*s]",p-out,out);
+            // We have xxx=& rewind to end of previous parameter.
+            p--;
+            while ( p>out &&  *p != '&' && *p != '?' ) {
+                p--;
+            }
+            // now we are at the start or at the previous &
+            if (*p == '&' || *p == '?' ) p++;
+            *p = '\0'; // terminate to be on th safe side.
+            //HTML_LOG(0,"removed from [%.*s]",p-out,out);
+        } else {
+            p++;
+        }
+        if (*in == '\0') break;
+        in++;
+    }
+    if (0 && strcmp(input,out) != 0) {
+        HTML_LOG(0,"remove_blank_params[%s] vs [%s]",input,out);
+    }
+    return out;
 }
 
 
@@ -583,10 +620,10 @@ char *final_link(char *params,char *attr,char *title) {
     assert(title);
     char *result=NULL;
 
-    HTML_LOG(0," begin final link for params[%s] attr[%s] title[%s]",params,attr,title);
+    HTML_LOG(1," begin final link for params[%s] attr[%s] title[%s]",params,attr,title);
 
     char *url = final_url(params,DRILL_DOWN_PARAM_NAMES);
-    HTML_LOG(2," end final link [%s]",url);
+    HTML_LOG(1," end final link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
 
@@ -697,7 +734,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
 
     HTML_LOG(1,"VOD file[%s]",file);
     char *path = get_path(rowid,file,&freepath);
-    HTML_LOG(0,"VOD path[%s]",path);
+    HTML_LOG(1,"VOD path[%s]",path);
 
     nmt_mount(path);
 
@@ -1229,10 +1266,10 @@ TRACE;
            }
         }
 TRACE;
-        HTML_LOG(0,"imdbid=[%s]",imdbid);
+        HTML_LOG(1,"imdbid=[%s]",imdbid);
         if (imdbid) {
            p += sprintf(p,"_%d_%.9s.jpg",rid->year,imdbid);
-            HTML_LOG(0,"path=[%s]",path);
+            HTML_LOG(1,"path=[%s]",path);
         } else {
             // Blank it all out
             *path = '\0';
@@ -1245,6 +1282,8 @@ TRACE;
     return path;
 }
 
+char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type);
+char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type);
 
 char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) {
 
@@ -1287,46 +1326,76 @@ TRACE;
     if (path == NULL) {
 
         // look in internal db
+        path = get_internal_image_path_any_season(num_rows,sorted_rows,image_type);
+    }
 
-        path = internal_image_path_static(rid,image_type);
+    return path;
+}
 
-        if (path) {
-            int freepath=0;
-            path = get_path(rid,path,&freepath);
+/**
+ * If looking at the box set view try each season in turn
+ */
+char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type)
+{
+
+    int i;
+    int season=-2;
+    char * path = NULL;
+    for ( i= 0 ; path == NULL && i < num_rows ; i++ ) {
+        if (season == -2 || sorted_rows[i]->season != season) {
+            season = sorted_rows[i]->season;
+            path = get_existing_internal_image_path(sorted_rows[i],image_type);
+        }
+    }
+    return path;
+}
+
+/*
+ * Get the full internal image path if it exists.
+ */
+char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type)
+{
+    char *path = internal_image_path_static(rid,image_type);
+
+    if (path) {
+        int freepath=0;
+        path = get_path(rid,path,&freepath);
 TRACE;
 
-            if (image_type == FANART_IMAGE ) {
+        if (image_type == FANART_IMAGE ) {
 TRACE;
-                char *modifier=".hd.jpg";
+            char *modifier=".hd.jpg";
 
-                if (g_dimension->scanlines == 0 ) {
+            if (g_dimension->scanlines == 0 ) {
 
-                    if (g_dimension->is_pal ) {
-                        modifier=".pal.jpg";
-                    } else {
-                        modifier=".sd.jpg";
-                    }
+                if (g_dimension->is_pal ) {
+                    modifier=".pal.jpg";
+                } else {
+                    modifier=".sd.jpg";
                 }
-                char *tmp = replace_all(path,"\\.jpg$",modifier,0);
+            }
+            char *tmp = replace_all(path,"\\.jpg$",modifier,0);
+            if(freepath) FREE(path);
+            path = tmp;
+
+        } else if (image_type == THUMB_IMAGE ) {
+
+            char *tmp = replace_all(path,"\\.jpg$",".thumb.jpg",0);
+            if (exists(tmp)) {
                 if(freepath) FREE(path);
                 path = tmp;
-
-            } else if (image_type == THUMB_IMAGE ) {
-
-                char *tmp = replace_all(path,"\\.jpg$",".thumb.jpg",0);
-                if (exists(tmp)) {
-                    if(freepath) FREE(path);
-                    path = tmp;
-                } else {
-                    FREE(tmp);
-                    if(!freepath && path) {
-                        path=STRDUP(path);
-                    }
+            } else {
+                FREE(tmp);
+                if(!freepath && path) {
+                    path=STRDUP(path);
                 }
             }
         }
+        if(!exists(path) ) {
+            FREE(path);
+            path=NULL;
+        }
     }
-
     return path;
 }
 
@@ -2506,7 +2575,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     int cell_margin=2;
 
     if (g_dimension->poster_mode) {
-        ovs_asprintf(&table_id,"<table class=overview_poster>");
+        ovs_asprintf(&table_id,"<table class=overview_poster >");
             //ovs_asprintf(&table_id,"<table class=overview_poster height=%dpx>",
             //               2*(g_dimension->poster_menu_img_height+cell_margin));
     } else {
@@ -3403,7 +3472,7 @@ char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
 }
 
 
-#define PLACEHOLDER "X@X@X"
+#define PLACEHOLDER "@x@x@"
 char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) {
     char *result=NULL;
     char *selected=query_val(name);
@@ -3416,7 +3485,7 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     ovs_asprintf(&params,"p=&idlist=&%s=" PLACEHOLDER,name);
     char *link=self_url(params);
     FREE(params);
-    Array *link_parts = split(strchr(link,'?'),PLACEHOLDER,0);
+    Array *link_parts = splitstr(strchr(link,'?'),PLACEHOLDER);
     FREE(link);
 
     //GAYA does seem to like passing just the options to the link

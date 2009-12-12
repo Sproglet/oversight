@@ -444,6 +444,4 @@ void gaya_set_env(int argc,char **argv)
         setenv("QUERY_STRING",query+1,1);
     }
     setenv("REMOTE_ADDR","127.0.0.1",1);
-
-    fprintf(stderr,"query string=[%s]\n",getenv("QUERY_STRING"));
 }

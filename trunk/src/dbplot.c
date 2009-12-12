@@ -177,20 +177,19 @@ char *truncate_plot(char *plot,int *free_result)
     *free_result = 0;
     int max = g_dimension->max_plot_length;
 
-    if (plot != NULL || strlen(plot) > max) {
+    if (!EMPTY_STR(plot) || strlen(plot) > max) {
 
         char *p = plot + max;
         // search back to a full stop.
         while (p > plot && strchr(".!?",*p) == NULL ) {
             p--;
         }
+        *free_result = 1;
         if (p == plot ) {
             // oops gone too far. Just truncate with ellipse
             ovs_asprintf(&short_plot,"%.*s...",max-3,plot);
-            *free_result = 1;
         } else {
-            ovs_asprintf(&short_plot,"%.*s.",p-plot ,plot);
-            *free_result = 1;
+            ovs_asprintf(&short_plot,"%.*s",p-plot+1 ,plot);
         }
     }
     return short_plot;

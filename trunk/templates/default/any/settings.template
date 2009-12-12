@@ -23,7 +23,7 @@ th.optionhelp { width:60%; }
             [:EDIT_CONFIG($?file,$?help):]
 
             <input type=hidden name=file value="[:$?file:]">
-            <input type=hidden name=view value="[:$?view:]">
+            <!-- <input type=hidden name=view value="[:$?view:]"> -->
             <table width=100%>
                 <tr>
                     <td align=center><input type=submit name=action value="Save Settings"></td>
@@ -31,7 +31,6 @@ th.optionhelp { width:60%; }
                 </tr>
             </table>
             <input type=hidden name=old_action value="[:$?action:]">
-            <input type=hidden name=form value="1">
 
         </form>
     </body>

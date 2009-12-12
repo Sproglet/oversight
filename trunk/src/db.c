@@ -1249,6 +1249,11 @@ int in_idlist(int id,int size,int *ids) {
     if (size == 0) return 0;
     if (size == ALL_IDS) return 1;
 
+    // The range is usually much smaller than the number of possible ids.
+    // So do boundary comparison first.
+    if (id < ids[0] ) return 0;
+    if (id > ids[size-1] ) return 0;
+
     int min=0;
     int max=size;
     int mid;

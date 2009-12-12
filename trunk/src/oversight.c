@@ -322,7 +322,6 @@ int oversight_instead_of_wget(int argc, char **argv)
     gaya_set_output(argc,argv);
     gaya_set_env(argc,argv);
     setenv("SCRIPT_NAME",SCRIPT_NAME,1);
-
        
     char *args[2] ;
     args[0]="oversight";

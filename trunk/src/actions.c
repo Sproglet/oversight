@@ -54,6 +54,10 @@ int is_checkbox(char *name,char *val) {
 void clear_selection() {
 
 
+    query_remove("help"); // settingscfg help file
+    query_remove("file"); // settings cfg file
+    query_remove("title"); // settings title
+    query_remove("form");
     query_remove("form");
     query_remove("select");
     query_remove("action");
@@ -538,11 +542,14 @@ TRACE;
 
         }
 
-        // If in the tv  or movie view and all items have been deleted - go to the main view
-        if (!*query_val("idlist")) {
-            HTML_LOG(0,"Going back to main view");
-            query_remove("view");
-            query_remove("select");
+        char *view = query_val("view");
+        if (util_starts_with(view,"tv") || util_starts_with(view,"movie")) {
+            // If in the tv  or movie view and all items have been deleted - go to the main view
+            if (!*query_val("idlist")) {
+                HTML_LOG(0,"Going back to main view");
+                query_remove("view");
+                query_remove("select");
+            }
         }
 
     }

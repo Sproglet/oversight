@@ -1,0 +1,12 @@
+ovs_title_size[1080]:Title Size|24
+ovs_movie_poster_height[1080]:Movie Poster height|540
+ovs_tv_poster_height[1080]:TV Poster height|540
+ovs_max_plot_length[1080]:Maximum Plot Length |600
+ovs_certificate_size[1080]:Certificate Size|40
+ovs_tv_rows[1080]:Number of Episode Rows in TV Detail view|10
+ovs_tv_cols[1080]:Number of Episode Columns in TV Detail view|6
+ovs_font_size_plot:Relative size of plot font (percent)|130
+ovs_font_size_eptitle:Relative size of plot font (percent)|80
+ovs_font_size_epdate:Relative size of plot font (percent)|80
+ovs_transparency:Transparancy of text background %|0|10|20|30|40|50|60|70|80|90|100
+ovs_fade:Fade Transparency|1|0

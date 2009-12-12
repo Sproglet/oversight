@@ -74,7 +74,7 @@
 	 						</table>
 	 					</td>
 	 				</tr>
-                    [:GAYA_LIST_ROWS(40,35,40,35,25,290,10):]
+                    XX[:GAYA_LIST_ROWS(40,35,40,35,25,290,10):]XX
 	 				<tr>
 	 					<td height=15  align=right><font size=1 color=user2><b>[:$@gaya_first_file:] - [:$@gaya_last_file:] / [:$@gaya_file_total:] items&nbsp;</b></font></td>
 	 				</tr>

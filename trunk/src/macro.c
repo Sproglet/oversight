@@ -1735,7 +1735,7 @@ char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num
                     image_width,image_height,
                     name_width,space_width);
 
-        HTML_LOG(0,"ROW[%s]",new_row);
+        //HTML_LOG(0,"ROW[%s]",new_row);
 
         ovs_asprintf(&tmp,"%s%s",NVL(result),new_row);
         FREE(result);
@@ -1743,6 +1743,7 @@ char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num
         result = tmp;
     }
 
+    HTML_LOG(0,"RESULT[%s]",result);
     return result;
 }
 

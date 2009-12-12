@@ -10,7 +10,7 @@
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Oversight Configuration</h1>
 
-        <form action="?" enctype="multipart/form-data" method="POST">
+        [:FORM_START:]
 
             <center>
             <table>
@@ -49,7 +49,6 @@
 
             <input type=hidden name=old_action value="[:$?action:]">
             <input type=hidden name=view value="[:$?view:]">
-            <input type=hidden name=form value="1">
         </form>
     </body>
 </html>

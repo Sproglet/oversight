@@ -102,19 +102,29 @@ void array_sort(Array *a,int (*fn)(const void *,const void *)) {
     }
 }
 
-void array_print(char *label,Array *a) {
+void array_dump(int level,char *label,Array *a)
+{
 
     int i;
 
-    HTML_LOG(1,"%s: size %d mem %d",label,a->size,a->mem_size);
+    if (a) {
 
-    if ( a->size) {
+        HTML_LOG(level,"%s: size %d mem %d",label,a->size,a->mem_size);
 
-        for(i = 0 ; i < a->size ; i++ ) {
+        if ( a->size) {
 
-            HTML_LOG(1,"%s: [%d]=<%s>",label,i,(char *)(a->array[i]));
+            for(i = 0 ; i < a->size ; i++ ) {
+
+                HTML_LOG(level,"%s: [%d]=<%s>",label,i,(char *)(a->array[i]));
+            }
         }
+    } else {
+        HTML_LOG(level,"%s: null array",label);
     }
+}
+void array_print(char *label,Array *a) {
+
+    array_dump(1,label,a);
 }
 
 void array_unittest() {

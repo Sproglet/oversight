@@ -5,7 +5,7 @@
 		<title>Video</title>
    		<meta http-equiv="content-type" content="text/html; charset=utf-8">
 	</head>
-  <body bgcolor="#0A446F" focushighlight=user5 focustext=user3 background="file:///opt/sybhttpd/localhost.images/sd/bg.jpg" onloadset="[:EVAL($?page*9-8):]" marginheight=40 file=c>
+  <body bgcolor="#0A446F" focushighlight=user5 focustext=user3 background="file:///opt/sybhttpd/localhost.images/sd/bg.jpg" onloadset="[:$@gaya_first_file:]" marginheight=40 file=c>
 	 <table border="0" cellspacing="0" cellpadding="0">
 	 	<tr>
 	 		<td valign="top">
@@ -38,16 +38,16 @@
 						<td width="179" align="right" >
 							<table border="0" cellspacing="0" cellpadding="0">
 	 							<tr>
-									<td valign="middle" align="right" width="164"><a href="http://127.0.0.1:8883/start.cgi?list" name="media" onkeyrightset="[:EVAL($?page*9-8):]" onkeyleftset="media" onkeyupset="media" style="width:120"><font size="2" color=user1><b>&nbsp;Media Source&nbsp;</b></font></a></td>
+									<td valign="middle" align="right" width="164"><a href="http://127.0.0.1:8883/start.cgi?list" name="media" onkeyrightset="[:$@gaya_first_file:]" onkeyleftset="media" onkeyupset="media" style="width:120"><font size="2" color=user1><b>&nbsp;Media Source&nbsp;</b></font></a></td>
 									<td valign="middle" align="right" width="15" height="30"><img src="file:///opt/sybhttpd/localhost.images/sd/rect.png" width="12" height="12"></td>
 								</tr>
 								<tr>
-									<td valign="middle" align="right"><a href="file:///opt/sybhttpd/default/webservices_list.html" name="web" onkeyrightset="[:EVAL($?page*9-8):]" onkeyleftset="web" onkeyupset="media" style="width:120"><font size="2" color=user1><b>&nbsp;Web Services&nbsp;</b></font></a></td>
+									<td valign="middle" align="right"><a href="file:///opt/sybhttpd/default/webservices_list.html" name="web" onkeyrightset="[:$@gaya_first_file:]" onkeyleftset="web" onkeyupset="media" style="width:120"><font size="2" color=user1><b>&nbsp;Web Services&nbsp;</b></font></a></td>
 									<td valign="middle" align="right" height="30"><img src="file:///opt/sybhttpd/localhost.images/sd/rect.png" width="12" height="12"></td>
 								</tr>
 								<tr><td height="10"></td></tr>
 								<tr>
-									<td valign="middle" align="right"><a href="file:///opt/sybhttpd/default/preferences.htm" name="setup" onkeyrightset="[:EVAL($?page*9-8):]" onkeyleftset="setup" onkeydownset="setup" onkeyupset="web" style="width:120"><font size="2" color=user1><b>&nbsp;Setup&nbsp;</b></font></a></td>
+									<td valign="middle" align="right"><a href="file:///opt/sybhttpd/default/preferences.htm" name="setup" onkeyrightset="[:$@gaya_first_file:]" onkeyleftset="setup" onkeydownset="setup" onkeyupset="web" style="width:120"><font size="2" color=user1><b>&nbsp;Setup&nbsp;</b></font></a></td>
 									<td valign="middle" align="right" height="30"><img src="file:///opt/sybhttpd/localhost.images/sd/rect.png" width="12" height="12"></td>
 								</tr>
 	 						</table>
@@ -60,8 +60,8 @@
 	 			<table border="0" cellspacing="0" cellpadding="0">
 	 				<tr>
 	 					<td height="5">
-	 						<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:EVAL($page-1):]')" tvid="pgup"></a>
-	 						<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:EVAL($page-1):]#27')" onfocusload><font size="1">&nbsp;</font></a>
+	 						<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:$@gaya_prev_page:]')" tvid="pgup"></a>
+	 						<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:$@gaya_prev_page:]#[:$@gaya_prev_file):]')" onfocusload><font size="1">&nbsp;</font></a>
 	 					</td>
 	 				</tr>
 	 				<tr>
@@ -74,13 +74,13 @@
 	 						</table>
 	 					</td>
 	 				</tr>
-                    [:GAYA_LIST_ROWS(35,40,40,290,10):]
+                    [:GAYA_LIST_ROWS(40,35,40,35,25,290,10):]
 	 				<tr>
-	 					<td height=15  align=right><font size=1 color=user2><b>28 - 36 / 52 items&nbsp;</b></font></td>
+	 					<td height=15  align=right><font size=1 color=user2><b>[:$@gaya_first_file:] - [:$@gaya_last_file:] / [:$@gaya_file_total:] items&nbsp;</b></font></td>
 	 				</tr>
 					<tr>
 						<td>
-							<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:EVAL($?page+1):]')" onfocusload tvid="pgdn"><font size="1">&nbsp;</font></a>
+							<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:$@gaya_next_page:]')" onfocusload tvid="pgdn"><font size="1">&nbsp;</font></a>
 							<a href="http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&file=" tvid=#52 onclick=history.go(-1)></a>
 						</td>
 					</tr>

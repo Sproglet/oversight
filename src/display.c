@@ -2323,11 +2323,12 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
     HTML_LOG(1,"begin template");
 
     char *file;
+
     ovs_asprintf(&file,"%s/templates/%s/%s/%s.template",appDir(),
             template_name,
             scanlines_to_text(g_dimension->scanlines),
             file_name);
-    HTML_LOG(2,"opening %s",file);
+    HTML_LOG(0,"opening %s",file);
 
     FILE *fp=fopen(file,"r");
     if (fp == NULL) {
@@ -3386,6 +3387,7 @@ char *get_status() {
 
 char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
 
+    HTML_LOG(0,"auto_option_list %s",name);
     static char *attr = NULL;
     if (attr == NULL ) {
         if (g_dimension->local_browser) {

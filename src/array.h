@@ -11,6 +11,7 @@ struct array_str {
 typedef struct array_str Array;
 
 void array_print(char *label,Array *a);
+void array_dump(int level,char *label,Array *a);
 Array *array_new(void(*fr)(void *) );
 void array_add(Array *a,void *ptr);
 void array_set(Array *a,int idx,void *ptr);

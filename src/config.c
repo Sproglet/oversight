@@ -167,6 +167,8 @@ struct hashtable *config_load(char *filename) {
 
     assert(filename);
     struct hashtable *result=NULL;
+
+    HTML_LOG(0,"load config [%s]",filename);
     FILE *f = fopen(filename,"r");
 
     if (f == NULL) {
@@ -403,65 +405,66 @@ void config_read_dimensions() {
 
     html_comment("scanlines_str=[%]",scanlines_str);
 
-    config_get_long_indexed(g_oversight_config,"ovs_font_size",scanlines_str,&(g_dimension->font_size));
-    config_get_long_indexed(g_oversight_config,"ovs_title_size",scanlines_str,&(g_dimension->title_size));
-    config_get_long_indexed(g_oversight_config,"ovs_movie_poster_height",scanlines_str,&(g_dimension->movie_img_height));
-    config_get_long_indexed(g_oversight_config,"ovs_tv_poster_height",scanlines_str,&(g_dimension->tv_img_height));
-    config_get_long_indexed(g_oversight_config,"ovs_max_plot_length",scanlines_str,&(g_dimension->max_plot_length));
-    config_get_long_indexed(g_oversight_config,"ovs_button_size",scanlines_str,&(g_dimension->button_size));
-    config_get_long_indexed(g_oversight_config,"ovs_certificate_size",scanlines_str,&(g_dimension->certificate_size));
-    config_get_long_indexed(g_oversight_config,"ovs_poster_mode",scanlines_str,&(g_dimension->poster_mode));
-    if (g_dimension->poster_mode) {
-        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_rows",scanlines_str,&(g_dimension->rows));
-        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_cols",scanlines_str,&(g_dimension->cols));
-        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_height",scanlines_str,&(g_dimension->poster_menu_img_height));
-        config_get_long_indexed(g_oversight_config,"ovs_poster_mode_width",scanlines_str,&(g_dimension->poster_menu_img_width));
+    if (g_oversight_config == NULL) {
+        HTML_LOG(0,"No oversight config read");
     } else {
-        config_get_long_indexed(g_oversight_config,"ovs_rows",scanlines_str,&(g_dimension->rows));
-        config_get_long_indexed(g_oversight_config,"ovs_cols",scanlines_str,&(g_dimension->cols));
-    }
+        config_get_long_indexed(g_oversight_config,"ovs_font_size",scanlines_str,&(g_dimension->font_size));
+        config_get_long_indexed(g_oversight_config,"ovs_title_size",scanlines_str,&(g_dimension->title_size));
+        config_get_long_indexed(g_oversight_config,"ovs_movie_poster_height",scanlines_str,&(g_dimension->movie_img_height));
+        config_get_long_indexed(g_oversight_config,"ovs_tv_poster_height",scanlines_str,&(g_dimension->tv_img_height));
+        config_get_long_indexed(g_oversight_config,"ovs_max_plot_length",scanlines_str,&(g_dimension->max_plot_length));
+        config_get_long_indexed(g_oversight_config,"ovs_button_size",scanlines_str,&(g_dimension->button_size));
+        config_get_long_indexed(g_oversight_config,"ovs_certificate_size",scanlines_str,&(g_dimension->certificate_size));
+        config_get_long_indexed(g_oversight_config,"ovs_poster_mode",scanlines_str,&(g_dimension->poster_mode));
+        if (g_dimension->poster_mode) {
+            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_rows",scanlines_str,&(g_dimension->rows));
+            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_cols",scanlines_str,&(g_dimension->cols));
+            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_height",scanlines_str,&(g_dimension->poster_menu_img_height));
+            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_width",scanlines_str,&(g_dimension->poster_menu_img_width));
+        } else {
+            config_get_long_indexed(g_oversight_config,"ovs_rows",scanlines_str,&(g_dimension->rows));
+            config_get_long_indexed(g_oversight_config,"ovs_cols",scanlines_str,&(g_dimension->cols));
+        }
 
-    if (g_dimension->poster_menu_img_height == 0) {
-        //compute
-        int lines=500;
-        if (g_dimension->scanlines) lines=g_dimension->scanlines;
+        if (g_dimension->poster_menu_img_height == 0) {
+            //compute
+            int lines=500;
+            if (g_dimension->scanlines) lines=g_dimension->scanlines;
 
-        html_comment("rows = %d\n",g_dimension->rows);
-        g_dimension->poster_menu_img_height = lines * 1.0 / ( g_dimension->rows + 2.2 ) ;
+            html_comment("rows = %d\n",g_dimension->rows);
+            g_dimension->poster_menu_img_height = lines * 1.0 / ( g_dimension->rows + 2.2 ) ;
 
+            if (g_dimension->is_pal) {
+                // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed
+                pal_fixed = 1;
+            }
+        }
+
+        if (g_dimension->poster_menu_img_width == 0) {
+            //compute from height
+            g_dimension->poster_menu_img_width =  g_dimension->poster_menu_img_height / 1.5 ;
+            if (pal_fixed) {
+                // the height has been scaled to compensate for gaya bug. 
+                // Scale the width based on the original height!
+                g_dimension->poster_menu_img_height *= ( 576.0 / 480 );
+            }
+        }
+
+        g_dimension->movie_img_width = g_dimension->movie_img_height * 2 / 3;
+        g_dimension->tv_img_width = g_dimension->tv_img_height * 2 / 3;
         if (g_dimension->is_pal) {
-            // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed
-            pal_fixed = 1;
+            g_dimension->movie_img_height *= ( 576.0 / 480 );
+            g_dimension->tv_img_height *= ( 576.0 / 480 );
+        }
+
+        char *title_bar = oversight_val("ovs_title_bar");
+        g_dimension->title_bar = 0;
+
+        if (strcasecmp(title_bar,"poster_mode") == 0 || strcasecmp(title_bar,"always") == 0) {
+
+            g_dimension->title_bar = g_dimension->poster_mode;
         }
     }
-
-    if (g_dimension->poster_menu_img_width == 0) {
-        //compute from height
-        g_dimension->poster_menu_img_width =  g_dimension->poster_menu_img_height / 1.5 ;
-        if (pal_fixed) {
-            // the height has been scaled to compensate for gaya bug. 
-            // Scale the width based on the original height!
-            g_dimension->poster_menu_img_height *= ( 576.0 / 480 );
-        }
-    }
-
-    g_dimension->movie_img_width = g_dimension->movie_img_height * 2 / 3;
-    g_dimension->tv_img_width = g_dimension->tv_img_height * 2 / 3;
-    if (g_dimension->is_pal) {
-        g_dimension->movie_img_height *= ( 576.0 / 480 );
-        g_dimension->tv_img_height *= ( 576.0 / 480 );
-    }
-
-    char *title_bar = oversight_val("ovs_title_bar");
-    g_dimension->title_bar = 0;
-
-    if (strcasecmp(title_bar,"poster_mode") == 0 || strcasecmp(title_bar,"always") == 0) {
-
-        g_dimension->title_bar = g_dimension->poster_mode;
-    }
-
-  
-
 }
 
 

@@ -21,21 +21,18 @@
 #include "permissions.h"
 #include "gaya.h"
 
+
 //void exec_old_cgi(int argc,char **argv);
 
 // Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
 void load_configs () {
-    html_comment("load ovs config");
     g_oversight_config =
         config_load_wth_defaults(appDir(),"conf/.oversight.cfg.defaults","conf/oversight.cfg");
 
-    html_comment("load catalog config");
     g_catalog_config =
         config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
 
-    html_comment("load nmt settings");
     g_nmt_settings = config_load("/tmp/setting.txt");
-    html_comment("end load nmt settings");
 
 }
 
@@ -294,31 +291,6 @@ TRACE;
     
 }
 
-// Changes stdout to be -O wget parameter.
-// Returns index of output file argument or 0
-int gaya_set_output(int argc,char **argv)
-{
-    int ret = 0;
-    char *output = NULL;
-    //Change stdout
-    int i;
-    for(i = 0 ; i < argc ; i++ ) {
-        if (strcmp(argv[i],"-O") == 0 && i < argc-1) {
-            ret = i+1;
-            break;
-        }
-    }
-
-    fprintf(stderr,"output=[%s]\n",output);
-    fprintf(stderr,"query string=[%s]\n",getenv("QUERY_STRING"));
-
-    if (argv[ret] != NULL) {
-        // Change stdout and launch oversight
-        freopen(argv[ret],"w",stdout);
-    }
-    freopen("/tmp/0err","w",stderr);
-    return ret;
-}
 
 /*
  * If gaya has invoked oversight as wget then the parameter list looks like 
@@ -342,29 +314,14 @@ int gaya_set_output(int argc,char **argv)
  * and
  *    /tmp/0
  */
-#define SCRIPT_PATH ":8883/oversight/oversight.cgi"
 #define SCRIPT_NAME "http://127.0.0.1:8883/oversight/oversight.cgi"
-int oversight_instead_of_wget(char *script_path,int argc, char **argv) 
+int oversight_instead_of_wget(int argc, char **argv) 
 {
     int ret = -1;
 
     gaya_set_output(argc,argv);
-
-#if 0
-    int i;
-    for (i = 0 ; i < argc ; i++ ) {
-        printf("<!-- %d:[%s] -->\n",i,argv[i]);
-    }
-#endif
-
-    // Get the arguments.
-    if (*script_path == '?' ) {
-        setenv("QUERY_STRING",script_path+1,1);
-    }
+    gaya_set_env(argc,argv);
     setenv("SCRIPT_NAME",SCRIPT_NAME,1);
-    setenv("REMOTE_ADDR","127.0.0.1",1);
-
-    printf("<!-- QUERY_STRING:[%s] -->\n",getenv("QUERY_STRING"));
 
        
     char *args[2] ;
@@ -375,73 +332,6 @@ int oversight_instead_of_wget(char *script_path,int argc, char **argv)
 
 }
 
-// 0=not browsing >0 browsing (index of url argument)
-int gaya_file_browsing(int argc,char **argv) {
-    static int ret = -1;
-    if (ret == -1 ) {
-        ret = 0;
-        int i;
-        for(i = 1 ; i < argc ; i++ ) {
-            if (argv[i][0] == 'h'
-                    && util_starts_with(argv[i],"http://localhost.drives:8883/")
-                    && strstr(argv[i],"Tv")
-                    && strstr(argv[i],"/?") ) {
-                ret= i;
-                break;
-            }
-        }
-    }
-    return ret;
-}
-
-// 0=no post data else = --post-data argument index 
-int gaya_sent_post_data(int argc,char **argv) {
-
-    static int ret= -1;
-
-    if (ret == -1) {
-        // can skip arg0 and use 0 as -ve result
-        int i;
-        ret = 0;
-        for(i = 0 ; i < argc ; i++ ) {
-            if (strcmp(argv[i],"--post-data") == 0) {
-                ret = i;
-                break;
-            }
-        }
-        fprintf(stderr,"gaya_sent_post_data=[%d]\n",ret);
-    }
-    return ret;
-}
-
-// returns query string following oversight URL or NULL if nothing sent
-char *gaya_sent_oversight_url(int argc,char **argv) {
-    int i;
-    char *p=NULL;
-    // can skip arg0 and use 0 as -ve result
-    for(i = 1 ; i < argc ; i++ ) {
-        if (argv[i][0] == 'h' && (p=strstr(argv[i],SCRIPT_PATH)) != NULL) {
-            p = p+strlen(SCRIPT_PATH);
-            break;
-        }
-    }
-    fprintf(stderr,"gaya_sent_oversight_url=[%s]",p);
-    return p;
-}
-
-// return http argument to wget 
-char *gaya_url(int argc,char **argv) {
-    static char *result = NULL;
-    int i;
-    for (i = 1 ; i < argc ; i++) {
-        if (argv[i][0] == 'h' && util_starts_with(argv[i],"http:") ) {
-            result = argv[i];
-            break;
-        }
-        
-    }
-    return result;
-}
 
 int run_wget(int argc,char **argv) {
 
@@ -462,10 +352,12 @@ int main(int argc,char **argv)
     char *turbo_flag;
     ovs_asprintf(&turbo_flag,"%s/conf/use.wget.wrapper",appDir());
  
+    char *turbo_flag2;
+    ovs_asprintf(&turbo_flag2,"%s/conf/replace.file.browser",appDir());
+ 
 
     if (strstr(argv[0],"wget") ) {
 
-        char *query_string = NULL;
         if (argc == 2 && strcmp(argv[1],"-oversight") == 0 ) {
 
             // Special case to allow scripts to test if wget is really oversight.
@@ -477,24 +369,26 @@ int main(int argc,char **argv)
 
             run_wget(argc,argv);
 
-        } else if ((query_string=gaya_sent_oversight_url(argc,argv)) != NULL 
-            && !gaya_sent_post_data(argc,argv)) {
+        } else if (gaya_sent_oversight_url(argc,argv) && !gaya_sent_post_data(argc,argv)) {
             // Oversight has been called as wget. 
             // The normal CGI call sequence from gaya is 
             // gaya -> wget -> sybhttpd -> cgi
             // By replacing oversight with wget we try to short circuit this.
             // gaya -> oversight
-            ret = oversight_instead_of_wget(query_string,argc,argv);
+            ret = oversight_instead_of_wget(argc,argv);
 
 #if 0
-        } else if ((gaya_file_browsing(argc,argv)) && !gaya_sent_post_data(argc,argv)) {
+        } else if (is_file(turbo_flag2) && (gaya_file_browsing(argc,argv)) && !gaya_sent_post_data(argc,argv)) {
 
             // Gaya has invoked wget with argument eg.  http://localhost.drives:8883/HARD_DISK/?filter=3&page=1
             // Important bits are
             //          http://localhost.drives:8883/ 
             //          The folder /HARD_DISK/
             //          The directory browse "/?"
+            g_nmt_settings = config_load("/tmp/setting.txt");
+            config_read_dimensions();
             gaya_set_output(argc,argv);
+            gaya_set_env(argc,argv);
             gaya_list(gaya_url(argc,argv));
 #endif
 

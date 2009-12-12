@@ -86,7 +86,7 @@
 					</tr>
 					<tr>
 					<td>
-<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$filter:]&page=[:$?page:]')" tvid="red"></a>
+<a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=[:$?filter:]&page=[:$?page:]')" tvid="red"></a>
 <a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=1&page=[:$?page:]')" tvid="green"></a>
 <a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=2&page=[:$?page:]')" tvid="yellow"></a>
 <a href="javascript:location.replace('http://localhost.drives:8883[:GAYA_FOLDER:]/?filter=4&page=[:$?page:]')" tvid="blue"></a></td>

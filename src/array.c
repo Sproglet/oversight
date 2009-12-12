@@ -182,10 +182,13 @@ void array_unittest() {
 /*
  * Split a strin s_in into an array using character ch.
  */
-Array *splitch(char *s_in,char ch) {
+Array *splitstr(char *s_in,char *sep)
+{
     Array *a = array_new(free);
     char *s = s_in;
     char *p;
+
+    int seplen = strlen(sep);
     // printf("split ch [%s] by [%c]\n",s,ch);
 
     if (s_in == NULL || *s_in == '\0' ) {
@@ -193,21 +196,18 @@ Array *splitch(char *s_in,char ch) {
     }
 
 
-    while ((p=strchr(s,ch)) != NULL ) {
+    while ((p=strstr(s,sep)) != NULL ) {
 
-        char *part = MALLOC(p-s+1);
+        char *part;
+        ovs_asprintf(&part,"%.*s",p-s,s);
 
-        strncpy(part,s,p-s);
-
-        part[p-s]='\0';
-
-       //  printf("part=[%s]\n",part);
+        //HTML_LOG(0,"part[%s]",part);
 
         array_add(a,part);
 
-        s = p+1;
+        s = p+seplen;
     }
-    array_add(a,strdup(s));
+    array_add(a,STRDUP(s));
 
     return a;
 
@@ -260,7 +260,7 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
     //printf("split re [%s] by [%s]\n",s_in,pattern);
 
     if (strlen(pattern) == 1 && reg_opts == 0 ) {
-        return splitch(s_in,pattern[0]);
+        return splitstr(s_in,pattern);
     }
 
     regex_t re;

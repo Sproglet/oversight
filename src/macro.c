@@ -75,11 +75,9 @@ char *macro_fn_fanart_url(char *template_name,char *call,Array *args,int num_row
         *free_result=0;
         return "?";
     }
-
     if (*oversight_val("ovs_display_fanart") == '0' ) {
 
         // do nothing
-
         
     } else if (args && args->size > 1 ) {
 
@@ -262,7 +260,19 @@ char *macro_fn_plot(char *template_name,char *call,Array *args,int num_rows,DbRo
     }
 
 TRACE;
-    result = STRDUP(NVL(get_plot(sorted_rows[0],PLOT_MAIN)));
+    int season = -1;
+    int i;
+    for ( i = 0 ; EMPTY_STR(result) && i < num_rows ; i++ ) {
+        DbRowId *rid = sorted_rows[i];
+        if (season == -1 || rid->season != season ) {
+            season = rid->season;
+            result = get_plot(rid,PLOT_MAIN);
+            HTML_LOG(0,"plot for %s %d %s = [%s]",rid->title,rid->season,rid->episode,result);
+        }
+    }
+    if (result) {
+        result = STRDUP(result);
+    }
 TRACE;
     HTML_LOG(1,"plot[%s]",result);
 
@@ -794,16 +804,13 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     int free_url=0;
     char *url=NULL;
 
-    HTML_LOG(0,"%s:%d view=[%s] action=[%s]",__FILE__,__LINE__,query_val("view"),query_val("action"));
 TRACE;
     if (strcasecmp(query_val("view"),"admin") == 0) {
         char *action = query_val("action");
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;
         } else {
-            url=cgi_url("");// clear URL
-            HTML_LOG(0,"action[%s]",url);
-            HTML_LOG(0,"cgi_url[%s]",cgi_url());
+            url=cgi_url(1);// clear URL
         } 
     } else {
 TRACE;
@@ -1140,7 +1147,7 @@ char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_ro
 
     if(!*query_val("select")) {
         char *tag=get_theme_image_tag("home",NULL);
-        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",cgi_url(),tag);
+        ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",cgi_url(0),tag);
         FREE(tag);
     }
 

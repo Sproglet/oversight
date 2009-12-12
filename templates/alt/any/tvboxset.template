@@ -74,7 +74,7 @@ table.overview_poster {
                 </td>
             </tr>
             <tr>
-                <td >
+                <td colspan="2" >
                     <center>
                         <table >
                             <tr>
@@ -97,6 +97,7 @@ table.overview_poster {
                                     [:GRID:]
                                 </td >
                             </tr>
+[:IF(0):]
                             <tr>
                                 <td >
                                     <center>
@@ -117,6 +118,7 @@ table.overview_poster {
                                     </center>
                                 </td>
                             </tr>
+[:ENDIF:]
                             <tr>
                                 <td >
                                     <table class=header width=100%>

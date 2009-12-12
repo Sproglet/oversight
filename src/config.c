@@ -138,7 +138,6 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     ovs_asprintf(&f,"%s/%s",d,defaults_file);
 
     if (is_file(f)) {
-        HTML_LOG(1,"loading [%s]",f);
         out = config_load(f);
     } else {
         out = string_string_hashtable(16);
@@ -150,7 +149,6 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     sprintf(f,"%s/%s",d,main_file);
 
     if (is_file(f)) {
-        HTML_LOG(1,"loading [%s]",f);
         new = config_load(f);
     } else {
         new = string_string_hashtable(16);
@@ -210,21 +208,33 @@ struct hashtable *config_load_fp(FILE *fp) {
             while(isspace(*p)) p++;
             if (*p == '=' || *p == ':' ) {
 
+                char *val_end = NULL;
+
                 p++;
                 while(isspace(*p)) p++;
                 val = p;
-                while(!isspace(*p)) p++;
-                char *val_end = p;
+                if (strchr("\"'",*val) ) {
+                    //parse quoted value
+                    p++;
+                    while (*p && *p != *val) p++;
+                    if (*p == *val) {
+                        val++;
+                        val_end=p;
+                        p++;
+                    }
+                } else {
+                    //parse unquoted value
+                    while(!isspace(*p)) p++;
+                    val_end = p;
+                }
 
                 while(isspace(*p)) p++;
+                if (*p == '#') {
+                    // skip trailing comment
+                    while(*p >= ' ' || isspace(*p)) p++;
+                }
 
-                if (strchr("\n\r",*p)) {
-
-                    //remove quotes
-                    if (strchr("\"'",*val) && val_end[-1] == *val ) {
-                        val++;
-                        val_end --;
-                    }
+                if (val_end && strchr("\n\r",*p)) {
 
                     if (key && val && key_end > key ) {
                         *key_end = *val_end = '\0';
@@ -394,6 +404,8 @@ void config_read_dimensions() {
     g_dimension = MALLOC(sizeof(Dimensions));
 
     g_dimension->local_browser = (addr == NULL || strcmp(addr,"127.0.0.1") == 0);
+
+    html_comment("local browser = %d",g_dimension->local_browser);
     //g_dimension->local_browser = 1;
 
     g_dimension->scanlines = get_scanlines(&(g_dimension->is_pal));

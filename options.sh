@@ -53,9 +53,7 @@ OPTION_PARSE() {
     done
 
     awk '
-{
-    print "<!-- "FILENAME " : " $0 "-->";
-}
+# { print "<!-- "FILENAME " : " $0 "-->"; }
 /^#/ { next }
 
 FILENAME ~ "help$" {
@@ -78,9 +76,7 @@ i) {
 
 function addVal(line,sep,arr,addToOrder,   i,name,rest) {
 
-    if (MODE ~ "^TABLE") {
-        print "<!-- "FILENAME " : " sep " : " $0 "-->";
-    }
+    # if (MODE ~ "^TABLE") { print "<!-- "FILENAME " : " sep " : " $0 "-->"; }
     sub(/$/,"",line);
     i = index(line,sep);
     if (i > 0 ) {
@@ -90,7 +86,7 @@ function addVal(line,sep,arr,addToOrder,   i,name,rest) {
             order = order "|" name ;
         }
         arr[name] = rest;
-        print "<!-- "name"="rest" -->";
+        # print "<!-- "name"="rest" -->";
     }
 }
 function trim(x) {

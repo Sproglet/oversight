@@ -395,7 +395,7 @@ char *delimited_substring(char *buf,char *prefix,char *substr,char *suffix,int m
 
         if (( p > buf && strchr(prefix,p[-1]) ) || (p == buf && match_start ) ) {
 
-            if ( (p[len] == '\0' && match_end ) || ( p[len] && strchr(suffix,p[len]) ) ) {
+            if ( ( p[len] && strchr(suffix,p[len]) ) || (p[len] == '\0' && match_end ) ) {
 
                 return p;
 

@@ -104,4 +104,5 @@ char *util_day_static();
 char *clean_js_string(char *in);
 int is_dvd(char *file);
 char *timestamp_static();
+char *util_change_extension(char *file,char *new_ext);
 #endif

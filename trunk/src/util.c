@@ -904,3 +904,13 @@ char *timestamp_static()
     strftime(date,DATE_BUF_SIZ,"%Y%m%d-%H%M%S",timep);
     return date;
 }
+
+char *util_change_extension(char *file,char *new_ext) 
+{
+    char *dot = strrchr(file,'.');
+    char *result;
+    ovs_asprintf(&result,"%.*s%s",dot-file,file,new_ext);
+
+    return result;
+
+}

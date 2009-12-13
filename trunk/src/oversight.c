@@ -314,7 +314,8 @@ TRACE;
  * and
  *    /tmp/0
  */
-#define SCRIPT_NAME "http://127.0.0.1:8883/oversight/oversight.cgi"
+#define SCRIPT_NAMEX "http://127.0.0.1:8883/oversight/oversight.cgi"
+#define SCRIPT_NAME "/oversight/oversight.cgi"
 int oversight_instead_of_wget(int argc, char **argv) 
 {
     int ret = -1;
@@ -388,7 +389,7 @@ int main(int argc,char **argv)
             config_read_dimensions();
             gaya_set_output(argc,argv);
             gaya_set_env(argc,argv);
-            gaya_list(gaya_url(argc,argv));
+            ret = gaya_list(gaya_url(argc,argv));
 #endif
 
         } else {

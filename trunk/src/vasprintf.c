@@ -46,8 +46,19 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
       if (*p == '%') {
 
           p++;
+          
+          // Repeat %s logic here because this is most common format option
+          // It is also at the end of the case statement after qualifiers %.*s etc.
+          if (*p == 's')  {
+              char *ss=va_arg (ap, char *);
+              if (ss) {
+                  int len = strlen(ss);
+                  total_width += len;
+              } else {
+                  total_width += 7; /* "(null)" */
+              }
 
-          if (*p == '%') {
+          } else if (*p == '%') {
 
               p++;
 
@@ -195,7 +206,7 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
                           int len = strlen(ss);
                           total_width += len;
                       } else {
-                          total_width += 6; /* "(null)" */
+                          total_width += 7; /* "(null)" */
                       }
                   }
                   break;

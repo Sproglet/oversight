@@ -1660,16 +1660,18 @@ char *get_gaya_row(int pos,Array *files,
     char *link_content;
     char *image;
 
+    char *encoded_name = url_encode(name+1);
+
     ovs_asprintf(&link_content,
         "<font size=\"2\" color=user1><b><marquee behavior=focus width=%d>&nbsp;&nbsp;%s</marquee></b></font>",
         name_width,name+1);
 
     if (*name == 'd' )  {
         ovs_asprintf(&link,
-            "<a href=\"http://localhost.drives:8883%s/%s?filter=%s\" name=\"%d\" tvid=\"%d\" "
+            "<a href=\"http://localhost.drives:8883%s%s/?filter=%s\" name=\"%d\" tvid=\"%d\" "
             "onkeyleftset=\"media\" onkeyrightset=\"FILE_INDEX\" alt=\"%s\" file=c "
             "fip=\"%s\">%s</a>",
-            get_gaya_short_folder(),name+1,get_gaya_filter(),pos,pos,name+1,name+1,link_content);
+            get_gaya_short_folder(),encoded_name,get_gaya_filter(),pos,pos,name+1,name+1,link_content);
         image=gaya_image("list_folder.png");
 
     } else {
@@ -1687,12 +1689,13 @@ char *get_gaya_row(int pos,Array *files,
         "<td width=\"10\"></td>\n"
         "</tr></table>\n"
     "</td></tr>\n\n"
-    "<tr><td weight=\"2\"></td></tr>\n\n",
+    "<tr><td height=\"2\"></td></tr>\n\n",
          gaya_image("list_bar.png"),
          number_cell_width,number_cell_height,pos,
          icon_cell_width,image,image_width,image_height,
          name_width,link);
 
+    FREE(encoded_name);
     FREE(image);
     FREE(link);
 
@@ -1700,7 +1703,14 @@ char *get_gaya_row(int pos,Array *files,
         
 }
 
-char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_gaya_list_rows(
+        char *template_name,
+        char *call,
+        Array *args,
+        int num_rows,
+        DbRowId **sorted_rows,
+        int *free_result)
+{
     *free_result = 1;
     char *result = NULL;
 
@@ -1743,7 +1753,7 @@ char *macro_fn_gaya_list_rows(char *template_name,char *call,Array *args,int num
         result = tmp;
     }
 
-    HTML_LOG(0,"RESULT[%s]",result);
+    //HTML_LOG(0,"RESULT[%s]",result);
     return result;
 }
 

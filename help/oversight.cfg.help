@@ -2,6 +2,7 @@ ovs_new_days:Highlight as new if video newer than this number of days|1|2|3|4|5|
 #ovs_icon_set:Name of Icon set|set1|none
 #ovs_icon_type:Type of icons|png|gif|jpg
 ovs_show_episode_titles:Display Episode Titles (select Home Icon after changing)|No|Yes=>_et=1
+ovs_show_episode_dates:Display Episode Dates (select Home Icon after changing)|No|Yes=>_ed=1
 ovs_show_repack:Identify Repacks and Propers (select Home Icon after changing)|1|0
 ovs_sort_order:Default Sort Order (select Home Icon after changing)|Age|Name=>s=_T
 ovs_tvboxsets:Use boxsets|1|0

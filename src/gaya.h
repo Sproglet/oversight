@@ -11,7 +11,7 @@ char *get_gaya_filter();
 void show_page(char *folder,char *filter,int page);
 char *gaya_image(char *image);
 Array *gaya_get_files();
-void gaya_list(char *arg);
+int gaya_list(char *arg);
 char *gaya_get_file_image(char *name);
 int gaya_file_total();
 int gaya_first_file();

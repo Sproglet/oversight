@@ -40,6 +40,7 @@ char *get_drilldown_view(DbRowId *rid);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
+void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -1313,6 +1314,7 @@ TRACE;
         }
     }
 
+    // note this could be re-written with util_change_extension()
     path=check_path("%.*s%sjpg",dot-file,file,modifier);
 
     if (path == NULL) path=check_path("%.*s%spng",dot-file,file,modifier);
@@ -1374,13 +1376,13 @@ TRACE;
                     modifier=".sd.jpg";
                 }
             }
-            char *tmp = replace_all(path,"\\.jpg$",modifier,0);
+            char *tmp = util_change_extension(path,modifier);
             if(freepath) FREE(path);
             path = tmp;
 
         } else if (image_type == THUMB_IMAGE ) {
 
-            char *tmp = replace_all(path,"\\.jpg$",".thumb.jpg",0);
+            char *tmp = util_change_extension(path,".thumb.jpg");
             if (exists(tmp)) {
                 if(freepath) FREE(path);
                 path = tmp;
@@ -1398,6 +1400,7 @@ TRACE;
     }
     return path;
 }
+
 
 char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type) {
 
@@ -1716,23 +1719,30 @@ int group_count(DbRowId *rid) {
     return i;
 }
 
-int unwatched_count(DbRowId *rid) {
-    int i=0;
+void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp) 
+{
+    int watched=0;
+    int unwatched=0;
     for(  ; rid ; rid=rid->linked) {
-        if (rid->watched == 0) {
-            i++;
+        if (rid->watched ) {
+            watched++;
+        } else {
+            unwatched++;
         }
     }
+    if (watchedp) *watchedp = watched;
+    if (unwatchedp) *unwatchedp = unwatched;
+}
+    
+int unwatched_count(DbRowId *rid) {
+    int i=0;
+    get_watched_counts(rid,NULL,&i);
     return i;
 }
 
 int watched_count(DbRowId *rid) {
     int i=0;
-    for(  ; rid ; rid=rid->linked) {
-        if (rid->watched ) {
-            i++;
-        }
-    }
+    get_watched_counts(rid,&i,NULL);
     return i;
 }
 
@@ -2527,6 +2537,7 @@ int all_linked_rows_delisted(DbRowId *rowid)
 void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char **idlist) {
     int i,r,c;
 
+    HTML_LOG(0,"script start");
     printf("<script type=\"text/javascript\"><!--\n");
 
     for ( r = 0 ; r < rows ; r++ ) {
@@ -2536,8 +2547,8 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
 
                 DbRowId *rid = row_ids[i];
 
-                int unwatched = unwatched_count(rid);
-                int watched = watched_count(rid);
+                int watched,unwatched;
+                get_watched_counts(rid,&watched,&unwatched);
 
                 char *title = get_simple_title(rid,NULL);
                 if (rid->category == 'T' ) {
@@ -2557,6 +2568,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
         }
     }
     printf("--></script>\n");
+    HTML_LOG(0,"script end");
 }
 
 // Generate the HTML for the grid. 
@@ -2652,7 +2664,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     for ( r = 0 ; r < rows ; r++ ) {
 
 
-        HTML_LOG(1,"grid row %d",r);
+        HTML_LOG(0,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
         FREE(result);
         result=tmp;
@@ -2688,7 +2700,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         ovs_asprintf(&tmp,"%s</tr>\n",result);
         FREE(result);
         result=tmp;
-        HTML_LOG(1,"grid end row %d",r);
+        HTML_LOG(0,"grid end row %d",r);
 
     }
     //
@@ -3251,9 +3263,10 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
     char *listing=NULL;
 
-    int width2=100/cols; //text and date
-    int width1=4; //episode width
-    width2 -= width1;
+    int width_txt_and_date=100/cols; //text and date
+    int width_epno=1; //episode width
+    int width_icon=1; //episode width
+    width_txt_and_date -= width_epno+width_icon;
 
 TRACE;
     HTML_LOG(0,"pruned_tv_listing");
@@ -3264,6 +3277,10 @@ TRACE;
 TRACE;
 
     int show_episode_titles = *query_val(QUERY_PARAM_EPISODE_TITLES) == '1';
+    int show_episode_dates = *query_val(QUERY_PARAM_EPISODE_DATES) == '1';
+    if  (!show_episode_dates && !show_episode_titles ) {
+        width_txt_and_date = 1;
+    }
 
     int show_repacks = *oversight_val("ovs_show_repack") != '0';
     
@@ -3331,12 +3348,11 @@ TRACE;
 
                 char *icon_text = icon_link(rid->file);
 
-                ovs_asprintf(&title_txt,"%s%s%s&nbsp;%s",
+                ovs_asprintf(&title_txt,"%s%s%s",
                         episode_title,
                         (is_proper?"&nbsp;<font class=proper>[pr]</font>":""),
-                        (is_repack?"&nbsp;<font class=repack>[rpk]</font>":""),
-                        (icon_text?icon_text:""));
-                FREE(icon_text);
+                        (is_repack?"&nbsp;<font class=repack>[rpk]</font>":"")
+                        );
                 if (free_eptitle) {
                     FREE(episode_title);
                 }
@@ -3357,21 +3373,23 @@ TRACE;
                 char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
 
                 ovs_asprintf(&tmp,
-                        "%s<td class=%s width=%d%% %s>%s</td>" 
-                        "<td class=%s width=%d%% %s><font %s>%s%s</font><font class=epdate>%s</font></td>\n",
+                        "%s<td class=%s width=%d%% %s align=right>%s</td>" 
+                        "<td width=%d%% %s>%s</td>"
+                        "<td class=%s width=%d%% %s>"
+                        "<font %s>%s%s</font>"
+                        "<font class=epdate>%s</font></td>\n",
                         (row_text?row_text:""),
-                        td_class,
-                        width1,
-                        td_plot_attr,
-                        episode_col,
-                        td_class,
-                        width2,
-                        td_plot_attr,
-                        watched_style(rid),
-                        (network_icon?network_icon:""),
+                        td_class,width_epno, td_plot_attr, episode_col,
+
+                        width_icon,td_plot_attr,NVL(icon_text),
+
+                        td_class, width_txt_and_date, td_plot_attr,
+
+                        watched_style(rid), (network_icon?network_icon:""),
                         title_txt,
-                        (*date_buf?date_buf:"")
+                        (show_episode_dates && *date_buf?date_buf:"")
                         );
+                FREE(icon_text);
                 FREE(td_plot_attr);
                 FREE(title_txt);
                 FREE(episode_col);
@@ -3380,10 +3398,11 @@ TRACE;
 
             } else {
                 char *tmp=NULL;
-                ovs_asprintf(&tmp,"%s<td width=%d%%></td><td width=%d%%></td>\n",
+                ovs_asprintf(&tmp,"%s<td width=%d%%></td><td width=%d%%></td><td width=%d%%></td>\n",
                     (row_text?row_text:""),
-                    width1,
-                    width2);
+                    width_epno,
+                    width_icon,
+                    width_txt_and_date);
                 FREE(row_text);
                 row_text=tmp;
             }
@@ -3391,7 +3410,7 @@ TRACE;
         // Add the row
         if (row_text) {
             char *tmp;
-            ovs_asprintf(&tmp,"%s<tr>%s</tr>\n",(listing?listing:""),row_text);
+            ovs_asprintf(&tmp,"%s<tr align=top>%s</tr>\n",(listing?listing:""),row_text);
             FREE(row_text);
             FREE(listing);
             listing=tmp;

@@ -25,10 +25,11 @@ void show_page(char *folder,char * filter,int page);
 void set_gaya_filter(char *filter);
 
 
-void gaya_list(char *arg)
+int gaya_list(char *arg)
 {
 
     //arg = http://localhost.drives:8883/HARD_DISK/Complete/?filter=3&page=3
+
 
     g_query = string_string_hashtable(16);
 
@@ -57,14 +58,19 @@ TR;
 TR;
 
         // get page
-        int page=atol(query_val("page"));
-        set_gaya_page(page);
+        if (*query_val("page")) {
+            set_gaya_page(atol(query_val("page")));
+        }
 TR;
 
         set_gaya_filter(query_val("filter"));
 TR;
+        // Get the file list
+        gaya_get_files();
+
         show_page(get_gaya_folder(),get_gaya_filter(),get_gaya_page());
 TR;
+        return 0;
 
     }
 TR;
@@ -114,7 +120,7 @@ int get_gaya_page()
 void set_gaya_page(int page)
 {
     gaya_page = page;
-    fprintf(stderr,"set_gaya_page[%d]\n",gaya_page);
+    HTML_LOG(0,"set_gaya_page[%d]\n",gaya_page);
 }
 
 static char *gaya_filter=NULL;
@@ -149,19 +155,21 @@ Array *gaya_get_files()
                 struct dirent *file;
                 while( (file=readdir(d)) != NULL) {
                     
-                    HTML_LOG(0,"file [%s]",file->d_name);
+                    //HTML_LOG(0,"file [%s]",file->d_name);
                     char *tmp;
 
                     if (is_dir(file->d_name)) {
                         
-                        HTML_LOG(0,"add dir [%s]",file->d_name);
-                        ovs_asprintf(&tmp,"d%s",file->d_name);
-                        array_add(gaya_files,tmp);
+                        if (file->d_name[0] != '.') {
+                            //HTML_LOG(0,"add dir [%s]",file->d_name);
+                            ovs_asprintf(&tmp,"d%s",file->d_name);
+                            array_add(gaya_files,tmp);
+                        }
 
                     } else if (is_visible(*gaya_filter,file->d_name)) {
 
-                        HTML_LOG(0,"add file [%s]",file->d_name);
-                        ovs_asprintf(&tmp,"-%s",file->d_name);
+                        //HTML_LOG(0,"add file [%s]",file->d_name);
+                        ovs_asprintf(&tmp,"f%s",file->d_name);
                         array_add(gaya_files,tmp);
                     }
                 }
@@ -266,7 +274,7 @@ int is_video(char *name)
     int ret = 0;
     char  *dot = strrchr(name,'.');
     if (dot) {
-        char *ext=util_tolower(dot);
+        char *ext=util_tolower(dot+1);
         ret = delimited_substring("iso|avi|divx|mkv|mp4|ts|m2ts|xmv|mpe|movie|asf|vob|m2v|m2p|mpg|mpeg|mov|m4v|wmv","|",ext,"|",1,1) != NULL;
     }
     return ret;
@@ -277,7 +285,7 @@ int is_audio(char *name)
     int ret = 0;
     char  *dot = strrchr(name,'.');
     if (dot) {
-        char *ext=util_tolower(dot);
+        char *ext=util_tolower(dot+1);
         ret = delimited_substring("wav|m4a|mpga|mp2|mp3|pcm|ogg|wma|mp1|ac3|aac|mpa|pls|dts|flac","|",ext,"|",1,1) != NULL;
     }
     return ret;
@@ -288,7 +296,7 @@ int is_image(char *name)
     int ret = 0;
     char  *dot = strrchr(name,'.');
     if (dot) {
-        char *ext=util_tolower(dot);
+        char *ext=util_tolower(dot+1);
         ret = delimited_substring("gif|jpg|jpeg|jpe|png|bmp","|",ext,"|",1,1) != NULL;
     }
     return ret;

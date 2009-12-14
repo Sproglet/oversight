@@ -61,19 +61,15 @@ TR;
         if (*query_val("page")) {
             set_gaya_page(atol(query_val("page")));
         }
-TR;
 
         set_gaya_filter(query_val("filter"));
-TR;
         // Get the file list
         gaya_get_files();
 
         show_page(get_gaya_folder(),get_gaya_filter(),get_gaya_page());
-TR;
-        return 0;
 
     }
-TR;
+    return 0;
 }
 
 static char *gaya_folder=NULL;

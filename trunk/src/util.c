@@ -67,6 +67,22 @@ struct hashtable *string_string_hashtable(int size)
 }
 
 
+char *replace_str(char *s_in,char *match,char *replace)
+{
+    char *tmp;
+    char *p=NULL;
+    char *out = s_in;
+    int matchlen = strlen(match);
+    while((p = strstr(out,match)) != NULL) {
+        ovs_asprintf(&tmp,"%.*s%s%s",p-out,out,NVL(replace),p+matchlen);
+        if (out != s_in) FREE(out);
+        out = tmp;
+    }
+    if (out == s_in) {
+        out = STRDUP(s_in);
+    }
+    return out;
+}
 /*
  * Split a strin s_in into an array using regex pattern.
  * If pattern is one character long then a simple

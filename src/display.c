@@ -2683,19 +2683,14 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         }
     }
 
-#if 0
-    for ( c = 0 ; c < cols ; c++ ) {
-        ovs_asprintf(&tmp,"%s<col class=\"grid_col%d\" >\n",NVL(result),(c&1));
-        FREE(result);
-        result = tmp;
-    }
-    ovs_asprintf(&tmp,"<colgroup>%s</colgroup>\n",NVL(result));
-    FREE(result);
-    result = tmp;
-#endif
 
     // First output the javascript functions - diretly to stdout - lazy.
     write_titlechanger(rows,cols,numids,row_ids,idlist);
+
+#define QGRID
+#ifdef QGRID
+    Array *rowArray = array_new(array_free);
+#endif
 
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
@@ -2703,8 +2698,14 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
         HTML_LOG(0,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
+#ifdef QGRID
+        Array *cellArray = array_new(free);
+        array_add(cellArray,tmp);
+#else
         FREE(result);
         result=tmp;
+#endif
+
 
         for ( c = 0 ; c < cols ; c++ ) {
             i = c * rows + r ;
@@ -2727,16 +2728,24 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
                 }
 
             }
+#ifdef QGRID
+            if (item) array_add(cellArray,item);
+#else
             ovs_asprintf(&tmp,"%s%s\n",result,NVL(item));
             FREE(result);
             FREE(item);
             result=tmp;
+#endif
             HTML_LOG(1,"grid end col %d",c);
         }
-        
+#ifdef QGRID
+        array_add(cellArray,STRDUP("</tr>\n"));
+        array_add(rowArray,cellArray);
+#else
         ovs_asprintf(&tmp,"%s</tr>\n",result);
         FREE(result);
         result=tmp;
+#endif
         HTML_LOG(0,"grid end row %d",r);
 
     }
@@ -2750,6 +2759,26 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     } else {
         w="";
     }
+
+#ifdef QGRID
+    int tableSize = 0;
+    for (r = 0 ; r < rowArray->size ; r++ ) {
+        Array *cellArray = rowArray->array[r];
+        for (c = 0 ; c < cellArray->size ; c++ ) {
+            tableSize += strlen(cellArray->array[c]);
+        }
+    }
+    result = MALLOC(tableSize+1);
+    char *p = result;
+    for (r = 0 ; r < rowArray->size ; r++ ) {
+        Array *cellArray = rowArray->array[r];
+        for (c = 0 ; c < cellArray->size ; c++ ) {
+            p+= sprintf(p,"%s",(char *)NVL(cellArray->array[c]));
+        }
+    }
+    array_free(rowArray);
+#endif
+
     ovs_asprintf(&tmp,"<center>%s\n%s\n%s</center>\n",
             table_start,
             (result?result:"<tr><td>No results</td><tr>"), //bug here may need to add table tags

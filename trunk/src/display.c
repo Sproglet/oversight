@@ -3520,12 +3520,20 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
             char *k=keys->array[i];
             char *v=hashtable_search(vals,k);
             char *link=join(link_parts,k);
-            ovs_asprintf(&tmp,
-                "%s<option value=\"%s\" %s >%s</option>\n",
-                (result?result:""),
-                link,
-                (strcmp(selected,k)==0?"selected":""),
-                v);
+
+            char *selected_text=(strcmp(selected,k)==0?"selected":"");
+
+            if (firstItem != NULL && strcmp(firstItem,k) == 0 ) {
+                // Add item to the start
+                ovs_asprintf(&tmp,
+                    "<option value=\"%s\" %s >%s</option>\n%s",
+                    link, selected_text, v, NVL(result));
+            } else {
+                // Add item to the end
+                ovs_asprintf(&tmp,
+                    "%s<option value=\"%s\" %s >%s</option>\n",
+                    NVL(result), link, selected_text, v);
+            }
             FREE(link);
             FREE(result);
             result=tmp;
@@ -3533,12 +3541,9 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     }
     if (result) {
         char *tmp;
-        char *link=join(link_parts,"");
-        ovs_asprintf(&tmp,"<select %s>\n<option value=\"%s\">%s</option>\n%s</select>",
+        ovs_asprintf(&tmp,"<select %s>\n%s</select>",
                 //name,
-                attr,
-                link,
-                firstItem,result);
+                attr, result);
         FREE(result);
         result = tmp;
     }

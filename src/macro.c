@@ -290,7 +290,7 @@ char *macro_fn_sort_select(char *template_name,char *call,Array *args,int num_ro
         hashtable_insert(sort,DB_FLDID_TITLE,"Name");
         hashtable_insert(sort,DB_FLDID_INDEXTIME,"Age");
         hashtable_insert(sort,DB_FLDID_YEAR,"Year");
-        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"Age",sort);
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,DB_FLDID_INDEXTIME,sort);
         hashtable_destroy(sort,0,0);
     }
     *free_result = 0;
@@ -307,9 +307,10 @@ char *macro_fn_media_select(char *template_name,char *call,Array *args,int num_r
             label = "Tv+Movie";
         }
         struct hashtable *category = string_string_hashtable(4);
+        hashtable_insert(category,"MT",label);
         hashtable_insert(category,"M","Movie");
         hashtable_insert(category,"T","Tv");
-        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,label,category);
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"MT",category);
         hashtable_destroy(category,0,0);
     }
     *free_result = 0;
@@ -320,9 +321,10 @@ char *macro_fn_watched_select(char *template_name,char *call,Array *args,int num
     static char *result=NULL;
     if (!result) {
         struct hashtable *watched = string_string_hashtable(4);
+        hashtable_insert(watched,"","---");
         hashtable_insert(watched,"W","Watched");
         hashtable_insert(watched,"U","Unwatched");
-        result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"---",watched);
+        result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"",watched);
         hashtable_destroy(watched,0,0);
     }
     *free_result = 0;
@@ -396,8 +398,9 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
             hashtable_insert(title,STRDUP(letter),STRDUP(letter));
         }
         hashtable_insert(title,STRDUP("1"),STRDUP("1"));
+        hashtable_insert(title,STRDUP(""),STRDUP("*"));
 
-        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"*",title);
+        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"",title);
         hashtable_destroy(title,1,1);
     }
     *free_result = 0;
@@ -406,7 +409,10 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
-    result = auto_option_list(DB_FLDID_GENRE,"All Genres",g_genre_hash);
+    if (!hashtable_search(g_genre_hash,"")) {
+        hashtable_insert(g_genre_hash,STRDUP(""),STRDUP("All Genres"));
+    }
+    result = auto_option_list(DB_FLDID_GENRE,"",g_genre_hash);
     *free_result = 0; // TODO : this should be freed but we'll leave until next release.
     return result;
 }

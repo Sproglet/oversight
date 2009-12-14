@@ -6560,7 +6560,7 @@ tmp,err) {
     return (err != -1 );
 }
 function is_empty(d) {
-    return system("ls -a "qa(d)" | egrep -v '^\.\.?$'") != 0;
+    return system("ls -a "qa(d)" | egrep -v \"^\.\.?$\"") != 0;
 }
 function is_dir(f) {
     return 0+ test("-d",f"/.");

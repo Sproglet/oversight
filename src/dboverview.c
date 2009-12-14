@@ -327,11 +327,12 @@ DbRowId **flatten_hash_to_array(struct hashtable *overview) {
 DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,const void *)) {
 
     DbRowId **ids = flatten_hash_to_array(overview);
+    int total = hashtable_count(overview);
 
-    HTML_LOG(1,"sorting %d items",hashtable_count(overview));
+    HTML_LOG(0,"sorting %d items",total);
     overview_array_dump(3,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
-    HTML_LOG(2,"sorted %d items",hashtable_count(overview));
+    HTML_LOG(1,"sorted %d items",total);
     overview_array_dump(2,"ovw sorted",ids);
 
     return ids;

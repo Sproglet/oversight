@@ -930,7 +930,7 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
     assert(id->db == dbrs->db);
 
     if (dbrs->size >= dbrs->memsize) {
-        dbrs->memsize += 50;
+        dbrs->memsize += 100;
         dbrs->rows = REALLOC(dbrs->rows,dbrs->memsize * sizeof(DbRowId));
     }
     DbRowId *insert = dbrs->rows + dbrs->size;
@@ -1024,10 +1024,6 @@ TRACE;
     HTML_LOG(0,"end db_scan_and_add_rowset[%s][%s]=%d",path,name,*rowset_count_ptr);
 }
 
-void clear_title_letter_count() {
-    memset(g_title_letter_count,0,NUM_TITLE_LETTERS);
-}
-
 char *next_space(char *p) {
     char *space=p;
 
@@ -1066,8 +1062,6 @@ DbRowSet **db_crossview_scan_titles(
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
 
-    clear_title_letter_count();
-
     if (use_folder_titles == UNSET ) {
         use_folder_titles = *oversight_val("ovs_use_folders_as_title") == '1';
     }
@@ -1088,7 +1082,6 @@ TRACE;
         //Better to scan /etc/mtab for shares then do a quick ping first.
         //make m=ping timeout configurable.
 
-#if 1
     // Get crossview mounts by looking at pflash settings servnameN=name
         char *settingname,*name;
         struct hashtable_itr *itr;
@@ -1117,44 +1110,6 @@ TRACE;
                 FREE(path);
             }
         }
-#else
-    // Get crossview mounts by looking a folder names in NETWORK_SHARE
-    // may cause timeouts.
-    DIR *d = opendir(NETWORK_SHARE);
-    if (d) {
-        struct dirent dent,*p;
-        while((readdir_r(d,&dent,&p)) == 0 && p != NULL) {
-
-            char *path=NULL;
-            char *name=dent.d_name;
-
-
-            if (*name != '.') {
-                HTML_LOG(0,"crossview looking at [%s]",name);
-
-                ovs_asprintf(&path,NETWORK_SHARE "%s/Apps/oversight/index.db",name);
-
-                if (nmt_mount(path)) {
-                    if (is_file(path)) {
-
-                        HTML_LOG(0,"crossview [%s]",path);
-                        db_scan_and_add_rowset(
-                            path,name,
-                            name_filter,media_type,watched,
-                            &rowset_count,&rowsets);
-
-                    } else {
-                        HTML_LOG(0,"crossview search [%s] doesnt exist",path);
-                    }
-                } else {
-                    HTML_LOG(0,"crossview search - could not mount [%s] ",path);
-                }
-                FREE(path);
-            }
-        }
-        closedir(d);
-    }
-#endif
     }
     //Save the first row as the default row to edit. - when the editor comes!
     if (g_first_row == NULL && rowsets && rowsets[0]->rows ) {
@@ -1283,7 +1238,7 @@ int in_idlist(int id,int size,int *ids) {
         (!title?\
             '\0'\
         :\
-            (*(title) == 'T' && util_starts_with((title),"The ") ?\
+            (*(title) == 'T' && (title)[1]=='h' && (title)[2] == 'e' && (title)[3]==' ' ?\
                 (title)[4]\
              :\
              *title)\
@@ -1407,21 +1362,23 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                         get_genre_from_string(rowid.genre,&g_genre_hash);
                     }
 
-                    unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
-                    g_title_letter_count[toupper(first_letter)]++;
+                    if (title_filter_start) {
 
-                    if (first_letter) {
-                        if (title_filter_start && title_filter_start < 'A' ) {
-                            // Non alpahbetic
-                            if (first_letter >= 'A' && first_letter <= 'Z') {
+                        unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
+
+                        if (first_letter) {
+                            if (title_filter_start < 'A' ) {
+                                // Non alpahbetic
+                                if (first_letter >= 'A' && first_letter <= 'Z') {
+                                    keeprow = 0;
+                                }
+                            } else if (first_letter < title_filter_start || first_letter > title_filter_end) {
                                 keeprow = 0;
                             }
-                        } else if (first_letter < title_filter_start || first_letter > title_filter_end) {
-                            keeprow = 0;
                         }
                     }
 
-                    if (genre_filter && *genre_filter) {
+                    if (genre_filter && *genre_filter && keeprow) {
                         //HTML_LOG(0,"genre [%.*s]",10,rowid.genre);
                         if (rowid.genre && !strstr(rowid.genre,genre_filter)) {
                             HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
@@ -1431,7 +1388,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
                     //if (keeprow) HTML_LOG(0,"xx genre ok");
 
-                    if (keeprow && name_filter && *name_filter) {
+                    if (name_filter && *name_filter && keeprow) {
                         int match= regexec(&pattern,rowid.title,0,NULL,0);
                         if (match != 0 ) {
                             HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
@@ -1485,7 +1442,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
         HTML_LOG(0,"read_ticks %d",read_ticks/1000);
         */
 
-        HTML_LOG(0,"First total %d",total_rows);
+        HTML_LOG(0,"total rows %d",total_rows);
         fclose(fp);
     }
     if (rowset) {

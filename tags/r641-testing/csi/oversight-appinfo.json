@@ -1,0 +1,12 @@
+// $Author$ $Id$ $Date$ 
+{
+    appinfo_format="1",
+    name="oversight",
+    version="@@VERSION@@",
+    enabled="1",
+    //daemon_script:
+    //crontab:
+    setup_script="oversight-install.cgi"
+    //gayaui_path:
+    //webui_path:
+}

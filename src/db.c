@@ -524,6 +524,10 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
         case FIELD_TYPE_STR:
             *(char **)offset = COPY_STRING(val_len,val);
             if (offset == &(rowid->file)) {
+
+                // TODO Test the following function!
+                // fix_file_path(rowid);
+                //
                 // Append Network share path
                 if (rowid->file[0] != '/') {
                     char *tmp;
@@ -559,6 +563,40 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
         default:
             HTML_LOG(0,"Bad field type [%c]",type);
             assert(0);
+    }
+}
+
+void fix_file_path(DbRowId *rowid) {
+    // Append Network share path
+    if (rowid->file[0] != '/') {
+        char *tmp;
+        ovs_asprintf(&tmp,"%s%s" , NETWORK_SHARE, rowid->file );
+        FREE(rowid->file);
+        rowid->file = tmp;
+    }
+    // set extension
+    char *p = strrchr(rowid->file,'.');
+    if (p) {
+        rowid->ext = p+1;
+    }
+}
+
+void fix_file_paths(int num_row,DbRowId **rows)
+{
+    int i;
+    for(i = 0 ; i < num_row ; i++ ) {
+        DbRowId *rid;
+        for(rid = rows[i] ; rid ; rid = rid->linked ) {
+            // Append Network share path
+            if (rid->file[0] != '/') {
+                fix_file_path(rid);
+            }
+            // set extension
+            char *p = strrchr(rid->file,'.');
+            if (p) {
+                rid->ext = p+1;
+            }
+        }
     }
 }
 
@@ -1077,12 +1115,7 @@ TRACE;
 
     if (crossview) {
         //get iformation from any remote databases
-        //
-        //TODO there may be a long time out if trying to access an unmounted device.
-        //Better to scan /etc/mtab for shares then do a quick ping first.
-        //make m=ping timeout configurable.
-
-    // Get crossview mounts by looking at pflash settings servnameN=name
+        // Get crossview mounts by looking at pflash settings servnameN=name
         char *settingname,*name;
         struct hashtable_itr *itr;
         for (itr=hashtable_loop_init(g_nmt_settings) ; hashtable_loop_more(itr,&settingname,&name) ; ) {

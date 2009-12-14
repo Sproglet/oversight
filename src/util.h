@@ -20,6 +20,7 @@ char *join_str_fmt_free(char *fmt,char *s1,char *s2);
 char *substring(char *s,int start_pos, int end_pos);
 
 char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts);
+char *replace_str(char *s_in,char *match,char *replace);
 
 Array *regextract(char *s,char *pattern,int reg_opts);
 char *regextract1(char *s,char *pattern,int submatch,int reg_opts);

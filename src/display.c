@@ -164,55 +164,81 @@ char *cgi_url(int full) {
 // Merge the current query string with the parameters.
 // Keep the parameters that are not in the new parameter list and are also not blank
 // Also exclude "colour" because it represents a one off action and not at state.
+#define MAX_PARAMS 50
 char *self_url(char *new_params) {
 
     struct hashtable_itr *itr;
     char *param_name;
     char *param_value;
 
+#define QSELFURLX
+#ifdef QSELFURL
+    // Store params here.
+    int pcount=0;
+    int psize=0;
+    char *pname[MAX_PARAMS];
+    char *pval[MAX_PARAMS];
+#else
+    char *old_params = NULL;
     int first=1;
-
-    char *url = STRDUP(cgi_url(0));
+#endif
 
     // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
 
         if (!EMPTY_STR(param_value)) {
-            if (param_name[0] != 'c' || strcmp(param_name,"colour") != 0) {
-                if (strstr(param_name,"option_") == NULL) {
-                    //
-                    // search for pram_name in new_params
-                    int add_param=1;
 
-                    // If the existing parameter name is also in the new parameter list then dont add it
-                    if (new_params && *new_params) {
-                        if (delimited_substring(new_params,"&",param_name,"&=",1,1)) {
+            // Ignore parameters colour  option_* and orig_option_*
 
-                          // end of string is = or & or nul
-                          // param_name is in new_params - we dont want this
-                          add_param=0;
-                        }
-                    }
-                    if (add_param) {
-                        char *new;
-                        ovs_asprintf(&new,"%s%c%s=%s",url,(first?'?':'&'),param_name,param_value);
-                        FREE(url);
-                        url = new;
-                        first=0;
-                    }
+            if (param_name[0] == 'c' && strcmp(param_name,"colour") == 0) {
+                // ignore
+            } else if (param_name[0] == 'o' && 
+                   (  util_starts_with(param_name,"option_" ) || util_starts_with(param_name,"orig_option_" ) ) ) {
+                // ignore
+            } else {
+                //
+                // search for pram_name in new_params
+
+                // If the existing parameter name is also in the new parameter list then dont add it
+                if (EMPTY_STR(new_params) || !delimited_substring(new_params,"&",param_name,"&=",1,1)) {
+
+                    // Keep the old parameter
+#ifdef QSELFURL
+                    pname[pcount] = param_name;
+                    pval[pcount] = param_value;
+                    pcount++;
+                    assert(pcount < MAX_PARAMS);
+                    psize += strlen(param_name) + strlen(param_value) + 3;
+#else
+
+                    char *new;
+                    ovs_asprintf(&new,"%s%c%s=%s",NVL(old_params),(first?'?':'&'),param_name,param_value);
+                    FREE(old_params);
+                    old_params = new;
+                    first=0;
+#endif
                 }
             }
         }
     }
-    // Now remove any blank params in the list
-    //char *tmp=replace_all(new_params,"([-.~@a-zA-Z0-9_]+=(&|$))","",0);
-    //char *tmp = remove_blank_params(new_params);
 
     char *tmp;
+#ifdef QSELFURL
+    char *new=MALLOC(strlen(cgi_url(0))+psize+strlen(new_params) + 3);
+    tmp = new;
+    tmp += sprintf(tmp,"%s",cgi_url(0));
+    int i;
+    for(i = 0 ; i < pcount ; i ++ ) {
+        tmp += sprintf(tmp,"%c%s=%s",(i==0?'?':'&'),pname[i],pval[i]);
+    }
+    tmp += sprintf(tmp,"%c%s",(pcount==0?'?':'&'),new_params);
+#else
+
     char *new;
-    ovs_asprintf(&tmp,"%s%c%s",url,(first?'?':'&'),new_params);
-    FREE(url);
+    ovs_asprintf(&tmp,"%s%s%c%s",cgi_url(0),old_params,(first?'?':'&'),new_params);
+    FREE(old_params);
     new = tmp;
+#endif
 
     tmp = remove_blank_params(new);
     FREE(new);
@@ -2078,19 +2104,30 @@ TRACE;
         cell_text = STRDUP(title);
 
     } else if (tv_or_movie) {
+
+#define USE_TEMPLATE
+#ifdef USE_TEMPLATE
+        static char *link_template = NULL;
+        if (link_template == NULL ) {
+
+            link_template = get_drilldown_link_with_font("view=@VIEW@&p=&idlist=@IDLIST@","@ATTR@","@TITLE@","@FONT_CLASS@");
+        }
+        char *tmp;
+        tmp=replace_str(link_template,"@VIEW@",newview);
+        cell_text=replace_str(tmp,"@IDLIST@",idlist); FREE(tmp);
+        tmp=replace_str(cell_text,"@ATTR@",attr); FREE(cell_text);
+        cell_text=replace_str(tmp,"@TITLE@",title); FREE(tmp);
+        tmp=replace_str(cell_text,"@FONT_CLASS@",font_class); FREE(cell_text);
+        cell_text = tmp;
+
+#else
         char *params;
-
-
-        HTML_LOG(1,"dbg: id list... [%s]",idlist);
-
         ovs_asprintf(&params,"view=%s&p=&idlist=%s",newview,idlist);
-        HTML_LOG(1,"dbg: params [%s]",params);
-
-        
 
         cell_text = get_drilldown_link_with_font(params,attr,title,font_class);
 
         FREE(params);
+#endif
 
     } else {
 

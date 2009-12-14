@@ -28,13 +28,11 @@ int numstrcmp(char *a,char *b) {
             anum=strtol(a,&anext,10);
             bnum=strtol(b,&bnext,10);
             if (anum != bnum) {
-                HTML_LOG(3,"numstrcmp numdiff %d=%d",anum,bnum);
                 return anum-bnum;
             }
             a=anext;
             b=bnext;
         } else if (*a != *b ) {
-            HTML_LOG(3,"numstrcmp strdiff %s=%s",a,b);
             return *a - *b;
         }
         a++;
@@ -49,9 +47,16 @@ int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
     return (*rid2)->date - (*rid1)->date;
 }
 
+#define THE(a) ( ( (a)[0]=='T' || (a)[0]=='t' ) \
+        && ( (a)[1]=='h' || (a)[1]=='H' ) \
+        && ( (a)[2]=='e' || (a)[2]=='E' ) \
+        && (a)[3] == ' ' )
+
 int index_strcmp(char *a,char *b) {
-    if (strncasecmp(a,"the ",4)==0) a+= 4;
-    if (strncasecmp(b,"the ",4)==0) b+= 4;
+    if (THE(a)) a+= 4;
+    if (THE(b)) b+= 4;
+    //if (strncasecmp(a,"the ",4)==0) a+= 4;
+    //if (strncasecmp(b,"the ",4)==0) b+= 4;
     return strcasecmp(a,b);
 }
 // This function is just used for sorting the overview AFTER it has been created.

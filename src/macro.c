@@ -281,7 +281,6 @@ TRACE;
     return result;
 }
 
-// TODO - Sort needs to default to Sort By Age. Add extra option to auto_option_list - default value.
 char *macro_fn_sort_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
 

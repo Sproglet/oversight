@@ -30,6 +30,7 @@
 
 long ping_timeout();
 
+#if 0
 /**
  * Ping: reference <Unix network programming>, volume 1, third edition.
  */
@@ -54,7 +55,6 @@ static uint16_t in_checkksum(uint16_t *addr, int len)
 	return (answer);
 }
 
-#if 0
 #ifndef NI_MAXHOST
 #define NI_MAXHOST 200
 #endif
@@ -100,6 +100,8 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 	return info;
 }
 
+#if 0
+
 /**
  * Need root privilege
  * @return:
@@ -112,7 +114,6 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 // If USE_SELECT then select() is used for timeout rather than the original setsockopt/recvmsg
 // This is because setsockopt SO_SNDTIMEO does not work on NMT.
 //
-// TODO Implement version that creates a socket to portmap (NFS) or 445(Windows)
 // http://www.developerweb.net/forum/showthread.php?p=13486
 //
 
@@ -179,6 +180,8 @@ int ping (char *host,long timeout_millis)
 
 	return ret;
 }
+
+#endif
 
 // connect to a port and disconnect
 // 0 = success

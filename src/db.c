@@ -1277,6 +1277,7 @@ int in_idlist(int id,int size,int *ids) {
              *title)\
         )
 
+#define ANY_SEASON -10
 DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
@@ -1295,6 +1296,11 @@ DbRowSet * db_scan_titles(
     int *ids = extract_idlist(db->source,&num_ids);
 
     char *title_filter = query_val(QUERY_PARAM_TITLE_FILTER);
+
+    int season = ANY_SEASON;
+    if (*query_val(QUERY_PARAM_SEASON) ) {
+        season = atol(query_val(QUERY_PARAM_SEASON));
+    }
 
     HTML_LOG(3,"Creating db scan pattern..");
 
@@ -1395,7 +1401,11 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                         get_genre_from_string(rowid.genre,&g_genre_hash);
                     }
 
-                    if (title_filter_start) {
+                    if (season != ANY_SEASON && rowid.season != season ) {
+                        keeprow = 0;
+                    }
+
+                    if (title_filter_start && keeprow) {
 
                         unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
 

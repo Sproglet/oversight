@@ -490,18 +490,19 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
         char *cert = util_tolower(sorted_rows[0]->certificate);
 
 
-        tmp=replace_all(cert,"usa:","us:",0);
+        tmp=replace_str(cert,"usa:","us:");
         FREE(cert);
         cert=tmp;
 
 
-        tmp=replace_all(cert,":","/",0);
+        tmp=replace_str(cert,":","/");
         FREE(cert);
         cert=tmp;
 
         ovs_asprintf(&tmp,"%s/templates/%s/images/cert/%s.%s",appDir(),skin_name(),cert,ovs_icon_type());
         FREE(cert);
         cert=tmp;
+        HTML_LOG(0,"xx cert[%s]",cert);
 
         char *attr;
         ovs_asprintf(&attr," width=%d height=%d ",g_dimension->certificate_size,g_dimension->certificate_size);

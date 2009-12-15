@@ -2761,21 +2761,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     }
 
 #ifdef QGRID
-    int tableSize = 0;
-    for (r = 0 ; r < rowArray->size ; r++ ) {
-        Array *cellArray = rowArray->array[r];
-        for (c = 0 ; c < cellArray->size ; c++ ) {
-            tableSize += strlen(cellArray->array[c]);
-        }
-    }
-    result = MALLOC(tableSize+1);
-    char *p = result;
-    for (r = 0 ; r < rowArray->size ; r++ ) {
-        Array *cellArray = rowArray->array[r];
-        for (c = 0 ; c < cellArray->size ; c++ ) {
-            p+= sprintf(p,"%s",(char *)NVL(cellArray->array[c]));
-        }
-    }
+    result = array2dstr(rowArray);
     array_free(rowArray);
 #endif
 
@@ -2791,6 +2777,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     FREE(width_attr);
     return result;
 }
+
 
 char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     // first loop through the selected rowids that we expect to draw.

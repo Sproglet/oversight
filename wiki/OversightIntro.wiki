@@ -40,6 +40,7 @@ Here I have listed the main strengths and weaknesses of Oversight.
   * Crossview: If you have two NMT, and install Oversight on each, then you can see all media in a single Oversight session. No need to switch sources or jukeboxes.
  
 =Oversight Weaknesses=
+  * Page load speed - Because Oversight is dynamic is does a lot of things each time a page is drawn (eg. check for custom posters, check NAS availability etc) It is no match for a jukebox built on static pages - but some speed improvements are in the works.
   * No post scan tweaking of plots etc. - This will be implemented soon.
   * Multi-lingual support (I plan to address this in later releases)
   * Detailed Scraping. Actor Bios, Names of Producers, Cleaners and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.

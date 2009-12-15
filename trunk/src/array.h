@@ -25,5 +25,7 @@ Array *splitstr(char *s_in,char *sep);
 int array_strcasecmp(const void *a,const void *b);
 void array_sort(Array *a,int (*fn)(const void *,const void *));
 char *join(Array *a,char *sep);
+char *arraystr(Array *a);
+char *array2dstr(Array *a);
 
 #endif

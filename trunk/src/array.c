@@ -319,3 +319,65 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
     return a;
 }
 
+char *arraystr(Array *a)
+{
+    int i;
+    int len  = 0;
+    char *str = NULL;
+    if (a) {
+        for (i = 0 ; i < a->size ; i++ ) {
+            len += strlen(NVL(a->array[i]));
+        }
+    }
+    if (len) {
+        str = MALLOC(len+1);
+        char *q,*p = str;
+        for (i = 0 ; i < a->size ; i++ ) {
+            if ((q = a->array[i]) != NULL ) {
+                while ((*p++ = *q++ ) != '\0' ) {
+                        ; //do nothing
+                }
+                p--;
+            }
+        }
+        *p = '\0';
+    }
+    return str;
+}
+
+char *array2dstr(Array *a)
+{
+    int i,j;
+    int len  = 0;
+    char *str = NULL;
+    if (a) {
+        for (i = 0 ; i < a->size ; i++ ) {
+            Array *b = a->array[i];
+            if (b) {
+                for (j = 0 ; j < b->size ; j++ ) {
+                    len += strlen(NVL(b->array[j]));
+                }
+            }
+        }
+    }
+
+    if (len) {
+        str = MALLOC(len+1);
+        char *q,*p = str;
+        for (i = 0 ; i < a->size ; i++ ) {
+            Array *b = a->array[i];
+            if (b) {
+                for (j = 0 ; j < b->size ; j++ ) {
+                    if ((q = b->array[j]) != NULL ) {
+                        while ((*p++ = *q++ ) != '\0' ) {
+                            ; //do nothing
+                        }
+                        p--;
+                    }
+                }
+            }
+        }
+        *p = '\0';
+    }
+    return str;
+}

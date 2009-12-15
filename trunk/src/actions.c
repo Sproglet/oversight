@@ -58,7 +58,6 @@ void clear_selection() {
     query_remove("file"); // settings cfg file
     query_remove("title"); // settings title
     query_remove("form");
-    query_remove("form");
     query_remove("select");
     query_remove("action");
     query_remove("old_action");

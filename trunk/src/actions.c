@@ -321,9 +321,8 @@ void delete_config(char *name) {
 
 void do_actions() {
 
-    char *view=query_val("view");
+    char *view=query_val(QUERY_PARAM_VIEW);
     char *action=query_val("action");
-    //char *select=query_val("select");
 
     // If remote play then send to gaya
     char *file=query_val(REMOTE_VOD_PREFIX1);
@@ -541,15 +540,6 @@ TRACE;
 
         }
 
-        char *view = query_val("view");
-        if (util_starts_with(view,"tv") || util_starts_with(view,"movie")) {
-            // If in the tv  or movie view and all items have been deleted - go to the main view
-            if (!*query_val("idlist")) {
-                HTML_LOG(0,"Going back to main view");
-                query_remove("view");
-                query_remove("select");
-            }
-        }
 
     }
 

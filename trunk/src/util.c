@@ -67,6 +67,34 @@ struct hashtable *string_string_hashtable(int size)
 }
 
 
+// Replace all pairs  string,match1,replace1,match2,replace2,NULL
+char *replace_all_str(char *s_in,...)
+{
+    char *result;
+    va_list args;
+    char *match,*replace;
+
+    char *tmp;
+
+    va_start(args,s_in);
+
+    result = s_in;
+
+    while ((match = va_arg(args,char *)) != NULL ) {
+        replace = va_arg(args,char *);
+
+        tmp = replace_str(result,match,replace);
+
+        if (result != s_in) FREE(result);
+        result = tmp;
+    }
+    va_end(args);
+    if (result == s_in) {
+        result = STRDUP(result);
+    }
+    return result;
+
+}
 char *replace_str(char *s_in,char *match,char *replace)
 {
     char *tmp;

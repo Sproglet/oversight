@@ -202,7 +202,7 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     int total=0;
     struct hashtable *overview = NULL;
 
-    char *view=query_val("view");
+    char *view=query_val(QUERY_PARAM_VIEW);
 
 TRACE;
    

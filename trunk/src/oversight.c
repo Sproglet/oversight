@@ -176,7 +176,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     // Run the old cgi script for admin functions
     // This will be phased out as the admin functions are brought in.
-    char *view=query_val("view");  
+    char *view=query_val(QUERY_PARAM_VIEW);  
 
 
 
@@ -184,11 +184,8 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     html_comment("Begin Actions");
     do_actions();
-    html_comment("End Actions view=%s select=%s ==",query_val("view"),query_val("select"));
+    html_comment("End Actions view=%s select=%s ==",query_val(QUERY_PARAM_VIEW),query_val("select"));
    
-    // After actions get view again. This is in case we have just deleted the last item in 
-    // a tv or moview view. Then we want to go back to the main view.
-    view=query_val("view");  
 
 
     DbRowSet **rowsets;
@@ -197,6 +194,22 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
     HTML_LOG(0,"Got %d rows",num_rows);
     dump_all_rows("sorted",num_rows,sorted_rows);
+
+    if (num_rows == 0 && (util_starts_with(view,"tv") || util_starts_with(view,"movie"))) {
+        // If in the tv  or movie view and all items have been deleted - go to the main view
+        char *back = return_query_string();
+        HTML_LOG(0,"Going back to main view using [%s]",back);
+        html_hashtable_dump(0,"preback",g_query);
+        parse_query_string(back,g_query);
+        html_hashtable_dump(0,"postback",g_query);
+        FREE(back);
+        // Now refetch all data again with new parameters.
+        FREE(sorted_rows);
+        db_free_rowsets_and_dbs(rowsets);
+        num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
+        HTML_LOG(0,"refetched %d rows",num_rows);
+        view=query_val(QUERY_PARAM_VIEW);  
+    }
 
 TRACE;
 

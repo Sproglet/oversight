@@ -394,7 +394,7 @@ long get_scanlines(int *is_pal) {
 void config_read_dimensions() {
 
     char scanlines_str[9];
-    int pal_fixed = 0;
+    int ar_fixed = 0;
 
     
     html_comment("read dimensions");
@@ -438,27 +438,39 @@ void config_read_dimensions() {
             config_get_long_indexed(g_oversight_config,"ovs_cols",scanlines_str,&(g_dimension->cols));
         }
 
+        double ntsc_fix = 8 / 7.0; // scale height by this amount
+        double pal_fix = 576.0 / 480; // scale height by this amount
+
         if (g_dimension->poster_menu_img_height == 0) {
             //compute
-            int lines=500;
+            int lines=480;
             if (g_dimension->scanlines) lines=g_dimension->scanlines;
 
             html_comment("rows = %d\n",g_dimension->rows);
-            g_dimension->poster_menu_img_height = lines * 1.0 / ( g_dimension->rows + 2.2 ) ;
 
-            if (g_dimension->is_pal) {
-                // Need adjustment for Gaya PAL mode on NMT otherwise vertical is squashed
-                pal_fixed = 1;
+            double virtual_rows = g_dimension->rows + 2.5;
+
+            if (g_dimension->scanlines == 0) {
+                // Need adjustment for Gaya SD modes on NMT otherwise vertical is squashed
+                ar_fixed = 1;
             }
+            g_dimension->poster_menu_img_height = lines / virtual_rows ;
+
         }
 
         if (g_dimension->poster_menu_img_width == 0) {
             //compute from height
             g_dimension->poster_menu_img_width =  g_dimension->poster_menu_img_height / 1.5 ;
-            if (pal_fixed) {
-                // the height has been scaled to compensate for gaya bug. 
-                // Scale the width based on the original height!
-                g_dimension->poster_menu_img_height *= ( 576.0 / 480 );
+            if (ar_fixed) {
+                // Gaya has SD NTSC distortion a square appears 54w 48h
+                g_dimension->poster_menu_img_height *= ntsc_fix;
+
+                if (g_dimension->is_pal) {
+                    // Even worse PAL distortion.
+                    // the height has been scaled to compensate for gaya bug. 
+                    // Scale the width based on the original height!
+                    g_dimension->poster_menu_img_height *= pal_fix;
+                }
             }
         }
 

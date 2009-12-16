@@ -1,0 +1,9 @@
+<!-- Default Buttons Template  $Id:$ -->
+    [:SELECT_MARK_SUBMIT:]
+    [:SELECT_DELETE_SUBMIT:]
+    [:SELECT_DELIST_SUBMIT:]
+    [:SELECT_CANCEL_SUBMIT:]
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

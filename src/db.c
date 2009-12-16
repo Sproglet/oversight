@@ -1287,9 +1287,10 @@ DbRowSet * db_scan_titles(
         ){
 
     regex_t pattern;
+
     DbRowSet *rowset = NULL;
 
-    char *view=query_val("view");
+    char *view=query_val(QUERY_PARAM_VIEW);
     int tv_or_movie_view = (strcmp(view,VIEW_TV)==0 || strcmp(view,VIEW_MOVIE) == 0);
 
     int num_ids;
@@ -1304,7 +1305,8 @@ DbRowSet * db_scan_titles(
 
     HTML_LOG(3,"Creating db scan pattern..");
 
-    if (name_filter && *name_filter) {
+    // Special case if the name_filter starts with P then it is a regex. If it starts with S then a string
+    if (name_filter && *name_filter && *name_filter == NAME_FILTER_REGEX_FLAG[0] ) {
         // Take the pattern and turn it into <TAB>_ID<TAB>pattern<TAB>
         int status;
 
@@ -1318,22 +1320,6 @@ DbRowSet * db_scan_titles(
             return NULL;
         }
         HTML_LOG(0,"filtering by regex [%s]",name_filter);
-    }
-
-    char *watched_substring=NULL;
-    switch(watched) {
-        case DB_WATCHED_FILTER_NO : watched_substring = "\t" DB_FLDID_WATCHED "\t0\t"; break;
-        case DB_WATCHED_FILTER_YES : watched_substring = "\t" DB_FLDID_WATCHED "\t1\t"; break;
-        case DB_WATCHED_FILTER_ANY : watched_substring = NULL ; break;
-        default: assert(watched == DB_WATCHED_FILTER_NO); break;
-    }
-
-    char *media_substring=NULL;
-    switch(media_type) {
-        case DB_MEDIA_TYPE_TV : media_substring = "\t" DB_FLDID_CATEGORY "\tT\t"; break;
-        case DB_MEDIA_TYPE_FILM : media_substring = "\t" DB_FLDID_CATEGORY "\tM\t"; break;
-        case DB_MEDIA_TYPE_ANY : media_substring = NULL ; break;
-        default: assert(watched == DB_MEDIA_TYPE_TV); break;
     }
 
     char *genre_filter = query_val(DB_FLDID_GENRE);
@@ -1423,8 +1409,8 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
 
                     if (genre_filter && *genre_filter && keeprow) {
                         //HTML_LOG(0,"genre [%.*s]",10,rowid.genre);
-                        if (rowid.genre && !strstr(rowid.genre,genre_filter)) {
-                            HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
+                        if (EMPTY_STR(rowid.genre) || strstr(rowid.genre,genre_filter) == NULL ) {
+                            //HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
                             keeprow=0;
                         }
                     }
@@ -1432,10 +1418,17 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
                     //if (keeprow) HTML_LOG(0,"xx genre ok");
 
                     if (name_filter && *name_filter && keeprow) {
-                        int match= regexec(&pattern,rowid.title,0,NULL,0);
+                        int match=-1;
+                        if (*name_filter == NAME_FILTER_REGEX_FLAG[0]) {
+                            match= regexec(&pattern,rowid.title,0,NULL,0);
+                        } else if ( *name_filter == NAME_FILTER_STRING_FLAG[0] ) {
+                            match = strcasecmp(rowid.title,name_filter+1);
+                        }
                         if (match != 0 ) {
                             HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
                             keeprow=0;
+                        } else {
+                            HTML_LOG(1,"matched [%s]",rowid.title);
                         }
                     }
                     if (keeprow) {

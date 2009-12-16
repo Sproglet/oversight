@@ -48,6 +48,9 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define VIEW_MOVIEBOXSET "movieboxset"
 #define VIEW_MIXED "mixed"
 
+#define QUERY_PARAM_VIEW "view"
+#define QUERY_PARAM_PAGE "p"
+#define QUERY_PARAM_IDLIST "idlist"
 #define QUERY_PARAM_EPISODE_TITLES "_et"
 #define QUERY_PARAM_EPISODE_DATES "_ed"
 #define QUERY_PARAM_TYPE_FILTER "_tf"
@@ -73,6 +76,8 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define EMPTY_STR(str) ((str) == NULL || (*(str)) == '\0')
 #define IFEMPTY(s,alt) (EMPTY_STR(s)?(alt):(s))
 
+#define NAME_FILTER_REGEX_FLAG "R"
+#define NAME_FILTER_STRING_FLAG "S"
 char *get_mounted_path(char *source,char *path,int *freeit);
 
 // Instead of converting timestamps to epoc time use a rough representation (see time_ordinal)

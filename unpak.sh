@@ -1626,7 +1626,7 @@ delete_files() {
 
 #more than 50% pars
 par_set() {
-    par_count=`ls *[Pp][Aa][Rr]2 | line_count`
+    par_count=`ls *[Pp][Aa][Rr]2 2>/dev/null | line_count`
     all_count=`ls | line_count`
     [ $(( $par_count * 2 )) -gt $all_count ]
 }

@@ -25,7 +25,7 @@
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
 #define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES "p,idlist,view"
+#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_REGEX "," QUERY_PARAM_SEASON
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
@@ -41,6 +41,9 @@ char *get_final_link_with_font(char *params,char *attr,char *title,char *font_at
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
 void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp);
+char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class);
+char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class);
+char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -171,7 +174,7 @@ char *self_url(char *new_params) {
     char *param_name;
     char *param_value;
 
-#define QSELFURLX
+#define QSELFURL
 #ifdef QSELFURL
     // Store params here.
     int pcount=0;
@@ -235,7 +238,7 @@ char *self_url(char *new_params) {
 #else
 
     char *new;
-    ovs_asprintf(&tmp,"%s%s%c%s",cgi_url(0),old_params,(first?'?':'&'),new_params);
+    ovs_asprintf(&tmp,"%s%s%c%s",cgi_url(0),NVL(old_params),(first?'?':'&'),new_params);
     FREE(old_params);
     new = tmp;
 #endif
@@ -406,6 +409,7 @@ char *drill_down_url(char *new_params,char *param_list)
     /*
      * Compute the new url
      */
+    HTML_LOG(0,"xx get drilldown for [%s][%s]",new_params,new_drilldown_params);
     char *final = self_url2(new_params,new_drilldown_params);
 
     FREE(new_drilldown_params);
@@ -413,9 +417,9 @@ char *drill_down_url(char *new_params,char *param_list)
     return final;
 }
 
-// this is a link where existing @p,@view,@idlist parameters are moved back to
+// this is a query string where existing @p,@view,@idlist parameters are moved back to
 // p,view,idlist // so that we can return the the previous screen.
-char *return_url(char *new_params,char *param_list) 
+char *return_query_string() 
 {
 
     /*
@@ -435,18 +439,19 @@ char *return_url(char *new_params,char *param_list)
      * end for
      *
  * e.g
- * '@p=1 & @@p=2 & @@@p = 3    new_params = p=5
+ * '@p=1 & @@p=2 & @@@p = 3  
  *
  * becomes
  *
  * 'p=1 & @p=2 & @@p = 3
-     * eg given 'p=1 & @p=2 & @@p = 3  AND new params p = 4 we want
-     *
-     * p = 2 & @p = 3 
-     * 
      */
-    char *new_drilldown_params = NULL;
-    Array *drilldown_root_names=split(param_list,",",0);
+    static Array *drilldown_root_names= NULL;
+    if (drilldown_root_names == NULL ) {
+        drilldown_root_names = split(DRILL_DOWN_PARAM_NAMES,",",0);
+    }
+
+    Array *new_drilldown_params = array_new(free);
+
     int i;
     if (drilldown_root_names) {
         for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
@@ -468,17 +473,12 @@ char *return_url(char *new_params,char *param_list)
 
                         char *new_name = qname + 1;
 
-                        if (new_drilldown_params == NULL) {
-                            ovs_asprintf(&new_drilldown_params,"%s=%s",new_name,qval);
-                        } else {
-                            ovs_asprintf(&tmp,"%s&%s=%s",new_drilldown_params,new_name,qval);
-                            FREE(new_drilldown_params);
-                            new_drilldown_params = tmp;
-                        }
+                        ovs_asprintf(&tmp,"&%s=%s",new_name,qval);
+                        array_add(new_drilldown_params,tmp);
 
-                        if (depth > max_depth ) {
-                            max_depth = depth;
-                        }
+                    }
+                    if (depth > max_depth ) {
+                        max_depth = depth;
                     }
                 }
                 // Now remove the deepest eg.
@@ -488,9 +488,8 @@ char *return_url(char *new_params,char *param_list)
                     char *last_name = get_drilldown_name(param_name,num_prefix);
 
                     char *tmp;
-                    ovs_asprintf(&tmp,"%s&%s=",new_drilldown_params,last_name);
-                    FREE(new_drilldown_params);
-                    new_drilldown_params = tmp;
+                    ovs_asprintf(&tmp,"&%s=",last_name);
+                    array_add(new_drilldown_params,tmp);
                 }
 
 
@@ -498,13 +497,20 @@ char *return_url(char *new_params,char *param_list)
             }
         }
     }
-    array_free(drilldown_root_names);
+    char *result = arraystr(new_drilldown_params);
+    FREE(new_drilldown_params);
+    return result;
+}
+
+// Compute url to go back to previous link.
+char *return_url() {
     /*
      * Compute the new url
      */
-    char *final = self_url2(new_params,new_drilldown_params);
+    char *tmp = return_query_string();
+    char *final = self_url(tmp+1);
     HTML_LOG(0,"return url = [%s]",final);
-    FREE(new_drilldown_params);
+    FREE(tmp);
 
     return final;
 }
@@ -577,10 +583,14 @@ char *get_self_link(char *params,char *attr,char *title) {
     assert(title);
     char *result=NULL;
 
-    HTML_LOG(1," begin self link for params[%s] attr[%s] title[%s]",params,attr,title);
+    if (strstr(params,"Mark")) {
+        HTML_LOG(0," begin self link for params[%s] attr[%s] title[%s]",params,attr,title);
+        html_hashtable_dump(0,"query",g_query);
+    }
 
     char *url = self_url(params);
-    HTML_LOG(2," end self link [%s]",url);
+    if (strstr(params,"Mark"))
+        HTML_LOG(0," end self link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
 
@@ -623,15 +633,14 @@ char *drill_down_link(char *params,char *attr,char *title) {
  * @title  <a>title</a>
  * @param_list = list of parameters whose old values are kept in the url.
  */
-char *return_link(char *params,char *attr,char *title) {
-    assert(params);
+char *return_link(char *attr,char *title) {
     assert(attr);
     assert(title);
     char *result=NULL;
 
-    HTML_LOG(1," begin drill down link for params[%s] attr[%s] title[%s]",params,attr,title);
+    HTML_LOG(1," begin drill down link for attr[%s] title[%s]",attr,title);
 
-    char *url = return_url(params,DRILL_DOWN_PARAM_NAMES);
+    char *url = return_url();
     HTML_LOG(2," end drill down link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
@@ -781,7 +790,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
             //small text to auto load a file using <a onfocusload> and <body onloadset>
             char *params =NULL;
             ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
-            //ovs_asprintf(&params,"idlist=&view=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
+            //ovs_asprintf(&params,"idlist=&"QUERY_PARAM_VIEW"=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
             //
             result = get_final_link_with_font(params,class,title,class);
             //result = get_self_link_with_font(params,class,title,class); XX
@@ -1008,13 +1017,12 @@ void display_footer(
  * html code for an image link where url will drillup - ie remap @@param to @param
  * and @param to param.
  */
-char *get_theme_image_return_link(char *qlist,char *href_attr,char *image_name,char *button_attr)
+char *get_theme_image_return_link(char *href_attr,char *image_name,char *button_attr)
 {
-    assert(qlist);
     assert(image_name);
 
     char  *tag=get_theme_image_tag(image_name,button_attr);
-    char *result = return_link(qlist,href_attr,tag);
+    char *result = return_link(href_attr,tag);
     FREE(tag);
     return result;
 }
@@ -2103,31 +2111,20 @@ TRACE;
 
         cell_text = STRDUP(title);
 
-    } else if (tv_or_movie) {
+    } else if (strcmp(newview,"tv") == 0 ) {
+        // TV shows are drill down by title and season
+        cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class);
 
-#define USE_TEMPLATE
-#ifdef USE_TEMPLATE
-        static char *link_template = NULL;
-        if (link_template == NULL ) {
+    } else if (util_starts_with(newview,"tv") ) {
+        // Box sets or TV shows are drill down by title
+        cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class);
 
-            link_template = get_drilldown_link_with_font("view=@VIEW@&p=&idlist=@IDLIST@","@ATTR@","@TITLE@","@FONT_CLASS@");
-        }
-        char *tmp;
-        tmp=replace_str(link_template,"@VIEW@",newview);
-        cell_text=replace_str(tmp,"@IDLIST@",idlist); FREE(tmp);
-        tmp=replace_str(cell_text,"@ATTR@",attr); FREE(cell_text);
-        cell_text=replace_str(tmp,"@TITLE@",title); FREE(tmp);
-        tmp=replace_str(cell_text,"@FONT_CLASS@",font_class); FREE(cell_text);
-        cell_text = tmp;
 
-#else
-        char *params;
-        ovs_asprintf(&params,"view=%s&p=&idlist=%s",newview,idlist);
+    } else if (row_id->category == 'M') {
+        // Movies are drill down by ID
+        cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class);
 
-        cell_text = get_drilldown_link_with_font(params,attr,title,font_class);
 
-        FREE(params);
-#endif
 
     } else {
 
@@ -2164,7 +2161,7 @@ TRACE;
 
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s%s class=grid%d %s >%s%s%s%s</td>",
+    ovs_asprintf(&result,"\t<td %s%s class=grid%d %s >%s%s%s%s</td>\n",
             (cell_background_image?"background=":""),
             (cell_background_image?cell_background_image:""),
 
@@ -2186,6 +2183,63 @@ TRACE;
     FREE(cell_text);
     FREE(title); // first_space points inside of title
     return result;
+}
+char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class)
+{
+    static char *link_template = NULL;
+    if (link_template == NULL ) {
+
+        link_template = get_drilldown_link_with_font(
+            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&"QUERY_PARAM_SEASON"=@SEASON@",
+            "@ATTR@","@TITLE@","@FONT_CLASS@");
+        HTML_LOG(0,"xx template[%s]",link_template);
+    }
+    char season_txt[9];
+    sprintf(season_txt,"%d",season);
+
+    return replace_all_str(link_template,
+            "@VIEW@",view,
+            "@NAME@",name,
+            "@SEASON@",season_txt,
+            "@ATTR@",attr,
+            "@TITLE@",title,
+            "@FONT_CLASS@",font_class,
+            NULL);
+}
+
+char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class)
+{
+    static char *link_template = NULL;
+    if (link_template == NULL ) {
+
+        link_template = get_drilldown_link_with_font(
+                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@","@ATTR@","@TITLE@","@FONT_CLASS@");
+        HTML_LOG(0,"xx template[%s]",link_template);
+    }
+    return replace_all_str(link_template,
+            "@VIEW@",view,
+            "@NAME@",name,
+            "@ATTR@",attr,
+            "@TITLE@",title,
+            "@FONT_CLASS@",font_class,
+            NULL);
+}
+char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class)
+{
+    static char *link_template = NULL;
+    if (link_template == NULL ) {
+
+        link_template = get_drilldown_link_with_font(
+               QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@","@ATTR@","@TITLE@","@FONT_CLASS@");
+        HTML_LOG(0,"xx template[%s]",link_template);
+    }
+    return replace_all_str(link_template,
+            "@VIEW@",view,
+            "@IDLIST@",idlist,
+            "@ATTR@",attr,
+            "@TITLE@",title,
+            "@FONT_CLASS@",font_class,
+            NULL);
 }
 
 char *get_drilldown_view(DbRowId *rid) {
@@ -2683,29 +2737,19 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         }
     }
 
-
     // First output the javascript functions - diretly to stdout - lazy.
     write_titlechanger(rows,cols,numids,row_ids,idlist);
 
-#define QGRID
-#ifdef QGRID
-    Array *rowArray = array_new(array_free);
-#endif
+    Array *rowArray = array_new((void(*)(void *))array_free);
 
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
 
-
         HTML_LOG(0,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
-#ifdef QGRID
+
         Array *cellArray = array_new(free);
         array_add(cellArray,tmp);
-#else
-        FREE(result);
-        result=tmp;
-#endif
-
 
         for ( c = 0 ; c < cols ; c++ ) {
             i = c * rows + r ;
@@ -2728,24 +2772,13 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
                 }
 
             }
-#ifdef QGRID
+
             if (item) array_add(cellArray,item);
-#else
-            ovs_asprintf(&tmp,"%s%s\n",result,NVL(item));
-            FREE(result);
-            FREE(item);
-            result=tmp;
-#endif
             HTML_LOG(1,"grid end col %d",c);
         }
-#ifdef QGRID
+
         array_add(cellArray,STRDUP("</tr>\n"));
         array_add(rowArray,cellArray);
-#else
-        ovs_asprintf(&tmp,"%s</tr>\n",result);
-        FREE(result);
-        result=tmp;
-#endif
         HTML_LOG(0,"grid end row %d",r);
 
     }
@@ -2760,10 +2793,8 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
         w="";
     }
 
-#ifdef QGRID
     result = array2dstr(rowArray);
     array_free(rowArray);
-#endif
 
     ovs_asprintf(&tmp,"<center>%s\n%s\n%s</center>\n",
             table_start,
@@ -2912,18 +2943,20 @@ int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
 
 TRACE;
 
-    char *regex = get_tvid(query_val(QUERY_PARAM_REGEX));
+    int free_regex=0;
+    char *regex = query_val(QUERY_PARAM_REGEX);
 
-    if (regex == NULL || !*regex) {
+    if (EMPTY_STR(regex)) {
 TRACE;
         //Check regex entered via text box
 
         if (*query_val("searcht") && *query_val(QUERY_PARAM_SEARCH_MODE)) {
             regex=util_tolower(query_val("searcht"));
+            free_regex=1;
         }
     }
 TRACE;
-    HTML_LOG(3,"Regex filter = %s",regex);
+    HTML_LOG(0,"Regex filter = %s",regex);
 
     // Watched filter
     // ==============
@@ -2970,7 +3003,7 @@ TRACE;
 
 TRACE;
 
-    if (regex && *regex ) { FREE(regex); regex=NULL; }
+    if (free_regex) { FREE(regex); }
 
     struct hashtable *overview = db_overview_hash_create(rowsets);
 TRACE;
@@ -2983,7 +3016,7 @@ TRACE;
     int numrows = hashtable_count(overview);
 TRACE;
 
-    if (strcmp(query_val("view"),VIEW_TV) == 0) {
+    if (strcmp(query_val(QUERY_PARAM_VIEW),VIEW_TV) == 0) {
 TRACE;
 
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);

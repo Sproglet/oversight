@@ -73,9 +73,9 @@ jpg_resize() {
             # Pal is created from the SD but we need to maintain the quality
             o="-width=685 -height=542" ; q=90 ;;
 
-        */_J/*.thumb.jpg) o="-width=150" ; q=85 ;;
+        */_J/*.thumb.jpg) o="-width=200" ; q=85 ;;
 
-        */_J/*.jpg) o="-width=300" ; q=85 ;;
+        */_J/*.jpg) o="-width=400" ; q=85 ;;
 
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac

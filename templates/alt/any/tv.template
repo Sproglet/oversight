@@ -119,7 +119,9 @@ hr { color:#FBB917 }
             </td>
 
             <td width=100% class=main>
-[:IF($ovs_fade):]
+[:IF(1-$ovs_display_fanart):]
+                <table width="100%" >
+[:ELSEIF($ovs_fade):]
                 <table width="100%" background="[:URL_BASE:]/templates/alt/images/transfade[:$ovs_transparency:].png" >
                     <tr><td>&nbsp;</td><td></td></tr>
 [:ELSE:]
@@ -141,7 +143,11 @@ hr { color:#FBB917 }
         </tr>
         <tr valign="bottom" >
             <td colspan=2 >
+[:IF(1-$ovs_display_fanart):]
+                <table width=100% >
+[:ELSE:]
                 <table width=100% background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
                     <tr>
                         <td class=filelist align=center>
                         [:TV_LISTING:]

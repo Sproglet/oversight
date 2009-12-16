@@ -811,7 +811,7 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     char *url=NULL;
 
 TRACE;
-    if (strcasecmp(query_val("view"),"admin") == 0) {
+    if (strcasecmp(query_val(QUERY_PARAM_VIEW),"admin") == 0) {
         char *action = query_val("action");
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;
@@ -1072,13 +1072,13 @@ char *macro_fn_help_button(char *template_name,char *call,Array *args,int num_ro
 }
 
 char *macro_fn_setup_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return get_theme_image_link("view=admin&action=ask","TVID=SETUP","configure","");
+    return get_theme_image_link(QUERY_PARAM_VIEW"=admin&action=ask","TVID=SETUP","configure","");
 }
 
 char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) {
 
     char *select = query_val("select");
-    char *view = query_val("view");
+    char *view = query_val(QUERY_PARAM_VIEW);
     int page = get_current_page();
     char *result = NULL;
 
@@ -1131,19 +1131,19 @@ char *macro_fn_right_button(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_back_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val("view") && !*query_val("select")) {
+    if (*query_val(QUERY_PARAM_VIEW) && !*query_val("select")) {
         char *attr = "";
         if (args && args->size == 1) {
             attr=args->array[0];
         }
-        result = get_theme_image_return_link("view=&idlist=","name=up","back",attr);
+        result = get_theme_image_return_link("name=up","back",attr);
     }
     return result;
 }
 
 char *macro_fn_menu_tvid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    char *url = self_url("view=&idlist=");
+    char *url = self_url(QUERY_PARAM_VIEW"=&idlist=");
     ovs_asprintf(&result,"<a href=\"%s\" TVID=TAB ></a>",url);
     FREE(url);
     return result;

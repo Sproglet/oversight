@@ -43,18 +43,29 @@ table.overview_poster {
 <center>
         <table class=main width=100% height=100%>
         <tr><td>
-            <table class=header width=100%>
+            <table class=header width=100% >
                 <tr>
-                    <td>[:TITLE_SELECT:]</td>
-                    <td>[:GENRE_SELECT:]</td>
-                    <td>[:MEDIA_SELECT:]</td>
-                    <td>[:WATCHED_SELECT:]</td>
+                    <td>[:HOME_BUTTON:]</td>
+[:IF($@sd):]
+                    <td align=center>[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
+                    <td align=center>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>
+[:ELSE:]
+                    <td align=center>[:TITLE_SELECT:]</td>
+                    <td align=center>[:WATCHED_SELECT:]</td>
+                    <td align=center>[:MEDIA_SELECT:]</td>
+                    <td align=center>[:GENRE_SELECT:]</td>
+[:ENDIF:]
                     <td>[:SORT_TYPE_TOGGLE:]</td>
                     <td><span class="status">[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</span></td>
-                    <td>[:SETUP_BUTTON:]</td>
+                    <td align=right>[:SETUP_BUTTON:]</td>
+                    [<td align=center>:EXIT_BUTTON:</td>]
                 </tr>
                 <tr>
+[:IF($@sd):]
                     <td colspan=7 align=center >
+[:ELSE:]
+                    <td colspan=9 align=center >
+[:ENDIF:]
                         <span class=menutitle id="menutitle">&nbsp;</span>
                         <span class=menutitle id="unwatchedtotal">&nbsp;</span>
                         <span class=menutitle id="watchedtotal">&nbsp;</span>
@@ -70,8 +81,6 @@ table.overview_poster {
                 <tr valign=top>
                     <td width=10%>[:LEFT_BUTTON:]</td>
                     [<td align=center>:BACK_BUTTON:</td>]
-                    [<td align=center>:EXIT_BUTTON:</td>]
-                    <td align=center>[:HOME_BUTTON:]</td>
 [:IF($@gaya):]
 [:ELSE:]
                     [<td align=center>:MARK_BUTTON:</td>]

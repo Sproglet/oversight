@@ -24,4 +24,4 @@ unpak_maximum_par_repair_minutes:Only attempt par repairs if they will complete 
 #unpak_subfolder_by_newsgroup_0:"erotica:PIN:FOLDER"
 #unpak_subfolder_by_newsgroup_1:"sounds:/share/Music"
 #unpak_subfolder_by_newsgroup_2:"pictures:Pictures"
-unpak_delete_samples:Delete sample files after succesfull unpack|1|0
+unpak_delete_samples:Files matching this pattern are deleted if other media files are present

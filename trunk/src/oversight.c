@@ -211,6 +211,12 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         view=query_val(QUERY_PARAM_VIEW);  
     }
 
+    // Remove and store the last navigation cell. eg if user clicked on cell 12 this is passed in 
+    // the URL as @i=12. The url that returns to this page then has i=12. If we have returned to this
+    // page we must remove i=12 from the query so that it is not passed to the new urls created for this 
+    // page.
+    set_selected_item();
+
 TRACE;
 
     char *skin_name=oversight_val("ovs_skin_name");
@@ -466,6 +472,5 @@ TRACE;
     }
     return new;
 }
-
 
 

@@ -408,11 +408,18 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
-    if (!hashtable_search(g_genre_hash,"")) {
-        hashtable_insert(g_genre_hash,STRDUP(""),STRDUP("All Genres"));
+    HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
+    if (g_genre_hash != NULL) {
+        if (!hashtable_search(g_genre_hash,"")) {
+        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
+            hashtable_insert(g_genre_hash,STRDUP(""),STRDUP("All Genres"));
+        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
+        }
+        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
+        result = auto_option_list(DB_FLDID_GENRE,"",g_genre_hash);
+        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
+        *free_result = 0; // TODO : this should be freed but we'll leave until next release.
     }
-    result = auto_option_list(DB_FLDID_GENRE,"",g_genre_hash);
-    *free_result = 0; // TODO : this should be freed but we'll leave until next release.
     return result;
 }
 
@@ -866,7 +873,7 @@ char *macro_fn_start_cell(char *template_name,char *call,Array *args,int num_row
     if (*query_val(QUERY_PARAM_REGEX)) {
         return "filter5";
     } else {
-        return "centreCell";
+        return "selectedCell";
     }
 
 }
@@ -899,9 +906,9 @@ char *macro_fn_media_toggle(char *template_name,char *call,Array *args,int num_r
 
 }
 char *macro_fn_watched_toggle(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return get_toggle("green",QUERY_PARAM_WATCHED_FILTER,
-            QUERY_PARAM_WATCHED_VALUE_NO,"Unmarked",
-            QUERY_PARAM_WATCHED_VALUE_YES,"Marked");
+    return get_toggle("yellow",QUERY_PARAM_WATCHED_FILTER,
+            QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched",
+            QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
 }
 char *macro_fn_sort_type_toggle(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     return get_toggle("blue",QUERY_PARAM_SORT,
@@ -1086,6 +1093,9 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
     assert(tvid_name);
     assert(image_base_name);
 
+//    char *button_attr=" width=10px height=10px ";
+    char *button_attr="";
+
     if (! *select) {
         //only show page controls when NOT selecting
         if (on)  {
@@ -1094,17 +1104,24 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
             ovs_asprintf(&params,"p=%d",page+offset);
             ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
 
-            HTML_LOG(2,"dbg params [%s] attr [%s] tvid [%s]",params,attrs,tvid_name);
-
-            result = get_theme_image_link(params,attrs,image_base_name,"");
+            if (g_dimension->local_browser) {
+                // draw invisible page controls
+                char *url=self_url(params);
+                ovs_asprintf(&result,"<a href=\"%s\" %s></a>",url,attrs);
+            } else {
+                // visible page controls in browser
+                result = get_theme_image_link(params,attrs,image_base_name,button_attr);
+            }
             FREE(params);
             FREE(attrs);
         } else if (! *view ) {
-            //Only show disabled page controls in main menu view (not tv / movie subpage) - this may change
-            char *image_off=NULL;
-            ovs_asprintf(&image_off,"%s-off",image_base_name);
-            result = get_theme_image_tag(image_off,NULL);
-            FREE(image_off);
+            if (!g_dimension->local_browser) {
+                //show disabled page controls in browser
+                char *image_off=NULL;
+                ovs_asprintf(&image_off,"%s-off",image_base_name);
+                result = get_theme_image_tag(image_off,button_attr);
+                FREE(image_off);
+            }
         }
     }
     return result;
@@ -1936,6 +1953,16 @@ char *get_variable(char *vname,int *free_result)
                 convert_int=1;
                 int_val = gaya_prev_file();
             }
+
+        } else if (strcmp(vname+1,"hd") == 0) {
+
+            convert_int=1;
+            int_val = g_dimension->scanlines > 0;
+
+        } else if (strcmp(vname+1,"sd") == 0) {
+
+            convert_int=1;
+            int_val = g_dimension->scanlines == 0;
 
         } else if (strcmp(vname+1,"poster_mode") == 0) {
             return ( g_dimension->poster_mode ? "1" : "0" ) ; // $@gaya

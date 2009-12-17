@@ -2843,6 +2843,7 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     // Create space for pruned rows
     HTML_LOG(0,"get_grid page %ld rows %d cols %d",page,rows,cols);
     DbRowId **prunedRows = filter_delisted(start,numids,row_ids,items_per_page,&total);
+    HTML_LOG(0,"pruned");
     
     int page_before = (page > 0);
     int page_after = (numids >= total);

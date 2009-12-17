@@ -1,4 +1,4 @@
-# $Id: oversight.cfg.example 449 2009-10-18 02:52:48Z lordylordy $ 
+# $Id: oversight.cfg.example 616 2009-12-09 06:32:45Z lordylordy $ 
 ovs_config_version=1
 ovs_tvboxsets=1
 ovs_log_level=0
@@ -17,6 +17,8 @@ ovs_title_bar="poster_mode"
 ovs_auto_prune=1
 ovs_use_folders_as_titles=0
 ovs_nas_timeout=20
+ovs_hm_runtime_format="%dh&nbsp;%dm"
+ovs_m_runtime_format="%d&nbsp;min"
 
 ovs_poster_mode[0]=1
 ovs_rows[0]=9

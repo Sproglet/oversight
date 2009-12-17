@@ -24,6 +24,7 @@
 #define DB_FLDID_SEASON0 "0_s"
 #define DB_FLDID_EPISODE0 "0_e"
 
+#define DB_FLDID_RUNTIME "_rt"
 #define DB_FLDID_GENRE "_G"
 #define DB_FLDID_RATING "_r"
 #define DB_FLDID_CERT "_R"

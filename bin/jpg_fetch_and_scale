@@ -138,7 +138,7 @@ resize_img() {
             ;;
         poster)
             # assuming covers are high quality we can start with 50% reduction in djpeg stage
-            jpg_resize "$2" "$2" "1/2"
+            jpg_resize "$2" "$2" "1/1"
             jpg_resize "$2" "$base.thumb.jpg" "1/2"
             ;;
     esac

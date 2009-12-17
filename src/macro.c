@@ -452,6 +452,64 @@ char *macro_fn_season(char *template_name,char *call,Array *args,int num_rows,Db
     }
     return season;
 }
+int chartotal(char *s,char *c) {
+    int total =0;
+    while (*s) {
+        if (strchr(c,*s++)) total++;
+    }
+    return total;
+}
+
+char *macro_fn_runtime(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    int runtime = 0;
+    int i;
+    for(i = 0 ; i < num_rows ; i++ ) {
+        DbRowId *rid = sorted_rows[i];
+        if (rid->runtime > 0 ) {
+            runtime = rid->runtime;
+            break;
+        }
+    }
+
+    HTML_LOG(0,"runtime=[%d]",runtime);
+
+    if (runtime == 0) {
+        *free_result=0;
+        return NULL;
+    }
+
+#define MAX_RUNTIME 30
+    static char runtime_str[MAX_RUNTIME+1];
+    char *hm_format = oversight_val("ovs_hm_runtime_format");
+    char *m_format = oversight_val("ovs_m_runtime_format");
+
+    HTML_LOG(0,"ovs_hm_runtime_format[%s]",hm_format);
+    HTML_LOG(0,"ovs_m_runtime_format[%s]",m_format);
+
+    runtime_str[MAX_RUNTIME]='\0';
+    if (runtime >= 60 ) {
+
+        if (chartotal(hm_format,"%") > 1 ) {
+            sprintf(runtime_str,hm_format,runtime/60,runtime%60);
+        } else {
+            sprintf(runtime_str,hm_format,runtime);
+        }
+
+    } else {
+
+        if (chartotal(m_format,"%") > 1 ) {
+            sprintf(runtime_str,m_format,runtime/60,runtime%60);
+        } else {
+            sprintf(runtime_str,m_format,runtime);
+        }
+    }
+    assert(runtime_str[MAX_RUNTIME] == '\0');
+    HTML_LOG(0,"runtime[%d]m = [%s]",runtime,runtime_str);
+
+    *free_result = 0;
+    return runtime_str;
+}
 char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     if (num_rows == 0 || sorted_rows == NULL ) {
@@ -1813,6 +1871,7 @@ void macro_init() {
         hashtable_insert(macros,"GENRE",macro_fn_genre);
         hashtable_insert(macros,"SEASON",macro_fn_season);
         hashtable_insert(macros,"YEAR",macro_fn_year);
+        hashtable_insert(macros,"RUNTIME",macro_fn_runtime);
         hashtable_insert(macros,"RATING",macro_fn_rating);
         hashtable_insert(macros,"RATING_STARS",macro_fn_rating_stars);
         hashtable_insert(macros,"SOURCE",macro_fn_source);

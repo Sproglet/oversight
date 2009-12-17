@@ -58,7 +58,13 @@ body { color:yellow ; background-color:black; }
                             </tr>
                             <tr>
                                 <td align="left"><font id="genre">[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
-                                <td class="right">[:RATING_STARS(5):][:RATING:]</td>
+                                <td class="right">[:RATING_STARS(5):][:RATING:]<br>
+[:IF($@hd):]
+[Runtime&#58;&nbsp;:RUNTIME:]
+[:ELSE:]
+[:RUNTIME:]
+[:ENDIF:]
+</td>
                             </tr>
                             <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:]</span></td><tr>
                             <tr><Td>[:MOVIE_LISTING:]</td></tr>

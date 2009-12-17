@@ -408,16 +408,11 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
-    HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
     if (g_genre_hash != NULL) {
         if (!hashtable_search(g_genre_hash,"")) {
-        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
             hashtable_insert(g_genre_hash,STRDUP(""),STRDUP("All Genres"));
-        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
         }
-        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
         result = auto_option_list(DB_FLDID_GENRE,"",g_genre_hash);
-        HTML_LOG(0,"%s:%d",__FILE__,__LINE__);
         *free_result = 0; // TODO : this should be freed but we'll leave until next release.
     }
     return result;

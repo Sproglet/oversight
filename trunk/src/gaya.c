@@ -386,7 +386,7 @@ char *gaya_sent_oversight_url(int argc,char **argv)
             break;
         }
     }
-    fprintf(stderr,"gaya_sent_oversight_url=[%s]\n",p);
+    //fprintf(stderr,"gaya_sent_oversight_url=[%s]\n",p);
     return p;
 }
 

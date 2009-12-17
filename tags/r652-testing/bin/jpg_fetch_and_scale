@@ -1,0 +1,340 @@
+#!/bin/sh
+
+# $Id:$
+#
+# run commands to resize a backdrop
+# this requires
+# libjpeg commands cpeg and djpeg 
+# netpbm commands pamscalefixed
+#
+# Note it requires a lot of cpu esp on embedded machines.
+# on NMT it typically requires about 6 seconds per resize operation.
+#
+# For this reason all covers are processed first, then fanart is done 
+# afterwards. 
+
+# --------------------------------------------------------------
+# maxthreads determines how many instances of the script run.
+# This will fetch and resize images while the main catalog script
+# scrapes details.
+# for NMT platform use either 1 or 2. 
+
+maxthreads=1
+
+
+OVS_HOME=/share/Apps/oversight
+
+export PATH="$OVS_HOME/bin:$PATH"
+
+uid=nmt
+gid=nmt
+
+thread=0
+
+ARCH=
+if [ -f /mnt/syb8634/MIN_FIRMWARE_VER ] ;then
+    ARCH=nmt100
+    export PATH="$OVS_HOME/bin/$ARCH:$PATH"
+    export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
+else
+    if [ -f /nmt/apps/MIN_FIRMWARE_VER ] ; then
+        ARCH=nmt200
+        export PATH="$OVS_HOME/bin/$ARCH:$PATH"
+        export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
+    fi
+fi
+
+TMP=/share/Apps/oversight/tmp
+if [ ! -d $TMP ] ; then 
+    TMP=/tmp
+fi
+
+
+jpg_resize() {
+
+    # resize a jpeg to Sd or Hd backdrop
+
+    input="$1"
+    output="$2"
+
+    #This is the initial - approx scale down factor passed to djpeg for performance
+    #it is not the final image size.
+    #for example we know that going from hd to sd is roughly 1/2 so we first scale by that
+    initial_scale="$3"
+
+    o=
+    case "$output" in 
+
+        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=85 ;;
+
+        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=85 ;;
+
+        */_fa/*.pal.jpg)
+            # Pal is created from the SD but we need to maintain the quality
+            o="-width=685 -height=542" ; q=90 ;;
+
+        */_J/*.thumb.jpg) o="-width=200" ; q=85 ;;
+
+        */_J/*.jpg) o="-width=400" ; q=85 ;;
+
+        *) ERROR "Unknown image name [$output]" ; return 1 ;;
+    esac
+
+    #Could use a pipe but input may = output so use tmp file.
+    # We always resize even if the dimensions are unchanged because it makes file size much smaller
+    # INFO "$o to $output" 
+    # Remove it first in case it was a hard link to the original file.
+    tmpjpg=`thread_prefix`.jpg
+    tmppnm=`thread_prefix`.pnm
+
+    # we do the usual djpeg | pnmscale | cjpeg  but keep the pnm files so we can reuse them for other sizes.
+    # also input and output may be the same so we use intermediate file rather than pipes.
+    # this may also give better performance on embedded machines.
+    if ( cat "$input.pnm" 2>/dev/null || djpeg -dct fast -scale $initial_scale "$input" ) |\
+             pnmscalefixed $o > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
+       cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
+        perms "$output"
+    else
+        ERROR "Unable to generate $output from $input using $o"
+    fi
+}
+
+
+perms() {
+    chown $uid:$gid "$@"
+}
+
+fetch_resize() {
+    calling_pid="$1"; shift;
+    type="$1" ; shift; # poster or fanart
+    url="$1" ; shift;
+    file="$1" ; shift ;
+
+    INFO ""
+    INFO "Processing : $type $url $file"
+
+    if wget -O "$file" "$@" "$url" && [ -s "$file" ]  ; then
+        perms $file
+        resize_img "$type" "$file"  # &
+    else
+        rm -f "$file" 
+        ERROR "Failed wget -O $file $@ $url"
+    fi
+}
+
+# $1 = fanart | poster
+# $2 = source file
+resize_img() {
+
+    base=`echo "$2" | sed -r 's/\.(jpg|png)$//'`
+
+    case "$1" in
+        fanart)
+            jpg_resize "$2" "$base.hd.jpg" "1/1"
+            jpg_resize "$base.hd.jpg" "$base.sd.jpg" "1/2"
+            if [ $get_pal -eq 1 ] ; then
+                jpg_resize "$base.sd.jpg" "$base.pal.jpg" "1/1"
+            fi
+            ;;
+        poster)
+            # assuming covers are high quality we can start with 50% reduction in djpeg stage
+            jpg_resize "$2" "$2" "1/2"
+            jpg_resize "$2" "$base.thumb.jpg" "1/2"
+            ;;
+    esac
+    rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm" "$base.thumb.jpg.pnm"
+}
+
+Q=$TMP/resize.queue
+
+add_queue() {
+    args=
+    type="$2"
+    for i in "$@" ; do
+        i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
+        args="$args $i"
+    done
+    mkdir -p "$Q.$type"
+    perms "$Q.$type"
+    echo "$args" >> "$Q.$type/$$"
+    chmod 666 "$Q.$type/$$"
+    perms "$Q.$type/$$"
+    INFO "Queued $args"
+}
+
+
+# Manage a pid / lock file
+running() {
+    if [ -f $1 ] ; then
+        pid=`cat "$1" 2>/dev/null`
+        if [ -n "$pid" ] ; then
+            if [ -d /proc/$pid ] ; then
+                return 0
+            else
+                rm -f "$1"
+            fi
+        fi
+    fi
+    return 1
+}
+
+INFO() {
+    echo "[INFO] `date +%H:%M:%S` IMAGES-$thread : $@"
+}
+
+ERROR() {
+    echo "[ERROR] `date +%H:%M:%S` IMAGES-$thread : $@"
+}
+
+process_queue() {
+
+    pq_folder="$1"
+    pq_loop=$2
+    pq_count=0 
+    pq_args="`thread_prefix`.cmd"
+
+    INFO "Begin Processing $1"
+
+    cd $pq_folder
+    for f in * ; do
+
+        if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
+
+            #INFO "got image queue file $pq_folder/$f"
+
+
+            while FS= read line ; do
+                eval fetch_resize $line
+            done < "$pq_args"
+
+            rm -f "$pq_args"
+
+            pq_count=$(( $pq_count + 1 ))
+        fi
+        if [ $pq_loop -eq 0 ] ; then break ; fi
+    done
+    #INFO "End processing $1 : $pq_count files"
+    # If no files then return error code.
+    [ $pq_count -gt 0 ]
+
+}
+
+
+#caculate in real time to track $$
+thread_group() {
+    echo "$TMP/.thread"
+}
+
+thread_prefix() {
+    echo "`thread_group`.$thread"
+}
+
+# A thread will process as many posters as it can, then look for one fanart 
+# if anything was found it repeats the cycle otherwise it exists.
+start_thread() {
+    eval pid=\$\$
+    thread=$pid.$1
+    INFO "Thread $pid starting ($$)"
+    echo $pid > `thread_prefix`.pid
+    while process_queue "$Q.poster" 1 || process_queue "$Q.fanart" 0 ; do
+        true
+    done
+    INFO "Thread $pid stopping ($$)"
+    rm -f `thread_prefix`.pid
+}
+
+wc_l() {
+    awk 'END { print NR; }'
+}
+
+numthreads() {
+    nt=0
+    for f in "`thread_group`"*.pid ; do
+        if running "$f" ; then
+            nt=$(( $nt + 1 ))
+        fi
+    done
+    echo $nt
+}
+
+tidy() {
+    INFO "Thread abort"
+    rm -f "`thread_prefix`"*
+
+}
+
+
+# Synchronise threads
+synchronise() {
+    sync_file="`thread_group`.sync"
+    case "$1" in
+        1)
+            while running "$sync_file" ; do
+                sleep 1
+            done
+            echo "$pid" > "$sync_file"
+            ;;
+        0)  rm -f "$sync_file"
+            ;;
+    esac
+}
+
+    
+startup() {
+
+
+    synchronise 1
+    tc=`numthreads`
+    INFO "thread count = $tc"
+    while [ $tc -lt $maxthreads ] ; do
+        ( $0 SPAWN $tc.`date +%H%M%S` & )
+        tc=$(( $tc + 1 ))
+        sleep 2
+    done
+    synchronise 0
+}
+
+check_pal() {
+    location_file=$TMP/.location
+    location=`$OVS_HOME/bin/locate.sh $location_file`
+    tv_file="$OVS_HOME/conf/tv.txt"
+    if grep -q "^$location:" $tv_file ; then
+        if egrep -v "^$location:.*(pal|secam)" ; then
+            get_pal=0
+        fi
+    fi
+}
+
+if [ -z "$1" ] ; then
+	echo "usage $0 [poster|fanart] url file wget options"
+	echo "usage $0 START"
+	exit 1
+fi
+
+get_pal=1
+## If you really want pal backdrops but are not getting them comment out the following line
+# check_pal
+
+trap tidy 1 2 3 6
+
+case "$1" in
+
+    STOP)
+        kill `cat $TMP/.thread.*`
+        ;;
+
+    START)
+        startup
+        ;;
+
+    SPAWN)
+        start_thread "$2"
+        ;;
+
+    *)
+        if [ -n "$*" ] ; then
+            add_queue  "$@"
+        fi
+        startup
+        ;;
+esac

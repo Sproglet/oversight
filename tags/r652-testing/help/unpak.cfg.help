@@ -1,0 +1,27 @@
+#unpak_nzbget_bin:NZBGET binary|/mnt/syb8634/bin/nzbget
+#unpak_nzbget_conf:NZBGET conf|/share/.nzbget/nzbget.conf
+#unpak_unrar_bin:PAR2 binary|/mnt/syb8634/bin/unrar
+#unpak_par2_bin:PAR2 binary|/mnt/syb8634/bin/par2
+unpak_completed_dir:Default location for completed downloads|../Complete
+unpak_debug_mode:Debug|0|1
+unpak_sanity_check_rar_files:Quck check on Rar files before unraring|1|0
+# Rename img-files to iso (1, 0)
+#unpak_rename_img_to_iso=1
+unpak_check_for_new_versions:Check for new versions|1|0
+unpak_delete_rar_files:Delete Rar files|1|0
+unpak_max_nzbfile_age:Delete NZBs if they are older than this(days)|30
+unpak_nested_unrar_depth:Nested unrar depth|3
+unpak_disable_external_par_repair:Set 1 to stop all par repairs by nzbget AND unpak|0|1
+unpak_external_par_repair_tidy_queue:Remove paused PARs from queue after unrar|1|0
+unpak_pause_nzbget:Pause nzbget while script is active (Note nzbget 0.5 has PostPauseQueue setting which is preferred)|0|1
+unpak_pause_nzbget_during_unrar:Pause nzbget during unrar|0|1
+pause_nzbget_during_par2repair:Pause nbget suring repair|0|1
+unpak_maximum_par_repair_minutes:Only attempt par repairs if they will complete in the given amount of minutes (0=always repair)|300
+#unpak_nmt_pin_root:Folder for mature content|/share/~Other
+#unpak_nmt_pin="2468" 
+#unpak_nmt_pin_folder_scramble_windows_share=1
+#unpak_auto_categorisation_from_newsgroups=1
+#unpak_subfolder_by_newsgroup_0:"erotica:PIN:FOLDER"
+#unpak_subfolder_by_newsgroup_1:"sounds:/share/Music"
+#unpak_subfolder_by_newsgroup_2:"pictures:Pictures"
+unpak_delete_samples:Files matching this pattern are deleted if other media files are present

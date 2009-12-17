@@ -1143,6 +1143,7 @@ SEASON=db_field("_s","Season","season")
 EPISODE=db_field("_e","Episode","episode")
 
 GENRE=db_field("_G","Genre","genre") 
+RUNTIME=db_field("_rt","Runtime","runtime") 
 RATING=db_field("_r","Rating","rating")
 CERT=db_field("_R","CERT","mpaa")
 
@@ -3088,6 +3089,7 @@ delete gCertCountry
 delete g_director
 delete g_poster
 delete g_genre
+delete g_runtime
 delete gProdCode
 delete gTitle
 delete gOriginalTitle
@@ -6019,6 +6021,13 @@ if (g_genre[idx] == "" && index(line,"Genre:")) {
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
 sub(/ +more */,"",g_genre[idx])
 }
+if (g_runtime[idx] == "" && index(line,"Runtime:")) {
+g_runtime[idx]=trimAll(scrape_until("irtime",f,"</div>",0))
+if (match(g_runtime[idx],"[0-9]+")) {
+g_runtime[idx] = substr(g_runtime[idx],RSTART,RLENGTH)
+}
+}
+
 if (g_rating[idx] == "" && index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
 g_rating[idx]=0+substr(line,RSTART,RLENGTH-3)
 DEBUG("IMDB: Got Rating = ["g_rating[idx]"]")
@@ -6784,6 +6793,7 @@ row=row"\t"RATING"\t"g_rating[i]
 if (g_episode[i] != "") row=row"\t"EPISODE"\t"g_episode[i]
 
 row=row"\t"GENRE"\t"g_genre[i]
+row=row"\t"RUNTIME"\t"g_runtime[i]
 
 if (gParts[i]) row=row"\t"PARTS"\t"gParts[i]
 

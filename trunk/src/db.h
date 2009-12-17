@@ -30,6 +30,7 @@ typedef struct Dbrowid_struct {
     char *ext;
     char *certificate;
     int year;
+    int runtime;
 
     //only populate if view=tv or movie
     char *url;

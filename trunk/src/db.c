@@ -406,6 +406,9 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
                 *offset=&(rowid->rating);
                 *type = FIELD_TYPE_DOUBLE;
                 *overview = 1;
+            } else if (name[2] == 't') {
+                *offset=&(rowid->runtime);
+                *type = FIELD_TYPE_INT;
             }
             break;
         case 'R':
@@ -646,6 +649,7 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPISODE,rid->episode);
     //fprintf(fp,"\t%s\t%s",DB_FLDID_POSTER,rid->poster);
     fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,rid->genre);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_RUNTIME,rid->runtime);
     fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,rid->parts);
     fprintf(fp,"\t%s\t%d",DB_FLDID_YEAR,rid->year);
 

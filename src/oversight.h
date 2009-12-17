@@ -49,6 +49,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define VIEW_MIXED "mixed"
 
 #define QUERY_PARAM_VIEW "view"
+#define QUERY_PARAM_SELECTED "i"
 #define QUERY_PARAM_PAGE "p"
 #define QUERY_PARAM_IDLIST "idlist"
 #define QUERY_PARAM_EPISODE_TITLES "_et"

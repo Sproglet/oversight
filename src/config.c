@@ -178,11 +178,11 @@ struct hashtable *config_load(char *filename) {
     return result;
 }
 
-#define CFG_BUFSIZ 200
+#define CFG_BUFSIZ 300
 struct hashtable *config_load_fp(FILE *fp) {
 
     struct hashtable *result=string_string_hashtable(16);
-    char line[CFG_BUFSIZ];
+    char line[CFG_BUFSIZ+1];
 
     while((fgets(line,CFG_BUFSIZ,fp))) {
 
@@ -224,7 +224,7 @@ struct hashtable *config_load_fp(FILE *fp) {
                     }
                 } else {
                     //parse unquoted value
-                    while(!isspace(*p)) p++;
+                    while(*p && !isspace(*p)) p++;
                     val_end = p;
                 }
 
@@ -448,13 +448,17 @@ void config_read_dimensions() {
 
             html_comment("rows = %d\n",g_dimension->rows);
 
-            double virtual_rows = g_dimension->rows + 2.5;
+            double virtual_rows = g_dimension->rows + 1.1;
 
+            int menu_height;
             if (g_dimension->scanlines == 0) {
                 // Need adjustment for Gaya SD modes on NMT otherwise vertical is squashed
                 ar_fixed = 1;
+                menu_height = 100;
+            } else {
+                menu_height = 150;
             }
-            g_dimension->poster_menu_img_height = lines / virtual_rows ;
+            g_dimension->poster_menu_img_height = ( lines - menu_height ) / virtual_rows ;
 
         }
 

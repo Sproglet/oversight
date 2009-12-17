@@ -25,7 +25,7 @@
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
 #define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_REGEX "," QUERY_PARAM_SEASON
+#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_REGEX "," QUERY_PARAM_SEASON
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
@@ -41,9 +41,9 @@ char *get_final_link_with_font(char *params,char *attr,char *title,char *font_at
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
 void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp);
-char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class);
-char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class);
-char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class);
+char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -1047,12 +1047,12 @@ void display_theme_image_link(char *qlist,char *href_attr,char *image_name,char 
     FREE(tag);
 }
 
-char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,char *attrin)
+char *add_scroll_attributes(int left_scroll,int right_scroll,int selected_cell,char *attrin)
 {
     char *attr;
     ovs_asprintf(&attr,
             " %s%s%s %s ",
-            (centre_cell? "name=centreCell ":""),
+            (selected_cell? "name=selectedCell ":""),
             (left_scroll? "onkeyleftset=pgup1 ":""),
             (right_scroll? "onkeyrightset=pgdn1 ":""),
 
@@ -1061,11 +1061,11 @@ char *add_scroll_attributes(int left_scroll,int right_scroll,int centre_cell,cha
     return attr;
 }
 
-char *get_empty(char *width_attr,int grid_toggle,char *height_attr,int left_scroll,int right_scroll,int centre_cell) {
+char *get_empty(char *width_attr,int grid_toggle,char *height_attr,int left_scroll,int right_scroll,int selected_cell) {
 
     char *attr;
 
-    attr=add_scroll_attributes(left_scroll,right_scroll,centre_cell,NULL);
+    attr=add_scroll_attributes(left_scroll,right_scroll,selected_cell,NULL);
 
     char *result;
 
@@ -2003,11 +2003,14 @@ char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action)
 }
 
 char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
-        int left_scroll,int right_scroll,int centre_cell,char *idlist)
+        int left_scroll,int right_scroll,int selected_cell,char *idlist)
 {
 
     //TODO:Highlight matched bit
     HTML_LOG(2,"Item %d = %s %s %s",cell_no,row_id->db->source,row_id->title,row_id->file);
+
+    char cell_no_txt[9];
+    sprintf(cell_no_txt,"%d",cell_no);
 
     char *title=NULL;
     char *font_class="";
@@ -2101,8 +2104,9 @@ TRACE;
     ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), focus_ev);
 
 
-    char *attr = add_scroll_attributes(left_scroll,right_scroll,centre_cell,title_change_attr);
+    char *attr = add_scroll_attributes(left_scroll,right_scroll,selected_cell,title_change_attr);
     FREE(title_change_attr);
+
 
     HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
@@ -2113,16 +2117,16 @@ TRACE;
 
     } else if (strcmp(newview,"tv") == 0 ) {
         // TV shows are drill down by title and season
-        cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class);
+        cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
 
     } else if (util_starts_with(newview,"tv") ) {
         // Box sets or TV shows are drill down by title
-        cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class);
+        cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
 
 
     } else if (row_id->category == 'M') {
         // Movies are drill down by ID
-        cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class);
+        cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
 
 
 
@@ -2134,8 +2138,8 @@ TRACE;
 
         sprintf(cellId,"%d",cell_no);
         char *cellName;
-        if (centre_cell) {
-            cellName="centreCell";
+        if (selected_cell) {
+            cellName="selectedCell";
         } else {
             cellName=cellId;
         }
@@ -2184,13 +2188,15 @@ TRACE;
     FREE(title); // first_space points inside of title
     return result;
 }
-char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class)
+char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
     static char *link_template = NULL;
     if (link_template == NULL ) {
 
+        // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
+        // return link. 
         link_template = get_drilldown_link_with_font(
-            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&"QUERY_PARAM_SEASON"=@SEASON@",
+            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&"QUERY_PARAM_SEASON"=@SEASON@&@"QUERY_PARAM_SELECTED"=@CELLNO@",
             "@ATTR@","@TITLE@","@FONT_CLASS@");
         HTML_LOG(0,"xx template[%s]",link_template);
     }
@@ -2203,34 +2209,41 @@ char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *ti
             "@SEASON@",season_txt,
             "@ATTR@",attr,
             "@TITLE@",title,
+            "@CELLNO@",cell_no_txt,
             "@FONT_CLASS@",font_class,
             NULL);
 }
 
-char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class)
+char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
     static char *link_template = NULL;
     if (link_template == NULL ) {
 
+        // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
+        // return link. 
         link_template = get_drilldown_link_with_font(
-                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@","@ATTR@","@TITLE@","@FONT_CLASS@");
+                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
         HTML_LOG(0,"xx template[%s]",link_template);
     }
+
     return replace_all_str(link_template,
             "@VIEW@",view,
             "@NAME@",name,
             "@ATTR@",attr,
             "@TITLE@",title,
             "@FONT_CLASS@",font_class,
+            "@CELLNO@",cell_no_txt,
             NULL);
 }
-char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class)
+char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
     static char *link_template = NULL;
     if (link_template == NULL ) {
 
+        // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
+        // return link. 
         link_template = get_drilldown_link_with_font(
-               QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@","@ATTR@","@TITLE@","@FONT_CLASS@");
+               QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
         HTML_LOG(0,"xx template[%s]",link_template);
     }
     return replace_all_str(link_template,
@@ -2239,6 +2252,7 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
             "@ATTR@",attr,
             "@TITLE@",title,
             "@FONT_CLASS@",font_class,
+            "@CELLNO@",cell_no_txt,
             NULL);
 }
 
@@ -2742,6 +2756,14 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
     Array *rowArray = array_new((void(*)(void *))array_free);
 
+    int selected_cell = -1;
+    if (*get_selected_item()) {
+        selected_cell = atol(get_selected_item());
+    } else {
+        selected_cell = centre_col * rows + centre_row;
+    }
+    
+
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
 
@@ -2758,15 +2780,15 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
             int left_scroll = (page_before && c == 0);
             int right_scroll = (page_after && c == cols-1 );
-            int centre_cell = (r == centre_row && c == centre_col);
+            int is_selected = (i == selected_cell);
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,centre_cell,idlist[i]);
+                item = get_item(i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i]);
             } else {
                 // only draw empty cells if there are two or more rows
                 if (rows > 1) {
-                    item = get_empty(width_attr,(c+r)&1,height_attr,left_scroll,right_scroll,centre_cell);
+                    item = get_empty(width_attr,(c+r)&1,height_attr,left_scroll,right_scroll,is_selected);
                 } else {
                     item = NULL;
                 }
@@ -3647,3 +3669,20 @@ void xx_dump_genre(char *file,int line,int num,DbRowId **rows) {
     }
 }
 
+// Remove and store the last navigation cell. eg if user clicked on cell 12 this is passed in 
+// the URL as @i=12. The url that returns to this page then has i=12. If we have returned to this
+// page we must remove i=12 from the query so that it is not passed to the new urls created for this 
+// page.
+static char *selected_item = NULL;
+void set_selected_item()
+{
+    if (selected_item == NULL) {
+        selected_item = STRDUP(query_val(QUERY_PARAM_SELECTED));
+        query_remove(QUERY_PARAM_SELECTED);
+    }
+}
+char *get_selected_item()
+{
+    assert(selected_item);
+    return selected_item;
+}

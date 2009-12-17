@@ -409,7 +409,6 @@ char *drill_down_url(char *new_params,char *param_list)
     /*
      * Compute the new url
      */
-    HTML_LOG(0,"xx get drilldown for [%s][%s]",new_params,new_drilldown_params);
     char *final = self_url2(new_params,new_drilldown_params);
 
     FREE(new_drilldown_params);
@@ -2198,7 +2197,6 @@ char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *ti
         link_template = get_drilldown_link_with_font(
             QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&"QUERY_PARAM_SEASON"=@SEASON@&@"QUERY_PARAM_SELECTED"=@CELLNO@",
             "@ATTR@","@TITLE@","@FONT_CLASS@");
-        HTML_LOG(0,"xx template[%s]",link_template);
     }
     char season_txt[9];
     sprintf(season_txt,"%d",season);
@@ -2223,7 +2221,6 @@ char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,c
         // return link. 
         link_template = get_drilldown_link_with_font(
                 QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
-        HTML_LOG(0,"xx template[%s]",link_template);
     }
 
     return replace_all_str(link_template,
@@ -2244,7 +2241,6 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
         // return link. 
         link_template = get_drilldown_link_with_font(
                QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
-        HTML_LOG(0,"xx template[%s]",link_template);
     }
     return replace_all_str(link_template,
             "@VIEW@",view,
@@ -3583,7 +3579,6 @@ char *get_status() {
 
 char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
 
-    HTML_LOG(0,"auto_option_list %s",name);
     static char *attr = NULL;
     if (attr == NULL ) {
         if (g_dimension->local_browser) {

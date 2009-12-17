@@ -3,8 +3,7 @@
     <head>
         <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]):
-T
- [:TITLE:]
+[:TITLE:]
 Season
 [:SEASON:] </title>
         <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />

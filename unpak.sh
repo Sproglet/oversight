@@ -1167,9 +1167,9 @@ unrar_one() {
                     #If check_header fails use the cat command. Not this only works if rar segments are in order
                     WARNING "$rarfile does not appear to be a rar archive. Joining using cat"
                     mkdir -p "$dirname/$unrar_tmp_dir";
-                    target=$(rarname "$dirname/$unrar_tmp_dir/$rarname")
+                    target="$dirname/$unrar_tmp_dir/`BASENAME $rarfile '\.0*1'`"
                     if [ -f "$target" ] ; then
-                        ERROR "Target alread exists. <$target>"
+                        ERROR "Target already exists. <$target>"
                     else
                         #Note we only set rarState and the end using joinState. This ensures if the script is
                         #interrupted for any reason, rarState has the correct 'failed' value.

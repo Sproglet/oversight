@@ -3958,7 +3958,7 @@ if (sep == "") sep = "<"
 
 if (ignorePaths != "") {
 gsub(/,/,"|",ignorePaths)
-ignorePaths = "^("ignorePaths")//>"
+ignorePaths = "^("ignorePaths")\\>"
 }
 
 if (index(line,g_sigma) ) { 
@@ -4819,7 +4819,7 @@ pi="TVRAGE"
 result = 0
 delete filter
 
-
+if (index(tvDbSeriesUrl,"1817XX")) g_xx = 1
 ignore="/Show/Episodelist"
 if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
 dump(0,"tvrage series",seriesInfo)
@@ -4880,7 +4880,7 @@ WARNING("Error getting episode xml")
 } else {
 WARNING("Error getting series xml")
 }
-
+g_xx = 0
 
 return 0+ result
 }

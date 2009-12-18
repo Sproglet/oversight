@@ -19,5 +19,3 @@ this testing release masquerades as the 'wget' binary. If it sees the request is
 
 This saves a full startup of wget , and the overhead of connecting to a web server.
 For other normal pages there is an extra step where oversight must start the real wget binary, however this is negligable compared to all the other stuff going on , esp as Oversight is a compiled binary.
-
-This technique can also be expanded to the gaya file browser. Watch this space but I think Oversight will soon be bundled with a significantly faster file browser than the standard one.

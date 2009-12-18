@@ -26,12 +26,20 @@ static char plot_buf[MAX_PLOT_LENGTH+1];
 
 FILE *plot_open(Db*db)
 {
+    char *path = db->plot_file;
+    // If it is a remote oversight then read from local copy
+    if (util_starts_with(db->plot_file,NETWORK_SHARE)) {
+        path = get_crossview_local_copy(db->plot_file,db->source);
+    }
+
     if (db->plot_fp == NULL) {
-        db->plot_fp = fopen(db->plot_file,"r");
+        db->plot_fp = fopen(path,"r");
         if (db->plot_fp == NULL) {
-            html_error("Unable to open plotfile [%s]",db->plot_file);
+            html_error("Unable to open plotfile [%s]",path);
         }
     }
+    if (path != db->plot_file) FREE(path);
+
     return db->plot_fp;
 }
 

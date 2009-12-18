@@ -1,6 +1,9 @@
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <utime.h>
+#include <errno.h>
 #include <stdio.h>
 #include <regex.h>
 #include <assert.h>
@@ -1367,12 +1370,16 @@ DbRowSet * db_scan_titles(
     int row_count=0;
     int total_rows=0;
 
-    HTML_LOG(3,"db scanning %s",db->path);
 
-    FILE *fp = fopen(db->path,"r");
-    HTML_LOG(3,"db scanning %s",db->path);
-    //assert(fp);
-HTML_LOG(3,"db fp.%ld..",(long)fp);
+    char  *path = db->path;
+
+    // If it is a remote oversight then read from local copy
+    if (util_starts_with(db->path,NETWORK_SHARE)) {
+        path = get_crossview_local_copy(db->path,db->source);
+    }
+    HTML_LOG(0,"db scanning %s",path);
+
+    FILE *fp = fopen(path,"r");
     if (fp) {
         rowset=db_rowset(db);
 
@@ -1520,6 +1527,7 @@ HTML_LOG(3,"db fp.%ld..",(long)fp);
         HTML_LOG(0,"total rows %d",total_rows);
         fclose(fp);
     }
+    if (path != db->path) FREE(path);
     if (rowset) {
         HTML_LOG(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
     } else {
@@ -1845,5 +1853,61 @@ void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[])
         }
     }
 #endif
+}
+
+#define COPY_BUF_SIZE 2000
+int copy_file(char *from, char *to)
+{
+    HTML_LOG(0,"copying [%s] to [%s]",from,to);
+    char buf[COPY_BUF_SIZE+1];
+    int result = -1;
+    FILE *fromfp,*tofp;
+    if ((fromfp = fopen(from,"r") ) != NULL) {
+        if ((tofp = fopen(to,"w") ) != NULL) {
+            while (fgets(buf,COPY_BUF_SIZE,fromfp) ) {
+                fputs(buf,tofp);
+            }
+            result = errno;
+            fclose(tofp);
+        }
+        fclose(fromfp);
+    }
+    return result;
+}
+
+char *get_crossview_local_copy(char *path,char *label)
+{
+
+    char *local_path = path;
+
+    if (util_starts_with(path,NETWORK_SHARE) ) {
+
+        struct stat remote_s;
+        if (stat(path,&remote_s) == 0) {
+            char *tmp;
+            ovs_asprintf(&tmp,"%s/tmp/%s.%s",appDir(),util_basename(path),label);
+            struct stat local_s;
+            if (stat(tmp,&local_s) != 0 || remote_s.st_mtime > local_s.st_mtime ) {
+                // copy remote file
+                if (copy_file(path,tmp) == 0) {
+                    local_path = tmp;
+
+                    //Set modification and access time of new file to be the same as the old one
+                    //compensates for clock sync issues.
+                    struct utimbuf ut;
+                    ut.actime = ut.modtime = remote_s.st_mtime;
+
+                    if (utime(local_path,&ut) ) {
+                        HTML_LOG(0,"Error setting modification time of [%s]",local_path);
+                    }
+                }
+            } else if (remote_s.st_mtime < local_s.st_mtime) {
+                // Use local file
+                local_path = tmp;
+            }
+        }
+    }
+    
+    return local_path;
 }
 

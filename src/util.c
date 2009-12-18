@@ -793,6 +793,23 @@ char *util_basename(char *file)
 
     return s;
 }
+
+int is_nmt200()
+{
+    static int check=1;
+    static int result;
+    if (check) {
+        check = 0;
+        char *cpu_model = getenv("CPU_MODEL");
+        result = (cpu_model != NULL && strcmp(cpu_model,"74K") == 0);
+    }
+    return result;
+}
+int is_nmt100()
+{
+    return !is_nmt200();
+}
+
 int util_starts_with(char *a,char *b)
 {
     assert(a);

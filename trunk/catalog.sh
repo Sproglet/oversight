@@ -6776,7 +6776,7 @@ index_time = NOW
 }
 }
 
-row=row"\t"INDEXTIME"\t"index_time
+row=row"\t"INDEXTIME"\t"shorttime(index_time)
 
 row=row"\t"WATCHED"\t"watched
 
@@ -6821,8 +6821,8 @@ row=row"\t"URL"\t"g_imdb[i]
 row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i]
 if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i]
 
-row=row"\t"FILETIME"\t"g_file_time[i]
-row=row"\t"DOWNLOADTIME"\t"est
+row=row"\t"FILETIME"\t"shorttime(g_file_time[i])
+row=row"\t"DOWNLOADTIME"\t"shorttime(est)
 
 
 
@@ -6841,6 +6841,23 @@ if (is_file(g_fldr[i]"/"nfo)) {
 row=row"\t"NFO"\t"nfo
 }
 return row
+}
+
+function shorttime(t,\
+y,m,d,H,M) {
+if (t != "") {
+y = 0+substr(t,1,4)-1900
+m = 0+substr(t,5,2)
+d = 0+substr(t,7,2)
+H = 0+substr(t,9,2)
+M = 0+substr(t,11,2)
+t = lshift(y,4)+m
+t = lshift(t,5)+d
+t = lshift(t,5)+h
+t = lshift(t,6)+M
+t= sprintf("%x",t)
+}
+return t
 }
 
 

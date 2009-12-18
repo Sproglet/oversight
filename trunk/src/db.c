@@ -229,8 +229,11 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 
 
 
+// 1=OK 0=failed
 int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 {
+    int result = 0;
+    int err=0;
     assert(val_ptr);
     assert(field_id);
     assert(buffer);
@@ -239,25 +242,57 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
     if (!*buffer) {
         // blank is OK
         return 1;
-    } else if (sscanf(buffer,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) < 6) {
-        if (!quiet) HTML_LOG(1,"failed to extract timestamp field %s",field_id);
-    } else if (term != '\t' && term != '\0') {
-        if (!quiet) HTML_LOG(1,"ERROR: bad terminator [%c=%d] after timestamp field %s = %d %d %d %d %d %d",term,term,field_id,y,m,d,H,M,S);
-    } else {
-        struct tm t;
-        t.tm_year = y - 1900;
-        t.tm_mon = m - 1;
-        t.tm_mday = d;
-        t.tm_hour = H;
-        t.tm_min = M;
-        t.tm_sec = S;
-        *val_ptr = time_ordinal(&t);
-        if (*val_ptr < 0 ) {
-            HTML_LOG(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
+    } else if (strlen(buffer) <= 8 ) {
+        if (sscanf(buffer,"%x%c",&M,&term) >= 1 ) {
+            //already in the compacted format
+            if (term == '\t' || term == '\0') {
+                *val_ptr = M;
+                //HTML_LOG(0,"buffer[%s] val(%x)",buffer,M);
+                //HTML_LOG(0,"year(%d)",year(M));
+                result = 1;
+            } else {
+                err = 2;
+            }
+        } else {
+            err = 1;
         }
-        return 1;
+
+    } else if (buffer[14] == '\0' && strlen(buffer) == 14 ) {
+        
+        if ( sscanf(buffer,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) >= 6) {
+
+            if (term == '\t' || term == '\0') {
+                err = 0;
+                struct tm t;
+                t.tm_year = y - 1900;
+                t.tm_mon = m - 1;
+                t.tm_mday = d;
+                t.tm_hour = H;
+                t.tm_min = M;
+                t.tm_sec = S;
+                *val_ptr = time_ordinal(&t);
+                if (*val_ptr < 0 ) {
+                    HTML_LOG(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
+                }
+                result = 1;
+            } else {
+                err = 2;
+            }
+        } else {
+            err = 1;
+        }
     }
-    return 0;
+    if (result == 0) {
+        switch(err) {
+            case 1:
+                if (!quiet) HTML_LOG(1,"failed to extract timestamp field %s",field_id);
+                break;
+            case 2:
+            if (!quiet) HTML_LOG(1,"ERROR: bad terminator [%c=%d] after timestamp field %s [%d] ",term,term,field_id,buffer);
+                break;
+        }
+    }
+    return result;
 }
 
 #define FIELD_TYPE_NONE '-'

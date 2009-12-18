@@ -9,7 +9,7 @@ Normally when Gaya invokes a CGI script, the following steps occur:
   # wget saves output in /tmp/0
   # gaya reads html in /tmp/0 and renders it
 
-this testing release masquerades as the 'wget' binary. If it sees the request is for an oversight page then it intercepts it in writes the results to /tmp/0. Otherwise it is passed through to the original wget. So the new sequence for oversight.cgi is is :
+this testing release masquerades as the 'wget' binary. If it sees the request is for an oversight page then it intercepts it and writes the results to /tmp/0. Otherwise it is passed through to the original wget. So the new sequence for oversight.cgi is is :
 
 
   # gaya starts wget (but its really oversight in disguise)
@@ -18,4 +18,4 @@ this testing release masquerades as the 'wget' binary. If it sees the request is
   # gaya reads html in /tmp/0 and renders it
 
 This saves a full startup of wget , and the overhead of connecting to a web server.
-For other normal pages there is an extra step where oversight must start the real wget binary, however this is negligable compared to all the other stuff going on , esp as Oversight is a compiled binary.
+For other normal pages there is an extra step where oversight must start the real wget binary, however this is negligible compared to all the other stuff going on , esp as Oversight is a compiled binary.

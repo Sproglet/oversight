@@ -363,7 +363,7 @@ case "$1" in
 
 
         # Replace wget binary with oversight. This allows faster page load.
-        if ! /bin/wget -oversight 2>/dev/null  ; then
+        if ! /bin/wget -oversight >/dev/null 2>&1  ; then
             cp -a /bin/wget "$WGET_BACKUP"
             mv /bin/wget "$WGET_RENAME"
         fi

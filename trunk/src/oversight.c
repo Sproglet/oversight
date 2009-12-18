@@ -85,12 +85,28 @@ void gaya_auto_load(char *url_encoded_file) {
     FREE(name);
 }
 
+void adjust_path()
+{
+    char *new_path;
+    char *binDir;
+
+    if (is_nmt100()) {
+        binDir="nmt100";
+    } else {
+        binDir="nmt200";
+    }
+
+    ovs_asprintf(&new_path,"%s:%s/bin/%s",getenv("PATH"),appDir(),binDir);
+    setenv("PATH",new_path,1);
+}
+
 int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
 
     g_start_clock = time(NULL);
     assert(sizeof(long long) >= 8);
 
+    adjust_path();
 
     char *q=getenv("QUERY_STRING");
 

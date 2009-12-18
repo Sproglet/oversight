@@ -141,4 +141,5 @@ void dump_row(char *prefix,DbRowId *rid);
 void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows);
 void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[]);
 void fix_file_paths(int num_row,DbRowId **rows);
+char *get_crossview_local_copy(char *path,char *label);
 #endif

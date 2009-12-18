@@ -107,4 +107,6 @@ char *clean_js_string(char *in);
 int is_dvd(char *file);
 char *timestamp_static();
 char *util_change_extension(char *file,char *new_ext);
+int is_nmt200();
+int is_nmt100();
 #endif

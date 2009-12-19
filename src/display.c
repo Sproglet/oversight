@@ -3267,11 +3267,16 @@ TRACE;
     }
 
     if (EMPTY_STR(main_plot)) main_plot = "(no plot info)";
-    if (main_genre == NULL) main_genre = "no genre";
+    if (main_genre == NULL) {
+        main_genre = STRDUP("no genre");
+    } else {
+        main_genre = expand_genre(main_genre);
+    }
 
 TRACE;
 
     tmp = ep_js_fn(result,0,"","",NVL(main_plot),"",NVL(main_genre),NULL,NULL);
+    FREE(main_genre);
     FREE(result);
     result = tmp;
 

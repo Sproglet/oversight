@@ -1632,7 +1632,10 @@ char *translate_genre(char *genre_keys,int expand)
 // * a | c = Action | Comedy
 char *expand_genre(char *genre_keys)
 {
-    return translate_genre(genre_keys,1);
+    char *tmp = translate_genre(genre_keys,1);
+    char *tmp2 = replace_all(tmp," *\\| *"," | ",0);
+    FREE(tmp);
+    return tmp2;
 }
 // * Action | Comedy = a|c
 char *compress_genre(char *genre_names)

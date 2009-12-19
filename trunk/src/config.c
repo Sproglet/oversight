@@ -228,7 +228,7 @@ struct hashtable *config_load_fp(FILE *fp) {
                     val_end = p;
                 }
 
-                while(isspace(*p)) p++;
+                while(isspace(*p) || *p == ';') p++;
                 if (*p == '#') {
                     // skip trailing comment
                     while(*p >= ' ' || isspace(*p)) p++;

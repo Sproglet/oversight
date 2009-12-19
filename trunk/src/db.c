@@ -1364,7 +1364,18 @@ DbRowSet * db_scan_titles(
         HTML_LOG(0,"filtering by regex [%s]",name_filter);
     }
 
+    // For back compatability (and custom genre support) we serach for both compressed genres or normal.
     char *genre_filter = query_val(DB_FLDID_GENRE);
+    char *compressed_genre_filter = NULL;
+    if (!EMPTY_STR(genre_filter) ) {
+        compressed_genre_filter = compress_genre(genre_filter);
+
+        // If its a custom genre, then compressed will be the same.
+        if (strcmp(compressed_genre_filter,genre_filter) == 0) {
+            compressed_genre_filter = NULL;
+        }
+        HTML_LOG(0,"genre filter [%s][%s]",genre_filter,compressed_genre_filter);
+    }
 
 
     int row_count=0;
@@ -1455,9 +1466,15 @@ DbRowSet * db_scan_titles(
 
                     if (genre_filter && *genre_filter && keeprow) {
                         //HTML_LOG(0,"genre [%.*s]",10,rowid.genre);
-                        if (EMPTY_STR(rowid.genre) || strstr(rowid.genre,genre_filter) == NULL ) {
-                            //HTML_LOG(3,"Rejected [%s] as [%s] not in [%s]",rowid.title,genre_filter,rowid.genre);
+                        if (EMPTY_STR(rowid.genre))  {
                             keeprow=0;
+                        } else if (delimited_substring(rowid.genre," |",genre_filter," |",1,1)) {
+                            keeprow= 1;
+                        } else if (compressed_genre_filter != NULL &&
+                                 delimited_substring(rowid.genre," |",compressed_genre_filter," |",1,1)) {
+                            keeprow=1;
+                        } else {
+                            keeprow = 0;
                         }
                     }
 
@@ -1534,6 +1551,7 @@ DbRowSet * db_scan_titles(
         HTML_LOG(1,"db[%s] No rows loaded",db->source);
     }
     FREE(ids);
+    if (!EMPTY_STR(compressed_genre_filter)) FREE(compressed_genre_filter);
     HTML_LOG(1,"return rowset");
     return rowset;
 }
@@ -1556,6 +1574,70 @@ void db_free(Db *db) {
     FREE(db->backup);
     FREE(db);
 
+}
+
+/*
+ * Expand list of genre keys. eg. 
+ * r = Romance
+ * a | c = Action | Comedy
+ */
+char *translate_genre(char *genre_keys,int expand)
+{
+    static Array *genres = NULL;
+    if (genres == NULL) {
+        char *list = catalog_val("catalog_genre");
+        //HTML_LOG(0,"catalog_genre = [%s] ",list);
+        //html_hashtable_dump(0,"catalog",g_catalog_config);
+        if (!EMPTY_STR(list)) {
+            genres=splitstr(list,",");
+        }
+        //array_dump(0,"genres",genres);
+    }
+    char *out = genre_keys;
+    if (genres) {
+        int i;
+        for(i = 0 ; i < genres->size ; i += 2 ) {
+
+            char *key = genres->array[i+1];
+            char *val = genres->array[i];
+
+            char *from,*to;
+
+            if (expand) {
+                from = key;
+                to = val;
+            } else {
+                from = val;
+                to = key;
+            }
+
+            // If key is a letter on its own replace with val.
+            // could use regex replace \<key\> , val but this is slow platform
+            char *p;
+            if ((p=delimited_substring(out," |",from," |",1,1)) != NULL) {
+
+                char *new;
+                ovs_asprintf(&new,"%.*s%s%s",p-out,out,to,p+strlen(from));
+                if (out != genre_keys) FREE(out);
+                out = new;
+            }
+
+        }
+    }
+    if (out == genre_keys) out = STRDUP(out);
+
+    HTML_LOG(0,"genre[%s] is [%s]",genre_keys,out);
+    return out;
+}
+// * a | c = Action | Comedy
+char *expand_genre(char *genre_keys)
+{
+    return translate_genre(genre_keys,1);
+}
+// * Action | Comedy = a|c
+char *compress_genre(char *genre_names)
+{
+    return translate_genre(genre_names,0);
 }
 
 

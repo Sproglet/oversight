@@ -409,11 +409,25 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
 char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result = NULL;
     if (g_genre_hash != NULL) {
-        if (!hashtable_search(g_genre_hash,"")) {
-            hashtable_insert(g_genre_hash,STRDUP(""),STRDUP("All Genres"));
+
+        // Expand the genre hash table
+        struct hashtable *expanded_genres = string_string_hashtable(16);
+        char *k,*v;
+        struct hashtable_itr *itr;
+        for(itr = hashtable_loop_init(g_genre_hash) ; hashtable_loop_more(itr,&k,&v) ; ) {
+            char *val = expand_genre(v);
+
+            if (!hashtable_search(expanded_genres,val)) {
+                hashtable_insert(expanded_genres,STRDUP(val),val);
+            }
         }
-        result = auto_option_list(DB_FLDID_GENRE,"",g_genre_hash);
+
+        if (!hashtable_search(expanded_genres,"")) {
+            hashtable_insert(expanded_genres,STRDUP(""),STRDUP("All Genres"));
+        }
+        result = auto_option_list(DB_FLDID_GENRE,"",expanded_genres);
         *free_result = 0; // TODO : this should be freed but we'll leave until next release.
+        hashtable_destroy(expanded_genres,1,1);
     }
     return result;
 }
@@ -421,10 +435,10 @@ char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_r
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *genre = "?";
-    *free_result=0;
+    *free_result=1;
 
     if (num_rows && sorted_rows && sorted_rows[0]->genre ) {
-        genre =sorted_rows[0]->genre;
+        genre =expand_genre(sorted_rows[0]->genre);
     }
 
     return genre;

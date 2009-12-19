@@ -6792,7 +6792,7 @@ row=row"\t"RATING"\t"g_rating[i]
 
 if (g_episode[i] != "") row=row"\t"EPISODE"\t"g_episode[i]
 
-row=row"\t"GENRE"\t"g_genre[i]
+row=row"\t"GENRE"\t"short_genre(g_genre[i])
 row=row"\t"RUNTIME"\t"g_runtime[i]
 
 if (gParts[i]) row=row"\t"PARTS"\t"gParts[i]
@@ -6841,6 +6841,15 @@ if (is_file(g_fldr[i]"/"nfo)) {
 row=row"\t"NFO"\t"nfo
 }
 return row
+}
+function short_genre(g,\
+i,gnames,gcount) {
+gcount = split(g_settings["catalog_genre"],gnames,",")
+for(i = 1 ; i <= gcount ; i += 2) {
+if (index(g,gnames[i])) sub(gnames[i],gnames[i+1],g); 
+}
+gsub(/[^-A-Za-z]+/,"|",g)
+return g
 }
 
 function shorttime(t,\

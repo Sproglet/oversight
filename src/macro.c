@@ -439,6 +439,9 @@ char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbR
 
     if (num_rows && sorted_rows && sorted_rows[0]->genre ) {
         genre =expand_genre(sorted_rows[0]->genre);
+        char *tmp = replace_all(genre," *\\| *"," | ",0);
+        FREE(genre);
+        genre=tmp;
     }
 
     return genre;

@@ -16,7 +16,7 @@ ovs_title_bar:Display titles as cursor moves|poster_mode|never
 #ovs_skin_name:Name of skin (must be in templates folder)|default
 ovs_log_level:Amount of logging within html comments|0|1|2|3|4|5
 ovs_use_folders_as_titles:Display the containing folder name in place of the video title|0|1
-ovs_nas_timeout:Max time to detect NAS service in millis|20
+ovs_nas_timeout:Max time to detect NAS service in millis|50
 ovs_hm_runtime_format:Format for runtime >=1 hour |%dh %dm
 ovs_m_runtime_format:Format for runtime < 1 hour|%d mins
 

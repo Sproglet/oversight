@@ -1501,6 +1501,7 @@ g_media[idx] = file
 if (! (NEWSCAN == 1  &&  in_db(path))) {
 gMovieFilePresent[path] = idx
 }
+
 g_file_time[idx] = timeStamp
 
 setNfo(gMovieFileCount,nfoReplace,nfoExt)
@@ -2296,6 +2297,11 @@ more_info[1]=0
 
 if (ret == 1) {
 
+if (details[TITLE] == "" ) {
+
+
+searchByEpisodeName(plugin,details)
+}
 adjustTitle(idx,details[TITLE],"filename")
 
 
@@ -2324,6 +2330,33 @@ gAdditionalInfo[idx] = details[ADDITIONAL_INF]
 }
 id0(ret)
 return ret
+}
+
+function searchByEpisodeName(plugin,details,\
+terms,results,id) {
+
+
+id1("searchByEpisodeName "plugin)
+if (plugin == "THETVDB") {
+terms="\"season "details[SEASON]"\" \""details[EPISODE]" :\" \""clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com"
+results = scanPageForMatch(g_search_google terms,"seriesid","seriesid=[0-9]+",0)
+if (split(results,parts,"=") == 2) {
+id = parts[2]
+}
+} else if (plugin == "TVRAGE") {
+terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com"
+url = scanPageForMatch(g_search_google terms,"tvrage","http"g_nonquote_regex"+.tvrage"g_nonquote_regex"+",0)
+if (url != "") {
+results = scanPageForMatches(url,"show/","show/[0-9]+",0)
+results=getMax(results,1,1)
+if (split(results,parts,"/") == 2) {
+id = parts[2]
+}
+}
+} 
+id0(id)
+details[TVID]=id
+return id
 }
 
 function extractEpisodeByPatterns(plugin,line,details,\
@@ -4507,7 +4540,7 @@ return html
 
 
 
-function getMax(arr,requiredThreshold,requireDifferenceSquared,dontRejectCloseSubstrings,\
+function getMax(arr,requiredThreshold,requireDifferenceSquared,\
 maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
 nextBest=0
 maxName=""
@@ -4549,11 +4582,6 @@ if (diff * diff - best  >= 0 ) {
 
 return maxName
 
-} else if (dontRejectCloseSubstrings && (index(maxName,nextBestName) || index(nextBestName,maxName))) {
-
-DEBUG("Match permitted as next best is a substring")
-return maxName
-
 } else {
 
 DEBUG("But rejected as "best" too close to next best "nextBest" to be certain")
@@ -4580,7 +4608,7 @@ keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de"
 scanPageForMatches(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList)
 
 
-bestUrl=getMax(matchList,linkThreshold,1,0)
+bestUrl=getMax(matchList,linkThreshold,1)
 if (bestUrl != "") {
 i1 = extractImdbLink(bestUrl)
 }
@@ -6766,10 +6794,7 @@ INF("dbrow "op" ["db_index":"g_file[i]"]")
 row=row"\t"CATEGORY"\t"g_category[i]
 
 if (index_time == "") {
-if (gMovieFileCount - 4 > 0) {
-
-
-
+if (RESCAN == 1 ) {
 index_time = est
 } else {
 index_time = NOW
@@ -6797,7 +6822,7 @@ row=row"\t"RUNTIME"\t"g_runtime[i]
 
 if (gParts[i]) row=row"\t"PARTS"\t"gParts[i]
 
-row=row"\t"YEAR"\t"g_year[i]
+row=row"\t"YEAR"\t"short_year(g_year[i])
 
 start=1
 if (index(g_file[i],g_mount_root) == 1) {
@@ -6841,6 +6866,9 @@ if (is_file(g_fldr[i]"/"nfo)) {
 row=row"\t"NFO"\t"nfo
 }
 return row
+}
+function short_year(y) {
+return sprintf("%x",y-1900)
 }
 function short_genre(g,\
 i,gnames,gcount) {

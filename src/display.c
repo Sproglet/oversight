@@ -1427,6 +1427,7 @@ TRACE;
             }
         }
         if(!exists(path) ) {
+            HTML_LOG(0,"[%s] doesnt exist",path);
             FREE(path);
             path=NULL;
         }

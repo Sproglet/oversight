@@ -25,6 +25,8 @@
 #define DB_ROW_BUF_SIZE 4000
 #define QUICKPARSE
 
+#define HEX_YEAR_OFFSET 1900
+
 /*
 static long read_and_parse_row_ticks=0;
 static long assign_ticks=0;
@@ -303,6 +305,7 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 #define FIELD_TYPE_DOUBLE 'f'
 #define FIELD_TYPE_CHAR 'c'
 #define FIELD_TYPE_LONG 'l'
+#define FIELD_TYPE_YEAR 'y'
 #define FIELD_TYPE_INT 'i'
 #define FIELD_TYPE_DATE 'd'
 #define FIELD_TYPE_TIMESTAMP 't'
@@ -490,7 +493,7 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
         case 'Y':
             if (name[2] == '\0') {
                 *offset=&(rowid->year) ;
-                *type = FIELD_TYPE_INT;
+                *type = FIELD_TYPE_YEAR;
                 *overview = 1;
             }
             break;
@@ -501,6 +504,8 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
 
 }
 // This will take ownership of the val - freeing it if necessary.
+// Return string representation of a field the way a user would like to see it.
+// TODO: Need to add expand for genre codes.
 char * db_rowid_get_field(DbRowId *rowid,char *name) {
 
     char *result=NULL;
@@ -523,6 +528,9 @@ char * db_rowid_get_field(DbRowId *rowid,char *name) {
             break;
         case FIELD_TYPE_DOUBLE:
             ovs_asprintf(&result,"%.1lf",*(double *)offset);
+            break;
+        case FIELD_TYPE_YEAR:
+            ovs_asprintf(&result,"%d",*(int *)offset);
             break;
         case FIELD_TYPE_INT:
             ovs_asprintf(&result,"%d",*(int *)offset);
@@ -585,6 +593,14 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             break;
         case FIELD_TYPE_CHAR:
             *(char *)offset = *val;
+            break;
+        case FIELD_TYPE_YEAR:
+            if (strlen(val) > 3) {
+                *(int *)offset=strtol(val,&tmps,10) ;
+            } else {
+                *(int *)offset=strtol(val,&tmps,16)+HEX_YEAR_OFFSET ;
+                //HTML_LOG(0,"year %s = %d",val,*(int *)offset);
+            }
             break;
         case FIELD_TYPE_INT:
             *(int *)offset=strtol(val,&tmps,10) ;
@@ -689,8 +705,7 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,rid->genre);
     fprintf(fp,"\t%s\t%d",DB_FLDID_RUNTIME,rid->runtime);
     fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,rid->parts);
-    fprintf(fp,"\t%s\t%d",DB_FLDID_YEAR,rid->year);
-
+    fprintf(fp,"\t%s\t%x",DB_FLDID_YEAR,rid->year-HEX_YEAR_OFFSET);
 
     // Remove Network share path
     if (util_starts_with(rid->file,NETWORK_SHARE)) {

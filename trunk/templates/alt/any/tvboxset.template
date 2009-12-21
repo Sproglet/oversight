@@ -58,7 +58,6 @@ table.overview_poster {
                     <table class="header">
                         <tr>
                             [<td>:BACK_BUTTON:</td>]
-                            [<td>:EXIT_BUTTON:</td>]
                             <td>[:HOME_BUTTON:]</td>
 [:IF($@gaya):]
 [:ELSE:]

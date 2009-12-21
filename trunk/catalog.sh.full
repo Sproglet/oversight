@@ -2032,11 +2032,11 @@ function short_path(path) {
 
 function in_db(path,verbose,\
 ) {
+    path = short_path(path);
     if (index(path,g_occurs_prefix) != 1) {
         ERR("Cannot check ["path"] occurs agains current prefix ["g_occurs_prefix"]");
         exit;
     }
-    path = short_path(path);
     if (path in g_occurs) {
         if (verbose) INF("["path"] already scanned");
         return 1;
@@ -2057,9 +2057,10 @@ dbline,dbfields,err,count,filter) {
 
     id1("get_files ["prefix"]");
     delete g_occurs;
-    g_occurs_prefix = prefix;
+    g_occurs_prefix = short_path(prefix);
 
-    filter = "\t" FILE "\t" prefix;
+    filter = "\t" FILE "\t" g_occurs_prefix;
+    INF("get_files filter = "filter);
 
     while((err = (getline dbline < db )) > 0) {
 

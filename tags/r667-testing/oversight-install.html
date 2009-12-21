@@ -1,0 +1,35 @@
+<html>
+<!-- Installer stub for my application -->
+<style>
+    td { color:white; }
+    .oversight { color:white;  text-align:center; }
+    .unpak { color:#AAFFAA; text-align:center; }
+    .look { color:red; font-weight:bold; font-style:italic; }
+    a { font-weight:bold; text-decoration:underline; }
+</style>
+<script  type="text/javascript">
+function url(args) {
+    location.replace(location.href.replace(/.*localhost.drives/,'http://localhost.drives:8883').replace(/.html/,'.cgi?'+args));
+}
+</script>
+<body bgcolor="#000022" text="white" link="white">
+   <div class=oversight><center>
+       OverSight Installer - simple low maintenance index for unpak.sh
+       <p>Installation will build the initial index by scanning the following folders:
+       <br> /share/
+       <p>This <font class=look>requires internet access</font> (to get program details) and may take <font class=look>5-10 minutes</font> initially.
+       <p>When the link is selected the screen will pause for 1 minute, then you can return to the web services screen to view the index.
+       <font class=look>however the index will not be ready for a few more minutes</font>.
+       <br> <font class=look>This will also update your unpak script</font>
+   </center>
+   </div>
+       <br><a href="javascript:url('install')">Click here to Install Oversight Indexer</a>
+       
+   <br>
+       <table width=100%><tr><td>
+           <a href="javascript:url('check')">Check Install</a> - saved in file 'logs/check.log'.
+       </td><td align=right>
+       <a href="javascript:url('uninstall')">Uninstall Oversight Indexer</a>
+   </td></tr></table>
+</body>
+</html>

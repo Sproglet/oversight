@@ -2652,6 +2652,13 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 int watched,unwatched;
                 get_watched_counts(rid,&watched,&unwatched);
 
+                {
+                    char *d;
+                    d=db_rowid_get_field(rid,DB_FLDID_INDEXTIME);
+                    HTML_LOG(0,"xx %s age = %x = %s",rid->title,rid->date,d);
+                    FREE(d);
+                }
+
                 char *title = get_simple_title(rid,NULL);
                 if (rid->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
@@ -2947,7 +2954,8 @@ char *get_theme_image_tag(char *image_name,char *attr) {
 
 
 
-int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr) {
+int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
+{
 
 
     // Get filter options
@@ -3019,12 +3027,14 @@ TRACE;
 
 TRACE;
     
+    HTML_LOG(0,"Scan..");
     DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
 
 TRACE;
 
     if (free_regex) { FREE(regex); }
 
+    HTML_LOG(0,"Overview..");
     struct hashtable *overview = db_overview_hash_create(rowsets);
 TRACE;
 
@@ -3036,30 +3046,30 @@ TRACE;
     int numrows = hashtable_count(overview);
 TRACE;
 
+    HTML_LOG(0,"Sort..");
     if (strcmp(query_val(QUERY_PARAM_VIEW),VIEW_TV) == 0) {
-TRACE;
 
+        HTML_LOG(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
-TRACE;
 
-        HTML_LOG(1,"sort by name [%s]",sort);
+        HTML_LOG(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
     } else {
-TRACE;
 
-        HTML_LOG(1,"sort by age [%s]",sort);
+        HTML_LOG(0,"sort by age [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
     }
-TRACE;
 
     //Free hash without freeing keys
     db_overview_hash_destroy(overview);
 
     if (sortedRowsPtr) *sortedRowsPtr = sorted_row_ids;
     if (rowSetsPtr) *rowSetsPtr = rowsets;
+
+    HTML_LOG(0,"end get_sorted_rows_from_params");
 
     return numrows;
 }

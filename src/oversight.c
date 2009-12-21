@@ -198,9 +198,8 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     config_read_dimensions();
 
-    html_comment("Begin Actions");
+    HTML_LOG(0,"Begin Actions");
     do_actions();
-    html_comment("End Actions view=%s select=%s ==",query_val(QUERY_PARAM_VIEW),query_val("select"));
    
 
 

@@ -1,6 +1,5 @@
 <!-- Default Buttons Template  $Id:$ -->
     [:BACK_BUTTON:]
-    [:EXIT_BUTTON:]
     [:HOME_BUTTON:]
 [:IF($@gaya):]
 [:ELSE:]

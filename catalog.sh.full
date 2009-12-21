@@ -1108,12 +1108,18 @@ function set_permissions(shellArg) {
     return 0;
 }
 
-function capitalise(text) {
+function capitalise(text,\
+i,rtext,rstart) {
     text=" "text;
     while (match(text," [a-z]") > 0) {
         text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2);
     }
-    gsub(/\<Ii\>/,"II",text);
+    ## Uppercase roman
+    if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
+        for(i in rtext) {
+            text = substr(text,1,rstart[i]-1) toupper(rtext[i]) substr(text,rstart[i]+length(rtext[i]));
+        }
+    }
     return substr(text,2);
 }
 
@@ -1944,7 +1950,7 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
             idx=gMovieFilePresent[f];
             if (idx != -1 ) {
                 # Update the old entry with the new data
-                dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],dbfields[INDEXTIME]);
+                dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],""); #dbfields[INDEXTIME]);
                 updated_count++;
                 print dbline2"\t" >> new_db_file;
                 update_plots(g_plot_file,idx);
@@ -2736,7 +2742,8 @@ tmpTitle,ret,reg_len) {
 
 function identify_and_catalog_scanned_files(\
 idx,file,fldr,bestUrl,scanNfo,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total,more_info,search_abbreviations) {
+ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total,more_info,search_abbreviations,\
+tvid) {
 
     numFiles=hash_size(g_media);
 
@@ -2833,7 +2840,28 @@ ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total,more_info,s
         DEBUG("premovie tv_status "tv_status);
         if (tv_status == 0 && UPDATE_MOVIES) {
             g_tvid_plugin[idx] = g_tvid[idx]="";
-            movie_search(idx,bestUrl);
+
+            #More yuckiness. Sometimes the movie search does a better job of finding unidentified 
+            # tv shows. If so we go back and do a tv scrape.
+
+            #0 = not found 1=movie 2=tv?
+            if (movie_search(idx,bestUrl) == 2) {
+                # Looks like tv show after all?
+                if (UPDATE_TV) {
+                    INF("Going back to TV search");
+                    for (p in g_tv_plugin_list) {
+                        plugin = g_tv_plugin_list[p];
+                        tvid = find_tvid(plugin,idx,extractImdbId(g_imdb[idx]));
+                        if(tvid != "") {
+                            tvDbSeriesPage = get_tv_series_api_url(plugin,tvid);
+                            if (get_tv_series_info(plugin,idx,tvDbSeriesPage) != 0) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             scanned=1;
         }
 
@@ -2960,10 +2988,11 @@ tvDbSeriesPage,result,tvid) {
     return 0+ result;
 }
 
+#0=not found 1=movie 2=tv??
 function movie_search(idx,bestUrl,\
 name,name_no_br,name_no_tags,name_no_parts,i,\
 n,name_hash,name_list,name_id,name_try,\
-search_regex_key,search_order_key,search_order,s,search_order_size) {
+search_regex_key,search_order_key,search_order,s,search_order_size,ret) {
 
     id1("movie search");
 
@@ -3064,18 +3093,22 @@ search_regex_key,search_order_key,search_order,s,search_order_size) {
     }
 
     # Finished Search. Scrape IMDB
+    ret=0;
     if (bestUrl != "") {
 
         scrapeIMDBTitlePage(idx,bestUrl);
         # fallback to tv search doesnt make sense here - we have no season / episode info
         if (g_category[idx] == "T" ) {
             WARNING("Unidentifed TV show ???");
+            ret=2;
         } else {
+            ret=1;
             getNiceMoviePosters(idx,extractImdbId(bestUrl));
         }
 
-    }
+    } 
     id0(bestUrl);
+    return ret;
 }
 
 function tv2imdb(idx,\
@@ -3885,7 +3918,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
 
                     #allow for titles "The Office (US)" or "The Office" and 
                     # hope the start year is enough to differentiate.
-                    filter["/Data/Series/SeriesName"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
+                    filter["/Data/Series/SeriesName"] = "~:^"gTitle[idx]"(| \\([a-z0-9]\\))$";
                     filter["/Data/Series/FirstAired"] = "~:^"year_range"-";
 
                     url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",gTitle[idx]);
@@ -3907,7 +3940,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
 
                     #allow for titles "The Office (US)" or "The Office" and 
                     # hope the start year is enough to differentiate.
-                    filter["/Results/show/name"] = "~:^"gTitle[idx]"(| \\([A-Za-z0-9]\\))$";
+                    filter["/Results/show/name"] = "~:^"gTitle[idx]"(| \\(a-z0-9]\\))$";
                     filter["/Results/show/started"] = "~:"year_range;
                     
                     if (fetch_xml_single_child("http://www.tvrage.com/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
@@ -4512,7 +4545,7 @@ function clean_title(t) {
     }
     gsub(/@@/,"",t);
 
-    gsub(/[^A-Za-z0-9]+/," ",t);
+    gsub("[^A-Za-z0-9"g_quote"]+"," ",t);
     gsub(/ +/," ",t);
     t=trim(capitalise(tolower(t)));
     return t;
@@ -4957,7 +4990,7 @@ t) {
 
        } else if (substr(tagfilters[t],1,2) == "~:") {
 
-           regexs[t] = substr(tagfilters[t],3);
+           regexs[t] = tolower(substr(tagfilters[t],3));
 
        } else {
 
@@ -5022,7 +5055,7 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
                     }
                 }
                 for(t in regexs) {
-                    if (!(t in xmlout) || (xmlout[t] !~ regexs[t] ) ) {
+                    if (!(t in xmlout) || (tolower(xmlout[t]) !~ regexs[t] ) ) {
                         found =0 ; break;
                     }
                 }
@@ -6881,20 +6914,21 @@ i,gnames,gcount) {
 }
 # convert yyyymmddHHMMSS to bitwise yyyyyy yyyymmmm dddddhhh hhmmmmmm
 function shorttime(t,\
-y,m,d,H,M) {
-    if (t != "") {
+y,m,d,hr,mn,r) {
+    r = t;
+    if (length(t) > 8 ) {
+
         y = 0+substr(t,1,4)-1900;
         m = 0+substr(t,5,2);
         d = 0+substr(t,7,2);
-        H = 0+substr(t,9,2);
-        M = 0+substr(t,11,2);
-        t = lshift(y,4)+m;
-        t = lshift(t,5)+d;
-        t = lshift(t,5)+h;
-        t = lshift(t,6)+M;
-        t= sprintf("%x",t);
+        hr = 0+substr(t,9,2);
+        mn = 0+substr(t,11,2);
+
+        r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn;
+        r= sprintf("%x",r);
     }
-    return t;
+    INF("shorttime "t" = "r);
+    return r;
 }
 
 # IN indexToMergeHash - hash whose indexes are the items we want to add during this iteration.

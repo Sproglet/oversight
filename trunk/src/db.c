@@ -506,7 +506,8 @@ int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char 
 // This will take ownership of the val - freeing it if necessary.
 // Return string representation of a field the way a user would like to see it.
 // TODO: Need to add expand for genre codes.
-char * db_rowid_get_field(DbRowId *rowid,char *name) {
+char * db_rowid_get_field(DbRowId *rowid,char *name)
+{
 
     char *result=NULL;
     void *offset;

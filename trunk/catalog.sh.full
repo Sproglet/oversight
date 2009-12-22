@@ -6916,17 +6916,28 @@ i,gnames,gcount) {
     gsub(/[^-A-Za-z]+/,"|",g);
     return g;
 }
+#busybox awk - I think has some issues converting numbers with leading zeroes
+#this will try to return an integer extracted from a string. Just guesswork
+#would not be needed with well behaved awk
+function n(x)
+{
+    if (index(x,"0") ==1) {
+        gsub(/^0+/,"",x);
+    }
+    return x+0;
+}
+
 # convert yyyymmddHHMMSS to bitwise yyyyyy yyyymmmm dddddhhh hhmmmmmm
 function shorttime(t,\
 y,m,d,hr,mn,r) {
     r = t;
     if (length(t) > 8 ) {
 
-        y = 0+substr(t,1,4)-1900;
-        m = 0+substr(t,5,2);
-        d = 0+substr(t,7,2);
-        hr = 0+substr(t,9,2);
-        mn = 0+substr(t,11,2);
+        y = n(substr(t,1,4))-1900;
+        m = n(substr(t,5,2));
+        d = n(substr(t,7,2));
+        hr = n(substr(t,9,2));
+        mn = n(substr(t,11,2));
 
         r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn;
         r= sprintf("%x",r);

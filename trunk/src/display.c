@@ -2577,6 +2577,18 @@ int check_and_prune_item(DbRowId *rowid,char *path) {
     return result;
 }
 
+char *next_folder(char *path,char *root)
+{
+    char *result = NULL;
+    if (util_starts_with(path,root)) {
+        char *p = strchr(path+strlen(root) + 1 , '/'); // mount folder
+        if (p != NULL) {
+            ovs_asprintf(&result,"%.*s",p-path,path);
+        }
+    }
+    return result;
+}
+
 // Delist a file if it's grandparent folder is present and not empty.
 // This is deleted from the db, which will be reflected in the next page draw.
 int delisted(DbRowId *rowid)
@@ -2596,27 +2608,21 @@ int delisted(DbRowId *rowid)
         
         HTML_LOG(0,"auto delist check [%s][%s]",rowid->db->source,path);
 
-        char *parent_dir = util_dirname(path);
-        char *grandparent_dir = util_dirname(parent_dir);
+        char *ancestor_dir = NULL;
+        if (util_starts_with(path,NETWORK_SHARE)) {
+            ancestor_dir=next_folder(path,NETWORK_SHARE);
+        } else {
+            ancestor_dir=next_folder(path,"/");
+        }
 
-        char *name = util_basename(path);
-
-        HTML_LOG(1,"path[%s]",path);
-        HTML_LOG(1,"parent_dir[%s]",parent_dir);
-        HTML_LOG(1,"grandparent_dir[%s]",grandparent_dir);
-        HTML_LOG(1,"grandparent_dir[%s] exists = %d",grandparent_dir,exists(grandparent_dir));
-        HTML_LOG(1,"name[%s]",name);
-
-        if (exists(grandparent_dir) && !is_empty_dir(grandparent_dir) &&  auto_prune) {
+        if (exists(ancestor_dir) && !is_empty_dir(ancestor_dir) &&  auto_prune) {
 
             //media present - file gone!
             db_remove_row(rowid);
             result = 1;
 
         }
-        FREE(name);
-        FREE(parent_dir);
-        FREE(grandparent_dir);
+        FREE(ancestor_dir);
     }
     HTML_LOG(1-result,"delisted [%s] = %d",path,result);
     if (freepath) FREE(path);

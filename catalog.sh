@@ -2344,6 +2344,7 @@ terms,results,id) {
 
 
 id1("searchByEpisodeName "plugin)
+dump(0,"searchByEpisodeName",details)
 if (plugin == "THETVDB") {
 terms="\"season "details[SEASON]"\" \""details[EPISODE]" :\" \""clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com"
 results = scanPageForMatch(g_search_google terms,"seriesid","seriesid=[0-9]+",0)
@@ -4529,14 +4530,14 @@ return letter
 
 
 function clean_title(t) {
+
 if (index(t,"&") && index(t,";")) {
 gsub(/[&]amp;/,"and",t)
 t = html_decode(t)
 gsub(/[&][a-z0-9]+;/,"",t)
 }
-gsub(/[&]/," and ",t)
-gsub(/['"'"']/,"",t)
 
+gsub(/[&]/," and ",t)
 
 
 
@@ -4544,9 +4545,11 @@ gsub(/['"'"']/,"",t)
 while (match(t,"\\<[A-Za-z]\\>\.\\<[A-Za-z]\\>")) {
 t = substr(t,1,RSTART) "@@" substr(t,RSTART+2)
 }
+
 gsub(/@@/,"",t)
 
 gsub("[^A-Za-z0-9"g_quote"]+"," ",t)
+
 gsub(/ +/," ",t)
 t=trim(capitalise(tolower(t)))
 return t

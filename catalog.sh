@@ -416,6 +416,8 @@ return best_url
 
 
 BEGIN {
+g_punc="[^][}{a-zA-Z0-9()"g_quote"]+"
+g_punc2="[^a-zA-Z0-9()"g_quote"]+"
 g_indent=""
 g_sigma="Σ"
 g_start_time = systime()
@@ -1111,8 +1113,8 @@ return 0
 function capitalise(text,\
 i,rtext,rstart) {
 text=" "text
-while (match(text," [a-z]") > 0) {
-text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2)
+while (match(text,"\\<[a-z]") > 0) {
+text=substr(text,1,RSTART-1) toupper(substr(text,RSTART,1)) substr(text,RSTART+1)
 }
 
 if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
@@ -2257,8 +2259,8 @@ delete more_info
 
 id1("checkTvFilenameFormat "plugin)
 
-
 line = remove_format_tags(g_media[idx])
+DEBUG("CHECK TV ["line"] vs ["g_media[idx]"]")
 
 dirCount = split(g_fldr[idx],dirs,"/")
 dirLevels=2
@@ -2288,6 +2290,7 @@ if (ret == 0 ) {
 more_info[1]=1
 line = remove_format_tags(g_media[idx])
 for(d=0 ; d-dirLevels <= 0  ; d++ ) {
+INF("xx1 ["line"]")
 if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) {
 dump(0,"details",details)
 ret = 1
@@ -2409,6 +2412,7 @@ ret = extractEpisodeByDates(plugin,line,details)
 } else {
 split(pat[i],parts,"@")
 
+INF("xx2 ["line"]")
 ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details)
 if (ret+0) {
 details[EPISODE] = parts[5] details[EPISODE]
@@ -2525,9 +2529,9 @@ result=0
 
 if (extractDate(line,date,nonDate)) {
 rest=nonDate[2]
-title = clean_title(nonDate[1])
 
-details[TITLE]=title
+details[TITLE]= title = clean_title(nonDate[1])
+
 y = date[1]
 m = date[2]
 d = date[3]
@@ -2687,7 +2691,9 @@ DEBUG("ignoring ["reg_match"]")
 reg_pos += prefixReLen
 reg_len = length(reg_match)-prefixReLen
 
+DEBUG("ExtractEpisode:0 Title= ["line"]")
 details[TITLE] = substr(line,1,reg_pos-1)
+DEBUG("ExtractEpisode:1 Title= ["details[TITLE]"]")
 details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len)
 
 line=substr(reg_match,prefixReLen+1)
@@ -2695,6 +2701,7 @@ line=substr(reg_match,prefixReLen+1)
 if (match(details[TITLE],": *")) {
 details[TITLE] = substr(details[TITLE],RSTART+RLENGTH)
 }
+DEBUG("ExtractEpisode:2 Title= ["details[TITLE]"]")
 
 if (match(details[TITLE],"^[a-z][a-z0-9]+[-]")) {
 tmpTitle=substr(details[TITLE],RSTART+RLENGTH)
@@ -2704,6 +2711,7 @@ details[TITLE]=tmpTitle
 }
 }
 
+DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
 details[TITLE] = clean_title(details[TITLE])
 
 DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
@@ -3425,7 +3433,19 @@ return foundId
 
 
 function search_tv_series_names(plugin,idx,title,search_abbreviations,\
-tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
+tnum,t,i,url) {
+
+tnum = alternate_titles(title,t)
+
+for(i = 0 ; i-tnum < 0 ; i++ ) {
+url = search_tv_series_names2(plugin,idx,t[i],search_abbreviations)
+if (url != "") break
+} 
+return url
+}
+
+function search_tv_series_names2(plugin,idx,title,search_abbreviations,\
+tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid,nobr) {
 
 title_key = plugin"/"g_fldr[idx]"/"title
 id1("search_tv_series_names "title_key)
@@ -3436,6 +3456,7 @@ tvDbSeriesPage =  g_tvDbIndex[title_key];
 } else {
 
 tvDbSeriesPage = searchTvDbTitles(plugin,idx,title)
+
 DEBUG("search_tv_series_names: bytitles="tvDbSeriesPage)
 if (tvDbSeriesPage) {
 
@@ -3543,11 +3564,17 @@ function possible_tv_titles(plugin,title,closeTitles,\
 ret) {
 
 if (plugin == "THETVDB" ) {
+
 ret = searchTv(plugin,title,"FirstAired,Overview",closeTitles)
+
 } else if (plugin == "TVRAGE" ) {
+
 ret = searchTv(plugin,title,"started,origin_country",closeTitles)
+
 } else {
+
 plugin_error(plugin)
+
 } 
 g_indent=substr(g_indent,2)
 dump(0,"searchTv out",closeTitles)
@@ -3727,6 +3754,47 @@ id0(score)
 dump(0,"post filterTitle",showIdHash)
 }
 
+function remove_country(t) {
+if (match(tolower(t)," (au|uk|us)( |$)")) {
+t=substr(t,1,RSTART-1) substr(t,RSTART+RLENGTH)
+}
+return t
+}
+
+
+function alternate_titles(title,t,\
+tnum,tried,tmp) {
+
+tnum = 0
+tmp = clean_title(title,1)
+tried[tmp]=1
+t[tnum++] = tmp
+
+tmp = clean_title(remove_brackets(title),1)
+if (!(tmp in tried)) {
+tried[tmp]=1
+t[tnum++] = tmp
+}
+
+tmp = clean_title(remove_country(title),1)
+if (!(tmp in tried)) {
+tried[tmp]=1
+t[tnum++] = tmp
+}
+
+tmp = clean_title(remove_country(remove_brackets(title)),1)
+if (!(tmp in tried)) {
+tried[tmp]=1
+t[tnum++] = tmp
+}
+
+dump(0,"alternate_titles",t)
+
+return tnum+0
+
+}
+
+
 
 
 
@@ -3734,25 +3802,9 @@ dump(0,"post filterTitle",showIdHash)
 
 
 function searchTv(plugin,title,requiredTagList,closeTitles,\
-score) {
-if (title != "") {
-score=searchTv2(plugin,title,requiredTagList,closeTitles)
-if (score+0 <= 0 ) {
-if (match(tolower(title)," (au|uk|us)( |$)")) {
-title=substr(title,1,RSTART-1) substr(title,RSTART+RLENGTH)
-DEBUG("Trying generic title "title)
-score=searchTv2(plugin,title,requiredTagList,closeTitles)
-}
-}
-}
-return 0+ score
-}
-
-
-function searchTv2(plugin,title,requiredTagList,closeTitles,\
 requiredTagNames,allTitles,url,ret) {
 
-id1("searchTv2 Checking ["plugin"/"title"]" )
+id1("searchTv Checking ["plugin"/"title"]" )
 split(requiredTagList,requiredTagNames,",")
 delete closeTitles
 
@@ -3825,7 +3877,7 @@ if (index(line,seriesEnd) > 0) {
 
 
 
-currentName = info[seriesPath"/"nameTag]
+currentName = clean_title(info[seriesPath"/"nameTag])
 
 currentId = info[seriesPath"/"idTag]
 count ++
@@ -4186,13 +4238,13 @@ if (sub(/ [Oo] /," O",titleIn)) {
 titleIn=clean_title(titleIn)
 }
 
-if ((bPos=index(possible_title," (")) > 0) {
-yearOrCountry=clean_title(substr(possible_title,bPos+2))
-DEBUG("Qualifier "yearOrCountry)
+if (match(possible_title," \\([^)]+")) {
+yearOrCountry=tolower(clean_title(substr(possible_title,RSTART+2,RLENGTH-2),1))
+DEBUG("Qualifier ["yearOrCountry"]")
 }
 
 if ((cPos=index(possible_title,",")) > 0) {
-shortName=clean_title(substr(possible_title,1,cPos-1))
+shortName=clean_title(substr(possible_title,1,cPos-1),1)
 }
 
 possible_title=clean_title(possible_title)
@@ -4207,8 +4259,15 @@ sub(/ [Tt]he$/,"",titleIn)
 
 
 if (yearOrCountry != "") {
-DEBUG("Qualified title "possible_title)
+DEBUG("Qualified title ["possible_title"]")
 }
+
+titleIn = tolower(titleIn)
+possible_title = tolower(possible_title)
+INF("titleIn["titleIn"]")
+INF("possible_title["possible_title"]")
+INF("qualifed titleIn["titleIn" ("yearOrCountry")]")
+
 if (index(possible_title,titleIn) == 1) {
 
 
@@ -4233,7 +4292,7 @@ matchLevel=5
 
 
 
-} else if ( possible_title == titleIn " " yearOrCountry ) {
+} else if ( possible_title == titleIn " (" yearOrCountry ")" ) {
 INF("match for ["titleIn"+"yearOrCountry"] against ["possible_title"]")
 
 
@@ -4301,8 +4360,10 @@ bestScores(score,titleHashOut,0)
 
 
 for(i in titleHashOut) {
-titleHashOut[i] = tmpTitles[i]
+titleHashOut[clean_title(i)] = tmpTitles[i]
 }
+
+dump(0,"matches",titleHashOut)
 bestScore = score[firstIndex(titleHashOut)]
 if (bestScore == "" ) bestScore = -1
 
@@ -4529,7 +4590,8 @@ return letter
 
 
 
-function clean_title(t) {
+
+function clean_title(t,deep) {
 
 if (index(t,"&") && index(t,";")) {
 gsub(/[&]amp;/,"and",t)
@@ -4548,10 +4610,14 @@ t = substr(t,1,RSTART) "@@" substr(t,RSTART+2)
 
 gsub(/@@/,"",t)
 
-gsub("[^A-Za-z0-9"g_quote"]+"," ",t)
+gsub(g_punc," ",t)
+if (deep) {
+gsub(g_punc2," ",t)
+}
 
 gsub(/ +/," ",t)
 t=trim(capitalise(tolower(t)))
+
 return t
 }
 
@@ -6032,8 +6098,7 @@ gsub(/-$/,"",g_motech_title[idx])
 
 g_imdb_title[idx]=extract_imdb_title_category(idx,title)
 
-title=clean_title(g_imdb_title[idx])
-if (adjustTitle(idx,title,"imdb")) {
+if (adjustTitle(idx,g_imdb_title[idx],"imdb")) {
 gOriginalTitle[idx] = gTitle[idx]
 }
 }
@@ -7045,8 +7110,8 @@ timestamp("[DETAIL] ",x)
 
 
 function trimAll(str) {
-sub(/([^a-zA-Z0-9()]|[ ])+$/,"",str)
-sub(/^([^a-zA-Z0-9()]|[ ])+/,"",str)
+sub(g_punc"$","",str)
+sub("^"g_punc,"",str)
 return str
 }
 

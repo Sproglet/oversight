@@ -70,7 +70,7 @@ char *fmt_timestamp_static(OVS_TIME t1)
     internal_time2tm(t1,&t);
     sprintf(buf,"%4d%02d%02d%02d%02d%02d",
             t.tm_year+1900,
-            t.tm_mon+1,
+            t.tm_mon,
             t.tm_mday,
             t.tm_hour,
             t.tm_min,

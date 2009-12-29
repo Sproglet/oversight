@@ -1281,8 +1281,6 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
         } else if (first_nonalnum) {
             *p++ = '_';
             first_nonalnum=0;
-        } else {
-            p++;
         }
         t++;
     }

@@ -101,8 +101,11 @@ char *replace_str(char *s_in,char *match,char *replace)
     char *p=NULL;
     char *out = s_in;
     int matchlen = strlen(match);
-    while((p = strstr(out,match)) != NULL) {
+    int replen = strlen(replace);
+    int offset=0;
+    while((p = strstr(out+offset,match)) != NULL) {
         ovs_asprintf(&tmp,"%.*s%s%s",p-out,out,NVL(replace),p+matchlen);
+        offset  = p-out + replen;
         if (out != s_in) FREE(out);
         out = tmp;
     }

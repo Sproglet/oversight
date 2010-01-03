@@ -416,8 +416,6 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
-    g_punc="[^][}{a-zA-Z0-9()"g_quote"]+";
-    g_punc2="[^a-zA-Z0-9()"g_quote"]+";
     g_indent="";
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();
@@ -434,6 +432,9 @@ BEGIN {
     no="no";
     g_quote="'"'"'";
     g_quote2="\"'"'"'";
+    g_punc[0]="[^][}{a-zA-Z0-9()"g_quote"]+";
+    g_punc[1]="[^a-zA-Z0-9()"g_quote"]+";
+    g_punc[2]="[^a-zA-Z0-9"g_quote"]+";
     g_nonquote_regex = "[^"g_quote2"]";
 
     #g_imdb_regex="\\<tt[0-9]+\\>";
@@ -722,6 +723,9 @@ END{
     for(i in g_settings) {
         g_settings_orig[i] = g_settings[i];
     }
+    t="Michael"g_quote"s";
+    gsub(g_punc[deep+0]," ",t);
+    INF("test ["t"]");
 
     # code was originally written so that get_tv_series_info and get_episode_xml
     # write into lots of global arrays g_Season, g_episode, gTitle , g_imdb etc etc,
@@ -2694,7 +2698,16 @@ tmpTitle,ret,reg_len) {
         DEBUG("ExtractEpisode:0 Title= ["line"]");
         details[TITLE] = substr(line,1,reg_pos-1);
         DEBUG("ExtractEpisode:1 Title= ["details[TITLE]"]");
+
         details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len);
+
+        if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
+            details[EXT]=details[ADDITIONAL_INF];
+            gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF]);
+            details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2);
+        }
+
+        details[ADDITIONAL_INF]=clean_title(details[ADDITIONAL_INF],2);
 
         line=substr(reg_match,prefixReLen+1); # season episode
 
@@ -2712,15 +2725,9 @@ tmpTitle,ret,reg_len) {
         }
 
         DEBUG("ExtractEpisode: Title= ["details[TITLE]"]");
-        details[TITLE] = clean_title(details[TITLE]);
+        details[TITLE] = clean_title(details[TITLE],2);
         
         DEBUG("ExtractEpisode: Title= ["details[TITLE]"]");
-
-        if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
-            details[EXT]=details[ADDITIONAL_INF];
-            gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF]);
-            details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2);
-        }
 
 
         #Reject this could be 64(x264) or 80(hd1080)
@@ -4610,10 +4617,7 @@ function clean_title(t,deep) {
 
     gsub(/@@/,"",t);
 
-    gsub(g_punc," ",t);
-    if (deep) {
-        gsub(g_punc2," ",t);
-    }
+    gsub(g_punc[deep+0]," ",t);
 
     gsub(/ +/," ",t);
     t=trim(capitalise(tolower(t)));
@@ -7110,8 +7114,8 @@ function DETAIL(x) {
 
 # Remove spaces and non alphanum
 function trimAll(str) {
-    sub(g_punc"$","",str);
-    sub("^"g_punc,"",str);
+    sub(g_punc[0]"$","",str);
+    sub("^"g_punc[0],"",str);
     return str;
 }
 

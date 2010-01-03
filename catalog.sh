@@ -416,8 +416,6 @@ return best_url
 
 
 BEGIN {
-g_punc="[^][}{a-zA-Z0-9()"g_quote"]+"
-g_punc2="[^a-zA-Z0-9()"g_quote"]+"
 g_indent=""
 g_sigma="Σ"
 g_start_time = systime()
@@ -434,6 +432,9 @@ yes="yes"
 no="no"
 g_quote="'"'"'"
 g_quote2="\"'"'"'"
+g_punc[0]="[^][}{a-zA-Z0-9()"g_quote"]+"
+g_punc[1]="[^a-zA-Z0-9()"g_quote"]+"
+g_punc[2]="[^a-zA-Z0-9"g_quote"]+"
 g_nonquote_regex = "[^"g_quote2"]"
 
 
@@ -722,6 +723,9 @@ g_plot_app=qa(APPDIR"/bin/plot.sh")
 for(i in g_settings) {
 g_settings_orig[i] = g_settings[i]
 }
+t="Michael"g_quote"s"
+gsub(g_punc[deep+0]," ",t)
+INF("test ["t"]")
 
 
 
@@ -2694,7 +2698,16 @@ reg_len = length(reg_match)-prefixReLen
 DEBUG("ExtractEpisode:0 Title= ["line"]")
 details[TITLE] = substr(line,1,reg_pos-1)
 DEBUG("ExtractEpisode:1 Title= ["details[TITLE]"]")
+
 details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len)
+
+if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
+details[EXT]=details[ADDITIONAL_INF]
+gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF])
+details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2)
+}
+
+details[ADDITIONAL_INF]=clean_title(details[ADDITIONAL_INF],2)
 
 line=substr(reg_match,prefixReLen+1)
 
@@ -2712,15 +2725,9 @@ details[TITLE]=tmpTitle
 }
 
 DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
-details[TITLE] = clean_title(details[TITLE])
+details[TITLE] = clean_title(details[TITLE],2)
 
 DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
-
-if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
-details[EXT]=details[ADDITIONAL_INF]
-gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF])
-details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2)
-}
 
 
 
@@ -4610,10 +4617,7 @@ t = substr(t,1,RSTART) "@@" substr(t,RSTART+2)
 
 gsub(/@@/,"",t)
 
-gsub(g_punc," ",t)
-if (deep) {
-gsub(g_punc2," ",t)
-}
+gsub(g_punc[deep+0]," ",t)
 
 gsub(/ +/," ",t)
 t=trim(capitalise(tolower(t)))
@@ -7110,8 +7114,8 @@ timestamp("[DETAIL] ",x)
 
 
 function trimAll(str) {
-sub(g_punc"$","",str)
-sub("^"g_punc,"",str)
+sub(g_punc[0]"$","",str)
+sub("^"g_punc[0],"",str)
 return str
 }
 

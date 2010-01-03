@@ -554,15 +554,17 @@ char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRo
 }
 
 char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    char *tmp=NULL;
+    char *cert,*tmp;
+    cert = tmp = NULL;
+
     if (num_rows == 0 || sorted_rows == NULL ) {
         *free_result=0;
         return "?";
     }
 
     if (*oversight_val("ovs_display_certificate") == '1') {
-        char *cert = util_tolower(sorted_rows[0]->certificate);
 
+        cert = util_tolower(sorted_rows[0]->certificate);
 
         tmp=replace_str(cert,"usa:","us:");
         FREE(cert);
@@ -576,16 +578,18 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
         ovs_asprintf(&tmp,"%s/templates/%s/images/cert/%s.%s",appDir(),skin_name(),cert,ovs_icon_type());
         FREE(cert);
         cert=tmp;
-        HTML_LOG(0,"xx cert[%s]",cert);
 
         char *attr;
-        ovs_asprintf(&attr," width=%d height=%d ",g_dimension->certificate_size,g_dimension->certificate_size);
+        ovs_asprintf(&attr," height=%d ",g_dimension->certificate_size);
 
         tmp = get_local_image_link(cert,sorted_rows[0]->certificate,attr);
+        FREE(cert);
+        cert=tmp;
         FREE(attr);
     }
 
-    return tmp;
+    HTML_LOG(0,"xx cert[%s]",cert);
+    return cert;
 }
 
 char *macro_fn_tv_listing(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -2021,6 +2025,15 @@ char *get_variable(char *vname,int *free_result)
                 convert_int=1;
                 int_val = gaya_prev_file();
             }
+
+        } else if (strcmp(vname+1,"nmt100") == 0) {
+            convert_int=1;
+            int_val = is_nmt100();
+
+        } else if (strcmp(vname+1,"nmt200") == 0) {
+
+            convert_int=1;
+            int_val = is_nmt200();
 
         } else if (strcmp(vname+1,"hd") == 0) {
 

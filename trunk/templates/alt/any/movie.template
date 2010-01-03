@@ -53,22 +53,25 @@ body { color:yellow ; background-color:black; }
                         <table width="100%" background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
 [:ENDIF:]
                             <tr>
-                                <td class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
-                                <td class="right" width=20%><font class="info">[:EXTERNAL_URL:][:SOURCE:]</font></td>
+                                <td colspan=2 class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
                             </tr>
                             <tr>
-                                <td align="left"><font id="genre">[:CERTIFICATE_IMAGE:] [:GENRE:]</font></td>
-                                <td class="right">[:RATING_STARS(5):][:RATING:]<br>
+                                <td align="left"><font id="genre">[:GENRE:]</font></td>
+                                <td align="right">[:RATING_STARS(5):][:RATING:]</td>
+                            </tr>
+                            <tr>
+                                <td align="left"><font class="info">[:CERTIFICATE_IMAGE:] [:SOURCE:]
 [:IF($@hd):]
 [Runtime&#58;&nbsp;:RUNTIME:]
 [:ELSE:]
 [:RUNTIME:]
 [:ENDIF:]
 </td>
+                                <td class="right"><font class="info">[:EXTERNAL_URL:]</font></td>
                             </tr>
                             <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:]</span></td><tr>
-                            <tr><Td>[:MOVIE_LISTING:]</td></tr>
-                            <tr><td>
+                            <tr><td colspan=2>[:MOVIE_LISTING:]</td></tr>
+                            <tr><td colspan=2>
                                 [:INCLUDE_TEMPLATE(submit_btn):]
                             </td></tr>
                         </table>
@@ -87,6 +90,7 @@ vi:ts=4:sw=4:et:syntax=html
 
 <script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/movie.js"></script>
 
+<a href="javascript:ovs_info();" tvid="INFO"></a>
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>
 <a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
 <a href="javascript:ovs_watched();" tvid="RED"></a>

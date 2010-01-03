@@ -65,9 +65,15 @@ img.nasstatus { width:15; height:15; }
             <td align=left colspan=3>
                 <table width=100%>
                     <tr>
+[:IF($@nmt200):]
+                        <td>[:CONFIG_LINK(oversight.cfg,720.help,720 text mode,class=scanlines720):]</td>
+                        <td>[:CONFIG_LINK(oversight.cfg,720-poster.help,720 poster mode,class=scanlines720):]</td>
+                        <td>[:CONFIG_LINK(oversight.cfg,720-detail.help,720 detail view,class=scanlines720):]</td>
+[:ELSE:]
                         <td>[:CONFIG_LINK(oversight.cfg,720.help,HD text mode,class=scanlines720):]</td>
                         <td>[:CONFIG_LINK(oversight.cfg,720-poster.help,HD poster mode,class=scanlines720):]</td>
                         <td>[:CONFIG_LINK(oversight.cfg,720-detail.help,HD detail view,class=scanlines720):]</td>
+[:ENDIF:]
                     </tr>
                 </table>
             </td>
@@ -75,6 +81,18 @@ img.nasstatus { width:15; height:15; }
             <td align=left>[:CONFIG_LINK(unpak.cfg,help,Nzbget Unpacking):]</td>
         </tr>
         <tr>
+[:IF($@nmt200):]
+            <td>[:ICON(display):]</td>
+            <td align=left colspan=3>
+                <table width=100%>
+                    <tr>
+                        <td>[:CONFIG_LINK(oversight.cfg,1080.help,1080 text mode,class=scanlines1080):]</td>
+                        <td>[:CONFIG_LINK(oversight.cfg,1080-poster.help,1080 poster mode,class=scanlines1080):]</td>
+                        <td>[:CONFIG_LINK(oversight.cfg,1080-detail.help,1080 detail view,class=scanlines1080):]</td>
+                    </tr>
+                </table>
+            </td>
+[:ENDIF:]
             <td>[:ICON(internet):]</td>
             <td align=left>[:CONFIG_LINK(oversight.cfg,secure.help,Internet Access):]</td>
         </tr>

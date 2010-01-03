@@ -30,6 +30,8 @@
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
 
+char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action);
+char *focus_event_fn(char *function_name_prefix,long function_id,int out_action);
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
@@ -791,8 +793,11 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
             ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
             //ovs_asprintf(&params,"idlist=&"QUERY_PARAM_VIEW"=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
             //
-            result = get_final_link_with_font(params,class,title,class);
+            char *attr;
+            ovs_asprintf(&attr,"%s %s",class,NVL(href_attr));
+            result = get_final_link_with_font(params,attr,title,class);
             //result = get_self_link_with_font(params,class,title,class); XX
+            FREE(attr);
             FREE(params);
 
         } else {
@@ -1644,8 +1649,26 @@ char *select_checkbox(DbRowId *rid,char *text) {
 }
 
 
+#define JS_MOVIE_INFO_FN_PREFIX "set_info"
+void add_movie_info_text(Array *js,long fn_id,char *info)
+{
+    char *text = clean_js_string(info);
+    char *tmp;
+    ovs_asprintf(&tmp,"function " JS_MOVIE_INFO_FN_PREFIX "%x() { set_info('%s'); }\n",fn_id,text);
+    array_add(js,tmp);
+    if (text != info) FREE(text);
+}
+void add_movie_part_row(Array *output,long fn_id,char *cell)
+{
+    char *tmp;
+    char *focus=focus_event_fn(JS_MOVIE_INFO_FN_PREFIX,fn_id,1);
+    ovs_asprintf(&tmp,"<tr><td %s>%s</td></tr>\n",focus);
+    FREE(focus);
+    array_add(output,tmp);
+}
 
-char *movie_listing(DbRowId *rowid) {
+char *movie_listing(DbRowId *rowid)
+{
 
     db_rowid_dump(rowid);
 
@@ -1660,14 +1683,25 @@ char *movie_listing(DbRowId *rowid) {
     if (*select) {
         return select_checkbox(rowid,rowid->file);
     } else {
-        char *result=NULL;
+        Array *js = array_new(free);
+        Array *output = array_new(free);
+
         Array *parts = split(rowid->parts,"/",0);
         HTML_LOG(1,"parts ptr = %ld",parts);
 
         char *basename=util_basename(rowid->file);
 
-        result=vod_link(rowid,basename,"",rowid->db->source,rowid->file,"0","onkeyleftset=up",style);
+        char *mouse=mouse_event_fn(JS_MOVIE_INFO_FN_PREFIX,0,1);
+
+        char *href_attr;
+        ovs_asprintf(&href_attr,"onkeyleftset=up %s",mouse);
+        add_movie_info_text(js,0,rowid->file);
+        add_movie_part_row(output,0,vod_link(rowid,basename,"",rowid->db->source,rowid->file,"0",href_attr,style));
+
         FREE(basename);
+        FREE(mouse);
+        FREE(href_attr);
+
         // Add vod links for all of the parts
         
         if (parts && parts->size) {
@@ -1678,15 +1712,16 @@ char *movie_listing(DbRowId *rowid) {
                 char i_str[10];
                 sprintf(i_str,"%d",i);
 
-                char *tmp=vod_link(rowid,parts->array[i],"",rowid->db->source,parts->array[i],i_str,"",style);
+                char *mouse=mouse_event_fn(JS_MOVIE_INFO_FN_PREFIX,i+1,1);
 
-                char *vod_list;
-                ovs_asprintf(&vod_list,"%s<br>\n%s",result,tmp);
-                FREE(tmp);
-                FREE(result);
-                result=vod_list;
+                add_movie_part_row(output,i+1,vod_link(rowid,parts->array[i],"",rowid->db->source,parts->array[i],i_str,mouse,style));
+                add_movie_info_text(js,i+1,parts->array[i]);
+
+                FREE(mouse);
+
             }
         }
+
 
         // Big play button
         char *play_button = get_theme_image_tag("player_play","");
@@ -1699,11 +1734,24 @@ char *movie_listing(DbRowId *rowid) {
         }
 
         char *vod_list;
-        ovs_asprintf(&vod_list,"<table><tr><td>%s</td><td>%s</td></table>",play_tvid,result);
+        char *js_script = arraystr(js);
+        char *result = arraystr(output);
+
+        ovs_asprintf(&vod_list,
+            "<script type=\"text/javascript\"><!--\n>%s\n--></script>\n"
+            "<table><tr><td>%s</td>"
+            "<td><table>%s</table></td></table>",
+            js_script,play_tvid,result);
+
+        FREE(js_script);
         FREE(result);
         result = vod_list;
         FREE(play_button);
         FREE(play_tvid);
+
+        array_free(output);
+        array_free(js);
+
         return result;
     }
 }
@@ -1973,6 +2021,11 @@ char *get_simple_title(
                 NVL(row_id->certificate),
                 source_start,(show_source?source:""),source_end);
     }
+    if (strchr(title,'\'')) {
+        char *tmp = replace_str(title,"\'","\\\'");
+        FREE(title);
+        title=tmp;
+    }
     return title;
 }
 char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
@@ -1989,15 +2042,21 @@ char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *
 }
 
 // These are attributes of the href
-char *focus_event_fn(char *function_name_prefix,long function_id,int out_action) {
+char *focus_event_fn(char *function_name_prefix,long function_id,int out_action)
+{
     return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus",
             (out_action?"onblur":NULL));
 }
 
 // These are attributes of the cell text
-char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action) {
-    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover",
-            (out_action?"onmouseout":NULL));
+char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action)
+{
+    if (g_dimension->local_browser) {
+        return NULL; 
+    } else {
+        return mouse_or_focus_event_fn(function_name_prefix,function_id,"onmouseover",
+                (out_action?"onmouseout":NULL));
+    }
 }
 
 char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
@@ -2091,9 +2150,7 @@ TRACE;
         char *simple_title = get_simple_title(row_id,newview);
 
         focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
-        if (!g_dimension->local_browser) {
-            mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
-        }
+        mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
         FREE(simple_title);
     }
 TRACE;
@@ -2170,17 +2227,17 @@ TRACE;
             //width_attr,
             //height_attr,
             grid_toggle,
-            mouse_ev,
+            NVL(mouse_ev),
             
             cell_text,
             (first_space?" ":""),
             (first_space?first_space+1:""),
             add_spacer);
 
-    if (add_spacer && *add_spacer) FREE(add_spacer);
-    if (mouse_ev && *mouse_ev) FREE(mouse_ev);
-    if (focus_ev && *focus_ev) FREE(focus_ev);
-    if (cell_background_image && *cell_background_image) FREE(cell_background_image);
+    if (!EMPTY_STR(add_spacer)) FREE(add_spacer);
+    if (!EMPTY_STR(mouse_ev)) FREE(mouse_ev);
+    if (!EMPTY_STR(focus_ev)) FREE(focus_ev);
+    if (!EMPTY_STR(cell_background_image)) FREE(cell_background_image);
 
     FREE(cell_text);
     FREE(title); // first_space points inside of title
@@ -3506,7 +3563,7 @@ TRACE;
                         (row_text?row_text:""),
                         td_class,width_epno, td_plot_attr, episode_col,
 
-                        width_icon,td_plot_attr,NVL(icon_text),
+                        width_icon,NVL(td_plot_attr),NVL(icon_text),
 
                         td_class, width_txt_and_date, td_plot_attr,
 
@@ -3515,7 +3572,9 @@ TRACE;
                         (show_episode_dates && *date_buf?date_buf:"")
                         );
                 FREE(icon_text);
-                FREE(td_plot_attr);
+
+                if (!EMPTY_STR(td_plot_attr)) FREE(td_plot_attr);
+
                 FREE(title_txt);
                 FREE(episode_col);
                 FREE(row_text);

@@ -1,6 +1,7 @@
 // $Id:$
 
 // g_idlist and g_title are set by the movie_listing code in oversight
+var g_info='';
 
 function ovs_del() {
     if (confirm("Remove ["+g_title+"]?")) {
@@ -12,6 +13,13 @@ function ovs_del() {
             action('delist');
         }
     }
+}
+function set_info(info) {
+    g_info=info;
+}
+
+function ovs_info() {
+    alert(g_info);
 }
 function ovs_watched() {
     action('watch');

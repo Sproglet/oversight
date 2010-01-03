@@ -11,13 +11,6 @@
 #include "gaya_cgi.h"
 #include "vasprintf.h"
 
-int isSeries100() {
-    return EMPTY_STR(getenv("CPU_MODEL"));
-}
-int isSeries200() {
-    return !isSeries100();
-}
-
 int in_poster_mode() {
     return g_dimension->poster_mode != 0 ;
 }
@@ -369,25 +362,34 @@ long get_scanlines(int *is_pal) {
         tv_mode_int = atoi(tv_mode);
     }
 
-    if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 || tv_mode_int == 16 ) {
-        scanlines = 720;
-    } else if (tv_mode_int <= 5 || ( tv_mode_int == 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
-        scanlines = 0;
+    if (is_nmt100()) {
+        if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 || tv_mode_int == 16 ) {
+            scanlines = 720;
+        } else if (tv_mode_int <= 5 || ( tv_mode_int == 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
+            scanlines = 0;
+        } else {
+            // Note that NMT A series does not have a true 1080p but scales up 720
+            scanlines = 720;
+        }
+        if (is_pal) {
+            *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
+        }
     } else {
-        scanlines = 1080;
-    }
-
-    // Note that NMT A series does not have a true 1080p but scales up 720
-    if (scanlines == 1080 && isSeries100() ) {
-        scanlines = 720;
+        if (tv_mode_int <= 4 ) {
+            scanlines = 0;
+        } else if (tv_mode_int <= 6 ) {
+            scanlines = 720;
+        } else {
+            scanlines = 1080;
+        }
+        if (is_pal) {
+            *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 );
+        }
     }
 
     g_dimension->tv_mode = tv_mode_int;
 
     // NMT does not use correct aspect ratio for gaya on PAL. Video Playback is OK but gaya is squashed
-    if (is_pal) {
-        *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
-    }
      return scanlines;
 }
 

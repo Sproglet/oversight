@@ -2375,7 +2375,7 @@ return id
 }
 
 function extractEpisodeByPatterns(plugin,line,details,\
-ret,p,pat,i,parts) {
+ret,p,pat,i,parts,sreg,ereg) {
 
 
 
@@ -2386,22 +2386,26 @@ line = tolower(line)
 
 ret=0
 
+sreg="([0-5][0-9]|[0-9])"
+
+ereg="[0-9][0-9]?"
+
 
 
 p=0
 
-pat[++p]="0@@s[0-9][0-9]?@[/ .]?[e/][0-9]+[-e0-9]+@"
+pat[++p]="0@@s"sreg"@[/ .]?[e/][0-9]+[-e0-9]+@"
 
-pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*[0-9][0-9]?@"
-
-
-pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*[0-9][0-9]?@[/ .]?(disc|dvd|d)[^a-z0-9]*[0-9][0-9]?@DVD"
+pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*"sreg"@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*"ereg"@"
 
 
-pat[++p]="0@@s?[0-9][0-9]?@[/ .]?[e/][0-9]+[a-e]?@"
+pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"@[/ .]?(disc|dvd|d)[^a-z0-9]*"ereg"@DVD"
 
 
-pat[++p]="1@[^a-z0-9]@[0-9][0-9]?@[/ .]?x[0-9][0-9]?@"
+pat[++p]="0@@s?"sreg"@[/ .]?[e/][0-9]+[a-e]?@"
+
+
+pat[++p]="1@[^a-z0-9]@"sreg"@[/ .]?x"ereg"@"
 
 
 

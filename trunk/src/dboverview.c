@@ -15,14 +15,6 @@ int numstrcmp(char *a,char *b) {
     int anum,bnum;
     char *anext,*bnext;
 
-    HTML_LOG(3,"numstrcmp begin %s=%s",a,b);
-
-    if (a == NULL ) {
-        return -(b == NULL);
-    } else if (b == NULL) {
-        return 1;
-    }
-
     while (*a && *b ) {
         if (isdigit(*a) && isdigit(*b)) {
             anum=strtol(a,&anext,10);
@@ -47,14 +39,10 @@ int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
     return (*rid2)->date - (*rid1)->date;
 }
 
-#define THE(a) ( ( (a)[0]=='T' || (a)[0]=='t' ) \
-        && ( (a)[1]=='h' || (a)[1]=='H' ) \
-        && ( (a)[2]=='e' || (a)[2]=='E' ) \
-        && (a)[3] == ' ' )
 
 int index_strcmp(char *a,char *b) {
-    if (THE(a)) a+= 4;
-    if (THE(b)) b+= 4;
+    if (STARTS_WITH_THE(a)) a+= 4;
+    if (STARTS_WITH_THE(b)) b+= 4;
     //if (strncasecmp(a,"the ",4)==0) a+= 4;
     //if (strncasecmp(b,"the ",4)==0) b+= 4;
     return strcasecmp(a,b);
@@ -65,7 +53,7 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
     int c;
 
     // If titles are different - return comparison
-    if ((c=index_strcmp((*rid1)->title,(*rid2)->title)) != 0) {
+    if ((c=index_strcmp(NVL((*rid1)->title),NVL((*rid2)->title))) != 0) {
         return c;
     }
 
@@ -74,7 +62,7 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
         int d = (*rid1)->season-(*rid2)->season;
         if (d == 0) {
-            d = numstrcmp((*rid1)->episode,(*rid2)->episode);
+            d = numstrcmp(NVL((*rid1)->episode),NVL((*rid2)->episode));
         }
         return d;
     } else {
@@ -89,7 +77,7 @@ int db_overview_name_eqf(DbRowId *rid1,DbRowId *rid2) {
     if (rid1->category != rid2->category) {
         return 0;
     } else {
-        return strcmp(rid1->title,rid2->title) ==0;
+        return STRCMP(rid1->title,rid2->title) ==0;
     }
 }
 // overview hash function based on titles only. This is used in boxset mode.
@@ -107,14 +95,14 @@ int db_overview_name_season_eqf(DbRowId *rid1,DbRowId *rid2) {
     if (rid1->category != rid2->category) {
         return 0;
     } else if (rid1->category == 'T' ) {
-       if (strcmp(rid1->title,rid2->title) != 0) {
+       if (STRCMP(rid1->title,rid2->title) != 0) {
           return 0;
        } else {
           return (rid1->season == rid2->season);
        }
     } else {
         //films are equal only if source and file are equal
-        return strcmp(rid1->file,rid2->file)==0 && strcmp(rid1->db->source,rid2->db->source) ==0 ;
+        return STRCMP(rid1->file,rid2->file)==0 && STRCMP(rid1->db->source,rid2->db->source) ==0 ;
     }
 }
 // overview hash function based on titles and season only. This is used in non-boxset mode.
@@ -133,15 +121,15 @@ int db_overview_name_season_episode_eqf(DbRowId *rid1,DbRowId *rid2) {
     if (rid1->category != rid2->category) {
         return 0;
     } else if (rid1->category == 'T' ) {
-       if (strcmp(rid1->title,rid2->title) != 0) {
+       if (STRCMP(rid1->title,rid2->title) != 0) {
           return 0;
        } else if ( rid1->season != rid2->season ) {
            return 0 ;
        } else {
-          return strcmp(rid1->episode,rid2->episode) ==0;
+          return STRCMP(rid1->episode,rid2->episode) ==0;
        }
     } else {
-        return strcmp(rid1->title,rid2->title) ==0;
+        return STRCMP(rid1->title,rid2->title) ==0;
     }
 }
 // overview hash function based on titles and season only. This is used in non-boxset mode.
@@ -158,7 +146,7 @@ unsigned int db_overview_name_season_episode_hashf(void *rid) {
 // overview equality function based on file path only. This is used in non-boxset mode.
 int db_overview_file_path_eqf(DbRowId *rid1,DbRowId *rid2) {
 
-    return strcmp(rid1->file,rid2->file) ==0 && strcmp(rid1->db->source,rid2->db->source) == 0;
+    return STRCMP(rid1->file,rid2->file) ==0 && STRCMP(rid1->db->source,rid2->db->source) == 0;
 }
 // overview hash function based on file path . This is used in non-boxset mode.
 unsigned int db_overview_file_path_hashf(void *rid) {
@@ -214,7 +202,7 @@ TRACE;
     void *eq_fn;
     void *hash_fn;
 
-    if (strcmp(view,VIEW_TV) == 0 || strcmp(view,VIEW_MOVIE) == 0) {
+    if (STRCMP(view,VIEW_TV) == 0 || STRCMP(view,VIEW_MOVIE) == 0) {
 TRACE;
 
         //At this level equality is based on file name. 
@@ -226,7 +214,7 @@ TRACE;
 
     } else if (use_boxsets()) {
 TRACE;
-        if (strcmp(view,VIEW_TVBOXSET) == 0) {
+        if (STRCMP(view,VIEW_TVBOXSET) == 0) {
             // BoxSet equality function equates tv shows by name/season
             // if view=tv or file doesnt matter as we have already filtered down past this level
             // but if view = boxset then it matters

@@ -1,4 +1,5 @@
 # box set view - main menus need to be removed - or they need to strip idlist.
+checking planet earth
 
 GENRE ERROR!!!!!!
 

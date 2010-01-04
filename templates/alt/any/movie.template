@@ -16,6 +16,8 @@ table.listing {
 
 </style>
 
+<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/movie.js"></script>
+
 <!-- Default Fanart Movie Template  $Id:$ -->
 <style type="text/css">
 body { color:yellow ; background-color:black; }
@@ -56,18 +58,18 @@ body { color:yellow ; background-color:black; }
                                 <td colspan=2 class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
                             </tr>
                             <tr>
-                                <td align="left"><font id="genre">[:GENRE:]</font></td>
-                                <td align="right">[:RATING_STARS(5):][:RATING:]</td>
+                                <td align="left" ><font id="genre">[:GENRE:]</font></td>
+                                <td align="right" >[:RATING_STARS(5):][:RATING:]</td>
                             </tr>
                             <tr>
-                                <td align="left"><font class="info">[:CERTIFICATE_IMAGE:] [:SOURCE:]
+                                <td colspan=2 align="left"><font class="info">[:CERTIFICATE_IMAGE:] [:SOURCE:]
 [:IF($@hd):]
 [Runtime&#58;&nbsp;:RUNTIME:]
 [:ELSE:]
 [:RUNTIME:]
 [:ENDIF:]
+[:EXTERNAL_URL:]
 </td>
-                                <td class="right"><font class="info">[:EXTERNAL_URL:]</font></td>
                             </tr>
                             <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:]</span></td><tr>
                             <tr><td colspan=2>[:MOVIE_LISTING:]</td></tr>
@@ -88,7 +90,6 @@ body { color:yellow ; background-color:black; }
 vi:ts=4:sw=4:et:syntax=html
 -->
 
-<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/movie.js"></script>
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>
 <a href="javascript:ovs_del();" tvid="CLEAR"></a>

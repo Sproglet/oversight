@@ -86,7 +86,7 @@ void util_rmdir(char *path,char *name);
     }\
 }while(0);
 
-#define TR fprintf(stderr,"%s:%d\n",__FILE__,__LINE__)
+#define TR HTML_LOG(0,"%s() %s:%d\n",__FUNCTION__,__FILE__,__LINE__)
 
 #define TRACE do {\
     if (0) {\

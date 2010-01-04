@@ -38,6 +38,7 @@ OVS_EXTERN(time_t g_start_clock,0);
 OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
+#define STRCMP(a,b) strcmp(NVL(a),NVL(b))
 
 /*
 #define OVS_VERSION "20091123-5BETA"
@@ -80,6 +81,12 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define NAME_FILTER_REGEX_FLAG "R"
 #define NAME_FILTER_STRING_FLAG "S"
 char *get_mounted_path(char *source,char *path,int *freeit);
+
+#define STARTS_WITH_THE(a) ( ((a) != NULL) \
+        && ( (a)[0]=='T' || (a)[0]=='t' ) \
+        && ( (a)[1]=='h' || (a)[1]=='H' ) \
+        && ( (a)[2]=='e' || (a)[2]=='E' ) \
+        && (a)[3] == ' ' )
 
 // Instead of converting timestamps to epoc time use a rough representation (see time_ordinal)
 #define FAST_TIME

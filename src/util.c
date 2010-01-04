@@ -43,15 +43,26 @@ int is_empty_dir(char *dname)
 // String hashfunction - used by string_string_hashtable()
 // http://www.cse.yorku.ca/~oz/hash.html
 unsigned int stringhash(void *vptr) {
-    register unsigned long hash = 5381;
+
+    register unsigned long hash = 0;
     int c;
     unsigned char *str = vptr;
 
-    while ((c = *str++)) {
-        /*Berstein*/
-        //hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-        /*LUA*/
-        hash ^= ((hash << 5) + (hash >> 2)) + c; 
+    if (str) {
+
+        if (STARTS_WITH_THE(str)) str+=4;
+
+        hash = 5381;
+        
+        while ((c = *str++)) {
+            /*Berstein*/
+            //hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+            /*LUA*/
+            //hash ^= ((hash << 5) + (hash >> 2)) + c; 
+            
+            /* Case insensitive LUA */
+            hash ^= ((hash << 5) + (hash >> 2)) + (c | 32); 
+        }
     }
 
     return hash;
@@ -124,7 +135,7 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts)
 
     assert(s_in);
     assert(pattern);
-    assert(replace);
+    replace = NVL(replace);
 
     int outlen = 0;
     int replace_len = strlen(replace);
@@ -182,7 +193,6 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts)
     regfree(&re);
 
     char *s_out = MALLOC(outlen+1);
-    assert(s_out);
     s = s_out;
 
     int i;
@@ -653,9 +663,7 @@ char *util_tolower(char *s) {
 char *STRDUP(char *s) {
     char *p = NULL;
 
-    assert(s);
-    
-    p = strdup(s);
+    p = strdup(NVL(s));
     if (p == NULL) {
         fprintf(stderr,"Memory exhausted on strdup\n");
         printf("Memory exhausted on strdup\n");
@@ -815,12 +823,8 @@ int is_nmt100()
 
 int util_starts_with(char *a,char *b)
 {
-    assert(a);
-    assert(b);
-    if (a == NULL || b == NULL ) {
-        HTML_LOG(0,"util_starts_with error (%s,%s)",a,b);
-        return 0;
-    }
+    if (!a) a = "";
+    if (!b) b = "";
     while(*a == *b) {
         if (*b == '\0') return 1;
         a++;
@@ -855,7 +859,9 @@ void util_rmdir(char *path,char *name)
 int count_chr(char *str,char c)
 {
     int count = 0;
-    assert(str);
+
+    str = NVL(str);
+
     while((str=strchr(str,c)) != NULL) {
         count++;
         str++;

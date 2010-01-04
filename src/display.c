@@ -30,8 +30,8 @@
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
 
-char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action);
-char *focus_event_fn(char *function_name_prefix,long function_id,int out_action);
+char *td_mouse_event_fn(char *function_name_prefix,long function_id,int out_action);
+char *href_focus_event_fn(char *function_name_prefix,long function_id,int out_action);
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
@@ -1654,15 +1654,15 @@ void add_movie_info_text(Array *js,long fn_id,char *info)
 {
     char *text = clean_js_string(info);
     char *tmp;
-    ovs_asprintf(&tmp,"function " JS_MOVIE_INFO_FN_PREFIX "%x() { set_info('%s'); }\n",fn_id,text);
+    ovs_asprintf(&tmp,"\nfunction " JS_MOVIE_INFO_FN_PREFIX "%x() { set_info('%s'); }\n",fn_id,text);
     array_add(js,tmp);
     if (text != info) FREE(text);
 }
 void add_movie_part_row(Array *output,long fn_id,char *cell)
 {
     char *tmp;
-    char *focus=focus_event_fn(JS_MOVIE_INFO_FN_PREFIX,fn_id,1);
-    ovs_asprintf(&tmp,"<tr><td %s>%s</td></tr>\n",focus);
+    char *focus=td_mouse_event_fn(JS_MOVIE_INFO_FN_PREFIX,fn_id,1);
+    ovs_asprintf(&tmp,"\n<tr><td %s>%s</td></tr>\n",NVL(focus),cell);
     FREE(focus);
     array_add(output,tmp);
 }
@@ -1673,9 +1673,13 @@ char *movie_listing(DbRowId *rowid)
     db_rowid_dump(rowid);
 
     char *tmp = build_id_list(rowid);
+    char *js_title = clean_js_string(rowid->title);
+
     printf("<script type=\"text/javascript\"><!--\ng_title='%s';\ng_idlist='%s';\n--></script>\n",
-            rowid->title,tmp);
+            js_title,tmp);
+
     FREE(tmp);
+    if (js_title != rowid->title) FREE(js_title);
 
 
     char *select = query_val("select");
@@ -1689,16 +1693,21 @@ char *movie_listing(DbRowId *rowid)
         Array *parts = split(rowid->parts,"/",0);
         HTML_LOG(1,"parts ptr = %ld",parts);
 
-        char *basename=util_basename(rowid->file);
+        char *label;
+        if (parts && parts->size) {
+            label = STRDUP("part 1");
+        } else {
+            label = STRDUP("movie");
+        }
 
-        char *mouse=mouse_event_fn(JS_MOVIE_INFO_FN_PREFIX,0,1);
-
+        char *mouse=href_focus_event_fn(JS_MOVIE_INFO_FN_PREFIX,0,1);
         char *href_attr;
-        ovs_asprintf(&href_attr,"onkeyleftset=up %s",mouse);
+        ovs_asprintf(&href_attr,"onkeyleftset=up %s",NVL(mouse));
         add_movie_info_text(js,0,rowid->file);
-        add_movie_part_row(output,0,vod_link(rowid,basename,"",rowid->db->source,rowid->file,"0",href_attr,style));
+        char *vod = vod_link(rowid,label,"",rowid->db->source,rowid->file,"0",href_attr,style);
+        add_movie_part_row(output,0,vod);
 
-        FREE(basename);
+        FREE(label);
         FREE(mouse);
         FREE(href_attr);
 
@@ -1712,9 +1721,15 @@ char *movie_listing(DbRowId *rowid)
                 char i_str[10];
                 sprintf(i_str,"%d",i);
 
-                char *mouse=mouse_event_fn(JS_MOVIE_INFO_FN_PREFIX,i+1,1);
+                char *mouse=href_focus_event_fn(JS_MOVIE_INFO_FN_PREFIX,i+1,1);
 
-                add_movie_part_row(output,i+1,vod_link(rowid,parts->array[i],"",rowid->db->source,parts->array[i],i_str,mouse,style));
+HTML_LOG(0,"mouse[%s]",mouse);
+                char *label;
+                ovs_asprintf(&label,"part %d",i+2);
+                char *vod = vod_link(rowid,label,"",rowid->db->source,parts->array[i],i_str,NVL(mouse),style);
+                FREE(label);
+
+                add_movie_part_row(output,i+1,vod);
                 add_movie_info_text(js,i+1,parts->array[i]);
 
                 FREE(mouse);
@@ -1738,14 +1753,14 @@ char *movie_listing(DbRowId *rowid)
         char *result = arraystr(output);
 
         ovs_asprintf(&vod_list,
-            "<script type=\"text/javascript\"><!--\n>%s\n--></script>\n"
+            "<script type=\"text/javascript\"><!--\n\n%s\n\n--></script>\n"
             "<table><tr><td>%s</td>"
             "<td><table>%s</table></td></table>",
             js_script,play_tvid,result);
 
-        FREE(js_script);
         FREE(result);
         result = vod_list;
+        FREE(js_script);
         FREE(play_button);
         FREE(play_tvid);
 
@@ -1842,7 +1857,6 @@ char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class) 
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
-TRACE;
     ViewStatus status = get_view_status(row_id);
 
 
@@ -1872,7 +1886,6 @@ TRACE;
 #else
     title = get_poster_image_tag(row_id,*font_class,THUMB_IMAGE);
 #endif
-TRACE;
 
 TRACE;
     return title;
@@ -1881,7 +1894,15 @@ TRACE;
 char *get_poster_mode_item_unknown(DbRowId *row_id,char **font_class,char **grid_class) {
     HTML_LOG(2,"dbg: unclassified : set details as title");
     // Unclassified
-    char *title=STRDUP(row_id->title);
+
+    char *title;
+    title = row_id->title;
+    if (title != NULL) {
+        title = STRDUP(title);
+    } else {
+        title = util_basename(row_id->file);
+    }
+
     if (strlen(title) > 20) {
         strcpy(title+18,"..");
     }
@@ -2042,14 +2063,18 @@ char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *
 }
 
 // These are attributes of the href
-char *focus_event_fn(char *function_name_prefix,long function_id,int out_action)
+char *href_focus_event_fn(char *function_name_prefix,long function_id,int out_action)
 {
-    return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus",
+    if (g_dimension->local_browser) {
+        return mouse_or_focus_event_fn(function_name_prefix,function_id,"onfocus",
             (out_action?"onblur":NULL));
+    } else {
+        return NULL;
+    }
 }
 
 // These are attributes of the cell text
-char *mouse_event_fn(char *function_name_prefix,long function_id,int out_action)
+char *td_mouse_event_fn(char *function_name_prefix,long function_id,int out_action)
 {
     if (g_dimension->local_browser) {
         return NULL; 
@@ -2142,21 +2167,21 @@ TRACE;
     }
 TRACE;
     char *cell_text=NULL;
-    char *focus_ev = "";
-    char *mouse_ev = "";
+    char *focus_ev = NULL;
+    char *mouse_ev = NULL;
 
     if (g_dimension->title_bar && !*select) {
 
         char *simple_title = get_simple_title(row_id,newview);
 
-        focus_ev = focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
-        mouse_ev = mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
+        focus_ev = href_focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
+        mouse_ev = td_mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
         FREE(simple_title);
     }
 TRACE;
 
     char *title_change_attr;
-    ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), focus_ev);
+    ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), NVL(focus_ev));
 
 
     char *attr = add_scroll_attributes(left_scroll,right_scroll,selected_cell,title_change_attr);
@@ -2168,7 +2193,7 @@ TRACE;
 TRACE;
     if (*select) {
 
-        cell_text = STRDUP(title);
+        cell_text = STRDUP(NVL(title));
 
     } else if (strcmp(newview,"tv") == 0 ) {
         // TV shows are drill down by title and season
@@ -2235,8 +2260,8 @@ TRACE;
             add_spacer);
 
     if (!EMPTY_STR(add_spacer)) FREE(add_spacer);
-    if (!EMPTY_STR(mouse_ev)) FREE(mouse_ev);
-    if (!EMPTY_STR(focus_ev)) FREE(focus_ev);
+    FREE(mouse_ev);
+    FREE(focus_ev);
     if (!EMPTY_STR(cell_background_image)) FREE(cell_background_image);
 
     FREE(cell_text);
@@ -2694,6 +2719,7 @@ int all_linked_rows_delisted(DbRowId *rowid)
             return 0;
         }
     }
+    HTML_LOG(0,"delisted rows linked to [%s]",rowid->title);
     return 1;
 }
 
@@ -2716,7 +2742,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 {
                     char *d;
                     d=db_rowid_get_field(rid,DB_FLDID_INDEXTIME);
-                    HTML_LOG(0,"xx %s age = %x = %s",rid->title,rid->date,d);
+                    //HTML_LOG(0,"xx %s age = %x = %s",rid->title,rid->date,d);
                     FREE(d);
                 }
 
@@ -3500,7 +3526,7 @@ TRACE;
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
-                    char *href_attr = focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
+                    char *href_attr = href_focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
                     episode_col = vod_link(
                             rid,
                             ep,"",
@@ -3552,7 +3578,7 @@ TRACE;
                 sprintf(td_class,"ep%d%d",rid->watched,i%2);
                 char *tmp;
 
-                char *td_plot_attr = mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
+                char *td_plot_attr = td_mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
 
                 ovs_asprintf(&tmp,
                         "%s<td class=%s width=%d%% %s align=right>%s</td>" 

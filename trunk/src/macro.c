@@ -347,7 +347,7 @@ char *macro_fn_checkbox(char *template_name,char *call,Array *args,int num_rows,
         for(i = 3 ; i < args->size ; i++ ) {
             char *tmp;
             char *val = args->array[i];
-            if (val && *val && strcmp(val,"\"\"") != 0 ) {
+            if (val && *val && STRCMP(val,"\"\"") != 0 ) {
                 ovs_asprintf(&tmp,"%s%s<input type=checkbox name=\"%s%s\" %s>%s",
                     NVL(result),(first==1?"":sep),htmlname,val,checked,val);
                 first = 0;
@@ -1290,21 +1290,21 @@ char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_
 }
 char *macro_fn_select_mark_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (strcmp(query_val("select"),"Mark")==0) {
+    if (STRCMP(query_val("select"),"Mark")==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Mark >");
     }
     return result;
 }
 char *macro_fn_select_delete_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (strcmp(query_val("select"),"Delete")==0) {
+    if (STRCMP(query_val("select"),"Delete")==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Delete >");
     }
     return result;
 }
 char *macro_fn_select_delist_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (strcmp(query_val("select"),"Delete")==0) {
+    if (STRCMP(query_val("select"),"Delete")==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Remove_From_List >");
     }
     return result;
@@ -1985,75 +1985,75 @@ char *get_variable(char *vname,int *free_result)
 
         if (util_starts_with(vname+1,"gaya")) {
 
-            if (strcmp(vname+1,"gaya") == 0) {
+            if (STRCMP(vname+1,"gaya") == 0) {
 
                 convert_int=1;
                 int_val = g_dimension->local_browser;
 
-            } else if (strcmp(vname+1,"gaya_page") == 0) {
+            } else if (STRCMP(vname+1,"gaya_page") == 0) {
 
                 convert_int=1;
                 int_val = get_gaya_page();
 
-            } else if (strcmp(vname+1,"gaya_file_total") == 0) {
+            } else if (STRCMP(vname+1,"gaya_file_total") == 0) {
 
                 convert_int=1;
                 int_val = gaya_file_total();
 
-            } else if (strcmp(vname+1,"gaya_prev_page") == 0) {
+            } else if (STRCMP(vname+1,"gaya_prev_page") == 0) {
 
                 convert_int=1;
                 int_val = gaya_prev_page();
 
-            } else if (strcmp(vname+1,"gaya_next_page") == 0) {
+            } else if (STRCMP(vname+1,"gaya_next_page") == 0) {
 
                 convert_int=1;
                 int_val = gaya_next_page();
 
-            } else if (strcmp(vname+1,"gaya_first_file") == 0) {
+            } else if (STRCMP(vname+1,"gaya_first_file") == 0) {
 
                 convert_int=1;
                 int_val = gaya_first_file();
 
-            } else if (strcmp(vname+1,"gaya_last_file") == 0) {
+            } else if (STRCMP(vname+1,"gaya_last_file") == 0) {
 
                 convert_int=1;
                 int_val = gaya_last_file();
 
-            } else if (strcmp(vname+1,"gaya_prev_file") == 0) {
+            } else if (STRCMP(vname+1,"gaya_prev_file") == 0) {
 
                 convert_int=1;
                 int_val = gaya_prev_file();
             }
 
-        } else if (strcmp(vname+1,"nmt100") == 0) {
+        } else if (STRCMP(vname+1,"nmt100") == 0) {
             convert_int=1;
             int_val = is_nmt100();
 
-        } else if (strcmp(vname+1,"nmt200") == 0) {
+        } else if (STRCMP(vname+1,"nmt200") == 0) {
 
             convert_int=1;
             int_val = is_nmt200();
 
-        } else if (strcmp(vname+1,"hd") == 0) {
+        } else if (STRCMP(vname+1,"hd") == 0) {
 
             convert_int=1;
             int_val = g_dimension->scanlines > 0;
 
-        } else if (strcmp(vname+1,"sd") == 0) {
+        } else if (STRCMP(vname+1,"sd") == 0) {
 
             convert_int=1;
             int_val = g_dimension->scanlines == 0;
 
-        } else if (strcmp(vname+1,"poster_mode") == 0) {
+        } else if (STRCMP(vname+1,"poster_mode") == 0) {
             return ( g_dimension->poster_mode ? "1" : "0" ) ; // $@gaya
 
-        } else if (strcmp(vname+1,"poster_menu_img_width") == 0) {
+        } else if (STRCMP(vname+1,"poster_menu_img_width") == 0) {
 
             convert_int=1;
             int_val = g_dimension->poster_menu_img_width;
 
-        } else if (strcmp(vname+1,"poster_menu_img_height") == 0) {
+        } else if (STRCMP(vname+1,"poster_menu_img_height") == 0) {
 
             convert_int=1;
             int_val = g_dimension->poster_menu_img_height;

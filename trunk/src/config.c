@@ -253,7 +253,7 @@ void config_unittest() {
 
         char *v2 = hashtable_search(cfg2,k);
         assert(v2);
-        assert(strcmp(v,v2) == 0);
+        assert(STRCMP(v,v2) == 0);
         printf("%s:%s\n",k,v);
 
     }
@@ -405,7 +405,7 @@ void config_read_dimensions() {
 
     g_dimension = MALLOC(sizeof(Dimensions));
 
-    g_dimension->local_browser = (addr == NULL || strcmp(addr,"127.0.0.1") == 0);
+    g_dimension->local_browser = (addr == NULL || STRCMP(addr,"127.0.0.1") == 0);
 
     html_comment("local browser = %d",g_dimension->local_browser);
     //g_dimension->local_browser = 1;

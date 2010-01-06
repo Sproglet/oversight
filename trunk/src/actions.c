@@ -37,7 +37,7 @@ int has_post_data() {
 }
 
 int is_checkbox(char *name,char *val) {
-    if (val && strcmp(val,"on") ==0) {
+    if (val && STRCMP(val,"on") ==0) {
         if (util_starts_with(name,CHECKBOX_PREFIX)) {
             return 1;
         } else if (util_starts_with(name,"orig_"CHECKBOX_PREFIX)) {
@@ -333,32 +333,32 @@ void do_actions() {
 
 
 
-    if (strcmp(query_val("searchb"),"Hide") == 0) {
+    if (STRCMP(query_val("searchb"),"Hide") == 0) {
 
         query_remove(QUERY_PARAM_SEARCH_MODE);
         query_remove("searchb");
     }
 
-    if (allow_admin() && strcmp(view,"admin")==0 ) {
+    if (allow_admin() && STRCMP(view,"admin")==0 ) {
 
-        if (strcmp(action,"reinstall") == 0) {
+        if (STRCMP(action,"reinstall") == 0) {
 
             char *cmd;
             ovs_asprintf(&cmd,"%s/oversight-install.cgi install",appDir());
             util_system(cmd);
             FREE(cmd);
 
-        } else if (strcmp(action,"reset_defaults") == 0) {
+        } else if (STRCMP(action,"reset_defaults") == 0) {
 
             delete_config("oversight.cfg");
             delete_config("catalog.cfg");
             delete_config("unpak.cfg");
 
-        } else if (strcmp(action,"clear_cache") == 0) {
+        } else if (STRCMP(action,"clear_cache") == 0) {
 
             util_rmdir("/mnt/.cache",".");
 
-        } else if (strcmp(action,"rescan_request") == 0) {
+        } else if (STRCMP(action,"rescan_request") == 0) {
 
             int parallel_scan = 0;
             char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");
@@ -381,7 +381,7 @@ void do_actions() {
                     ovs_asprintf(&tmp,"%s \"%s\"",cmd,opt);
                     FREE(cmd);
                     cmd = tmp;
-                    if (strcmp(opt,"PARALLEL_SCAN" ) == 0 ) {
+                    if (STRCMP(opt,"PARALLEL_SCAN" ) == 0 ) {
                         parallel_scan = 1;
                     }
                 }
@@ -409,7 +409,7 @@ void do_actions() {
             }
             FREE(cmd);
 
-        } else if (strcmp(action,"Save Settings") == 0) {
+        } else if (STRCMP(action,"Save Settings") == 0) {
 
             struct hashtable_itr *itr;
             char *option_name,*value;
@@ -423,7 +423,7 @@ void do_actions() {
 
                     old_value=query_val(old_name);
 
-                    if (strcmp(value,old_value) != 0) {
+                    if (STRCMP(value,old_value) != 0) {
 
                         HTML_LOG(1,"new name value [%s]=[%s]=[%s]",option_name,real_name,value);
                         HTML_LOG(1,"old name value [%s]=[%s]",old_name,old_value);
@@ -437,7 +437,7 @@ void do_actions() {
                         util_system(cmd);
                         FREE(cmd);
 
-                        if (strcmp(real_name,"catalog_watch_frequency") == 0) {
+                        if (STRCMP(real_name,"catalog_watch_frequency") == 0) {
                            char *cmd;
                            ovs_asprintf(&cmd,"cd \"%s\" && ./oversight.sh WATCH_FOLDERS %s",
                                    appDir(),value);
@@ -469,17 +469,17 @@ void do_actions() {
 
             total_changed = idlist_to_idhash(changed_source_id_hash,actionids);
 
-            if (allow_mark() && strcmp(action,"watch") == 0) {
+            if (allow_mark() && STRCMP(action,"watch") == 0) {
 
                 db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
                 query_remove("action");
 
-            } else if (allow_mark() && strcmp(action,"unwatch") == 0) {
+            } else if (allow_mark() && STRCMP(action,"unwatch") == 0) {
 
                 db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
                 query_remove("action");
 
-            } else if (allow_delete() && strcmp(action,"delete") == 0) {
+            } else if (allow_delete() && STRCMP(action,"delete") == 0) {
 
                 db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_DELETE);
                 total_deleted = total_changed;
@@ -488,7 +488,7 @@ void do_actions() {
                 }
                 query_remove("action");
 
-            } else if (allow_delist() && strcmp(action,"delist") == 0) {
+            } else if (allow_delist() && STRCMP(action,"delist") == 0) {
 
                 db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_REMOVE);
                 total_deleted = total_changed;
@@ -501,7 +501,7 @@ void do_actions() {
             query_remove("actionids");
             hashtable_destroy(changed_source_id_hash,1,1);
 
-        } else if (allow_mark() && strcmp(action,"Mark") == 0) {
+        } else if (allow_mark() && STRCMP(action,"Mark") == 0) {
 
 
             int total_changed = 0;
@@ -516,7 +516,7 @@ void do_actions() {
             query_remove("action");
 
 
-        } else if (allow_delete() && strcmp(action,"Delete") == 0) {
+        } else if (allow_delete() && STRCMP(action,"Delete") == 0) {
 
 TRACE;
             changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
@@ -527,7 +527,7 @@ TRACE;
             hashtable_destroy(changed_source_id_hash,1,1);
             query_remove("action");
 
-        } else if (allow_delist() && strcmp(action,"Remove_From_List") == 0) {
+        } else if (allow_delist() && STRCMP(action,"Remove_From_List") == 0) {
 
 TRACE;
             changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
@@ -732,7 +732,7 @@ int count_checked() {
 
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&name,&val) ; ) {
 
-        if (util_starts_with(name,CHECKBOX_PREFIX) && strcmp(val,"on") != 0) {
+        if (util_starts_with(name,CHECKBOX_PREFIX) && STRCMP(val,"on") != 0) {
             total++;
         }
 

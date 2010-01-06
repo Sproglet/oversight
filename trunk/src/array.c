@@ -150,25 +150,25 @@ void array_unittest() {
     a = split(s,"XX",0);
 
     assert(a->size == 3);
-    assert(strcmp(a->array[0],"one") == 0);
-    assert(strcmp(a->array[1],"two") == 0);
-    assert(strcmp(a->array[2],"three\tfour") == 0);
+    assert(STRCMP(a->array[0],"one") == 0);
+    assert(STRCMP(a->array[1],"two") == 0);
+    assert(STRCMP(a->array[2],"three\tfour") == 0);
     array_free(a);
 
     a = split(s,"X",0);
     assert(a->size == 5);
-    assert(strcmp(a->array[0],"one") == 0);
-    assert(strcmp(a->array[1],"") == 0);
-    assert(strcmp(a->array[2],"two") == 0);
-    assert(strcmp(a->array[3],"") == 0);
-    assert(strcmp(a->array[4],"three\tfour") == 0);
+    assert(STRCMP(a->array[0],"one") == 0);
+    assert(STRCMP(a->array[1],"") == 0);
+    assert(STRCMP(a->array[2],"two") == 0);
+    assert(STRCMP(a->array[3],"") == 0);
+    assert(STRCMP(a->array[4],"three\tfour") == 0);
     array_free(a);
 
     a = split(s,"X+",0);
     assert(a->size == 3);
-    assert(strcmp(a->array[0],"one") == 0);
-    assert(strcmp(a->array[1],"two") == 0);
-    assert(strcmp(a->array[2],"three\tfour") == 0);
+    assert(STRCMP(a->array[0],"one") == 0);
+    assert(STRCMP(a->array[1],"two") == 0);
+    assert(STRCMP(a->array[2],"three\tfour") == 0);
     array_free(a);
 
     a = split(s,"X*",0);

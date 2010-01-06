@@ -1349,7 +1349,7 @@ DbRowSet * db_scan_titles(
     DbRowSet *rowset = NULL;
 
     char *view=query_val(QUERY_PARAM_VIEW);
-    int tv_or_movie_view = (strcmp(view,VIEW_TV)==0 || strcmp(view,VIEW_MOVIE) == 0);
+    int tv_or_movie_view = (STRCMP(view,VIEW_TV)==0 || STRCMP(view,VIEW_MOVIE) == 0);
 
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);
@@ -1387,7 +1387,7 @@ DbRowSet * db_scan_titles(
         compressed_genre_filter = compress_genre(genre_filter);
 
         // If its a custom genre, then compressed will be the same.
-        if (strcmp(compressed_genre_filter,genre_filter) == 0) {
+        if (STRCMP(compressed_genre_filter,genre_filter) == 0) {
             compressed_genre_filter = NULL;
         }
         HTML_LOG(0,"genre filter [%s][%s]",genre_filter,compressed_genre_filter);
@@ -1501,7 +1501,7 @@ DbRowSet * db_scan_titles(
                         if (*name_filter == NAME_FILTER_REGEX_FLAG[0]) {
                             match= regexec(&pattern,rowid.title,0,NULL,0);
                         } else if ( *name_filter == NAME_FILTER_STRING_FLAG[0] ) {
-                            match = strcasecmp(rowid.title,name_filter+1);
+                            match = STRCASECMP(rowid.title,name_filter+1);
                         }
                         if (match != 0 ) {
                             HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
@@ -1905,7 +1905,7 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
             *p = '\0';
 
             // Exclude 'and' and 'Show' from genres
-            if (strcmp(gstr,"and") != 0 && strcmp(gstr,"Show") != 0 ) {
+            if (STRCMP(gstr,"and") != 0 && STRCMP(gstr,"Show") != 0 ) {
 
                 //HTML_LOG(1,"Genre[%s]",gstr);
                 if (gstr && *gstr) {

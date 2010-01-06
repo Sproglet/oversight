@@ -39,6 +39,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 #define STRCMP(a,b) strcmp(NVL(a),NVL(b))
+#define STRCASECMP(a,b) strcasecmp(NVL(a),NVL(b))
 
 /*
 #define OVS_VERSION "20091123-5BETA"

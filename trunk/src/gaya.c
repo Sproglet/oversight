@@ -363,7 +363,7 @@ int gaya_sent_post_data(int argc,char **argv)
         int i;
         ret = 0;
         for(i = 0 ; i < argc ; i++ ) {
-            if (strcmp(argv[i],"--post-data") == 0) {
+            if (STRCMP(argv[i],"--post-data") == 0) {
                 ret = i;
                 break;
             }
@@ -414,7 +414,7 @@ int gaya_set_output(int argc,char **argv)
     int i;
     for(i = 0 ; i < argc ; i++ ) {
         printf("gaya_set_output : arg %d[%s]\n",i,argv[i]);
-        if (strcmp(argv[i],"-O") == 0 && i < argc-1) {
+        if (STRCMP(argv[i],"-O") == 0 && i < argc-1) {
             ret = i+1;
             break;
         }

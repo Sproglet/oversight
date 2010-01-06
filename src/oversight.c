@@ -126,15 +126,15 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 if (dot) {
 
 
-                    if (strcmp(dot,".png") == 0 ) {
+                    if (STRCMP(dot,".png") == 0 ) {
 
                         cat("image/png",img);
 
-                    } else if ( strcmp(dot,".jpg") == 0 ) {
+                    } else if ( STRCMP(dot,".jpg") == 0 ) {
 
                         cat("image/jpeg",img);
 
-                    } else if ( strcmp(dot,".gif") == 0) {
+                    } else if ( STRCMP(dot,".gif") == 0) {
 
                         cat("image/gif",img);
 
@@ -245,23 +245,23 @@ TRACE;
 TRACE;
         playlist_open();
 TRACE;
-        if (strcmp(view,VIEW_MOVIE) == 0 ||
-                strcmp(view,VIEW_TV) == 0 ||
-                strcmp(view,VIEW_TVBOXSET) == 0 
+        if (STRCMP(view,VIEW_MOVIE) == 0 ||
+                STRCMP(view,VIEW_TV) == 0 ||
+                STRCMP(view,VIEW_TVBOXSET) == 0 
                 ) {
 
             dump_all_rows("pre",num_rows,sorted_rows);
 
             display_template(skin_name,view,num_rows,sorted_rows);
 
-            if (strcmp(view,VIEW_MOVIE) == 0 || strcmp(view,VIEW_TV) == 0 ) {
+            if (STRCMP(view,VIEW_MOVIE) == 0 || STRCMP(view,VIEW_TV) == 0 ) {
                 build_playlist(num_rows,sorted_rows);
             } 
 
             dump_all_rows("post",num_rows,sorted_rows);
 
 
-        } else if (strcmp(view,"admin") == 0) {
+        } else if (STRCMP(view,"admin") == 0) {
 
             setPermissions();
             display_admin();
@@ -392,7 +392,7 @@ int main(int argc,char **argv)
 
     if (strstr(argv[0],"wget") ) {
 
-        if (argc == 2 && strcmp(argv[1],"-oversight") == 0 ) {
+        if (argc == 2 && STRCMP(argv[1],"-oversight") == 0 ) {
 
             // Special case to allow scripts to test if wget is really oversight.
             // wget -oversight will throw an error with the real wget.

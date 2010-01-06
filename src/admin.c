@@ -17,7 +17,7 @@ void display_admin() {
 
         printf("admin disabled");
 
-    } else if (EMPTY_STR(action) || strcmp(action,"ask")==0 || strcmp(action,"Cancel")==0) {
+    } else if (EMPTY_STR(action) || STRCMP(action,"ask")==0 || STRCMP(action,"Cancel")==0) {
 
         display_template("default","admin",0,NULL);
 

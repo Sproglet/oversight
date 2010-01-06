@@ -11,7 +11,7 @@
 #include "hashtable_loop.h"
 
 //Compare a string - numeric compare of numeric parts.
-int numstrcmp(char *a,char *b) {
+int numSTRCMP(char *a,char *b) {
     int anum,bnum;
     char *anext,*bnext;
 
@@ -40,7 +40,7 @@ int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
 }
 
 
-int index_strcmp(char *a,char *b) {
+int index_STRCMP(char *a,char *b) {
     if (STARTS_WITH_THE(a)) a+= 4;
     if (STARTS_WITH_THE(b)) b+= 4;
     //if (strncasecmp(a,"the ",4)==0) a+= 4;
@@ -53,7 +53,7 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
     int c;
 
     // If titles are different - return comparison
-    if ((c=index_strcmp(NVL((*rid1)->title),NVL((*rid2)->title))) != 0) {
+    if ((c=index_STRCMP(NVL((*rid1)->title),NVL((*rid2)->title))) != 0) {
         return c;
     }
 
@@ -62,7 +62,7 @@ int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
         int d = (*rid1)->season-(*rid2)->season;
         if (d == 0) {
-            d = numstrcmp(NVL((*rid1)->episode),NVL((*rid2)->episode));
+            d = numSTRCMP(NVL((*rid1)->episode),NVL((*rid2)->episode));
         }
         return d;
     } else {

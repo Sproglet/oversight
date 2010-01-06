@@ -126,7 +126,7 @@ void tag(char *label,char *attr,va_list ap) {
     } else {
         
 #ifdef XHTML
-        if (count && strcmp(label,stack[count]) == 0) {
+        if (count && STRCMP(label,stack[count]) == 0) {
             html_error("double nested <%s>",label); // div ok really
         }
 #endif
@@ -195,7 +195,7 @@ char *self_url(char *new_params) {
 
             // Ignore parameters colour  option_* and orig_option_*
 
-            if (param_name[0] == 'c' && strcmp(param_name,"colour") == 0) {
+            if (param_name[0] == 'c' && STRCMP(param_name,"colour") == 0) {
                 // ignore
             } else if (param_name[0] == 'o' && 
                    (  util_starts_with(param_name,"option_" ) || util_starts_with(param_name,"orig_option_" ) ) ) {
@@ -277,7 +277,7 @@ char *remove_blank_params(char *input)
         if (*in == '\0') break;
         in++;
     }
-    if (0 && strcmp(input,out) != 0) {
+    if (0 && STRCMP(input,out) != 0) {
         HTML_LOG(0,"remove_blank_params[%s] vs [%s]",input,out);
     }
     return out;
@@ -297,7 +297,7 @@ int is_drilldown_of(char *param_name,char *root_name)
     while (*p && *p == DRILLDOWN_CHAR ) {
         p++;
     }
-    if ( strcmp(p,root_name) ==0 ) {
+    if ( STRCMP(p,root_name) ==0 ) {
         result = (p-param_name)+1;
     }
     //HTML_LOG(0,"is_drilldown_of(%s,%s)=%d",param_name,root_name,result);
@@ -943,12 +943,12 @@ char *get_toggle(char *button_colour,char *param_name,char *v1,char *text1,char 
         v2current = 1;
         next = v1;
 
-    } else if (strcmp(param_value,v1)==0) {
+    } else if (STRCMP(param_value,v1)==0) {
 
         v1current = 1;
         next = v2;
 
-    } else if (strcmp(param_value,v2)==0) {
+    } else if (STRCMP(param_value,v2)==0) {
             
         v2current = 1;
         next = v1;
@@ -1554,7 +1554,7 @@ char *add_one_source_to_idlist(DbRowId *row_id,char *current_idlist,int *mixed_s
 
     DbRowId *ri;
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-        if (strcmp(ri->db->source,row_id->db->source) == 0) {
+        if (STRCMP(ri->db->source,row_id->db->source) == 0) {
             char *tmp;
             // Add all other items with the same source
             ovs_asprintf(&tmp,"%s%ld|",idlist,ri->id);
@@ -1624,7 +1624,7 @@ char *select_checkbox(DbRowId *rid,char *text) {
 
         char *id_list = build_id_list(rid);
 
-        if (rid->watched && strcmp(select,"Mark") == 0) {
+        if (rid->watched && STRCMP(select,"Mark") == 0) {
 
             ovs_asprintf(&result,
                 "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" CHECKED >"
@@ -1928,7 +1928,7 @@ char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,cha
     char *title = trim_title(row_id->title);
    
     char *tmp;
-    if (strcmp(newview,VIEW_TVBOXSET) == 0) {
+    if (STRCMP(newview,VIEW_TVBOXSET) == 0) {
 
         ovs_asprintf(&tmp,"%s [%d Seasons]",title,season_count(row_id));
         FREE(title);
@@ -2021,7 +2021,7 @@ char *get_simple_title(
         source_end="]";
     }
 
-    if (strcmp(newview,VIEW_TVBOXSET) == 0) {
+    if (STRCMP(newview,VIEW_TVBOXSET) == 0) {
 
         ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
 
@@ -2195,7 +2195,7 @@ TRACE;
 
         cell_text = STRDUP(NVL(title));
 
-    } else if (strcmp(newview,"tv") == 0 ) {
+    } else if (STRCMP(newview,"tv") == 0 ) {
         // TV shows are drill down by title and season
         cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
 
@@ -2996,7 +2996,7 @@ char *icon_source(char *image_name)
     assert(image_name);
     static int is_default_skin = UNSET;
     if (is_default_skin == UNSET) {
-        is_default_skin = (strcmp(skin_name(),"default") == 0);
+        is_default_skin = (STRCMP(skin_name(),"default") == 0);
     }
 
     char *ico=ovs_icon_type();
@@ -3080,12 +3080,12 @@ TRACE;
     char *watched_param=query_val(QUERY_PARAM_WATCHED_FILTER);
 
 TRACE;
-    if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
+    if (STRCMP(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
 TRACE;
 
         watched=DB_WATCHED_FILTER_YES;
 
-    } else if (strcmp(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
+    } else if (STRCMP(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
 TRACE;
 
         watched=DB_WATCHED_FILTER_NO;
@@ -3099,12 +3099,12 @@ TRACE;
     char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
     int media_type=DB_MEDIA_TYPE_ANY;
 
-    if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
+    if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
 TRACE;
 
         media_type=DB_MEDIA_TYPE_TV; 
 
-    } else if(strcmp(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
+    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
 TRACE;
 
         media_type=DB_MEDIA_TYPE_FILM; 
@@ -3134,12 +3134,12 @@ TRACE;
 TRACE;
 
     HTML_LOG(0,"Sort..");
-    if (strcmp(query_val(QUERY_PARAM_VIEW),VIEW_TV) == 0) {
+    if (STRCMP(query_val(QUERY_PARAM_VIEW),VIEW_TV) == 0) {
 
         HTML_LOG(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
-    } else  if (sort && strcmp(sort,DB_FLDID_TITLE) == 0) {
+    } else  if (sort && STRCMP(sort,DB_FLDID_TITLE) == 0) {
 
         HTML_LOG(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
@@ -3730,9 +3730,9 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
             char *v=hashtable_search(vals,k);
             char *link=join(link_parts,k);
 
-            char *selected_text=(strcmp(selected,k)==0?"selected":"");
+            char *selected_text=(STRCMP(selected,k)==0?"selected":"");
 
-            if (firstItem != NULL && strcmp(firstItem,k) == 0 ) {
+            if (firstItem != NULL && STRCMP(firstItem,k) == 0 ) {
                 // Add item to the start
                 ovs_asprintf(&tmp,
                     "<option value=\"%s\" %s >%s</option>\n%s",

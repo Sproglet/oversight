@@ -44,7 +44,7 @@ void set_mount_status(char *p,char *val) {
     if (current == NULL) {
         HTML_LOG(1,"Adding mount point [%s] = %s",p,val);
         hashtable_insert(mount_points,STRDUP(p),val);
-    } else if ( strcmp(current,val) != 0) {
+    } else if ( STRCMP(current,val) != 0) {
         hashtable_remove(mount_points,p,1);
         HTML_LOG(1,"mount point [%s] status changed from [%s] to [%s]",p,current,val);
         hashtable_insert(mount_points,STRDUP(p),val);
@@ -153,10 +153,10 @@ TRACE;
             char *mount_status = get_mount_status(path);
 TRACE;
             
-            if (strcmp(mount_status,MOUNT_STATUS_OK) == 0) {
+            if (STRCMP(mount_status,MOUNT_STATUS_OK) == 0) {
 TRACE;
                 result = 1;
-            } else if (strcmp(mount_status,MOUNT_STATUS_BAD) == 0) {
+            } else if (STRCMP(mount_status,MOUNT_STATUS_BAD) == 0) {
 TRACE;
                 result = 0;
             } else {
@@ -244,7 +244,7 @@ static char get_link_index(char *share_name) {
     // for one that is called "abc"
     for(c = '0' ; c <= '9' ; c++ ) {
         *last = c;
-        if (strcmp(setting_val(key),share_name) == 0) {
+        if (STRCMP(setting_val(key),share_name) == 0) {
             index = c;
             break;
         }
@@ -383,7 +383,7 @@ TRACE ; HTML_LOG(0,"mount servlink [%s]",serv_link);
 
             set_mount_status(path,MOUNT_STATUS_BAD);
 TRACE;
-        } else if (strcmp(current_mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
+        } else if (STRCMP(current_mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
 
             char *user = get_link_user(serv_link);
             char *passwd = get_link_passwd(serv_link);
@@ -435,7 +435,7 @@ TRACE;
                 FREE(cmd);
             }
 
-        } else if (strcmp(current_mount_status,MOUNT_STATUS_IN_MTAB) == 0) {
+        } else if (STRCMP(current_mount_status,MOUNT_STATUS_IN_MTAB) == 0) {
             // Its pingable but now we check it is accessible.
             result = check_accessible(path,5);
         } else {

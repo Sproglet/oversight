@@ -68,7 +68,7 @@ unsigned int stringhash(void *vptr) {
     return hash;
 }
 int stringcmp(void *a,void *b) {
-    return strcmp(a,b) ==0;
+    return STRCMP(a,b) ==0;
 }
 
 struct hashtable *string_string_hashtable(int size)
@@ -368,7 +368,7 @@ void util_unittest() {
     // string functions
     char *hello = substring("XXhelloYY",2,7);
     //printf("%s\n",hello);
-    assert(strcmp(hello,"hello") == 0);
+    assert(STRCMP(hello,"hello") == 0);
 
     //regex functions
     //
@@ -377,13 +377,13 @@ void util_unittest() {
     char *there = strdup(a->array[1]);
     array_free(a);
 
-    assert(strcmp(there,"there") == 0);
+    assert(STRCMP(there,"there") == 0);
 
 
     printf("replaceall...\n");
     char *x=replace_all(hello,"e","E",0);
     printf("%s\n",x);
-    assert(strcmp(x,"hEllo thErE") == 0);
+    assert(STRCMP(x,"hEllo thErE") == 0);
 
     printf("strreg...\n");
     char *hstr="hello";
@@ -393,17 +393,17 @@ void util_unittest() {
     Array *matches=regextract(" a=b helllo d:efg ","(.)=(.).*(.):(..)",0);
     assert(matches);
     assert(matches->size == 5);
-    assert(strcmp(matches->array[0],"a=b helllo d:ef") ==0);
-    assert(strcmp(matches->array[1],"a") ==0);
-    assert(strcmp(matches->array[2],"b") ==0);
-    assert(strcmp(matches->array[3],"d") ==0);
-    assert(strcmp(matches->array[4],"ef") ==0);
+    assert(STRCMP(matches->array[0],"a=b helllo d:ef") ==0);
+    assert(STRCMP(matches->array[1],"a") ==0);
+    assert(STRCMP(matches->array[2],"b") ==0);
+    assert(STRCMP(matches->array[3],"d") ==0);
+    assert(STRCMP(matches->array[4],"ef") ==0);
     printf("regmatch4...\n");
     array_free(matches);
     printf("regmatch5...\n");
 
     //printf("%s\n",hello);
-    assert(strcmp(hello,"hello there") == 0);
+    assert(STRCMP(hello,"hello there") == 0);
 
     // hashtables
     //
@@ -812,7 +812,7 @@ int is_nmt200()
     if (check) {
         check = 0;
         char *cpu_model = getenv("CPU_MODEL");
-        result = (cpu_model != NULL && strcmp(cpu_model,"74K") == 0);
+        result = (cpu_model != NULL && STRCMP(cpu_model,"74K") == 0);
     }
     return result;
 }
@@ -842,7 +842,7 @@ void util_rmdir(char *path,char *name)
         if (d) {
             struct dirent *dp;
             while((dp = readdir(d)) != NULL) {
-                if(strcmp(dp->d_name,".") != 0 && strcmp(dp->d_name,"..") != 0) {
+                if(STRCMP(dp->d_name,".") != 0 && STRCMP(dp->d_name,"..") != 0) {
                     util_rmdir(full_path,dp->d_name);
                 }
             }

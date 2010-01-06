@@ -2280,6 +2280,11 @@ if (extractEpisodeByPatterns(plugin,line,details)==1) {
 ret = 1
 break
 }
+if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) {
+dump(0,"details",details)
+ret = 1
+break
+}
 if (d == dirLevels) {
 INF("No tv series-episode format in ["line"]")
 break
@@ -2290,24 +2295,24 @@ more_info[1]=0
 
 
 
-if (ret == 0 ) {
-more_info[1]=1
-line = remove_format_tags(g_media[idx])
-for(d=0 ; d-dirLevels <= 0  ; d++ ) {
-INF("xx1 ["line"]")
-if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) {
-dump(0,"details",details)
-ret = 1
-break
-}
-if (d == dirLevels) {
-INF("No mini-series format in ["line"]")
-break
-}
-line=dirs[dirCount-d]"/"line
-more_info[1]=0
-}
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if (ret == 1) {
 

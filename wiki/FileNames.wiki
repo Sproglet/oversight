@@ -1,5 +1,6 @@
 #sidebar TableOfContents
 An overriding requirement of Oversight is to minimize manual file renaming.
+For information on changing NZBGet download locations see [NZBGetIntegrationAndRenaming]
 
 <wiki:toc max_depth="2" />
 

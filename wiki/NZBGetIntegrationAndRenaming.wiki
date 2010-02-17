@@ -1,3 +1,6 @@
+#sidebar TableOfContents
+<wiki:toc max_depth="2" />
+
 #summary NZBGet Integration and File Renaming
 
 =  NZBGet Integration and File Renaming =

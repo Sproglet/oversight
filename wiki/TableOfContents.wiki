@@ -5,6 +5,7 @@ Everyone
   * RunningOversight
   * CrossView
   * FileNames
+  * NZBGetIntegrationAndRenaming
   * SendingLogReports
   * PruningFiles
   * KnownIssues

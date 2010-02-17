@@ -1,0 +1,67 @@
+#sidebar TableOfContents
+<wiki:toc max_depth="3" />
+
+#summary NZBGet Integration and File Renaming
+
+=  NZBGet Integration and File Renaming =
+
+This page is about how Oversight integrates with NZBget when renaming files.
+Information here can help you change the download location and final resting place of your media downloaded via usenet.
+
+For more general information on manual scanning and renaming see [FileNames]
+
+
+
+= Details =
+
+when a file is downloaded it goes through the following stages.
+
+  # nzbget downloads the archive files into */share/Download*
+  # Once all parts are downloaded , the archive is par-repaired and unpacked by unpak.sh into */share/Complete* (This is an nzbget post processing script) - see [ Par-repair on demand ]
+  # If the post processing script can further categorise it based on the newsgroup name. eg stuff from alt.binaries.sounds is moved to /share/Music, alt.binaries.erotica is moved to /share/~Other/2/4/6/8
+  # Finally, if the file looks like a movie or a TV show, it is renamed by catalog.sh (This is Oversight's scanning script)
+
+So if you want to change the location of these folders, refer to the relevant section below.
+
+=== The nzbget download location : *DestDir* ===
+
+  * GUI: http://nmt_ip:9999/NZBget_web/config.php?section=S-PATHS (CSI nzbget only)
+  * CLI: Change DestDir in nzbget.conf
+
+
+=== The unpak.sh Complete location : *completed_dir* ===
+
+  * GUI: Oversight -> Setup -> NZBGet Unpacking
+  * CLI: vi /share/Apps/oversight/conf/unpak.cfg -> unpak_completed_dir
+
+=== The unpak.sh custom locations (eg Music / Erotica ) : *completed_dir* ===
+
+These options look at the newsgroup names embedded in the nzb file.
+
+  * CLI: vi /share/Apps/oversight/conf/unpak.cfg 
+edit 
+{{{
+unpak_auto_categorisation_from_newsgroups=1
+unpak_subfolder_by_newsgroup_0="erotica:PIN:FOLDER"
+unpak_subfolder_by_newsgroup_1="sounds:/share/Music"
+unpak_subfolder_by_newsgroup_2="pictures:Pictures"
+unpak_subfolder_by_newsgroup_3="hou:PIN:FOLDER"
+}}}
+
+Also for erotica review any keywords starting with unpak_nmt_pin
+
+  * GUI: No GUI option
+
+=== Final TV and Movie File destinations ===
+
+  * CLI: vi /share/Apps/oversight/conf/catalog.cfg 
+  * GUI: Oversight -> Setup -> Renaming
+
+=== Par-repair on demand ===
+
+Note that newer versions of nzbget have the capability to do on-demand par repair, however the version that comes with the NMT firmware cannot attempt to unpack before doing a par-repair on demand, it can only be configured to 
+a) unpack and fail, 
+b) force a par check before attempting to unpack. 
+c) hand over to a post-processing script.
+
+As a par-check can take several hours on the NMT platform, it was desirable to try to unpack first, and only do a par-repair if necessary. 

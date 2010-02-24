@@ -183,6 +183,25 @@ DETAIL() { LOG DETAIL "$@"; }
 # SECTION: CONFIG FUNCTIONS
 ########################################################################
 
+
+set_p2p_exit_codes() {
+        POSTPROCESS_ERROR=1
+        POSTPROCESS_SUCCESS=0
+}
+
+set_nzbget_exit_codes() {
+    if [ "${NZBOP_VERSION:-}" \> "0.7.0-testing-r341" ] ; then
+        POSTPROCESS_PARCHECK_CURRENT=91
+        POSTPROCESS_PARCHECK_ALL=92
+        POSTPROCESS_SUCCESS=93
+        POSTPROCESS_ERROR=94
+        POSTPROCESS_NONE=95
+    else
+        POSTPROCESS_ERROR=94
+        POSTPROCESS_SUCCESS=0
+    fi
+}
+
 #Get nzbget's settings if they are not in the environment. This is for older versions.
 #Get all lines with / = / remove spaces around '=' , prefix with NZBOP_ , upper case , replace x.y=z with x_y=z
 load_nzbget_settings_pre_v7() {
@@ -235,9 +254,9 @@ get_nzbpath() {
     fi
     INFO "unpak_nzbget_bin=${unpak_nzbget_bin:-}"
     INFO "unpak_nzbget_conf=${unpak_nzbget_conf:-}"
-    if [ -z "${unpak_nzbget_bin:-}" ]; then ERROR "unpak_nzbget_bin unset" ; exit ; fi
+    if [ -z "${unpak_nzbget_bin:-}" ]; then ERROR "unpak_nzbget_bin unset" ; abort ; fi
     if [ -z "${unpak_nzbget_conf:-}" ]; then
-        ERROR "unpak_nzbget_conf unset" ; exit ; 
+        ERROR "unpak_nzbget_conf unset" ; abort ; 
     else
         if [ ! -f "${unpak_nzbget_conf}" ] ; then
             #relative path maybe. OLDPWD should be the folder nzbget was initially started from
@@ -272,7 +291,7 @@ get_nzbpath_pre_v7() {
                         #Note nmt can have two common nzbget install locations. so check until this is resolved
                         #(by CSI installer using same lockfile for both)
                         ERROR "multiple nzblock files. Please stop one nzbget" 
-                        exit 1
+                        abort
                     fi
                 fi
                 NZBOP_LOCKFILE="$d/nzbget.lock"
@@ -1989,6 +2008,13 @@ stop_screensaver() {
 ##################################################################################
 # main SCRIPT
 ##################################################################################
+
+POSTPROCESS_ERROR=1
+
+abort() {
+    exit $POSTPROCESS_ERROR;
+}
+
 main() {
     INFO 'unpak version $Id$ '
     INFO "script_folder [$script_folder]"
@@ -2014,11 +2040,14 @@ main() {
 
     if [ $mode = nzbget ] ; then
         check_settings || exit 1
+        set_nzbget_exit_codes
+    else
+        set_p2p_exit_codes
     fi
 
     if [ "$arg_par_fail" -ne 0 ] ; then
         ERROR "Previous par-check failed, exiting"
-        exit 1
+        abort
     fi
 
     case "$arg_par_check" in
@@ -2026,15 +2055,15 @@ main() {
             if [ $mode = nzbget ] ; then
                 if [ -f _brokenlog.txt -a "$external_par_check" -ne 1 ] ; then
                     ERROR "par-check is disabled or no pars present, but a rar is broken, exiting"
-                    exit 1
+                    abort
                 fi
             fi
             ;;
        1) ERROR "par-check failed, exiting" 
-          exit 1 ;;
+          abort ;;
        2) true ;; # Checked and repaired.
        3) WARNING "Par can be repaired but repair is disabled, exiting"
-          exit 1 ;;
+          abort ;;
     esac
 
     #---------------------------------------------------------
@@ -2100,10 +2129,13 @@ main() {
 
     s=
     if waiting_for_pars ; then s="Waiting for PARS" ; fi
+    s=" ====== Post-process Finished : $1 : $NZB_NICE_NAME : $s $(date '+%T') ======";
     if check_top_level_unrar_state 1 ; then 
-        INFO " ====== Post-process Finished : $1 : $NZB_NICE_NAME : $s $(date '+%T') ======"
+        INFO "$s"
+        exit_code="$POSTPROCESS_SUCCESS"
     else
-        ERROR " ====== Post-process Finished : $1 : $NZB_NICE_NAME : $s $(date '+%T') ======"
+        ERROR "$s"
+        exit_code="$POSTPROCESS_ERROR"
     fi
 }
 
@@ -2114,14 +2146,15 @@ script_folder=$( cd $(DIRNAME "$0") ; pwd )
 ##################################################################################
 # something sometimes changes /tmp permissions so only root can write
 TMP=/tmp
+chmod o+w /tmp
 is_nmt=N
 if [ -n "$NMT_APP_DIR" ] ; then
-    TMP=$script_folder/tmp
-    if ! mkdir -p "$TMP" ; then
-        TMP=/tmp
-    fi
     is_nmt=Y
-    chown nmt:nmt "$TMP" || true
+    TMP2=$script_folder/tmp
+    if mkdir -p "$TMP2" ; then
+        TMP="$TMP2"
+        chown nmt:nmt "$TMP" || true
+    fi
 fi
 
 #Some global settings
@@ -2194,7 +2227,7 @@ case $mode in
             echo "  $0 torrent_seeding folder"
             echo "  $0 torrent_finished folder"
             get_nzbpath
-            exit 1
+            abort
         else
             mode=nzbget
             arg_download_dir="$1"   
@@ -2233,11 +2266,7 @@ INFO "TMP=[$TMP]"
 
 load_unpak_settings "$unpak_default_settings"
 
-set | grep "^unpak" | log_stream DEBUG "unpak1"
-
 load_unpak_settings "$unpak_load_settings"
-
-set | grep "^unpak" | log_stream DEBUG "unpak2"
 
 if [ $mode = nzbget ] ; then
     get_nzbpath
@@ -2256,6 +2285,8 @@ cd "$arg_download_dir"
 
 
 main "$@" 2>&1 | tee_logfiles $log_file || clear_tmpfiles
+
+exit $exit_code
 
 #
 # vi:shiftwidth=4:tabstop=4:expandtab

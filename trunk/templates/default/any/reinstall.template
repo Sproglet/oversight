@@ -14,7 +14,7 @@
 
             <center>
             <p>This will re-install oversight. Use this option after re-installing nzbget
- or if scans do not start.
+ or if scans do not start. Only click the button ONCE and wait about 15 seconds for the page to reload.
 
             <table width=30%>
                 <tr>
@@ -29,7 +29,6 @@
 <p>If this does not fix the issue consider deleting conf/catalog.cfg conf/oversight.cfg
 
             <input type=hidden name=old_action value="[:$?action:]">
-            <input type=hidden name=view value="[:$?view:]">
         </form>
     </body>
 </html>

@@ -344,7 +344,7 @@ void do_actions() {
         if (STRCMP(action,"reinstall") == 0) {
 
             char *cmd;
-            ovs_asprintf(&cmd,"%s/oversight-install.cgi install",appDir());
+            ovs_asprintf(&cmd,"%s/oversight-install.cgi install > %s/logs/reinstall.log 2>&1",appDir(),appDir());
             util_system(cmd);
             FREE(cmd);
 

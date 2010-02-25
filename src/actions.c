@@ -179,6 +179,7 @@ void delete_media(DbRowId *rid,int delete_related) {
  */
 static void insert_image_list(DbRowId *rid,Array *a) {
 
+TRACE;
     char *poster = internal_image_path_static(rid,POSTER_IMAGE);
     HTML_LOG(0,"poster[%s]",poster);
     if (poster) {
@@ -199,6 +200,7 @@ static void insert_image_list(DbRowId *rid,Array *a) {
 void remove_internal_images_from_delete_queue(DbRowId *rid)
 {
     int i;
+TRACE;
     Array *a = array_new(free);
     insert_image_list(rid,a);
     for(i=0 ; i < a->size ; i++ ) {

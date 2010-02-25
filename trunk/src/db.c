@@ -1437,8 +1437,13 @@ DbRowSet * db_scan_titles(
                 // as they are in use by this item.
                 if (g_delete_queue != NULL) {
 
+TRACE;
+HTML_LOG(0,"Title[%s]",rowid.title);
+
                     delete_queue_unqueue(&rowid,rowid.nfo);
+TRACE;
                     remove_internal_images_from_delete_queue(&rowid);
+TRACE;
                 }
 
                 // Check the device is mounted - if not skip it.

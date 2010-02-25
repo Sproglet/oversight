@@ -84,17 +84,14 @@ TRACE;
 
     int free2;
     mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt,&free2);
-TRACE;
     if (free2) {
         *freepath = 1;
     }
-TRACE;
 
     // Free intermediate result if necessary
     if (path_relative_to_host_nmt != path && path_relative_to_host_nmt != mounted_path) {
         FREE(path_relative_to_host_nmt);
     }
-TRACE;
 
     return mounted_path;
 }
@@ -1277,23 +1274,24 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
             catalog_val("catalog_poster_prefix"));
     char *t=rid->title;
 
-    // Add title replacing all runs of non-alnum with single _
-    int first_nonalnum = 1;
-    while(*t) {
-        if (isalnum(*t) || strchr("-_",*t) ) {
-            *p++ = *t;
-            first_nonalnum=1;
-        } else if (first_nonalnum) {
-            *p++ = '_';
-            first_nonalnum=0;
+    if (t) {
+        // Add title replacing all runs of non-alnum with single _
+        int first_nonalnum = 1;
+        while(*t) {
+            if (isalnum(*t) || strchr("-_",*t) ) {
+                *p++ = *t;
+                first_nonalnum=1;
+            } else if (first_nonalnum) {
+                *p++ = '_';
+                first_nonalnum=0;
+            }
+            t++;
         }
-        t++;
     }
     if (rid->category == 'T' ) {
         p+= sprintf(p,"_%d_%d.jpg",rid->year,rid->season);
     } else {
         char *imdbid=NULL;
-TRACE;
         if (!EMPTY_STR(rid->url ) ) {
            if ( util_starts_with(rid->url,"tt")) {
                imdbid = rid->url;
@@ -1302,7 +1300,6 @@ TRACE;
                if (imdbid && isdigit(imdbid[3])) imdbid ++;
            }
         }
-TRACE;
         HTML_LOG(1,"imdbid=[%s]",imdbid);
         if (imdbid) {
            p += sprintf(p,"_%d_%.9s.jpg",rid->year,imdbid);
@@ -1395,13 +1392,12 @@ char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type)
 {
     char *path = internal_image_path_static(rid,image_type);
 
+TRACE;
     if (path) {
         int freepath=0;
         path = get_path(rid,path,&freepath);
-TRACE;
 
         if (image_type == FANART_IMAGE ) {
-TRACE;
             char *modifier=".hd.jpg";
 
             if (g_dimension->scanlines == 0 ) {
@@ -1447,16 +1443,12 @@ TRACE;
     char *result = NULL;
     
     char *path = get_picture_path(1,&rowid,image_type);
-TRACE;
     if (path) {
-TRACE;
 
         result = get_local_image_link(path,rowid->title,attr);
-TRACE;
 
         FREE(path);
     }
-TRACE;
     return result;
 }
 
@@ -2126,9 +2118,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
             title = get_poster_mode_item_unknown(row_id,&font_class,&grid_class);
             displaying_text=1;
         }
-TRACE;
         if (displaying_text) {
-TRACE;
 
             if (link_first_word_only) {
                 //
@@ -2136,7 +2126,6 @@ TRACE;
                 first_space = strchr(title,' ');
             }
 
-TRACE;
             // Display alternate image - this has to be a cell background image
             // so ewe can overlay text on it. as NTM does not have relative positioning
             // the alternative is to render the page and then use javascript to inspect
@@ -2150,7 +2139,6 @@ TRACE;
                 default:
                     cell_background_image=icon_source("video"); break;
             }
-TRACE;
         }
 
     } else {
@@ -2165,7 +2153,6 @@ TRACE;
         }
         *first_space='\0';
     }
-TRACE;
     char *cell_text=NULL;
     char *focus_ev = NULL;
     char *mouse_ev = NULL;
@@ -2178,7 +2165,6 @@ TRACE;
         mouse_ev = td_mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
         FREE(simple_title);
     }
-TRACE;
 
     char *title_change_attr;
     ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), NVL(focus_ev));
@@ -2190,7 +2176,6 @@ TRACE;
 
     HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
-TRACE;
     if (*select) {
 
         cell_text = STRDUP(NVL(title));
@@ -2212,7 +2197,6 @@ TRACE;
 
     } else {
 
-TRACE;
 
         char cellId[9];
 
@@ -2392,10 +2376,8 @@ TRACE;
         HTML_LOG(2,"old line [%s]",input);
         HTML_LOG(2,"new line [%s]",newline);
     }
-TRACE;
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
     int count = template_replace_and_emit(template_name,newline,num_rows,sorted_row_ids);
-TRACE;
     if (newline !=input) FREE(newline);
     return count;
 }
@@ -2478,7 +2460,6 @@ TRACE;
         macro_start=strstr(++macro_end,MACRO_STR_START);
 
     }
-TRACE;
     return newline;
 }
 int template_replace_and_emit(char *template_name,char *input,int num_rows,DbRowId **sorted_row_ids) {
@@ -2525,9 +2506,7 @@ TRACE;
 
             int free_result=0;
             *macro_name_end = '\0';
-TRACE;
             char *macro_output = macro_call(template_name,macro_name_start,num_rows,sorted_row_ids,&free_result);
-TRACE;
 
             //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
             if (macro_start > p ) {

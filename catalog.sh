@@ -815,6 +815,10 @@ replace_share_names(FOLDER_ARR)
 
 make_paths_absolute(FOLDER_ARR)
 
+INF("13 = "n("13d"))
+INF("14 = "n("14"))
+INF("15 = "n("a15"))
+INF("16 = "n("d16t"))
 
 
 for(f in FOLDER_ARR) {
@@ -2689,6 +2693,7 @@ DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
 
 match(line,episodeRe "$" )
 details[EPISODE] = substr(line,RSTART,RLENGTH); 
+INF("xx1 ["details[EPISODE]"]")
 if (seasonRe == "") {
 details[SEASON] = 1
 } else {
@@ -2697,6 +2702,7 @@ details[SEASON] = substr(line,1,RSTART-1)
 
 
 details[EPISODE] = n(details[EPISODE])
+INF("xx2 ["details[EPISODE]"]")
 details[SEASON] = n(details[SEASON])
 ret=1
 }
@@ -4915,7 +4921,7 @@ dump(0,"tvrage series",seriesInfo)
 adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi)
 g_year[idx] = substr(seriesInfo["/Show/started"],8,4)
 setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
-url=seriesInfo["/Show/showlink"]
+url=urladd(seriesInfo["/Show/showlink"],"remove_add=1&bremove_add=1")
 g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1)
 g_tvid_plugin[idx]="TVRAGE"
 g_tvid[idx]=seriesInfo["/Show/showid"]
@@ -4974,7 +4980,7 @@ g_xx = 0
 return 0+ result
 }
 
-funcion urladd(a,b) {
+function urladd(a,b) {
 return a (index(a,"?") ? "&" : "?" ) b
 }
 
@@ -6948,7 +6954,10 @@ return g
 
 function n(x) \
 {
-gsub(/^[^-0-9]*0+/,"",x)
+gsub(/^[^-0-9]*0*/,"",x)
+if (0+x == 0 ) {
+INF("n("x") = "0)
+}
 return 0+x
 }
 

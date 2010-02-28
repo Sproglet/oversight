@@ -815,12 +815,6 @@ replace_share_names(FOLDER_ARR)
 
 make_paths_absolute(FOLDER_ARR)
 
-INF("13 = "n("13d"))
-INF("14 = "n("14"))
-INF("15 = "n("a15"))
-INF("16 = "n("d16t"))
-
-
 for(f in FOLDER_ARR) {
 INF("Folder "f"="FOLDER_ARR[f])
 }
@@ -2693,7 +2687,7 @@ DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
 
 match(line,episodeRe "$" )
 details[EPISODE] = substr(line,RSTART,RLENGTH); 
-INF("xx1 ["details[EPISODE]"]")
+
 if (seasonRe == "") {
 details[SEASON] = 1
 } else {
@@ -2702,7 +2696,7 @@ details[SEASON] = substr(line,1,RSTART-1)
 
 
 details[EPISODE] = n(details[EPISODE])
-INF("xx2 ["details[EPISODE]"]")
+
 details[SEASON] = n(details[SEASON])
 ret=1
 }
@@ -6955,9 +6949,9 @@ return g
 function n(x) \
 {
 gsub(/^[^-0-9]*0*/,"",x)
-if (0+x == 0 ) {
-INF("n("x") = "0)
-}
+
+
+
 return 0+x
 }
 

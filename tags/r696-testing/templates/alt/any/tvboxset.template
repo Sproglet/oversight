@@ -1,0 +1,154 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:HOSTNAME:]</title>
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+body.menu_background {
+    color:yellow ;
+    background-color:black;
+}
+
+td.grid_background {
+    text-align:center;
+    background-color:black;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+[:IF($@poster_mode):]
+    .overview_poster {
+        background-color:black;
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
+}
+
+        </style>
+    </head>
+
+[:IF($ovs_display_fanart):]
+
+    <body [onloadset=:START_CELL:] focuscolor=#FBB917 focustext=black class=menu_background background=[:FANART_URL(black_desert.jpg):] >
+    <table class=main width=100%>
+    <tr valign=bottom>
+
+[:ELSE:]
+
+    <body [onloadset=:START_CELL:] focuscolor="#FBB917" focustext="black" class="menu_background" >
+    <table class="main" width="100%">
+    <tr valign="middle">
+
+[:ENDIF:]
+
+        <td align="center" border="0" height="[:BODY_HEIGHT:]" >
+
+[:FORM_START:]
+    <center>
+        <table class="main" width="100%" height="100%">
+            <tr>
+                <td>
+                    <table class="header">
+                        <tr>
+                            [<td>:BACK_BUTTON:</td>]
+                            <td>[:HOME_BUTTON:]</td>
+[:IF($@gaya):]
+[:ELSE:]
+                            <td>[:DELETE_BUTTON:]</td>
+                            <td>[:MARK_BUTTON:]</td>
+[:ENDIF:]
+                            [<td>:SELECT_MARK_SUBMIT:</td>]
+                        </tr>
+                    </table>
+                </td>
+                <td align="right">
+                    [:EXTERNAL_URL:]
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" >
+                    <center>
+                        <table >
+                            <tr>
+                                <td>
+                                    <center>
+                                        <table>
+                                            <tr>
+                                                <td background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" align="center" >
+                                                    <span class="boxtitle" id="menutitle">&nbsp;</span>
+                                                    <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
+                                                    <span class="boxtitle" id="watchedtotal">&nbsp;</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </center>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td >
+                                    [:GRID:]
+                                </td >
+                            </tr>
+[:IF(0):]
+                            <tr>
+                                <td >
+                                    <center>
+[:IF($ovs_fade):]
+                                        <table background="[:URL_BASE:]/templates/alt/images/transfade[:$ovs_transparency:].png" >
+[:ELSE:]
+                                        <table background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
+                                            <tr>
+                                                <td>
+[:IF($ovs_fade):]
+<p>&nbsp;</p>
+[:ENDIF:]
+                                                    <span class="plot">[:PLOT:]</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </center>
+                                </td>
+                            </tr>
+[:ENDIF:]
+                            <tr>
+                                <td >
+                                    <table class=header width=100%>
+                                        <tr>
+                                            <td width=10%>[:LEFT_BUTTON:]</td>
+                                            [<td align="center" class="cancel" width="26%">:SELECT_CANCEL_SUBMIT:</td>]
+                                            [<td align="center" class="delist" width="26%">:SELECT_DELIST_SUBMIT:</td>]
+                                            [<td align="center" class="delete" width="26%">:SELECT_DELETE_SUBMIT:</td>]
+                                            <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </center>
+                </td>
+            </tr>
+        </table>
+    </center>
+</form>
+
+</td></tr></table>
+
+<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/menu.js"></script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

@@ -1,0 +1,8 @@
+catalog_movie_search_regex1:If file matches this regex use the 1st search order
+catalog_movie_search_order1:1st Filename Search Order
+catalog_movie_search_regex2:If file matches regex use the 2nd search order
+catalog_movie_search_order2:2nd Filename Search Order
+catalog_movie_search_regex3:If file matches regex use the 3rd search order
+catalog_movie_search_order3:3rd Filename Search Order
+catalog_movie_search_regex4:If file matches regex use the 4th search order
+catalog_movie_search_order4:4th Filename Search Order

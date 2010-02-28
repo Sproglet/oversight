@@ -2146,14 +2146,14 @@ script_folder=$( cd $(DIRNAME "$0") ; pwd )
 ##################################################################################
 # something sometimes changes /tmp permissions so only root can write
 TMP=/tmp
-chmod o+w /tmp
+chmod o+w /tmp 2>/dev/null || true
 is_nmt=N
 if [ -n "$NMT_APP_DIR" ] ; then
     is_nmt=Y
     TMP2=$script_folder/tmp
     if mkdir -p "$TMP2" ; then
         TMP="$TMP2"
-        chown nmt:nmt "$TMP" || true
+        chown nmt:nmt "$TMP" 2>/dev/null || true
     fi
 fi
 

@@ -2016,6 +2016,8 @@ abort() {
 }
 
 main() {
+
+    exit_code=1
     INFO 'unpak version $Id$ '
     INFO "script_folder [$script_folder]"
     sed 's/^/\[INFO\]/' /proc/version
@@ -2044,6 +2046,7 @@ main() {
     else
         set_p2p_exit_codes
     fi
+    exit_code="$POSTPROCESS_ERROR"
 
     if [ "$arg_par_fail" -ne 0 ] ; then
         ERROR "Previous par-check failed, exiting"
@@ -2137,6 +2140,7 @@ main() {
         ERROR "$s"
         exit_code="$POSTPROCESS_ERROR"
     fi
+    return $exit_code
 }
 
 script_name=$(BASENAME "$0" "")

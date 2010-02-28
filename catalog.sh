@@ -53,7 +53,7 @@
 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091123-3BETA
+VERSION=20100228-1BETA
 
 NMT_APP_DIR=
 nmt_version=unknown
@@ -338,13 +338,6 @@ function TODO(x) {
 DEBUG("TODO:"x)
 }
 
-function DEBUG(x) {
-
-if ( DBG ) {
-timestamp("[DEBUG]",x)
-}
-
-}
 
 
 function load_settings(file_name,\
@@ -461,55 +454,6 @@ INF("status:"msg)
 set_permissions(g_status_file)
 }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function get_mounts(mtab,\
 line,parts,f) {
@@ -710,7 +654,8 @@ return share_path
 
 END{
 g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+"
-g_wget_opts="-T 20 -t 2 -w 2 -q --no-check-certificate --ignore-length "
+g_wget_opts="-T 30 -t 2 -w 2 -q --no-check-certificate --ignore-length "
+g_art_timeout=" -T 60"
 
 
 g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"
@@ -1193,13 +1138,14 @@ return key
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fcount,total) {
+f,fcount,total,done) {
 
 for(f in folderArray ) {
 
-if (folderArray[f]) {
+if (folderArray[f] && !(f in done)) {
 report_status("folder "++fcount)
 total += scan_contents(folderArray[f],scan_options)
+done[f]=1
 }
 }
 
@@ -2425,7 +2371,6 @@ ret = extractEpisodeByDates(plugin,line,details)
 } else {
 split(pat[i],parts,"@")
 
-INF("xx2 ["line"]")
 ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details)
 if (ret+0) {
 details[EPISODE] = parts[5] details[EPISODE]
@@ -2750,11 +2695,9 @@ details[SEASON] = 1
 details[SEASON] = substr(line,1,RSTART-1)
 }
 
-gsub(/^[^0-9]+/,"",details[EPISODE])
-sub(/^0+/,"",details[EPISODE])
 
-gsub(/^[^0-9]+/,"",details[SEASON])
-sub(/^0+/,"",details[SEASON])
+details[EPISODE] = n(details[EPISODE])
+details[SEASON] = n(details[SEASON])
 ret=1
 }
 
@@ -5006,7 +4949,7 @@ if (get_episode_xml(pi,tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) 
 set_eptitle(idx,episodeInfo[e"/title"])
 
 gAirDate[idx]=formatDate(episodeInfo[e"/airdate"])
-url=episodeInfo[e"/link"]
+url=urladd(episodeInfo[e"/link"],"remove_add=1&bremove_add=1")
 
 if (g_epplot[idx] == "" ) {
 
@@ -5029,6 +4972,10 @@ WARNING("Error getting series xml")
 g_xx = 0
 
 return 0+ result
+}
+
+funcion urladd(a,b) {
+return a (index(a,"?") ? "&" : "?" ) b
 }
 
 function clean_xml_path(xmlpath,xml,\
@@ -5654,7 +5601,7 @@ referer=urls[2]
 
 
 
-wget_args=g_wget_opts
+wget_args=g_wget_opts g_art_timeout
 
 DEBUG("Image url = "url)
 default_referer = get_referer(url)
@@ -6099,6 +6046,12 @@ title = extractTagText(line,"title")
 DEBUG("Title found ["title "] current title ["gTitle[idx]"]")
 
 
+if (g_year[idx] == "" && match(title,".*\\([12][0-9][0-9][0-9]")) {
+g_year[idx] = substr(title,RSTART+RLENGTH-4,4)
+DEBUG("IMDB: Got year ["g_year[idx]"]")
+}
+
+
 
 
 
@@ -6130,10 +6083,6 @@ imdbContentPosition="footer"
 
 
 
-if (g_year[idx] == "" && (y=index(line,"/Sections/Years/")) > 0) {
-g_year[idx] = substr(line,y+16,4)
-DEBUG("IMDB: Got year ["g_year[idx]"]")
-}
 if (index(line,"a name=\"poster\"")) {
 if (match(line,"src=\"[^\"]+\"")) {
 
@@ -6997,12 +6946,10 @@ return g
 
 
 
-function n(x)
+function n(x) \
 {
-if (index(x,"0") ==1) {
-gsub(/^0+/,"",x)
-}
-return x+0
+gsub(/^[^-0-9]*0+/,"",x)
+return 0+x
 }
 
 
@@ -7107,6 +7054,13 @@ return CAPTURE_FILE
 function clean_capture_files() {
 INF("Clean up")
 exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* ")
+}
+function DEBUG(x) {
+
+if ( DBG ) {
+timestamp("[DEBUG]  ",x)
+}
+
 }
 function INF(x) {
 timestamp("[INFO]   ",x)

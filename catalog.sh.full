@@ -53,7 +53,7 @@
 # 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20091123-3BETA
+VERSION=20100228-1BETA
 
 NMT_APP_DIR=
 nmt_version=unknown
@@ -338,13 +338,6 @@ function TODO(x) {
     DEBUG("TODO:"x);
 }
 
-function DEBUG(x) {
-        
-    if ( DBG ) {
-        timestamp("[DEBUG]",x);
-    }
-
-}
 
 # Load configuration file
 function load_settings(file_name,\
@@ -461,55 +454,6 @@ function report_status(msg) {
         set_permissions(g_status_file);
     }
 }
-
-# Deperecated - get folders newer than timestamp
-#ALL# function get_new_folders(folder_list,timestamp_file,\
-#ALL# new_list,f,i,j,dir,newfile,newdir) {
-#ALL#     if (!is_file(timestamp_file)) {
-#ALL#         return;
-#ALL#     }
-#ALL#     DEBUG("Checking for changed content");
-#ALL#     for( i in folder_list ) {
-#ALL#         dir=folder_list[i];
-#ALL#         if (dir) {
-#ALL#             DEBUG("Checking "dir" for changed content");
-#ALL#             f=NEW_CAPTURE_FILE("NEWFOLDERS");
-#ALL#             exec("touch "qa(f)" ; cd "qa(dir)" && find . -newer "qa(timestamp_file)" > "qa(f));
-#ALL# DEBUG("end find");
-#ALL#             while((getline newfile < f) > 0) {
-#ALL# DEBUG("find line "newfile);
-#ALL# 
-#ALL#                 # If the new item is a folder add it.
-#ALL#                 # If the new item is media add the parent folder - to make sure we get nfo etc.
-#ALL#                 #
-#ALL#                 # Note due to rar-timestamps sometimes media will have older timestamps than the folder.
-#ALL#                 newdir=dir"/"newfile;
-#ALL#                 # remove /./
-#ALL#                 gsub(/\/\.\//,"/",newdir);
-#ALL# 
-#ALL#                 if (is_dir(newdir) ) {
-#ALL#                     DEBUG("Changed content - "newdir);
-#ALL#                 } else {
-#ALL#                     newdir=dirname(newdir);
-#ALL#                     DEBUG("Changed content - "dir"/"newfile" > "newdir);
-#ALL#                 }
-#ALL#                 new_list[newdir]=1;
-#ALL#             }
-#ALL# DEBUG("close find "f);
-#ALL#             close(f);
-#ALL#         } else {
-#ALL#             DEBUG("Ignoring blank "dir);
-#ALL#         }
-#ALL#     }
-#ALL# 
-#ALL#     #copy the new folders to the output array
-#ALL#     delete folder_list;
-#ALL#     i=1;
-#ALL#     for(j in new_list) {
-#ALL#         folder_list[i++] = j;
-#ALL#     }
-#ALL# 
-#ALL# }
 
 function get_mounts(mtab,\
 line,parts,f) {
@@ -710,7 +654,8 @@ share,share_path,rest) {
 
 END{
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
-    g_wget_opts="-T 20 -t 2 -w 2 -q --no-check-certificate --ignore-length ";
+    g_wget_opts="-T 30 -t 2 -w 2 -q --no-check-certificate --ignore-length ";
+    g_art_timeout=" -T 60";
 
 
     g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
@@ -1193,13 +1138,14 @@ function db_field(key,name,tag) {
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fcount,total) {
+f,fcount,total,done) {
 
     for(f in folderArray ) {
 
-        if (folderArray[f]) {
+        if (folderArray[f] && !(f in done)) {
             report_status("folder "++fcount);
             total += scan_contents(folderArray[f],scan_options);
+            done[f]=1;
         }
     }
 
@@ -2425,7 +2371,6 @@ ret,p,pat,i,parts,sreg,ereg) {
         } else {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
-           INF("xx2 ["line"]");
             ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details);
             if (ret+0) {
                 details[EPISODE] = parts[5] details[EPISODE];
@@ -2750,11 +2695,9 @@ tmpTitle,ret,reg_len) {
             details[SEASON] = substr(line,1,RSTART-1);
         }
 
-        gsub(/^[^0-9]+/,"",details[EPISODE]); #BigBrother non numeric episodes.
-        sub(/^0+/,"",details[EPISODE]);
-
-        gsub(/^[^0-9]+/,"",details[SEASON]);
-        sub(/^0+/,"",details[SEASON]);
+        #BigBrother episodes with trailing character.
+        details[EPISODE] = n(details[EPISODE]);
+        details[SEASON] = n(details[SEASON]);
         ret=1;
     }
 
@@ -5006,7 +4949,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
                 set_eptitle(idx,episodeInfo[e"/title"]);
 
                 gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
-                url=episodeInfo[e"/link"];
+                url=urladd(episodeInfo[e"/link"],"remove_add=1&bremove_add=1");
 
                 if (g_epplot[idx] == "" ) {
                     #p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);
@@ -5029,6 +4972,10 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
     g_xx = 0;
 
     return 0+ result;
+}
+
+funcion urladd(a,b) {
+    return a (index(a,"?") ? "&" : "?" ) b;
 }
 
 function clean_xml_path(xmlpath,xml,\
@@ -5654,7 +5601,7 @@ function download_image(field_id,url,idx,\
             # -t retries - oversight runs the command twice so halve number of retries.
             # -w time between retries.
             # -T network timeouts
-            wget_args=g_wget_opts;
+            wget_args=g_wget_opts g_art_timeout;
 
             DEBUG("Image url = "url);
             default_referer = get_referer(url);
@@ -6098,6 +6045,12 @@ title,y,poster_imdb_url) {
             title = extractTagText(line,"title");
             DEBUG("Title found ["title "] current title ["gTitle[idx]"]");
 
+            #extract right most year in title
+            if (g_year[idx] == "" && match(title,".*\\([12][0-9][0-9][0-9]")) {
+                g_year[idx] = substr(title,RSTART+RLENGTH-4,4);
+                DEBUG("IMDB: Got year ["g_year[idx]"]");
+            }
+
             # Get the almost raw Imdb title. This may have ampersand which 
             # helps to differentiate shows. This is more important if
             # later on we need to # do a lookup from imdb back to a tvdatabase site eg
@@ -6130,10 +6083,6 @@ title,y,poster_imdb_url) {
 
             #This is the main information section
 
-            if (g_year[idx] == "" && (y=index(line,"/Sections/Years/")) > 0) {
-                g_year[idx] = substr(line,y+16,4);
-                DEBUG("IMDB: Got year ["g_year[idx]"]");
-            }
             if (index(line,"a name=\"poster\"")) {
                 if (match(line,"src=\"[^\"]+\"")) {
 
@@ -6997,12 +6946,10 @@ i,gnames,gcount) {
 #busybox awk - I think has some issues converting numbers with leading zeroes
 #this will try to return an integer extracted from a string. Just guesswork
 #would not be needed with well behaved awk
-function n(x)
+function n(x) \
 {
-    if (index(x,"0") ==1) {
-        gsub(/^0+/,"",x);
-    }
-    return x+0;
+    gsub(/^[^-0-9]*0+/,"",x);
+    return 0+x;
 }
 
 # convert yyyymmddHHMMSS to bitwise yyyyyy yyyymmmm dddddhhh hhmmmmmm
@@ -7107,6 +7054,13 @@ function NEW_CAPTURE_FILE(label,\
 function clean_capture_files() {
     INF("Clean up");
     exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* ");
+}
+function DEBUG(x) {
+        
+    if ( DBG ) {
+        timestamp("[DEBUG]  ",x);
+    }
+
 }
 function INF(x) {
     timestamp("[INFO]   ",x);

@@ -51,6 +51,12 @@
 
 
 
+
+
+
+
+
+
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20100228-1BETA
@@ -2165,7 +2171,7 @@ return g_quote f g_quote
 }
 
 function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
-val,y,m,d,h,min) {
+val,y,m,d,h,min,checkFuture) {
 
 if (lsMonth == "" ) {
 return _default
@@ -2177,14 +2183,16 @@ if (index(lsTimeOrYear,":")) {
 y=THIS_YEAR
 h=substr(lsTimeOrYear,1,2)
 min=substr(lsTimeOrYear,4,2)
+checkFuture=1
 } else {
 
 y=lsTimeOrYear
 h=7
 min=0
+checkFuture=0
 }
 val = sprintf("%04d%02d%02d%02d%02d00",y,m,d,h,min); 
-if (val - NOW > 0 ) {
+if (checkFuture && (val - NOW) > 0 ) {
 y--
 val = sprintf("%04d%02d%02d%02d%02d00",y,m,d,h,min); 
 }
@@ -2302,8 +2310,10 @@ terms,results,id) {
 id1("searchByEpisodeName "plugin)
 dump(0,"searchByEpisodeName",details)
 if (plugin == "THETVDB") {
-terms="\"season "details[SEASON]"\" \""details[EPISODE]" :\" \""clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com"
-results = scanPageForMatch(g_search_google terms,"seriesid","seriesid=[0-9]+",0)
+terms="\"season "details[SEASON]"\" \""details[EPISODE]" : "clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com"
+
+results = scanPageForMatch(g_search_bing terms,"seriesid","seriesid=[0-9]+",0)
+
 if (split(results,parts,"=") == 2) {
 id = parts[2]
 }
@@ -3189,7 +3199,7 @@ return url
 
 function searchOnlineNfoImdbLinksFilter(name,additionalKeywords,minSize,\
 choice,i,url) {
-g_nfo_search_choices = 2
+g_nfo_search_choices =1
 
 for(i = 0 ; i - g_nfo_search_choices < 0 ; i++ ) {
 
@@ -3201,12 +3211,12 @@ choice = g_nfo_search_engine_sequence % g_nfo_search_choices
 if (choice == 0 ) {
 
 
-url = searchOnlineNfoLinksForImdb(name,\
-"http://www.bintube.com",\
-"/?b="minSize"&q=\"QUERY\"" additionalKeywords,\
-"/nfo/pid/[^\"]+",20,"nfo/","nfo/display/text/")
 
-} else if (choice == 1 ) {
+
+
+
+#
+
 
 
 url = searchOnlineNfoLinksForImdb(name,\
@@ -3552,9 +3562,9 @@ return ret
 function filterUsenetTitles(titles,filterText,filteredTitles,\
 result) {
 result = filterUsenetTitles1(titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles)
-if (result == 0 ) {
-result = filterUsenetTitles1(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles)
-}
+
+
+
 return 0+ result
 }
 

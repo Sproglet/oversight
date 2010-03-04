@@ -1390,7 +1390,7 @@ long numeric_constant_eval(long val,Array *args) {
                 } else
 #endif
                     
-                    if (isdigit(*p)) {
+                    if (*p == '-' || isdigit(*p)) {
 
                     num2=strtol(p,&nextp,10);
                     numstr=p;

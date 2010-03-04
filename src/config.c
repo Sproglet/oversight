@@ -373,9 +373,9 @@ long get_scanlines(int *is_pal) {
                 // Note that NMT A series does not have a true 1080p but scales up 720
                 scanlines = 720;
             }
-            if (is_pal) {
-                *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
-            }
+        }
+        if (is_pal) {
+            *is_pal = !g_dimension->local_browser && (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
         }
     } else {
         if (!g_dimension->local_browser) {
@@ -390,9 +390,9 @@ long get_scanlines(int *is_pal) {
             } else {
                 scanlines = 1080;
             }
-            if (is_pal) {
-                *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 );
-            }
+        }
+        if (is_pal) {
+            *is_pal = !g_dimension->local_browser && (tv_mode_int == 2 || tv_mode_int == 4 );
         }
     }
 

@@ -1,9 +1,4 @@
-There is no idlist passed to the delete functions anymore.
-action.c must look at the main qualifier vars.
-
-_rf = filter 'S'title
-_sn = Season
-
+ispal value not correct for c200 via browser
 
 check issues 93 against 1408.avi 
 check issue 86 hyphen search

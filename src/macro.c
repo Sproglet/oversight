@@ -1659,14 +1659,17 @@ char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_ro
 
         switch(g_dimension->scanlines) {
             case 0:
-            if (g_dimension->is_pal) {
-                value = "490px";
-            } else {
-                value = "400px";
-            }
+                if (g_dimension->is_pal) {
+                    value = "490px";
+                } else {
+                    value = "400px";
+                }
             break;
             case 720:
                 value = "648px";
+                break;
+            case 1080:
+                value = "664px"; // 972
                 break;
         }
 

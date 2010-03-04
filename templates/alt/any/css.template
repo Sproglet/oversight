@@ -15,7 +15,7 @@ td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
 
 
 [:IF($@poster_mode):]
-    .poster_fresh {
+img.poster_fresh {
  border-color:#AAAA00;
  border-width:2px;
  padding:0px;
@@ -24,14 +24,14 @@ td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
  height:[:EVAL($@poster_menu_img_height-2):]px;
  }
 
-    .poster {
+img.poster {
  border:none;
  padding:0px;
  margin:0px;
  width:[:$@poster_menu_img_width:]px;
  height:[:$@poster_menu_img_height:]px;
  }
-    img.poster_watched {
+img.poster_watched {
  border:none;
  padding:0px;
  margin:0px;

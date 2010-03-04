@@ -11,8 +11,8 @@ usage() {
 
 if ( ifconfig || ipconfig ) 2>/dev/null | grep -q 192.168.88 ; then
     case "$arch" in
-        100) ip=192.168.88.11  ; user=ftpuser ;;
-        200) ip=192.168.88.7  ; user=nmt ;;
+        100) ip=192.168.88.11  ; user=ftpuser ; root=/ ;;
+        200) ip=192.168.88.7  ; user=nmt root=/SATA_DISK ;;
         *) usage ;;
     esac
 else
@@ -20,12 +20,14 @@ else
     user=ftpuser 
 fi
 
-echo "Sending $@ to $ip:$d"
+echo "Sending $@ to $user@$ip:$d"
 
 ftp -n  <<HERE
 open $ip
 user $user 1234
-cd $d
+# First go to root. on c200 this may be / or /SATA_DISK
+cd $root
+cd ./$d
 bin
 hash
 prompt

@@ -352,10 +352,7 @@ long get_scanlines(int *is_pal) {
     long scanlines = 0;
     int tv_mode_int;
 
-    if (!g_dimension->local_browser) {
-        //Remote browser
-        tv_mode_int = 6; 
-    } else {
+    if (g_dimension->local_browser) {
         //Localbrowser- get resolution
         char *tv_mode = hashtable_search(g_nmt_settings,"video_output");
         HTML_LOG(1,"tvmode = %s",tv_mode);
@@ -363,27 +360,39 @@ long get_scanlines(int *is_pal) {
     }
 
     if (is_nmt100()) {
-        if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 || tv_mode_int == 16 ) {
-            scanlines = 720;
-        } else if (tv_mode_int <= 5 || ( tv_mode_int == 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
-            scanlines = 0;
+        if (!g_dimension->local_browser) {
+            //Remote browser
+            tv_mode_int = 6; 
+            scanlines= 720;
         } else {
-            // Note that NMT A series does not have a true 1080p but scales up 720
-            scanlines = 720;
-        }
-        if (is_pal) {
-            *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
+            if (tv_mode_int == 6 || tv_mode_int == 10 || tv_mode_int == 13 || tv_mode_int == 16 ) {
+                scanlines = 720;
+            } else if (tv_mode_int <= 5 || ( tv_mode_int == 9 )  || ( tv_mode_int >= 30 && tv_mode_int <= 31 )) {
+                scanlines = 0;
+            } else {
+                // Note that NMT A series does not have a true 1080p but scales up 720
+                scanlines = 720;
+            }
+            if (is_pal) {
+                *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
+            }
         }
     } else {
-        if (tv_mode_int <= 4 ) {
-            scanlines = 0;
-        } else if (tv_mode_int <= 6 ) {
-            scanlines = 720;
+        if (!g_dimension->local_browser) {
+            //Remote browser
+            tv_mode_int = 6; 
+            scanlines= 720;
         } else {
-            scanlines = 1080;
-        }
-        if (is_pal) {
-            *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 );
+            if (tv_mode_int <= 4 ) {
+                scanlines = 0;
+            } else if (tv_mode_int <= 6 ) {
+                scanlines = 720;
+            } else {
+                scanlines = 1080;
+            }
+            if (is_pal) {
+                *is_pal = (tv_mode_int == 2 || tv_mode_int == 4 );
+            }
         }
     }
 

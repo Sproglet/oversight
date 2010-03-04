@@ -1730,7 +1730,12 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
 }
 
 void db_set_fields_by_source(
-        char *field_id,char *new_value,char *source,char *idlist,int delete_mode) {
+        char *field_id, // field to be set ie         -- SET FIELD_ID
+        char *new_value, // value to set the field to -- = new_value
+        char *source,    // which db to update        -- UPDATE source
+        char *idlist,    // List of ids ie.           --  WHERE ID in idlist
+        int delete_mode // DELETE_MODE_DELETE DELETE_MODE_REMOVE DELETE_MODE_NONE (update)
+        ) {
 
     HTML_LOG(0," begin db_set_fields_by_source [%s][%s] [%s] -> [%s] delete mode = %d",
         source,idlist,field_id,new_value,delete_mode);
@@ -1775,7 +1780,7 @@ HTML_LOG(1," begin open db");
 
         if (db_in) {
             char *tmpdb;
-            ovs_asprintf(&tmpdb,"/share/Apps/oversight/index.db.tmp.%d",getpid());
+            ovs_asprintf(&tmpdb,"%s.tmp.%d",inpath,getpid());
             int rename=0;
 
             FILE *db_out = fopen(tmpdb,"w");
@@ -1851,7 +1856,7 @@ HTML_LOG(1," begin open db");
         db_unlock(db);
         db_free(db);
     }
-    HTML_LOG(0," end db_set_fields_by_source - number of records change = %d of %d",affected_total,dbsize);
+    HTML_LOG(0," end db_set_fields_by_source - %d of %d records changed",affected_total,dbsize);
     regfree(&regex_ptn);
     regfree(&id_regex_ptn);
     FREE(regex_text);

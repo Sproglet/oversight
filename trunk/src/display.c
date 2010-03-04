@@ -2568,7 +2568,10 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
             template_name,
             scanlines_to_text(g_dimension->scanlines),
             file_name);
-    HTML_LOG(0,"opening %s",file);
+
+    if (!strstr(file,"css")) {
+        HTML_LOG(0,"opening %s",file);
+    }
 
     FILE *fp=fopen(file,"r");
     if (fp == NULL) {
@@ -2706,7 +2709,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
     int i,r,c;
 
     HTML_LOG(0,"script start");
-    printf("<script type=\"text/javascript\"><!--\n");
+    printf("<script type=\"text/javascript\"><!--\nfunction t_0() { ; }\n");
 
     for ( r = 0 ; r < rows ; r++ ) {
         for ( c = 0 ; c < cols ; c++ ) {

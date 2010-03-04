@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # $Id$ 
 
 nzb_launch_dir="$OLDPWD"
@@ -1412,6 +1412,8 @@ BEGIN {
 
 }
 /^$/ { next ; }
+/^Exit_Code/ { exit($2); }
+
 {
 if (substr($1,1,1) != "[" ) {
     if($0 == "Request sent") {
@@ -1949,7 +1951,7 @@ run_catalog() {
     shift
     if [ -f "$script_folder/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
-        JOBID="$log_name" "$script_folder/catalog.sh" "$folder" GET_POSTERS GET_FANART "$@" #| log_stream INFO catalog:
+        JOBID="$log_name" "$script_folder/catalog.sh" "$folder" GET_POSTERS GET_FANART "$@" || true
         #create_resume_file "$folder/unpak.resume" "$script_folder/catalog.sh" "$folder" "$@"
     else
         INFO "Catalog script not present in $script_folder"
@@ -2011,8 +2013,18 @@ stop_screensaver() {
 
 POSTPROCESS_ERROR=1
 
+# This mess is because bash doesnt pass exit codes between piped processes.
+# but all of main is piped to a log handler - which would otherwise always return 
+# success. So the log handler listens for a line 'Exit_Code #' Probably a nicer way.
+exit_with() {
+    clear_tmpfiles
+    INFO "Exit_Code $1"
+    echo Exit_Code $1;
+    exit $1;
+}
+
 abort() {
-    exit $POSTPROCESS_ERROR;
+    exit_with $POSTPROCESS_ERROR
 }
 
 main() {
@@ -2031,21 +2043,22 @@ main() {
 
     NZB_NICE_NAME=$(BASENAME "$arg_download_dir" "")
 
-    #Only run at the end of nzbjob
-    if [ "$arg_nzb_state" -ne 1 ] ; then
-        exit
-    fi
-
-    INFO " ====== Post-process Started : $NZB_NICE_NAME $(date '+%T')======"
-
-    #stop_screensaver
-
     if [ $mode = nzbget ] ; then
         check_settings || exit 1
         set_nzbget_exit_codes
     else
         set_p2p_exit_codes
     fi
+
+    #Only run at the end of nzbjob
+    if [ "$arg_nzb_state" -ne 1 ] ; then
+        exit_with $POSTPROCESS_SUCCESS
+    fi
+
+    INFO " ====== Post-process Started : $NZB_NICE_NAME $(date '+%T')======"
+
+    #stop_screensaver
+
     exit_code="$POSTPROCESS_ERROR"
 
     if [ "$arg_par_fail" -ne 0 ] ; then
@@ -2140,7 +2153,7 @@ main() {
         ERROR "$s"
         exit_code="$POSTPROCESS_ERROR"
     fi
-    return $exit_code
+    exit_with $exit_code
 }
 
 script_name=$(BASENAME "$0" "")
@@ -2288,10 +2301,7 @@ cd "$arg_download_dir"
 #ln * "$arg_download_dir.2/."
 
 
-main "$@" 2>&1 | tee_logfiles $log_file || clear_tmpfiles
-
-exit $exit_code
-
+main "$@" 2>&1 | tee_logfiles $log_file 
 #
 # vi:shiftwidth=4:tabstop=4:expandtab
 #

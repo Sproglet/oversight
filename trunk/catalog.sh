@@ -7272,11 +7272,12 @@ main() {
 
 clean_old_tmp
 set +e
-echo '[INF] catalog version '$VERSION' $Id$'
-sed 's/^/\[INF\] os version /' /proc/version
+echo '[INFO] catalog version '$VERSION' $Id$'
+sed 's/^/\[INFO\] os version /' /proc/version
 if is_nmt ; then
-sed -rn '/./ s/^/\[INF\] nmt version /p' /???/*/VERSION
+sed -rn '/./ s/^/\[INFO\] nmt version /p' /???/*/VERSION
 fi
+
 catalog DEBUG$DEBUG "$@" 
 x=$?
 set -e

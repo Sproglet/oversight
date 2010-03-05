@@ -2144,15 +2144,19 @@ main() {
     # ----- END GAME -----
 
     s=
-    if waiting_for_pars ; then s="Waiting for PARS" ; fi
-    s=" ====== Post-process Finished : $1 : $NZB_NICE_NAME : $s $(date '+%T') ======";
-    if check_top_level_unrar_state 1 ; then 
-        INFO "$s"
+    if waiting_for_pars ; then
+        s="Waiting for PARS"
         exit_code="$POSTPROCESS_SUCCESS"
     else
-        ERROR "$s"
-        exit_code="$POSTPROCESS_ERROR"
+        if check_top_level_unrar_state 1 ; then 
+            INFO "$s"
+            exit_code="$POSTPROCESS_SUCCESS"
+        else
+            ERROR "$s"
+            exit_code="$POSTPROCESS_ERROR"
+        fi
     fi
+    s=" ====== Post-process Finished : $1 : $NZB_NICE_NAME : $s $(date '+%T') ======";
     exit_with $exit_code
 }
 

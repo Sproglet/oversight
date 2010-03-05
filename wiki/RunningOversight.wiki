@@ -84,3 +84,7 @@ will now scan smb://TRACY-SNG/Videos/Movies
 
 
 After you have set up the folders click the 'Rescan All Media' option http://oversight.googlecode.com/svn/trunk/images/nav/set1/rescan.png to start a background scan.
+
+If the scan appears to work but no files are displayed check the workgroup of the NAS is the same as the NMT.
+
+If the scan does not work at all, try replacing the NAS name with it's IP address in the Network Setup screen and in the Oversight settings.

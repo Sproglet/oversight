@@ -350,13 +350,13 @@ int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out)
 
 long get_scanlines(int *is_pal) {
     long scanlines = 0;
-    int tv_mode_int;
+    int tv_mode_int = 0;
 
     if (g_dimension->local_browser) {
         //Localbrowser- get resolution
         char *tv_mode = hashtable_search(g_nmt_settings,"video_output");
-        HTML_LOG(1,"tvmode = %s",tv_mode);
         tv_mode_int = atoi(tv_mode);
+        HTML_LOG(0,"tvmode = %d",tv_mode_int);
     }
 
     if (is_nmt100()) {
@@ -375,7 +375,7 @@ long get_scanlines(int *is_pal) {
             }
         }
         if (is_pal) {
-            *is_pal = !g_dimension->local_browser && (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
+            *is_pal = g_dimension->local_browser && (tv_mode_int == 2 || tv_mode_int == 4 || tv_mode_int == 30);
         }
     } else {
         if (!g_dimension->local_browser) {
@@ -392,7 +392,7 @@ long get_scanlines(int *is_pal) {
             }
         }
         if (is_pal) {
-            *is_pal = !g_dimension->local_browser && (tv_mode_int == 2 || tv_mode_int == 4 );
+            *is_pal = g_dimension->local_browser && (tv_mode_int == 2 || tv_mode_int == 4 );
         }
     }
 

@@ -1669,7 +1669,7 @@ char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_ro
                 value = "648px";
                 break;
             case 1080:
-                value = "664px"; // 972
+                value = "650px"; // 972
                 break;
         }
 

@@ -419,8 +419,9 @@ BEGIN {
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();
     g_thetvdb_web="http://www.thetvdb.com";
+    g_tvrage_web="http://www.tvrage.com";
 
-    g_tv_check_urls["TVRAGE"]="http://www.tvrage.com";
+    g_tv_check_urls["TVRAGE"]=g_tvrage_web;
     g_tv_check_urls["THETVDB"]=g_thetvdb_web;
 
     g_batch_size=30;
@@ -2304,7 +2305,7 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
 }
 
 function searchByEpisodeName(plugin,details,\
-terms,results,id) {
+terms,results,id,url,parts) {
     # search the tv sites using season , episode no and episode name.
     # ony bing or google - yahoo is not good here
     id1("searchByEpisodeName "plugin);
@@ -2722,7 +2723,7 @@ tmpTitle,ret,reg_len) {
 function identify_and_catalog_scanned_files(\
 idx,file,fldr,bestUrl,scanNfo,thisTime,numFiles,eta,\
 ready_to_merge,ready_to_merge_count,scanned,tv_status,p,plugin,total,more_info,search_abbreviations,\
-tvid) {
+tvid,tvDbSeriesPage) {
 
     numFiles=hash_size(g_media);
 
@@ -3414,7 +3415,7 @@ tnum,t,i,url) {
 }
 
 function search_tv_series_names2(plugin,idx,title,search_abbreviations,\
-tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid,nobr) {
+tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
     title_key = plugin"/"g_fldr[idx]"/"title;
     id1("search_tv_series_names "title_key);
@@ -3784,7 +3785,7 @@ requiredTagNames,allTitles,url,ret) {
 
     } else if (plugin == "TVRAGE") {
 
-        url="http://www.tvrage.com/feeds/search.php?show="title;
+        url=g_tvrage_web"/feeds/search.php?show="title;
         filter_search_results(url,title,"/Results/show","name","showid",requiredTagList,allTitles);
 
     } else {
@@ -3966,7 +3967,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
                     filter["/Results/show/name"] = "~:^"gTitle[idx]"(| \\(a-z0-9]\\))$";
                     filter["/Results/show/started"] = "~:"year_range;
                     
-                    if (fetch_xml_single_child("http://www.tvrage.com/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
+                    if (fetch_xml_single_child(g_tvrage_web"/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
                         INF("Looking at tv rage "showInfo["/Results/show/name"]);
                         id2 = showInfo["/Results/show/showid"];
                     }
@@ -4040,7 +4041,7 @@ f,line,result) {
 #sep is used if merging repeated element values together
 function parseXML(line,info,ignorePaths,\
 sep,\
-currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,prevTag,\
+currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,\
 attr,a_name,a_val,eq,attr_pairs) {
 
     if (index(line,"<?")) return;
@@ -4058,7 +4059,6 @@ attr,a_name,a_val,eq,attr_pairs) {
         INF("Sigma:"line);
     }
 
-    if (g_xx) INF("@@xml@@parseXML:["line"]");
 
 
     #break at each tag/endtag
@@ -4072,7 +4072,6 @@ attr,a_name,a_val,eq,attr_pairs) {
     tag_data_count = split(line,lines,"<");
 
     currentTag = info["@CURRENT"];
-if (g_xx) DEBUG("@@xml@@entry currentTag is = ["currentTag"]");
 
     if (tag_data_count  && currentTag ) {
         #If the line starts with text then add it to the current tag.
@@ -4080,11 +4079,9 @@ if (g_xx) DEBUG("@@xml@@entry currentTag is = ["currentTag"]");
         #first item is blank
     }
 
-if (g_xx) DEBUG("@@xml@@line="line);
 
     for(i = 2 ; i <= tag_data_count ; i++ ) {
 
-if (g_xx) DEBUG("@@xml@@start loop  currentTag is = ["currentTag"]");
 
         # lines[i] = tag>text
         # lines[i] = tag attr >text
@@ -4118,23 +4115,13 @@ if (g_xx) DEBUG("@@xml@@start loop  currentTag is = ["currentTag"]");
         if (slash == 1 )  {
 
             # end tag
-            # prevTag only tracks the last tag added so we can only use it once to go back
-            # A fuller implementation could maintain a tag stack to avoid the overhead of the
-            # substr() but this is probably not where the bottleneck is for this function?
 
             currentTag = substr(currentTag,1,length(currentTag)-length(tag));
 
-if (g_xx) DEBUG("@@xml@@end tag =["tag "] currentTag now = ["currentTag"]");
-
-
         } else if (slash == 0 ) {
-
-#ALL#            prevTag=currentTag;
-if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag was = ["currentTag"]");
 
              currentTag = currentTag "/" tag;
 
-if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]");
 
              #If merging element values add a sepearator
             if (currentTag in info) {
@@ -4143,14 +4130,11 @@ if (g_xx) DEBUG("@@xml@@start tag =["tag "] currentTag now = ["currentTag"]");
 
         } else {
 
-if (g_xx) DEBUG("@@xml@@ignore tag ="tag);
             # ignore <aaa/>
         }
 
         if (text) {
-if (g_xx) DEBUG("@@xml@@ignorePaths=["ignorePaths"] currentTag ["currentTag"]");
             if (ignorePaths == "" || currentTag !~ ignorePaths) {
-if (g_xx) DEBUG("@@xml@@adding");
                 info[currentTag] = info[currentTag] text;
             }
         }
@@ -4158,10 +4142,8 @@ if (g_xx) DEBUG("@@xml@@adding");
         #parse attributes.
         
         if (slash == 0 && index(parts[1],"=")) {
-            if (g_xx) DEBUG("Parsing attributes on " parts[1]);
             get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs);
             for(attr in attr_pairs) {
-                if (g_xx) DEBUG("Attr ["attr"]");
                 eq=index(attr,"=");
                 a_name=substr(attr,1,eq-1);
                 a_val=substr(attr,eq+1);
@@ -4170,17 +4152,13 @@ if (g_xx) DEBUG("@@xml@@adding");
                     sub(/"$/,"",a_val);
                 }
                 info[currentTag"#"a_name]=a_val;
-                if (g_xx) DEBUG("Parse Attr ["currentTag"#"a_name"]=["info[currentTag"#"a_name]"]");
             }
 
         }
 
-if (g_xx) DEBUG("@@xml@@end loop  currentTag is = ["currentTag"]");
     }
-if (g_xx) DEBUG("@@xml@@exit currentTag is = ["currentTag"]");
 
     info["@CURRENT"] = currentTag;
-if (g_xx) dump(0,"@@xml@@INFO",info);
 }
 
 # Return 3 if a possible Title is a very good match for titleIn
@@ -4188,7 +4166,7 @@ if (g_xx) dump(0,"@@xml@@INFO",info);
 # Return 1 if it is an initial or abbreviated type of match.
 # else return 0
 function similarTitles(titleIn,possible_title,\
-bPos,cPos,yearOrCountry,matchLevel,diff,shortName) {
+cPos,yearOrCountry,matchLevel,diff,shortName) {
 
     matchLevel = 0;
     yearOrCountry="";
@@ -4912,21 +4890,23 @@ function set_eptitle(idx,title) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
+seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
     pi="TVRAGE";
     result = 0;
     delete filter;
 
-    if (index(tvDbSeriesUrl,"1817XX")) g_xx = 1;
     ignore="/Show/Episodelist";
     if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
         dump(0,"tvrage series",seriesInfo);
         adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
+
+
         url=urladd(seriesInfo["/Show/showlink"],"remove_add=1&bremove_add=1");
         g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1);
+
         g_tvid_plugin[idx]="TVRAGE";
         g_tvid[idx]=seriesInfo["/Show/showid"];
         result ++;
@@ -4935,7 +4915,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
         if(g_imdb[idx] == "") {
             url = scanPageForMatch(url,"/links/",g_nonquote_regex"+/links/",1);
             if (url != "" ) {
-                url = scanPageForMatch("http://www.tvrage.com"url,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
+                url = scanPageForMatch(g_tvrage_web url,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
                 if (url != "" ) {
                     g_imdb[idx] = scanPageForMatch(url,"tt",g_imdb_regex,1);
                 }
@@ -4946,24 +4926,25 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
         e="/Show/Episodelist/Season/episode";
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
             if (get_episode_xml(pi,tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
-                #DEBUG("tmp=["tmp"]"(tmp?1:0));
-                #DEBUG("tmp=0["(tmp==0)"]");
-                #DEBUG("tmp=\"0\"["(tmp=="0")"]");
-                #DEBUG("tmp!=0["(tmp!=0)"]");
-                #DEBUG("tmp!=\"0\"["(tmp!="0")"]");
-                #DEBUG("tmp len["length(tmp)"]");
-                #DEBUG("tmp idx0["index("0",tmp)"]");
-                #DEBUG("tmp idx0["index(tmp,"0")"]");
-                #DEBUG("tmp+0=["tmp+0"]"((tmp+0)?1:0));
 
                 set_eptitle(idx,episodeInfo[e"/title"]);
 
                 gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
-                url=urladd(episodeInfo[e"/link"],"remove_add=1&bremove_add=1");
+                url=seriesInfo["/Show/showlink"] "/printable?nocrew=1&season=" g_season[idx];
+                #OLDWAY#url=urladd(episodeInfo[e"/link"],"remove_add=1&bremove_add=1");
 
                 if (g_epplot[idx] == "" ) {
                     #p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);
-                    p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"^<br>$|<a href",1,0);
+
+
+                    flag=sprintf(":%02dx%02d",g_season[idx],g_episode[idx]);
+                    p = scrape_one_item("tvrage_epplot", url, flag",<p>", 1, "</div>", 0, 1);
+
+
+                    #OLDWAY#p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"^<br>$|<a href",1,0);
+
+
+
                     sub(/ *There are no foreign summaries.*/,"",p);
                     if (p != "" && index(p,"There is no summary") == 0) {
                         g_epplot[idx] = p;
@@ -4979,7 +4960,6 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore) {
     } else {
         WARNING("Error getting series xml");
     }
-    g_xx = 0;
 
     return 0+ result;
 }
@@ -6043,7 +6023,7 @@ count,fcount,i,parts,start) {
 }
 
 function scrapeIMDBLine(line,imdbContentPosition,idx,f,\
-title,y,poster_imdb_url) {
+title,poster_imdb_url) {
 
     if (imdbContentPosition == "footer" ) {
         return imdbContentPosition;
@@ -6260,14 +6240,30 @@ l,cert,c) {
 }
 
 
+
+# start_text = csv list of tokens to be matched in sequence before we extract the item
+# start_include = include line that matched the last start token if true
+# end_text = last line of the extracted item
+# end_include = include line that matched the end_text if true
+# cache = store in cache
 function scrape_one_item(label,url,start_text,start_include,end_text,end_include,cache,\
-f,line,out,found) {
+f,line,out,found,tokens,token_count,token_i) {
     #DEBUG("scrape_one_item "label" start at ["start_text"]");
     f=getUrl(url,label,cache);
+
+    token_count = split(start_text,tokens,",");
     if (f) {
+        token_i = 1;
         while((getline line < f) > 0 ) {
-            if (match(line,start_text)) {
-                #DEBUG("trip line "line);
+            # eat up start tokens
+            if (token_i - token_count <= 0 ) {
+                if (match(line,tokens[token_i])) {
+                    INF("matched token ["tokens[token_i]"]");
+                    token_i++;
+                }
+            }
+            if (token_i - token_count > 0 ) {
+                # Now parse the item we want
                 out = scrape_until(label,f,end_text,end_include);
                 if (start_include) {
                     #DEBUG("scrape_one_item line = "line);

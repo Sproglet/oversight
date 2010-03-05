@@ -11,3 +11,5 @@ Then using the CSI installer (http://www.nmtinstaller.com) - select 'File->Insta
 
 
 For even earlier versions go to  http://code.google.com/p/nmt-mini-installer/source/browse/#svn/downloads/oversight select the version you want and then 'view raw file' and save.
+
+Note the last stable version r571 does not work with IMDB. To re-install this so that it works correctly follow the steps [http://www.networkedmediatank.com/showthread.php?tid=17637&pid=347577#pid347577 here]

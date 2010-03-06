@@ -1,4 +1,4 @@
-ispal value not correct for c200 via browser
+investigate iso deletions.
 
 check issues 93 against 1408.avi 
 check issue 86 hyphen search

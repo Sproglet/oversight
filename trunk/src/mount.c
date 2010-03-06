@@ -176,6 +176,26 @@ TRACE;
     return result;
 }
 
+int cidr(char *mask) {
+    unsigned int bytes[4];
+    sscanf(mask,"%u.%u.%u.%u",bytes,bytes+1,bytes+2,bytes+3);
+    int c = 0;
+    int i = 0;
+    for (i = 0 ; i < 4 ; i++ ) {
+        switch(bytes[i]) {
+            case 255: c += 8 ; break;
+            case 254: c += 7 ; break;
+            case 252: c += 6 ; break;
+            case 248: c += 5 ; break;
+            case 240: c += 4 ; break;
+            case 224: c += 3 ; break;
+            case 192: c += 2 ; break;
+            case 128: c += 1 ; break;
+        }
+    }
+    return c;
+}
+
 // input host based link
 // output ip based link
 char *wins_resolve(char *link) {
@@ -192,7 +212,10 @@ char *wins_resolve(char *link) {
     }
     if (!updated_wins_file && !exists(nbtscan_outfile)) {
         char *cmd;
-        ovs_asprintf(&cmd,"nbtscan %s/24 > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",setting_val("eth_gateway"),appDir(),appDir());
+        ovs_asprintf(&cmd,"nbtscan %s/%d > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",
+                setting_val("eth_gateway"),
+                cidr(setting_val("eth_netmask")),
+                appDir(),appDir());
         system(cmd);
         updated_wins_file=1;
     }
@@ -208,11 +231,23 @@ char *wins_resolve(char *link) {
         char buf[WINS_BUFSIZE];
         while(fgets(buf,WINS_BUFSIZE,fp)) {
             HTML_LOG(0,"Check wins %s",buf);
-            char *p;
+            char *p=NULL;
+
+#define IGNORE_WORKGROUP 1
+#ifdef IGNORE_WORKGROUP
+            // Ignore the workgroup
+            p = strchr(buf,'\\');
+            if (p != NULL) {
+                p++;
+            }
+#else
             // Look for host in output of nbtscan (which is run by the catalog process)
             // 1.1.1.1<space>WORKGROUP\host<space>
             if ((p=delimited_substring(buf," ",workgroup,"\\",0,0)) != NULL) {
                 p += 1+strlen(workgroup);
+            }
+#endif
+            if (p) {
                 if (util_starts_with(p,host) && p[strlen(host)] == ' ' ) {
                     // found it - get ip address from the start.
                     char *sp = strchr(buf,' ');

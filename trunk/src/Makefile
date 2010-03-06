@@ -1,7 +1,7 @@
 CC=gcc
 
 
-ARCH=100
+ARCH=200
 VERFILE=verfile
 
 REV='"`cat verfile`"'
@@ -41,7 +41,7 @@ CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 OBJS=gaya.o macro.o \
 	 oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
 	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o \
-	admin.o mount.o time.o network.o dbplot.o permissions.o 
+	admin.o mount.o time.o network.o dbplot.o permissions.o subtitles.o
 
 SRC=$(OBJS:.o=.c)
 

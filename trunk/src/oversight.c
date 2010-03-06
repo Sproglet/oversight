@@ -20,6 +20,7 @@
 #include "admin.h"
 #include "permissions.h"
 #include "gaya.h"
+#include "subtitles.h"
 
 
 //void exec_old_cgi(int argc,char **argv);
@@ -432,6 +433,10 @@ int main(int argc,char **argv)
             // Passthru to wget.real
 
         }
+    } else if ( argc > 1 && strcmp(argv[1],"-subtitle") == 0 ) {
+
+        ret = subtitle_main(argc,argv);
+
     } else {
         // start oversight normally (original cgi entry point)
         ret = oversight_main(argc,argv,1);

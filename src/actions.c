@@ -118,7 +118,7 @@ void delete_media(DbRowId *rid,int delete_related) {
     char *dir = util_dirname(rid->file);
 
     HTML_LOG(1,"%s %d begin delete_media",__FILE__,__LINE__);
-    if(is_dvd(rid->file)) {
+    if(is_dvd_folder(rid->file)) {
         // VIDEO_TS
         if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
             HTML_LOG(0,"folder doesnt look like dvd floder");

@@ -950,18 +950,23 @@ char *clean_js_string(char *in)
     }
     return out;
 }
-int is_dvd(char *file)
+int is_dvd_image(char *file)
 {
     char *p = file + strlen(file);
 
-    if (p[-1] == '/' || strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0) {
+    return (strcasecmp(p-4,".iso")==0 || strcasecmp(p-4,".img") == 0);
+}
 
-        return 1;
+int is_dvd_folder(char *file)
+{
+    char *p = file + strlen(file);
 
-    } else {
-            
-        return 0;
-    }
+    return (p[-1] == '/' );
+}
+
+int is_dvd(char *file)
+{
+    return (is_dvd_image(file) || is_dvd_folder(file)) ;
 }
 
 char *timestamp_static()

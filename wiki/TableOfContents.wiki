@@ -7,7 +7,7 @@ Everyone
   * FileNames
   * [NZBGetIntegrationAndRenaming]
   * SendingLogReports
-  * NASTimeouts
+  * [NASTimeouts]
   * PruningFiles
   * KnownIssues
   * FullScans

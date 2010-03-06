@@ -4,6 +4,70 @@ It comes in the form of templates with macros to replace certain text within htm
 
 <wiki:toc max_depth="3" />
 
+==Modifying Skins==
+
+Oversight comes with two skins, both of which are immature at the moment.
+ 
+  * 'default' skin is used for admin pages and should not be touched.
+  * 'alt' skin is for menu and tv pages. *This will get overwritten by each upgrade.*
+
+*You can modify the alt skin but you changes will get wiped when upgrading.*
+
+Alternatively you can create a copy of the alt skin, and make you changes there.
+To do this simply copy the entire folder
+
+/share/Apps/oversight/templates/alt
+
+to a new folder .eg. to create a skin called 'myskin'
+
+/share/Apps/oversight/templates/*myskin*
+
+Then change the oversight skin setting ovs_skin_name in /share/Apps/oversight/conf/oversight.cfg from 'alt' to 'myskin'
+
+
+==Background Image==
+
+You can set you own background image for
+  * The main menu
+  * The TV and Movie pages
+
+===Main Menu Background===
+
+First it is important to understand that Oversight displays different image depending on the display device. This is due to Gaya browser limitations , and also to a PAL aspect ratio bug.
+
+So if you have SD devices , you will need to create an SD background image, wihch can just be a scaled down version of the HD image. Or you could use the HD image for SD and accept that it will be cropped when viewing on an SD screen.
+
+In the following example *skin_name* is replaced with the name if the skin you are modifying. You can modify the 'alt' skin directly, but if you want changes to be preserved during upgrades, then you should make a copy of the alt skin, and change that.
+
+
+To change the main menu background. First edit 
+/share/Apps/oversight/templates/*skin_name*/any/menu.template
+
+and change
+{{{
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background >
+}}}
+
+to
+{{{
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background background=[:IMAGE(black_desert.jpg):] >
+}}}
+
+Then check the main menu page displays the black_desert image, rather than a plain black screen.
+
+Now you can change the image. 
+
+Put a suitable background image in the following folder:
+
+||Screen Resolution||Folder || Recommended Size
+||SD||/share/Apps/oversight/templates/*skin_name*/sd||685x460
+||HD||/share/Apps/oversight/templates/*skin_name*/720||1280x720
+
+and change the template file (/share/Apps/oversight/templates/*skin_name*/any/menu.template) to reference your new file instead of 'black_desert'
+
+This may need a fix for C200 / 1080 mode.
+
+
 ==Macros==
 
 The template system is like the C-PreProcessor. It takes a file in, and replaces certain bits of it (MACROS), and spits out the results. Before rendering a html or css page, it is passed through the macro processor.

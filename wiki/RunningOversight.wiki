@@ -4,7 +4,7 @@
 
 = TV Interface =
 
-To view the Oversight Page on the TV - select the Web Services on the NMT Menu then select the TV option.
+To view the Oversight Page on the TV - select the Web Services on the NMT Menu then select "Overdight".
 
 = Browser Interface =
 

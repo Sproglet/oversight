@@ -54,7 +54,7 @@ catalog_ignore_paths="/share/~Other,*/Download"
 # *=anything,?=single char, <=start of word , >=end of word ,=OR
 catalog_ignore_names="*<samp>*,*<sample>*,divxfactory-*,nympho-*,fle-*,dfa-*,starlets-*,wde-*,swe6-*,ps-*,slieze-*,xcite-*,ichiban-*,motto-*"
 catalog_title_country_list="USA,UK"
-catalog_cert_country_list="UK,USA,Ireland"
+catalog_cert_country_list="gb,UK,us,USA,ie,Ireland"
 #This is how many imdb links required in google search results.
 catalog_imdb_links_required=4
 #This is how many repetitions of the title required in google search results.

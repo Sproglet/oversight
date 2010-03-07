@@ -204,20 +204,28 @@ char *wins_resolve(char *link) {
     static char *workgroup = NULL;
     static int updated_wins_file=0;
 
+    HTML_LOG(0,"wins_resolve[%s]",link);
     if (workgroup == NULL ) {
        workgroup = setting_val("workgroup");
     }
+    HTML_LOG(0,"wins_resolve workgroup[%s]",workgroup);
+
     if (nbtscan_outfile  == NULL ) {
         ovs_asprintf(&nbtscan_outfile,"%s/conf/wins.txt",appDir());
     }
-    if (!updated_wins_file && !exists(nbtscan_outfile)) {
+    HTML_LOG(0,"wins_resolve nbtscan_outfile[%s]",nbtscan_outfile);
+
+    if (!updated_wins_file && ( !exists(nbtscan_outfile) || file_age(nbtscan_outfile) > 3600 ) ) {
         char *cmd;
         ovs_asprintf(&cmd,"nbtscan %s/%d > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",
                 setting_val("eth_gateway"),
                 cidr(setting_val("eth_netmask")),
                 appDir(),appDir());
-        system(cmd);
-        updated_wins_file=1;
+        if (system(cmd) == 0) {
+            updated_wins_file=1;
+        } else {
+            HTML_LOG(0,"ERROR wins_resolve running [%s]",cmd);
+        }
     }
 
     char *host = link + 6;
@@ -512,9 +520,9 @@ int ping_link(char *link)
 TRACE;
 
     if (connect_millis == -1 ) {
-        connect_millis = 20;
+        connect_millis = 58;
         char *p = oversight_val("ovs_nas_timeout");
-        if ( util_strreg(p,"^[0-9]$",0) ) {
+        if ( util_strreg(p,"^[0-9]+$",0) ) {
             connect_millis = atol(p);
         }
     }

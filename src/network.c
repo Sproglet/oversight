@@ -183,6 +183,31 @@ int ping (char *host,long timeout_millis)
 
 #endif
 
+int routable(struct sockaddr *addr,int addrlen) {
+
+    int i;
+    static unsigned long net[3] =  { 0x0A000000 /*10. */ , 0xAC100000 /* 172.16*/ , 0xC0A80000 /* 192.168 */ };
+    static unsigned long mask[3] = { 0xFF000000          , 0xFFF00000             , 0xFFFF0000 };
+
+    struct sockaddr_in *in4 = (void *)addr;
+    if (in4->sin_family == AF_INET) {
+        struct in_addr *ia = &(in4->sin_addr);
+        unsigned long ip = ntohl(ia->s_addr);
+        for ( i = 0 ; i < 3 ; i++ ) {
+            if ( ( ip & mask[i] ) == net[i] ) {
+                HTML_LOG(0,"Address %lx matches non routable %lx",ia->s_addr,net[i]);
+                return 0;
+            }
+        }
+        HTML_LOG(0,"Address %lx did not match any - assume routable",ia->s_addr);
+        return 1;
+    } else {
+        HTML_LOG(0,"Not ip4 assume non routable for now");
+        return 0;
+    }
+
+}
+
 // connect to a port and disconnect
 // 0 = success
 int connect_service(char *host,long timeout_millis,int port)
@@ -205,7 +230,11 @@ int connect_service(char *host,long timeout_millis,int port)
 	if (ai == NULL)
 		return -2;
 
-
+    // Open DNS map all unknown host lookups to an OpenDNS
+    // ip address. We have to trap these bogus lookups. No such thing as a free lunch !!
+    if (routable(ai->ai_addr,ai->ai_addrlen)) {
+        return -2;
+    }
 
     // The socket
     //

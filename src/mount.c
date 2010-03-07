@@ -215,7 +215,7 @@ char *wins_resolve(char *link) {
     }
     HTML_LOG(0,"wins_resolve nbtscan_outfile[%s]",nbtscan_outfile);
 
-    if (!updated_wins_file && ( !exists(nbtscan_outfile) || file_age(nbtscan_outfile) > 3600 ) ) {
+    if (!updated_wins_file && ( !exists(nbtscan_outfile) || file_age(nbtscan_outfile) > 60*60*24 ) ) {
         char *cmd;
         ovs_asprintf(&cmd,"nbtscan %s/%d > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",
                 setting_val("eth_gateway"),

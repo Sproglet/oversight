@@ -7198,8 +7198,12 @@ function load_catalog_settings() {
     gsub(/,/,"|",g_settings["catalog_ignore_paths"]);
     gsub(/,/,"|",g_settings["catalog_ignore_names"]);
 
-    g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"]);
     g_settings["catalog_ignore_names"]="^"glob2re(g_settings["catalog_ignore_names"])"$";
+
+    g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"]);
+    if (g_settings["catalog_ignore_paths"] == "^" ) {
+        g_settings["catalog_ignore_paths"] = "^$"; #regex will only match empty path
+    }
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));
 

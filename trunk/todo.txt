@@ -1,5 +1,7 @@
 # box set view - main menus need to be removed - or they need to strip idlist.
+check re-install button
 checking planet earth
+e10 in NAS list
 
 GENRE ERROR!!!!!!
 

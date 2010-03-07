@@ -231,7 +231,7 @@ struct hashtable *config_load_fp(FILE *fp) {
 
                     if (key && val && key_end > key ) {
                         *key_end = *val_end = '\0';
-                        HTML_LOG(1,"setting [%s]=[%s]",key,val);
+                        //HTML_LOG(1,"setting [%s]=[%s]",key,val);
                         hashtable_insert(result,STRDUP(key),STRDUP(val));
                     }
                 }

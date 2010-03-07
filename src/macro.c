@@ -434,10 +434,11 @@ char *macro_fn_genre_select(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_genre(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    char *genre = "?";
-    *free_result=1;
+    char *genre = "";
+    *free_result=0;
 
     if (num_rows && sorted_rows && sorted_rows[0]->genre ) {
+        *free_result=1;
         genre =expand_genre(sorted_rows[0]->genre);
     }
 

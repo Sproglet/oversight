@@ -206,7 +206,7 @@ struct hashtable *config_load_fp(FILE *fp) {
                 p++;
                 while(isspace(*p)) p++;
                 val = p;
-                if (strchr("\"'",*val) ) {
+                if (*val && strchr("\"'",*val) ) {
                     //parse quoted value
                     p++;
                     while (*p && *p != *val) p++;
@@ -231,6 +231,7 @@ struct hashtable *config_load_fp(FILE *fp) {
 
                     if (key && val && key_end > key ) {
                         *key_end = *val_end = '\0';
+                        HTML_LOG(1,"setting [%s]=[%s]",key,val);
                         hashtable_insert(result,STRDUP(key),STRDUP(val));
                     }
                 }

@@ -1177,7 +1177,8 @@ TRACE;
         char *settingname,*name;
         struct hashtable_itr *itr;
         for (itr=hashtable_loop_init(g_nmt_settings) ; hashtable_loop_more(itr,&settingname,&name) ; ) {
-            if (util_starts_with(settingname,"servname") && settingname[9] == '\0' ) {
+
+            if (util_starts_with(settingname,"servname") ) {
 
                 char *path=NULL;
                 HTML_LOG(0,"crossview looking at %s=[%s]",settingname,name);

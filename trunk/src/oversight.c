@@ -433,9 +433,11 @@ int main(int argc,char **argv)
             // Passthru to wget.real
 
         }
+#if 0
     } else if ( argc > 1 && strcmp(argv[1],"-subtitle") == 0 ) {
 
         ret = subtitle_main(argc,argv);
+#endif
 
     } else {
         // start oversight normally (original cgi entry point)

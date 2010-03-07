@@ -969,6 +969,18 @@ int is_dvd(char *file)
     return (is_dvd_image(file) || is_dvd_folder(file)) ;
 }
 
+// Return age of file in seconds. -1 = doesnt exist or error
+int file_age(char *path)
+{
+    struct stat s;
+    if (stat(path,&s) == 0) {
+        return time(NULL) - s.st_mtime;
+    } else {
+        return -1;
+    }
+}
+
+
 char *timestamp_static()
 {
 #define DATE_BUF_SIZ 40

@@ -108,6 +108,7 @@ char *clean_js_string(char *in);
 int is_dvd(char *file);
 int is_dvd_image(char *file);
 int is_dvd_folder(char *file);
+int file_age(char *path);
 
 char *timestamp_static();
 char *util_change_extension(char *file,char *new_ext);

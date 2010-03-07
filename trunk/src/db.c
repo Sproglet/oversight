@@ -1178,7 +1178,7 @@ TRACE;
         struct hashtable_itr *itr;
         for (itr=hashtable_loop_init(g_nmt_settings) ; hashtable_loop_more(itr,&settingname,&name) ; ) {
 
-            if (util_starts_with(settingname,"servname") ) {
+            if (util_starts_with(settingname,"servname") && name && *name ) {
 
                 char *path=NULL;
                 HTML_LOG(0,"crossview looking at %s=[%s]",settingname,name);
@@ -1615,8 +1615,13 @@ char *translate_genre(char *genre_keys,int expand)
         }
         //array_dump(0,"genres",genres);
     }
+    HTML_LOG(0,"translate genre ");
+    HTML_LOG(0,"translate genre [%s]",genre_keys);
+
     char *out = genre_keys;
-    if (genres) {
+    if (out == NULL) {
+        out = STRDUP("");
+    } else if (genres) {
         int i;
         for(i = 0 ; i < genres->size ; i += 2 ) {
 

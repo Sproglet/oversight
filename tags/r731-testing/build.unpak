@@ -1,0 +1,6 @@
+FILES="catalog.sh unpak.sh conf/unpak.cfg.example conf/catalog.cfg.example conf/.unpak.cfg.defaults conf/.catalog.cfg.defaults bin/nmt100 bin/nmt200 bin/jpg_fetch_and_scale"
+#!/bin/sh -x
+./squeeze
+chmod 775 *cgi *.sh
+../nmt-scripts/build unpak "$@" $FILES
+#./bundle.unpak

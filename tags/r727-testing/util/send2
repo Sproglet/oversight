@@ -1,0 +1,7 @@
+d=`pwd`
+d=`echo "$d" | sed 's;.*/oversight/;/oversight/;'`
+for i in "$@" ; do
+    dest=/cygdrive/a/Apps/$d/$i
+    mkdir -p `dirname "$dest"`
+    cp -v "$i" "$dest"
+done

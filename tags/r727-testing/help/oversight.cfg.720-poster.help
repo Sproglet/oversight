@@ -1,0 +1,5 @@
+ovs_poster_mode[720]:Display posters on main screen (720)|0|1
+ovs_poster_mode_rows[720]:Number of poster rows on front page
+ovs_poster_mode_cols[720]:Number of columns on front page
+ovs_poster_mode_height[720]:Height of poster. 0=automatic value .
+ovs_poster_mode_width[720]:Width of poster. 0=automatic value.

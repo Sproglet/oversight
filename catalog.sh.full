@@ -6971,7 +6971,9 @@ function short_genre(g,\
 i,gnames,gcount) {
     gcount = split(g_settings["catalog_genre"],gnames,",");
     for(i = 1 ; i <= gcount ; i += 2) {
-        if (index(g,gnames[i])) sub(gnames[i],gnames[i+1],g); 
+        if (match(g,"\\<"gnames[i]"\\>")) {
+           g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
+       }
     }
     gsub(/[^-A-Za-z]+/,"|",g);
     return g;

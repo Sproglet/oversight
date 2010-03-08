@@ -1,6 +1,32 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+r734-testing
+
+  *  Installer uses /proc/cpuinfo to determine platform (gave up on egreat version numbering)
+
+r727-testing
+
+  * Fixed parsing of NAS timeout
+  * changes for new IMDB certificate links.
+  * Fixed delete image option.
+  * Share Host ip lookup ignores routable ips (to ignore OpenDNS fake ip response)
+  * nbtscan updates stale conf/wins.txt (rather than waiting for catalog script)
+  * Fix Egreat M32 and Kaiber install - Firmware class -405 (B110 board) added to installer.
+  * Dont ignore all paths if ignore path setting is blank.
+  * Fixed parsing of empty settings.
+  * Fixed malloc error with empty Genre.
+
+r707-testing
+
+  * Fix to C200 1080p mode.
+  * Unpak status fix (revisited)
+  * IE drilldown fix (IE CSS bug. surprise)
+  * Fix to Crossview Delete function.
+
+r698-testing
+
+
 20090903-1BETA
 
   * Filter by Genre

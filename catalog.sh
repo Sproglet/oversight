@@ -130,7 +130,7 @@ if [ -d "$APPDIR/bin" ] ; then
 export PATH="$APPDIR/bin:$PATH"
 
 case "$nmt_version" in
-*-40[23]) export PATH="$APPDIR/bin/nmt100:$PATH" ;;
+*-40[235]) export PATH="$APPDIR/bin/nmt100:$PATH" ;;
 *-4*) export PATH="$APPDIR/bin/nmt200:$PATH" ;;
 esac
 fi
@@ -172,6 +172,7 @@ touch "$PLOT_DB"
 PERMS "$PLOT_DB"
 fi
 
+COUNTRY_FILE="$APPDIR/conf/country.txt"
 CONF_FILE="$APPDIR/conf/catalog.cfg"
 DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
 
@@ -346,7 +347,7 @@ DEBUG("TODO:"x)
 
 
 
-function load_settings(file_name,\
+function load_settings(prefix,file_name,\
 i,n,v,option) {
 
 INF("load "file_name)
@@ -365,7 +366,7 @@ option=trim(option)
 sub("=["g_quote2"]","=",option)
 sub("["g_quote2"]$","",option)
 if (match(option,"^[A-Za-z0-9_]+=")) {
-n=substr(option,1,RLENGTH-1)
+n=prefix substr(option,1,RLENGTH-1)
 v=substr(option,RLENGTH+1)
 
 
@@ -415,6 +416,7 @@ return best_url
 
 
 BEGIN {
+g_country_prefix="country_"
 g_indent=""
 g_sigma="Σ"
 g_start_time = systime()
@@ -736,6 +738,11 @@ ACTION_DELETE_ALL="D"
 g_settings["catalog_format_tags"]="\\<("tolower(g_settings["catalog_format_tags"])")"
 
 gsub(/ /,"%20",g_settings["catalog_cert_country_list"])
+
+gsub(/\<UK\>/,"UK,gb",g_settings["catalog_cert_country_list"])
+gsub(/\<USA\>/,"USA,us",g_settings["catalog_cert_country_list"])
+gsub(/\<Ireland\>/,"Ireland,ie",g_settings["catalog_cert_country_list"])
+
 split(g_settings["catalog_cert_country_list"],gCertificateCountries,",")
 
 gExtList1="avi|divx|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv"
@@ -839,7 +846,7 @@ if (hash_size(FOLDER_ARR)) {
 gMovieFileCount = 0
 gMaxDatabaseId = 0
 
-load_settings("'$UNPAK_CFG'")
+load_settings("","'$UNPAK_CFG'")
 unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"]
 
 g_tk = apply(g_tk)
@@ -1817,6 +1824,10 @@ while(imdbContentPosition != "footer" && (getline line < f) > 0  ) {
 imdbContentPosition=scrapeIMDBLine(line,imdbContentPosition,idx,f)
 }
 close(f)
+
+if (g_settings[g_country_prefix gCertCountry[idx]] != "") {
+gCertCountry[idx] = g_settings[g_country_prefix gCertCountry[idx]]
+}
 
 }
 
@@ -6211,15 +6222,28 @@ return
 }
 
 function scrapeIMDBCertificate(idx,line,\
-l,cert,c) {
-if ( match(line,"List[?]certificates=[^&]+")) {
+l,certs,certpos,cert,c,total,i,flag) {
+
+INF("getting cert_list")
+
+flag="certificates="
 
 
+total = get_regex_pos(line, flag"[^&\"]+",0,cert_list,certpos)
 
-l=substr(line,RSTART,RLENGTH)
-l=substr(l,index(l,"=")+1)
-split(l,cert,":")
+INF("got "total" cert_list from "line)
 
+dump(0,"cert_list",cert_list)
+
+for(i = 1 ; i - total <= 0 ; i++ ){
+
+INF("got cert ["cert_list[i]"]")
+
+l = substr(cert_list[i],index(cert_list[i],flag)+length(flag))
+
+split(l,cert,"[:|]")
+
+INF("got cert "cert[1]" == "cert[2])
 
 
 for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
@@ -6227,10 +6251,12 @@ if (gCertCountry[idx] == gCertificateCountries[c]) {
 
 return
 }
+INF("read config country "gCertificateCountries[c])
 if (cert[1] == gCertificateCountries[c]) {
 
 gCertCountry[idx] = cert[1]
-gCertRating[idx] = cert[2]
+
+gCertRating[idx] = toupper(cert[2])
 gsub(/%20/," ",gCertRating[idx])
 DEBUG("IMDB: set certificate ["gCertCountry[idx]"]["gCertRating[idx]"]")
 return
@@ -7191,15 +7217,21 @@ return folderCount
 
 function load_catalog_settings() {
 
-load_settings(DEFAULTS_FILE)
-load_settings(CONF_FILE)
+load_settings("",DEFAULTS_FILE)
+load_settings("",CONF_FILE)
+
+load_settings(g_country_prefix , COUNTRY_FILE)
 
 gsub(/,/,"|",g_settings["catalog_format_tags"])
 gsub(/,/,"|",g_settings["catalog_ignore_paths"])
 gsub(/,/,"|",g_settings["catalog_ignore_names"])
 
-g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"])
 g_settings["catalog_ignore_names"]="^"glob2re(g_settings["catalog_ignore_names"])"$"
+
+g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"])
+if (g_settings["catalog_ignore_paths"] == "^" ) {
+g_settings["catalog_ignore_paths"] = "^$"
+}
 
 
 
@@ -7250,6 +7282,7 @@ DAY=`date +%a.%P` \
 "LS=$LS" \
 "APPDIR=$APPDIR" \
 "CONF_FILE=$CONF_FILE" \
+"COUNTRY_FILE=$COUNTRY_FILE" \
 "DEFAULTS_FILE=$DEFAULTS_FILE" \
 tmp_dir="$tmp_dir" \
 "INDEX_DB=$INDEX_DB" "$@"

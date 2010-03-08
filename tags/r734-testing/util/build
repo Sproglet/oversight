@@ -1,0 +1,30 @@
+#!/bin/sh -e
+# usage from folder above
+
+# ./util/build 
+# ./util/build -label eg -stable
+
+echo r`./util/svnv oversight 1` > src/verfile
+
+v="`cat src/verfile`"
+echo ======= $v ==========
+
+./util/squeeze
+chmod 775 *cgi *.sh
+
+label="$v$@"
+
+( cd src && make ARCH=100 clean all && make ARCH=200 clean all )
+
+../nmt-scripts/build `basename "$PWD"` "$label" oversight.cgi \
+*.sh *.cgi *.full conf/*.example conf/.*defaults conf/use.wget.wrapper images imdb/imdb.sh imdb/download/.keep templates help/*.help db \
+	logs/.keep tmp/.keep *.html bin cache/.keep
+
+echo "Do svn commit and tag - ctrl -c to stop"
+
+read x
+
+svn commit -m "release $label"
+
+svn copy https://oversight.googlecode.com/svn/trunk/  "https://oversight.googlecode.com/svn/tags/$label" -m "$label"
+#./bundle.unpak

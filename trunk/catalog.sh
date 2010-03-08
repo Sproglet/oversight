@@ -129,9 +129,9 @@ if [ -d "$APPDIR/bin" ] ; then
 
 export PATH="$APPDIR/bin:$PATH"
 
-case "$nmt_version" in
-*-40[235]) export PATH="$APPDIR/bin/nmt100:$PATH" ;;
-*-4*) export PATH="$APPDIR/bin/nmt200:$PATH" ;;
+case "`uname -r`" in
+2.6.15-sigma) export PATH="$APPDIR/bin/nmt100:$PATH" ;;
+*) export PATH="$APPDIR/bin/nmt200:$PATH" ;;
 esac
 fi
 

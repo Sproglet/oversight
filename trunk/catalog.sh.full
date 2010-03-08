@@ -172,6 +172,7 @@ if [ ! -s "$PLOT_DB" ] ; then
     PERMS "$PLOT_DB"
 fi
 
+COUNTRY_FILE="$APPDIR/conf/country.txt"
 CONF_FILE="$APPDIR/conf/catalog.cfg"
 DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
 
@@ -346,7 +347,7 @@ function TODO(x) {
 
 
 # Load configuration file
-function load_settings(file_name,\
+function load_settings(prefix,file_name,\
 i,n,v,option) {
 
     INF("load "file_name);
@@ -365,7 +366,7 @@ i,n,v,option) {
         sub("=["g_quote2"]","=",option);
         sub("["g_quote2"]$","",option);
         if (match(option,"^[A-Za-z0-9_]+=")) {
-            n=substr(option,1,RLENGTH-1);
+            n=prefix substr(option,1,RLENGTH-1);
             v=substr(option,RLENGTH+1);
             #gsub(/ *[,] */,",",v);
 
@@ -415,6 +416,7 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_country_prefix="country_";
     g_indent="";
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();
@@ -736,6 +738,11 @@ END{
     g_settings["catalog_format_tags"]="\\<("tolower(g_settings["catalog_format_tags"])")";
 
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
+
+    gsub(/\<UK\>/,"UK,gb",g_settings["catalog_cert_country_list"]);
+    gsub(/\<USA\>/,"USA,us",g_settings["catalog_cert_country_list"]);
+    gsub(/\<Ireland\>/,"Ireland,ie",g_settings["catalog_cert_country_list"]);
+
     split(g_settings["catalog_cert_country_list"],gCertificateCountries,",");
 
     gExtList1="avi|divx|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
@@ -839,7 +846,7 @@ END{
         gMovieFileCount = 0;
         gMaxDatabaseId = 0;
         
-        load_settings("'$UNPAK_CFG'");
+        load_settings("","'$UNPAK_CFG'");
         unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"];
 
         g_tk = apply(g_tk);
@@ -1817,6 +1824,10 @@ f,line,imdbContentPosition) {
             imdbContentPosition=scrapeIMDBLine(line,imdbContentPosition,idx,f);
         }
         close(f);
+
+        if (g_settings[g_country_prefix gCertCountry[idx]] != "") {
+            gCertCountry[idx] = g_settings[g_country_prefix gCertCountry[idx]];
+        }
 
     }
 # Dont need premier anymore - this was for searching from imdb to tv database
@@ -6211,26 +6222,41 @@ l,akas,a,c,br) {
 }
 
 function scrapeIMDBCertificate(idx,line,\
-l,cert,c) {
-    if ( match(line,"List[?]certificates=[^&]+")) {
-        #<a href="/List?certificates=UK:15&&heading=14;UK:15">
-        #<a href="/List?certificates=USA:R&&heading=14;USA:R">
+l,certs,certpos,cert,c,total,i,flag) {
 
-        l=substr(line,RSTART,RLENGTH);
-        l=substr(l,index(l,"=")+1); # eg UK:15
-        split(l,cert,":");
-        #DEBUG("IMDB: found certificate ["cert[1]"]["cert[2]"]");
-        
+INF("getting cert_list");
+
+    flag="certificates=";
+
+    #Old style  -- <a href="/List?certificates=UK:15&&heading=14;UK:15">
+    total = get_regex_pos(line, flag"[^&\"]+",0,cert_list,certpos);
+
+INF("got "total" cert_list from "line);
+
+    dump(0,"cert_list",cert_list);
+
+    for(i = 1 ; i - total <= 0 ; i++ ){
+
+INF("got cert ["cert_list[i]"]");
+
+        l = substr(cert_list[i],index(cert_list[i],flag)+length(flag));
+
+        split(l,cert,"[:|]");
+
+INF("got cert "cert[1]" == "cert[2]);
+
         #Now we only want to assign the certificate if it is in our desired list of countries.
         for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
             if (gCertCountry[idx] == gCertificateCountries[c]) {
                 #Keep certificate as this country is early in the list.
                 return;
             }
+INF("read config country "gCertificateCountries[c]);
             if (cert[1] == gCertificateCountries[c]) {
                 #Update certificate
                 gCertCountry[idx] = cert[1];
-                gCertRating[idx] = cert[2];
+
+                gCertRating[idx] = toupper(cert[2]);
                 gsub(/%20/," ",gCertRating[idx]);
                 DEBUG("IMDB: set certificate ["gCertCountry[idx]"]["gCertRating[idx]"]");
                 return;
@@ -7191,8 +7217,10 @@ i,folderCount,moveDown) {
 
 function load_catalog_settings() {
 
-    load_settings(DEFAULTS_FILE);
-    load_settings(CONF_FILE);
+    load_settings("",DEFAULTS_FILE);
+    load_settings("",CONF_FILE);
+
+    load_settings(g_country_prefix , COUNTRY_FILE);
 
     gsub(/,/,"|",g_settings["catalog_format_tags"]);
     gsub(/,/,"|",g_settings["catalog_ignore_paths"]);
@@ -7254,6 +7282,7 @@ url) {
     "LS=$LS" \
     "APPDIR=$APPDIR" \
     "CONF_FILE=$CONF_FILE" \
+    "COUNTRY_FILE=$COUNTRY_FILE" \
     "DEFAULTS_FILE=$DEFAULTS_FILE" \
     tmp_dir="$tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"

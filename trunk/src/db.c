@@ -1615,8 +1615,6 @@ char *translate_genre(char *genre_keys,int expand)
         }
         //array_dump(0,"genres",genres);
     }
-    HTML_LOG(0,"translate genre ");
-    HTML_LOG(0,"translate genre [%s]",genre_keys);
 
     char *out = genre_keys;
     if (out == NULL) {
@@ -1653,7 +1651,7 @@ char *translate_genre(char *genre_keys,int expand)
     }
     if (out == genre_keys) out = STRDUP(out);
 
-    HTML_LOG(0,"genre[%s] is [%s]",genre_keys,out);
+    //HTML_LOG(0,"genre[%s] is [%s]",genre_keys,out);
     return out;
 }
 // * a | c = Action | Comedy

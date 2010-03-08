@@ -41,8 +41,8 @@ for d in /mnt/syb8634 /nmt/apps ; do
     fi
 done
 
-case "$nmt_version" in
-    *-40[0-7]) BINDIR=$APPDIR/bin/nmt100 ;;
+case "`uname -r`" in
+    2.6.15-sigma) BINDIR=$APPDIR/bin/nmt100 ;;
     *-4*) BINDIR=$APPDIR/bin/nmt200 ;;
 esac
 export PATH="$BINDIR:$PATH"

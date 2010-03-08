@@ -41,10 +41,12 @@ for d in /mnt/syb8634 /nmt/apps ; do
     fi
 done
 
-case "`uname -r`" in
-    2.6.15-sigma) BINDIR=$APPDIR/bin/nmt100 ;;
-    *-4*) BINDIR=$APPDIR/bin/nmt200 ;;
-esac
+if grep -q "MIPS 74K" /proc/cpuinfo ; then
+    BINDIR=$APPDIR/bin/nmt200
+else
+    BINDIR=$APPDIR/bin/nmt100
+fi
+
 export PATH="$BINDIR:$PATH"
 
 # -----------------------------------------------------

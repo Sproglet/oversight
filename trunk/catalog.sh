@@ -129,10 +129,11 @@ if [ -d "$APPDIR/bin" ] ; then
 
 export PATH="$APPDIR/bin:$PATH"
 
-case "`uname -r`" in
-2.6.15-sigma) export PATH="$APPDIR/bin/nmt100:$PATH" ;;
-*) export PATH="$APPDIR/bin/nmt200:$PATH" ;;
-esac
+if grep -q "MIPS 74K" /proc/cpuinfo ; then
+export PATH="$APPDIR/bin/nmt200:$PATH"
+else
+export PATH="$APPDIR/bin/nmt100:$PATH"
+fi
 fi
 
 

@@ -691,6 +691,7 @@ void set_title_as_folder(DbRowId *rowid)
 
 #define DB_NAME_BUF_SIZE 10
 #define DB_VAL_BUF_SIZE 4000
+#define ROW_SIZE 10000
 
 //changes here should be reflected in catalog.sh.full:createIndexRow()
 void write_row(FILE *fp,DbRowId *rid) {
@@ -736,6 +737,8 @@ void write_row(FILE *fp,DbRowId *rid) {
     fflush(fp);
 }
 
+#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
+
 // There are two functions to read the db - this one and parse_row()
 // They should be consolidated.
 // This one does a full table scan.
@@ -751,98 +754,96 @@ DbRowId *read_and_parse_row(
 
     db_rowid_init(rowid,db);
 
-    char name[DB_NAME_BUF_SIZE];
-    char *name_end = name+DB_NAME_BUF_SIZE;
 
-    char value[DB_VAL_BUF_SIZE];
-    char *value_end=value+DB_VAL_BUF_SIZE;
+    static char row[ROW_SIZE];
+    char *row_end = row+ROW_SIZE;
+    char * next;
 
-#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
+    char *name,*name_end;
+    char *value,*value_end;
 
-    register int next;
-
-    //initially point p at the value buffer.
-    //This initial value is discarded but it removes the need to 
-    //check for p != NULL for every character iteration
-    register char *p=NULL;
-    char *end=NULL;
-
+    *eof = 0;
     // Skip comment lines
-    while ( (next = getc(fp) ) == '#' ) {
-        if (fgets(value,DB_VAL_BUF_SIZE,fp) == NULL) break;
-    }
+    do {
+        if (fgets(row,ROW_SIZE,fp) == NULL) {
+            *eof = 1;
+            return NULL;
+        }
+    } while (row[0] == '#');
 
+    next = row;
     // search for first tab
-    while(TERM(next) && next != EOF && next != '\t' ) next = getc(fp);
+    while(*next && TERM(*next) && *next != '\t' ) next++;
 
-    if (next == '\t' ) {
+    if (*next == '\t' ) {
 
-        next = getc(fp);
+        next++;
 
-        if ( next == '_' ) {
+        if ( *next == '_' ) {
 
         // Loop starts at first character after _
             do {
 
-                p=name;
-                *p++ = '_';
-                end = name_end;
-                next = getc(fp);
-                while(!TERM(next)) {
-                    *p++ = next;
-                    next = getc(fp);
+                name = name_end =  next;
+                while(!TERM(*next)) {
+                    next ++;
                 }
-                *p = '\0';
-                assert(p < end);
-                //HTML_LOG(0,"parse name=[%s]",name);
+                name_end = next;
 
-                if (next == '\t') {
+                assert(next < row_end);
+                //HTML_LOG(0,"parse name=[%.*s]",name_end-name,name);
+
+                if (*next == '\t') {
                     // "<tab> Name <tab>" expect value
-                    *value = '\0';
-                    p=value;
-                    end = value_end;
-                    next = getc(fp);
+                    value = value_end = ++next;
 
                     for(;;) {
                         // Read until we hit a TERM
-                        while(!TERM(next) ) {
-                            *p++ = next;
-                            next = getc(fp);
+                        while(!TERM(*next) ) {
+                            next++;
                         }
+                        value_end = next;
                         // "<tab> Name <tab>" value ? expect value
                         //
                         // If Term is a tab and NOT followed by _ then keep it as part of the value.
                         // otherwise stop
-                        if (next != '\t' ) {
+                        if (*next != '\t' ) {
+                            // If term is not tab - end of line - break
+                            break;
+                        } else if ( next[1] == '_' ) {
+                            // <TAB>_ : break and read next name
+                            break;
+                        } else if ( TERM(next[1])) {
+                            // <TAB><TERM> break - EOL
                             break;
                         } else {
-                            // "<tab> Name <tab>" value <tab>  # check if tab followed by _
-                            next = getc(fp);
-                            if (next == EOF) {
-                                break;
-                            } else if (next == '_') {
-
-                                // break and read next name
-                                break;
-                            } else {
-                                *p++ = '\t';
-                                *p++ = next;
-                            }
+                            next++;
                         }
                     }
+                    //HTML_LOG(0,"parse value=[%.*s]",value_end-value,value);
 
-                    *p = '\0';
-                    assert(p < end);
-                    //HTML_LOG(0,"parse value=[%s]",value);
+
+                    assert(next < row_end);
                     if (*name && *value) {
-                        db_rowid_set_field(rowid,name,value,p-value,tv_or_movie_view);
+                        char ntmp,vtmp;
+                        ntmp = *name_end;
+                        vtmp = *value_end;
+                        *value_end = *name_end = '\0';
+                        db_rowid_set_field(rowid,name,value,value_end-value,tv_or_movie_view);
+                        *name_end = ntmp;
+                        *value_end = vtmp;
+
                     }
                 }
 
-            } while (next == '_');
+                // Seek to next name
+                while (*next != '_' && *next && TERM(*next) && next < row_end) {
+                    next++;
+                }
+
+            } while (*next == '_');
         }
     }
-    *eof = (next == EOF);
 
 //    if (rowid->genre == NULL) {
 //        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);

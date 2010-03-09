@@ -2672,6 +2672,7 @@ int delisted(DbRowId *rowid)
     char *path = get_path(rowid,rowid->file,&freepath);
     int result = 0;
     static int auto_prune=-2;
+
     if (auto_prune == -2) {
         auto_prune = *oversight_val("ovs_auto_prune") == '1';
         HTML_LOG(0,"auto delist = %d",auto_prune);

@@ -22,6 +22,11 @@ char *substring(char *s,int start_pos, int end_pos);
 char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts);
 char *replace_all_str(char *s_in,...);
 char *replace_str(char *s_in,char *match,char *replace);
+char *translate_inplace(
+        char *str, // input text
+        char *a,  // ordered list to translate characters from
+        char *b   // ordered list to translate characters to
+        );
 
 Array *regextract(char *s,char *pattern,int reg_opts);
 char *regextract1(char *s,char *pattern,int submatch,int reg_opts);

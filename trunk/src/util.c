@@ -969,6 +969,30 @@ int is_dvd(char *file)
     return (is_dvd_image(file) || is_dvd_folder(file)) ;
 }
 
+char *file_name(char *path)
+{
+    char *result;
+    if (path == NULL) {
+        result = STRDUP("");
+    } else {
+        char *p,*end;
+        end = p = path + strlen(path);
+        if (p > path) {
+            if (p[-1] == '/') {
+                end --;
+                p -= 2;
+            }
+            while(p >= path && *p != '/') {
+                p--;
+            }
+            p++;
+        }
+        ovs_asprintf(&result,"%.*s",end-p,p);
+    }
+    return result;
+}
+
+
 // Return age of file in seconds. -1 = doesnt exist or error
 int file_age(char *path)
 {

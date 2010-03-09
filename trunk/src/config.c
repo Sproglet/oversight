@@ -41,57 +41,30 @@ int browsing_from_lan() {
     return result;
 }
 
-long allow_mark() {
+static long allow_access(char *config_name) {
     static long result=-1;
     if (result == -1) {
         result=0;
         if (browsing_from_lan()) {
             result=1;
-        } else if (!config_check_long(g_oversight_config,"ovs_wan_mark",&result)) {
+        } else if (!config_check_long(g_oversight_config,config_name,&result)) {
             result=0;
         }
-        HTML_LOG(0,"allow mark = %d",result);
+        HTML_LOG(0,"allow %s = %d",config_name,result);
     }
     return result;
+}
+long allow_mark() {
+    return allow_access("ovs_wan_mark");
 }
 long allow_delete() {
-    static long result=-1;
-    if (result == -1) {
-        result=0;
-        if (browsing_from_lan()) {
-            result=1;
-        } else if (!config_check_long(g_oversight_config,"ovs_wan_delete",&result)) {
-            result=0;
-        }
-        HTML_LOG(0,"allow delete = %d",result);
-    }
-    return result;
+    return allow_access("ovs_wan_delete");
 }
 long allow_delist() {
-    static long result=-1;
-    if (result == -1) {
-        result=0;
-        if (browsing_from_lan()) {
-            result=1;
-        } else if (!config_check_long(g_oversight_config,"ovs_wan_delist",&result)) {
-            result=0;
-        }
-        HTML_LOG(1,"allow delist = %d",result);
-    }
-    return result;
+    return allow_access("ovs_wan_delist");
 }
 long allow_admin() {
-    static long result=-1;
-    if (result == -1) {
-        result=0;
-        if (browsing_from_lan()) {
-            result=1;
-        } else if (!config_check_long(g_oversight_config,"ovs_wan_admin",&result)) {
-            result=0;
-        }
-        HTML_LOG(1,"allow admin = %d",result);
-    }
-    return result;
+    return allow_access("ovs_wan_admin");
 }
 
 void config_write(struct hashtable *cfg,char *filename) {

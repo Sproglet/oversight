@@ -36,7 +36,7 @@ int has_post_data() {
     return (e && *e );
 }
 
-int is_checkbox(char *name,char *val) {
+static int is_checkbox(char *name,char *val) {
     if (val && STRCMP(val,"on") ==0) {
         if (util_starts_with(name,CHECKBOX_PREFIX)) {
             return 1;
@@ -51,7 +51,7 @@ int is_checkbox(char *name,char *val) {
     return 0;
 }
 
-void clear_selection() {
+static void clear_selection() {
 
 
     query_remove("help"); // settingscfg help file
@@ -78,7 +78,7 @@ void clear_selection() {
     array_free(a);
 }
 
-void gaya_send_link(char *arg) {
+static void gaya_send_link(char *arg) {
     //send this link to gaya with a single argment.
 //HTML_LOG(1,"dbg remove this arg=[%s]",arg);
     FILE *pip = fopen("/tmp/gaya_bc","w");
@@ -100,7 +100,7 @@ void gaya_send_link(char *arg) {
 }
 
 
-void delete_file(char *dir,char *name) {
+static void delete_file(char *dir,char *name) {
     char *path;
     ovs_asprintf(&path,"%s/%s",dir,name);
     HTML_LOG(0,"delete [%s]",path);
@@ -291,7 +291,7 @@ void delete_queue_delete() {
     }
 }
 
-void send_command(char *source,char *remote_cmd) {
+static void send_command(char *source,char *remote_cmd) {
     char *cmd;
     int freepath;
     char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh",&freepath);
@@ -307,7 +307,7 @@ void send_command(char *source,char *remote_cmd) {
     FREE(cmd);
 }
 
-void delete_config(char *name) {
+static void delete_config(char *name) {
     char *timestamp = timestamp_static();
     char *tmp,*tmp2;
     ovs_asprintf(&tmp,"%s/conf/%s",appDir(),name);
@@ -558,7 +558,7 @@ TRACE;
 // Collpase hash table with Key = source name value = "id1|id2|id3"
 // to a string with format val=src1(id|..)src2(id|..)
 // opposite function is idlist_to_idhash()
-char *idhash_to_idlist(struct hashtable *source_id_hash) {
+static char *idhash_to_idlist(struct hashtable *source_id_hash) {
     char *out = NULL;
     struct hashtable_itr *itr;
     char *name,*ids;

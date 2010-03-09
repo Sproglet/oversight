@@ -282,17 +282,6 @@ int connect_service(char *host,long timeout_millis,int port)
 	return ret;
 }
 
-int nfs_ping(char *host,long timeout_millis)
-{
-    // Just check the port mapper
-    return connect_service(host,timeout_millis,111);
-}
-
-int cifs_ping(char *host,long timeout_millis)
-{
-    return connect_service(host,timeout_millis,445);
-}
-
 long ping_timeout()
 {
     static long ping_millis = -1;

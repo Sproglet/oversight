@@ -1661,6 +1661,7 @@ void add_movie_part_row(Array *output,long fn_id,char *cell)
 
 char *movie_listing(DbRowId *rowid)
 {
+    static int show_names = 1;
 
     db_rowid_dump(rowid);
 
@@ -1686,10 +1687,15 @@ char *movie_listing(DbRowId *rowid)
         HTML_LOG(1,"parts ptr = %ld",parts);
 
         char *label;
-        if (parts && parts->size) {
-            label = STRDUP("part 1");
+
+        if (show_names) {
+            label = file_name(rowid->file);
         } else {
-            label = STRDUP("movie");
+            if (parts && parts->size) {
+                label = STRDUP("part 1");
+            } else {
+                label = STRDUP("movieX");
+            }
         }
 
         char *mouse=href_focus_event_fn(JS_MOVIE_INFO_FN_PREFIX,0,1);
@@ -1717,7 +1723,13 @@ char *movie_listing(DbRowId *rowid)
 
 HTML_LOG(0,"mouse[%s]",mouse);
                 char *label;
-                ovs_asprintf(&label,"part %d",i+2);
+
+
+                if (show_names) {
+                    ovs_asprintf(&label,parts->array[i]);
+                } else {
+                    ovs_asprintf(&label,"part %d",i+2);
+                }
                 char *vod = vod_link(rowid,label,"",rowid->db->source,parts->array[i],i_str,NVL(mouse),style);
                 FREE(label);
 

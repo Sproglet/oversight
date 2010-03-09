@@ -195,14 +195,14 @@ int routable(struct sockaddr *addr,int addrlen) {
         unsigned long ip = ntohl(ia->s_addr);
         for ( i = 0 ; i < 3 ; i++ ) {
             if ( ( ip & mask[i] ) == net[i] ) {
-                HTML_LOG(0,"Address %lx matches non routable %lx",ia->s_addr,net[i]);
+                HTML_LOG(1,"Address %lx matches non routable %lx",ia->s_addr,net[i]);
                 return 0;
             }
         }
         HTML_LOG(0,"Address %lx did not match any - assume routable",ia->s_addr);
         return 1;
     } else {
-        HTML_LOG(0,"Not ip4 assume non routable for now");
+        HTML_LOG(1,"Not ip4 assume non routable for now");
         return 0;
     }
 
@@ -213,12 +213,15 @@ int routable(struct sockaddr *addr,int addrlen) {
 int connect_service(char *host,long timeout_millis,int port)
 {
     int ret = -1;
+    
+    struct timeval t1,t2;
+    long elapsed=-1;
+
 	#define BUF_SIZE	1500
 	#define ICMP_REQUEST_DATA_LEN 56
     if (timeout_millis == 0) {
         timeout_millis = ping_timeout();
     }
-    HTML_LOG(0,"connect_service %s:%d within %ldms...",host,port,timeout_millis);
     long timeout_secs = timeout_millis / 1000;
     long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
 
@@ -227,59 +230,83 @@ int connect_service(char *host,long timeout_millis,int port)
 
     // The Address ai->ai_addr
 	struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP, 5);
-	if (ai == NULL)
-		return -2;
+	if (ai == NULL) {
+        HTML_LOG(0,"Unable to get remote address for [%s]",host);
+		ret = -2;
+    } else {
 
-    // Open DNS map all unknown host lookups to an OpenDNS
-    // ip address. We have to trap these bogus lookups. No such thing as a free lunch !!
-    if (routable(ai->ai_addr,ai->ai_addrlen)) {
-        return -2;
+        if (routable(ai->ai_addr,ai->ai_addrlen)) {
+
+            // Open DNS map all unknown host lookups to an OpenDNS
+            // ip address. We have to trap these bogus lookups. No such thing as a free lunch !!
+            HTML_LOG(0,"[%s] appears to be outside your network. Ignoring.",host);
+            ret  = -3;
+        } else {
+
+            // The socket
+            //
+            int sockfd = socket(PF_INET,SOCK_STREAM,0);
+            if (sockfd < 0 ) {
+
+                HTML_LOG(0,"socket error: create %d",errno);
+                ret  = -4;
+
+            } else {
+
+                // Using http://www.developerweb.net/forum/showthread.php?t=3000
+                //
+                // Set socket non-blocking
+                int flags;
+                if ((flags = fcntl(sockfd,F_GETFL)) < 0 ) {
+
+                    HTML_LOG(0,"socket error: get flags %d",errno);
+                    ret = -5;
+
+                } else if (fcntl(sockfd,F_SETFL, flags | O_NONBLOCK) < 0 ) {
+
+                    HTML_LOG(0,"socket error: set blocking %d",errno);
+                    ret = -6;
+
+                } else if (connect(sockfd,ai->ai_addr,ai->ai_addrlen) != 0) {
+
+                    if (errno != 150) {
+                        // this seems to be OK for a non-blocking socket but the 
+                        // cosde returned is not EINPROGRESS(119) or EALREADY(120)
+                        HTML_LOG(0,"socket error: connect %d",errno);
+                        ret = -7;
+
+                    } else {
+
+                        fd_set set;
+                        FD_ZERO(&set);
+                        FD_SET(sockfd,&set);
+
+                        gettimeofday(&t1,NULL);
+                        if (select(1+sockfd,&set,NULL,NULL,&timeout) == 1) {
+                            ret = 0;
+                        }
+                        gettimeofday(&t2,NULL);
+                        if (ret == 0) {
+                            elapsed = ( t2.tv_sec - t1.tv_sec ) * 1000;
+                            elapsed += ( t2.tv_usec - t1.tv_usec ) / 1000;
+                            HTML_LOG(0,"connect succeeded %s:%d within %dms (%ldms)",
+                                    host,port,timeout_millis,elapsed);
+                        }
+                    }
+                }
+
+                close(sockfd);
+
+            }
+        }
+        free(ai);
+    }
+    if (ret != 0) {
+        HTML_LOG(0,"connect %s:%d failed within %dms : error %d",host,port,timeout_millis,ret);
     }
 
-    // The socket
-    //
-    int sockfd = socket(PF_INET,SOCK_STREAM,0);
-    if (sockfd < 0 ) {
-        HTML_LOG(0,"Socket error %d at line %d",errno,__LINE__);
-        return -2;
-    }
 
-    // Using http://www.developerweb.net/forum/showthread.php?t=3000
-    //
-    // Set socket non-blocking
-#if 1
-    int flags;
-    if ((flags = fcntl(sockfd,F_GETFL)) < 0 ) {
-        HTML_LOG(0,"Socket error %d at line %d",errno,__LINE__);
-        return -2;
-    }
-    if (fcntl(sockfd,F_SETFL, flags | O_NONBLOCK) < 0 ) {
-        HTML_LOG(0,"Socket error %d at line %d",errno,__LINE__);
-        return -2;
-    }
-#endif
-
-    // Connect to the socket
-    //
-    if (connect(sockfd,ai->ai_addr,ai->ai_addrlen) != 0) {
-        HTML_LOG(0,"Connect error %d at line %d",errno,__LINE__);
-
-    }
-
-    fd_set set;
-    FD_ZERO(&set);
-    FD_SET(sockfd,&set);
-
-    if (select(1+sockfd,&set,NULL,NULL,&timeout) == 1) {
-        ret = 0;
-    }
-
-	free(ai);
-	close(sockfd);
-
-    HTML_LOG(0,"connect %s:%d within %dms = %d = %s",host,port,timeout_millis,ret,(ret?"bad":"good"));
-
-	return ret;
+    return ret;
 }
 
 long ping_timeout()

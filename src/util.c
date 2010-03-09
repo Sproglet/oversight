@@ -106,6 +106,27 @@ char *replace_all_str(char *s_in,...)
     return result;
 
 }
+
+
+char *translate_inplace(
+        char *str, // input text
+        char *a,   // ordered list to translate characters from
+        char *b    // ordered list to translate characters to
+        )
+{
+    char *p = str;
+    if (p) {
+        while(*p) {
+            char *ch;
+            if ((ch=strchr(a,*p)) != NULL) {
+                *p = b[ch-a];
+            }
+            p++;
+        }
+    }
+    return str;
+}
+
 char *replace_str(char *s_in,char *match,char *replace)
 {
     char *tmp;

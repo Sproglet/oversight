@@ -572,9 +572,7 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
         cert=tmp;
 
 
-        tmp=replace_str(cert,":","/");
-        FREE(cert);
-        cert=tmp;
+        translate_inplace(cert,":_","/-");
 
         ovs_asprintf(&tmp,"%s/templates/%s/images/cert/%s.%s",appDir(),skin_name(),cert,ovs_icon_type());
         FREE(cert);

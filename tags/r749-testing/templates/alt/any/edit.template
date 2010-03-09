@@ -1,0 +1,36 @@
+<!-- Default Edit Template  $Id:$ -->
+<body focuscolor=yellow focustext=black height=100% [class=movie_background:IS_GAYA:]>
+    [:FORM_START:]
+<table class="main" width=100% >
+    <tr valign="middle">
+        <td>
+            <table width=100%>
+                <tr valign=top>
+                    <td colspan=2>
+                        [:INCLUDE_TEMPLATE(buttons):]
+                    </td>
+                </tr>
+                <tr valign=bottom>
+                    <td>
+                        <table width=100%>
+                            <tr><td>Title:<td><td><input type=text name=TITLE>[:$%TITLE:]/></td></tr>
+                            <tr><td>Year:<td><td><input type=text name=TITLE>[:$%YEAR:]/></td></tr>
+                            <tr><td>IMDBID<td><td><input type=text name=URL>[:$%URL:]/></td></tr>
+                            <tr><td>Plot<td><td><textarea name=PLOT>[:$%PLOT:]</textarea></td></tr>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    To change images, store the image in the same folder as the media.
+                </tr>
+            </table>
+         </td>
+        </tr>
+    </table>
+    </form>
+</body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

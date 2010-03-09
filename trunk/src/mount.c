@@ -294,32 +294,34 @@ static char get_link_index(char *share_name) {
     }
     FREE(key);
 
-HTML_LOG(0,"mount index [%d=%c]",index,index);
-
     return index;
 
 }
 
-// extract user from eg servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
-char *get_link_user(char *servlink) {
-    char *user=NULL;
-    if (strstr(servlink,"smb.user")) {
-        user = regextract1(servlink,"smb.user=([^&]+)",1,0);
+
+static char *get_link_option(char *servlink,char *option) {
+    char *p;
+    char *result=NULL;
+
+    if ((p=delimited_substring(servlink,"&",option,"=",1,0)) != NULL ) {
+        p += strlen(option) + 1;
+        char *q = p ;
+        while (*q != '&' && *q != '\0' )  q++;
+        ovs_asprintf(&result,"%.*s",q-p,p);
     }
 TRACE ;
-    HTML_LOG(1,"mount user [%s]",user);
-    return user;
+    HTML_LOG(0,"mount %s=[%s]",option,result);
+    return result;
 }
 
-// extract password from eg servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+// extract user from eg servlink2=smb://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+char *get_link_user(char *servlink) {
+    return get_link_option(servlink,"smb.user");
+}
+
+// extract password from eg servlink2=smb://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
 char *get_link_passwd(char *servlink) {
-    char *passwd=NULL;
-    if (strstr(servlink,"smb.passwd")) {
-        passwd = regextract1(servlink,"smb.passwd=([^&]+)",1,0);
-    }
-TRACE ;
-    HTML_LOG(1,"mount passwd [%s]",passwd);
-    return passwd;
+    return get_link_option(servlink,"smb.passwd");
 }
 
 // given servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
@@ -331,14 +333,12 @@ char *get_pingable_link(char *servlink) {
     char *result=NULL;
     char *link=NULL;
 
-    HTML_LOG(0,"get pingable link for [%s]",servlink);
+    HTML_LOG(1,"get pingable link for [%s]",servlink);
 
     amp = strchr(servlink,'&');
     if (amp) {
 
         ovs_asprintf(&link,"%.*s",amp-servlink,servlink);
-
-TRACE ; HTML_LOG(0,"mount link [%s]",link);
 
         if (ping_link(link) ) {
             result = link;
@@ -357,7 +357,7 @@ TRACE ; HTML_LOG(0,"mount link [%s]",link);
     if (result != link ) {
         FREE(link);
     }
-    HTML_LOG(0,"pingable link [%s]",result);
+    HTML_LOG(0,"pingable link = [%s]",result);
     return result;
 }
 
@@ -365,24 +365,40 @@ char *get_mount_command(char *link,char *path,char *user,char *passwd) {
 
    char *cmd = NULL;
    char *log;
+   char *host = strstr(link,"://");
 
    ovs_asprintf(&log,"%s/logs/mnterr.log",appDir());
+   if (host) {
 
-    if (util_starts_with(link,"nfs://")) {
+       host +=3;
 
-        // iplink = nfs://host:/share
-        // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
-        ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\" 2> \"%s\"",
-                path,log,link+6,path,log);
+       if (util_starts_with(link,"nfs://")) {
 
-    } else if (util_starts_with(link,"smb://")) {
+            // iplink = nfs://host:/share
+            // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
+            ovs_asprintf(&cmd,
+                "mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\" 2> \"%s\"",
+                path,log,host,path,log);
 
-        // link = smb://host/share
-        // mount -t cifs -o username=,password= //host/share /path/to/network
-        ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -t cifs -o username=%s,password=%s \"%s\" \"%s\" 2> \"%s\"",
-                path,log,user,passwd,link+4,path,log);
+        } else if (util_starts_with(link,"nfs-tcp://")) {
+
+            // iplink = nfs://host:/share
+            // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
+            ovs_asprintf(&cmd,
+                "mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10,proto=tcp \"%s\" \"%s\" 2> \"%s\"",
+                path,log,host,path,log);
+
+        } else if (util_starts_with(link,"smb://")) {
+
+            // link = smb://host/share
+            // mount -t cifs -o username=,password= //host/share /path/to/network
+            ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -t cifs -o username=%s,password=%s \"//%s\" \"%s\" 2> \"%s\"",
+                    path,log,user,passwd,host,path,log);
+        } else {
+            html_log(0,"Dont know how to mount [%s]",link);
+        }
     } else {
-        html_log(0,"Dont know how to mount [%s]",link);
+        html_log(0,"Dont know how to mount host [%s]",link);
     }
     FREE(log);
     return cmd;
@@ -527,22 +543,31 @@ TRACE;
         }
     }
 
-    if (util_starts_with(link,"nfs://") ) {
-        link += 6;
-        end = strchr(link,':');
-        port=111; // assume nfs host has portmapper
+    if (util_starts_with(link,"nfs") ) {
+        link = strstr(link,"://");
+        if (link) {
+            link += 3;
+            end = strchr(link,':');
+            port=111; // assume nfs host has portmapper
+        }
 
-    } else if (util_starts_with(link,"smb://")) {
-        link += 6;
-        end = strchr(link,'/');
-        port=445; //assume SMB on port 445
+    } else if (util_starts_with(link,"smb")) {
+        link = strstr(link,"://");
+        if (link) {
+            link += 3;
+            end = strchr(link,'/');
+            port=445; //assume SMB on port 445
+        }
     }
+
     if (end) {
+
+
         ovs_asprintf(&host,"%.*s",end-link,link);
 
         result = (connect_service(host,connect_millis,port) == 0);
 
-        HTML_LOG(0,"ping link [%s] host[%s] = %d",link,host,result);
+        HTML_LOG(1,"ping link [%s] host[%s] = %d",link,host,result);
         FREE(host);
 
     }

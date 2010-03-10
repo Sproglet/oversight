@@ -49,6 +49,7 @@ DbRowId *read_and_parse_row(
         );
 int in_idlist(int id,int size,int *ids);
 void get_genre_from_string(char *gstr,struct hashtable **h);
+void fix_file_path(DbRowId *rowid);
 
 #define UNSET -2
 static int use_folder_titles = UNSET;
@@ -310,6 +311,8 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 #define FIELD_TYPE_DATE 'd'
 #define FIELD_TYPE_TIMESTAMP 't'
 
+// Most field ids have the form _a or _ab. This function looks at th first few letters of the 
+// id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbRowId structure.
 int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char *type,int *overview) {
 
     *offset=NULL;
@@ -575,21 +578,7 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
             *(char **)offset = COPY_STRING(val_len,val);
             if (offset == &(rowid->file)) {
 
-                // TODO Test the following function!
-                // fix_file_path(rowid);
-                //
-                // Append Network share path
-                if (rowid->file[0] != '/') {
-                    char *tmp;
-                    ovs_asprintf(&tmp,"%s%s" , NETWORK_SHARE, rowid->file );
-                    FREE(rowid->file);
-                    rowid->file = tmp;
-                }
-                // set extension
-                char *p = strrchr(rowid->file,'.');
-                if (p) {
-                    rowid->ext = p+1;
-                }
+                fix_file_path(rowid);
             }
             break;
         case FIELD_TYPE_CHAR:
@@ -624,7 +613,8 @@ void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_o
     }
 }
 
-void fix_file_path(DbRowId *rowid) {
+void fix_file_path(DbRowId *rowid)
+{
     // Append Network share path
     if (rowid->file[0] != '/') {
         char *tmp;

@@ -19,3 +19,16 @@ this testing release masquerades as the 'wget' binary. If it sees the request is
 
 This saves a full startup of wget , and the overhead of connecting to a web server.
 For other normal pages there is an extra step where oversight must start the real wget binary, however this is negligible compared to all the other stuff going on , esp as Oversight is a compiled binary.
+
+== Manually Disabling the wget masquerading function ==
+
+Starting with r756. If you encounter errors with gaya that you think may be caused by wget masquerading, then you can disable it as follows:
+
+rename or delete the file /share/Apps/oversight/conf/use.wget.wrapper and reboot.
+
+== Automatically Disabling the wget masquerading function ==
+
+Starting with r756. Oversight itself will also create a file 
+/share/Apps/oversight/conf/wget.wrapper.error
+if it crashes during page rendering.
+If this file exists and a reboot is performed, then the wget masquerading feature will be disabled.

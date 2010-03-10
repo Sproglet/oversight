@@ -1323,10 +1323,18 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
 
     char *path = NULL;
     DbRowId *rid = sorted_rows[0];
-    char *modifier="";
+    char *suffix ;     // given movie.avi look for movie.suffix.(jpg|png)
+    char*default_name; // given movie.avi look for default_name.(jpg|png)
+
+    char *ext[] = { ".jpg" , ".png" , NULL };
+    int i;
 
     if (image_type == FANART_IMAGE) {
-        modifier="fanart.";
+        suffix=".fanart";
+        default_name="fanart";
+    } else {
+        suffix="";
+        default_name="poster";
     }
 
     int freefile;
@@ -1334,29 +1342,37 @@ char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) 
     // This requires that the remote file is already mounted.
     char *file = get_path(rid,rid->file,&freefile);
 TRACE;
-    char *dir = util_dirname(file);
+    char *dir;
+   
+    if (is_dvd_folder(file)) {
+       dir = file;
+    } else {
+       dir = util_dirname(file);
 
-    // Find position of file extension.
-    char *dot = NULL;
+        // Find position of file extension.
+        char *dot = NULL;
 
-    // First look for file.modifier.jpg file.modifier.png
-    if (rid->ext != NULL) { 
-        dot = strrchr(file,'.');
+        // First look for file.modifier.jpg file.modifier.png
+        if (rid->ext != NULL) { 
+            dot = strrchr(file,'.');
+        }
+
+        //check movie.fanart.(png|jpg) or movie.(png|jpg)
         if (dot) {
-            dot++;
+
+            for(i=0 ; path==NULL && ext[i] ; i++ ) {
+                path=check_path("%.*s%s%s",dot-file,file,suffix,ext[i]);
+            }
         }
     }
 
-    // note this could be re-written with util_change_extension()
-    path=check_path("%.*s%sjpg",dot-file,file,modifier);
+    //check default_name.(png|jpg) ie. fanart.(png|jpg) or poster.(png|jpg)
+    for(i=0 ; path==NULL && ext[i] ; i++ ) {
+        path=check_path("%s/%s%s",dir,default_name,ext[i]);
+    }
 
-    if (path == NULL) path=check_path("%.*s%spng",dot-file,file,modifier);
-
-    if (path == NULL) path=check_path("%s/%sjpg",dir,(image_type == FANART_IMAGE?modifier:"poster."));
-    if (path == NULL) path=check_path("%s/%spng",dir,(image_type == FANART_IMAGE?modifier:"poster."));
-
+    if (dir != file) FREE(dir);
     if (freefile) FREE(file);
-    FREE(dir);
 
     if (path == NULL) {
 

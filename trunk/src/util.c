@@ -1041,7 +1041,11 @@ char *util_change_extension(char *file,char *new_ext)
 {
     char *dot = strrchr(file,'.');
     char *result;
-    ovs_asprintf(&result,"%.*s%s",dot-file,file,new_ext);
+    if (dot) {
+        ovs_asprintf(&result,"%.*s%s",dot-file,file,new_ext);
+    } else {
+        ovs_asprintf(&result,"%s%s",file,new_ext);
+    }
 
     return result;
 

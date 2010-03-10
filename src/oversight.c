@@ -326,6 +326,24 @@ TRACE;
     
 }
 
+#define ABORT_FILE_NAME "wget.wrapper.error"
+// Create a file which should be deleted when oversight is deleted.
+// if other supporting scripts detect this file thry know oversight
+// is misbehaving, and should not install it inplace of wget.
+// So a user should only have to reboot to stop any issues with 
+// oversight messing with wget.
+static char *abort_file_path;
+void create_abort_file() {
+    ovs_asprintf(&abort_file_path,"%s/conf/%s",appDir(),ABORT_FILE_NAME);
+    FILE *fp = fopen(abort_file_path,"w");
+    fclose(fp);
+}
+
+// Delete the abort file. see create_abort_file()
+void delete_abort_file() {
+    unlink(abort_file_path);
+}
+
 
 /*
  * If gaya has invoked oversight as wget then the parameter list looks like 
@@ -355,6 +373,8 @@ int oversight_instead_of_wget(int argc, char **argv)
 {
     int ret = -1;
 
+    create_abort_file();
+
     gaya_set_output(argc,argv);
     gaya_set_env(argc,argv);
     setenv("SCRIPT_NAME",SCRIPT_NAME,1);
@@ -363,6 +383,9 @@ int oversight_instead_of_wget(int argc, char **argv)
     args[0]="oversight";
     args[1]=NULL;
     ret = oversight_main(1,args,0);
+
+    delete_abort_file();
+
     return ret;
 
 }
@@ -387,10 +410,6 @@ int main(int argc,char **argv)
     char *turbo_flag;
     ovs_asprintf(&turbo_flag,"%s/conf/use.wget.wrapper",appDir());
  
-    char *turbo_flag2;
-    ovs_asprintf(&turbo_flag2,"%s/conf/replace.file.browser",appDir());
- 
-
     if (strstr(argv[0],"wget") ) {
 
         if (argc == 2 && STRCMP(argv[1],"-oversight") == 0 ) {
@@ -411,21 +430,6 @@ int main(int argc,char **argv)
             // By replacing oversight with wget we try to short circuit this.
             // gaya -> oversight
             ret = oversight_instead_of_wget(argc,argv);
-
-#if 0
-        } else if (is_file(turbo_flag2) && (gaya_file_browsing(argc,argv)) && !gaya_sent_post_data(argc,argv)) {
-
-            // Gaya has invoked wget with argument eg.  http://localhost.drives:8883/HARD_DISK/?filter=3&page=1
-            // Important bits are
-            //          http://localhost.drives:8883/ 
-            //          The folder /HARD_DISK/
-            //          The directory browse "/?"
-            g_nmt_settings = config_load("/tmp/setting.txt");
-            config_read_dimensions();
-            gaya_set_output(argc,argv);
-            gaya_set_env(argc,argv);
-            ret = gaya_list(gaya_url(argc,argv));
-#endif
 
         } else {
 

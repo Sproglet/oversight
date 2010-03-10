@@ -26,7 +26,20 @@ if [ ! -d $TMPDIR ] ; then
     fi
 fi
 
-WGET_BACKUP=/share/Apps/oversight/wget.original 
+# This file will be created by oversight if it crashed whilst masquerading as wget.
+# If it IS present during a reboot the all of the wget masquerading function is
+# disabled.
+OVERSIGHT_WGET_ERROR="$APPDIR/conf/wget.wrapper.error"
+
+# This file must be present to make oversight intercept oversight urls when the
+# oversight binary is also called "wget". If it is not present then oversight will
+# try to invoke the real wget in /bin/wget.real
+# If it is NOT present during a reboot the all of the wget masquerading function is
+# disabled.
+OVERSIGHT_USE_WGET="$APPDIR/conf/use.wget.wrapper"
+
+
+WGET_BACKUP="$APPDIR/wget.original"
 WGET_RENAME=/bin/wget.real
 
 # ------- GET NMT Version and set NMT specific paths if applicable ---------
@@ -361,12 +374,14 @@ case "$1" in
 
 
         # Replace wget binary with oversight. This allows faster page load.
-        if ! /bin/wget -oversight >/dev/null 2>&1  ; then
-            cp -a /bin/wget "$WGET_BACKUP"
-            mv /bin/wget "$WGET_RENAME"
+        if [ -f "$OVERSIGHT_USE_WGET" -a ! -f "$OVERSIGHT_WGET_ERROR" ] ; then
+            if ! /bin/wget -oversight >/dev/null 2>&1  ; then
+                cp -a /bin/wget "$WGET_BACKUP"
+                mv /bin/wget "$WGET_RENAME"
+            fi
+            cp $BINDIR/oversight /bin/wget
+            chmod 777 /bin/wget
         fi
-        cp $BINDIR/oversight /bin/wget
-        chmod 777 /bin/wget
 
         # Restore website link
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.

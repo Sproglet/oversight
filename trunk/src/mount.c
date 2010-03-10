@@ -217,9 +217,13 @@ char *wins_resolve(char *link) {
 
     if (!updated_wins_file && ( !exists(nbtscan_outfile) || file_age(nbtscan_outfile) > 60*60*24 ) ) {
         char *cmd;
-        ovs_asprintf(&cmd,"nbtscan %s/%d > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",
+        int c = cidr(setting_val("eth_netmask"));
+        // Avoid scanning too many ips 
+        // we can just scan a /21 subnet in about 25 secs.
+        if (c < 21 ) c = 21; 
+        ovs_asprintf(&cmd,"nbtscan -T 1 %s/%d > '%s/conf/wins.txt' && chown nmt:nmt '%s/conf/wins.txt'",
                 setting_val("eth_gateway"),
-                cidr(setting_val("eth_netmask")),
+                c,
                 appDir(),appDir());
         if (system(cmd) == 0) {
             updated_wins_file=1;

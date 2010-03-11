@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <dirent.h>
+#include <ctype.h>
 
 #include "util.h"
 #include "vasprintf.h"
@@ -40,6 +41,11 @@ struct hashtable *mount_points_hash()
 }
 
 void set_mount_status(char *p,char *val) {
+
+    if (util_starts_with(p,NETWORK_SHARE)) {
+        p += strlen(NETWORK_SHARE);
+    }
+
     char *current = hashtable_search(mount_points,p);
     if (current == NULL) {
         HTML_LOG(1,"Adding mount point [%s] = %s",p,val);
@@ -74,9 +80,10 @@ TRACE ; HTML_LOG(1,"network_mount_point [%s]=[%s]",file,path);
 // Only look at the standard NMT NETWORK media mount points.
 void get_mount_points() {
     if (mount_points == NULL) {
+
+        HTML_LOG(0,"getting mount points...");
         mount_points = string_string_hashtable(16); //let the OS clean this up at the end
 
-#if 1
         FILE *fp = fopen("/etc/mtab","r");
         if (fp) {
 #define BUFSIZE 200
@@ -85,33 +92,71 @@ void get_mount_points() {
                 char *p = strstr(buf,NETWORK_SHARE);
                 if (p) {
 
+#define MAX_SHARE_NAME_LEN 100
+                    char share_name[MAX_SHARE_NAME_LEN];
+                    char *s = share_name;
+
                     char *q = p+strlen(NETWORK_SHARE);
 
                     //seek to end of path skipping escapes.
                     while(*q) {
-                       if (*q == '\\' && q[1] ) {
-                           q += 2; 
+                       if (*q == '\\' ) {
+                          if (isdigit(q[1]) && isdigit(q[2]) && isdigit(q[3])) {
+                              // octal
+                              int c;
+                              q++;
+                              if (sscanf(q,"%03o",&c) ) {
+                                  q += 3;
+                                  *s++ = c;
+                              } else {
+                                  HTML_LOG(0,"Error parsing octal [%s]",q);
+                              }
+                          } else if (q[1] == 'x') {
+                              // hex
+                              int c;
+                              q+=2;
+                              if (sscanf(q,"%2x",&c) ) {
+                                  q += 2;
+                                  *s++ = c;
+                              } else {
+                                  HTML_LOG(0,"Error parsing hex [%s]",q);
+                              }
+
+                          } else {
+                              // normal escape
+                              q++;
+                              *s++ = *q++;
+                          }
                        } else if (*q == ' ') {
                            break;
                        } else {
-                           q++;
+                           *s++ = *q++;
                        }
                     }
+                    assert(s < share_name + MAX_SHARE_NAME_LEN);
+                    *s = '\0';
 
-                    *q = '\0';
 
-                    set_mount_status(p,MOUNT_STATUS_IN_MTAB);
+                    HTML_LOG(0,"mtab share name = [%s]",share_name);
+
+                    set_mount_status(share_name,MOUNT_STATUS_IN_MTAB);
                 }
 
             }
             fclose(fp);
         }
-#endif
+        html_hashtable_dump(0,"mount points",mount_points);
+        HTML_LOG(0,"got mount points");
     }
 }
 
 
-// 1 if tried mounting before - status returned via mount_status
+// returns :
+// MOUNT_STATUS_OK  : All working and verified files are accessible.
+// MOUNT_STATUS_BAD : Tried to mount but takes too long to access. usually Stale nfs
+// MOUNT_STATUS_IN_MTAB : Path is mounted but oversight has not tried to access it yet. NAS could be off.
+// MOUNT_STATUS_NOT_IN_MTAB : Path is not in mtab.
+//
 char *get_mount_status(char *path) {
 
     char *result;
@@ -119,11 +164,16 @@ char *get_mount_status(char *path) {
 
         get_mount_points();
     }
+
+    if (util_starts_with(path,NETWORK_SHARE)) {
+        path += strlen(NETWORK_SHARE);
+    }
+
     result = hashtable_search(mount_points,path) ;
     if (result == NULL) {
         result = MOUNT_STATUS_NOT_IN_MTAB;
     }
-    HTML_LOG(3,"mount status [%s]=[%s]",path,result);
+    HTML_LOG(0,"mount status [%s]=[%s]",path,result);
     return result;
 }
 
@@ -156,9 +206,15 @@ TRACE;
             if (STRCMP(mount_status,MOUNT_STATUS_OK) == 0) {
 TRACE;
                 result = 1;
+
             } else if (STRCMP(mount_status,MOUNT_STATUS_BAD) == 0) {
 TRACE;
                 result = 0;
+
+            } else if (STRCMP(mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
+
+                result = nmt_mount_share(path,mount_status);
+
             } else {
 TRACE;
                 // MOUNT_STATUS_IN_MTAB or MOUNT_STATUS_NOT_IN_MTAB
@@ -291,6 +347,7 @@ static char get_link_index(char *share_name) {
     // for one that is called "abc"
     for(c = '0' ; c <= '9' ; c++ ) {
         *last = c;
+        //HTML_LOG(0,"Checking [%s](%s) = (%s)",key,setting_val(key),share_name);
         if (STRCMP(setting_val(key),share_name) == 0) {
             index = c;
             break;
@@ -425,7 +482,7 @@ static int nmt_mount_share(char *path,char *current_mount_status)
     int result = 0;
 
     char *share_name = util_basename(path);
-TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s]",path,share_name);
+TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s] current status [%s]",path,share_name,current_mount_status);
     // eg "abc"
 
 TRACE ;
@@ -447,6 +504,7 @@ TRACE ; HTML_LOG(0,"mount servlink [%s]",serv_link);
             set_mount_status(path,MOUNT_STATUS_BAD);
 TRACE;
         } else if (STRCMP(current_mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
+TRACE;
 
             char *user = get_link_user(serv_link);
             char *passwd = get_link_passwd(serv_link);
@@ -500,6 +558,7 @@ TRACE;
 
         } else if (STRCMP(current_mount_status,MOUNT_STATUS_IN_MTAB) == 0) {
             // Its pingable but now we check it is accessible.
+TRACE;
             result = check_accessible(path,5);
         } else {
             // shouldnt get here
@@ -515,6 +574,7 @@ TRACE;
 // It is still possible it is a stale mtab entry - eg nfs server is stopped.
 int check_accessible(char *path,int timeout_secs)
 {
+TRACE;
     int result = 0;
     time_t now = time(NULL);
     DIR *d = opendir(path);

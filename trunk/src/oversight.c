@@ -33,7 +33,7 @@ void load_configs () {
     g_catalog_config =
         config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
 
-    g_nmt_settings = config_load("/tmp/setting.txt");
+    g_nmt_settings = config_load("/tmp/setting.txt",1);
 
 }
 
@@ -159,6 +159,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     html_log_level_set(2);
 
     load_configs();
+    //html_hashtable_dump(0,"settings",g_nmt_settings);
 
     long log_level;
     if (config_check_long(g_oversight_config,"ovs_log_level",&log_level)) {

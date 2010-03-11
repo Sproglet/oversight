@@ -26,5 +26,5 @@ read x
 
 svn commit -m "release $label"
 
-svn copy https://oversight.googlecode.com/svn/trunk/  "https://oversight.googlecode.com/svn/tags/$label" -m "$label"
+#svn copy https://oversight.googlecode.com/svn/trunk/  "https://oversight.googlecode.com/svn/tags/$label" -m "$label"
 #./bundle.unpak

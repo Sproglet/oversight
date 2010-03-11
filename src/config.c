@@ -104,7 +104,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     ovs_asprintf(&f,"%s/%s",d,defaults_file);
 
     if (is_file(f)) {
-        out = config_load(f);
+        out = config_load(f,0);
     } else {
         out = string_string_hashtable(16);
     }
@@ -115,7 +115,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     sprintf(f,"%s/%s",d,main_file);
 
     if (is_file(f)) {
-        new = config_load(f);
+        new = config_load(f,0);
     } else {
         new = string_string_hashtable(16);
     }
@@ -127,7 +127,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
 
 }
 
-struct hashtable *config_load(char *filename) {
+struct hashtable *config_load(char *filename,int include_unquoted_space) {
 
     assert(filename);
     struct hashtable *result=NULL;
@@ -138,14 +138,14 @@ struct hashtable *config_load(char *filename) {
     if (f == NULL) {
         fprintf(stderr,"Unable to open config file [%s]\n",filename);
     } else {
-        result = config_load_fp(f);
+        result = config_load_fp(f,include_unquoted_space);
         fclose(f);
     }
     return result;
 }
 
 #define CFG_BUFSIZ 300
-struct hashtable *config_load_fp(FILE *fp) {
+struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
     struct hashtable *result=string_string_hashtable(16);
     char line[CFG_BUFSIZ+1];
@@ -190,11 +190,18 @@ struct hashtable *config_load_fp(FILE *fp) {
                     }
                 } else {
                     //parse unquoted value
-                    while(*p && !isspace(*p)) p++;
+                    while(*p && (!isspace(*p) || (include_unquoted_space && *p == ' ') )) {
+                        p++;
+                    }
                     val_end = p;
                 }
 
-                while(isspace(*p) || *p == ';') p++;
+                if (!include_unquoted_space) {
+                    while(isspace(*p) || *p == ';') {
+                        p++;
+                    }
+                }
+
                 if (*p == '#') {
                     // skip trailing comment
                     while(*p >= ' ' || isspace(*p)) p++;
@@ -216,9 +223,9 @@ struct hashtable *config_load_fp(FILE *fp) {
 }
 
 void config_unittest() {
-    struct hashtable *cfg = config_load("test.cfg");
+    struct hashtable *cfg = config_load("test.cfg",0);
     config_write(cfg,"delete.cfg");
-    struct hashtable *cfg2 = config_load("delete.cfg");
+    struct hashtable *cfg2 = config_load("delete.cfg",0);
 
     char *k,*v;
     struct hashtable_itr *itr = hashtable_loop_init(cfg) ;

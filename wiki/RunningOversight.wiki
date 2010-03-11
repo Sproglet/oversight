@@ -4,7 +4,7 @@
 
 = TV Interface =
 
-To view the Oversight Page on the TV - select the Web Services on the NMT Menu then select "Overdight".
+To view the Oversight Page on the TV - select the Web Services on the NMT Menu then select "Oversight".
 
 = Browser Interface =
 
@@ -13,7 +13,7 @@ To view Oversight in a browser window. Go to http://<ip address on NMT>:8883/ove
 
 = Setup Page =
 
-The setup page can be accessed by cliking on the Setup icon http://oversight.googlecode.com/svn/trunk/images/nav/set1/configure.png
+The setup page can be accessed by clicking on the Setup icon http://oversight.googlecode.com/svn/trunk/images/nav/set1/configure.png
 
 = Your First Scan =
 
@@ -33,8 +33,11 @@ If you want Oversight to regularly check the source for new content, add the sou
 By default Oversight is initially configured to scan the following folders (used by the 'nzbget' post-processing script)
 
   * /share/Complete
+  * /share/Video
   * /share/Tv
   * /share/Movies
+
+The */share/Download* folder is ignored. This is because this folder may contain incomplete video. If you have complete video's in this folder, it is probably wise to move them to a different folder, (eg /share/Video ). Alternatively, if you really want all the content in /share/Download appearing then remove /share/Download from the 'ignore_paths' setting.
 
 ==Source on Internal HDD ==
 To add a folder on the Internal HDD just enter the path to the folder. E.g. 
@@ -84,7 +87,5 @@ will now scan smb://TRACY-SNG/Videos/Movies
 
 
 After you have set up the folders click the 'Rescan All Media' option http://oversight.googlecode.com/svn/trunk/images/nav/set1/rescan.png to start a background scan.
-
-If the scan appears to work but no files are displayed check the workgroup of the NAS is the same as the NMT.
 
 If the scan does not work at all, try replacing the NAS name with it's IP address in the Network Setup screen and in the Oversight settings.

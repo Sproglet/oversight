@@ -4223,9 +4223,9 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
 
     titleIn = tolower(titleIn);
     possible_title = tolower(possible_title);
-    INF("titleIn["titleIn"]");
-    INF("possible_title["possible_title"]");
-    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
+#    INF("titleIn["titleIn"]");
+#    INF("possible_title["possible_title"]");
+#    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
 
     if (index(possible_title,titleIn) == 1) {
         #TODO Note we could keep the 1 match levels here and below, but if so
@@ -6225,26 +6225,16 @@ l,akas,a,c,br) {
 function scrapeIMDBCertificate(idx,line,\
 l,certs,certpos,cert,c,total,i,flag) {
 
-INF("getting cert_list");
-
     flag="certificates=";
 
     #Old style  -- <a href="/List?certificates=UK:15&&heading=14;UK:15">
     total = get_regex_pos(line, flag"[^&\"]+",0,cert_list,certpos);
 
-INF("got "total" cert_list from "line);
-
-    dump(0,"cert_list",cert_list);
-
     for(i = 1 ; i - total <= 0 ; i++ ){
-
-INF("got cert ["cert_list[i]"]");
 
         l = substr(cert_list[i],index(cert_list[i],flag)+length(flag));
 
         split(l,cert,"[:|]");
-
-INF("got cert "cert[1]" == "cert[2]);
 
         #Now we only want to assign the certificate if it is in our desired list of countries.
         for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
@@ -6252,7 +6242,6 @@ INF("got cert "cert[1]" == "cert[2]);
                 #Keep certificate as this country is early in the list.
                 return;
             }
-INF("read config country "gCertificateCountries[c]);
             if (cert[1] == gCertificateCountries[c]) {
                 #Update certificate
                 gCertCountry[idx] = cert[1];

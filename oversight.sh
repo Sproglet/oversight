@@ -40,7 +40,7 @@ OVERSIGHT_USE_WGET="$APPDIR/conf/use.wget.wrapper"
 
 
 WGET_BACKUP="$APPDIR/wget.original"
-WGET_RENAME=/bin/wget.real
+WGET_BIN=/bin/wget
 
 # ------- GET NMT Version and set NMT specific paths if applicable ---------
 
@@ -347,6 +347,33 @@ add_watch_cron() {
     fi
 }
 
+oversight_is_wget() {
+    [ "$WGET_BIN" -ef "$BINDIR/oversight" ]
+}
+
+install_as_wget() {
+    # Replace wget binary with oversight. This allows faster page load.
+    if [ -f "$OVERSIGHT_USE_WGET" -a ! -f "$OVERSIGHT_WGET_ERROR" ] ; then
+        if ! oversight_is_wget ; then
+            cp -a "$WGET_BIN" "$WGET_BACKUP"
+            mv "$WGET_BIN" "$WGET_BIN.real"
+            ln -sf "$BINDIR/oversight" "$WGET_BIN"
+        fi
+    fi
+}
+
+uninstall_as_wget() {
+    # Restore wget binary
+    if oversight_is_wget ; then
+        rm -f "$WGET_BIN"
+        if "$WGET_BIN.real" -V | grep -q "GNU Wget" ; then
+            mv "$WGET_BIN.real" "$WGET_BIN"
+        else
+            cp -a "$WGET_BACKUP" "$WGET_BIN"
+        fi
+    fi
+}
+
 
 case "$1" in 
     NEWSCAN)
@@ -372,16 +399,7 @@ case "$1" in
             ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
         fi
 
-
-        # Replace wget binary with oversight. This allows faster page load.
-        if [ -f "$OVERSIGHT_USE_WGET" -a ! -f "$OVERSIGHT_WGET_ERROR" ] ; then
-            if ! /bin/wget -oversight >/dev/null 2>&1  ; then
-                cp -a /bin/wget "$WGET_BACKUP"
-                mv /bin/wget "$WGET_RENAME"
-            fi
-            cp $BINDIR/oversight /bin/wget
-            chmod 777 /bin/wget
-        fi
+        install_as_wget
 
         # Restore website link
         ln -sf "$APPDIR/" /opt/sybhttpd/default/.
@@ -412,7 +430,7 @@ case "$1" in
         "$NMT" NMT_CRON_DEL root "$appname" 
         "$NMT" NMT_CRON_DEL root "$appname.watch"
         rm -f "/opt/sybhttpd/default/oversight" "$PENDING_FILE" "$CMD_BUF.live"
-        mv "$WGET_RENAME" /bin/wget
+        uninstall_as_wget
         exit;;
     SAY)
         shift;

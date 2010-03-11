@@ -347,16 +347,18 @@ add_watch_cron() {
     fi
 }
 
-oversight_is_wget() {
-    [ "$WGET_BIN" -ef "$BINDIR/oversight" ]
+is_wget() {
+    [ -x "$1" ] && "$1" -V 2>/dev/null | grep -iq "GNU Wget"
 }
 
 install_as_wget() {
     # Replace wget binary with oversight. This allows faster page load.
     if [ -f "$OVERSIGHT_USE_WGET" -a ! -f "$OVERSIGHT_WGET_ERROR" ] ; then
-        if ! oversight_is_wget ; then
+        if is_wget "$WGET_BIN" ; then
             cp -a "$WGET_BIN" "$WGET_BACKUP"
-            mv "$WGET_BIN" "$WGET_BIN.real"
+            # use rm then cp to avoid symlink overwrite of unexpected file
+            rm -f "$WGET_BIN.real"
+            mv "$WGET_BIN" "$WGET_BIN.real" && \
             ln -sf "$BINDIR/oversight" "$WGET_BIN"
         fi
     fi
@@ -364,9 +366,9 @@ install_as_wget() {
 
 uninstall_as_wget() {
     # Restore wget binary
-    if oversight_is_wget ; then
+    if ! is_wget "$WGET_BIN" ; then
         rm -f "$WGET_BIN"
-        if "$WGET_BIN.real" -V | grep -q "GNU Wget" ; then
+        if is_wget "$WGET_BIN.real" ; then
             mv "$WGET_BIN.real" "$WGET_BIN"
         else
             cp -a "$WGET_BACKUP" "$WGET_BIN"

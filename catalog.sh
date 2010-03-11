@@ -4223,9 +4223,9 @@ DEBUG("Qualified title ["possible_title"]")
 
 titleIn = tolower(titleIn)
 possible_title = tolower(possible_title)
-INF("titleIn["titleIn"]")
-INF("possible_title["possible_title"]")
-INF("qualifed titleIn["titleIn" ("yearOrCountry")]")
+
+
+
 
 if (index(possible_title,titleIn) == 1) {
 
@@ -6225,26 +6225,16 @@ return
 function scrapeIMDBCertificate(idx,line,\
 l,certs,certpos,cert,c,total,i,flag) {
 
-INF("getting cert_list")
-
 flag="certificates="
 
 
 total = get_regex_pos(line, flag"[^&\"]+",0,cert_list,certpos)
 
-INF("got "total" cert_list from "line)
-
-dump(0,"cert_list",cert_list)
-
 for(i = 1 ; i - total <= 0 ; i++ ){
-
-INF("got cert ["cert_list[i]"]")
 
 l = substr(cert_list[i],index(cert_list[i],flag)+length(flag))
 
 split(l,cert,"[:|]")
-
-INF("got cert "cert[1]" == "cert[2])
 
 
 for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
@@ -6252,7 +6242,6 @@ if (gCertCountry[idx] == gCertificateCountries[c]) {
 
 return
 }
-INF("read config country "gCertificateCountries[c])
 if (cert[1] == gCertificateCountries[c]) {
 
 gCertCountry[idx] = cert[1]

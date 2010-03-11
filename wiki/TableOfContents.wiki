@@ -20,6 +20,7 @@ Advanced
   * UnpackingScriptsOnly
   * PreviousVersions
   * SearchMethods
+  * WgetWrapper
 
 Developers
   * ChangeLog

@@ -1,4 +1,8 @@
-==wget wrapper==
+#sidebar TableOfContents
+
+<wiki:toc max_depth="2" />
+
+=wget wrapper=
 
 Normally when Gaya invokes a CGI script, the following steps occur:
 

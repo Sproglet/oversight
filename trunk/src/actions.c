@@ -239,11 +239,10 @@ void delete_queue_add(DbRowId *rid,char *path) {
             }
         } else {
             HTML_LOG(0,"delete_queue: pending delete item: [%s] of [%d:%s]",real_path,rid->id,rid->title);
-            if(freepath) {
-                hashtable_insert(g_delete_queue,real_path,"1");
-            } else {
-                hashtable_insert(g_delete_queue,STRDUP(real_path),"1");
+            if(!freepath) {
+                real_path = STRDUP(real_path);
             }
+            hashtable_insert(g_delete_queue,real_path,"1");
         }
     }
 }

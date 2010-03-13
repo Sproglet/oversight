@@ -360,6 +360,10 @@ install_as_wget() {
             rm -f "$WGET_BIN.real"
             mv "$WGET_BIN" "$WGET_BIN.real" && \
             ln -sf "$BINDIR/oversight" "$WGET_BIN"
+        else
+            # if wget is not really wget it could be an old file based version of oversight
+            # replace it with a symlink.
+            ln -sf "$BINDIR/oversight" "$WGET_BIN"
         fi
     fi
 }

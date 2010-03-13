@@ -1121,8 +1121,8 @@ return 0
 function capitalise(text,\
 i,rtext,rstart) {
 text=" "text
-while (match(text,"\\<[a-z]") > 0) {
-text=substr(text,1,RSTART-1) toupper(substr(text,RSTART,1)) substr(text,RSTART+1)
+while (match(text,"[^a-zA-Z0-9"g_8bit"][a-z]") > 0) {
+text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2)
 }
 
 if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
@@ -1805,7 +1805,7 @@ f=tolower(f)
 if (heuristic == 0 || heuristic == 1) {
 
 
-gsub(/[^A-Za-z0-9]+/,"+",f)
+gsub(/[^A-Za-z0-9€-ÿ]+/,"+",f)
 
 
 
@@ -2823,8 +2823,6 @@ continue
 }
 
 DIV0("Start item "(g_item_count)": ["file"]")
-
-INF("length="length(file)" "url_encode(file))
 
 report_status("item "(++g_item_count))
 
@@ -5319,7 +5317,7 @@ c=substr(text,i,1)
 text2 = text2 g_utf8[c]
 }
 if (text != text2 ) {
-DEBUG("utf8 encode ["text"]=["text2"]")
+
 text = text2
 }
 }
@@ -5391,11 +5389,11 @@ i=0
 if (index(text,"&")) {
 while((i=indexFrom(text,"&",i)) > 0) {
 j=indexFrom(text,";",i)
-DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)))
+
 if (j > i && j - i < 7 ) {
 code=tolower(substr(text,i+1,j-(i+1)))
 
-DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]")
+
 
 if (code != "") {
 cc=substr(code,1,2)
@@ -5601,7 +5599,7 @@ return 0+ result
 function internal_poster_reference(field_id,idx,\
 poster_ref) {
 poster_ref = gTitle[idx]"_"g_year[idx]
-gsub(/[^-_a-zA-Z0-9]+/,"_",poster_ref)
+gsub(/[^-_a-zA-Z0-9€-ÿ]+/,"_",poster_ref)
 if (g_category[idx] == "T" ) {
 poster_ref = poster_ref "_" g_season[idx]
 } else {
@@ -6257,25 +6255,10 @@ semicolon,quote) {
 
 
 g_category[idx]="M"
-if (substr(title,1,1) == "&" ) {
-semicolon=index(title,";")
-if (semicolon > 0 ) { 
-
-quote=substr(title,2,semicolon-1)
-gsub("."quote,"",title)
+DEBUG("imdb title=["title"]")
+if (match(title,"^\".*\"") ) {
+title=substr(title,RSTART+1,RLENGTH-2)
 g_category[idx]="T"
-
-
-
-
-
-
-
-
-
-
-
-}
 }
 
 
@@ -6468,7 +6451,7 @@ newName = substitute("EPISODE",g_episode[i],newName)
 newName = substitute("INF",gAdditionalInfo[i],newName)
 
 epTitle=gEpTitle[i]
-gsub(/[^-A-Za-z0-9,. ]/,"",epTitle)
+gsub(/[^-A-Za-z0-9€-ÿ,. ]/,"",epTitle)
 gsub(/[{]EPTITLE[}]/,epTitle,newName)
 
 newName = substitute("EPTITLE",epTitle,newName)
@@ -6937,7 +6920,7 @@ t = g_media[idx]
 sub(/\/$/,"",t)
 sub(/.*\//,"",t)
 t = remove_format_tags(t)
-gsub(/[^A-Za-z0-9]/," ",t)
+gsub(/[^A-Za-z0-9€-ÿ]/," ",t)
 DEBUG("Setting title to file["t"]")
 }
 

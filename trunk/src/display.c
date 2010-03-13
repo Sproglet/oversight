@@ -1278,7 +1278,7 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
         // Add title replacing all runs of non-alnum with single _
         int first_nonalnum = 1;
         while(*t) {
-            if (isalnum(*t) || strchr("-_",*t) ) {
+            if (isalnum(*t) || strchr("-_",*t) || *t < 0 /* utf-8 high bit */ ) {
                 *p++ = *t;
                 first_nonalnum=1;
             } else if (first_nonalnum) {

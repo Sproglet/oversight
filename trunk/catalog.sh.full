@@ -57,6 +57,43 @@
 # Removed bintube search : commercial site.
 # Changed regex search order for ^[-a-z]+$- ONLINE_NFO 
 
+# ==================================================================================
+# Character Encodings - coping with accented characters.
+# UTF is received from NMT ls command (cygwin ls gives 8bit ascii) 
+# HTML encoding received from web searches. html_decode() decodes to 8bit ascii.
+# URLs should use url_encode()
+# File names should be written in UTF I think.
+# We should try to keep strings either 8bit ascii or UTF. and only convert them as they come in or go out.
+#
+# Also thetvdb will only search 7bit ascii but returns full utf8 html
+# tvtage will take 8bit ascii but returns more search results which are only 7bit.
+# Recommend searchs be done with no_accent() function!
+#
+# For full i18n support this requires a bit more thought. 
+#
+# Main internal string format will either be:
+# utf-8 : good i18n support  , but accent agnostic string comparison will fail.
+# 8bit : good performance but utf8 must be decoded back to 8bit.
+#
+# substr() index() need some no_accent equivalents. May need no_accent to work with utf8 or
+# use 8bit ascii as core format and replace all 3 char utf8 with '?'
+#
+# change adjustTitle to give priority to names with ascii 128+. These retain accent info.
+# remove html_decode from clean_title and call it in the right places.
+# add 'no_accent() to tvrage/tvdb lookup urls.
+# make noaccent() work with utf-8
+# identify raw ascii streams vs utf8 (eg ls command is utf8 on C200, check HDX , ) 
+# ensure all input is utf8.
+#
+#
+# Outputs:
+#  dynamic html(oversight bin) -> utf8 (Do not html_encode accented chars) ie send c3 a0 not &#xE0; etc
+#     but some characters need encoding - eg funny quotes in plots.
+#  index.db -> utf-8
+#  file names - check creation using utf8 otherwise use 8bit ascii
+
+#
+
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20100228-1BETA
@@ -435,9 +472,16 @@ BEGIN {
     no="no";
     g_quote="'"'"'";
     g_quote2="\"'"'"'";
-    g_punc[0]="[^][}{a-zA-Z0-9()"g_quote"]+";
-    g_punc[1]="[^a-zA-Z0-9()"g_quote"]+";
-    g_punc[2]="[^a-zA-Z0-9"g_quote"]+";
+
+    g_8bit="€-ÿ"; // range 0x80 - 0xff
+
+    # Remove any punctuation except quotes () [] {} - also keep high bit
+    g_punc[0]="[^][}{a-zA-Z0-9()"g_quote g_8bit"]+";
+    # Remove any punctuation except quotes () - also keep high bit
+    g_punc[1]="[^a-zA-Z0-9()"g_quote g_8bit"]+";
+    # Remove any punctuation except quotes () - also keep high bit
+    g_punc[2]="[^a-zA-Z0-9"g_quote g_8bit"]+";
+
     g_nonquote_regex = "[^"g_quote2"]";
 
     #g_imdb_regex="\\<tt[0-9]+\\>";
@@ -778,10 +822,12 @@ END{
 
     CAPTURE_PREFIX=tmp_dir"/catalog."
 
-    g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?p=");
+    #INF("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
+
+    g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8&eo=UTF-8&p=");
     g_search_ask = get_local_search_engine("http://ask.com","/web","?q=");
     g_search_bing = "http://www.bing.com/search?q=";
-    g_search_google = "http://www.google.com/search?q=";
+    g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q=";
 
     g_search_engine[0]=g_search_yahoo;
     g_search_engine[1]=g_search_bing;
@@ -1234,6 +1280,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
 
         #DEBUG( "ls: ["scan_line"]"); 
+        INF("scan_line: length="length(scan_line)" "url_encode(scan_line));
 
         store=0;
 
@@ -1443,6 +1490,12 @@ function glob2re(glob) {
     gsub(/[<]/,"\\<",glob);
     gsub(/ *, */,"|",glob);
     gsub(/[>]/,"\\>",glob);
+
+    #remove empty words
+    gsub("^\\|","",glob);
+    gsub("\\|$","",glob);
+    gsub("\\|\\|","",glob);
+
     return "("glob")";
 }
 
@@ -1797,7 +1850,7 @@ t) {
 }
 
 function scrapeIMDBTitlePage(idx,url,\
-f,line,imdbContentPosition) {
+f,line,imdbContentPosition,utf8) {
 
     if (url == "" ) return;
 
@@ -1822,6 +1875,14 @@ f,line,imdbContentPosition) {
 
         FS="\n";
         while(imdbContentPosition != "footer" && (getline line < f) > 0  ) {
+            if (utf8 == "" ) {
+                utf8 = check_utf8(line);
+            } else {
+                line = html_decode(line);
+                if (utf8 == 0) {
+                    line = utf8_encode(line);
+                }
+            }
             imdbContentPosition=scrapeIMDBLine(line,imdbContentPosition,idx,f);
         }
         close(f);
@@ -2763,6 +2824,8 @@ tvid,tvDbSeriesPage) {
 
         DIV0("Start item "(g_item_count)": ["file"]");
 
+        INF("length="length(file)" "url_encode(file));
+
         report_status("item "(++g_item_count));
 
         DEBUG("folder :["fldr"]");
@@ -3172,6 +3235,7 @@ function clean_globals() {
     delete g_rating;
     delete g_category;
     delete gDate;
+    delete g_title_rank;
     delete g_title_source;
 
     gMovieFileCount = 0;
@@ -4552,12 +4616,6 @@ letter) {
 # deep - if set then [] and {} are removed from text too
 function clean_title(t,deep) {
 
-    if (index(t,"&") && index(t,";")) {
-        gsub(/[&]amp;/,"and",t);
-        t = html_decode(t);
-        gsub(/[&][a-z0-9]+;/,"",t);
-    }
-
     gsub(/[&]/," and ",t);
 
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
@@ -5111,7 +5169,7 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
 function adjustTitle(idx,newTitle,source,\
-oldSrc,newSrc) {
+oldSrc,newSrc,newRank) {
 
     if (!("filename" in gTitlePriority)) {
         #initialise
@@ -5134,14 +5192,19 @@ oldSrc,newSrc) {
 
         ERR("Bad value ["source"] passed to adjustTitle");
 
-    } else if (gTitle[idx] == "" || gTitlePriority[source] - gTitlePriority[g_title_source[idx]] > 0) {
-        DEBUG(oldSrc" promoted to "newSrc);
-        gTitle[idx] = newTitle;
-        g_title_source[idx] = source;
-        return 1;
     } else {
-        DEBUG("current title "oldSrc "outranks " newSrc);
-        return 0;
+        newRank = gTitlePriority[source];
+        if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
+        if (gTitle[idx] == "" || newRank - g_title_rank[idx] > 0) {
+            DEBUG(oldSrc" promoted to "newSrc);
+            gTitle[idx] = newTitle;
+            g_title_source[idx] = source;
+            g_title_rank[idx] = newRank;;
+            return 1;
+        } else {
+            DEBUG("current title "oldSrc "outranks " newSrc);
+            return 0;
+        }
     }
 }
 
@@ -5248,17 +5311,20 @@ i,text2,ll,c) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
-    text2="";
-    ll=length(text);
-    for(i = 1 ; i - ll <= 0 ; i++ ) {
-        c=substr(text,i,1);
-        text2 = text2 g_utf8[c];
-    }
-    if (text != text2 ) {
-        DEBUG("utf8 encode ["text"]=["text2"]");
+    if (ascii8(text)) {
+        text2="";
+        ll=length(text);
+        for(i = 1 ; i - ll <= 0 ; i++ ) {
+            c=substr(text,i,1);
+            text2 = text2 g_utf8[c];
+        }
+        if (text != text2 ) {
+            DEBUG("utf8 encode ["text"]=["text2"]");
+            text = text2;
+        }
     }
 
-    return text2;
+    return text;
 }
 
 
@@ -5268,8 +5334,6 @@ i,text2,ll,c) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
-
-    text=utf8_encode(text);
 
     text2="";
     ll=length(text);
@@ -5310,25 +5374,46 @@ i,c,h,b1,b2) {
         b2=128+and(i,63);
         g_utf8[c]=g_chr[b1+0] g_chr[b2+0];
     }
+    #special html - all sites return utf8 except for IMDB and epguides.
+    # IMDB doesnt use symbolic names - mostly hexcodes. So we can probably 
+    # not bother with anything except for amp. see what happens.
+    #s="amp|38|gt|62|lt|60|divide|247|deg|176|copy|169|pound|163|quot|34|nbsp|32|cent|162|";
+    g_chr["amp"] = "&";
 }
 
+# TODO replace with new version that uses get_regex_pos or chop function
 function html_decode(text,\
-i,j,code,newcode) {
+i,j,code,newcode,cc) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
     i=0;
-    while((i=indexFrom(text,"&#",i)) > 0) {
-        DEBUG("i="i);
-        j=indexFrom(text,";",i);
-        code=tolower(substr(text,i+2,j-(i+2)));
+    if (index(text,"&")) {
+        while((i=indexFrom(text,"&",i)) > 0) {
+            j=indexFrom(text,";",i);
+            DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)));
+            if (j > i && j - i < 7 ) {
+                code=tolower(substr(text,i+1,j-(i+1)));
 
-        if (substr(code,1,1) == "x") {
-            newcode=g_chr[code];
-        } else {
-            newcode=g_chr[0+code];
+                DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]");
+
+                if (code != "") {
+                    cc=substr(code,1,2);
+                    if (cc == "#x") {
+                        newcode=g_chr[substr(code,2)];
+                    } else if (cc ~ "^#[0-9]")  {
+                        newcode=g_chr[0+substr(code,2)];
+                    } else {
+                        newcode=g_chr[code];
+                    }
+                    if (newcode != "") {
+                        text=substr(text,1,i-1) newcode substr(text,j+1);
+                        i += length(newcode) -1;
+                    }
+                }
+            }
+            i += 1;
         }
-        text=substr(text,1,i-1) newcode substr(text,j+1);
     }
     #DEBUG("decode out =["text"]");
     return text;
@@ -5872,6 +5957,16 @@ i,url2,f) {
     return f;
 }
 
+function check_utf8(line,\
+utf8) {
+    line=tolower(line);
+    if (index(line,"charset") || index(line,"encoding")) {
+        utf8 = index(line,"utf-8");
+        INF("UTF-8 Encoding:" utf8);
+    }
+    return utf8;
+}
+
 # Scan a page for matches to regular expression
 # IN url to scan
 # IN fixed_text, - fixed text to help speed up scan
@@ -5880,7 +5975,7 @@ i,url2,f) {
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbose,\
-f,line,count,linecount,remain,is_imdb,matches2) {
+f,line,count,linecount,remain,is_imdb,matches2,utf8) {
 
     delete matches;
     id1("scanPageForMatches["url"]["fixed_text"]["regex"]["max"]");
@@ -5901,6 +5996,15 @@ f,line,count,linecount,remain,is_imdb,matches2) {
         remain=max;
 
         while(((getline line < f) > 0)  ) {
+
+            if (utf8 == "" ) {
+                utf8 = check_utf8(line);
+            } else {
+                line = html_decode(line);
+                if (utf8 == 0) {
+                    line = utf8_encode(line);
+                }
+            }
 
             line = de_emphasise(line);
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
@@ -6037,6 +6141,7 @@ count,fcount,i,parts,start) {
 function scrapeIMDBLine(line,imdbContentPosition,idx,f,\
 title,poster_imdb_url) {
 
+
     if (imdbContentPosition == "footer" ) {
         return imdbContentPosition;
     } else if (imdbContentPosition == "header" ) {
@@ -6113,7 +6218,8 @@ title,poster_imdb_url) {
             #IMDB Genre takes precedence
             if (g_genre[idx] == "" && index(line,"Genre:")) {
                 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0));
-                sub(/ +more */,"",g_genre[idx]);
+                sub(/ +[Ss]ee /," ",g_genre[idx]);
+                sub(/ +[Mm]ore */,"",g_genre[idx]);
             }
             if (g_runtime[idx] == "" && index(line,"Runtime:")) {
                 g_runtime[idx]=trimAll(scrape_until("irtime",f,"</div>",0));
@@ -6223,7 +6329,7 @@ l,akas,a,c,br) {
 }
 
 function scrapeIMDBCertificate(idx,line,\
-l,certs,certpos,cert,c,total,i,flag) {
+l,cert_list,certpos,cert,c,total,i,flag) {
 
     flag="certificates=";
 
@@ -7031,6 +7137,52 @@ i,row,f) {
     }
     close(output_file);
 }
+
+function ascii8(s) {
+    return s ~ "["g_8bit"]";
+}
+
+#ALL# #set up accent translations
+#ALL# function accent_init(\
+#ALL# asc7,asc8,c7,c8,i) {
+#ALL#     if (!("Ï" in g_acc )) {
+#ALL#         asc8="ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ";
+#ALL#                asc7="SOZsozYYuAAAAAAACEEEEIIIIDNOOOOOOUUUUYsaaaaaaaceeeeiiiionoooooouuuuyy";
+#ALL#         for(i = 1 ; i <= length(asc8) ; i++ ) {
+#ALL#             c7=substr(asc7,i,1)
+#ALL#             c8=substr(asc8,i,1)
+#ALL#             g_acc[c8] = c7;
+#ALL#             g_acc[utf8_encode(c8)] = c7;
+#ALL#         }
+#ALL#     }
+#ALL# }
+#ALL# 
+#ALL# #http://weblogtoolscollection.com/b2-img/convertaccents.phps
+#ALL# function no_accent(s,\
+#ALL# i,j,out,s1,s2) {
+#ALL#     if (ascii7(s) == 0) {
+#ALL#         accent_init();
+#ALL#         for(i = 1 ; i <= length(s) ; i++ ) {
+#ALL#             c=substr(s,i,1);
+#ALL#             if ( c"" <= "~" ) {
+#ALL#                 out = out c;
+#ALL#             } else if ((c2=g_acc[c]) != "") {
+#ALL#                 out = out c2;
+#ALL#             } else if ((c2=g_acc[substr(s,i,2)]) != "") {
+#ALL#                 out = out c2;
+#ALL#                 i++;
+#ALL#             } else {
+#ALL#                 out = out "?";
+#ALL#                 i++;
+#ALL#             }
+#ALL#                 
+#ALL#             if ((j=index(s1,c)) > 0) {
+#ALL#                 s = substr(s,1,i-1) substr(s2,i,1) substr(s,i+1);
+#ALL#             }
+#ALL#         }
+#ALL#     }
+#ALL#     return s;
+#ALL# }
 
 function update_plots(pfile,idx,\
 id,key,cmd,cmd2,ep) {

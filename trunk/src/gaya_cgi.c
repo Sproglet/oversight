@@ -295,7 +295,7 @@ char *url_encode(char *str) {
     assert(str);
   char *pstr = str, *buf = MALLOC(strlen(str) * 3 + 1), *pbuf = buf;
   while (*pstr) {
-    if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
+    if (isalnum(*pstr) ||*pstr == '/' ||  *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
       *pbuf++ = *pstr;
 //    else if (*pstr == ' ') 
 //      *pbuf++ = '+';
@@ -305,6 +305,23 @@ char *url_encode(char *str) {
   }
   *pbuf = '\0';
   return buf;
+}
+
+/* if url_encoding string is unchanged, just return that. */
+char *url_encode_static(char *str,int *free_result)
+{
+    assert(str);
+  char *pstr = str;
+  while (*pstr && (isalnum(*pstr) || *pstr == '/' || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~')) {
+      pstr++;
+  }
+  if (*pstr) {
+      *free_result = 1;
+      return url_encode(str);
+  } else {
+      *free_result = 0;
+      return str;
+  }
 }
 
 /*==========================================================================

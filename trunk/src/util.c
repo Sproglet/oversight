@@ -77,7 +77,6 @@ struct hashtable *string_string_hashtable(int size)
     return create_hashtable(size,stringhash,stringcmp);
 }
 
-
 // Replace all pairs  string,match1,replace1,match2,replace2,NULL
 char *replace_all_str(char *s_in,...)
 {

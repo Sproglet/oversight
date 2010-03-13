@@ -59,39 +59,25 @@
 
 # ==================================================================================
 # Character Encodings - coping with accented characters.
-# UTF is received from NMT ls command (cygwin ls gives 8bit ascii) 
-# HTML encoding received from web searches. html_decode() decodes to 8bit ascii.
-# URLs should use url_encode()
-# File names should be written in UTF I think.
-# We should try to keep strings either 8bit ascii or UTF. and only convert them as they come in or go out.
 #
-# Also thetvdb will only search 7bit ascii but returns full utf8 html
-# tvtage will take 8bit ascii but returns more search results which are only 7bit.
-# Recommend searchs be done with no_accent() function!
+# In C and awk character encoding must be handled carefully. esp as oversight moves
+# towards i18n support.
 #
-# For full i18n support this requires a bit more thought. 
+# Where possible all html/xml input is utf-8. 
+# Two exceptions are imdb and epguides which both use the 1252 codepage thing.
 #
-# Main internal string format will either be:
-# utf-8 : good i18n support  , but accent agnostic string comparison will fail.
-# 8bit : good performance but utf8 must be decoded back to 8bit.
+# On NMT platform the ls command also returns UTF-8 filenames.
+# (via cygwin it is 8bit ascii)
 #
-# substr() index() need some no_accent equivalents. May need no_accent to work with utf8 or
-# use 8bit ascii as core format and replace all 3 char utf8 with '?'
+# The apis like utf8 wrapped in url encoding. They do not work with any codepage format.
 #
-# change adjustTitle to give priority to names with ascii 128+. These retain accent info.
-# remove html_decode from clean_title and call it in the right places.
-# add 'no_accent() to tvrage/tvdb lookup urls.
-# make noaccent() work with utf-8
-# identify raw ascii streams vs utf8 (eg ls command is utf8 on C200, check HDX , ) 
-# ensure all input is utf8.
+# capitalise()
+# There are issues identifying which utf8 chars are letters and which are punctuation.
+# for now all are treated as letters hence Wall-e not Wall-E
 #
-#
-# Outputs:
-#  dynamic html(oversight bin) -> utf8 (Do not html_encode accented chars) ie send c3 a0 not &#xE0; etc
-#     but some characters need encoding - eg funny quotes in plots.
-#  index.db -> utf-8
-#  file names - check creation using utf8 otherwise use 8bit ascii
-
+# adjustTitle()
+# adjustTitle gives priority to names with high bit characters. Its assumed these 
+# are close to the real name the user expects to see.
 #
 
 set -u  #Abort with unset variables
@@ -475,12 +461,14 @@ BEGIN {
 
     g_8bit="€-ÿ"; // range 0x80 - 0xff
 
+    g_alnum8 = "a-zA-Z0-9" g_8bit;
+
     # Remove any punctuation except quotes () [] {} - also keep high bit
-    g_punc[0]="[^][}{a-zA-Z0-9()"g_quote g_8bit"]+";
+    g_punc[0]="[^][}{&()" g_quote g_alnum8 "]+";
     # Remove any punctuation except quotes () - also keep high bit
-    g_punc[1]="[^a-zA-Z0-9()"g_quote g_8bit"]+";
+    g_punc[1]="[^&()"g_quote g_alnum8"]+";
     # Remove any punctuation except quotes () - also keep high bit
-    g_punc[2]="[^a-zA-Z0-9"g_quote g_8bit"]+";
+    g_punc[2]="[^&"g_quote g_alnum8"]+";
 
     g_nonquote_regex = "[^"g_quote2"]";
 
@@ -1280,7 +1268,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
 
         #DEBUG( "ls: ["scan_line"]"); 
-        INF("scan_line: length="length(scan_line)" "url_encode(scan_line));
+        #INF("scan_line: length="length(scan_line)" "url_encode(scan_line));
 
         store=0;
 
@@ -1805,7 +1793,7 @@ function textToSearchKeywords(f,heuristic\
     if (heuristic == 0 || heuristic == 1) {
 
         #removed hyphen from list
-        gsub(/[^A-Za-z0-9€-ÿ]+/,"+",f);
+        gsub("[^" g_alnum8"]+","+",f);
 
         #remove words ending with numbers
         #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
@@ -3667,7 +3655,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     for(t in titles) {
         #Just count the number of table links
         query = usenet_query_url;
-        sub(/QUERY/,clean_title(titles[t]),query);
+        sub(/QUERY/,norm_title(clean_title(titles[t])),query);
         link_count = scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles);
         DEBUG("number of links "link_count);
         if (link_count-baseline > 0) {
@@ -3879,7 +3867,8 @@ url) {
     if (match(title," [Aa]nd ")) {
         #try "a and b\ta & b"
         url=url"\t"url;
-        sub(/ [Aa]nd /," \\& ",url); 
+        sub(/ [Aa]nd /," %26 ",url); 
+        #sub(/ [Aa]nd /," \\& ",url); 
     }
     if (match(title," O ")) {
         #try "Mr O Connor\tMr OConnor"
@@ -4235,6 +4224,13 @@ attr,a_name,a_val,eq,attr_pairs) {
     info["@CURRENT"] = currentTag;
 }
 
+function norm_title(t) {
+    sub(/^[Tt]he /,"",t);
+    sub(/ [Tt]he$/,"",t);
+    gsub(/[&]/,"and",t);
+    return tolower(t);
+}
+
 # Return 3 if a possible Title is a very good match for titleIn
 # Return 2 if it is a likely match
 # Return 1 if it is an initial or abbreviated type of match.
@@ -4270,11 +4266,8 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
 
     possible_title=clean_title(possible_title);
 
-    sub(/^[Tt]he /,"",possible_title);
-    sub(/^[Tt]he /,"",titleIn);
-
-    sub(/ [Tt]he$/,"",possible_title);
-    sub(/ [Tt]he$/,"",titleIn);
+    possible_title=norm_title(possible_title);
+    titleIn=norm_title(titleIn);
 
 #    if (substr(titleIn,2) == substr(possible_title,2)) {
 #        DEBUG("Checking ["titleIn"] against ["possible_title"]");
@@ -4283,8 +4276,6 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         DEBUG("Qualified title ["possible_title"]");
     }
 
-    titleIn = tolower(titleIn);
-    possible_title = tolower(possible_title);
 #    INF("titleIn["titleIn"]");
 #    INF("possible_title["possible_title"]");
 #    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
@@ -4614,7 +4605,8 @@ letter) {
 # deep - if set then [] and {} are removed from text too
 function clean_title(t,deep) {
 
-    gsub(/[&]/," and ",t);
+    #ALL# gsub(/[&]/," and ",t);
+    gsub(/[&]amp;/,"\\&",t);
 
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
@@ -4636,7 +4628,7 @@ function clean_title(t,deep) {
 function remove_tags(line) {
     gsub(/<[^>]+>/," ",line);
     gsub(/ +/," ",line);
-    gsub(/\&amp;/," and ",line);
+    gsub(/\&amp;/," \\& ",line);
     gsub(/[&][a-z]+;?/,"",line);
     line=de_emphasise(line);
     return line;
@@ -5599,7 +5591,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 function internal_poster_reference(field_id,idx,\
 poster_ref) {
     poster_ref = gTitle[idx]"_"g_year[idx];
-    gsub(/[^-_a-zA-Z0-9€-ÿ]+/,"_",poster_ref);
+    gsub("[^-_&" g_alnum8 "]+","_",poster_ref);
     if (g_category[idx] == "T" ) {
         poster_ref = poster_ref "_" g_season[idx];
     } else {
@@ -6451,7 +6443,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         newName = substitute("INF",gAdditionalInfo[i],newName);
 
         epTitle=gEpTitle[i];
-        gsub(/[^-A-Za-z0-9€-ÿ,. ]/,"",epTitle);
+        gsub("[^-" g_alnum8 ",. ]","",epTitle);
         gsub(/[{]EPTITLE[}]/,epTitle,newName);
 
         newName = substitute("EPTITLE",epTitle,newName);
@@ -6920,7 +6912,7 @@ t) {
         sub(/\/$/,"",t);
         sub(/.*\//,"",t); #remove path
         t = remove_format_tags(t);
-        gsub(/[^A-Za-z0-9€-ÿ]/," ",t); #remove odd chars
+        gsub("[^" g_alnum8 "]"," ",t); #remove odd chars
         DEBUG("Setting title to file["t"]");
     }
 

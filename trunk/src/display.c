@@ -173,17 +173,11 @@ char *self_url(char *new_params) {
     char *param_name;
     char *param_value;
 
-#define QSELFURL
-#ifdef QSELFURL
     // Store params here.
     int pcount=0;
     int psize=0;
     char *pname[MAX_PARAMS];
     char *pval[MAX_PARAMS];
-#else
-    char *old_params = NULL;
-    int first=1;
-#endif
 
     // Cycle through each of the existing parameters
     for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&param_name,&param_value) ; ) {
@@ -205,46 +199,40 @@ char *self_url(char *new_params) {
                 if (EMPTY_STR(new_params) || !delimited_substring(new_params,"&",param_name,"&=",1,1)) {
 
                     // Keep the old parameter
-#ifdef QSELFURL
                     pname[pcount] = param_name;
                     pval[pcount] = param_value;
                     pcount++;
                     assert(pcount < MAX_PARAMS);
-                    psize += strlen(param_name) + strlen(param_value) + 3;
-#else
-
-                    char *new;
-                    ovs_asprintf(&new,"%s%c%s=%s",NVL(old_params),(first?'?':'&'),param_name,param_value);
-                    FREE(old_params);
-                    old_params = new;
-                    first=0;
-#endif
+                    // add 3 *param length to allow for url_encoding
+                    psize += strlen(param_name) + 3*strlen(param_value) + 3;
                 }
             }
         }
     }
 
     char *tmp;
-#ifdef QSELFURL
     char *new=MALLOC(strlen(cgi_url(0))+psize+strlen(new_params) + 3);
     tmp = new;
     tmp += sprintf(tmp,"%s",cgi_url(0));
     int i;
     for(i = 0 ; i < pcount ; i ++ ) {
-        tmp += sprintf(tmp,"%c%s=%s",(i==0?'?':'&'),pname[i],pval[i]);
+
+        int free_param;
+        char *value = url_encode_static(pval[i],&free_param);
+
+        HTML_LOG(0,"encoded[%s]",value);
+        tmp += sprintf(tmp,"%c%s=%s",(i==0?'?':'&'),pname[i],value);
+
+        if (free_param) {
+            FREE(value);
+        }
     }
     tmp += sprintf(tmp,"%c%s",(pcount==0?'?':'&'),new_params);
-#else
-
-    char *new;
-    ovs_asprintf(&tmp,"%s%s%c%s",cgi_url(0),NVL(old_params),(first?'?':'&'),new_params);
-    FREE(old_params);
-    new = tmp;
-#endif
 
     tmp = remove_blank_params(new);
     FREE(new);
     new = tmp;
+    HTML_LOG(0,"encoded final[%s]",new);
 
     return new;
 }
@@ -373,13 +361,19 @@ char *drill_down_url(char *new_params,char *param_list)
                     int depth = is_drilldown_of(qname,param_name);
                     if (depth) {
                         char *tmp;
+
+                        int free_val;
+                        char *encoded_val = url_encode_static(qval,&free_val);
+
                         if (new_drilldown_params == NULL) {
-                            ovs_asprintf(&new_drilldown_params,"%c%s=%s",DRILLDOWN_CHAR,qname,qval);
+                            ovs_asprintf(&new_drilldown_params,"%c%s=%s",DRILLDOWN_CHAR,qname,encoded_val);
                         } else {
-                            ovs_asprintf(&tmp,"%s&%c%s=%s",new_drilldown_params,DRILLDOWN_CHAR,qname,qval);
+                            ovs_asprintf(&tmp,"%s&%c%s=%s",new_drilldown_params,DRILLDOWN_CHAR,qname,encoded_val);
                             FREE(new_drilldown_params);
                             new_drilldown_params = tmp;
                         }
+
+                        if (free_val) FREE(encoded_val);
 
                         // track item with fewest DRILLDOWN_CHAR
                         if (depth < min_depth || min_depth == 0 ) {
@@ -471,8 +465,13 @@ char *return_query_string()
 
                         char *new_name = qname + 1;
 
-                        ovs_asprintf(&tmp,"&%s=%s",new_name,qval);
+                        int free_val;
+                        char *encoded_val = url_encode_static(qval,&free_val);
+
+                        ovs_asprintf(&tmp,"&%s=%s",new_name,encoded_val);
                         array_add(new_drilldown_params,tmp);
+
+                        if (free_val) FREE(encoded_val);
 
                     }
                     if (depth > max_depth ) {
@@ -1099,28 +1098,42 @@ void create_file_to_url_symlink() {
 
 char *file_to_url(char *path) {
     char *new = NULL;
+    char *prefix="";
+
     assert(path);
     if (g_dimension->local_browser) {
         //If using gaya just go directly to the file system
-        ovs_asprintf(&new,"\"file://%s\"",path);
+        prefix="file://";
 
     } else if (util_starts_with(path,"/share/Apps/oversight")) {
         // if /share/Apps/oversight/file/path 
         // then use /oversight/file/path thanks to symlink 
         //  /opt/sybhttpd/default/oversight -> /share/Apps/oversight/
-        ovs_asprintf(&new,"\"%s\"",path+11);
+        path += 11;
 
     } else if (util_starts_with(path,"/opt/sybhttpd/default")) {
         // if in /opt/sybhttpd/default/file/path
         // then use /file/path
-        ovs_asprintf(&new,"\"%s\"",path+21);
+        path +=21;
 
     } else if (use_file_to_url_symlink && util_starts_with(path,NETWORK_SHARE)) {
-        ovs_asprintf(&new,"\"/.network/%s\"",path+strlen(NETWORK_SHARE));
+
+        prefix="/.network/";
+        path += strlen(NETWORK_SHARE);
+
     } else {
         // otherwise pass as a paramter to this script. It will cat jpg etc it to stdout
-        ovs_asprintf(&new,"\"?%s\"",path);
+        prefix="?";
     }
+
+    int free_path2;
+    char *encoded_path = url_encode_static(path,&free_path2);
+
+
+    ovs_asprintf(&new,"\"%s%s\"",prefix,encoded_path);
+
+    if (free_path2) FREE(encoded_path);
+
     return new;
 
 }
@@ -1139,7 +1152,9 @@ char * get_local_image_link(char *path,char *alt_text,char *attr) {
         HTML_LOG(0,"%s doesnt exist",path);
     } else {
         char *img_src = file_to_url(path);
+
         ovs_asprintf(&result,"<img alt=\"%s\" src=%s %s >",alt_text,img_src,attr);
+
         FREE(img_src);
     }
     return result;
@@ -1278,7 +1293,7 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
         // Add title replacing all runs of non-alnum with single _
         int first_nonalnum = 1;
         while(*t) {
-            if (isalnum(*t) || strchr("-_",*t) || *t < 0 /* utf-8 high bit */ ) {
+            if (isalnum(*t) || strchr("-_&",*t) || *t < 0 /* utf-8 high bit */ ) {
                 *p++ = *t;
                 first_nonalnum=1;
             } else if (first_nonalnum) {
@@ -1442,7 +1457,7 @@ TRACE;
             }
         }
         if(!exists(path) ) {
-            HTML_LOG(0,"[%s] doesnt exist",path);
+            HTML_LOG(1,"[%s] doesnt exist",path);
             FREE(path);
             path=NULL;
         }
@@ -2280,8 +2295,10 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     FREE(title); // first_space points inside of title
     return result;
 }
+
 char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
+    char *result = NULL;
     static char *link_template = NULL;
     if (link_template == NULL ) {
 
@@ -2294,19 +2311,26 @@ char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *ti
     char season_txt[9];
     sprintf(season_txt,"%d",season);
 
-    return replace_all_str(link_template,
+    int free_name2;
+    char *name2 = url_encode_static(name,&free_name2);
+
+    result = replace_all_str(link_template,
             "@VIEW@",view,
-            "@NAME@",name,
+            "@NAME@",name2,
             "@SEASON@",season_txt,
             "@ATTR@",attr,
             "@TITLE@",title,
             "@CELLNO@",cell_no_txt,
             "@FONT_CLASS@",font_class,
             NULL);
+
+    if (free_name2) FREE(name2);
+    return result;
 }
 
 char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
+    char *result = NULL;
     static char *link_template = NULL;
     if (link_template == NULL ) {
 
@@ -2316,17 +2340,25 @@ char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,c
                 QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
     }
 
-    return replace_all_str(link_template,
+    int free_name2;
+    char *name2 = url_encode_static(name,&free_name2);
+
+    result = replace_all_str(link_template,
             "@VIEW@",view,
-            "@NAME@",name,
+            "@NAME@",name2,
             "@ATTR@",attr,
             "@TITLE@",title,
             "@FONT_CLASS@",font_class,
             "@CELLNO@",cell_no_txt,
             NULL);
+
+    if (free_name2) FREE(name2);
+    return result;
 }
+
 char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
+    char *result = NULL;
     static char *link_template = NULL;
     if (link_template == NULL ) {
 
@@ -2335,7 +2367,8 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
         link_template = get_drilldown_link_with_font(
                QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
     }
-    return replace_all_str(link_template,
+
+    result = replace_all_str(link_template,
             "@VIEW@",view,
             "@IDLIST@",idlist,
             "@ATTR@",attr,
@@ -2343,6 +2376,8 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
             "@FONT_CLASS@",font_class,
             "@CELLNO@",cell_no_txt,
             NULL);
+
+    return result;
 }
 
 char *get_drilldown_view(DbRowId *rid) {
@@ -3045,11 +3080,12 @@ char *get_theme_image_tag(char *image_name,char *attr) {
         attr = default_button_attr();
     }
     isrc = icon_source(image_name);
+
     ovs_asprintf(&result,"<img alt=\"%s\" border=0 src=%s %s />",image_name,isrc,attr);
+
     FREE(isrc);
     return result;
 }
-
 
 
 int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)

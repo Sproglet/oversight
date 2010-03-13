@@ -57,6 +57,43 @@
 
 
 
+
+
+
+
+
+
+
+#
+
+
+
+#
+
+#
+
+
+
+#
+
+
+#
+
+
+
+
+
+
+#
+#
+
+
+
+
+
+
+#
+
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20100228-1BETA
@@ -435,9 +472,16 @@ yes="yes"
 no="no"
 g_quote="'"'"'"
 g_quote2="\"'"'"'"
-g_punc[0]="[^][}{a-zA-Z0-9()"g_quote"]+"
-g_punc[1]="[^a-zA-Z0-9()"g_quote"]+"
-g_punc[2]="[^a-zA-Z0-9"g_quote"]+"
+
+g_8bit="€-ÿ"; // range 0x80 - 0xff
+
+
+g_punc[0]="[^][}{a-zA-Z0-9()"g_quote g_8bit"]+"
+
+g_punc[1]="[^a-zA-Z0-9()"g_quote g_8bit"]+"
+
+g_punc[2]="[^a-zA-Z0-9"g_quote g_8bit"]+"
+
 g_nonquote_regex = "[^"g_quote2"]"
 
 
@@ -778,10 +822,12 @@ if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0
 
 CAPTURE_PREFIX=tmp_dir"/catalog."
 
-g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?p=")
+
+
+g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8&eo=UTF-8&p=")
 g_search_ask = get_local_search_engine("http://ask.com","/web","?q=")
 g_search_bing = "http://www.bing.com/search?q="
-g_search_google = "http://www.google.com/search?q="
+g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q="
 
 g_search_engine[0]=g_search_yahoo
 g_search_engine[1]=g_search_bing
@@ -1234,6 +1280,7 @@ while((getline scan_line < tempFile) > 0 ) {
 
 
 
+INF("scan_line: length="length(scan_line)" "url_encode(scan_line))
 
 store=0
 
@@ -1443,6 +1490,12 @@ gsub(/[?]/,".",glob)
 gsub(/[<]/,"\\<",glob)
 gsub(/ *, */,"|",glob)
 gsub(/[>]/,"\\>",glob)
+
+
+gsub("^\\|","",glob)
+gsub("\\|$","",glob)
+gsub("\\|\\|","",glob)
+
 return "("glob")"
 }
 
@@ -1797,7 +1850,7 @@ return trimAll(text)
 }
 
 function scrapeIMDBTitlePage(idx,url,\
-f,line,imdbContentPosition) {
+f,line,imdbContentPosition,utf8) {
 
 if (url == "" ) return
 
@@ -1822,6 +1875,14 @@ DEBUG("START IMDB: title:"gTitle[idx]" poster "g_poster[idx]" genre "g_genre[idx
 
 FS="\n"
 while(imdbContentPosition != "footer" && (getline line < f) > 0  ) {
+if (utf8 == "" ) {
+utf8 = check_utf8(line)
+} else {
+line = html_decode(line)
+if (utf8 == 0) {
+line = utf8_encode(line)
+}
+}
 imdbContentPosition=scrapeIMDBLine(line,imdbContentPosition,idx,f)
 }
 close(f)
@@ -2763,6 +2824,8 @@ continue
 
 DIV0("Start item "(g_item_count)": ["file"]")
 
+INF("length="length(file)" "url_encode(file))
+
 report_status("item "(++g_item_count))
 
 DEBUG("folder :["fldr"]")
@@ -3172,6 +3235,7 @@ delete gCertRating
 delete g_rating
 delete g_category
 delete gDate
+delete g_title_rank
 delete g_title_source
 
 gMovieFileCount = 0
@@ -4552,12 +4616,6 @@ return letter
 
 function clean_title(t,deep) {
 
-if (index(t,"&") && index(t,";")) {
-gsub(/[&]amp;/,"and",t)
-t = html_decode(t)
-gsub(/[&][a-z0-9]+;/,"",t)
-}
-
 gsub(/[&]/," and ",t)
 
 
@@ -5111,7 +5169,7 @@ return 0+ found
 
 
 function adjustTitle(idx,newTitle,source,\
-oldSrc,newSrc) {
+oldSrc,newSrc,newRank) {
 
 if (!("filename" in gTitlePriority)) {
 
@@ -5134,14 +5192,19 @@ if (!(source in gTitlePriority)) {
 
 ERR("Bad value ["source"] passed to adjustTitle")
 
-} else if (gTitle[idx] == "" || gTitlePriority[source] - gTitlePriority[g_title_source[idx]] > 0) {
+} else {
+newRank = gTitlePriority[source]
+if  (ascii8(newTitle)) newRank += 10
+if (gTitle[idx] == "" || newRank - g_title_rank[idx] > 0) {
 DEBUG(oldSrc" promoted to "newSrc)
 gTitle[idx] = newTitle
 g_title_source[idx] = source
+g_title_rank[idx] = newRank;;
 return 1
 } else {
 DEBUG("current title "oldSrc "outranks " newSrc)
 return 0
+}
 }
 }
 
@@ -5248,6 +5311,7 @@ i,text2,ll,c) {
 if (g_chr[32] == "" ) {
 decode_init()
 }
+if (ascii8(text)) {
 text2=""
 ll=length(text)
 for(i = 1 ; i - ll <= 0 ; i++ ) {
@@ -5256,9 +5320,11 @@ text2 = text2 g_utf8[c]
 }
 if (text != text2 ) {
 DEBUG("utf8 encode ["text"]=["text2"]")
+text = text2
+}
 }
 
-return text2
+return text
 }
 
 
@@ -5268,8 +5334,6 @@ i,text2,ll,c) {
 if (g_chr[32] == "" ) {
 decode_init()
 }
-
-text=utf8_encode(text)
 
 text2=""
 ll=length(text)
@@ -5310,25 +5374,46 @@ b1=192+rshift(i,6)
 b2=128+and(i,63)
 g_utf8[c]=g_chr[b1+0] g_chr[b2+0]
 }
+
+
+
+
+g_chr["amp"] = "&"
 }
 
+
 function html_decode(text,\
-i,j,code,newcode) {
+i,j,code,newcode,cc) {
 if (g_chr[32] == "" ) {
 decode_init()
 }
 i=0
-while((i=indexFrom(text,"&#",i)) > 0) {
-DEBUG("i="i)
+if (index(text,"&")) {
+while((i=indexFrom(text,"&",i)) > 0) {
 j=indexFrom(text,";",i)
-code=tolower(substr(text,i+2,j-(i+2)))
+DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)))
+if (j > i && j - i < 7 ) {
+code=tolower(substr(text,i+1,j-(i+1)))
 
-if (substr(code,1,1) == "x") {
-newcode=g_chr[code]
+DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]")
+
+if (code != "") {
+cc=substr(code,1,2)
+if (cc == "#x") {
+newcode=g_chr[substr(code,2)]
+} else if (cc ~ "^#[0-9]")  {
+newcode=g_chr[0+substr(code,2)]
 } else {
-newcode=g_chr[0+code]
+newcode=g_chr[code]
 }
+if (newcode != "") {
 text=substr(text,1,i-1) newcode substr(text,j+1)
+i += length(newcode) -1
+}
+}
+}
+i += 1
+}
 }
 
 return text
@@ -5872,6 +5957,16 @@ if (f != "") break
 return f
 }
 
+function check_utf8(line,\
+utf8) {
+line=tolower(line)
+if (index(line,"charset") || index(line,"encoding")) {
+utf8 = index(line,"utf-8")
+INF("UTF-8 Encoding:" utf8)
+}
+return utf8
+}
+
 
 
 
@@ -5880,7 +5975,7 @@ return f
 
 
 function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbose,\
-f,line,count,linecount,remain,is_imdb,matches2) {
+f,line,count,linecount,remain,is_imdb,matches2,utf8) {
 
 delete matches
 id1("scanPageForMatches["url"]["fixed_text"]["regex"]["max"]")
@@ -5901,6 +5996,15 @@ FS="\n"
 remain=max
 
 while(((getline line < f) > 0)  ) {
+
+if (utf8 == "" ) {
+utf8 = check_utf8(line)
+} else {
+line = html_decode(line)
+if (utf8 == 0) {
+line = utf8_encode(line)
+}
+}
 
 line = de_emphasise(line)
 
@@ -6037,6 +6141,7 @@ return 0+count
 function scrapeIMDBLine(line,imdbContentPosition,idx,f,\
 title,poster_imdb_url) {
 
+
 if (imdbContentPosition == "footer" ) {
 return imdbContentPosition
 } else if (imdbContentPosition == "header" ) {
@@ -6113,7 +6218,8 @@ sub(/full (summary|synopsis).*/,"",g_plot[idx])
 
 if (g_genre[idx] == "" && index(line,"Genre:")) {
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
-sub(/ +more */,"",g_genre[idx])
+sub(/ +[Ss]ee /," ",g_genre[idx])
+sub(/ +[Mm]ore */,"",g_genre[idx])
 }
 if (g_runtime[idx] == "" && index(line,"Runtime:")) {
 g_runtime[idx]=trimAll(scrape_until("irtime",f,"</div>",0))
@@ -6223,7 +6329,7 @@ return
 }
 
 function scrapeIMDBCertificate(idx,line,\
-l,certs,certpos,cert,c,total,i,flag) {
+l,cert_list,certpos,cert,c,total,i,flag) {
 
 flag="certificates="
 
@@ -7031,6 +7137,52 @@ generate_nfo_file(g_settings["catalog_nfo_format"],row)
 }
 close(output_file)
 }
+
+function ascii8(s) {
+return s ~ "["g_8bit"]"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function update_plots(pfile,idx,\
 id,key,cmd,cmd2,ep) {

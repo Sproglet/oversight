@@ -101,6 +101,11 @@ void adjust_path()
     setenv("PATH",new_path,1);
 }
 
+static void start_page(char *callmode) {
+    printf("<html>\n<head>\n<meta http-equiv=content-type content=\"text/html; charset=utf-8\">\n");
+    printf("<!-- %s:%s -->\n",callmode,OVS_VERSION);
+}
+
 int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
 
@@ -151,9 +156,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     if (send_content_type_header) {
         printf("Content-Type: text/html\n\n");
 
-        printf("<!-- CGI:%s -->\n",OVS_VERSION);
+        start_page("CGI");
     } else {
-        printf("<!-- WGET:%s -->\n",OVS_VERSION);
+        start_page("WGET");
     }
 
     html_log_level_set(2);

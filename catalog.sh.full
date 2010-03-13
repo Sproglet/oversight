@@ -1121,8 +1121,8 @@ function set_permissions(shellArg) {
 function capitalise(text,\
 i,rtext,rstart) {
     text=" "text;
-    while (match(text,"\\<[a-z]") > 0) {
-        text=substr(text,1,RSTART-1) toupper(substr(text,RSTART,1)) substr(text,RSTART+1);
+    while (match(text,"[^a-zA-Z0-9"g_8bit"][a-z]") > 0) {
+        text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2);
     }
     ## Uppercase roman
     if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
@@ -1805,7 +1805,7 @@ function textToSearchKeywords(f,heuristic\
     if (heuristic == 0 || heuristic == 1) {
 
         #removed hyphen from list
-        gsub(/[^A-Za-z0-9]+/,"+",f);
+        gsub(/[^A-Za-z0-9€-ÿ]+/,"+",f);
 
         #remove words ending with numbers
         #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
@@ -2823,8 +2823,6 @@ tvid,tvDbSeriesPage) {
         }
 
         DIV0("Start item "(g_item_count)": ["file"]");
-
-        INF("length="length(file)" "url_encode(file));
 
         report_status("item "(++g_item_count));
 
@@ -5319,7 +5317,7 @@ i,text2,ll,c) {
             text2 = text2 g_utf8[c];
         }
         if (text != text2 ) {
-            DEBUG("utf8 encode ["text"]=["text2"]");
+            #DEBUG("utf8 encode ["text"]=["text2"]");
             text = text2;
         }
     }
@@ -5391,11 +5389,11 @@ i,j,code,newcode,cc) {
     if (index(text,"&")) {
         while((i=indexFrom(text,"&",i)) > 0) {
             j=indexFrom(text,";",i);
-            DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)));
+            #DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)));
             if (j > i && j - i < 7 ) {
                 code=tolower(substr(text,i+1,j-(i+1)));
 
-                DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]");
+                #DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]");
 
                 if (code != "") {
                     cc=substr(code,1,2);
@@ -5601,7 +5599,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 function internal_poster_reference(field_id,idx,\
 poster_ref) {
     poster_ref = gTitle[idx]"_"g_year[idx];
-    gsub(/[^-_a-zA-Z0-9]+/,"_",poster_ref);
+    gsub(/[^-_a-zA-Z0-9€-ÿ]+/,"_",poster_ref);
     if (g_category[idx] == "T" ) {
         poster_ref = poster_ref "_" g_season[idx];
     } else {
@@ -6257,25 +6255,10 @@ semicolon,quote) {
     # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
     g_category[idx]="M";
-    if (substr(title,1,1) == "&" ) {
-        semicolon=index(title,";");
-        if (semicolon > 0 ) { 
-
-            quote=substr(title,2,semicolon-1);
-            gsub("."quote,"",title);
-            g_category[idx]="T";
-
-#            quote=substr(title,1,semicolon);
-#            title2=substr(title,semicolon+1);
-#            quotePos = index(title2,quote);
-#            if (quotePos > 0 ) {
-#                #rest=substr(title2,quotePos+length(quote));
-#                #if (match(/^ \([0-9]{4}\)$/,rest)) {
-#                    title=substr(title2,1,quotePos-1);
-#                    g_category[idx]="T";
-#                #}
-#            }
-        }
+    DEBUG("imdb title=["title"]");
+    if (match(title,"^\".*\"") ) {
+        title=substr(title,RSTART+1,RLENGTH-2);
+        g_category[idx]="T";
     }
 
     #Remove the year
@@ -6468,7 +6451,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         newName = substitute("INF",gAdditionalInfo[i],newName);
 
         epTitle=gEpTitle[i];
-        gsub(/[^-A-Za-z0-9,. ]/,"",epTitle);
+        gsub(/[^-A-Za-z0-9€-ÿ,. ]/,"",epTitle);
         gsub(/[{]EPTITLE[}]/,epTitle,newName);
 
         newName = substitute("EPTITLE",epTitle,newName);
@@ -6937,7 +6920,7 @@ t) {
         sub(/\/$/,"",t);
         sub(/.*\//,"",t); #remove path
         t = remove_format_tags(t);
-        gsub(/[^A-Za-z0-9]/," ",t); #remove odd chars
+        gsub(/[^A-Za-z0-9€-ÿ]/," ",t); #remove odd chars
         DEBUG("Setting title to file["t"]");
     }
 

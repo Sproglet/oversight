@@ -59,19 +59,7 @@
 
 
 
-
-
-
-
-
 #
-
-
-
-#
-
-#
-
 
 
 #
@@ -80,15 +68,13 @@
 #
 
 
-
-
-
-
 #
+
 #
 
 
 
+#
 
 
 
@@ -475,12 +461,14 @@ g_quote2="\"'"'"'"
 
 g_8bit="€-ÿ"; // range 0x80 - 0xff
 
+g_alnum8 = "a-zA-Z0-9" g_8bit
 
-g_punc[0]="[^][}{a-zA-Z0-9()"g_quote g_8bit"]+"
 
-g_punc[1]="[^a-zA-Z0-9()"g_quote g_8bit"]+"
+g_punc[0]="[^][}{&()" g_quote g_alnum8 "]+"
 
-g_punc[2]="[^a-zA-Z0-9"g_quote g_8bit"]+"
+g_punc[1]="[^&()"g_quote g_alnum8"]+"
+
+g_punc[2]="[^&"g_quote g_alnum8"]+"
 
 g_nonquote_regex = "[^"g_quote2"]"
 
@@ -1280,7 +1268,7 @@ while((getline scan_line < tempFile) > 0 ) {
 
 
 
-INF("scan_line: length="length(scan_line)" "url_encode(scan_line))
+
 
 store=0
 
@@ -1805,7 +1793,7 @@ f=tolower(f)
 if (heuristic == 0 || heuristic == 1) {
 
 
-gsub(/[^A-Za-z0-9€-ÿ]+/,"+",f)
+gsub("[^" g_alnum8"]+","+",f)
 
 
 
@@ -3667,7 +3655,7 @@ DEBUG("number of links for no match "baseline)
 for(t in titles) {
 
 query = usenet_query_url
-sub(/QUERY/,clean_title(titles[t]),query)
+sub(/QUERY/,norm_title(clean_title(titles[t])),query)
 link_count = scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles)
 DEBUG("number of links "link_count)
 if (link_count-baseline > 0) {
@@ -3879,7 +3867,8 @@ url = baseurl title
 if (match(title," [Aa]nd ")) {
 
 url=url"\t"url
-sub(/ [Aa]nd /," \\& ",url); 
+sub(/ [Aa]nd /," %26 ",url); 
+
 }
 if (match(title," O ")) {
 
@@ -4235,6 +4224,13 @@ info[currentTag"#"a_name]=a_val
 info["@CURRENT"] = currentTag
 }
 
+function norm_title(t) {
+sub(/^[Tt]he /,"",t)
+sub(/ [Tt]he$/,"",t)
+gsub(/[&]/,"and",t)
+return tolower(t)
+}
+
 
 
 
@@ -4270,11 +4266,8 @@ shortName=clean_title(substr(possible_title,1,cPos-1),1)
 
 possible_title=clean_title(possible_title)
 
-sub(/^[Tt]he /,"",possible_title)
-sub(/^[Tt]he /,"",titleIn)
-
-sub(/ [Tt]he$/,"",possible_title)
-sub(/ [Tt]he$/,"",titleIn)
+possible_title=norm_title(possible_title)
+titleIn=norm_title(titleIn)
 
 
 
@@ -4283,8 +4276,6 @@ if (yearOrCountry != "") {
 DEBUG("Qualified title ["possible_title"]")
 }
 
-titleIn = tolower(titleIn)
-possible_title = tolower(possible_title)
 
 
 
@@ -4614,7 +4605,8 @@ return letter
 
 function clean_title(t,deep) {
 
-gsub(/[&]/," and ",t)
+
+gsub(/[&]amp;/,"\\&",t)
 
 
 
@@ -4636,7 +4628,7 @@ return t
 function remove_tags(line) {
 gsub(/<[^>]+>/," ",line)
 gsub(/ +/," ",line)
-gsub(/\&amp;/," and ",line)
+gsub(/\&amp;/," \\& ",line)
 gsub(/[&][a-z]+;?/,"",line)
 line=de_emphasise(line)
 return line
@@ -5599,7 +5591,7 @@ return 0+ result
 function internal_poster_reference(field_id,idx,\
 poster_ref) {
 poster_ref = gTitle[idx]"_"g_year[idx]
-gsub(/[^-_a-zA-Z0-9€-ÿ]+/,"_",poster_ref)
+gsub("[^-_&" g_alnum8 "]+","_",poster_ref)
 if (g_category[idx] == "T" ) {
 poster_ref = poster_ref "_" g_season[idx]
 } else {
@@ -6451,7 +6443,7 @@ newName = substitute("EPISODE",g_episode[i],newName)
 newName = substitute("INF",gAdditionalInfo[i],newName)
 
 epTitle=gEpTitle[i]
-gsub(/[^-A-Za-z0-9€-ÿ,. ]/,"",epTitle)
+gsub("[^-" g_alnum8 ",. ]","",epTitle)
 gsub(/[{]EPTITLE[}]/,epTitle,newName)
 
 newName = substitute("EPTITLE",epTitle,newName)
@@ -6920,7 +6912,7 @@ t = g_media[idx]
 sub(/\/$/,"",t)
 sub(/.*\//,"",t)
 t = remove_format_tags(t)
-gsub(/[^A-Za-z0-9€-ÿ]/," ",t)
+gsub("[^" g_alnum8 "]"," ",t)
 DEBUG("Setting title to file["t"]")
 }
 

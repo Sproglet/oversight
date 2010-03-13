@@ -21,6 +21,7 @@ char *substring(char *s,int start_pos, int end_pos);
 
 char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts);
 char *replace_all_str(char *s_in,...);
+char *replace_url_params(char *s_in,...);
 char *replace_str(char *s_in,char *match,char *replace);
 char *translate_inplace(
         char *str, // input text

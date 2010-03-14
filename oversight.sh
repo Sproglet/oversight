@@ -348,7 +348,7 @@ add_watch_cron() {
 }
 
 is_wget() {
-    [ -x "$1" ] && "$1" -V 2>/dev/null | grep -iq "GNU Wget"
+    [ -x "$1" ] && grep -iq "GNU Wget" "$1"
 }
 
 install_as_wget() {
@@ -371,11 +371,14 @@ install_as_wget() {
 uninstall_as_wget() {
     # Restore wget binary
     if ! is_wget "$WGET_BIN" ; then
-        rm -f "$WGET_BIN"
-        if is_wget "$WGET_BIN.real" ; then
-            mv "$WGET_BIN.real" "$WGET_BIN"
-        else
-            cp -a "$WGET_BACKUP" "$WGET_BIN"
+        if rm -f "$WGET_BIN" ; then
+            if is_wget "$WGET_BIN.real" ; then
+                mv "$WGET_BIN.real" "$WGET_BIN"
+            else
+                if is_wget "$WGET_BACKUP" ; then 
+                    cp -a "$WGET_BACKUP" "$WGET_BIN"
+                fi
+            fi
         fi
     fi
 }

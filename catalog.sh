@@ -4709,7 +4709,8 @@ if (!(keywords in g_imdb_link_search)) {
 
 
 
-keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de"
+
+keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb"
 
 
 scanPageForMatches(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList)
@@ -6006,6 +6007,11 @@ gsub(/\/Title\?/,"/tt",line)
 
 if (verbose) DEBUG("scanindex = "index(line,fixed_text))
 if (verbose) DEBUG(line)
+
+
+if ( index(url,"Bsummer") ) {
+DEBUG("line=["line"]")
+}
 
 if (fixed_text == "" || index(line,fixed_text)) {
 

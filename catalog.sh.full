@@ -4709,7 +4709,8 @@ i1,result,matchList,bestUrl) {
 
         #We want imdb links but not from imdb themselves as this skews the results.
         #Also keeping the number of results down helps focus on early matches.
-        keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb.com+-inurl%3Aimdb.de";
+        #yahoo : inurl:imdb.com is only applied to the site. to apply to url just use imdb.
+        keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb";
 
         # bing is not very good here.
         scanPageForMatches(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList);

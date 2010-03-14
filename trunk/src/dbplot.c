@@ -17,12 +17,12 @@
 #include "array.h"
 
 
-#define MAX_PLOT_LENGTH 5500
 
 static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int start_row,int copy_plot_text);
 char *truncate_plot(char *plot,int *free_result);
 
-static char plot_buf[MAX_PLOT_LENGTH+1];
+#define MAX_PLOT_LENGTH 10000
+static char* plot_buf = NULL;
 
 FILE *plot_open(Db*db)
 {
@@ -118,6 +118,7 @@ static char *get_plot_by_key_static(DbRowId *rid,PlotType ptype)
     FILE *fp = plot_open(rid->db);
 
     if (fp) {
+        if (!plot_buf) plot_buf = MALLOC(MAX_PLOT_LENGTH+1);
         if (!EMPTY_STR(key)) {
             if (rid->plotoffset[ptype] == PLOT_POSITION_UNSET) {
 
@@ -280,6 +281,8 @@ static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int star
 
         fseek(fp,0,SEEK_SET);
         long fpos=0;
+
+        if (!plot_buf) plot_buf = MALLOC(MAX_PLOT_LENGTH+1);
 
         while( fgets(plot_buf,MAX_PLOT_LENGTH,fp) != NULL ) {
 

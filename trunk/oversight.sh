@@ -353,17 +353,25 @@ is_wget() {
 
 install_as_wget() {
     # Replace wget binary with oversight. This allows faster page load.
-    if [ -f "$OVERSIGHT_USE_WGET" -a ! -f "$OVERSIGHT_WGET_ERROR" ] ; then
-        if is_wget "$WGET_BIN" ; then
-            cp -a "$WGET_BIN" "$WGET_BACKUP"
-            # use rm then cp to avoid symlink overwrite of unexpected file
-            rm -f "$WGET_BIN.real"
-            mv "$WGET_BIN" "$WGET_BIN.real" && \
-            ln -sf "$BINDIR/oversight" "$WGET_BIN"
-        else
-            # if wget is not really wget it could be an old file based version of oversight
-            # replace it with a symlink.
-            ln -sf "$BINDIR/oversight" "$WGET_BIN"
+    if [ ! -f "$OVERSIGHT_USE_WGET" ] ; then
+        echo "wget wrapper disabled: could not find $OVERSIGHT_USE_WGET"
+       
+    else 
+       if [ -f "$OVERSIGHT_WGET_ERROR" ] ; then
+           echo "wget wrapper disabled: found $OVERSIGHT_WGET_ERROR"
+       else
+            if is_wget "$WGET_BIN" ; then
+                cp -a "$WGET_BIN" "$WGET_BACKUP"
+                # use rm then cp to avoid symlink overwrite of unexpected file
+                rm -f "$WGET_BIN.real"
+                mv "$WGET_BIN" "$WGET_BIN.real" && \
+                ln -sf "$BINDIR/oversight" "$WGET_BIN"
+            else
+                # if wget is not really wget it could be an old file based version of oversight
+                # replace it with a symlink.
+                ln -sf "$BINDIR/oversight" "$WGET_BIN"
+            fi
+            echo "wget wrapper installed"
         fi
     fi
 }
@@ -380,9 +388,39 @@ uninstall_as_wget() {
                 fi
             fi
         fi
+        echo "wget wrapper removed"
     fi
 }
 
+reboot_fix() {
+    # NMT broken wget
+    if [ ! /dev/null -ef /tmp/dns_cache ] ; then
+        rm -f /tmp/dns_cache && ln -s /dev/null /tmp/dns_cache
+    fi
+
+    # NMT find siliently fails with -mtime and -newer
+    if [ ! -L "$APPDIR/bin/nmt100/find" ] ; then
+        ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
+    fi
+
+    ln -sf "$BINDIR/oversight" "$APPDIR/oversight.cgi"
+
+    install_as_wget
+
+    # Restore website link
+    ln -sf "$APPDIR/" /opt/sybhttpd/default/.
+
+    # Create symlink to html
+    ln -sf /tmp/0 "$APPDIR/logs/gui.log"
+
+    # Restore cronjobs
+    "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
+    freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
+    add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
+
+    # Delete any catalog 2 oversight messages
+    rm -f "$APPDIR/catalog.status"
+}
 
 case "$1" in 
     NEWSCAN)
@@ -406,33 +444,10 @@ case "$1" in
         ;;
 
     REBOOTFIX)
-        # NMT broken wget
-        if [ ! /dev/null -ef /tmp/dns_cache ] ; then
-            rm -f /tmp/dns_cache && ln -s /dev/null /tmp/dns_cache
-        fi
+        set -x
+        reboot_fix > "$APPDIR/logs/reboot.log" 2>&1
+        set +2
 
-        # NMT find siliently fails with -mtime and -newer
-        if [ ! -L "$APPDIR/bin/nmt100/find" ] ; then
-            ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
-        fi
-
-        ln -sf "$BINDIR/oversight" "$APPDIR/oversight.cgi"
-
-        install_as_wget
-
-        # Restore website link
-        ln -sf "$APPDIR/" /opt/sybhttpd/default/.
-
-        # Create symlink to html
-        ln -sf /tmp/0 "$APPDIR/logs/gui.log"
-
-        # Restore cronjobs
-        "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
-        freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
-        add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
-
-        # Delete any catalog 2 oversight messages
-        rm -f "$APPDIR/catalog.status"
         ;;
 
     LISTEN)

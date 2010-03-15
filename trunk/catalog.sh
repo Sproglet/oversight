@@ -6008,11 +6008,6 @@ gsub(/\/Title\?/,"/tt",line)
 if (verbose) DEBUG("scanindex = "index(line,fixed_text))
 if (verbose) DEBUG(line)
 
-
-if ( index(url,"Bsummer") ) {
-DEBUG("line=["line"]")
-}
-
 if (fixed_text == "" || index(line,fixed_text)) {
 
 linecount = get_regex_counts(line,regex,remain,matches2)
@@ -7469,8 +7464,13 @@ main "$@"
 else
 LOG_TAG=
 
-mkdir -p "$APPDIR/logs"
-LOG_FILE="$APPDIR/logs/catalog.$JOBID.log"
+LOG_DIR="$APPDIR/logs"
+mkdir -p "$LOG_DIR"
+LOG_NAME="catalog.$JOBID.log"
+LOG_FILE="$LOG_DIR/$LOG_NAME"
+
+(cd "$LOG_DIR" && ln -sf "$LOG_NAME" "last.log" )
+
 main "$@" > "$LOG_FILE" 2>&1
 if [ -z "${REMOTE_ADDR:-}" ] ;then
 echo "[INFO] $LOG_FILE"

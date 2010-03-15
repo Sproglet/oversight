@@ -48,13 +48,14 @@ void set_mount_status(char *p,char *val) {
 
     char *current = hashtable_search(mount_points,p);
     if (current == NULL) {
-        HTML_LOG(1,"Adding mount point [%s] = %s",p,val);
+        HTML_LOG(0,"Adding mount point [%s] = %s",p,val);
         hashtable_insert(mount_points,STRDUP(p),val);
     } else if ( STRCMP(current,val) != 0) {
         hashtable_remove(mount_points,p,1);
-        HTML_LOG(1,"mount point [%s] status changed from [%s] to [%s]",p,current,val);
+        HTML_LOG(0,"mount point [%s] status changed from [%s] to [%s]",p,current,val);
         hashtable_insert(mount_points,STRDUP(p),val);
     }
+    HTML_LOG(0,"set_mount_status done");
 }
 
 char *network_mount_point(char *file) {
@@ -86,11 +87,14 @@ void get_mount_points() {
 
         FILE *fp = fopen("/etc/mtab","r");
         if (fp) {
-#define BUFSIZE 200
+#define BUFSIZE 999
             char buf[BUFSIZE];
+
             PRE_CHECK_FGETS(buf,BUFSIZE);
 
             while(fgets(buf,BUFSIZE,fp) != NULL) {
+
+                HTML_LOG(0,"mount[%s]",buf);
 
                 CHECK_FGETS(buf,BUFSIZE);
 

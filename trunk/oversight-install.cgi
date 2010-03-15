@@ -6,7 +6,6 @@ INSTALL_DIR=$( cd "$INSTALL_DIR" ; pwd )
 appname="oversight"
 wsname="OverSight"
 cgiName="oversight.cgi"
-cgiPath="$INSTALL_DIR/$cgiName"
 shPath="$INSTALL_DIR/$appname.sh"
 start_command="$shPath REBOOTFIX"
 
@@ -91,24 +90,14 @@ INSTALL() {
 
         chmod -R 775 "$INSTALL_DIR"
         chown -R nmt:nmt "$INSTALL_DIR"
-        "$NMT" NMT_INSTALL_WS "$wsname" "$httpd/$appname/$cgiName"
         "$NMT" NMT_INSTALL "$appname" "$start_command"
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
         eval "$start_command"
+        "$NMT" NMT_INSTALL_WS "$wsname" "$httpd/$appname/$cgiName"
 
 
         UPGRADE_CONFIG conf/catalog.cfg catalog_config_version=1
         UPGRADE_CONFIG conf/oversight.cfg ovs_config_version=1
-
-        #Move the file format definitions.
-        if ! grep -q '^catalog_film_folder_fmt' conf/catalog.cfg ; then
-            sed -rn '/^unpak_movie_folder_format/ s/^unpak_movie_folder_format/catalog_film_folder_fmt/p' conf/unpak.cfg >> conf/catalog.cfg
-            sed -i 's/^unpak_movie_folder_format/#moved to end of catalog.cfg as catalog_film_folder_fmt : # unpak_movie_folder_format/' conf/unpak.cfg
-        fi
-        if ! grep -q '^catalog_tv_file_fmt' conf/catalog.cfg ; then
-            sed -rn '/^unpak_tv_file_format/ s/^unpak_tv_file_format/catalog_tv_file_fmt/p' conf/unpak.cfg >> conf/catalog.cfg
-            sed -i 's/^unpak_tv_file_format/#moved to end of catalog.cfg as catalog_tv_file_fmt # unpak_tv_file_format/' conf/unpak.cfg
-        fi
 
         if [ ! -f "index.db.idx" ] ; then
             touch "index.db"
@@ -119,17 +108,6 @@ INSTALL() {
         chmod a+r /dev/random /dev/urandom
         BOUNCE_NZBGET
         "$NMT" NMT_INSTALL_WS_BANNER "$wsname" "Installation Complete"
-        oldcgi="/opt/sybhttpd/default/oversight.cgi"
-        rm -f $oldcgi || true
-        cat <<HERE >$oldcgi
-#!/bin/sh
-cat <<HERE2
-Content-Type: text/html
-
-Oversight has moved. Please update your bookmarks.
-<a href="/oversight/oversight.cgi">Click here to continue</a>
-HERE2
-HERE
 }
 
 
@@ -257,7 +235,9 @@ BOUNCE_NZBGET() {
 case "$1" in 
     install|oversight-install)
         PERMS
-        INSTALL
+        set -x
+        INSTALL > "$INSTALL_DIR/logs/install.log" 2>&1
+        set +x
         PERMS
         BOUNCE_NZBGET
         ;;

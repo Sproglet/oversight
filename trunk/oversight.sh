@@ -397,6 +397,14 @@ case "$1" in
         add_watch_cron "$2" "watch" "NEWSCAN" 0 0
         ;;
 
+    INSTALL_AS_WGET)
+        install_as_wget
+        ;;
+
+    UNINSTALL_AS_WGET)
+        uninstall_as_wget
+        ;;
+
     REBOOTFIX)
         # NMT broken wget
         if [ ! /dev/null -ef /tmp/dns_cache ] ; then
@@ -407,6 +415,8 @@ case "$1" in
         if [ ! -L "$APPDIR/bin/nmt100/find" ] ; then
             ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
         fi
+
+        ln -sf "$BINDIR/oversight" "$APPDIR/oversight.cgi"
 
         install_as_wget
 

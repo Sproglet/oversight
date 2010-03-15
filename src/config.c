@@ -144,13 +144,18 @@ struct hashtable *config_load(char *filename,int include_unquoted_space) {
     return result;
 }
 
-#define CFG_BUFSIZ 300
+#define CFG_BUFSIZ 700
 struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
     struct hashtable *result=string_string_hashtable(16);
     char line[CFG_BUFSIZ+1];
 
+    PRE_CHECK_FGETS(line,CFG_BUFSIZ);
+
     while((fgets(line,CFG_BUFSIZ,fp))) {
+
+        HTML_LOG(0,"line[%s]",line);
+        CHECK_FGETS(line,CFG_BUFSIZ);
 
         if ( (line[0] == ' ' || line[0] == '\t' || line[0] == '#' ) && util_strreg(line,"^\\s*#",0)) {
             //skip comment

@@ -85,8 +85,6 @@ $(TARGET):  $(OBJS)
 
 ftp: all
 	cd ../$(TARGET_DIR) && ../../util/send $(ARCH) /Apps/oversight/$(TARGET_DIR) $(TARGET) 
-	# Replace original CGI file
-	cd .. && ./util/send $(ARCH) /Apps/oversight/ $(TARGET).cgi
 
 tester: $(HASH_OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(HASH_OBJECTS)

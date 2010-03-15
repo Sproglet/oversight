@@ -180,6 +180,41 @@ void array_unittest() {
 
 
 /*
+ * Split a strin s_in into an array using any character in sep.
+ */
+Array *split1ch(char *s_in,char *sep)
+{
+    Array *a = array_new(free);
+    char *s = s_in;
+    char *p;
+
+    // printf("split ch [%s] by [%c]\n",s,ch);
+
+    if (s_in == NULL || *s_in == '\0' ) {
+        return a;
+    }
+
+
+    p = s;
+    while (*p ) { 
+        if (strchr(sep,*p)) {
+
+            char *part;
+            ovs_asprintf(&part,"%.*s",p-s,s);
+
+            array_add(a,part);
+
+            s = p =  p+1;
+        } else {
+            p++;
+        }
+    }
+    array_add(a,STRDUP(s));
+
+    return a;
+
+}
+/*
  * Split a strin s_in into an array using character ch.
  */
 Array *splitstr(char *s_in,char *sep)

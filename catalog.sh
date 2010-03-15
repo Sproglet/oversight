@@ -718,9 +718,6 @@ g_plot_app=qa(APPDIR"/bin/plot.sh")
 for(i in g_settings) {
 g_settings_orig[i] = g_settings[i]
 }
-t="Michael"g_quote"s"
-gsub(g_punc[deep+0]," ",t)
-INF("test ["t"]")
 
 
 
@@ -1119,7 +1116,7 @@ return 0
 function capitalise(text,\
 i,rtext,rstart) {
 text=" "text
-while (match(text,"[^a-zA-Z0-9"g_8bit"][a-z]") > 0) {
+while (match(text,"[^a-zA-Z0-9"g_8bit g_quote"][a-z]") > 0) {
 text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2)
 }
 
@@ -2712,7 +2709,7 @@ return 0+ret
 
 
 function extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,reg_pos,reg_match,details,\
-tmpTitle,ret,reg_len) {
+tmpTitle,ret,reg_len,ep,season,title,inf) {
 
 ret = 0
 id1("extractEpisodeByPatternSingle:"reg_match)
@@ -2730,56 +2727,65 @@ reg_pos += prefixReLen
 reg_len = length(reg_match)-prefixReLen
 
 DEBUG("ExtractEpisode:0 Title= ["line"]")
-details[TITLE] = substr(line,1,reg_pos-1)
-DEBUG("ExtractEpisode:1 Title= ["details[TITLE]"]")
+title = substr(line,1,reg_pos-1)
+DEBUG("ExtractEpisode:1 Title= ["title"]")
 
-details[ADDITIONAL_INF]=substr(line,reg_pos+reg_len)
+inf=substr(line,reg_pos+reg_len)
 
-if (match(details[ADDITIONAL_INF],gExtRegExAll) ) {
-details[EXT]=details[ADDITIONAL_INF]
-gsub(/\.[^.]*$/,"",details[ADDITIONAL_INF])
-details[EXT]=substr(details[EXT],length(details[ADDITIONAL_INF])+2)
+if (match(inf,gExtRegExAll) ) {
+details[EXT]=inf
+gsub(/\.[^.]*$/,"",inf)
+details[EXT]=substr(details[EXT],length(inf)+2)
 }
 
-details[ADDITIONAL_INF]=clean_title(details[ADDITIONAL_INF],2)
+inf=clean_title(inf,2)
 
 line=substr(reg_match,prefixReLen+1)
 
-if (match(details[TITLE],": *")) {
-details[TITLE] = substr(details[TITLE],RSTART+RLENGTH)
+if (match(title,": *")) {
+title = substr(title,RSTART+RLENGTH)
 }
-DEBUG("ExtractEpisode:2 Title= ["details[TITLE]"]")
+DEBUG("ExtractEpisode:2 Title= ["title"]")
 
-if (match(details[TITLE],"^[a-z][a-z0-9]+[-]")) {
-tmpTitle=substr(details[TITLE],RSTART+RLENGTH)
+if (match(title,"^[a-z][a-z0-9]+[-]")) {
+tmpTitle=substr(title,RSTART+RLENGTH)
 if (tmpTitle != "" ) {
-INF("Removed group was ["details[TITLE]"] now ["tmpTitle"]")
-details[TITLE]=tmpTitle
+INF("Removed group was ["title"] now ["tmpTitle"]")
+title=tmpTitle
 }
 }
 
-DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
-details[TITLE] = clean_title(details[TITLE],2)
+DEBUG("ExtractEpisode: Title= ["title"]")
+title = clean_title(title,2)
 
-DEBUG("ExtractEpisode: Title= ["details[TITLE]"]")
+DEBUG("ExtractEpisode: Title= ["title"]")
 
 
 
 
 
 match(line,episodeRe "$" )
-details[EPISODE] = substr(line,RSTART,RLENGTH); 
-
+ep = substr(line,RSTART,RLENGTH); 
 if (seasonRe == "") {
-details[SEASON] = 1
+season = 1
 } else {
-details[SEASON] = substr(line,1,RSTART-1)
+season = substr(line,1,RSTART-1)
 }
 
 
-details[EPISODE] = n(details[EPISODE])
+INF("xx1 ["ep"]")
 
-details[SEASON] = n(details[SEASON])
+sub(/[eE]/,",",ep)
+gsub(/\<0*/,"",ep)
+gsub(/,,+/,",",ep)
+sub(/^,+/,"",ep)
+
+INF("xx2 ["ep"]")
+
+details[EPISODE] = ep
+details[SEASON] = n(season)
+details[TITLE] = title
+details[ADDITIONAL_INF]=inf
 ret=1
 }
 
@@ -4234,10 +4240,12 @@ info[currentTag"#"a_name]=a_val
 info["@CURRENT"] = currentTag
 }
 
+
 function norm_title(t) {
 sub(/^[Tt]he /,"",t)
 sub(/ [Tt]he$/,"",t)
 gsub(/[&]/,"and",t)
+gsub(g_quote,"",t)
 return tolower(t)
 }
 
@@ -7068,7 +7076,7 @@ return g
 
 function n(x) \
 {
-gsub(/^[^-0-9]*0*/,"",x)
+sub(/^[^-0-9]*0*/,"",x)
 
 
 
@@ -7468,7 +7476,7 @@ done
 clean_all_files() {
 clean_files "$tmp_root" "." 2
 clean_files "$APPDIR/logs" "catalog.*.log" 5 
-clean_files "$APPDIR/cache" "tt*" 3 
+clean_files "$APPDIR/cache" "tt*" 30
 }
 
 
@@ -7485,7 +7493,7 @@ mkdir -p "$LOG_DIR"
 LOG_NAME="catalog.$JOBID.log"
 LOG_FILE="$LOG_DIR/$LOG_NAME"
 
-(cd "$LOG_DIR" && ln -sf "$LOG_NAME" "last.log" )
+(cd "$LOG_DIR" && ( mv "last.log" "prev.log" || true ) && ln -sf "$LOG_NAME" "last.log" )
 
 main "$@" > "$LOG_FILE" 2>&1
 if [ -z "${REMOTE_ADDR:-}" ] ;then

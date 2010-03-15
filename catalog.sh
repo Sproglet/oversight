@@ -812,9 +812,10 @@ CAPTURE_PREFIX=tmp_dir"/catalog."
 
 
 
-g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8&eo=UTF-8&p=")
+g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8;eo=UTF-8;p=")
 g_search_ask = get_local_search_engine("http://ask.com","/web","?q=")
 g_search_bing = "http://www.bing.com/search?q="
+
 g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q="
 
 g_search_engine[0]=g_search_yahoo

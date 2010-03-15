@@ -7098,7 +7098,7 @@ mn = n(substr(t,11,2))
 r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn
 r= sprintf("%x",r)
 }
-
+INF("shorttime "t" = "r)
 return r
 }
 

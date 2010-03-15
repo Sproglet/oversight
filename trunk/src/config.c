@@ -154,7 +154,6 @@ struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
     while((fgets(line,CFG_BUFSIZ,fp))) {
 
-        HTML_LOG(0,"line[%s]",line);
         CHECK_FGETS(line,CFG_BUFSIZ);
 
         if ( (line[0] == ' ' || line[0] == '\t' || line[0] == '#' ) && util_strreg(line,"^\\s*#",0)) {

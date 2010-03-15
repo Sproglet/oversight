@@ -1692,7 +1692,10 @@ void add_movie_part_row(Array *output,long fn_id,char *cell)
 
 char *movie_listing(DbRowId *rowid)
 {
-    static int show_names = 1;
+    int show_names;
+   
+    show_names = *oversight_val("ovs_movie_filename") == '1';
+
 
     db_rowid_dump(rowid);
 
@@ -1725,7 +1728,7 @@ char *movie_listing(DbRowId *rowid)
             if (parts && parts->size) {
                 label = STRDUP("part 1");
             } else {
-                label = STRDUP("movieX");
+                label = STRDUP("movie");
             }
         }
 
@@ -2659,15 +2662,9 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
         int is_css = util_starts_with(file_name,"css.") ;
         int fix_css_bug = is_css && is_local_browser();
 
-
-        int lno = 0;
-
         PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
-            HTML_LOG(0,"line %d",++lno);
             CHECK_FGETS(buffer,HTML_BUF_SIZE);
-
-            HTML_LOG(0,"line %d",++lno);
 
             int count = 0; 
             char *p=buffer;

@@ -2269,9 +2269,11 @@ mkdir -p $log_dir
 
 log_file="$log_dir/unpak.$log_name.log"
 
+( cd "$log_dir" && ln -sf "unpak.$log_name.log" last.unpak.log )
+
 
 clean_logs() {
-    find "$1" -name \*.log -mtime +1 | while IFS= read f ; do
+    find "$1" -name unpak.\*.log -mtime +5 | while IFS= read f ; do
         rm -f -- "$f"
     done
 }

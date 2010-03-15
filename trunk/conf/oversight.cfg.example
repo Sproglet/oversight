@@ -20,6 +20,8 @@ ovs_use_folders_as_titles=0
 ovs_nas_timeout=90
 ovs_hm_runtime_format="%dh&nbsp;%dm"
 ovs_m_runtime_format="%d&nbsp;min"
+ovs_movie_filename=0
+
 
 ovs_poster_mode[0]=1
 ovs_rows[0]=9

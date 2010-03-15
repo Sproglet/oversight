@@ -69,14 +69,6 @@ body { font-size:20; font-family:"arial"; color:white; }
             Scan speed is approx 300 new files per hour. x2 if getting fanart.
             Other applications may also affect overall scan speed.
             Covers and fanart are downloaded independently so may appear later.
-            <table>
-                <tr>
-                    <td align=center>
-                        <a target="_blank" href="/oversight/logs/last.log">{last log}</a>
-                        <a target="_blank" href="/oversight/logs/last.unpak.log">{last unpak log}</a>
-                    </td>
-                </tr>
-            </table>
 
             <input type=hidden name=old_action value="[:$?action:]">
         </form>

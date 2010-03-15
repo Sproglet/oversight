@@ -7426,14 +7426,15 @@ rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
 
 tidy() {
 rm -f "$APPDIR/catalog.status"
-clean_old_tmp
+clean_all_files
 }
 
 trap "rm -f $APPDIR/catalog.status" INT TERM EXIT
 
 main() {
 
-clean_old_tmp
+clean_all_files
+
 set +e
 echo '[INFO] catalog version '$VERSION' $Id$'
 sed 's/^/\[INFO\] os version /' /proc/version
@@ -7453,21 +7454,22 @@ return $x
 
 
 
-clean_old_tmp() {
-find "$tmp_root" -mtime +2 | while IFS= read f ; do
-rm -fr -- "$f"
-done
-}
 
 
-clean_logs() {
-find "$APPDIR/logs" -name catalog.\*.log -mtime +5 | while IFS= read f ; do
+
+
+
+clean_files() {
+find "$1" -name "$2" -mtime "+$3" | while IFS= read f ; do
 rm -f -- "$f"
 done
 }
 
-clean_logs
-
+clean_all_files() {
+clean_files "$tmp_root" "." 2
+clean_files "$APPDIR/logs" "catalog.*.log" 5 
+clean_files "$APPDIR/cache" "tt*" 3 
+}
 
 
 

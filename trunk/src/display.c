@@ -2702,6 +2702,12 @@ int check_and_prune_item(DbRowId *rowid,char *path) {
     return result;
 }
 
+/*
+ * Find the next folder after the mount point.
+ * This is not calculated from the real mount point but where we
+ * expect things to be on the NMT.
+ * So its just the folder name after the root part.
+ */
 char *next_folder(char *path,char *root)
 {
     char *result = NULL;
@@ -2729,6 +2735,11 @@ int delisted(DbRowId *rowid)
         HTML_LOG(0,"auto delist = %d",auto_prune);
     }
 
+    // Dont check media if it is on another oversight db. Let each one manage itself.
+    if (rowid->db->source[0] != '*' ) {
+        return 0;
+    }
+
     HTML_LOG(1,"auto delist precheck [%s]",path);
     if (auto_prune && !exists(path)) {
         
@@ -2741,7 +2752,7 @@ int delisted(DbRowId *rowid)
             ancestor_dir=next_folder(path,"/");
         }
 
-        if (exists(ancestor_dir) && !is_empty_dir(ancestor_dir) &&  auto_prune) {
+        if (ancestor_dir && exists(ancestor_dir) && !is_empty_dir(ancestor_dir) &&  auto_prune) {
 
             //media present - file gone!
             db_remove_row(rowid);
@@ -2750,7 +2761,10 @@ int delisted(DbRowId *rowid)
         }
         FREE(ancestor_dir);
     }
-    HTML_LOG(1-result,"delisted [%s] = %d",path,result);
+
+    HTML_LOG(0,"delisted [%s] = %d",path,result);
+    //HTML_LOG(1-result,"delisted [%s] = %d",path,result);
+
     if (freepath) FREE(path);
     return result;
 }
@@ -2984,7 +2998,6 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     // Create space for pruned rows
     HTML_LOG(0,"get_grid page %ld rows %d cols %d",page,rows,cols);
     DbRowId **prunedRows = filter_delisted(start,numids,row_ids,items_per_page,&total);
-    HTML_LOG(0,"pruned");
     
     int page_before = (page > 0);
     int page_after = (numids >= total);

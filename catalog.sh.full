@@ -7464,8 +7464,13 @@ if [ "$STDOUT" -eq 1 ] ; then
 else
     LOG_TAG=
     #LOG_FILE="$APPDIR/logs/catalog.`date +%d%H%M`.$$.log"
-    mkdir -p "$APPDIR/logs"
-    LOG_FILE="$APPDIR/logs/catalog.$JOBID.log"
+    LOG_DIR="$APPDIR/logs"
+    mkdir -p "$LOG_DIR"
+    LOG_NAME="catalog.$JOBID.log"
+    LOG_FILE="$LOG_DIR/$LOG_NAME"
+
+    (cd "$LOG_DIR" && ln -sf "$LOG_NAME" "last.log" )
+
     main "$@" > "$LOG_FILE" 2>&1
     if [ -z "${REMOTE_ADDR:-}" ] ;then
         echo "[INFO] $LOG_FILE"

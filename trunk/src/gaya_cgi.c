@@ -55,7 +55,9 @@ void add_default_html_parameters(struct hashtable *query_hash)
 struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 
     int i;
-    Array *qarr = split(q,"&",0);
+    Array *qarr = split1ch(q,"&;");
+
+    //HTML_LOG(0,"query[%s]",q);
 
     if (hashtable_in == NULL) {
         hashtable_in = string_string_hashtable(16);
@@ -94,7 +96,7 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 /*
  * Read the form post data
  */
-#define POST_BUF 999
+#define POST_BUF 2999
 struct hashtable *read_post_data(char *post_filename) {
 
     struct hashtable *result = string_string_hashtable(16);
@@ -144,14 +146,12 @@ struct hashtable *read_post_data(char *post_filename) {
         exit(1);
     }
 
-    char post_line[POST_BUF];
+    char post_line[POST_BUF],c;
+    c='\0';
 
     while(fgets(post_line,POST_BUF,pfp) != NULL ) {
 
-//if ((p=strrchr(post_line,'\n')) != NULL) {
-//*p='\0';
-//}
-
+        assert(c == '\0');
 
         if (url_encoded_in_post_data) {
 

@@ -119,6 +119,7 @@ static char *get_plot_by_key_static(DbRowId *rid,PlotType ptype)
 
     if (fp) {
         if (!plot_buf) plot_buf = MALLOC(MAX_PLOT_LENGTH+1);
+        PRE_CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
         if (!EMPTY_STR(key)) {
             if (rid->plotoffset[ptype] == PLOT_POSITION_UNSET) {
 
@@ -129,9 +130,10 @@ static char *get_plot_by_key_static(DbRowId *rid,PlotType ptype)
                 } else {
                     long fpos=0;
                     while(fgets(plot_buf,MAX_PLOT_LENGTH,fp) ) {
+                        CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
+
                         count++;
 
-                        plot_buf[MAX_PLOT_LENGTH] = '\0';
                         chomp(plot_buf);
 
                         if (util_starts_with(plot_buf,key)) {
@@ -147,6 +149,7 @@ static char *get_plot_by_key_static(DbRowId *rid,PlotType ptype)
                 HTML_LOG(LOG_LVL,"Direct seek to %ld",rid->plotoffset[ptype]);
                 fseek(fp,rid->plotoffset[ptype],SEEK_SET);
                 fgets(plot_buf,MAX_PLOT_LENGTH,fp);
+                CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
                 plot_buf[MAX_PLOT_LENGTH] = '\0';
                 chomp(plot_buf);
                 result = plot_buf;
@@ -283,10 +286,11 @@ static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int star
         long fpos=0;
 
         if (!plot_buf) plot_buf = MALLOC(MAX_PLOT_LENGTH+1);
+        PRE_CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
 
         while( fgets(plot_buf,MAX_PLOT_LENGTH,fp) != NULL ) {
 
-            plot_buf[MAX_PLOT_LENGTH] = '\0';
+            CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
             chomp(plot_buf);
 
             if (!util_starts_with(plot_buf,PLOT_KEY_PREFIX)) {

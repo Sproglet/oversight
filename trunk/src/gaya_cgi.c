@@ -146,12 +146,12 @@ struct hashtable *read_post_data(char *post_filename) {
         exit(1);
     }
 
-    char post_line[POST_BUF],c;
-    c='\0';
+    char post_line[POST_BUF];
 
+    PRE_CHECK_FGETS(post_line,POST_BUF);
     while(fgets(post_line,POST_BUF,pfp) != NULL ) {
 
-        assert(c == '\0');
+        CHECK_FGETS(post_line,POST_BUF);
 
         if (url_encoded_in_post_data) {
 

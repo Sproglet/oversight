@@ -88,7 +88,13 @@ void get_mount_points() {
         if (fp) {
 #define BUFSIZE 200
             char buf[BUFSIZE];
+            PRE_CHECK_FGETS(buf,BUFSIZE);
+
             while(fgets(buf,BUFSIZE,fp) != NULL) {
+
+                CHECK_FGETS(buf,BUFSIZE);
+
+
                 char *p = strstr(buf,NETWORK_SHARE);
                 if (p) {
 
@@ -297,7 +303,13 @@ char *wins_resolve(char *link) {
     if (fp) {
 #define WINS_BUFSIZE 200
         char buf[WINS_BUFSIZE];
+
+        PRE_CHECK_FGETS(buf,WINS_BUFSIZE);
+
         while(fgets(buf,WINS_BUFSIZE,fp)) {
+
+            CHECK_FGETS(buf,WINS_BUFSIZE);
+
             HTML_LOG(0,"Check wins %s",buf);
             char *p=NULL;
 

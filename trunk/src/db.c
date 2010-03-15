@@ -750,17 +750,20 @@ DbRowId *read_and_parse_row_buf(
     db_rowid_init(rowid,db);
 
 
-    static char row[ROW_SIZE];
+    static char row[ROW_SIZE+1];
     char *row_end = row+ROW_SIZE;
     char * next;
 
     char *name,*name_end;
     char *value,*value_end;
 
+    PRE_CHECK_FGETS(row,ROW_SIZE);
+
     *eof = 0;
     // Skip comment lines
     do {
         if (fgets(row,ROW_SIZE,fp) == NULL) {
+            CHECK_FGETS(row,ROW_SIZE);
             *eof = 1;
             return NULL;
         }
@@ -1909,6 +1912,7 @@ void db_set_fields_by_source(
     regex_t regex_ptn;
 
     char buf[DB_ROW_BUF_SIZE+1];
+    PRE_CHECK_FGETS(buf,DB_ROW_BUF_SIZE);
 
     regmatch_t pmatch[5];
 
@@ -1939,14 +1943,12 @@ HTML_LOG(1," begin open db");
             if (db_out) {
                 while(1) {
                     
-                    buf[DB_ROW_BUF_SIZE]='\0';
 
                     if (fgets(buf,DB_ROW_BUF_SIZE,db_in) == NULL) {
                         break;
                     }
 
-                    assert( buf[DB_ROW_BUF_SIZE] == '\0' );
-
+                    CHECK_FGETS(buf,DB_ROW_BUF_SIZE);
 
                     dbsize++;
 
@@ -2117,6 +2119,9 @@ void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[])
 #endif
 }
 
+/*
+ * Todo this should use fread/fwrite 
+ */
 #define COPY_BUF_SIZE 2000
 int copy_file(char *from, char *to)
 {
@@ -2124,9 +2129,11 @@ int copy_file(char *from, char *to)
     char buf[COPY_BUF_SIZE+1];
     int result = -1;
     FILE *fromfp,*tofp;
+
     if ((fromfp = fopen(from,"r") ) != NULL) {
         if ((tofp = fopen(to,"w") ) != NULL) {
             while (fgets(buf,COPY_BUF_SIZE,fromfp) ) {
+
                 fputs(buf,tofp);
             }
             result = errno;

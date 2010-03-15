@@ -105,6 +105,17 @@ void util_rmdir(char *path,char *name);
 #define UNSET -2
 #define UNSET_PTR ((void *)(-2))
 
+/* reading a file using fgets will get out of sync if the line length is greater 
+ * than the buffer. The following macros will log this.
+ * fgets reads up to N-1 bytes and appends nul char so if a line is too long.
+ * or only just fits. b[N] will be nul but b[N-1] will not be null.
+ * So before fgets set b[N-1]=null - if it is not null after then we have hit
+ * a long line. Not the line may actually just fit, but we still flag it as an 
+ * error.
+ */
+#define PRE_CHECK_FGETS(b,sz) b[(sz)-2]='\0'
+#define CHECK_FGETS(b,sz) assert(b[(sz)-2]=='\0')
+
 int count_chr(char *str,char c);
 int exists_file_in_dir(char *dir,char *name);
 Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);

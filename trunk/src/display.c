@@ -2654,15 +2654,22 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
     if (fp) {
 #define HTML_BUF_SIZE 999
 
-        char buffer[HTML_BUF_SIZE+1];
+        char buffer[HTML_BUF_SIZE];
 
         int is_css = util_starts_with(file_name,"css.") ;
         int fix_css_bug = is_css && is_local_browser();
 
 
+        int lno = 0;
+
+        PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
         while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
+            HTML_LOG(0,"line %d",++lno);
+            CHECK_FGETS(buffer,HTML_BUF_SIZE);
+
+            HTML_LOG(0,"line %d",++lno);
+
             int count = 0; 
-            buffer[HTML_BUF_SIZE] = '\0';
             char *p=buffer;
 //            while(*p == ' ') {
 //                p++;
@@ -3710,17 +3717,18 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
 char *get_status() {
     char *result=NULL;
-#define MSG_SIZE 20
+#define MSG_SIZE 50
     static char msg[MSG_SIZE+1];
     char *filename;
     ovs_asprintf(&filename,"%s/catalog.status",appDir());
 
     msg[0] = '\0';
+    PRE_CHECK_FGETS(msg,MSG_SIZE);
 
     FILE *fp = fopen(filename,"r");
     if (fp) {
         fgets(msg,MSG_SIZE,fp);
-        msg[MSG_SIZE] = '\0';
+        CHECK_FGETS(msg,MSG_SIZE);
         chomp(msg);
 
         result = STRDUP(msg);

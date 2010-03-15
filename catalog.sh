@@ -427,6 +427,13 @@ ERR("Unknown plugin "p)
 
 function get_local_search_engine(domain,context,param,\
 i,links,best_url) {
+
+
+
+
+
+
+
 best_url = domain context param
 scanPageForMatches(best_url "test",context,"http://[-_.a-z0-9/]+"context "\\>",0,0,"",links)
 bestScores(links,links,0)
@@ -434,6 +441,7 @@ for(i in links) {
 best_url = i param
 break
 }
+gsub(/\&/,";",best_url)
 INF("remapping "domain context param "=>" best_url)
 return best_url
 }
@@ -809,6 +817,7 @@ if ( g_settings["catalog_tv_file_fmt"] == "" ) RENAME_TV=0
 if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0
 
 CAPTURE_PREFIX=tmp_dir"/catalog."
+
 
 
 
@@ -4853,7 +4862,10 @@ DEBUG("tvdb plot "g_plot[idx])
 
 
 gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"]
-g_rating[idx] = seriesInfo["/Data/Series/Rating"]
+
+
+
+
 setFirst(g_poster,idx,tvDbImageUrl(seriesInfo["/Data/Series/poster"]))
 g_tvid_plugin[idx]="THETVDB"
 g_tvid[idx]=seriesInfo["/Data/Series/id"]
@@ -6220,7 +6232,8 @@ g_runtime[idx] = substr(g_runtime[idx],RSTART,RLENGTH)
 }
 }
 
-if (g_rating[idx] == "" && index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
+
+if (index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
 g_rating[idx]=0+substr(line,RSTART,RLENGTH-3)
 DEBUG("IMDB: Got Rating = ["g_rating[idx]"]")
 }
@@ -7448,7 +7461,7 @@ done
 
 
 clean_logs() {
-find "$APPDIR/logs" -name \*.log -mtime +2 | while IFS= read f ; do
+find "$APPDIR/logs" -name catalog.\*.log -mtime +5 | while IFS= read f ; do
 rm -f -- "$f"
 done
 }

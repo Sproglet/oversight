@@ -427,6 +427,13 @@ function plugin_error(p) {
 # IN param = ?p= or ?q=
 function get_local_search_engine(domain,context,param,\
 i,links,best_url) {
+
+    #param must not use & separater as this gets mangled when using gsub() 
+    # eg url=http:/.../ie=utf8&q=SEARCH then gsub(/SEARCH/,"real query",url)
+    # replace & with ;
+
+
+
     best_url = domain context param;
     scanPageForMatches(best_url "test",context,"http://[-_.a-z0-9/]+"context "\\>",0,0,"",links);
     bestScores(links,links,0);
@@ -434,6 +441,7 @@ i,links,best_url) {
         best_url = i param; #http.../search ?q=
         break;
     }
+    gsub(/\&/,";",best_url);
     INF("remapping "domain context param "=>" best_url);
     return best_url;
 }
@@ -811,6 +819,7 @@ END{
     CAPTURE_PREFIX=tmp_dir"/catalog."
 
     #INF("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
+
 
     g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8;eo=UTF-8;p=");
     g_search_ask = get_local_search_engine("http://ask.com","/web","?q=");
@@ -4853,7 +4862,10 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
         #setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
 
         gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
-        g_rating[idx] = seriesInfo["/Data/Series/Rating"];
+
+        # Dont use tvdb rating - prefer imdb one.
+        #g_rating[idx] = seriesInfo["/Data/Series/Rating"];
+
         setFirst(g_poster,idx,tvDbImageUrl(seriesInfo["/Data/Series/poster"]));
         g_tvid_plugin[idx]="THETVDB";
         g_tvid[idx]=seriesInfo["/Data/Series/id"];
@@ -6220,7 +6232,8 @@ title,poster_imdb_url) {
                 }
             }
 
-            if (g_rating[idx] == "" && index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
+            # Always overwrite tvdb ratings with imdb ones.
+            if (index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
                 g_rating[idx]=0+substr(line,RSTART,RLENGTH-3);
                DEBUG("IMDB: Got Rating = ["g_rating[idx]"]");
             }
@@ -7448,7 +7461,7 @@ clean_old_tmp() {
 
 
 clean_logs() {
-    find "$APPDIR/logs" -name \*.log -mtime +2 | while IFS= read f ; do
+    find "$APPDIR/logs" -name catalog.\*.log -mtime +5 | while IFS= read f ; do
         rm -f -- "$f"
     done
 }

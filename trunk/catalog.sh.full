@@ -3331,11 +3331,12 @@ choice,i,url) {
 function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosToScan,inurlFind,inurlReplace,
 nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id,count,result) {
 
-    id1("Online nfo search for ["name"]");
 
-    if (length(name) <= 4) {
-        INF("name too short ");
+    if (length(name) <= 4 || name !~ "^[-.a-zA-Z0-9]$" ) {
+        INF("onlinenfo: ["name"] ignored");
     } else {
+
+        id1("Online nfo search for ["name"]");
 
         sub(/QUERY/,name,queryPath);
         INF("query["queryPath"]");
@@ -3398,11 +3399,11 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,
 
             } else {
 
-                INF("To many matches with the same number of occurrences. Discarding results");
+                INF("To many equal matches. Discarding results");
             }
         }
+        id0(result);
     }
-    id0(result);
     return result;
 }
 

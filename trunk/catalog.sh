@@ -2108,7 +2108,12 @@ id0(count" files")
 
 function remove_brackets(s) {
 
+
 while (gsub(/\[[^][]*\]/,"",s) || gsub(/\{[^}{]*\}/,"",s)) continue
+
+
+while (gsub(/\([^()]*[^0-9 ][^()]*\)/,"",s)) continue
+
 return s
 }
 
@@ -3063,7 +3068,7 @@ INF("name_no_parts=["name_no_parts"]")
 
 name_no_tags=textToSearchKeywords(name,0)
 
-name_no_br=remove_format_tags(remove_brackets(g_media[idx]))
+name_no_br=remove_format_tags(remove_brackets(basename(g_media[idx])))
 INF("name_no_br=["name_no_br"]")
 
 
@@ -5330,7 +5335,7 @@ if (ascii8(text)) {
 count = chop(text,"["g_8bit"]+",parts)
 for(part=2 ; part-count <= 0 ; part += 2 ) {
 text2=text2 parts[part-1] utf8_encode2(parts[part])
-INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]")
+
 }
 text2 = text2 parts[count]
 if (text != text2 ) {
@@ -5348,9 +5353,9 @@ ll=length(text)
 for(i = 1 ; i - ll <= 0 ; i++ ) {
 text2 = text2 g_utf8[substr(text,i,1)]
 }
-if (text != text2 ) {
-DEBUG("utf8_encode2 ["text"]=["text2"]")
-}
+
+
+
 return text2
 }
 
@@ -7123,7 +7128,7 @@ mn = n(substr(t,11,2))
 r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn
 r= sprintf("%x",r)
 }
-INF("shorttime "t" = "r)
+
 return r
 }
 

@@ -817,7 +817,6 @@ END{
 
     #INF("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
 
-
     g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8;eo=UTF-8;p=");
     g_search_ask = get_local_search_engine("http://ask.com","/web","?q=");
     g_search_bing = "http://www.bing.com/search?q=";
@@ -5318,25 +5317,41 @@ function indexFrom(str,x,startPos,\
     return j+startPos-1;
 }
 
+# encode a string to utf8
 function utf8_encode(text,\
-i,text2,ll,c) {
+text2,part,parts,count) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
+
+
     if (ascii8(text)) {
-        text2="";
-        ll=length(text);
-        for(i = 1 ; i - ll <= 0 ; i++ ) {
-            c=substr(text,i,1);
-            text2 = text2 g_utf8[c];
+
+        count = chop(text,"["g_8bit"]+",parts);
+        for(part=2 ; part-count <= 0 ; part += 2 ) {
+            text2=text2 parts[part-1] utf8_encode2(parts[part]);
+            #INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]");
         }
+        text2 = text2 parts[count];
         if (text != text2 ) {
-            #DEBUG("utf8 encode ["text"]=["text2"]");
             text = text2;
         }
     }
-
     return text;
+}
+# encode a string to utf8 that alread consists entirely of chr(128-255)
+# called by utf8_encode
+function utf8_encode2(text,\
+i,text2,ll) {
+
+    ll=length(text);
+    for(i = 1 ; i - ll <= 0 ; i++ ) {
+        text2 = text2 g_utf8[substr(text,i,1)];
+    }
+#    if (text != text2 ) {
+#        DEBUG("utf8_encode2 ["text"]=["text2"]");
+#    }
+    return text2;
 }
 
 
@@ -6266,7 +6281,7 @@ title,poster_imdb_url) {
 }
 
 function extract_imdb_title_category(idx,title,\
-semicolon,quote) {
+) {
     # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
     g_category[idx]="M";
@@ -6402,17 +6417,27 @@ f,line,out,found,tokens,token_count,token_i) {
     #DEBUG("scrape_one_item "label" out ["out"]");
     return out;
 }
+
+function isreg(t) {
+    if (index(t,"\\<")) return 1;
+    gsub(/\\./,"",t);
+    return match(t,"[][().|$^+*]");
+}
 function scrape_until(label,f,end_text,inclusive,\
-line,out,ending) {
+line,out,ending,isre) {
     ending = 0;
+    isre = isreg(end_text);
+    DEBUG("isreg["end_text"] = "isre);
+
     while(!ending && (getline line< f) > 0) {
-        if (match(line,end_text)) {
-            ending=1;
-            if (!inclusive) {
-                break;
-            }
+        if (isre) {
+            ending =match(line,end_text);
+        } else {
+            ending =index(line,end_text);
         }
-        out = out " " line;
+        if (!ending || inclusive) {
+            out = out " " line;
+        }
     }
     gsub(/ +/," ",out);
     out =remove_html_section(out,"script");
@@ -7260,8 +7285,8 @@ function trimAll(str) {
 }
 
 function trim(str) {
-    gsub(/^ +/,"",str);
-    gsub(/ +$/,"",str);
+    sub(/^ +/,"",str);
+    sub(/ +$/,"",str);
     return str;
 }
 

@@ -1213,7 +1213,7 @@ tempFile,i,procfile) {
 DEBUG("Finding LS Format")
 
 procfile="/proc/"PID"/fd"
-tempFile=NEW_CAPTURE_FILE("LS")
+tempFile=new_capture_file("LS")
 
 
 exec(LS" -ld "procfile" > "qa(tempFile) )
@@ -1247,7 +1247,7 @@ if (NEWSCAN) {
 get_files(root,INDEX_DB)
 }
 
-tempFile=NEW_CAPTURE_FILE("MOVIEFILES")
+tempFile=new_capture_file("MOVIEFILES")
 
 
 if (root != "/" ) {
@@ -1629,25 +1629,72 @@ return 1
 
 
 function web_search_first_imdb_link(qualifier,\
-i1,i2,i3,ret) {
+u,id,sc,ret,i) {
 
 
 id1("imdbfirst ["qualifier"]")
-i1=scanPageForMatch("SEARCH" qualifier,"/tt",g_imdb_regex,0)
-i2=scanPageForMatch("SEARCH" qualifier,"/tt",g_imdb_regex,0)
-if (i1 == i2 ) {
-ret= i1
-} else if (i1 != i2 && "" != i1 i2 ) {
+u[1] = search_url("SEARCH" qualifier)
+u[2] = search_url("SEARCH" qualifier)
+u[3] = g_search_google qualifier
 
-i3=scanPageForMatch(g_search_google qualifier,"/tt",g_imdb_regex,0)
-if (i3 != "" ) {
-if (i3 == i1 ) ret = i1
-else if (i3 == i2 ) ret = i2
+
+for(i = 1 ; i-2 <= 0 ; i++ ) {
+id[i]=scanPageForMatch(u[i],"/tt",g_imdb_regex,1)
+}
+
+if (id[1] == id[2] && id[1] != "") {
+
+ret = id[1]
+} else {
+
+id[3]=scanPageForMatch(u[3],"/tt",g_imdb_regex,1)
+if (id[3] != "") {
+if (id[3] == id[1] || id[3] == id[2] ) {
+
+ret = id[3]
 }
 }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 id0(ret)
 return ret
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function web_search_frequent_imdb_link(idx,\
@@ -2780,7 +2827,7 @@ season = substr(line,1,RSTART-1)
 INF("xx1 ["ep"]")
 
 sub(/[eE]/,",",ep)
-gsub(/\<0*/,"",ep)
+gsub(/\<0+/,"",ep)
 gsub(/,,+/,",",ep)
 sub(/^,+/,"",ep)
 
@@ -3142,7 +3189,7 @@ TODO("url encode name.")
 if (index(name_try,"-") ) {
 name_try="\""name_try"\""
 }
-bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title"))
+bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title")"-rapidshare")
 
 } else {
 ERR("Unknown search method "search_order[s])
@@ -5412,45 +5459,89 @@ g_utf8[c]=g_chr[b1+0] g_chr[b2+0]
 
 
 g_chr["amp"] = "&"
+g_chr["quot"] = "\""
+g_chr["lt"] = "<"
+g_chr["gt"] = ">"
+g_chr["nbsp"] = " "
 }
 
-
 function html_decode(text,\
-i,j,code,newcode,cc) {
+parts,part,count,code,newcode,cc,text2) {
 if (g_chr[32] == "" ) {
 decode_init()
 }
-i=0
-if (index(text,"&")) {
-while((i=indexFrom(text,"&",i)) > 0) {
-j=indexFrom(text,";",i)
+if (index(text,"&") && index(text,";") ) {
 
-if (j > i && j - i < 7 ) {
-code=tolower(substr(text,i+1,j-(i+1)))
+count = chop(text,"[&][#0-9a-zA-Z]+;",parts)
+for(part=2 ; part-count <= 0 ; part += 2 ) {
 
+newcode=""
 
-
+code=parts[part]
 if (code != "") {
+code=tolower(substr(code,2,length(code)-2))
+
 cc=substr(code,1,2)
 if (cc == "#x") {
 newcode=g_chr[substr(code,2)]
-} else if (cc ~ "^#[0-9]")  {
+} else if (cc == "#")  {
 newcode=g_chr[0+substr(code,2)]
 } else {
 newcode=g_chr[code]
 }
-if (newcode != "") {
-text=substr(text,1,i-1) newcode substr(text,j+1)
-i += length(newcode) -1
 }
+if (newcode == "") {
+newcode=parts[part]
 }
-}
-i += 1
-}
-}
+text2=text2 parts[part-1] newcode
 
+}
+text2 = text2 parts[count]
+if (text != text2 ) {
+text = text2
+}
+}
 return text
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function equate_urls(u1,u2) {
@@ -5515,7 +5606,7 @@ cache=1
 }
 
 if (f =="" ) {
-f=NEW_CAPTURE_FILE(capture_label)
+f=new_capture_file(capture_label)
 }
 if (is_file(f) == 0) {
 
@@ -5959,7 +6050,7 @@ return url
 
 function scanPageForMatch(url,fixed_text,regex,cache,referer,\
 matches,i,ret) {
-id1("scanPageForMatch["url"]["regex"]")
+id1("scanPageForMatch")
 scanPageForMatches(url,fixed_text,regex,1,cache,referer,matches)
 
 
@@ -5975,13 +6066,16 @@ return ret
 
 
 #
+function search_url(url) {
+sub(/^SEARCH/,g_search_engine[(g_search_engine_current++) % g_search_engine_count],url)
+return url
+}
+
 function search_url2file(url,cache,referer,\
 i,url2,f) {
 for(i = 0 ; i < 0+g_search_engine_count ; i++ ) {
 
-url2 = url
-
-sub(/^SEARCH/,g_search_engine[(g_search_engine_current++) % g_search_engine_count] , url2)
+url2 = search_url(url)
 
 f=getUrl(url2,"scan4match",cache,referer)
 
@@ -6011,7 +6105,8 @@ function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbo
 f,line,count,linecount,remain,is_imdb,matches2,utf8) {
 
 delete matches
-id1("scanPageForMatches["url"]["fixed_text"]["regex"]["max"]")
+id1("scanPageForMatches["url"]")
+INF("["fixed_text"]["regex"]["max"]")
 
 if (index(url,"SEARCH") == 1) {
 f = search_url2file(url,cache,referer)
@@ -7250,18 +7345,16 @@ system("touch "qa(x)" ; mv "qa(x)" "qa(y))
 
 
 
-function NEW_CAPTURE_FILE(label,\
-CAPTURE_FILE,suffix) {
-suffix= "." CAPTURE_COUNT "__" label
-CAPTURE_FILE = CAPTURE_PREFIX JOBID suffix
+function new_capture_file(label,\
+fname) {
+fname = CAPTURE_PREFIX JOBID  "." CAPTURE_COUNT "__" label
 CAPTURE_COUNT++
-
-return CAPTURE_FILE
+return fname
 }
 
 function clean_capture_files() {
 INF("Clean up")
-exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* ")
+exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* 2>/dev/null")
 }
 function DEBUG(x) {
 

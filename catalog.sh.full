@@ -1213,7 +1213,7 @@ tempFile,i,procfile) {
     DEBUG("Finding LS Format");
 
     procfile="/proc/"PID"/fd"; #Fd always has a recent timestamp even on cygwin
-    tempFile=NEW_CAPTURE_FILE("LS")
+    tempFile=new_capture_file("LS")
 
 
     exec(LS" -ld "procfile" > "qa(tempFile) );
@@ -1247,7 +1247,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
         get_files(root,INDEX_DB);
     }
 
-    tempFile=NEW_CAPTURE_FILE("MOVIEFILES");
+    tempFile=new_capture_file("MOVIEFILES");
 
     #Remove trailing slash. This ensures all folder paths end without trailing slash
     if (root != "/" ) {
@@ -1629,25 +1629,72 @@ function folderIsRelevant(dir) {
 # its a shame that it will blacklist repeat searches very quickly, so we use the 
 # other engines in round-robin. If they disagree then google cast the deciding vote.
 function web_search_first_imdb_link(qualifier,\
-i1,i2,i3,ret) {
+u,id,sc,ret,i) {
 
 
     id1("imdbfirst ["qualifier"]");
-    i1=scanPageForMatch("SEARCH" qualifier,"/tt",g_imdb_regex,0);
-    i2=scanPageForMatch("SEARCH" qualifier,"/tt",g_imdb_regex,0);
-    if (i1 == i2 ) {
-       ret= i1;
-    } else if (i1 != i2 && "" != i1 i2 ) {
-        # Difference of opinion - try google.
-        i3=scanPageForMatch(g_search_google qualifier,"/tt",g_imdb_regex,0);
-        if (i3 != "" ) {
-            if (i3 == i1 ) ret = i1;
-            else if (i3 == i2 ) ret = i2;
+    u[1] = search_url("SEARCH" qualifier);
+    u[2] = search_url("SEARCH" qualifier);
+    u[3] = g_search_google qualifier;
+
+    #Check first two search engines.
+    for(i = 1 ; i-2 <= 0 ; i++ ) {
+        id[i]=scanPageForMatch(u[i],"/tt",g_imdb_regex,1);
+    }
+
+    if (id[1] == id[2] && id[1] != "") {
+        # first two search engines match. Assume a hit
+        ret = id[1];
+    } else {
+        # get google
+        id[3]=scanPageForMatch(u[3],"/tt",g_imdb_regex,1);
+        if (id[3] != "") {
+            if (id[3] == id[1] || id[3] == id[2] ) {
+                # Google + one engine match
+                ret = id[3];
+            }
         }
     }
+#ALL8#    if (ret == "") {
+#ALL8#        
+#ALL8#        for(i = 1 ; i-3 <= 0 ; i++ ) {
+#ALL8#            sc[i] = rank(id[i],i,u,0,2);
+#ALL8#        }
+#ALL8#        ret = getMax(sc,3,1);
+#ALL8#        if (ret == "") {
+#ALL8#            INF("Could repeat again but with most the frequent link rather than the first one");
+#ALL8#        }  else {
+#ALL8#            ret = id[ret];
+#ALL8#        }
+#ALL8#    }
+
     id0(ret);
     return ret;
 }
+# return a score = number of occurences on self page + 2 * #other pages * #other occurences.
+# eg if something appears 3 times on self and twice on two other pages score = 3+2*2*2 = 11
+# eg if something appears 4 times on self and 3 times on one other pages score = 3+2*3*1 = 9 
+
+#ALL8#function rank(text,urlno,urls,selfweight,otherweight,\
+#ALL8#score,s,u) {
+#ALL8#
+#ALL8#    score = 0;
+#ALL8#    if (text != "") {
+#ALL8#        id1("cross page rank["text"]");
+#ALL8#        for(u in urls) {
+#ALL8#            if ( ( urlno != u && otherweight) || (urlno == u && selfweight)) {
+#ALL8#                s = scanPageForMatches(urls[u],text,"\\<"text"\\>",0,1,"");
+#ALL8#                if (urlno == u ) {
+#ALL8#                    score += s * selfweight;
+#ALL8#                } else {
+#ALL8#                    score += s * otherweight;
+#ALL8#                }
+#ALL8#            }
+#ALL8#        }
+#ALL8#        id0(score);
+#ALL8#    }
+#ALL8#    return score;
+#ALL8#}
 
 # If no direct urls found. Search using file names.
 function web_search_frequent_imdb_link(idx,\
@@ -2780,7 +2827,7 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         INF("xx1 ["ep"]");
 
         sub(/[eE]/,",",ep);
-        gsub(/\<0*/,"",ep);
+        gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
         sub(/^,+/,"",ep);
 
@@ -3142,7 +3189,7 @@ search_regex_key,search_order_key,search_order,s,search_order_size,ret) {
                     if (index(name_try,"-") ) {
                         name_try="\""name_try"\"";
                     }
-                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title"));
+                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title")"-rapidshare");
 
                 } else {
                     ERR("Unknown search method "search_order[s]);
@@ -5412,45 +5459,89 @@ i,c,h,b1,b2) {
     # not bother with anything except for amp. see what happens.
     #s="amp|38|gt|62|lt|60|divide|247|deg|176|copy|169|pound|163|quot|34|nbsp|32|cent|162|";
     g_chr["amp"] = "&";
+    g_chr["quot"] = "\"";
+    g_chr["lt"] = "<";
+    g_chr["gt"] = ">";
+    g_chr["nbsp"] = " ";
 }
 
-# TODO replace with new version that uses get_regex_pos or chop function
 function html_decode(text,\
-i,j,code,newcode,cc) {
+parts,part,count,code,newcode,cc,text2) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
-    i=0;
-    if (index(text,"&")) {
-        while((i=indexFrom(text,"&",i)) > 0) {
-            j=indexFrom(text,";",i);
-            #DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)));
-            if (j > i && j - i < 7 ) {
-                code=tolower(substr(text,i+1,j-(i+1)));
+    if (index(text,"&") && index(text,";") ) {
 
-                #DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]");
+        count = chop(text,"[&][#0-9a-zA-Z]+;",parts);
+        for(part=2 ; part-count <= 0 ; part += 2 ) {
 
-                if (code != "") {
-                    cc=substr(code,1,2);
-                    if (cc == "#x") {
-                        newcode=g_chr[substr(code,2)];
-                    } else if (cc ~ "^#[0-9]")  {
-                        newcode=g_chr[0+substr(code,2)];
-                    } else {
-                        newcode=g_chr[code];
-                    }
-                    if (newcode != "") {
-                        text=substr(text,1,i-1) newcode substr(text,j+1);
-                        i += length(newcode) -1;
-                    }
+            newcode="";
+
+            code=parts[part];
+            if (code != "") {
+                code=tolower(substr(code,2,length(code)-2));
+
+                cc=substr(code,1,2);
+                if (cc == "#x") {
+                    newcode=g_chr[substr(code,2)];
+                } else if (cc == "#")  {
+                    newcode=g_chr[0+substr(code,2)];
+                } else {
+                    newcode=g_chr[code];
                 }
             }
-            i += 1;
+            if (newcode == "") {
+                newcode=parts[part]; #unchanged
+            }
+            text2=text2 parts[part-1] newcode;
+            #INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]");
+        }
+        text2 = text2 parts[count];
+        if (text != text2 ) {
+            text = text2;
         }
     }
-    #DEBUG("decode out =["text"]");
     return text;
 }
+
+#ALL# # TODO replace with new version that uses get_regex_pos or chop function
+#ALL# function html_decode2(text,\
+#ALL# i,j,code,newcode,cc) {
+#ALL#     if (g_chr[32] == "" ) {
+#ALL#         decode_init();
+#ALL#     }
+#ALL#     i=0;
+#ALL#     if (index(text,"&")) {
+#ALL# 
+#ALL#         while((i=indexFrom(text,"&",i)) > 0) {
+#ALL#             j=indexFrom(text,";",i);
+#ALL#             #DEBUG("i="i " j="j " str=" substr(text,i,j-(i-1)));
+#ALL#             if (j > i && j - i < 7 ) {
+#ALL#                 code=tolower(substr(text,i+1,j-(i+1)));
+#ALL# 
+#ALL#                 #DEBUG("code[" (i+1) "-" (j-1) "] = [" code"]");
+#ALL# 
+#ALL#                 if (code != "") {
+#ALL#                     cc=substr(code,1,2);
+#ALL#                     if (cc == "#x") {
+#ALL#                         newcode=g_chr[substr(code,2)];
+#ALL#                     } else if (cc ~ "^#[0-9]")  {
+#ALL#                         newcode=g_chr[0+substr(code,2)];
+#ALL#                     } else {
+#ALL#                         newcode=g_chr[code];
+#ALL#                     }
+#ALL#                     if (newcode != "") {
+#ALL#                         text=substr(text,1,i-1) newcode substr(text,j+1);
+#ALL#                         i += length(newcode) -1;
+#ALL#                     }
+#ALL#                 }
+#ALL#             }
+#ALL#             i += 1;
+#ALL#         }
+#ALL#     }
+#ALL#     #DEBUG("decode out =["text"]");
+#ALL#     return text;
+#ALL# }
 
 # Make two urls point to the same cache page.
 function equate_urls(u1,u2) {
@@ -5515,7 +5606,7 @@ function getUrl(url,capture_label,cache,referer,\
     }
 
     if (f =="" ) {
-        f=NEW_CAPTURE_FILE(capture_label);
+        f=new_capture_file(capture_label);
     }
     if (is_file(f) == 0) {
 
@@ -5959,7 +6050,7 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
 # returns match or empty.
 function scanPageForMatch(url,fixed_text,regex,cache,referer,\
 matches,i,ret) {
-    id1("scanPageForMatch["url"]["regex"]");
+    id1("scanPageForMatch");
     scanPageForMatches(url,fixed_text,regex,1,cache,referer,matches);
 
     # Return first one
@@ -5975,13 +6066,16 @@ matches,i,ret) {
 #So we apply round-robin (yahoo,msn,ask) to avoid getting blacklisted.
 
 #
+function search_url(url) {
+    sub(/^SEARCH/,g_search_engine[(g_search_engine_current++) % g_search_engine_count],url);
+    return url;
+}
+
 function search_url2file(url,cache,referer,\
 i,url2,f) {
     for(i = 0 ; i < 0+g_search_engine_count ; i++ ) {
 
-        url2 = url;
-
-        sub(/^SEARCH/,g_search_engine[(g_search_engine_current++) % g_search_engine_count] , url2);
+        url2 = search_url(url);
 
         f=getUrl(url2,"scan4match",cache,referer);
 
@@ -6011,7 +6105,8 @@ function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbo
 f,line,count,linecount,remain,is_imdb,matches2,utf8) {
 
     delete matches;
-    id1("scanPageForMatches["url"]["fixed_text"]["regex"]["max"]");
+    id1("scanPageForMatches["url"]");
+    INF("["fixed_text"]["regex"]["max"]");
 
     if (index(url,"SEARCH") == 1) {
         f = search_url2file(url,cache,referer);
@@ -7250,18 +7345,16 @@ function touch_and_move(x,y) {
 # Convinience function. Create a new file to capture some information.
 # At the end capture files are deleted.
 #--------------------------------------------------------------------
-function NEW_CAPTURE_FILE(label,\
-    CAPTURE_FILE,suffix) {
-    suffix= "." CAPTURE_COUNT "__" label;
-    CAPTURE_FILE = CAPTURE_PREFIX JOBID suffix;
+function new_capture_file(label,\
+    fname) {
+    fname = CAPTURE_PREFIX JOBID  "." CAPTURE_COUNT "__" label;
     CAPTURE_COUNT++;
-   #DEBUG("New capture file "label" ["CAPTURE_FILE "]");
-    return CAPTURE_FILE;
+    return fname;
 }
 
 function clean_capture_files() {
     INF("Clean up");
-    exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* ");
+    exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* 2>/dev/null");
 }
 function DEBUG(x) {
         

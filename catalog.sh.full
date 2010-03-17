@@ -481,7 +481,9 @@ BEGIN {
     g_nonquote_regex = "[^"g_quote2"]";
 
     #g_imdb_regex="\\<tt[0-9]+\\>";
-    g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
+    g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
+
+    g_imdb_title_re="\\<[A-Z"g_8bit"][a-zA-Z0-9& "g_quote g_8bit"]* \\([12][0-9][0-9][0-9]\\)";
 
     ELAPSED_TIME=systime();
     UPDATE_TV=1;
@@ -1628,18 +1630,28 @@ function folderIsRelevant(dir) {
 # Google is MILES ahead of yahoo and bing for the kind of searching oversight is doing.
 # its a shame that it will blacklist repeat searches very quickly, so we use the 
 # other engines in round-robin. If they disagree then google cast the deciding vote.
-function web_search_first_imdb_link(qualifier,\
+function web_search_first_imdb_link(qualifier) {
+    return web_search_first(qualifier,1,"imdbid","/tt",g_imdb_regex);
+}
+function web_search_first_imdb_title(qualifier,\
+) {
+    return web_search_first(qualifier,0,"imdbtitle"," ",g_imdb_title_re);
+}
+
+# the help text just helps avoid overhead of regex matching.
+# freqOrFirst =0 freq match | =1 first match
+function web_search_first(qualifier,freqOrFirst,mode,helptxt,regex,\
 u,id,sc,ret,i) {
 
 
-    id1("imdbfirst ["qualifier"]");
+    id1("web_search_first "mode" ["qualifier"]");
     u[1] = search_url("SEARCH" qualifier);
     u[2] = search_url("SEARCH" qualifier);
     u[3] = g_search_google qualifier;
 
     #Check first two search engines.
     for(i = 1 ; i-2 <= 0 ; i++ ) {
-        id[i]=scanPageForMatch(u[i],"/tt",g_imdb_regex,1);
+        id[i]=scanPageOneMatch(u[i],freqOrFirst,helptxt,regex,1);
     }
 
     if (id[1] == id[2] && id[1] != "") {
@@ -1647,7 +1659,7 @@ u,id,sc,ret,i) {
         ret = id[1];
     } else {
         # get google
-        id[3]=scanPageForMatch(u[3],"/tt",g_imdb_regex,1);
+        id[3]=scanPageOneMatch(u[3],freqOrFirst,helptxt,regex,1);
         if (id[3] != "") {
             if (id[3] == id[1] || id[3] == id[2] ) {
                 # Google + one engine match
@@ -1655,18 +1667,22 @@ u,id,sc,ret,i) {
             }
         }
     }
-#ALL8#    if (ret == "") {
-#ALL8#        
-#ALL8#        for(i = 1 ; i-3 <= 0 ; i++ ) {
-#ALL8#            sc[i] = rank(id[i],i,u,0,2);
-#ALL8#        }
-#ALL8#        ret = getMax(sc,3,1);
-#ALL8#        if (ret == "") {
-#ALL8#            INF("Could repeat again but with most the frequent link rather than the first one");
-#ALL8#        }  else {
-#ALL8#            ret = id[ret];
-#ALL8#        }
-#ALL8#    }
+    if (ret == "") {
+        # get number of times one result occurs on another page.
+        
+        for(i = 1 ; i-3 <= 0 ; i++ ) {
+            sc[i] = rank(id[i],i,u,0,2);
+        }
+        ret = getMax(sc,4,1);
+        if (ret == "") {
+            INF("Could repeat again but with most the frequent link rather than the first one");
+        }  else if (sc[ret] - 4 <= 0) {
+            INF("Ignoring page rank of "sc[ret]);
+            ret = "";
+        }  else {
+            ret = id[ret];
+        }
+    }
 
     id0(ret);
     return ret;
@@ -1675,26 +1691,30 @@ u,id,sc,ret,i) {
 # eg if something appears 3 times on self and twice on two other pages score = 3+2*2*2 = 11
 # eg if something appears 4 times on self and 3 times on one other pages score = 3+2*3*1 = 9 
 
-#ALL8#function rank(text,urlno,urls,selfweight,otherweight,\
-#ALL8#score,s,u) {
-#ALL8#
-#ALL8#    score = 0;
-#ALL8#    if (text != "") {
-#ALL8#        id1("cross page rank["text"]");
-#ALL8#        for(u in urls) {
-#ALL8#            if ( ( urlno != u && otherweight) || (urlno == u && selfweight)) {
-#ALL8#                s = scanPageForMatches(urls[u],text,"\\<"text"\\>",0,1,"");
-#ALL8#                if (urlno == u ) {
-#ALL8#                    score += s * selfweight;
-#ALL8#                } else {
-#ALL8#                    score += s * otherweight;
-#ALL8#                }
-#ALL8#            }
-#ALL8#        }
-#ALL8#        id0(score);
-#ALL8#    }
-#ALL8#    return score;
-#ALL8#}
+function rank(text,urlno,urls,selfweight,otherweight,\
+score,s,u,page,count) {
+
+    score = 0;
+    if (text != "") {
+        id1("cross page rank "text"|");
+        for(u in urls) {
+            if ( ( urlno != u && otherweight) || (urlno == u && selfweight)) {
+                s = scanPageForMatches(urls[u],text,"\\<"text"\\>",0,1,"");
+                if (s != 0 ) {
+                    page++;
+                }
+                if (urlno == u ) {
+                    score += s * selfweight;
+                } else {
+                    count += s * otherweight;
+                }
+            }
+        }
+        score += page * count;
+        id0(score);
+    }
+    return score;
+}
 
 # If no direct urls found. Search using file names.
 function web_search_frequent_imdb_link(idx,\
@@ -1936,7 +1956,7 @@ f,line,imdbContentPosition,utf8) {
 # Dont need premier anymore - this was for searching from imdb to tv database
 # we just use the year instead.
 #    if (g_category[idx] == "T" && g_premier[idx] == "" ) {
-#        g_premier[idx] = remove_tags(scanPageForMatch(url"/releaseinfo","BusinessThisDay.*",1));
+#        g_premier[idx] = remove_tags(scanPageOneMatch(url"/releaseinfo",1,"BusinessThisDay.*",1));
 #        DEBUG("IMDB Premier = "g_premier[idx]);
 #    }
     id0("category = "g_category[idx] );
@@ -2432,14 +2452,14 @@ terms,results,id,url,parts) {
     if (plugin == "THETVDB") {
         terms="\"season "details[SEASON]"\" \""details[EPISODE]" : "clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com";
         # Bing seems a bit better than google for this. For "The office" anyway.
-        results = scanPageForMatch(g_search_bing terms,"seriesid","seriesid=[0-9]+",0);
-        #results = scanPageForMatch(g_search_google terms,"seriesid","seriesid=[0-9]+",0);
+        results = scanPageOneMatch(g_search_bing terms,1,"seriesid","seriesid=[0-9]+",0);
+        #results = scanPageOneMatch(g_search_google terms,1,"seriesid","seriesid=[0-9]+",0);
         if (split(results,parts,"=") == 2) {
             id = parts[2];
         }
     } else if (plugin == "TVRAGE") {
         terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
-        url = scanPageForMatch(g_search_google terms,"tvrage","http"g_nonquote_regex"+.tvrage"g_nonquote_regex"+",0);
+        url = scanPageOneMatch(g_search_google terms,1,"tvrage","http"g_nonquote_regex"+.tvrage"g_nonquote_regex"+",0);
         if (url != "") {
             results = scanPageForMatches(url,"show/","show/[0-9]+",0);
             results=getMax(results,1,1);
@@ -2824,14 +2844,10 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        INF("xx1 ["ep"]");
-
         sub(/[eE]/,",",ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
         sub(/^,+/,"",ep);
-
-        INF("xx2 ["ep"]");
 
         details[EPISODE] = ep;
         details[SEASON] = n(season);
@@ -3100,7 +3116,7 @@ tvDbSeriesPage,result,tvid) {
 function movie_search(idx,bestUrl,\
 name,name_no_br,name_no_tags,name_no_parts,i,\
 n,name_hash,name_list,name_id,name_try,\
-search_regex_key,search_order_key,search_order,s,search_order_size,ret) {
+search_regex_key,search_order_key,search_order,s,search_order_size,ret,title) {
 
     id1("movie search");
 
@@ -3189,7 +3205,13 @@ search_regex_key,search_order_key,search_order,s,search_order_size,ret) {
                     if (index(name_try,"-") ) {
                         name_try="\""name_try"\"";
                     }
-                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title")"-rapidshare");
+                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("+imdb")"+"url_encode("+title")"+-rapidshare");
+                    if (bestUrl == "" ) {
+                        title = web_search_first_imdb_title(name_try);
+                        if (title != "" && title != name_try) {
+                            bestUrl=web_search_first_imdb_link(title"+"url_encode("+imdb")"+"url_encode("+title")"+-rapidshare");
+                        }
+                    }
 
                 } else {
                     ERR("Unknown search method "search_order[s]);
@@ -3379,7 +3401,7 @@ function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosT
 nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,bestId,wgetWorksWithMultipleUrlRedirects,id,count,result) {
 
 
-    if (length(name) <= 4 || name !~ "^[-.a-zA-Z0-9]$" ) {
+    if (length(name) <= 4 || name !~ "^[-.a-zA-Z0-9]+$" ) {
         INF("onlinenfo: ["name"] ignored");
     } else {
 
@@ -4025,10 +4047,10 @@ i,c) {
 #ALL#     
 #ALL#     if (premier_mdy != "") {
 #ALL#         url=keywords " " premier_mdy;
-#ALL#         id2 = scanPageForMatch(g_search_bing" "keywords " \"" premier_mdy"\"",regex,0);
+#ALL#         id2 = scanPageOneMatch(g_search_bing" "keywords " \"" premier_mdy"\"",1,"",regex,0);
 #ALL#     }
 #ALL# #    if (id2 == "" ) {
-#ALL# #        id2 = scanPageForMatch(g_search_bing" "keywords " "year ,regex,0);
+#ALL# #        id2 = scanPageOneMatch(g_search_bing" "keywords " "year ,1,"",regex,0);
 #ALL# #    }
 #ALL#     return id2;
 #ALL# }
@@ -4052,7 +4074,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
                 regex="[&?;]id=[0-9]+";
                 #first try api search
                 url = g_thetvdb_web"/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
-                id2 = scanPageForMatch(url,"",regex,0);
+                id2 = scanPageOneMatch(url,1,"",regex,0);
                 if (id2 != "" ) {
                     id2=substr(id2,5);
                 }
@@ -4696,21 +4718,38 @@ function clean_title(t,deep) {
 }
 
 function remove_tags(line) {
+
     gsub(/<[^>]+>/," ",line);
-    gsub(/ +/," ",line);
-    gsub(/\&amp;/," \\& ",line);
+
+    if (index(line,"  ")) {
+        gsub(/ +/," ",line);
+    }
+
+    if (index(line,"amp")) {
+        gsub(/\&amp;/," \\& ",line);
+    }
+
     gsub(/[&][a-z]+;?/,"",line);
+
     line=de_emphasise(line);
+
     return line;
 }
 
 function de_emphasise(html) {
-    gsub(/<(\/|)(b|em|strong)>/,"",html); #remove emphasis tags
+    if (index(html,"<b") || index(html,"</b") ||\
+       index(html,"<em") || index(html,"</em") ||\
+       index(html,"<strong") || index(html,"</strong") ) {
+        gsub(/<\/?(b|em|strong)>/,"",html); #remove emphasis tags
+    }
     if (index(html,"wbr")) {
         # Note yahoo will sometimes break an imdb tag with a space and wbr eg. tt1234 <wbr>567
-        gsub(/ *<(\/|)wbr>/,"",html); #remove emphasis tags
+        gsub(/ *<\/?wbr>/,"",html); #remove emphasis tags
     }
-    gsub(/<[^\/][^<]+[\/]>/,"",html); #remove single tags eg <wbr />
+    if (index("/>",html)) {
+        #gsub(/<[^\/][^<]+\/>/,"",html); #remove single tags eg <wbr />
+        gsub(/<[a-z]+ ?\/>/,"",html); #remove single tags eg <wbr />
+    }
     return html;
 }
 
@@ -4722,14 +4761,9 @@ maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
     nextBest=0;
     maxName="";
     best=0;
+    dump(0,"getMax",arr);
     for(i in arr) {
-        msg="Score: "arr[i]" for ["i"]";
         if (arr[i]-best >= 0 ) {
-            if (maxName == "") {
-                INF(msg": first value ");
-            } else {
-                INF(msg":"(arr[i]>best?"beats":"matches")" current best of " best " held by ["maxName"]");
-            }
             nextBest = best;
             nextBestName = maxName;
             best = threshold = arr[i];
@@ -4737,37 +4771,29 @@ maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
 
         } else if (arr[i]-nextBest >= 0 ) {
 
-            INF(msg":"(arr[i]>nextBest?"beats":"matches")" current next best of " nextBest " held by ["nextBestName"]");
             nextBest = arr[i];
             nextBestName = i;
-            INF(msg": set as next best");
-
-        } else {
-            INF(msg);
         }
     }
     DEBUG("Best "best"*"arr[i]". Required="requiredThreshold);
 
     if (0+best < 0+requiredThreshold ) {
         DEBUG("Rejected as "best" does not meet requiredThreshold of "requiredThreshold);
-        return "";
-    }
-    if (requireDifferenceSquared ) {
+        maxName = "";
+
+    } else if (requireDifferenceSquared ) {
+
         diff=best-nextBest;
         DEBUG("Next best count = "nextBest" diff^2 = "(diff*diff));
-        if (diff * diff - best  >= 0 ) {
-
-            return maxName;
-
-        } else {
+        if (diff * diff - best  < 0 ) {
 
             DEBUG("But rejected as "best" too close to next best "nextBest" to be certain");
-            return "";
+            maxName = "";
 
         }
-    } else {
-        return maxName;
     }
+    DEBUG("getMax: best index = ["maxName"]");
+    return maxName;
 }
 
 
@@ -4916,7 +4942,6 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
         g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
         g_plot[idx] = seriesInfo["/Data/Series/Overview"];
-        DEBUG("tvdb plot "g_plot[idx]);
 
         #Dont use thetvdb genre - its too confusing when mixed with imdb movie genre
         #setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
@@ -5047,11 +5072,11 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
         #get imdb link - via links page and then epguides.
         if(g_imdb[idx] == "") {
-            url = scanPageForMatch(url,"/links/",g_nonquote_regex"+/links/",1);
+            url = scanPageOneMatch(url,1,"/links/",g_nonquote_regex"+/links/",1);
             if (url != "" ) {
-                url = scanPageForMatch(g_tvrage_web url,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
+                url = scanPageOneMatch(g_tvrage_web url,1,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
                 if (url != "" ) {
-                    g_imdb[idx] = scanPageForMatch(url,"tt",g_imdb_regex,1);
+                    g_imdb[idx] = scanPageOneMatch(url,1,"tt",g_imdb_regex,1);
                 }
             }
         }
@@ -5966,11 +5991,11 @@ referer_url,url,url2) {
     referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/";
     #} else {
     #search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
-    #referer_url=scanPageForMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
+    #referer_url=scanPageOneMatch(search_url,1,"http://www.motechposters.com/title[^\"]+",0);
     #}
     DEBUG("Got motech referer "referer_url);
     if (referer_url != "" ) {
-        url2=scanPageForMatch(referer_url,"/posters","/posters/[^\"]+jpg",0);
+        url2=scanPageOneMatch(referer_url,1,"/posters","/posters/[^\"]+jpg",0);
         if (url2 != ""  && index(url2,"thumb.jpg") == 0 ) {
             url="http://www.motechposters.com" url2;
 
@@ -6048,15 +6073,22 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
 # matches = array of matches index 1,2,...
 # max = max number to match
 # returns match or empty.
-function scanPageForMatch(url,fixed_text,regex,cache,referer,\
-matches,i,ret) {
-    id1("scanPageForMatch");
-    scanPageForMatches(url,fixed_text,regex,1,cache,referer,matches);
-
-    # Return first one
-    for(i in matches) {
-        ret= i;
-        break;
+# if freqOrFirst=1 return first match else =0 return most common match
+function scanPageOneMatch(url,freqOrFirst,fixed_text,regex,cache,referer,\
+matches,i,ret,max) {
+    id1("scanPageOneMatch"freqOrFirst);
+    max=0;
+    if (freqOrFirst == 1) max=1;
+    scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches);
+    if (freqOrFirst) {
+        # Return first one
+        for(i in matches) {
+            ret= i;
+            break;
+        }
+    } else {
+        # get most common match
+        ret=getMax(matches,0,0);
     }
     id0(ret);
     return ret;
@@ -6106,7 +6138,7 @@ f,line,count,linecount,remain,is_imdb,matches2,utf8) {
 
     delete matches;
     id1("scanPageForMatches["url"]");
-    INF("["fixed_text"]["regex"]["max"]");
+    INF("["fixed_text"]["(regex == g_imdb_regex?"<imdbtag>":regex)"]["max"]");
 
     if (index(url,"SEARCH") == 1) {
         f = search_url2file(url,cache,referer);
@@ -6135,6 +6167,8 @@ f,line,count,linecount,remain,is_imdb,matches2,utf8) {
             }
 
             line = de_emphasise(line);
+            #if (index(line,"Diamond (2006)")) INF(line);
+
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
             # itself is more work - for example the results will come back as two different 
             # counts. 

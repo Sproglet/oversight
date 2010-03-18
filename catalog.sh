@@ -819,13 +819,22 @@ CAPTURE_PREFIX=tmp_dir"/catalog."
 
 
 
+
+
+
+
+
+
+
 g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8;eo=UTF-8;p=")
 g_search_ask = get_local_search_engine("http://ask.com","/web","?q=")
 g_search_bing = "http://www.bing.com/search?q="
+g_search_bing2 = "http://www.bing.com/search?q=subtitles+"
 
 g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q="
 
-g_search_engine[0]=g_search_yahoo
+g_search_engine[0]=g_search_bing2
+
 g_search_engine[1]=g_search_bing
 
 g_search_engine_count=2
@@ -1142,24 +1151,24 @@ EXT=db_field("_ext","EXT","")
 
 
 ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle")
-TITLE=db_field("_T","Title","title") 
-DIRECTOR=db_field("_d","Director","director") 
+TITLE=db_field("_T","Title","title",1) 
+DIRECTOR=db_field("_d","Director","director",1) 
 CREATOR=db_field("_c","Creator","creator") 
-AKA=db_field("_K","AKA","")
+AKA=db_field("_K","AKA","",1)
 
 CATEGORY=db_field("_C","Category","")
 ADDITIONAL_INF=db_field("_ai","Additional Info","")
-YEAR=db_field("_Y","Year","year") 
+YEAR=db_field("_Y","Year","year",1) 
 
 SEASON=db_field("_s","Season","season") 
 EPISODE=db_field("_e","Episode","episode")
 
-GENRE=db_field("_G","Genre","genre") 
-RUNTIME=db_field("_rt","Runtime","runtime") 
-RATING=db_field("_r","Rating","rating")
+GENRE=db_field("_G","Genre","genre",1) 
+RUNTIME=db_field("_rt","Runtime","runtime",1) 
+RATING=db_field("_r","Rating","rating",1)
 CERT=db_field("_R","CERT","mpaa")
 
-PLOT=db_field("_P","Plot","plot")
+PLOT=db_field("_P","Plot","plot",1)
 
 
 URL=db_field("_U","URL","url")
@@ -1185,10 +1194,15 @@ TVID=db_field("_tvid","TVID","id")
 
 
 
-function db_field(key,name,tag) {
+
+
+function db_field(key,name,tag,imdbsrc) {
 g_db_field_name[key]=name
 gDbTag2FieldId[tag]=key
 gDbFieldId2Tag[key]=tag
+if (imdbsrc) {
+g_imdb_sections[key]=name
+}
 return key
 }
 
@@ -1932,7 +1946,7 @@ return trimAll(text)
 }
 
 function scrapeIMDBTitlePage(idx,url,\
-f,line,imdbContentPosition) {
+f,line,imdbContentPosition,isection) {
 
 if (url == "" ) return
 
@@ -1948,6 +1962,7 @@ g_imdb[idx] = extractImdbId(url)
 }
 
 f=getUrl(url,"imdb_main",1)
+hash_copy(isection,g_imdb_sections)
 
 if (f != "" ) {
 
@@ -1957,9 +1972,14 @@ DEBUG("START IMDB: title:"gTitle[idx]" poster "g_poster[idx]" genre "g_genre[idx
 
 FS="\n"
 while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-imdbContentPosition=scrapeIMDBLine(line[1],imdbContentPosition,idx,f)
+imdbContentPosition=scrapeIMDBLine(line[1],imdbContentPosition,idx,f,isection)
 }
 enc_close(f)
+
+if (hash_size(isection) > 0 ) {
+ERR("Missing imdb sections ")
+dump(0,"missing",isection)
+}
 
 
 if (gCertCountry[idx] != "" && g_settings[g_country_prefix gCertCountry[idx]] != "") {
@@ -6355,8 +6375,9 @@ dump(3,"get_regex_count_or_pos:"mode,rtext)
 return 0+count
 }
 
-function scrapeIMDBLine(line,imdbContentPosition,idx,f,\
-title,poster_imdb_url,i) {
+
+function scrapeIMDBLine(line,imdbContentPosition,idx,f,isection,\
+title,poster_imdb_url,i,sec) {
 
 
 if (imdbContentPosition == "footer" ) {
@@ -6373,6 +6394,7 @@ DEBUG("Title found ["title "] current title ["gTitle[idx]"]")
 if (g_year[idx] == "" && match(title,".*\\([12][0-9][0-9][0-9]")) {
 g_year[idx] = substr(title,RSTART+RLENGTH-4,4)
 DEBUG("IMDB: Got year ["g_year[idx]"]")
+delete isection[YEAR]
 }
 
 
@@ -6391,6 +6413,7 @@ g_imdb_title[idx]=extract_imdb_title_category(idx,title)
 if (adjustTitle(idx,g_imdb_title[idx],"imdb")) {
 gOriginalTitle[idx] = gTitle[idx]
 }
+sec=TITLE
 }
 if (index(line,"pagecontent")) {
 imdbContentPosition="body"
@@ -6418,9 +6441,11 @@ sub(/SY[0-9]{2,3}_/,"SY400_",poster_imdb_url)
 g_imdb_img[idx]=poster_imdb_url
 DEBUG("IMDB: Got imdb poster ["g_imdb_img[idx]"]")
 }
+sec=POSTER
 }
 if (g_director[idx] == "" && index(line,"Director:")) {
 g_director[idx] = scrape_until("idirector",f,"/name/",1)
+sec=DIRECTOR
 }
 
 if (g_plot[idx] == "" && index(line,"Plot:")) {
@@ -6428,6 +6453,7 @@ g_plot[idx] = scrape_until("iplot",f,"</div>",0)
 sub(/\|.*/,"",g_plot[idx])
 sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",g_plot[idx])
 
+sec=PLOT
 }
 
 
@@ -6435,36 +6461,47 @@ if (g_genre[idx] == "" && index(line,"Genre:")) {
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
 sub(/ +[Ss]ee /," ",g_genre[idx])
 sub(/ +[Mm]ore */,"",g_genre[idx])
+sec=GENRE
 }
 if (g_runtime[idx] == "" && index(line,"Runtime:")) {
 g_runtime[idx]=trimAll(scrape_until("irtime",f,"</div>",0))
 if (match(g_runtime[idx],"[0-9]+")) {
 g_runtime[idx] = substr(g_runtime[idx],RSTART,RLENGTH)
 }
+sec=RUNTIME
 }
 
 
 if (index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
 g_rating[idx]=0+substr(line,RSTART,RLENGTH-3)
 DEBUG("IMDB: Got Rating = ["g_rating[idx]"]")
+sec=RATING
 }
 if (index(line,"certificates")) {
 
 scrapeIMDBCertificate(idx,line)
+sec=CERT
 
 }
 
 
 
+if (index(line,"Also Known")) DEBUG("AKA "gOriginalTitle[idx]" vs "gTitle[idx])
+
 if (gOriginalTitle[idx] == gTitle[idx] && index(line,"Also Known As:")) {
+line = raw_scrape_until("aka",f,"</div>",1)
+
+DEBUG("AKA:"line)
 
 scrapeIMDBAka(idx,line)
+sec=AKA
 
 }
 }
 } else {
 DEBUG("Unknown imdbContentPosition ["imdbContentPosition"]")
 }
+if (sec) delete isection[sec]
 return imdbContentPosition
 }
 
@@ -6493,25 +6530,27 @@ return title
 
 
 function scrapeIMDBAka(idx,line,\
-l,akas,a,c,br) {
+akas,a,c,bro,brc) {
 
 if (gOriginalTitle[idx] != gTitle[idx] ) return 
 
-br=substr("()",1,1)
-
-l=substr(line,index(line,"</h")+5)
-split(l,akas,"<br>")
+bro="("
+brc=")"
+split(de_emphasise(line),akas,"<br>")
+dump(0,"AKA array",akas)
 for(a in akas) {
 akas[a] = remove_tags(akas[a])
 DEBUG("Checking aka ["akas[a]"]")
 for(c in gTitleCountries ) {
-if (index(akas[a],br gTitleCountries[c]":")) {
+if (index(akas[a], gTitleCountries[c])) {
+if (match(akas[a], "- .*\\<"gTitleCountries[c]":")) {
+
 
 
 DEBUG("Ignoring aka section")
 return
 }
-if (index(akas[a],br gTitleCountries[c]")")) {
+if (match(akas[a],"- .*\\<" gTitleCountries[c] "\\>")) {
 
 if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative")) {
 
@@ -6520,10 +6559,11 @@ DEBUG("Ignoring aka section")
 return
 }
 
-akas[a]=substr(akas[a],1,index(akas[a]," (")-1)
-akas[a]=clean_title(akas[a])
-adjustTitle(idx,akas[a],"imdb_aka"); 
+if (match(akas[a],"\".*\" -")) {
+adjustTitle(idx,clean_title(substr(akas[a],RSTART+1,RLENGTH-2)),"imdb_aka"); 
+}
 return
+}
 }
 }
 }
@@ -6611,7 +6651,11 @@ if (index(t,"\\<")) return 1
 gsub(/\\./,"",t)
 return match(t,"[][().|$^+*]")
 }
-function scrape_until(label,f,end_text,inclusive,\
+function scrape_until(label,f,end_text,inclusive) {
+
+return trim(remove_tags(raw_scrape_until(label,f,end_text,inclusive)))
+}
+function raw_scrape_until(label,f,end_text,inclusive,\
 line,out,ending,isre) {
 ending = 0
 isre = isreg(end_text)
@@ -6630,9 +6674,8 @@ out = out " " line[1]
 gsub(/ +/," ",out)
 out =remove_html_section(out,"script")
 out =remove_html_section(out,"style")
-out = remove_tags(out)
-INF("scrape_until "label"/"end_text":=["out"]")
-return trim(out)
+INF("raw_scrape_until "label"/"end_text":=["out"]")
+return out
 }
 
 

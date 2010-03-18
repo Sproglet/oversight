@@ -1656,7 +1656,15 @@ match1,submatch) {
 
         scanPageFreqMatch(url,helptxt,regex,1,"",submatch);
     }
+    # for each match we increment its score one.
+    # note one page may yield the same match in slightly different ways (eg "of the" vs"Of The")
+    # in this case we only want the inter page score incremented once, but we want 
+    #cross page search to treat both matches as one.
+
     for(match1 in submatch) {
+        if (match1 !~ g_imdb_regex) {
+            match1 = clean_title(match1);
+        }
         matches[match1] ++; 
         src[match1]=src[match1] ":" url ":";
     }
@@ -3209,16 +3217,19 @@ imdb_title_q,imdb_id_q) {
 
                 } else if (search_order[s] == "IMDBFIRST") {
 
-                    TODO("url encode name.");
-                    if (index(name_try,"-") ) {
-                        name_try="\""name_try"\"";
+                    if (name_try ~ "^[a-zA-Z0-9]+-[a-zA-Z0-9]+$" ) {
+                        # quote hyphenated file names
+                        name_try = "\""name_try"\"";
+                    } else {
+                        # Remove punctuation runs
+                        gsub("[^a-zA-Z0-9()"g_8bit" ]+"," ",name_try);
+                        name_try = trim(name_try);
                     }
-                    #ALL# Remove underscores
-                    gsub(/_/," ",name_try);
 
-                    imdb_title_q=url_encode("site:imdb.com")
-                    imdb_id_q = url_encode("site:imdb.com")
-                    #ALL#
+
+                    imdb_title_q=url_encode("imdb");
+                    imdb_id_q = url_encode("imdb");
+                    #imdb_id_q = url_encode("site:imdb.com");
                     #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
 
                     bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q);

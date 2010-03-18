@@ -1656,7 +1656,15 @@ submatch[match1] = 1
 
 scanPageFreqMatch(url,helptxt,regex,1,"",submatch)
 }
+
+
+
+
+
 for(match1 in submatch) {
+if (match1 !~ g_imdb_regex) {
+match1 = clean_title(match1)
+}
 matches[match1] ++; 
 src[match1]=src[match1] ":" url ":"
 }
@@ -3209,15 +3217,18 @@ bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"))
 
 } else if (search_order[s] == "IMDBFIRST") {
 
-TODO("url encode name.")
-if (index(name_try,"-") ) {
-name_try="\""name_try"\""
+if (name_try ~ "^[a-zA-Z0-9]+-[a-zA-Z0-9]+$" ) {
+
+name_try = "\""name_try"\""
+} else {
+
+gsub("[^a-zA-Z0-9()"g_8bit" ]+"," ",name_try)
+name_try = trim(name_try)
 }
 
-gsub(/_/," ",name_try)
 
-imdb_title_q=url_encode("site:imdb.com")
-imdb_id_q = url_encode("site:imdb.com")
+imdb_title_q=url_encode("imdb")
+imdb_id_q = url_encode("imdb")
 
 
 

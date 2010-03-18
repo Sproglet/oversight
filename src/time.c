@@ -8,7 +8,7 @@ inline OVS_TIME time_ordinal(struct tm *t) {
 // we just need a number we can sort on and compare
     // Remove seconds from timestamp format. must fit 32 otherwise high bits lost.
     // Binary layout is YYYYYY YYYYMMMM dddddhhh hhmmmmmm
-    return ((((((((t->tm_year & 0x3FF) << 4)+t->tm_mon) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min;
+    return ((((((((t->tm_year & 0x3FF) << 4)+(t->tm_mon+1)) << 5)+t->tm_mday) << 5)+t->tm_hour)<<6)+t->tm_min;
 }
 
 OVS_TIME epoc2internal_time(time_t t1) {
@@ -38,7 +38,7 @@ static void copy_internal_time2tm(OVS_TIME t1,struct tm *t) {
     t->tm_min = t1  & 0x3F;
     t->tm_hour = ( t1 >> (6)) & 0x1F;
     t->tm_mday = ( ( t1 >> (6+5)) & 0x1F  );
-    t->tm_mon = ( t1 >> (6+5+5)) & 0xF  ;
+    t->tm_mon = ( t1 >> (6+5+5)) & 0xF -1  ;
     t->tm_year = ( t1 >> (6+5+5+4)) & 0x3FF  ;
 }
 

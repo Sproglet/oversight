@@ -1023,7 +1023,7 @@ rar_sanity_check_nzb() {
 
 # Check free space - watch out for df split across lines.
 free_space() {
-    df -k "$1" | awk 'NR==1 { u=index($0,"Use%"); } END { $0=substr($0,1,u-2) ; sub(/.* /,"") ;  print $0 } '
+    df -k "$1" | awk 'END { print (index($0," ")==1 ? $3 : $4 ); }'
 }
 
 # Do a quick header check on each part.

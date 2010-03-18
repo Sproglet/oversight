@@ -22,7 +22,7 @@
 #include "network.h"
 #include "mount.h"
 
-#define DB_ROW_BUF_SIZE 4000
+#define DB_ROW_BUF_SIZE 6000
 #define QUICKPARSE
 
 #define HEX_YEAR_OFFSET 1900

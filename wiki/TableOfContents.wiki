@@ -3,6 +3,7 @@ Everyone
   * OversightIntro
   * InstallingOversight
   * RunningOversight
+  * SiteChecker
   * CrossView
   * FileNames
   * [NZBGetIntegrationAndRenaming]

@@ -34,7 +34,4 @@ void setPermissions()
     } else {
         HTML_LOG(0,"user [%s] not found",NMT_USER);
     }
-    // remove crappy dns cache that NMT have coded into wget.
-    // This causes problems when a site changes IP. (which happens fairly often)
-    unlink("/tmp/dns_cache");
 }

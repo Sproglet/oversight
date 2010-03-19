@@ -92,4 +92,6 @@ char *get_mounted_path(char *source,char *path,int *freeit);
 // Instead of converting timestamps to epoc time use a rough representation (see time_ordinal)
 #define FAST_TIME
 
+#define USER_AGENT "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+"
+
 #endif

@@ -8,26 +8,32 @@
         </style>
     </head>
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
-        <h1 class=admin>[:ICON_LINK(view=ask&idlist=&action=,back):] Clear NMT Cache</h1>
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Clear NMT Caches</h1>
 
         [:FORM_START:]
 
             <center>
-            <p>This will clear the NMT image cache. Use this option if changes to images do not appear on the TV but do appear on  the internal HD and in the PC browser.
-
-            <table width=30%>
+            <table width=80%>
                 <tr>
-                    <td align=center colspan=2 class=delete>
+                    <td align=right>
+                        <input type=submit name=action value="reset_dns_cache">
+                    </td>
+                    <td>
+                        PRESS ONCE! Reset DNS cache - try this if all crosses red on site checker but internet is working.
+                        <b>If the next page does not appear press PREV and restest the site checker.</b>
+                    </td>
+                </tr>
+                <tr>
+                    <td align=right >
                         <input type=submit name=action value="clear_cache">
                     </td>
-                    <td align=center colspan=2>
-                        <input type=submit name=action value="Cancel">
+                    <td>
+                        Clear the image cache - try this if images appear in browser but not on TV
                     </td>
                 </tr>
             </table>
 
             <input type=hidden name=old_action value="[:$?action:]">
-            <input type=hidden name=view value="[:$?view:]">
         </form>
     </body>
 </html>

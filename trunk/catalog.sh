@@ -127,7 +127,6 @@ gid=nmt
 if [ -d /share/bin ] ; then
 PATH="/share/bin:$PATH" && export PATH
 fi
-rm -f "/tmp/dns_cache"  # nmt brokenness
 else
 uid=root
 gid=None

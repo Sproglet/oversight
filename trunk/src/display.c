@@ -2759,7 +2759,7 @@ int delisted(DbRowId *rowid)
         if (ancestor_dir && exists(ancestor_dir) && !is_empty_dir(ancestor_dir) &&  auto_prune) {
 
             //media present - file gone!
-            db_remove_row(rowid);
+            db_auto_remove_row(rowid);
             result = 1;
 
         }

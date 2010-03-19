@@ -483,7 +483,8 @@ g_nonquote_regex = "[^"g_quote2"]"
 
 g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"
 
-g_imdb_title_re="[A-Z"g_8bit"][a-zA-Z0-9& "g_quote g_8bit"]* \\([12][0-9][0-9][0-9]\\)"
+g_year_re="(20[01][0-9]|19[5-9][0-9])"
+g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& "g_quote "]* \\("g_year_re"\\)"
 
 ELAPSED_TIME=systime()
 UPDATE_TV=1
@@ -833,8 +834,8 @@ g_search_bing2 = "http://www.bing.com/search?q=subtitles+"
 
 g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q="
 
-g_search_engine[0]=g_search_bing2
 
+g_search_engine[0]=g_search_yahoo
 g_search_engine[1]=g_search_bing
 
 g_search_engine_count=2
@@ -1126,7 +1127,7 @@ return 0
 function capitalise(text,\
 i,rtext,rstart) {
 text=" "text
-while (match(text,"[^a-zA-Z0-9"g_8bit g_quote"][a-z]") > 0) {
+while (match(text,"[^" g_alnum8 g_quote"][a-z]") > 0) {
 text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2)
 }
 
@@ -1834,7 +1835,7 @@ bestUrl = searchArrayForIMDB2(k,linkThreshold)
 if (bestUrl == "") {
 
 for(keywords in k) {
-if (sub(/ *s[0-9][0-9]e[0-9][0-9].*/,"",keywords)) {
+if (sub(/ *[sS][0-9][0-9][eE][0-9][0-9].*/,"",keywords)) {
 keywordsSansEpisode[keywords]=1
 }
 }
@@ -1882,9 +1883,7 @@ f=substr(f,RSTART+1)
 
 f=substr(f,RSTART+1,RLENGTH-2)
 }
-
 sub(gExtRegExAll,"",f)
-
 return f
 }
 
@@ -1907,14 +1906,13 @@ gsub("[^" g_alnum8"]+","+",f)
 
 
 
-if (match(f,"\\<(19|20)[0-9][0-9]\\>")) {
-f = substr(f,1,RSTART+RLENGTH)
+if (match(f,"\\<"g_year_re"\\>")) {
+f = substr(f,1,RSTART+RLENGTH-1)
 }
 
-if (match(f,"\\<s[0-9][0-9]e[0-9][0-9]")) {
-f = substr(f,1,RSTART+RLENGTH)
+if (match(f,"\\<[sS][0-9][0-9][eE][0-9][0-9]")) {
+f = substr(f,1,RSTART+RLENGTH-1)
 }
-
 
 f = remove_format_tags(f)
 
@@ -2593,7 +2591,7 @@ delete date
 delete nonDate
 
 
-y4="(20[01][0-9]|19[5-9][0-9])"
+y4=g_year_re
 m2="(0[1-9]|1[012])"
 m1=d1="[1-9]"
 d2="([012][0-9]|3[01])"
@@ -3148,8 +3146,8 @@ return 0+ result
 
 
 function movie_search(idx,bestUrl,\
-name,name_no_br,name_no_tags,name_no_parts,i,\
-n,name_hash,name_list,name_id,name_try,\
+name,i,\
+n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
 imdb_title_q,imdb_id_q) {
 
@@ -3157,31 +3155,22 @@ id1("movie search")
 
 
 
+name_id=0
+
+
+if (gParts[idx] != "") {
+name_list[++name_id]=remove_part_suffix(idx)
+}
 
 name=cleanSuffix(idx)
-INF("name=["name"]")
-
-name_no_parts = remove_part_suffix(idx)
-INF("name_no_parts=["name_no_parts"]")
+name_list[++name_id] = name
 
 
-INF("IGNORING name_no_tags=["name_no_tags"]")
-
-name_no_br=remove_format_tags(remove_brackets(basename(g_media[idx])))
-INF("name_no_br=["name_no_br"]")
-
-
-
-name_id=0
-if (!(name in name_hash)) name_hash[name]=++name_id
-if (gParts[idx] != "" &&  !(name_no_parts in name_hash)) name_hash[name_no_parts]=++name_id
-
-if (!(name_no_br in name_hash)) name_hash[name_no_br]=++name_id
-
-
-for(n in name_hash) {
-name_list[name_hash[n]] = n
+if (match(name,"\\(?"g_year_re"\\)?")) {
+name_list[++name_id] = substr(name,1,RSTART+RLENGTH-1)
 }
+
+name_list[++name_id] = remove_format_tags(remove_brackets(basename(g_media[idx])))
 
 dump(0,"name_tries",name_list)
 
@@ -3219,6 +3208,10 @@ for(n = 1 ; bestUrl=="" && n+0 <= name_id ; n++) {
 
 name_try = name_list[n]
 
+if (!(name_try in name_seen)) {
+
+name_seen[name_try]=n
+
 id1("Search Phase: "search_order[s]"["name_try"]")
 
 if (search_order[s] == "ONLINE_NFO") {
@@ -3242,7 +3235,7 @@ if (name_try ~ "^[a-zA-Z0-9]+-[a-zA-Z0-9]+$" ) {
 name_try = "\""name_try"\""
 } else {
 
-gsub("[^a-zA-Z0-9()"g_8bit" ]+"," ",name_try)
+gsub("[^()"g_alnum8" ]+"," ",name_try)
 name_try = trim(name_try)
 }
 
@@ -3270,6 +3263,7 @@ ERR("Unknown search method "search_order[s])
 }
 
 id0(bestUrl)
+}
 }
 }
 }
@@ -4475,7 +4469,7 @@ DEBUG("No match for ["titleIn"+"yearOrCountry"] against ["possible_title"]")
 
 
 diff=substr(titleIn,length(possible_title)+1)
-if ( diff ~ " (19|20)[0-9][0-9]$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
+if ( diff ~ " "g_year_re"$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
 
 matchLevel = 5
 INF("match for ["titleIn"] containing ["possible_title"]")

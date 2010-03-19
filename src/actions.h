@@ -14,7 +14,8 @@ void add_internal_images_to_delete_queue(DbRowId *rid);
 void remove_internal_images_from_delete_queue(DbRowId *rid);
 
 #define DELETE_MODE_NONE 0
-#define DELETE_MODE_REMOVE 1
-#define DELETE_MODE_DELETE 2
+#define DELETE_MODE_REMOVE 1      // user initiated delist - pass 1
+#define DELETE_MODE_DELETE 2      // user initiated delete - pass 1
+#define DELETE_MODE_AUTO_REMOVE 3 // automatic delist during pass 2
 
 #endif

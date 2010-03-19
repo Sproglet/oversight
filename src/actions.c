@@ -201,12 +201,14 @@ void remove_internal_images_from_delete_queue(DbRowId *rid)
 {
     int i;
 TRACE;
-    Array *a = array_new(free);
-    insert_image_list(rid,a);
-    for(i=0 ; i < a->size ; i++ ) {
-        delete_queue_unqueue(rid,(char *)(a->array[i]));
+    if (g_delete_queue != NULL ) {
+        Array *a = array_new(free);
+        insert_image_list(rid,a);
+        for(i=0 ; i < a->size ; i++ ) {
+            delete_queue_unqueue(rid,(char *)(a->array[i]));
+        }
+        array_free(a);
     }
-    array_free(a);
 }
 
 void add_internal_images_to_delete_queue(DbRowId *rid)

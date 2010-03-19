@@ -1957,13 +1957,24 @@ HTML_LOG(1," begin open db");
                         // No match - emit
                         fprintf(db_out,"%s",buf);
 
-                    } else if (delete_mode == DELETE_MODE_REMOVE || delete_mode == DELETE_MODE_DELETE) {
+                    } else if (
+                            delete_mode == DELETE_MODE_AUTO_REMOVE ||
+                            delete_mode == DELETE_MODE_REMOVE ||
+                            delete_mode == DELETE_MODE_DELETE) {
 
+                        // if delisting then keep the resources. Only remove them if there is a 
+                        // user initiated deletion or delist. Autodelist do not delete images.
+                        // Otherwise we have to do a third pass of the db to identify autodelited 
+                        // resources that are still in use.
+                        // pass 1 = user delete/delist action
+                        // pass 2 = render / auto delist.
                         DbRowId rid;
                         parse_row(ALL_IDS,NULL,0,buf,db,&rid);
-                        add_internal_images_to_delete_queue(&rid);
-                        if (delete_mode == DELETE_MODE_DELETE) {
-                            delete_media(&rid,1);
+                        if (delete_mode == DELETE_MODE_DELETE || delete_mode == DELETE_MODE_REMOVE) {
+                            add_internal_images_to_delete_queue(&rid);
+                            if (delete_mode == DELETE_MODE_DELETE ) {
+                                delete_media(&rid,1);
+                            }
                         }
                         db_rowid_free(&rid,0);
                         affected_total++;
@@ -2017,15 +2028,22 @@ HTML_LOG(1," begin open db");
 
 }
 
-void db_remove_row(DbRowId *rid) {
+void db_remove_row_helper(DbRowId *rid,int mode) {
     char idlist[20];
     sprintf(idlist,"%ld",rid->id);
-    db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,DELETE_MODE_REMOVE);
+    db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,mode);
 }
+// remove item from list, keep media, and keep images. initiated by Auto delist.
+void db_auto_remove_row(DbRowId *rid) {
+    db_remove_row_helper(rid,DELETE_MODE_AUTO_REMOVE);
+}
+// remove item from list, keep media, delete images. user initiated delist
+void db_remove_row(DbRowId *rid) {
+    db_remove_row_helper(rid,DELETE_MODE_REMOVE);
+}
+// remove item from list, delete everything. user initiated delete.
 void db_delete_row_and_media(DbRowId *rid) {
-    char idlist[20];
-    sprintf(idlist,"%ld",rid->id);
-    db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,DELETE_MODE_DELETE);
+    db_remove_row_helper(rid,DELETE_MODE_DELETE);
 }
 
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode) {

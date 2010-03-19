@@ -228,7 +228,12 @@ PERMS() {
 
 BOUNCE_NZBGET() {
     #Bounce nzbget if its running
-    $INSTALL_DIR/unpak.sh nzbget_cmd restart
+    #nmt should set its own Daemon user - but wrapped command with su 
+    #because of reports of nzbget running as nobody.
+
+    # "$INSTALL_DIR/unpak.sh nzbget_cmd restart"
+
+    su -s /bin/sh nmt -c "$INSTALL_DIR/unpak.sh nzbget_cmd restart"
 }
 
 

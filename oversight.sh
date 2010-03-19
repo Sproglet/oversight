@@ -393,11 +393,6 @@ uninstall_as_wget() {
 }
 
 reboot_fix() {
-    # NMT broken wget
-    if [ ! /dev/null -ef /tmp/dns_cache ] ; then
-        rm -f /tmp/dns_cache && ln -s /dev/null /tmp/dns_cache
-    fi
-
     # NMT find siliently fails with -mtime and -newer
     if [ ! -L "$APPDIR/bin/nmt100/find" ] ; then
         ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find

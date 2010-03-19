@@ -31,7 +31,7 @@ PUSH() {
             echo Drive $i
             root=$dest_prefix/$i/Apps/oversight/.
 
-            CP "$root" *.full *.cgi *.sh help bin/nmt*/oversight bin/jpg_* bin/plot.sh
+            CP "$root" *.full *.cgi *.sh help bin/nmt*/oversight bin/jpg_* bin/plot.sh bin/dns.sh
             CP "$root" conf/*example conf/.*defaults conf/tv.txt
 
             if [ "$mode" = "all" ] ; then

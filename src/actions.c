@@ -357,6 +357,12 @@ void do_actions() {
             delete_config("catalog.cfg");
             delete_config("unpak.cfg");
 
+        } else if (STRCMP(action,"reset_dns_cache") == 0) {
+
+            char *cmd;
+            ovs_asprintf(&cmd,"%s/bin/dns.sh",appDir());
+            util_system(cmd);
+
         } else if (STRCMP(action,"clear_cache") == 0) {
 
             util_rmdir("/mnt/.cache",".");

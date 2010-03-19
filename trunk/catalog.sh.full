@@ -483,7 +483,8 @@ BEGIN {
     #g_imdb_regex="\\<tt[0-9]+\\>";
     g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
 
-    g_imdb_title_re="[A-Z"g_8bit"][a-zA-Z0-9& "g_quote g_8bit"]* \\([12][0-9][0-9][0-9]\\)";
+    g_year_re="(20[01][0-9]|19[5-9][0-9])";
+    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& "g_quote "]* \\("g_year_re"\\)";
 
     ELAPSED_TIME=systime();
     UPDATE_TV=1;
@@ -1126,7 +1127,7 @@ function set_permissions(shellArg) {
 function capitalise(text,\
 i,rtext,rstart) {
     text=" "text;
-    while (match(text,"[^a-zA-Z0-9"g_8bit g_quote"][a-z]") > 0) {
+    while (match(text,"[^" g_alnum8 g_quote"][a-z]") > 0) {
         text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2);
     }
     ## Uppercase roman
@@ -1834,7 +1835,7 @@ bestUrl,keywords,keywordsSansEpisode) {
     if (bestUrl == "") {
         # Remove episode tags and try again
         for(keywords in k) {
-            if (sub(/ *s[0-9][0-9]e[0-9][0-9].*/,"",keywords)) {
+            if (sub(/ *[sS][0-9][0-9][eE][0-9][0-9].*/,"",keywords)) {
                 keywordsSansEpisode[keywords]=1;
             }
         }
@@ -1882,9 +1883,7 @@ function basename(f) {
         # "/path/to/folder/" return "folder"
         f=substr(f,RSTART+1,RLENGTH-2);
     }
-    #DEBUG("Before ext ["f"]");
     sub(gExtRegExAll,"",f); #remove extension
-    #DEBUG("After ext ["f"]");
     return f;
 }
 
@@ -1907,14 +1906,13 @@ function textToSearchKeywords(f,heuristic\
         #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
 
         #remove everything after a year
-        if (match(f,"\\<(19|20)[0-9][0-9]\\>")) {
-            f = substr(f,1,RSTART+RLENGTH);
+        if (match(f,"\\<"g_year_re"\\>")) {
+            f = substr(f,1,RSTART+RLENGTH-1);
         }
         #remove everything after episode
-        if (match(f,"\\<s[0-9][0-9]e[0-9][0-9]")) {
-            f = substr(f,1,RSTART+RLENGTH);
+        if (match(f,"\\<[sS][0-9][0-9][eE][0-9][0-9]")) {
+            f = substr(f,1,RSTART+RLENGTH-1);
         }
-
 
         f = remove_format_tags(f);
 
@@ -2593,7 +2591,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
     delete nonDate;
     #Extract the date.
     #because awk doesnt capture submatches we have to do this a slightly painful way.
-    y4="(20[01][0-9]|19[5-9][0-9])";
+    y4=g_year_re;
     m2="(0[1-9]|1[012])";
     m1=d1="[1-9]";
     d2="([012][0-9]|3[01])";
@@ -3148,8 +3146,8 @@ tvDbSeriesPage,result,tvid) {
 
 #0=not found 1=movie 2=tv??
 function movie_search(idx,bestUrl,\
-name,name_no_br,name_no_tags,name_no_parts,i,\
-n,name_hash,name_list,name_id,name_try,\
+name,i,\
+n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
 imdb_title_q,imdb_id_q) {
 
@@ -3157,31 +3155,22 @@ imdb_title_q,imdb_id_q) {
 
     # search online info using film basename looking for imdb link
     # -----------------------------------------------------------------------------
+    name_id=0;
+
+
+    if (gParts[idx] != "") {
+        name_list[++name_id]=remove_part_suffix(idx);
+    }
 
     name=cleanSuffix(idx);
-    INF("name=["name"]");
-
-    name_no_parts = remove_part_suffix(idx);
-    INF("name_no_parts=["name_no_parts"]");
-
-#ALL#    name_no_tags=textToSearchKeywords(name,0);
-    INF("IGNORING name_no_tags=["name_no_tags"]");
-
-    name_no_br=remove_format_tags(remove_brackets(basename(g_media[idx])));
-    INF("name_no_br=["name_no_br"]");
-
+    name_list[++name_id] = name;
 
     # Build hash of name->order
-    name_id=0;
-    if (!(name in name_hash)) name_hash[name]=++name_id;
-    if (gParts[idx] != "" &&  !(name_no_parts in name_hash)) name_hash[name_no_parts]=++name_id;
-#ALL#    if (!(name_no_tags in name_hash)) name_hash[name_no_tags]=++name_id;
-    if (!(name_no_br in name_hash)) name_hash[name_no_br]=++name_id;
-
-    #build ordered list order->name
-    for(n in name_hash) {
-        name_list[name_hash[n]] = n;
+    if (match(name,"\\(?"g_year_re"\\)?")) {
+        name_list[++name_id] = substr(name,1,RSTART+RLENGTH-1);
     }
+
+    name_list[++name_id] = remove_format_tags(remove_brackets(basename(g_media[idx])));
 
     dump(0,"name_tries",name_list);
 
@@ -3215,61 +3204,66 @@ imdb_title_q,imdb_id_q) {
 
         } else {
 
-            for(n = 1 ; bestUrl=="" && n+0 <= name_id ; n++) {
+                for(n = 1 ; bestUrl=="" && n+0 <= name_id ; n++) {
 
-                name_try = name_list[n];
+                    name_try = name_list[n];
 
-                id1("Search Phase: "search_order[s]"["name_try"]");
+                    if (!(name_try in name_seen)) {
 
-                if (search_order[s] == "ONLINE_NFO") {
+                        name_seen[name_try]=n;
 
-                    #Add a dot on the end to stop binsearch false matching sub words.
-                    #eg binsearch will find "a-bcd" given "a-b" to prevent this 
-                    # change a-b to "a-b."
-                    #bintube will ignore the dot.
-                    bestUrl = searchOnlineNfoImdbLinks(name_try".");
+                    id1("Search Phase: "search_order[s]"["name_try"]");
 
-                } else if (search_order[s] == "IMDB") {
+                    if (search_order[s] == "ONLINE_NFO") {
 
-                    #This is a web search of imdb site returning the first match.
+                        #Add a dot on the end to stop binsearch false matching sub words.
+                        #eg binsearch will find "a-bcd" given "a-b" to prevent this 
+                        # change a-b to "a-b."
+                        #bintube will ignore the dot.
+                        bestUrl = searchOnlineNfoImdbLinks(name_try".");
 
-                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"));
+                    } else if (search_order[s] == "IMDB") {
 
-                } else if (search_order[s] == "IMDBFIRST") {
+                        #This is a web search of imdb site returning the first match.
 
-                    if (name_try ~ "^[a-zA-Z0-9]+-[a-zA-Z0-9]+$" ) {
-                        # quote hyphenated file names
-                        name_try = "\""name_try"\"";
-                    } else {
-                        # Remove punctuation runs
-                        gsub("[^a-zA-Z0-9()"g_8bit" ]+"," ",name_try);
-                        name_try = trim(name_try);
-                    }
+                        bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"));
+
+                    } else if (search_order[s] == "IMDBFIRST") {
+
+                        if (name_try ~ "^[a-zA-Z0-9]+-[a-zA-Z0-9]+$" ) {
+                            # quote hyphenated file names
+                            name_try = "\""name_try"\"";
+                        } else {
+                            # Remove punctuation runs
+                            gsub("[^()"g_alnum8" ]+"," ",name_try);
+                            name_try = trim(name_try);
+                        }
 
 
-                    imdb_title_q=url_encode("imdb");
-                    imdb_id_q = url_encode("imdb");
-                    #imdb_id_q = url_encode("site:imdb.com");
-                    #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
+                        imdb_title_q=url_encode("imdb");
+                        imdb_id_q = url_encode("imdb");
+                        #imdb_id_q = url_encode("site:imdb.com");
+                        #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
 
-                    bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q);
-                    if (bestUrl == "" ) {
+                        bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q);
+                        if (bestUrl == "" ) {
 
-                        # look for imdb style titles 
-                        title = web_search_first_imdb_title(name_try);
-                        if (title != "" && title != name_try) {
-                            bestUrl=web_search_first_imdb_link(title"+"imdb_title_q);
-                            if (bestUrl == "") {
-                                bestUrl=web_search_first_imdb_link(title"+"imdb_id_q);
+                            # look for imdb style titles 
+                            title = web_search_first_imdb_title(name_try);
+                            if (title != "" && title != name_try) {
+                                bestUrl=web_search_first_imdb_link(title"+"imdb_title_q);
+                                if (bestUrl == "") {
+                                    bestUrl=web_search_first_imdb_link(title"+"imdb_id_q);
+                                }
                             }
                         }
+
+                    } else {
+                        ERR("Unknown search method "search_order[s]);
                     }
 
-                } else {
-                    ERR("Unknown search method "search_order[s]);
+                    id0(bestUrl);
                 }
-
-                id0(bestUrl);
             }
         }
     }
@@ -4475,7 +4469,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
 
         #matchLevel = 1;
         diff=substr(titleIn,length(possible_title)+1);
-        if ( diff ~ " (19|20)[0-9][0-9]$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
+        if ( diff ~ " "g_year_re"$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
             #unqualified match xxxx 2000 vs xxxx
             matchLevel = 5;
             INF("match for ["titleIn"] containing ["possible_title"]");

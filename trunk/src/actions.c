@@ -181,14 +181,14 @@ static void insert_image_list(DbRowId *rid,Array *a) {
 
 TRACE;
     char *poster = internal_image_path_static(rid,POSTER_IMAGE);
-    HTML_LOG(0,"poster[%s]",poster);
+    //HTML_LOG(0,"poster[%s]",poster);
     if (poster) {
         array_add(a,STRDUP(poster));
         array_add(a,replace_all(poster,"\\.jpg$",".thumb.jpg",0));
     }
 
     char *fanart = internal_image_path_static(rid,FANART_IMAGE);
-    HTML_LOG(0,"fanart[%s]",fanart);
+    //HTML_LOG(0,"fanart[%s]",fanart);
     if (fanart) {
         array_add(a,STRDUP(fanart));
         array_add(a,replace_all(fanart,"\\.jpg$",".hd.jpg",0));
@@ -632,6 +632,15 @@ void update_idlist(struct hashtable *source_id_hash_removed)
         //Update the html parameter
         query_update("idlist",idhash_to_idlist(source_id_hash_current));
         hashtable_destroy(source_id_hash_current,1,1);
+    }
+
+    // If the id list is empty then go back to the main menu.
+    // TODO  This needs to work with boxsets too. ie deleting last item in the 
+    // detail page should go back to the previous box set and not the main menu.
+    // Will resolve later.
+    if (!*query_val("idlist")) {
+        HTML_LOG(0,"pop to previous screen");
+        query_pop();
     }
     HTML_LOG(0,"post update idlist = [%s]",query_val("idlist"));
 }

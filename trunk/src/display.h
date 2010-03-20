@@ -55,6 +55,7 @@ char *skin_name();
 char *internal_image_path_static(DbRowId *rid,ImageType image_type);
 void xx_dump_genre(char *file,int line,int num,DbRowId **rows);
 char *return_query_string();
+void query_pop();
 void set_selected_item();
 char *get_selected_item();
 #endif

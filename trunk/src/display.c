@@ -409,6 +409,7 @@ char *drill_down_url(char *new_params,char *param_list)
     return final;
 }
 
+static Array *drilldown_root_names= NULL;
 // this is a query string where existing @p,@view,@idlist parameters are moved back to
 // p,view,idlist // so that we can return the the previous screen.
 char *return_query_string() 
@@ -437,7 +438,6 @@ char *return_query_string()
  *
  * 'p=1 & @p=2 & @@p = 3
      */
-    static Array *drilldown_root_names= NULL;
     if (drilldown_root_names == NULL ) {
         drilldown_root_names = split(DRILL_DOWN_PARAM_NAMES,",",0);
     }
@@ -497,6 +497,83 @@ char *return_query_string()
     char *result = arraystr(new_drilldown_params);
     FREE(new_drilldown_params);
     return result;
+}
+
+// This is the same as return_query_string() but acts on the current query parameters
+// rather then generating a new URL
+void query_pop() 
+{
+
+    /*
+     * given parameter name p we want
+     * p=1&@p=2&@@p=3 to become p=2&@p=3
+     *
+     * for each parameter pname in param list
+     *    for each param Q in g_query do
+     *       if Q.name = pname 
+     *          if @name not in query then
+     *             add Q.name=<blank>
+     *          endif
+     *       else if Q matches ^@+param$  eg , @param , @@param etc.
+     *          add (Q.name)=((@Q).value) to new parameter list.
+     *       end if 
+     *    end for
+     * end for
+     *
+ * e.g
+ * '@p=1 & @@p=2 & @@@p = 3  
+ *
+ * becomes
+ *
+ * 'p=1 & @p=2 & @@p = 3
+     */
+    if (drilldown_root_names == NULL ) {
+        drilldown_root_names = split(DRILL_DOWN_PARAM_NAMES,",",0);
+    }
+
+    int i;
+    if (drilldown_root_names) {
+        for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
+            char *param_name = drilldown_root_names->array[i];
+
+            if (param_name) {
+                struct hashtable_itr *itr;
+                char *qname;
+                char *qval;
+
+                int max_depth = 0; // track the deepest level parameter to remove it
+
+                for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
+
+                    int depth = is_drilldown_of(qname,param_name);
+
+                    if (depth > max_depth ) {
+                        max_depth = depth;
+                    }
+                }
+                // Now  shift them all up and remove the deepest eg.
+                // if p=1&@p=2&@@p=3 becomes p=2&@p=3 we need to add @@p=
+                if (max_depth > 0 ) {
+                    char *name;
+                    ovs_asprintf(&name,"%.*s%s",max_depth-1,"@@@@@@@@@@",param_name);
+                    HTML_LOG(0,"query_pop:name=[%s]",name);
+                    int i;
+                    for(i = 1 ; i < max_depth ; i++ ) {
+                        char *new_name = name+(max_depth-i);
+                        char *old_name = --new_name ;
+                        char *val = query_val(old_name);
+                        query_update(STRDUP(new_name),STRDUP(val));
+                    }
+                    query_remove(name);
+                    HTML_LOG(0,"query_pop:done=[%s]",name);
+
+                    ss
+                        track idlist variable in actions.c and make sure it can be freed at this stage.
+
+                }
+            }
+        }
+    }
 }
 
 // Compute url to go back to previous link.

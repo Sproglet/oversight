@@ -1589,8 +1589,6 @@ DbRowSet * db_scan_titles(
                 if (g_delete_queue != NULL) {
 
 TRACE;
-HTML_LOG(0,"Title[%s]",rowid.title);
-
                     delete_queue_unqueue(&rowid,rowid.nfo);
 TRACE;
                     remove_internal_images_from_delete_queue(&rowid);

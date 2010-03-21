@@ -1296,7 +1296,7 @@ char *macro_fn_select_mark_submit(char *template_name,char *call,Array *args,int
 char *macro_fn_select_delete_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (STRCMP(query_val("select"),"Delete")==0) {
-        ovs_asprintf(&result,"<input type=submit name=action value=Delete >");
+        ovs_asprintf(&result,"<input type=submit name=action value=Delete onclick=\"return confirm('STOP! REALLY DELETE FILES?');\" >");
     }
     return result;
 }

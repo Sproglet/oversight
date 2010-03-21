@@ -5,16 +5,17 @@ var genrecell = document.getElementById('genre').firstChild;
 var g_epno='';
 var g_info='';
 
-function ovs_del() {
+function ovs_delist() {
     if (g_epno != '') {
-        if (confirm("Remove ["+g_epno+"]?")) {
-            if (confirm("Also Delete "+g_info)) {
-                if(confirm("Deleting media files") ) {
-                    action('delete');
-                }
-            } else {
-                action('delist');
-            }
+        if (confirm("Delist ["+g_epno+"]?")) {
+            action('delist');
+        }
+    }
+}
+function ovs_delete() {
+    if (g_epno != '') {
+        if (confirm("STOP! DELETE EP["+g_epno+"] FILES ?")) {
+            action('delete');
         }
     }
 }

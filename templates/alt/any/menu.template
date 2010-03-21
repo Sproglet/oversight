@@ -104,12 +104,13 @@ table.overview_poster {
 <script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/menu.js"></script>
 <script type="text/javascript">
 function info() {
-    alert('[RED] - mark watched\n[GREEN] - unwatch\n[DELETE] - delist/delete');
+    alert('[RED] - mark watched\n[GREEN] - unwatch\n[DELETE] - delist\n[1111] Delete Media');
 }
 </script>
 <!-- tvids -->
 [:TVIDS:]
-<a href="javascript:ovs_del();" tvid="CLEAR"></a>
+<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
+<a href="javascript:ovs_delete();" tvid="1111"></a>
 <a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
 <a href="javascript:ovs_watched();" tvid="RED"></a>
 <a href="javascript:info();" tvid="INFO"></a>

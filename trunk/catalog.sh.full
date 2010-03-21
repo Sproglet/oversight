@@ -2875,7 +2875,7 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        sub(/[eE]/,",",ep);
+        sub(/[-eE]/,",",ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
         sub(/^,+/,"",ep);
@@ -3162,7 +3162,6 @@ imdb_title_q,imdb_id_q) {
     }
 
     name=cleanSuffix(idx);
-    name_list[++name_id] = name;
 
     # Build hash of name->order
     if (match(name,"\\(?"g_year_re"\\)?")) {
@@ -3170,6 +3169,8 @@ imdb_title_q,imdb_id_q) {
     }
 
     name_list[++name_id] = remove_format_tags(remove_brackets(basename(g_media[idx])));
+
+    name_list[++name_id] = name;
 
     dump(0,"name_tries",name_list);
 

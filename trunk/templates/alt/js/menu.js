@@ -6,14 +6,17 @@ var unwatchedNode = document.getElementById('unwatchedtotal').firstChild;
 var g_idlist = '';
 var g_title = '';
 
-function ovs_del() {
+function ovs_delist() {
     if (g_idlist) {
-        if (confirm("Delist/Delete "+g_title+"?")) {
-            if (confirm("!!!Also Delete  "+g_title+" FILES ?!!!")) {
-                action('delete');
-            } else {
-                action('delist');
-            }
+        if (confirm("Delist "+g_title+"?")) {
+            action('delist');
+        }
+    }
+}
+function ovs_delete() {
+    if (g_idlist) {
+        if (confirm("STOP! DELETE "+g_title+" FILES?")) {
+            action('delete');
         }
     }
 }

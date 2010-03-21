@@ -3,15 +3,14 @@
 // g_idlist and g_title are set by the movie_listing code in oversight
 var g_info='';
 
-function ovs_del() {
-    if (confirm("Remove ["+g_title+"]?")) {
-        if (confirm("Also delete  "+g_title+" files ?!!!")) {
-            if(confirm("Deleting media files") ) {
-                action('delete');
-            } 
-        } else {
-            action('delist');
-        }
+function ovs_delist() {
+    if (confirm("Delist ["+g_title+"]?")) {
+        action('delist');
+    }
+}
+function ovs_delete() {
+    if (confirm("STOP! DELETE ["+g_title+"] FILES?")) {
+        action('delete');
     }
 }
 function set_info(info) {

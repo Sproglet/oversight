@@ -558,18 +558,19 @@ void query_pop()
                     ovs_asprintf(&name,"%.*s%s",max_depth-1,"@@@@@@@@@@",param_name);
                     HTML_LOG(0,"query_pop:name=[%s]",name);
                     int i;
+
+                    // eg if max_depth=2 name=@i new_name=i 
                     for(i = 1 ; i < max_depth ; i++ ) {
                         char *new_name = name+(max_depth-i);
-                        char *old_name = --new_name ;
+                        char *old_name = new_name-1 ;
                         char *val = query_val(old_name);
+
+                        HTML_LOG(0,"move [%s] from [%s] to [%s]",val,old_name,new_name);
+
                         query_update(STRDUP(new_name),STRDUP(val));
                     }
                     query_remove(name);
                     HTML_LOG(0,"query_pop:done=[%s]",name);
-
-                    ss
-                        track idlist variable in actions.c and make sure it can be freed at this stage.
-
                 }
             }
         }

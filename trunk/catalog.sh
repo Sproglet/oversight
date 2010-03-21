@@ -2875,7 +2875,7 @@ season = substr(line,1,RSTART-1)
 }
 
 
-sub(/[eE]/,",",ep)
+sub(/[-eE]/,",",ep)
 gsub(/\<0+/,"",ep)
 gsub(/,,+/,",",ep)
 sub(/^,+/,"",ep)
@@ -3162,7 +3162,6 @@ name_list[++name_id]=remove_part_suffix(idx)
 }
 
 name=cleanSuffix(idx)
-name_list[++name_id] = name
 
 
 if (match(name,"\\(?"g_year_re"\\)?")) {
@@ -3170,6 +3169,8 @@ name_list[++name_id] = substr(name,1,RSTART+RLENGTH-1)
 }
 
 name_list[++name_id] = remove_format_tags(remove_brackets(basename(g_media[idx])))
+
+name_list[++name_id] = name
 
 dump(0,"name_tries",name_list)
 
@@ -5698,7 +5699,8 @@ if (urls[i] != "") {
 if (wget2(urls[i],tmpf,referer) == 0) {
 
 
-exec("awk "g_quote"{ gsub(/<[hd]/,\"\\n&\") ; print ; }"g_quote" "qf" >> "qa(file))
+
+exec("\"'"$AWK"'\" "g_quote"{ gsub(/<(h[1-5]|div|td|tr|p)[ >]/,\"\\n&\") ; print ; }"g_quote" "qf" >> "qa(file))
 r=0
 }
 }
@@ -6153,7 +6155,10 @@ return f
 
 function enc_getline(f,line,\
 code,t) {
+
 code = ( getline t < f )
+
+if (code > 0) {
 
 if (g_f_utf8[f] == "" ) {
 
@@ -6173,6 +6178,7 @@ t = utf8_encode(t)
 }
 }
 line[1] = t
+}
 return code
 }
 

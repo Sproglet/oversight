@@ -197,9 +197,6 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     html_hashtable_dump(0,"query final",g_query);
 
-    // Run the old cgi script for admin functions
-    // This will be phased out as the admin functions are brought in.
-    char *view=query_val(QUERY_PARAM_VIEW);  
 
 
 
@@ -208,6 +205,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     HTML_LOG(0,"Begin Actions");
     do_actions();
    
+    char *view=query_val(QUERY_PARAM_VIEW);  
 
 
     DbRowSet **rowsets;

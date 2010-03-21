@@ -709,7 +709,9 @@ void query_update(char *name,char *new)
 {
     HTML_LOG(0,"Changing query item [%s] to [%s]",name,new);
     hashtable_remove(g_query,name,1);
-    hashtable_insert(g_query,name,new);
+    if(new) {
+        hashtable_insert(g_query,name,new);
+    }
 }
      
 char *query_val(char *name)

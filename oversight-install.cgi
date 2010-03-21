@@ -88,6 +88,8 @@ INSTALL() {
         NZBGET_UNPAK_INSTALL 
         TRANSMISSION_UNPAK_INSTALL
 
+        ( cd "$INSTALL_DIR" && rm -f tt[0-9]*[0-9] ) # clear cache
+
         chmod -R 775 "$INSTALL_DIR"
         chown -R nmt:nmt "$INSTALL_DIR"
         "$NMT" NMT_INSTALL "$appname" "$start_command"

@@ -4399,7 +4399,8 @@ DEBUG("Qualifier ["yearOrCountry"]")
 }
 
 
-sub(/\<2[0-9][0-9][0-9]$/," (&)",titleIn)
+
+sub(/\<2[0-9][0-9][0-9]$/,"(&)",titleIn)
 
 if ((cPos=index(possible_title,",")) > 0) {
 shortName=clean_title(substr(possible_title,1,cPos-1),1)

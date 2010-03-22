@@ -2603,7 +2603,7 @@ pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*"sreg"@[/ .]?(e|ep.?|episode|/
 pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"@[/ .]?(disc|dvd|d)[^a-z0-9]*"ereg"@DVD"
 
 
-pat[++p]="0@@s?"sreg"@[/ .]?[e/][0-9]+[a-e]?@"
+pat[++p]="0@@s?"sreg"@[-/ .]?[e/][0-9]+[a-e]?@"
 
 
 pat[++p]="1@[^a-z0-9]@"sreg"@[/ .]?x"ereg"@"
@@ -2946,7 +2946,7 @@ season = substr(line,1,RSTART-1)
 }
 
 
-sub(/[-eE]/,",",ep)
+sub(/[-.eE]+/,",",ep)
 gsub(/\<0+/,"",ep)
 gsub(/,,+/,",",ep)
 sub(/^,+/,"",ep)
@@ -4473,6 +4473,7 @@ if (match(possible_title," \\([^)]+")) {
 yearOrCountry=tolower(clean_title(substr(possible_title,RSTART+2,RLENGTH-2),1))
 DEBUG("Qualifier ["yearOrCountry"]")
 }
+
 
 
 sub(/\<2[0-9][0-9][0-9]$/,"(&)",titleIn)

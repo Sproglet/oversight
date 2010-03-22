@@ -2603,7 +2603,7 @@ ret,p,pat,i,parts,sreg,ereg) {
     pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"@[/ .]?(disc|dvd|d)[^a-z0-9]*"ereg"@DVD";
 
     #s00e00 (allow d00a for BigBrother)
-    pat[++p]="0@@s?"sreg"@[/ .]?[e/][0-9]+[a-e]?@";
+    pat[++p]="0@@s?"sreg"@[-/ .]?[e/][0-9]+[a-e]?@";
 
     #00x00
     pat[++p]="1@[^a-z0-9]@"sreg"@[/ .]?x"ereg"@";
@@ -2946,7 +2946,7 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        sub(/[-eE]/,",",ep);
+        sub(/[-.eE]+/,",",ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
         sub(/^,+/,"",ep);

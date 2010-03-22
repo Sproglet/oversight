@@ -10,6 +10,8 @@
 
 
 
+
+
 #
 
 
@@ -483,7 +485,7 @@ g_nonquote_regex = "[^"g_quote2"]"
 g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"
 
 g_year_re="(20[01][0-9]|19[5-9][0-9])"
-g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& "g_quote "]* \\("g_year_re"\\)"
+g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& "g_quote "]* \\(?"g_year_re"\\)?"
 
 ELAPSED_TIME=systime()
 UPDATE_TV=1
@@ -1649,8 +1651,9 @@ return web_search_first(qualifier,1,"imdbid","/tt",g_imdb_regex)
 }
 function web_search_first_imdb_title(qualifier,\
 ) {
-return web_search_first(qualifier,0,"imdbtitle","(",g_imdb_title_re)
+return web_search_first(qualifier,0,"imdbtitle","",g_imdb_title_re)
 }
+
 
 
 
@@ -1668,23 +1671,56 @@ submatch[match1] = 1
 }
 } else {
 
-scanPageFreqMatch(url,helptxt,regex,1,"",submatch)
+scanPageMostFreqMatch(url,helptxt,regex,1,"",submatch)
 }
-
-
-
 
 
 for(match1 in submatch) {
-if (match1 !~ g_imdb_regex) {
-match1 = clean_title(match1)
-}
 matches[match1] ++; 
+if (index(src[match1],":" url ":") == 0) {
 src[match1]=src[match1] ":" url ":"
 }
 }
+}
 
 
+
+
+
+
+
+
+
+function normalise_title_matches(matches,normed,\
+t,t2) {
+
+delete normed
+for(t in matches) {
+t2=t
+gsub("[^"g_alnum8"]"," ",t2)
+gsub(/  +/," ",t2)
+t2 = capitalise(trim(t2))
+
+
+if (t2 !~ "GMT "g_year_re"$" ) {
+normed[t2] += matches[t]
+}
+}
+
+
+for(t in normed) {
+for(t2 in normed) {
+if (t != t2 && index(t2,t)) {
+normed[t] += normed[t2]
+}
+}
+}
+dump(0,"normalise title matches out",normed)
+}
+
+
+
+#
 
 function web_search_first(qualifier,freqOrFirst,mode,helptxt,regex,\
 u,s,pages,subtotal,ret,i,matches,m,src) {
@@ -1701,7 +1737,7 @@ u[3] = g_search_google qualifier
 
 
 for(i = 1 ; i-2 <= 0 ; i++ ) {
-sub(/\([0-9]+\)/,"+%2B+&",u[i])
+sub("\\<"g_year_re"\\>","+%2B+&",u[i])
 }
 
 
@@ -1717,6 +1753,7 @@ ret = firstIndex(matches)
 
 
 
+#
 scrapeMatches(u[3],freqOrFirst,helptxt,regex,matches,src)
 if (bestScores(matches,matches,0) == 2 ) {
 
@@ -1733,7 +1770,7 @@ pages=0
 subtotal=0
 for(i = 1 ; i-3 <= 0 ; i++ ) {
 if (index(src[m],":"u[i]":") == 0) {
-s = scanPageForMatches(u[i],m,"\\<"m"\\>",0,1,"")
+s = scanPageForMatches(u[i],m,title_to_re(m),0,1,"")
 if (s != 0) pages++
 subtotal += s
 }
@@ -1741,7 +1778,6 @@ subtotal += s
 matches[m] += pages * subtotal
 id0(pages*subtotal)
 }
-
 ret = getMax(matches,4,1)
 }
 }
@@ -2340,6 +2376,41 @@ function qa(f) {
 gsub(g_quote,g_quote "\\"g_quote g_quote,f)
 return g_quote f g_quote
 }
+
+
+
+
+function title_to_re(s,\
+i,words,count,s2,ch) {
+
+
+sub(g_year_re"$","\\(?&\\)?",s); 
+
+
+
+
+count = chop(s,"\\<[a-zA-z]",words)
+s2=""
+for(i = 1 ; i - length(s) <= 0 ; i++ ) {
+ch = substr(s,i,1)
+if (tolower(ch) != toupper(ch) ) {
+s2 = s2 "[" tolower(ch) toupper(ch) "]"
+} else {
+s2 = s2 ch
+}
+}
+
+
+sub(/ /,"[. ]",s2); 
+
+return "\\<"s2"\\>"
+}
+
+
+
+
+
+
 
 function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 val,y,m,d,h,min,checkFuture) {
@@ -3164,13 +3235,15 @@ name_list[++name_id]=remove_part_suffix(idx)
 name=cleanSuffix(idx)
 
 
+
 if (match(name,"\\(?"g_year_re"\\)?")) {
 name_list[++name_id] = substr(name,1,RSTART+RLENGTH-1)
 }
 
+name_list[++name_id] = name
+
 name_list[++name_id] = remove_format_tags(remove_brackets(basename(g_media[idx])))
 
-name_list[++name_id] = name
 
 dump(0,"name_tries",name_list)
 
@@ -3193,7 +3266,9 @@ break
 delete search_order
 }
 
-for( s = 1 ; bestUrl=="" && s+0 <= search_order_size ; s++ ) {
+dump(0,"search order",search_order)
+
+for( s = 1 ; bestUrl=="" && s-search_order_size <= 0 ; s++ ) {
 
 if (search_order[s] == "IMDBLINKS") {
 
@@ -3204,7 +3279,8 @@ id0(bestUrl)
 
 } else {
 
-for(n = 1 ; bestUrl=="" && n+0 <= name_id ; n++) {
+delete name_seen
+for(n = 1 ; bestUrl=="" && n-name_id <= 0 ; n++) {
 
 name_try = name_list[n]
 
@@ -4397,7 +4473,6 @@ if (match(possible_title," \\([^)]+")) {
 yearOrCountry=tolower(clean_title(substr(possible_title,RSTART+2,RLENGTH-2),1))
 DEBUG("Qualifier ["yearOrCountry"]")
 }
-
 
 
 sub(/\<2[0-9][0-9][0-9]$/,"(&)",titleIn)
@@ -6118,10 +6193,14 @@ return ret
 
 
 
-function scanPageFreqMatch(url,fixed_text,regex,cache,referer,matches,\
-ret) {
-id1("scanPageFreqMatch")
+function scanPageMostFreqMatch(url,fixed_text,regex,cache,referer,matches,\
+normedt,ret) {
+id1("scanPageMostFreqMatch")
 scanPageForMatches(url,fixed_text,regex,0,cache,referer,matches)
+if (regex == g_imdb_title_re) {
+normalise_title_matches(matches,normedt)
+hash_copy(matches,normedt)
+}
 ret=bestScores(matches,matches,0)
 id0(ret)
 return ret
@@ -6659,7 +6738,7 @@ function raw_scrape_until(label,f,end_text,inclusive,\
 line,out,ending,isre) {
 ending = 0
 isre = isreg(end_text)
-DEBUG("isreg["end_text"] = "isre)
+
 
 while(!ending && enc_getline(f,line) > 0) {
 if (isre) {
@@ -6674,7 +6753,7 @@ out = out " " line[1]
 gsub(/ +/," ",out)
 out =remove_html_section(out,"script")
 out =remove_html_section(out,"style")
-INF("raw_scrape_until "label"/"end_text":=["out"]")
+
 return out
 }
 

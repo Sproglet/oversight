@@ -2529,6 +2529,7 @@ INF("Found tv info in file name:"line" title:["gTitle[idx]"] ["g_season[idx]"] x
 ePos = index(g_episode[idx],"e")
 if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
 gsub(/e/,",",g_episode[idx])
+sub(/[-]/,"",g_episode[idx])
 DEBUG("Double Episode : "g_episode[idx])
 
 }

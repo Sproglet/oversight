@@ -2529,6 +2529,7 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
         ePos = index(g_episode[idx],"e");
         if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
             gsub(/e/,",",g_episode[idx]);
+            sub(/[-]/,"",g_episode[idx]);
             DEBUG("Double Episode : "g_episode[idx]);
 
         }

@@ -2522,17 +2522,18 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
         g_episode[idx]=details[EPISODE];
 
         INF("Found tv info in file name:"line" title:["gTitle[idx]"] ["g_season[idx]"] x ["g_episode[idx]"]");
-
-        # If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
-        # Then prior to any DB lookups we just use the first integer (episode+0)
-        # To avoid changing the e in the BigBrother d000e format first check its not at the end 
-        ePos = index(g_episode[idx],"e");
-        if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
-            gsub(/e/,",",g_episode[idx]);
-            sub(/[-]/,"",g_episode[idx]);
-            DEBUG("Double Episode : "g_episode[idx]);
-
-        }
+        
+        ## Commented Out As Double Episode checked elsewhere to shrink code ##
+        ## Left In So We Can Ensure It's Ok ##
+        ## If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
+        ## Then prior to any DB lookups we just use the first integer (episode+0)
+        ## To avoid changing the e in the BigBrother d000e format first check its not at the end 
+        #ePos = index(g_episode[idx],",");
+        #if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
+        #    #gsub(/[-e]+/,",",g_episode[idx]);
+        #    #sub(/[-]/,"",g_episode[idx]);
+        #    DEBUG("Double Episode : "g_episode[idx]);
+        #}
 
 
         g_tvid[idx] = details[TVID];
@@ -2947,7 +2948,8 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        sub(/[-.eE]+/,",",ep);
+        gsub(/[-.eE]+/,",",ep);
+        #DEBUG("Episode : "ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
         sub(/^,+/,"",ep);

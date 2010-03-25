@@ -2949,7 +2949,7 @@ season = substr(line,1,RSTART-1)
 
 
 gsub(/[-.eE]+/,",",ep)
-
+DEBUG("Episode : "ep)
 gsub(/\<0+/,"",ep)
 gsub(/,,+/,",",ep)
 sub(/^,+/,"",ep)
@@ -7403,7 +7403,7 @@ function short_genre(g,\
 i,gnames,gcount) {
 gcount = split(g_settings["catalog_genre"],gnames,",")
 for(i = 1 ; i <= gcount ; i += 2) {
-if (match(g,"\\<"gnames[i]"\\>")) {
+if (match(g,"\\<"gnames[i]"\\>") || match(g,"\\<"gnames[i]"o\\>")) {
 g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
 }
 }

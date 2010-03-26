@@ -1,4 +1,8 @@
 #!/bin/sh
+#
+# Copy scripts and binaries directly to a NMT share.
+# if using cygwin the Argument is the drive letter the NMT HDD is mapped to.
+# if using linux its expected the NMT is mounted under '/mnt' and the argument is the folder name.
 
 if [ -d /cygdrive/c ] ; then
     net use a: '\\192.168.88.11\share' 1234  /user:nmt

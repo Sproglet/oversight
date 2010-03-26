@@ -4274,6 +4274,13 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles) {
         possible_tv_titles(plugin,title,closeTitles);
         tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
     }
+    if (length(tvdbid) == 0) {
+    	if(title != remove_tv_year(title)) {
+    	    INF("Try Again Without A Year If Nothing Found Thus Far");
+    	    possible_tv_titles(plugin,remove_tv_year(title),closeTitles);
+    	    tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
+    	}
+    }
     if (tvdbid != "") {
         tvDbSeriesUrl=get_tv_series_api_url(plugin,tvdbid);
     }
@@ -5046,6 +5053,13 @@ function setFirst(array,field,value) {
 
 function remove_year(t) {
     sub(/ *\([12][0-9][0-9][0-9]\)/,"",t); #remove year
+    return t;
+}
+
+function remove_tv_year(t) {
+    if(length(t) > 4) {
+    sub(/ *[12][0-9][0-9][0-9]/,"",t);
+    }
     return t;
 }
 # Scrape theTvDb series page, populate arrays and return imdb link

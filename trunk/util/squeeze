@@ -20,6 +20,11 @@ s/([;{]) #.*/\1/;
 #remove trailing semi-colon  except for bash case ;;
 /;$/ {s/([^;]);$/\1/}
 
+# collapse internal spaces if the line does not have any quotes (double,single or regex /);;
+# Note awk string concatenation a = b c  so we must not make this a=bc so
+# Only collapse if either surrounding token is not alpha numeric
+#/^[^"/]+$/ { s/ *([-!+(){}<>=|]) */\1/g }
+
 ' "$1" > "$2"
 
     #sed -r 's/^[ 	]+/ /;/^ #/ {s/.*//};/^#[^!]/ {s/.*//};/^$/ {s/.*//}' "$1" > "$2"

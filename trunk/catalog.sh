@@ -334,6 +334,8 @@ fi
 
 
 
+$AWK --version 2>&1 || true
+
 $AWK '
 
 
@@ -5643,28 +5645,35 @@ g_chr["nbsp"] = " "
 }
 
 function html_decode(text,\
-parts,part,count,code,newcode,cc,text2) {
+parts,part,count,code,newcode,text2) {
 if (g_chr[32] == "" ) {
 decode_init()
 }
 if (index(text,"&") && index(text,";") ) {
 
 count = chop(text,"[&][#0-9a-zA-Z]+;",parts)
-for(part=2 ; part-count <= 0 ; part += 2 ) {
+for(part=2 ; part-count < 0 ; part += 2 ) {
 
 newcode=""
 
 code=parts[part]
 if (code != "") {
-code=tolower(substr(code,2,length(code)-2))
 
-cc=substr(code,1,2)
-if (cc == "#x") {
-newcode=g_chr[substr(code,2)]
-} else if (cc == "#")  {
-newcode=g_chr[0+substr(code,2)]
-} else {
+code=tolower(code)
+
+if (index(code,"&#") == 1) {
+
+code = substr(code,3,length(code)-3)
+if (index(code,"x") == 1) {
+
 newcode=g_chr[code]
+} else {
+
+newcode=g_chr[0+code]
+}
+} else {
+
+newcode=g_chr[substr(code,2,length(code)-2)]
 }
 }
 if (newcode == "") {
@@ -6276,9 +6285,7 @@ g_f_utf8[f] = check_utf8(t)
 
 } else {
 
-if (index(t,"&") && index(t,";") ) {
 t = html_decode(t)
-}
 
 if (g_f_utf8[f] != 1) {
 t = utf8_encode(t)
@@ -6397,19 +6404,11 @@ flag = flag "£" flag
 }
 
 
-
-
 gsub(regex,flag "&" flag , s )
 
 
-
-
-i= split(s,parts,flag)
-
-
-
-
-
+i = split(s,parts,flag)
+if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]")
 return i+0
 }
 
@@ -7431,8 +7430,7 @@ function short_genre(g,\
 i,gnames,gcount) {
 gcount = split(g_settings["catalog_genre"],gnames,",")
 for(i = 1 ; i <= gcount ; i += 2) {
-
-if (match(g,"\\<"gnames[i]"\\>") || match(g,"\\<"gnames[i]"o\\>")) {
+if (match(g,"\\<"gnames[i]"\\>") ) {
 g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
 }
 }

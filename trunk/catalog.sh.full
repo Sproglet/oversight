@@ -4263,7 +4263,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range) {
 }
 
 function searchTvDbTitles(plugin,idx,title,\
-tvdbid,tvDbSeriesUrl,imdb_id,closeTitles) {
+tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
 
     id1("searchTvDbTitles");
     if (g_imdb[idx]) {
@@ -4274,10 +4274,19 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles) {
         possible_tv_titles(plugin,title,closeTitles);
         tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
     }
-    if (length(tvdbid) == 0) {
-    	if(title != remove_tv_year(title)) {
+    if (tvdbid == "") {
+        noyr  = remove_tv_year(title);
+    	if(title != noyr) {
     	    INF("Try Again Without A Year If Nothing Found Thus Far");
-    	    possible_tv_titles(plugin,remove_tv_year(title),closeTitles);
+            # the tvdb api can return better hits without the year.
+            # compare e.g.
+            # http://www.thetvdb.com/api/GetSeries.php?seriesname=Carnivale%202003 Bad
+            # http://www.thetvdb.com/api/GetSeries.php?seriesname=Carnivale Good
+            #
+            # tv rage should work with the year. compare .e.g
+            # http://services.tvrage.com/feeds/search.php?show=carnivale Good
+            # vs http://services.tvrage.com/feeds/search.php?show=carnivale%202003 OK
+    	    possible_tv_titles(plugin,noyr,closeTitles);
     	    tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
     	}
     }
@@ -5052,13 +5061,13 @@ function setFirst(array,field,value) {
 }
 
 function remove_year(t) {
-    sub(/ *\([12][0-9][0-9][0-9]\)/,"",t); #remove year
+    sub(" *\\("g_year_re"\\)","",t); #remove year
     return t;
 }
 
 function remove_tv_year(t) {
     if(length(t) > 4) {
-    sub(/ *[12][0-9][0-9][0-9]/,"",t);
+    sub(" *"g_year_re,"",t);
     }
     return t;
 }
@@ -6488,7 +6497,7 @@ title,poster_imdb_url,i,sec) {
             DEBUG("Title found ["title "] current title ["gTitle[idx]"]");
 
             #extract right most year in title
-            if (g_year[idx] == "" && match(title,".*\\([12][0-9][0-9][0-9]")) {
+            if (g_year[idx] == "" && match(title,".*\\("g_year_re)) {
                 g_year[idx] = substr(title,RSTART+RLENGTH-4,4);
                 DEBUG("IMDB: Got year ["g_year[idx]"]");
                 delete isection[YEAR];

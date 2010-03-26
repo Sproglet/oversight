@@ -6542,6 +6542,7 @@ sec=PLOT
 
 if (g_genre[idx] == "" && index(line,"Genre:")) {
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
+DEBUG("Genre=["g_genre[idx]"]")
 sub(/ +[Ss]ee /," ",g_genre[idx])
 sub(/ +[Mm]ore */,"",g_genre[idx])
 sec=GENRE
@@ -6745,6 +6746,10 @@ isre = isreg(end_text)
 
 
 while(!ending && enc_getline(f,line) > 0) {
+
+if (label == "igenre") {
+DEBUG("REMOVE LATER: genre html["line[1]"]")
+}
 if (isre) {
 ending =match(line[1],end_text)
 } else {
@@ -7403,6 +7408,7 @@ function short_genre(g,\
 i,gnames,gcount) {
 gcount = split(g_settings["catalog_genre"],gnames,",")
 for(i = 1 ; i <= gcount ; i += 2) {
+
 if (match(g,"\\<"gnames[i]"\\>") || match(g,"\\<"gnames[i]"o\\>")) {
 g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
 }

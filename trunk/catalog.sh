@@ -1725,7 +1725,7 @@ gsub(/  +/," ",t2)
 t2 = capitalise(trim(t2))
 
 
-if (t2 !~ "GMT "g_year_re"$" ) {
+if (t2 !~ "(©|GMT|PDT|"g_months_short") "g_year_re"$" ) {
 normed[t2] += matches[t]
 }
 }

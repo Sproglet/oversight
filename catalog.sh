@@ -903,7 +903,6 @@ gMovieFileCount = 0
 gMaxDatabaseId = 0
 
 load_settings("","'$UNPAK_CFG'")
-unpak_nmt_pin_root=unpak_option["unpak_nmt_pin_root"]
 
 g_tk = apply(g_tk)
 g_tk2 = apply(g_tk2)
@@ -1251,6 +1250,20 @@ INF("ls -l file position at "gLS_FILE_POS)
 INF("ls -l time position at "gLS_TIME_POS)
 
 }
+function is_hidden_fldr(d,\
+ur) {
+ur = unpak_option["unpak_nmt_pin_root"]
+return ur != "" && index(d,ur) == 1
+}
+function is_bdmv_subfldr(d) {
+return tolower(d) ~ "/bdmv/(playlist|clipinf|stream|auxdata|backup)$"
+}
+function is_bdmv_fldr(d) {
+return tolower(d) ~ "/bdmv$" && dir_contains(d"/STREAM","[Mm]2[Tt][Ss]$")
+}
+function is_videots_fldr(d) {
+return tolower(d) ~ "/video_ts$" && dir_contains(d,"[Vv][Oo][Bb]$")
+}
 function dir_contains(dir,pattern) {
 return exec("ls "qa(dir)" 2>/dev/null | egrep -q "qa(pattern) ) ==0
 }
@@ -1322,11 +1335,20 @@ sub(/\/*:$/,"",currentFolder)
 DEBUG("Folder = "currentFolder)
 folderNameNext=0
 if ( currentFolder ~ g_settings["catalog_ignore_paths"] ) {
+
 skipFolder=1
 INF("Ignore path "currentFolder)
-} else if(unpak_nmt_pin_root != "" && index(currentFolder,unpak_nmt_pin_root) == 1) {
+
+} else if ( is_bdmv_subfldr(currentFolder)) {
+
+INF("Ignore BDMV sub folder "currentFolder)
+skipFolder=1
+
+} else if(is_hidden_fldr(currentFolder)) {
+
 skipFolder=1
 INF("SKIPPING "currentFolder)
+
 } else if (currentFolder in g_fldrCount) {
 
 WARNING("Already visited "currentFolder)
@@ -1379,8 +1401,7 @@ g_fldrCount[currentFolder]++
 
 DEBUG("Folder ["scan_line"]")
 
-
-if (lc == "video_ts" && dir_contains(currentFolder"/"scan_line,"[Vv][Oo][Bb]$") ) {
+if (is_videots_fldr(currentFolder"/"scan_line) || is_bdmv_fldr(currentFolder"/"scan_line) ) {
 
 if (match(currentFolder,"/[^/]+$")) {
 f = substr(currentFolder,RSTART+1)

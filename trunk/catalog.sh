@@ -2971,7 +2971,7 @@ season = substr(line,1,RSTART-1)
 }
 
 
-gsub(/[-.eE]+/,",",ep)
+gsub(/[-.eExX]+/,",",ep)
 DEBUG("Episode : "ep)
 gsub(/\<0+/,"",ep)
 gsub(/,,+/,",",ep)

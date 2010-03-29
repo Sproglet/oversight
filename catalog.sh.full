@@ -451,6 +451,7 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_max_plot_len=3000;
     g_country_prefix="country_";
     g_indent="";
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
@@ -1252,7 +1253,7 @@ tempFile,i,procfile) {
 }
 function is_hidden_fldr(d,\
 ur) {
-    ur = unpak_option["unpak_nmt_pin_root"];
+    ur = g_settings["unpak_nmt_pin_root"];
     return ur != "" && index(d,ur) == 1;
 }
 function is_bdmv_subfldr(d) {
@@ -5094,6 +5095,9 @@ function remove_tv_year(t) {
     }
     return t;
 }
+function set_plot(idx,plotv,txt) {
+    plotv[idx] = substr(txt,1,g_max_plot_len);
+}
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
@@ -5116,7 +5120,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
         g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
-        g_plot[idx] = seriesInfo["/Data/Series/Overview"];
+        set_plot(idx,g_plot,seriesInfo["/Data/Series/Overview"]);
 
         #Dont use thetvdb genre - its too confusing when mixed with imdb movie genre
         #setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
@@ -5148,7 +5152,9 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
                     set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"]);
 
-                    setFirst(g_epplot,idx,episodeInfo["/Data/Episode/Overview"]);
+                    if (g_epplot[idx] == "") {
+                        set_plot(idx,g_epplot,episodeInfo["/Data/Episode/Overview"]);
+                    }
 
                     if (gEpTitle[idx] != "" ) {
                        if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {
@@ -5239,7 +5245,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
 
         url=urladd(seriesInfo["/Show/showlink"],"remove_add=1&bremove_add=1");
-        g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1);
+        set_plot(idx,g_plot,scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
 
         g_tvid_plugin[idx]="TVRAGE";
         g_tvid[idx]=seriesInfo["/Show/showid"];
@@ -5281,7 +5287,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
                     sub(/ *There are no foreign summaries.*/,"",p);
                     if (p != "" && index(p,"There is no summary") == 0) {
-                        g_epplot[idx] = p;
+                        set_plot(idx,g_epplot,p);
                         DEBUG("rage epplot :"g_epplot[idx]);
                     }
                 }
@@ -6575,7 +6581,7 @@ title,poster_imdb_url,i,sec) {
             }
 
             if (g_plot[idx] == "" && index(line,"Plot:")) {
-                g_plot[idx] = scrape_until("iplot",f,"</div>",0);
+                set_plot(idx,g_plot,scrape_until("iplot",f,"</div>",0));
                 sub(/\|.*/,"",g_plot[idx]);
                 sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",g_plot[idx]);
                 #DEBUG("imdb plot "g_plot[idx]);

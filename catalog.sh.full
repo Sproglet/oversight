@@ -1258,7 +1258,7 @@ ur) {
     return ur != "" && index(d,ur) == 1;
 }
 function is_bdmv_subfldr(d) {
-    return tolower(d) ~ "/bdmv/(playlist|clipinf|stream|auxdata|backup)$";
+    return tolower(d) ~ "/bdmv/(playlist|clipinf|stream|auxdata|backup|jar|meta|bdjo)\\>";
 }
 function is_bdmv_fldr(d) {
     return tolower(d) ~ "/bdmv$" && dir_contains(d"/STREAM","[Mm]2[Tt][Ss]$");

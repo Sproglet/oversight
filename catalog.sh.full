@@ -2971,7 +2971,7 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        gsub(/[-.eE]+/,",",ep);
+        gsub(/[-.eExX]+/,",",ep);
         DEBUG("Episode : "ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);

@@ -452,6 +452,7 @@ i,links,best_url) {
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
     g_max_plot_len=3000;
+    g_max_db_len=4000;
     g_country_prefix="country_";
     g_indent="";
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
@@ -2133,9 +2134,11 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
             if (idx != -1 ) {
                 # Update the old entry with the new data
                 dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],""); #dbfields[INDEXTIME]);
-                updated_count++;
-                print dbline2"\t" >> new_db_file;
-                update_plots(g_plot_file,idx);
+                if (length(dbline2) - g_max_db_len < 0) {
+                    print dbline2"\t" >> new_db_file;
+                    updated_count++;
+                    update_plots(g_plot_file,idx);
+                }
                 delete indexToMergeHash[idx];
                 #make sure we dont add it later.
                 gMovieFilePresent[f] = -1;
@@ -7515,11 +7518,13 @@ i,row,f) {
         add_file(g_fldr[i]"/"g_media[i]);
 
         row=createIndexRow(i,-1,0,"");
+        if (length(row) - g_max_db_len < 0) {
 
-        print row"\t" >> output_file;
+            print row"\t" >> output_file;
 
-        # Plots are added to a seperate file.
-        update_plots(g_plot_file,i);
+            # Plots are added to a seperate file.
+            update_plots(g_plot_file,i);
+        }
 
         # If plots need to be written to nfo file then they should 
         # be added to the row at this point.

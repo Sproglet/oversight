@@ -451,6 +451,8 @@ return best_url
 
 
 BEGIN {
+g_max_plot_len=3000
+g_max_db_len=4000
 g_country_prefix="country_"
 g_indent=""
 g_sigma="Σ"
@@ -1252,7 +1254,7 @@ INF("ls -l time position at "gLS_TIME_POS)
 }
 function is_hidden_fldr(d,\
 ur) {
-ur = unpak_option["unpak_nmt_pin_root"]
+ur = g_settings["unpak_nmt_pin_root"]
 return ur != "" && index(d,ur) == 1
 }
 function is_bdmv_subfldr(d) {
@@ -2132,9 +2134,11 @@ idx=gMovieFilePresent[f]
 if (idx != -1 ) {
 
 dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],"")
-updated_count++
+if (length(dbline2) - g_max_db_len < 0) {
 print dbline2"\t" >> new_db_file
+updated_count++
 update_plots(g_plot_file,idx)
+}
 delete indexToMergeHash[idx]
 
 gMovieFilePresent[f] = -1
@@ -5094,6 +5098,9 @@ sub(" *"g_year_re,"",t)
 }
 return t
 }
+function set_plot(idx,plotv,txt) {
+plotv[idx] = substr(txt,1,g_max_plot_len)
+}
 
 
 
@@ -5116,7 +5123,7 @@ adjustTitle(idx,remove_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb")
 
 g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4)
 setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]))
-g_plot[idx] = seriesInfo["/Data/Series/Overview"]
+set_plot(idx,g_plot,seriesInfo["/Data/Series/Overview"])
 
 
 
@@ -5148,7 +5155,9 @@ setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]))
 
 set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"])
 
-setFirst(g_epplot,idx,episodeInfo["/Data/Episode/Overview"])
+if (g_epplot[idx] == "") {
+set_plot(idx,g_epplot,episodeInfo["/Data/Episode/Overview"])
+}
 
 if (gEpTitle[idx] != "" ) {
 if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {
@@ -5239,7 +5248,7 @@ setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]))
 
 
 url=urladd(seriesInfo["/Show/showlink"],"remove_add=1&bremove_add=1")
-g_plot[idx] = scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1)
+set_plot(idx,g_plot,scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1))
 
 g_tvid_plugin[idx]="TVRAGE"
 g_tvid[idx]=seriesInfo["/Show/showid"]
@@ -5281,7 +5290,7 @@ p = scrape_one_item("tvrage_epplot", url, flag",<p>", 1, "</div>", 0, 1)
 
 sub(/ *There are no foreign summaries.*/,"",p)
 if (p != "" && index(p,"There is no summary") == 0) {
-g_epplot[idx] = p
+set_plot(idx,g_epplot,p)
 DEBUG("rage epplot :"g_epplot[idx])
 }
 }
@@ -6575,7 +6584,7 @@ sec=DIRECTOR
 }
 
 if (g_plot[idx] == "" && index(line,"Plot:")) {
-g_plot[idx] = scrape_until("iplot",f,"</div>",0)
+set_plot(idx,g_plot,scrape_until("iplot",f,"</div>",0))
 sub(/\|.*/,"",g_plot[idx])
 sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",g_plot[idx])
 
@@ -7509,11 +7518,13 @@ if (g_media[i] == "") continue
 add_file(g_fldr[i]"/"g_media[i])
 
 row=createIndexRow(i,-1,0,"")
+if (length(row) - g_max_db_len < 0) {
 
 print row"\t" >> output_file
 
 
 update_plots(g_plot_file,i)
+}
 
 
 

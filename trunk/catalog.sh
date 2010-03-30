@@ -334,7 +334,13 @@ fi
 
 
 
-$AWK --version 2>&1 || true
+
+
+set +e
+/bin/busybox 2>/dev/null 
+ls -l /bin/busybox 
+set -e
+
 
 $AWK '
 
@@ -6300,11 +6306,15 @@ return f
 
 
 function enc_getline(f,line,\
-code,t) {
+code,t,t2) {
 
 code = ( getline t < f )
 
 if (code > 0) {
+
+if (genre_debug) {
+DEBUG("REMOVE LATER: from file["t"]")
+}
 
 if (g_f_utf8[f] == "" ) {
 
@@ -6315,10 +6325,18 @@ g_f_utf8[f] = check_utf8(t)
 
 } else {
 
-t = html_decode(t)
+t2 = html_decode(t)
+if (genre_debug && t2 != t) {
+DEBUG("REMOVE LATER: post decode["t2"]")
+}
+t = t2
 
 if (g_f_utf8[f] != 1) {
-t = utf8_encode(t)
+t2 = utf8_encode(t)
+if (genre_debug && t2 != t) {
+DEBUG("REMOVE LATER: post utf8["t2"]")
+}
+t = t2
 }
 }
 line[1] = t
@@ -6593,7 +6611,9 @@ sec=PLOT
 
 
 if (g_genre[idx] == "" && index(line,"Genre:")) {
+genre_debug = 1
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
+genre_debug = 0
 DEBUG("Genre=["g_genre[idx]"]")
 sub(/ +[Ss]ee /," ",g_genre[idx])
 sub(/ +[Mm]ore */,"",g_genre[idx])
@@ -6797,11 +6817,8 @@ ending = 0
 isre = isreg(end_text)
 
 
-while(!ending && enc_getline(f,line) > 0) {
 
-if (label == "igenre") {
-DEBUG("REMOVE LATER: genre html["line[1]"]")
-}
+while(!ending && enc_getline(f,line) > 0) {
 if (isre) {
 ending =match(line[1],end_text)
 } else {
@@ -7460,7 +7477,7 @@ function short_genre(g,\
 i,gnames,gcount) {
 gcount = split(g_settings["catalog_genre"],gnames,",")
 for(i = 1 ; i <= gcount ; i += 2) {
-if (match(g,"\\<"gnames[i]"\\>") ) {
+if (match(g,"\\<"gnames[i]"o?\\>") ) {
 g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
 }
 }

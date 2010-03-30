@@ -5688,6 +5688,9 @@ decode_init()
 if (index(text,"&") && index(text,";") ) {
 
 count = chop(text,"[&][#0-9a-zA-Z]+;",parts)
+
+if (genre_debug) dump(0,"html_decode",parts)
+
 for(part=2 ; part-count < 0 ; part += 2 ) {
 
 newcode=""
@@ -6306,7 +6309,7 @@ return f
 
 
 function enc_getline(f,line,\
-code,t,t2) {
+code,t) {
 
 code = ( getline t < f )
 
@@ -6325,18 +6328,16 @@ g_f_utf8[f] = check_utf8(t)
 
 } else {
 
-t2 = html_decode(t)
-if (genre_debug && t2 != t) {
-DEBUG("REMOVE LATER: post decode["t2"]")
+t = html_decode(t)
+if (genre_debug ) {
+DEBUG("REMOVE LATER: post decode["t"]")
 }
-t = t2
 
 if (g_f_utf8[f] != 1) {
-t2 = utf8_encode(t)
-if (genre_debug && t2 != t) {
-DEBUG("REMOVE LATER: post utf8["t2"]")
+t = utf8_encode(t)
+if (genre_debug ) {
+DEBUG("REMOVE LATER: post utf8["t"]")
 }
-t = t2
 }
 }
 line[1] = t
@@ -6452,10 +6453,18 @@ flag = flag "£" flag
 }
 
 
+
+if (genre_debug) INF("before gsub["flag"]=["s"]")
+
 gsub(regex,flag "&" flag , s )
+
+if (genre_debug) INF("after gsub["flag"]=["s"]")
 
 
 i = split(s,parts,flag)
+
+if (genre_debug) for(gg=1 ; gg<= i ; gg++ ) INF("split["gg"]=["parts[gg]"]")
+
 if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]")
 return i+0
 }

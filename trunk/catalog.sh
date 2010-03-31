@@ -137,13 +137,7 @@ fi
 
 export OVERSIGHT_ID="$uid:$gid"
 
-
-AWK="/share/Apps/gawk/bin/gawk"
-if [ ! -x "$AWK" ] ; then
 AWK=awk
-fi
-AWK=awk
-AWK="/usr/bin/awk"
 
 
 
@@ -151,12 +145,24 @@ AWK="/usr/bin/awk"
 
 if [ -d "$APPDIR/bin" ] ; then
 
-export PATH="$APPDIR/bin:$PATH"
-
 if grep -q "MIPS 74K" /proc/cpuinfo ; then
-export PATH="$APPDIR/bin/nmt200:$PATH"
+BINDIR="$APPDIR/bin/nmt200"
 else
-export PATH="$APPDIR/bin/nmt100:$PATH"
+BINDIR="$APPDIR/bin/nmt100"
+fi
+
+export PATH="$PATH:$BINDIR:$APPDIR/bin"
+
+
+
+
+
+if /bin/busybox | grep -q 'BusyBox v1\.[1-9]\.' ; then
+
+
+
+ln -sf "$BINDIR/busybox" "$BINDIR/awk"
+AWK="$BINDIR/awk"
 fi
 fi
 
@@ -332,14 +338,6 @@ LS=/share/bin/ls
 fi
 
 
-
-
-
-
-set +e
-/bin/busybox 2>/dev/null 
-ls -l /bin/busybox 
-set -e
 
 
 $AWK '
@@ -5689,8 +5687,6 @@ if (index(text,"&") && index(text,";") ) {
 
 count = chop(text,"[&][#0-9a-zA-Z]+;",parts)
 
-if (genre_debug) dump(0,"html_decode",parts)
-
 for(part=2 ; part-count < 0 ; part += 2 ) {
 
 newcode=""
@@ -6315,9 +6311,6 @@ code = ( getline t < f )
 
 if (code > 0) {
 
-if (genre_debug) {
-DEBUG("REMOVE LATER: from file["t"]")
-}
 
 if (g_f_utf8[f] == "" ) {
 
@@ -6329,15 +6322,9 @@ g_f_utf8[f] = check_utf8(t)
 } else {
 
 t = html_decode(t)
-if (genre_debug ) {
-DEBUG("REMOVE LATER: post decode["t"]")
-}
 
 if (g_f_utf8[f] != 1) {
 t = utf8_encode(t)
-if (genre_debug ) {
-DEBUG("REMOVE LATER: post utf8["t"]")
-}
 }
 }
 line[1] = t
@@ -6454,16 +6441,10 @@ flag = flag "£" flag
 
 
 
-if (genre_debug) INF("before gsub["flag"]=["s"]")
-
 gsub(regex,flag "&" flag , s )
-
-if (genre_debug) INF("after gsub["flag"]=["s"]")
 
 
 i = split(s,parts,flag)
-
-if (genre_debug) for(gg=1 ; gg<= i ; gg++ ) INF("split["gg"]=["parts[gg]"]")
 
 if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]")
 return i+0
@@ -6620,9 +6601,8 @@ sec=PLOT
 
 
 if (g_genre[idx] == "" && index(line,"Genre:")) {
-genre_debug = 1
+
 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0))
-genre_debug = 0
 DEBUG("Genre=["g_genre[idx]"]")
 sub(/ +[Ss]ee /," ",g_genre[idx])
 sub(/ +[Mm]ore */,"",g_genre[idx])

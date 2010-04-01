@@ -6697,7 +6697,7 @@ return
 }
 if (match(akas[a],"- .*\\<" gTitleCountries[c] "\\>")) {
 
-if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative")) {
+if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative|Spanish title")) {
 
 
 DEBUG("Ignoring aka section")

@@ -31,11 +31,12 @@
 # Where possible all html/xml input is utf-8. 
 # Two exceptions are imdb and epguides which both use the 1252 codepage thing.
 # plan to port iconv and drop utf8 awk function.
+# but uft8 occurs after html_decode so need a html decoder binary.
 #
 # On NMT platform the ls command also returns UTF-8 filenames.
 # (via cygwin it is 8bit ascii)
 #
-# The apis like utf8 wrapped in url encoding. They do not work with any codepage format.
+# The api sites expect urls to be utf8 wrapped in url encoding. They do not work with any codepage format.
 #
 # capitalise()
 # There are issues identifying which utf8 chars are letters and which are punctuation.
@@ -2365,6 +2366,7 @@ ret,p,pat,i,parts,sreg,ereg) {
             #dump(0,"epparts",parts);
             ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details);
             if (ret+0) {
+                # For DVDs add DVD prefix to Episode
                 details[EPISODE] = parts[5] details[EPISODE];
             }
         }
@@ -2688,7 +2690,7 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        gsub(/[-.eExXpP]+/,",",ep); #
+        gsub(/[^0-9]+/,",",ep); #
         DEBUG("Episode : "ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
@@ -4746,6 +4748,8 @@ episodeUrl,filter,result) {
     delete episodeInfo;
 
     id1("get_episode_xml");
+
+    gsub(/[^0-9]/,"",episode);
 
     episodeUrl = get_episode_url(plugin,seriesUrl,season,episode);
     if (episodeUrl != "") {

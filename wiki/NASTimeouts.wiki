@@ -32,6 +32,10 @@ If you have more than one NAS, then at present each one is probed in sequence, s
 ====Firewalls====
 If you have a software firewall between the NMT and the shared drive, it may block Oversights initial probe for the presence of the drive. In this case modify your firewall rules accordingly.
 
+===== Windows Home Server (WHS) Firewall =====
+ 
+Windows Home Server firewall will block oversight's probes on port 445, so if possible you should create a rule to allow this.
+
 === How It Works ===
 
 If the NAS share is window/SAMBA/Cifs share, then it is the max amount of time to establish a socket connection to Port 445.

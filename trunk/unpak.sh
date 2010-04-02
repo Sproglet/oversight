@@ -1639,7 +1639,7 @@ delete_files() {
     if [ $mode = torrent_seeding ] ; then return ; fi
 
     if [ -f "$delete_queue" ] ; then
-        exec_file_list "rm \1" "--" < "$delete_queue"
+        exec_file_list "rm -f \1" "--" < "$delete_queue"
         #mv "$delete_queue" "$delete_queue.bak"
         rm -f "$delete_queue"
     fi
@@ -1882,7 +1882,7 @@ relocate() {
     if [ -n "$arg_category" ] ; then
         unpak_completed_dir=`prepare_target_folder "$arg_category"`
         INFO Using user category $arg_category == $unpak_completed_dir
-        mv "$arg_download_dir" "$unpak_completed_dir/."
+        mvlog "$arg_download_dir" "$unpak_completed_dir"
         cd "$unpak_completed_dir/$b"
     else
         dest=`auto_category_from_newsgroups_inside_nzb`
@@ -1896,18 +1896,22 @@ relocate() {
                     ;;
             esac
             dest="`prepare_target_folder "$dest"`/$b"
-            mv "$arg_download_dir" "$dest"
+            mvlog "$arg_download_dir" "$dest"
             cd "$dest"
         else
             #Everything else 
-            unpak_completed_dir=`prepare_target_folder`
-            INFO "Moving $arg_download_dir to $unpak_completed_dir"
-            mv "$arg_download_dir" "$unpak_completed_dir/."
-            cd "$unpak_completed_dir/$b"
+            dest=`prepare_target_folder`/"$b"
+            mvlog "$arg_download_dir" "$dest"
+            cd "$dest"
             #run_catalog "$unpak_completed_dir/$b" RENAME STDOUT
-            run_catalog "$unpak_completed_dir/$b" RENAME WRITE_NFO
+            run_catalog "$dest" RENAME WRITE_NFO
         fi
     fi
+}
+
+mvlog() {
+    INFO "moving [$1] to [$2]"
+    mv "$1" "$2"
 }
 
 arg_list() {

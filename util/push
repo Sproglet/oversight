@@ -21,8 +21,7 @@ PUSH() {
     echo updating drives : "$@"
 
     echo compacting script
-    ./util/squeeze
-    chmod 775 *cgi *.sh
+    chmod 775 *cgi *.sh *.awk
 
 
     for i in "$@" ; do

@@ -19,7 +19,7 @@ label="$v$@"
 
 ../nmt-scripts/build `basename "$PWD"` "$label" \
     *.awk *.sh *.cgi *.html \
-    conf/*.example conf/.*defaults conf/use.wget.wrapper conf/country.txt \
+    conf/*.example conf/.*defaults conf/use.wget.wrapper conf/country.txt conf/.version \
     help/*.help \
     images \
     templates \

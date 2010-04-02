@@ -358,4 +358,4 @@ fi
 if [ -f "$APPDIR/oversight.sh" ] ; then
     $APPDIR/oversight.sh CLEAR_CACHE
 fi
-# vi:syntax=sh:sw=4:et:ts=4
+# vi:sw=4:et:ts=4

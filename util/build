@@ -17,7 +17,7 @@ label="$v$@"
 ( cd src && make ARCH=100 clean all && make ARCH=200 clean all )
 
 ../nmt-scripts/build `basename "$PWD"` "$label" \
-    *.sh *.cgi *.full *.html \
+    *.awk *.sh *.cgi *.html \
     conf/*.example conf/.*defaults conf/use.wget.wrapper conf/country.txt \
     help/*.help \
     images \

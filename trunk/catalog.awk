@@ -1,5 +1,4 @@
-#!/bin/sh
-#! $Id$
+#! $Id: catalog.sh.full 853 2010-03-31 00:21:48Z lordylordy $
 #!This is a compacted file. If looking for the source see catalog.sh.full
 #!If not compressed then awk will report "bad address" error on some platforms.
 #!
@@ -16,49 +15,13 @@
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
 # of global arrays causing memory problems.
 
-# AWK funnies
+# AWK funnies - mostly from busybox awk
 # Sometimes awk seems to do a string compare when both values look like numbers.
 #Ive tried to isolate but cant, its something to do with parameter passing I think. 
 # anyway most number comparisons are eg.  "x - y > 0" instead of "x > y"
 #
-# Watch out when logging results of a function. This may turn a numeric result into a string.
-# this is a bug in busybox awk which can cause a variable to be cast to a string just by using (not assign)
-# it as a string.
-# Combined with "0" evaluating to true, this can cause real headaches. eg
-# function a() {
-#   return 0;
-# }
-#
-# function b(tmp) {
-#   tmp= a();
-#   print "result="tmp;
-#   return tmp;
-# }
-# function c(tmp) {
-#   tmp= b();
-#   print "result="tmp;
-#   return tmp;
-# }
-#
-# BEGIN {
-#   if (c()) print "WTF"
-# }
-#
-# Two ways to avoid.
-#    Force numeric return. eg return tmp+0 
-#    Force numeric compare (if(....!=0)  or if (0+xxxx)
-#
-#  I have a script in th nmt-script project called alint.sh this will check for this.
-#
-# TODO: For tvrage it may be better to scrape the printable page for episode info rather than the xml
-# as this has plot info to. However tvrage is a backup so low priority.
+# Watch out when logging results of a function. This may turn a numeric result into a string. bug fixed in newer bbawk.
 # 
-# Mar 1 2010:
-# searchByEpisodeName : concatenated episode : title in tvdb.com search
-# searchByEpisodeName : switched from google to bing
-# Removed bintube search : commercial site.
-# Changed regex search order for ^[-a-z]+$- ONLINE_NFO 
-
 # ==================================================================================
 # Character Encodings - coping with accented characters.
 #
@@ -67,6 +30,7 @@
 #
 # Where possible all html/xml input is utf-8. 
 # Two exceptions are imdb and epguides which both use the 1252 codepage thing.
+# plan to port iconv and drop utf8 awk function.
 #
 # On NMT platform the ls command also returns UTF-8 filenames.
 # (via cygwin it is 8bit ascii)
@@ -82,267 +46,6 @@
 # are close to the real name the user expects to see.
 #
 
-set -u  #Abort with unset variables
-set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20100228-1BETA
-
-NMT_APP_DIR=
-nmt_version=unknown
-#Thanks to Jorge for pointing out C200 changes.
-for d in /mnt/syb8634 /nmt/apps ; do
-    if [ -f $d/MIN_FIRMWARE_VER ] ; then
-        NMT_APP_DIR=$d
-        nmt_version=`cat $NMT_APP_DIR/VERSION`
-    fi
-done
-
-# Fixed reference to NZBOP_APPBIN
-#VERSION=20090605-1BETA
-# Added more checking around nfo name
-
-# TV AWK INTERFACE
-# This script is horrendous. My comment!
-# Pushing limits of awks usability. Next time I'll use <insert any other scripting language here>
-# Also sometimes lines are left in for debugging
-#
-#TODO should check write permissions to nfo file - not urgent
-#TODO Error displaying titles for Leon Wall-E etc. special chars.
-# (c) Andy Lord andy@lordy.org.uk #License GPLv3
-
-DEBUG=1
-#Find install folder
-EXE=$0
-while [ -L "$EXE" ] ; do
-    EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
-done
-APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}" ; pwd )
-
-is_nmt() {
-    [ -n "$NMT_APP_DIR" ]
-}
-
-NMT=0
-if is_nmt ; then
-    uid=nmt
-    gid=nmt
-    if [ -d /share/bin ] ; then
-        PATH="/share/bin:$PATH" && export PATH
-    fi
-else
-    uid=root
-    gid=None
-fi
-
-# also used by plot.db
-export OVERSIGHT_ID="$uid:$gid"
-
-AWK=awk
-
-#Get newer gzip and wget
-# nmt busybox wget is primitive.
-# nmt /bin/wget is buggy
-# nmt busybox gzip is not graceful for passthru of uncompressed data
-if [ -d "$APPDIR/bin" ] ; then
-
-    if grep -q "MIPS 74K" /proc/cpuinfo ; then
-        BINDIR="$APPDIR/bin/nmt200"
-    else
-        BINDIR="$APPDIR/bin/nmt100"
-    fi
-
-    export PATH="$PATH:$BINDIR:$APPDIR/bin"
-
-
-    # To help save memory we only want to invoke awk on oversights busybox if the user is running 
-    #and old busy box.
-
-    if /bin/busybox | grep -q 'BusyBox v1\.[1-9]\.' ; then
-        # Old version - make awk use newer version
-        #Note this may become gawk one day if memory limits become an issue
-        #if so gawk doesnt like curly braces in regex eg a{3,4} for aaa or aaaa
-        ln -sf "$BINDIR/busybox" "$BINDIR/awk"
-        AWK="$BINDIR/awk"
-    fi
-fi
-
-
-
-set +e
-
-PERMS() {
-    chown -R $OVERSIGHT_ID "$@" || true
-}
-
-tmp_root=/tmp/oversight
-if is_nmt ; then
-    # on nmt something sometimes changes /tmp permissions so only root can write
-    tmp_root="$APPDIR/tmp"
-fi
-
-#unpak.sh may pass the JOBID to catalog.sh via JOBID env. This allows
-#the log files to share the same number.
-if [ -z "${JOBID:-}" ] ; then
-    JOBID=$$
-fi
-
-tmp_dir="$tmp_root/$JOBID"
-rm -fr "$tmp_dir"
-mkdir -p $tmp_dir
-PERMS $tmp_dir
-
-INDEX_DB="$APPDIR/index.db"
-if [ ! -s "$INDEX_DB" ] ; then
-    echo "#Index" > "$INDEX_DB";
-    PERMS "$INDEX_DB"
-fi
-
-PLOT_DB="$APPDIR/plot.db"
-if [ ! -s "$PLOT_DB" ] ; then
-    touch "$PLOT_DB"
-    PERMS "$PLOT_DB"
-fi
-
-COUNTRY_FILE="$APPDIR/conf/country.txt"
-CONF_FILE="$APPDIR/conf/catalog.cfg"
-DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
-
-if [ ! -f "$CONF_FILE" ] ; then
-    cp "$CONF_FILE.example" "$CONF_FILE"
-fi
-
-# Have to do fix endings because of WordPad. Also not all platforms have sed -i
-#cat preserves dest permissions
-# note replace ^M with ^L-^N to avoid eol issues with subervsion
-# eol-style not doing as expected via cygwin/windows.
-if grep -q '[-]' "$CONF_FILE" ; then
-    tmpFile="$tmp_dir/catalog.cfg.$$"
-    sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
-    cat "$tmpFile" > "$CONF_FILE"
-    rm -f "$tmpFile"
-fi
-. "$DEFAULTS_FILE"
-. "$CONF_FILE"
-
-check_missing_settings() {
-    # Just in case user has an earlier config file that doesnt have these settings.
-    if [ -z "$catalog_tv_file_fmt" ] ; then 
-        catalog_tv_file_fmt="/share/Tv/{:TITLE:}{ - Season :SEASON:}/{:NAME:}"
-        echo "[WARNING] Please add catalog_tv_file_fmt settings to catalog.cfg. See catlog.cfg.example for examples."
-    fi
-    if [ -z "$catalog_film_folder_fmt" ] ; then 
-        catalog_film_folder_fmt="/share/Movies/{:TITLE:}{-:CERT:}"
-        echo "[WARNING] Please add catalog_film_folder_fmt settings to catalog.cfg. See catlog.cfg.example for examples."
-    fi
-}
-
-
-RENAME_TV=0
-RENAME_FILM=0
-STDOUT=0
-
-START_DIR="$PWD"
-
-check_missing_settings
-
-if [ -z "$*" ] ; then
-    cat<<USAGE
-    usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [DEBUG] [REBUILD] [NOACTIONS] [RESCAN] [NEWSCAN]
-             [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN]
-             [GET_POSTERS] [UPDATE_POSTERS]
-             [GET_FANART] [UPDATE_FANART]
-             ..folders..
-____________________________________________________________________________________________________________________    
-To simply index all files in a folder:
-
-        $0 Folder
-
-        This is usually all that is needed. The new oversight viewer will take care of showing nice names to the user.
-____________________________________________________________________________________________________________________    
-Other options 
-    RENAME_TV      - Move the tv folders.
-    RENAME_FILM    - Move the film folders.
-    RENAME         - Rename both tv and film
-    DRYRUN         - Show effects of RENAME but dont do it.
-    IGNORE_NFO     - dont look in existing NFO for any infomation
-    WRITE_NFO      - write NFO files
-    NOWRITE_NFO    - dont write NFO files
-    DEBUG          - lots of logging
-    REBUILD        - Run even if no folders. Usually to tidy database.
-    RESCAN         - Rescan default paths
-    NEWSCAN        - Rescan default paths - new media only
-    PARALLEL_SCAN  - Allow multiple scans with RESCAN or NEWSCAN keyword
-    NOACTIONS      - Do not run any actions and hide Delete actions from overview.
-    STDOUT         - Write to stdout (if not present output goes to log file)
-    GET_POSTERS    - Download posters
-    UPDATE_POSTERS- Fetch new posters for each scanned item.
-    GET_FANART     - Download fanart
-    UPDATE_FANART - Fetch new fanart for each scanned item.
-USAGE
-    exit 0
-fi
-
-quoted_arg_list() {
-    ARGS=""
-    for i in "$@" ; do
-        case "$i" in
-        *\'*)
-            case "$i" in
-            *\"*) ARGS=`echo "$ARGS" | sed -r 's/[][ *"()?!'"'"']/\\\1/g'` ;;
-            *) ARGS="$ARGS "'"'"$i"'"' ;;
-            esac
-            ;;
-        *) ARGS="$ARGS '$i'" ;;
-        esac
-    done
-    echo "$ARGS"
-}
-
-SWITCHUSER() {
-    if ! id | fgrep -q "($1)" ; then
-        u=$1
-        shift;
-        echo "[$USER] != [$u]"
-        
-        a="$0 $(quoted_arg_list "$@")"
-        echo "CMD=$a"
-        exec su $u -s /bin/sh -c "$a"
-    fi
-}
-
-get_unpak_cfg() {
-    for ext in cfg cfg.example ; do
-        for nzd in "$APPDIR/conf" /share/Apps/NZBGet/.nzbget /share/.nzbget ; do
-            if [ -f "$nzd/unpak.$ext" ] ; then 
-                echo "$nzd/unpak.$ext"
-                return
-            fi
-        done
-    done
-}
-
-catalog() {
-
-    #Look at the old unpak file - to make sure we dont index pin folder.
-    UNPAK_CFG=`get_unpak_cfg`
-    echo UNPAK="[$UNPAK_CFG]"
-
-    Q="'"
-
-    #for nmt platform use /share/bin/ls for ls if available, but
-    #we cant just add /share/bin to path as this forces busybox wget.
-
-    LS=ls
-    if [ -f /share/bin/ls ] ; then
-        LS=/share/bin/ls
-    fi
-
-    # use index before match
-    # clear arrays using split("",array,"")
-
-        $AWK '
-#catalog.awk
-
 #Pad episode but dont assume its a number .eg 03a for Big Brother
 #BEGINAWK
 #!catalog
@@ -356,8 +59,8 @@ function pad_episode(e) {
 
 function timestamp(label,x) {
 
-    if (index(x,g_tk) ) gsub(g_tk,".",x);
-    if (index(x,g_tk2) ) gsub(g_tk2,".",x);
+    if (index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
+    if (index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
 
     if (index(x,"d=") ) {
         sub("password.?=([^,]+)","password=***",x);
@@ -369,7 +72,7 @@ function timestamp(label,x) {
         g_last_ts=systime();
         g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
     }
-    print label" '$LOG_TAG' "g_last_ts_str g_indent x;
+    print label" "LOG_TAG" "g_last_ts_str g_indent x;
 }
 
 function TODO(x) {
@@ -394,8 +97,8 @@ i,n,v,option) {
         sub(/ *= */,"=",option);
         option=trim(option);
         # remove outer quotes
-        sub("=["g_quote2"]","=",option);
-        sub("["g_quote2"]$","",option);
+        sub("=[\"']","=",option);
+        sub("[\"']$","",option);
         if (match(option,"^[A-Za-z0-9_]+=")) {
             n=prefix substr(option,1,RLENGTH-1);
             v=substr(option,RLENGTH+1);
@@ -473,27 +176,25 @@ BEGIN {
     g_opt_dry_run=0;
     yes="yes";
     no="no";
-    g_quote="'"'"'";
-    g_quote2="\"'"'"'";
 
     g_8bit="€-ÿ"; // range 0x80 - 0xff
 
     g_alnum8 = "a-zA-Z0-9" g_8bit;
 
     # Remove any punctuation except quotes () [] {} - also keep high bit
-    g_punc[0]="[^][}{&()" g_quote g_alnum8 "]+";
+    g_punc[0]="[^][}{&()'" g_alnum8 "]+";
     # Remove any punctuation except quotes () - also keep high bit
-    g_punc[1]="[^&()"g_quote g_alnum8"]+";
+    g_punc[1]="[^&()'"g_alnum8"]+";
     # Remove any punctuation except quotes () - also keep high bit
-    g_punc[2]="[^&"g_quote g_alnum8"]+";
+    g_punc[2]="[^&'"g_alnum8"]+";
 
-    g_nonquote_regex = "[^"g_quote2"]";
+    g_nonquote_regex = "[^\"']";
 
     #g_imdb_regex="\\<tt[0-9]+\\>";
     g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
 
     g_year_re="(20[01][0-9]|19[5-9][0-9])";
-    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& "g_quote "]* \\(?"g_year_re"\\)?";
+    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& ']* \\(?"g_year_re"\\)?";
 
     ELAPSED_TIME=systime();
     UPDATE_TV=1;
@@ -502,6 +203,9 @@ BEGIN {
     GET_FANART=0;
     UPDATE_POSTERS=0;
     UPDATE_FANART=0;
+
+    g_api_tvdb="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
+    g_api_tmdb="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
 
     get_folders_from_args(FOLDER_ARR);
 }
@@ -538,18 +242,22 @@ line,f,n,v,n2,v2) {
         n=index(line,"=");
         v=substr(line,n+1);
         n=substr(line,1,n-1);
-        settings[n] = v;
-        DEBUG("setting ["n"]=["v"]");
 
-        # if servname2=nas then store servname_nas=2 - this makes it easier to
-        # find the corresponding servlink2 using the share name.
-        if (n ~ /^servname/ ) {
+        if ( index(n,"_BKMRK_") == 0) {
 
-            n2="servname_"v;
-            v2="servlink"substr(n,length(n));
+            settings[n] = v;
+            DEBUG("setting ["n"]=["v"]");
 
-            settings[n2] = v2;
-            DEBUG("setting *** ["n2"]=["v2"]");
+            # if servname2=nas then store servname_nas=2 - this makes it easier to
+            # find the corresponding servlink2 using the share name.
+            if (n ~ /^servname/ ) {
+
+                n2="servname_"v;
+                v2="servlink"substr(n,length(n));
+
+                settings[n2] = v2;
+                DEBUG("setting *** ["n2"]=["v2"]");
+            }
         }
     }
     close(f);
@@ -724,7 +432,7 @@ END{
     g_winsfile = APPDIR"/conf/wins.txt";
     g_item_count = 0;
 
-    g_plot_file="'"$PLOT_DB"'";
+    g_plot_file=PLOT_DB;
     g_plot_app=qa(APPDIR"/bin/plot.sh");
 
     for(i in g_settings) {
@@ -814,8 +522,6 @@ END{
 
     g_months_short="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
     monthHash(g_months_short,"|",gMonthConvert);
-    g_tk="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
-    g_tk2="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
 
     g_months_long="January|February|March|April|May|June|July|August|September|October|November|December";
     monthHash(g_months_long,"|",gMonthConvert);
@@ -908,10 +614,10 @@ END{
         gMovieFileCount = 0;
         gMaxDatabaseId = 0;
         
-        load_settings("","'$UNPAK_CFG'");
+        load_settings("",UNPAK_CFG);
 
-        g_tk = apply(g_tk);
-        g_tk2 = apply(g_tk2);
+        g_api_tvdb = apply(g_api_tvdb);
+        g_api_tmdb = apply(g_api_tmdb);
         g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
         delete g_occurs;
@@ -1126,8 +832,8 @@ function replace_database_with_new(newdb,currentdb,olddb) {
 }
 
 function set_permissions(shellArg) {
-    if (ENVIRON["USER"] != '$uid' ) {
-        return system("chown '$OVERSIGHT_ID' "shellArg);
+    if (ENVIRON["USER"] != UID ) {
+        return system("chown "OVERSIGHT_ID" "shellArg);
     }
     return 0;
 }
@@ -1135,7 +841,7 @@ function set_permissions(shellArg) {
 function capitalise(text,\
 i,rtext,rstart) {
     text=" "text;
-    while (match(text,"[^" g_alnum8 g_quote"][a-z]") > 0) {
+    while (match(text,"[^'" g_alnum8 "][a-z]") > 0) {
         text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2);
     }
     ## Uppercase roman
@@ -1678,7 +1384,7 @@ function folderIsRelevant(dir) {
 function web_search_first_imdb_link(qualifier) {
     return web_search_first(qualifier,1,"imdbid","/tt",g_imdb_regex);
 }
-function web_search_first_imdb_title(qualifier,\
+function web_search_first_imdb_title(qualifier\
 ) {
     return web_search_first(qualifier,0,"imdbtitle","",g_imdb_title_re);
 }
@@ -1730,8 +1436,8 @@ t,t2) {
         gsub(/  +/," ",t2);
         t2 = capitalise(trim(t2));
 
-        #Ignore "GMT yyyy"
-        if (t2 !~ "(©|GMT|PDT|"g_months_short") "g_year_re"$" ) {
+        #Ignore anything that looks like a date.
+        if (t2 !~ "(©|GMT|PDT|"g_months_short"(| [0-9][0-9])) "g_year_re"$" ) {
             normed[t2] += matches[t];
         }
     }
@@ -2219,7 +1925,7 @@ function short_path(path) {
     return path;
 }
 
-function in_db(path,verbose,\
+function in_db(path,verbose\
 ) {
     path = short_path(path);
     if (index(path,g_occurs_prefix) != 1) {
@@ -2339,7 +2045,7 @@ function remove_absent_files_from_new_db(db,\
                     if (systime()-timer > 10) {
                         # error accessing nas - blacklist this path.
                         blacklist_dir = f;
-                        if (match(f,"NETWORK_SHARE/[^\/]+/")) {
+                        if (match(f,"NETWORK_SHARE/[^/]+/")) {
                             blacklist_dir = substr(f,RSTART,RLENGTH);
                             sub(/.*NETWORK_SHARE/,"",blacklist_dir);
                             ERR("Unresponsive device : Blacklisting access to NETWORK_SHARE"blacklist_dir);
@@ -2404,8 +2110,8 @@ function getPath(name,localPath) {
 
 #Return single quoted file name. Inner quotes are backslash escaped.
 function qa(f) {
-    gsub(g_quote,g_quote "\\"g_quote g_quote,f);
-    return g_quote f g_quote;
+    gsub(/'/,"'\\''",f);
+    return "'"f"'";
 }
 
 # Convert a movie title and year to a regular expression that should match 
@@ -2843,7 +2549,7 @@ function extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details,\
 episodeInfo,url) {
 
     
-    url=g_thetvdb_web"/api/GetEpisodeByAirDate.php?apikey="g_tk"&seriesid="tvdbid"&airdate="y"-"m"-"d,"ep-by-date-";
+    url=g_thetvdb_web"/api/GetEpisodeByAirDate.php?apikey="g_api_tvdb"&seriesid="tvdbid"&airdate="y"-"m"-"d;
     fetchXML(url,"epbydate",episodeInfo);
 
     if ( "/Data/Error" in episodeInfo ) {
@@ -2859,7 +2565,7 @@ episodeInfo,url) {
         details[ADDITIONAL_INF]=episodeInfo["/Data/Episode/EpisodeName"];
         #TODO We can cache the above url for later use instead of fetching episode explicitly.
         # Setting this will help short circuit searching later.
-        equate_urls(url,g_thetvdb_web"/api/"g_tk"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
+        equate_urls(url,g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
         #g_imdb[idx]=get_tv_series_api_url(tvdbid);
         #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "g_imdb[idx]);
         #dump(0,"epinfo",episodeInfo);
@@ -3360,6 +3066,9 @@ imdb_title_q,imdb_id_q) {
 
                             # look for imdb style titles 
                             title = web_search_first_imdb_title(name_try);
+                            if (title == "" ) {
+                                title = web_search_first_imdb_title(name_try"+movie");
+                            }
                             if (title != "" && title != name_try) {
                                 bestUrl=web_search_first_imdb_link(title"+"imdb_title_q);
                                 if (bestUrl == "") {
@@ -3406,7 +3115,9 @@ url,key) {
         DEBUG("tv2imdb key=["key"]");
         if (!(key in g_tv2imdb)) {
 
-            url=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons ";
+            # Search for imdb page  - try to filter out Episode pages.
+            #url=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons ";
+            url=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"";
         
             g_tv2imdb[key] = web_search_first_imdb_link(url); 
         }
@@ -3539,7 +3250,7 @@ choice,i,url) {
 #            url = searchOnlineNfoLinksForImdb(name,\
 #                "http://www.ngindex.com",\
 #                "/nfos.php?method=and&type=2&sort=score&matchesperpage=50&archive=all&FT=4&words=QUERY",\
-#                "/setinfo.php[^\""g_quote"]+",5);
+#                "/setinfo.php[^\"']+",5);
         }
         if (url != "") {
             break;
@@ -4089,12 +3800,12 @@ requiredTagNames,allTitles,url,ret) {
     if (plugin == "THETVDB") {
 
         url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",title);
-        filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",requiredTagList,allTitles);
+        filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",requiredTagNames,allTitles);
 
     } else if (plugin == "TVRAGE") {
 
         url=g_tvrage_web"/feeds/search.php?show="title;
-        filter_search_results(url,title,"/Results/show","name","showid",requiredTagList,allTitles);
+        filter_search_results(url,title,"/Results/show","name","showid",requiredTagNames,allTitles);
 
     } else {
         plugin_error(plugin);
@@ -4163,7 +3874,8 @@ f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,fi
 
                 add=1;
                 for( i in requiredTagNames ) {
-                    if (! ( "/"seriesTag"/"requiredTagNames[i] in info ) ) {
+                    if (! ( seriesPath"/"requiredTagNames[i] in info ) ) {
+                        dump(0,"info",info);
                         DEBUG("["currentName"] rejected due to missing "requiredTagNames[i]" tag");
                         add=0;
                         filter_count++;
@@ -4333,9 +4045,9 @@ function get_tv_series_api_url(plugin,tvdbid) {
     if (tvdbid != "") {
         if (plugin == "THETVDB") {
             if (g_tvdb_user_per_episode_api) {
-                return g_thetvdb_web"/api/"g_tk"/series/"tvdbid"/en.xml";
+                return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/en.xml";
             } else {
-                return g_thetvdb_web"/api/"g_tk"/series/"tvdbid"/all/en.xml";
+                return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/all/en.xml";
             }
         } else if (plugin == "TVRAGE") {
             return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
@@ -4467,7 +4179,7 @@ attr,a_name,a_val,eq,attr_pairs) {
         #parse attributes.
         
         if (slash == 0 && index(parts[1],"=")) {
-            get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ "g_quote2">=]*))",0,attr_pairs);
+            get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ \"'>=]*))",0,attr_pairs);
             for(attr in attr_pairs) {
                 eq=index(attr,"=");
                 a_name=substr(attr,1,eq-1);
@@ -4491,7 +4203,7 @@ function norm_title(t) {
     sub(/^[Tt]he /,"",t);
     sub(/ [Tt]he$/,"",t);
     gsub(/[&]/,"and",t);
-    gsub(g_quote,"",t);
+    gsub(/'/,"",t);
     return tolower(t);
 }
 
@@ -4879,7 +4591,7 @@ function clean_title(t,deep) {
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
     #this has to be done in two stages otherwise the collapsing prevents the next match.
-    while (match(t,"\\<[A-Za-z]\\>\.\\<[A-Za-z]\\>")) {
+    while (match(t,"\\<[A-Za-z]\\>[.]\\<[A-Za-z]\\>")) {
         t = substr(t,1,RSTART) "@@" substr(t,RSTART+2);
     }
 
@@ -5524,7 +5236,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
 
     DEBUG("tmp file "tmpFile);
 
-    system("awk '"'"'BEGIN { FS=\"_\" } { gsub(/[^ -~]+/,\"~\"); gsub(\"~+\",\"~\") ; split($0,w,\"~\"); for (i in w)  if (w[i]) print w[i] ; }'"'"' "isoPart" > "tmpFile);
+    system(AWK" 'BEGIN { FS=\"_\" } { gsub(/[^ -~]+/,\"~\"); gsub(\"~+\",\"~\") ; split($0,w,\"~\"); for (i in w)  if (w[i]) print w[i] ; }' "isoPart" > "tmpFile);
     getline f < tmpFile;
     getline f < tmpFile;
     system("rm -f -- "tmpFile" "isoPart);
@@ -5847,7 +5559,7 @@ i,urls,tmpf,qf,r) {
                 #exec("cat "qf" >> "qa(file));
                 #Insert line feeds - but try not to split text that has bold or span tags.
 
-                exec("\"'"$AWK"'\" "g_quote"{ gsub(/<(h[1-5]|div|td|tr|p)[ >]/,\"\\n&\") ; print ; }"g_quote" "qf" >> "qa(file));
+                exec(AWK " '{ gsub(/<(h[1-5]|div|td|tr|p)[ >]/,\"\\n&\") ; print ; }' "qf" >> "qa(file));
                 r=0;
             }
         }
@@ -6201,7 +5913,7 @@ referer_url,url,url2) {
 function get_moviedb_img(imdb_id,type,size,\
 search_url,txt,xml,f,bestId,url,url2,parse,id) {
 
-    search_url="http://api.themoviedb.org/2.1/Movie.getImages/en/xml/"g_tk2"/"imdb_id;
+    search_url="http://api.themoviedb.org/2.1/Movie.getImages/en/xml/"g_api_tmdb"/"imdb_id;
 
 # We want the one with lowest id.
 
@@ -6446,7 +6158,7 @@ flag,i) {
     # now split at boundaries.
     i = split(s,parts,flag);
 
-    if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
+    if (i > 0 && i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
     return i+0;
 }
 
@@ -6650,7 +6362,7 @@ title,poster_imdb_url,i,sec) {
     return imdbContentPosition;
 }
 
-function extract_imdb_title_category(idx,title,\
+function extract_imdb_title_category(idx,title\
 ) {
     # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
@@ -6894,7 +6606,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
         if (fileType == "file") {
             newName = substitute("NAME",g_media[i],newName);
-            if (match(g_media[i],"\.[^.]+$")) {
+            if (match(g_media[i],"[.][^.]+$")) {
                 #DEBUG("BASE EXT="g_media[i] " AT "RSTART);
                 newName = substitute("BASE",substr(g_media[i],1,RSTART-1),newName);
                 newName = substitute("EXT",substr(g_media[i],RSTART),newName);
@@ -7068,7 +6780,7 @@ function rename_related(oldName,newName,\
 
 function preparePath(f) {
     f = qa(f);
-    return system("if [ ! -e "f" ] ; then mkdir -p "f" && chown '$OVERSIGHT_ID' "f"/.. &&  rmdir -- "f" ; fi");
+    return system("if [ ! -e "f" ] ; then mkdir -p "f" && chown "OVERSIGHT_ID" "f"/.. &&  rmdir -- "f" ; fi");
 }
 
 #This is used to double check we are only manipulating files that meet certain criteria.
@@ -7176,7 +6888,7 @@ tmp,err) {
 }
 
 function isnmt() {
-    return 0+ is_file("'"$NMT_APP_DIR"'/MIN_FIRMWARE_VER");
+    return 0+ is_file(NMT_APP_DIR"/MIN_FIRMWARE_VER");
 }
 function is_file(f,\
 tmp,err) {
@@ -7814,117 +7526,4 @@ url) {
     url_encode("site:filmup.leonardo.it"));
     HTML_LOG(0,"it "url);
 }
-
-
 #ENDAWK
-
-' JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
-    DAY=`date +%a.%P` \
-    "START_DIR=$START_DIR" \
-    "LS=$LS" \
-    "APPDIR=$APPDIR" \
-    "CONF_FILE=$CONF_FILE" \
-    "COUNTRY_FILE=$COUNTRY_FILE" \
-    "DEFAULTS_FILE=$DEFAULTS_FILE" \
-    tmp_dir="$tmp_dir" \
-    "INDEX_DB=$INDEX_DB" "$@"
-
-    rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
-}
-
-tidy() {
-    rm -f "$APPDIR/catalog.status"
-    clean_all_files
-}
-
-trap "rm -f $APPDIR/catalog.status" INT TERM EXIT
-
-main() {
-
-    clean_all_files
-
-    set +e
-    echo '[INFO] catalog version '$VERSION' $Id$'
-    sed 's/^/\[INFO\] os version /' /proc/version
-    if is_nmt ; then
-        sed -rn '/./ s/^/\[INFO\] nmt version /p' /???/*/VERSION
-    fi
-    #echo "[INFO] HD:`dmesg | egrep '(, ATA|ATA-)'`"
-    catalog DEBUG$DEBUG "$@" 
-    x=$?
-    set -e
-
-    rm -fr -- "$tmp_dir"
-    chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$APPDIR/tmp" || true
-    return $x
-}
-
-#-------------------------------------------------------------------------
-
-
-
-# $1 = dir
-# $2 = file pattern
-# $3 = age
-# find exec doesnt work on nmt
-clean_files() {
-    find "$1" -name "$2" -mtime "+$3" | while IFS= read f ; do
-        rm -f -- "$f"
-    done
-}
-
-clean_all_files() {
-    clean_files "$tmp_root" "." 2
-    clean_files "$APPDIR/logs" "catalog.*.log" 5 
-    clean_files "$APPDIR/cache" "tt*" 30
-}
-
-#Due to a very nasty root renaming incident - reinstated user switch
-#SWITCHUSER "$uid" "$@"
-
-if [ "$STDOUT" -eq 1 ] ; then
-    LOG_TAG="catalog:"
-    main "$@"
-else
-    LOG_TAG=
-    #LOG_FILE="$APPDIR/logs/catalog.`date +%d%H%M`.$$.log"
-    LOG_DIR="$APPDIR/logs"
-    mkdir -p "$LOG_DIR"
-    LOG_NAME="catalog.$JOBID.log"
-    LOG_FILE="$LOG_DIR/$LOG_NAME"
-
-    (cd "$LOG_DIR" && ( mv "last.log" "prev.log" || true ) && ln -sf "$LOG_NAME" "last.log" )
-
-    main "$@" > "$LOG_FILE" 2>&1
-    if [ -z "${REMOTE_ADDR:-}" ] ;then
-        echo "[INFO] $LOG_FILE"
-    fi
-    grep dryrun: "$LOG_FILE"
-    PERMS "$APPDIR/logs"
-fi
-if [ -f "$APPDIR/oversight.sh" ] ; then
-    $APPDIR/oversight.sh CLEAR_CACHE
-fi
-#!#- awk script is compressed using the following: (this file is called util/squeeze)
-#!#- sed -r '
-#!#- 
-#!#- #collapse all leading space [ ] is [<space><tab>]
-#!#- s/^[ 	]+//;
-#!#- 
-#!#- #collapse indented comments
-#!#- /^ +#/ {s/.*//};
-#!#- 
-#!#- #remove trailing comments after ; or {
-#!#- s/[;{] #.*//;
-#!#- 
-#!#- #collapse comment lines - except shebangs
-#!#- /^#[^!]/ {s/.*//};
-#!#- 
-#!#- #collapse blank lines - keep them for line number reporting
-#!#- /^$/ {s/.*//}
-#!#- 
-#!#- #remove trailing semi-colon  except for bash case ;;
-#!#- /; *$/ {s/([^;]);$/\1/}
-#!#- 
-#!#- ' catalog.sh.full > catalog.sh
-# vi:syntax=awk:sw=4:et:ts=4

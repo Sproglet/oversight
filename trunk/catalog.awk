@@ -1,4 +1,4 @@
-#! $Id: catalog.sh.full 853 2010-03-31 00:21:48Z lordylordy $
+#! $Id:$
 #!This is a compacted file. If looking for the source see catalog.sh.full
 #!If not compressed then awk will report "bad address" error on some platforms.
 #!
@@ -1438,7 +1438,10 @@ t,t2) {
 
         #Ignore anything that looks like a date.
         if (t2 !~ "(©|GMT|PDT|"g_months_short"(| [0-9][0-9])) "g_year_re"$" ) {
-            normed[t2] += matches[t];
+            #or a sentence blah blah blah In 2003
+            if (t2 !~ "[A-Z][a-z]* [A-Z][a-z]* [A-Z][a-z]* In "g_year_re"$" ) {
+                normed[t2] += matches[t];
+            }
         }
     }
     # Any that are substrings inherit the score of the superstring.
@@ -2685,7 +2688,7 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
         }
 
         #BigBrother episodes with trailing character.
-        gsub(/[-.eExX]+/,",",ep);
+        gsub(/[-.eExXpP]+/,",",ep); #
         DEBUG("Episode : "ep);
         gsub(/\<0+/,"",ep);
         gsub(/,,+/,",",ep);
@@ -3555,7 +3558,7 @@ ret) {
 
     if (plugin == "THETVDB" ) {
 
-        ret = searchTv(plugin,title,"FirstAired,Overview",closeTitles);
+        ret = searchTv(plugin,title,"FirstAired",closeTitles);
 
     } else if (plugin == "TVRAGE" ) {
 
@@ -4264,7 +4267,10 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         #TODO Note we could keep the 1 match levels here and below, but if so
         #we should still go on to search abbreviations. For now easier to comment out.
         #The zero score will trigger the abbreviation code.
-        # matchLevel = 1;
+        #
+        # Enabling this would allow "curb" to match "curb your enthusiasm"
+        # but may false match abbreviations?
+        matchLevel = 1;
 
         #This will match exact name OR if BOTH contain original year or country
         if (possible_title == titleIn) {
@@ -6387,15 +6393,18 @@ function extract_imdb_title_category(idx,title\
 # against alternative titles that are further down the list.
 
 function scrapeIMDBAka(idx,line,\
-akas,a,c,bro,brc) {
+akas,a,c,bro,brc,akacount) {
 
     if (gOriginalTitle[idx] != gTitle[idx] ) return ;
 
     bro="(";
     brc=")";
-    split(de_emphasise(line),akas,"<br>");
+
+    akacount = split(de_emphasise(line),akas,"<br>");
+
     dump(0,"AKA array",akas);
-    for(a in akas) {
+
+    for(a = 1 ; a <= akacount ; a++ ) {
         akas[a] = remove_tags(akas[a]);
         DEBUG("Checking aka ["akas[a]"]");
         for(c in gTitleCountries ) {
@@ -7527,3 +7536,4 @@ url) {
     HTML_LOG(0,"it "url);
 }
 #ENDAWK
+# vi:sw=4:et:ts=4

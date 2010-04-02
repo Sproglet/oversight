@@ -18,8 +18,9 @@ when a file is downloaded it goes through the following stages.
 
   # nzbget downloads the archive files into */share/Download*
   # Once all parts are downloaded , the archive is par-repaired and unpacked by unpak.sh into */share/Complete* (This is an nzbget post processing script) - see [ Par-repair on demand ]
-  # If the post processing script can further categorise it based on the newsgroup name. eg stuff from alt.binaries.sounds is moved to /share/Music, alt.binaries.erotica is moved to /share/~Other/2/4/6/8
-  # Finally, if the file looks like a movie or a TV show, it is renamed by catalog.sh (This is Oversight's scanning script)
+  # The unpak.sh post processing script checks if the user has set a nzbget category. *If nzbget categories are used, processing stops* and the file will not appear in oversight. It's assumed the users manual category selection takes priority over oversight processing.
+  # The unpak.sh post processing script checks if the newsgroup name should be used to determine the final location of the file. This is based on the newsgroup name configuration in unpak.cfg. eg stuff from alt.binaries.sounds is moved to /share/Music, alt.binaries.erotica is moved to /share/~Other/2/4/6/8. *If there is a newsgroup name matches, the file is moved and processing stops.*
+  # Finally, if the file looks like a movie or a TV show, it is renamed by catalog.sh (This is Oversight's scanning script catalog.sh)
 
 So if you want to change the location of these folders, refer to the relevant section below.
 

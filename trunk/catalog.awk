@@ -6418,7 +6418,7 @@ akas,a,c,bro,brc,akacount) {
                 }
                 if (match(akas[a],"- .*\\<" gTitleCountries[c] "\\>")) {
                     #We hit a matching AKA country ...
-                    if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative|Spanish title")) {
+                    if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative|Spanish title|video box title")) {
                         #the qualifications again suggest that weve already passed a better match
                         # ignore rest of section.
                         DEBUG("Ignoring aka section");

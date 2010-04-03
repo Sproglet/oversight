@@ -942,6 +942,11 @@ ur) {
     ur = g_settings["unpak_nmt_pin_root"];
     return ur != "" && index(d,ur) == 1;
 }
+
+function is_movie_structure_fldr(d) {
+    return is_videots_fldr(d) || is_bdmv_subfldr(d);
+}
+
 function is_bdmv_subfldr(d) {
     return tolower(d) ~ "/bdmv/(playlist|clipinf|stream|auxdata|backup|jar|meta|bdjo)\\>";
 }
@@ -1026,9 +1031,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                 skipFolder=1;
                 INF("Ignore path "currentFolder);
 
-            } else if ( is_bdmv_subfldr(currentFolder)) {
+            } else if ( is_movie_structure_fldr(currentFolder)) {
 
-                INF("Ignore BDMV sub folder "currentFolder);
+                INF("Ignore DVD/BDMV sub folder "currentFolder);
                 skipFolder=1;
 
             } else if(is_hidden_fldr(currentFolder)) {
@@ -1079,9 +1084,11 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             scan_line=substr(scan_line,pos);
             lc=tolower(scan_line);
 
-            if (substr(perms,1,1) != "-") {
-                if (substr(perms,1,1) == "d") {
-                    #Directory
+
+            if (substr(perms,1,1) != "-") { # Not a file
+
+                if (substr(perms,1,1) == "d") { #Directory
+
                     if (currentFolder in g_fldrCount) {
                         g_fldrCount[currentFolder]++;
                     }
@@ -1098,7 +1105,6 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
                         storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo");
-                        skipFolder=1;
                     }
                 }
 
@@ -1149,8 +1155,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                 if (match(lc,gExtRegexIso)) {
                     #ISO images.
 
-                    if (length(w5) - 10 < 0) {
-                        INF("Skipping image - too small");
+                    # Check image size. Images should be very large or for testing only, very small.
+                    if (length(w5) > 1 && length(w5) - 10 < 0) {
+                        INF("Skipping image ["scan_line"] - too small");
                     } else {
                         store=1;
                     }
@@ -1303,7 +1310,7 @@ lastNameSeen,i,lastch,ch) {
         # That is done during the scrape stage by "checkTvFilenameFormat". This is just a quick way.
         # reject 0e1 0x1 "ep 1" "dvd 1" etc.
         # we could change this to a white list instead. eg part01 cd1 etc.
-        if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.]|[edx]|dvd|disc|ep|episode) *1$") {
+        if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.edx]|dvd|disc|ep|episode) *1$") {
             return 0;
         }
 
@@ -2707,6 +2714,27 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
 }
 
 ############### GET IMDB URL FROM NFO ########################################
+function setImplicitNfo(idx,path,\
+ret) {
+
+    if (isDvdDir(path)) path = substr(path,1,length(path)-1);
+
+    if (g_fldrMediaCount[path]+0 <= 1 ) { # if 1 or less media files (could be 0 for nfo inside a dvd structure)
+       
+        if ( g_fldrInfoCount[path] == 1 ) { # if only one nfo file in this folder
+           
+           if( is_file(g_fldrInfoName[path])) {
+
+               DEBUG("Using single nfo "g_fldrInfoName[path]);
+
+               gNfoDefault[idx] = g_fldrInfoName[path];
+
+               ret = 1;
+           }
+       }
+   }
+   return ret;
+}
 
 function identify_and_catalog_scanned_files(\
 idx,file,fldr,bestUrl,scanNfo,thisTime,numFiles,eta,\
@@ -2758,12 +2786,13 @@ tvid,tvDbSeriesPage) {
                DEBUG("Using default info to find url");
                scanNfo = 1;
 
-            } else if (g_fldrMediaCount[fldr] == 1 && g_fldrInfoCount[fldr] == 1 && is_file(g_fldrInfoName[fldr])) {
+            # Look at other files in the same folder.
+            } else if  (setImplicitNfo(idx,fldr) ) {
+                scanNfo = 1;
 
-               DEBUG("Using single nfo "g_fldrInfoName[fldr]);
-
-               gNfoDefault[idx] = g_fldrInfoName[fldr];
-               scanNfo = 1;
+            # Look inside movie_structire
+            } else if ( isDvdDir(file) && setImplicitNfo(idx,fldr"/"file) ) {
+                scanNfo = 1;
            }
         }
 
@@ -6852,7 +6881,7 @@ function isDvdDir(f) {
 
 #Moves folder contents.
 function moveFolder(i,oldName,newName,\
-    cmd,new,old,ret,isDvdDir,err) {
+    cmd,new,old,ret,err) {
 
    ret=1;
    err="";

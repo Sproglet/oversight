@@ -1,17 +1,4 @@
 #! $Id:$
-#!This is a compacted file. If looking for the source see catalog.sh.full
-#!If not compressed then awk will report "bad address" error on some platforms.
-#!
-#!blank lines kept to preserve line numbers reported in errors.
-#!All leading white space trimmed so make sure lines ending in \ have any mandatory white space included.
-#!
-#! See end of file for Compress command.
-
-# TODO Any more memory errors remove :
-# IMDBLINKS code
-# nfo file generation.
-
-#
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
 # of global arrays causing memory problems.
 
@@ -658,23 +645,6 @@ END{
     }
 }
 
-#function unit_tests() {
-#    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[0-9]+",0,m);
-#    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[a-z]+",0,m);
-#    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[0-9]+",2,m);
-#    test_regex_count("a54321bb4321ccc321dddd21eeeee1a54321","[a-z]+",2,m);
-#}
-#function test_regex_count(line,re,max,\
-#m,p) {
-#    id1("test_regex_count ["line"]["re"]["max"]");
-#    get_regex_counts(line,re,max,m);
-#    dump(0,"count",m);
-#    get_regex_pos(line,re,max,m,p);
-#    dump(0,"pos",m);
-#    dump(0,"pos",p);
-#    id0();
-#}
-
 function replace_share_names(folders,\
 f,share_name) {
     if (isnmt()) {
@@ -840,11 +810,15 @@ function set_permissions(shellArg) {
 }
 
 function capitalise(text,\
-i,rtext,rstart) {
-    text=" "text;
-    while (match(text,"[^'" g_alnum8 "][a-z]") > 0) {
-        text=substr(text,1,RSTART) toupper(substr(text,RSTART+1,1)) substr(text,RSTART+2);
+i,rtext,rstart,words,wcount) {
+
+    wcount= split(tolower(text),words," ");
+    text = "";
+
+    for(i = 1 ; i<= wcount ; i++) {
+        text = text " " toupper(substr(words[i],1,1)) substr(words[i],2);
     }
+
     ## Uppercase roman
     if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
         for(i in rtext) {
@@ -1286,7 +1260,7 @@ path) {
 # count          : next index in array
 # multiPartRegex : regex that matches the part tag of the file
 function checkMultiPart(name,count,\
-lastNameSeen,i) {
+lastNameSeen,i,lastch,ch) {
 
     lastNameSeen = g_media[count-1];
 
@@ -1298,27 +1272,46 @@ lastNameSeen,i) {
     if (lastNameSeen == name) return 0;
 
     for(i=1 ; i - length(lastNameSeen) <= 0 ; i++ ) {
-        if (substr(lastNameSeen,i,1) != substr(name,i,1)) {
+        lastch = substr(lastNameSeen,i,1);
+        ch = substr(name,i,1);
+        if (lastch != ch) {
             break;
         }
     }
 
+    # Check following characters...
     if (substr(lastNameSeen,i+1) != substr(name,i+1)) {
         #DEBUG("no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
         return 0;
     }
 
-    if (substr(lastNameSeen,i-1,2) ~ "[^0-9]1" || substr(lastNameSeen,i-2,3) ~ "[^EeXx0-9][0-9]1" ) {
+    lastch = tolower(lastch);
+    ch = tolower(ch);
+
+    # i is the point at which the filenames differ.
+
+    if (lastch == "1" ) {
+        if (index("2345",ch) == 0) {
+            return 0;
+        }
+        # Ignore double digit xxx01 xxx02 these are likely tv series.
+        if (substr(lastNameSeen,i-1,2) ~ "[0-9]1" ) {
+            return 0;
+        }
         # Avoid matching tv programs e0n x0n 11n
         # At this stage we have not done full filename analysis to determine if it matches a tv program
         # That is done during the scrape stage by "checkTvFilenameFormat". This is just a quick way.
-        # It makes sure the character 2 digits before is not E,X or 0-9. It will fail the name is cd001 
-        if (!(substr(name,i,1) ~ "[2-9]")) {
+        # reject 0e1 0x1 "ep 1" "dvd 1" etc.
+        # we could change this to a white list instead. eg part01 cd1 etc.
+        if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.]|[edx]|dvd|disc|ep|episode) *1$") {
             return 0;
         }
+
         #continue 
-    } else if (substr(lastNameSeen,i,1) ~ "[Aa]") {
-        if (!(substr(name,i,1) ~ "[A-Fa-f]")) {
+
+    } else if (lastch == "a") {
+
+        if (index("bcdef",ch) == 0) {
             return 0;
         }
         #continue 
@@ -1437,8 +1430,10 @@ t,t2) {
         gsub(/  +/," ",t2);
         t2 = capitalise(trim(t2));
 
+        INF("["t"]=>["t2"]");
+
         #Ignore anything that looks like a date.
-        if (t2 !~ "(©|GMT|PDT|"g_months_short"(| [0-9][0-9])) "g_year_re"$" ) {
+        if (t2 !~ "(©|Gmt|Pdt|"g_months_short"|"g_months_long"(| [0-9][0-9])) "g_year_re"$" ) {
             #or a sentence blah blah blah In 2003
             if (t2 !~ "[A-Z][a-z]* [A-Z][a-z]* [A-Z][a-z]* In "g_year_re"$" ) {
                 normed[t2] += matches[t];
@@ -2318,6 +2313,8 @@ terms,results,id,url,parts) {
     return id;
 }
 
+#
+# If Plugin != "" then it will also check episodes by date.
 function extractEpisodeByPatterns(plugin,line,details,\
 ret,p,pat,i,parts,sreg,ereg) {
 
@@ -2359,7 +2356,7 @@ ret,p,pat,i,parts,sreg,ereg) {
     pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@";
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
-        if (pat[i] == "DATE" ) {
+        if (pat[i] == "DATE" && plugin != "" ) {
             ret = extractEpisodeByDates(plugin,line,details);
         } else {
             split(pat[i],parts,"@");
@@ -3138,7 +3135,7 @@ url,key) {
 # become scalar.
 # Its messy because the scanner started out as a single file
 # incremental scanner. so everything was loaded into memory for speed
-# however this is bead when doing the initial scan of a NAS etc.
+# however this is bad when doing the initial scan of a NAS etc.
 function clean_globals() {
     delete g_media;
     delete g_scraped;

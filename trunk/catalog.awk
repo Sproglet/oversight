@@ -1,7 +1,26 @@
-#! $Id:$
+#! $Id$
+#
+# ensure svn keyword expansion is enabled
+#
+# Script to metch meta-data for Movie and TV media.
+# The result is stored in a flat file index.db
+# The facility to create XMBC conformant nfo files will be re-enabled soon.
+#
+#
 # This is a sprawling mess. due to evolving over time, and lack of structures meaning lots
-# of global arrays causing memory problems.
-
+# of global arrays causing memory problems. Esp with busybox awk.
+#
+# ==================================================================================
+#
+# This script uses awk in the 'bad' way. It does not use awks pattern matching on input. methodology,
+# but works as a simple procedural program. Everything is triggered from the END clause.
+#
+# I would rather have used perl, but this was not available at the time.
+# Using awk in the 'good' way, does not really fit with what the scanner is trying to do.
+# For example many input files do not exist at the time the script is started.
+#
+# ==================================================================================
+#
 # AWK funnies - mostly from busybox awk
 # Sometimes awk seems to do a string compare when both values look like numbers.
 #Ive tried to isolate but cant, its something to do with parameter passing I think. 
@@ -411,6 +430,7 @@ share,share_path,rest) {
 
 
 END{
+    INFO("$Id$");
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
     g_wget_opts="-T 30 -t 2 -w 2 -q --no-check-certificate --ignore-length ";
     g_art_timeout=" -T 60";

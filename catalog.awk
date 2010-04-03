@@ -4269,7 +4269,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         #
         # Enabling this would allow "curb" to match "curb your enthusiasm"
         # but may false match abbreviations?
-        matchLevel = 1;
+        #matchLevel = 1;
 
         #This will match exact name OR if BOTH contain original year or country
         if (possible_title == titleIn) {

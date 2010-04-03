@@ -946,13 +946,13 @@ function is_bdmv_subfldr(d) {
     return tolower(d) ~ "/bdmv/(playlist|clipinf|stream|auxdata|backup|jar|meta|bdjo)\\>";
 }
 function is_bdmv_fldr(d) {
-    return tolower(d) ~ "/bdmv$" && dir_contains(d"/STREAM","[Mm]2[Tt][Ss]$");
+    return tolower(d) ~ "/bdmv$" && dir_contains(d"/STREAM","m2ts$");
 }
 function is_videots_fldr(d) {
-    return tolower(d) ~ "/video_ts$" && dir_contains(d,"[Vv][Oo][Bb]$");
+    return tolower(d) ~ "/video_ts$" && dir_contains(d,"vob$");
 }
 function dir_contains(dir,pattern) {
-    return exec("ls "qa(dir)" 2>/dev/null | egrep -q "qa(pattern) ) ==0;
+    return exec("ls "qa(dir)" 2>/dev/null | egrep -iq "qa(pattern) ) ==0;
 }
 
 # Input is ls -lR or ls -l
@@ -5563,10 +5563,14 @@ i,urls,tmpf,qf,r) {
     for(i in urls) {
         if (urls[i] != "") {
             if (wget2(urls[i],tmpf,referer) == 0) {
-                #exec("cat "qf" >> "qa(file));
+
+                # Long html lines were split to avoid memory issues with bbawk.
+                # With gawk it may be possible to bo back to using cat.
+
                 #Insert line feeds - but try not to split text that has bold or span tags.
 
-                exec(AWK " '{ gsub(/<(h[1-5]|div|td|tr|p)[ >]/,\"\\n&\") ; print ; }' "qf" >> "qa(file));
+                #exec("cat "qf" >> "qa(file));
+                exec(AWK " '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P)[ >]/,\"\\n&\") ; print ; }' "qf" >> "qa(file));
                 r=0;
             }
         }

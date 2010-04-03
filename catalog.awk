@@ -5386,8 +5386,8 @@ text2,part,parts,count) {
     }
 
 
-    count = chop(text,"["g_8bit"]+",parts);
-    if (count>1) {
+    if (ascii8(text)) {
+        count = chop(text,"["g_8bit"]+",parts);
         for(part=2 ; part-count <= 0 ; part += 2 ) {
             text2=text2 parts[part-1] utf8_encode2(parts[part]);
             #INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]");
@@ -5477,7 +5477,7 @@ parts,part,count,code,newcode,text2) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
-    if (index(text,"&") && index(text,";") ) {
+    if (index(text,"&")) {
 
         count = chop(text,"[&][#0-9a-zA-Z]+;",parts);
 

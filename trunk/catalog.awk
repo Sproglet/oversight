@@ -6246,7 +6246,7 @@ flag,i,s) {
         i = split(s,parts,flag);
         if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
     } else {
-        i = 0;
+        i = 1;
         delete parts;
         parts[1] = s_in;
     }

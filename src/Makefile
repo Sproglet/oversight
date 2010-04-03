@@ -16,11 +16,11 @@ else
 endif
 else
 ifeq ($(ARCH),200) 
-	CROSS_DIR=/usr/local/mips-4.3
+	CROSS_DIR=~/nmt/packages/toolchain_200/mips-4.3
 	CFLAGS_ARCH=-EL
 	LDFLAGS_ARCH=-EL
 else
-	CROSS_DIR=/usr/local/mips
+	CROSS_DIR=~/nmt/packages/toolchain_100/usr/local/mips
 endif
 endif
 

@@ -5386,9 +5386,8 @@ text2,part,parts,count) {
     }
 
 
-    if (ascii8(text)) {
-
-        count = chop(text,"["g_8bit"]+",parts);
+    count = chop(text,"["g_8bit"]+",parts);
+    if (count>1) {
         for(part=2 ; part-count <= 0 ; part += 2 ) {
             text2=text2 parts[part-1] utf8_encode2(parts[part]);
             #INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]");
@@ -6232,20 +6231,22 @@ f,line,count,linecount,remain,is_imdb,matches2) {
 function chop(s,regex,parts,\
 flag,i) {
     #first find split text that doesnt occur in the string.
-    flag="@~";
-    while (index(s,flag) ) {
-        WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
-        flag = flag "£" flag; #dodgy line but should work!
-    }
+    flag="=#z@~";
+#    while (index(s,flag) ) {
+#        WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
+#        flag = flag "£" flag; #dodgy line but should work!
+#    }
 
     # insert the split text around the regex boundaries
 
-    gsub(regex,flag "&" flag , s );
-
-    # now split at boundaries.
-    i = split(s,parts,flag);
-
-    if (i > 0 && i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
+    if (gsub(regex,flag "&" flag , s )) {
+        # now split at boundaries.
+        i = split(s,parts,flag);
+        if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
+    } else {
+        i = 0;
+        delete parts;
+    }
     return i+0;
 }
 

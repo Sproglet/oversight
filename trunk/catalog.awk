@@ -6709,10 +6709,9 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         }
 
         INF("checking "qa(oldFolder));
-        if (is_dir(oldFolder) && is_empty(oldFolder)) {
+        if (is_dir(oldFolder) ) {
 
-            INF("removing "qa(oldFolder));
-            system("rmdir "qa(oldFolder));
+            system("rmdir -- "qa(oldFolder)); # only remove if empty
         }
 
     } else {
@@ -6915,7 +6914,7 @@ tmp,err) {
     return (err != -1 );
 }
 function is_empty(d) {
-    return system("ls -a "qa(d)" | egrep -v \"^\.\.?$\"") != 0;
+    return system("ls -1A "qa(d)" | grep -q .") != 0;
 }
 function is_dir(f) {
     return 0+ test("-d",f"/.");

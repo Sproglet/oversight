@@ -1469,10 +1469,37 @@ t,t2) {
     }
     # Any that are substrings inherit the score of the superstring.
     # eg "The Movie 2009" and "Download The Movie 2009"
+    # But only add the score if the longer title appears less frequently than the short title.
+    # this is to help ensure that a title that is broken by a page break does not get a big score.
+    # eg.
+    # --------------
+    # Star Wars 1977
+    # Star Wars 1977
+    # Star Wars 1977
+    # Wars 1977
+    # --------------
+    # In the above case we do NOT want Wars 1977 to have a high score. But...
+    # --------------
+    # Download Star Wars 1977
+    # Star Wars 1977
+    # Star Wars 1977
+    # Star Wars 1977
+    # --------------
+    # In the above case we DO want Star Wars 1977 to inherit the score for "Download Star Wars 1977"
+    # This presents a problem for
+    # --------------
+    # Download Star Wars 1977
+    # Download Star Wars 1977
+    # Star Wars 1977
+    #---------------
+    # So only inherit the score if #short + 2 >= #long (This is just arbitrary heuristic)
+
     for(t in normed) {
         for(t2 in normed) {
             if (t != t2 && index(t2,t)) {
-                normed[t] += normed[t2];
+                if (normed[t]+2 >= normed[t2]+0 ) {
+                    normed[t] += normed[t2];
+                }
             }
         }
     }
@@ -3951,9 +3978,8 @@ f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,fi
 function dump(lvl,label,array,\
 i,c) {
     if (DBG-lvl >= 0)   {
-        DEBUG("  "label":...");
         for(i in array) {
-            DEBUG(" "i"=["array[i]"]");
+            DEBUG(" "label":"i"=["array[i]"]");
             c++;
         }
         if (c == 0 ) {
@@ -5240,7 +5266,7 @@ oldSrc,newSrc,newRank) {
 
     } else {
         newRank = gTitlePriority[source];
-        if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
+        #if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
         if (gTitle[idx] == "" || newRank - g_title_rank[idx] > 0) {
             DEBUG(oldSrc" promoted to "newSrc);
             gTitle[idx] = newTitle;

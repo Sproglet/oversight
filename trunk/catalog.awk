@@ -6228,8 +6228,8 @@ f,line,count,linecount,remain,is_imdb,matches2) {
 # IN regex - regular expression
 # OUT parts - index 1,2,3.. values text,match1,text,match2,...
 # RET number of parts.
-function chop(s,regex,parts,\
-flag,i) {
+function chop(s_in,regex,parts,\
+flag,i,s) {
     #first find split text that doesnt occur in the string.
     flag="=#z@~";
 #    while (index(s,flag) ) {
@@ -6239,6 +6239,8 @@ flag,i) {
 
     # insert the split text around the regex boundaries
 
+    s = s_in;
+
     if (gsub(regex,flag "&" flag , s )) {
         # now split at boundaries.
         i = split(s,parts,flag);
@@ -6246,6 +6248,7 @@ flag,i) {
     } else {
         i = 0;
         delete parts;
+        parts[1] = s_in;
     }
     return i+0;
 }

@@ -214,6 +214,7 @@ BEGIN {
     g_api_tvdb="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
     g_api_tmdb="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
 
+    INF("$Id$");
     get_folders_from_args(FOLDER_ARR);
 }
 
@@ -430,7 +431,6 @@ share,share_path,rest) {
 
 
 END{
-    INFO("$Id$");
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
     g_wget_opts="-T 30 -t 2 -w 2 -q --no-check-certificate --ignore-length ";
     g_art_timeout=" -T 60";
@@ -1705,10 +1705,10 @@ function textToSearchKeywords(f,heuristic\
         if (match(f,"\\<"g_year_re"\\>")) {
             f = substr(f,1,RSTART+RLENGTH-1);
         }
-        #remove everything after episode
-        if (match(f,"\\<[sS][0-9][0-9][eE][0-9][0-9]")) {
-            f = substr(f,1,RSTART+RLENGTH-1);
-        }
+#        #remove everything after episode
+#        if (match(f,"\\<[sS][0-9][0-9][eE][0-9][0-9]")) {
+#            f = substr(f,1,RSTART+RLENGTH-1);
+#        }
 
         f = remove_format_tags(f);
 
@@ -1771,7 +1771,7 @@ f,line,imdbContentPosition,isection) {
         enc_close(f);
 
         if (hash_size(isection) > 0 ) {
-            ERR("Missing imdb sections ");
+            ERR("Unparsed imdb sections ");
             dump(0,"missing",isection);
         }
 
@@ -2311,7 +2311,7 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
 }
 
 function searchByEpisodeName(plugin,details,\
-terms,results,id,url,parts) {
+terms,results,id,url,parts,showurl) {
     # search the tv sites using season , episode no and episode name.
     # ony bing or google - yahoo is not good here
     id1("searchByEpisodeName "plugin);
@@ -2326,11 +2326,11 @@ terms,results,id,url,parts) {
         }
     } else if (plugin == "TVRAGE") {
         terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
-        url = scanPageFirstMatch(g_search_google terms,"tvrage","http"g_nonquote_regex"+.tvrage"g_nonquote_regex"+",0);
+        url = scanPageFirstMatch(g_search_google terms,"tvrage","http://[a-z0-9.]+.tvrage."g_nonquote_regex"+",0);
         if (url != "") {
-            results = scanPageForMatches(url,"show/","show/[0-9]+",0);
-            results=getMax(results,1,1);
-            if (split(results,parts,"/") == 2) {
+            scanPageForMatches(url,"/shows/","/shows/[0-9]+",0,0,"",results);
+            showurl=getMax(results,1,1);
+            if (split(showurl,parts,"/") == 2) {
                 id = parts[2];
             }
         }
@@ -3951,8 +3951,9 @@ f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,fi
 function dump(lvl,label,array,\
 i,c) {
     if (DBG-lvl >= 0)   {
+        DEBUG("  "label":...");
         for(i in array) {
-            DEBUG("  "label":"i"=["array[i]"]");
+            DEBUG(" "i"=["array[i]"]");
             c++;
         }
         if (c == 0 ) {

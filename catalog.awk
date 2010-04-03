@@ -1460,7 +1460,7 @@ t,t2) {
         INF("["t"]=>["t2"]");
 
         #Ignore anything that looks like a date.
-        if (t2 !~ "(©|Gmt|Pdt|"g_months_short"|"g_months_long"(| [0-9][0-9])) "g_year_re"$" ) {
+        if (t2 !~ "(©|Gmt|Pdt|("g_months_short"|"g_months_long")(| [0-9][0-9])) "g_year_re"$" ) {
             #or a sentence blah blah blah In 2003
             if (t2 !~ "[A-Z][a-z]* [A-Z][a-z]* [A-Z][a-z]* (In|Of) "g_year_re"$" ) {
                 normed[t2] += matches[t];

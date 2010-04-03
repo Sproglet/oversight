@@ -297,7 +297,6 @@ main() {
     clean_all_files
 
     set +e
-    echo '[INFO] catalog version '$VERSION' $Id$'
     sed 's/^/\[INFO\] os version /' /proc/version
     if is_nmt ; then
         sed -rn '/./ s/^/\[INFO\] nmt version /p' /???/*/VERSION

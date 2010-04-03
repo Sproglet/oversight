@@ -4,7 +4,7 @@
 # ./util/build 
 # ./util/build -label eg -stable
 
-echo r`./util/svnv oversight 1` > src/verfile
+echo r`sh ./util/svnv oversight 1` > src/verfile
 
 cp src/verfile ./conf/.version
 

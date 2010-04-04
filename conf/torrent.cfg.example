@@ -1,0 +1,5 @@
+active_torrents=2
+upload_kBps=80
+slot_kBps=10
+seed_ratio=1.0
+

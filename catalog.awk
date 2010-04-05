@@ -4277,9 +4277,12 @@ attr,a_name,a_val,eq,attr_pairs) {
 }
 
 # this corrupts a title but makes it easier to match on other similar titles.
-function norm_title(t) {
-    sub(/^[Tt]he /,"",t);
-    sub(/ [Tt]he$/,"",t);
+function norm_title(t,\
+keep_the) {
+    if (!keep_the) {
+        sub(/^[Tt]he /,"",t);
+        sub(/ [Tt]he$/,"",t);
+    }
     gsub(/[&]/,"and",t);
     gsub(/'/,"",t);
     return tolower(t);
@@ -4565,6 +4568,7 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
 
 # if the possible title has n words and the abbreviation is n letters then reject.
 # no one would abbreviate 'red blue' as anything but 'rb' which has already been picked up by abbrevMatch
+# this may not be true, but hopefully other heuristics will recover those cases.
 
 #similarly a contraction should have more letters than words. eg. at least one letter is picked from each word
 #as it is usually a phonic type contraction eg.
@@ -4593,18 +4597,28 @@ initials) {
     return initials;
 }
 
+# Return a regex that will find any embedded occurence of the given string. lowercase only
+# ie aBc => a.*b.*c
+function embedded_lc_regex(s) {
+    gsub(//,".*",s);
+    return tolower(substr(s,3,length(s)-4));
+}
+
 # match tblt to tablet , grk greek etc.
+# The contraction is allowed to match from the beginning of the title to the
+# end of any whole word. eg greys = greys anatomy 
 function abbrevContraction(abbrev,possible_title,\
 found,regex,initials,initial_regex) {
 
 
     # Use regular expressions to do the heavy lifting.
-    # First if abbreviation is grk convert to g.*r.*k
-    regex=tolower(abbrev);
-    gsub(//,".*",regex);
-    regex= "^" substr(regex,3,length(regex)-4) "$";
+    # First if abbreviation is grk convert to ^g.*r.*k\>
+    regex= "^" embedded_lc_regex(abbrev)"\\>";
 
-    found = match(tolower(possible_title),regex);
+    possible_title = norm_title(possible_title,1);
+    found = match(possible_title,regex);
+
+    #DEBUG("abbrev:["abbrev"] ["regex"] ["possible_title"] = "found);
 
     if (found) {
         # Note this check should be at the start for efficiency but it is here to
@@ -4616,17 +4630,7 @@ found,regex,initials,initial_regex) {
             INF(possible_title " abbreviated by ["abbrev"]");
         }
     }
-    if (found) {
-        # Check the contraction also contains the initials. 
-        initials = initial_regex = get_initials(possible_title);
-        gsub(//,".*",initial_regex);
-        if (abbrev !~ initial_regex ) {
-            INF("Contraction ["abbrev"] does not contain show ["possible_title"] initials ["initials"] so reject");
-            found = 0;
-        }
-    }
 
-        
     return 0+ found;
 }
 

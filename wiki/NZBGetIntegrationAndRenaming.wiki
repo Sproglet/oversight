@@ -35,7 +35,19 @@ So if you want to change the location of these folders, refer to the relevant se
   * GUI: Oversight -> Setup -> NZBGet Unpacking
   * CLI: vi /share/Apps/oversight/conf/unpak.cfg -> unpak_completed_dir
 
-=== The unpak.sh custom locations (eg Music / Erotica ) : *completed_dir* ===
+By default the completed_dir location is where files are moved when they have finished downloading and unpacking. They will either remain here , or be moved again if 
+
+  # The newsgroups match the newsgroup_categories in unpak.cfg (eg if the newsgroup contains 'sounds' then it it moved to /share/Music/.
+  # catalog.sh thinks the file is a movie or tv show. (see 'TV and Movie File destinations' )
+
+Some people set the Completed folder to be the same as the Download folder. I think to avoid having another folder on the main menu. However there are problems doing this:
+
+By making them the same folder you then have to remove /share/Download from the ignore list,
+and then if you do rescans Oversight will pick up everything in Download folder including half completed torrents etc.
+In this case I recommend you change both NZBGet and Transmission to download to something like
+/share/Download/InProgress, (rather than /share/Download) create the folder manually and add it to the ignore path. (see previous section for changing nzbget download folder)
+
+=== The unpak.sh custom locations (eg Music / Erotica )  ===
 
 These options look at the newsgroup names embedded in the nzb file.
 
@@ -53,7 +65,7 @@ Also for erotica review any keywords starting with unpak_nmt_pin
 
   * GUI: No GUI option
 
-=== Final TV and Movie File destinations ===
+=== TV and Movie File destinations ===
 
   * CLI: vi /share/Apps/oversight/conf/catalog.cfg 
   * GUI: Oversight -> Setup -> Renaming

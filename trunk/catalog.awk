@@ -4575,13 +4575,6 @@ function significant_words(t) {
     gsub(/  +/," ",t);
     return trim(t);
 }
-#number of words 4 or more characters.
-function significant_word_count(t,\
-w) {
-    #split on boundaries of words >= 4 characters.
-    # If the first word is short the count is wrong so add a fake word at the start.
-    return split("xxxx "t,w," [^ ]{4,}")-1; 
-}
 
 function get_initials(title,\
 initials) {
@@ -4625,25 +4618,6 @@ found,regex,initials,initial_regex) {
         if (abbrev !~ embedded_lc_regex(get_initials(significant_words(possible_title))) ) {
             INF(possible_title " rejected for abbrev ["abbrev"]. doesnt contain initials.");
             found = 0;
-        }
-    }
-
-    # The clause below is superceed by the one above which does a better job.
-    if (0 && found) {
-        # if the possible title has n words and the abbreviation is n letters then reject.
-        # no one would abbreviate 'red blue' as anything but 'rb' which has already been picked up by abbrevMatch
-        # this may not be true, but hopefully other heuristics will recover those cases.
-
-        #similarly a contraction should have more letters than words. eg. at least one letter is picked from each word
-        #as it is usually a phonic type contraction eg.
-        # Royal Pain might be rylpn 
-        # Note this check should be at the start for efficiency but it is here to
-        # see exactly what is getting rejected.
-        if (length(abbrev) < significant_word_count(possible_title)+0 ) {
-            INF(possible_title " rejected for abbrev ["abbrev"]. Doesnt match enough words.");
-            found = 0;
-        } else {
-            INF(possible_title " abbreviated by ["abbrev"]");
         }
     }
 

@@ -88,6 +88,74 @@ unsigned int db_overview_name_hashf(void *rid) {
     return h;
 }
 
+int get_view_mode() {
+    static int mode=-1;
+    if (mode == -1 ) {
+        char *view=query_val(QUERY_PARAM_VIEW);
+        if (STRCMP(view,VIEW_TV) == 0 ) {
+            mode = TV_VIEW;
+        } else if (STRCMP(view,VIEW_MOVIE) == 0) {
+            mode = MOVIE_VIEW;
+        } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
+            mode = TVBOXSET_VIEW;
+        } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
+            mode = MOVIEBOXSET_VIEW;
+        } else {
+            mode = MENU_VIEW;
+        }
+    }
+    return mode;
+}
+
+
+/*
+ * This function may get called 1000s of times so avoid further function calls,
+ * and use static data where possible.
+ */
+unsigned int db_overview_general_eqf(DBRowId *rid1,DBRowId *rid2) {
+    static int tvbox=-1;
+    static int moviebox=-1;
+    static int mode=-1;
+
+    if (tvbox == -1) {
+        tvbox = use_tv_boxsets();
+        moviebox = use_movie_boxsets();
+        mode = get_view_mode();
+    }
+
+    if (rid1->category != rid2->category) {
+        return 0;
+
+    } else if (rid1->category == 'T' ) {
+        switch(mode) {
+            case MENU_VIEW:
+                if (tvbox) {
+                   return rid1->year == rid2->year && (STRCMP(rid1->title,rid2->title) == 0) ;
+                } else {
+                   return rid1->year == rid2->year && (STRCMP(rid1->title,rid2->title) == 0) && (rid1->season == rid2->season);
+                }
+            case TVBOXSET_VIEW:
+               return rid1->year == rid2->year && (STRCMP(rid1->title,rid2->title) == 0) && (rid1->season == rid2->season);
+            case TV_VIEW:
+                return STRCMP(rid1->file,rid2->file) ==0 && STRCMP(rid1->db->source,rid2->db->source) == 0;
+            default:
+                assert(0);
+        }
+    } else if (rid1->category == 'M' ) {
+        switch(mode) {
+            case MENU_VIEW:
+            case MOVIEBOXSET_VIEW:
+            case MOVIE_VIEW:
+                return STRCMP(rid1->file,rid2->file) ==0 && STRCMP(rid1->db->source,rid2->db->source) == 0;
+            default:
+                assert(0);
+    }
+
+
+
+}
+unsigned int db_overview_general_hashf(void *rid) {
+}
 
 // overview equality function based on titles and season only. This is used in non-boxset mode.
 int db_overview_name_season_eqf(DbRowId *rid1,DbRowId *rid2) {
@@ -194,8 +262,20 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
 
 TRACE;
    
-    //Functions used to create the overview hash
-    //If boxsets are enabled then the overview should equate all shows with the same season.
+    /*
+     * Functions used to create the overview hash
+     *
+     * When looking at the main menu , or a box set, each cell is a collection of programs.
+     * This code sets up the relevant equality fns(and corresponding hash fns) that determine
+     * which files share a cell (ie are equivalent).
+     *
+     * For example. In the main menu - All Tv episodes in the same show are considered equivalent
+     * but at the box set level, only episodes in the same season are equivalent.
+     *
+     * Also if using movie box sets , then all movies in the same IMDB movie connections are 
+     * equivalent. In this case it is not sufficient to use the movie name , as unrelated movies
+     * might have the same name. (esp movies with one word titles - eg Venom)
+     */
     //TODO we need to find a generic image for the box set!
 //int (*eq_fn)(DbRowId *rid1,DbRowId *rid2);
 //unsigned int (*hash_fn)(void *rid);
@@ -212,24 +292,24 @@ TRACE;
         //hash_fn = db_overview_name_season_episode_hashf;
         //eq_fn = db_overview_name_season_episode_eqf;
 
-    } else if (use_boxsets()) {
-TRACE;
-        if (STRCMP(view,VIEW_TVBOXSET) == 0) {
-            // BoxSet equality function equates tv shows by name/season
-            // if view=tv or file doesnt matter as we have already filtered down past this level
-            // but if view = boxset then it matters
-            hash_fn = db_overview_name_season_hashf;
-            eq_fn = db_overview_name_season_eqf;
-        } else {
-            // Main menu view Overview equality function equates tv shows by name
-            hash_fn = db_overview_name_hashf;
-            eq_fn = db_overview_name_eqf;
-        }
-    } else {
-TRACE;
-        // Overview equality function equates tv shows by name/season
+    } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
+        
+        // BoxSet equality function equates tv shows by name/season
+        // if view=tv or file doesnt matter as we have already filtered down past this level
+        // but if view = boxset then it matters
         hash_fn = db_overview_name_season_hashf;
         eq_fn = db_overview_name_season_eqf;
+
+    } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
+
+        // Each individual movie is relevant
+        hash_fn = db_overview_file_path_hashf;
+        eq_fn = db_overview_file_path_eqf;
+
+    } else {
+        // Main menu - this will equate items depending on the box set settings.
+        hash_fn = db_overview_general_hashf;
+        eq_fn = db_overview_general_eqf;
     }
 TRACE;
 

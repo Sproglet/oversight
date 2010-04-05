@@ -3370,14 +3370,23 @@ char *get_tvid_links() {
     return result;
 }
 
-long use_boxsets() {
-    static long boxsets = -1;
-    if(boxsets == -1) {
-        if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&boxsets)) {
-            boxsets = 0;
+long use_tv_boxsets() {
+    static long tv_boxsets = -1;
+    if(tv_boxsets == -1) {
+        if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&tv_boxsets)) {
+            tv_boxsets = 0;
         }
     }
-    return boxsets;
+    return tv_boxsets;
+}
+long use_movie_boxsets() {
+    static long movie_boxsets = -1;
+    if(movie_boxsets == -1) {
+        if (!config_check_long(g_oversight_config,"ovs_movieboxsets",&movie_boxsets)) {
+            movie_boxsets = 0;
+        }
+    }
+    return movie_boxsets;
 }
 
 void build_playlist(int num_rows,DbRowId **sorted_rows)

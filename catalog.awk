@@ -3637,7 +3637,7 @@ ret) {
 
     } else if (plugin == "TVRAGE" ) {
 
-        ret = searchTv(plugin,title,"started,origin_country",closeTitles);
+        ret = searchTv(plugin,title,"started",closeTitles);
 
     } else {
 

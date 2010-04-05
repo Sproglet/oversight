@@ -61,6 +61,13 @@ void *CALLOC(size_t count,size_t bytes);
 void *REALLOC(void *p,unsigned long bytes);
 char *STRDUP(char *s);
 char *util_tolower(char *s);
+
+/*Berstein*/
+//hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+/*LUA*/
+//hash ^= ((hash << 5) + (hash >> 2)) + c; 
+#define HASH_ADD(h,c) h ^= ((h << 5) + (h >> 2)) + ((c) | 32) 
+
 unsigned int stringhash(void *vptr);
 char *util_hostname();
 char *util_dirname(char *file);

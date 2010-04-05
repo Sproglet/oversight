@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include "db.h"
 #include "util.h"
@@ -107,15 +108,30 @@ int get_view_mode() {
     return mode;
 }
 
+// Compare numeric field of records. (casting void* to DbRowId*)
+#define EQ_NUM(rid1,rid2,fld) (((DbRowId*)(rid1))->fld == ((DbRowId*)(rid2))->fld)
 
+// Compare string field of records. (casting void* to DbRowId*)
+#define EQ_STR(rid1,rid2,fld) (STRCMP(((DbRowId*)(rid1))->fld,((DbRowId*)(rid2))->fld) ==0)
+
+// true if two records have the same file. (should never happen really so just return 0
+//#define EQ_FILE(rid1,rid2) EQ_STR(rid1,rid2,file) && EQ_SHOW(rid1,rid2,source)
+#define EQ_FILE(rid1,rid2) 0
+
+// true if two records are part of the same show. Assuemes category=T already tested.
+#define EQ_SHOW(rid1,rid2) (EQ_NUM(rid1,rid2,year) && EQ_STR(rid1,rid2,title))
+
+// true if two records are part of the same season. Assuemes category=T already tested.
+#define EQ_SEASON(rid1,rid2) (EQ_NUM(rid1,rid2,season) && EQ_SHOW((rid1),(rid2)))
 /*
  * This function may get called 1000s of times so avoid further function calls,
  * and use static data where possible.
  */
-unsigned int db_overview_general_eqf(DBRowId *rid1,DBRowId *rid2) {
+int db_overview_general_eqf(void *rid1,void *rid2) {
     static int tvbox=-1;
     static int moviebox=-1;
     static int mode=-1;
+    int ret=0;
 
     if (tvbox == -1) {
         tvbox = use_tv_boxsets();
@@ -123,104 +139,98 @@ unsigned int db_overview_general_eqf(DBRowId *rid1,DBRowId *rid2) {
         mode = get_view_mode();
     }
 
-    if (rid1->category != rid2->category) {
-        return 0;
+    if (((DbRowId*)rid1)->category != ((DbRowId*)rid2)->category) {
+        ret = 0;
 
-    } else if (rid1->category == 'T' ) {
+    } else if (((DbRowId*)rid1)->category == 'T' ) {
         switch(mode) {
             case MENU_VIEW:
                 if (tvbox) {
-                   return rid1->year == rid2->year && (STRCMP(rid1->title,rid2->title) == 0) ;
+                   ret = EQ_SHOW(rid1,rid2);
                 } else {
-                   return rid1->year == rid2->year && (STRCMP(rid1->title,rid2->title) == 0) && (rid1->season == rid2->season);
+                   ret = EQ_SEASON(rid1,rid2);
                 }
+                break;
             case TVBOXSET_VIEW:
-               return rid1->year == rid2->year && (STRCMP(rid1->title,rid2->title) == 0) && (rid1->season == rid2->season);
+               ret = EQ_SEASON(rid1,rid2);
+                break;
             case TV_VIEW:
-                return STRCMP(rid1->file,rid2->file) ==0 && STRCMP(rid1->db->source,rid2->db->source) == 0;
+               ret = EQ_FILE(rid1,rid2);
+                break;
             default:
                 assert(0);
+                break;
         }
-    } else if (rid1->category == 'M' ) {
+    } else if (((DbRowId*)rid1)->category == 'M' ) {
         switch(mode) {
             case MENU_VIEW:
             case MOVIEBOXSET_VIEW:
             case MOVIE_VIEW:
-                return STRCMP(rid1->file,rid2->file) ==0 && STRCMP(rid1->db->source,rid2->db->source) == 0;
+               ret = EQ_FILE(rid1,rid2);
+                break;
             default:
                 assert(0);
-    }
-
-
-
-}
-unsigned int db_overview_general_hashf(void *rid) {
-}
-
-// overview equality function based on titles and season only. This is used in non-boxset mode.
-int db_overview_name_season_eqf(DbRowId *rid1,DbRowId *rid2) {
-
-    if (rid1->category != rid2->category) {
-        return 0;
-    } else if (rid1->category == 'T' ) {
-       if (STRCMP(rid1->title,rid2->title) != 0) {
-          return 0;
-       } else {
-          return (rid1->season == rid2->season);
-       }
+                break;
+        } 
     } else {
-        //films are equal only if source and file are equal
-        return STRCMP(rid1->file,rid2->file)==0 && STRCMP(rid1->db->source,rid2->db->source) ==0 ;
+           ret = EQ_FILE(rid1,rid2);
     }
-}
-// overview hash function based on titles and season only. This is used in non-boxset mode.
-unsigned int db_overview_name_season_hashf(void *rid) {
-    unsigned int h;
-    h  = stringhash(((DbRowId *)rid)->title);
-    if (((DbRowId *)rid)->category == 'T') {
-        // tv shows Unique per title/season/category
-        h = ( h << 5 ) + h + ((DbRowId *)rid)->season;
-    }
-    return h;
-}
-// overview equality function based on titles and season only. This is used in non-boxset mode.
-int db_overview_name_season_episode_eqf(DbRowId *rid1,DbRowId *rid2) {
+    return ret;
 
-    if (rid1->category != rid2->category) {
-        return 0;
-    } else if (rid1->category == 'T' ) {
-       if (STRCMP(rid1->title,rid2->title) != 0) {
-          return 0;
-       } else if ( rid1->season != rid2->season ) {
-           return 0 ;
-       } else {
-          return STRCMP(rid1->episode,rid2->episode) ==0;
-       }
-    } else {
-        return STRCMP(rid1->title,rid2->title) ==0;
-    }
 }
-// overview hash function based on titles and season only. This is used in non-boxset mode.
-unsigned int db_overview_name_season_episode_hashf(void *rid) {
-    unsigned int h;
-    h  = stringhash(((DbRowId *)rid)->title);
-    if (((DbRowId *)rid)->category == 'T') {
-        // tv shows Unique per title/season/category
-        h = ( h << 5 ) + h + ((DbRowId *)rid)->season;
-        h = ( h << 5 ) + h + stringhash(((DbRowId *)rid)->episode);
-    }
-    return h;
-}
-// overview equality function based on file path only. This is used in non-boxset mode.
-int db_overview_file_path_eqf(DbRowId *rid1,DbRowId *rid2) {
+unsigned int db_overview_general_hashf(void *rid)
+{
+    static int tvbox=-1;
+    static int moviebox=-1;
+    static int mode=-1;
+    int h=0;
 
-    return STRCMP(rid1->file,rid2->file) ==0 && STRCMP(rid1->db->source,rid2->db->source) == 0;
-}
-// overview hash function based on file path . This is used in non-boxset mode.
-unsigned int db_overview_file_path_hashf(void *rid) {
-    unsigned int h;
-    h  = stringhash(((DbRowId *)rid)->file);
+    if (tvbox == -1) {
+        tvbox = use_tv_boxsets();
+        moviebox = use_movie_boxsets();
+        mode = get_view_mode();
+    }
+    switch(((DbRowId *)rid)->category) {
+        case 'T':
+        switch(mode) {
+            case MENU_VIEW:
+                if (tvbox) {
+                    h  = stringhash(((DbRowId *)rid)->title);
+                    HASH_ADD(h,((DbRowId *)rid)->year);
+                } else {
+                    h  = stringhash(((DbRowId *)rid)->title);
+                    HASH_ADD(h,((DbRowId *)rid)->year);
+                    HASH_ADD(h,((DbRowId *)rid)->season);
+                }
+                break;
+            case TVBOXSET_VIEW:
+                h  = stringhash(((DbRowId *)rid)->title);
+                HASH_ADD(h,((DbRowId *)rid)->year);
+                HASH_ADD(h,((DbRowId *)rid)->season);
+                break;
+            case TV_VIEW:
+                h  = stringhash(((DbRowId *)rid)->file);
+                break;
+            default:
+                assert(0);
+        } 
+        break;
+    case 'M':
+        switch(mode) {
+            case MENU_VIEW:
+            case MOVIEBOXSET_VIEW:
+            case MOVIE_VIEW:
+                h  = stringhash(((DbRowId *)rid)->file);
+                break;
+            default:
+                assert(0);
+        } 
+        break;
+    default:
+        h  = stringhash(((DbRowId *)rid)->file);
+    }
     return h;
+
 }
 
 void overview_dump(int level,char *label,struct hashtable *overview) {
@@ -258,8 +268,6 @@ struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     int total=0;
     struct hashtable *overview = NULL;
 
-    char *view=query_val(QUERY_PARAM_VIEW);
-
 TRACE;
    
     /*
@@ -277,44 +285,8 @@ TRACE;
      * might have the same name. (esp movies with one word titles - eg Venom)
      */
     //TODO we need to find a generic image for the box set!
-//int (*eq_fn)(DbRowId *rid1,DbRowId *rid2);
-//unsigned int (*hash_fn)(void *rid);
-    void *eq_fn;
-    void *hash_fn;
 
-    if (STRCMP(view,VIEW_TV) == 0 || STRCMP(view,VIEW_MOVIE) == 0) {
-TRACE;
-
-        //At this level equality is based on file name. 
-        //This means that duplicate episodes appear twice - which is what we want
-        hash_fn = db_overview_file_path_hashf;
-        eq_fn = db_overview_file_path_eqf;
-        //hash_fn = db_overview_name_season_episode_hashf;
-        //eq_fn = db_overview_name_season_episode_eqf;
-
-    } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
-        
-        // BoxSet equality function equates tv shows by name/season
-        // if view=tv or file doesnt matter as we have already filtered down past this level
-        // but if view = boxset then it matters
-        hash_fn = db_overview_name_season_hashf;
-        eq_fn = db_overview_name_season_eqf;
-
-    } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
-
-        // Each individual movie is relevant
-        hash_fn = db_overview_file_path_hashf;
-        eq_fn = db_overview_file_path_eqf;
-
-    } else {
-        // Main menu - this will equate items depending on the box set settings.
-        hash_fn = db_overview_general_hashf;
-        eq_fn = db_overview_general_eqf;
-    }
-TRACE;
-
-    //tv Items with the same title/season are the same
-    overview = create_hashtable(100,hash_fn,eq_fn);
+    overview = create_hashtable(100,db_overview_general_hashf,db_overview_general_eqf);
 TRACE;
 
     int rowset_count=0;

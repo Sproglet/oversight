@@ -3370,7 +3370,8 @@ char *get_tvid_links() {
     return result;
 }
 
-long use_tv_boxsets() {
+long use_tv_boxsets()
+{
     static long tv_boxsets = -1;
     if(tv_boxsets == -1) {
         if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&tv_boxsets)) {
@@ -3379,7 +3380,8 @@ long use_tv_boxsets() {
     }
     return tv_boxsets;
 }
-long use_movie_boxsets() {
+long use_movie_boxsets()
+{
     static long movie_boxsets = -1;
     if(movie_boxsets == -1) {
         if (!config_check_long(g_oversight_config,"ovs_movieboxsets",&movie_boxsets)) {

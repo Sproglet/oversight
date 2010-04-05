@@ -40,6 +40,7 @@ int is_empty_dir(char *dname)
     return result;
 }
 
+
 // String hashfunction - used by string_string_hashtable()
 // http://www.cse.yorku.ca/~oz/hash.html
 unsigned int stringhash(void *vptr) {
@@ -55,13 +56,9 @@ unsigned int stringhash(void *vptr) {
         hash = 5381;
         
         while ((c = *str++)) {
-            /*Berstein*/
-            //hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-            /*LUA*/
-            //hash ^= ((hash << 5) + (hash >> 2)) + c; 
             
             /* Case insensitive LUA */
-            hash ^= ((hash << 5) + (hash >> 2)) + (c | 32); 
+            HASH_ADD(hash,c);
         }
     }
 

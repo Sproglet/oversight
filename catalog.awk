@@ -201,7 +201,7 @@ BEGIN {
     g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
 
     g_year_re="(20[01][0-9]|19[5-9][0-9])";
-    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& ']* \\(?"g_year_re"\\)?";
+    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]* \\(?"g_year_re"\\)?";
 
     ELAPSED_TIME=systime();
     UPDATE_TV=1;
@@ -3054,8 +3054,11 @@ imdb_title_q,imdb_id_q) {
 
 
     # Build hash of name->order
-    if (match(name,"\\(?"g_year_re"\\)?")) {
-        name_list[++name_id] = substr(name,1,RSTART+RLENGTH-1);
+    if (match(name,g_imdb_regex)) {
+        name_list[++name_id] = substr(name,RSTART,RLENGTH);
+    }
+    if (match(name,g_imdb_title_re))  {
+        name_list[++name_id] = substr(name,RSTART,RLENGTH);
     }
 
     name_list[++name_id] = name;

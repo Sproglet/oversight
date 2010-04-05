@@ -49,11 +49,11 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define VIEW_TVBOXSET "tvboxset"
 #define VIEW_MOVIEBOXSET "movieboxset"
 #define VIEW_MIXED "mixed"
-#define MENU_VIEW=1
-#define TV_VIEW=2
-#define MOVIE_VIEW=3
-#define TVBOXSET_VIEW=10
-#define MOVIEBOXSET_VIEW=11
+#define MENU_VIEW 1
+#define TV_VIEW 2
+#define MOVIE_VIEW 3
+#define TVBOXSET_VIEW 10
+#define MOVIEBOXSET_VIEW 11
 
 #define QUERY_PARAM_VIEW "view"
 #define QUERY_PARAM_SELECTED "i"

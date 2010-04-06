@@ -824,6 +824,17 @@ char *util_basename(char *file)
     return s;
 }
 
+// result must be freed
+char *util_basename_no_ext(char *file) 
+{
+    char *b = util_basename(file);
+    char *e = strrchr(b,'.');
+    if (e != NULL) {
+        *e = '\0';
+    }
+    return b;
+}
+
 int is_nmt200()
 {
     static int check=1;

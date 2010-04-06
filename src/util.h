@@ -79,6 +79,7 @@ char *unpak_val(char *name);
 void query_update(char *name,char *new);
 void query_remove(char *name);
 char *util_basename(char *file);
+char *util_basename_no_ext(char *file) ;
 int util_starts_with(char *a,char *b);
 void util_regcomp(regex_t *re,char *pattern,int flags);
 int util_rename(char *old,char *new);

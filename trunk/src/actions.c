@@ -157,6 +157,28 @@ void delete_media(DbRowId *rid,int delete_related) {
     //Delete the following files at the end if not used.
     delete_queue_add(rid,rid->nfo);
 
+    // Delete all files with the same prefix.
+    struct dirent *dp;
+    char *prefix = util_basename_no_ext(rid->file);
+    DIR *d = opendir(dir);
+    if (d != NULL) {
+        while((dp = readdir(d)) != NULL) {
+            if (util_starts_with(dp->d_name,prefix)) {
+
+                if ( util_strreg(dp->d_name+strlen(prefix),"^\\.(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
+                    array_add(names_to_delete,STRDUP(dp->d_name));
+
+                } else if ( util_strreg(dp->d_name+strlen(prefix),"^\\.[a-z]+\\.(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
+                    // Also delete files with language tags before the extension
+                    array_add(names_to_delete,STRDUP(dp->d_name));
+                }
+            }
+        }
+        closedir(d);
+    }
+    FREE(prefix);
+
+
     if(names_to_delete && names_to_delete->size) {
        int i=0;
        for(i= 0 ; i<names_to_delete->size ; i++) {

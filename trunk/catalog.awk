@@ -4600,7 +4600,7 @@ function embedded_lc_regex(s) {
 # The contraction is allowed to match from the beginning of the title to the
 # end of any whole word. eg greys = greys anatomy 
 function abbrevContraction(abbrev,possible_title,\
-found,regex,initials,initial_regex) {
+found,regex,initials,initial_regex,part) {
 
 
     # Use regular expressions to do the heavy lifting.
@@ -4614,9 +4614,11 @@ found,regex,initials,initial_regex) {
     #DEBUG("abbrev:["abbrev"] ["regex"] ["possible_title"] = "found);
 
     if (found) {
-        # Note this can be made more specific as a contraction will usually include the initials.
-        if (abbrev !~ embedded_lc_regex(get_initials(significant_words(possible_title))) ) {
-            INF(possible_title " rejected for abbrev ["abbrev"]. doesnt contain initials.");
+        #  contraction will usually contain the initials of the part of the pattern that it matched.
+        part=substr(possible_title,RSTART,RLENGTH);
+        # 
+        if (abbrev !~ embedded_lc_regex(get_initials(significant_words(part))) ) {
+            INF("["possible_title "] rejected. Abbrev ["abbrev"]. doesnt contain initials of ["part"].");
             found = 0;
         }
     }

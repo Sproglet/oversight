@@ -165,12 +165,10 @@ void delete_media(DbRowId *rid,int delete_related) {
         while((dp = readdir(d)) != NULL) {
             if (util_starts_with(dp->d_name,prefix)) {
 
-                if ( util_strreg(dp->d_name+strlen(prefix),"^\\.(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
+                // regex also allows for language tags before the extension
+                if ( util_strreg(dp->d_name+strlen(prefix),"^\\.(|[a-z]+\\.)(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
                     array_add(names_to_delete,STRDUP(dp->d_name));
 
-                } else if ( util_strreg(dp->d_name+strlen(prefix),"^\\.[a-z]+\\.(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
-                    // Also delete files with language tags before the extension
-                    array_add(names_to_delete,STRDUP(dp->d_name));
                 }
             }
         }

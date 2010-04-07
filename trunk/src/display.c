@@ -220,7 +220,7 @@ char *self_url(char *new_params) {
         int free_param;
         char *value = url_encode_static(pval[i],&free_param);
 
-        HTML_LOG(0,"encoded[%s]",value);
+        HTML_LOG(1,"encoded[%s]",value);
         tmp += sprintf(tmp,"%c%s=%s",(i==0?'?':'&'),pname[i],value);
 
         if (free_param) {
@@ -232,7 +232,7 @@ char *self_url(char *new_params) {
     tmp = remove_blank_params(new);
     FREE(new);
     new = tmp;
-    HTML_LOG(0,"encoded final[%s]",new);
+    HTML_LOG(1,"encoded final[%s]",new);
 
     return new;
 }
@@ -2844,8 +2844,8 @@ int delisted(DbRowId *rowid)
         FREE(ancestor_dir);
     }
 
-    HTML_LOG(0,"delisted [%s] = %d",path,result);
-    //HTML_LOG(1-result,"delisted [%s] = %d",path,result);
+    //HTML_LOG(0,"delisted [%s] = %d",path,result);
+    HTML_LOG(1-result,"delisted [%s] = %d",path,result);
 
     if (freepath) FREE(path);
     return result;
@@ -3000,7 +3000,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
 
-        HTML_LOG(0,"grid row %d",r);
+        HTML_LOG(1,"grid row %d",r);
         ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
 
         Array *cellArray = array_new(free);
@@ -3034,7 +3034,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
         array_add(cellArray,STRDUP("</tr>\n"));
         array_add(rowArray,cellArray);
-        HTML_LOG(0,"grid end row %d",r);
+        HTML_LOG(1,"grid end row %d",r);
 
     }
     //

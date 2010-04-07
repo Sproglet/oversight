@@ -94,10 +94,18 @@ char *dbreader_advance_line(ReadBuf *b,char *pos)
         char *end = b->data_end;
 
         //HTML_LOG(0,"pre advance [%.20s] ",next);
-        while (*next && !EOL(*next) && next < end ) next++;
+        while (*next && !EOL(*next) ) next++;
         //HTML_LOG(0,"pre advance to eol [%.20s] ",next);
-        while (*next && EOL(*next)  && next < end ) next++;
+        while (*next && EOL(*next) ) next++;
         //HTML_LOG(0,"post advance past eol [%.20s] ",next);
+        //
+
+        // This is a lazy check. We should really check we are not overunning the 
+        // buffer in the above while loops, but that would mean that MAX_LINE is
+        // not big enough and the buffer holds a partial line (ie no \n nor \r )
+        // This is a rare case, so for performance only (rather than correctness)
+        // we check we have not overrun the buffer at the end.
+        if (next > end) next = end;
 
         b->data_start = next;
 

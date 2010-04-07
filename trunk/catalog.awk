@@ -115,7 +115,7 @@ i,n,v,option) {
 
                 if (n ~ "movie_search") DEBUG("index check "n"="index(n,"catalog_movie_search")); #TODO remove
 
-                if (index(n,"catalog_movie_search") != 0 || n == "catalog_format_tags" ) {
+                if (index(n,"catalog_movie_search") || n == "catalog_format_tags" || n == "catalog_format_tags" ) {
 
                     INF("Ignoring user setings for "n);
 
@@ -1448,7 +1448,7 @@ match1,submatch) {
 # Input "matches" hash of raw titles and counts
 # Output "normed" hash of normalised titles and counts
 function normalise_title_matches(matches,normed,\
-t,t2) {
+t,t2,y) {
 
     delete normed;
     for(t in matches) {
@@ -1457,12 +1457,22 @@ t,t2) {
         gsub(/  +/," ",t2);
         t2 = capitalise(trim(t2));
 
-        INF("["t"]=>["t2"]");
 
         #Ignore anything that looks like a date.
         if (t2 !~ "(©|Gmt|Pdt|("g_months_short"|"g_months_long")(| [0-9][0-9])) "g_year_re"$" ) {
             #or a sentence blah blah blah In 2003
             if (t2 !~ "[A-Z][a-z]* [A-Z][a-z]* [A-Z][a-z]* (In|Of) "g_year_re"$" ) {
+
+                # remove tags from "movie name DVD 2009" etc.
+                if (match(t2," \\(?"g_year_re"\\)?$")) {
+                    y = substr(t2,RSTART);
+                    t2 = substr(t2,1,RSTART-1);
+                }
+                t2 = remove_format_tags(t2) y;
+
+                INF("["t"]=>["t2"]");
+
+
                 normed[t2] += matches[t];
             }
         }
@@ -1757,11 +1767,29 @@ function textToSearchKeywords(f,heuristic\
     return f;
 }
 
+
+# remove all text after a format tag. eg "blah blah dvdrip blah2" => "blah blah"
+# but if the first word matches a format tag then that word is removed.
+# eg. "dvdrip blah 720p blah2" => "blah"
 function remove_format_tags(text,\
-t) {
-    if ((t = match(tolower(text),g_settings["catalog_format_tags"])) > 0) {
+                            tags) {
+
+
+    tags = g_settings["catalog_format_tags"];
+
+    # Remove format tags at the beginning
+    while (match(tolower(text),"^"tags)) {
+        # Remove the whole whole (the format tag may only be a partial word match)
+        DEBUG("format tag prefix ["text"]");
+        sub(/^[a-zA-Z0-9]+[^a-zA-Z0-9]*/,"",text);
+        DEBUG("format tag prefix ["text"]");
+    }
+
+    # Remove all trailing tags and any other text.
+    if (match(tolower(text),tags)) {
         text = substr(text,1,RSTART-1);
     }
+
     #remove trailing punctuation
     return trimAll(text);
 }
@@ -3105,7 +3133,7 @@ imdb_title_q,imdb_id_q) {
 
                 name_try = name_list[n];
 
-                if (!(name_try in name_seen)) {
+                if (!(name_try in name_seen) && name_try != "") {
 
                     name_seen[name_try]=n;
 

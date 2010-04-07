@@ -3982,15 +3982,15 @@ f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,fi
                 count ++;
 
                 add=1;
-                for( i in requiredTagNames ) {
-                    if (! ( seriesPath"/"requiredTagNames[i] in info ) ) {
-                        dump(0,"info",info);
-                        DEBUG("["currentName"] rejected due to missing "requiredTagNames[i]" tag");
-                        add=0;
-                        filter_count++;
-                        break;
-                    }
-                }
+#                for( i in requiredTagNames ) {
+#                    if (! ( seriesPath"/"requiredTagNames[i] in info ) ) {
+#                        dump(0,"info",info);
+#                        DEBUG("["currentName"] rejected due to missing "requiredTagNames[i]" tag");
+#                        add=0;
+#                        filter_count++;
+#                        break;
+#                    }
+#                }
 
                 if (add) {
                     allTitles[currentId] = currentName;

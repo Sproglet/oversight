@@ -9,11 +9,13 @@ typedef struct ReadBufStruct {
     char *buf_end;
     int buf_size;
     int max_line;
-    int eof;
+    int eof_internal;
+    int eof_client;
 } ReadBuf;
 
 
 ReadBuf *dbreader_open(char *name);
 void dbreader_close(ReadBuf *b);
-int dbreader_advance(char *position,ReadBuf *buf);
+void dbreader_set_position(ReadBuf *b,char *pos);
+char *dbreader_advance_line(ReadBuf *b,char *pos);
 #endif

@@ -189,11 +189,11 @@ BEGIN {
     g_alnum8 = "a-zA-Z0-9" g_8bit;
 
     # Remove any punctuation except quotes () [] {} - also keep high bit
-    g_punc[0]="[^][}{&()'" g_alnum8 "]+";
+    g_punc[0]="[^-][}{&()'" g_alnum8 "]+";
     # Remove any punctuation except quotes () - also keep high bit
-    g_punc[1]="[^&()'"g_alnum8"]+";
+    g_punc[1]="[^-&()'"g_alnum8"]+";
     # Remove any punctuation except quotes () - also keep high bit
-    g_punc[2]="[^&'"g_alnum8"]+";
+    g_punc[2]="[^-&'"g_alnum8"]+";
 
     g_nonquote_regex = "[^\"']";
 

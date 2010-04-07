@@ -13,6 +13,7 @@
 #include <ctype.h>
 
 #include "db.h"
+#include "dbread.h"
 #include "dbplot.h"
 #include "actions.h"
 #include "dbfield.h"
@@ -727,6 +728,7 @@ void write_row(FILE *fp,DbRowId *rid) {
     fflush(fp);
 }
 
+#define EOL(c)  ((c) == '\n' ) ||  (c) == '\r') 
 #define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
 
 // There are two functions to read the db - this one and parse_row()
@@ -744,7 +746,8 @@ DbRowId *read_and_parse_row(
         FILE *fp,
         int *eof,
         int tv_or_movie_view // true if looking at tv or moview view.
-        ) {
+        )
+{
 
     db_rowid_init(rowid,db);
 
@@ -834,13 +837,142 @@ DbRowId *read_and_parse_row(
                 }
 
                 // Seek to next name
-                while (*next != '_' && *next && TERM(*next) && next < row_end) {
+                while (*next != '_' && *next && TERM(*next) && next < row_end) { // ?? TERM
                     next++;
                 }
 
             } while (*next == '_');
         }
     }
+
+//    if (rowid->genre == NULL) {
+//        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
+//    }
+    if (use_folder_titles) {
+
+        set_title_as_folder(rowid);
+    }
+
+    return rowid;
+}
+DbRowId *dbread_and_parse_row(
+        DbRowId *rowid,
+        Db *db,
+        ReadBuf *fp,
+        int *eof,
+        int tv_or_movie_view // true if looking at tv or moview view.
+        )
+{
+
+    db_rowid_init(rowid,db);
+
+
+    char * next;
+
+    char *name,*name_end;
+    char *value,*value_end;
+
+
+    *eof = 0;
+
+    next = fp->data_start;
+
+    //HTML_LOG(0,"dbline start[%.20s]",next);
+    
+    // Skip comment lines
+    while(next && *next == '#') {
+        next = dbreader_advance_line(fp,next);
+    }
+    //HTML_LOG(0,"dbline starting[%.20s]",next);
+
+    if (next == NULL) {
+        *eof = 1;
+        return NULL;
+    }
+
+    // Here we assume the buffer will hold a complete line so it MUST have \r\n or \0
+    // search for first tab
+    while(*next && TERM(*next) && *next != '\t' ) next++;
+
+
+    //HTML_LOG(0,"dbline start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+    if (*next == '\t' ) {
+
+        //HTML_LOG(0,"dbline start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+        next++;
+
+        if ( *next == '_' ) {
+
+        // Loop starts at first character after _
+            do {
+                //HTML_LOG(0,"dbline name loop start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+
+                name = name_end =  next;
+                while(!TERM(*next)) {
+                    next ++;
+                }
+                name_end = next;
+
+                //HTML_LOG(0,"parse name=[%.*s]",name_end-name,name);
+                //HTML_LOG(0,"dbline val? start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+
+                if (*next == '\t') {
+                    // "<tab> Name <tab>" expect value
+                    value = value_end = ++next;
+
+                    for(;;) {
+                        // Read until we hit a TERM
+                        while(!TERM(*next) ) {
+                            next++;
+                        }
+                        value_end = next;
+                        // "<tab> Name <tab>" value ? expect value
+                        //
+                        // If Term is a tab and NOT followed by _ then keep it as part of the value.
+                        // otherwise stop
+                        if (*next != '\t' ) {
+                            // If term is not tab - end of line - break
+                            break;
+                        } else if ( next[1] == '_' ) {
+                            // <TAB>_ : break and read next name
+                            break;
+                        } else if ( TERM(next[1])) {
+                            // <TAB><TERM> break - EOL
+                            break;
+                        } else {
+                            next++;
+                        }
+                    }
+                    //HTML_LOG(0,"parse value=[%.*s]",value_end-value,value);
+
+
+                    if (*name && *value) {
+                        char ntmp,vtmp;
+                        ntmp = *name_end;
+                        vtmp = *value_end;
+                        *value_end = *name_end = '\0';
+                        db_rowid_set_field(rowid,name,value,value_end-value,tv_or_movie_view);
+                        *name_end = ntmp;
+                        *value_end = vtmp;
+
+                    }
+                }
+                //HTML_LOG(0,"dbline pre seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+
+                // Seek to next name
+                while (*next == '\t' ) { 
+                    next++;
+                } 
+                //HTML_LOG(0,"dbline post seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+
+            } while (*next == '_');
+        }
+    }
+    //HTML_LOG(0,"dbline ending %d[%.20s]",*next,next);
+
+    // Skip EOL characters,
+    dbreader_advance_line(fp,next);
+    //HTML_LOG(0,"dbline finished at [%.20s]",fp->data_start);
 
 //    if (rowid->genre == NULL) {
 //        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
@@ -1405,10 +1537,18 @@ DbRowSet * db_scan_titles(
     }
     HTML_LOG(0,"db scanning %s",path);
 
+#define DBREAD
+#ifdef DBREAD
+    ReadBuf *fp = dbreader_open(path);
+#else
     FILE *fp = fopen(path,"r");
+#endif
+
     if (fp) {
 #define FILE_IO_BUF_SIZ 65536
+#ifndef DBREAD
         setvbuf(fp,NULL,_IOFBF,FILE_IO_BUF_SIZ);
+#endif
 
         rowset=db_rowset(db);
 
@@ -1427,7 +1567,11 @@ DbRowSet * db_scan_titles(
 
         while (eof == 0) {
             total_rows++;
+#ifdef DBREAD
+            dbread_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
+#else
             read_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
+#endif
 
             if (rowid.file) {
 
@@ -1563,7 +1707,11 @@ TRACE;
         */
 
         HTML_LOG(0,"total rows %d",total_rows);
+#ifdef DBREAD
+        dbreader_close(fp);
+#else
         fclose(fp);
+#endif
     }
     if (path != db->path) FREE(path);
     if (rowset) {

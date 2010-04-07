@@ -5,16 +5,16 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include "gaya_cgi.h"
 #include "dbread.h"
 #include "util.h"
 
 // present a line at a time (like fgets) but avoid inspecting each line.
-#define BUF_SIZE 65536
+#define BUF_SIZE (4*65536)
 #define MAX_LINE 10000
 
-
-
-static char *buf = NULL;
+void read_data(ReadBuf *b);
+void move_and_read(ReadBuf *b);
 
 // Provide a faster way of reading index.db. Instead of fgets()...
 // Because fgets is NOT used, each line is NOT terminated by 'nul'
@@ -28,17 +28,27 @@ ReadBuf *dbreader_open(char *name)
 {
     assert(BUF_SIZE > 2 * MAX_LINE);
 
-    ReadBuf *b;
+    ReadBuf *b=NULL;
+    int fd;
    
-    b = MALLOC(sizeof(struct ReadBufStruct));
-    b->fd = open(name,O_RDONLY);
-    b->buf = MALLOC(BUF_SIZE);
-    b->buf_size = BUF_SIZE;
-    b->buf_end = b->buf + b->buf_size;
+    fd = open(name,O_RDONLY);
+    if (fd != -1) {
+        b = MALLOC(sizeof(struct ReadBufStruct));
+        b->fd = fd;
+        b->buf = MALLOC(BUF_SIZE+1);
+        b->buf_size = BUF_SIZE;
+        b->buf_end = b->buf + b->buf_size;
 
-    b->data_start = b->data_end = b->buf;
+        b->data_start = b->data_end = b->buf;
 
-    b->eof = 0;
+        // Flag End of Data.
+        b->data_start[0] = '\0';
+
+        b->eof_internal = 0;
+        b->eof_client = 0;
+
+        read_data(b);
+    }
     return b;
 }
 
@@ -74,29 +84,74 @@ void dbreader_close(ReadBuf *b)
  * dbreader_close(buf);
  *
  */
-int dbreader_advance(char *position,ReadBuf *b)
+#define EOL(c)  ((c) == '\n'  ||  (c) == '\r') 
+char *dbreader_advance_line(ReadBuf *b,char *pos)
 {
-    static char *buf_end;
-    assert(b == NULL);
 
-    if (b->data_start >= b->data_end ) {
-        if (b->eof) {
-            b->data_end = b->data_start = NULL;
-        } else {
-            if ((buf_end - b->data_end ) < MAX_LINE) {
-                // move current data to start of buffer.
-                memcpy(b->data_start,b->buf,b->data_end-b->data_start);
-                b->data_end += ( b->buf - b->data_start);
-                b->data_start = b->buf;
+    if (!b->eof_client)  {
+
+        char *next = pos;
+        char *end = b->data_end;
+
+        //HTML_LOG(0,"pre advance [%.20s] ",next);
+        while (*next && !EOL(*next) && next < end ) next++;
+        //HTML_LOG(0,"pre advance to eol [%.20s] ",next);
+        while (*next && EOL(*next)  && next < end ) next++;
+        //HTML_LOG(0,"post advance past eol [%.20s] ",next);
+
+        b->data_start = next;
+
+        move_and_read(b);
+
+        if (b->eof_internal) {
+            if (b->data_start[0] == '\0' || b->data_start >= b->data_end ) {
+                b->eof_client = 1;
+                b->data_start = NULL;
             }
-            // read in as much data as possible.
-            int remain = b->buf_end - b->data_end;
-            int bytes = read(b->fd,b->data_end,remain);
-            if (bytes < remain) {
-                b->eof = 1;
-            }
-            b->data_end += bytes;
+        }
+
+    }
+
+    return b->data_start;
+}
+void dbreader_set_position(ReadBuf *b,char *pos)
+{
+    b->data_start = pos;
+}
+
+void move_and_read(ReadBuf *b) {
+    // move current data to start of buffer.
+    if (!b->eof_client) {
+        if (b->buf_end - b->data_start < MAX_LINE) {
+            int data_size = b->data_end - b->data_start;
+            memcpy(b->buf,b->data_start,data_size);
+            HTML_LOG(0,"moved %d bytes",data_size);
+            b->data_end = b->buf + data_size;
+            b->data_end[0] = '\0';
+            b->data_start = b->buf;
+            read_data(b);
         }
     }
-    return b->data_start;
+}
+
+void read_data(ReadBuf *b)
+{
+    // read in as much data as possible.
+
+    if (!b->eof_internal) {
+
+        int buf_remain = b->buf_end - b->data_end;
+
+        int bytes = read(b->fd,b->data_end,buf_remain);
+
+        HTML_LOG(0,"read %d of %d bytes",bytes,buf_remain);
+
+        if (bytes < buf_remain) {
+            HTML_LOG(0,"eof0 ");
+            b->eof_internal = 1;
+        }
+        b->data_end += bytes;
+        // nul = end of read data NOT EOL
+        b->data_end[0] = '\0';
+    }
 }

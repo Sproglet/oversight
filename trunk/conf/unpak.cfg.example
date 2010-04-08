@@ -201,5 +201,11 @@ unpak_delete_files="*.nzb|*.sfv|*.srr|*.url|*.damaged|_brokenlog.txt|*.par2|*.qu
 #If set then a fake null keypress is sent to temporarily disable screensaver during processing.
 unpak_nmt_disable_screensaver=1
 
+#When a file is unpacked it usually has the timestamp of the file before it was archived and uploaded.
+#this time often has no real use. It is not necessarily the publication date, nor is it the download
+#date. (which is useful for identifying new content). This option , changes the file date to be the 
+#downloaded date.
+unpak_touch_files=1
+
 #---------------------------------------------------------------------------
 unpak_settings_version=1 #Dont change this

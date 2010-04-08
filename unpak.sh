@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # $Id$ 
 
 nzb_launch_dir="$OLDPWD"
@@ -528,7 +528,8 @@ par_repair_all() {
             #TODO This may fail occasionally with accidental substring matches. But its quick and easy
             INFO "Finding PARS for $rarPart"
             while IFS= read p ; do
-                if [ -f "$p" ] && fgrep -l "$rarPart." "$p" > /dev/null ; then
+                name_re="`echo "$rarPart." | re_escape`(part|rar|r[0-9][0-9])"
+                if [ -f "$p" ] && egrep -il "$name_re" "$p" > /dev/null ; then
                     if par_repair "$p" ; then
                         set_rar_state "$rarPart" REPAIRED
                     fi
@@ -1615,6 +1616,11 @@ move_rar_contents() {
     #INFO "Move rar contents into $1 = $(pwd)"
     if [ -d "$unrar_tmp_dir" ]; then 
         DEBUG "Moving rar contents up from [$PWD/$unrar_tmp_dir]"
+
+        if [ "$unpak_touch_files" -eq 1 ] ; then
+            touch "$unrar_tmp_dir"/* || true
+        fi
+
         ( cd "$unrar_tmp_dir"; move_rar_contents "../$1" )
         #Copy directory up. 
         #

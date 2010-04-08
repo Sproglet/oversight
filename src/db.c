@@ -552,6 +552,23 @@ static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int va
     }
 }
 
+
+
+OVS_TIME *timestamp_ptr(DbRowId *rowid)
+{
+    static int age_field_scantime = -1;
+    if (age_field_scantime== -1) {
+       age_field_scantime = (STRCMP(oversight_val("ovs_age_field"),"scantime") == 0);
+    }
+    if (age_field_scantime) {
+        return &(rowid->date);
+    } else {
+        return &(rowid->filetime);
+    }
+}
+
+
+
 void fix_file_path(DbRowId *rowid)
 {
     // Append Network share path

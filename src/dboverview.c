@@ -37,7 +37,8 @@ int numSTRCMP(char *a,char *b) {
 // This function is inverted to usual sense as we wnat the oldest first.
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2) {
-    return (*rid2)->date - (*rid1)->date;
+    //return (*rid2)->date - (*rid1)->date;
+    return *timestamp_ptr(*rid2)- *timestamp_ptr(*rid1);
 }
 
 
@@ -320,14 +321,9 @@ TRACE;
                     HTML_LOG(1,"overview: match [%s] with [%s]",rid->title,match->title);
 
                     //Move most recent age to the first overview item
-                    if (rid->date > match->date ) {
-                        match->date = rid->date;
+                    if (*timestamp_ptr(rid) > *timestamp_ptr(match) ) {
+                        *timestamp_ptr(match) = *timestamp_ptr(rid);
                     }
-//DELETE
-//DELETE                    //*If item is unwatched then set overview as unwatched.
-//DELETE                    if (rid->watched == 0 ) {
-//DELETE                       match->watched = 0;
-//DELETE                    }
 
                     // Add rid to linked list at match->linked
                     rid->linked = match->linked;

@@ -68,9 +68,11 @@ typedef struct Dbrowid_struct {
     long plotoffset[2];
     char *plottext[2];
 
+
 } DbRowId;
 
 void db_rowid_dump(DbRowId *rid);
+OVS_TIME *timestamp_ptr(DbRowId *rowid);
 
 #define DB_MEDIA_TYPE_TV 1
 #define DB_MEDIA_TYPE_FILM 2
@@ -141,6 +143,7 @@ char *db_get_field(char *fieldid);
 void dump_row(char *prefix,DbRowId *rid);
 void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows);
 void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[]);
+OVS_TIME get_newest_linked_timestamp(DbRowId *rowid);
 void fix_file_paths(int num_row,DbRowId **rows);
 char *get_crossview_local_copy(char *path,char *label);
 char *expand_genre(char *genre_keys);

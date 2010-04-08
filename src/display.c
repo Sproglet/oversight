@@ -1285,6 +1285,7 @@ int is_watched(DbRowId *rowid) {
 }
 
 
+
 int is_fresh(DbRowId *rowid) {
     int result=0;
     static long fresh_time = -1;
@@ -1302,12 +1303,7 @@ int is_fresh(DbRowId *rowid) {
 
     // Item is marked fresh if any row is fresh
     if (fresh_time > 0) {
-        for( ; rowid ; rowid = rowid -> linked ) {
-            if (internal_time2epoc(rowid->date) > fresh_time) {
-                result=1;
-                break;
-            }
-        }
+        result = (internal_time2epoc(*timestamp_ptr(rowid)) > fresh_time);
     }
     return result;
 }
@@ -2881,12 +2877,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 int watched,unwatched;
                 get_watched_counts(rid,&watched,&unwatched);
 
-                {
-                    char *d;
-                    d=db_rowid_get_field(rid,DB_FLDID_INDEXTIME);
-                    //HTML_LOG(0,"xx %s age = %x = %s",rid->title,rid->date,d);
-                    FREE(d);
-                }
+                HTML_LOG(0,"xx %s age = %x ",rid->title,*timestamp_ptr(rid));
 
                 char *title = get_simple_title(rid,NULL);
                 if (rid->category == 'T' ) {

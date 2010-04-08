@@ -991,7 +991,7 @@ DbRowId *db_rowid_init(DbRowId *rowid,Db *db) {
     rowid->rating=0;
 
     rowid->db = db;
-    rowid->season = -1;
+    rowid->season = 1;
     rowid->category='?';
     for(i = 0 ; i < PLOT_TYPE_COUNT ; i++ ) {
         rowid->plotoffset[i] = PLOT_POSITION_UNSET;

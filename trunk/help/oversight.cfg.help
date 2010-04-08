@@ -5,6 +5,7 @@ ovs_show_episode_titles:Display Episode Titles (select Home Icon after changing)
 ovs_show_episode_dates:Display Episode Dates (select Home Icon after changing)|No|Yes=>_ed=1
 ovs_show_repack:Identify Repacks and Propers (select Home Icon after changing)|1|0
 ovs_sort_order:Default Sort Order (select Home Icon after changing)|Age|Name=>s=_T
+ovs_age_field:Field to use for age|scantime|filetime
 ovs_tvboxsets:Use boxsets|1|0
 ovs_default_view:Default Media View (select Home Icon after changing)|All|Movies=>_tf=M|Tv=>_tf=T
 ovs_crossview:Merge oversight view from another NMT player in the network share list.|0|1

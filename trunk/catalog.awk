@@ -3886,7 +3886,7 @@ tnum,tried,tmp) {
         t[tnum++] = tmp;
     }
 
-    dump(0,"alternate_titles["title"]",t);
+    dump(0,"alternate_titles",t);
 
     return tnum+0;
 
@@ -4880,6 +4880,11 @@ function get_tv_series_info(plugin,idx,tvDbSeriesUrl,\
 result) {
 
     id1("get_tv_series_info("plugin","idx"," tvDbSeriesUrl")");
+
+    # mini-series may not have season set
+    if (g_season[idx] == "") {
+        g_season[idx] = 1;
+    }
 
     if (plugin == "THETVDB") {
         result = get_tv_series_info_tvdb(idx,tvDbSeriesUrl);

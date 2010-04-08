@@ -56,7 +56,7 @@ EXE=../$(TARGET_DIR)/$(TARGET)
 
 LIBS=-lm
 
-LDFLAGS=-g -Wall -O $(LIBS) $(LDFLAGS_ARCH)
+LDFLAGS=-g -Wall -O3 $(LIBS) $(LDFLAGS_ARCH)
 
 all: $(ARCH) $(TARGET) 
 

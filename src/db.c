@@ -27,6 +27,8 @@
 #define QUICKPARSE
 
 #define HEX_YEAR_OFFSET 1900
+#define EOL(c)  ((c) == '\n' ) ||  (c) == '\r') 
+#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
 
 /*
 static long read_and_parse_row_ticks=0;
@@ -35,9 +37,11 @@ static long inner_date_ticks=0;
 static long date_ticks=0;
 static long filter_ticks=0;
 static long discard_ticks=0;
-static long read_ticks=0;
 static long keep_ticks=0;
 */
+#define START_CLOCK(x) 
+#define STOP_CLOCK(x) 
+
 char *copy_string(int len,char *s);
 DbRowId *db_rowid_new(Db *db);
 DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
@@ -234,74 +238,6 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
     return 0;
 }
 
-
-
-// 1=OK 0=failed
-int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
-{
-    int result = 0;
-    int err=0;
-    assert(val_ptr);
-    assert(field_id);
-    assert(buffer);
-    int y,m,d,H,M,S;
-    char term='\0';
-    if (!*buffer) {
-        // blank is OK
-        return 1;
-    } else if (strlen(buffer) <= 8 ) {
-        if (sscanf(buffer,"%x%c",&M,&term) >= 1 ) {
-            //already in the compacted format
-            if (term == '\t' || term == '\0') {
-                *val_ptr = M;
-                //HTML_LOG(0,"buffer[%s] val(%x)",buffer,M);
-                //HTML_LOG(0,"year(%d)",year(M));
-                result = 1;
-            } else {
-                err = 2;
-            }
-        } else {
-            err = 1;
-        }
-
-    } else if (buffer[14] == '\0' && strlen(buffer) == 14 ) {
-        
-        if ( sscanf(buffer,"%4d%2d%2d%2d%2d%2d%c",&y,&m,&d,&H,&M,&S,&term) >= 6) {
-
-            if (term == '\t' || term == '\0') {
-                err = 0;
-                struct tm t;
-                t.tm_year = y - 1900;
-                t.tm_mon = m - 1;
-                t.tm_mday = d;
-                t.tm_hour = H;
-                t.tm_min = M;
-                t.tm_sec = S;
-                *val_ptr = time_ordinal(&t);
-                if (*val_ptr < 0 ) {
-                    HTML_LOG(1,"ERROR: bad timstamp %d/%02d/%02d %02d:%02d:%02d = %s",y,m,d,H,M,S,asctime(&t));
-                }
-                result = 1;
-            } else {
-                err = 2;
-            }
-        } else {
-            err = 1;
-        }
-    }
-    if (result == 0) {
-        switch(err) {
-            case 1:
-                if (!quiet) HTML_LOG(1,"failed to extract timestamp field %s",field_id);
-                break;
-            case 2:
-            if (!quiet) HTML_LOG(1,"ERROR: bad terminator [%c=%d] after timestamp field %s [%d] ",term,term,field_id,buffer);
-                break;
-        }
-    }
-    return result;
-}
-
 #define FIELD_TYPE_NONE '-'
 #define FIELD_TYPE_STR 's'
 #define FIELD_TYPE_DOUBLE 'f'
@@ -314,11 +250,12 @@ int parse_timestamp(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 
 // Most field ids have the form _a or _ab. This function looks at th first few letters of the 
 // id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbRowId structure.
-int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char *type,int *overview) {
+static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char *type,int *overview) {
 
     *offset=NULL;
     *type = FIELD_TYPE_NONE;
     *overview = 0;
+
 
     assert(name[0]=='_');
 
@@ -557,60 +494,61 @@ char * db_rowid_get_field(DbRowId *rowid,char *name)
 }
 
 // This will take ownership of the val - freeing it if necessary.
-void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
+static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
 
     void *offset;
     char type;
     int overview;
+
     if (!db_rowid_get_field_offset_type(rowid,name,&offset,&type,&overview)) {
         return;
     }
-
     //Dont get the field if this is the menu view and it is not an overview field 
-    if (!tv_or_movie_view && !overview) return;
+    if (tv_or_movie_view || overview) {
 
-    // Used to checl for trailing chars.
-    char *tmps=NULL;
+        // Used to checl for trailing chars.
+        char *tmps=NULL;
 
-    assert(name[0]=='_');
 
-    switch(type) {
-        case FIELD_TYPE_STR:
-            *(char **)offset = COPY_STRING(val_len,val);
-            if (offset == &(rowid->file)) {
+        switch(type) {
+            case FIELD_TYPE_STR:
 
-                fix_file_path(rowid);
-            }
-            break;
-        case FIELD_TYPE_CHAR:
-            *(char *)offset = *val;
-            break;
-        case FIELD_TYPE_YEAR:
-            if (strlen(val) > 3) {
+                *(char **)offset = COPY_STRING(val_len,val);
+                if (offset == &(rowid->file)) {
+
+                    fix_file_path(rowid);
+                }
+                break;
+            case FIELD_TYPE_CHAR:
+                *(char *)offset = *val;
+                break;
+            case FIELD_TYPE_YEAR:
+                if (strlen(val) > 3) {
+                    *(int *)offset=strtol(val,&tmps,10) ;
+                } else {
+                    *(int *)offset=strtol(val,&tmps,16)+HEX_YEAR_OFFSET ;
+                    //HTML_LOG(0,"year %s = %d",val,*(int *)offset);
+                }
+                break;
+            case FIELD_TYPE_INT:
                 *(int *)offset=strtol(val,&tmps,10) ;
-            } else {
-                *(int *)offset=strtol(val,&tmps,16)+HEX_YEAR_OFFSET ;
-                //HTML_LOG(0,"year %s = %d",val,*(int *)offset);
-            }
-            break;
-        case FIELD_TYPE_INT:
-            *(int *)offset=strtol(val,&tmps,10) ;
-            break;
-        case FIELD_TYPE_LONG:
-            *(long *)offset=strtol(val,&tmps,10) ;
-            break;
-        case FIELD_TYPE_DOUBLE:
-            sscanf(val,"%lf",(double *)offset);
-            break;
-        case FIELD_TYPE_DATE:
-            parse_date(name,val,offset,0);
-            break;
-        case FIELD_TYPE_TIMESTAMP:
-            parse_timestamp(name,val,offset,0);
-            break;
-        default:
-            HTML_LOG(0,"Bad field type [%c]",type);
-            assert(0);
+                break;
+            case FIELD_TYPE_LONG:
+                *(long *)offset=strtol(val,&tmps,10) ;
+                break;
+            case FIELD_TYPE_DOUBLE:
+                sscanf(val,"%lf",(double *)offset);
+                break;
+            case FIELD_TYPE_DATE:
+                parse_date(name,val,offset,0);
+                break;
+            case FIELD_TYPE_TIMESTAMP:
+                *(long *)offset=strtol(val,&tmps,16) ;
+                break;
+            default:
+                HTML_LOG(0,"Bad field type [%c]",type);
+                assert(0);
+        }
     }
 }
 
@@ -728,8 +666,6 @@ void write_row(FILE *fp,DbRowId *rid) {
     fflush(fp);
 }
 
-#define EOL(c)  ((c) == '\n' ) ||  (c) == '\r') 
-#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
 
 // There are two functions to read the db - this one and parse_row()
 // They should be consolidated.
@@ -887,99 +823,100 @@ DbRowId *dbread_and_parse_row(
 
     if (next == NULL) {
         *eof = 1;
-        return NULL;
-    }
+        rowid = NULL;
+    } else {
 
-    // Here we assume the buffer will hold a complete line so it MUST have \r\n or \0
-    // search for first tab
-    while(*next && TERM(*next) && *next != '\t' ) next++;
+        // Here we assume the buffer will hold a complete line so it MUST have \r\n or \0
+        // search for first tab
+        while(*next && TERM(*next) && *next != '\t' ) next++;
 
-
-    //HTML_LOG(0,"dbline start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
-    if (*next == '\t' ) {
 
         //HTML_LOG(0,"dbline start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
-        next++;
+        if (*next == '\t' ) {
 
-        if ( *next == '_' ) {
+            //HTML_LOG(0,"dbline start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+            next++;
 
-        // Loop starts at first character after _
-            do {
-                //HTML_LOG(0,"dbline name loop start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+            if ( *next == '_' ) {
 
-                name = name_end =  next;
-                while(!TERM(*next)) {
-                    next ++;
-                }
-                name_end = next;
+            // Loop starts at first character after _
+                do {
+                    //HTML_LOG(0,"dbline name loop start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
 
-                //HTML_LOG(0,"parse name=[%.*s]",name_end-name,name);
-                //HTML_LOG(0,"dbline val? start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
+                    name = name_end =  next;
+                    while(!TERM(*next)) {
+                        next ++;
+                    }
+                    name_end = next;
 
-                if (*next == '\t') {
-                    // "<tab> Name <tab>" expect value
-                    value = value_end = ++next;
+                    //HTML_LOG(0,"parse name=[%.*s]",name_end-name,name);
+                    //HTML_LOG(0,"dbline val? start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
 
-                    for(;;) {
-                        // Read until we hit a TERM
-                        while(!TERM(*next) ) {
-                            next++;
+                    if (*next == '\t') {
+                        // "<tab> Name <tab>" expect value
+                        value = value_end = ++next;
+
+                        for(;;) {
+                            // Read until we hit a TERM
+                            while(!TERM(*next) ) {
+                                next++;
+                            }
+                            value_end = next;
+                            // "<tab> Name <tab>" value ? expect value
+                            //
+                            // If Term is a tab and NOT followed by _ then keep it as part of the value.
+                            // otherwise stop
+                            if (*next != '\t' ) {
+                                // If term is not tab - end of line - break
+                                break;
+                            } else if ( next[1] == '_' ) {
+                                // <TAB>_ : break and read next name
+                                break;
+                            } else if ( TERM(next[1])) {
+                                // <TAB><TERM> break - EOL
+                                break;
+                            } else {
+                                next++;
+                            }
                         }
-                        value_end = next;
-                        // "<tab> Name <tab>" value ? expect value
-                        //
-                        // If Term is a tab and NOT followed by _ then keep it as part of the value.
-                        // otherwise stop
-                        if (*next != '\t' ) {
-                            // If term is not tab - end of line - break
-                            break;
-                        } else if ( next[1] == '_' ) {
-                            // <TAB>_ : break and read next name
-                            break;
-                        } else if ( TERM(next[1])) {
-                            // <TAB><TERM> break - EOL
-                            break;
-                        } else {
-                            next++;
+                        //HTML_LOG(0,"parse value=[%.*s]",value_end-value,value);
+
+
+                        if (*name && *value) {
+                            char ntmp,vtmp;
+                            ntmp = *name_end;
+                            vtmp = *value_end;
+                            *value_end = *name_end = '\0';
+                            db_rowid_set_field(rowid,name,value,value_end-value,tv_or_movie_view);
+                            *name_end = ntmp;
+                            *value_end = vtmp;
+
                         }
                     }
-                    //HTML_LOG(0,"parse value=[%.*s]",value_end-value,value);
+                    //HTML_LOG(0,"dbline pre seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
 
+                    // Seek to next name
+                    while (*next == '\t' ) { 
+                        next++;
+                    } 
+                    //HTML_LOG(0,"dbline post seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
 
-                    if (*name && *value) {
-                        char ntmp,vtmp;
-                        ntmp = *name_end;
-                        vtmp = *value_end;
-                        *value_end = *name_end = '\0';
-                        db_rowid_set_field(rowid,name,value,value_end-value,tv_or_movie_view);
-                        *name_end = ntmp;
-                        *value_end = vtmp;
-
-                    }
-                }
-                //HTML_LOG(0,"dbline pre seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
-
-                // Seek to next name
-                while (*next == '\t' ) { 
-                    next++;
-                } 
-                //HTML_LOG(0,"dbline post seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
-
-            } while (*next == '_');
+                } while (*next == '_');
+            }
         }
-    }
-    //HTML_LOG(0,"dbline ending %d[%.20s]",*next,next);
+        //HTML_LOG(0,"dbline ending %d[%.20s]",*next,next);
 
-    // Skip EOL characters,
-    dbreader_advance_line(fp,next);
-    //HTML_LOG(0,"dbline finished at [%.20s]",fp->data_start);
+        // Skip EOL characters,
+        dbreader_advance_line(fp,next);
+        //HTML_LOG(0,"dbline finished at [%.20s]",fp->data_start);
 
-//    if (rowid->genre == NULL) {
-//        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
-//    }
-    if (use_folder_titles) {
+    //    if (rowid->genre == NULL) {
+    //        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
+    //    }
+        if (use_folder_titles) {
 
-        set_title_as_folder(rowid);
+            set_title_as_folder(rowid);
+        }
     }
 
     return rowid;
@@ -1703,7 +1640,6 @@ TRACE;
         HTML_LOG(0,"filter_ticks %d",filter_ticks/1000);
         HTML_LOG(0,"keep_ticks %d",keep_ticks/1000);
         HTML_LOG(0,"discard_ticks %d",discard_ticks/1000);
-        HTML_LOG(0,"read_ticks %d",read_ticks/1000);
         */
 
         HTML_LOG(0,"total rows %d",total_rows);

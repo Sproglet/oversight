@@ -820,7 +820,7 @@ DbRowId *dbread_and_parse_row(
     db_rowid_init(rowid,db);
 
 
-    char * next;
+    register char * next;
 
     char *name,*name_end;
     char *value,*value_end;
@@ -873,29 +873,12 @@ DbRowId *dbread_and_parse_row(
                         // "<tab> Name <tab>" expect value
                         value = value_end = ++next;
 
-                        for(;;) {
-                            // Read until we hit a TERM
-                            while(!TERM(*next) ) {
-                                next++;
-                            }
-                            value_end = next;
-                            // "<tab> Name <tab>" value ? expect value
-                            //
-                            // If Term is a tab and NOT followed by _ then keep it as part of the value.
-                            // otherwise stop
-                            if (*next != '\t' ) {
-                                // If term is not tab - end of line - break
-                                break;
-                            } else if ( next[1] == '_' ) {
-                                // <TAB>_ : break and read next name
-                                break;
-                            } else if ( TERM(next[1])) {
-                                // <TAB><TERM> break - EOL
-                                break;
-                            } else {
-                                next++;
-                            }
+                        // Read until we hit a TERM
+                        while (!TERM(*next) || ( *next == '\t' && next[1] != '_' ) ) {
+                            next++;
                         }
+
+                        value_end = next;
                         //HTML_LOG(0,"parse value=[%.*s]",value_end-value,value);
 
 
@@ -910,13 +893,10 @@ DbRowId *dbread_and_parse_row(
 
                         }
                     }
-                    //HTML_LOG(0,"dbline pre seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
-
                     // Seek to next name
                     while (*next == '\t' ) { 
                         next++;
                     } 
-                    //HTML_LOG(0,"dbline post seek start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
 
                 } while (*next == '_');
             }

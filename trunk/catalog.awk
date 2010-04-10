@@ -2374,6 +2374,7 @@ terms,results,id,url,parts,showurl) {
     if (plugin == "THETVDB") {
         terms="\"season "details[SEASON]"\" \""details[EPISODE]" : "clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com";
         # Bing seems a bit better than google for this. For "The office" anyway.
+        # But google finds 1x5 Jersey Devil = X Files.
         results = scanPageFirstMatch(g_search_bing terms,"seriesid","seriesid=[0-9]+",0);
         #results = scanPageFirstMatch(g_search_google terms,"seriesid","seriesid=[0-9]+",0);
         if (split(results,parts,"=") == 2) {
@@ -4705,6 +4706,7 @@ function clean_title(t,deep) {
     gsub(g_punc[deep+0]," ",t);
 
     gsub(/ +/," ",t);
+
     t=trim(capitalise(tolower(t)));
 
     return t;
@@ -7496,8 +7498,8 @@ function trimAll(str) {
 }
 
 function trim(str) {
-    sub(/^ +/,"",str);
-    sub(/ +$/,"",str);
+    sub(/^[- ]+/,"",str);
+    sub(/[- ]+$/,"",str);
     return str;
 }
 

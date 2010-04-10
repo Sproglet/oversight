@@ -810,12 +810,6 @@ char *add_network_icon(DbRowId *r,char *text) {
 
 }
 
-int has_category(DbRowId *rowid) {
-    return (rowid->category == 'T' || rowid->category == 'M' );
-}
-
-
-
 char *vod_attr(char *file) {
 
     if (is_dvd(file)) {
@@ -840,7 +834,7 @@ char *vod_link(DbRowId *rowid,char *title ,char *t2,
     char *vod=NULL;
     int freepath;
 
-    int add_to_playlist= has_category(rowid) && !is_dvd(rowid->file);
+    int add_to_playlist= !is_dvd(rowid->file);
     char *result=NULL;
 
     HTML_LOG(1,"VOD file[%s]",file);
@@ -2030,7 +2024,7 @@ char *get_poster_mode_item_unknown(DbRowId *row_id,char **font_class,char **grid
 }
 
 char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,char *newview) {
-    int tv_or_movie = has_category(row_id);
+
     // TEXT MODE
     HTML_LOG(2,"dbg: get text mode details ");
 
@@ -2065,23 +2059,21 @@ char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,cha
             title=tmp;
         }
 
-        if (tv_or_movie) {
-            HTML_LOG(2,"dbg: add certificate");
-            //Add certificate and extension
-            char *tmp;
-            char *ext_icons=build_ext_list(row_id);
-            HTML_LOG(2,"dbg: add extension [%s]",ext_icons);
+        HTML_LOG(2,"dbg: add certificate");
+        //Add certificate and extension
+        char *tmp;
+        char *ext_icons=build_ext_list(row_id);
+        HTML_LOG(2,"dbg: add extension [%s]",ext_icons);
 
-            ovs_asprintf(&tmp,"%s %s %s",
-                    title,
-                    (cert?cert:""),
-                    (ext_icons?ext_icons:""));
+        ovs_asprintf(&tmp,"%s %s %s",
+                title,
+                (cert?cert:""),
+                (ext_icons?ext_icons:""));
 
-            FREE(title);
-            title=tmp;
-            if (cert != row_id->certificate) FREE(cert);
-            FREE(ext_icons);
-        }
+        FREE(title);
+        title=tmp;
+        if (cert != row_id->certificate) FREE(cert);
+        FREE(ext_icons);
 
 
         if (row_id->category == 'T') {
@@ -2161,6 +2153,7 @@ char *get_simple_title(
     }
     return title;
 }
+
 char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
     char *result = NULL;
     if (off_event != NULL) {
@@ -2211,7 +2204,6 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *grid_class="";
 
     char *select = query_val("select");
-    int tv_or_movie = has_category(row_id);
     char *cell_background_image=NULL;
     int displaying_text;
 
@@ -2227,7 +2219,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
     if (in_poster_mode() ) {
         displaying_text=0;
-        if (tv_or_movie && (title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
+        if ((title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
 
             if (*title != '<' && !util_starts_with(title,"<img")) {
                 displaying_text=1;
@@ -2309,7 +2301,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
         cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
 
 
-    } else if (row_id->category == 'M') {
+    } else if (row_id->category != 'T') {
         // Movies are drill down by ID
         cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
 
@@ -2470,7 +2462,7 @@ char *get_drilldown_view(DbRowId *rid) {
             view = VIEW_MOVIE;
             break;
         default:
-            view = "unknown";
+            view = VIEW_MOVIE;
             break;
     }
 

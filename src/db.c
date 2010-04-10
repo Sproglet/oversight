@@ -27,8 +27,9 @@
 #define QUICKPARSE
 
 #define HEX_YEAR_OFFSET 1900
-#define EOL(c)  ((c) == '\n' ) ||  (c) == '\r') 
-#define TERM(c)  (( (c) <= '\n' ) && ( ( (c) == '\t' ) || ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF ))
+#define EOL(c)  ((c) == '\n'  ||  (c) == '\r' || (c) == '\0' )
+#define SEP(c)  ((c) == '\t' ) 
+#define TERM(c)  ( ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF )
 
 /*
 static long read_and_parse_row_ticks=0;
@@ -438,10 +439,12 @@ static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void 
                 *overview = 1;
             }
             break;
-        default:
-            HTML_LOG(-1,"Unknown field [%s]",name);
     }
-    return *type != FIELD_TYPE_NONE;
+    if (*type == FIELD_TYPE_NONE) {
+        HTML_LOG(-1,"Unknown field [%s]",name);
+        return 0;
+    }
+    return 1;
 
 }
 // This will take ownership of the val - freeing it if necessary.
@@ -592,14 +595,7 @@ void fix_file_paths(int num_row,DbRowId **rows)
         DbRowId *rid;
         for(rid = rows[i] ; rid ; rid = rid->linked ) {
             // Append Network share path
-            if (rid->file[0] != '/') {
-                fix_file_path(rid);
-            }
-            // set extension
-            char *p = strrchr(rid->file,'.');
-            if (p) {
-                rid->ext = p+1;
-            }
+            fix_file_path(rid);
         }
     }
 }
@@ -693,121 +689,6 @@ void write_row(FILE *fp,DbRowId *rid) {
 // use fread()
 // use read()
 //
-DbRowId *read_and_parse_row(
-        DbRowId *rowid,
-        Db *db,
-        FILE *fp,
-        int *eof,
-        int tv_or_movie_view // true if looking at tv or moview view.
-        )
-{
-
-    db_rowid_init(rowid,db);
-
-
-    static char row[ROW_SIZE+1];
-    char *row_end = row+ROW_SIZE;
-    char * next;
-
-    char *name,*name_end;
-    char *value,*value_end;
-
-    PRE_CHECK_FGETS(row,ROW_SIZE);
-
-    *eof = 0;
-    // Skip comment lines
-    do {
-        if (fgets(row,ROW_SIZE,fp) == NULL) {
-            CHECK_FGETS(row,ROW_SIZE);
-            *eof = 1;
-            return NULL;
-        }
-    } while (row[0] == '#');
-
-    next = row;
-    // search for first tab
-    while(*next && TERM(*next) && *next != '\t' ) next++;
-
-    if (*next == '\t' ) {
-
-        next++;
-
-        if ( *next == '_' ) {
-
-        // Loop starts at first character after _
-            do {
-
-                name = name_end =  next;
-                while(!TERM(*next)) {
-                    next ++;
-                }
-                name_end = next;
-
-                assert(next < row_end);
-                //HTML_LOG(0,"parse name=[%.*s]",name_end-name,name);
-
-                if (*next == '\t') {
-                    // "<tab> Name <tab>" expect value
-                    value = value_end = ++next;
-
-                    for(;;) {
-                        // Read until we hit a TERM
-                        while(!TERM(*next) ) {
-                            next++;
-                        }
-                        value_end = next;
-                        // "<tab> Name <tab>" value ? expect value
-                        //
-                        // If Term is a tab and NOT followed by _ then keep it as part of the value.
-                        // otherwise stop
-                        if (*next != '\t' ) {
-                            // If term is not tab - end of line - break
-                            break;
-                        } else if ( next[1] == '_' ) {
-                            // <TAB>_ : break and read next name
-                            break;
-                        } else if ( TERM(next[1])) {
-                            // <TAB><TERM> break - EOL
-                            break;
-                        } else {
-                            next++;
-                        }
-                    }
-                    //HTML_LOG(0,"parse value=[%.*s]",value_end-value,value);
-
-
-                    assert(next < row_end);
-                    if (*name && *value) {
-                        char ntmp,vtmp;
-                        ntmp = *name_end;
-                        vtmp = *value_end;
-                        *value_end = *name_end = '\0';
-                        db_rowid_set_field(rowid,name,value,value_end-value,tv_or_movie_view);
-                        *name_end = ntmp;
-                        *value_end = vtmp;
-
-                    }
-                }
-
-                // Seek to next name
-                while (*next != '_' && *next && TERM(*next) && next < row_end) { // ?? TERM
-                    next++;
-                }
-
-            } while (*next == '_');
-        }
-    }
-
-//    if (rowid->genre == NULL) {
-//        HTML_LOG(0,"no genre [%s][%s]",rowid->file,rowid->title);
-//    }
-    if (use_folder_titles) {
-
-        set_title_as_folder(rowid);
-    }
-
-    return rowid;
-}
 DbRowId *dbread_and_parse_row(
         DbRowId *rowid,
         Db *db,
@@ -845,7 +726,7 @@ DbRowId *dbread_and_parse_row(
 
         // Here we assume the buffer will hold a complete line so it MUST have \r\n or \0
         // search for first tab
-        while(*next && TERM(*next) && *next != '\t' ) next++;
+        while(*next && !SEP(*next)) next++;
 
 
         //HTML_LOG(0,"dbline start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
@@ -861,7 +742,7 @@ DbRowId *dbread_and_parse_row(
                     //HTML_LOG(0,"dbline name loop start/cur/end = %u / (%d,%u) / %u",fp->data_start,*next,next,fp->data_end);
 
                     name = name_end =  next;
-                    while(!TERM(*next)) {
+                    while(*next && !SEP(*next)) {
                         next ++;
                     }
                     name_end = next;
@@ -873,8 +754,8 @@ DbRowId *dbread_and_parse_row(
                         // "<tab> Name <tab>" expect value
                         value = value_end = ++next;
 
-                        // Read until we hit a TERM
-                        while (!TERM(*next) || ( *next == '\t' && next[1] != '_' ) ) {
+                        // Read until we hit a SEP - unless it not followed by underscore - which is expected.
+                        while ( *next &&  (  !SEP(*next) || ( !EOL(next[1]) && next[1] != '_' ))) {
                             next++;
                         }
 
@@ -883,11 +764,15 @@ DbRowId *dbread_and_parse_row(
 
 
                         if (*name && *value) {
+
                             char ntmp,vtmp;
                             ntmp = *name_end;
                             vtmp = *value_end;
+
                             *value_end = *name_end = '\0';
+
                             db_rowid_set_field(rowid,name,value,value_end-value,tv_or_movie_view);
+
                             *name_end = ntmp;
                             *value_end = vtmp;
 
@@ -1471,18 +1356,9 @@ DbRowSet * db_scan_titles(
     }
     HTML_LOG(0,"db scanning %s",path);
 
-#define DBREAD
-#ifdef DBREAD
     ReadBuf *fp = dbreader_open(path);
-#else
-    FILE *fp = fopen(path,"r");
-#endif
 
     if (fp) {
-#define FILE_IO_BUF_SIZ 65536
-#ifndef DBREAD
-        setvbuf(fp,NULL,_IOFBF,FILE_IO_BUF_SIZ);
-#endif
 
         rowset=db_rowset(db);
 
@@ -1501,11 +1377,7 @@ DbRowSet * db_scan_titles(
 
         while (eof == 0) {
             total_rows++;
-#ifdef DBREAD
             dbread_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
-#else
-            read_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
-#endif
 
             if (rowid.file) {
 
@@ -1640,11 +1512,7 @@ TRACE;
         */
 
         HTML_LOG(0,"total rows %d",total_rows);
-#ifdef DBREAD
         dbreader_close(fp);
-#else
-        fclose(fp);
-#endif
     }
     if (path != db->path) FREE(path);
     if (rowset) {

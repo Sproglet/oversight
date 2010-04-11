@@ -38,13 +38,22 @@ create_hashtable(unsigned int minsize,
     if (minsize > (1u << 30)) return NULL;
     /* Enforce size as prime */
     for (pindex=0; pindex < prime_table_length; pindex++) {
-        if (primes[pindex] > minsize) { size = primes[pindex]; break; }
+        if (primes[pindex] > minsize) {
+            size = primes[pindex];
+            break;
+        }
     }
     h = (struct hashtable *)MALLOC(sizeof(struct hashtable));
-    if (NULL == h) return NULL; /*oom*/
+    if (!h) return NULL; /*oom*/
+
     h->table = (struct entry **)MALLOC(sizeof(struct entry*) * size);
-    if (NULL == h->table) { FREE(h); return NULL; } /*oom*/
+    if (!h->table) {
+        FREE(h);
+        return NULL;
+    } /*oom*/
+
     memset(h->table, 0, size * sizeof(struct entry *));
+
     h->tablelength  = size;
     h->primeindex   = pindex;
     h->entrycount   = 0;
@@ -90,7 +99,7 @@ hashtable_expand(struct hashtable *h)
     newsize = primes[++(h->primeindex)];
 
     newtable = (struct entry **)MALLOC(sizeof(struct entry*) * newsize);
-    if (NULL != newtable)
+    if (newtable)
     {
         memset(newtable, 0, newsize * sizeof(struct entry *));
         /* This algorithm is not 'stable'. ie. it reverses the list
@@ -111,7 +120,7 @@ hashtable_expand(struct hashtable *h)
     {
         newtable = (struct entry **)
                    realloc(h->table, newsize * sizeof(struct entry *));
-        if (NULL == newtable) { (h->primeindex)--; return 0; }
+        if (!newtable) { (h->primeindex)--; return 0; }
         h->table = newtable;
         memset(newtable[h->tablelength], 0, newsize - h->tablelength);
         for (i = 0; i < h->tablelength; i++) {
@@ -156,7 +165,11 @@ int hashtable_insert(struct hashtable *h, void *k, void *v) {
         hashtable_expand(h);
     }
     e = (struct entry *)MALLOC(sizeof(struct entry));
-    if (NULL == e) { --(h->entrycount); return 0; } /*oom*/
+    if (!e) {
+        --(h->entrycount);
+        return 0;
+    } /*oom*/
+
     e->h = hash(h,k);
     index = indexFor(h->tablelength,e->h);
     e->k = k;
@@ -175,7 +188,7 @@ hashtable_search(struct hashtable *h, void *k)
     hashvalue = hash(h,k);
     index = indexFor(h->tablelength,hashvalue);
     e = h->table[index];
-    while (NULL != e)
+    while (e)
     {
         /* Check hash value to short circuit heavier comparison */
         if ((hashvalue == e->h) && (h->eqfn(k, e->k))) return e->v;
@@ -200,7 +213,7 @@ hashtable_remove(struct hashtable *h, void *k,int free_key)
     index = indexFor(h->tablelength,hash(h,k));
     pE = &(h->table[index]);
     e = *pE;
-    while (NULL != e)
+    while (e)
     {
         /* Check hash value to short circuit heavier comparison */
         if ((hashvalue == e->h) && (h->eqfn(k, e->k)))
@@ -227,19 +240,34 @@ hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
     struct entry *e, *f;
     struct entry **table = h->table;
 
+    // stats
+    int hit1=0;
+    int hit2=0;
+    int hmax=0;
+
 
     for (i = 0; i < h->tablelength; i++)
     {
         e = table[i];
-        while (NULL != e) {
+        if (e) hit1++;
+
+        int hthis=0;
+        while (e) {
+
             f = e;
+
+            hthis++;
 
             e = e->next;
             if (free_keys) freekey(f->k);
             if (free_values) FREE(f->v);
             FREE(f);
         }
+        hit2 += hthis;
+        if (hthis > hmax) hmax = hthis;
     }
+    HTML_LOG(0,"ht: size=%u,hits =%d, av=%lf max=%d",h->tablelength,hit1,hit2*1.0/hit1,hmax);
+
     FREE(h->table);
     FREE(h);
 }

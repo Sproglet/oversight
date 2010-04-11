@@ -289,7 +289,9 @@ TRACE;
     HTML_LOG(0,"deleting...");
     delete_queue_delete();
     TRACE;
-    if(1) {
+
+#if 1
+    // Cleanup properly
         html_comment("cleanup");
 
     TRACE;
@@ -321,7 +323,7 @@ TRACE;
 
         display_page(g_query,database_list);
         */
-    }
+#endif
 
     HTML_LOG(0,"end=%d",result);
 

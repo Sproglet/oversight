@@ -2217,7 +2217,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
     char *newview = get_drilldown_view(row_id);
 
-    if (in_poster_mode() ) {
+    if (IN_POSTER_MODE) {
         displaying_text=0;
         if ((title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
 
@@ -2335,7 +2335,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
     // Add a horizontal image to stop cell shrinkage.
     char *add_spacer = "";
-    if (in_poster_mode() && displaying_text) {
+    if (IN_POSTER_MODE && displaying_text) {
         ovs_asprintf(&add_spacer,"<br><img src=\"images/1h.jpg\" %s height=1px>",width_attr);
     }
 

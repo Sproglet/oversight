@@ -4508,6 +4508,15 @@ url,title,link,links,i,count2) {
                 link = extractAttribute(i,"a","href");
                 sub(/\.\./,"http://epguides.com",link);
                 gsub(/\&amp;/,"And",title);
+
+                # First hardcoded title. :(
+                #epguide has the name listed differently to every other site in the world.
+                #epguide is only used because, compared to the other sites, it is easy to
+                #extract a list of all programs beginning with the same letter.
+                #So I feel a little justified in hacking this list to be inline with everyone else.
+                if (title == "C.S.I.") {
+                    title = "C.S.I Crime Scene Investigation";
+                }
                 names[link] = title;
                 count2++;
 
@@ -4635,10 +4644,11 @@ found,regex,initials,initial_regex,part) {
     # Use regular expressions to do the heavy lifting.
     # First if abbreviation is grk convert to ^g.*r.*k\>
     #
-    regex= "^" embedded_lc_regex(abbrev)"\\>";
+    regex= embedded_lc_regex(abbrev);
 
     possible_title = norm_title(possible_title,1);
-    found = match(possible_title,regex);
+    found = match(possible_title,"^"regex"\\>");
+
 
     #DEBUG("abbrev:["abbrev"] ["regex"] ["possible_title"] = "found);
 

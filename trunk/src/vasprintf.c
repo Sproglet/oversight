@@ -52,8 +52,7 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
           if (*p == 's')  {
               char *ss=va_arg (ap, char *);
               if (ss) {
-                  int len = strlen(ss);
-                  total_width += len;
+                  total_width += strlen(ss);
               } else {
                   total_width += 7; /* "(null)" */
               }
@@ -203,8 +202,7 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
                   {
                       char *ss=va_arg (ap, char *);
                       if (ss) {
-                          int len = strlen(ss);
-                          total_width += len;
+                          total_width += strlen(ss);
                       } else {
                           total_width += 7; /* "(null)" */
                       }

@@ -387,12 +387,14 @@ char *macro_fn_title_select(char *template_name,char *call,Array *args,int num_r
     static char *result=NULL;
     if (!result) {
 
+        HTML_LOG(0,"macro_fn_title_select");
         struct hashtable *title = string_string_hashtable(30);
 
         char c;
+        char letter[2];
+        letter[1]='\0';
         for(c = 'A' ; c <= 'Z' ; c++ ) {
-            char letter[2];
-            sprintf(letter,"%c",c);
+            letter[0] = c;
             hashtable_insert(title,STRDUP(letter),STRDUP(letter));
         }
         hashtable_insert(title,STRDUP("1"),STRDUP("1"));

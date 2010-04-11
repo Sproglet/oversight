@@ -253,192 +253,198 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 // id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbRowId structure.
 static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char *type,int *overview) {
 
+    register char *p = name;
     *offset=NULL;
     *type = FIELD_TYPE_NONE;
     *overview = 0;
 
 
-    assert(name[0]=='_');
 
-    switch(name[1]) {
-        case 'a':
-            if (name[2] == 'i' ) { // _ai
-                *offset=&(rowid->additional_nfo);
-                *type = FIELD_TYPE_STR;
+    if  (*p++ == '_' ) {
 
-            } else if (name[2] == 'd' ) { // _ad...
-
-                if (name[3] == '\0') { // _ad
-
-                    *offset=&(rowid->airdate);
-                    *type = FIELD_TYPE_DATE;
-
-                } else if (name[3] == 'i') { // _adi
-
-                    *offset=&(rowid->airdate_imdb);
-                    *type = FIELD_TYPE_DATE;
-
-                }
-            }
-            break;
-        case 'C':
-            if (name[2] == '\0') { // _C
-                *offset=&(rowid->category);
-                *type = FIELD_TYPE_CHAR;
-                *overview = 1;
-            }
-            break;
-        case 'd':
-            if (name[2] == '\0') { // _d
-                *offset=&(rowid->director);
-                *type = FIELD_TYPE_STR;
-            }
-            break;
-        case 'D':
-            if (name[2] == 'T' ) {
-                *offset=&(rowid->downloadtime);
-                *type = FIELD_TYPE_TIMESTAMP;
-                *overview = 1;
-            }
-            break;
-        case 'e':
-            if (name[2] == '\0') { // _e
-                *offset=&(rowid->episode);
-                *type = FIELD_TYPE_STR;
-            }else if (name[2] == 't') {
-                if (name[3] == '\0') { // _et
-                    *offset=&(rowid->eptitle);
+        switch(*p++) {
+            case 'a':
+                if (*p == 'i' ) { // _ai
+                    *offset=&(rowid->additional_nfo);
                     *type = FIELD_TYPE_STR;
-                } else if (name[3] == 'i') { // _eti
-                    *offset=&(rowid->eptitle_imdb);
+
+                } else if (*p == 'd' ) { // _ad...
+
+                    if (p[1] == '\0') { // _ad
+
+                        *offset=&(rowid->airdate);
+                        *type = FIELD_TYPE_DATE;
+
+                    } else if (p[1] == 'i') { // _adi
+
+                        *offset=&(rowid->airdate_imdb);
+                        *type = FIELD_TYPE_DATE;
+
+                    }
+                }
+                break;
+            case 'C':
+                if (*p == '\0') { // _C
+                    *offset=&(rowid->category);
+                    *type = FIELD_TYPE_CHAR;
+                    *overview = 1;
+                }
+                break;
+            case 'd':
+                if (*p == '\0') { // _d
+                    *offset=&(rowid->director);
                     *type = FIELD_TYPE_STR;
                 }
-//            }else if (name[2] == 'p') { // _ep
-//                *offset=&(rowid->episode_plot_key);
-//                *type = FIELD_TYPE_STR;
-            }
-            break;
-        case 'f':
-                if (name[2] == 'a') {
-                    *offset=&(rowid->fanart);
-                    *type = FIELD_TYPE_STR;
+                break;
+            case 'D':
+                if (*p == 'T' ) {
+                    *offset=&(rowid->downloadtime);
+                    *type = FIELD_TYPE_TIMESTAMP;
+                    *overview = 1;
                 }
-            break;
-        case 'F':
-            if (name[2] == '\0') {
-                *offset=&(rowid->file);
-                *type = FIELD_TYPE_STR;
-                *overview = 1;
-            } else if (name[2] == 'T' ) {
-                *offset=&(rowid->filetime);
-                *type = FIELD_TYPE_TIMESTAMP;
-                *overview = 1;
-            }
-            break;
+                break;
+            case 'e':
+                if (*p == '\0') { // _e
+                    *offset=&(rowid->episode);
+                    *type = FIELD_TYPE_STR;
+                }else if (*p == 't') {
+                    if (p[1] == '\0') { // _et
+                        *offset=&(rowid->eptitle);
+                        *type = FIELD_TYPE_STR;
+                    } else if (p[1] == 'i') { // _eti
+                        *offset=&(rowid->eptitle_imdb);
+                        *type = FIELD_TYPE_STR;
+                    }
+    //            }else if (name[2] == 'p') { // _ep
+    //                *offset=&(rowid->episode_plot_key);
+    //                *type = FIELD_TYPE_STR;
+                }
+                break;
+            case 'f':
+                    if (*p == 'a') {
+                        *offset=&(rowid->fanart);
+                        *type = FIELD_TYPE_STR;
+                    }
+                break;
+            case 'F':
+                if (*p == '\0') {
+                    *offset=&(rowid->file);
+                    *type = FIELD_TYPE_STR;
+                    *overview = 1;
+                } else if (*p == 'T' ) {
+                    *offset=&(rowid->filetime);
+                    *type = FIELD_TYPE_TIMESTAMP;
+                    *overview = 1;
+                }
+                break;
 
-        case 'G':
-            if (name[2] == '\0') {
-                *offset=&(rowid->genre);
-                *type = FIELD_TYPE_STR;
-                *overview = 1;
-            }
-            break;
-        case 'J':
-            if (name[2] == '\0') {
-                *offset=&(rowid->poster);
-                *type = FIELD_TYPE_STR;
-            }
-            break;
-        case 'i':
-            if (name[2] == 'd') {
-                *offset=&(rowid->id);
-                *type = FIELD_TYPE_LONG;
-                *overview = 1;
-            }
-            break;
-        case 'I':
-            if (name[2] == 'T') {
-                *offset=&(rowid->date);
-                *type = FIELD_TYPE_TIMESTAMP;
-                *overview = 1;
-            }
-            break;
-        case 'n':
-                if (name[2] == 'f') {
-                    *offset=&(rowid->nfo);
+            case 'G':
+                if (*p == '\0') {
+                    *offset=&(rowid->genre);
+                    *type = FIELD_TYPE_STR;
+                    *overview = 1;
+                }
+                break;
+            case 'J':
+                if (*p == '\0') {
+                    *offset=&(rowid->poster);
                     *type = FIELD_TYPE_STR;
                 }
-            break;
-        case 'o':
-            // do nothing - _ot ORIGINAL_TITLE
-            break;
-        case 'p':
-                if (name[2] == 't') {
-                    *offset=&(rowid->parts);
+                break;
+            case 'i':
+                if (*p == 'd') {
+                    *offset=&(rowid->id);
+                    *type = FIELD_TYPE_LONG;
+                    *overview = 1;
+                }
+                break;
+            case 'I':
+                if (*p == 'T') {
+                    *offset=&(rowid->date);
+                    *type = FIELD_TYPE_TIMESTAMP;
+                    *overview = 1;
+                }
+                break;
+            case 'n':
+                    if (*p == 'f') {
+                        *offset=&(rowid->nfo);
+                        *type = FIELD_TYPE_STR;
+                    }
+                break;
+            case 'o':
+                if (*p == 't') {
+                    *offset=&(rowid->orig_title);
                     *type = FIELD_TYPE_STR;
                 }
-            break;
-//        case 'P':
-//                if (name[2] == '\0') {
-//                *offset=&(rowid->plot_key);
-//                *type = FIELD_TYPE_STR;
-//                }
-//            break;
-        case 'r':
-            if (name[2] == '\0') {
-                *offset=&(rowid->rating);
-                *type = FIELD_TYPE_DOUBLE;
-                *overview = 1;
-            } else if (name[2] == 't') {
-                *offset=&(rowid->runtime);
-                *type = FIELD_TYPE_INT;
-            }
-            break;
-        case 'R':
-            if (name[2] == '\0') {
-                *offset=&(rowid->certificate);
-                *type = FIELD_TYPE_STR;
-                *overview = 1;
-            }
-            break;
-        case 's':
-            if (name[2] == '\0') {
-                *offset=&(rowid->season);
-                *type = FIELD_TYPE_INT;
-                *overview = 1;
-            }
-            break;
-        case 't':
-            //do nothing - TVCOM
-            break;
-        case 'T':
-            if (name[2] == '\0') {
-                *offset=&(rowid->title);
-                *type = FIELD_TYPE_STR;
-                *overview = 1;
-            }
-            break;
-        case 'U':
-            if (name[2] == '\0') {
-                *offset=&(rowid->url);
-                *type = FIELD_TYPE_STR;
-                *overview = 1;
-            }
-            break;
-        case 'w':
-            if (name[2] == '\0') {
-                *offset=&(rowid->watched);
-                *type = FIELD_TYPE_INT;
-                *overview = 1;
-            }
-            break;
-        case 'Y':
-            if (name[2] == '\0') {
-                *offset=&(rowid->year) ;
-                *type = FIELD_TYPE_YEAR;
-                *overview = 1;
-            }
-            break;
+                break;
+            case 'p':
+                    if (*p == 't') {
+                        *offset=&(rowid->parts);
+                        *type = FIELD_TYPE_STR;
+                    }
+                break;
+    //        case 'P':
+    //                if (name[2] == '\0') {
+    //                *offset=&(rowid->plot_key);
+    //                *type = FIELD_TYPE_STR;
+    //                }
+    //            break;
+            case 'r':
+                if (*p == '\0') {
+                    *offset=&(rowid->rating);
+                    *type = FIELD_TYPE_DOUBLE;
+                    *overview = 1;
+                } else if (*p == 't') {
+                    *offset=&(rowid->runtime);
+                    *type = FIELD_TYPE_INT;
+                }
+                break;
+            case 'R':
+                if (*p == '\0') {
+                    *offset=&(rowid->certificate);
+                    *type = FIELD_TYPE_STR;
+                    *overview = 1;
+                }
+                break;
+            case 's':
+                if (*p == '\0') {
+                    *offset=&(rowid->season);
+                    *type = FIELD_TYPE_INT;
+                    *overview = 1;
+                }
+                break;
+            case 't':
+                //do nothing - TVCOM
+                break;
+            case 'T':
+                if (*p == '\0') {
+                    *offset=&(rowid->title);
+                    *type = FIELD_TYPE_STR;
+                    *overview = 1;
+                }
+                break;
+            case 'U':
+                if (*p == '\0') {
+                    *offset=&(rowid->url);
+                    *type = FIELD_TYPE_STR;
+                    *overview = 1;
+                }
+                break;
+            case 'w':
+                if (*p == '\0') {
+                    *offset=&(rowid->watched);
+                    *type = FIELD_TYPE_INT;
+                    *overview = 1;
+                }
+                break;
+            case 'Y':
+                if (*p == '\0') {
+                    *offset=&(rowid->year) ;
+                    *type = FIELD_TYPE_YEAR;
+                    *overview = 1;
+                }
+                break;
+        }
     }
     if (*type == FIELD_TYPE_NONE) {
         HTML_LOG(-1,"Unknown field [%s]",name);

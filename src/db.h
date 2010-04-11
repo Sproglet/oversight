@@ -18,6 +18,7 @@ typedef struct Dbrowid_struct {
     OVS_TIME date;
     int watched;
     char *title;
+    char *orig_title;
     char *poster;
     char *genre;
     char category;

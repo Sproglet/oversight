@@ -2869,7 +2869,7 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 int watched,unwatched;
                 get_watched_counts(rid,&watched,&unwatched);
 
-                HTML_LOG(0,"xx %s age = %x ",rid->title,*timestamp_ptr(rid));
+                //HTML_LOG(0,"xx %s age = %x ",rid->title,*timestamp_ptr(rid));
 
                 char *title = get_simple_title(rid,NULL);
                 if (rid->category == 'T' ) {

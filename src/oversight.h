@@ -91,10 +91,10 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 char *get_mounted_path(char *source,char *path,int *freeit);
 
 #define STARTS_WITH_THE(a) ( ((a) != NULL) \
+        && (a)[3] == ' ' \
         && ( (a)[0]=='T' || (a)[0]=='t' ) \
         && ( (a)[1]=='h' || (a)[1]=='H' ) \
-        && ( (a)[2]=='e' || (a)[2]=='E' ) \
-        && (a)[3] == ' ' )
+        && ( (a)[2]=='e' || (a)[2]=='E' ))
 
 // Instead of converting timestamps to epoc time use a rough representation (see time_ordinal)
 #define FAST_TIME

@@ -137,7 +137,7 @@ struct hashtable *config_load(char *filename,int include_unquoted_space) {
     return result;
 }
 
-is_comment(char *line) {
+int is_comment(char *line) {
     while(*line && isspace(*line)) {
         line++;
     }
@@ -371,9 +371,11 @@ long get_scanlines(int *is_pal) {
             if (tv_mode_int <= 4 ) {
                 scanlines = 0;
             } else if (tv_mode_int <= 6 ) {
+                // 720 modes.
                 scanlines = 720;
             } else {
-                scanlines = 1080;
+                // tv is 1080 but browser is still 720
+                scanlines = 720;
             }
         }
         if (is_pal) {
@@ -444,7 +446,7 @@ void config_read_dimensions() {
 
             html_comment("rows = %d\n",g_dimension->rows);
 
-            double virtual_rows = g_dimension->rows + 1.1;
+            double virtual_rows = g_dimension->rows + 0.7 ;
 
             int menu_height;
             if (g_dimension->scanlines == 0) {
@@ -472,6 +474,7 @@ void config_read_dimensions() {
                     g_dimension->poster_menu_img_height *= pal_fix;
                 }
             }
+
         }
 
         g_dimension->movie_img_width = g_dimension->movie_img_height * 2 / 3;

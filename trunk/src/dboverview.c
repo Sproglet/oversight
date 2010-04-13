@@ -328,6 +328,7 @@ TRACE;
                     // Add rid to linked list at match->linked
                     rid->linked = match->linked;
                     match->linked = rid;
+                    match->link_count++;
 
                 } else {
 TRACE;

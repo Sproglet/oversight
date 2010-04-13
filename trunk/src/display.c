@@ -1632,30 +1632,45 @@ char *build_ext_list(DbRowId *row_id) {
 
 char *add_one_source_to_idlist(DbRowId *row_id,char *current_idlist,int *mixed_sources) {
 
+    DbRowId *ri;
     char *idlist=NULL;
     assert(row_id);
     assert(row_id->db);
     assert(row_id->db->source);
-    ovs_asprintf(&idlist,"%s%s(%ld|",
+
+    ovs_asprintf(&idlist,"%s%s(%ld",
             NVL(current_idlist),
             row_id->db->source,row_id->id);
+
     FREE(current_idlist);
 
     if (mixed_sources) *mixed_sources=0;
 
-    DbRowId *ri;
+    int link_count = 0;
+    for( ri = row_id ; ri ; ri=ri->linked ) {
+        link_count++;
+    }
+
+    char *out = MALLOC(10+10 * link_count);
+
+    char *p = out;
+
+    *p = '\0';
+
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
         if (STRCMP(ri->db->source,row_id->db->source) == 0) {
-            char *tmp;
-            // Add all other items with the same source
-            ovs_asprintf(&tmp,"%s%ld|",idlist,ri->id);
-            FREE(idlist);
-            idlist = tmp;
+
+            p += sprintf(p,"|%ld",ri->id);
         } else {
             if (mixed_sources) *mixed_sources=1;
         }
     }
-    idlist[strlen(idlist)-1] = ')';
+    ovs_asprintf(&p,"%s%s)",idlist,out);
+    FREE(idlist);
+    FREE(out);
+
+    idlist = p;
+
     return idlist;
 }
 

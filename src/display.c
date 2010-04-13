@@ -3303,15 +3303,13 @@ char *get_tvid_links() {
     char *format_string = get_self_link(params,"tvid=\""TVID_MARKER"\"","");
     FREE(params);
 
-    //As we want a printf format string - escape any %
-    if (strchr(format_string,'%') ) {
-        char *tmp = replace_all(format_string,"%","%%",0);
-        FREE(format_string);
-        format_string=tmp;
-    }
     int format_memsize = strlen(format_string)+20;
 
-    char *tmp = replace_all(format_string,TVID_MARKER,"%s",0);
+    // TODO there is a bug here if string contaings %s - will get corrupted.
+    char *tmp = replace_all_str(format_string,
+            "%","%%",
+            TVID_MARKER,"%s",
+            NULL);
     FREE(format_string);
     format_string=tmp;
 

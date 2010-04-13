@@ -593,12 +593,12 @@ TRACE;
     int result = 0;
     time_t now = time(NULL);
     DIR *d = opendir(path);
-    closedir(d);
-    if (time(NULL) - now > timeout_secs) {
-        HTML_LOG(0,"mount [%s] too slow to open folder",path);
-    } else {
+    if (d) closedir(d);
+    if (d && ( time(NULL) - now <= timeout_secs)) {
         HTML_LOG(0,"mount [%s] ok",path);
         result = 1;
+    } else {
+        HTML_LOG(0,"mount [%s] too slow to open folder",path);
     }
     set_mount_status(path,(result ? MOUNT_STATUS_OK : MOUNT_STATUS_BAD));
     return result;

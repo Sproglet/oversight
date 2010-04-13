@@ -446,7 +446,13 @@ void config_read_dimensions() {
 
             html_comment("rows = %d\n",g_dimension->rows);
 
-            double virtual_rows = g_dimension->rows + 0.7 ;
+            // Compute row height by first allowing for menu height.
+            double virtual_rows;
+            if (g_dimension->scanlines > 600 ) {
+                virtual_rows = g_dimension->rows + 0.7 ;
+            } else {
+                virtual_rows = g_dimension->rows + 1.1 ;
+            }
 
             int menu_height;
             if (g_dimension->scanlines == 0) {

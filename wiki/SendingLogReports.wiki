@@ -37,28 +37,16 @@ To send GUI logs:
   # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
 
-== Debug GUI logs ==
-
-It may be that I specifically ask for _debug_ GUI logs. These contain more comments in the HTML code, however the comments often interfere with the HTML  and the normal browser display will not appear, but the extra log details will still be present in the browser. To generate a debug gui log:
-
-  # Open Oversight in the PC. Go to Oversight->Setup->Oversight Jukebox Settings General and set log level to '1' (NO MORE!), and save , 
-  # now go back to the page that is causing problems. 
-  # if using Internet Explorer or Firefox, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
-  # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
-  # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
-  # Change the log level back to 0. If you have trouble with the GUI (because of the extra logging interfering with the display) you will have to edit the file /share/Apps/oversight/logs/oversight.cfg using an editor.
-
 = TV Logs =
 
 Send these if odd things happen only via the TV interface - not PC
 
 To get the page that is sent to gaya/tv, you must
-  # first edit oversight.cgi with a [http://www.networkedmediatank.com/wiki/index.php/Unix_Friendly_Text_Editor unix friendly editor], and comment out the line 'rm -f -- "$html" "$err" by putting a '#' in the first column.
-  # Then load the page again on the TV screen. 
-  # Now in /oversight/tmp you should have files 1234.html 1234.err - send the newest ones. (The number will change each time)
-  # email the page to me as an attachment  nmt AT lordy dot org Dot uk.
+
+  # Then load the problem page again on the TV screen. 
+  # On the PC go to OVersight->Setup->Diagnostics->{Last TV GUI Log}
+  # Save the page to a file and then email the file to me as an attachment  nmt AT lordy dot org Dot uk.
   # If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and the post number in the email.
-  # Once you have sent the logs, edit the oversight.cgi file again and remove the # added earlier, from  the line '#rm -f -- "$html" "$err"
 
 If the issue is with the play button on the remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 
 

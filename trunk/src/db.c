@@ -60,8 +60,6 @@ void fix_file_path(DbRowId *rowid);
 #define UNSET -2
 static int use_folder_titles = UNSET;
 
-#define COPY_STRING(len,from) ((from)?memcpy(MALLOC((len)+1),(from),(len)+1):NULL)
-
 char *copy_string(int len,char *s)
 {
     char *p=NULL;

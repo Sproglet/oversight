@@ -200,7 +200,8 @@ Array *split1ch(char *s_in,char *sep)
         if (strchr(sep,*p)) {
 
             char *part;
-            ovs_asprintf(&part,"%.*s",p-s,s);
+            part = COPY_STRING(p-s,s);
+            part[p-s] = '\0';
 
             array_add(a,part);
 
@@ -234,7 +235,9 @@ Array *splitstr(char *s_in,char *sep)
     while ((p=strstr(s,sep)) != NULL ) {
 
         char *part;
-        ovs_asprintf(&part,"%.*s",p-s,s);
+
+        part = COPY_STRING(p-s,s);
+        part[p-s] = '\0';
 
         //HTML_LOG(0,"part[%s]",part);
 
@@ -294,7 +297,7 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
 
     //printf("split re [%s] by [%s]\n",s_in,pattern);
 
-    if (strlen(pattern) == 1 && reg_opts == 0 ) {
+    if ( pattern[0] && !pattern[1] && reg_opts == 0 ) {
         return splitstr(s_in,pattern);
     }
 

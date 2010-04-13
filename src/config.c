@@ -137,6 +137,13 @@ struct hashtable *config_load(char *filename,int include_unquoted_space) {
     return result;
 }
 
+is_comment(char *line) {
+    while(*line && isspace(*line)) {
+        line++;
+    }
+    return (*line == '#');
+}
+
 #define CFG_BUFSIZ 700
 struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
@@ -149,7 +156,7 @@ struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
         CHECK_FGETS(line,CFG_BUFSIZ);
 
-        if ( (line[0] == ' ' || line[0] == '\t' || line[0] == '#' ) && util_strreg(line,"^\\s*#",0)) {
+        if ( (*line == ' ' || *line == '\t' || *line == '#' ) && is_comment(line)) {
             //skip comment
         } else {
             char *key = NULL;

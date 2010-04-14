@@ -1,25 +1,106 @@
-.dummy { color:red; }
 
-#menutitle { font-size:12pt; color:white; text-align:center; font-family:"arial"; font-weight:bold; }
+/* td.fresh,a.fresh,font.fresh */ a{}
+
+.fresh {
+[:IF($ovs_poster_mode):]
+ color:#FBB917;
+[:ELSE:]
+ color:#FFFF00;
+[:ENDIF:]
+ font-weight:bold;
+ font-style:italic;
+}
+
+td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
+
+
+[:IF($@poster_mode):]
+img.poster_fresh {
+ border-color:#AAAA00;
+ border-width:2px;
+ padding:1px;
+ margin:1px;
+ width:[:EVAL($@poster_menu_img_width-2):]px;
+ height:[:EVAL($@poster_menu_img_height-2):]px;
+ }
+
+img.poster {
+ border-width:none;
+ padding:1px;
+ margin:3px;
+ width:[:$@poster_menu_img_width:]px;
+ height:[:$@poster_menu_img_height:]px;
+ }
+ 
+img.poster_watched {
+ border-width:none;
+ padding:1px;
+ margin:3px;
+ width:[:$@poster_menu_img_width:]px;
+ height:[:$@poster_menu_img_height:]px;
+    }
+
+    a.poster { color:white; font-weight:bold; font-style:italic; }
+    a.poster_fresh { color:white; font-weight:bold; font-style:italic; }
+    a.poster_watched { color:#88AA88; font-weight:bold; font-style:italic; }
+
+    td.poster_unknown { }
+    td.poster_fresh_unknown { }
+    td.poster_watched_unknown { }
+[:ELSE:]
+
+    .grid0 { background-color:#333333; }
+    .grid1 { background-color:#666666; }
+
+[:ENDIF:]
+
+.plot {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+    font-weight:normal;
+}
+
+.title {
+ text-align:right;
+ font-size:[:TITLE_SIZE:];
+ font-weight:bold;
+ color:yellow;
+}
+
+.boxtitle {
+ text-align:left;
+ font-size:[:TITLE_SIZE:];
+ font-family:"arial";
+ font-weight:bold;
+}
+.menutitle {
+ font-size:[:TITLE_SIZE(-2):];
+ font-family:"arial";
+ font-weight:bold;
+}
+
+.Xtitle {
+ text-align:left;
+ font-size:[:TITLE_SIZE:];
+ font-weight:bold;
+ color:yellow;
+}
+
+.Xyear {
+ text-align:right;
+ font-size:[:TITLE_SIZE:];
+ color:white;
+}
+
+.Xgenre {
+ color:white;
+ font-weight:bold;
+}
+
+/* All after this point is admin related */
+
 html,body { height:100%; margin:0; padding:0; border:none; }
 #main { height:99%; width:100%; border:none; margin:0; padding:0; }
-
-img { border: 0px solid black; }
-td.poster         { background-color:#AA00AA; border-color:red;     border-width:2px; padding:1px; margin:1px; }
-td.poster_fresh   { background-color:#AA00AA; border-color:#AA00AA; border-width:2px; padding:1px; margin:1px; }
-td.poster_watched { border-width:2px; border-color:red; padding:1px; margin:1px; }
-
-td.poster_unknown { }
-td.poster_fresh_unknown { }
-td.poster_watched_unknown { }
-
-img.poster { border: 1px solid white; }
-img.poster_fresh { border: 2px solid green; }
-img.poster_watched { border: 0px solid black; }
-
-td.fresh_small { font-size:10pt; }
-td.normal_small { font-size:10pt; }
-td.watched_small { font-size:10pt; }
 
 body.menu_background0 { color:white ; background-color:black; }
 body.menu_background1 { color:yellow ; background-color:black; }
@@ -61,6 +142,8 @@ img.fresh {
     color:yellow;
     border-color:yellow;
 }
+
+
 .dummy { color:red; }
 
 td.fresh { color:yellow; font-weight:bold; font-style:italic; }
@@ -72,13 +155,6 @@ font.fresh { color:yellow; font-weight:bold; font-style:italic; }
 .watched { color:7777777 ; font-style:italic; }
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { background-color:red ; }
-
-.gridTW1_1 { color:#555555; background-color:#101066; }
-.gridTW1_0 { color:#555555; background-color:#101055; }
-.gridMW1_1 { color:#555555; background-color:#105510; }
-.gridMW1_0 { color:#555555; background-color:#106610; }
-.gridW1_1 { color:#555555; background-color:#551010; }
-.gridW1_0 { color:#555555; background-color:#661010; }
 
 table.header {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
 table.footer {	margin:0; border-spacing:1px; padding:0 ; border-width:0 ; }
@@ -166,35 +242,8 @@ h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF0
     color:white;
 }
 
-.transparent_fanart1_local0 {
-                filter:alpha(opacity=70);
-                opacity:0.7;
-                background-color:black;
-                color:white;
-}
 
-.transparent_fanart1_local1 {
-    background-color:black-alpha2;
-}
-
-.transparent_fanart0_local0 {
-    background-color:black;
-    color:white;
-}
-
-.transparent_fanart0_local1 {
-    background-color:black;
-}
-
-tr.fanart0 {
-    vertical-align:middle;
-}
-
-tr.fanart1 {
-    vertical-align:bottom;
-}
-
-
-<!--
+/*
 vi:ts=4:sw=4:et:syntax=css
--->
+*/a{}
+

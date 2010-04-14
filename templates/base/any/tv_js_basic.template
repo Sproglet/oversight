@@ -1,0 +1,16 @@
+<script type="text/javascript">
+	
+function show(idlist,epno,plot_text,info,eptitle)
+{
+    g_idlist = idlist;
+    g_epno = epno;
+    g_info = info;
+    titlecell.nodeValue = plot_text;
+    if (epno != '' ) {
+        episodecell.nodeValue = epno + ' : ' + eptitle + ' - ';
+    } else {
+        episodecell.nodeValue = 'Show Summary - ';
+    }
+}
+
+</script>

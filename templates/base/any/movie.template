@@ -1,0 +1,109 @@
+<!-- Default Movie Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:] [(:YEAR:)]</title>
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+		</style>
+
+		<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/movie.js"></script>
+
+		<!-- Default Fanart Movie Template  $Id:$ -->
+		<style type="text/css">
+		body { color:#66CCFF ; background-color:black; }
+		</style>
+    </head>
+
+[:INCLUDE_TEMPLATE(body_start):]
+        [:FORM_START:]
+            <table class="main" width="100%"  >
+[:IF($@gaya):]
+[:ELSE:]
+    			<tr valign=top><td height=100%></td></tr>
+[:ENDIF:]
+                <tr valign="bottom" >
+		            <td class=main width=1% align=right>
+		            	[:INCLUDE_TEMPLATE(buttons):]
+		            	<table class=main>
+							<tr><td align=right>[:POSTER:]</td></tr>					
+		            	</table>
+		            </td>
+                    <td class="main" >
+[:IF($ovs_fade):]
+                        <table width="100%" background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/transfade[:$ovs_transparency:].png" >
+[:ELSE:]
+                        <table width="100%" background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/trans[:$ovs_transparency:].png" >
+[:ENDIF:]
+		                    <tr>
+		                    	<td colspan=4 height=10%>&nbsp;</td>
+		                    <tr>	
+		                    <tr>
+		                    	<td width=1%></td>
+		                        <td width=79% class=Xtitle>[:TITLE:]</td>
+		                        <td align=right class=Xyear>[ (:$%YEAR:)]</td>
+                    			<td width=1%></td>
+		                    </tr>
+		                    <tr>
+		                    	<td colspan=4 height=2%>&nbsp;</td>
+		                    <tr>	
+		                    <tr>
+		                    	<td width=1%></td>
+		                        <td width=79% align=left><font class=Xgenre>[:GENRE:]</font></td>
+		                        <td align=right rowspan=2>[:CERTIFICATE_IMAGE:]&nbsp;[:EXTERNAL_URL:]</td>
+                    			<td width=1% rowspan=2></td>
+		                    </tr>
+		                    <tr>
+		                    	<td width=1%></td>
+		                        <td width=79% align=left>[:RATING_STARS(5):]&nbsp;&nbsp;[:RATING:]&nbsp;&nbsp;&nbsp;&nbsp;[:SOURCE:]&nbsp;&nbsp;&nbsp;&nbsp;
+								[:IF($@hd):]
+									[Runtime&#58;&nbsp;:RUNTIME:]
+								[:ELSE:]
+									[:RUNTIME:]
+								[:ENDIF:]</td>
+		                    </tr>	
+		                    <tr>
+		                    	<td colspan=4 height=1%>&nbsp;</td>
+		                    <tr>		
+                            <tr>
+                            	<td width=1%></td>
+                            	<td colspan=2 align="left"><span class="plot">[:PLOT:]</span></td>
+                    			<td width=1%></td>
+                            <tr>
+		                    <tr>
+		                    	<td colspan=4 height=2%>&nbsp;</td>
+		                    <tr>					
+                            <tr>
+                            	<td width=1%></td>
+                            	<td colspan=2>[:MOVIE_LISTING:]</td>
+                    			<td width=1%></td>
+                            </tr>
+                            <tr><td colspan=4>
+                                [:INCLUDE_TEMPLATE(submit_btn):]
+                            </td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        [:PLAY_TVID:]
+    </td>
+    </tr>
+</table>
+    </body>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->
+
+
+<a href="javascript:ovs_info();" tvid="INFO"></a>
+<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
+<a href="javascript:ovs_delete();" tvid="1111"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+</body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

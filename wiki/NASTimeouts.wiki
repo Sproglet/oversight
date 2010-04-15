@@ -34,7 +34,8 @@ If you have a software firewall between the NMT and the shared drive, it may blo
 
 ===== Windows Home Server (WHS) Firewall =====
  
-Windows Home Server firewall will block oversight's probes on port 445, so if possible you should create a rule to allow this.
+Windows Home Server firewall will block oversight's probes on port 445, so if possible you should create a rule that allows any traffic from NMT to port 445 of your server.
+If that doesnt work then if you are not serving files on the internet, you may want to consider disabling the firewall completely.
 
 === How It Works ===
 

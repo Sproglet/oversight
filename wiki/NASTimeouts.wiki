@@ -22,7 +22,7 @@ If your NAS has to spin up for example you may get a red X the first time and a 
 
 Increase the NAS timeout enough and you should always get a green tick (assuming NAS is available). however If you ever use Oversight with the NAS switched off (ie internal HD only), then every page load will be delayed by this amount of time. This time should be kept as short as reasonably possible for your network/NAS configuration.
 
-=== Recommendations ===
+= Recommendations =
 
 So, if you always need your NAS on when using oversight, then set this to the amount of time your NAS takes to respond after it has been left idle for sometime. (eg 1000 ms).
 
@@ -31,15 +31,15 @@ If you often use Oversight with the NAS switched off, then set this to a shorter
 
 If you have more than one NAS, then at present each one is probed in sequence, so bear that in mind when setting the timeout.
 
-====Firewalls====
+==Firewalls==
 If you have a software firewall between the NMT and the shared drive, it may block Oversights initial probe for the presence of the drive. In this case modify your firewall rules accordingly.
 
-===== Windows Home Server (WHS) Firewall =====
+=== Windows Home Server (WHS) Firewall ===
  
 Windows Home Server firewall will block oversight's probes on port 445, so if possible you should create a rule that allows any traffic from NMT to port 445 of your server.
 If that doesnt work then if you are not serving files on the internet, you may want to consider disabling the firewall completely.
 
-=== How It Works ===
+= How It Works =
 
 If the NAS share is window/SAMBA/Cifs share, then it is the max amount of time to establish a socket connection to Port 445.
 

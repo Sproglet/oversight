@@ -1,7 +1,7 @@
 #summary Configure how long Oversight waits for your NAS to respond.
 #sidebar TableOfContents
 
-<wiki:toc max_depth="2" />
+<wiki:toc max_depth="4" />
 
 This applies to dedicated NAS hardware as well as simple Windows shares on PCs, etc.
 

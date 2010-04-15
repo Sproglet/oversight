@@ -1,6 +1,8 @@
 #summary Configure how long Oversight waits for your NAS to respond.
 #sidebar TableOfContents
 
+<wiki:toc max_depth="2" />
+
 This applies to dedicated NAS hardware as well as simple Windows shares on PCs, etc.
 
 Oversight has a 'nas_timeout' setting ( see menu Oversight->Setup->General Settings )

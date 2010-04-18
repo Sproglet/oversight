@@ -862,6 +862,17 @@ int util_starts_with(char *a,char *b)
     }
     return *b == '\0';
 }
+int util_starts_with_ignore_case(char *a,char *b)
+{
+    if (!a) a = "";
+    if (!b) b = "";
+    while(tolower(*a) == tolower(*b) ) {
+        if (*b == '\0') return 1;
+        a++;
+        b++;
+    }
+    return *b == '\0';
+}
 
 void util_rmdir(char *path,char *name)
 {

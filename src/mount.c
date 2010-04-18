@@ -331,7 +331,7 @@ char *wins_resolve(char *link) {
             }
 #endif
             if (p) {
-                if (util_starts_with(p,host) && p[strlen(host)] == ' ' ) {
+                if (util_starts_with_ignore_case(p,host) && p[strlen(host)] == ' ' ) {
                     // found it - get ip address from the start.
                     char *sp = strchr(buf,' ');
                     if (sp) {

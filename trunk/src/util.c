@@ -1017,7 +1017,8 @@ char *file_name(char *path)
             }
             p++;
         }
-        ovs_asprintf(&result,"%.*s",end-p,p);
+        result = COPY_STRING(end-p,p);
+        result[end-p]='\0';
     }
     return result;
 }

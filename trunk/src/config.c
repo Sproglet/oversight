@@ -449,7 +449,7 @@ void config_read_dimensions() {
             // Compute row height by first allowing for menu height.
             double virtual_rows;
             if (g_dimension->scanlines > 600 ) {
-                virtual_rows = g_dimension->rows + 0.7 ;
+                virtual_rows = g_dimension->rows + 0.8 ;
             } else {
                 virtual_rows = g_dimension->rows + 1.1 ;
             }

@@ -277,13 +277,23 @@ int connect_service(char *host,long timeout_millis,int port)
 
                     } else {
 
+                        int num_responses=0;
                         fd_set set;
                         FD_ZERO(&set);
                         FD_SET(sockfd,&set);
 
                         gettimeofday(&t1,NULL);
-                        if (select(1+sockfd,&set,NULL,NULL,&timeout) == 1) {
-                            ret = 0;
+                        num_responses = select(1+sockfd,&set,NULL,NULL,&timeout);
+                        switch(num_responses) {
+                            case 0: //timeout
+                                ret = -8;
+                                break;
+                            case 1: // success
+                                ret = 0;
+                                break;
+                            default: // Error or more than one response!?!?!
+                                ret = errno;
+                                break;
                         }
                         gettimeofday(&t2,NULL);
                         if (ret == 0) {

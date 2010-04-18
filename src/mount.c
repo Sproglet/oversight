@@ -610,7 +610,6 @@ int ping_link(char *link)
     char *host=NULL;
     char *end=NULL;
     int result = 0;
-    int port;
     static long connect_millis=-1;
 TRACE;
 
@@ -627,7 +626,10 @@ TRACE;
         if (link) {
             link += 3;
             end = strchr(link,':');
-            port=111; // assume nfs host has portmapper
+            //
+            // assume nfs host has portmapper
+            ovs_asprintf(&host,"%.*s",end-link,link);
+            result = (connect_service(host,connect_millis,111) == 0);
         }
 
     } else if (util_starts_with(link,"smb")) {
@@ -635,21 +637,23 @@ TRACE;
         if (link) {
             link += 3;
             end = strchr(link,'/');
-            port=445; //assume SMB on port 445
+            //assume SMB on port 445
+            ovs_asprintf(&host,"%.*s",end-link,link);
+
+            int connect_code = connect_service(host,connect_millis,445);
+
+            if (connect_code == ECONNREFUSED) {
+                // ok device is present so try 139.
+                connect_code = connect_service(host,connect_millis,139);
+            }
+            result  = (connect_code == 0);
         }
     }
-
     if (end) {
-
-
-        ovs_asprintf(&host,"%.*s",end-link,link);
-
-        result = (connect_service(host,connect_millis,port) == 0);
-
         HTML_LOG(1,"ping link [%s] host[%s] = %d",link,host,result);
-        FREE(host);
-
     }
+
+    FREE(host);
     return result;
 }
 

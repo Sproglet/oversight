@@ -90,6 +90,11 @@ INSTALL() {
 
         ( cd "$INSTALL_DIR/cache" && rm -f tt[0-9]*[0-9] ) # clear cache
 
+        #not sure how people are still getting wget in busybox but rename it
+        if [ -f /share/bin/wget ] ; then
+            mv /share/bin/wget /share/bin/wget2 || true
+        fi
+
         chmod -R 775 "$INSTALL_DIR"
         chown -R nmt:nmt "$INSTALL_DIR"
         "$NMT" NMT_INSTALL "$appname" "$start_command"

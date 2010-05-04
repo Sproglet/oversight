@@ -312,7 +312,24 @@ void delete_queue_delete() {
     }
 }
 
-static void send_command(char *source,char *remote_cmd) {
+static void delete_config(char *name) {
+    char *timestamp = timestamp_static();
+    char *tmp,*tmp2;
+    ovs_asprintf(&tmp,"%s/conf/%s",appDir(),name);
+    ovs_asprintf(&tmp2,"%s/conf/%s.%s",appDir(),name,timestamp);
+    if (rename(tmp,tmp2) != 0) {
+        HTML_LOG(0,"Error renaming [%s] to [%s]",tmp,tmp2);
+    } else {
+        HTML_LOG(0,"Renamed [%s] to [%s]",tmp,tmp2);
+    }
+    FREE(tmp);
+    FREE(tmp2);
+}
+
+// #define USE_CRON 1
+#ifdef USE_CRON 
+static void send_command(char *source,char *remote_cmd)
+{
     char *cmd;
     int freepath;
     char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh",&freepath);
@@ -327,20 +344,7 @@ static void send_command(char *source,char *remote_cmd) {
     }
     FREE(cmd);
 }
-
-static void delete_config(char *name) {
-    char *timestamp = timestamp_static();
-    char *tmp,*tmp2;
-    ovs_asprintf(&tmp,"%s/conf/%s",appDir(),name);
-    ovs_asprintf(&tmp2,"%s/conf/%s.%s",appDir(),name,timestamp);
-    if (rename(tmp,tmp2) != 0) {
-        HTML_LOG(0,"Error renaming [%s] to [%s]",tmp,tmp2);
-    } else {
-        HTML_LOG(0,"Renamed [%s] to [%s]",tmp,tmp2);
-    }
-    FREE(tmp);
-    FREE(tmp2);
-}
+#endif
 
 void do_actions() {
 
@@ -380,7 +384,7 @@ void do_actions() {
         } else if (STRCMP(action,"reset_dns_cache") == 0) {
 
             char *cmd;
-            ovs_asprintf(&cmd,"%s/bin/dns.sh",appDir());
+            ovs_asprintf(&cmd,"daemon %s/bin/dns.sh",appDir());
             util_system(cmd);
 
         } else if (STRCMP(action,"clear_cache") == 0) {
@@ -390,7 +394,14 @@ void do_actions() {
         } else if (STRCMP(action,"rescan_request") == 0) {
 
             int parallel_scan = 0;
-            char *cmd = STRDUP("catalog.sh NOWRITE_NFO ");
+            char *cmd ;
+
+#ifdef USE_CRON 
+            cmd = STRDUP("catalog.sh NOWRITE_NFO ");
+#else
+            ovs_asprintf(&cmd,"DAEMON_DIR='%s' daemon %s/catalog.sh NOWRITE_NFO ",appDir(),appDir());
+#endif
+
             char *k;
             char *v;
             
@@ -425,7 +436,11 @@ void do_actions() {
                     char *tmp;
                     ovs_asprintf(&tmp,"%s \"%s\"",cmd,k+strlen(RESCAN_DIR_PREFIX));
                     if (parallel_scan) {
+#ifdef USE_CRON 
                         send_command("*",tmp);
+#else
+                        util_system(tmp);
+#endif
                         FREE(tmp);
                     } else {
                         FREE(cmd);
@@ -434,7 +449,11 @@ void do_actions() {
                 }
             }
             if (!parallel_scan) {
+#ifdef USE_CRON 
                 send_command("*",cmd);
+#else
+                util_system(cmd);
+#endif
             }
             FREE(cmd);
 

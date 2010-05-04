@@ -58,7 +58,7 @@ LIBS=-lm
 
 LDFLAGS=-g -Wall -O3 $(LIBS) $(LDFLAGS_ARCH)
 
-all: $(ARCH) $(TARGET) 
+all: $(ARCH) $(TARGET) daemon
 
 push: ftp
 
@@ -83,6 +83,12 @@ $(TARGET):  $(OBJS)
 	cp $(TARGET) $(EXE)
 	sleep 1
 
+daemon.o: daemon.c
+
+daemon: daemon.o
+	$(CC) $(LDFLAGS) -o daemon daemon.o
+	cp daemon ../$(TARGET_DIR)/.
+
 ftp: all
 	cd ../$(TARGET_DIR) && ../../util/send $(ARCH) /Apps/oversight/$(TARGET_DIR) $(TARGET) 
 
@@ -93,4 +99,4 @@ tidy:
 	rm -f *.o $(ARCH) $(BADARCH) $(VERFILE)
 
 clean: tidy
-	rm -f tester old_tester $(TARGET)
+	rm -f tester old_tester $(TARGET) daemon

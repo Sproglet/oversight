@@ -409,7 +409,8 @@ reboot_fix() {
     ln -sf /tmp/0 "$APPDIR/logs/gui.log"
 
     # Restore cronjobs
-    "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
+    # "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
+
     freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
     add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
 

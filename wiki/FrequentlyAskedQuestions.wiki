@@ -1,7 +1,8 @@
 #labels Featured
 #sidebar TableOfContents
+<wiki:toc max_depth="3" />
 
-*Q. How can I get oversight to rename and move Films that were already on the PCH _before_ I installed oversight?*
+===How can I get oversight to rename and move Films that were already on the PCH _before_ I installed oversight?*===
 
 A with telnet you can do
 
@@ -10,18 +11,24 @@ A with telnet you can do
 I would only do this if Oversight is getting all of the film names correct, otherwise they will end up in a wrongly named folder.
 (This is one reason Oversight doesnt change the name of the actual movie avi file yet, I will only add that once Oversight becomes more accurate)
 
+===How do I clear the dataabase?===
 
+Delete the file /share/Apps/oversight/index.db. You can do this via the TV file browser or via Windows share etc.
 
-*Q. How do I download to an external hard drive?*
+===How do I download to an external hard drive?===
 
 A. To download content to an external HDD you must change the film_folder_fmt and tv_file_fmt settings in oversight->admin->renaming.
 
 For content other than movies or tv shows, also change the oversight->admin->Nzbget unpacking->completed_dir to be the full path to a folder on the external HDD. 
+See [NZBGetIntegrationAndRenaming]
 
-*Q. When displaying by Age, how is 'Age' calculated*
+
+
+===When displaying by Age, how is 'Age' calculated?===
 
 One of Oversight's goals is to act like a PVR, so the 'age' is generally the time the item was added to Oversight. This works well for incremental scans. However when doing a full scan, age is taken from the age of the file itself. Broadcast or Release age is not used at present.
 
-*Q. Why does Oversight use 3 different search engines
+===Why does Oversight use 3 different search engines?===
 
 A. No one really ask this much, but it might cross their mind when using the site checker. To reduce false positives, some queries are performed against two different search engines. If they disagree, then a third engine is used for the casting vote. This has made searches much more accurate and reduced false positives. It is important that the search engines are not re-badged versions of one another or we'd get the same results.
+(eg Ask = Google)

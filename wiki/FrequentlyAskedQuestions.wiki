@@ -11,7 +11,7 @@ A with telnet you can do
 I would only do this if Oversight is getting all of the film names correct, otherwise they will end up in a wrongly named folder.
 (This is one reason Oversight doesnt change the name of the actual movie avi file yet, I will only add that once Oversight becomes more accurate)
 
-===How do I clear the dataabase?===
+===How do I clear the database?===
 
 Delete the file /share/Apps/oversight/index.db. You can do this via the TV file browser or via Windows share etc.
 

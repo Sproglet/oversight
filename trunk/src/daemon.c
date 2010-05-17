@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,"Unable to setpgrp - error %d",errno);
     }
     if (setsid() == -1) {
-        fprintf(stderr,"Unable to setsid - error %d",errno);
+        // fprintf(stderr,"Unable to setsid - error %d",errno);
     }
 
     pid = fork();

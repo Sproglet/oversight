@@ -201,7 +201,7 @@ BEGIN {
     #g_imdb_regex="\\<tt[0-9]+\\>";
     g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
 
-    g_year_re="(20[01][0-9]|19[5-9][0-9])";
+    g_year_re="(20[01][0-9]|19[0-9][0-9])";
     g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]* \\(?"g_year_re"\\)?";
 
     ELAPSED_TIME=systime();

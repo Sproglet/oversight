@@ -36,7 +36,7 @@ catalog_fetch_posters="yes"
 catalog_fetch_fanart="yes"
 catalog_poster_prefix="ovs_"
 
-catalog_format_tags="bd,dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,avchd,blu720p,blu1080p,bluray,brrip,dsrip,img,hdtv,pal\>,ntsc\>,pdtv,r5,repost,screener,workprint,ws\>,x264,xvid,yenc,par2,remaster,download,subtitle"
+catalog_format_tags="bd,dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,avchd,blu720p,blu1080p,bluray,brrip,dsrip,img,hdtv,pal\>,ntsc\>,pdtv,r5,repost,screener,workprint,ws\>,x264,xvid,yenc,par2,remaster,download,subtitle,720x,1280x,1920x"
 
 
 catalog_scan_paths="/share/Video,/share/Movies,/share/Tv,/share/Complete"
@@ -75,7 +75,7 @@ catalog_tv_plugins="THETVDB,TVRAGE"
 
 #scene names
 catalog_movie_search_regex1="^[-a-z0-9.]+$"
-catalog_movie_search_order1="ONLINE_NFO,IMDBFIRST,IMDBLINKS"
+catalog_movie_search_order1="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
 #something with the year in it.
 catalog_movie_search_regex2=" .(20|19)[0-9][0-9]"
 catalog_movie_search_order2="IMDBFIRST,ONLINE_NFO,IMDBLINKS"

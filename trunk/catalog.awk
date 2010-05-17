@@ -502,7 +502,15 @@ END{
     ACTION_DELETE_MEDIA="d";
     ACTION_DELETE_ALL="D";
 
-    g_settings["catalog_format_tags"]="\\<("tolower(g_settings["catalog_format_tags"])")";
+    # underscores should also be treated as word boundaries.
+
+    tmp = tolower(g_settings["catalog_format_tags"]);
+
+    gsub(/\\>/,"(\\>|_)",tmp); # allow underscore to match end of word.
+
+    g_settings["catalog_format_tags"]="(\\<|_)("tmp")";
+
+    DEBUG("catalog_format_tags="g_settings["catalog_format_tags"]);
 
     gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
 
@@ -1774,7 +1782,6 @@ function textToSearchKeywords(f,heuristic\
 # eg. "dvdrip blah 720p blah2" => "blah"
 function remove_format_tags(text,\
                             tags) {
-
 
     tags = g_settings["catalog_format_tags"];
 

@@ -2770,18 +2770,29 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
             season = substr(line,1,RSTART-1);
         }
 
-        #BigBrother episodes with trailing character.
-        gsub(/[^0-9]+/,",",ep); #
-        DEBUG("Episode : "ep);
-        gsub(/\<0+/,"",ep);
-        gsub(/,,+/,",",ep);
-        sub(/^,+/,"",ep);
+        if (season - 50 > 0 ) {
 
-        details[EPISODE] = ep;
-        details[SEASON] = n(season);
-        details[TITLE] = title;
-        details[ADDITIONAL_INF]=inf;
-        ret=1;
+            DEBUG("Reject season > 50");
+
+        } else if (ep - 52 > 0 ) {
+
+            DEBUG("Reject episode > 52 : expect date format ");
+
+        } else {
+
+            #BigBrother episodes with trailing character.
+            gsub(/[^0-9]+/,",",ep); #
+            DEBUG("Episode : "ep);
+            gsub(/\<0+/,"",ep);
+            gsub(/,,+/,",",ep);
+            sub(/^,+/,"",ep);
+
+            details[EPISODE] = ep;
+            details[SEASON] = n(season);
+            details[TITLE] = title;
+            details[ADDITIONAL_INF]=inf;
+            ret=1;
+        }
     }
 
     #Return results

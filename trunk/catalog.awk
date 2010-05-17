@@ -165,6 +165,7 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
     g_max_db_len=4000;
     g_country_prefix="country_";
@@ -1194,7 +1195,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                       if ( checkMultiPart(scan_line,gMovieFileCount) ) {
                           #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                           #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
-                          if ( !setNfo(gMovieFileCount-1,".(|cd|disk|disc|part)[1-9]" extRe,".nfo") ) {
+                          if ( !setNfo(gMovieFileCount-1,".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
                               setNfo(gMovieFileCount-1, extRe,".nfo");
                           }
                       } else {
@@ -1623,7 +1624,7 @@ txt) {
     #Remove the cd1 partb bit.
     if (idx in gMultiPartTagPos) {
         txt = substr(txt,1,gMultiPartTagPos[idx]);
-        sub(/(part|cd|)[1a]$/,"",txt);
+        sub("("g_multpart_tags"|)[1a]$","",txt);
         DEBUG("MultiPart Suffix removed = ["txt"]");
     }
 

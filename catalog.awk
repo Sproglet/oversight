@@ -1780,7 +1780,7 @@ function remove_format_tags(text,\
 
     # Remove format tags at the beginning
     while (match(tolower(text),"^"tags)) {
-        # Remove the whole whole (the format tag may only be a partial word match)
+        # Remove the first word (the format tag may only be a partial word match)
         DEBUG("format tag prefix ["text"]");
         sub(/^[a-zA-Z0-9]+[^a-zA-Z0-9]*/,"",text);
         DEBUG("format tag prefix ["text"]");

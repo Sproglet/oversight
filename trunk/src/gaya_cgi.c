@@ -350,21 +350,19 @@ char *url_decode(char *str) {
 }
 
 int is_local_browser() {
-    char *addr;
-    if ((addr=getenv("REMOTE_ADDR")) != NULL) {
-        return (strcmp(addr,"127.0.0.1") == 0);
-    } else {
-        return 1;
+    static int result = -1;
+    if (result == -1) {
+        result = 0;
+        char *addr=NULL;
+        if ((addr=getenv("REMOTE_ADDR")) != NULL) {
+            result = (strcmp(addr,"127.0.0.1") == 0);
+        }
     }
+    return result;
 }
 
 int is_pc_browser() {
-    char *addr;
-    if ((addr=getenv("REMOTE_ADDR")) != NULL) {
-        return (strcmp(addr,"127.0.0.1") != 0);
-    } else {
-        return 0;
-    }
+    return !is_local_browser();
 }
 
 char *html_encode(char *s) {

@@ -1,6 +1,7 @@
 <!-- Default Rescan Template  $Id:$ -->
 <html>
     <head>
+        [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight [:HOSTNAME:]: Rescan</title>
         <style type="text/css">

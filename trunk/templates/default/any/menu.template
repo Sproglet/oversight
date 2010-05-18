@@ -1,6 +1,7 @@
 <!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
+        [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight [:VERSION:] ([:HOSTNAME:])</title>
         <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css" />

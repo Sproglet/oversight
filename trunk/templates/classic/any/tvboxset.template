@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta name="robots" content="nofollow">
+        [:FAVICON:]
         <title>Oversight Menu [:HOSTNAME:]</title>
         <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
         <style type="text/css">

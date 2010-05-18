@@ -469,6 +469,8 @@ END{
     g_ABC=toupper(g_abc);
     g_tagstartchar=g_ABC g_abc":_";
 
+    report_status("scanning");
+
     load_catalog_settings();
 
     split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep);
@@ -809,7 +811,6 @@ attempts,sleep,backoff) {
 function unlock(lock_file) {
     INF("Unlocked "lock_file);
     system("rm -f -- "qa(lock_file));
-    report_status("");
 }
 
 function monthHash(nameList,sep,hash,\

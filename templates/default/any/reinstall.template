@@ -1,6 +1,7 @@
 <!-- Default Reinstall Template  $Id:$ -->
 <html>
     <head>
+        [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight [:HOSTNAME:]: Reinstall</title>
         <style type="text/css">

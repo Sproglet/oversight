@@ -1,6 +1,7 @@
 <!-- Default Completed Template  $Id:$ -->
 <html>
     <head>
+        [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight Settings Menu [:HOSTNAME:]</title>
         <style type="text/css">

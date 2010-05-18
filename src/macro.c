@@ -1083,6 +1083,15 @@ char *macro_fn_image_url(char *template_name,char *call,Array *args,int num_rows
     return result;
 }
 
+char *macro_fn_favicon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result="";
+    *free_result = 0;
+    if (is_pc_browser()) {
+        result = "<link rel=\"shortcut icon\" href=\"/oversight/templates/ovsicon.ico\" />";
+    }
+    return  result;
+}
+
 // Display an icon
 char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
@@ -1912,6 +1921,7 @@ void macro_init() {
         hashtable_insert(macros,"HELP_BUTTON",macro_fn_help_button);
 
         hashtable_insert(macros,"LINK",macro_fn_link);
+        hashtable_insert(macros,"FAVICON",macro_fn_favicon);
         hashtable_insert(macros,"ICON",macro_fn_icon);
         hashtable_insert(macros,"ICON_LINK",macro_fn_icon_link);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);

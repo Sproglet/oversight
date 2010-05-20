@@ -4,7 +4,7 @@
         <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]): [:TITLE:] [(:YEAR:)]</title>
         [:FAVICON:]
-        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:SKIN_NAME:]/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -17,7 +17,7 @@ table.listing {
 
 </style>
 
-<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/movie.js"></script>
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/movie.js"></script>
 
 <!-- Default Fanart Movie Template  $Id:$ -->
 <style type="text/css">
@@ -51,9 +51,9 @@ body { color:yellow ; background-color:black; }
                     <td width=1% class="main" align=left>[:POSTER:]</td>
                     <td class="main" >
 [:IF($ovs_fade):]
-                        <table width="100%" background="[:URL_BASE:]/templates/alt/images/transfade[:$ovs_transparency:].png" >
+                        <table width="100%" background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/transfade[:$ovs_transparency:].png" >
 [:ELSE:]
-                        <table width="100%" background="[:URL_BASE:]/templates/alt/images/trans[:$ovs_transparency:].png" >
+                        <table width="100%" background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/trans[:$ovs_transparency:].png" >
 [:ENDIF:]
                             <tr>
                                 <td colspan=2 class="title">[:$%TITLE:][ (:$%YEAR:)]</td>

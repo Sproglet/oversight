@@ -4,7 +4,7 @@
         <meta name="robots" content="nofollow">
         <title>Oversight Menu [:VERSION:] [:HOSTNAME:]</title>
         [:FAVICON:]
-        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/alt/css/default.css" />
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:SKIN_NAME:]/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -102,7 +102,7 @@ table.overview_poster {
         </td></tr></table>
 [:ENDIF:]
 </form>
-<script type="text/javascript" src="[:URL_BASE:]/templates/alt/js/menu.js"></script>
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/menu.js"></script>
 <script type="text/javascript">
 function info() {
     alert('[RED] - mark watched\n[GREEN] - unwatch\n[DELETE] - delist\n[1111] Delete Media');

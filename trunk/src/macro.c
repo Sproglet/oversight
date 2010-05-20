@@ -1092,6 +1092,11 @@ char *macro_fn_favicon(char *template_name,char *call,Array *args,int num_rows,D
     return  result;
 }
 
+char *macro_fn_skin_name(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    *free_result = 0;
+    return skin_name();
+}
+
 // Display an icon
 char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
@@ -1923,6 +1928,7 @@ void macro_init() {
         hashtable_insert(macros,"LINK",macro_fn_link);
         hashtable_insert(macros,"FAVICON",macro_fn_favicon);
         hashtable_insert(macros,"ICON",macro_fn_icon);
+        hashtable_insert(macros,"SKIN_NAME",macro_fn_skin_name);
         hashtable_insert(macros,"ICON_LINK",macro_fn_icon_link);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"RIGHT_BUTTON",macro_fn_right_button);

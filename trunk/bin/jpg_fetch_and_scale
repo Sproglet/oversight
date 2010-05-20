@@ -29,6 +29,8 @@ export PATH="$OVS_HOME/bin:$PATH"
 uid=nmt
 gid=nmt
 
+prefix=ovsq.
+
 thread=0
 
 ARCH=
@@ -111,7 +113,7 @@ fetch_resize() {
     file="$1" ; shift ;
 
     INFO ""
-    INFO "Processing : $type $url $file"
+    INFO "Processing : [$type] [$url] [$file]"
 
     if wget -O "$file" "$@" "$url" && [ -s "$file" ]  ; then
         perms $file
@@ -156,9 +158,9 @@ add_queue() {
     done
     mkdir -p "$Q.$type"
     perms "$Q.$type"
-    echo "$args" >> "$Q.$type/$$"
-    chmod 666 "$Q.$type/$$"
-    perms "$Q.$type/$$"
+    echo "$args" >> "$Q.$type/$prefix$$"
+    chmod 666 "$Q.$type/$prefix$$"
+    perms "$Q.$type/$prefix$$"
     INFO "Queued $args"
 }
 
@@ -193,10 +195,10 @@ process_queue() {
     pq_count=0 
     pq_args="`thread_prefix`.cmd"
 
-    INFO "Begin Processing $1"
+    INFO "Begin Processing folder [$1]"
 
     cd $pq_folder
-    for f in * ; do
+    for f in $prefix* ; do
 
         if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
 

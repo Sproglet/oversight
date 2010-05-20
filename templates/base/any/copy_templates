@@ -1,3 +1,3 @@
 for i in "$@" ; do
-    cp -v *e /cygdrive/"$i"/Apps/oversight/templates/alt/any/.
+    cp -v *e /cygdrive/"$i"/Apps/oversight/templates/default/any/.
 done

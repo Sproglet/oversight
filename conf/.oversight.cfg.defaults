@@ -23,6 +23,11 @@ ovs_m_runtime_format="%d&nbsp;min"
 ovs_movie_filename=0
 ovs_age_field="filetime"
 
+ovs_tvid_delist=CLEAR
+ovs_tvid_delete=1111
+ovs_tvid_mark=RED
+ovs_tvid_unmark=GREEN
+
 ovs_poster_mode[0]=1
 ovs_rows[0]=9
 ovs_cols[0]=2

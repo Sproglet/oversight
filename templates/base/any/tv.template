@@ -108,10 +108,10 @@
 [:INCLUDE_TEMPLATE(tv_js):]
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>
-<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
-<a href="javascript:ovs_delete();" tvid="1111"></a>
-<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
-<a href="javascript:ovs_watched();" tvid="RED"></a>
+<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
+<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
+<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
+<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
 <!-- Title toggle -->
 </body>
 </html>

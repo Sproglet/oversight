@@ -12,7 +12,7 @@
 #
 # ==================================================================================
 #
-# This script uses awk in the 'bad' way. It does not use awks pattern matching on input. methodology,
+# This script uses awk in the 'bad' way. It does not use awks pattern matching on input.
 # but works as a simple procedural program. Everything is triggered from the END clause.
 #
 # I would rather have used perl, but this was not available at the time.

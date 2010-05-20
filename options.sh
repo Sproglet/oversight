@@ -4,6 +4,8 @@ VERSION=20090605-1BETA
 APPDIR=$( echo $0 | sed -r 's|[^/]+$||' )
 APPDIR=$(cd "${APPDIR:-.}" ; pwd )
 
+TMPDIR="$APPDIR/tmp"
+
 #echo "APPDIR=$APPDIR"
 
 #$1 = file
@@ -52,6 +54,8 @@ OPTION_PARSE() {
         esac
     done
 
+    cd "$APPDIR"
+
     awk '
 # { print "<!-- "FILENAME " : " $0 "-->"; }
 /^#/ { next }
@@ -89,11 +93,40 @@ function addVal(line,sep,arr,addToOrder,   i,name,rest) {
         # print "<!-- "name"="rest" -->";
     }
 }
+
+# Trim trailing quote only if leading quote present.
 function trim(x) {
-    sub(/^[ "'"'"']+/,"",x);
-    sub(/[ "'"'"']+$/,"",x);
+    sub(/^ +/,"",x);
+    sub(/ +$/,"",x);
+
+    if (sub(/^["'"'"']+/,"",x) ) {
+        sub(/["'"'"']+$/,"",x);
+    }
     return x;
 }
+
+# input opt[1]=var name opt[2]=parent folder
+# output opt[1]=var name opt[2...n]=child folder
+
+function run_option_command(cmd,opts,\
+tmpf,count,err) {
+
+    delete opts;
+    tmpf = "'"$TMPDIR/option.$$"'";
+    cmd = cmd" > \""tmpf"\"";
+    if (system(cmd) == 0 ) {
+        count = 0;
+        while ( err = (getline opts[++count] < tmpf ) > 0 ) {
+        }
+        if (err != -1)  {
+            close(tmpf)
+        }
+    } else {
+        print "<-- ERROR: failed to run ["cmd"] -->";
+    }
+    return count;
+}
+
 function html_table(    i,n,current,sel,opts,optCount) {
     i=1;
     print "<table class=\"options\" width=\"100%\" >";
@@ -115,15 +148,21 @@ function html_table(    i,n,current,sel,opts,optCount) {
         draw_choice="";
         if (n in options) {
 
-            split(options[n],opts,"|");
-            optCount=0;
-            for(o in opts) optCount++;
+
+            if (match(options[n],"@CMD:")) {
+
+                optCount = run_option_command(substr(options[n],RSTART+RLENGTH),opts);
+            } else {
+                optCount = split(options[n],opts,"|");
+            }
 
             if (optCount > 0 && !(n in val) ) {
                 #Take default from first option
                 current = val[n]=opts[1];
             }
+
             if (optCount > 1) {
+
                 draw_choice = sprintf("<select name=option_%s>",n);
                 for(o=1 ; o <= optCount ; o++) {
                     if (opts[o] == current) {
@@ -174,23 +213,10 @@ function html_table(    i,n,current,sel,opts,optCount) {
 
 #Return file name with shell meta-chars escaped.
 function quoteFile(f,
-    j,ch) {
-    if (index(f,"\"") == 0) {
-        return "\""f"\"";
-    } else if (index(f,"'"'"'") == 0) {
-        return "'"'"'"f"'"'"'";
-    } else {
-        meta=" !&[]*()\"'"'"'";
-        for(j= 1 ; j <= length(meta) ; j++ ) {
-            ch=substr(meta,j,1);
-            if (index(f,ch)) {
-                #DEBUG("Escaping ["ch"] from "f);
-                gsub("["ch"]","\\"ch,f);
-                #DEBUG("= "f);
-                }
-        }
-        return f;
-    }
+    q) {
+    q="'"'"'";
+    gsub(q, q "\\" q q,f);
+    return q f q;
 }
 
 function shell_assign() {

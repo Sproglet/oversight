@@ -629,7 +629,13 @@ TRACE;
             //
             // assume nfs host has portmapper
             ovs_asprintf(&host,"%.*s",end-link,link);
-            result = (connect_service(host,connect_millis,111) == 0);
+            int connect_code = connect_service(host,connect_millis,2049); //nfs
+
+            if (connect_code == ECONNREFUSED) {
+                // ok device is present so try 139.
+                connect_code = connect_service(host,connect_millis,111); //portmapper
+            }
+            result  = (connect_code == 0);
         }
 
     } else if (util_starts_with(link,"smb")) {
@@ -640,11 +646,11 @@ TRACE;
             //assume SMB on port 445
             ovs_asprintf(&host,"%.*s",end-link,link);
 
-            int connect_code = connect_service(host,connect_millis,445);
+            int connect_code = connect_service(host,connect_millis,445); //new SMB
 
             if (connect_code == ECONNREFUSED) {
                 // ok device is present so try 139.
-                connect_code = connect_service(host,connect_millis,139);
+                connect_code = connect_service(host,connect_millis,139); //old SMB
             }
             result  = (connect_code == 0);
         }

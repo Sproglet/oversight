@@ -5,5 +5,5 @@
 # for quick testing.
 #
 for i in "$@" ; do
-    cp -v *e /cygdrive/"$i"/Apps/oversight/templates/alt/any/.
+    cp -v *e /cygdrive/"$i"/Apps/oversight/templates/classic/any/.
 done

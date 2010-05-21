@@ -94,6 +94,8 @@ INSTALL() {
         if [ -f /share/bin/wget ] ; then
             mv /share/bin/wget /share/bin/wget2 || true
         fi
+        # remove bad skin
+        rm -fr "$INSTALL_DIR/templates/gaya"
 
         chmod -R 775 "$INSTALL_DIR"
         chown -R nmt:nmt "$INSTALL_DIR"

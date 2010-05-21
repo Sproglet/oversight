@@ -442,7 +442,7 @@ case "$1" in
     REBOOTFIX)
         set -x
         reboot_fix > "$APPDIR/logs/reboot.log" 2>&1
-        set +2
+        set +x
 
         ;;
 

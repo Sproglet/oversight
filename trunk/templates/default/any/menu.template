@@ -104,7 +104,7 @@ table.overview_poster {
 [:IF(0):]
         </td></tr></table>
 [:ENDIF:]
-</form>
+[:FORM_END:]
 <script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/menu.js"></script>
 <script type="text/javascript">
 function info() {

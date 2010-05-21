@@ -107,7 +107,7 @@ table.overview_poster {
             </tr>
         </table>
     </center>
-</form>
+[:FORM_END:]
 
 </td></tr></table>
 

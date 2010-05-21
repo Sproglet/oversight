@@ -916,6 +916,12 @@ TRACE;
     return result;
 }
 
+char *macro_fn_form_end(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+    char *result=NULL;
+    ovs_asprintf(&result,"<input type=hidden item_count=\"%d\" /></form>",g_item_count);
+    return result;
+}
+
 char *macro_fn_is_gaya(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result=0;
     if (g_dimension->local_browser) {
@@ -1911,6 +1917,7 @@ void macro_init() {
         hashtable_insert(macros,"GRID",macro_fn_grid);
         hashtable_insert(macros,"HEADER",macro_fn_header);
         hashtable_insert(macros,"FORM_START",macro_fn_form_start);
+        hashtable_insert(macros,"FORM_END",macro_fn_form_end);
         hashtable_insert(macros,"MEDIA_TYPE",macro_fn_media_type);
         hashtable_insert(macros,"VERSION",macro_fn_version);
         hashtable_insert(macros,"HOSTNAME",macro_fn_hostname);

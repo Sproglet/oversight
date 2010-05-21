@@ -677,7 +677,13 @@ void update_idlist(struct hashtable *source_id_hash_removed)
     // TODO  This needs to work with boxsets too. ie deleting last item in the 
     // detail page should go back to the previous box set and not the main menu.
     // Will resolve later.
-    if (!*query_val("idlist")) {
+    int total = 0;
+    char *total_str = query_val("item_count");
+    if (total_str != NULL) {
+        total = atoi(total_str);
+    }
+    int removed = hashtable_count(source_id_hash_removed);
+    if (total - removed == 0 ) {
         HTML_LOG(0,"pop to previous screen");
         query_pop();
     }

@@ -23,6 +23,7 @@ OVS_EXTERN(struct hashtable *g_nmt_settings,NULL);
 OVS_EXTERN(struct hashtable *g_genre_hash,NULL);
 OVS_EXTERN(struct hashtable *g_first_two_letters,NULL);
 OVS_EXTERN(struct hashtable *g_delete_queue,NULL);
+OVS_EXTERN(int g_item_count,0);
 
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 #define IN_POSTER_MODE (g_dimension->poster_mode != 0) 

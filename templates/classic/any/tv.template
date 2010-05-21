@@ -158,14 +158,14 @@ hr { color:#FBB917 }
             </td>
         </tr>
     </table>
-</form>
+[:FORM_END:]
 
 </td></tr></table>
 
 
 [:MENU_TVID:]
 [:PLAY_TVID:]
-<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/tv.js"></script>
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/tv.js?"></script>
 
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>

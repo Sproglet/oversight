@@ -1728,6 +1728,8 @@ char *select_checkbox(DbRowId *rid,char *text) {
 
     if (*select) {
 
+        g_item_count ++;
+
         char *id_list = build_id_list(rid);
 
         if (rid->watched && STRCMP(select,"Mark") == 0) {

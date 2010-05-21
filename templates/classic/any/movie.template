@@ -81,7 +81,7 @@ body { color:yellow ; background-color:black; }
                     </td>
                 </tr>
             </table>
-        </form>
+        [:FORM_END:]
         [:PLAY_TVID:]
     </td>
     </tr>

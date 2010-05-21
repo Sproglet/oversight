@@ -97,14 +97,14 @@
             </td>
         </tr>
     </table>
-</form>
+[:FORM_END:]
 
 </td></tr></table>
 
 
 [:MENU_TVID:]
 [:PLAY_TVID:]
-<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/tv.js"></script>
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/tv.js?"></script>
 [:INCLUDE_TEMPLATE(tv_js):]
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>

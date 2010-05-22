@@ -14,7 +14,7 @@ function ovs_delist() {
 }
 function ovs_delete() {
     if (g_epno != '') {
-        if (confirm("STOP! DELETE EP["+g_epno+"] FILES ?")) {
+        if (confirm("Delete files for episode "+g_epno+"?")) {
             action('delete');
         }
     }

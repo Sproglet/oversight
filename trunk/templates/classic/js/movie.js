@@ -9,7 +9,7 @@ function ovs_delist() {
     }
 }
 function ovs_delete() {
-    if (confirm("STOP! DELETE ["+g_title+"] FILES?")) {
+    if (confirm("Delete files for "+g_title+"?")) {
         action('delete');
     }
 }

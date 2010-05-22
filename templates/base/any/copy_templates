@@ -1,3 +1,8 @@
-for i in "$@" ; do
-    cp -v *e /cygdrive/"$i"/Apps/oversight/templates/default/any/.
+d=`pwd | sed 's/.*oversight//'`
+if [ -z "$@" ] ; then
+    echo enter cygwin disk letter for nmt
+    read disk
+fi
+for i in "$@" $disk ; do
+    cp -v *[es] /cygdrive/"$i"/Apps/oversight/$d/.
 done

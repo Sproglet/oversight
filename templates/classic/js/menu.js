@@ -15,7 +15,7 @@ function ovs_delist() {
 }
 function ovs_delete() {
     if (g_idlist) {
-        if (confirm("STOP! DELETE "+g_title+" FILES?")) {
+        if (confirm("Delete files for "+g_title+" ?")) {
             action('delete');
         }
     }

@@ -4733,7 +4733,11 @@ function clean_title(t,deep) {
 
     gsub(/@@/,"",t);
 
-    gsub(g_punc[deep+0]," ",t);
+    # If there are no spaces then convert all punctuation to spaces.
+    # this may probably affect hyphen searches.
+    if (!index(t," ") ) {
+        gsub(g_punc[deep+0]," ",t);
+    }
 
     gsub(/ +/," ",t);
 
@@ -4960,6 +4964,9 @@ function remove_tv_year(t) {
 }
 function set_plot(idx,plotv,txt) {
     plotv[idx] = substr(txt,1,g_max_plot_len);
+    if (index(plotv[idx],"Remove Ad")) {
+        sub(/\[[Xx]\] Remove Ad/,"",plotv[idx]);
+    }
 }
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
@@ -5107,7 +5114,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
 
 
-        url=urladd(seriesInfo["/Show/showlink"],"remove_add=1&bremove_add=1");
+        url=urladd(seriesInfo["/Show/showlink"],"remove_add336=1&bremove_add=1");
         set_plot(idx,g_plot,scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
 
         g_tvid_plugin[idx]="TVRAGE";
@@ -5134,7 +5141,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
                 gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
                 url=seriesInfo["/Show/showlink"] "/printable?nocrew=1&season=" g_season[idx];
-                #OLDWAY#url=urladd(episodeInfo[e"/link"],"remove_add=1&bremove_add=1");
+                #OLDWAY#url=urladd(episodeInfo[e"/link"],"remove_add336=1&bremove_add=1");
 
                 if (g_epplot[idx] == "" ) {
                     #p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);

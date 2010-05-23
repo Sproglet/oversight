@@ -1,0 +1,184 @@
+/* $Id:$ Note gaya has css bug. Item after comments is ignored. Hence */a{}
+
+a { color:white ; text-decoration:none; }
+
+html { margin:0; padding:0; border:none; height:100%; }
+body { margin:0; padding:0; border:none; height:100%; }
+
+table.main {
+ margin:0;
+ padding:0;
+ border:none;
+ height:100%;
+ border-collapse:collapse;
+}
+
+table.listing {
+ margin:0;
+ border-spacing:0;
+ padding:0;
+ border-width:0;
+}
+
+#main {
+ height:99%;
+ width:100%;
+}
+
+img {
+ border: 0px solid black;
+}
+
+img.codec {
+ width:25px;
+}
+
+td.gc_small { font-size:10pt; }
+td.gc_fresh_small { font-size:10pt; }
+td.gc_watched_small { font-size:10pt; }
+
+.padded {
+ margin:15px; border-spacing:15px; padding:15px ; border-width:15px ;
+}
+
+.status {
+    color:#FFBB66;
+}
+
+.menubarTitle {
+ font-size:120%;
+ color:#FFFFFF;	
+}
+
+.fanartIcon {
+	height: 40px;
+ 	border-color:#FFFFFF;
+}
+
+.fanartGaya {
+	height: 247px;
+ 	border-color:#FFFFFF;
+ 	border-width:3px;
+ 	margin:45px;
+}
+
+.fanartSegment {
+	float:right;
+	position: absolute;
+	height: 247px;
+	bottom: 50px;
+	right: 50px;
+	z-index:-2;
+ 	border-color:#FFFFFF;
+ 	border-width:3px;
+}
+
+font.Delete {color:#FF9966; font-weight:normal; }
+font.Ignore {color:#777;}
+font.Mark {color:#AAA;}
+font.Unmark {color:#DDF;}
+font.Remove_From_List {color:orange;}
+
+img.fresh { 
+ border-width: 4px;
+ color:#FFFFFF;
+ border-color:#FFFFFF;
+}
+
+font.watched {
+ color:#FF7777 ;
+}
+
+font.unwatched {
+ color:#77FF77 ;
+}
+
+
+.error { color:red ; font-style:italic; font-weight:bold; }
+.delete { ; }
+.delist { ; }
+.cancel { ; }
+.mark { ; }
+
+#genre {
+    color:#FFBB66;
+    font-weight:bold;
+}
+
+#episode {
+    color:#66CCFF;
+    font-weight:bold;
+}
+
+table.header,table.footer {
+ margin:0;
+ border-spacing:1px;
+ padding:0;
+ border-width:0;
+border-spacing: 0px;
+border-collapse:collapse;
+ }
+
+.bluebutton {
+ color:#5555FF;
+ background-color:black;
+ font-weight:normal;
+  text-decoration:none;
+ }
+a.bluebutton {
+ color:black ;
+}
+
+.yellowbutton {
+ color:#FFFF55;
+ background-color:black;
+ font-weight:normal;
+  text-decoration:none;
+ }
+/* a.yellowbutton { color:black ; } */
+
+/* TV or movie view */ a{}
+table.detail   { margin:0; border-spacing:3px; padding:3px ; }
+
+/* Admin page */ a{}
+
+.match {color:#FF7777; font-weight:bold; }
+
+/* Movie Page */ a{}
+
+.right { text-align:right; }
+
+select {
+ background-color:black;
+ color:#66CCFF;
+ font-weight:bold;
+ border:#66CCFF 3px solid;
+ font-size:small;
+}
+
+input {
+ background-color:black;
+ color:#66CCFF;
+ font-weight:bold;
+ border:#66CCFF 3px solid;
+ font-size:small;
+}
+
+body { font-family:"arial"; color:white;  }
+
+.label { color:red }
+
+#menutitle {
+ color:#66CCFF;
+}
+#unwatchedtotal { 
+ color:#44FF77;
+}
+#watchedtotal { 
+ color:#FF7777;
+}
+
+/*
+vi:ts=4:sw=4:et:syntax=css
+*/a{}
+

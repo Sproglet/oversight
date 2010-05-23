@@ -17,7 +17,7 @@ function ovs_delist() {
 
 function ovs_delete() {   
     if (g_epno != '') {
-		if (confirm("STOP! Are you sure you want to DELETE the FILES for " + g_epno + "?")) {
+		if (confirm("Are you sure you want to DELETE the FILES for " + g_epno + "?")) {
 			action('delete');
 		}
 	}
@@ -41,17 +41,13 @@ function ovs_info() {
 }
 function ovs_watched() {
     if (g_epno != '') {
-        //if (confirm("Mark episode "+g_epno+"\n as watched?")) {
-            action('watch');
-        //}
+        action('watch');
     }
 }
 
 function ovs_unwatched() {
     if (g_epno != '') {
-        //if (confirm("Mark episode"+g_epno+"\nas NOT watched?")) {
-            action('unwatch');
-        //}
+        action('unwatch');
     }
 }
 

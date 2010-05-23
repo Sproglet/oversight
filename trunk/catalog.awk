@@ -6579,7 +6579,7 @@ akas,a,c,bro,brc,akacount) {
                     }
                     #Use first match from AKA section 
                     if (match(akas[a],"\".*\" -")) {
-                        adjustTitle(idx,clean_title(substr(akas[a],RSTART+1,RLENGTH-2)),"imdb_aka"); 
+                        adjustTitle(idx,clean_title(substr(akas[a],RSTART+1,RLENGTH-4)),"imdb_aka"); 
                     }
                     return;
                 }

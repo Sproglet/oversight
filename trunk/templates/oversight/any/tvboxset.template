@@ -1,0 +1,124 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+body.menu_background {
+    color:#66CCFF;
+    background-color:black;
+}
+
+td.grid_background {
+    text-align:center;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+[:IF($@poster_mode):]
+    .overview_poster {
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
+}
+
+.XTitle {
+ text-align:left;
+ font-size:[:TITLE_SIZE:];
+ font-weight:bold;
+ color:#66CCFF;
+}
+
+        </style>
+    </head>
+
+[:IF($ovs_display_fanart):]
+
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background=[:FANART_URL(abstract_circles.jpg):] >
+    <table class=main width=100%>
+    <tr valign=bottom>
+
+[:ELSE:]
+
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/abstract_circles.jpg">
+    <table class="main" width="100%">
+    <tr valign="middle">
+
+[:ENDIF:]
+
+        <td align="center" border="0" height="[:BODY_HEIGHT:]" >
+
+[:FORM_START:]
+    <center>
+        <table class="main" width="100%" height="100%">
+            <tr>
+                <td>
+		            <table height=50px class="header" background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/trans50.png">
+		                <tr>
+		                    [<td>&nbsp;:BACK_BUTTON:&nbsp;&nbsp;&nbsp;&nbsp;</td>]
+		                    <td>[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+[:IF($@gaya):]
+[:ELSE:]
+		                    <td>[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		                    <td>[:MARK_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+[:ENDIF:]
+		                    [<td align="center" width="20%">:SELECT_MARK_SUBMIT:</td>]
+		                    [<td align="center" width="20%">:SELECT_CANCEL_SUBMIT:</td>]
+		                    [<td align="center" width="20%">:SELECT_DELIST_SUBMIT:</td>]
+		                    [<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>][:IF($@gaya):]		
+			                <td align=right>
+			                    <img class=fanartIcon src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/tv_icon.png"/>&nbsp;
+			                </td>		
+[:ELSE:]
+			                <td align=right>
+			                    [:EXTERNAL_URL:]&nbsp;
+			                </td>
+[:ENDIF:]
+		                    <td align=right>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		                        <span class="boxtitle" id="menutitle">[:TITLE:]</span>
+		                        <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
+		                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>&nbsp;
+		                    </td>
+		                </tr>
+		            </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <center>
+                        <table >
+                            <tr>
+                                <td >
+                                    [:GRID:]
+                                </td >
+                            </tr>
+                        </table>
+                    </center>
+                </td>
+            </tr>
+        </table>
+    </center>
+</form>
+
+</td></tr></table>
+
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/menu.js"></script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_info();" tvid="INFO"></a>
+<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
+<a href="javascript:ovs_delete();" tvid="1111"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

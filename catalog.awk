@@ -4882,7 +4882,7 @@ episodeUrl,filter,result) {
 
     id1("get_episode_xml");
 
-    gsub(/[^0-9]/,"",episode);
+    gsub(/[^0-9,]/,"",episode);
 
     episodeUrl = get_episode_url(plugin,seriesUrl,season,episode);
     if (episodeUrl != "") {

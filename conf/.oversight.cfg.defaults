@@ -62,23 +62,6 @@ ovs_poster_mode_height[720]=0
 ovs_tv_rows[720]=10
 ovs_tv_cols[720]=6
 
-ovs_poster_mode[1080]=1
-ovs_rows[1080]=17
-ovs_cols[1080]=2
-ovs_font_size[1080]=20
-ovs_title_size[1080]=30
-ovs_movie_poster_height[1080]=300
-ovs_tv_poster_height[1080]=300
-ovs_max_plot_length[1080]=600
-ovs_button_size[1080]=40
-ovs_certificate_size[1080]=30
-ovs_poster_mode_rows[1080]=2
-ovs_poster_mode_cols[1080]=8
-ovs_poster_mode_width[1080]=0
-ovs_poster_mode_height[1080]=0
-ovs_tv_rows[1080]=10
-ovs_tv_cols[1080]=6
-
 ovs_font_size_plot="130"
 ovs_font_size_eptitle="90"
 ovs_font_size_epdate="90"

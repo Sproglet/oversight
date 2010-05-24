@@ -526,28 +526,34 @@ char *macro_fn_runtime(char *template_name,char *call,Array *args,int num_rows,D
 }
 char *macro_fn_year(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
+    int i;
     if (num_rows == 0 || sorted_rows == NULL ) {
         *free_result=0;
         return "?";
     }
     char *year = NULL;
-    DbRowId *rid = sorted_rows[0];
     int year_num = 0;
    
-    if (rid->category == 'T' ) {
+    // look for item with year set - sometimes tv Pilot does not have airdate 
+    for(i = 0 ; i < num_rows && year_num <= 1900 ; i++ ) {
+        DbRowId *rid = sorted_rows[i];
 
-        HTML_LOG(0,"airdate[%s]=[%x]",rid->file,rid->airdate);
-        struct tm *t = internal_time2tm(rid->airdate,NULL);
-        year_num = t->tm_year+1900;
+        if (rid->category == 'T' ) {
 
-    } else if (rid->category == 'M' ) {
+            HTML_LOG(0,"airdate[%s]=[%x]",rid->file,rid->airdate);
+            struct tm *t = internal_time2tm(rid->airdate,NULL);
+            year_num = t->tm_year+1900;
 
-        year_num = rid->year;
+        } else if (rid->category == 'M' ) {
 
-    } else {
-        struct tm *t = internal_time2tm(rid->date,NULL);
-        year_num = t->tm_year+1900;
+            year_num = rid->year;
+
+        } else {
+            struct tm *t = internal_time2tm(rid->date,NULL);
+            year_num = t->tm_year+1900;
+        }
     }
+
 
     ovs_asprintf(&year,"%d",year_num);
     return year;

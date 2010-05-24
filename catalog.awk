@@ -4733,9 +4733,12 @@ function clean_title(t,deep) {
 
     gsub(/@@/,"",t);
 
-    # If there are no spaces then convert all punctuation to spaces.
-    # this may probably affect hyphen searches.
-    if (!index(t," ") ) {
+    if (index(t," ") ) {
+        # If there is a space only replace trailing punctuation.
+        # This preserves dot in titles like "Jake 2.0"
+        gsub(g_punc[deep+0]"$"," ",t);
+    } else {
+        # If there are no spaces then convert all punctuation to spaces.
         gsub(g_punc[deep+0]," ",t);
     }
 

@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta name=robots content=nofollow>
+        [:FAVICON:]
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
         <link rel=stylesheet type=text/css href=[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css />
         <style type=text/css>

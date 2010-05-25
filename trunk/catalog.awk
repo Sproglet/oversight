@@ -4337,6 +4337,12 @@ keep_the) {
     }
     gsub(/[&]/,"and",t);
     gsub(/'/,"",t);
+
+    # Clean title only removes . and _ if it has no spaces.
+    # For similar title matching to work we remove all punctuation
+    gsub(g_punc[0]," ",t);
+    gsub(/  +/," ",t);
+
     return tolower(t);
 }
 
@@ -4719,7 +4725,8 @@ letter) {
 # This is used in tv comparison functions for qualified matches so it must not remove any country
 # or year designation
 # deep - if set then [] and {} are removed from text too
-function clean_title(t,deep) {
+function clean_title(t,deep,\
+punc) {
 
     #ALL# gsub(/[&]/," and ",t);
     gsub(/[&]amp;/,"\\&",t);
@@ -4733,14 +4740,20 @@ function clean_title(t,deep) {
 
     gsub(/@@/,"",t);
 
+    punc = g_punc[deep+0];
     if (index(t," ") ) {
-        # If there is a space only replace trailing punctuation.
-        # This preserves dot in titles like "Jake 2.0"
-        gsub(g_punc[deep+0]"$"," ",t);
-    } else {
-        # If there are no spaces then convert all punctuation to spaces.
-        gsub(g_punc[deep+0]," ",t);
+        # If there is a space then also preserve . and _ . These are often used as spaces
+        # but if there is aready a space , assume they are significant.
+
+        # first remove any trailing dot
+        gsub(punc"$","",t);
+
+        #Now modify regex to keep any internal dots.
+        if (sub(/-\]/,"_.-]",punc) != 1) {
+            ERR("Fix punctuation string");
+        }
     }
+    gsub(punc," ",t);
 
     gsub(/ +/," ",t);
 
@@ -4789,7 +4802,7 @@ function de_emphasise(html) {
 # Special case: If threshold = -1 then the votes must exceed the square of the 
 # difference between next largest amount.
 function getMax(arr,requiredThreshold,requireDifferenceSquared,\
-maxName,best,nextBest,nextBestName,diff,i,threshold,msg) {
+maxName,best,nextBest,nextBestName,diff,i,threshold) {
     nextBest=0;
     maxName="";
     best=0;

@@ -3,6 +3,7 @@
     <head>
         <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+        [:FAVICON:]
         <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css" />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]

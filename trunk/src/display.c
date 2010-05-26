@@ -211,9 +211,10 @@ char *self_url(char *new_params) {
     }
 
     char *tmp;
-    char *new=MALLOC(strlen(cgi_url(0))+psize+strlen(new_params) + 3);
+    char *self = cgi_url(0);
+    char *new=MALLOC(strlen(self)+psize+strlen(new_params) + 3);
     tmp = new;
-    tmp += sprintf(tmp,"%s",cgi_url(0));
+    tmp += sprintf(tmp,"%s",self);
     int i;
     for(i = 0 ; i < pcount ; i ++ ) {
 
@@ -245,7 +246,7 @@ char *remove_blank_params(char *input)
     p = out;
     for(;;) {
         *p = *in;
-        if ( ( *p == '\0' || *p == '&' ) && ( p[-1] == '=' ) ) {
+        if ( ( p[-1] == '=' ) && ( *p == '\0' || *p == '&' )  ) {
             //HTML_LOG(0,"removing from [%.*s]",p-out,out);
             // We have xxx=& rewind to end of previous parameter.
             p--;
@@ -3697,13 +3698,9 @@ TRACE;
 
                 char *title_txt=NULL;
 
-                int is_proper = show_repacks && (strstr(rid->file,"proper") ||
-                                 strstr(rid->file,"Proper") ||
-                                 strstr(rid->file,"PROPER"));
+                int is_proper = show_repacks && (util_strcasestr(rid->file,"proper"));
 
-                int is_repack = show_repacks && (strstr(rid->file,"repack") ||
-                                 strstr(rid->file,"Repack") ||
-                                 strstr(rid->file,"REPACK"));
+                int is_repack = show_repacks && (util_strcasestr(rid->file,"repack"));
 
                 char *icon_text = icon_link(rid->file);
 

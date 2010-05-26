@@ -2427,7 +2427,7 @@ ret,p,pat,i,parts,sreg,ereg) {
     # This mess is because awk regex dont have captures.
     p=0
     # s00e00e01
-    pat[++p]="0@@s"sreg"@[/ .]?[e/][0-9]+[-e0-9]+@";
+    pat[++p]="0@@s"sreg"@[/ .]?[e/][0-9]+[-,e0-9]+@";
     # long forms season 1 ep  3
     pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*"sreg"@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*"ereg"@";
 

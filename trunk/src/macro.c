@@ -759,7 +759,13 @@ char *add_star(char *buf,char *star_path,int star_no) {
 }
 
 char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return get_tvid_links();
+
+    char *result = NULL;
+    if (! *query_val(QUERY_PARAM_VIEW)) {
+        result = get_tvid_links();
+    }
+    return result;
+    
 }
 
 char *get_rating_stars(DbRowId *rid,int num_stars)

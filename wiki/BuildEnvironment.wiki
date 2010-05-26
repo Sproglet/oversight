@@ -1,0 +1,32 @@
+#How to build oversight.
+
+At present oversight is built using bash/make etc. I may port this to ant if this gives more flexibility.
+
+To Build an environment:
+
+  # Windows only: Install cygwin
+  # Install gcc+make
+  # Install mips gcc toolchain
+  # build
+
+
+== Cygwin ==
+
+If using windows install [http://www.cygwin.com/ Cygwin]. Most of my development is on cygwin. And some of the quick update scripts assume you are using cygwin drive mappings.
+(Select the gcc and make packages in the installer)
+
+== GCC + Make == 
+Install Gcc + make if you haven't already.
+
+== Mips Toolchain ==
+
+Download the mips toolchains from the following locations:
+  * Windows
+    * 
+    *
+  * Linux
+    * 
+    *
+  * Mac
+    * 
+    *

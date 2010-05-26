@@ -82,6 +82,7 @@ char *util_basename(char *file);
 char *util_basename_no_ext(char *file) ;
 int util_starts_with(char *a,char *b);
 int util_starts_with_ignore_case(char *a,char *b);
+char *util_strcasestr(char *a,char *b);
 void util_regcomp(regex_t *re,char *pattern,int flags);
 int util_rename(char *old,char *new);
 int util_system(char *cmd);

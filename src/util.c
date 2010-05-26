@@ -862,6 +862,26 @@ int util_starts_with(char *a,char *b)
     }
     return *b == '\0';
 }
+char *util_strcasestr(char *a,char *b)
+{
+    if (!a) a = "";
+    if (!b) b = "";
+
+    char *aa;
+    for ( aa = a ; *aa ; aa++ ) {
+
+        char *p;
+        p = aa;
+        char *q = b;
+        while(*p && tolower(*p) == tolower(*q) ) {
+            p++;
+            q++;
+        }
+        if (*q == '\0') return aa;
+    }
+    return NULL;
+}
+
 int util_starts_with_ignore_case(char *a,char *b)
 {
     if (!a) a = "";

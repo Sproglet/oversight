@@ -286,22 +286,28 @@ char to_hex(char code) {
   return hex[code & 15];
 }
 
+#define NO_URLENCODE(c) (isalnum(c) || (c) == '/' ||   (c) == '-' ||  (c) == '_' ||  (c) == '.' ||  (c) == '~') 
 /*==========================================================================
  * http://www.geekhideout.com/urlcode.shtml
  * ========================================================================*/
 /* Returns a url-encoded version of str */
 /* IMPORTANT: be sure to FREE() the returned string after use */
 char *url_encode(char *str) {
-    assert(str);
-  char *pstr = str, *buf = MALLOC(strlen(str) * 3 + 1), *pbuf = buf;
+  assert(str);
+
+  char *pstr = str;
+  char *buf = MALLOC(strlen(str) * 3 + 1);
+  char *pbuf = buf;
+
   while (*pstr) {
-    if (isalnum(*pstr) ||*pstr == '/' ||  *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
-      *pbuf++ = *pstr;
-//    else if (*pstr == ' ') 
-//      *pbuf++ = '+';
-    else 
-      *pbuf++ = '%', *pbuf++ = to_hex(*pstr >> 4), *pbuf++ = to_hex(*pstr & 15);
-    pstr++;
+    if (NO_URLENCODE(*pstr)) { 
+      *pbuf++ = *pstr++;
+    } else  {
+      *pbuf++ = '%' ;
+      *pbuf++ = to_hex(*pstr >> 4);
+      *pbuf++ = to_hex(*pstr & 15);
+      pstr++;
+    }
   }
   *pbuf = '\0';
   return buf;
@@ -312,7 +318,7 @@ char *url_encode_static(char *str,int *free_result)
 {
     assert(str);
   char *pstr = str;
-  while (*pstr && (isalnum(*pstr) || *pstr == '/' || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~')) {
+  while (*pstr && NO_URLENCODE(*pstr)) {
       pstr++;
   }
   if (*pstr) {

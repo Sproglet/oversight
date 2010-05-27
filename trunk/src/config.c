@@ -34,30 +34,39 @@ int browsing_from_lan() {
     return result;
 }
 
-static long allow_access(char *config_name) {
-    static long result=-1;
-    if (result == -1) {
+long allow_access(char *config_name) {
+    long result;
+    result=0;
+    if (browsing_from_lan()) {
+        result=1;
+    } else if (!config_check_long(g_oversight_config,config_name,&result)) {
         result=0;
-        if (browsing_from_lan()) {
-            result=1;
-        } else if (!config_check_long(g_oversight_config,config_name,&result)) {
-            result=0;
-        }
-        HTML_LOG(0,"allow %s = %d",config_name,result);
     }
+    HTML_LOG(0,"allow %s = %d",config_name,result);
     return result;
 }
 long allow_mark() {
-    return allow_access("ovs_wan_mark");
+    static long result = -1;
+    if (result == -1) result = allow_access("ovs_wan_mark");
+    return result;
 }
+
 long allow_delete() {
-    return allow_access("ovs_wan_delete");
+    static long result = -1;
+    if (result == -1) result = allow_access("ovs_wan_delete");
+    return result;
 }
+
 long allow_delist() {
-    return allow_access("ovs_wan_delist");
+    static long result = -1;
+    if (result == -1) result = allow_access("ovs_wan_delist");
+    return result;
 }
+
 long allow_admin() {
-    return allow_access("ovs_wan_admin");
+    static long result = -1;
+    if (result == -1) result = allow_access("ovs_wan_admin");
+    return result;
 }
 
 void config_write(struct hashtable *cfg,char *filename) {

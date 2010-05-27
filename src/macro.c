@@ -305,11 +305,15 @@ char *macro_fn_media_select(char *template_name,char *call,Array *args,int num_r
     //        label = "Tv+Movie";
     //    }
         struct hashtable *category = string_string_hashtable(4);
-        hashtable_insert(category,"MT","All");
-        hashtable_insert(category,"M","Movie");
-        hashtable_insert(category,"T","Tv");
-		hashtable_insert(category,"O","Other");
-        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"MT",category);
+
+        char *both=QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE QUERY_PARAM_MEDIA_TYPE_VALUE_TV;
+        hashtable_insert(category,both,"All");
+
+        hashtable_insert(category,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE,"Movie");
+        hashtable_insert(category,QUERY_PARAM_MEDIA_TYPE_VALUE_TV,"Tv");
+		hashtable_insert(category,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER,"Other");
+
+        result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,both,category);
         hashtable_destroy(category,0,0);
     }
     *free_result = 0;
@@ -321,8 +325,8 @@ char *macro_fn_watched_select(char *template_name,char *call,Array *args,int num
     if (!result) {
         struct hashtable *watched = string_string_hashtable(4);
         hashtable_insert(watched,"","---");
-        hashtable_insert(watched,"W","Watched");
-        hashtable_insert(watched,"U","Unwatched");
+        hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
+        hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched");
         result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"",watched);
         hashtable_destroy(watched,0,0);
     }

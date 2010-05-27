@@ -3396,6 +3396,20 @@ long use_movie_boxsets()
     return movie_boxsets;
 }
 
+int playlist_size(int num_rows,DbRowId **sorted_rows)
+{
+    int i;
+    int count = 0;
+    for(i = 0 ; i < num_rows ; i++ ) {
+        DbRowId *rowid = sorted_rows[i];
+        if (rowid->playlist_names && rowid->playlist_paths) {
+            count += rowid->playlist_names->size;
+        }
+    }
+
+    return count;
+}
+
 void build_playlist(int num_rows,DbRowId **sorted_rows)
 {
     int i;

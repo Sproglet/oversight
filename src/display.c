@@ -3252,8 +3252,14 @@ TRACE;
 
         media_type=DB_MEDIA_TYPE_FILM; 
 
+    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER) == 0) {
+TRACE;
+
+        media_type=DB_MEDIA_TYPE_OTHER; 
+
     }
     HTML_LOG(1,"Media type = %d",media_type);
+	HTML_LOG(0,"Media type str = %d",media_type_str);
 
 TRACE;
     

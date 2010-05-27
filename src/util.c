@@ -123,6 +123,8 @@ char *translate_inplace(
     return str;
 }
 
+// TODO: this could be optimized to scan for number of occurrences then malloc once then build new string.
+// but at the moment it does not get called enough
 char *replace_str(char *s_in,char *match,char *replace)
 {
     char *tmp;

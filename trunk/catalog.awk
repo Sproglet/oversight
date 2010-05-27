@@ -5335,9 +5335,10 @@ oldSrc,newSrc,newRank) {
         gTitlePriority["imdb"]=2;
         gTitlePriority["epguides"]=2;
         gTitlePriority["imdb_aka"]=3;
-        gTitlePriority["thetvdb"]=4;
-        gTitlePriority["THETVDB"]=4;
-        gTitlePriority["TVRAGE"]=4;
+        gTitlePriority["imdb_orig"]=4;
+        gTitlePriority["thetvdb"]=5;
+        gTitlePriority["THETVDB"]=5;
+        gTitlePriority["TVRAGE"]=5;
     }
     newTitle = clean_title(newTitle);
 
@@ -6407,7 +6408,7 @@ count,fcount,i,parts,start) {
 
 # isection tracks sections found. This helps alert us to IMDB changes.
 function scrapeIMDBLine(line,imdbContentPosition,idx,f,isection,\
-title,poster_imdb_url,i,sec) {
+title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country) {
 
 
     if (imdbContentPosition == "footer" ) {
@@ -6525,9 +6526,23 @@ title,poster_imdb_url,i,sec) {
 
                 DEBUG("AKA:"line);
 
-                scrapeIMDBAka(idx,line);
+                aka_title_country = scrapeIMDBAka(idx,line);
                 sec=AKA;
 
+            }
+
+            if (index(line,"Country:")) {
+                # There may be multiple countries. Only scrape the first one.
+                orig_title_country = scrape_until("title",f,"</a>",1);
+                orig_country_pos = index(g_settings["catalog_title_country_list"],orig_title_country);
+                aka_country_pos = index(g_settings["catalog_title_country_list"],aka_title_country);
+
+                if (orig_country_pos > 0 ) {
+                    if (aka_title_country == "" ||  orig_country_pos <= aka_country_pos ) {
+                        adjustTitle(idx,gOriginalTitle[idx],"imdb_orig"); 
+                        INF("TODO DELETE READJUST TITLE=["gOriginalTitle[idx]"]");
+                    }
+                }
             }
         }
     } else {
@@ -6562,7 +6577,7 @@ function extract_imdb_title_category(idx,title\
 # against alternative titles that are further down the list.
 
 function scrapeIMDBAka(idx,line,\
-akas,a,c,bro,brc,akacount) {
+akas,a,c,bro,brc,akacount,country) {
 
     if (gOriginalTitle[idx] != gTitle[idx] ) return ;
 
@@ -6595,9 +6610,10 @@ akas,a,c,bro,brc,akacount) {
                     }
                     #Use first match from AKA section 
                     if (match(akas[a],"\".*\" -")) {
+                        country=gTitleCountries[c];
                         adjustTitle(idx,clean_title(substr(akas[a],RSTART+1,RLENGTH-4)),"imdb_aka"); 
                     }
-                    return;
+                    return country;
                 }
             }
         }

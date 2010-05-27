@@ -1746,11 +1746,16 @@ char *macro_fn_edit_config(char *template_name,char *call,Array *args,int num_ro
 }
 
 char *macro_fn_play_tvid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    char *result = NULL;
     char *text="";
     if (args && args->size > 0)  {
         text = args->array[0];
     }
-    return get_play_tvid(text);
+    if (playlist_size(num_rows,sorted_rows)) {
+        result = get_play_tvid(text);
+    }
+    return result;
 }
 
 

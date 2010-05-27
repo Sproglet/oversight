@@ -298,16 +298,17 @@ char *macro_fn_sort_select(char *template_name,char *call,Array *args,int num_ro
 char *macro_fn_media_select(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
     if (!result) {
-        char *label;
-        if (g_dimension->scanlines == 0) {
-            label = "Tv+Mov";
-        } else {
-            label = "Tv+Movie";
-        }
+    //    char *label;
+    //    if (g_dimension->scanlines == 0) {
+    //        label = "Tv+Mov";
+    //    } else {
+    //        label = "Tv+Movie";
+    //    }
         struct hashtable *category = string_string_hashtable(4);
-        hashtable_insert(category,"MT",label);
+        hashtable_insert(category,"MT","All");
         hashtable_insert(category,"M","Movie");
         hashtable_insert(category,"T","Tv");
+		hashtable_insert(category,"O","Other");
         result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,"MT",category);
         hashtable_destroy(category,0,0);
     }
@@ -968,6 +969,7 @@ char *macro_fn_media_type(char *template_name,char *call,Array *args,int num_row
     *free_result=0;
     char *mt="?";
     switch(*query_val(QUERY_PARAM_TYPE_FILTER)) {
+		case 'O': mt="Other"; break;
         case 'T': mt="TV Shows"; break;
         case 'M': mt="Movies"; break;
         default: mt="All Video"; break;

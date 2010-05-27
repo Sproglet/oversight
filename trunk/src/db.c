@@ -1473,6 +1473,7 @@ TRACE;
                         switch(media_type) {
                             case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
                             case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
+							case DB_MEDIA_TYPE_OTHER : if (rowid.category != 'O') keeprow=0; ; break;
                         }
                     }
                     //if (keeprow) HTML_LOG(0,"xx type ok");

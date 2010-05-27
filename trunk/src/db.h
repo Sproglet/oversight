@@ -79,6 +79,7 @@ OVS_TIME *timestamp_ptr(DbRowId *rowid);
 #define DB_MEDIA_TYPE_TV 1
 #define DB_MEDIA_TYPE_FILM 2
 #define DB_MEDIA_TYPE_ANY 3
+#define DB_MEDIA_TYPE_OTHER 4
 
 #define DB_WATCHED_FILTER_YES 1
 #define DB_WATCHED_FILTER_NO 2

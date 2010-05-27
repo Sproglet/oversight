@@ -1005,6 +1005,11 @@ char *clean_js_string(char *in)
             if (out != in) FREE(out);
             out = tmp;
         }
+        if (strstr(out,"&amp;")) {
+            char *tmp = replace_all(out,"&amp;","&",0);
+            if (out != in) FREE(out);
+            out = tmp;
+        }
         replace_char(out,'\r',' ');
         replace_char(out,'\n',' ');
 

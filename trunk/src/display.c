@@ -3569,7 +3569,7 @@ char *get_date_static(DbRowId *rid)
         recent_date_format=" - %d %b";
     }
     if (old_date_format == NULL && !config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
-        old_date_format=" -%d %b %y";
+        old_date_format=" - %d %b %y";
     }
 
 #define DATE_BUF_SIZ 40

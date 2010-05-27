@@ -70,6 +70,20 @@ Also for erotica review any keywords starting with unpak_nmt_pin
   * CLI: vi /share/Apps/oversight/conf/catalog.cfg 
   * GUI: Oversight -> Setup -> Renaming
 
+Eg. For movies a setting of 
+{{{
+/share/Video/{:TITLE:}{ (:YEAR:)}{ - :CERT:}
+}}}
+Would move dark_knight_720p.mkv to
+{{{
+/share/Video/The Dark Knight (2008) - 15/dark_knight_720p.mkv
+}}}
+
+For movies, *only the containing folder is renamed*, never the actual file. 
+This is because a false match would make it very hard to later correctly identify the movie later. Even nfo files occasionally have the wrong imdb link in.
+
+Tv file names are a bit more consistent so Oversight will rename Tv files, but not movie files.
+
 === Par-repair on demand ===
 
 Note that newer versions of nzbget have the capability to do on-demand par repair, however the version that comes with the NMT firmware cannot attempt to unpack before doing a par-repair on demand, it can only be configured to 

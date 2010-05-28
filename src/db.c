@@ -1470,10 +1470,25 @@ TRACE;
                         }
                     }
                     if (keeprow) {
+                        int is_tv = (rowid.category == *QUERY_PARAM_MEDIA_TYPE_VALUE_TV);
+                        int is_movie = (rowid.category == *QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE);
+
                         switch(media_type) {
-                            case DB_MEDIA_TYPE_TV : if (rowid.category != 'T') keeprow=0; ; break;
-                            case DB_MEDIA_TYPE_FILM : if (rowid.category != 'M') keeprow=0; ; break;
-							case DB_MEDIA_TYPE_OTHER : if (rowid.category != 'O') keeprow=0; ; break;
+                            case DB_MEDIA_TYPE_TV:
+                                if (!is_tv) {
+                                    keeprow=0;
+                                }
+                                break;
+                            case DB_MEDIA_TYPE_FILM:
+                                if (!is_movie) {
+                                    keeprow=0;
+                                }
+                                break;
+							case DB_MEDIA_TYPE_OTHER:
+                                if (is_tv || is_movie) {
+                                    keeprow=0;
+                                }
+                                break;
                         }
                     }
                     //if (keeprow) HTML_LOG(0,"xx type ok");

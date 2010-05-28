@@ -1,0 +1,141 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name=robots content=nofollow>
+        [:FAVICON:]
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+        <link rel=stylesheet type=text/css href=[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css />
+        <style type=text/css>
+            [:INCLUDE_TEMPLATE(css):]
+
+body.menu_background {
+    color:#66CCFF;
+    background-color:black;
+	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/lightwave.jpg'); 
+}
+
+td.grid_background {
+    text-align:center;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+[:IF($@poster_mode):]
+    .overview_poster {
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
+}
+
+.XTitle {
+	font-size:[:TITLE_SIZE(-5):];
+	font-weight:bold;
+	color:#66CCFF;
+}
+        </style>
+    </head>
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/lightwave.jpg">
+[:FORM_START:]
+[:IF(0):]
+        <table class=main width=100% height=100%>
+        <tr><td>
+[:ENDIF:]
+[:IF($ovs_fade):]
+            <table class=header width=100% background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/bluemenu2.png" >
+[:ELSE:]
+            <table class=header width=100% background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/bluemenu2.jpg" >
+[:ENDIF:]
+                <tr>
+                    [<td>&nbsp;:BACK_BUTTON:&nbsp;&nbsp;&nbsp;&nbsp;</td>]
+                    <td>[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+[:IF($@gaya):]
+[:ELSE:]
+                    <td>[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                    <td>[:MARK_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+[:ENDIF:]
+                    [<td align="center" width="20%">:SELECT_MARK_SUBMIT:</td>]
+                    [<td align="center" width="20%">:SELECT_CANCEL_SUBMIT:</td>]
+                    [<td align="center" width="20%">:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>]
+                    <td width=80% align=right>
+                    	<span class=menubarTitle><b>[:TITLE:]</b>&nbsp;&nbsp;</span>
+                    </td>
+[:IF($@gaya):]
+	                <td align=right width="8%">
+	                    <img class=fanartIcon src=[:FANART_URL(lightwave.jpg):]/>&nbsp;
+	                </td>					
+[:ELSE:]
+	                <td align=right width="8%">
+	                    [:EXTERNAL_URL:]&nbsp;
+	                </td>
+[:ENDIF:]
+                </tr>
+            </table>
+[:IF(0):]
+        </td></tr><tr id=gridRow><td id=gridCell>
+[:ENDIF:]
+            <center>
+            	<br/>
+            	<div id=gridWrapper>
+            		[:GRID:]
+            	</div>
+            </center>
+[:IF(0):]
+        </td></tr><tr><td>
+[:ENDIF:]
+                <table width="100%"><tr>
+[:IF($@sd):]
+                    <td colspan=6 align=center >
+[:ELSE:]
+                    <td colspan=8 align=center >
+[:ENDIF:]
+                        <span class="boxtitle" id="menutitle">&nbsp;</span>
+                        <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
+                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>
+                    </td></tr>
+                    
+[:IF($@sd):]
+[:ELSE:]
+[:IF($@gaya):]
+                    <script type="text/javascript">
+	                    var fanartLoc = [:FANART_URL(lightwave.jpg):];
+	                    if([:EVAL($@poster_menu_img_height):] < 200) {
+							document.write("<tr valign=bottom><td align=right>");
+	              			document.write("<div id=gayaFanart><img class=fanartGaya src='" + fanartLoc + "'/></div>");
+	              			document.write("</td></tr>");
+	                    }
+              		</script>
+[:ENDIF:][:ENDIF:]
+                </table></tr>
+            <table class=footer width=100%>
+                <tr valign=top>
+                        <td width=10%>[:LEFT_BUTTON:]</td>
+                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                </tr>
+            </table>
+[:IF(0):]
+        </td></tr></table>
+[:ENDIF:]
+</form>      
+[:IF($@gaya):]
+[:ELSE:]
+    <img class=fanartSegment src=[:FANART_URL(lightwave.jpg):]/>
+[:ENDIF:]
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/menu.js"></script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_info();" tvid="INFO"></a>
+<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
+<a href="javascript:ovs_delete();" tvid="1111"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->
+

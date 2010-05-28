@@ -1,0 +1,122 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        <meta name="robots" content="nofollow">
+        <title>Oversight Menu [:VERSION:] [:HOSTNAME:]</title>
+        [:FAVICON:]
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:SKIN_NAME:]/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+[:IF($@gaya):]
+    body.menu_background { color:yellow ; background-color:black; }
+[:ELSE:]
+    body.menu_background { color:white ; background-color:black; }
+[:ENDIF:]
+
+
+.status {
+    font-size:70%;
+}
+
+table.overview_poster {
+    margin:0; border-spacing:1px; padding:0 ; border-width:0 ;
+}
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:100%;
+[:ENDIF:]
+}
+        </style>
+    </head>
+    <!--
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
+-->
+    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background >
+        [:FORM_START:]
+[:IF(0):]
+        <table class=main width=100% height=100%>
+        <tr><td>
+[:ENDIF:]
+            <table class=header width=100% >
+                <tr>
+                    <td>[:HOME_BUTTON:]</td>
+[:IF($@sd):]
+                    <td align=center>[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
+                    <td align=center>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>
+[:ELSE:]
+                    <td align=center>[:TITLE_SELECT:]</td>
+                    <td align=center>[:WATCHED_SELECT:]</td>
+                    <td align=center>[:MEDIA_SELECT:]</td>
+                    <td align=center>[:GENRE_SELECT:]</td>
+[:ENDIF:]
+                    <td>[:SORT_TYPE_TOGGLE:]</td>
+                    <td><span class="status">[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</span></td>
+                    <td align=right>[:SETUP_BUTTON:]</td>
+                </tr>
+                <tr>
+[:IF($@sd):]
+                    <td colspan=6 align=center >
+[:ELSE:]
+                    <td colspan=8 align=center >
+[:ENDIF:]
+                        <span class=menutitle id="menutitle">&nbsp;</span>
+                        <span class=menutitle id="unwatchedtotal">&nbsp;</span>
+                        <span class=menutitle id="watchedtotal">&nbsp;</span>
+                    </td>
+                </tr>
+            </table>
+[:IF(0):]
+        </td></tr><tr><td>
+[:ENDIF:]
+            <center>
+            [:GRID:] 
+            </center>
+[:IF(0):]
+        </td></tr><tr><td>
+[:ENDIF:]
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td width=10%>[:LEFT_BUTTON:]</td>
+                    [<td align=center>:BACK_BUTTON:</td>]
+[:IF($@gaya):]
+[:ELSE:]
+                    [<td align=center>:MARK_BUTTON:</td>]
+                    [<td align=center>:DELETE_BUTTON:</td>]
+[:ENDIF:]
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
+                    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
+                    <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+                </tr>
+            </table>
+[:IF(0):]
+        </td></tr></table>
+[:ENDIF:]
+[:FORM_END:]
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/menu.js"></script>
+<script type="text/javascript">
+function info() {
+    alert('[[:$ovs_tvid_mark:]] - mark watched\n[[:$ovs_tvid_unmark:]] - unwatch\n[[:$ovs_tvid_delist:]] - delist\n[[:$ovs_tvid_delete:]] Delete Media');
+}
+</script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
+<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
+<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
+<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
+<a href="javascript:info();" tvid="INFO"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

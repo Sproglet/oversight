@@ -1,0 +1,214 @@
+# This probably wont work very well
+af:pal,secam
+al:pal b/g 
+algeria:pal b/g 
+ao:pal i 
+aq:ntsc m 
+ag:ntsc m
+ar:pal n 
+am:secam d/k 
+aw:ntsc m 
+au:pal b/g 
+at:pal b/g 
+az:secam d/k 
+azores:pal b
+bs:ntsc m 
+bh:pal b/g 
+bd:pal b 
+bb:ntsc m 
+by:secam d/k 
+be:pal b/h 
+bz:ntsc m 
+bj:secam k 
+bm:ntsc m 
+bo:ntsc m 
+ba:pal b/h 
+bw:secam k, pal i 
+br:pal m
+bn:pal b
+bg:pal 
+bf:secam k
+bi:secam k
+kh:pal b/g, ntsc m 
+cm:pal b/g 
+ca:ntsc m 
+es:pal b/g 
+td:secam d 
+cl:ntsc m
+cn:pal d
+co:ntsc m 
+cd:secam k
+cg:secam k
+ck:pal b
+cr:ntsc m 
+ci:secam
+hr:pal b/h 
+cu:ntsc m 
+cy:pal b/g 
+cz:pal b/g (cable), pal d/k (broadcast) 
+dk:pal b/g 
+io:garcia ntsc m
+d:secam k
+dm:ntsc m 
+do:ntsc m 
+tl:pal b
+easter island:pal b
+ec:ntsc m 
+eg:pal b/g, secam b/g 
+sv:ntsc m 
+gq:secam b
+ee:pal b/g 
+et:pal b
+fk: pal i
+fj:ntsc m 
+fi:pal b/g 
+fr:secam l 
+ga:secam k 
+gm:pal b 
+ge:secam d/k 
+de:pal b/g 
+gh:pal b/g 
+gi:pal b/g 
+gr:pal b/g
+gl:pal b 
+gd:ntsc m 
+gu:ntsc m 
+gp:secam k 
+gt:ntsc m 
+gf:secam k
+gn:pal k
+gy:ntsc m 
+ht:secam 
+hn:ntsc m 
+hk:pal i 
+hu:pal k/k 
+is:pal b/g 
+in:pal b
+id:pal b 
+ir:pal b/g 
+iq:pal 
+ie:pal i 
+isle of man:&nbsp;pal 
+il:pal b/g 
+it:pal b/g
+jm:ntsc m 
+jp:ntsc m 
+johnstone:island ntsc m
+jo:pal b/g 
+kz:secam d/k 
+ke:pal b/g 
+kp:secam d, pal d/k
+kr:ntsc m 
+kw:pal b/g 
+kg:secam d/k
+laos:pal b 
+lv:pal b/g 
+lb:pal b/g 
+ls:pal k
+lr:pal b/h 
+ly:pal b/g 
+lc:pal b/g 
+ls:pal b/g, secam d/k 
+lu:pal b/g, secam l 
+mo:pal i 
+mk:pal b/h 
+rm:secam k 
+madeira:pal b 
+my:pal b
+mv:pal b 
+mali:secam k 
+malta:pal b 
+marshall:islands ntsc m
+mq:secam k 
+mr:secam b 
+yt:secam k 
+mx:ntsc m 
+fm:ntsc m 
+midway:island ntsc m
+md:secam d/k
+mc:secam l, pal g 
+mn:secam d
+me:pal b/g
+ms:ntsc m 
+ma:secam b 
+mz:pal b 
+mm:ntsc m
+na:pal i 
+np:b 
+nl:pal b/g 
+an:ntsc m
+nc:secam k
+new zealand:pal b/g
+ni:ntsc m 
+ne:secam k 
+ng:pal b/g 
+nf:pal b
+north:mariana islands ntsc m
+no:pal b/g 
+om:pal b/g
+pk:pal b 
+pw:ntsc m 
+panama:ntsc m 
+pg:pal b/g
+py:pal n 
+pe:ntsc m 
+ph:ntsc m
+pl:pal d/k 
+pf:secam k
+pt:pal b/g 
+pr:ntsc m 
+qa:pal b 
+reunion:secam k 
+ro:pal d/g
+ru:secam d/k 
+kn:ntsc m 
+wl:ntsc m 
+pm:secam k
+vc:ntsc m
+st:pal b/g
+as:ntsc 
+sa:secam b/g, pal b 
+ws:ntsc m 
+sn:secam k 
+rs:pal b/g 
+sc:pal b/g
+sl:pal b/g 
+sg:pal b/g 
+sk:pal b/g 
+si:pal b/h 
+so:pal b/g 
+za:pal i 
+es:pal b/g
+lk:pal 
+sd:pal b 
+sr:ntsc m 
+sz:pal b/g 
+se:pal b/g 
+ch:pal b/g (german zone), secam l (french zone) 
+sy:secam b, pal g
+tahiti:secam 
+tw:ntsc 
+tj:secam d/k 
+tz:pal b 
+th:pal b/m 
+tg:secam k 
+tt:ntsc m
+tn:secam b/g 
+tr:pal b 
+tm:secam d/k 
+turks:&amp; caicos islands ntsc m
+ug:pal b/g
+ua:secam d/k 
+uy:pal n 
+ae:pal b/g 
+us:ntsc m 
+gb:pal i
+uz:secam d/k 
+ve:ntsc m
+vn:ntsc m,secam d 
+vg:ntsc m
+vi:ntsc m
+wf:secam
+ye:pal b/ntsc m
+zm:pal b/g 
+zw:pal b/g 

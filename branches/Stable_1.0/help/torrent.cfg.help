@@ -1,0 +1,4 @@
+active_torrents:Max number of active torrents|2
+upload_kBps:Upload bandwidth KBYTES p s|80
+slot_kBps:Per slot bandwidth KBYTES p s|10
+seed_ratio:Seed Ration|1.0

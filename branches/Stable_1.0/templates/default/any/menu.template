@@ -1,0 +1,125 @@
+<!-- Default Menu Template  $Id:$ -->
+<html>
+    <head>
+        [:FAVICON:]
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:VERSION:] ([:HOSTNAME:])</title>
+        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css" />
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+
+body.menu_background { 
+	color:yellow ; 
+	background-color:black; 
+	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg'); 
+}
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/40):]px; padding:0 ; border-width:0 ;
+}
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:100%;
+[:ENDIF:]
+}
+
+.Xtitle {
+ font-size:[:TITLE_SIZE(-5):];
+ font-weight:bold;
+ color:white;
+}
+
+
+        </style>
+    </head>
+    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
+        [:FORM_START:]
+[:IF(0):]
+        <table class=main width=100% height=100%>
+        <tr><td>
+[:ENDIF:]
+            <table class=header width=100%>
+                <tr>
+[:IF($@sd):]
+                    <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
+                    <td align=left>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>
+[:ELSE:]
+                    <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:]</td>
+[:ENDIF:]
+                    <td align=left>[:SORT_TYPE_TOGGLE:]</td>
+					<td align=center>[:HOME_BUTTON:]</td>
+					<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
+					[<td align=right>:HELP_BUTTON:</td>]
+                    <td align=right>[:SETUP_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                </tr>
+[:IF(0):]
+                <tr>
+[:IF($@sd):]
+                    <td colspan=7 align=center >
+[:ELSE:]
+                    <td colspan=6 align=center >
+[:ENDIF:]
+                        <span class=menutitle id="menutitle">&nbsp;</span>
+                        <span class=menutitle id="unwatchedtotal">&nbsp;</span>
+                        <span class=menutitle id="watchedtotal">&nbsp;</span>
+                    </td>
+                </tr>
+[:ENDIF:]
+            </table>
+[:IF(0):]
+        </td></tr><tr><td>
+[:ENDIF:]
+            <center>
+            	<div>
+            		[:GRID:]
+            	</div
+            </center>
+			<br/>
+[:IF(0):]
+        </td></tr><tr><td>
+[:ENDIF:]       
+            <table class=footer width=100%>
+                <tr valign=top>
+                    <td align=left>&nbsp;[:LEFT_BUTTON:]</td>
+                    [<td align=center>:BACK_BUTTON:</td>]             
+[:IF($@gaya):]
+[:ELSE:]
+                    [<td align=center>:MARK_BUTTON:</td>]
+                    [<td align=center>:DELETE_BUTTON:</td>]
+[:ENDIF:]
+                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
+                    [<td align=center class=cancel>:SELECT_CANCEL_SUBMIT:</td>]
+                    [<td align=center class=delist>:SELECT_DELIST_SUBMIT:</td>]
+                    [<td align=center class=delete>:SELECT_DELETE_SUBMIT:</td>]
+                    <td align=right>[:RIGHT_BUTTON:]&nbsp;</td>
+                </tr>
+            </table>
+[:IF(0):]
+        </td></tr></table>
+[:ENDIF:]
+[:FORM_END:]
+<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/menu.js"></script>
+<script type="text/javascript">
+function info() {
+    alert('[RED] - Mark Watched\n[GREEN] - Mark Unwatched\n[DELETE] - Delist\n[1111] - Delete Media');
+}
+</script>
+<!-- tvids -->
+[:TVIDS:]
+<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
+<a href="javascript:ovs_delete();" tvid="1111"></a>
+<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
+<a href="javascript:ovs_watched();" tvid="RED"></a>
+<a href="javascript:info();" tvid="INFO"></a>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

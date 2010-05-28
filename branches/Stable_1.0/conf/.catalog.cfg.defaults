@@ -1,0 +1,98 @@
+#Configuration for catalog.sh - must be unix format
+# $Id: catalog.cfg.example 432 2009-10-12 23:17:25Z lordylordy $ 
+#
+##----------------------------------------------------------------------------------------
+# Rename format.
+catalog_film_folder_fmt="/share/Movies/{:TITLE:}{ (:YEAR:)}{ - :CERT:}"
+catalog_tv_file_fmt="/share/Tv/{:TITLE:}{ - Season :SEASON:}/{:NAME:}"
+#
+# available fields are:
+#    {:TITLE}
+#    {:SEASON:} 
+#    {:EPISODE:} 
+#    {:0SEASON:} 
+#    {:0EPISODE:} 
+#    {:EPTITLE:} 
+#    {:GENRE:} 
+#    {:CERT:} 
+#    {:YEAR:} 
+#    {:NAME:} is original file name.
+#    {:INFO:} is any additional info from the file name.
+#    {:BASE:} is original file name without extension.
+#    {:EXT:}
+#  Recommend not changing the filename if possible as it is useful imformation if the database
+#  has to be rebuilt.
+##----------------------------------------------------------------------------------------
+
+catalog_nfo_read="yes"
+
+#catalog_nfo_write=never|always|if_none_exists
+catalog_nfo_write="never"
+
+#catalog_nfo_format="xmbc|flat"
+catalog_nfo_format="xmbc"
+
+catalog_fetch_posters="yes"
+catalog_fetch_fanart="yes"
+catalog_poster_prefix="ovs_"
+
+catalog_format_tags="bd,dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,avchd,blu720p,blu1080p,bluray,brrip,dsrip,img,hdtv,pal\>,ntsc\>,pdtv,r5,repost,screener,workprint,ws\>,x264,xvid,yenc,par2,remaster,download,subtitle,720x,1280x,1920x"
+
+
+catalog_scan_paths="/share/Video,/share/Movies,/share/Tv,/share/Complete"
+#Folders to watch for new media. This is implemented in oversight. NMT only.
+catalog_watch_paths="NAS1,NAS2/movies"
+#How often to watch for new media. This is implemented in oversight. NMT only.
+catalog_watch_minutes=60
+#watch for completed torrents. This is implemented in oversight. NMT only.
+catalog_watch_torrents=0
+
+#Ignore the following paths when scanning.
+# *=anything,?=single char, <=start of word , >=end of word ,=OR
+catalog_ignore_paths="/share/~Other,*/Download" 
+#Ignore the following names when scanning.
+# *=anything,?=single char, <=start of word , >=end of word ,=OR
+catalog_ignore_names="*<samp>*,*<sample>*,divxfactory-*,nympho-*,fle-*,dfa-*,starlets-*,wde-*,swe6-*,ps-*,slieze-*,xcite-*,ichiban-*,motto-*"
+catalog_title_country_list="USA,UK"
+catalog_cert_country_list="gb,UK,us,USA,ie,Ireland"
+#This is how many imdb links required in google search results.
+catalog_imdb_links_required=4
+#This is how many repetitions of the title required in google search results.
+catalog_imdb_titles_required=4
+catalog_user="nmt"
+catalog_group="nmt"
+# Comma seperated list of search providers. All are used esp during initial scan to avoid getting blacklisted.
+# Google is quick to block with initial scans so it is only used for deep searches.
+#catalog_search_engines="GOOGLE,MSN,YAHOO,MSNUK,YAHOOUK,YAHOOAU"
+catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
+catalog_tv_plugins="THETVDB,TVRAGE"
+
+# Here the order of search methods can be selected based on the file name.
+# Note that the IMDBFIRST search will always find something and can give false +ve
+# so only use for short titles where other search methods might get confused.
+# Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods
+# 
+
+#scene names
+catalog_movie_search_regex1="^[-a-z0-9.]+$"
+catalog_movie_search_order1="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+#something with the year in it.
+catalog_movie_search_regex2=" .(20|19)[0-9][0-9]"
+catalog_movie_search_order2="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+
+# 10 characters or more - search for most frequently occuring imdb reference first
+catalog_movie_search_regex3=".........."
+catalog_movie_search_order3="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+
+# Short titles - best try a simple search first.
+catalog_movie_search_regex4="."
+catalog_movie_search_order4="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+
+#scene tags - dont use ones that are normal words.
+catalog_config_version=1
+# Cache info downloaded from web - approx 50k per movie.
+# This speeds up full scans but ratings may become outdated
+catalog_cache_film_info="yes"
+
+# Genre codes
+catalog_genre="Action,a,Adventure,e,Animation,i,Biography,b,Comedy,c,Crime,j,Documentary,k,Drama,d,Family,f,Fantasy,l,Film-Noir,o,Game-Show,g,History,p,Horror,h,Music,q,Musical,m,Mystery,u,News,n,Reality-TV,v,Romance,r,Sci-Fi,s,Short,x,Sport,y,Talk-Show,z,Thriller,t,War,w";

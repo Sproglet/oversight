@@ -1,0 +1,43 @@
+<!-- Default Diagnostics Template  $Id:$ -->
+<html>
+    <head>
+        [:FAVICON:]
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Rescan</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+        <style type="text/css">
+img.webstatus { width:15; height:15; }
+td.webstatus { font-size:90% ; }
+a { color:yellow; }
+body { font-size:20; font-family:"arial"; color:white; }
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Diagnostics</h1>
+
+            <p> Log file diagnostics. Only works from PC at the moment.
+            <table>
+                <tr>
+                    <td align=center>
+                        Scan logs  <a href="/oversight/logs/last.log">{Last}</a> <a href="/oversight/logs/prev.log">{Prev}</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td align=center>
+                        <a href="/oversight/logs/last.unpak.log">{Last unpak log}</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td align=center>
+                        <a href="/oversight/logs/gui.log">{Last TV gui log}</a>
+                    </td>
+                </tr>
+                </tr>
+            </table>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

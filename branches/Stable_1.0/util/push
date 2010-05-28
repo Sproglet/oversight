@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# Copy scripts and binaries directly to a NMT share.
+# if using cygwin the Argument is the drive letter the NMT HDD is mapped to.
+# if using linux its expected the NMT is mounted under '/mnt' and the argument is the folder name.
+
+if [ -d /cygdrive/c ] ; then
+    net use a: '\\192.168.88.11\share' 1234  /user:nmt
+#    net use b: '\\192.168.88.6\share' 1234  /user:nmt
+    dest_prefix=/cygdrive
+else
+    dest_prefix=/mnt
+fi
+
+CP() {
+    dest="$1" ; shift;
+    tar -cf - --exclude=.svn --exclude=\*~ "$@" | ( cd "$dest/." && tar xvf - )
+}
+
+PUSH() {
+    echo updating drives : "$@"
+
+    echo compacting script
+    chmod 775 *cgi *.sh *.awk
+
+
+    for i in "$@" ; do
+	case "$i" in
+	all|q)
+		mode=$i
+		;;
+	*)
+
+            echo Drive $i
+            root=$dest_prefix/$i/Apps/oversight/.
+
+            CP "$root" *.awk *.cgi *.sh help bin/nmt*/oversight bin/jpg_* bin/plot.sh bin/dns.sh
+            CP "$root" conf/*example conf/.*defaults conf/tv.txt
+
+            if [ "$mode" = "all" ] ; then
+                CP "$root" templates
+                CP "$root" bin
+            fi
+
+            echo clear cache ...
+            rm -f $root/tmp/cache/*
+            ls -l $root/oversight.cgi
+
+        esac
+    done
+}
+
+if [ -z "$*" ] ;then
+    echo "cygwin usage $0 [all|q] drive drive..."
+    echo "linux usage $0 [all|q] mount ..."
+else
+    PUSH "$@"
+fi
+

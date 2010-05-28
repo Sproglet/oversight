@@ -1,0 +1,12 @@
+<!-- Default Buttons Template  $Id:$ -->
+    [:BACK_BUTTON:]
+    [:HOME_BUTTON:]
+[:IF($@gaya):]
+[:ELSE:]
+    [:MARK_BUTTON:]
+    [:DELETE_BUTTON:]
+[:ENDIF:]
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

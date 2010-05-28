@@ -509,7 +509,9 @@ TRACE ;
 
         char *serv_link = setting_val(key);
         // Look for corresponding variable servlinkN
-TRACE ; HTML_LOG(0,"mount servlink [%s]",serv_link);
+TRACE ;
+		
+		HTML_LOG(1,"mount servlink [%s]",serv_link);
         FREE(key);
 
         char *link = get_pingable_link(serv_link);

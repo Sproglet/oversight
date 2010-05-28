@@ -3259,7 +3259,6 @@ TRACE;
 
     }
     HTML_LOG(1,"Media type = %d",media_type);
-	HTML_LOG(0,"Media type str = %d",media_type_str);
 
 TRACE;
     

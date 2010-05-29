@@ -449,3 +449,4 @@ void gaya_set_env(int argc,char **argv)
     }
     setenv("REMOTE_ADDR","127.0.0.1",1);
 }
+// vi:sw=4:et:ts=4

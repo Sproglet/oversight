@@ -47,7 +47,12 @@ table.overview_poster {
 [:ENDIF:]
             <table class=header width=100% background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/trans60.png">
                 <tr>
+[:IF($?resizeon):]
+                    <td>[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
                     <td width="7%">&nbsp;[:HOME_BUTTON:]</td>
+[:ENDIF:]
+
                     <td width="1%" align=right>[:WATCHED_SELECT:][:TITLE_SELECT:]</td>
                     <td width="1%" align=left>[:MEDIA_SELECT:][:GENRE_SELECT:]</td>
                     <td align=right width="75%">
@@ -64,7 +69,7 @@ table.overview_poster {
             <center>
             	<div>
             		[:GRID:]
-            	</div
+            	</div>
             </center>
 [:IF(0):]
         </td></tr><tr><td>

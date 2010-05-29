@@ -35,3 +35,4 @@ void setPermissions()
         HTML_LOG(0,"user [%s] not found",NMT_USER);
     }
 }
+// vi:sw=4:et:ts=4

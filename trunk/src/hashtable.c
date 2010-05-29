@@ -304,3 +304,4 @@ hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+// vi:sw=4:et:ts=4

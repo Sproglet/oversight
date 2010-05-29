@@ -385,3 +385,4 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
 void db_overview_hash_destroy(struct hashtable *ovw_hash) {
     hashtable_destroy(ovw_hash,0,0);
 }
+// vi:sw=4:et:ts=4

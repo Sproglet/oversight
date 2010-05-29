@@ -25,17 +25,6 @@
 
 //void exec_old_cgi(int argc,char **argv);
 
-// Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
-void load_configs () {
-    g_oversight_config =
-        config_load_wth_defaults(appDir(),"conf/.oversight.cfg.defaults","conf/oversight.cfg");
-
-    g_catalog_config =
-        config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
-
-    g_nmt_settings = config_load("/tmp/setting.txt",1);
-
-}
 
 void clear_playlist() {
     truncate(NMT_PLAYLIST,0);
@@ -506,3 +495,4 @@ TRACE;
 }
 
 
+// vi:sw=4:et:ts=4

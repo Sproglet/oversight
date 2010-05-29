@@ -45,3 +45,4 @@ int main(int argc, char ** argv) {
 }
 */
 
+// vi:sw=4:et:ts=4

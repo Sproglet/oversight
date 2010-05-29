@@ -26,7 +26,7 @@ img.nasstatus { width:15; height:15; }
             </td>
             <td align=left width=28%>
                 [:CONFIG_LINK(oversight.cfg,help,General Settings):]<br>
-                [:CONFIG_LINK(oversight.cfg,keys.help,Keys):]<br>
+                [:CONFIG_LINK(oversight.cfg,keys.help,Keys):] / [:LINK(action=template_resize,Resize):]<br>
                 [:LINK(action=confirm_rescan,Rescan Media):]<br>
                 [:LINK(action=template_diagnostics,Diagnostics):]
             </td>

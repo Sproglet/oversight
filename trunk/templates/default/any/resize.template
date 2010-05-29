@@ -1,0 +1,41 @@
+<!-- Default Resize Template  $Id:$ -->
+<html>
+    <head>
+        [:FAVICON:]
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Resize</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+        <style type="text/css">
+img.webstatus { width:15; height:15; }
+td.webstatus { font-size:90% ; }
+a { color:yellow; }
+body { font-size:20; font-family:"arial"; color:white; }
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Media Scan</h1>
+
+        <p>To resize the grid on the TV. use the following remote key sequences:
+            Note think of 2,4,6,8 as up,left,right,down.
+        <ul>
+            <li><b>52</b> - Decrease poster height.</li>
+            <li><b>58</b> - Increase poster height.</li>
+            <li><b>54</b> - Decrease poster width.</li>
+            <li><b>56</b> - Increase poster width.</li>
+        </ul>
+        <ul>
+            <li><b>552</b> - Decrease rows.</li>
+            <li><b>558</b> - Increase rows.</li>
+            <li><b>554</b> - Decrease columns.</li>
+            <li><b>556</b> - Increase columns.</li>
+        </ul>
+        <p>You can also use the onscreen arrows.
+
+        [:LINK(view=&resizeon=1,{resize}):]
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

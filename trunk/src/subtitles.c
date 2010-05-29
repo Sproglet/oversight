@@ -122,3 +122,4 @@ int subtitle_main(int argc,char **argv) {
 
     return ret;
 }
+// vi:sw=4:et:ts=4

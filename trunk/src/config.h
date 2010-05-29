@@ -44,6 +44,8 @@ int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out)
 int config_get_str_indexed(struct hashtable *h,char *k,char *index,char **out);
 int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out);
 
+void load_configs();
+void reload_configs();
 void config_read_dimensions();
 
 long allow_admin();
@@ -53,4 +55,5 @@ long allow_mark();
 int in_poster_mode();
 int in_text_mode();
 int browsing_from_lan();
+int ovs_config_dimension_increment(char *keyword_prefix,char* delta_str,int min,int max);
 #endif

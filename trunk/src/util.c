@@ -1098,3 +1098,4 @@ char *util_change_extension(char *file,char *new_ext)
     return result;
 
 }
+// vi:sw=4:et:ts=4

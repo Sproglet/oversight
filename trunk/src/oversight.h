@@ -58,6 +58,8 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define TVBOXSET_VIEW 10
 #define MOVIEBOXSET_VIEW 11
 
+#define QUERY_ASSIGN_PREFIX "*"
+
 #define QUERY_PARAM_VIEW "view"
 #define QUERY_PARAM_SELECTED "i"
 #define QUERY_PARAM_PAGE "p"

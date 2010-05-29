@@ -689,33 +689,27 @@ char *macro_fn_paypal(char *template_name,char *call,Array *args,int num_rows,Db
 }
 
 char *macro_fn_sys_load_avg(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    static char result[50] = "";
-    *free_result = 0;
-    if (!*result) {
-        double av[3];
+
+    char *result=NULL;
+    double av[3];
 #if 0
-        if (getloadavg(av,3) == 3) {
-            sprintf(result,"1m:%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
-        }
-#else
-        FILE *fp = popen("uptime","r");
-        if (fp) {
-#define BLEN 99
-            char buf[BLEN];
-            while(fgets(buf,BLEN,fp) != NULL) {
-                char *p = strstr(buf,"average:");
-                if (p) {
-                    p = strchr(p,' ');
-                    if (p) {
-                        sscanf(p," %lf, %lf, %lf",av,av+1,av+2);
-                    }
-                    sprintf(result,"%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
-                }
-            }
-            pclose(fp);
-        }
-#endif
+    if (getloadavg(av,3) == 3) {
+        ovs_asprintf(&result,"1m:%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
     }
+#else
+    FILE *fp = fopen("/proc/loadavg","r");
+    if (fp) {
+#define BLEN 99
+        char buf[BLEN];
+        while(fgets(buf,BLEN,fp) != NULL) {
+            if (sscanf(buf,"%lf %lf %lf",av,av+1,av+2) == 3) {
+                ovs_asprintf(&result,"%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
+                break;
+            }
+        }
+        fclose(fp);
+    }
+#endif
     return result;
 }
 

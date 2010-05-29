@@ -60,6 +60,7 @@ static void clear_selection() {
     query_remove("form");
     query_remove("select");
     query_remove("action");
+    query_remove("set_val");
     query_remove("old_action");
     struct hashtable_itr *itr;
     Array *a = array_new(NULL);
@@ -350,6 +351,8 @@ void do_actions() {
 
     char *view=query_val(QUERY_PARAM_VIEW);
     char *action=query_val("action");
+    char *set_name=query_val("set_name");
+    char *set_val=query_val("set_val");
 
     // If remote play then send to gaya
     char *file=query_val(REMOTE_VOD_PREFIX1);
@@ -545,6 +548,7 @@ void do_actions() {
                 }
                 query_remove("action");
 
+
             }
             query_remove("actionids");
             hashtable_destroy(changed_source_id_hash,1,1);
@@ -586,6 +590,16 @@ TRACE;
             hashtable_destroy(changed_source_id_hash,1,1);
             query_remove("action");
 
+        } else if (allow_admin() && STRCMP(action,"set")==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
+
+            int min = atoi(query_val("min"));
+            int max = atoi(query_val("max"));
+
+            if (ovs_config_dimension_increment(set_name,set_val,min,max) == 0) {
+                reload_configs();
+            }
+            query_remove("min");
+            query_remove("max");
         }
 
 
@@ -879,3 +893,4 @@ HTML_LOG(1," end get_newly_deselected_ids_by_source");
 }
 
 
+// vi:sw=4:et:ts=4

@@ -702,3 +702,4 @@ int nmt_mount_quick (char *file)
     }
     return last_result;
 }
+// vi:sw=4:et:ts=4

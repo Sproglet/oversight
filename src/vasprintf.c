@@ -255,3 +255,4 @@ int ovs_asprintf (char **result, char *format, ...)
 
   return done;
 } 
+// vi:sw=4:et:ts=4

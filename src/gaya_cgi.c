@@ -491,3 +491,4 @@ void html_hashtable_dump(int level,char *label,struct hashtable *h) {
 }
 
 
+// vi:sw=4:et:ts=4

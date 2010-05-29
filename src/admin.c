@@ -41,3 +41,4 @@ void display_admin() {
     }
 
 }
+// vi:sw=4:et:ts=4

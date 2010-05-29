@@ -331,3 +331,4 @@ long ping_timeout()
     return ping_millis;
 }
 
+// vi:sw=4:et:ts=4

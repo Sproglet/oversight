@@ -187,3 +187,4 @@ hashtable_iterator_search(struct hashtable_itr *itr,
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+// vi:sw=4:et:ts=4

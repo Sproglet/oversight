@@ -47,7 +47,11 @@ table.overview_poster {
 [:ENDIF:]
             <table class=header width=100%>
                 <tr>
+[:IF($?resizeon):]
+                    <td>[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
                     <td width="7%">&nbsp;[:HOME_BUTTON:]</td>
+[:ENDIF:]
 [:IF($@sd):]
                     <td align=center>[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
                     <td align=center>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>

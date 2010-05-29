@@ -1484,7 +1484,7 @@ TRACE;
                                     keeprow=0;
                                 }
                                 break;
-							case DB_MEDIA_TYPE_OTHER:
+                            case DB_MEDIA_TYPE_OTHER:
                                 if (is_tv || is_movie) {
                                     keeprow=0;
                                 }
@@ -2016,3 +2016,4 @@ char *get_crossview_local_copy(char *path,char *label)
     return local_path;
 }
 
+// vi:sw=4:et:ts=4

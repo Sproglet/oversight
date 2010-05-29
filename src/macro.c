@@ -763,7 +763,18 @@ char *add_star(char *buf,char *star_path,int star_no) {
     return p;
 }
 
-char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_resize_controls(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+
+    char *result = NULL;
+    if (! *query_val(QUERY_PARAM_VIEW)) {
+        result = get_tvid_resize_links();
+    }
+    return result;
+    
+}
+char *macro_fn_tvids(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
 
     char *result = NULL;
     if (! *query_val(QUERY_PARAM_VIEW)) {
@@ -961,12 +972,19 @@ char *macro_fn_include(char *template_name,char *call,Array *args,int num_rows,D
 
 char *macro_fn_start_cell(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     *free_result=0;
+    char *result=NULL;
 
     if (*query_val(QUERY_PARAM_REGEX)) {
-        return "filter5";
+        result="filter5";
+
+    } else if (*query_val("set_name") && *query_val("set_val")) {
+        ovs_asprintf(&result,"%s%s",query_val("set_name"),query_val("set_val"));
+        *free_result=1;
     } else {
-        return "selectedCell";
+        result= "selectedCell";
     }
+
+    return result;
 
 }
 char *macro_fn_media_type(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -1986,6 +2004,7 @@ void macro_init() {
         hashtable_insert(macros,"BODY_HEIGHT",macro_fn_body_height);
         hashtable_insert(macros,"EDIT_CONFIG",macro_fn_edit_config);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
+        hashtable_insert(macros,"RESIZE_CONTROLS",macro_fn_resize_controls);
         hashtable_insert(macros,"TVIDS",macro_fn_tvids);
         hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);
         hashtable_insert(macros,"SYS_DISK_USED",macro_fn_sys_disk_used);
@@ -2205,3 +2224,4 @@ TRACE;
     return result;
 }
 
+// vi:sw=4:et:ts=4

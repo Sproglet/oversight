@@ -12,6 +12,38 @@
 #include "vasprintf.h"
 
 
+int rename_cfg(char *old,char *new);
+int set_option(char *file,char *name,char *new_value);
+
+// Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
+void load_ovs_configs()
+{
+    g_oversight_config =
+        config_load_wth_defaults(appDir(),"conf/.oversight.cfg.defaults","conf/oversight.cfg");
+
+    g_catalog_config =
+        config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
+
+}
+
+void load_configs()
+{
+    load_ovs_configs();
+
+    g_nmt_settings = config_load("/tmp/setting.txt",1);
+
+}
+
+void reload_configs()
+{
+    HTML_LOG(0,"reload configs");
+    // small leak here in not freeing the hashtable values.
+    hashtable_destroy(g_oversight_config,0,0);
+    hashtable_destroy(g_catalog_config,0,0); 
+
+    load_ovs_configs();
+    config_read_dimensions();
+}
 int browsing_from_lan() {
     static int result = -1;
     if (result == -1) {
@@ -129,6 +161,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
 
 }
 
+// include_unquoted_space option is for /tmp/setting.txt other config files always quote space.
 struct hashtable *config_load(char *filename,int include_unquoted_space) {
 
     assert(filename);
@@ -153,7 +186,89 @@ int is_comment(char *line) {
     return (*line == '#');
 }
 
+int parse_key_val(char *line,
+        int include_unquoted_space,
+        char **key_p,char **keyend_p,
+        char **val_p,char **valend_p)
+{
+
+    int ret=0;
+    char *key = NULL;
+    char *val = NULL;
+
+    if ( (*line == ' ' || *line == '\t' || *line == '#' ) && is_comment(line)) {
+
+        // comment
+        ret = 0;
+
+    } else {
+
+        // key = value where value = X....X or just X (where X= ^space )
+        // \x5b = [ \x5d = ]
+        //
+        char *p = line;
+        while (isspace(*p)) p++;
+        key = p;
+        while (isalnum(*p) || (*p && strchr("_.[]",*p))) {
+            p++;
+        }
+        char *key_end = p;
+
+
+        while(isspace(*p)) p++;
+        if (*p == '=' || *p == ':' ) {
+
+            char *val_end = NULL;
+
+            p++;
+            while(isspace(*p)) p++;
+            val = p;
+            if (*val && strchr("\"'",*val) ) {
+                //parse quoted value
+                p++;
+                while (*p && *p != *val) p++;
+                if (*p == *val) {
+                    val++;
+                    val_end=p;
+                    p++;
+                }
+            } else {
+                //parse unquoted value
+                while(*p && (!isspace(*p) || (include_unquoted_space && *p == ' ') )) {
+                    p++;
+                }
+                val_end = p;
+            }
+
+            if (!include_unquoted_space) {
+                while(isspace(*p) || *p == ';') {
+                    p++;
+                }
+            }
+
+            if (*p == '#') {
+                // skip trailing comment
+                while(*p >= ' ' || isspace(*p)) p++;
+            }
+
+            if (val_end && strchr("\n\r",*p)) {
+
+                if (key && val && key_end > key ) {
+                    *key_p = key;
+                    *val_p = val;
+                    *keyend_p = key_end;
+                    *valend_p = val_end;
+                    ret = 1;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+
 #define CFG_BUFSIZ 700
+// include_unquoted_space option is for /tmp/setting.txt other config files always quote space.
 struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
     struct hashtable *result=string_string_hashtable(16);
@@ -165,74 +280,154 @@ struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
 
         CHECK_FGETS(line,CFG_BUFSIZ);
 
-        if ( (*line == ' ' || *line == '\t' || *line == '#' ) && is_comment(line)) {
-            //skip comment
-        } else {
-            char *key = NULL;
-            char *val = NULL;
+        char *key,*val,*keyend,*valend;
 
+        if (parse_key_val(line,include_unquoted_space,&key,&keyend,&val,&valend) ) {
 
-            // key = value where value = X....X or just X (where X= ^space )
-            // \x5b = [ \x5d = ]
-            //
-            char *p = line;
-            while (isspace(*p)) p++;
-            key = p;
-            while (isalnum(*p) || (*p && strchr("_.[]",*p))) {
-                p++;
-            }
-            char *key_end = p;
+            *keyend = *valend = '\0';
 
-
-            while(isspace(*p)) p++;
-            if (*p == '=' || *p == ':' ) {
-
-                char *val_end = NULL;
-
-                p++;
-                while(isspace(*p)) p++;
-                val = p;
-                if (*val && strchr("\"'",*val) ) {
-                    //parse quoted value
-                    p++;
-                    while (*p && *p != *val) p++;
-                    if (*p == *val) {
-                        val++;
-                        val_end=p;
-                        p++;
-                    }
-                } else {
-                    //parse unquoted value
-                    while(*p && (!isspace(*p) || (include_unquoted_space && *p == ' ') )) {
-                        p++;
-                    }
-                    val_end = p;
-                }
-
-                if (!include_unquoted_space) {
-                    while(isspace(*p) || *p == ';') {
-                        p++;
-                    }
-                }
-
-                if (*p == '#') {
-                    // skip trailing comment
-                    while(*p >= ' ' || isspace(*p)) p++;
-                }
-
-                if (val_end && strchr("\n\r",*p)) {
-
-                    if (key && val && key_end > key ) {
-                        *key_end = *val_end = '\0';
-                        //HTML_LOG(1,"setting [%s]=[%s]",key,val);
-                        hashtable_insert(result,STRDUP(key),STRDUP(val));
-                    }
-                }
-            }
-
+            hashtable_insert(result,STRDUP(key),STRDUP(val));
         }
+
     }
     return result;
+}
+
+// Add delta to a dimension value. 0=success
+int ovs_config_increment(char *name,char *delta_str,int min,int max) 
+{
+    int ret = 1;
+    char *file;
+
+HTML_LOG(0,"ovs_config_increment(%s,%s)",name,delta_str);
+
+    ovs_asprintf(&file,"%s/conf/oversight.cfg",appDir());
+
+
+    char *old_val;
+    old_val=oversight_val(name);
+HTML_LOG(0,"ovs_config_increment old val %s = (%s)",name,old_val);
+    if (old_val != NULL) {
+
+        int v;
+        int delta;
+        if (util_starts_with(delta_str,QUERY_ASSIGN_PREFIX)) {
+            v = atoi(delta_str+strlen(QUERY_ASSIGN_PREFIX));
+        } else {
+            delta = atoi(delta_str);
+            v = atoi(old_val) + delta;
+        }
+
+        if (v < min) {
+            v = min;
+        } else if (v > max) {
+             v = max;
+        }
+
+        char *new_val;
+        ovs_asprintf(&new_val,"%d",v);
+        ret = set_option(file,name,new_val);
+        FREE(new_val);
+    } else {
+        html_error("Unable to find [%s] setting",name);
+    }
+    FREE(file);
+    return ret;
+}
+
+int ovs_config_dimension_increment(char *keyword_prefix,char* delta_str,int min,int max) 
+{
+    char *name;
+HTML_LOG(0,"ovs_config_dimension_increment(%s,%s)",keyword_prefix,delta_str);
+    ovs_asprintf(&name,"%s[%d]",keyword_prefix,g_dimension->scanlines);
+    int ret=ovs_config_increment(name,delta_str,min,max);
+    FREE(name);
+    return ret;
+}
+
+// 0 = success
+int set_option(char *file,char *name,char *new_value)
+{
+    HTML_LOG(0,"set_option(%s,%s,%s)",file,name,new_value);
+
+    int set_err = 1;
+    char *tmp_file;
+    char *old_file;
+    int pid = getpid();
+    int namelen = strlen(name);
+
+    ovs_asprintf(&tmp_file,"%s.%d.tmp",file,pid);
+    ovs_asprintf(&old_file,"%s.old",file);
+
+    FILE *tmp_fp = NULL;
+    FILE *fp = fopen(file,"r");
+
+    if (fp == NULL) {
+
+        html_error("Failed to open(r)[%s]",file);
+
+    } else {
+
+        tmp_fp = fopen(tmp_file,"w");
+        if (tmp_fp == NULL) {
+
+            html_error("Failed to open(w) [%s]",tmp_file);
+
+        } else {
+
+            char line[CFG_BUFSIZ+1];
+            PRE_CHECK_FGETS(line,CFG_BUFSIZ);
+            while((fgets(line,CFG_BUFSIZ,fp))) {
+
+                int keep=1;
+                CHECK_FGETS(line,CFG_BUFSIZ);
+
+                char *key,*val,*keyend,*valend;
+
+                if (parse_key_val(line,0,&key,&keyend,&val,&valend) ) {
+
+                    if (keyend-key == namelen && util_starts_with(key,name)) {
+                        keep=0;
+                        fprintf(tmp_fp,"%s=\"%s\"\n",name,new_value);
+                        set_err = 0;
+                    }
+                }
+                if (keep) {
+                    // preserve line
+                    fprintf(tmp_fp,"%s",line);
+                }
+
+            }
+            if (set_err) {
+                // not found. Write it at the end.
+                fprintf(tmp_fp,"%s=\"%s\"\n",name,new_value);
+                set_err = 0;
+            }
+        }
+    }
+
+    if (fp) fclose(fp);
+    if (tmp_fp) fclose(tmp_fp);
+
+    if (!set_err) {
+        if (rename_cfg(file,old_file) != 0) {
+            set_err = 2;
+        } else if (rename(tmp_file,file) != 0) {
+            set_err = 3;
+            rename_cfg(old_file,file); // try to undo
+        }
+    }
+    return set_err;
+}
+
+// 0 = success
+int rename_cfg(char *old,char *new)
+{
+    int ret;
+    if ((ret = rename(old,new)) != 0) {
+        html_error("Error renaming [%s] to [%s]",old,new);
+    }
+    return ret;
 }
 
 void config_unittest() {
@@ -510,3 +705,4 @@ void config_read_dimensions() {
 }
 
 
+// vi:sw=4:et:ts=4

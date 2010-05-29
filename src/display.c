@@ -3316,7 +3316,8 @@ typedef struct tvid_struct {
 
 #define TVID_MAX_LEN 2 //
 #define TVID_MAX 99  //must be 10 ^ TVID_MAX_LEN -1
-char *get_tvid_links() {
+char *get_tvid_links()
+{
 
     // Pre compute format string for tvids.
 #define TVID_MARKER "@X@Y@"
@@ -3371,6 +3372,95 @@ char *get_tvid_links() {
     }
 //    HTML_LOG(0,"result = %s",result);
 
+    return result;
+}
+
+#define ARROW_CLASS " class=\"resize_arrow\""
+
+char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char *text)
+{
+    char *result;
+    char *attr;
+    char *params;
+    ovs_asprintf(&params,"action=set&set_name=%s&min=%s&max=%s&set_val=%s",name,min,max,increment);
+    ovs_asprintf(&attr,"tvid=\"%s\" name=\"%s%s\" "ARROW_CLASS,tvid,name,increment);
+    result = get_self_link(params,attr,text);
+    FREE(params);
+    FREE(attr);
+    return result;
+}
+// Links to resize the grid -on the fly
+char *get_tvid_resize_links()
+{
+    char *result=NULL;
+
+    if (*query_val("resizeon")) {
+
+#define GRID_INC "1"
+#define ARROW_UP "↑"
+#define ARROW_LEFT "←"
+#define ARROW_RIGHT "→"
+#define ARROW_DOWN "↓"
+        char *rinc=resize_link("ovs_poster_mode_rows",GRID_INC,"1","99","558",ARROW_DOWN);
+        char *rdec=resize_link("ovs_poster_mode_rows","-"GRID_INC,"1","99","552",ARROW_UP);
+        char *cinc=resize_link("ovs_poster_mode_cols",GRID_INC,"1","99","556",ARROW_RIGHT);
+        char *cdec=resize_link("ovs_poster_mode_cols","-"GRID_INC,"1","99","554",ARROW_LEFT);
+
+#define POSTER_INC "10"
+
+#define PARROW_UP "⇧"
+#define PARROW_LEFT "⇦"
+#define PARROW_RIGHT "⇨"
+#define PARROW_DOWN "⇩"
+        char *hinc=resize_link("ovs_poster_mode_height",POSTER_INC   ,"10","750","58",PARROW_DOWN);
+        char *hdec=resize_link("ovs_poster_mode_height","-"POSTER_INC,"10","750","52",PARROW_UP);
+        char *winc=resize_link("ovs_poster_mode_width" ,POSTER_INC,   "10","500","56",PARROW_RIGHT);
+        char *wdec=resize_link("ovs_poster_mode_width" ,"-"POSTER_INC,"10","500","54",PARROW_LEFT);
+        char *wzero=resize_link("ovs_poster_mode_width" ,QUERY_ASSIGN_PREFIX"0","0","500","","auto_width");
+        char *hzero=resize_link("ovs_poster_mode_height" ,QUERY_ASSIGN_PREFIX"0","0","750","","auto_height");
+
+        char *control=get_self_link("resizeon=&set_name=&set_val=&action=",ARROW_CLASS,"Off");
+
+        char *grid_centre=get_self_link("",ARROW_CLASS,"Grid");
+        char *poster_centre=get_self_link("",ARROW_CLASS,"Images");
+
+
+    ovs_asprintf(&result,"\
+            <style type=\"text/css\">\
+            .resize_arrow { font-size:8pt; }\
+            </style>\
+            <table class=\"resize_table\" >"
+            "<tr>"
+                "<td></td><td align=\"center\">%s</td>"
+                "<td></td>"     "<td></td><td align=\"center\">%s</td><td></td>"
+                "<td>%s</td>"
+            "</tr>"
+            "<tr>"
+                "<td>%s</td><td>%s</td><td>%s</td>"
+                "<td>%s</td><td>%s</td><td>%s</td>"
+                "<td>%s</td>"
+            "</tr>"
+            "<tr>"
+                "<td></td><td align=\"center\">%s</td><td></td>"
+                "<td></td><td align=\"center\">%s</td><td></td>"
+                "<td>%s</td>"
+            "</tr>"
+            "</table>",
+                rdec,hdec,hzero,
+                cdec,grid_centre,cinc,wdec,poster_centre,winc,wzero,
+                rinc,hinc,control);
+
+        FREE(rinc); FREE(rdec); FREE(cinc); FREE(cdec);
+        FREE(hinc); FREE(hdec); FREE(winc); FREE(wdec);
+        FREE(grid_centre);
+        FREE(poster_centre);
+
+        FREE(control);
+//    } else {
+//        char *control=get_self_link("resizeon=1","tvid=12","Resize");
+//        ovs_asprintf(&result,"%s",control);
+//        FREE(control);
+    }
     return result;
 }
 
@@ -3955,3 +4045,4 @@ char *get_selected_item()
     assert(selected_item);
     return selected_item;
 }
+// vi:sw=4:et:ts=4

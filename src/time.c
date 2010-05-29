@@ -76,3 +76,4 @@ int year(OVS_TIME t1)
     internal_time2tm(t1,&t);
     return t.tm_year+1900;
 }
+// vi:sw=4:et:ts=4

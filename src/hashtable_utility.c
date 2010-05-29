@@ -70,3 +70,4 @@ hashtable_change(struct hashtable *h, void *k, void *v)
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+// vi:sw=4:et:ts=4

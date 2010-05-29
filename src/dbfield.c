@@ -75,3 +75,4 @@ char *dbf_fieldid_to_macro(char *fieldid)
     return hashtable_search(dbf_id_to_macro,fieldid);
 }
 
+// vi:sw=4:et:ts=4

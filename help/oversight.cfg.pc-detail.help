@@ -1,10 +1,10 @@
-ovs_title_size[720]:Title Size(720)|34
-ovs_movie_poster_height[720]:Movie Poster height(720)|360
-ovs_tv_poster_height[720]:TV Poster height(720)|360
-ovs_max_plot_length[720]:Maximum Plot Length (720)|600
-ovs_certificate_size[720]:Certificate Size(720)|30
-ovs_tv_rows[720]:Number of Episode Rows in TV Detail view|10
-ovs_tv_cols[720]:Number of Episode Columns in TV Detail view|6
+ovs_title_size[pc]:Title Size(pc)|34
+ovs_movie_poster_height[pc]:Movie Poster height(pc)|360
+ovs_tv_poster_height[pc]:TV Poster height(pc)|360
+ovs_max_plot_length[pc]:Maximum Plot Length (pc)|600
+ovs_certificate_size[pc]:Certificate Size(pc)|30
+ovs_tv_rows[pc]:Number of Episode Rows in TV Detail view|10
+ovs_tv_cols[pc]:Number of Episode Columns in TV Detail view|6
 ovs_font_size_plot:Relative size of plot font (percent)|130
 ovs_font_size_eptitle:Relative size of plot font (percent)|80
 ovs_font_size_epdate:Relative size of plot font (percent)|80

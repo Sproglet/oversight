@@ -12,6 +12,8 @@ void delete_media(DbRowId *rid,int delete_related);
 
 void add_internal_images_to_delete_queue(DbRowId *rid);
 void remove_internal_images_from_delete_queue(DbRowId *rid);
+void set_start_cell();
+char *get_start_cell();
 
 #define DELETE_MODE_NONE 0
 #define DELETE_MODE_REMOVE 1      // user initiated delist - pass 1

@@ -3,3 +3,13 @@ ovs_poster_mode_rows[720]:Number of poster rows on front page
 ovs_poster_mode_cols[720]:Number of columns on front page
 ovs_poster_mode_height[720]:Height of poster. 0=automatic value .
 ovs_poster_mode_width[720]:Width of poster. 0=automatic value.
+
+ovs_poster_mode_rows_tvboxset[720]:Number of poster rows on tvboxset page <b>-1</b> use main menu value
+ovs_poster_mode_cols_tvboxset[720]:Number of columns on tvboxset page <b>-1</b> use main menu value
+ovs_poster_mode_height_tvboxset[720]:Height of poster. <b>0</b>=automatic value . <b>-1</b> use main menu value
+ovs_poster_mode_width_tvboxset[720]:Width of poster. <b>0</b>=automatic value. <b>-1</b> use main menu value
+
+ovs_poster_mode_rows_movieboxset[720]:Number of poster rows on movie boxset page -1</b> use main menu value
+ovs_poster_mode_cols_movieboxset[720]:Number of columns on movie boxset page <b>-1</b> use main menu value
+ovs_poster_mode_height_movieboxset[720]:Height of poster. <b>0</b>=automatic value . <b>-1</b> use main menu value
+ovs_poster_mode_width_movieboxset[720]:Width of poster. <b>0</b>=automatic value. <b>-1</b> use main menu value

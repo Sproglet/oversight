@@ -4,6 +4,18 @@
 #include <stdio.h>
 #include "hashtable.h"
 
+
+#define GRID_MAIN 0
+#define GRID_TVBOXSET 1
+#define GRID_MOVIEBOXSET 2
+
+typedef struct grid_dimension_str {
+    long rows;
+    long cols;
+    long img_height;
+    long img_width;
+} GridDimensions ;
+
 typedef struct dimension_str {
     int tv_mode;
     int is_pal;
@@ -11,8 +23,8 @@ typedef struct dimension_str {
     long poster_mode;
     long title_bar; //dynamic title bar.
     long local_browser;
-    long rows;
-    long cols;
+    long text_rows;
+    long text_cols;
     long font_size;
     long title_size;
     long movie_img_height;
@@ -22,9 +34,9 @@ typedef struct dimension_str {
     long max_plot_length;
     long button_size;
     long certificate_size;
-    long poster_menu_img_width;
-    long poster_menu_img_height;
-
+    char *set_name; // eg 0=SD , 720=HD , pc=browser
+    GridDimensions grids[3]; // main , tvboxset , movie boxset
+    GridDimensions *current_grid;
 } Dimensions ;
 
 struct hashtable *config_load(char *filename,int include_unquoted_space);
@@ -56,4 +68,5 @@ int in_poster_mode();
 int in_text_mode();
 int browsing_from_lan();
 int ovs_config_dimension_increment(char *keyword_prefix,char* delta_str,int min,int max);
+int ovs_config_dimension_inherit(char *keyword_prefix);
 #endif

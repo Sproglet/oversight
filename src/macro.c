@@ -20,6 +20,7 @@
 #include "dbfield.h"
 #include "mount.h"
 #include "gaya.h"
+#include "actions.h"
 
 #define MACRO_VARIABLE_PREFIX '$'
 #define MACRO_SPECIAL_PREFIX '@'
@@ -761,7 +762,7 @@ char *macro_fn_resize_controls(char *template_name,char *call,Array *args,int nu
 {
 
     char *result = NULL;
-    if (! *query_val(QUERY_PARAM_VIEW)) {
+    if (STRCMP(query_val(QUERY_PARAM_VIEW),"admin") != 0) {
         result = get_tvid_resize_links();
     }
     return result;
@@ -888,8 +889,9 @@ char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRo
     int rows=0;
     int cols=0;
     if (!get_rows_cols(call,args,&rows,&cols)) {
-        rows = g_dimension->rows;
-        cols = g_dimension->cols;
+
+        rows = g_dimension->current_grid->rows;
+        cols = g_dimension->current_grid->cols;
     }
     return get_grid(get_current_page(),rows,cols,num_rows,sorted_rows);
 }
@@ -968,12 +970,14 @@ char *macro_fn_start_cell(char *template_name,char *call,Array *args,int num_row
     *free_result=0;
     char *result=NULL;
 
-    if (*query_val(QUERY_PARAM_REGEX)) {
+    char *start_cell = get_start_cell();
+    if (start_cell && *start_cell) {
+
+        result = start_cell;
+
+    } else if (*query_val(QUERY_PARAM_REGEX)) {
         result="filter5";
 
-    } else if (*query_val("set_name") && *query_val("set_val")) {
-        ovs_asprintf(&result,"%s%s",query_val("set_name"),query_val("set_val"));
-        *free_result=1;
     } else {
         result= "selectedCell";
     }
@@ -1258,7 +1262,7 @@ char *macro_fn_left_button(char *template_name,char *call,Array *args,int num_ro
 
 char *macro_fn_right_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    int on = ((get_current_page()+1)*g_dimension->rows*g_dimension->cols < num_rows);
+    int on = ((get_current_page()+1)*g_dimension->current_grid->rows*g_dimension->current_grid->cols < num_rows);
 
     return get_page_control(on,1,"pgdn","right");
 }
@@ -2108,12 +2112,12 @@ char *get_variable(char *vname,int *free_result)
         } else if (STRCMP(vname+1,"poster_menu_img_width") == 0) {
 
             convert_int=1;
-            int_val = g_dimension->poster_menu_img_width;
+            int_val = g_dimension->current_grid->img_width;
 
         } else if (STRCMP(vname+1,"poster_menu_img_height") == 0) {
 
             convert_int=1;
-            int_val = g_dimension->poster_menu_img_height;
+            int_val = g_dimension->current_grid->img_height;
 
         }
 

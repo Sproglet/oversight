@@ -106,4 +106,15 @@ char *get_mounted_path(char *source,char *path,int *freeit);
 #define USER_AGENT "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+"
 #define COPY_STRING(len,from) ((from)?memcpy(MALLOC((len)+1),(from),(len)+1):NULL)
 
+#define QUERY_RESIZE_DIM_ACTION "reset_dimensions"
+#define QUERY_RESIZE_DIM_SET_NAME "dimension_set"
+#define QUERY_RESIZE_DIM_SET_GRID "grid"
+#define QUERY_RESIZE_DIM_SET_IMAGE "image"
+#define QUERY_START_CELL "start_cell"
+//
+// Value to represent an inherited dimension. ie for tvboxsets use the main menu dimensions,
+#define INHERIT_DIMENSION -1
+#define INHERIT_DIMENSION_STR "-1"
+
 #endif
+

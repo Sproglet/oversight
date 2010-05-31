@@ -59,7 +59,11 @@ table.overview_poster {
                     <table class="header">
                         <tr>
                             [<td>:BACK_BUTTON:</td>]
+[:IF($?resizeon):]
+                            <td>[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
                             <td>[:HOME_BUTTON:]</td>
+[:ENDIF:]
 [:IF($@gaya):]
 [:ELSE:]
                             <td>[:DELETE_BUTTON:]</td>

@@ -1,0 +1,15 @@
+ovs_poster_mode[pc]:Display posters on main screen (pc)|0|1
+ovs_poster_mode_rows[pc]:Number of poster rows on front page
+ovs_poster_mode_cols[pc]:Number of columns on front page
+ovs_poster_mode_height[pc]:Height of poster. 0=automatic value .
+ovs_poster_mode_width[pc]:Width of poster. 0=automatic value.
+
+ovs_poster_mode_rows_tvboxset[pc]:Number of poster rows on tvboxset page <b>-1</b> use main menu value
+ovs_poster_mode_cols_tvboxset[pc]:Number of columns on tvboxset page <b>-1</b> use main menu value
+ovs_poster_mode_height_tvboxset[pc]:Height of poster. <b>0</b>=automatic value . <b>-1</b> use main menu value
+ovs_poster_mode_width_tvboxset[pc]:Width of poster. <b>0</b>=automatic value. <b>-1</b> use main menu value
+
+ovs_poster_mode_rows_movieboxset[pc]:Number of poster rows on movie boxset page -1</b> use main menu value
+ovs_poster_mode_cols_movieboxset[pc]:Number of columns on movie boxset page <b>-1</b> use main menu value
+ovs_poster_mode_height_movieboxset[pc]:Height of poster. <b>0</b>=automatic value . <b>-1</b> use main menu value
+ovs_poster_mode_width_movieboxset[pc]:Width of poster. <b>0</b>=automatic value. <b>-1</b> use main menu value

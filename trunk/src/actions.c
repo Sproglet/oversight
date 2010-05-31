@@ -347,7 +347,21 @@ static void send_command(char *source,char *remote_cmd)
 }
 #endif
 
+static char *g_start_cell = NULL;
+
+void set_start_cell()
+{
+    g_start_cell = STRDUP(query_val(QUERY_START_CELL));
+    query_remove(QUERY_START_CELL);
+}
+char *get_start_cell()
+{
+    return g_start_cell;
+}
+
 void do_actions() {
+
+    set_start_cell();
 
     char *view=query_val(QUERY_PARAM_VIEW);
     char *action=query_val("action");
@@ -600,6 +614,50 @@ TRACE;
             }
             query_remove("min");
             query_remove("max");
+            query_remove("action");
+            query_remove("set_name");
+            query_remove("set_val");
+
+        } else if (allow_admin() && STRCMP(action,QUERY_RESIZE_DIM_ACTION)==0 ) {
+
+            char *dimension_set=query_val(QUERY_RESIZE_DIM_SET_NAME); // image or grid ie reset image height/width or grid rows/cols
+            if (STRCMP(view,"tvboxset") == 0) {
+                if (STRCMP(dimension_set,QUERY_RESIZE_DIM_SET_GRID)==0) {
+ 
+                    ovs_config_dimension_increment("ovs_poster_mode_rows_tvboxset","=-1",-1,-1);
+                    ovs_config_dimension_increment("ovs_poster_mode_cols_tvboxset","=-1",-1,-1);
+                    reload_configs();
+
+
+                } else if (STRCMP(dimension_set,QUERY_RESIZE_DIM_SET_IMAGE)==0) {
+
+                    ovs_config_dimension_increment("ovs_poster_mode_height_tvboxset","=-1",-1,-1);
+                    ovs_config_dimension_increment("ovs_poster_mode_width_tvboxset","=-1",-1,-1);
+                    reload_configs();
+
+                } else {
+                   html_error("unable to reset tvboxset dimensions");
+                }
+            } else if (STRCMP(view,"movieboxset") == 0) {
+
+                if (STRCMP(dimension_set,"grid")==0) {
+
+                   ovs_config_dimension_inherit("ovs_poster_mode_rows_movieboxset");
+                   ovs_config_dimension_inherit("ovs_poster_mode_cols_movieboxset");
+                    reload_configs();
+
+                } else if (STRCMP(dimension_set,"poster")==0) {
+
+                    ovs_config_dimension_inherit("ovs_poster_mode_height_movieboxset");
+                    ovs_config_dimension_inherit("ovs_poster_mode_width_movieboxset");
+                    reload_configs();
+
+                } else {
+                   html_error("unable to reset movieboxset dimensions");
+                }
+            }
+            query_remove("action");
+
         }
 
 

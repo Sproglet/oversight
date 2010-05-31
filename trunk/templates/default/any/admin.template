@@ -20,6 +20,8 @@ img.nasstatus { width:15; height:15; }
         <h3>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access Enabled!):]</h3>
         <table width=100%>
         <tr>
+            <!-- =============== -->
+
             <td width=5%>
                 <br>
                 [:ICON(rescan):]
@@ -31,6 +33,8 @@ img.nasstatus { width:15; height:15; }
                 [:LINK(action=template_diagnostics,Diagnostics):]
             </td>
 
+            <!-- =============== -->
+
             <td width=5%>[:ICON(catalog):]</td>
             <td align=left width=28%>
                 [:CONFIG_LINK(catalog.cfg,input.help,Media Sources):]<br>
@@ -38,6 +42,9 @@ img.nasstatus { width:15; height:15; }
                 [:CONFIG_LINK(catalog.cfg,output.help,Renaming):]<br>
                 [:CONFIG_LINK(catalog.cfg,search.help,Advanced Search):]
             </td>
+
+            <!-- =============== -->
+
             <td width=5%>[:ICON(nas):]</td>
             <td align=left width=28%>
                 [:MOUNT_STATUS:]
@@ -45,16 +52,16 @@ img.nasstatus { width:15; height:15; }
 
         </tr>
         <tr>
-            <td>[:ICON(display):]</td>
-            <td align=left colspan=3>Display<br>
-                <table width=100%>
-                    <tr>
-                        <td>[:CONFIG_LINK(oversight.cfg,sd.help,SD text mode,class=scanlines0):]</td>
-                        <td>[:CONFIG_LINK(oversight.cfg,sd-poster.help,SD poster mode,class=scanlines0):]</td>
-                        <td>[:CONFIG_LINK(oversight.cfg,sd-detail.help,SD detail view,class=scanlines0):]</td>
-                    </tr>
-                </table>
-            </td>
+            <!-- =============== -->
+
+            <td>[:ICON(internet):]</td>
+            <td align=left>[:CONFIG_LINK(oversight.cfg,secure.help,Internet Access):]</td>
+            <!-- =============== -->
+
+            <td>[:ICON(unpak):]</td>
+            <td align=left>[:CONFIG_LINK(unpak.cfg,help,Nzbget Unpacking):]</td>
+            <!-- =============== -->
+
             <td>[:ICON(reinstall):]</td>
             <td align=left >
                 [:LINK(action=confirm_reset,Default Settings):]
@@ -62,26 +69,13 @@ img.nasstatus { width:15; height:15; }
                 <br>[:LINK(action=confirm_reinstall,Reinstall):]
             </td>
         </tr>
-
-        <tr>
-            <td>[:ICON(display):]</td>
-            <td align=left colspan=3>
-                <table width=100%>
-                    <tr>
-                        <td>[:CONFIG_LINK(oversight.cfg,720.help,HD text mode,class=scanlines720):]</td>
-                        <td>[:CONFIG_LINK(oversight.cfg,720-poster.help,HD poster mode,class=scanlines720):]</td>
-                        <td>[:CONFIG_LINK(oversight.cfg,720-detail.help,HD detail view,class=scanlines720):]</td>
-                    </tr>
-                </table>
-            </td>
-            <td>[:ICON(unpak):]</td>
-            <td align=left>[:CONFIG_LINK(unpak.cfg,help,Nzbget Unpacking):]</td>
-        </tr>
-        <tr>
-            <td>[:ICON(internet):]</td>
-            <td align=left>[:CONFIG_LINK(oversight.cfg,secure.help,Internet Access):]</td>
-        </tr>
         </table>
+
+
+
+
+
+
         <hr>
         <table width=100%>
             <tr>

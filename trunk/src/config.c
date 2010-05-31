@@ -335,11 +335,16 @@ HTML_LOG(0,"ovs_config_increment old val %s = (%s)",name,old_val);
     return ret;
 }
 
+int ovs_config_dimension_inherit(char *keyword_prefix) 
+{
+    return ovs_config_dimension_increment(keyword_prefix,"="INHERIT_DIMENSION_STR,INHERIT_DIMENSION,INHERIT_DIMENSION);
+}
+
 int ovs_config_dimension_increment(char *keyword_prefix,char* delta_str,int min,int max) 
 {
     char *name;
 HTML_LOG(0,"ovs_config_dimension_increment(%s,%s)",keyword_prefix,delta_str);
-    ovs_asprintf(&name,"%s[%d]",keyword_prefix,g_dimension->scanlines);
+    ovs_asprintf(&name,"%s[%s]",keyword_prefix,g_dimension->set_name);
     int ret=ovs_config_increment(name,delta_str,min,max);
     FREE(name);
     return ret;
@@ -513,7 +518,22 @@ int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out)
     return result;
 }
 
+/* read mandatory array variable from config - eg key[index]=value 1=good else halt
+ * If the value is -1 then set it to the inherit value */
+int config_get_long_indexed_inherit(struct hashtable *h,char *k,char *key_suffix,char *index,long inherit_value,long *out) {
 /* read mandatory array variable from config - eg key[index]=value */
+    char *full_key;
+    ovs_asprintf(&full_key,"%s%s",NVL(k),NVL(key_suffix));
+
+    int ret = config_get_long_indexed(h,full_key,index,out);
+    if (*out == INHERIT_DIMENSION) {
+        *out = inherit_value;
+    }
+    FREE(full_key);
+    return ret;
+}
+
+/* read optional array variable from config - eg key[index]=value 1=good  else halt */
 int config_get_long_indexed(struct hashtable *h,char *k,char *index,long *out) {
 
     int result = config_check_long_indexed(h,k,index,out);
@@ -525,13 +545,19 @@ int config_get_long_indexed(struct hashtable *h,char *k,char *index,long *out) {
     return result;
 }
 
-/* read optional array variable from config - eg key[index]=value */
+/* read optional array variable from config - eg key[index]=value 1=good 0=bad */
 int config_check_long_indexed(struct hashtable *h,char *k,char *index,long *out) {
     char *s ;
     int result=0;
     //HTML_LOG(4,"Checking long [%s[%s]]",k,index);
     if (ovs_asprintf(&s,"%s[%s]",k,index) >= 0 ) {
         result = config_check_long(h,s,out);
+//        if (result == 0 ) {
+//            // If looking for some_name_movieboxet[index] then try some_name[index]
+//           if ((p = strstr(k,"_tvboxset")) != NULL || (p = strstr(k,"_movieboxset")) != NULL ) {
+//               char *short_key
+//           }
+//       }
         FREE(s);
     }
     return result;
@@ -592,10 +618,38 @@ long get_scanlines(int *is_pal) {
     // NMT does not use correct aspect ratio for gaya on PAL. Video Playback is OK but gaya is squashed
      return scanlines;
 }
+//
+//  
+void config_get_grid_dimensions(
+        struct hashtable *config_hash,
+        char *key_suffix, // eg "" _tvboxset _movieboxset
+        int grid_index // GRID_MAIN, GRID_MOVIEBOXSET etc.
+        ) {
+
+    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_rows",
+            key_suffix,  
+            g_dimension->set_name, // eg sd , hd, pc
+            g_dimension->grids[GRID_MAIN].rows,&(g_dimension->grids[grid_index].rows));
+
+    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_cols",
+            key_suffix, 
+            g_dimension->set_name, // eg sd , hd, pc
+            g_dimension->grids[GRID_MAIN].cols,&(g_dimension->grids[grid_index].cols));
+
+    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_height",
+            key_suffix,
+            g_dimension->set_name, // eg sd , hd, pc
+            g_dimension->grids[GRID_MAIN].img_height,&(g_dimension->grids[grid_index].img_height));
+
+    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_width",
+            key_suffix,
+            g_dimension->set_name, // eg sd , hd, pc
+            g_dimension->grids[GRID_MAIN].img_width,&(g_dimension->grids[grid_index].img_width));
+}
+
 
 void config_read_dimensions() {
 
-    char scanlines_str[9];
     int ar_fixed = 0;
 
     
@@ -614,84 +668,114 @@ void config_read_dimensions() {
 
     html_comment("scanlines=[%ld] ispal = %d",g_dimension->scanlines,g_dimension->is_pal);
 
-    sprintf(scanlines_str,"%ld",g_dimension->scanlines);
+
+    if (!g_dimension->local_browser) {
+        g_dimension->set_name = STRDUP("pc");
+    } else {
+        ovs_asprintf(&(g_dimension->set_name),"%ld",g_dimension->scanlines);
+    }
 
 
-    html_comment("scanlines_str=[%]",scanlines_str);
+    html_comment("g_dimension->set_name=[%s]",g_dimension->set_name);
 
     if (g_oversight_config == NULL) {
         HTML_LOG(0,"No oversight config read");
     } else {
-        config_get_long_indexed(g_oversight_config,"ovs_font_size",scanlines_str,&(g_dimension->font_size));
-        config_get_long_indexed(g_oversight_config,"ovs_title_size",scanlines_str,&(g_dimension->title_size));
-        config_get_long_indexed(g_oversight_config,"ovs_movie_poster_height",scanlines_str,&(g_dimension->movie_img_height));
-        config_get_long_indexed(g_oversight_config,"ovs_tv_poster_height",scanlines_str,&(g_dimension->tv_img_height));
-        config_get_long_indexed(g_oversight_config,"ovs_max_plot_length",scanlines_str,&(g_dimension->max_plot_length));
-        config_get_long_indexed(g_oversight_config,"ovs_button_size",scanlines_str,&(g_dimension->button_size));
-        config_get_long_indexed(g_oversight_config,"ovs_certificate_size",scanlines_str,&(g_dimension->certificate_size));
-        config_get_long_indexed(g_oversight_config,"ovs_poster_mode",scanlines_str,&(g_dimension->poster_mode));
-        if (g_dimension->poster_mode) {
-            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_rows",scanlines_str,&(g_dimension->rows));
-            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_cols",scanlines_str,&(g_dimension->cols));
-            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_height",scanlines_str,&(g_dimension->poster_menu_img_height));
-            config_get_long_indexed(g_oversight_config,"ovs_poster_mode_width",scanlines_str,&(g_dimension->poster_menu_img_width));
+        config_get_long_indexed(g_oversight_config,"ovs_font_size",g_dimension->set_name,&(g_dimension->font_size));
+        config_get_long_indexed(g_oversight_config,"ovs_title_size",g_dimension->set_name,&(g_dimension->title_size));
+        config_get_long_indexed(g_oversight_config,"ovs_movie_poster_height",g_dimension->set_name,&(g_dimension->movie_img_height));
+        config_get_long_indexed(g_oversight_config,"ovs_tv_poster_height",g_dimension->set_name,&(g_dimension->tv_img_height));
+        config_get_long_indexed(g_oversight_config,"ovs_max_plot_length",g_dimension->set_name,&(g_dimension->max_plot_length));
+        config_get_long_indexed(g_oversight_config,"ovs_button_size",g_dimension->set_name,&(g_dimension->button_size));
+        config_get_long_indexed(g_oversight_config,"ovs_certificate_size",g_dimension->set_name,&(g_dimension->certificate_size));
+        config_get_long_indexed(g_oversight_config,"ovs_poster_mode",g_dimension->set_name,&(g_dimension->poster_mode));
+
+        g_dimension->current_grid = &(g_dimension->grids[GRID_MAIN]);
+
+
+        if (!g_dimension->poster_mode) {
+
+            config_get_long_indexed(g_oversight_config,"ovs_rows",g_dimension->set_name,&(g_dimension->text_rows));
+            config_get_long_indexed(g_oversight_config,"ovs_cols",g_dimension->set_name,&(g_dimension->text_cols));
+            // Force all boxset views to use main menu dimensions. Otherwise we'd have to maintain another set of dimensions
+            // for text mode tvboxsets and text mode movie boxsets which I think is not necessary. Text mode is really
+            // obsoleted by now.
+            g_dimension->current_grid->rows = g_dimension->text_rows;
+            g_dimension->current_grid->cols = g_dimension->text_cols;
+
         } else {
-            config_get_long_indexed(g_oversight_config,"ovs_rows",scanlines_str,&(g_dimension->rows));
-            config_get_long_indexed(g_oversight_config,"ovs_cols",scanlines_str,&(g_dimension->cols));
+            // set the current grid dimensions
+            char *view = query_val(QUERY_PARAM_VIEW);
+            if (STRCMP(view,VIEW_TVBOXSET) == 0) {
+                g_dimension->current_grid = &(g_dimension->grids[GRID_TVBOXSET]);
+            } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
+                g_dimension->current_grid = &(g_dimension->grids[GRID_MOVIEBOXSET]);
+            }
+
+            config_get_grid_dimensions(g_oversight_config,"",GRID_MAIN);
+
+            config_get_grid_dimensions(g_oversight_config,"_tvboxset",GRID_TVBOXSET);
+            config_get_grid_dimensions(g_oversight_config,"_movieboxset",GRID_MOVIEBOXSET);
+
         }
 
+        // compute_auto_image_dimensions
+        //
         double ntsc_fix = 8 / 7.0; // scale height by this amount
         double pal_fix = 576.0 / 480; // scale height by this amount
 
-        if (g_dimension->poster_menu_img_height == 0) {
-            //compute
-            int lines=480;
-            if (g_dimension->scanlines) lines=g_dimension->scanlines;
+        if (g_dimension->poster_mode) {
+            if (g_dimension->current_grid->img_height == 0) {
+                //compute
+                int lines=480;
+                if (g_dimension->scanlines) lines=g_dimension->scanlines;
 
-            html_comment("rows = %d\n",g_dimension->rows);
+                html_comment("rows = %d\n",g_dimension->current_grid->rows);
 
-            // Compute row height by first allowing for menu height.
-            double virtual_rows;
-            if (g_dimension->scanlines > 600 ) {
-                virtual_rows = g_dimension->rows + 0.8 ;
-            } else {
-                virtual_rows = g_dimension->rows + 1.1 ;
-            }
-
-            int menu_height;
-            if (g_dimension->scanlines == 0) {
-                // Need adjustment for Gaya SD modes on NMT otherwise vertical is squashed
-                ar_fixed = 1;
-                menu_height = 100;
-            } else {
-                menu_height = 150;
-            }
-            g_dimension->poster_menu_img_height = ( lines - menu_height ) / virtual_rows ;
-
-        }
-
-        if (g_dimension->poster_menu_img_width == 0) {
-            //compute from height
-            g_dimension->poster_menu_img_width =  g_dimension->poster_menu_img_height / 1.5 ;
-            if (ar_fixed) {
-                // Gaya has SD NTSC distortion a square appears 54w 48h
-                g_dimension->poster_menu_img_height *= ntsc_fix;
-
-                if (g_dimension->is_pal) {
-                    // Even worse PAL distortion.
-                    // the height has been scaled to compensate for gaya bug. 
-                    // Scale the width based on the original height!
-                    g_dimension->poster_menu_img_height *= pal_fix;
+                // Compute row height by first allowing for menu height.
+                double virtual_rows;
+                if (g_dimension->scanlines > 600 ) {
+                    virtual_rows = g_dimension->current_grid->rows + 0.8 ;
+                } else {
+                    virtual_rows = g_dimension->current_grid->rows + 1.1 ;
                 }
+
+                int menu_height;
+                if (g_dimension->scanlines == 0) {
+                    // Need adjustment for Gaya SD modes on NMT otherwise vertical is squashed
+                    ar_fixed = 1;
+                    menu_height = 100;
+                } else {
+                    menu_height = 150;
+                }
+                g_dimension->current_grid->img_height = ( lines - menu_height ) / virtual_rows ;
+
             }
 
+            if (g_dimension->current_grid->img_width == 0) {
+                //compute from height
+                g_dimension->current_grid->img_width =  g_dimension->current_grid->img_height / 1.5 ;
+                if (ar_fixed) {
+                    // Gaya has SD NTSC distortion a square appears 54w 48h
+                    g_dimension->current_grid->img_height *= ntsc_fix;
+
+                    if (g_dimension->is_pal) {
+                        // Even worse PAL distortion.
+                        // the height has been scaled to compensate for gaya bug. 
+                        // Scale the width based on the original height!
+                        g_dimension->current_grid->img_height *= pal_fix;
+                    }
+                }
+
+            }
         }
 
+        // For Tv and Movie detail view 
         g_dimension->movie_img_width = g_dimension->movie_img_height * 2 / 3;
         g_dimension->tv_img_width = g_dimension->tv_img_height * 2 / 3;
         if (g_dimension->is_pal) {
-            g_dimension->movie_img_height *= ( 576.0 / 480 );
-            g_dimension->tv_img_height *= ( 576.0 / 480 );
+            g_dimension->movie_img_height *= pal_fix;
+            g_dimension->tv_img_height *= pal_fix;
         }
 
         char *title_bar = oversight_val("ovs_title_bar");

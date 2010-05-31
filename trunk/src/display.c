@@ -2001,8 +2001,8 @@ char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class) 
     // The class is reused here to set the image tag
     // They just happen to have the same name - maybe there is a more css friendly way to do this!
     ovs_asprintf(&attr," width=%d height=%d %s ",
-        g_dimension->poster_menu_img_width,
-        g_dimension->poster_menu_img_height,
+        g_dimension->current_grid->img_width,
+        g_dimension->current_grid->img_height,
         *font_class);
 
     title = get_poster_image_tag(row_id,attr,THUMB_IMAGE);
@@ -2928,7 +2928,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     if (g_dimension->poster_mode) {
         ovs_asprintf(&table_id,"<table class=overview_poster >");
             //ovs_asprintf(&table_id,"<table class=overview_poster height=%dpx>",
-            //               2*(g_dimension->poster_menu_img_height+cell_margin));
+            //               2*(g_dimension->current_grid->img_height+cell_margin));
     } else {
         ovs_asprintf(&table_id,"<table class=overview_poster width=100%%>");
     }
@@ -2965,9 +2965,9 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     }
 
     if (g_dimension->poster_mode) {
-        ovs_asprintf(&width_attr," width=%dpx ", g_dimension->poster_menu_img_width+cell_margin);
+        ovs_asprintf(&width_attr," width=%dpx ", g_dimension->current_grid->img_width+cell_margin);
 
-        ovs_asprintf(&height_attr," height=%dpx ", g_dimension->poster_menu_img_height+cell_margin);
+        ovs_asprintf(&height_attr," height=%dpx ", g_dimension->current_grid->img_height+cell_margin);
     } else {
         ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
         height_attr=STRDUP("");
@@ -3377,14 +3377,42 @@ char *get_tvid_links()
 
 #define ARROW_CLASS " class=\"resize_arrow\""
 
+char *dimension_cell_name_suffix() {
+    static char *name_suffix=NULL;
+    if (!name_suffix) {
+        char *view = query_val("view");
+        if (STRCMP(view,"movieboxset") == 0) {
+            name_suffix = "_movieboxset";
+        } else if (STRCMP(view,"tvboxset") == 0) {
+            name_suffix = "_tvboxset";
+        } else {
+            name_suffix = "";
+        }
+    }
+    return name_suffix;
+}
+
+char *dimension_cell_name(char *set_name,char *set_val) {
+    char *name;
+    ovs_asprintf(&name,"%s%s%s",set_name,dimension_cell_name_suffix(),set_val);
+    return name;
+}
+
 char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char *text)
 {
     char *result;
     char *attr;
     char *params;
-    ovs_asprintf(&params,"action=set&set_name=%s&min=%s&max=%s&set_val=%s",name,min,max,increment);
-    ovs_asprintf(&attr,"tvid=\"%s\" name=\"%s%s\" "ARROW_CLASS,tvid,name,increment);
+
+    char *name_suffix = dimension_cell_name_suffix();
+
+    char *cell_name = dimension_cell_name(name,increment);
+
+    ovs_asprintf(&params,"action=set&set_name=%s%s&min=%s&max=%s&set_val=%s&" QUERY_START_CELL "=%s" ,name,name_suffix,min,max,increment,cell_name);
+    ovs_asprintf(&attr,"tvid=\"%s\" name=\"%s\" "ARROW_CLASS,tvid,cell_name);
     result = get_self_link(params,attr,text);
+
+    FREE(cell_name);
     FREE(params);
     FREE(attr);
     return result;
@@ -3393,6 +3421,7 @@ char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char
 char *get_tvid_resize_links()
 {
     char *result=NULL;
+    char *view = query_val("view");
 
     if (*query_val("resizeon")) {
 
@@ -3412,18 +3441,39 @@ char *get_tvid_resize_links()
 #define PARROW_LEFT "⇦"
 #define PARROW_RIGHT "⇨"
 #define PARROW_DOWN "⇩"
-        char *hinc=resize_link("ovs_poster_mode_height",POSTER_INC   ,"10","750","58",PARROW_DOWN);
-        char *hdec=resize_link("ovs_poster_mode_height","-"POSTER_INC,"10","750","52",PARROW_UP);
-        char *winc=resize_link("ovs_poster_mode_width" ,POSTER_INC,   "10","500","56",PARROW_RIGHT);
-        char *wdec=resize_link("ovs_poster_mode_width" ,"-"POSTER_INC,"10","500","54",PARROW_LEFT);
+        char *hinc=resize_link("ovs_poster_mode_height",POSTER_INC   ,"60","750","58",PARROW_DOWN);
+        char *hdec=resize_link("ovs_poster_mode_height","-"POSTER_INC,"60","750","52",PARROW_UP);
+        char *winc=resize_link("ovs_poster_mode_width" ,POSTER_INC,   "40","500","56",PARROW_RIGHT);
+        char *wdec=resize_link("ovs_poster_mode_width" ,"-"POSTER_INC,"40","500","54",PARROW_LEFT);
         char *wzero=resize_link("ovs_poster_mode_width" ,QUERY_ASSIGN_PREFIX"0","0","500","","auto_width");
         char *hzero=resize_link("ovs_poster_mode_height" ,QUERY_ASSIGN_PREFIX"0","0","750","","auto_height");
 
         char *control=get_self_link("resizeon=&set_name=&set_val=&action=",ARROW_CLASS,"Off");
 
-        char *grid_centre=get_self_link("",ARROW_CLASS,"Grid");
-        char *poster_centre=get_self_link("",ARROW_CLASS,"Images");
+        char *grid_centre=NULL;
+        char *poster_centre=NULL;
+TRACE;
 
+        if (*view) {
+
+TRACE;
+            grid_centre=get_self_link("action="QUERY_RESIZE_DIM_ACTION"&"QUERY_RESIZE_DIM_SET_NAME"="QUERY_RESIZE_DIM_SET_GRID,
+                    ARROW_CLASS,"Grid");
+TRACE;
+
+            poster_centre=get_self_link("action="QUERY_RESIZE_DIM_ACTION"&"QUERY_RESIZE_DIM_SET_NAME"="QUERY_RESIZE_DIM_SET_IMAGE,
+                    ARROW_CLASS,"Images");
+TRACE;
+
+        } else {
+TRACE;
+            grid_centre=STRDUP("<span "ARROW_CLASS">Grid</span>");
+TRACE;
+            poster_centre=STRDUP("<span "ARROW_CLASS">Images</span>");
+TRACE;
+        }
+
+TRACE;
 
     ovs_asprintf(&result,"\
             <style type=\"text/css\">\
@@ -3450,12 +3500,14 @@ char *get_tvid_resize_links()
                 cdec,grid_centre,cinc,wdec,poster_centre,winc,wzero,
                 rinc,hinc,control);
 
+TRACE;
         FREE(rinc); FREE(rdec); FREE(cinc); FREE(cdec);
         FREE(hinc); FREE(hdec); FREE(winc); FREE(wdec);
         FREE(grid_centre);
         FREE(poster_centre);
 
         FREE(control);
+TRACE;
 //    } else {
 //        char *control=get_self_link("resizeon=1","tvid=12","Resize");
 //        ovs_asprintf(&result,"%s",control);

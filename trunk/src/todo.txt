@@ -1,3 +1,6 @@
+Test browser nav arrows do not have action= on them.
+else ensure query_remove("action") called appropiately
+
 investigate iso deletions.
 
 check issues 93 against 1408.avi 

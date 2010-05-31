@@ -17,23 +17,77 @@ body { font-size:20; font-family:"arial"; color:white; }
     <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
         <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Media Scan</h1>
 
-        <p>To resize the grid on the TV. use the following remote key sequences:
-            Note think of 2,4,6,8 as up,left,right,down.
-        <ul>
-            <li><b>52</b> - Decrease poster height.</li>
-            <li><b>58</b> - Increase poster height.</li>
-            <li><b>54</b> - Decrease poster width.</li>
-            <li><b>56</b> - Increase poster width.</li>
-        </ul>
-        <ul>
-            <li><b>552</b> - Decrease rows.</li>
-            <li><b>558</b> - Increase rows.</li>
-            <li><b>554</b> - Decrease columns.</li>
-            <li><b>556</b> - Increase columns.</li>
-        </ul>
-        <p>You can also use the onscreen arrows.
+        <p><u>Interactive Resize</u>
+        <p>Select [:LINK(view=&action=&resizeon=1,{resize mode}):] to resize the grid interactively  then 
+        use the following remote key sequences:
+        Think of 2,4,6,8 as up,left,right,down.
+        Some skins may ignore boxset resizing.
+        <table>
+            <tr>
+                <td>
+                    <ul>
+                        <li><b>52</b> - Decrease poster height.</li>
+                        <li><b>58</b> - Increase poster height.</li>
+                        <li><b>54</b> - Decrease poster width.</li>
+                        <li><b>56</b> - Increase poster width.</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li><b>552</b> - Decrease rows.</li>
+                        <li><b>558</b> - Increase rows.</li>
+                        <li><b>554</b> - Decrease columns.</li>
+                        <li><b>556</b> - Increase columns.</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
+        <p>You can also use the onscreen arrows. To change the boxset values, navigate to a boxset view whilst in 
+resize mode.
 
-        [:LINK(view=&resizeon=1,{resize}):]
+        <p><u>Edit Configuration</u>
+        <p>You can also fine tune the values by editing them directly using the links below.
+        <table width="100%">
+            <tr>
+                <td>[:ICON(display):]</td>
+                <td align=left colspan=3>Display<br>
+                    <table width=100%>
+                        <tr>
+                            <td>[:CONFIG_LINK(oversight.cfg,sd.help,SD text mode,class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(oversight.cfg,sd-poster.help,SD poster mode,class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(oversight.cfg,sd-detail.help,SD detail view,class=scanlines0):]</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td>[:ICON(display):]</td>
+                <td align=left colspan=3>
+                    <table width=100%>
+                        <tr>
+                            <td>[:CONFIG_LINK(oversight.cfg,720.help,HD text mode,class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(oversight.cfg,720-poster.help,HD poster mode,class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(oversight.cfg,720-detail.help,HD detail view,class=scanlines720):]</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td>[:ICON(display):]</td>
+                <td align=left colspan=3>
+                    <table width=100%>
+                        <tr>
+                            <td>[:CONFIG_LINK(oversight.cfg,pc.help,PC text mode,class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(oversight.cfg,pc-poster.help,PC poster mode,class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(oversight.cfg,pc-detail.help,PC detail view,class=scanlinespc):]</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+        </table>
     </body>
 </html>
 <!--

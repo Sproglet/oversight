@@ -526,7 +526,8 @@ void do_actions() {
 
             int total_changed = 0;
 
-            // This is the direct delete method
+            // The following actions are invoked when deleting and marking via gaya.
+            // In this case the url was ...action=delete&actionsids=*(1|2|3)nas(4|5|6) etc.
 
             HTML_LOG(0,"actionids=[%s]",actionids);
 
@@ -537,12 +538,10 @@ void do_actions() {
             if (allow_mark() && STRCMP(action,"watch") == 0) {
 
                 db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
-                query_remove("action");
 
             } else if (allow_mark() && STRCMP(action,"unwatch") == 0) {
 
                 db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
-                query_remove("action");
 
             } else if (allow_delete() && STRCMP(action,"delete") == 0) {
 
@@ -551,7 +550,6 @@ void do_actions() {
                 if (total_deleted > 0) {
                     update_idlist(changed_source_id_hash);
                 }
-                query_remove("action");
 
             } else if (allow_delist() && STRCMP(action,"delist") == 0) {
 
@@ -560,49 +558,55 @@ void do_actions() {
                 if (total_deleted > 0) {
                     update_idlist(changed_source_id_hash);
                 }
-                query_remove("action");
 
 
             }
+            query_remove("action");
             query_remove("actionids");
             hashtable_destroy(changed_source_id_hash,1,1);
 
         } else if (allow_mark() && STRCMP(action,"Mark") == 0) {
 
+                // The following actions are invoked when marking via PC browser and form.
+                // In this case the post data has a select box variable for each item
 
-            int total_changed = 0;
-            
-            changed_source_id_hash = get_newly_selected_ids_by_source(&total_changed);
-            db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
-            hashtable_destroy(changed_source_id_hash,1,1);
+                int total_changed = 0;
+                
+                changed_source_id_hash = get_newly_selected_ids_by_source(&total_changed);
+                db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
+                hashtable_destroy(changed_source_id_hash,1,1);
 
-            changed_source_id_hash = get_newly_deselected_ids_by_source(&total_changed);
-            db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
-            hashtable_destroy(changed_source_id_hash,1,1);
-            query_remove("action");
+                changed_source_id_hash = get_newly_deselected_ids_by_source(&total_changed);
+                db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
+                hashtable_destroy(changed_source_id_hash,1,1);
+                query_remove("action");
 
 
         } else if (allow_delete() && STRCMP(action,"Delete") == 0) {
 
 TRACE;
-            changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
-            db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_DELETE);
-            if (total_deleted > 0) {
-                update_idlist(changed_source_id_hash);
-            }
-            hashtable_destroy(changed_source_id_hash,1,1);
-            query_remove("action");
+                // The following actions are invoked when deleting via PC browser and form.
+                // In this case the post data has a select box variable for each item
+                changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+                db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_DELETE);
+                if (total_deleted > 0) {
+                    update_idlist(changed_source_id_hash);
+                }
+                hashtable_destroy(changed_source_id_hash,1,1);
+                query_remove("action");
 
         } else if (allow_delist() && STRCMP(action,"Remove_From_List") == 0) {
 
 TRACE;
-            changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
-            db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_REMOVE);
-            if (total_deleted > 0) {
-                update_idlist(changed_source_id_hash);
-            }
-            hashtable_destroy(changed_source_id_hash,1,1);
-            query_remove("action");
+                // The following actions are invoked when delisting via PC browser and form.
+                // In this case the post data has a select box variable for each item
+                changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+                db_set_fields(DB_FLDID_ACTION,NULL,changed_source_id_hash,DELETE_MODE_REMOVE);
+                if (total_deleted > 0) {
+                    update_idlist(changed_source_id_hash);
+                }
+                hashtable_destroy(changed_source_id_hash,1,1);
+                query_remove("action");
 
         } else if (allow_admin() && STRCMP(action,"set")==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
 
@@ -689,6 +693,9 @@ static char *idhash_to_idlist(struct hashtable *source_id_hash) {
         FREE(out);
         out = tmp;
     }
+//    if (out == NULL) {
+//        out = STRDUP("");
+//    }
     HTML_LOG(0,"hash to list = [%s]",out);
     return out;
 }
@@ -696,12 +703,12 @@ static char *idhash_to_idlist(struct hashtable *source_id_hash) {
 void update_idlist(struct hashtable *source_id_hash_removed)
 {
 
-    HTML_LOG(0,"pre update idlist = [%s]",query_val("idlist"));
+    HTML_LOG(0,"pre update idlist = [%s]",query_val(QUERY_PARAM_IDLIST));
 
-    if (*query_val("idlist")) {
+    if (*query_val(QUERY_PARAM_IDLIST)) {
 
         struct hashtable *source_id_hash_current = string_string_hashtable(16);
-        idlist_to_idhash(source_id_hash_current,query_val("idlist"));
+        idlist_to_idhash(source_id_hash_current,query_val(QUERY_PARAM_IDLIST));
 
         struct hashtable_itr *itr;
         char *source;
@@ -741,7 +748,7 @@ void update_idlist(struct hashtable *source_id_hash_removed)
 
         }
         //Update the html parameter
-        query_update("idlist",idhash_to_idlist(source_id_hash_current));
+        query_update(STRDUP(QUERY_PARAM_IDLIST),idhash_to_idlist(source_id_hash_current));
         hashtable_destroy(source_id_hash_current,1,1);
     }
 
@@ -749,17 +756,27 @@ void update_idlist(struct hashtable *source_id_hash_removed)
     // TODO  This needs to work with boxsets too. ie deleting last item in the 
     // detail page should go back to the previous box set and not the main menu.
     // Will resolve later.
+    //
+    
+    // This is a short term hack to fix deleting movies. The correct fix is outlined in 
+    // todo.txt http://code.google.com/p/oversight/issues/detail?id=390
+
+    if (STRCMP(QUERY_PARAM_VIEW,VIEW_MOVIE) == 0) {
+        query_pop();
+    } else {
+
     int total = 0;
     char *total_str = query_val("item_count");
     if (total_str != NULL) {
         total = atoi(total_str);
     }
     int removed = hashtable_count(source_id_hash_removed);
-    if (total - removed == 0 ) {
+    if (total - removed <= 0 ) {
         HTML_LOG(0,"pop to previous screen");
         query_pop();
     }
-    HTML_LOG(0,"post update idlist = [%s]",query_val("idlist"));
+    }
+    HTML_LOG(0,"post update idlist = [%s]",query_val(QUERY_PARAM_IDLIST));
 }
 
 // count the number if ids in an idlist format [source(id1|id2|..id3)][...][...]
@@ -882,7 +899,7 @@ int count_unchecked() {
     int total=0;
 
     //First count the total number of ids passed in idlist
-    char *p = query_val("idlist");
+    char *p = query_val(QUERY_PARAM_IDLIST);
     if (*p) {
         total++;
         while (*p) {
@@ -896,6 +913,7 @@ int count_unchecked() {
     return total;
 }
 
+// Get all ids that were selected on the form. This method is valid via the PC view.
 struct hashtable *get_newly_selected_ids_by_source(int *totalp)
 {
 

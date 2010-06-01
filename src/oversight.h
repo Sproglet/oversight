@@ -55,6 +55,12 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define VIEW_MOVIEBOXSET "movieboxset"
 #define VIEW_MIXED "mixed"
 
+// Used in the resize view when QUERY_PARAM_ACTION=QUERY_PARAM_ACTION_VALUE_SET
+#define QUERY_PARAM_SET_NAME "set_name"
+#define QUERY_PARAM_SET_VAL "set_val"
+#define QUERY_PARAM_SET_MIN "set_min"
+#define QUERY_PARAM_SET_MAX "set_max"
+
 #define MENU_VIEW_ID 1
 #define TV_VIEW_ID 2
 #define MOVIE_VIEW_ID 3
@@ -80,9 +86,10 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_SEARCH_TEXT "searcht" //obsoleted?
 #define QUERY_PARAM_RESIZE "resizeon"
 
-#define QUERY_PARAM_SELECT "select"
 #define QUERY_PARAM_ACTION "action"
+#define QUERY_PARAM_ACTION_VALUE_SET "set"
 
+#define QUERY_PARAM_SELECT "select"
 #define FORM_PARAM_SELECT_VALUE_DELETE "Delete"
 #define FORM_PARAM_SELECT_VALUE_MARK "Mark"
 

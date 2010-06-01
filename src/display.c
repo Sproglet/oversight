@@ -3408,7 +3408,14 @@ char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char
 
     char *cell_name = dimension_cell_name(name,increment);
 
-    ovs_asprintf(&params,"action=set&set_name=%s%s&min=%s&max=%s&set_val=%s&" QUERY_START_CELL "=%s" ,name,name_suffix,min,max,increment,cell_name);
+    ovs_asprintf(&params,"action=" QUERY_PARAM_ACTION_VALUE_SET "&"
+                         QUERY_PARAM_SET_NAME "=%s%s&" 
+                         QUERY_PARAM_SET_MIN "=%s&"
+                         QUERY_PARAM_SET_MAX "=%s&"
+                         QUERY_PARAM_SET_VAL "=%s&"
+                         QUERY_START_CELL "=%s",
+                         name,name_suffix,min,max,increment,cell_name);
+
     ovs_asprintf(&attr,"tvid=\"%s\" name=\"%s\" "ARROW_CLASS,tvid,cell_name);
     result = get_self_link(params,attr,text);
 

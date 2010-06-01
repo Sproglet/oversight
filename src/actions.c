@@ -60,7 +60,10 @@ static void clear_selection() {
     query_remove("form");
     query_remove(QUERY_PARAM_SELECT);
     query_remove(QUERY_PARAM_ACTION);
-    query_remove("set_val");
+
+    query_remove(QUERY_PARAM_SET_NAME);
+    query_remove(QUERY_PARAM_SET_VAL);
+
     query_remove("old_action");
     struct hashtable_itr *itr;
     Array *a = array_new(NULL);
@@ -365,8 +368,8 @@ void do_actions() {
 
     char *view=query_val(QUERY_PARAM_VIEW);
     char *action=query_val(QUERY_PARAM_ACTION);
-    char *set_name=query_val("set_name");
-    char *set_val=query_val("set_val");
+    char *set_name=query_val(QUERY_PARAM_SET_NAME);
+    char *set_val=query_val(QUERY_PARAM_SET_VAL);
 
     // If remote play then send to gaya
     char *file=query_val(REMOTE_VOD_PREFIX1);
@@ -608,19 +611,19 @@ TRACE;
                 hashtable_destroy(changed_source_id_hash,1,1);
                 query_remove(QUERY_PARAM_ACTION);
 
-        } else if (allow_admin() && STRCMP(action,"set")==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
+        } else if (allow_admin() && STRCMP(action,QUERY_PARAM_ACTION_VALUE_SET)==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
 
-            int min = atoi(query_val("min"));
-            int max = atoi(query_val("max"));
+            int min = atoi(query_val(QUERY_PARAM_SET_MIN));
+            int max = atoi(query_val(QUERY_PARAM_SET_MAX));
 
             if (ovs_config_dimension_increment(set_name,set_val,min,max) == 0) {
                 reload_configs();
             }
-            query_remove("min");
-            query_remove("max");
+            query_remove(QUERY_PARAM_SET_MIN);
+            query_remove(QUERY_PARAM_SET_MAX);
             query_remove(QUERY_PARAM_ACTION);
-            query_remove("set_name");
-            query_remove("set_val");
+            query_remove(QUERY_PARAM_SET_NAME);
+            query_remove(QUERY_PARAM_SET_VAL);
 
         } else if (allow_admin() && STRCMP(action,QUERY_RESIZE_DIM_ACTION)==0 ) {
 

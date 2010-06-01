@@ -704,6 +704,8 @@ void query_remove(char *name) {
         HTML_LOG(5,"query item not present [%s]",name);
     }
 }
+
+// Value is not freed.
 void query_update(char *name,char *new)
 {
     HTML_LOG(0,"Changing query item [%s] to [%s]",name,new);

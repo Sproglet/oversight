@@ -213,6 +213,7 @@ unsigned int db_overview_general_hashf(void *rid)
                 h  = stringhash(((DbRowId *)rid)->file);
                 break;
             default:
+                html_error("unknown view for item %d[%s - %s]",((DbRowId*)rid)->id,((DbRowId*)rid)->title,((DbRowId*)rid)->file);
                 assert(0);
         } 
         break;
@@ -224,6 +225,7 @@ unsigned int db_overview_general_hashf(void *rid)
                 h  = stringhash(((DbRowId *)rid)->file);
                 break;
             default:
+                html_error("unknown view for item %d[%s - %s]",((DbRowId*)rid)->id,((DbRowId*)rid)->title,((DbRowId*)rid)->file);
                 assert(0);
         } 
         break;

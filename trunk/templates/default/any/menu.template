@@ -54,7 +54,11 @@ table.overview_poster {
                     <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:]</td>
 [:ENDIF:]
                     <td align=left>[:SORT_TYPE_TOGGLE:]</td>
+[:IF($?resizeon):]
+					<td align=center>[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
 					<td align=center>[:HOME_BUTTON:]</td>
+[:ENDIF:]
 					<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
 					[<td align=right>:HELP_BUTTON:</td>]
                     <td align=right>[:SETUP_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
@@ -108,15 +112,15 @@ table.overview_poster {
 <script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/menu.js"></script>
 <script type="text/javascript">
 function info() {
-    alert('[RED] - Mark Watched\n[GREEN] - Mark Unwatched\n[DELETE] - Delist\n[1111] - Delete Media');
+    alert('[[:$ovs_tvid_mark:]] - mark watched\n[[:$ovs_tvid_unmark:]] - unwatch\n[[:$ovs_tvid_delist:]] - delist\n[[:$ovs_tvid_delete:]] Delete Media');
 }
 </script>
 <!-- tvids -->
 [:TVIDS:]
-<a href="javascript:ovs_delist();" tvid="CLEAR"></a>
-<a href="javascript:ovs_delete();" tvid="1111"></a>
-<a href="javascript:ovs_unwatched();" tvid="GREEN"></a>
-<a href="javascript:ovs_watched();" tvid="RED"></a>
+<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
+<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
+<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
+<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
 <a href="javascript:info();" tvid="INFO"></a>
     </body>
 </html>

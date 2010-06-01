@@ -659,13 +659,13 @@ char *get_self_link(char *params,char *attr,char *title) {
     assert(title);
     char *result=NULL;
 
-    if (strstr(params,"Mark")) {
+    if (strstr(params,FORM_PARAM_SELECT_VALUE_MARK)) {
         HTML_LOG(0," begin self link for params[%s] attr[%s] title[%s]",params,attr,title);
         html_hashtable_dump(0,"query",g_query);
     }
 
     char *url = self_url(params);
-    if (strstr(params,"Mark"))
+    if (strstr(params,FORM_PARAM_SELECT_VALUE_MARK))
         HTML_LOG(0," end self link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
@@ -1725,7 +1725,7 @@ char *trim_title(char *title) {
 
 char *select_checkbox(DbRowId *rid,char *text) {
     char *result = NULL;
-    char *select = query_val("select");
+    char *select = query_val(QUERY_PARAM_SELECT);
 
     if (*select) {
 
@@ -1733,7 +1733,7 @@ char *select_checkbox(DbRowId *rid,char *text) {
 
         char *id_list = build_id_list(rid);
 
-        if (rid->watched && STRCMP(select,"Mark") == 0) {
+        if (rid->watched && STRCMP(select,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
 
             ovs_asprintf(&result,
                 "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" CHECKED >"
@@ -1795,7 +1795,7 @@ char *movie_listing(DbRowId *rowid)
     if (js_title != rowid->title) FREE(js_title);
 
 
-    char *select = query_val("select");
+    char *select = query_val(QUERY_PARAM_SELECT);
     char *style = watched_style(rowid);
     if (*select) {
         return select_checkbox(rowid,rowid->file);
@@ -2221,7 +2221,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *font_class="";
     char *grid_class="";
 
-    char *select = query_val("select");
+    char *select = query_val(QUERY_PARAM_SELECT);
     char *cell_background_image=NULL;
     int displaying_text;
 
@@ -3208,8 +3208,8 @@ TRACE;
 TRACE;
         //Check regex entered via text box
 
-        if (*query_val("searcht") && *query_val(QUERY_PARAM_SEARCH_MODE)) {
-            regex=util_tolower(query_val("searcht"));
+        if (*query_val(QUERY_PARAM_SEARCH_TEXT) && *query_val(QUERY_PARAM_SEARCH_MODE)) {
+            regex=util_tolower(query_val(QUERY_PARAM_SEARCH_TEXT));
             free_regex=1;
         }
     }
@@ -3380,7 +3380,7 @@ char *get_tvid_links()
 char *dimension_cell_name_suffix() {
     static char *name_suffix=NULL;
     if (!name_suffix) {
-        char *view = query_val("view");
+        char *view = query_val(QUERY_PARAM_VIEW);
         if (STRCMP(view,"movieboxset") == 0) {
             name_suffix = "_movieboxset";
         } else if (STRCMP(view,"tvboxset") == 0) {
@@ -3421,9 +3421,9 @@ char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char
 char *get_tvid_resize_links()
 {
     char *result=NULL;
-    char *view = query_val("view");
+    char *view = query_val(QUERY_PARAM_VIEW);
 
-    if (*query_val("resizeon")) {
+    if (*query_val(QUERY_PARAM_RESIZE)) {
 
 #define GRID_INC "1"
 #define ARROW_UP "↑"
@@ -3780,7 +3780,7 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 {
     int r,c;
 
-    char *select=query_val("select");
+    char *select=query_val(QUERY_PARAM_SELECT);
 
     char *listing=NULL;
 

@@ -47,20 +47,22 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 /*
 #define OVS_VERSION "20091123-5BETA"
 */
+#define QUERY_PARAM_VIEW "view"
+#define VIEW_ADMIN "admin"
 #define VIEW_TV "tv"
 #define VIEW_MOVIE "movie"
 #define VIEW_TVBOXSET "tvboxset"
 #define VIEW_MOVIEBOXSET "movieboxset"
 #define VIEW_MIXED "mixed"
-#define MENU_VIEW 1
-#define TV_VIEW 2
-#define MOVIE_VIEW 3
-#define TVBOXSET_VIEW 10
-#define MOVIEBOXSET_VIEW 11
+
+#define MENU_VIEW_ID 1
+#define TV_VIEW_ID 2
+#define MOVIE_VIEW_ID 3
+#define TVBOXSET_VIEW_ID 10
+#define MOVIEBOXSET_VIEW_ID 11
 
 #define QUERY_ASSIGN_PREFIX "*"
 
-#define QUERY_PARAM_VIEW "view"
 #define QUERY_PARAM_SELECTED "i"
 #define QUERY_PARAM_PAGE "p"
 #define QUERY_PARAM_IDLIST "idlist"
@@ -75,6 +77,14 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_REGEX "_rf"
 #define QUERY_PARAM_SEARCH_MODE "_sm"
 #define QUERY_PARAM_CHECKBOX_PREFIX "cb_"
+#define QUERY_PARAM_SEARCH_TEXT "searcht" //obsoleted?
+#define QUERY_PARAM_RESIZE "resizeon"
+
+#define QUERY_PARAM_SELECT "select"
+#define QUERY_PARAM_ACTION "action"
+
+#define FORM_PARAM_SELECT_VALUE_DELETE "Delete"
+#define FORM_PARAM_SELECT_VALUE_MARK "Mark"
 
 #define QUERY_PARAM_WATCHED_VALUE_NO "U"
 #define QUERY_PARAM_WATCHED_VALUE_YES "W"

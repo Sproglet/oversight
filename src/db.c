@@ -1016,12 +1016,9 @@ int db_full_size() {
     return g_db_size;
 }
 
-// Return 1 if db should be scanned accoring to html get parameters.
+// Return 1 if db should be scanned according to html get parameters.
 int db_to_be_scanned(char *name) {
-    static char *idlist = NULL;
-    if (idlist == NULL) {
-        idlist = query_val("idlist");
-    }
+    char *idlist = query_val(QUERY_PARAM_IDLIST);
     if (*idlist) {
         //Look for "name(" in idlist
         char *p = idlist;
@@ -1110,6 +1107,9 @@ DbRowSet **db_crossview_scan_titles(
         ){
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
+
+    g_db_size=0;
+    g_first_row=NULL;
 
     if (use_folder_titles == UNSET ) {
         use_folder_titles = *oversight_val("ovs_use_folders_as_title") == '1';

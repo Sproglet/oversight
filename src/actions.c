@@ -58,8 +58,8 @@ static void clear_selection() {
     query_remove("file"); // settings cfg file
     query_remove("title"); // settings title
     query_remove("form");
-    query_remove("select");
-    query_remove("action");
+    query_remove(QUERY_PARAM_SELECT);
+    query_remove(QUERY_PARAM_ACTION);
     query_remove("set_val");
     query_remove("old_action");
     struct hashtable_itr *itr;
@@ -364,7 +364,7 @@ void do_actions() {
     set_start_cell();
 
     char *view=query_val(QUERY_PARAM_VIEW);
-    char *action=query_val("action");
+    char *action=query_val(QUERY_PARAM_ACTION);
     char *set_name=query_val("set_name");
     char *set_val=query_val("set_val");
 
@@ -383,7 +383,7 @@ void do_actions() {
         query_remove("searchb");
     }
 
-    if (allow_admin() && STRCMP(view,"admin")==0 ) {
+    if (allow_admin() && STRCMP(view,VIEW_ADMIN)==0 ) {
 
         if (STRCMP(action,"reinstall") == 0) {
 
@@ -561,11 +561,11 @@ void do_actions() {
 
 
             }
-            query_remove("action");
+            query_remove(QUERY_PARAM_ACTION);
             query_remove("actionids");
             hashtable_destroy(changed_source_id_hash,1,1);
 
-        } else if (allow_mark() && STRCMP(action,"Mark") == 0) {
+        } else if (allow_mark() && STRCMP(action,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
 
                 // The following actions are invoked when marking via PC browser and form.
                 // In this case the post data has a select box variable for each item
@@ -579,10 +579,10 @@ void do_actions() {
                 changed_source_id_hash = get_newly_deselected_ids_by_source(&total_changed);
                 db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
                 hashtable_destroy(changed_source_id_hash,1,1);
-                query_remove("action");
+                query_remove(QUERY_PARAM_ACTION);
 
 
-        } else if (allow_delete() && STRCMP(action,"Delete") == 0) {
+        } else if (allow_delete() && STRCMP(action,FORM_PARAM_SELECT_VALUE_DELETE) == 0) {
 
 TRACE;
                 // The following actions are invoked when deleting via PC browser and form.
@@ -593,7 +593,7 @@ TRACE;
                     update_idlist(changed_source_id_hash);
                 }
                 hashtable_destroy(changed_source_id_hash,1,1);
-                query_remove("action");
+                query_remove(QUERY_PARAM_ACTION);
 
         } else if (allow_delist() && STRCMP(action,"Remove_From_List") == 0) {
 
@@ -606,7 +606,7 @@ TRACE;
                     update_idlist(changed_source_id_hash);
                 }
                 hashtable_destroy(changed_source_id_hash,1,1);
-                query_remove("action");
+                query_remove(QUERY_PARAM_ACTION);
 
         } else if (allow_admin() && STRCMP(action,"set")==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
 
@@ -618,7 +618,7 @@ TRACE;
             }
             query_remove("min");
             query_remove("max");
-            query_remove("action");
+            query_remove(QUERY_PARAM_ACTION);
             query_remove("set_name");
             query_remove("set_val");
 
@@ -660,7 +660,7 @@ TRACE;
                    html_error("unable to reset movieboxset dimensions");
                 }
             }
-            query_remove("action");
+            query_remove(QUERY_PARAM_ACTION);
 
         }
 
@@ -750,32 +750,9 @@ void update_idlist(struct hashtable *source_id_hash_removed)
         //Update the html parameter
         query_update(STRDUP(QUERY_PARAM_IDLIST),idhash_to_idlist(source_id_hash_current));
         hashtable_destroy(source_id_hash_current,1,1);
+
     }
 
-    // If the id list is empty then go back to the main menu.
-    // TODO  This needs to work with boxsets too. ie deleting last item in the 
-    // detail page should go back to the previous box set and not the main menu.
-    // Will resolve later.
-    //
-    
-    // This is a short term hack to fix deleting movies. The correct fix is outlined in 
-    // todo.txt http://code.google.com/p/oversight/issues/detail?id=390
-
-    if (STRCMP(QUERY_PARAM_VIEW,VIEW_MOVIE) == 0) {
-        query_pop();
-    } else {
-
-    int total = 0;
-    char *total_str = query_val("item_count");
-    if (total_str != NULL) {
-        total = atoi(total_str);
-    }
-    int removed = hashtable_count(source_id_hash_removed);
-    if (total - removed <= 0 ) {
-        HTML_LOG(0,"pop to previous screen");
-        query_pop();
-    }
-    }
     HTML_LOG(0,"post update idlist = [%s]",query_val(QUERY_PARAM_IDLIST));
 }
 

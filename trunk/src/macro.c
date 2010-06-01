@@ -762,7 +762,7 @@ char *macro_fn_resize_controls(char *template_name,char *call,Array *args,int nu
 {
 
     char *result = NULL;
-    if (STRCMP(query_val(QUERY_PARAM_VIEW),"admin") != 0) {
+    if (STRCMP(query_val(QUERY_PARAM_VIEW),VIEW_ADMIN) != 0) {
         result = get_tvid_resize_links();
     }
     return result;
@@ -911,8 +911,8 @@ char *macro_fn_form_start(char *template_name,char *call,Array *args,int num_row
     char *url=NULL;
 
 TRACE;
-    if (strcasecmp(query_val(QUERY_PARAM_VIEW),"admin") == 0) {
-        char *action = query_val("action");
+    if (strcasecmp(query_val(QUERY_PARAM_VIEW),VIEW_ADMIN) == 0) {
+        char *action = query_val(QUERY_PARAM_ACTION);
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;
         } else {
@@ -1056,11 +1056,11 @@ char *macro_fn_filter_bar(char *template_name,char *call,Array *args,int num_row
 
         } else {
 
-            ovs_asprintf(&result,"<input type=text name=searcht value=\"%s\" >"
+            ovs_asprintf(&result,"<input type=text name="QUERY_PARAM_SEARCH_TEXT" value=\"%s\" >"
                     "<input type=submit name=searchb value=Search >"
                     "<input type=submit name=searchb value=Hide >"
                     "<input type=hidden name="QUERY_PARAM_SEARCH_MODE" value=\"%s\" >"
-                    ,query_val("searcht"),query_val(QUERY_PARAM_SEARCH_MODE));
+                    ,query_val(QUERY_PARAM_SEARCH_TEXT),query_val(QUERY_PARAM_SEARCH_MODE));
 
         }
 
@@ -1207,7 +1207,7 @@ char *macro_fn_setup_button(char *template_name,char *call,Array *args,int num_r
 
 char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) {
 
-    char *select = query_val("select");
+    char *select = query_val(QUERY_PARAM_SELECT);
     char *view = query_val(QUERY_PARAM_VIEW);
     int page = get_current_page();
     char *result = NULL;
@@ -1271,7 +1271,7 @@ char *macro_fn_right_button(char *template_name,char *call,Array *args,int num_r
 
 char *macro_fn_back_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val(QUERY_PARAM_VIEW) && !*query_val("select")) {
+    if (*query_val(QUERY_PARAM_VIEW) && !*query_val(QUERY_PARAM_SELECT)) {
         char *attr = "";
         if (args && args->size == 1) {
             attr=args->array[0];
@@ -1291,7 +1291,7 @@ char *macro_fn_menu_tvid(char *template_name,char *call,Array *args,int num_rows
 char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
 
-    if(!*query_val("select")) {
+    if(!*query_val(QUERY_PARAM_SELECT)) {
         char *tag=get_theme_image_tag("home",NULL);
         ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",cgi_url(0),tag);
         FREE(tag);
@@ -1303,7 +1303,7 @@ char *macro_fn_home_button(char *template_name,char *call,Array *args,int num_ro
 char *macro_fn_exit_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
 
-    if(g_dimension->local_browser && !*query_val("select")) {
+    if(g_dimension->local_browser && !*query_val(QUERY_PARAM_SELECT)) {
         char *tag=get_theme_image_tag("exit",NULL);
         ovs_asprintf(&result,"<a href=\"/start.cgi\" name=home >%s</a>",tag);
         FREE(tag);
@@ -1313,7 +1313,7 @@ char *macro_fn_exit_button(char *template_name,char *call,Array *args,int num_ro
 
 char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (!*query_val("select") && allow_mark()) {
+    if (!*query_val(QUERY_PARAM_SELECT) && allow_mark()) {
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("mark",NULL);
             ovs_asprintf(&result,
@@ -1328,7 +1328,7 @@ char *macro_fn_mark_button(char *template_name,char *call,Array *args,int num_ro
 
 char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (!*query_val("select") && (allow_delete() || allow_delist())) {
+    if (!*query_val(QUERY_PARAM_SELECT) && (allow_delete() || allow_delist())) {
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("delete",NULL);
             ovs_asprintf(&result,
@@ -1342,28 +1342,28 @@ char *macro_fn_delete_button(char *template_name,char *call,Array *args,int num_
 }
 char *macro_fn_select_mark_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (STRCMP(query_val("select"),"Mark")==0) {
+    if (STRCMP(query_val(QUERY_PARAM_SELECT),FORM_PARAM_SELECT_VALUE_MARK)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Mark >");
     }
     return result;
 }
 char *macro_fn_select_delete_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (STRCMP(query_val("select"),"Delete")==0) {
+    if (STRCMP(query_val(QUERY_PARAM_SELECT),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Delete onclick=\"return confirm('STOP! REALLY DELETE FILES?');\" >");
     }
     return result;
 }
 char *macro_fn_select_delist_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (STRCMP(query_val("select"),"Delete")==0) {
+    if (STRCMP(query_val(QUERY_PARAM_SELECT),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Remove_From_List >");
     }
     return result;
 }
 char *macro_fn_select_cancel_submit(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
-    if (*query_val("select")) {
+    if (*query_val(QUERY_PARAM_SELECT)) {
         ovs_asprintf(&result,"<input type=submit name=select value=Cancel >");
     }
     return result;

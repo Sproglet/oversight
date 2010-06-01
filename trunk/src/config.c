@@ -704,6 +704,7 @@ void config_read_dimensions() {
             g_dimension->current_grid->cols = g_dimension->text_cols;
 
         } else {
+
             // set the current grid dimensions
             char *view = query_val(QUERY_PARAM_VIEW);
             if (STRCMP(view,VIEW_TVBOXSET) == 0) {

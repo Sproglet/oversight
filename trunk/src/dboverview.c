@@ -95,15 +95,15 @@ int get_view_mode() {
     if (mode == -1 ) {
         char *view=query_val(QUERY_PARAM_VIEW);
         if (STRCMP(view,VIEW_TV) == 0 ) {
-            mode = TV_VIEW;
+            mode = TV_VIEW_ID;
         } else if (STRCMP(view,VIEW_MOVIE) == 0) {
-            mode = MOVIE_VIEW;
+            mode = MOVIE_VIEW_ID;
         } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
-            mode = TVBOXSET_VIEW;
+            mode = TVBOXSET_VIEW_ID;
         } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
-            mode = MOVIEBOXSET_VIEW;
+            mode = MOVIEBOXSET_VIEW_ID;
         } else {
-            mode = MENU_VIEW;
+            mode = MENU_VIEW_ID;
         }
     }
     return mode;
@@ -145,17 +145,17 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
 
     } else if (((DbRowId*)rid1)->category == 'T' ) {
         switch(mode) {
-            case MENU_VIEW:
+            case MENU_VIEW_ID:
                 if (tvbox) {
                    ret = EQ_SHOW(rid1,rid2);
                 } else {
                    ret = EQ_SEASON(rid1,rid2);
                 }
                 break;
-            case TVBOXSET_VIEW:
+            case TVBOXSET_VIEW_ID:
                ret = EQ_SEASON(rid1,rid2);
                 break;
-            case TV_VIEW:
+            case TV_VIEW_ID:
                ret = EQ_FILE(rid1,rid2);
                 break;
             default:
@@ -164,9 +164,9 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
         }
     } else if (((DbRowId*)rid1)->category == 'M' ) {
         switch(mode) {
-            case MENU_VIEW:
-            case MOVIEBOXSET_VIEW:
-            case MOVIE_VIEW:
+            case MENU_VIEW_ID:
+            case MOVIEBOXSET_VIEW_ID:
+            case MOVIE_VIEW_ID:
                ret = EQ_FILE(rid1,rid2);
                 break;
             default:
@@ -194,7 +194,7 @@ unsigned int db_overview_general_hashf(void *rid)
     switch(((DbRowId *)rid)->category) {
         case 'T':
         switch(mode) {
-            case MENU_VIEW:
+            case MENU_VIEW_ID:
                 if (tvbox) {
                     h  = stringhash(((DbRowId *)rid)->title);
                     HASH_ADD(h,((DbRowId *)rid)->year);
@@ -204,12 +204,12 @@ unsigned int db_overview_general_hashf(void *rid)
                     HASH_ADD(h,((DbRowId *)rid)->season);
                 }
                 break;
-            case TVBOXSET_VIEW:
+            case TVBOXSET_VIEW_ID:
                 h  = stringhash(((DbRowId *)rid)->title);
                 HASH_ADD(h,((DbRowId *)rid)->year);
                 HASH_ADD(h,((DbRowId *)rid)->season);
                 break;
-            case TV_VIEW:
+            case TV_VIEW_ID:
                 h  = stringhash(((DbRowId *)rid)->file);
                 break;
             default:
@@ -219,9 +219,9 @@ unsigned int db_overview_general_hashf(void *rid)
         break;
     case 'M':
         switch(mode) {
-            case MENU_VIEW:
-            case MOVIEBOXSET_VIEW:
-            case MOVIE_VIEW:
+            case MENU_VIEW_ID:
+            case MOVIEBOXSET_VIEW_ID:
+            case MOVIE_VIEW_ID:
                 h  = stringhash(((DbRowId *)rid)->file);
                 break;
             default:

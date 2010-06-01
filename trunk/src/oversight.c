@@ -194,30 +194,45 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     HTML_LOG(0,"Begin Actions");
     do_actions();
    
-    char *view=query_val(QUERY_PARAM_VIEW);  
-
+    char *view;
 
     DbRowSet **rowsets;
     DbRowId **sorted_rows;
 
-    int num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
-    HTML_LOG(0,"Got %d rows",num_rows);
-    dump_all_rows("sorted",num_rows,sorted_rows);
+    int num_rows;
+    while(1) {
+        view=query_val(QUERY_PARAM_VIEW);  
 
-    if (num_rows == 0 && (util_starts_with(view,"tv") || util_starts_with(view,"movie"))) {
-        // If in the tv  or movie view and all items have been deleted - go to the main view
-        char *back = return_query_string();
-        HTML_LOG(0,"Going back to main view using [%s]",back);
-        html_hashtable_dump(0,"preback",g_query);
-        parse_query_string(back,g_query);
-        html_hashtable_dump(0,"postback",g_query);
-        FREE(back);
+        // If movie view but all ids have been removed , then move up
+        if (STRCMP(view,VIEW_MOVIE) == 0 && !*query_val(QUERY_PARAM_IDLIST)) {
+            query_pop();
+        }
+
+        num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
+        HTML_LOG(0,"Got %d rows",num_rows);
+        dump_all_rows("sorted",num_rows,sorted_rows);
+
+        // Found some data - continue to render page.
+        if (num_rows) {
+            break;
+        }
+
+        // If it's not a tv/movie detail or boxset view then break
+        if (!*view || STRCMP(view,VIEW_ADMIN)==0) {
+            break;
+        }
+
+        // No data found in this view - try to return to the previous view.
+        query_pop();
+        // Adjust config - 
+        // TODO Change the config structure to reload more efficiently.
+        //reload_configs();
+        config_read_dimensions();
+
         // Now refetch all data again with new parameters.
         FREE(sorted_rows);
         db_free_rowsets_and_dbs(rowsets);
-        num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
-        HTML_LOG(0,"refetched %d rows",num_rows);
-        view=query_val(QUERY_PARAM_VIEW);  
+        HTML_LOG(0,"reparsing database");
     }
 
     // Remove and store the last navigation cell. eg if user clicked on cell 12 this is passed in 
@@ -255,7 +270,7 @@ TRACE;
             dump_all_rows("post",num_rows,sorted_rows);
 
 
-        } else if (STRCMP(view,"admin") == 0) {
+        } else if (STRCMP(view,VIEW_ADMIN) == 0) {
 
             setPermissions();
             display_admin();

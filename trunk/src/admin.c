@@ -9,7 +9,7 @@
 
 void display_admin() {
 
-    char *action = query_val("action");
+    char *action = query_val(QUERY_PARAM_ACTION);
 
     HTML_LOG(1,"action = %s",action);
 

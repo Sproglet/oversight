@@ -1,3 +1,4 @@
+// $Id:$
 #include "util.h" //for MALLOC
 
 /* Converts a hex character to its integer value */

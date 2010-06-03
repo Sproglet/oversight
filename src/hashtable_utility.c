@@ -1,4 +1,5 @@
 /* Copyright (C) 2002 Christopher Clark <firstname.lastname@cl.cam.ac.uk> */
+// $Id:$
 
 #include "util.h"
 #include "hashtable.h"

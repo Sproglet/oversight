@@ -1,3 +1,4 @@
+// $Id:$
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -37,7 +38,7 @@ char *get_theme_image_tag(char *image_name,char *attr);
 char *icon_source(char *image_name);
 void util_free_char_array(int size,char **a);
 char *get_date_static(DbRowId *rid);
-DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
+DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
 char *get_drilldown_view(DbRowId *rid);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
@@ -2323,22 +2324,11 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
         // Movies are drill down by ID
         cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
 
-
-
     } else {
 
-
-        char cellId[9];
-
-        sprintf(cellId,"%d",cell_no);
-        char *cellName;
-        if (selected_cell) {
-            cellName="selectedCell";
-        } else {
-            cellName=cellId;
-        }
-
-        cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,cellName,attr,font_class);
+        cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,
+                (selected_cell?"selectedCell":cell_no_txt),
+                attr,font_class);
 
     }
     FREE(attr);
@@ -2871,11 +2861,20 @@ int all_linked_rows_delisted(DbRowId *rowid)
     return 1;
 }
 
-void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char **idlist) {
+void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row_ids,char **idlist)
+{
     int i,r,c;
 
-    HTML_LOG(0,"script start");
-    printf("<script type=\"text/javascript\"><!--\nfunction t_0() { ; }\n");
+    HTML_LOG(0,"script start offset %d %dx%d",offset,rows,cols);
+
+
+    printf("<script type=\"text/javascript\"><!--\n");
+    
+    static int first_time=1;
+    if (first_time) {
+        first_time = 0;
+        printf("function t_0() { ; }\n");
+    }
 
     for ( r = 0 ; r < rows ; r++ ) {
         for ( c = 0 ; c < cols ; c++ ) {
@@ -2893,14 +2892,14 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
                 if (rid->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s',%d,%d); }\n",
-                            i+1,title,idlist[i],
+                            i+1+offset,title,idlist[i],
                             unwatched,
                             watched
                             );
                 } else {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s','-','-'); }\n",
-                            i+1,title,idlist[i]);
+                            i+1+offset,title,idlist[i]);
                 }
                 FREE(title);
             }
@@ -2913,9 +2912,18 @@ void write_titlechanger(int rows, int cols, int numids, DbRowId **row_ids,char *
 // Generate the HTML for the grid. 
 // Note that the row_ids have already been pruned to only contain the items
 // for the current page.
-char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,int page_before,int page_after) {
+char *render_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids,int page_before,int page_after) {
+
+    int rows = gs->dimensions.rows;
+
+    int cols = gs->dimensions.cols;
+
+    // Points past last item
+    int end_item = rows * cols;
+    if (end_item > numids ) {
+        end_item = numids;
+    }
     
-    int end = numids;
     int centre_row = rows/2;
     int centre_col = cols/2;
     int r,c;
@@ -2936,11 +2944,10 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
    table_start = table_id;
    table_end = "</table>";
 
-    if (end > numids) end = numids;
-
     HTML_LOG(0,"render page %ld rows %d cols %d",page,rows,cols);
 
 #if 0
+    // Diagnostic code. Enable to see all rows dumped.
     HTML_LOG(0,"input size = %d",numids);
     for(r=0 ; r<numids ; r++) {
         HTML_LOG(0,"get_grid row %d %s %s %s",r,row_ids[r]->db->source,row_ids[r]->title,row_ids[r]->file);
@@ -2986,8 +2993,9 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     }
 
     // First output the javascript functions - diretly to stdout - lazy.
-    write_titlechanger(rows,cols,numids,row_ids,idlist);
+    write_titlechanger(gs->offset,rows,cols,numids,row_ids,idlist);
 
+TRACE;
     Array *rowArray = array_new((void(*)(void *))array_free);
 
     int selected_cell = -1;
@@ -2996,6 +3004,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     } else {
         selected_cell = centre_col * rows + centre_row;
     }
+HTML_LOG(0,"rows = %d",rows);
     
 
     // Now build the table and return the text.
@@ -3018,7 +3027,7 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i]);
+                item = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i]);
             } else {
                 // only draw empty cells if there are two or more rows
                 if (rows > 1) {
@@ -3062,11 +3071,14 @@ char *render_grid(long page,int rows, int cols, int numids, DbRowId **row_ids,in
     result=tmp;
 
     FREE(width_attr);
+    HTML_LOG(0,"render_grid length = %d",strlen(NVL(result)));
+
     return result;
 }
 
 
-char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
+char *get_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids)
+{
     // first loop through the selected rowids that we expect to draw.
     // If there are any that need pruning - remove them from the database and get another one.
     // This will possibly cause a temporary inconsistency in page numbering but
@@ -3074,17 +3086,38 @@ char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids) {
     //
     // Note the db load routing should already filter out items that cant be mounted,
     // otherwise this can cause timeouts.
-    int items_per_page = rows * cols;
-    int start = page * items_per_page;
+    if (gs->parent->page_size == DEFAULT_PAGE_SIZE) {
+        gs->parent->page_size = gs->dimensions.rows * gs->dimensions.cols;
+    }
+
+    int start = page * gs->parent->page_size; 
 
     int total=0;
     // Create space for pruned rows
-    HTML_LOG(0,"get_grid page %ld rows %d cols %d",page,rows,cols);
-    DbRowId **prunedRows = filter_delisted(start,numids,row_ids,items_per_page,&total);
+    DbRowId **prunedRows = filter_page_items(start,numids,row_ids,gs->parent->page_size,&total);
+
     
-    int page_before = (page > 0);
-    int page_after = (numids >= total);
-    return render_grid(page,rows,cols,total,prunedRows,page_before,page_after);
+    DbRowId **segmentRows = prunedRows + gs->offset;
+
+    int segment_total = total - gs->offset;
+
+    if (segment_total < 0 ) {
+
+        segment_total = 0;
+
+    } else if (segment_total > gs->dimensions.rows * gs->dimensions.cols ) {
+
+        segment_total = gs->dimensions.rows * gs->dimensions.cols ;
+    }
+
+
+    int page_before = (gs->offset == 1) && (page > 0);
+    int page_after = gs->offset + segment_total >= total;
+
+
+    char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after);
+    FREE(prunedRows);
+    return ret;
 }
 
 
@@ -3763,7 +3796,8 @@ char *get_date_static(DbRowId *rid)
     return date_buf;
 }
 
-DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num)
+// Return all rows after delisting
+DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num)
 {
 
     int i;
@@ -3774,12 +3808,18 @@ DbRowId **filter_delisted(int start,int num_rows,DbRowId **row_ids,int max_new,i
     for ( i = start ; total < max_new && i < num_rows ; i++ ) {
         DbRowId *rid = row_ids[i];
         if (rid) {
-            if (!all_linked_rows_delisted(rid)) {
+            if (rid->delist_checked) {
                 new_list[total++] = rid;
+            } else {
+                if (!all_linked_rows_delisted(rid)) {
+                    new_list[total++] = rid;
+                }
+                rid->delist_checked = 1;
             }
         }
     }
     *new_num = total;
+    HTML_LOG(0,"filter_page_items = %d of %d items (max %d)",total,num_rows,max_new);
     return new_list;
 }
 
@@ -3957,7 +3997,7 @@ char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 
 
     html_log(-1,"tv_listing");
-    pruned_rows = filter_delisted(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
+    pruned_rows = filter_page_items(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
     FREE(pruned_rows);
 

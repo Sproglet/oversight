@@ -1,3 +1,4 @@
+// $Id:$
 /*
  * Found at http://downloads.openmoko.org/developer/sources/svn/omgps.googlecode.com/svn/trunk/omgps/src/network.c
  * googling for ping function "int ping(char *host)"

@@ -1,3 +1,4 @@
+// $Id:$
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -357,16 +358,31 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
     return a;
 }
 
-char *arraystr(Array *a)
-{
-    int i;
+/**
+ * Get combined length of all char * in an array.
+ */
+int array_strlen(Array *a) {
     int len  = 0;
-    char *str = NULL;
+    int i;
     if (a) {
         for (i = 0 ; i < a->size ; i++ ) {
             len += strlen(NVL(a->array[i]));
         }
     }
+    return len;
+}
+
+/**
+ * Convert Array of Char * to a single char *
+ */
+char *arraystr(Array *a)
+{
+    int i;
+    int len  = 0;
+    char *str = NULL;
+
+    len = array_strlen(a);
+
     if (len) {
         str = MALLOC(len+1);
         char *q,*p = str;
@@ -383,6 +399,9 @@ char *arraystr(Array *a)
     return str;
 }
 
+/**
+ * Convert Array of Array of Char * to a single char *
+ */
 char *array2dstr(Array *a)
 {
     int i,j;
@@ -391,11 +410,7 @@ char *array2dstr(Array *a)
     if (a) {
         for (i = 0 ; i < a->size ; i++ ) {
             Array *b = a->array[i];
-            if (b) {
-                for (j = 0 ; j < b->size ; j++ ) {
-                    len += strlen(NVL(b->array[j]));
-                }
-            }
+            len += array_strlen(b);
         }
     }
 

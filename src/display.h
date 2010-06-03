@@ -29,7 +29,7 @@ char *get_theme_image_return_link(char *href_attr,char *image_name,char *button_
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type);
 char *get_theme_image_tag(char *image_name,char *attr);
-char *get_grid(long page,int rows, int cols, int numids, DbRowId **row_ids);
+char *get_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
 char *get_tvid_links();

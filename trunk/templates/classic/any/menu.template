@@ -37,7 +37,7 @@ table.overview_poster {
         </style>
     </head>
     <!--
-<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:IMAGE(black_desert.jpg):] >
+<body [onloadset=:START_CELL:] focuscolor=yellow focustext=black [class=menu_background:IS_GAYA:] background=[:BACKGROUND_IMAGE(black_desert.jpg):] >
 -->
     <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background >
         [:FORM_START:]

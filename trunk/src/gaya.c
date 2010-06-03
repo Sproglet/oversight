@@ -11,6 +11,7 @@
 #include "hashtable.h"
 #include "oversight.h"
 #include "gaya_cgi.h"
+#include "template.h"
 
 #define PORT_STR ":8883"
 

@@ -39,7 +39,7 @@ STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 # Most stable last to speed compile-fail cycle
-OBJS=gaya.o macro.o \
+OBJS=gaya.o macro.o template.o \
 	grid.o display.o oversight.o util.o \
 	config.o \
    	db.o dbfield.o dboverview.o actions.o \

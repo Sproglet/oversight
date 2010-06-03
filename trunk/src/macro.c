@@ -1262,7 +1262,7 @@ char *macro_fn_icon_link(char *template_name,char *call,Array *args,int num_rows
 }
 
 // write an image url
-char *macro_fn_image_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_background_image(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (args && args->size == 1) {
         char *tmp = image_path_by_resolution(template_name,args->array[0]);
@@ -1289,20 +1289,18 @@ char *macro_fn_skin_name(char *template_name,char *call,Array *args,int num_rows
 }
 
 // Display a template image from images folder - if not present look in defaults.
-char *macro_fn_image(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_image_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
     char *result=NULL;
-    if (args && args->size == 1) {
+    if (args && args->size >= 1) {
 
-        result= get_theme_image_tag(args->array[0]," "); // space here to stop icon attributes. Bit nasty
-
-    } else if (args && args->size == 2) {
-
-        result= get_theme_image_tag(args->array[0],args->array[1]);
+        char *name = arraystr(args);
+        result = image_source("",name,""); 
+        FREE(name);
 
     } else {
 
-        printf("%s(image[,attr])",call);
+        printf("%s(IMAGE_URL[name])",call);
     }
     return result;
 }
@@ -2109,7 +2107,7 @@ void macro_init() {
         //HTML_LOG(1,"begin macro init");
         macros = string_string_hashtable(64);
 
-        hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_image_url); // referes to images in sd / 720 folders.
+        hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_image); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
         hashtable_insert(macros,"BODY_HEIGHT",macro_fn_body_height);
         hashtable_insert(macros,"BODY_WIDTH",macro_fn_body_width);
@@ -2144,7 +2142,7 @@ void macro_init() {
         hashtable_insert(macros,"ICON",macro_fn_icon);
         hashtable_insert(macros,"ICON_LINK",macro_fn_icon_link);
         hashtable_insert(macros,"IF",macro_fn_if);
-        hashtable_insert(macros,"IMAGE",macro_fn_image);
+        hashtable_insert(macros,"IMAGE_URL",macro_fn_image_url);
         hashtable_insert(macros,"INCLUDE_TEMPLATE",macro_fn_include);
         hashtable_insert(macros,"IS_GAYA",macro_fn_is_gaya);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);

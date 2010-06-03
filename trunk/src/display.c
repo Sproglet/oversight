@@ -2708,10 +2708,11 @@ char *scanlines_to_text(long scanlines) {
     }
 }
 
-void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids) {
 
-    HTML_LOG(1,"begin template");
+int display_template_file(char*template_name,char *resolution,char *file_name,int num_rows,DbRowId **sorted_row_ids)
+{
 
+    int ret = 1;
     char *file;
 
     ovs_asprintf(&file,"%s/templates/%s/%s/%s.template",appDir(),
@@ -2725,21 +2726,12 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 
     FILE *fp=fopen(file,"r");
     if (fp == NULL) {
-        if (errno == 2 || errno == 22) {
-            FREE(file);
-            ovs_asprintf(&file,"%s/templates/%s/any/%s.template",appDir(),
-                    template_name,
-                    file_name);
-            HTML_LOG(2,"opening %s",file);
-            fp=fopen(file,"r");
-        }
-        if (fp == NULL) {
-            html_error("Error %d opening %s",errno,file);
-        }
-    }
 
-    if (fp) {
+        html_error("Error %d opening %s",errno,file);
+
+    } else {
 #define HTML_BUF_SIZE 999
+        ret = 0;
 
         char buffer[HTML_BUF_SIZE];
 
@@ -2770,6 +2762,28 @@ void display_template(char*template_name,char *file_name,int num_rows,DbRowId **
 
     if (file) FREE(file);
     HTML_LOG(1,"end template");
+    return ret;
+}
+
+// 0 = success
+int display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids)
+{
+    int ret = 0;
+
+    HTML_LOG(1,"begin template");
+
+    char *resolution = scanlines_to_text(g_dimension->scanlines);
+    if (display_template_file(template_name,resolution,file_name,num_rows,sorted_row_ids) != 0) {
+        if (display_template_file(template_name,"any",file_name,num_rows,sorted_row_ids) != 0) {
+            if (display_template_file("default",resolution,file_name,num_rows,sorted_row_ids) != 0) {
+                if (display_template_file("default","any",file_name,num_rows,sorted_row_ids) != 0) {
+                    html_error("failed to load template %s",file_name);
+                    ret = 1;
+                }
+            }
+        }
+    }
+    return ret;
 }
 
 

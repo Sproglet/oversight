@@ -15,7 +15,7 @@ typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
 void display_menu();
 
 FILE *playlist_open();
-void display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids);
+int display_template(char*template_name,char *file_name,int num_rows,DbRowId **sorted_row_ids);
 int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr);
 void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids);
 int playlist_size(int num_rows,DbRowId **sorted_rows);
@@ -62,4 +62,5 @@ char *return_query_string();
 void query_pop();
 void set_selected_item();
 char *get_selected_item();
+char *image_source(char *subfolder,char *image_name,char *ext);
 #endif

@@ -1,4 +1,9 @@
 # box set view - main menus need to be removed - or they need to strip idlist.
+#
+#
+
+add new config skin.cfg and skin.help and allow editing.
+
 utf:
     catalog.sh : capitalisation of letter after uft-8. 
     carnivale poster: didnt look right.

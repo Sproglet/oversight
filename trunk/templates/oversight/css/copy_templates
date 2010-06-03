@@ -1,3 +1,0 @@
-for i in "$@" ; do
-    cp -v *css /cygdrive/"$i"/Apps/oversight/templates/oversight/css/.
-done

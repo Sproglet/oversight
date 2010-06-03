@@ -6,6 +6,7 @@
 #include "admin.h"
 #include "display.h"
 #include "gaya_cgi.h"
+#include "template.h"
 
 
 void display_admin() {

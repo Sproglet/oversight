@@ -22,6 +22,7 @@
 #include "permissions.h"
 #include "gaya.h"
 #include "subtitles.h"
+#include "template.h"
 
 
 //void exec_old_cgi(int argc,char **argv);

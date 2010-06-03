@@ -7,5 +7,9 @@ if [ -z "$@" ] ; then
     read disk
 fi
 for i in "$@" $disk ; do
-    cp -v *[es] /cygdrive/"$i"/Apps/oversight/$d/.
+    # *e templates
+    # *s js / css
+    # *g jpg/png
+    # *f gif
+    cp -v *[esgf] /cygdrive/"$i"/Apps/oversight/$d/.
 done

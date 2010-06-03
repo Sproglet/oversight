@@ -1,0 +1,11 @@
+# $Id:$
+# Quick (cygwin) script to copy templatess to a NMT mapped in windows.
+
+d=`pwd | sed 's|.*oversight/templates|templates|'`
+if [ -z "$@" ] ; then
+    echo enter cygwin disk letter for nmt
+    read disk
+fi
+for i in "$@" $disk ; do
+    cp -v *[es] /cygdrive/"$i"/Apps/oversight/$d/.
+done

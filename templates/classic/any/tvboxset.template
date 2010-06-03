@@ -86,7 +86,7 @@ table.overview_poster {
                                     <center>
                                         <table>
                                             <tr>
-                                                <td background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/trans[:$ovs_transparency:].png" align="center" >
+                                                <td background=[:IMAGE_URL(trans,$ovs_transparency,.png)] align="center" >
                                                     <span class="boxtitle" id="menutitle">&nbsp;</span>
                                                     <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
                                                     <span class="boxtitle" id="watchedtotal">&nbsp;</span>
@@ -106,9 +106,9 @@ table.overview_poster {
                                 <td >
                                     <center>
 [:IF($ovs_fade):]
-                                        <table background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/transfade[:$ovs_transparency:].png" >
+                                        <table background=[:IMAGE_URL(transfade,$ovs_transparency,.png)] >
 [:ELSE:]
-                                        <table background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/trans[:$ovs_transparency:].png" >
+                                        <table background=[:IMAGE_URL(trans,$ovs_transparency,.png)] >
 [:ENDIF:]
                                             <tr>
                                                 <td>

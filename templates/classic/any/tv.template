@@ -82,7 +82,7 @@ body { color:yellow ; background-color:black; }
         background-color:black;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:URL_BASE:]/templates/[:SKIN_NAME:]/images/trans[:$ovs_transparency:].png);
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
     [:ENDIF:]
 }
 
@@ -122,10 +122,10 @@ hr { color:#FBB917 }
 [:IF(1-$ovs_display_fanart):]
                 <table width="100%" >
 [:ELSEIF($ovs_fade):]
-                <table width="100%" background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/transfade[:$ovs_transparency:].png" >
+                <table width="100%" background=[:IMAGE_URL(transfade,$ovs_transparency,.png)] >
                     <tr><td>&nbsp;</td><td></td></tr>
 [:ELSE:]
-                <table width="100%" background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/trans[:$ovs_transparency:].png" >
+                <table width="100%" background=[:IMAGE_URL(trans,$ovs_transparency,.png)] >
 [:ENDIF:]
                     <tr>
                         <td class=title>[:TITLE:]</td>

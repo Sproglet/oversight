@@ -1288,7 +1288,25 @@ char *macro_fn_skin_name(char *template_name,char *call,Array *args,int num_rows
     return skin_name();
 }
 
-// Display an icon ICON(name,[attribute])
+// Display a template image from images folder - if not present look in defaults.
+char *macro_fn_image(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    char *result=NULL;
+    if (args && args->size == 1) {
+
+        result= get_theme_image_tag(args->array[0]," "); // space here to stop icon attributes. Bit nasty
+
+    } else if (args && args->size == 2) {
+
+        result= get_theme_image_tag(args->array[0],args->array[1]);
+
+    } else {
+
+        printf("%s(image[,attr])",call);
+    }
+    return result;
+}
+// Display an icon ICON(name,[attribute]) - if not present look in defaults.
 char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (args && args->size == 1) {
@@ -2091,6 +2109,7 @@ void macro_init() {
         //HTML_LOG(1,"begin macro init");
         macros = string_string_hashtable(64);
 
+        hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_image_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
         hashtable_insert(macros,"FANART_URL",macro_fn_fanart_url);
@@ -2128,6 +2147,7 @@ void macro_init() {
         hashtable_insert(macros,"LINK",macro_fn_link);
         hashtable_insert(macros,"FAVICON",macro_fn_favicon);
         hashtable_insert(macros,"ICON",macro_fn_icon);
+        hashtable_insert(macros,"IMAGE",macro_fn_image);
         hashtable_insert(macros,"SKIN_NAME",macro_fn_skin_name);
         hashtable_insert(macros,"ICON_LINK",macro_fn_icon_link);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
@@ -2173,7 +2193,6 @@ void macro_init() {
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
-        hashtable_insert(macros,"IMAGE",macro_fn_image_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
         hashtable_insert(macros,"EVAL",macro_fn_eval);
         hashtable_insert(macros,"URL_BASE",macro_fn_url_base);

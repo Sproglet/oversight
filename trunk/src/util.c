@@ -1,3 +1,4 @@
+// $Id:$
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -1099,5 +1100,27 @@ char *util_change_extension(char *file,char *new_ext)
 
     return result;
 
+}
+// When freeing the set use set_free(h);
+void set_free(struct hashtable *h)
+{
+    if (h) {
+        hashtable_destroy(h,1,0);
+    }
+}
+
+struct hashtable *array_to_set(Array *args)
+{
+    int i;
+    struct hashtable *h = NULL;
+    if (args) {
+        for(i= 0 ; i < args->size ; i++ ) {
+            if (h == NULL) {
+                h = string_string_hashtable(16);
+            }
+            hashtable_insert(h,STRDUP(args->array[i]),"1");
+        }
+    }
+    return h;
 }
 // vi:sw=4:et:ts=4

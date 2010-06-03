@@ -1,3 +1,4 @@
+// $Id:$
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -8,6 +9,7 @@
 
 #include "hashtable.h"
 #include "hashtable_loop.h"
+#include "array.h"
 #include "util.h"
 #include "oversight.h"
 #include "db.h"
@@ -21,6 +23,8 @@
 #include "mount.h"
 #include "gaya.h"
 #include "actions.h"
+#include "vasprintf.h"
+
 
 #define MACRO_VARIABLE_PREFIX '$'
 #define MACRO_SPECIAL_PREFIX '@'
@@ -30,6 +34,7 @@
 static struct hashtable *macros = NULL;
 char *get_variable(char *vname,int *free_result);
 char *image_path(char *template_name,char *name);
+char *get_named_arg(struct hashtable *h,char *name);
 
 long get_current_page() {
     long page;
@@ -885,15 +890,164 @@ char *macro_fn_rating(char *template_name,char *call,Array *args,int num_rows,Db
     return result;
 }
 
-char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    int rows=0;
-    int cols=0;
-    if (!get_rows_cols(call,args,&rows,&cols)) {
 
-        rows = g_dimension->current_grid->rows;
-        cols = g_dimension->current_grid->cols;
+// If a macro has arguments like, 1,cols=>3,rows=>4,5  then create a hashtable cols=>3,rows=>4
+#define HASH_ASSIGN "=>"
+struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_list) {
+    int i;
+
+    struct hashtable *required_set = NULL;
+    struct hashtable *optional_set = NULL;
+
+    // Get list of required variables.
+    if (required_list != NULL) {
+        Array *a = split1ch(required_list,",");
+        required_set = array_to_set(a);
+        array_free(a);
     }
-    return get_grid(get_current_page(),rows,cols,num_rows,sorted_rows);
+
+    // Get list of optional variables.
+    if (optional_list != NULL) {
+        Array *a = split1ch(optional_list,",");
+        optional_set = array_to_set(a);
+        array_free(a);
+    }
+
+    struct hashtable *h = NULL;
+    if (args) {
+        for(i= 0 ; i < args->size ; i++ ) {
+            char *hashop;
+            char *a = args->array[i];
+            if ((hashop = strstr(a,HASH_ASSIGN)) != NULL) {
+                char *name,*val;
+                ovs_asprintf(&name,"%.*s",hashop-a,a);
+
+                if ((required_set && hashtable_search(required_set,name))
+                  || (optional_set && hashtable_search(optional_set,name) ) ) {
+                    val = STRDUP(hashop+strlen(HASH_ASSIGN));
+                    if (h == NULL) {
+                        h = string_string_hashtable(16);
+                    }
+                    if (hashtable_search(h,name)) {
+                        html_error("ignore duplicate arg[%s]",name);
+                    } else {
+                        hashtable_insert(h,name,val);
+                    }
+                } else {
+                    html_error("ignore arg[%s] not in [%s][%s]",name,NVL(required_list),NVL(optional_list));
+                }
+            }
+        }
+    }
+    // Now check all required arguments are present
+    if (required_set) {
+        char *name,*value;
+        struct hashtable_itr *itr;
+        for(itr=hashtable_loop_init(required_set) ; hashtable_loop_more(itr,&name,&value) ; ) {
+            if (!get_named_arg(h,name)) {
+                html_error("required arg[%s] missing",name);
+            }
+        }
+    }
+
+
+    set_free(required_set);
+    set_free(optional_set);
+    return h;
+}
+
+/*
+ * Grid Macro has format
+ * GRID(rows=>r,cols=>c,img_height=300,img_width=200,offset=0,page_size=50);
+ *
+ * All parameters are optional.
+ * rows,cols            = row and columns of thumb images in the grid (defaults to config file settings for that view)
+ * img_height,img_width = thumb image dimensions ( defaults to config file settings for that view)
+ * offset               = This setting is to allow multiple grids on the same page. eg. 
+ * for a layout where X represents a thumb you mak have:
+ *
+ * XXXX
+ * XX
+ * XX
+ *
+ * This could be two grids
+ * GRID(rows=>1,cols=>4,offset=0);
+ * GRID(rows=>2,cols=>2,offset=4);
+ *
+ * In this secnario oversight also needs to know which is the last grid on the page, so it can add the page navigation to 
+ * the correct grid. As the elements may occur in
+ * any order in the template, this would either require two passes of the template, or the user to indicate the 
+ * last grid. I took the easy option , so the user must spacify the total thumbs on the page.
+ *
+ * GRID(rows=>1,cols=>4,offset=0);
+ * GRID(rows=>2,cols=>2,offset=4,last=1);
+ */
+static GridInfo *grid_info=NULL; // At the moment only one Grid(multi segments) per page.
+
+char *get_named_arg(struct hashtable *h,char *name)
+{
+    char *ret = NULL;
+    if (h) {
+        ret = hashtable_search(h,name);
+    }
+    return ret;
+}
+void free_named_args(struct hashtable *h) {
+    if (h) {
+        hashtable_destroy(h,1,1);
+    }
+}
+
+char *macro_fn_grid(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+
+    struct hashtable *h = args_to_hash(args,NULL,"rows,cols,img_height,img_width,offset,page_size");
+    
+    if (grid_info == NULL) {
+        grid_info = grid_info_init();
+    }
+
+    GridSegment *gs = grid_info_add_segment(grid_info);
+
+    // Copy default grid size and dimensions
+    gs->dimensions = *(g_dimension->current_grid);
+    gs->offset = 0;
+    
+    char *tmp;
+    if ((tmp = get_named_arg(h,"page_size")) != NULL) {
+        if (grid_info->page_size != DEFAULT_PAGE_SIZE) {
+            html_error("duplicate page size");
+        } else {
+            grid_info->page_size = atoi(tmp);
+        }
+    }
+
+    if ((tmp = get_named_arg(h,"rows")) != NULL) {
+        gs->dimensions.rows = atoi(tmp);
+    }
+    if ((tmp = get_named_arg(h,"cols")) != NULL) {
+        gs->dimensions.cols = atoi(tmp);
+    }
+
+    if ((tmp = get_named_arg(h,"img_height")) != NULL) {
+        gs->dimensions.img_height = atoi(tmp);
+    }
+    if ((tmp = get_named_arg(h,"img_width")) != NULL) {
+        gs->dimensions.img_width = atoi(tmp);
+    }
+    if ((tmp = get_named_arg(h,"offset")) != NULL) {
+        gs->offset = atoi(tmp);
+        if (grid_info->page_size == DEFAULT_PAGE_SIZE) {
+            html_error("GRID: page_size must be given with offset");
+        }
+    }
+
+    char *result = get_grid(get_current_page(),gs,num_rows,sorted_rows);
+
+    free_named_args(h);
+
+HTML_LOG(0,"macro length = %d",NVL(result));
+
+    return result;
 }
 
 char *macro_fn_header(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {

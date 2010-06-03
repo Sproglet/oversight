@@ -70,6 +70,9 @@ typedef struct Dbrowid_struct {
     long plotoffset[2];
     char *plottext[2];
 
+    // Set to 1 if item checked on HDD
+    int delist_checked;
+
 
 } DbRowId;
 

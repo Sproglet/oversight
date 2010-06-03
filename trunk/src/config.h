@@ -3,18 +3,13 @@
 
 #include <stdio.h>
 #include "hashtable.h"
+#include "grid.h"
 
 
 #define GRID_MAIN 0
 #define GRID_TVBOXSET 1
 #define GRID_MOVIEBOXSET 2
 
-typedef struct grid_dimension_str {
-    long rows;
-    long cols;
-    long img_height;
-    long img_width;
-} GridDimensions ;
 
 typedef struct dimension_str {
     int tv_mode;

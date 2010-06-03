@@ -104,6 +104,12 @@ void util_rmdir(char *path,char *name);
 
 #define TR HTML_LOG(0,"%s() %s:%d\n",__FUNCTION__,__FILE__,__LINE__)
 
+#define TRACE1 do {\
+    if (1) {\
+        HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
+    }\
+}while(0);
+
 #define TRACE do {\
     if (0) {\
         HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
@@ -142,4 +148,6 @@ char *timestamp_static();
 char *util_change_extension(char *file,char *new_ext);
 int is_nmt200();
 int is_nmt100();
+struct hashtable *array_to_set(Array *args);
+void set_free(struct hashtable *h);
 #endif

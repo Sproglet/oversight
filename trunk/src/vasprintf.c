@@ -1,3 +1,4 @@
+// $Id:$
 /* Like vsprintf but provides a pointer to MALLOC'd storage, which must
    be freed by the caller.
    Copyright (C) 1994 Free Software Foundation, Inc.

@@ -1,3 +1,4 @@
+// $Id:$
 // mini replacement for gaya
 #include <sys/types.h>
 #include <dirent.h>

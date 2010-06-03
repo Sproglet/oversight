@@ -38,10 +38,17 @@ STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 
 CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
+# Most stable last to speed compile-fail cycle
 OBJS=gaya.o macro.o \
-	 oversight.o util.o hashtable.o hashtable_itr.o hashtable_utility.o gaya_cgi.o array.o \
-	config.o hashtable_loop.o vasprintf.o db.o dbfield.o dboverview.o display.o actions.o \
-	admin.o mount.o time.o network.o dbplot.o permissions.o dbread.o subtitles.o 
+	grid.o display.o oversight.o util.o \
+	config.o \
+   	db.o dbfield.o dboverview.o actions.o \
+	admin.o mount.o \
+   	dbplot.o permissions.o dbread.o subtitles.o \
+	gaya_cgi.o array.o \
+   	time.o network.o \
+   	hashtable_loop.o vasprintf.o \
+   	hashtable.o hashtable_itr.o hashtable_utility.o \
 
 SRC=$(OBJS:.o=.c)
 

@@ -1,4 +1,5 @@
 /* Copyright (C) 2002, 2004 Christopher Clark  <firstname.lastname@cl.cam.ac.uk> */
+// $Id:$
 
 /* Andy Lord Andy AT lordy dot org dot uk
  * This is based on the hashtable_itr.c but I wanted something to reduce 

@@ -33,7 +33,7 @@
 
 static struct hashtable *macros = NULL;
 char *get_variable(char *vname,int *free_result);
-char *image_path(char *template_name,char *name);
+char *image_path_by_resolution(char *template_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
 
 long get_current_page() {
@@ -103,7 +103,7 @@ TRACE;
 
             if (default_wallpaper) {
 
-                fanart = image_path(template_name,default_wallpaper);
+                fanart = image_path_by_resolution(template_name,default_wallpaper);
 
             }
         }
@@ -114,7 +114,8 @@ TRACE;
     return result;
 }
 
-char *image_path(char *template_name,char *name)
+// used to find resolution dependent images - normally for wallpapers.
+char *image_path_by_resolution(char *template_name,char *name)
 {
     char *result = NULL;
     // Use default wallpaper
@@ -590,17 +591,13 @@ char *macro_fn_cert_img(char *template_name,char *call,Array *args,int num_rows,
 
         translate_inplace(cert,":_","/-");
 
-        ovs_asprintf(&tmp,"%s/templates/%s/images/cert/%s.%s",appDir(),skin_name(),cert,ovs_icon_type());
-        FREE(cert);
-        cert=tmp;
-
         char *attr;
         ovs_asprintf(&attr," height=%d ",g_dimension->certificate_size);
 
-        tmp = get_local_image_link(cert,sorted_rows[0]->certificate,attr);
+        tmp = template_image_link("/cert",cert,NULL,sorted_rows[0]->certificate,attr);
         FREE(cert);
-        cert=tmp;
         FREE(attr);
+        cert=tmp;
     }
 
     HTML_LOG(0,"xx cert[%s]",cert);
@@ -1268,7 +1265,7 @@ char *macro_fn_icon_link(char *template_name,char *call,Array *args,int num_rows
 char *macro_fn_image_url(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (args && args->size == 1) {
-        char *tmp = image_path(template_name,args->array[0]);
+        char *tmp = image_path_by_resolution(template_name,args->array[0]);
         result = file_to_url(tmp);
         FREE(tmp);
     } else {
@@ -1291,7 +1288,7 @@ char *macro_fn_skin_name(char *template_name,char *call,Array *args,int num_rows
     return skin_name();
 }
 
-// Display an icon
+// Display an icon ICON(name,[attribute])
 char *macro_fn_icon(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (args && args->size == 1) {
@@ -1543,96 +1540,92 @@ char *macro_fn_external_url(char *template_name,char *call,Array *args,int num_r
     return result;
 }
 
-// Parse val +2,-3,/4 
-long numeric_constant_eval(long val,Array *args) {
+// Very simple expression evaluator - no precedence, no brackets.
+long numeric_constant_eval_str(long val,char *expression) {
 
-    if (args) {
-        //int i;
-        //for(i = 0 ; i < args->size ; i++ ) {
-            char *p=args->array[0];
-            HTML_LOG(1,"start parsing [%s]",p);
-            int error=0;
+    char *p=expression;
+    HTML_LOG(1,"start parsing [%s]",p);
+    int error=0;
 
-            char op='+';
-            while (!error && *p && op) {
+    char op='+';
+    while (!error && *p && op) {
 
-                long num2;
-                char *numstr;
-                char *nextp;
-                //get the operator
-                HTML_LOG(1,"parsing [%s]",p);
+        long num2;
+        char *numstr;
+        char *nextp;
+        //get the operator
+        HTML_LOG(1,"parsing [%s]",p);
 
-               
+       
 #if 0
-                // parse number
-                if (*p == MACRO_VARIABLE_PREFIX) {
-                    char *end;
-                    p++;
-                    nextp=p;
-                    if (*nextp == MACRO_QUERY_PREFIX) {
-                        nextp++;
-                    }
-                    while(*nextp && ( isalnum(*nextp) || strchr("_[]",*nextp) ) ) {
-                        nextp++;
-                    }
-                    char tmp = *nextp;
-                    *nextp='\0';
-                    numstr=get_variable(p);
-                    HTML_LOG(0,"var [%s]=[%s]",p,numstr);
-                    *nextp=tmp;
-                    if (numstr && *numstr) {
-                        num2 = strtol(numstr,&end,10);
-
-                    } else {
-                        html_error("bad setting [%s]",p);
-                        break;
-                    }
-                    if (*end != '\0') {
-                        html_error("bad number [%s]",numstr);
-                        break;
-                    }
-                    p = nextp;
-
-                } else
-#endif
-                    
-                    if (*p == '-' || isdigit(*p)) {
-
-                    num2=strtol(p,&nextp,10);
-                    numstr=p;
-                    p = nextp;
-
-                } else {
-                    html_error("unexpected character [%c]",*p);
-                    error=1;
-                    break;
-                }
-
-                if (*numstr == '\0' ) {
-                    html_error("bad number [%s]",numstr);
-                    break;
-                }
-
-                HTML_LOG(1,"val[%ld] op[%c] num [%ld]",val,op,num2);
-
-                // do the calculation
-                switch(op) {
-                    case '+': val += num2; break;
-                    case '-': val -= num2; break;
-                    case '/': val /= num2; break;
-                    case '*': val *= num2; break;
-                    case '%': val %= num2; break;
-                    case '=': val = (val == num2 ); break;
-
-                    default:
-                        html_error("unexpected operator [%d]",*p);
-                        error=1;
-                        break;
-                }
-                if (*p == '\0') break;
-                op=*p++;
+        // commented out as variables are already substituted by the template calling code.
+        // parse number
+        if (*p == MACRO_VARIABLE_PREFIX) {
+            char *end;
+            p++;
+            nextp=p;
+            if (*nextp == MACRO_QUERY_PREFIX) {
+                nextp++;
             }
-        //}
+            while(*nextp && ( isalnum(*nextp) || strchr("_[]",*nextp) ) ) {
+                nextp++;
+            }
+            char tmp = *nextp;
+            *nextp='\0';
+            numstr=get_variable(p);
+            HTML_LOG(0,"var [%s]=[%s]",p,numstr);
+            *nextp=tmp;
+            if (numstr && *numstr) {
+                num2 = strtol(numstr,&end,10);
+
+            } else {
+                html_error("bad setting [%s]",p);
+                break;
+            }
+            if (*end != '\0') {
+                html_error("bad number [%s]",numstr);
+                break;
+            }
+            p = nextp;
+
+        } else
+#endif
+            
+            if (*p == '-' || isdigit(*p)) {
+
+            num2=strtol(p,&nextp,10);
+            numstr=p;
+            p = nextp;
+
+        } else {
+            html_error("unexpected character [%c]",*p);
+            error=1;
+            break;
+        }
+
+        if (*numstr == '\0' ) {
+            html_error("bad number [%s]",numstr);
+            break;
+        }
+
+        HTML_LOG(1,"val[%ld] op[%c] num [%ld]",val,op,num2);
+
+        // do the calculation
+        switch(op) {
+            case '+': val += num2; break;
+            case '-': val -= num2; break;
+            case '/': val /= num2; break;
+            case '*': val *= num2; break;
+            case '%': val %= num2; break;
+            case '=': val = (val == num2 ); break;
+
+            default:
+                html_error("unexpected operator [%d]",*p);
+                error=1;
+                break;
+        }
+        if (*p == '\0') break;
+        op=*p++;
     }
     return val;
 }
@@ -1698,9 +1691,19 @@ void replace_variables(Array *args)
     }
 }
 
-char *numeric_constant_macro(long val,Array *args) {
+// Parse val eg. +2-3/4 
+long numeric_constant_eval_first_arg(long val,Array *args) {
+
+    if (args) {
+        val = numeric_constant_eval_str(val,args->array[0]);
+    }
+    return val;
+}
+
+
+char *numeric_constant_arg_to_str(long val,Array *args) {
     char *result = NULL;
-    long out = numeric_constant_eval(val,args);
+    long out = numeric_constant_eval_first_arg(val,args);
     ovs_asprintf(&result,"%ld",out);
     return result;
 }
@@ -1740,7 +1743,7 @@ long output_state_pop() {
 
 char *macro_fn_if(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
-    long l = numeric_constant_eval(0,args);
+    long l = numeric_constant_eval_first_arg(0,args);
     if (args == NULL || args->size == 1 ) {
         // Single form [:IF:] - supresses all line output until [:ENDIF:] or [:ELSE:]
         // Also returns NULL to remove itself from output.
@@ -1780,7 +1783,7 @@ char *macro_fn_elseif(char *template_name,char *call,Array *args,int num_rows,Db
         result="ELSEIF";
     } else {
         if (IF_CLAUSE_FIRED <= 1) {
-            long l = numeric_constant_eval(0,args);
+            long l = numeric_constant_eval_first_arg(0,args);
             IF_CLAUSE_VALUE = l;
             if (l) { IF_CLAUSE_FIRED++; }
         }
@@ -1812,19 +1815,19 @@ char *macro_fn_endif(char *template_name,char *call,Array *args,int num_rows,DbR
 char *macro_fn_eval(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
     *free_result = 1;
-    return numeric_constant_macro(0,args);
+    return numeric_constant_arg_to_str(0,args);
 }
 
 char *macro_fn_number(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
-    return numeric_constant_macro(0,args);
+    return numeric_constant_arg_to_str(0,args);
 }
 char *macro_fn_font_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
-    return numeric_constant_macro(g_dimension->font_size,args);
+    return numeric_constant_arg_to_str(g_dimension->font_size,args);
 }
 char *macro_fn_title_size(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return numeric_constant_macro(g_dimension->title_size,args);
+    return numeric_constant_arg_to_str(g_dimension->title_size,args);
 }
 char *macro_fn_body_width(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     long value = g_dimension->scanlines ;
@@ -1842,7 +1845,7 @@ char *macro_fn_body_width(char *template_name,char *call,Array *args,int num_row
 
     }
 
-    return numeric_constant_macro(value,args);
+    return numeric_constant_arg_to_str(value,args);
 }
 char *macro_fn_url_base(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
@@ -1882,11 +1885,11 @@ char *macro_fn_body_height(char *template_name,char *call,Array *args,int num_ro
     *free_result = 0;
     return value;
 
-    //return numeric_constant_macro(value,args);
+    //return numeric_constant_arg_to_str(value,args);
 }
 
 char *macro_fn_scanlines(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return numeric_constant_macro(g_dimension->scanlines,args);
+    return numeric_constant_arg_to_str(g_dimension->scanlines,args);
 }
 
 // Write a html input table for a configuration file. The help file(arg2) decides which options to show.
@@ -2170,7 +2173,7 @@ void macro_init() {
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
-        hashtable_insert(macros,"IMAGE",macro_fn_image_url);
+        hashtable_insert(macros,"IMAGE",macro_fn_image_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
         hashtable_insert(macros,"EVAL",macro_fn_eval);
         hashtable_insert(macros,"URL_BASE",macro_fn_url_base);

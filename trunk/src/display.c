@@ -47,6 +47,7 @@ void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp);
 char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *image_source(char *subfolder,char *image_name,char *ext);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -1170,6 +1171,7 @@ void create_file_to_url_symlink() {
     use_file_to_url_symlink=1;
 }
 
+// returns a url path - with quotes.
 char *file_to_url(char *path) {
     char *new = NULL;
     char *prefix="";
@@ -1212,6 +1214,23 @@ char *file_to_url(char *path) {
 
 }
 
+// Return html img tag to a template image. The url will point to the skin or fail back to default.
+char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,char *attr)
+{
+    char *url = image_source(subfolder,name,ext);
+
+    char *link;
+
+    ovs_asprintf(&link,"<img src=%s alt=\"%s\" %s \\>",
+            url,
+            (alt_text?alt_text:name),
+            NVL(attr));
+
+    FREE(url);
+    return link;
+}
+
+// Used for poster and fanart links.
 char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
     assert(path);
@@ -1568,16 +1587,7 @@ char *ovs_icon_type() {
 }
 
 char *container_icon(char *image_name,char *name) {
-    char *path;
-    char *name_br;
-
-    ovs_asprintf(&path,"%s/templates/%s/images/%s.%s",appDir(),skin_name(),image_name,ovs_icon_type());
-    ovs_asprintf(&name_br,"(%s)",name);
-
-    char *result = get_local_image_link(path,name_br,"class=\"codec\"");
-
-    FREE(path);
-    FREE(name_br);
+    char *result = template_image_link("",image_name,NULL,NULL,"class=\"codec\"");
     return result;
 }
 
@@ -3164,9 +3174,16 @@ char *skin_name()
     return template_name;
 }
 
-char *icon_source(char *image_name)
-{
+// Get an icon file from the root folder. Fall back to default folder if it doesnt exist.
+char *icon_source(char *image_name) {
+    return image_source("",image_name,NULL);
+}
 
+// Get an image file  templates/skin/images/subfolder/name.ext . Fall back to
+// templates/default/images/subfolder/name.exe if it doesnt exist.
+// returns a quoted url.
+char *image_source(char *subfolder,char *image_name,char *ext)
+{
     char *path;
     assert(image_name);
     static int is_default_skin = UNSET;
@@ -3174,18 +3191,33 @@ char *icon_source(char *image_name)
         is_default_skin = (STRCMP(skin_name(),"default") == 0);
     }
 
-    char *ico=ovs_icon_type();
+    static char *ico=NULL;
+    
+    if (ext == NULL) {
+        if (ico == NULL) ico = ovs_icon_type();
+        ext = ico;
+    }
 
-    ovs_asprintf(&path,"%s/templates/%s/images/%s.%s",
+    if (subfolder == NULL) {
+        subfolder = "";
+    }
+
+    ovs_asprintf(&path,"%s/templates/%s/images%s%s/%s.%s",
             appDir(),
             skin_name(),
+            (*subfolder=='/'?"":"/"),
+            subfolder,
             image_name,
             ico);
 
     if (!exists(path) && !is_default_skin) {
+        HTML_LOG(0,"[%s] not found",path);
         FREE(path);
-        ovs_asprintf(&path,"%s/templates/default/images/%s.%s",
+
+        ovs_asprintf(&path,"%s/templates/default/images%s%s/%s.%s",
                 appDir(),
+                (*subfolder=='/'?"":"/"),
+                subfolder,
                 image_name,
                 ico);
     }

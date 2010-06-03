@@ -32,6 +32,7 @@ char *get_theme_image_tag(char *image_name,char *attr);
 char *get_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
+char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,char *attr);
 char *get_tvid_links();
 char *get_tvid_resize_links();
 char *get_play_tvid(char *text);

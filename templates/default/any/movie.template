@@ -33,9 +33,9 @@
 		            </td>
                     <td class="main" >
 [:IF($ovs_fade):]
-                        <table width="100%" background=[:IMAGE_URL(transfade,$ovs_transparency,.png)] >
+                        <table width="100%" background=[:IMAGE_URL(transfade,$ovs_transparency,.png):] >
 [:ELSE:]
-                        <table width="100%" background=[:IMAGE_URL(trans,$ovs_transparency,.png)] >
+                        <table width="100%" background=[:IMAGE_URL(trans,$ovs_transparency,.png):] >
 [:ENDIF:]
 		                    <tr>
 		                    	<td colspan=4 height=10%>&nbsp;</td>

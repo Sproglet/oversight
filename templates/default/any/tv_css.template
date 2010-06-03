@@ -21,7 +21,7 @@ td.ep10 {
         background-color:#222222;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png):]);
     [:ENDIF:]
 }
 td.ep11 { 
@@ -31,7 +31,7 @@ td.ep11 {
         background-color:#111111;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png):]);
     [:ENDIF:]
 }
 td.ep00 { 
@@ -41,7 +41,7 @@ td.ep00 {
         background-color:#004400;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png):]);
     [:ENDIF:]
 }
 td.ep01 { 
@@ -51,7 +51,7 @@ td.ep01 {
         background-color:#003300;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png):]);
     [:ENDIF:]
 }
 .proper { color: #66CCFF; size:small; }
@@ -92,7 +92,7 @@ body { color:#66CCFF ; background-color:black; }
         background-color:black;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png):]);
     [:ENDIF:]
 }
 

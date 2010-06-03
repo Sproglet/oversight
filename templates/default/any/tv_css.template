@@ -1,0 +1,103 @@
+
+td {
+    margin:0px;
+    border:none;
+    padding:0px ;
+}
+table {
+    margin:0px;
+    border:none;
+    padding:0px ;
+    border-spacing: 0px;
+    border-collapse:collapse;
+}
+
+/* watched/Unwatched tv */ .a {}
+
+td.ep10 { 
+	font-weight:bold; 
+	font-size:[:$ovs_font_size_eptitle:]%;
+    [:IF($ovs_transparency=0):]
+        background-color:#222222;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSE:]
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+    [:ENDIF:]
+}
+td.ep11 { 
+	font-weight:bold; 
+	font-size:[:$ovs_font_size_eptitle:]%;
+    [:IF($ovs_transparency=0):]
+        background-color:#111111;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSE:]
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+    [:ENDIF:]
+}
+td.ep00 { 
+	font-weight:bold; 
+	font-size:[:$ovs_font_size_eptitle:]%;
+    [:IF($ovs_transparency=0):]
+        background-color:#004400;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSE:]
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+    [:ENDIF:]
+}
+td.ep01 { 
+	font-weight:bold; 
+	font-size:[:$ovs_font_size_eptitle:]%;
+    [:IF($ovs_transparency=0):]
+        background-color:#003300;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSE:]
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+    [:ENDIF:]
+}
+.proper { color: #66CCFF; size:small; }
+.repack { color: #66CCFF; size:small; }
+.eptitle { font-weight:normal; font-size:[:$ovs_font_size_eptitle:]%; }
+
+.epdate { color:#AAAAFF; font-size:[:$ovs_font_size_epdate:]%; }
+.info {
+    color:white;
+    filter:alpha(opacity=100);
+    opacity:1;
+}
+
+.plot0 {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+    filter:alpha(opacity=100);
+    opacity:1;
+    font-weight:normal;
+}
+.plot1 {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+}
+
+td.filelist {
+ text-align:center;
+}
+
+body { color:#66CCFF ; background-color:black; }
+
+.transparent {
+    margin:0px;
+    padding:0px;
+    border:0px;
+
+    [:IF($ovs_transparency=0):]
+        background-color:black;
+    [:ELSEIF($ovs_transparency=100):]
+    [:ELSE:]
+        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+    [:ENDIF:]
+}
+
+
+/*
+vi:ts=4:sw=4:et:syntax=css
+*/a{}
+

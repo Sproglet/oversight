@@ -1,3 +1,0 @@
-d=`pwd`
-d=`echo "$d" | sed 's;.*/oversight/;/oversight/;'`
-cp -v "$@" /cygdrive/a/Apps/$d/.

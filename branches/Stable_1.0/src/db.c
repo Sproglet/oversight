@@ -1111,6 +1111,9 @@ DbRowSet **db_crossview_scan_titles(
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
 
+    g_db_size = 0;
+    g_first_row = NULL;
+
     if (use_folder_titles == UNSET ) {
         use_folder_titles = *oversight_val("ovs_use_folders_as_title") == '1';
     }

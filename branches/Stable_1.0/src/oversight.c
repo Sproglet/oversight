@@ -217,7 +217,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     if (num_rows == 0 && (util_starts_with(view,"tv") || util_starts_with(view,"movie"))) {
         // If in the tv  or movie view and all items have been deleted - go to the main view
-        char *back = return_query_string();
+        char *back = query_pop();
         HTML_LOG(0,"Going back to main view using [%s]",back);
         html_hashtable_dump(0,"preback",g_query);
         parse_query_string(back,g_query);

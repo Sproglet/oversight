@@ -2221,7 +2221,9 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *font_class="";
     char *grid_class="";
 
-    char *select = query_val("select");
+    static char *select = NULL;
+    if (select == NULL ) select = query_val("select");
+
     char *cell_background_image=NULL;
     int displaying_text;
 

@@ -9,7 +9,7 @@
             [:INCLUDE_TEMPLATE(css):]
 		</style>
 
-		<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/movie.js"></script>
+        <script type="text/javascript" src=[:TEMPLATE_URL(js/movie.js):]></script>
 
 		<!-- Default Fanart Movie Template  $Id:$ -->
 		<style type="text/css">

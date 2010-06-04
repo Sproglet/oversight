@@ -54,12 +54,10 @@ char *auto_option_list(char *name,char *firstItem,struct hashtable *vals);
 char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals);
 char *add_network_icon(DbRowId *r,char *text);
 char *share_name(DbRowId *r,int *freeme);
-char *skin_name();
 char *internal_image_path_static(DbRowId *rid,ImageType image_type);
 void xx_dump_genre(char *file,int line,int num,DbRowId **rows);
 char *return_query_string();
 void query_pop();
 void set_selected_item();
 char *get_selected_item();
-char *image_source(char *subfolder,char *image_name,char *ext);
 #endif

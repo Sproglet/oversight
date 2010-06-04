@@ -146,7 +146,7 @@ table.overview_poster {
 
 </td></tr></table>
 
-<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/menu.js"></script>
+<script type="text/javascript" src=[:TEMPLATE_URL(js/menu.js):]></script>
 <!-- tvids -->
 [:TVIDS:]
 <a href="javascript:ovs_info();" tvid="INFO"></a>

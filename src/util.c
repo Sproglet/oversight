@@ -59,7 +59,9 @@ unsigned int stringhash(void *vptr) {
         while ((c = *str++)) {
             
             /* Case insensitive LUA */
-            HASH_ADD(hash,c);
+            // HASH_ADD(hash,c);
+            /* For oversight this is good enough. Dont worry about overflow */
+            hash += c;
         }
     }
 

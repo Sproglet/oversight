@@ -67,7 +67,7 @@ create_hashtable(unsigned int minsize,
 /*****************************************************************************/
 // ALL #defined away this function. I spend too much time looking at hash functions
 // and then see this.
-//  see hashtable.h for macro replacement
+//  see hashtable_private.h for macro replacement
 //
 #if 0
 unsigned int
@@ -211,7 +211,7 @@ hashtable_remove(struct hashtable *h, void *k,int free_key)
     unsigned int hashvalue, index;
 
     hashvalue = hash(h,k);
-    index = indexFor(h->tablelength,hash(h,k));
+    index = indexFor(h->tablelength,hashvalue);
     pE = &(h->table[index]);
     e = *pE;
     while (e)

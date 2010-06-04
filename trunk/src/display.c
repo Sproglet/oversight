@@ -2227,7 +2227,7 @@ char *td_mouse_event_fn(char *function_name_prefix,long function_id,int out_acti
 }
 
 char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
-        int left_scroll,int right_scroll,int selected_cell,char *idlist)
+        int left_scroll,int right_scroll,int selected_cell,char *idlist,int select_mode)
 {
 
     //TODO:Highlight matched bit
@@ -2240,7 +2240,6 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *font_class="";
     char *grid_class="";
 
-    char *select = query_val(QUERY_PARAM_SELECT);
     char *cell_background_image=NULL;
     int displaying_text;
 
@@ -2255,7 +2254,9 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *newview = get_drilldown_view(row_id);
 
     if (IN_POSTER_MODE) {
+
         displaying_text=0;
+
         if ((title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
 
             if (*title != '<' && !util_starts_with(title,"<img")) {
@@ -2306,7 +2307,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *focus_ev = NULL;
     char *mouse_ev = NULL;
 
-    if (g_dimension->title_bar && !*select) {
+    if (g_dimension->title_bar && select_mode) {
 
         char *simple_title = get_simple_title(row_id,newview);
 
@@ -2315,49 +2316,38 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
         FREE(simple_title);
     }
 
-    char *title_change_attr;
-    ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), NVL(focus_ev));
 
 
-    char *attr = add_scroll_attributes(left_scroll,right_scroll,selected_cell,title_change_attr);
-    FREE(title_change_attr);
+    // Newview should be a specific char constant so using == not strcmp.
+    if (select_mode) {
 
-
-    HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
-
-    if (*select) {
-
-        cell_text = STRDUP(NVL(title));
-
-    } else if (STRCMP(newview,"tv") == 0 ) {
-        // TV shows are drill down by title and season
-        cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
-
-    } else if (util_starts_with(newview,"tv") ) {
-        // Box sets or TV shows are drill down by title
-        cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
-
-
-    } else if (row_id->category != 'T') {
-        // Movies are drill down by ID
-        cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
+        cell_text = select_checkbox(row_id,NVL(title));
 
     } else {
 
-        cell_text = vod_link(row_id,title,"",row_id->db->source,row_id->file,
-                (selected_cell?"selectedCell":cell_no_txt),
-                attr,font_class);
+        char *title_change_attr;
+        ovs_asprintf(&title_change_attr," %s %s" ,(grid_class?grid_class:""), NVL(focus_ev));
 
+
+        char *attr = add_scroll_attributes(left_scroll,right_scroll,selected_cell,title_change_attr);
+        FREE(title_change_attr);
+        HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
+
+
+        if (STRCMP(newview,VIEW_TV) == 0 ) {
+            // TV shows are drill down by title and season
+            cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
+
+        } else if (STRCMP(newview,VIEW_TVBOXSET) == 0 ) {
+            // Box sets or TV shows are drill down by title
+            cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
+
+        } else {
+            // Movies, movieboxsets, uncategorised video and mixed boxsets are drill down by ID
+            cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
+        }
+        FREE(attr);
     }
-    FREE(attr);
-
-    if (*select) {
-        char *tmp = cell_text;
-        tmp=select_checkbox(row_id,cell_text);
-        FREE(cell_text);
-        cell_text=tmp;
-    }
-
 
     // Add a horizontal image to stop cell shrinkage.
     char *add_spacer = "";
@@ -2622,7 +2612,7 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row
 {
     int i,r,c;
 
-    HTML_LOG(0,"script start offset %d %dx%d",offset,rows,cols);
+    HTML_LOG(0,"%s script start offset %d %dx%d",__func__,offset,rows,cols);
 
 
     printf("<script type=\"text/javascript\"><!--\n");
@@ -2663,7 +2653,7 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row
         }
     }
     printf("--></script>\n");
-    HTML_LOG(0,"script end");
+    HTML_LOG(0,"write_titlechanger end");
 }
 
 // Generate the HTML for the grid. 
@@ -2685,21 +2675,8 @@ char *render_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids,int p
     int centre_col = cols/2;
     int r,c;
 
-    char *table_start,*table_end;
-    char *table_id;
 
     int cell_margin=2;
-
-    if (g_dimension->poster_mode) {
-        ovs_asprintf(&table_id,"<table class=overview_poster >");
-            //ovs_asprintf(&table_id,"<table class=overview_poster height=%dpx>",
-            //               2*(g_dimension->current_grid->img_height+cell_margin));
-    } else {
-        ovs_asprintf(&table_id,"<table class=overview_poster width=100%%>");
-    }
-
-   table_start = table_id;
-   table_end = "</table>";
 
     HTML_LOG(0,"render page %ld rows %d cols %d",page,rows,cols);
 
@@ -2722,6 +2699,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids,int p
     char *width_attr;
     char *height_attr;
     char *tmp;
+    int select_mode=!EMPTY_STR(query_val(QUERY_PARAM_SELECT));
 
     if (numids < rows * cols ) {
         //re-arrange layout to have as many columns as possible.
@@ -2761,7 +2739,7 @@ TRACE;
     } else {
         selected_cell = centre_col * rows + centre_row;
     }
-HTML_LOG(0,"rows = %d",rows);
+    HTML_LOG(0,"rows = %d",rows);
     
 
     // Now build the table and return the text.
@@ -2784,7 +2762,7 @@ HTML_LOG(0,"rows = %d",rows);
 
             char *item=NULL;
             if ( i < numids ) {
-                item = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i]);
+                item = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i],select_mode);
             } else {
                 // only draw empty cells if there are two or more rows
                 if (rows > 1) {
@@ -2818,12 +2796,11 @@ HTML_LOG(0,"rows = %d",rows);
     result = array2dstr(rowArray);
     array_free(rowArray);
 
-    ovs_asprintf(&tmp,"<center>%s\n%s\n%s</center>\n",
-            table_start,
-            (result?result:"<tr><td>No results</td><tr>"), //bug here may need to add table tags
-             table_end
+    ovs_asprintf(&tmp,"<center><table class=overview_poster %s>\n%s\n</table></center>\n",
+            (g_dimension->poster_mode?"":" width=100%"),
+            (result?result:"<tr><td>No results</td><tr>")
     );
-    FREE(table_id);
+
     FREE(result);
     result=tmp;
 
@@ -2960,8 +2937,9 @@ TRACE;
 TRACE;
         //Check regex entered via text box
 
-        if (*query_val(QUERY_PARAM_SEARCH_TEXT) && *query_val(QUERY_PARAM_SEARCH_MODE)) {
-            regex=util_tolower(query_val(QUERY_PARAM_SEARCH_TEXT));
+        char *t =query_val(QUERY_PARAM_SEARCH_TEXT); 
+        if (*t && *query_val(QUERY_PARAM_SEARCH_MODE)) {
+            regex=util_tolower(t);
             free_regex=1;
         }
     }

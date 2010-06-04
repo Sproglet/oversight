@@ -753,11 +753,15 @@ char *macro_fn_movie_listing(char *template_name,char *orig_skin,char *call,Arra
 }
 
 // add code for a star image to a buffer and return pointer to end of buffer.
-char *add_star(char *buf,char *star_path,int star_no) {
-    char *p = buf;
-    p += sprintf(p,"<img src=\"");
-    p += sprintf(p,star_path,star_no);
-    p += sprintf(p,"\">");
+char *add_star(int star_no) {
+
+    char name[10];
+
+    sprintf(name,"star%d",star_no);
+
+    char *p;
+    ovs_asprintf(&p,"<img src=%s \\>",image_source("stars",name,NULL));
+
     return p;
 }
 
@@ -786,45 +790,34 @@ char *get_rating_stars(DbRowId *rid,int num_stars)
 {
 
     double rating = rid->rating;
-    static char *star_path=NULL;
-    if (!star_path) {
-        if (g_dimension->local_browser) {
-            ovs_asprintf(&star_path,"file://%s/templates/%s/images/stars/star%%d.%s",
-                    appDir(),
-                    skin_name(),ovs_icon_type());
-        } else {
-            ovs_asprintf(&star_path,"/oversight/templates/%s/images/stars/star%%d.%s",
-                    skin_name(),ovs_icon_type());
-        }
-    }
+
+    Array *a = array_new(free);
 
     if (rating > 10) rating=10;
 
     rating = rating * num_stars / 10.0 ;
 
-    char *result = malloc((num_stars+1) * (strlen(star_path)+strlen("<img src=..>")+10));
     int i;
-
-    char *p = result;
 
     for(i = 1 ; i <= (int)(rating+0.0001) ; i++) {
 
-        p = add_star(p,star_path,10);
+        array_add(a,add_star(10));
         num_stars --;
-
     }
 
     int tenths = (int)(0.001+10*(rating - (int)(rating+0.001)));
     if (tenths) {
-        p = add_star(p,star_path,tenths);
+        array_add(a,add_star(tenths));
         num_stars --;
     }
 
     while(num_stars > 0 ) {
 
-        p = add_star(p,star_path,0);
+        array_add(a,add_star(0));
         num_stars--;
     }
+    char *result = arraystr(a);
+    array_free(a);
 
     return result;
 }

@@ -674,34 +674,14 @@ void update_idlist(struct hashtable *source_id_hash_removed)
 
         }
         //Update the html parameter
-        query_update(STRDUP(QUERY_PARAM_IDLIST),idhash_to_idlist(source_id_hash_current));
+        char *new_idlist = idhash_to_idlist(source_id_hash_current);
+        query_update(STRDUP(QUERY_PARAM_IDLIST),new_idlist);
         hashtable_destroy(source_id_hash_current,1,1);
+        if (EMPTY_STR(new_idlist) && STRCMP(query_val(QUERY_PARAM_VIEW),VIEW_MOVIE) == 0 ) {
+            query_pop();
+        }
     }
 
-    // If the id list is empty then go back to the main menu.
-    // TODO  This needs to work with boxsets too. ie deleting last item in the 
-    // detail page should go back to the previous box set and not the main menu.
-    // Will resolve later.
-    //
-    
-    // This is a short term hack to fix deleting movies. The correct fix is outlined in 
-    // todo.txt http://code.google.com/p/oversight/issues/detail?id=390
-
-    if (STRCMP(QUERY_PARAM_VIEW,VIEW_MOVIE) == 0) {
-        query_pop();
-    } else {
-
-    int total = 0;
-    char *total_str = query_val("item_count");
-    if (total_str != NULL) {
-        total = atoi(total_str);
-    }
-    int removed = hashtable_count(source_id_hash_removed);
-    if (total - removed <= 0 ) {
-        HTML_LOG(0,"pop to previous screen");
-        query_pop();
-    }
-    }
     HTML_LOG(0,"post update idlist = [%s]",query_val(QUERY_PARAM_IDLIST));
 }
 

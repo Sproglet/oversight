@@ -17,7 +17,7 @@ table.listing {
 
 </style>
 
-<script type="text/javascript" src="[:URL_BASE:]/templates/[:SKIN_NAME:]/js/movie.js"></script>
+<script type="text/javascript" src=[:TEMPLATE_URL(js/movie.js):]></script>
 
 <!-- Default Fanart Movie Template  $Id:$ -->
 <style type="text/css">

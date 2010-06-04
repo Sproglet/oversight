@@ -318,3 +318,77 @@ char *scanlines_to_text(long scanlines)
     }
 }
 
+char *skin_name()
+{
+    static char *template_name=NULL;
+    if (!template_name) template_name=oversight_val("ovs_skin_name");
+    return template_name;
+}
+
+// Get an icon file from the root folder. Fall back to default folder if it doesnt exist.
+char *icon_source(char *image_name) {
+    return image_source("",image_name,NULL);
+}
+
+// Get an image file  templates/skin/images/subfolder/name.ext . Fall back to
+// templates/default/images/subfolder/name.exe if it doesnt exist.
+// returns a quoted url.
+char *image_source(char *subfolder,char *image_name,char *ext)
+{
+    assert(image_name);
+    static char *ico=NULL;
+    
+    if (ext == NULL) {
+        if (ico == NULL) ico = ovs_icon_type();
+        ext = ico;
+    }
+    char *image_folder=NULL;
+    ovs_asprintf(&image_folder,"images%s%s",(EMPTY_STR(subfolder)?"":"/"),NVL(subfolder));
+
+    char *result =  file_source(image_folder,image_name,ext);
+    FREE(image_folder);
+
+    return result;
+}
+
+char *file_source(char *subfolder,char *image_name,char *ext)
+{
+
+    char *path;
+
+    static int is_default_skin = UNSET;
+    if (is_default_skin == UNSET) {
+        is_default_skin = (STRCMP(skin_name(),"default") == 0);
+    }
+
+    if (subfolder == NULL) {
+        subfolder = "";
+    }
+
+    ovs_asprintf(&path,"%s/templates/%s%s%s/%s%s%s",
+            appDir(),
+            skin_name(),
+            (EMPTY_STR(subfolder)?"":"/"),
+            NVL(subfolder),
+            image_name,
+            (EMPTY_STR(ext)?"":"."),
+            ext);
+
+    if (!exists(path) && !is_default_skin) {
+        HTML_LOG(0,"[%s] not found",path);
+        FREE(path);
+
+        ovs_asprintf(&path,"%s/templates/default%s%s/%s%s%s",
+                appDir(),
+                (EMPTY_STR(subfolder)?"":"/"),
+                NVL(subfolder),
+                image_name,
+                (EMPTY_STR(ext)?"":"."),
+                ext);
+    }
+
+    char *result = file_to_url(path);
+    FREE(path);
+    return result;
+}
+

@@ -36,7 +36,6 @@ char *td_mouse_event_fn(char *function_name_prefix,long function_id,int out_acti
 char *href_focus_event_fn(char *function_name_prefix,long function_id,int out_action);
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
-char *icon_source(char *image_name);
 void util_free_char_array(int size,char **a);
 char *get_date_static(DbRowId *rid);
 DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
@@ -1203,12 +1202,20 @@ char *file_to_url(char *path) {
         prefix="?";
     }
 
+    char *non_empty = path;
+    // Gaya doesnt like empty paths
+    if (strstr(path,"//")) {
+        non_empty = replace_str(path,"//","/");
+    }
+
     int free_path2;
-    char *encoded_path = url_encode_static(path,&free_path2);
+    char *encoded_path = url_encode_static(non_empty,&free_path2);
+
 
 
     ovs_asprintf(&new,"\"%s%s\"",prefix,encoded_path);
 
+    if (non_empty != path) FREE(non_empty);
     if (free_path2) FREE(encoded_path);
 
     return new;
@@ -2907,68 +2914,6 @@ char *default_button_attr() {
     return default_attr;
 }
 
-char *skin_name()
-{
-    static char *template_name=NULL;
-    if (!template_name) template_name=oversight_val("ovs_skin_name");
-    return template_name;
-}
-
-// Get an icon file from the root folder. Fall back to default folder if it doesnt exist.
-char *icon_source(char *image_name) {
-    return image_source("",image_name,NULL);
-}
-
-// Get an image file  templates/skin/images/subfolder/name.ext . Fall back to
-// templates/default/images/subfolder/name.exe if it doesnt exist.
-// returns a quoted url.
-char *image_source(char *subfolder,char *image_name,char *ext)
-{
-    char *path;
-    assert(image_name);
-    static int is_default_skin = UNSET;
-    if (is_default_skin == UNSET) {
-        is_default_skin = (STRCMP(skin_name(),"default") == 0);
-    }
-
-    static char *ico=NULL;
-    
-    if (ext == NULL) {
-        if (ico == NULL) ico = ovs_icon_type();
-        ext = ico;
-    }
-
-    if (subfolder == NULL) {
-        subfolder = "";
-    }
-
-    ovs_asprintf(&path,"%s/templates/%s/images%s%s/%s%s%s",
-            appDir(),
-            skin_name(),
-            (*subfolder=='/'?"":"/"),
-            subfolder,
-            image_name,
-            (EMPTY_STR(ext)?"":"."),
-            ext);
-
-    if (!exists(path) && !is_default_skin) {
-        HTML_LOG(0,"[%s] not found",path);
-        FREE(path);
-
-        ovs_asprintf(&path,"%s/templates/default/images%s%s/%s%s%s",
-                appDir(),
-                (*subfolder=='/'?"":"/"),
-                subfolder,
-                image_name,
-                (EMPTY_STR(ext)?"":"."),
-                ext);
-    }
-
-    char *result = file_to_url(path);
-    FREE(path);
-    return result;
-}
-
 void href(char *url,char *attr,char *text) {
     printf("\n<a href=\"%s\" %s>%s</a>",url,attr,text);
 }
@@ -3630,12 +3575,15 @@ TRACE;
     printf("%s",script);
 
     HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
+#if 0
     // Adjust rows to be squarish.
     if (num_rows/cols < rows ) {
         rows = (num_rows+cols-1) / cols;
     }
 
     HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
+#endif
+
     for(r=0 ; r < rows ; r++ ) {
         HTML_LOG(1,"tvlisting row %d",r);
         char *row_text = NULL;

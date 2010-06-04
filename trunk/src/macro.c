@@ -1289,6 +1289,22 @@ char *macro_fn_skin_name(char *template_name,char *orig_skin,char *call,Array *a
     return skin_name();
 }
 
+char *macro_fn_template_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    char *result=NULL;
+    if (args && args->size >= 1) {
+
+        char *name = arraystr(args);
+        result = file_source("",name,""); 
+        FREE(name);
+
+    } else {
+
+        printf("%s(TEMPLATE_URL[name])",call);
+    }
+    return result;
+}
+
 // Display a template image from images folder - if not present look in defaults.
 char *macro_fn_image_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
@@ -2184,6 +2200,7 @@ void macro_init() {
         hashtable_insert(macros,"SYS_LOAD_AVG",macro_fn_sys_load_avg);
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         hashtable_insert(macros,"TAB_TVID",macro_fn_menu_tvid);
+        hashtable_insert(macros,"TEMPLATE_URL",macro_fn_template_url);
         hashtable_insert(macros,"TITLE",macro_fn_title);
         hashtable_insert(macros,"TITLE_SELECT",macro_fn_title_select);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);

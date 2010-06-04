@@ -108,7 +108,7 @@ table.overview_poster {
         </td></tr></table>
 [:ENDIF:]
 [:FORM_END:]
-<script type="text/javascript" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/js/menu.js"></script>
+<script type="text/javascript" src=[:TEMPLATE_URL(js/menu.js):]></script>
 <script type="text/javascript">
 function info() {
     alert('[[:$ovs_tvid_mark:]] - mark watched\n[[:$ovs_tvid_unmark:]] - unwatch\n[[:$ovs_tvid_delist:]] - delist\n[[:$ovs_tvid_delete:]] Delete Media');

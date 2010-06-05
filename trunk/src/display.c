@@ -2845,7 +2845,7 @@ char *get_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids)
     }
 
 
-    int page_before = (gs->offset == 1) && (page > 0);
+    int page_before = (gs->offset == 0) && (page > 0);
     int page_after = gs->offset + segment_total >= total;
 
 

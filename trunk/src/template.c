@@ -141,6 +141,21 @@ TRACE;
     return count;
 }
 
+int replace_macro(char *macro_name) {
+
+    int result = 0;
+    if (output_state()) {
+        result = 1;
+    } else if (util_starts_with(macro_name,"IF")
+            || util_starts_with(macro_name,"ELSEIF")
+            || util_starts_with(macro_name,"ELSE")
+            || util_starts_with(macro_name,"ENDIF")) {
+        result = 1;
+    }
+    return result;
+}
+
+
 char *template_replace_only(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids) {
 
 TRACE;
@@ -173,10 +188,15 @@ TRACE;
 
             macro_end = macro_start;
 
+        } else if (!replace_macro(macro_name_start)) {
+
+            macro_end = macro_start;
+
         } else {
 
             int free_result=0;
             *macro_name_end = '\0';
+
             char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,num_rows,sorted_row_ids,&free_result);
             count++;
             *macro_name_end = *MACRO_STR_START_INNER;
@@ -253,6 +273,15 @@ TRACE;
 
         // Cant identify macro - advance to next character.
         if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL  ) {
+
+            //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
+            if (output_state() ) {
+                PRINTSPAN(p,macro_start);
+                putc(*MACRO_STR_START,stdout);
+            }
+            macro_end = macro_start;
+
+        } else if (!replace_macro(macro_name_start)) {
 
             //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
             if (output_state() ) {
@@ -391,4 +420,5 @@ char *file_source(char *subfolder,char *image_name,char *ext)
     FREE(path);
     return result;
 }
+
 

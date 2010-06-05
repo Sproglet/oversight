@@ -8,6 +8,7 @@
 #include <sys/types.h>
 
 #include "template.h"
+#include "template_condition.h"
 #include "hashtable.h"
 #include "hashtable_loop.h"
 #include "array.h"
@@ -1750,55 +1751,13 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
 }
 
 
-/*
- * Stack to manage output state.
- * IF , and elseif push the expression value to TOS
- * else negates TOS.
- * There is also a value below TOS that indicates if a clause has fired for this 
- * if-elseif-else-endif
- */
-#define IF_CLAUSE_FIRED output_state_stack[output_state_tos]
-#define IF_CLAUSE_VALUE output_state_stack[output_state_tos-1]
-static long output_state_stack[100];
-static int output_state_tos=-1;
-long output_state() {
-    
-    //HTML_LOG(0,"[%d]if(%d) && fired=%d",output_state_tos,IF_CLAUSE_VALUE,IF_CLAUSE_FIRED);
-
-    if (output_state_tos >= 1 ) {
-        return (IF_CLAUSE_VALUE!=0 && IF_CLAUSE_FIRED == 1);
-    } else {
-        return 1;
-    }
-}
-void output_state_push(long val) {
-    output_state_stack[++output_state_tos] = val;
-}
-long output_state_pop() {
-    if (output_state_tos >= 0 ) { 
-        return output_state_stack[output_state_tos--];
-    } else {
-        return -1;
-    }
-}
-
 char *macro_fn_if(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
 {
     long l = numeric_constant_eval_first_arg(0,args);
     if (args == NULL || args->size == 1 ) {
         // Single form [:IF:] - supresses all line output until [:ENDIF:] or [:ELSE:]
         // Also returns NULL to remove itself from output.
-
-        int current_state = output_state();
-        //reserve two spaces on the stack
-        output_state_push(0);
-        output_state_push(0); 
-        if (current_state) {
-            IF_CLAUSE_VALUE = l;
-            if (l) { IF_CLAUSE_FIRED++; }
-        } else {
-            IF_CLAUSE_FIRED=2;
-        }
+        output_state_push(l);
         
     } else if (l) {
         // [:IF(exp,replace):] - if exp is true - result is 'replace'
@@ -1823,23 +1782,23 @@ char *macro_fn_elseif(char *template_name,char *orig_skin,char *call,Array *args
         *free_result=0;
         result="ELSEIF";
     } else {
-        if (IF_CLAUSE_FIRED <= 1) {
-            long l = numeric_constant_eval_first_arg(0,args);
-            IF_CLAUSE_VALUE = l;
-            if (l) { IF_CLAUSE_FIRED++; }
-        }
+        long l = numeric_constant_eval_first_arg(0,args);
+        output_state_eval(l);
     }
     return result;
 }
 
 char *macro_fn_else(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    if (IF_CLAUSE_FIRED <= 1) {
-        IF_CLAUSE_VALUE = !IF_CLAUSE_VALUE;
-        if (IF_CLAUSE_VALUE) { IF_CLAUSE_FIRED++; }
+    char *result = NULL;
+    if (args && args->size ) {
+        *free_result=0;
+        result="ENDIF";
+    } else {
+        output_state_invert();
     }
 
-    return NULL;
+    return result;
 }
 char *macro_fn_endif(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result = NULL;
@@ -1848,7 +1807,6 @@ char *macro_fn_endif(char *template_name,char *orig_skin,char *call,Array *args,
         result="ENDIF";
     } else {
         output_state_pop();
-        output_state_pop(); // This is the value that tracks if a clause fired
     }
     return result;
 }

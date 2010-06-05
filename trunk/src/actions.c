@@ -367,7 +367,7 @@ void do_actions() {
 
     set_start_cell();
 
-    char *view=query_val(QUERY_PARAM_VIEW);
+    char *view=query_view_val();
     char *action=query_val(QUERY_PARAM_ACTION);
     char *set_name=query_val(QUERY_PARAM_SET_NAME);
     char *set_val=query_val(QUERY_PARAM_SET_VAL);

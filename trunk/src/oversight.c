@@ -203,7 +203,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     int num_rows;
     while(1) {
-        view=query_val(QUERY_PARAM_VIEW);  
+        view=query_view_val();  
 
         // If movie view but all ids have been removed , then move up
         if (STRCMP(view,VIEW_MOVIE) == 0 && !*query_val(QUERY_PARAM_IDLIST)) {

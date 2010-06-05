@@ -94,7 +94,7 @@ unsigned int db_overview_name_hashf(void *rid) {
 int get_view_mode() {
     static int mode=-1;
     if (mode == -1 ) {
-        char *view=query_val(QUERY_PARAM_VIEW);
+        char *view=query_view_val();
         if (STRCMP(view,VIEW_TV) == 0 ) {
             mode = TV_VIEW_ID;
         } else if (STRCMP(view,VIEW_MOVIE) == 0) {

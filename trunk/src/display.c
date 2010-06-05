@@ -1744,7 +1744,7 @@ char *trim_title(char *title) {
 
 char *select_checkbox(DbRowId *rid,char *text) {
     char *result = NULL;
-    char *select = query_val(QUERY_PARAM_SELECT);
+    char *select = query_select_val();
 
     if (*select) {
 
@@ -1814,7 +1814,7 @@ char *movie_listing(DbRowId *rowid)
     if (js_title != rowid->title) FREE(js_title);
 
 
-    char *select = query_val(QUERY_PARAM_SELECT);
+    char *select = query_select_val();
     char *style = watched_style(rowid);
     if (*select) {
         return select_checkbox(rowid,rowid->file);
@@ -2699,7 +2699,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids,int p
     char *width_attr;
     char *height_attr;
     char *tmp;
-    int select_mode=!EMPTY_STR(query_val(QUERY_PARAM_SELECT));
+    int select_mode=!EMPTY_STR(query_select_val());
 
     if (numids < rows * cols ) {
         //re-arrange layout to have as many columns as possible.
@@ -3012,7 +3012,7 @@ TRACE;
 TRACE;
 
     HTML_LOG(0,"Sort..");
-    if (STRCMP(query_val(QUERY_PARAM_VIEW),VIEW_TV) == 0) {
+    if (STRCMP(query_view_val(),VIEW_TV) == 0) {
 
         HTML_LOG(0,"sort by name [%s]",sort);
         sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
@@ -3110,7 +3110,7 @@ char *get_tvid_links()
 char *dimension_cell_name_suffix() {
     static char *name_suffix=NULL;
     if (!name_suffix) {
-        char *view = query_val(QUERY_PARAM_VIEW);
+        char *view = query_view_val();
         if (STRCMP(view,"movieboxset") == 0) {
             name_suffix = "_movieboxset";
         } else if (STRCMP(view,"tvboxset") == 0) {
@@ -3158,7 +3158,7 @@ char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char
 char *get_tvid_resize_links()
 {
     char *result=NULL;
-    char *view = query_val(QUERY_PARAM_VIEW);
+    char *view = query_view_val();
 
     if (*query_val(QUERY_PARAM_RESIZE)) {
 
@@ -3524,7 +3524,7 @@ char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
 {
     int r,c;
 
-    char *select=query_val(QUERY_PARAM_SELECT);
+    char *select=query_select_val();
 
     char *listing=NULL;
 

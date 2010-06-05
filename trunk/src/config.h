@@ -64,4 +64,13 @@ int in_text_mode();
 int browsing_from_lan();
 int ovs_config_dimension_increment(char *keyword_prefix,char* delta_str,int min,int max);
 int ovs_config_dimension_inherit(char *keyword_prefix);
+char *query_val(char *name);
+char *catalog_val(char *name);
+char *setting_val(char *name);
+char *oversight_val(char *name);
+char *unpak_val(char *name);
+void query_update(char *name,char *new);
+void query_remove(char *name);
+char *query_view_val();
+char *query_select_val();
 #endif

@@ -16,6 +16,9 @@
 int rename_cfg(char *old,char *new);
 int set_option(char *file,char *name,char *new_value);
 
+static inline void query_view_val_reset();
+static inline void query_select_val_reset();
+
 // Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
 void load_ovs_configs()
 {
@@ -707,7 +710,7 @@ void config_read_dimensions() {
         } else {
 
             // set the current grid dimensions
-            char *view = query_val(QUERY_PARAM_VIEW);
+            char *view = query_view_val();
             if (STRCMP(view,VIEW_TVBOXSET) == 0) {
                 g_dimension->current_grid = &(g_dimension->grids[GRID_TVBOXSET]);
             } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
@@ -790,5 +793,107 @@ void config_read_dimensions() {
     }
 }
 
+
+void query_remove(char *name) {
+    HTML_LOG(0,"Removing query item [%s]",name);
+    if (hashtable_remove(g_query,name,1) == NULL) {
+        HTML_LOG(5,"query item not present [%s]",name);
+    }
+}
+
+// Value is not freed.
+void query_update(char *name,char *new)
+{
+    HTML_LOG(0,"Changing query item [%s] to [%s]",name,new);
+    hashtable_remove(g_query,name,1);
+    if(new) {
+        hashtable_insert(g_query,name,new);
+    }
+    query_select_val_reset();
+    query_view_val_reset();
+}
+     
+char *query_val(char *name)
+{
+    char *val;
+    if (config_check_str(g_query,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+char *catalog_val(char *name)
+{
+    char *val;
+    if (config_check_str(g_catalog_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+char *oversight_val(char *name)
+{
+    char *val;
+    if (config_check_str(g_oversight_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+char *setting_val(char *name)
+{
+    char *val;
+    if (config_check_str(g_nmt_settings,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+char *unpak_val(char *name)
+{
+    char *val;
+
+    if (g_unpack_config == NULL) {
+        g_unpack_config = config_load_wth_defaults(appDir(),"conf/unpak.cfg.example","conf/unpak.cfg");
+    }
+
+    if (config_check_str(g_unpack_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+
+/* ======================================================== */
+// Provide faster access to select query parameter.
+
+static char *query_select_str = NULL;
+char *query_select_val()
+{
+   if (query_select_str == NULL) {
+       query_select_str = query_val(QUERY_PARAM_SELECT);
+    }
+   return query_select_str; 
+}
+static inline void query_select_val_reset()
+{
+    query_select_str = NULL;
+}
+
+/* ======================================================== */
+// Provide faster access to view query parameter.
+
+static char *query_view_str = NULL;
+char *query_view_val()
+{
+   if (query_view_str == NULL) {
+       query_view_str = query_val(QUERY_PARAM_VIEW);
+    }
+   return query_view_str; 
+}
+static inline void query_view_val_reset()
+{
+    query_view_str = NULL;
+}
 
 // vi:sw=4:et:ts=4

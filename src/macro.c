@@ -36,6 +36,8 @@ static struct hashtable *macros = NULL;
 char *get_variable(char *vname,int *free_result);
 char *image_path_by_resolution(char *template_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
+char *get_macro_variable(char *name);
+int set_macro_variable(char *name,char *value);
 
 long get_current_page() {
     long page;
@@ -466,6 +468,16 @@ char *macro_fn_title(char *template_name,char *orig_skin,char *call,Array *args,
         result = sorted_rows[0]->title;
     } 
     return result;
+}
+
+char *macro_fn_set(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+{
+    if (args == NULL || args->size != 2 ) {
+        html_error("invalid arguments [:%s(name,val):]",call);
+    } else {
+        set_macro_variable(args->array[0],args->array[1]);
+    }
+    return NULL;
 }
 
 char *macro_fn_season(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
@@ -991,7 +1003,7 @@ void free_named_args(struct hashtable *h) {
 
 char *macro_fn_grid(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    struct hashtable *h = args_to_hash(args,NULL,"rows,cols,img_height,img_width,offset,page_size");
+    struct hashtable *h = args_to_hash(args,NULL,"rows,cols,img_height,img_width,offset");
     
     if (grid_info == NULL) {
         grid_info = grid_info_init();
@@ -1004,13 +1016,6 @@ char *macro_fn_grid(char *template_name,char *orig_skin,char *call,Array *args,i
     gs->offset = 0;
     
     char *tmp;
-    if ((tmp = get_named_arg(h,"page_size")) != NULL) {
-        if (grid_info->page_size != DEFAULT_PAGE_SIZE) {
-            html_error("duplicate page size");
-        } else {
-            grid_info->page_size = atoi(tmp);
-        }
-    }
 
     if ((tmp = get_named_arg(h,"rows")) != NULL) {
         gs->dimensions.rows = atoi(tmp);
@@ -1027,9 +1032,11 @@ char *macro_fn_grid(char *template_name,char *orig_skin,char *call,Array *args,i
     }
     if ((tmp = get_named_arg(h,"offset")) != NULL) {
         gs->offset = atoi(tmp);
-        if (grid_info->page_size == DEFAULT_PAGE_SIZE) {
-            html_error("GRID: page_size must be given with offset");
+        tmp = get_macro_variable("grid_size");
+        if (tmp == NULL) {
+            html_error("GRID: grid_size must be set when using GRID segments");
         }
+        gs->parent->page_size = atoi(tmp);
     }
 
     char *result = get_grid(get_current_page(),gs,num_rows,sorted_rows);
@@ -1429,6 +1436,7 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
 
 char *macro_fn_left_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
+    HTML_LOG(0,"current page=%d",get_current_page());
     int on = get_current_page() > 0;
 
     return get_page_control(on,-1,"pgup","left");
@@ -1439,7 +1447,14 @@ char *macro_fn_left_button(char *template_name,char *orig_skin,char *call,Array 
 
 char *macro_fn_right_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
-    int on = ((get_current_page()+1)*g_dimension->current_grid->rows*g_dimension->current_grid->cols < num_rows);
+    int page_size = g_dimension->current_grid->rows*g_dimension->current_grid->cols;
+    HTML_LOG(0,"page_size=%d",page_size);
+    char *custom_grid_size = get_macro_variable("grid_size");
+    if (!EMPTY_STR(custom_grid_size)) {
+        page_size = atoi(custom_grid_size);
+        HTML_LOG(0,"grid_size=%d",page_size);
+    }
+    int on = ((get_current_page()+1)*page_size < num_rows);
 
     return get_page_control(on,1,"pgdn","right");
 }
@@ -2178,6 +2193,7 @@ void macro_init() {
         hashtable_insert(macros,"RUNTIME",macro_fn_runtime);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
         hashtable_insert(macros,"SEASON",macro_fn_season);
+        hashtable_insert(macros,"SET",macro_fn_set);
         hashtable_insert(macros,"SELECT_CANCEL_SUBMIT",macro_fn_select_cancel_submit);
         hashtable_insert(macros,"SELECT_DELETE_SUBMIT",macro_fn_select_delete_submit);
         hashtable_insert(macros,"SELECT_DELIST_SUBMIT",macro_fn_select_delist_submit);
@@ -2405,6 +2421,26 @@ TRACE;
         array_free(args);
     }
     return result;
+}
+
+static struct hashtable *vars = NULL;
+int set_macro_variable(char *name,char *value)
+{
+    int ret;
+    if (vars == NULL) {
+        vars = string_string_hashtable(16);
+    }
+    ret = hashtable_insert(vars,STRDUP(name),STRDUP(value));
+    HTML_LOG(0,"[%s=%s]",name,value);
+    return ret;
+}
+char *get_macro_variable(char *name)
+{
+    if (vars == NULL) {
+        return NULL;
+    } else {
+        return hashtable_search(vars,name);
+    }
 }
 
 // vi:sw=4:et:ts=4

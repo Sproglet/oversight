@@ -1195,7 +1195,7 @@ int id_cmp_fn(const void *i,const void *j) {
 // if there is no idlist then ALL ids are OK. to indicate this num_ids = -1
 int *extract_idlist(char *db_name,int *num_ids) {
 
-    char *query = query_val("idlist");
+    char *query = query_val(QUERY_PARAM_IDLIST);
     int *result = NULL;
 
     HTML_LOG(0,"extract_idlist from [%s]",query);
@@ -1303,7 +1303,7 @@ DbRowSet * db_scan_titles(
 
     DbRowSet *rowset = NULL;
 
-    char *view=query_val(QUERY_PARAM_VIEW);
+    char *view=query_view_val();
     int tv_or_movie_view = (STRCMP(view,VIEW_TV)==0 || STRCMP(view,VIEW_MOVIE) == 0);
 
     int num_ids;

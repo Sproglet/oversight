@@ -2,16 +2,15 @@
 <html>
     <head>
         <meta name="robots" content="nofollow">
-        <title>Oversight ([:HOSTNAME:])</title>
+        <title>xOversight ([:HOSTNAME:])</title>
         [:FAVICON:]
-        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:$ovs_skin_name:]/css/default.css" />
+        <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
 body.menu_background { 
 	color:white ; 
 	background-color:black; 
-	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/lightwave.jpg'); 
 }
 
 table.overview_poster {
@@ -39,17 +38,13 @@ table.overview_poster {
 
         </style>
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/lightwave.jpg">
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background=[:BACKGROUND_IMAGE(lightwave.jpg):] >
 [:FORM_START:]
 [:IF(0):]
         <table class=main width=100% height=100%>
         <tr><td>
 [:ENDIF:]
-[:IF($ovs_fade):]
-            <table class=header width=100% background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/bluemenu2.png" >
-[:ELSE:]
-            <table class=header width=100% background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/bluemenu2.jpg" >
-[:ENDIF:]
+            <table class=header width=100% background=[:IMAGE_URL(bluemenu2.png):] >
                 <tr>
 
 [:IF($?resizeon):]

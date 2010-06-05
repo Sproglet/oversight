@@ -168,7 +168,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     //util_unittest();
     //config_unittest();
 
-    g_query = string_string_hashtable(16);
+    g_query = string_string_hashtable("g_query2",16);
 
     html_comment("default query ... ");
     add_default_html_parameters(g_query);
@@ -318,11 +318,11 @@ TRACE;
         hashtable_destroy(g_catalog_config,1,1);
     TRACE;
 
+        hashtable_destroy(g_query,1,0);
+    TRACE;
         hashtable_destroy(g_nmt_settings,1,1);
     TRACE;
 
-        hashtable_destroy(g_query,1,0);
-    TRACE;
 
         /*
         hashtable database_list= open_databases(g_query);

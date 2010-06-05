@@ -1716,7 +1716,7 @@ char *build_id_list(DbRowId *row_id) {
         // Add rows from other sources. This could be merged with the loop above
         // but to help performance we only track sources if we need to as the loop
         // performance is O(n^2)
-        struct hashtable *sources = string_string_hashtable(4);
+        struct hashtable *sources = string_string_hashtable("db_sources",4);
         hashtable_insert(sources,row_id->db->source,"1");
         DbRowId *ri;
 
@@ -2307,7 +2307,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *focus_ev = NULL;
     char *mouse_ev = NULL;
 
-    if (g_dimension->title_bar && select_mode) {
+    if (g_dimension->title_bar && !select_mode) {
 
         char *simple_title = get_simple_title(row_id,newview);
 
@@ -2331,7 +2331,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
         char *attr = add_scroll_attributes(left_scroll,right_scroll,selected_cell,title_change_attr);
         FREE(title_change_attr);
-        HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
+        HTML_LOG(0,"dbg: scroll attributes [%s]",attr);
 
 
         if (STRCMP(newview,VIEW_TV) == 0 ) {

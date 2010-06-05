@@ -61,7 +61,7 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
     //HTML_LOG(0,"query[%s]",q);
 
     if (hashtable_in == NULL) {
-        hashtable_in = string_string_hashtable(16);
+        hashtable_in = string_string_hashtable("query3",16);
     }
 
     for(i = 0 ; i < qarr->size ; i++ ) {
@@ -100,7 +100,7 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
 #define POST_BUF 2999
 struct hashtable *read_post_data(char *post_filename) {
 
-    struct hashtable *result = string_string_hashtable(16);
+    struct hashtable *result = string_string_hashtable("post_data",16);
 
     if (post_filename == NULL) {
         HTML_LOG(2,"no post data");

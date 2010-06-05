@@ -290,7 +290,7 @@ TRACE;
      */
     //TODO we need to find a generic image for the box set!
 
-    overview = create_hashtable(100,db_overview_general_hashf,db_overview_general_eqf);
+    overview = create_hashtable("db_overview",100,db_overview_general_hashf,db_overview_general_eqf);
 TRACE;
 
     int rowset_count=0;

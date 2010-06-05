@@ -83,7 +83,7 @@ void get_mount_points() {
     if (mount_points == NULL) {
 
         HTML_LOG(0,"getting mount points...");
-        mount_points = string_string_hashtable(16); //let the OS clean this up at the end
+        mount_points = string_string_hashtable("mount points",16); //let the OS clean this up at the end
 
         FILE *fp = fopen("/etc/mtab","r");
         if (fp) {

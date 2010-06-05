@@ -76,6 +76,11 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
 }
 
 
+/**
+  FANART_URL(image name)
+  Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+  use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL
+**/  
 char *macro_fn_fanart_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
 
     char *result = NULL;
@@ -295,7 +300,7 @@ char *macro_fn_sort_select(char *template_name,char *orig_skin,char *call,Array 
     static char *result=NULL;
 
     if (!result) {
-        struct hashtable *sort = string_string_hashtable(4);
+        struct hashtable *sort = string_string_hashtable("sort",4);
         hashtable_insert(sort,DB_FLDID_TITLE,"Name");
         hashtable_insert(sort,DB_FLDID_INDEXTIME,"Age");
         hashtable_insert(sort,DB_FLDID_YEAR,"Year");
@@ -315,7 +320,7 @@ char *macro_fn_media_select(char *template_name,char *orig_skin,char *call,Array
     //    } else {
     //        label = "Tv+Movie";
     //    }
-        struct hashtable *category = string_string_hashtable(4);
+        struct hashtable *category = string_string_hashtable("category",4);
 
         char *both=QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE QUERY_PARAM_MEDIA_TYPE_VALUE_TV;
         hashtable_insert(category,both,"All");
@@ -334,7 +339,7 @@ char *macro_fn_media_select(char *template_name,char *orig_skin,char *call,Array
 char *macro_fn_watched_select(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     static char *result=NULL;
     if (!result) {
-        struct hashtable *watched = string_string_hashtable(4);
+        struct hashtable *watched = string_string_hashtable("watched_menu",4);
         hashtable_insert(watched,"","---");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched");
@@ -404,7 +409,7 @@ char *macro_fn_title_select(char *template_name,char *orig_skin,char *call,Array
     if (!result) {
 
         HTML_LOG(0,"macro_fn_title_select");
-        struct hashtable *title = string_string_hashtable(30);
+        struct hashtable *title = string_string_hashtable("title-menu",30);
 
         char *letters[]= 
           { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1",NULL};
@@ -426,7 +431,7 @@ char *macro_fn_genre_select(char *template_name,char *orig_skin,char *call,Array
     if (g_genre_hash != NULL) {
 
         // Expand the genre hash table
-        struct hashtable *expanded_genres = string_string_hashtable(16);
+        struct hashtable *expanded_genres = string_string_hashtable("genre_menu",16);
         char *k,*v;
         struct hashtable_itr *itr;
         for(itr = hashtable_loop_init(g_genre_hash) ; hashtable_loop_more(itr,&k,&v) ; ) {
@@ -930,7 +935,7 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
                   || (optional_set && hashtable_search(optional_set,name) ) ) {
                     val = STRDUP(hashop+strlen(HASH_ASSIGN));
                     if (h == NULL) {
-                        h = string_string_hashtable(16);
+                        h = string_string_hashtable("macro_args",16);
                     }
                     if (hashtable_search(h,name)) {
                         html_error("ignore duplicate arg[%s]",name);
@@ -1033,9 +1038,9 @@ char *macro_fn_grid(char *template_name,char *orig_skin,char *call,Array *args,i
     }
     if ((tmp = get_named_arg(h,"offset")) != NULL) {
         gs->offset = atoi(tmp);
-        tmp = get_macro_variable("grid_size");
+        tmp = get_macro_variable("skin_grid_size");
         if (tmp == NULL) {
-            html_error("GRID: grid_size must be set when using GRID segments");
+            html_error("GRID: skin_grid_size must be set when using GRID segments. [:SET(skin_grid_size,value):]");
         }
         gs->parent->page_size = atoi(tmp);
     }
@@ -1263,8 +1268,15 @@ char *macro_fn_icon_link(char *template_name,char *orig_skin,char *call,Array *a
     return result;
 }
 
-// write an image url
-char *macro_fn_background_image(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+/**
+  BACKGROUND_URL(image name)
+  Display image from skin/720 or skin/sd folder. Also see FANART_URL
+**/  
+/**
+  BACKGROUND_IMAGE(image name) - deprecated - use BACKGROUND_URL() 
+  Display image from skin/720 or skin/sd folder. Also see BACKGROUND_URL,FANART_URL
+**/  
+char *macro_fn_background_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
     char *result=NULL;
     if (args && args->size == 1) {
         char *tmp = image_path_by_resolution(template_name,args->array[0]);
@@ -1450,7 +1462,7 @@ char *macro_fn_right_button(char *template_name,char *orig_skin,char *call,Array
 
     int page_size = g_dimension->current_grid->rows*g_dimension->current_grid->cols;
     HTML_LOG(0,"page_size=%d",page_size);
-    char *custom_grid_size = get_macro_variable("grid_size");
+    char *custom_grid_size = get_macro_variable("skin_grid_size");
     if (!EMPTY_STR(custom_grid_size)) {
         page_size = atoi(custom_grid_size);
         HTML_LOG(0,"grid_size=%d",page_size);
@@ -2088,9 +2100,10 @@ void macro_init() {
 
     if (macros == NULL) {
         //HTML_LOG(1,"begin macro init");
-        macros = string_string_hashtable(64);
+        macros = string_string_hashtable("macro_names",64);
 
-        hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_image); // referes to images in sd / 720 folders.
+        hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
+        hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
         hashtable_insert(macros,"BODY_HEIGHT",macro_fn_body_height);
         hashtable_insert(macros,"BODY_WIDTH",macro_fn_body_width);
@@ -2189,6 +2202,7 @@ void macro_init() {
 // ovs_xxx = oversight config
 // catalog_xxx = catalog config
 // unpak_xxx = unpak config
+// skin_xxx = macro variable
 //
 
 char *get_variable(char *vname,int *free_result)
@@ -2306,6 +2320,9 @@ char *get_variable(char *vname,int *free_result)
 
         result = unpak_val(vname);
 
+    } else if (util_starts_with(vname,"skin_")) {
+
+        result = get_macro_variable(vname);
     }
     if (convert_int) {
         ovs_asprintf(&result,"%d",int_val);
@@ -2386,7 +2403,7 @@ int set_macro_variable(char *name,char *value)
 {
     int ret;
     if (vars == NULL) {
-        vars = string_string_hashtable(16);
+        vars = string_string_hashtable("macro_args",16);
     }
     ret = hashtable_insert(vars,STRDUP(name),STRDUP(value));
     HTML_LOG(0,"[%s=%s]",name,value);

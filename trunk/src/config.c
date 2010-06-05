@@ -15,6 +15,7 @@
 
 int rename_cfg(char *old,char *new);
 int set_option(char *file,char *name,char *new_value);
+struct hashtable *config_load_fp(char *filename,FILE *fp,int include_unquoted_space);
 
 static inline void query_view_val_reset();
 static inline void query_select_val_reset();
@@ -144,7 +145,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     if (is_file(f)) {
         out = config_load(f,0);
     } else {
-        out = string_string_hashtable(16);
+        out = string_string_hashtable(f,16);
     }
     FREE(f);
 
@@ -155,7 +156,7 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
     if (is_file(f)) {
         new = config_load(f,0);
     } else {
-        new = string_string_hashtable(16);
+        new = string_string_hashtable(f,16);
     }
     FREE(f);
 
@@ -177,7 +178,7 @@ struct hashtable *config_load(char *filename,int include_unquoted_space) {
     if (f == NULL) {
         fprintf(stderr,"Unable to open config file [%s]\n",filename);
     } else {
-        result = config_load_fp(f,include_unquoted_space);
+        result = config_load_fp(filename,f,include_unquoted_space);
         fclose(f);
     }
     return result;
@@ -273,9 +274,10 @@ int parse_key_val(char *line,
 
 #define CFG_BUFSIZ 700
 // include_unquoted_space option is for /tmp/setting.txt other config files always quote space.
-struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space) {
+struct hashtable *config_load_fp(char *filename,FILE *fp,int include_unquoted_space)
+{
 
-    struct hashtable *result=string_string_hashtable(16);
+    struct hashtable *result=string_string_hashtable(filename,16);
     char line[CFG_BUFSIZ+1];
 
     PRE_CHECK_FGETS(line,CFG_BUFSIZ);

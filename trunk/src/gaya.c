@@ -33,7 +33,7 @@ int gaya_list(char *arg)
     //arg = http://localhost.drives:8883/HARD_DISK/Complete/?filter=3&page=3
 
 
-    g_query = string_string_hashtable(16);
+    g_query = string_string_hashtable("g_query",16);
 
     // Get query string
     char *qpos = strchr(arg,'?');

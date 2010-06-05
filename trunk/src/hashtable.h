@@ -71,7 +71,7 @@ struct hashtable;
  * @return                  newly created hashtable or NULL on failure
  */
 
-struct hashtable * create_hashtable(unsigned int minsize,
+struct hashtable * create_hashtable(char *name,unsigned int minsize,
                  unsigned int (*hashfunction) (void*),
                  int (*key_eq_fn) (void*,void*));
 
@@ -154,9 +154,10 @@ hashtable_count(struct hashtable *h);
 /*****************************************************************************
  * hashtable_destroy
    
- * @name        hashtable_destroy
+ * @name    hashtable_destroy
  * @param   h   the hashtable
- * @param       free_values     whether to call 'free' on the remaining values
+ * @param   free_values     whether to call 'free' on the remaining values
+ * @param   label Text added to statistics report.
  */
 
 void

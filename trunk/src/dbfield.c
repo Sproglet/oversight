@@ -17,8 +17,8 @@ void dbf_ids_init()
 
     if (dbf_id_to_macro) return;
 
-    dbf_id_to_macro = string_string_hashtable(32);
-    dbf_macro_to_id = string_string_hashtable(32);
+    dbf_id_to_macro = string_string_hashtable("field_id_to_macro",32);
+    dbf_macro_to_id = string_string_hashtable("field_macro_to_id",32);
 
     add_label(DB_FLDID_ID,"ID");
     add_label(DB_FLDID_WATCHED,"WATCHED");

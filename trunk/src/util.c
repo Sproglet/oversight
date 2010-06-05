@@ -52,7 +52,7 @@ unsigned int stringhash(void *vptr) {
 
     if (str) {
 
-        if (STARTS_WITH_THE(str)) str+=4;
+        //if (STARTS_WITH_THE(str)) str+=4;
 
         hash = 5381;
         
@@ -71,10 +71,10 @@ int stringcmp(void *a,void *b) {
     return STRCMP(a,b) ==0;
 }
 
-struct hashtable *string_string_hashtable(int size)
+struct hashtable *string_string_hashtable(char *name,int size)
 {
 
-    return create_hashtable(size,stringhash,stringcmp);
+    return create_hashtable(name,size,stringhash,stringcmp);
 }
 
 // Replace all pairs  string,match1,replace1,match2,replace2,NULL
@@ -429,7 +429,7 @@ void util_unittest() {
 
     // hashtables
     //
-    struct hashtable *h = string_string_hashtable(16);
+    struct hashtable *h = string_string_hashtable("test",16);
 
     assert(hashtable_insert(h,hello,x));
 
@@ -1051,7 +1051,7 @@ struct hashtable *array_to_set(Array *args)
     if (args) {
         for(i= 0 ; i < args->size ; i++ ) {
             if (h == NULL) {
-                h = string_string_hashtable(16);
+                h = string_string_hashtable("set",16);
             }
             hashtable_insert(h,STRDUP(args->array[i]),"1");
         }

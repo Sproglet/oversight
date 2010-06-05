@@ -1884,7 +1884,7 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
     char *p;
 
     if (*h == NULL) {
-        *h = string_string_hashtable(16);
+        *h = string_string_hashtable("genre_hash",16);
     }
 
     for(;;) {

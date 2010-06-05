@@ -35,7 +35,6 @@ typedef struct dimension_str {
 } Dimensions ;
 
 struct hashtable *config_load(char *filename,int include_unquoted_space);
-struct hashtable *config_load_fp(FILE *fp,int include_unquoted_space);
 void config_write(struct hashtable *cfg,char *filename);
 void config_write_fp(struct hashtable *cfg,FILE *fp);
 void config_unittest();

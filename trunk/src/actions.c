@@ -258,7 +258,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
         char *real_path=get_path(rid,path,&freepath);
 
         if (g_delete_queue == NULL) {
-            g_delete_queue = string_string_hashtable(16);
+            g_delete_queue = string_string_hashtable("delete queue",16);
         }
         if (hashtable_search(g_delete_queue,real_path)) {
             if(freepath) {
@@ -535,7 +535,7 @@ void do_actions() {
 
             HTML_LOG(0,"actionids=[%s]",actionids);
 
-            changed_source_id_hash = string_string_hashtable(16);
+            changed_source_id_hash = string_string_hashtable("changed_ids",16);
 
             total_changed = idlist_to_idhash(changed_source_id_hash,actionids);
 
@@ -711,7 +711,7 @@ void update_idlist(struct hashtable *source_id_hash_removed)
 
     if (*query_val(QUERY_PARAM_IDLIST)) {
 
-        struct hashtable *source_id_hash_current = string_string_hashtable(16);
+        struct hashtable *source_id_hash_current = string_string_hashtable("source_id_hash_current",16);
         idlist_to_idhash(source_id_hash_current,query_val(QUERY_PARAM_IDLIST));
 
         struct hashtable_itr *itr;
@@ -898,7 +898,7 @@ int count_unchecked() {
 struct hashtable *get_newly_selected_ids_by_source(int *totalp)
 {
 
-    struct hashtable *h = string_string_hashtable(16);
+    struct hashtable *h = string_string_hashtable("idhash",16);
 
     char *name;
     char *val;
@@ -926,7 +926,7 @@ struct hashtable *get_newly_selected_ids_by_source(int *totalp)
 struct hashtable *get_newly_deselected_ids_by_source(int *totalp)
 {
 
-    struct hashtable *h = string_string_hashtable(16);
+    struct hashtable *h = string_string_hashtable("deselected_ids_by_source",16);
     int total = 0;
 
     char *name;

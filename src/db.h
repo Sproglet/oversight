@@ -88,6 +88,9 @@ OVS_TIME *timestamp_ptr(DbRowId *rowid);
 #define DB_WATCHED_FILTER_NO 2
 #define DB_WATCHED_FILTER_ANY 3
 
+/**
+ * Details for a particualr index.db/plot.db
+ **/
 typedef struct Db_struct {
 
     char *path;     // ..../index.db (auto computed from source)
@@ -100,17 +103,30 @@ typedef struct Db_struct {
 
 } Db;
 
+/**
+ * A subset of entries from a particular Db
+ */
 typedef struct DbResults_struct {
     Db *db;
     long size;
     long memsize;
-    DbRowId *rows;
+    DbRowId *rows; // Array of actual entries.
     int movie_total;
     int series_total;
     int episode_total;
     int other_media_total;
 } DbRowSet;
 
+/**
+ * All DbRowSets merged and sorted.
+ */
+typedef struct DBSortedRows_struct {
+
+    int num_rows;
+    DbRowSet **rowsets;
+    DbRowId **rows;
+
+} DbSortedRows;
 
 Db *db_init(char *filename, // path to the file
         char *source       // logical name or tag - local="*"

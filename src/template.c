@@ -29,11 +29,11 @@
 // vi:sw=4:et:ts=4
 
 char *scanlines_to_text(long scanlines);
-char *template_replace_only(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids);
-int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids);
-int template_replace(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids);
+char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
+int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
+int template_replace(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
 
-int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *file_name,int num_rows,DbRowId **sorted_row_ids)
+int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows)
 {
 
     int ret = 1;
@@ -81,7 +81,7 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
 //            while(*p == ' ') {
 //                p++;
 //            }
-            if ((count=template_replace(skin_name,orig_skin,p,num_rows,sorted_row_ids)) != 0 ) {
+            if ((count=template_replace(skin_name,orig_skin,p,sorted_rows)) != 0 ) {
                 HTML_LOG(4,"macro count %d",count);
             }
 
@@ -100,17 +100,17 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
 }
 
 // 0 = success
-int display_template(char*skin_name,char *file_name,int num_rows,DbRowId **sorted_row_ids)
+int display_template(char*skin_name,char *file_name,DbSortedRows *sorted_rows)
 {
     int ret = 0;
 
     HTML_LOG(1,"begin template");
 
     char *resolution = scanlines_to_text(g_dimension->scanlines);
-    if (display_template_file(skin_name,skin_name,resolution,file_name,num_rows,sorted_row_ids) != 0) {
-        if (display_template_file(skin_name,skin_name,"any",file_name,num_rows,sorted_row_ids) != 0) {
-            if (display_template_file("default",skin_name,resolution,file_name,num_rows,sorted_row_ids) != 0) {
-                if (display_template_file("default",skin_name,"any",file_name,num_rows,sorted_row_ids) != 0) {
+    if (display_template_file(skin_name,skin_name,resolution,file_name,sorted_rows) != 0) {
+        if (display_template_file(skin_name,skin_name,"any",file_name,sorted_rows) != 0) {
+            if (display_template_file("default",skin_name,resolution,file_name,sorted_rows) != 0) {
+                if (display_template_file("default",skin_name,"any",file_name,sorted_rows) != 0) {
                     html_error("failed to load template %s",file_name);
                     ret = 1;
                 }
@@ -124,19 +124,19 @@ int display_template(char*skin_name,char *file_name,int num_rows,DbRowId **sorte
 #define MACRO_STR_END "]"
 #define MACRO_STR_START_INNER ":"
 #define MACRO_STR_END_INNER ":"
-int template_replace(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids)
+int template_replace(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows)
 {
 
 TRACE;
 
     // first replace simple variables in the buffer.
-    char *newline=template_replace_only(skin_name,orig_skin,input,num_rows,sorted_row_ids);
+    char *newline=template_replace_only(skin_name,orig_skin,input,sorted_rows);
     if (newline != input) {
         HTML_LOG(2,"old line [%s]",input);
         HTML_LOG(2,"new line [%s]",newline);
     }
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
-    int count = template_replace_and_emit(skin_name,orig_skin,newline,num_rows,sorted_row_ids);
+    int count = template_replace_and_emit(skin_name,orig_skin,newline,sorted_rows);
     if (newline !=input) FREE(newline);
     return count;
 }
@@ -156,7 +156,8 @@ int replace_macro(char *macro_name) {
 }
 
 
-char *template_replace_only(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids) {
+char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows)
+{
 
 TRACE;
     char *newline = input;
@@ -197,7 +198,7 @@ TRACE;
             int free_result=0;
             *macro_name_end = '\0';
 
-            char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,num_rows,sorted_row_ids,&free_result);
+            char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
             count++;
             *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output) {
@@ -241,7 +242,7 @@ TRACE;
     }
     return newline;
 }
-int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,int num_rows,DbRowId **sorted_row_ids) {
+int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows) {
 
 TRACE;
     char *macro_start = NULL;
@@ -294,7 +295,7 @@ TRACE;
 
             int free_result=0;
             *macro_name_end = '\0';
-            char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,num_rows,sorted_row_ids,&free_result);
+            char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
 
             //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
             if (macro_start > p ) {

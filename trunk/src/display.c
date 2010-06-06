@@ -2811,8 +2811,10 @@ TRACE;
 }
 
 
-char *get_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids)
+char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows) 
 {
+    int numids = sorted_rows->num_rows;
+    DbRowId **row_ids = sorted_rows->rows;
     // first loop through the selected rowids that we expect to draw.
     // If there are any that need pruning - remove them from the database and get another one.
     // This will possibly cause a temporary inconsistency in page numbering but
@@ -2913,7 +2915,7 @@ char *get_theme_image_tag(char *image_name,char *attr) {
 }
 
 
-int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr)
+DbSortedRows *get_sorted_rows_from_params()
 {
 
 
@@ -3031,12 +3033,24 @@ TRACE;
     //Free hash without freeing keys
     db_overview_hash_destroy(overview);
 
-    if (sortedRowsPtr) *sortedRowsPtr = sorted_row_ids;
-    if (rowSetsPtr) *rowSetsPtr = rowsets;
+    DbSortedRows *sortedRows = MALLOC(sizeof(DbSortedRows));
+    sortedRows->num_rows = numrows;
+    sortedRows->rowsets = rowsets;
+    sortedRows->rows = sorted_row_ids;
 
     HTML_LOG(0,"end get_sorted_rows_from_params");
 
-    return numrows;
+    return sortedRows;
+}
+
+void sorted_rows_free_all(DbSortedRows *sortedRows)
+{
+    if (sortedRows) {
+        HTML_LOG(0,"sorted_rows_free_all");
+        FREE(sortedRows->rows);
+        db_free_rowsets_and_dbs(sortedRows->rowsets);
+        FREE(sortedRows);
+    }
 }
 
 typedef struct tvid_struct {
@@ -3274,12 +3288,12 @@ long use_movie_boxsets()
     return movie_boxsets;
 }
 
-int playlist_size(int num_rows,DbRowId **sorted_rows)
+int playlist_size(DbSortedRows *sorted_rows)
 {
     int i;
     int count = 0;
-    for(i = 0 ; i < num_rows ; i++ ) {
-        DbRowId *rowid = sorted_rows[i];
+    for(i = 0 ; i < sorted_rows->num_rows ; i++ ) {
+        DbRowId *rowid = sorted_rows->rows[i];
         if (rowid->playlist_names && rowid->playlist_paths) {
             count += rowid->playlist_names->size;
         }
@@ -3288,12 +3302,12 @@ int playlist_size(int num_rows,DbRowId **sorted_rows)
     return count;
 }
 
-void build_playlist(int num_rows,DbRowId **sorted_rows)
+void build_playlist(DbSortedRows *sorted_rows)
 {
     int i;
     FILE *fp = NULL;
-    for(i = 0 ; i < num_rows ; i++ ) {
-        DbRowId *rowid = sorted_rows[i];
+    for(i = 0 ; i < sorted_rows->num_rows ; i++ ) {
+        DbRowId *rowid = sorted_rows->rows[i];
         if (rowid->playlist_names && rowid->playlist_paths) {
             int j;
             HTML_LOG(0,"Adding files for [%s] to playlist",rowid->title);
@@ -3690,14 +3704,14 @@ TRACE;
     return result;
 }
 
-char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
+char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
 {
     int pruned_num_rows;
     DbRowId **pruned_rows;
 
 
     html_log(-1,"tv_listing");
-    pruned_rows = filter_page_items(0,num_rows,sorted_rows,num_rows,&pruned_num_rows);
+    pruned_rows = filter_page_items(0,sorted_rows->num_rows,sorted_rows->rows,sorted_rows->num_rows,&pruned_num_rows);
     char *result = pruned_tv_listing(pruned_num_rows,pruned_rows,rows,cols);
     FREE(pruned_rows);
 

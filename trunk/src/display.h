@@ -15,10 +15,10 @@ typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
 void display_menu();
 
 FILE *playlist_open();
-int get_sorted_rows_from_params(DbRowSet ***rowSetsPtr,DbRowId ***sortedRowsPtr);
-void free_sorted_rows(DbRowSet **rowsets,DbRowId **sorted_row_ids);
-int playlist_size(int num_rows,DbRowId **sorted_rows);
-void build_playlist(int num_rows,DbRowId **sorted_rows);
+DbSortedRows *get_sorted_rows_from_params();
+void sorted_rows_free_all(DbSortedRows *sortedRows);
+int playlist_size(DbSortedRows *sorted_rows);
+void build_playlist(DbSortedRows *sorted_rows);
 
 void display_dynamic_styles();
 
@@ -28,7 +28,7 @@ char *get_theme_image_return_link(char *href_attr,char *image_name,char *button_
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type);
 char *get_theme_image_tag(char *image_name,char *attr);
-char *get_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids);
+char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
 char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,char *attr);
@@ -38,7 +38,7 @@ char *get_play_tvid(char *text);
 char *movie_listing(DbRowId *rowid);
 long use_tv_boxsets();
 long use_movie_boxsets();
-char *tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols);
+char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols);
 char *get_status();
 char *cgi_url(int full);
 char *self_url(char *new_params);

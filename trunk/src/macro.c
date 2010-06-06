@@ -26,19 +26,14 @@
 #include "gaya.h"
 #include "actions.h"
 #include "vasprintf.h"
+#include "variables.h"
 
 
-#define MACRO_VARIABLE_PREFIX '$'
-#define MACRO_SPECIAL_PREFIX '@'
-#define MACRO_QUERY_PREFIX '?'
-#define MACRO_DBROW_PREFIX '%'
 
 static struct hashtable *macros = NULL;
 char *get_variable(char *vname,int *free_result);
-char *image_path_by_resolution(char *template_name,char *name);
+char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
-char *get_macro_variable(char *name);
-int set_macro_variable(char *name,char *value);
 
 long get_current_page() {
     long page;
@@ -81,38 +76,38 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
   Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
   use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL
 **/  
-char *macro_fn_fanart_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_fanart_url(MacroCallInfo *call_info) {
 
     char *result = NULL;
     char *default_wallpaper=NULL;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
     if (*oversight_val("ovs_display_fanart") == '0' ) {
 
         // do nothing
         
-    } else if (args && args->size > 1 ) {
+    } else if (call_info->args && call_info->args->size > 1 ) {
 
-        ovs_asprintf(&result,"%s([default wallpaper])",call);
+        ovs_asprintf(&result,"%s([default wallpaper])",call_info->call);
 
     } else {
 
-        if (args && args->size == 1 ) {
+        if (call_info->args && call_info->args->size == 1 ) {
 
-            default_wallpaper = args->array[0];
+            default_wallpaper = call_info->args->array[0];
         }
 
-        char *fanart = get_picture_path(num_rows,sorted_rows,FANART_IMAGE);
+        char *fanart = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,FANART_IMAGE);
 TRACE;
 
         if (!fanart || !exists(fanart)) {
 
             if (default_wallpaper) {
 
-                fanart = image_path_by_resolution(template_name,default_wallpaper);
+                fanart = image_path_by_resolution(call_info->skin_name,default_wallpaper);
 
             }
         }
@@ -124,31 +119,31 @@ TRACE;
 }
 
 // used to find resolution dependent images - normally for wallpapers.
-char *image_path_by_resolution(char *template_name,char *name)
+char *image_path_by_resolution(char *skin_name,char *name)
 {
     char *result = NULL;
     // Use default wallpaper
 
     if (g_dimension->scanlines == 0 ) {
-        ovs_asprintf(&result,"%s/templates/%s/sd/%s",appDir(),template_name,name);
+        ovs_asprintf(&result,"%s/templates/%s/sd/%s",appDir(),skin_name,name);
     } else {
-        ovs_asprintf(&result,"%s/templates/%s/%d/%s",appDir(),template_name,g_dimension->scanlines,name);
+        ovs_asprintf(&result,"%s/templates/%s/%d/%s",appDir(),skin_name,g_dimension->scanlines,name);
     }
     return result;
 }
 
-char *macro_fn_web_status(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_web_status(MacroCallInfo *call_info) {
     char *result = NULL;
 
-    if (args == NULL || args->size == 0  || args->size > 2 ) {
-        *free_result=0;
+    if (call_info->args == NULL || call_info->args->size == 0  || call_info->args->size > 2 ) {
+        call_info->free_result=0;
         result = "WEB_STATUS(url[,expected text])";
     } else {
         // If expected text is present prepare grep command to check wget output
         char *expected_text = NULL;
-        if (args->size == 2 ) {
+        if (call_info->args->size == 2 ) {
             // wget | grep -q causes broken pipe unless wget has -q also.
-            ovs_asprintf(&expected_text," -O - | grep  -q \"%s\"",args->array[1]);
+            ovs_asprintf(&expected_text," -O - | grep  -q \"%s\"",call_info->args->array[1]);
         } else {
             // otherwise silence wget.
             expected_text = STRDUP(" -O /dev/null");
@@ -158,8 +153,8 @@ char *macro_fn_web_status(char *template_name,char *orig_skin,char *call,Array *
 
         ovs_asprintf(&cmd,"/bin/wget -U \"%s\" -q -t 1 --dns-timeout 2 --connect-timeout 5 --read-timeout 10 --ignore-length \"%s%s\" %s",
                 USER_AGENT,
-                (util_starts_with(args->array[0],"http")?"":"http://"),
-                args->array[0],
+                (util_starts_with(call_info->args->array[0],"http")?"":"http://"),
+                call_info->args->array[0],
                 expected_text);
 
         HTML_LOG(0,"web status cmd [%s]",cmd);
@@ -177,7 +172,7 @@ char *macro_fn_web_status(char *template_name,char *orig_skin,char *call,Array *
     return result;
 }
 
-char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_mount_status(MacroCallInfo *call_info) {
     struct hashtable *mounts = mount_points_hash();
     struct hashtable_itr *itr;
     char *tmp;
@@ -211,27 +206,27 @@ char *macro_fn_mount_status(char *template_name,char *call,Array *args,int num_r
     return result;
 }
 
-char *macro_fn_poster(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_poster(MacroCallInfo *call_info) {
     char *result = NULL;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
 
-    DbRowId *rid=sorted_rows[0];
+    DbRowId *rid=call_info->sorted_rows->rows[0];
 
-    if (num_rows == 0) {
+    if (call_info->sorted_rows->num_rows == 0) {
 
-       *free_result=0;
+       call_info->free_result=0;
        result = "poster - no rows";
 
-    } else if (args && args->size  == 1) {
+    } else if (call_info->args && call_info->args->size  == 1) {
 
-        result = get_poster_image_tag(rid,args->array[0],POSTER_IMAGE);
+        result = get_poster_image_tag(rid,call_info->args->array[0],POSTER_IMAGE);
 TRACE;
 
-    } else if (!args || args->size == 0 ) {
+    } else if (!call_info->args || call_info->args->size == 0 ) {
 
         char *attr;
         long height;
@@ -258,27 +253,27 @@ TRACE;
 
     } else {
 
-        *free_result = 0;
+        call_info->free_result = 0;
         result = "POSTER([attributes])";
     }
     return result;
 }
 
-char *macro_fn_plot(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_plot(MacroCallInfo *call_info) {
 
-    *free_result=1;
+    call_info->free_result=1;
     char *result = NULL;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if (call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
 
 TRACE;
     int season = -1;
     int i;
-    for ( i = 0 ; EMPTY_STR(result) && i < num_rows ; i++ ) {
-        DbRowId *rid = sorted_rows[i];
+    for ( i = 0 ; EMPTY_STR(result) && i < call_info->sorted_rows->num_rows ; i++ ) {
+        DbRowId *rid = call_info->sorted_rows->rows[i];
         if (season == -1 || rid->season != season ) {
             season = rid->season;
             result = get_plot(rid,PLOT_MAIN);
@@ -296,7 +291,7 @@ TRACE;
     return result;
 }
 
-char *macro_fn_sort_select(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_sort_select(MacroCallInfo *call_info) {
     static char *result=NULL;
 
     if (!result) {
@@ -307,11 +302,11 @@ char *macro_fn_sort_select(char *template_name,char *orig_skin,char *call,Array 
         result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,DB_FLDID_INDEXTIME,sort);
         hashtable_destroy(sort,0,0);
     }
-    *free_result = 0;
+    call_info->free_result = 0;
     return result;
 }
 
-char *macro_fn_media_select(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_media_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
     //    char *label;
@@ -332,11 +327,11 @@ char *macro_fn_media_select(char *template_name,char *orig_skin,char *call,Array
         result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,both,category);
         hashtable_destroy(category,0,0);
     }
-    *free_result = 0;
+    call_info->free_result = 0;
     return result;
 }
 
-char *macro_fn_watched_select(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_watched_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
         struct hashtable *watched = string_string_hashtable("watched_menu",4);
@@ -346,27 +341,27 @@ char *macro_fn_watched_select(char *template_name,char *orig_skin,char *call,Arr
         result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"",watched);
         hashtable_destroy(watched,0,0);
     }
-    *free_result = 0;
+    call_info->free_result = 0;
     return result;
 }
 
 // Checkbox list of scan options
-char *macro_fn_checkbox(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_checkbox(MacroCallInfo *call_info) {
     static char *result=NULL;
-    if (!args || args->size < 3 ) {
+    if (!call_info->args || call_info->args->size < 3 ) {
         result = "CHECKBOX(htmlname_prefix,checked,htmlsep,values,..,..,)";
-        *free_result = 0;
+        call_info->free_result = 0;
     } else {
 
         int i;
-        char *htmlname=args->array[0];
-        char *checked=args->array[1];
-        char *sep=args->array[2];
+        char *htmlname=call_info->args->array[0];
+        char *checked=call_info->args->array[1];
+        char *sep=call_info->args->array[2];
         int first = 1;
 
-        for(i = 3 ; i < args->size ; i++ ) {
+        for(i = 3 ; i < call_info->args->size ; i++ ) {
             char *tmp;
-            char *val = args->array[i];
+            char *val = call_info->args->array[i];
             if (val && *val && STRCMP(val,"\"\"") != 0 ) {
                 ovs_asprintf(&tmp,"%s%s<input type=checkbox name=\"%s%s\" %s>%s",
                     NVL(result),(first==1?"":sep),htmlname,val,checked,val);
@@ -378,33 +373,33 @@ char *macro_fn_checkbox(char *template_name,char *orig_skin,char *call,Array *ar
     }
     return result;
 }
-char *macro_fn_episode_total(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_episode_total(MacroCallInfo *call_info) {
     static char result[10]="";
-    *free_result=0;
+    call_info->free_result=0;
     if (!*result) {
         sprintf(result,"%d",g_episode_total);
     }
     return result;
 }
 
-char *macro_fn_movie_total(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_movie_total(MacroCallInfo *call_info) {
     static char result[10]="";
-    *free_result=0;
+    call_info->free_result=0;
     if (!*result) {
         sprintf(result,"%d",g_movie_total);
     }
     return result;
 }
-char *macro_fn_other_media_total(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_other_media_total(MacroCallInfo *call_info) {
     static char result[10]="";
-    *free_result=0;
+    call_info->free_result=0;
     if (!*result) {
         sprintf(result,"%d",g_other_media_total);
     }
     return result;
 }
 
-char *macro_fn_title_select(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_title_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
 
@@ -422,11 +417,11 @@ char *macro_fn_title_select(char *template_name,char *orig_skin,char *call,Array
         result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"",title);
         hashtable_destroy(title,0,0);
     }
-    *free_result = 0;
+    call_info->free_result = 0;
     return result;
 }
 
-char *macro_fn_genre_select(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_genre_select(MacroCallInfo *call_info) {
     static char *result = NULL;
     if (g_genre_hash != NULL) {
 
@@ -446,54 +441,54 @@ char *macro_fn_genre_select(char *template_name,char *orig_skin,char *call,Array
             hashtable_insert(expanded_genres,STRDUP(""),STRDUP("All Genres"));
         }
         result = auto_option_list(DB_FLDID_GENRE,"",expanded_genres);
-        *free_result = 0; // TODO : this should be freed but we'll leave until next release.
+        call_info->free_result = 0; // TODO : this should be freed but we'll leave until next release.
         hashtable_destroy(expanded_genres,1,1);
     }
     return result;
 }
 
-char *macro_fn_genre(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_genre(MacroCallInfo *call_info) {
 
     char *genre = "";
-    *free_result=0;
+    call_info->free_result=0;
 
-    if (num_rows && sorted_rows && sorted_rows[0]->genre ) {
-        *free_result=1;
-        genre =expand_genre(sorted_rows[0]->genre);
+    if (call_info->sorted_rows && call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->genre ) {
+        call_info->free_result=1;
+        genre =expand_genre(call_info->sorted_rows->rows[0]->genre);
     }
 
     return genre;
 }
 
-char *macro_fn_title(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_title(MacroCallInfo *call_info) {
 
     char *result = "?";
-    *free_result=0;
+    call_info->free_result=0;
 
-    if ( num_rows && sorted_rows && sorted_rows[0]->title ) {
-        result = sorted_rows[0]->title;
+    if (call_info->sorted_rows &&  call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->title ) {
+        result = call_info->sorted_rows->rows[0]->title;
     } 
     return result;
 }
 
-char *macro_fn_set(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_set(MacroCallInfo *call_info)
 {
-    if (args == NULL || args->size != 2 ) {
-        html_error("invalid arguments [:%s(name,val):]",call);
+    if (call_info->args == NULL || call_info->args->size != 2 ) {
+        html_error("invalid arguments [:%s(name,val):]",call_info->call);
     } else {
-        set_macro_variable(args->array[0],args->array[1]);
+        set_skin_variable(call_info->args->array[0],call_info->args->array[1]);
     }
     return NULL;
 }
 
-char *macro_fn_season(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_season(MacroCallInfo *call_info) {
 
     char *season="?";
-    *free_result=0;
+    call_info->free_result=0;
 
-    if (num_rows && sorted_rows && sorted_rows[0]->season >=0) {
-        ovs_asprintf(&season,"%d",sorted_rows[0]->season);
-        *free_result=1;
+    if (call_info->sorted_rows && call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->season >=0) {
+        ovs_asprintf(&season,"%d",call_info->sorted_rows->rows[0]->season);
+        call_info->free_result=1;
     }
     return season;
 }
@@ -505,12 +500,12 @@ int chartotal(char *s,char *c) {
     return total;
 }
 
-char *macro_fn_runtime(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_runtime(MacroCallInfo *call_info) {
 
     int runtime = 0;
     int i;
-    for(i = 0 ; i < num_rows ; i++ ) {
-        DbRowId *rid = sorted_rows[i];
+    for(i = 0 ; i < call_info->sorted_rows->num_rows ; i++ ) {
+        DbRowId *rid = call_info->sorted_rows->rows[i];
         if (rid->runtime > 0 ) {
             runtime = rid->runtime;
             break;
@@ -520,7 +515,7 @@ char *macro_fn_runtime(char *template_name,char *orig_skin,char *call,Array *arg
     HTML_LOG(0,"runtime=[%d]",runtime);
 
     if (runtime == 0) {
-        *free_result=0;
+        call_info->free_result=0;
         return NULL;
     }
 
@@ -552,22 +547,22 @@ char *macro_fn_runtime(char *template_name,char *orig_skin,char *call,Array *arg
     assert(runtime_str[MAX_RUNTIME] == '\0');
     HTML_LOG(0,"runtime[%d]m = [%s]",runtime,runtime_str);
 
-    *free_result = 0;
+    call_info->free_result = 0;
     return runtime_str;
 }
-char *macro_fn_year(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_year(MacroCallInfo *call_info) {
 
     int i;
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
     char *year = NULL;
     int year_num = 0;
    
     // look for item with year set - sometimes tv Pilot does not have airdate 
-    for(i = 0 ; i < num_rows && year_num <= 1900 ; i++ ) {
-        DbRowId *rid = sorted_rows[i];
+    for(i = 0 ; i < call_info->sorted_rows->num_rows && year_num <= 1900 ; i++ ) {
+        DbRowId *rid = call_info->sorted_rows->rows[i];
 
         if (rid->category == 'T' ) {
 
@@ -590,18 +585,18 @@ char *macro_fn_year(char *template_name,char *orig_skin,char *call,Array *args,i
     return year;
 }
 
-char *macro_fn_cert_img(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_cert_img(MacroCallInfo *call_info) {
     char *cert,*tmp;
     cert = tmp = NULL;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
 
     if (*oversight_val("ovs_display_certificate") == '1') {
 
-        cert = util_tolower(sorted_rows[0]->certificate);
+        cert = util_tolower(call_info->sorted_rows->rows[0]->certificate);
 
         tmp=replace_str(cert,"usa:","us:");
         FREE(cert);
@@ -613,7 +608,7 @@ char *macro_fn_cert_img(char *template_name,char *orig_skin,char *call,Array *ar
         char *attr;
         ovs_asprintf(&attr," height=%d ",g_dimension->certificate_size);
 
-        tmp = template_image_link("/cert",cert,NULL,sorted_rows[0]->certificate,attr);
+        tmp = template_image_link("/cert",cert,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
         FREE(cert);
         FREE(attr);
         cert=tmp;
@@ -623,12 +618,12 @@ char *macro_fn_cert_img(char *template_name,char *orig_skin,char *call,Array *ar
     return cert;
 }
 
-char *macro_fn_tv_listing(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_tv_listing(MacroCallInfo *call_info) {
     int rows=0;
     int cols=0;
     HTML_LOG(1,"macro_fn_tv_listing");
 TRACE;
-    if (!get_rows_cols(call,args,&rows,&cols)) {
+    if (!get_rows_cols(call_info->call,call_info->args,&rows,&cols)) {
         char sl[20];
         long rl=0,cl=0;
         sprintf(sl,"%ld",g_dimension->scanlines);
@@ -639,16 +634,16 @@ TRACE;
         if (rl) rows = rl ; else rows = 10;
         if (cl) cols = cl ; else cols = 4 + 2 * (g_dimension->scanlines > 600 );
     }
-    return tv_listing(num_rows,sorted_rows,rows,cols);
+    return tv_listing(call_info->sorted_rows,rows,cols);
 }
 
 
-char *macro_fn_tv_paypal(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_tv_paypal(MacroCallInfo *call_info) {
     char *result=NULL;
 
     return result;
 }
-char *macro_fn_tv_mode(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_tv_mode(MacroCallInfo *call_info) {
 
     static char *result = NULL;
 
@@ -661,8 +656,8 @@ char *macro_fn_tv_mode(char *template_name,char *orig_skin,char *call,Array *arg
 
     return result;
 }
-char *macro_fn_sys_disk_used(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result=0;
+char *macro_fn_sys_disk_used(MacroCallInfo *call_info) {
+    call_info->free_result=0;
     static char result[50] = "";
 
     if (!*result) {
@@ -688,7 +683,7 @@ char *macro_fn_sys_disk_used(char *template_name,char *orig_skin,char *call,Arra
     return result;
 }
 
-char *macro_fn_paypal(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_paypal(MacroCallInfo *call_info) {
     char *p = NULL;
     if (!(g_dimension->local_browser) && *oversight_val("remove_donate_msg") != '1' ) {
         p = "<td width=25%><font size=2>Any contributions are gratefully received towards"
@@ -704,13 +699,13 @@ char *macro_fn_paypal(char *template_name,char *orig_skin,char *call,Array *args
         "<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/GB/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"PayPal - The safer, easier way to pay online.\">"
         "<img alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
         "</form></td>";
-        *free_result=0;
+        call_info->free_result=0;
     }
 
     return p;
 }
 
-char *macro_fn_sys_load_avg(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_sys_load_avg(MacroCallInfo *call_info) {
 
     char *result=NULL;
     double av[3];
@@ -735,11 +730,11 @@ char *macro_fn_sys_load_avg(char *template_name,char *orig_skin,char *call,Array
     return result;
 }
 
-char *macro_fn_sys_uptime(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_sys_uptime(MacroCallInfo *call_info) {
 
     static char result[50] = "";
 
-    *free_result = 0;
+    call_info->free_result = 0;
     if (!*result) {
         FILE *fp = fopen("/proc/uptime","r");
         if (fp != NULL) {
@@ -766,8 +761,8 @@ char *macro_fn_sys_uptime(char *template_name,char *orig_skin,char *call,Array *
     return result;
 }
 
-char *macro_fn_movie_listing(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return movie_listing(sorted_rows[0]);
+char *macro_fn_movie_listing(MacroCallInfo *call_info) {
+    return movie_listing(call_info->sorted_rows->rows[0]);
 }
 
 // add code for a star image to a buffer and return pointer to end of buffer.
@@ -783,7 +778,7 @@ char *add_star(int star_no) {
     return p;
 }
 
-char *macro_fn_resize_controls(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_resize_controls(MacroCallInfo *call_info)
 {
 
     char *result = NULL;
@@ -793,7 +788,7 @@ char *macro_fn_resize_controls(char *template_name,char *orig_skin,char *call,Ar
     return result;
     
 }
-char *macro_fn_tvids(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_tvids(MacroCallInfo *call_info)
 {
 
     char *result = NULL;
@@ -840,40 +835,40 @@ char *get_rating_stars(DbRowId *rid,int num_stars)
     return result;
 }
 
-char *macro_fn_rating_stars(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_rating_stars(MacroCallInfo *call_info) {
     char *result = NULL;
     int num_stars=0;
     char *star_path=NULL;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
     if (*oversight_val("ovs_display_rating") != '0') {
 
-        if (args && args->size == 1 && sscanf(args->array[0],"%d",&num_stars) == 1 ) {
+        if (call_info->args && call_info->args->size == 1 && sscanf(call_info->args->array[0],"%d",&num_stars) == 1 ) {
 
-            star_path=args->array[1];
+            star_path=call_info->args->array[1];
 
-            result = get_rating_stars(sorted_rows[0],num_stars);
+            result = get_rating_stars(call_info->sorted_rows->rows[0],num_stars);
 
         } else {
 
-            ovs_asprintf(&result,"%s(num_stars) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call);
+            ovs_asprintf(&result,"%s(num_stars) %%d is replaced with 10ths of the rating, eg 7.9rating becomes star10.png*7,star9.png,star0.png*2)",call_info->call);
         }
     }
         
     return result;
 }
 
-char *macro_fn_source(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_source(MacroCallInfo *call_info) {
     char *result = NULL;
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
-    if (num_rows) {
-        DbRowId *r=sorted_rows[0];
+    if (call_info->sorted_rows->num_rows) {
+        DbRowId *r=call_info->sorted_rows->rows[0];
         int freeit;
         char *share = share_name(r,&freeit);
         result = add_network_icon(r,share);
@@ -882,17 +877,17 @@ char *macro_fn_source(char *template_name,char *orig_skin,char *call,Array *args
     return result;
 }
 
-char *macro_fn_rating(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_rating(MacroCallInfo *call_info) {
     char *result = NULL;
 
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
-    if (*oversight_val("ovs_display_rating") != '0' && num_rows) {
+    if (*oversight_val("ovs_display_rating") != '0' && call_info->sorted_rows->num_rows) {
 
-        if (sorted_rows[0]->rating > 0.01) {
-            ovs_asprintf(&result,"%.1lf",sorted_rows[0]->rating);
+        if (call_info->sorted_rows->rows[0]->rating > 0.01) {
+            ovs_asprintf(&result,"%.1lf",call_info->sorted_rows->rows[0]->rating);
         }
     }
 
@@ -1007,9 +1002,9 @@ void free_named_args(struct hashtable *h) {
     }
 }
 
-char *macro_fn_grid(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_grid(MacroCallInfo *call_info) {
 
-    struct hashtable *h = args_to_hash(args,NULL,"rows,cols,img_height,img_width,offset");
+    struct hashtable *h = args_to_hash(call_info->args,NULL,"rows,cols,img_height,img_width,offset");
     
     if (grid_info == NULL) {
         grid_info = grid_info_init();
@@ -1038,14 +1033,14 @@ char *macro_fn_grid(char *template_name,char *orig_skin,char *call,Array *args,i
     }
     if ((tmp = get_named_arg(h,"offset")) != NULL) {
         gs->offset = atoi(tmp);
-        tmp = get_macro_variable("skin_grid_size");
+        tmp = get_skin_variable("skin_grid_size");
         if (tmp == NULL) {
             html_error("GRID: skin_grid_size must be set when using GRID segments. [:SET(skin_grid_size,value):]");
         }
         gs->parent->page_size = atoi(tmp);
     }
 
-    char *result = get_grid(get_current_page(),gs,num_rows,sorted_rows);
+    char *result = get_grid(get_current_page(),gs,call_info->sorted_rows);
 
     free_named_args(h);
 
@@ -1054,16 +1049,16 @@ HTML_LOG(0,"macro length = %d",NVL(result));
     return result;
 }
 
-char *macro_fn_header(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_header(MacroCallInfo *call_info) {
     return STRDUP("header");
 }
 
-char *macro_fn_hostname(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result=0;
+char *macro_fn_hostname(MacroCallInfo *call_info) {
+    call_info->free_result=0;
     return util_hostname();
 }
 
-char *macro_fn_form_start(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_form_start(MacroCallInfo *call_info) {
 
     int free_url=0;
     char *url=NULL;
@@ -1098,14 +1093,14 @@ TRACE;
     return result;
 }
 
-char *macro_fn_form_end(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_form_end(MacroCallInfo *call_info) {
     char *result=NULL;
     ovs_asprintf(&result,"<input type=hidden item_count=\"%d\" /></form>",g_item_count);
     return result;
 }
 
-char *macro_fn_is_gaya(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result=0;
+char *macro_fn_is_gaya(MacroCallInfo *call_info) {
+    call_info->free_result=0;
     if (g_dimension->local_browser) {
         return "1";
     } else {
@@ -1113,19 +1108,19 @@ char *macro_fn_is_gaya(char *template_name,char *orig_skin,char *call,Array *arg
     }
 }
 
-char *macro_fn_include(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    if (args && args->size == 1) {
-        display_template(orig_skin,args->array[0],num_rows,sorted_rows);
-    } else if (!args) {
+char *macro_fn_include(MacroCallInfo *call_info) {
+    if (call_info->args && call_info->args->size == 1) {
+        display_template(call_info->orig_skin_name,call_info->args->array[0],call_info->sorted_rows);
+    } else if (!call_info->args) {
         html_error("missing  args for include");
     } else {
-        html_error("number of args for include = %d",args->size);
+        html_error("number of args for include = %d",call_info->args->size);
     }
     return NULL;
 }
 
-char *macro_fn_start_cell(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result=0;
+char *macro_fn_start_cell(MacroCallInfo *call_info) {
+    call_info->free_result=0;
     char *result=NULL;
 
     char *start_cell = get_start_cell();
@@ -1143,8 +1138,8 @@ char *macro_fn_start_cell(char *template_name,char *orig_skin,char *call,Array *
     return result;
 
 }
-char *macro_fn_media_type(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result=0;
+char *macro_fn_media_type(MacroCallInfo *call_info) {
+    call_info->free_result=0;
     char *mt="?";
     switch(*query_val(QUERY_PARAM_TYPE_FILTER)) {
 		case 'O': mt="Other"; break;
@@ -1155,7 +1150,7 @@ char *macro_fn_media_type(char *template_name,char *orig_skin,char *call,Array *
 
     return mt;
 }
-char *macro_fn_version(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_version(MacroCallInfo *call_info) {
 
     char *version=OVS_VERSION;
     if (strstr(version,"2009")) {
@@ -1165,24 +1160,24 @@ char *macro_fn_version(char *template_name,char *orig_skin,char *call,Array *arg
 
 }
 
-char *macro_fn_media_toggle(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_media_toggle(MacroCallInfo *call_info) {
 
     return get_toggle("red",QUERY_PARAM_TYPE_FILTER,
             QUERY_PARAM_MEDIA_TYPE_VALUE_TV,"Tv",
             QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE,"Film");
 
 }
-char *macro_fn_watched_toggle(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_watched_toggle(MacroCallInfo *call_info) {
     return get_toggle("yellow",QUERY_PARAM_WATCHED_FILTER,
             QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched",
             QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
 }
-char *macro_fn_sort_type_toggle(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_sort_type_toggle(MacroCallInfo *call_info) {
     return get_toggle("blue",QUERY_PARAM_SORT,
             DB_FLDID_TITLE,"Name",
             DB_FLDID_INDEXTIME,"Age");
 }
-char *macro_fn_filter_bar(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_filter_bar(MacroCallInfo *call_info) {
 
     char *result=NULL;
 
@@ -1229,41 +1224,41 @@ char *macro_fn_filter_bar(char *template_name,char *orig_skin,char *call,Array *
 }
 
 // Display a link back to this cgi file with paramters adjusted.
-char *macro_fn_link(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_link(MacroCallInfo *call_info) {
     char *result=NULL;
 
-    if (args && args->size == 2) {
+    if (call_info->args && call_info->args->size == 2) {
 
-        result = get_self_link(args->array[0],"",args->array[1]);
+        result = get_self_link(call_info->args->array[0],"",call_info->args->array[1]);
 
-    } else if (args && args->size == 3) {
+    } else if (call_info->args && call_info->args->size == 3) {
 
-        result= get_self_link(args->array[0],args->array[2],args->array[1]);
+        result= get_self_link(call_info->args->array[0],call_info->args->array[2],call_info->args->array[1]);
 
     } else {
 
-        printf("%s(params,title[,attr])",call);
+        printf("%s(params,title[,attr])",call_info->call);
     }
     return result;
 }
 
-char *macro_fn_icon_link(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_icon_link(MacroCallInfo *call_info) {
     char *result=NULL;
-    if (args && args->size == 2) {
+    if (call_info->args && call_info->args->size == 2) {
 
-        result = get_theme_image_link(args->array[0],"",args->array[1],"");
+        result = get_theme_image_link(call_info->args->array[0],"",call_info->args->array[1],"");
 
-    } else if (args && args->size == 3) {
+    } else if (call_info->args && call_info->args->size == 3) {
 
-        result= get_theme_image_link(args->array[0],args->array[2],args->array[1],"");
+        result= get_theme_image_link(call_info->args->array[0],call_info->args->array[2],call_info->args->array[1],"");
 
-    } else if (args && args->size == 3) {
+    } else if (call_info->args && call_info->args->size == 3) {
 
-        result= get_theme_image_link(args->array[0],args->array[2],args->array[1],args->array[3]);
+        result= get_theme_image_link(call_info->args->array[0],call_info->args->array[2],call_info->args->array[1],call_info->args->array[3]);
 
     } else {
 
-        printf("%s(params,icon[,href_attr[,image_attr]])",call);
+        printf("%s(params,icon[,href_attr[,image_attr]])",call_info->call);
     }
     return result;
 }
@@ -1276,78 +1271,78 @@ char *macro_fn_icon_link(char *template_name,char *orig_skin,char *call,Array *a
   BACKGROUND_IMAGE(image name) - deprecated - use BACKGROUND_URL() 
   Display image from skin/720 or skin/sd folder. Also see BACKGROUND_URL,FANART_URL
 **/  
-char *macro_fn_background_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_background_url(MacroCallInfo *call_info) {
     char *result=NULL;
-    if (args && args->size == 1) {
-        char *tmp = image_path_by_resolution(template_name,args->array[0]);
+    if (call_info->args && call_info->args->size == 1) {
+        char *tmp = image_path_by_resolution(call_info->skin_name,call_info->args->array[0]);
         result = file_to_url(tmp);
         FREE(tmp);
     } else {
-        ovs_asprintf(&result,"%s(image base name)",call);
+        ovs_asprintf(&result,"%s(image base name)",call_info->call);
     }
     return result;
 }
 
-char *macro_fn_favicon(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_favicon(MacroCallInfo *call_info) {
     char *result="";
-    *free_result = 0;
+    call_info->free_result = 0;
     if (is_pc_browser()) {
         result = "<link rel=\"shortcut icon\" href=\"/oversight/templates/ovsicon.ico\" />";
     }
     return  result;
 }
 
-char *macro_fn_skin_name(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result = 0;
+char *macro_fn_skin_name(MacroCallInfo *call_info) {
+    call_info->free_result = 0;
     return skin_name();
 }
 
-char *macro_fn_template_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_template_url(MacroCallInfo *call_info)
 {
     char *result=NULL;
-    if (args && args->size >= 1) {
+    if (call_info->args && call_info->args->size >= 1) {
 
-        char *name = arraystr(args);
+        char *name = arraystr(call_info->args);
         result = file_source("",name,""); 
         FREE(name);
 
     } else {
 
-        printf("%s(TEMPLATE_URL[name])",call);
+        printf("%s(TEMPLATE_URL[name])",call_info->call);
     }
     return result;
 }
 
 // Display a template image from images folder - if not present look in defaults.
-char *macro_fn_image_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_image_url(MacroCallInfo *call_info)
 {
     char *result=NULL;
-    if (args && args->size >= 1) {
+    if (call_info->args && call_info->args->size >= 1) {
 
-        char *name = arraystr(args);
+        char *name = arraystr(call_info->args);
         result = image_source("",name,""); 
         FREE(name);
 
     } else {
 
-        printf("%s(IMAGE_URL[name])",call);
+        printf("%s(IMAGE_URL[name])",call_info->call);
     }
     return result;
 }
 // Display an icon ICON(name,[attribute]) - if not present look in defaults.
-char *macro_fn_icon(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_icon(MacroCallInfo *call_info) {
     char *result=NULL;
-    if (args && args->size == 1) {
+    if (call_info->args && call_info->args->size == 1) {
 
-        result= get_theme_image_tag(args->array[0],"");
+        result= get_theme_image_tag(call_info->args->array[0],"");
 
-    } else if (args && args->size == 2) {
+    } else if (call_info->args && call_info->args->size == 2) {
 
-        result= get_theme_image_tag(args->array[0],args->array[1]);
+        result= get_theme_image_tag(call_info->args->array[0],call_info->args->array[1]);
 
     } else {
 
-        printf("%s(icon_name[,attr])",call);
+        printf("%s(icon_name[,attr])",call_info->call);
     }
     return result;
 }
@@ -1360,32 +1355,32 @@ char *config_link(char *config_file,char *help_suffix,char *html_attributes,char
     return link;
 }
 
-char *macro_fn_admin_config_link(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_admin_config_link(MacroCallInfo *call_info) {
 
     char *result=NULL;
 
-    if (args && args->size == 3) {
+    if (call_info->args && call_info->args->size == 3) {
 
-        result= config_link(args->array[0],args->array[1],"",args->array[2]);
+        result= config_link(call_info->args->array[0],call_info->args->array[1],"",call_info->args->array[2]);
 
-    } else if (args && args->size == 4) {
+    } else if (call_info->args && call_info->args->size == 4) {
 
-        result= config_link(args->array[0],args->array[1],args->array[3],args->array[2]);
+        result= config_link(call_info->args->array[0],call_info->args->array[1],call_info->args->array[3],call_info->args->array[2]);
 
     } else {
 
-        printf("%s(config_file,help_suffix,text[,html_attributes])",call);
+        printf("%s(config_file,help_suffix,text[,html_attributes])",call_info->call);
     }
     return result;
 }
 
 
-char *macro_fn_status(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_status(MacroCallInfo *call_info) {
     return get_status();
 }
 
 
-char *macro_fn_help_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_help_button(MacroCallInfo *call_info) {
     char *result = NULL;
     char *tag=get_theme_image_tag("help",NULL);
     if (!g_dimension->local_browser) {
@@ -1398,7 +1393,7 @@ char *macro_fn_help_button(char *template_name,char *orig_skin,char *call,Array 
     return result;
 }
 
-char *macro_fn_setup_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_setup_button(MacroCallInfo *call_info) {
     return get_theme_image_link(QUERY_PARAM_VIEW"=admin&action=ask","TVID=SETUP","configure","");
 }
 
@@ -1447,7 +1442,7 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
     return result;
 }
 
-char *macro_fn_left_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_left_button(MacroCallInfo *call_info) {
 
     HTML_LOG(0,"current page=%d",get_current_page());
     int on = get_current_page() > 0;
@@ -1458,42 +1453,42 @@ char *macro_fn_left_button(char *template_name,char *orig_skin,char *call,Array 
 
 
 
-char *macro_fn_right_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_right_button(MacroCallInfo *call_info) {
 
     int page_size = g_dimension->current_grid->rows*g_dimension->current_grid->cols;
     HTML_LOG(0,"page_size=%d",page_size);
-    char *custom_grid_size = get_macro_variable("skin_grid_size");
+    char *custom_grid_size = get_skin_variable("skin_grid_size");
     if (!EMPTY_STR(custom_grid_size)) {
         page_size = atoi(custom_grid_size);
         HTML_LOG(0,"grid_size=%d",page_size);
     }
-    int on = ((get_current_page()+1)*page_size < num_rows);
+    int on = ((get_current_page()+1)*page_size < call_info->sorted_rows->num_rows);
 
     return get_page_control(on,1,"pgdn","right");
 }
 
 
 
-char *macro_fn_back_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_back_button(MacroCallInfo *call_info) {
     char *result=NULL;
     if (*query_view_val() && !*query_select_val()) {
         char *attr = "";
-        if (args && args->size == 1) {
-            attr=args->array[0];
+        if (call_info->args && call_info->args->size == 1) {
+            attr=call_info->args->array[0];
         }
         result = get_theme_image_return_link("name=up","back",attr);
     }
     return result;
 }
 
-char *macro_fn_menu_tvid(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_menu_tvid(MacroCallInfo *call_info) {
     char *result=NULL;
     char *url = self_url(QUERY_PARAM_VIEW"=&idlist=");
     ovs_asprintf(&result,"<a href=\"%s\" TVID=TAB ></a>",url);
     FREE(url);
     return result;
 }
-char *macro_fn_home_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_home_button(MacroCallInfo *call_info) {
     char *result=NULL;
 
     if(!*query_select_val()) {
@@ -1505,7 +1500,7 @@ char *macro_fn_home_button(char *template_name,char *orig_skin,char *call,Array 
     return result;
 }
 
-char *macro_fn_exit_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_exit_button(MacroCallInfo *call_info) {
     char *result=NULL;
 
     if(g_dimension->local_browser && !*query_select_val()) {
@@ -1516,7 +1511,7 @@ char *macro_fn_exit_button(char *template_name,char *orig_skin,char *call,Array 
     return result;
 }
 
-char *macro_fn_mark_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_mark_button(MacroCallInfo *call_info) {
     char *result=NULL;
     if (!*query_select_val() && allow_mark()) {
         if (g_dimension->local_browser) {
@@ -1531,7 +1526,7 @@ char *macro_fn_mark_button(char *template_name,char *orig_skin,char *call,Array 
     return result;
 }
 
-char *macro_fn_delete_button(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_delete_button(MacroCallInfo *call_info) {
     char *result=NULL;
     if (!*query_select_val() && (allow_delete() || allow_delist())) {
         if (g_dimension->local_browser) {
@@ -1545,42 +1540,42 @@ char *macro_fn_delete_button(char *template_name,char *orig_skin,char *call,Arra
     }
     return result;
 }
-char *macro_fn_select_mark_submit(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_select_mark_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_MARK)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Mark >");
     }
     return result;
 }
-char *macro_fn_select_delete_submit(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_select_delete_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Delete onclick=\"return confirm('STOP! REALLY DELETE FILES?');\" >");
     }
     return result;
 }
-char *macro_fn_select_delist_submit(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_select_delist_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Remove_From_List >");
     }
     return result;
 }
-char *macro_fn_select_cancel_submit(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_select_cancel_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (*query_select_val()) {
         ovs_asprintf(&result,"<input type=submit name=select value=Cancel >");
     }
     return result;
 }
-char *macro_fn_external_url(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_external_url(MacroCallInfo *call_info) {
     char *result=NULL;
-    if (num_rows == 0 || sorted_rows == NULL ) {
-        *free_result=0;
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
         return "?";
     }
     if (!g_dimension->local_browser){
-        char *url=sorted_rows[0]->url;
+        char *url=call_info->sorted_rows->rows[0]->url;
         if (url != NULL) {
             char *image=get_theme_image_tag("upgrade"," alt=External ");
             char *website="";
@@ -1763,48 +1758,48 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
 }
 
 
-char *macro_fn_if(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_if(MacroCallInfo *call_info)
 {
-    long l = numeric_constant_eval_first_arg(0,args);
-    if (args == NULL || args->size == 1 ) {
+    long l = numeric_constant_eval_first_arg(0,call_info->args);
+    if (call_info->args == NULL || call_info->args->size == 1 ) {
         // Single form [:IF:] - supresses all line output until [:ENDIF:] or [:ELSE:]
         // Also returns NULL to remove itself from output.
         output_state_push(l);
         
     } else if (l) {
         // [:IF(exp,replace):] - if exp is true - result is 'replace'
-        HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[1]);
-        if (args->size >= 2) {
-            return STRDUP(args->array[1]);
+        HTML_LOG(0,"val=%ld [%d] [%s]",l,call_info->args->size,call_info->args->array[1]);
+        if (call_info->args->size >= 2) {
+            return STRDUP(call_info->args->array[1]);
         }
     } else {
         // [:IF(exp,replace,replace2):] - if exp is false - result is 'replace2'
-        HTML_LOG(0,"val=%ld [%d] [%s]",l,args->size,args->array[2]);
-        if (args->size >= 3) {
-            return STRDUP(args->array[2]);
+        HTML_LOG(0,"val=%ld [%d] [%s]",l,call_info->args->size,call_info->args->array[2]);
+        if (call_info->args->size >= 3) {
+            return STRDUP(call_info->args->array[2]);
         }
     }
     return NULL;
 }
-char *macro_fn_elseif(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_elseif(MacroCallInfo *call_info)
 {
     char *result = NULL;
 
-    if (args == NULL ||  args->size != 1 ) {
-        *free_result=0;
+    if (call_info->args == NULL ||  call_info->args->size != 1 ) {
+        call_info->free_result=0;
         result="ELSEIF";
     } else {
-        long l = numeric_constant_eval_first_arg(0,args);
+        long l = numeric_constant_eval_first_arg(0,call_info->args);
         output_state_eval(l);
     }
     return result;
 }
 
-char *macro_fn_else(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_else(MacroCallInfo *call_info) {
 
     char *result = NULL;
-    if (args && args->size ) {
-        *free_result=0;
+    if (call_info->args && call_info->args->size ) {
+        call_info->free_result=0;
         result="ENDIF";
     } else {
         output_state_invert();
@@ -1812,10 +1807,10 @@ char *macro_fn_else(char *template_name,char *orig_skin,char *call,Array *args,i
 
     return result;
 }
-char *macro_fn_endif(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_endif(MacroCallInfo *call_info) {
     char *result = NULL;
-    if (args && args->size ) {
-        *free_result=0;
+    if (call_info->args && call_info->args->size ) {
+        call_info->free_result=0;
         result="ENDIF";
     } else {
         output_state_pop();
@@ -1823,24 +1818,24 @@ char *macro_fn_endif(char *template_name,char *orig_skin,char *call,Array *args,
     return result;
 }
 
-char *macro_fn_eval(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_eval(MacroCallInfo *call_info)
 {
-    *free_result = 1;
-    return numeric_constant_arg_to_str(0,args);
+    call_info->free_result = 1;
+    return numeric_constant_arg_to_str(0,call_info->args);
 }
 
-char *macro_fn_number(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_number(MacroCallInfo *call_info)
 {
-    return numeric_constant_arg_to_str(0,args);
+    return numeric_constant_arg_to_str(0,call_info->args);
 }
-char *macro_fn_font_size(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_font_size(MacroCallInfo *call_info)
 {
-    return numeric_constant_arg_to_str(g_dimension->font_size,args);
+    return numeric_constant_arg_to_str(g_dimension->font_size,call_info->args);
 }
-char *macro_fn_title_size(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return numeric_constant_arg_to_str(g_dimension->title_size,args);
+char *macro_fn_title_size(MacroCallInfo *call_info) {
+    return numeric_constant_arg_to_str(g_dimension->title_size,call_info->args);
 }
-char *macro_fn_body_width(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_body_width(MacroCallInfo *call_info) {
     long value = g_dimension->scanlines ;
     switch(value) {
         case 0:
@@ -1856,12 +1851,12 @@ char *macro_fn_body_width(char *template_name,char *orig_skin,char *call,Array *
 
     }
 
-    return numeric_constant_arg_to_str(value,args);
+    return numeric_constant_arg_to_str(value,call_info->args);
 }
-char *macro_fn_url_base(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_fn_url_base(MacroCallInfo *call_info)
 {
     static char *base = NULL;
-    *free_result = 0;
+    call_info->free_result = 0;
     if (base == NULL) {
         if (g_dimension->local_browser) {
             ovs_asprintf(&base,"file://%s",appDir());
@@ -1872,7 +1867,7 @@ char *macro_fn_url_base(char *template_name,char *orig_skin,char *call,Array *ar
     return base;
 }
 
-char *macro_fn_body_height(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_body_height(MacroCallInfo *call_info) {
     char* value = "100%";
 
     if (g_dimension->local_browser) {
@@ -1893,23 +1888,23 @@ char *macro_fn_body_height(char *template_name,char *orig_skin,char *call,Array 
     } else {
         value="100%";
     }
-    *free_result = 0;
+    call_info->free_result = 0;
     return value;
 
     //return numeric_constant_arg_to_str(value,args);
 }
 
-char *macro_fn_scanlines(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    return numeric_constant_arg_to_str(g_dimension->scanlines,args);
+char *macro_fn_scanlines(MacroCallInfo *call_info) {
+    return numeric_constant_arg_to_str(g_dimension->scanlines,call_info->args);
 }
 
 // Write a html input table for a configuration file. The help file(arg2) decides which options to show.
-char *macro_fn_edit_config(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_edit_config(MacroCallInfo *call_info) {
 
     char *result = NULL;
-    if (args && args->size == 2) {
-        char *file=args->array[0];
-        char *help_suffix=args->array[1];
+    if (call_info->args && call_info->args->size == 2) {
+        char *file=call_info->args->array[0];
+        char *help_suffix=call_info->args->array[1];
         char *cmd;
 
         //Note this outputs directly to stdout so always returns null
@@ -1919,182 +1914,30 @@ char *macro_fn_edit_config(char *template_name,char *orig_skin,char *call,Array 
         system(cmd);
         FREE(cmd);
 
-        *free_result = 0;
+        call_info->free_result = 0;
 
         result="";
 
     } else {
-        ovs_asprintf(&result,"%s(config_file,help_suffix)",call);
+        ovs_asprintf(&result,"%s(config_file,help_suffix)",call_info->call);
     }
     return result;
 }
 
-char *macro_fn_play_tvid(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
+char *macro_fn_play_tvid(MacroCallInfo *call_info) {
 
     char *result = NULL;
     char *text="";
-    if (args && args->size > 0)  {
-        text = args->array[0];
+    if (call_info->args && call_info->args->size > 0)  {
+        text = call_info->args->array[0];
     }
-    if (playlist_size(num_rows,sorted_rows)) {
+    if (playlist_size(call_info->sorted_rows)) {
         result = get_play_tvid(text);
     }
     return result;
 }
 
 
-/*
- <tr>
-    <td>
-        <table border="0" cellspacing="0" cellpadding="0" background="file:///opt/sybhttpd/localhost.images/sd/list_bar.
-png">
-            <tr>
-                <td width="40" height="35" align="right"><font size="2" color=user1><b>28</b></font></td>
-                <td width="40" align="right">
-                    <img src="file:///opt/sybhttpd/localhost.images/sd/list_folder.png" width="35" height="25">
-                </td>
-                <td width="290"><a href="http://localhost.drives:8883/HARD_DISK/Complete/house.s06e08.720p.hdtv.x264.imm
-erse.extra.par.s.nzb/?filter=3" name="28" onkeyleftset="media" onkeyrightset="FILE_INDEX" tvid="28" alt="house.s06e08.72
-0p.hdtv....text/plain                4 KB" file=c   fip="house.s06e08.720p.hdtv.x264.immerse.extra.par.s.nzb"><font size
-="2" color=user1><b><marquee behavior=focus width=290>&nbsp;&nbsp;house.s06e08.720p.hdtv.x264.immerse.extra.par.s.nzb</m
-arquee></b></font></a></td>
-                <td width="10"></td>
-            </tr>
-        </table>
-    </td>
-</tr>
-<tr><td height="2"></td></tr>
-*/
-
-char *get_gaya_row(int pos,Array *files,
-        int number_cell_width,int number_cell_height,int icon_cell_width,
-        int image_width,int image_height,
-        int name_width,
-        int space_width) {
-    char *tmp;
-
-    char *link;
-    char *name = files->array[pos];
-
-    char *link_content;
-    char *image;
-
-    char *encoded_name = url_encode(name+1);
-
-    ovs_asprintf(&link_content,
-        "<font size=\"2\" color=user1><b><marquee behavior=focus width=%d>&nbsp;&nbsp;%s</marquee></b></font>",
-        name_width,name+1);
-
-    if (*name == 'd' )  {
-        ovs_asprintf(&link,
-            "<a href=\"http://localhost.drives:8883%s%s/?filter=%s\" name=\"%d\" tvid=\"%d\" "
-            "onkeyleftset=\"media\" onkeyrightset=\"FILE_INDEX\" alt=\"%s\" file=c "
-            "fip=\"%s\">%s</a>",
-            get_gaya_short_folder(),encoded_name,get_gaya_filter(),pos,pos,name+1,name+1,link_content);
-        image=gaya_image("list_folder.png");
-
-    } else {
-        image=gaya_get_file_image(name+1);
-        ovs_asprintf(&link,"%s",link_content);
-    }
-    FREE(link_content);
-
-    ovs_asprintf(&tmp,
-    "<tr><td>\n"
-        "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" background=\"%s\"><tr>\n"
-        "<td width=\"%d\" height=\"%d\" align=\"right\"><font size=\"2\" color=user1><b>%d</b></font></td>\n"
-        "<td width=\"%d\" align=\"right\"><img src=\"%s\" width=\"%d\" height=\"%d\"></td>\n"
-        "<td width=\"%d\">%s</td>\n"
-        "<td width=\"10\"></td>\n"
-        "</tr></table>\n"
-    "</td></tr>\n\n"
-    "<tr><td height=\"2\"></td></tr>\n\n",
-         gaya_image("list_bar.png"),
-         number_cell_width,number_cell_height,pos,
-         icon_cell_width,image,image_width,image_height,
-         name_width,link);
-
-    FREE(encoded_name);
-    FREE(image);
-    FREE(link);
-
-    return tmp;
-        
-}
-
-char *macro_fn_gaya_list_rows(
-        char *template_name,
-        char *call,
-        Array *args,
-        int num_rows,
-        DbRowId **sorted_rows,
-        int *free_result)
-{
-    *free_result = 1;
-    char *result = NULL;
-
-    //args = row height, col1 width, col2width , col3 width , col4width
-
-    Array *files = gaya_get_files();
-
-    int arg=0;
-
-    if (args == NULL || args->size != 7 ) {
-        *free_result = 0;
-        return "GAYA_LIST_ROWS(number_cell_w,number_cell_h,icon_cell_w,image_w,image_h,name_w,space_w)";
-    }
-    int number_cell_width = atol(args->array[arg++]);
-    int number_cell_height = atol(args->array[arg++]);
-    int icon_cell_width=atol(args->array[arg++]);
-    int image_width=atol(args->array[arg++]);
-    int image_height=atol(args->array[arg++]);
-    int name_width=atol(args->array[arg++]);
-    int space_width=atol(args->array[arg++]);
-
-    int i = 0;
-    int start_file = gaya_first_file();
-    int end_file = gaya_last_file();
-
-    HTML_LOG(0,"Files from %d to %d",start_file,end_file);
-    for(i = start_file ; i<= end_file ; i++ ) {
-        char *tmp;
-        char *new_row = 
-            get_gaya_row(i-1,files,
-                    number_cell_width,number_cell_height,icon_cell_width,
-                    image_width,image_height,
-                    name_width,space_width);
-
-        //HTML_LOG(0,"ROW[%s]",new_row);
-
-        ovs_asprintf(&tmp,"%s%s",NVL(result),new_row);
-        FREE(result);
-        FREE(new_row);
-        result = tmp;
-    }
-
-    //HTML_LOG(0,"RESULT[%s]",result);
-    return result;
-}
-
-char *macro_fn_gaya_folder(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result = 0;
-    return get_gaya_short_folder();
-}
-
-char *macro_fn_gaya_root_folder_name(char *template_name,char *orig_skin,char *call,Array *args,int num_rows,DbRowId **sorted_rows,int *free_result) {
-    *free_result = 1;
-    char *result = NULL;
-
-    char *f = get_gaya_short_folder();
-    f++; 
-
-    char *end = strchr(f,'/');
-    if (end == NULL) {
-        end = f + strlen(f);
-    }
-    ovs_asprintf(&result,"%.*s",end-f,f);
-    return result;
-}
 
 void macro_init() {
 
@@ -2125,9 +1968,6 @@ void macro_init() {
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"FORM_END",macro_fn_form_end);
         hashtable_insert(macros,"FORM_START",macro_fn_form_start);
-        hashtable_insert(macros,"GAYA_FOLDER",macro_fn_gaya_folder);
-        hashtable_insert(macros,"GAYA_LIST_ROWS",macro_fn_gaya_list_rows);
-        hashtable_insert(macros,"GAYA_ROOT_FOLDER_NAME",macro_fn_gaya_root_folder_name);
         hashtable_insert(macros,"GENRE",macro_fn_genre);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
         hashtable_insert(macros,"GRID",macro_fn_grid);
@@ -2198,141 +2038,8 @@ void macro_init() {
     }
 }
 
-// ?xx = html query variable
-// ovs_xxx = oversight config
-// catalog_xxx = catalog config
-// unpak_xxx = unpak config
-// skin_xxx = macro variable
-//
 
-char *get_variable(char *vname,int *free_result)
-{
-
-    int convert_int = 0;
-    int int_val=0;
-
-    *free_result = 0;
-    char *result=NULL;
-
-    if (*vname == MACRO_SPECIAL_PREFIX ) {
-
-        if (util_starts_with(vname+1,"gaya")) {
-
-            if (STRCMP(vname+1,"gaya") == 0) {
-
-                convert_int=1;
-                int_val = g_dimension->local_browser;
-
-            } else if (STRCMP(vname+1,"gaya_page") == 0) {
-
-                convert_int=1;
-                int_val = get_gaya_page();
-
-            } else if (STRCMP(vname+1,"gaya_file_total") == 0) {
-
-                convert_int=1;
-                int_val = gaya_file_total();
-
-            } else if (STRCMP(vname+1,"gaya_prev_page") == 0) {
-
-                convert_int=1;
-                int_val = gaya_prev_page();
-
-            } else if (STRCMP(vname+1,"gaya_next_page") == 0) {
-
-                convert_int=1;
-                int_val = gaya_next_page();
-
-            } else if (STRCMP(vname+1,"gaya_first_file") == 0) {
-
-                convert_int=1;
-                int_val = gaya_first_file();
-
-            } else if (STRCMP(vname+1,"gaya_last_file") == 0) {
-
-                convert_int=1;
-                int_val = gaya_last_file();
-
-            } else if (STRCMP(vname+1,"gaya_prev_file") == 0) {
-
-                convert_int=1;
-                int_val = gaya_prev_file();
-            }
-
-        } else if (STRCMP(vname+1,"nmt100") == 0) {
-            convert_int=1;
-            int_val = is_nmt100();
-
-        } else if (STRCMP(vname+1,"nmt200") == 0) {
-
-            convert_int=1;
-            int_val = is_nmt200();
-
-        } else if (STRCMP(vname+1,"hd") == 0) {
-
-            convert_int=1;
-            int_val = g_dimension->scanlines > 0;
-
-        } else if (STRCMP(vname+1,"sd") == 0) {
-
-            convert_int=1;
-            int_val = g_dimension->scanlines == 0;
-
-        } else if (STRCMP(vname+1,"poster_mode") == 0) {
-            return ( g_dimension->poster_mode ? "1" : "0" ) ; // $@gaya
-
-        } else if (STRCMP(vname+1,"poster_menu_img_width") == 0) {
-
-            convert_int=1;
-            int_val = g_dimension->current_grid->img_width;
-
-        } else if (STRCMP(vname+1,"poster_menu_img_height") == 0) {
-
-            convert_int=1;
-            int_val = g_dimension->current_grid->img_height;
-
-        }
-
-    } else if (*vname == MACRO_QUERY_PREFIX ) {
-
-        // html query variable ?name=val
-        result=query_val(vname+1);
-
-    } else if (*vname == MACRO_DBROW_PREFIX ) {
-
-        HTML_LOG(0,"DBROW LOOKUP [%s]",vname+1);
-        char *fieldid = dbf_macro_to_fieldid(vname+1);
-        if (fieldid) {
-            HTML_LOG(0,"DBROW LOOKUP [%s]",fieldid);
-            // Get the value from the first row in the set
-            result=db_get_field(fieldid);
-        }
-
-    } else if (util_starts_with(vname,"ovs_") ) {
-
-        result = oversight_val(vname);
-
-    } else if (util_starts_with(vname,"catalog_")) {
-
-        result = catalog_val(vname);
-
-    } else if (util_starts_with(vname,"unpak_")) {
-
-        result = unpak_val(vname);
-
-    } else if (util_starts_with(vname,"skin_")) {
-
-        result = get_macro_variable(vname);
-    }
-    if (convert_int) {
-        ovs_asprintf(&result,"%d",int_val);
-        *free_result = 1;
-    }
-
-    return result;
-}
-
-char *macro_call(char *template_name,char *orig_skin,char *call,int num_rows,DbRowId **sorted_rows,int *free_result)
+char *macro_call(char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted_rows,int *free_result)
 {
 
 
@@ -2340,7 +2047,7 @@ TRACE;
     if (macros == NULL) macro_init();
 
     char *result = NULL;
-    char *(*fn)(char *template_name,char *orig_skin,char *name,Array *args,int num_rows,DbRowId **,int *) = NULL;
+    char *(*fn)(MacroCallInfo *) = NULL;
     Array *args=NULL;
 
     if (*call == MACRO_VARIABLE_PREFIX) {
@@ -2383,11 +2090,19 @@ TRACE;
         }
                 
 
+        MacroCallInfo call_info;
+        call_info.skin_name = skin_name;
+        call_info.orig_skin_name = orig_skin;
+        call_info.call = call;
+        call_info.args = args;
+        call_info.sorted_rows = sorted_rows;
+        call_info.free_result = 1;
+
         if (fn) {
 TRACE;
             //HTML_LOG(1,"begin macro [%s]",call);
-            *free_result=1;
-            result =  (*fn)(template_name,orig_skin,call,args,num_rows,sorted_rows,free_result);
+            result =  (*fn)(&call_info);
+            *free_result=call_info.free_result;
 TRACE;
             //HTML_LOG(1,"end macro [%s]",call);
         } else {
@@ -2398,24 +2113,5 @@ TRACE;
     return result;
 }
 
-static struct hashtable *vars = NULL;
-int set_macro_variable(char *name,char *value)
-{
-    int ret;
-    if (vars == NULL) {
-        vars = string_string_hashtable("macro_args",16);
-    }
-    ret = hashtable_insert(vars,STRDUP(name),STRDUP(value));
-    HTML_LOG(0,"[%s=%s]",name,value);
-    return ret;
-}
-char *get_macro_variable(char *name)
-{
-    if (vars == NULL) {
-        return NULL;
-    } else {
-        return hashtable_search(vars,name);
-    }
-}
 
 // vi:sw=4:et:ts=4

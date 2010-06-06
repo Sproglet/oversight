@@ -198,10 +198,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
    
     char *view;
 
-    DbRowSet **rowsets;
-    DbRowId **sorted_rows;
+    DbSortedRows *sortedRows = NULL;
 
-    int num_rows;
+
     while(1) {
         view=query_view_val();  
 
@@ -210,12 +209,12 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
             query_pop();
         }
 
-        num_rows = get_sorted_rows_from_params(&rowsets,&sorted_rows);
-        HTML_LOG(0,"Got %d rows",num_rows);
-        dump_all_rows("sorted",num_rows,sorted_rows);
+        sortedRows = get_sorted_rows_from_params();
+        HTML_LOG(0,"Got %d rows",sortedRows->num_rows);
+        dump_all_rows("sorted",sortedRows->num_rows,sortedRows->rows);
 
         // Found some data - continue to render page.
-        if (num_rows) {
+        if (sortedRows->num_rows) {
             break;
         }
 
@@ -232,8 +231,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         config_read_dimensions();
 
         // Now refetch all data again with new parameters.
-        FREE(sorted_rows);
-        db_free_rowsets_and_dbs(rowsets);
+        sorted_rows_free_all(sortedRows);
         HTML_LOG(0,"reparsing database");
     }
 
@@ -261,15 +259,11 @@ TRACE;
                 STRCMP(view,VIEW_TVBOXSET) == 0 
                 ) {
 
-            dump_all_rows("pre",num_rows,sorted_rows);
-
-            display_template(skin_name,view,num_rows,sorted_rows);
+            display_template(skin_name,view,sortedRows);
 
             if (STRCMP(view,VIEW_MOVIE) == 0 || STRCMP(view,VIEW_TV) == 0 ) {
-                build_playlist(num_rows,sorted_rows);
+                build_playlist(sortedRows);
             } 
-
-            dump_all_rows("post",num_rows,sorted_rows);
 
 
         } else if (STRCMP(view,VIEW_ADMIN) == 0) {
@@ -282,8 +276,8 @@ TRACE;
             //create_file_to_url_symlink();
 
             // main menu
-            display_template(skin_name,"menu",num_rows,sorted_rows);
-            build_playlist(num_rows,sorted_rows);
+            display_template(skin_name,"menu",sortedRows);
+            build_playlist(sortedRows);
         }
     }
 
@@ -300,10 +294,7 @@ TRACE;
     // Cleanup properly
         html_comment("cleanup");
 
-    TRACE;
-        FREE(sorted_rows);
-    TRACE;
-        db_free_rowsets_and_dbs(rowsets);
+        sorted_rows_free_all(sortedRows);
     TRACE;
 
         /*

@@ -276,7 +276,7 @@ hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
         hit2 += hthis;
         if (hthis > hmax) hmax = hthis;
     }
-    HTML_LOG(0,"hashtable[%s]: size=%u,used =%d, max=%d searches=%d misses=%d",
+    HTML_LOG(1,"hashtable[%s]: size=%u,used =%d, max=%d searches=%d misses=%d",
         h->name,
         h->tablelength,used,hmax,
         h->searches,h->misses);

@@ -2331,7 +2331,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
         char *attr = add_scroll_attributes(left_scroll,right_scroll,selected_cell,title_change_attr);
         FREE(title_change_attr);
-        HTML_LOG(0,"dbg: scroll attributes [%s]",attr);
+        HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
 
         if (STRCMP(newview,VIEW_TV) == 0 ) {

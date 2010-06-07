@@ -15,6 +15,18 @@ I would only do this if Oversight is getting all of the film names correct, othe
 
 Delete the file /share/Apps/oversight/index.db. You can do this via the TV file browser or via Windows share etc.
 
+=== What's the difference between delisting and deleting? Why two types of delete? ===
+
+You can ether :
+1. Completely delete a movie from Oversight and from your Hard Drive/Storage. OR
+2. Just remove a file from the Oversight database, but keep it on your hard drive. (eg Home Video or Adult Content etc). In Oversight, this is called 'delisting'.
+
+Some people prefer the *DELETE* button on the remote, to just Delist or hide items , others want it to really Delete  the item.
+
+By default *DELETE* button on the remote will delist, but you can change it to a real file deletion, in the OVersight->Setup->Keys menu.
+
+On the left is the Oversight action , on the right is the sequence of keys on the Remote to perform that action. These are also known as [http://www.networkedmediatank.com/wiki/index.php/Technical_Documentation#TVID_codes Tvid codes]
+
 ===How do I download to an external hard drive?===
 
 A. To download content to an external HDD you must change the film_folder_fmt and tv_file_fmt settings in oversight->admin->renaming.

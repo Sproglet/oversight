@@ -1,12 +1,14 @@
 Checkin status:
 
-Select a string library and implement. This should bring performance improvements?
+
+HIGH:
+Test [:$field_TITLE:0:] syntax may need to change it to allow dynamic index. eg [:FIELD(TITLE,0):] with default [:FIELD(TITLE):]
 
 Add item count macro then modify boxset view to provide alternate views depending on number of seasons.
 
-remove quotes from file_to_url and modify all macro_calls accordingly. Or understand why this was quoted at this level and
-not in the skin.
+LOW:
 
+Select a string library and implement. This should bring performance improvements?
 
 check issues 93 against 1408.avi 
 check issue 86 hyphen search

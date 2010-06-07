@@ -64,7 +64,39 @@ char *get_gaya_variable(char *vname,int *free_result)
 }
 #endif
 
-char *get_variable(char *vname,int *free_result)
+/**
+ * convert TITLE:n to the title of the N'th row of the sorted results.
+ */
+
+char *get_indexed_field(char *field_reference,DbSortedRows *sorted_rows)
+{
+    int row_num;
+    char *result = NULL;
+
+#define INDEX_SEP ':'
+    char *sep_pos;
+    char *fieldid = NULL;
+
+    if ( (sep_pos = strchr(field_reference,INDEX_SEP)) != NULL) {
+        char *name = COPY_STRING(sep_pos-field_reference,field_reference);
+        fieldid = dbf_macro_to_fieldid(name);
+        row_num = atoi(sep_pos+1);
+        FREE(name);
+    } else {
+        fieldid = dbf_macro_to_fieldid(field_reference);
+        row_num = 0;
+    }
+
+    if (fieldid) {
+        // Get the value from the first row in the set
+        result=db_get_field(sorted_rows,row_num,fieldid);
+    } else {
+        HTML_LOG(0,"Field [%s] not found",field_reference);
+    }
+    return result;
+}
+
+char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
 {
 
     int convert_int = 0;
@@ -128,25 +160,17 @@ char *get_variable(char *vname,int *free_result)
     } else if (*vname == MACRO_DBROW_PREFIX ) {
 
         char *f = vname+1;
-        HTML_LOG(0,"DBROW LOOKUP [%s] - [%c%s] deprecated - use [field_%s]",f);
-        char *fieldid = dbf_macro_to_fieldid(f);
-        if (fieldid) {
-            HTML_LOG(0,"DBROW LOOKUP [%s]",fieldid);
-            // Get the value from the first row in the set
-            result=db_get_field(fieldid);
-        }
+        HTML_LOG(0,"DBROW LOOKUP [%s] - [%c%s] deprecated - use [field_%s]",f,MACRO_DBROW_PREFIX,f,f);
+        *free_result=1;
+        result = get_indexed_field(f,sorted_rows);
 
 
     } else if (util_starts_with(vname,"field_") ) {
         char *f = vname+6;
         HTML_LOG(0,"DBROW LOOKUP [%s]",f);
-        char *fieldid = dbf_macro_to_fieldid(f);
-        if (fieldid) {
-            // Get the value from the first row in the set
-            result=db_get_field(fieldid);
-        } else {
-            HTML_LOG(0,"Field [%s] not found",f);
-        }
+        *free_result=1;
+        result = get_indexed_field(f,sorted_rows);
+
 
     } else if (util_starts_with(vname,"ovs_") ) {
 

@@ -290,7 +290,7 @@ TRACE;
     delete_queue_delete();
     TRACE;
 
-#if 1
+#if 0
     // Cleanup properly
         html_comment("cleanup");
 

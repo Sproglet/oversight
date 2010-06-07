@@ -100,6 +100,7 @@ typedef struct Db_struct {
     int locked_by_this_code;
     char *plot_file; // ..../plot.db (auto computed from source)
     FILE *plot_fp;    // File pointer to plotfile
+    int db_size;
 
 } Db;
 
@@ -136,8 +137,7 @@ DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched,        // 1=watched 2=unwatched 3=any
-        int *gross_size
+        int watched        // 1=watched 2=unwatched 3=any
         );
 
 int db_lock(Db *db);
@@ -161,7 +161,7 @@ void db_auto_remove_row(DbRowId *rid);
 void db_remove_row(DbRowId *rid);
 void db_delete_row_and_media(DbRowId *rid);
 Array *get_genres();
-char *db_get_field(char *fieldid);
+char *db_get_field(DbSortedRows *sorted_rows,int idx,char *fieldid);
 void dump_row(char *prefix,DbRowId *rid);
 void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows);
 void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[]);

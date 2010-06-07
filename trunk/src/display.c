@@ -2939,6 +2939,7 @@ TRACE;
 
     int free_regex=0;
     char *regex = query_val(QUERY_PARAM_REGEX);
+    char *view = query_view_val();
 
     if (EMPTY_STR(regex)) {
 TRACE;
@@ -2979,14 +2980,14 @@ TRACE;
     char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
     int media_type=DB_MEDIA_TYPE_ANY;
 
-    if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
-TRACE;
+    if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 || STRCMP(view,VIEW_TV)== 0 || STRCMP(view,VIEW_TVBOXSET) == 0 ) {
 
+TRACE;
         media_type=DB_MEDIA_TYPE_TV; 
 
-    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
-TRACE;
+    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 || STRCMP(view,VIEW_MOVIE)== 0 || STRCMP(view,VIEW_MOVIEBOXSET) == 0 ) {
 
+TRACE;
         media_type=DB_MEDIA_TYPE_FILM; 
 
     } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER) == 0) {
@@ -3723,7 +3724,22 @@ char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
     return result;
 }
 
-char *get_status() {
+int db_full_size(char *source,DbSortedRows *sorted_rows)
+{
+    int i;
+    if (sorted_rows && sorted_rows->num_rows && sorted_rows->rowsets ) {
+        for (i = 0 ; sorted_rows->rowsets[i] ; i++ ) {
+            Db *db = sorted_rows->rowsets[i]->db;
+            if (STRCMP(db->source,source) == 0) {
+                return db->db_size;
+            }
+        }
+    }
+    return 0;
+}
+
+char *get_status(DbSortedRows *sorted_rows)
+{
     char *result=NULL;
 #define MSG_SIZE 50
     static char msg[MSG_SIZE+1];
@@ -3751,7 +3767,7 @@ char *get_status() {
 
         if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
             result = STRDUP("Scanning...");
-        } else if (db_full_size() == 0 ) {
+        } else if (db_full_size("*",sorted_rows) == 0 ) {
             result = STRDUP("No Videos indexed. In [Setup] select media sources and rescan.");
         }
     }
@@ -3801,6 +3817,7 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
 
 
         for(i = 0 ; i < keys->size ; i++ ) {
+
             char *tmp;
             char *k=keys->array[i];
             char *v=hashtable_search(vals,k);
@@ -3808,17 +3825,19 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
 
             char *selected_text=(STRCMP(selected,k)==0?"selected":"");
 
+            char *prefix="";
+            char *suffix="";
+
             if (firstItem != NULL && STRCMP(firstItem,k) == 0 ) {
                 // Add item to the start
-                ovs_asprintf(&tmp,
-                    "<option value=\"%s\" %s >%s</option>\n%s",
-                    link, selected_text, v, NVL(result));
+                suffix=NVL(result);
             } else {
-                // Add item to the end
-                ovs_asprintf(&tmp,
-                    "%s<option value=\"%s\" %s >%s</option>\n",
-                    NVL(result), link, selected_text, v);
+                prefix = NVL(result);
             }
+            ovs_asprintf(&tmp,
+                    "%s<option value=\"%s\" %s >%s</option>\n%s",
+                    prefix,link, selected_text, v, suffix);
+
             FREE(link);
             FREE(result);
             result=tmp;

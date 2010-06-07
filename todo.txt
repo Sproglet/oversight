@@ -6,9 +6,6 @@ add new config skin.cfg and skin.help and allow editing.
 
 utf:
     catalog.sh : capitalisation of letter after uft-8. 
-    carnivale poster: didnt look right.
-    carnivale fanart : missing
-first check downloaded. Check download source. Then check oversight binary/html
 
     in search_tv_series_names if using tvrage the comparison should be no_accents.
      but this will only affect a minority of programs. So I wont code this.
@@ -19,17 +16,9 @@ check re-install button
 checking planet earth
 
 
-Check why Russell Peters Outsource - one black one green
-
-Test new Mark/Unmark funcions via gaya.
-Check Old browser functions still work.
-
 Certificate Filter
 
 IMDB Movie director search is broken
-
-tvrage search - the episode title is not displayed in gui.
-Check index.db first.
 
 =================
 How to get allocine.fr  id..
@@ -61,24 +50,9 @@ Note if we start also scraping the Director this will help with i18n searches.
 
 =================
 
-check torrent watch
-
 BUG: parsing VIDEO_TS eg /share/Complete/hulk wolverine
 
 Verify no more /./ scan paths.
-
-Q. Why are we scraping IMDB for TV shows?
-
-DONE Have seperate rescan and watch folders. /share/Tv and /sahre/Movies do not need to be watched.
-
-DONE: Add TV_MODE=0 warning!
-
-After selecting/deleting return to the same view.
-
-FEATURE: amazon scrape - Some crazy people put Amazon links in nfo eg.
-http://www.amazon.com/dp/B00006HAWP In this case scrape the URL for ttnnnnnnn
-
-Play from menu
 
 BUG: The picture may be downloaded twice if the second scan occurs before the picture is downloaded.
 but also have to be mindful of UPDATE_POSTERS option. We only want one picture per scan process.
@@ -86,172 +60,17 @@ SOLUTION: jpeg_fetch should check if the picture is  newer than the catalog proc
 catalog can pass PID. jpeg fetch will only download picure if it is older than /proc/PID
 
 
-FALSE +VE
-[INFO]   277 : 27:2009.mtv.movie.awards.ws.dsr.xvid-sys.avi
-[DEBUG]  277 : nfo check :2009.mtv.movie.awards.ws.dsr.xvid-sys.avi
-[DEBUG]  277 : No date format found
-[DEBUG]  277 : failed level 0 check tv [2009.mtv.movie.awards.ws.dsr.xvid-sys.avi]
-[DEBUG]  277 : No date format found
-[DEBUG]  277 : failed level 1 check tv [Terminator Salvation (2009) - 12A/2009.mtv.movie.awards.ws.dsr.xvid-sys.avi]
-[DEBUG]  277 : No date format found
-[DEBUG]  277 : failed level 2 check tv [Movies/Terminator Salvation (2009) - 12A/2009.mtv.movie.awards.ws.dsr.xvid-sys.avi]
-[INFO]   277 : Online nfo search for 2009.mtv.movie.awards.ws.dsr.xvid-sys
-[INFO]   277 : scan http://www.binsearch.info/?max=25&adv_age=&server=&q=2009.mtv.movie.awards.ws.dsr.xvid-sys for /viewNFO[^"]+
-[DEBUG]  277 : getUrl:scan4match: http://www.binsearch.info/?max=25&adv_age=&server=&q=2009.mtv.movie.awards.ws.dsr.xvid-sys
-[DEBUG]  277 : SYSTEM : /bin/wget -q "http://www.binsearch.info/?max=25&adv_age=&server=&q=2009.mtv.movie.awards.ws.dsr.xvid...
-[DEBUG]  277 : getUrl:scan4match:  Cached url [http://www.binsearch.info/?max=25&adv_age=&server=&q=2009.mtv.movie.awards.ws.dsr.xvid-sys] to [/share/tmp/catalog.28014.162__scan4match]
-[DEBUG]  277 : matches:/viewNFO.php?oid=37887667&amp;server==[1]
-[INFO]   277 : scan http://www.binsearch.info/viewNFO.php?oid=37887667&server= for \<tt[0-9]+\>
-[DEBUG]  277 : getUrl:scan4match: http://www.binsearch.info/viewNFO.php?oid=37887667&server=
-[DEBUG]  277 : SYSTEM : sleep 2 ; /bin/wget -q "http://www.binsearch.info/viewNFO.php?oid=37887667&server=" -O '/share/tmp/c...
-[DEBUG]  280 : getUrl:scan4match:  Cached url [http://www.binsearch.info/viewNFO.php?oid=37887667&server=] to [/share/tmp/catalog.28014.163__scan4match]
-[INFO]   280 : best imdb link = 
-[INFO]   280 : Online nfo search for 2009.mtv.movie.awards.ws.dsr.xvid-sys
-[INFO]   280 : scan http://www.bintube.com/?q=2009.mtv.movie.awards.ws.dsr.xvid-sys for /nfo/pid/[^"]+
-[DEBUG]  280 : getUrl:scan4match: http://www.bintube.com/?q=2009.mtv.movie.awards.ws.dsr.xvid-sys
-[DEBUG]  280 : SYSTEM : /bin/wget -q "http://www.bintube.com/?q=2009.mtv.movie.awards.ws.dsr.xvid-sys" -O '/share/tmp/catalo...
-gunzip: invalid magic
-[DEBUG]  280 : getUrl:scan4match:  Cached url [http://www.bintube.com/?q=2009.mtv.movie.awards.ws.dsr.xvid-sys] to [/share/tmp/catalog.28014.164__scan4match]
-[INFO]   280 : best imdb link = 
-[INFO]   280 : Using search method 0 = [2009]
-[DEBUG]  280 : Base query = 2009+
-[INFO]   280 : Using search method 1 = [%2B2009+%2B]
-[DEBUG]  280 : direct search...
-[DEBUG]  280 : direct search [2009]...
-[INFO]   280 : direct search [2009]
-[DEBUG]  280 : getUrl:search4imdb: http://search.msn.com/results.aspx?q=2009+%2Bimdb+%2Btitle+-site%3Aimdb.com+-site%3Aimdb.de
-[DEBUG]  280 : SYSTEM : /bin/wget -q "http://search.msn.com/results.aspx?q=2009+%2Bimdb+%2Btitle+-site%3Aimdb.com+-site%3Aim...
-[DEBUG]  281 : getUrl:search4imdb:  Fetched [http://search.msn.com/results.aspx?q=2009+%2Bimdb+%2Btitle+-site%3Aimdb.com+-site%3Aimdb.de] into [/share/tmp/catalog.28014.165__search4imdb]
-[DEBUG]  281 : Looking for \<tt[0-9]+\> in /share/tmp/catalog.28014.165__search4imdb
-[DEBUG]  281 : Possible match tt1144884
-[DEBUG]  281 : Possible match tt0808372
-[DEBUG]  281 : Possible match tt0808372
-[DEBUG]  281 : Possible match tt0808372
-[DEBUG]  281 : Possible match tt0808372
-[DEBUG]  281 : Possible match tt0448011
-[DEBUG]  281 : Possible match tt1325753
-[DEBUG]  281 : Possible match tt1153100
-[DEBUG]  281 : Possible match tt1114740
-[DEBUG]  281 : Possible match tt1059786
-[DEBUG]  281 : Possible match tt0787470
-[INFO]   281 : Score: 4 for [tt0808372]: first value 
-[INFO]   281 : Score: 1 for [tt1114740]:beats current next best of 0 held by []
-[INFO]   281 : Score: 1 for [tt1114740]: set as next best
-[INFO]   281 : Score: 1 for [tt1144884]:matches current next best of 1 held by [tt1114740]
-[INFO]   281 : Score: 1 for [tt1144884]: set as next best
-[INFO]   281 : Score: 1 for [tt0787470]:matches current next best of 1 held by [tt1144884]
-[INFO]   281 : Score: 1 for [tt0787470]: set as next best
-[INFO]   281 : Score: 1 for [tt0448011]:matches current next best of 1 held by [tt0787470]
-[INFO]   281 : Score: 1 for [tt0448011]: set as next best
-[INFO]   281 : Score: 1 for [tt1153100]:matches current next best of 1 held by [tt0448011]
-[INFO]   281 : Score: 1 for [tt1153100]: set as next best
-[INFO]   281 : Score: 1 for [tt1059786]:matches current next best of 1 held by [tt1153100]
-[INFO]   281 : Score: 1 for [tt1059786]: set as next best
-[INFO]   281 : Score: 1 for [tt1325753]:matches current next best of 1 held by [tt1059786]
-[INFO]   281 : Score: 1 for [tt1325753]: set as next best
-[INFO]   281 : Best 4*1. Required=3
-[INFO]   281 : Next best count = 1 diff^2 = 9
-[DEBUG]  281 : Extracted IMDB Id [tt0808372]
-[INFO]   281 : direct search : Found [http://www.imdb.com/title/tt0808372]with direct search [2009]
-[DEBUG]  281 : direct search : nothing found
-[DEBUG]  281 : Extracted IMDB Id [tt0808372]
-[DEBUG]  281 : Setting external url to [http://www.imdb.com/title/tt0808372]
-[DEBUG]  281 : getUrl:imdb_main: http://www.imdb.com/title/tt0808372
-[DEBUG]  281 : SYSTEM : /bin/wget -q "http://www.imdb.com/title/tt0808372" -O '/share/tmp/catalog.28014.166__imdb_main.gz'  ...
-[DEBUG]  282 : getUrl:imdb_main:  Cached url [http://www.imdb.com/title/tt0808372] to [/share/tmp/catalog.28014.166__imdb_main]
-[DEBUG]  282 : START IMDB: title: poster  genre  cert  year 
-[DEBUG]  282 : Title found [Metal Gear Solid (2009)] current title []
-[DEBUG]  282 : title changed from :[] to imdb:[Metal Gear Solid]
-[DEBUG]  282 : IMDB: Got year [2009]
-[DEBUG]  282 : IMDB: Got genre = [Action | Sci-Fi]
-[DEBUG]  282 : Found company details - ending
-[DEBUG]  282 : Extracted IMDB Id [tt0808372]
-[DEBUG]  282 : Poster check id = tt0808372
-[INFO]   282 : scan http://www.themoviedb.org/search?search[text]=tt0808372 for [-_.a-zA-Z0-9/:?&]+_thumb.jpg
-[DEBUG]  282 : getUrl:scan4match: http://www.themoviedb.org/search?search[text]=tt0808372
-[DEBUG]  282 : SYSTEM : /bin/wget -q "http://www.themoviedb.org/search?search[text]=tt0808372" -O '/share/tmp/catalog.28014....
-[DEBUG]  283 : getUrl:scan4match:  Cached url [http://www.themoviedb.org/search?search[text]=tt0808372] to [/share/tmp/catalog.28014.167__scan4match]
-[DEBUG]  283 : relocate_files
-[DEBUG]  283 : processed in 6s | processed 28 items in 255s av time per item 9.10714s
-[INFO]   283 : status:Indexing 29/352 49m
-[INFO]   283 : 
-    ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==
-
-Rescan: Add a Rescan link/option
-
-Samples: still not getting deleted!
-
-1080p mode when tv on 720 /etc/tvmode=16
-http://www.networkedmediatank.com/showthread.php?tid=14410&pid=202554#pid202554
-
-
-
 BUG:oversight.sh: When deleting a film - delete the nfo file
 FEATURE:catalog: If not category found by title - look at text of search results.
-
-==============================================================
-BUG: ovs: Deleting last item in drilldown gives blank screen
-==============================================================
-BUG: ovs: Deleting VIDEO_TS doesnt work?
-==============================================================
-BUG: ovs: episode text stays small
-==============================================================
-
 
 Check logic when .nfo file is called .NFO. It appears to be 
     1. ignored when looking for imdb url.
     2. ignored during relocate/rename
 
-
 DVD icon on tv overview
-Make 'delete' and 'mark' work with cross view
 tvid search broken
 BUG When adding share cancel button says 'ask'
 BUG!! Rename of DVD folder incorrect. 
 given /path/to/dvd/VIDEO_TS
 it will move all contents of /path/to. This should be prevented by a Media/Folder count. Review.
 
-BUG!! unpak still does a par repair after sanilty check fail (test using nzb with 1st segment of a file/rar headr removed)
-BUG!! VIDEO_TS are removed on re-scan?
-BUG!! Renamed Complete
-BUG!! When renaming Video/Ts we should introduce a new subdir to avoid renaming the parent folder. or need special rules for VTS
-BUG: To differentiate betwen game iso and video iso, mount and check VIDEO_TS etc.
-
-TODO Undo rename feature - how
-FEATURE 1: Film file renaming.
-
-BUG 1 catalog.sh: if oversight not present - set poster location to with_video
-BUG 1 Add onkeyup on lower menu bar to go to table. Similarly for top menu (onkeydown)
-BUG 2 Cope with Unicode - either store and pass through OR replace with latin equivs.
-BUG 2 TODO Fix installer for linux/mac
-BUG 3 If tvnzb pauses nzbget and an unpak is running it will resume it if using the pause option.
-BUG 4 When a script errors and nzbget pause is being used - it doesnt resume
-BUG 5 - AKA needs to check country/language of main title first.
-
-FEATURE 1 torrent version needs to deal with files going straight to Downloads. Waiit for new commands in 1.60
-FEATURE 1 Parental access : with auto certificate based defaults
-FEATURE 1 Cross Play extreme :) Allow one oversight session to see all media.
-FEATURE 2 Play back from browser links.
-FEATURE 2 Grab Plot Summary
-BUG 2 oversight: Sort playlist for TV programs.
-FEATURE 2 oversight: Add left-right navigation on level 2
-FEATURE 2 oversight: Add Category change TV<->Film Unknown->TV|Film
-FEATURE 2 oversight: removable media - dont remove stuff if the share has gone away. Need to use df command on folder to determine share. (symlinks?) What to do? This ties in with remote viewing also.
-FEATURE 3 Add option to catalog.sh to add files without flagging as new. This is for torrents that have just moved location. (wait for Transmission 1.60)
-FEATURE 3 oversight: hot key file back to gaya browser. using /?filter=0 + index.html
-FEATURE 3 tvnzb, torrent links.
-FEATURE 3 unpak : grab subtitles.
-FEATURE 4 Cope with Program files not present in tvnfo. (eg foreign)
-FEATURE 5 add streaming when files are clicked on PC web browser
-
-TEST oversight: post-update script
-TEST catalog: Big Brother format.
-TEST catalog: avi prefix.
-
-DONE oversight: Default button on drilldown set to first media file
-DONE catalog: Only pages if cache if it looks like a TV show
-DONE oversight: Multi number search - Find '*DO*ctor' by going direct to channel '36' TVIDS
-DONE Deleted one episode but entire series disappeared then came back after rescan - however jpg deleted and should have been flagged as in use. review.
-DONE Change mark/unmark logic, so marked items are already checked.
-DONE VIDEO_TS
-DONE A keyword search heuristic should look for a year then only include prior words before punctuation.  eg "blah blah : Title 2004 blah"

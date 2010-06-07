@@ -1,6 +1,140 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+r1104-rc7
+  * delete navigation fixes where Tv and Movie have same title.
+
+r1090-rc6
+  * Fixes: More delete navigation fixes.
+  * Features: Very slight menu speedup.
+
+r1048-rc5
+  * Fixes: Interim fix for movie deletion
+
+r1044-rc4
+  * Fixes: > 12 series view on tvboxset
+
+r1030-rc3
+  * Fixes : uptime error finding load avg.
+
+r1021-rc1
+  * disabled [PLAY] on dvd - use [OK]
+  * body_height change
+  * remote access fix
+  * in js fix
+  * Other category
+
+r1004-testing
+  * Comsetic: favicon / replace 720 with HD on admin view
+
+r1001-testing
+  * Handling of punctuation in tv names
+
+r997-testing
+  * better YEAR macro / remove dot from titles
+
+r994-testing
+  * Delete Navigation
+  * Scan Shows with period.
+  * Reboot Fix
+  * Remove setsid scan message.
+  * Probe nfs port before portmapper.
+  * Probe SMB port 139 as well as 445.
+  * Includes Skins
+  * Bookmark Icon
+
+r925-testing
+  * CSI tweaks.
+  * Allow Custom posters for unidentified media
+
+r920-testing
+  * Hyphen in titles
+
+r917-testing
+  * Various Scanner fixes.
+  * Faster index loading.
+  * Sort by file age or index time.
+
+r890-testing
+  * nfo for video_ts
+  * multipart fix
+  * gawk compatibility fixes
+  * tvrage id extraction / normailse fixes
+
+r863-testing
+  * unpak.sh more robust deleting and moving
+
+r861-testing
+  * Better parsing of IMDB aka titles.
+  * Replace bbawk with gawk
+
+r853-testing
+  * Genre-o bug - bundled busybox from CSI
+
+r851-testing
+Fixes:
+  * Genre-o workaround. (tx Sproglet)
+  * 00x00 fix.
+  * Ignore dates when looking for title year.
+  * English title selection for Good Bad Ugly, Two Brothers etc.
+  * Delete of last entry on detail page returns to parent menu
+  * bdmv support (tx Nicob)
+
+r830-testing
+Fixes:
+- date/age
+- imdb AKA titles
+- parse e01-e02 s02-e03
+- Fix awk memory exhuasted when parsing compacted HTML
+- Matching TV titles with year.
+Features:
+- scanner changes (look for title then id)
+- reset DNS cache
+- Seperate Delete/Delist
+Other:
+- force nzbget to run as nmt (seems to be an issue with latest A200 apps)
+
+r803-testing
+
+Fix to mis-identification of episodes >= 10 (busybox awk buggette 1333)
+Scanner refinements.
+To do a rescan, delist(not delete!) the dodgy items, and then rescan.
+
+r797-testing
+
+utf8 support for Léon etc.
+improved wget wrapper
+improved scanning
+optional movie file name in detail screen
+diagnostics page.
+
+r761-testing
+
+fixes to auto-mounting - handles shares with spaces , no duplicate mounting.
+
+r756-testing
+
+Fixed local poster and fanart for video_ts
+Limit size of SMB scan network to /21
+Disable wget masquerading at reboot if:
+- user manually renamed or deleted conf/use.wget.wrapper .
+- or oversight was abruptly terminated (conf/wget.wrapper.error)
+
+r749-testing
+
+Restored skin option on settings page.
+
+r746-testing
+
+Faster page load (ok not a bug fix but it did bug me for a long while)
+nfs-tcp support.
+Fixed certificate image links.
+Restored File name in Movie detail.
+
+r738-testing
+
+Added missing country.txt file.
+
 r734-testing
 
   *  Installer uses /proc/cpuinfo to determine platform (gave up on egreat version numbering)

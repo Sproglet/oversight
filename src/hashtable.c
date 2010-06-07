@@ -15,7 +15,7 @@ Credit for primes table: Aaron Krowne
  http://planetmath.org/encyclopedia/GoodHashTablePrimes.html
 */
 static const unsigned int primes[] = {
-53, 97, 193, 389,
+17, 53, 97, 193, 389,
 769, 1543, 3079, 6151,
 12289, 24593, 49157, 98317,
 196613, 393241, 786433, 1572869,
@@ -185,14 +185,16 @@ hashtable_search(struct hashtable *h, void *k)
 {
     struct entry *e;
     unsigned int hashvalue, index;
-    hashvalue = hash(h,k);
-    index = indexFor(h->tablelength,hashvalue);
-    e = h->table[index];
-    while (e)
-    {
-        /* Check hash value to short circuit heavier comparison */
-        if ((hashvalue == e->h) && (h->eqfn(k, e->k))) return e->v;
-        e = e->next;
+    if (h->entrycount) {
+        hashvalue = hash(h,k);
+        index = indexFor(h->tablelength,hashvalue);
+        e = h->table[index];
+        while (e)
+        {
+            /* Check hash value to short circuit heavier comparison */
+            if ((hashvalue == e->h) && (h->eqfn(k, e->k))) return e->v;
+            e = e->next;
+        }
     }
     return NULL;
 }
@@ -209,24 +211,26 @@ hashtable_remove(struct hashtable *h, void *k,int free_key)
     void *v;
     unsigned int hashvalue, index;
 
-    hashvalue = hash(h,k);
-    index = indexFor(h->tablelength,hash(h,k));
-    pE = &(h->table[index]);
-    e = *pE;
-    while (e)
-    {
-        /* Check hash value to short circuit heavier comparison */
-        if ((hashvalue == e->h) && (h->eqfn(k, e->k)))
+    if (h->entrycount) {
+        hashvalue = hash(h,k);
+        index = indexFor(h->tablelength,hashvalue);
+        pE = &(h->table[index]);
+        e = *pE;
+        while (e)
         {
-            *pE = e->next;
-            h->entrycount--;
-            v = e->v;
-            if (free_key) freekey(e->k);
-            FREE(e);
-            return v;
+            /* Check hash value to short circuit heavier comparison */
+            if ((hashvalue == e->h) && (h->eqfn(k, e->k)))
+            {
+                *pE = e->next;
+                h->entrycount--;
+                v = e->v;
+                if (free_key) freekey(e->k);
+                FREE(e);
+                return v;
+            }
+            pE = &(e->next);
+            e = e->next;
         }
-        pE = &(e->next);
-        e = e->next;
     }
     return NULL;
 }

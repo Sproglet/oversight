@@ -82,7 +82,7 @@ body { color:yellow ; background-color:black; }
         background-color:black;
     [:ELSEIF($ovs_transparency=100):]
     [:ELSE:]
-        background-image:url([:IMAGE_URL(trans,$ovs_transparency,.png)]);
+        background-image:url("[:IMAGE_URL(trans,$ovs_transparency,.png)]");
     [:ENDIF:]
 }
 

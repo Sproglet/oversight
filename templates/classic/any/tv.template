@@ -122,10 +122,10 @@ hr { color:#FBB917 }
 [:IF(1-$ovs_display_fanart):]
                 <table width="100%" >
 [:ELSEIF($ovs_fade):]
-                <table width="100%" background=[:IMAGE_URL(transfade,$ovs_transparency,.png):] >
+                <table width="100%" background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]" >
                     <tr><td>&nbsp;</td><td></td></tr>
 [:ELSE:]
-                <table width="100%" background=[:IMAGE_URL(trans,$ovs_transparency,.png):] >
+                <table width="100%" background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
 [:ENDIF:]
                     <tr>
                         <td class=title>[:TITLE:]</td>
@@ -146,7 +146,7 @@ hr { color:#FBB917 }
 [:IF(1-$ovs_display_fanart):]
                 <table width=100% >
 [:ELSE:]
-                <table width=100% background=[:IMAGE_URL(trans,$ovs_transparency,.png):] >
+                <table width=100% background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
 [:ENDIF:]
                     <tr>
                         <td class=filelist align=center>
@@ -165,7 +165,7 @@ hr { color:#FBB917 }
 
 [:MENU_TVID:]
 [:PLAY_TVID:]
-<script type="text/javascript" src=[:TEMPLATE_URL(js/tv.js):]></script>
+<script type="text/javascript" src="[:TEMPLATE_URL(js/tv.js):]"></script>
 
 
 <a href="javascript:ovs_info();" tvid="INFO"></a>

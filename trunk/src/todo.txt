@@ -1,13 +1,9 @@
 Checkin status:
 
-Fade on tv view not working.
-
 Add item count macro then modify boxset view to provide alternate views depending on number of seasons.
 
-Some menu pages consistently take longer than others - identify. The HTML seems to take same time to 
-render so it may be an issue with the poster image.
-
-
+remove quotes from file_to_url and modify all macro_calls accordingly. Or understand why this was quoted at this level and
+not in the skin.
 
 
 check issues 93 against 1408.avi 

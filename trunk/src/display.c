@@ -1213,7 +1213,7 @@ char *file_to_url(char *path) {
 
 
 
-    ovs_asprintf(&new,"\"%s%s\"",prefix,encoded_path);
+    ovs_asprintf(&new,"%s%s",prefix,encoded_path);
 
     if (non_empty != path) FREE(non_empty);
     if (free_path2) FREE(encoded_path);
@@ -1254,7 +1254,7 @@ char * get_local_image_link(char *path,char *alt_text,char *attr) {
     } else {
         char *img_src = file_to_url(path);
 
-        ovs_asprintf(&result,"<img alt=\"%s\" src=%s %s >",alt_text,img_src,attr);
+        ovs_asprintf(&result,"<img alt=\"%s\" src=\"%s\" %s >",alt_text,img_src,attr);
 
         FREE(img_src);
     }
@@ -2357,10 +2357,15 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
     char *result;
 
-    ovs_asprintf(&result,"\t<td %s%s class=grid%d %s >%s%s%s%s</td>\n",
-            (cell_background_image?"background=":""),
-            (cell_background_image?cell_background_image:""),
+    char *background_prefix = "";
+    char *background_suffix = "";
+    if (cell_background_image) {
+        background_prefix = "background=\"";
+        background_suffix = "\"";
+    }
 
+    ovs_asprintf(&result,"\t<td %s%s%s class=grid%d %s >%s%s%s%s</td>\n",
+            background_prefix,NVL(cell_background_image),background_suffix,
             //width_attr,
             //height_attr,
             grid_toggle,
@@ -2908,7 +2913,7 @@ char *get_theme_image_tag(char *image_name,char *attr) {
     }
     isrc = icon_source(image_name);
 
-    ovs_asprintf(&result,"<img alt=\"%s\" border=0 src=%s %s />",image_name,isrc,attr);
+    ovs_asprintf(&result,"<img alt=\"%s\" border=0 src=\"%s\" %s />",image_name,isrc,attr);
 
     FREE(isrc);
     return result;

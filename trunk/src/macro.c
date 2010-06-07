@@ -773,7 +773,7 @@ char *add_star(int star_no) {
     sprintf(name,"star%d",star_no);
 
     char *p;
-    ovs_asprintf(&p,"<img src=%s \\>",image_source("stars",name,NULL));
+    ovs_asprintf(&p,"<img src=\"%s\" \\>",image_source("stars",name,NULL));
 
     return p;
 }
@@ -1297,6 +1297,11 @@ char *macro_fn_skin_name(MacroCallInfo *call_info) {
     return skin_name();
 }
 
+/**
+ * TEMPLATE_URL(file path)
+ * Return URL to a file within the current skin/template. Fall back to default skin if not found in current skin.
+ * eg. TEMPLATE_URL(css/default.css)
+ */
 char *macro_fn_template_url(MacroCallInfo *call_info)
 {
     char *result=NULL;
@@ -1320,6 +1325,7 @@ char *macro_fn_image_url(MacroCallInfo *call_info)
     if (call_info->args && call_info->args->size >= 1) {
 
         char *name = arraystr(call_info->args);
+        HTML_LOG(0,"IMAGE_URL(%s)",name);
         result = image_source("",name,""); 
         FREE(name);
 

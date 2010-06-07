@@ -42,7 +42,7 @@ table.overview_poster {
 
 [:IF($ovs_display_fanart):]
 
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background=[:FANART_URL(default.jpg):] >
+    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:FANART_URL(default.jpg):]" >
     <table class=main width=100%>
     <tr valign=bottom>
 
@@ -122,7 +122,7 @@ table.overview_poster {
 
 </td></tr></table>
 
-<script type="text/javascript" src=[:TEMPLATE_URL(js/menu.js):]></script>
+<script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->
 [:TVIDS:]
 <a href="javascript:ovs_info();" tvid="INFO"></a>

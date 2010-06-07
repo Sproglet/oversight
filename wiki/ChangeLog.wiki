@@ -152,14 +152,25 @@ r727-testing
   * Fixed malloc error with empty Genre.
 
 r707-testing
-
   * Fix to C200 1080p mode.
   * Unpak status fix (revisited)
   * IE drilldown fix (IE CSS bug. surprise)
   * Fix to Crossview Delete function.
 
 r698-testing
+  * Fix to IMDB Year Scanning.
+  * Remove searches in BinTube (not free anymore)
+  * Hopefully scripts will work with A200
 
+r667-testing
+  * Fix to NAS incremental scans
+
+r665-testing
+Fix to hex dates - needs a full rescan if upgrading from 662.
+  * Some scanning improvements - eg "2x13 episode title.avi" can be scanned without the series name. (except '1x01 Pilot.avi' will give problems )
+
+r662-testing
+  * Fix to blank page after scan - WINS resolving for samba shares.
 
 20090903-1BETA
 

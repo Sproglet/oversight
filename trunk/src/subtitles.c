@@ -29,8 +29,6 @@ unsigned long long analizefileOSHahs(char *fileName){
   unsigned long long buffer1[ 2*NUMLONGS ];
 
   long unsigned int items;
-  long long length;
-
 
   file = fopen(fileName, "rb");
   if (file != NULL) {
@@ -73,7 +71,7 @@ unsigned long long analizefileOSHahs(char *fileName){
                   printf("at end block\n");
                   fflush(stdout);
 
-                  printf("pos = %lld\n",ftell(file));
+                  //printf("pos = %lld\n",ftell(file));
                   fflush(stdout);
                   
                   if ((items = fread(buffer1+NUMLONGS, LONGSIZ , NUMLONGS, file)) !=  NUMLONGS) {
@@ -83,7 +81,7 @@ unsigned long long analizefileOSHahs(char *fileName){
                   } else {
                       printf("read end block\n");
                       fflush(stdout);
-                      printf("finished at = %lld\n",ftell(file));
+                      //printf("finished at = %lld\n",ftell(file));
                       fflush(stdout);
 
                       for ( i=0 ; i< NUMLONGS*2 ; i++ ) {
@@ -114,7 +112,7 @@ int subtitle_main(int argc,char **argv) {
     printf("%0llx",val);
 
 
-    char *p = &val;
+    char *p = (char *)&val;
     for(i = 0 ; i < sizeof(val) ; i++ ) {
         printf(" %x",*(p+i));
     }

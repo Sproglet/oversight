@@ -7,7 +7,7 @@
 [:TITLE:]
 Season
 [:SEASON:] </title>
-        <link rel="stylesheet" type="text/css" href="[:URL_BASE:]/templates/[:SKIN_NAME:]/css/default.css" />
+        <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
@@ -122,10 +122,10 @@ hr { color:#FBB917 }
 [:IF(1-$ovs_display_fanart):]
                 <table width="100%" >
 [:ELSEIF($ovs_fade):]
-                <table width="100%" background=[:IMAGE_URL(transfade,$ovs_transparency,.png)] >
+                <table width="100%" background=[:IMAGE_URL(transfade,$ovs_transparency,.png):] >
                     <tr><td>&nbsp;</td><td></td></tr>
 [:ELSE:]
-                <table width="100%" background=[:IMAGE_URL(trans,$ovs_transparency,.png)] >
+                <table width="100%" background=[:IMAGE_URL(trans,$ovs_transparency,.png):] >
 [:ENDIF:]
                     <tr>
                         <td class=title>[:TITLE:]</td>
@@ -146,7 +146,7 @@ hr { color:#FBB917 }
 [:IF(1-$ovs_display_fanart):]
                 <table width=100% >
 [:ELSE:]
-                <table width=100% background="[:URL_BASE:]/templates/[:SKIN_NAME:]/images/trans[:$ovs_transparency:].png" >
+                <table width=100% background=[:IMAGE_URL(trans,$ovs_transparency,.png):] >
 [:ENDIF:]
                     <tr>
                         <td class=filelist align=center>

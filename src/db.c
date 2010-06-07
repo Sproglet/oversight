@@ -452,7 +452,6 @@ static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void 
     return 1;
 
 }
-// This will take ownership of the val - freeing it if necessary.
 // Return string representation of a field the way a user would like to see it.
 // TODO: Need to add expand for genre codes.
 char * db_rowid_get_field(DbRowId *rowid,char *name)
@@ -966,13 +965,6 @@ DbRowSet *db_rowset(Db *db) {
 }
 
 
-//Save the first row as the default row to edit.
-static DbRowId *g_first_row=NULL;
-DbRowId *get_first_row() {
-    return g_first_row;
-}
-
-
 int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
 
     assert(id);
@@ -996,10 +988,13 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
     return dbrs->size;
 }
 
-char *db_get_field(char *fieldid)
+char *db_get_field(DbSortedRows *sorted_rows,int idx,char *fieldid)
 {
-    if (g_first_row == NULL) return NULL;
-    return db_rowid_get_field(g_first_row,fieldid);
+    char *result = NULL;
+    if (idx <= sorted_rows->num_rows ) {
+        result =  db_rowid_get_field(sorted_rows->rows[idx],fieldid);
+    }
+    return result; 
 }
 
 
@@ -1009,12 +1004,6 @@ char *localDbPath() {
         ovs_asprintf(&a,"%s/index.db",appDir());
     }
     return a;
-}
-
-static int g_db_size = 0;
-
-int db_full_size() {
-    return g_db_size;
 }
 
 // Return 1 if db should be scanned according to html get parameters.
@@ -1052,8 +1041,7 @@ TRACE;
         if (db) {
 TRACE;
 
-            int this_db_size=0;
-            DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched,&this_db_size);
+            DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched);
 
             if ( r != NULL ) {
 TRACE;
@@ -1062,8 +1050,6 @@ TRACE;
                 (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbRowSet*));
                 (*row_set_ptr)[(*rowset_count_ptr)++] = r;
                 (*row_set_ptr)[(*rowset_count_ptr)]=NULL;
-
-                g_db_size += this_db_size;
 
             }
         }
@@ -1109,9 +1095,6 @@ DbRowSet **db_crossview_scan_titles(
     int rowset_count=0;
     DbRowSet **rowsets = NULL;
 
-    g_db_size=0;
-    g_first_row=NULL;
-
     if (use_folder_titles == UNSET ) {
         use_folder_titles = *oversight_val("ovs_use_folders_as_title") == '1';
     }
@@ -1156,11 +1139,6 @@ TRACE;
                 FREE(path);
             }
         }
-    }
-    //Save the first row as the default row to edit. - when the editor comes!
-    if (g_first_row == NULL && rowsets && rowsets[0]->rows ) {
-        g_first_row = rowsets[0]->rows;
-        HTML_LOG(0,"First row=[%s]",g_first_row->title);
     }
 
     HTML_LOG(0,"end db_crossview_scan_titles");
@@ -1295,8 +1273,7 @@ DbRowSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched,        // 1=watched 2=unwatched 3=any
-        int *gross_size     // Full unfiltered size of database.
+        int watched        // 1=watched 2=unwatched 3=any
         ){
 
     regex_t pattern;
@@ -1350,7 +1327,7 @@ DbRowSet * db_scan_titles(
 
 
     int row_count=0;
-    int total_rows=0;
+    db->db_size=0;
 
 
     char  *path = db->path;
@@ -1381,7 +1358,7 @@ DbRowSet * db_scan_titles(
 
 
         while (eof == 0) {
-            total_rows++;
+            db->db_size++;
             dbread_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
 
             if (rowid.file) {
@@ -1515,10 +1492,6 @@ TRACE;
                 } else {
                     db_rowid_free(&rowid,0);
                 }
-
-                if (gross_size != NULL) {
-                    (*gross_size)++;
-                }
             }
         }
 
@@ -1532,12 +1505,12 @@ TRACE;
         HTML_LOG(0,"discard_ticks %d",discard_ticks/1000);
         */
 
-        HTML_LOG(0,"total rows %d",total_rows);
+        HTML_LOG(0,"total rows %d",db->db_size);
         dbreader_close(fp);
     }
     if (path != db->path) FREE(path);
     if (rowset) {
-        HTML_LOG(1,"db[%s] filtered %d of %d rows",db->source,row_count,total_rows);
+        HTML_LOG(1,"db[%s] filtered %d of %d rows",db->source,row_count,db->db_size);
     } else {
         HTML_LOG(1,"db[%s] No rows loaded",db->source);
     }

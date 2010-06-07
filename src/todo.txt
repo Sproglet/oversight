@@ -1,5 +1,7 @@
 Checkin status:
 
+Select a string library and implement. This should bring performance improvements?
+
 Add item count macro then modify boxset view to provide alternate views depending on number of seasons.
 
 remove quotes from file_to_url and modify all macro_calls accordingly. Or understand why this was quoted at this level and

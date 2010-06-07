@@ -31,7 +31,6 @@
 
 
 static struct hashtable *macros = NULL;
-char *get_variable(char *vname,int *free_result);
 char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
 
@@ -1382,7 +1381,7 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info) {
 
 
 char *macro_fn_status(MacroCallInfo *call_info) {
-    return get_status();
+    return get_status(call_info->sorted_rows);
 }
 
 
@@ -1685,7 +1684,7 @@ long numeric_constant_eval_str(long val,char *expression) {
     return val;
 }
 
-void replace_variables(Array *args)
+void replace_variables(Array *args,DbSortedRows *sorted_rows)
 {
     if (args) {
         int i;
@@ -1713,7 +1712,7 @@ void replace_variables(Array *args)
                 *v='\0'; //replace $ with null
 
                 int free2;
-                char *replace=get_variable(v+1,&free2);
+                char *replace=get_variable(v+1,&free2,sorted_rows);
 
                 char *tmp2;
                 ovs_asprintf(&tmp2,"%s%s%s",NVL(newp),p,NVL(replace));
@@ -2060,7 +2059,7 @@ TRACE;
 
 
 TRACE;
-        result=get_variable(call+1,free_result);
+        result=get_variable(call+1,free_result,sorted_rows);
 
         if (result == NULL) {
 
@@ -2091,7 +2090,7 @@ TRACE;
                 fn = hashtable_search(macros,call);
                 *p='(';
                 // Replace any variables in the function
-                replace_variables(args);
+                replace_variables(args,sorted_rows);
             }
         }
                 

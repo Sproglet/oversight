@@ -9,6 +9,7 @@
 #include "util.h"
 #include "gaya_cgi.h"
 
+int array_strlen(Array *a);
 
 Array *array_new(void(*free_fn)(void *)) {
 
@@ -255,26 +256,32 @@ Array *splitstr(char *s_in,char *sep)
 char *join(Array *a,char *sep) {
     char *result=NULL;
     int len=0;
-    int slen = strlen(sep);
+    int slen = 0;
+    if (sep) {
+        slen = strlen(sep);
+    }
 
     if (a && a->size) {
-        int i;
-        for(i = 0 ; i< a->size ; i++ ) {
-            if (a->array[i]) {
-                len += strlen(a->array[i]) + slen;
-            }
-        }
+
+        len = array_strlen(a) + slen * (a->size-1);
         result = MALLOC(len+1);
+        char *q;
         char *p = result;
+        int i;
+
         for(i = 0 ; i< a->size ; i++ ) {
             if (i) {
-                // copy the separator
-                memcpy(p,sep,slen);
-                p+=slen;
+                if(slen) {
+                    // copy the separator
+                    memcpy(p,sep,slen);
+                    p+=slen;
+                }
             }
-            if (a->array[i]) {
-                // copy the string
-                p += sprintf(p,"%s",(char *)a->array[i]);
+            if ((q = a->array[i]) != NULL ) {
+                while ((*p++ = *q++ ) != '\0' ) {
+                        ; //do nothing
+                }
+                p--;
             }
         }
         *p = '\0';
@@ -361,12 +368,15 @@ Array *split(char *s_in,char *pattern,int reg_opts) {
 /**
  * Get combined length of all char * in an array.
  */
-int array_strlen(Array *a) {
+int array_strlen(Array *a)
+{
     int len  = 0;
     int i;
     if (a) {
         for (i = 0 ; i < a->size ; i++ ) {
-            len += strlen(NVL(a->array[i]));
+            if (a->array[i]) {
+                len += strlen(a->array[i]);
+            }
         }
     }
     return len;
@@ -377,26 +387,7 @@ int array_strlen(Array *a) {
  */
 char *arraystr(Array *a)
 {
-    int i;
-    int len  = 0;
-    char *str = NULL;
-
-    len = array_strlen(a);
-
-    if (len) {
-        str = MALLOC(len+1);
-        char *q,*p = str;
-        for (i = 0 ; i < a->size ; i++ ) {
-            if ((q = a->array[i]) != NULL ) {
-                while ((*p++ = *q++ ) != '\0' ) {
-                        ; //do nothing
-                }
-                p--;
-            }
-        }
-        *p = '\0';
-    }
-    return str;
+    return join(a,NULL);
 }
 
 /**

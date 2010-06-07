@@ -3206,6 +3206,7 @@ TRACE;
 
     int free_regex=0;
     char *regex = query_val(QUERY_PARAM_REGEX);
+    char *view = query_val(QUERY_PARAM_VIEW);
 
     if (EMPTY_STR(regex)) {
 TRACE;
@@ -3245,12 +3246,12 @@ TRACE;
     char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
     int media_type=DB_MEDIA_TYPE_ANY;
 
-    if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0) {
+    if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 || STRCMP(view,VIEW_TV)== 0 || STRCMP(view,VIEW_TVBOXSET) == 0 ) {
 TRACE;
 
         media_type=DB_MEDIA_TYPE_TV; 
 
-    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0) {
+    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 || STRCMP(view,VIEW_MOVIE)== 0 || STRCMP(view,VIEW_MOVIEBOXSET) == 0 ) {
 TRACE;
 
         media_type=DB_MEDIA_TYPE_FILM; 

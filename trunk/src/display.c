@@ -3048,7 +3048,7 @@ TRACE;
     sortedRows->rowsets = rowsets;
     sortedRows->rows = sorted_row_ids;
 
-    HTML_LOG(0,"end get_sorted_rows_from_params");
+    HTML_LOG(0,"end get_sorted_rows_from_params : %d rows",numrows);
 
     return sortedRows;
 }
@@ -3731,6 +3731,7 @@ char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
 int db_full_size(char *source,DbSortedRows *sorted_rows)
 {
     int i;
+    HTML_LOG(0,"db_full_size %d",sorted_rows);
     if (sorted_rows && sorted_rows->num_rows && sorted_rows->rowsets ) {
         for (i = 0 ; sorted_rows->rowsets[i] ; i++ ) {
             Db *db = sorted_rows->rowsets[i]->db;
@@ -3772,7 +3773,7 @@ char *get_status(DbSortedRows *sorted_rows)
         if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
             result = STRDUP("Scanning...");
         } else if (db_full_size("*",sorted_rows) == 0 ) {
-            result = STRDUP("No Videos indexed. In [Setup] select media sources and rescan.");
+            result = STRDUP("Database empty. Goto [Setup]&gt;media sources and rescan.");
         }
     }
 

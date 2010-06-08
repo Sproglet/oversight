@@ -210,7 +210,6 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         }
 
         sortedRows = get_sorted_rows_from_params();
-        HTML_LOG(0,"Got %d rows",sortedRows->num_rows);
         dump_all_rows("sorted",sortedRows->num_rows,sortedRows->rows);
 
         // Found some data - continue to render page.
@@ -269,7 +268,7 @@ TRACE;
         } else if (STRCMP(view,VIEW_ADMIN) == 0) {
 
             setPermissions();
-            display_admin();
+            display_admin(sortedRows);
 
         } else {
 

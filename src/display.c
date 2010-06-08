@@ -324,6 +324,13 @@ TRACE;
 
     return result;
 }
+Array *get_drilldown_root_names() {
+    static Array *drilldown_root_names= NULL;
+    if (drilldown_root_names == NULL) {
+        drilldown_root_names = split(DRILL_DOWN_PARAM_NAMES,",",0);
+    }
+    return drilldown_root_names;
+}
 /*
  * 'new_params = query string selgment - ie p=1&q=2"
  * @param_list = list of parameters whose old values are kept in the url.
@@ -335,7 +342,7 @@ TRACE;
  * '@p=1 & @@p=2 & @@@p = 3   
  *
  */
-char *drill_down_url(char *new_params,char *param_list) 
+char *drill_down_url(char *new_params) 
 {
     /*
      * for each parameter name pname in param list
@@ -347,8 +354,12 @@ char *drill_down_url(char *new_params,char *param_list)
      * end for
      */
 
+
     char *new_drilldown_params = NULL;
-    Array *drilldown_root_names=split(param_list,",",0);
+
+    Array *drilldown_root_names= get_drilldown_root_names();
+
+
     int i;
     if (drilldown_root_names) {
         for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
@@ -400,7 +411,6 @@ char *drill_down_url(char *new_params,char *param_list)
             }
         }
     }
-    array_free(drilldown_root_names);
 
     /*
      * Compute the new url
@@ -412,7 +422,6 @@ char *drill_down_url(char *new_params,char *param_list)
     return final;
 }
 
-static Array *drilldown_root_names= NULL;
 // this is a query string where existing @p,@view,@idlist parameters are moved back to
 // p,view,idlist // so that we can return the the previous screen.
 char *return_query_string() 
@@ -441,9 +450,7 @@ char *return_query_string()
  *
  * 'p=1 & @p=2 & @@p = 3
      */
-    if (drilldown_root_names == NULL ) {
-        drilldown_root_names = split(DRILL_DOWN_PARAM_NAMES,",",0);
-    }
+    Array *drilldown_root_names= get_drilldown_root_names();
 
     Array *new_drilldown_params = array_new(free);
 
@@ -530,9 +537,7 @@ void query_pop()
  *
  * 'p=1 & @p=2 & @@p = 3
      */
-    if (drilldown_root_names == NULL ) {
-        drilldown_root_names = split(DRILL_DOWN_PARAM_NAMES,",",0);
-    }
+    Array *drilldown_root_names= get_drilldown_root_names();
 
     int i;
     if (drilldown_root_names) {
@@ -611,7 +616,7 @@ char *final_url(char *new_params,char *param_list)
 {
 
     char *new_drilldown_params = NULL;
-    Array *drilldown_root_names=split(param_list,",",0);
+    Array *drilldown_root_names= get_drilldown_root_names();
     int i;
     if (drilldown_root_names) {
         for(i = 0 ; i < drilldown_root_names-> size ; i++ ) {
@@ -642,7 +647,6 @@ char *final_url(char *new_params,char *param_list)
             }
         }
     }
-    array_free(drilldown_root_names);
 TRACE;
     /*
      * Compute the new url
@@ -693,7 +697,7 @@ char *drill_down_link(char *params,char *attr,char *title) {
 
     HTML_LOG(1," begin drill down link for params[%s] attr[%s] title[%s]",params,attr,title);
 
-    char *url = drill_down_url(params,DRILL_DOWN_PARAM_NAMES);
+    char *url = drill_down_url(params);
     HTML_LOG(2," end self link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);

@@ -104,7 +104,8 @@ int display_template(char*skin_name,char *file_name,DbSortedRows *sorted_rows)
 {
     int ret = 0;
 
-    HTML_LOG(1,"begin template");
+    HTML_LOG(0,"begin template");
+    HTML_LOG(0,"begin template %d",sorted_rows);
 
     char *resolution = scanlines_to_text(g_dimension->scanlines);
     if (display_template_file(skin_name,skin_name,resolution,file_name,sorted_rows) != 0) {

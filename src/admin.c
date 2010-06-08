@@ -9,7 +9,7 @@
 #include "template.h"
 
 
-void display_admin() {
+void display_admin(DbSortedRows *sorted_rows) {
 
     char *action = query_val(QUERY_PARAM_ACTION);
 
@@ -21,25 +21,25 @@ void display_admin() {
 
     } else if (EMPTY_STR(action) || STRCMP(action,"ask")==0 || STRCMP(action,"Cancel")==0) {
 
-        display_template("default","admin",NULL);
+        display_template("default","admin",sorted_rows);
 
     } else if (util_starts_with(action,"settings")) {
         
-        display_template("default","settings",NULL);
+        display_template("default","settings",sorted_rows);
 
 #define CONFIRM_PREFIX "confirm_"
     } else if (util_starts_with(action,CONFIRM_PREFIX)) {
         
-        display_template("default",action+strlen(CONFIRM_PREFIX),NULL);
+        display_template("default",action+strlen(CONFIRM_PREFIX),sorted_rows);
 
 #define TEMPLATE_PREFIX "template_"
     } else if (util_starts_with(action,TEMPLATE_PREFIX)) {
         
-        display_template("default",action+strlen(TEMPLATE_PREFIX),NULL);
+        display_template("default",action+strlen(TEMPLATE_PREFIX),sorted_rows);
 
     } else {
 
-        display_template("default","completed",NULL);
+        display_template("default","completed",sorted_rows);
     }
 
 }

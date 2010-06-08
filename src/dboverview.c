@@ -267,6 +267,27 @@ void overview_array_dump(int level,char *label,DbRowId **arr) {
 }
 
 
+/**
+  Change overview from a hash to a list of lists. This is to allow an item to be in multiple places.
+  At the moment the menu and tv box set grids, each icon replresents all items with the same hash.
+  This will not scale to work with movie and custom box sets. Eg AvP may be in a Predator Box set,
+  and an Aliens box set. etc.
+  Because an item can appear in multiple places we need to build a list of lists.
+  */
+ 
+void db_set_visited(DbRowSet **rowsets,int val) {
+    if (rowsets) {
+
+        int i,j;
+        for( i = 0 ; rowsets[i] ; i++ ) {
+            for( j = 0 ; j < rowsets[i]->size ; j++ ) {
+                DbRowId *r = rowsets[i]->rows+j;
+                r->visited = val;
+            }
+        }
+    }
+}
+
 struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
     
     int total=0;
@@ -303,10 +324,10 @@ TRACE;
 
             int i;
             HTML_LOG(1,"dbg: overview merging rowset[%d]",++rowset_count);
+            total += (*rowset_ptr)->size;
 
             for( i = 0 ; i < (*rowset_ptr)->size ; i++ ) {
 
-                total++;
 
 TRACE;
                 DbRowId *rid = (*rowset_ptr)->rows+i;

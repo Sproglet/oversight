@@ -150,6 +150,18 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
             convert_int=1;
             int_val = g_dimension->current_grid->img_height;
 
+#if 0
+        } else if (STRCMP(vname+1,"item_count") == 0) {
+
+            convert_int=1;
+            int_val = sorted_rows->num_rows;
+
+        } else if (STRCMP(vname+1,"group_count") == 0) {
+
+            convert_int=1;
+            int_val = sorted_rows->num_rows;
+#endif
+
         }
 
     } else if (*vname == MACRO_QUERY_PREFIX ) {

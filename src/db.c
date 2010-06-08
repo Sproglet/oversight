@@ -965,7 +965,7 @@ DbRowSet *db_rowset(Db *db) {
 }
 
 
-int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
+void db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
 
     assert(id);
     assert(dbrs);
@@ -984,8 +984,6 @@ int db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
         case 'M': dbrs->movie_total++; break;
         default: dbrs->other_media_total++; break;
     }
-
-    return dbrs->size;
 }
 
 char *db_get_field(DbSortedRows *sorted_rows,int idx,char *fieldid)
@@ -1326,7 +1324,6 @@ DbRowSet * db_scan_titles(
     }
 
 
-    int row_count=0;
     db->db_size=0;
 
 
@@ -1487,7 +1484,7 @@ TRACE;
                 }
 
                 if (keeprow) {
-                    row_count = db_rowset_add(rowset,&rowid);
+                    db_rowset_add(rowset,&rowid);
                     //HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
                 } else {
                     db_rowid_free(&rowid,0);
@@ -1505,15 +1502,10 @@ TRACE;
         HTML_LOG(0,"discard_ticks %d",discard_ticks/1000);
         */
 
-        HTML_LOG(0,"total rows %d",db->db_size);
         dbreader_close(fp);
     }
     if (path != db->path) FREE(path);
-    if (rowset) {
-        HTML_LOG(1,"db[%s] filtered %d of %d rows",db->source,row_count,db->db_size);
-    } else {
-        HTML_LOG(1,"db[%s] No rows loaded",db->source);
-    }
+    HTML_LOG(0,"db[%s] filtered %d of %d rows",db->source,(rowset?rowset->size:0),db->db_size);
     FREE(ids);
     if (!EMPTY_STR(compressed_genre_filter)) FREE(compressed_genre_filter);
     HTML_LOG(1,"return rowset");

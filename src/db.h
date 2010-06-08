@@ -24,9 +24,6 @@ typedef struct Dbrowid_struct {
     char category;
     int season;
 
-    struct Dbrowid_struct *linked;
-    int link_count;
-
     // Add ext member etc but only populate if postermode=0 as the text mode has this extra detail
     char *file;
     char *ext;
@@ -73,6 +70,12 @@ typedef struct Dbrowid_struct {
     // Set to 1 if item checked on HDD
     int delist_checked;
 
+    // General flag
+    int visited;
+
+// warning TODO remove this link once lists are implemented
+    struct Dbrowid_struct *linked;
+    int link_count;
 
 } DbRowId;
 

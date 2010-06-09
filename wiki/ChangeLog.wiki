@@ -1,6 +1,9 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+r1120-rc8
+  * ignore underscore when extracting tv name details. (affected regex word boundaries)
+ 
 r1104-rc7
   * delete navigation fixes where Tv and Movie have same title.
 

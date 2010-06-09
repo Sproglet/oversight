@@ -2696,6 +2696,9 @@ function remove_season(t) {
 function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
 
+    #To detect work boundaries remove _ - this may affect Lukio_. Only TV show with an underscore in IMDB
+    if (index(line,"_")) gsub(/_/," ",line);
+
     #id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
     #DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
     count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart);

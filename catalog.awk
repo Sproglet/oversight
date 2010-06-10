@@ -152,7 +152,7 @@ i,links,best_url) {
 
 
     best_url = domain context param;
-    scanPageForMatches(best_url "test",context,"http://[-_.a-z0-9/]+"context "\\>",0,0,"",links);
+    scan_page_for_match_counts(best_url "test",context,"http://[-_.a-z0-9/]+"context "\\>",0,0,"",links);
     bestScores(links,links,0);
     for(i in links) {
         best_url = i param; #http.../search ?q=
@@ -1578,7 +1578,7 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
                 subtotal=0;
                 for(i = 1 ; i-3 <= 0 ; i++ ) {
                     if (index(src[m],":"u[i]":") == 0) {
-                        s = scanPageForMatches(u[i],m,title_to_re(m),0,1,"");
+                        s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
                         if (s != 0) pages++;
                         subtotal += s;
                     }
@@ -1801,6 +1801,34 @@ function remove_format_tags(text,\
 
     #remove trailing punctuation
     return trimAll(text);
+}
+
+function getMovieConnections(id,\
+url,htag,connections,i,count,adding,list,ret) {
+    id1("getMovieConnections");
+    htag = "h5";
+    url = extractImdbLink(id)"movieconnections";
+    count=scan_page_for_match_order(url,"","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
+    #dump(0,"movieconnections-"count,connections);
+    for(i = 1 ; i <= count ; i++ ) {
+        if (substr(connections[i],1,2) == "tt" ) {
+            if (adding == 1 || adding == 2) {
+                list[adding] = list[adding] "," connections[i];
+            }
+        } else if(index(connections[i],">Follows<") ) {
+            adding=1;
+        } else if(index(connections[i],">Followed by<") ) {
+            adding=2;
+        } else {
+            adding=0;
+        }
+    }
+    if (list[1] != "" || list[2] != "" ) {
+        ret = substr(list[1] "," id list[2] , 2 );
+    }
+    id0(ret);
+    return ret;
+    
 }
 
 function scrapeIMDBTitlePage(idx,url,\
@@ -2214,7 +2242,7 @@ i,words,count,s2,ch) {
     sub(g_year_re"$","\\(?&\\)?",s); 
 
     # "the movie" to "[Tt][Hh][Ee] [Mm][Oo]vie"
-    # could use tolower() but this means another parameter to scanPageForMatches and complicates
+    # could use tolower() but this means another parameter to scan_page_for_match_counts and complicates
     # returning matches as the match string is modified by tolower().
     count = chop(s,"\\<[a-zA-z]",words);
     s2="";
@@ -2393,7 +2421,7 @@ terms,results,id,url,parts,showurl) {
         terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
         url = scanPageFirstMatch(g_search_google terms,"tvrage","http://[a-z0-9.]+.tvrage."g_nonquote_regex"+",0);
         if (url != "") {
-            scanPageForMatches(url,"/shows/","/shows/[0-9]+",0,0,"",results);
+            scan_page_for_match_counts(url,"/shows/","/shows/[0-9]+",0,0,"",results);
             showurl=getMax(results,1,1);
             if (split(showurl,parts,"/") == 2) {
                 id = parts[2];
@@ -2695,6 +2723,9 @@ function remove_season(t) {
 
 function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
 rtext,rstart,count,i,ret) {
+
+    #To detect work boundaries remove _ - this may affect Lukio_. Only TV show with an underscore in IMDB
+    if (index(line,"_")) gsub(/_/," ",line);
 
     #id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
     #DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
@@ -3229,6 +3260,7 @@ imdb_title_q,imdb_id_q) {
         } else {
             ret=1;
             getNiceMoviePosters(idx,extractImdbId(bestUrl));
+            getMovieConnections(extractImdbId(bestUrl));
         }
 
     } 
@@ -3408,7 +3440,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
         INF("query["queryPath"]");
 
         #Get all nfo links
-        scanPageForMatches(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
+        scan_page_for_match_counts(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
 
         #Scan each link for imdb matches and tally
 
@@ -3423,7 +3455,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
     #            }
     #        }
     #        sub(/[&]amp;/,"\\&",nfo2);
-    #        if (scanPageForMatches(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
+    #        if (scan_page_for_match_counts(nfo2, g_imdb_regex ,0,1,"", imdbIds) == 0) {
     #            scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
     #        }
     #        for(id in imdbIds) {
@@ -3437,7 +3469,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
                 }
                 sub(/[&]amp;/,"\\&",nfo2);
 
-                if (scanPageForMatches(nfo2,"tt", g_imdb_regex ,0,1,"", imdbIds) == 0) {
+                if (scan_page_for_match_counts(nfo2,"tt", g_imdb_regex ,0,1,"", imdbIds) == 0) {
                     scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
                 }
 
@@ -3476,9 +3508,9 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
 # This is really for amazon links in nfo files but might work for some other sites.
 function scanPageForIMDBviaLinksInNfo(url,imdbIds,\
 amzurl,amazon_urls,imdb_per_page,imdb_id) {
-    if (scanPageForMatches(url, "amazon","http://(www.|)amazon[ !#-;=?-~]+",0,1,"",amazon_urls)) {
+    if (scan_page_for_match_counts(url, "amazon","http://(www.|)amazon[ !#-;=?-~]+",0,1,"",amazon_urls)) {
         for(amzurl in amazon_urls) {
-            if (scanPageForMatches(amzurl, "/tt", g_imdb_regex ,0,1,"", imdb_per_page)) {
+            if (scan_page_for_match_counts(amzurl, "/tt", g_imdb_regex ,0,1,"", imdb_per_page)) {
                 for(imdb_id in imdb_per_page) {
                     INF("Found "imdb_id" via amazon link");
                     imdbIds[imdb_id] += imdb_per_page[imdb_id];
@@ -3736,7 +3768,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     dummy=rand()systime()rand();
     query = usenet_query_url;
     sub(/QUERY/,dummy,query);
-    baseline = scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles);
+    baseline = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
 
     DEBUG("number of links for no match "baseline);
 
@@ -3744,14 +3776,14 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
         #Just count the number of table links
         query = usenet_query_url;
         sub(/QUERY/,norm_title(clean_title(titles[t])),query);
-        link_count = scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles);
+        link_count = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
         DEBUG("number of links "link_count);
         if (link_count-baseline > 0) {
             count[t] = link_count;
             found=1;
         }
         if (link_count == 0 ) {
-            scanPageForMatches(query,"</","</[Aa]>",0,1,"",tmpTitles,1);
+            scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles,1);
         }
     }
 
@@ -4519,7 +4551,7 @@ function getEpguideNames(letter,names,\
 url,title,link,links,i,count2) {
     url = "http://epguides.com/menu"letter;
 
-    scanPageForMatches(url,"<li>","<li>(|<b>)<a.*</li>",0,1,"",links);
+    scan_page_for_match_counts(url,"<li>","<li>(|<b>)<a.*</li>",0,1,"",links);
     count2 = 0;
 
     for(i in links) {
@@ -4854,7 +4886,7 @@ i1,result,matchList,bestUrl) {
         keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb";
 
         # bing is not very good here.
-        scanPageForMatches(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList);
+        scan_page_for_match_counts(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList);
         # Find the url with the highest count for each index.
         #To help stop false matches we requre at least two occurences.
         bestUrl=getMax(matchList,linkThreshold,1);
@@ -6137,7 +6169,7 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
 function scanPageFirstMatch(url,fixed_text,regex,cache,referer,\
 matches,ret) {
     id1("scanPageFirstMatch");
-    scanPageForMatches(url,fixed_text,regex,1,cache,referer,matches);
+    scan_page_for_match_counts(url,fixed_text,regex,1,cache,referer,matches);
     ret = firstIndex(matches);
     id0(ret);
     return ret;
@@ -6150,7 +6182,7 @@ matches,ret) {
 function scanPageMostFreqMatch(url,fixed_text,regex,cache,referer,matches,\
 normedt,ret) {
     id1("scanPageMostFreqMatch");
-    scanPageForMatches(url,fixed_text,regex,0,cache,referer,matches);
+    scan_page_for_match_counts(url,fixed_text,regex,0,cache,referer,matches);
     if (regex == g_imdb_title_re) {
         normalise_title_matches(matches,normedt);
         hash_copy(matches,normedt);
@@ -6242,11 +6274,32 @@ utf8) {
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scanPageForMatches(url,fixed_text,regex,max,cache,referer,matches,verbose,\
-f,line,count,linecount,remain,is_imdb,matches2) {
+function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,matches,verbose) {
+    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,0,matches,verbose);
+}
+# Scan a page for matches to regular expression
+# IN url to scan
+# IN fixed_text, - fixed text to help speed up scan
+# IN regex to scan for
+# IN max = max number to match 0=all
+# OUT matches = array of matches index by the match text value = number of occurences.
+# return number of matches
+function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matches,verbose) {
+    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,1,matches,verbose);
+}
+# Scan a page for matches to regular expression
+# IN url to scan
+# IN fixed_text, - fixed text to help speed up scan
+# IN regex to scan for
+# IN max = max number to match 0=all
+# IN count_or_order = 0=count 1=order
+# OUT matches = array of matches index by the match text value = number of occurences.
+# return number of matches
+function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
+f,line,count,linecount,remain,is_imdb,matches2,i) {
 
     delete matches;
-    id1("scanPageForMatches["url"]");
+    id1("scan_page_for_matches["url"]");
     INF("["fixed_text"]["\
         (regex == g_imdb_regex\
             ?"<imdbtag>"\
@@ -6274,7 +6327,6 @@ f,line,count,linecount,remain,is_imdb,matches2) {
         while(enc_getline(f,line) > 0 ) {
 
             line[1] = de_emphasise(line[1]);
-            #if (index(line,"Diamond (2006)")) INF(line);
 
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
             # itself is more work - for example the results will come back as two different 
@@ -6288,8 +6340,20 @@ f,line,count,linecount,remain,is_imdb,matches2) {
 
             if (fixed_text == "" || index(line[1],fixed_text)) {
 
-                linecount = get_regex_counts(line[1],regex,remain,matches2);
-                hash_add(matches,matches2);
+                if (count_or_order) {
+                    # Get all ordered matches. 1=>test1, 2=>text2 , etc.
+                    linecount = get_regex_pos(line[1],regex,remain,matches2);
+                    # 
+                    # Append the matches2 array of ordered regex matches. Index by order.
+                    for(i = 1 ; i+0 <= linecount+0 ; i++) {
+                        matches[count+i] = matches2[i];
+                    }
+                } else {
+                    # Get all occurence counts text1=m , text2=n etc.
+                    linecount = get_regex_counts(line[1],regex,remain,matches2);
+                    # Add to the total occurences so far , index by pattern.
+                    hash_add(matches,matches2);
+                }
 
                 count += linecount;
                 if (max > 0) {

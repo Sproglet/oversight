@@ -12,6 +12,47 @@
 #include "display.h"
 #include "hashtable_loop.h"
 
+int in_db_custom_group(DbRowId *rid,DbGroupCustom *g)
+{
+    html_error("in_db_custom_group not implemented");
+    return 0;
+}
+
+int in_db_name_season_group(DbRowId *rid,DbGroupNameSeason *g)
+{
+    int result = 0 ;
+    if (rid->category == 'T' ) {
+        if (g->season <= 0 || g->season == rid->season) {
+            result = STRCMP(g->name,rid->title) == 0;
+        }
+    }
+    return result;
+}
+
+int in_db_imdb_group(DbRowId *rid,DbGroupIMDB *g)
+{
+    html_error("in_db_imdb_group not implemented");
+    return 0;
+}
+
+int in_db_group(DbRowId *rid,DbGroupDef *g)
+{
+    int result = 0;
+    switch(g->dbg_type) {
+        case DB_GROUP_BY_CUSTOM_TAG:
+            result = in_db_custom_group(rid,g->u.dbgc);
+        case DB_GROUP_BY_NAME_TYPE_SEASON:
+            result = in_db_name_season_group(rid,g->u.dbgns);
+        case DB_GROUP_BY_IMDB_LIST:
+            result = in_db_imdb_group(rid,g->u.dbgi);
+        default:
+            assert(0);
+    }
+    return result;
+}
+
+XXX
+
 //Compare a string - numeric compare of numeric parts.
 int numSTRCMP(char *a,char *b) {
     int anum,bnum;

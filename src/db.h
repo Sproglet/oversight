@@ -109,6 +109,7 @@ typedef struct Db_struct {
 
 /**
  * A subset of entries from a particular Db
+ * The subset is usually determined by the query string. eg Only Movies beginning with A etc.
  */
 typedef struct DbResults_struct {
     Db *db;

@@ -910,11 +910,17 @@ function set_db_fields() {
 
     IMDBID=db_field("_imdb","IMDBID","id");
     TVID=db_field("_tvid","TVID","id");
+    CONN_FOLLOWS=db_field("_mcfs","FOLLOWS","");
+    CONN_FOLLOWED=db_field("_mcfd","FOLLOWED","");
+    CONN_REMAKES=db_field("_mcrm","REMAKES","");
 }
 
 
 #Setup db_field identifier, pretty name ,
-# imdbsrc just indicates that this value can appear on imdb page.
+# IN key = database key and html parameter
+# IN name = logical name
+# IN tag = xml tag in xmbc nfo files.
+# IN imdbsrc just indicates that this value can appear on imdb page.
 # it is only used to warn if imdb has changed thier page format - again.
 function db_field(key,name,tag,imdbsrc) {
     g_db_field_name[key]=name;
@@ -1803,32 +1809,42 @@ function remove_format_tags(text,\
     return trimAll(text);
 }
 
-function getMovieConnections(id,\
-url,htag,connections,i,count,adding,list,ret) {
+# input imdb id
+# OUT: list - array of strings of CSV imdb ids.
+# list["Follows"]     = list of imdb ids that follow this movie etc.
+# list["Followed by"] = 
+# list["Remade as"]   =
+# list["Remake of"]   =
+#
+function getMovieConnections(id,list,\
+url,htag,connections,i,count,relationship,ret,txt) {
     id1("getMovieConnections");
+    delete list;
     htag = "h5";
     url = extractImdbLink(id)"movieconnections";
     count=scan_page_for_match_order(url,"","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
     #dump(0,"movieconnections-"count,connections);
     for(i = 1 ; i <= count ; i++ ) {
-        if (substr(connections[i],1,2) == "tt" ) {
-            if (adding == 1 || adding == 2) {
-                list[adding] = list[adding] "," connections[i];
+        txt = connections[i];
+        if (substr(txt,1,2) == "tt" ) {
+            if (relationship != "") {
+                list[relationship] = list[relationship] "," connections[i];
             }
-        } else if(index(connections[i],">Follows<") ) {
-            adding=1;
-        } else if(index(connections[i],">Followed by<") ) {
-            adding=2;
+        } else if(index(txt,"<") ) {
+            if (match(txt,">[^<]+")) {
+                relationship=substr(txt,RSTART+1,RLENGTH-1);
+            }
         } else {
-            adding=0;
+            relationship="";
         }
     }
-    if (list[1] != "" || list[2] != "" ) {
-        ret = substr(list[1] "," id list[2] , 2 );
+    # remove leading comma
+    for(i in list) {
+        list[i] = substr(list[i],2);
     }
+    dump(0,id" movie connections",list);
     id0(ret);
     return ret;
-    
 }
 
 function scrapeIMDBTitlePage(idx,url,\
@@ -3117,7 +3133,7 @@ function movie_search(idx,bestUrl,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
-imdb_title_q,imdb_id_q) {
+imdb_title_q,imdb_id_q,connections,remakes) {
 
     id1("movie search");
 
@@ -3260,7 +3276,16 @@ imdb_title_q,imdb_id_q) {
         } else {
             ret=1;
             getNiceMoviePosters(idx,extractImdbId(bestUrl));
-            getMovieConnections(extractImdbId(bestUrl));
+            getMovieConnections(extractImdbId(bestUrl),connections);
+            if (connections["Remake of"] != "") {
+                getMovieConnections(connections["Remake of"],remakes);
+            }
+            g_conn_follows[idx]= connections["Follows"];
+            g_conn_followed_by[idx]= connections["Followed by"];
+            g_conn_remakes[idx]=remakes["Remade as"];
+            INF("follows="g_conn_follows[idx]);
+            INF("followed_by="g_conn_followed_by[idx]);
+            INF("remakes="g_conn_remakes[idx]);
         }
 
     } 
@@ -3341,6 +3366,9 @@ function clean_globals() {
     delete gDate;
     delete g_title_rank;
     delete g_title_source;
+    delete g_conn_follows;
+    delete g_conn_followed_by;
+    delete g_conn_remakes;
 
     gMovieFileCount = 0;
     INF("Reset scanned files store");
@@ -7426,6 +7454,9 @@ row,est,nfo,op,start) {
     if (is_file(g_fldr[i]"/"nfo)) {
         row=row"\t"NFO"\t"nfo;
     }
+    if (g_conn_follows[i]) row=row"\t"CONN_FOLLOWS"\t"g_conn_follows[i];
+    if (g_conn_followed_by[i]) row=row"\t"CONN_FOLLOWED"\t"g_conn_followed_by[i];
+    if (g_conn_remakes[i]) row=row"\t"CONN_REMAKES"\t"g_conn_remakes[i];
     return row;
 }
 function short_year(y) {

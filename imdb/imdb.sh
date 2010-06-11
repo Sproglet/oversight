@@ -20,6 +20,7 @@ update() {
     directors
     genres
     movies
+    movie-links
     plot
     producers
     ratings
@@ -144,6 +145,12 @@ plot() {
 }
 ' $dbdir/plot.list
 }
+
+reduce_links() {
+$ sed -rn '1,/===/ d ; /^"/,/^$/ d; /\((reference|spoof|feature|version|edited)/ d ; /./ p' movie-l
+inks.list > short.list
+}
+
 
 if [ -z "$1" ] ; then usage ; fi
 

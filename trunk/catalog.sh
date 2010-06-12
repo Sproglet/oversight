@@ -279,7 +279,7 @@ catalog() {
     "OVERSIGHT_ID=$OVERSIGHT_ID" \
     "AWK=$AWK" \
     "NMT_APP_DIR=$NMT_APP_DIR" \
-    tmp_dir="$tmp_dir" \
+    g_tmp_dir="$tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"

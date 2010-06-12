@@ -468,14 +468,9 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbRowId **,DbR
     DbRowId **ids = flatten_hash_to_array(overview);
     int total = hashtable_count(overview);
 
-    int (*f)(const void *,const void *);
-
-    f = (void *)cmp_fn;
-
-
     HTML_LOG(0,"sorting %d items",total);
     overview_array_dump(3,"ovw flatten",ids);
-    qsort(ids,hashtable_count(overview),sizeof(DbRowId *),f);
+    qsort(ids,hashtable_count(overview),sizeof(DbRowId *),(void *)cmp_fn);
     HTML_LOG(0,"sorted %d items",total);
     overview_array_dump(2,"ovw sorted",ids);
 

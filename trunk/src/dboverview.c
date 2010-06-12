@@ -21,14 +21,14 @@ DbGroupIMDB *db_group_imdb_new(
         int size // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
 )
 {
+    if (size == 0) {
+        size = IMDB_GROUP_MAX_SIZE;
+    }
     DbGroupIMDB *g = MALLOC(sizeof(DbGroupIMDB));
     memset(g,0,sizeof(DbGroupIMDB));
 
     int *list = CALLOC(size,sizeof(int));
 
-    if (size == 0) {
-        size = IMDB_GROUP_MAX_SIZE;
-    }
     g->dbgi_max_size = size;
     g->dbgi_size = 0;
     g->dbgi_ids = list;
@@ -38,9 +38,11 @@ DbGroupIMDB *db_group_imdb_new(
 }
 void db_group_imdb_free(DbGroupIMDB *g,int free_parent)
 {
-    FREE(g->dbgi_ids);
-    if (free_parent) {
-        FREE(g);
+    if (g) {
+        FREE(g->dbgi_ids);
+        if (free_parent) {
+            FREE(g);
+        }
     }
 }
 
@@ -539,6 +541,15 @@ DbGroupIMDB *parse_imdb_list(
             db_group_imdb_add(group,id);
         }
     }
+
+    if (group) {
+        int i;
+        for(i = 0 ; i < group->dbgi_size ; i++ ) {
+            HTML_LOG(0,"tt%d",group->dbgi_ids[i]);
+        }
+        HTML_LOG(0,"expanded[%s]",db_group_imdb_string_static(group));
+        HTML_LOG(0,"compressed[%s]",db_group_imdb_compressed_string_static(group));
+    }
     return group;
 }
 
@@ -549,10 +560,10 @@ DbGroupIMDB *parse_imdb_list(
 //
 char *db_group_imdb_compressed_string_static(DbGroupIMDB *g)
 {
-    char *result="";
+    static char buffer[(MAX_IMDB_BASE_N_DIGITS+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
+    char *p = buffer;
+
     if (g) {
-        static char buffer[(MAX_IMDB_BASE_N_DIGITS+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
-        char *p = buffer;
         int i;
         for(i = 0 ; i < g->dbgi_size ; i++ ) {
 
@@ -573,18 +584,17 @@ char *db_group_imdb_compressed_string_static(DbGroupIMDB *g)
                 *p++ = *numptr;
             }
         }
-        *p = '\0';
     }
-    return result;
+    *p = '\0';
+    return buffer;
 }
 // Get string representation of a list of imdb ids.
 #define MAX_IMDB_IDLEN 9  // tt8888888
 char *db_group_imdb_string_static(DbGroupIMDB *g)
 {
-    char *result="";
+    static char buffer[(MAX_IMDB_IDLEN+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
+    char *p = buffer;
     if (g) {
-        static char buffer[(MAX_IMDB_IDLEN+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
-        char *p = buffer;
         int i;
         for(i = 0 ; i < g->dbgi_size ; i++ ) {
 
@@ -595,9 +605,9 @@ char *db_group_imdb_string_static(DbGroupIMDB *g)
             }
             p += sprintf(p,"tt%07d",id);
         }
-        *p = '\0';
     }
-    return result;
+    *p = '\0';
+    return buffer;
 }
 
 // vi:sw=4:et:ts=4

@@ -1,7 +1,5 @@
 Checkin status:
 
-dbfield - update free function to free imdb lists
-
 HIGH:
 Test [:$field_TITLE:0:] syntax may need to change it to allow dynamic index. eg [:FIELD(TITLE,0):] with default [:FIELD(TITLE):]
 

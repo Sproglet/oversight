@@ -41,7 +41,6 @@ static long keep_ticks=0;
 #define STOP_CLOCK(x) 
 
 char *copy_string(int len,char *s);
-int in_idlist(int id,int size,int *ids);
 void get_genre_from_string(char *gstr,struct hashtable **h);
 
 char *copy_string(int len,char *s)
@@ -653,7 +652,7 @@ TRACE;
                     }
                     //if (keeprow) HTML_LOG(0,"xx watched ok");
                     if (keeprow) {
-                        if (num_ids != ALL_IDS && !in_idlist(rowid.id,num_ids,ids)) {
+                        if (num_ids != ALL_IDS && idlist_index(rowid.id,num_ids,ids) == -1) {
                             keeprow = 0;
                         }
                     }

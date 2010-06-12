@@ -2,14 +2,90 @@
 #define __OVS_DBROW_H__
 
 #include <stdio.h>
-#include "db.h"
-#include "dbread.h"
 
+#include "time.h"
+#include "dbread.h"
+#include "array.h"
+
+typedef struct Dbrowid_struct {
+
+    long id;
+    struct Db_struct *db;
+    long offset;
+    OVS_TIME date;
+    int watched;
+    char *title;
+    char *orig_title;
+    char *poster;
+    char *genre;
+    char category;
+    int season;
+
+    // Add ext member etc but only populate if postermode=0 as the text mode has this extra detail
+    char *file;
+    char *ext;
+    char *certificate;
+    int year;
+    int runtime;
+
+    char *url;
+    int external_id;
+
+    /*
+     * plot_key is derived from URL tt0000000
+     * movie plot_key[MAIN]=_@tt0000000@@@_
+     * tv plot_key[MAIN]=_@tt0000000@season@@_
+     * tv plot_key[EPPLOT]=_@tt0000000@season@episode@_
+     */
+    char *plotkey[2];
+    char *fanart;
+    char *parts;
+    char *episode;
+    char *director;
+
+    //only populate if deleting
+    char *nfo;
+
+    OVS_TIME airdate;
+    OVS_TIME airdate_imdb;
+
+    char *eptitle;
+    char *eptitle_imdb;
+    char *additional_nfo;
+    double rating;
+
+    OVS_TIME filetime;
+    OVS_TIME downloadtime;
+
+    //Only set if a row has a vodlink displayed and is added the the playlist
+    Array *playlist_paths;
+    Array *playlist_names;
+
+    long plotoffset[2];
+    char *plottext[2];
+
+    // Set to 1 if item checked on HDD
+    int delist_checked;
+
+    // General flag
+    int visited;
+
+// warning TODO remove this link once lists are implemented
+    struct Dbrowid_struct *linked;
+    int link_count;
+
+    struct DbGroupIMDB_struct *comes_after;
+    struct DbGroupIMDB_struct *comes_before;
+    struct DbGroupIMDB_struct *remakes;
+
+} DbRowId;
+
+void db_rowid_dump(DbRowId *rid);
 void fix_file_paths(int num_row,DbRowId **rows);
 void fix_file_path(DbRowId *rowid);
-int in_idlist(int id,int size,int *ids);
-DbRowId *db_rowid_new(Db *db);
-DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
+int idlist_index(int id,int size,int *ids);
+DbRowId *db_rowid_new(struct Db_struct *db);
+DbRowId *db_rowid_init(DbRowId *rowid,struct Db_struct *db);
 
 // TODO: 3 functions below need consolidation read_and_parse_row() and
 // parse_row() are usually called after some other time consuming action. eg
@@ -20,14 +96,14 @@ DbRowId *db_rowid_init(DbRowId *rowid,Db *db);
 
 DbRowId *read_and_parse_row(
         DbRowId *rowid,
-        Db *db,
+        struct Db_struct *db,
         FILE *fp,
         int *eof,
         int tv_or_movie_view // true if looking at tv or moview view.
         );
 DbRowId *dbread_and_parse_row(
         DbRowId *rowid,
-        Db *db,
+        struct Db_struct *db,
         ReadBuf *fp,
         int *eof,
         int tv_or_movie_view // true if looking at tv or moview view.
@@ -37,7 +113,7 @@ int parse_row(
         int *ids,    // sorted array of ids passed in query string idlist to use as a filter.
         int tv_or_movie_view, // true if looking at tv or moview view.
         char *buffer,  // The current buffer contaning a line of input from the database
-        Db *db,        // the database
+        struct Db_struct *db,        // the database
         DbRowId *rowid// current rowid structure to populate.
         );
 #endif

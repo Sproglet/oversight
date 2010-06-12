@@ -1058,4 +1058,44 @@ struct hashtable *array_to_set(Array *args)
     }
     return h;
 }
+// quick binary chop to search list.
+// Returns index of item.
+// -1 = not found.
+//
+#define BCHOP_NOT_FOUND -1
+int bchop(int id,int size,int *ids)
+{
+
+    if (size == 0) return BCHOP_NOT_FOUND;
+
+    // The range is usually much smaller than the number of possible ids.
+    // So do boundary comparison first.
+    if (id < ids[0] || id > ids[size-1] ) {
+        return BCHOP_NOT_FOUND;
+    }
+
+    int min=0;
+    int max=size;
+    int mid;
+    do {
+        mid = (min+max) / 2;
+
+        if (id < ids[mid] ) {
+
+            max = mid;
+
+        } else if (id > ids[mid] ) {
+
+            min = mid + 1 ;
+
+        } else {
+
+            HTML_LOG(1,"found %d",ids[mid]);
+            return mid;
+        }
+    } while (min < max);
+
+    //HTML_LOG("not found %d",id);
+    return BCHOP_NOT_FOUND;
+}
 // vi:sw=4:et:ts=4

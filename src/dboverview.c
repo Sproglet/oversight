@@ -65,8 +65,11 @@ int in_db_name_season_group(DbRowId *rid,DbGroupNameSeason *g)
 
 int in_db_imdb_group(DbRowId *rid,DbGroupIMDB *g)
 {
-    html_error("in_db_imdb_group not implemented");
-    return 0;
+    int result = 0 ;
+    if (rid->external_id ) {
+        result = bchop(rid->external_id,g->dbgi_size,g->dbgi_ids) >= 0;
+    } 
+    return result;
 }
 
 int in_db_group(DbRowId *rid,DbGroupDef *g)
@@ -542,6 +545,8 @@ DbGroupIMDB *parse_imdb_list(
         }
     }
 
+#if 0
+    // Debug/test code.
     if (group) {
         int i;
         for(i = 0 ; i < group->dbgi_size ; i++ ) {
@@ -550,6 +555,7 @@ DbGroupIMDB *parse_imdb_list(
         HTML_LOG(0,"expanded[%s]",db_group_imdb_string_static(group));
         HTML_LOG(0,"compressed[%s]",db_group_imdb_compressed_string_static(group));
     }
+#endif
     return group;
 }
 

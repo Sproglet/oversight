@@ -242,7 +242,8 @@ DbRowId *db_rowid_new(Db *db) {
     return rowid;
 }
 
-void db_rowid_dump(DbRowId *rid) {
+void db_rowid_dump(DbRowId *rid)
+{
     
     time_t t;
     HTML_LOG(1,"ROWID: id = %d",rid->id);
@@ -364,48 +365,19 @@ got_value_end:
     delete_queue_unqueue(rowid,rowid->poster);
     delete_queue_unqueue(rowid,rowid->fanart);
 
-    result =   (result && (num_ids == ALL_IDS || in_idlist(rowid->id,num_ids,ids)) );
+    result =   (result && (num_ids == ALL_IDS || idlist_index(rowid->id,num_ids,ids) >= 0) );
     if (!result) {
         db_rowid_free(rowid,0);
     }
     return result;
 }
-// quick binary chop to search list.
-int in_idlist(int id,int size,int *ids)
+// Returns index of item.
+// -1 = not found.
+int idlist_index(int id,int size,int *ids)
 {
-
-    if (size == 0) return 0;
-    if (size == ALL_IDS) return 1;
-
-    // The range is usually much smaller than the number of possible ids.
-    // So do boundary comparison first.
-    if (id < ids[0] ) return 0;
-    if (id > ids[size-1] ) return 0;
-
-    int min=0;
-    int max=size;
-    int mid;
-    do {
-        mid = (min+max) / 2;
-
-        if (id < ids[mid] ) {
-
-            max = mid;
-
-        } else if (id > ids[mid] ) {
-
-            min = mid + 1 ;
-
-        } else {
-
-            HTML_LOG(1,"found %d",ids[mid]);
-            return 1;
-        }
-    } while (min < max);
-
-    //HTML_LOG("not found %d",id);
-    return 0;
+    return bchop(id,size,ids);
 }
+
 #define DB_NAME_BUF_SIZE 10
 #define DB_VAL_BUF_SIZE 4000
 #define ROW_SIZE 10000
@@ -826,6 +798,11 @@ static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int va
                 if (offset == &(rowid->file)) {
 
                     fix_file_path(rowid);
+                }
+                else if (offset == &(rowid->url)) {
+                    if (val && *val == 't') {
+                        rowid->external_id = atol(val+2);
+                    }
                 }
                 break;
             case FIELD_TYPE_CHAR:

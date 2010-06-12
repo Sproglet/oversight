@@ -17,6 +17,8 @@
 #define IMDB_GROUP_SEP ','
 #define IMDB_GROUP_BASE 128
 
+int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2);
+
 DbGroupIMDB *db_group_imdb_new(
         int size // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
 )
@@ -127,7 +129,6 @@ int index_STRCMP(char *a,char *b) {
     return strcasecmp(a,b);
 }
 
-#define DBR(X) ((DbRowId *)(*(X)))
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
@@ -198,6 +199,8 @@ int get_view_mode() {
 //#define EQ_FILE(rid1,rid2) EQ_STR(rid1,rid2,file) && EQ_SHOW(rid1,rid2,source)
 #define EQ_FILE(rid1,rid2) 0
 
+#define EQ_MOVIE(rid1,rid2) EQ_NUM(rid1,rid2,external_id)
+
 // true if two records are part of the same show. Assuemes category=T already tested.
 #define EQ_SHOW(rid1,rid2) (EQ_NUM(rid1,rid2,year) && EQ_STR(rid1,rid2,title))
 
@@ -244,9 +247,18 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
     } else if (((DbRowId*)rid1)->category == 'M' ) {
         switch(mode) {
             case MENU_VIEW_ID:
+                if (!moviebox) {
+                    ret = EQ_FILE(rid1,rid2);
+
+                } else {
+                   
+                   ret = in_same_db_imdb_group(((DbRowId*)rid1),((DbRowId*)rid2));
+
+                }
+                break;
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
-               ret = EQ_FILE(rid1,rid2);
+                ret = EQ_MOVIE(rid1,rid2);
                 break;
             default:
                 assert(0);
@@ -258,6 +270,29 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
     return ret;
 
 }
+
+int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2)
+{
+   int ret = 0;
+
+   if (rid1->external_id && rid2->external_id ) {
+
+       if (rid1->external_id == rid2->external_id) {
+           ret = 1;
+       } else if (rid1->external_id < rid2->external_id ) {
+           if (rid2->comes_after) {
+              ret = in_db_imdb_group(rid1,rid2->comes_after);
+           }
+       } else {
+           if (rid1->comes_after) {
+              ret = in_db_imdb_group(rid2,rid1->comes_after);
+           }
+       }
+   }
+   return ret;
+}
+
+#define DBR(x) ((DbRowId *)(x))
 unsigned int db_overview_general_hashf(void *rid)
 {
     static int tvbox=-1;
@@ -270,41 +305,56 @@ unsigned int db_overview_general_hashf(void *rid)
         moviebox = use_movie_boxsets();
         mode = get_view_mode();
     }
-    switch(((DbRowId *)rid)->category) {
+    switch(DBR(rid)->category) {
         case 'T':
         switch(mode) {
             case MENU_VIEW_ID:
                 if (tvbox) {
-                    h  = stringhash(((DbRowId *)rid)->title);
-                    HASH_ADD(h,((DbRowId *)rid)->year);
+                    h  = stringhash(DBR(rid)->title);
+                    HASH_ADD(h,DBR(rid)->year);
                 } else {
-                    h  = stringhash(((DbRowId *)rid)->title);
-                    HASH_ADD(h,((DbRowId *)rid)->year);
-                    HASH_ADD(h,((DbRowId *)rid)->season);
+                    h  = stringhash(DBR(rid)->title);
+                    HASH_ADD(h,DBR(rid)->year);
+                    HASH_ADD(h,DBR(rid)->season);
                 }
                 break;
             case TVBOXSET_VIEW_ID:
-                h  = stringhash(((DbRowId *)rid)->title);
-                HASH_ADD(h,((DbRowId *)rid)->year);
-                HASH_ADD(h,((DbRowId *)rid)->season);
+                h  = stringhash(DBR(rid)->title);
+                HASH_ADD(h,DBR(rid)->year);
+                HASH_ADD(h,DBR(rid)->season);
                 break;
             case TV_VIEW_ID:
-                h  = stringhash(((DbRowId *)rid)->file);
+                h  = stringhash(DBR(rid)->file);
                 break;
             default:
-                html_error("unknown view for item %d[%s - %s]",((DbRowId*)rid)->id,((DbRowId*)rid)->title,((DbRowId*)rid)->file);
+                html_error("unknown view for item %d[%s - %s]",DBR(rid)->id,DBR(rid)->title,DBR(rid)->file);
                 assert(0);
         } 
         break;
     case 'M':
         switch(mode) {
             case MENU_VIEW_ID:
+                if (!moviebox) {
+                    h  = stringhash(DBR(rid)->file);
+                } else if (DBR(rid)->external_id == 0) {
+                    // External ID not set - just use the title
+                    h  = stringhash(DBR(rid)->file);
+                } else if (DBR(rid)->comes_after == NULL) {
+                    // If it doesnt follow anything then it is the main item
+                    h = DBR(rid)->external_id ;
+                } else {
+                    // The box set is identified by the first movie in the series.
+                    // This will not work for AvP series. May need to rewrite later.
+                    // To add an item to multiple sets.
+                    h = DBR(rid)->comes_after->dbgi_ids[0];
+                }
+                break;
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
-                h  = stringhash(((DbRowId *)rid)->file);
+                h  = stringhash(DBR(rid)->file);
                 break;
             default:
-                html_error("unknown view for item %d[%s - %s]",((DbRowId*)rid)->id,((DbRowId*)rid)->title,((DbRowId*)rid)->file);
+                html_error("unknown view for item %d[%s - %s]",DBR(rid)->id,DBR(rid)->title,DBR(rid)->file);
                 assert(0);
         } 
         break;

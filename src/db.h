@@ -86,6 +86,8 @@ typedef struct Dbrowid_struct {
 void db_rowid_dump(DbRowId *rid);
 OVS_TIME *timestamp_ptr(DbRowId *rowid);
 
+#define ALL_IDS -1
+
 #define DB_MEDIA_TYPE_TV 1
 #define DB_MEDIA_TYPE_FILM 2
 #define DB_MEDIA_TYPE_ANY 3

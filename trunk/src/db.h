@@ -4,86 +4,14 @@
 #include "hashtable.h"
 #include "util.h"
 #include "vasprintf.h"
+#include "dbrow.h"
 #include "dbfield.h"
 #include "time.h"
 
 typedef enum { PLOT_MAIN=0 , PLOT_EPISODE=1 } PlotType;
+
 #define PLOT_TYPE_COUNT 2
 
-typedef struct Dbrowid_struct {
-
-    long id;
-    struct Db_struct *db;
-    long offset;
-    OVS_TIME date;
-    int watched;
-    char *title;
-    char *orig_title;
-    char *poster;
-    char *genre;
-    char category;
-    int season;
-
-    // Add ext member etc but only populate if postermode=0 as the text mode has this extra detail
-    char *file;
-    char *ext;
-    char *certificate;
-    int year;
-    int runtime;
-
-    //only populate if view=tv or movie
-    char *url;
-
-    /*
-     * plot_key is derived from URL tt0000000
-     * movie plot_key[MAIN]=_@tt0000000@@@_
-     * tv plot_key[MAIN]=_@tt0000000@season@@_
-     * tv plot_key[EPPLOT]=_@tt0000000@season@episode@_
-     */
-    char *plotkey[2];
-    char *fanart;
-    char *parts;
-    char *episode;
-    char *director;
-
-    //only populate if deleting
-    char *nfo;
-
-    OVS_TIME airdate;
-    OVS_TIME airdate_imdb;
-
-    char *eptitle;
-    char *eptitle_imdb;
-    char *additional_nfo;
-    double rating;
-
-    OVS_TIME filetime;
-    OVS_TIME downloadtime;
-
-    //Only set if a row has a vodlink displayed and is added the the playlist
-    Array *playlist_paths;
-    Array *playlist_names;
-
-    long plotoffset[2];
-    char *plottext[2];
-
-    // Set to 1 if item checked on HDD
-    int delist_checked;
-
-    // General flag
-    int visited;
-
-// warning TODO remove this link once lists are implemented
-    struct Dbrowid_struct *linked;
-    int link_count;
-
-    struct DbGroupIMDB_struct *comes_after;
-    struct DbGroupIMDB_struct *comes_before;
-    struct DbGroupIMDB_struct *remakes;
-
-} DbRowId;
-
-void db_rowid_dump(DbRowId *rid);
 OVS_TIME *timestamp_ptr(DbRowId *rowid);
 
 #define ALL_IDS -1

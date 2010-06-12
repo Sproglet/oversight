@@ -6,11 +6,43 @@
 #include <assert.h>
 
 #include "db.h"
+#include "dboverview.h"
 #include "util.h"
 #include "gaya_cgi.h"
 #include "hashtable.h"
 #include "display.h"
 #include "hashtable_loop.h"
+
+#define IMDB_GROUP_MAX_SIZE 50
+#define IMDB_GROUP_SEP ','
+#define IMDB_GROUP_BASE 128
+
+DbGroupIMDB *db_group_imdb_new(
+        int size // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
+)
+{
+    DbGroupIMDB *g = MALLOC(sizeof(DbGroupIMDB));
+    memset(g,0,sizeof(DbGroupIMDB));
+
+    int *list = CALLOC(size,sizeof(int));
+
+    if (size == 0) {
+        size = IMDB_GROUP_MAX_SIZE;
+    }
+    g->dbgi_max_size = size;
+    g->dbgi_size = 0;
+    g->dbgi_ids = list;
+
+
+    return g;
+}
+void db_group_imdb_free(DbGroupIMDB *g,int free_parent)
+{
+    FREE(g->dbgi_ids);
+    if (free_parent) {
+        FREE(g);
+    }
+}
 
 int in_db_custom_group(DbRowId *rid,DbGroupCustom *g)
 {
@@ -40,18 +72,16 @@ int in_db_group(DbRowId *rid,DbGroupDef *g)
     int result = 0;
     switch(g->dbg_type) {
         case DB_GROUP_BY_CUSTOM_TAG:
-            result = in_db_custom_group(rid,g->u.dbgc);
+            result = in_db_custom_group(rid,&(g->u.dbgc));
         case DB_GROUP_BY_NAME_TYPE_SEASON:
-            result = in_db_name_season_group(rid,g->u.dbgns);
+            result = in_db_name_season_group(rid,&(g->u.dbgns));
         case DB_GROUP_BY_IMDB_LIST:
-            result = in_db_imdb_group(rid,g->u.dbgi);
+            result = in_db_imdb_group(rid,&(g->u.dbgi));
         default:
             assert(0);
     }
     return result;
 }
-
-XXX
 
 //Compare a string - numeric compare of numeric parts.
 int numSTRCMP(char *a,char *b) {
@@ -91,6 +121,8 @@ int index_STRCMP(char *a,char *b) {
     //if (strncasecmp(b,"the ",4)==0) b+= 4;
     return strcasecmp(a,b);
 }
+
+#define DBR(X) ((DbRowId *)(*(X)))
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2) {
 
@@ -431,14 +463,19 @@ DbRowId **flatten_hash_to_array(struct hashtable *overview) {
     return ids;
 }
 
-DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,const void *)) {
+DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbRowId **,DbRowId **)) {
 
     DbRowId **ids = flatten_hash_to_array(overview);
     int total = hashtable_count(overview);
 
+    int (*f)(const void *,const void *);
+
+    f = (void *)cmp_fn;
+
+
     HTML_LOG(0,"sorting %d items",total);
     overview_array_dump(3,"ovw flatten",ids);
-    qsort(ids,hashtable_count(overview),sizeof(DbRowId *),cmp_fn);
+    qsort(ids,hashtable_count(overview),sizeof(DbRowId *),f);
     HTML_LOG(0,"sorted %d items",total);
     overview_array_dump(2,"ovw sorted",ids);
 
@@ -450,4 +487,122 @@ DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(const void *,c
 void db_overview_hash_destroy(struct hashtable *ovw_hash) {
     hashtable_destroy(ovw_hash,0,0);
 }
+
+void db_group_imdb_add(DbGroupIMDB *g,int id) {
+
+    int size = g->dbgi_size;
+    assert(size < IMDB_GROUP_MAX_SIZE-1);
+    g->dbgi_ids[size++] = id;
+    g->dbgi_size = size;
+}
+
+/**
+ * Parse a list of imdb ids. They may be ascii strings eg tt123,tt456
+ * or in base IMDB_GROUP_BASE format with characters offset by 128.
+ * eg. in base 128 with offset 128 then the sequence
+ * chr(129)chr(130) = 12(base 128) = 1*128 + 2 = 130(dec)
+ * This compresses an id tt1999999 down to 3 bytes, .
+ */
+DbGroupIMDB *parse_imdb_list(
+        char *val,
+        int val_len
+        )
+{
+    DbGroupIMDB *group = NULL;
+    if (val != NULL && val_len > 0 ) {
+        unsigned char *p,*start = (unsigned char *)val;
+        unsigned char *end = start+val_len;
+        int id = 0;
+        for(p = start ; p < end ; ) {
+            if (*p == 't') {
+                // Parse tt0000000
+                char *q;
+                p++;
+                assert(*p == 't');
+                p ++;
+                id = strtol((char *)p,&q,10);
+                p = (unsigned char *)q;
+
+            } else if (*p && *p != IMDB_GROUP_SEP) {
+                // Parse number in base n where each character is a digit offset
+                // by 128. (to avoid clash with ascii7 )
+                id = id * IMDB_GROUP_BASE + (*p - 128);
+                p++;
+            } else {
+                if (group == NULL) {
+                    group = db_group_imdb_new(0);
+                }
+                db_group_imdb_add(group,id);
+                id = 0;
+                p++;
+            }
+        }
+        if (id != 0) {
+            if (group == NULL) {
+                group = db_group_imdb_new(0);
+            }
+            db_group_imdb_add(group,id);
+        }
+    }
+    return group;
+}
+
+#define MAX_IMDB_BASE_N_DIGITS 5
+//
+// Get compressed string representation of a list of imdb ids.
+// Each id is represented by a base128 number. (ascii(128) to ascii(255)
+//
+char *db_group_imdb_compressed_string_static(DbGroupIMDB *g)
+{
+    char *result="";
+    if (g) {
+        static char buffer[(MAX_IMDB_BASE_N_DIGITS+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
+        char *p = buffer;
+        int i;
+        for(i = 0 ; i < g->dbgi_size ; i++ ) {
+
+            // Convert Id to  IMDB_GROUP_BASE (reverse division)
+            unsigned char num[MAX_IMDB_BASE_N_DIGITS+1],*numptr=num;
+            int id = g->dbgi_ids[i];
+            do {
+                *numptr++ = 128 + id % IMDB_GROUP_BASE;
+                id /= IMDB_GROUP_BASE;
+            } while(id);
+            assert(numptr < num+MAX_IMDB_BASE_N_DIGITS);
+            // Copy seperator
+            if (i) {
+                *p++ = IMDB_GROUP_SEP;
+            }
+            // Reverse Copy bytes into p
+            while (--numptr >= num) {
+                *p++ = *numptr;
+            }
+        }
+        *p = '\0';
+    }
+    return result;
+}
+// Get string representation of a list of imdb ids.
+#define MAX_IMDB_IDLEN 9  // tt8888888
+char *db_group_imdb_string_static(DbGroupIMDB *g)
+{
+    char *result="";
+    if (g) {
+        static char buffer[(MAX_IMDB_IDLEN+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
+        char *p = buffer;
+        int i;
+        for(i = 0 ; i < g->dbgi_size ; i++ ) {
+
+            int id = g->dbgi_ids[i];
+            // Copy seperator
+            if (i) {
+                *p++ = IMDB_GROUP_SEP;
+            }
+            p += sprintf(p,"tt%07d",id);
+        }
+        *p = '\0';
+    }
+    return result;
+}
+
 // vi:sw=4:et:ts=4

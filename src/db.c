@@ -15,6 +15,7 @@
 
 #include "db.h"
 #include "dbread.h"
+#include "dboverview.h"
 #include "dbplot.h"
 #include "actions.h"
 #include "dbfield.h"
@@ -247,6 +248,7 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 #define FIELD_TYPE_INT 'i'
 #define FIELD_TYPE_DATE 'd'
 #define FIELD_TYPE_TIMESTAMP 't'
+#define FIELD_TYPE_IMDB_LIST 'I'
 
 // Most field ids have the form _a or _ab. This function looks at th first few letters of the 
 // id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbRowId structure.
@@ -280,6 +282,17 @@ static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void 
                         *type = FIELD_TYPE_DATE;
 
                     }
+                } else if (*p == '\0' ) { // _a
+                    *offset=&(rowid->comes_after);
+                    *type = FIELD_TYPE_IMDB_LIST;
+                    *overview = 1;
+                }
+                break;
+            case 'b':
+                if (*p == '\0' ) { // _b
+                    *offset=&(rowid->comes_before);
+                    *type = FIELD_TYPE_IMDB_LIST;
+                    *overview = 1;
                 }
                 break;
             case 'C':
@@ -361,6 +374,13 @@ static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void 
                 if (*p == 'T') {
                     *offset=&(rowid->date);
                     *type = FIELD_TYPE_TIMESTAMP;
+                    *overview = 1;
+                }
+                break;
+            case 'k':
+                if (*p == '\0' ) { // _k
+                    *offset=&(rowid->remakes);
+                    *type = FIELD_TYPE_IMDB_LIST;
                     *overview = 1;
                 }
                 break;
@@ -500,7 +520,6 @@ char * db_rowid_get_field(DbRowId *rowid,char *name)
     return result;
 }
 
-// This will take ownership of the val - freeing it if necessary.
 static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
 
     void *offset;
@@ -551,6 +570,9 @@ static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int va
                 break;
             case FIELD_TYPE_TIMESTAMP:
                 *(long *)offset=strtol(val,&tmps,16) ;
+                break;
+            case FIELD_TYPE_IMDB_LIST:
+                *(DbGroupIMDB **)offset = parse_imdb_list(val,val_len);
                 break;
             default:
                 HTML_LOG(0,"Bad field type [%c]",type);
@@ -672,10 +694,23 @@ void write_row(FILE *fp,DbRowId *rid) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(rid->downloadtime));
     //fprintf(fp,"\t%s\t%s",DB_FLDID_PROD,rid->prod);
     fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATE,fmt_date_static(rid->airdate));
+
+    // TODO: Deprecate
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLEIMDB,rid->eptitle_imdb);
+    // TODO: Deprecate
     fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATEIMDB,fmt_date_static(rid->airdate_imdb));
+
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,rid->eptitle);
     fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,rid->nfo);
+    if (rid->comes_after) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_AFTER,db_group_imdb_compressed_string_static(rid->comes_after));
+    }
+    if (rid->comes_before) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_BEFORE,db_group_imdb_compressed_string_static(rid->comes_before));
+    }
+    if (rid->remakes) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_REMAKE,db_group_imdb_compressed_string_static(rid->remakes));
+    }
     //fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,rid->fanart);
     //fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot_key);
     //fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,rid->episode_plot_key);
@@ -850,6 +885,9 @@ void db_rowid_dump(DbRowId *rid) {
     HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime(&t)));
     t = rid->airdate_imdb;
     HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime(&t)));
+    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(rid->comes_after));
+    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(rid->comes_before));
+    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(rid->remakes));
     HTML_LOG(1,"----");
 }
 

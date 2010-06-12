@@ -11,6 +11,7 @@
 typedef enum DbGroupType_enum { DB_GROUP_BY_IMDB_LIST , DB_GROUP_BY_NAME_TYPE_SEASON , DB_GROUP_BY_CUSTOM_TAG } DbGroupType;
 
 typedef struct DbGroupIMDB_struct {
+    int dbgi_max_size;
     int dbgi_size;
     int *dbgi_ids;
 } DbGroupIMDB;
@@ -28,19 +29,25 @@ typedef struct DbGroupCustom_struct {
 typedef struct DbGroupDef_struct {
     union {
         DbGroupIMDB dbgi;
-        DbGroupNameSeason dbgnts;
+        DbGroupNameSeason dbgns;
         DbGroupCustom dbgc;
     } u;
     DbGroupType dbg_type;
 
 } DbGroupDef;
 
+char *db_group_imdb_string_static(DbGroupIMDB *g);
+char *db_group_imdb_compressed_string_static(DbGroupIMDB *g);
+
+DbGroupIMDB *db_group_imdb_new(int size);
+void db_group_imdb_free(DbGroupIMDB *g,int free_parent);
+DbGroupIMDB *parse_imdb_list(char *val,int val_len);
 
 unsigned int db_overview_hashf(DbRowId *rid);
-int db_overview_cmp_by_title(DbRowId *rid1,DbRowId *rid2);
-int db_overview_cmp_by_age(DbRowId *rid1,DbRowId *rid2);
-int db_overview_name_eqf(void *rid1,void *rid2);
-DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbRowId *,DbRowId *));
+int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2);
+int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2);
+int db_overview_name_eqf(DbRowId *rid1,DbRowId *rid2);
+DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbRowId **,DbRowId **));
 struct hashtable *db_overview_hash_create(DbRowSet **rowsets);
 void db_overview_hash_destroy(struct hashtable *ovw_hash);
 

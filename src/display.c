@@ -2505,7 +2505,7 @@ char *get_drilldown_view(DbRowId *rid) {
                     break;
                 case 'M': case 'F':
                     // As soon as there are two linked movies its a box set
-                    // view=VIEW_MOVIEBOXSET;
+                    view=VIEW_MOVIEBOXSET;
                     break;
                 default:
                     view=VIEW_MIXED;
@@ -3005,6 +3005,8 @@ TRACE;
 TRACE;
     
     HTML_LOG(0,"Scan..");
+
+    // Get array of rowsets. One item for each database source. 
     DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
 
 TRACE;
@@ -3012,6 +3014,7 @@ TRACE;
     if (free_regex) { FREE(regex); }
 
     HTML_LOG(0,"Overview..");
+    // Merge the rowsets into a single view.
     struct hashtable *overview = db_overview_hash_create(rowsets);
 TRACE;
 

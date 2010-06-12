@@ -255,6 +255,7 @@ TRACE;
 TRACE;
         if (STRCMP(view,VIEW_MOVIE) == 0 ||
                 STRCMP(view,VIEW_TV) == 0 ||
+                STRCMP(view,VIEW_MOVIEBOXSET) == 0 ||
                 STRCMP(view,VIEW_TVBOXSET) == 0 
                 ) {
 

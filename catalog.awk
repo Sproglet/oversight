@@ -550,7 +550,7 @@ END{
     if ( g_settings["catalog_tv_file_fmt"] == "" ) RENAME_TV=0;
     if  ( g_settings["catalog_film_folder_fmt"] == "") RENAME_FILM=0;
 
-    CAPTURE_PREFIX=tmp_dir"/catalog."
+    CAPTURE_PREFIX=g_tmp_dir"/catalog."
 
     #INF("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
 
@@ -910,9 +910,9 @@ function set_db_fields() {
 
     IMDBID=db_field("_imdb","IMDBID","id");
     TVID=db_field("_tvid","TVID","id");
-    CONN_FOLLOWS=db_field("_mcfs","FOLLOWS","");
-    CONN_FOLLOWED=db_field("_mcfd","FOLLOWED","");
-    CONN_REMAKES=db_field("_mcrm","REMAKES","");
+    CONN_FOLLOWS=db_field("_a","FOLLOWS",""); # Comes After
+    CONN_FOLLOWED=db_field("_b","FOLLOWED",""); # Comes Before
+    CONN_REMAKES=db_field("_k","REMAKES",""); # Movies remaKes
 }
 
 
@@ -1817,10 +1817,11 @@ function remove_format_tags(text,\
 # list["Remake of"]   =
 #
 function getMovieConnections(id,list,\
-url,htag,connections,i,count,relationship,ret,txt) {
+url,htag,connections,i,count,relationship,ret,txt,sep) {
     id1("getMovieConnections");
     delete list;
     htag = "h5";
+    sep=",";
     url = extractImdbLink(id)"movieconnections";
     count=scan_page_for_match_order(url,"","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
     #dump(0,"movieconnections-"count,connections);
@@ -1828,7 +1829,7 @@ url,htag,connections,i,count,relationship,ret,txt) {
         txt = connections[i];
         if (substr(txt,1,2) == "tt" ) {
             if (relationship != "") {
-                list[relationship] = list[relationship] "," connections[i];
+                list[relationship] = list[relationship] sep connections[i];
             }
         } else if(index(txt,"<") ) {
             if (match(txt,">[^<]+")) {
@@ -1840,7 +1841,7 @@ url,htag,connections,i,count,relationship,ret,txt) {
     }
     # remove leading comma
     for(i in list) {
-        list[i] = substr(list[i],2);
+        list[i] = imdb_list_shrink(substr(list[i],length(sep)+1),sep,128);
     }
     dump(0,id" movie connections",list);
     id0(ret);
@@ -2321,7 +2322,7 @@ function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 #     1 - tv format found - needs to be confirmed by scraping 
 #
 function checkTvFilenameFormat(plugin,idx,more_info,\
-details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
+details,line,dirs,d,dirCount,dirLevels,ret) {
 
     delete more_info;
     #First get season and episode information
@@ -2399,6 +2400,9 @@ details,line,dirs,d,dirCount,ePos,dirLevels,ret) {
         ## If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
         ## Then prior to any DB lookups we just use the first integer (episode+0)
         ## To avoid changing the e in the BigBrother d000e format first check its not at the end 
+
+        # local ePos
+
         #ePos = index(g_episode[idx],",");
         #if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
         #    #gsub(/[-e]+/,",",g_episode[idx]);
@@ -4029,7 +4033,7 @@ url) {
 # Series are only considered if they have the tags listed in requiredTags
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
-# IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
+# IN requiredTagNames - array of tags which must be present - to filter out obscure shows noone cares about
 function filter_search_results(url,title,seriesPath,nameTag,idTag,requiredTagNames,allTitles,\
 f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,filter_count) {
 
@@ -4724,7 +4728,7 @@ function embedded_lc_regex(s) {
 # The contraction is allowed to match from the beginning of the title to the
 # end of any whole word. eg greys = greys anatomy 
 function abbrevContraction(abbrev,possible_title,\
-found,regex,initials,initial_regex,part) {
+found,regex,part) {
 
 
     # Use regular expressions to do the heavy lifting.
@@ -5452,8 +5456,8 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     FS="\\n";
     sep="~";
     outputWords=0;
-    tmpFile=tmp_dir"/bytes."JOBID;
-    isoPart=tmp_dir"/bytes."JOBID".2";
+    tmpFile=g_tmp_dir"/bytes."JOBID;
+    isoPart=g_tmp_dir"/bytes."JOBID".2";
     delete outputText;
 
     if (exec("dd if="qa(isoPath)" of="isoPart" bs=1024 count=10 skip=32") != 0) {
@@ -5833,7 +5837,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
     rm(downloadedFile,1);
     args = args " -c ";
 
-    #d=tmp_dir"/wget."PID;
+    #d=g_tmp_dir"/wget."PID;
 
     url=qa(url);
 
@@ -7758,6 +7762,77 @@ i,folderCount,moveDown) {
     return folderCount;
 }
 
+#baseN - return a number base n. All output bytes are offset by 128 so the characters will not 
+#clash with seperators and other ascii characters.
+
+function basen(i,n,\
+out) {
+    if (g_chr[32] == "" ) {
+        decode_init();
+    }
+    while(i+0 > 0) {
+        out = g_chr[(i%n)+128] out;
+        i = int(i/n);
+    }
+    if (out == "") out=g_chr(128);
+    return out;
+}
+#base10 - convert a base n number back to base 10. All input bytes are offset by 128
+#so the characters will not clash with seperators and other ascii characters.
+function base10(input,n,\
+out,digits,ln,i) {
+    if (g_chr[32] == "" ) {
+        decode_init();
+    }
+    ln = split(input,digits,"");
+    for(i = 1 ; i <= ln ; i++ ) {
+        out = out *n + (g_ascii[digits[i]]-128);
+    }
+    if (out == "") out=0;
+    return out+0;
+}
+
+function imdb_list_shrink(s,sep,base,\
+i,n,out,ids,m,id) {
+    n = split(s,ids,sep);
+    for(i = 1 ; i <= n ; i++ ) {
+
+
+        if (index(ids[i],"tt") == 1) {
+
+            id = substr(ids[i],3);
+
+            m = basen(id,base);
+
+            out = out sep m ;
+        } else {
+            out = out sep ids[i] ;
+        }
+    }
+    out = substr(out,2);
+    INF("compress ["s"] = ["out"]");
+
+    return out;
+}
+function imdb_list_expand(s,sep,base,\
+i,n,out,ids,m) {
+    n = split(s,ids,sep);
+    for(i = 1 ; i <= n ; i++ ) {
+
+
+        if (index(ids[i],"tt") == 0) {
+
+            m = base10(ids[i],base);
+            out = out sep "tt" sprintf("%07d",m) ;
+        } else {
+            out = out sep ids[i] ;
+        }
+    }
+    out = substr(out,2);
+    INF("expand ["s"] = ["out"]");
+    return out;
+}
+
 
 function load_catalog_settings() {
 
@@ -7773,6 +7848,7 @@ function load_catalog_settings() {
     g_settings["catalog_ignore_names"]="^"glob2re(g_settings["catalog_ignore_names"])"$";
 
     g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"]);
+
     if (g_settings["catalog_ignore_paths"] == "^" ) {
         g_settings["catalog_ignore_paths"] = "^$"; #regex will only match empty path
     }
@@ -7789,6 +7865,9 @@ function lang_test(idx) {
     scrape_it(idx);
 }
 
+function first_result() {
+    INF("first_result: not impleneted");
+}
 function scrape_es(idx,details,\
 url) {
     delete details;

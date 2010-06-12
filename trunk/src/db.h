@@ -77,6 +77,10 @@ typedef struct Dbrowid_struct {
     struct Dbrowid_struct *linked;
     int link_count;
 
+    struct DbGroupIMDB_struct *comes_after;
+    struct DbGroupIMDB_struct *comes_before;
+    struct DbGroupIMDB_struct *remakes;
+
 } DbRowId;
 
 void db_rowid_dump(DbRowId *rid);

@@ -56,6 +56,9 @@ HEADERS=$(SRC:.c=.h)
 
 HASH_OBJECTS=hashtable.o hashtable_itr.o tester.o
 
+.c.o:
+	@echo [CC] $(CFLAGS) $<
+	@$(CC) $(CFLAGS) -c $<
 
 TARGET=oversight
 TARGET_DIR=bin/nmt$(ARCH)

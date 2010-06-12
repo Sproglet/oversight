@@ -47,6 +47,9 @@
 #define DB_FLDID_EPTITLEIMDB "_eti"
 #define DB_FLDID_AIRDATEIMDB "_adi"
 #define DB_FLDID_NFO "_nfo"
+#define DB_FLDID_COMES_AFTER "_a"
+#define DB_FLDID_COMES_BEFORE "_b"
+#define DB_FLDID_REMAKE "_k"
 
 
 char *dbf_macro_to_fieldid(char *macro);

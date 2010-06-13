@@ -801,6 +801,8 @@ void query_remove(char *name) {
     if (hashtable_remove(g_query,name,1) == NULL) {
         HTML_LOG(5,"query item not present [%s]",name);
     }
+    query_select_val_reset();
+    query_view_val_reset();
 }
 
 // Value is not freed.

@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# this requires
+# libjpeg commands cpeg and djpeg 
+# netpbm commands pamscalefixed pnmcomp
+# libpng commands png2pnm
+#
+
+OVS_HOME=/share/Apps/oversight
+
+. $OVS_HOME/bin/ovsenv
+
+
+uid=nmt
+gid=nmt
+
+input="$1"
+output="`DIRNAME "$1"`/`BASENAME "$1" .jpg`.boxset.jpg"
+
+icon_base="$OVS_HOME/templates/default/images/boxset/boxset"
+
+perms() {
+    chown $uid:$gid "$@"
+}
+
+INFO() {
+    echo "[INFO] `date +%H:%M:%S` : $@"
+}
+
+ERROR() {
+    echo "[ERROR] `date +%H:%M:%S` : $@"
+}
+
+
+# make sure we have the overlay icon in pnm format.
+# original icon must be png.
+if [ ! -f "$icon_base.pnm" ] ; then
+    png2pnm "$icon_base.png" -a "$icon_base.mask.pnm" > "$icon_base.pnm"
+fi
+
+if [  ! -f "$icon_base.pnm" ] ; then
+    ERROR "Unable to find boxset overlay $icon_base.pnm"
+    exit 1
+fi
+
+# convert the background file to pnm
+if [ ! -f "$input.pnm" ] ; then
+    djpeg "$input" > "$input.pnm"
+    remove_pnm="$input.pnm"
+fi
+
+if [ ! -f "$input.pnm" ] ; then
+    ERROR "Unable to create boxset icon background $input.pnm"
+    exit 1
+fi
+
+# merge(composite)
+pnmcomp -align=right -valign=bottom -alpha "$icon_base.mask.pnm" "$icon_base.pnm" "$input.pnm" \
+ | cjpeg "$output.pnm" > "$output" && perms "$output"
+
+if [ -n "$remove_pnm" ] ; then
+    rm -f "$remove_pnm"
+fi
+

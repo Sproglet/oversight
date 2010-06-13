@@ -1,0 +1,419 @@
+#!/bin/sh  
+#-------------------------------------------------------
+# This script attempts to capture some of the steps in building
+# the various helper applications lib_jpeg, lib_png, netpbm etc
+#
+# To get the toolchains run 
+#
+# setup 100 # A100/A110 etc
+# setup 200 # C200/A200
+#
+# Then to build a package:
+# Typically:
+#   get package
+#   untar it
+#   cd to package folder
+#   ./nmtdevel 100 confighp    ( equivalent to configure --host --prefix)
+#   ./nmtdevel 100 make 
+#   ./nmtdevel 100 make install # This will install files to local_100/ or local_200
+#
+# The above works sometimes but not always. 
+#
+# netpbm -----------------------
+#
+# I could not get latest netpbm to compile (always includes 64bit headers)
+# however 10.26.x works OK.
+# A custom makefile is required. Makefile.config. then build using
+# touch BUILD_NMT100 
+# ./nmtdevel 100 make
+# It may be necessary to disable some converter modules.
+#
+# 
+#-------------------------------------------------------
+
+
+d=`dirname $0`
+d=`cd "$d" ; pwd`
+
+# After installing the Series 100 toolchain add symlinks so that 
+# mipsel-linux-uclibc can be replaced with mipsel-linux-gnu
+
+nmt100_root="$d/toolchain_100/usr/local/mips"
+#nmt100_host=mipsel-linux-uclibc
+nmt100_host=mipsel-linux-gnu
+#nmt100_local_prefix=$nmt100_root/$nmt100_host/usr
+nmt100_local_prefix=$d/local_100
+
+nmt200_root="$d/toolchain_200/mips-4.3"
+nmt200_host=mips-linux-gnu
+#nmt200_local_prefix=$nmt200_root/$nmt200_host
+nmt200_local_prefix=$d/local_200
+
+# This is a symlink on the build machine for packages that 
+# hardcode the build prefix in their configuration. It should
+# not be a real folder on the build machine
+nmt_final_prefix_path=/share/Apps/oversight
+
+env_NMT100() {
+    host=$nmt100_host
+    root=$nmt100_root
+    local_prefix=$nmt100_local_prefix
+    export "PATH=$root/sh:$root/bin:$PATH"
+
+    echo PATH = $PATH
+
+    #Set to grand parent location of plain 'gcc'
+
+    env_both
+}
+
+env_NMT200() {
+
+    host=$nmt200_host
+    root=$nmt200_root
+    local_prefix=$nmt200_local_prefix
+
+
+    export "PATH=$root/sh:$root/bin:$PATH"
+
+    env_both
+}
+
+permissions() {
+    cat <<HERE
+
+    *IMO* I allow user to have write access to the toolchain build area.
+    This is so that 'configure --prefix ... ; make install ' can install
+    to the toolchaing without root access. 
+    This safeguards against accidentally installing over you host system files.
+
+    Change permissions on these folders so that the script can continue.
+
+HERE
+    exit 1
+}
+
+
+env_both() {
+
+
+    mkdir -p $local_prefix
+    export CC=$host-gcc
+    export LD=$host-ld
+    export AS=$host-as
+    #export AR=$host-ar
+    export SIZE=$host-size
+    export OBJDUMP=$host-objdump
+    export OBJCOPY=$host-objcopy
+    export CXX=$host-g++
+
+    echo CC=$CC
+    echo LD=$LD
+}
+
+SUDO() {
+    echo "Running as root : [ $@ ]"
+    echo "you may be promted for your password"
+    echo "First just press enter to continue - ctrl c to abort"
+    read blah
+    sudo "$@"
+}
+
+confirm() {
+    echo "press enter to continue"
+    read xyz
+}
+
+# This makes a symlink /share/Apps/local point to  the toolchain prefix/build area
+spoof_local_prefix() {
+    pf="$1"
+
+    if [ "$pf" != "$nmt_final_prefix_path" ] ; then
+        echo "Prefix $pf will NOT be merged with toolchain"
+        confirm
+        return 0
+    fi
+
+    echo "Using prefix $pf : you  will need to be in sudoers and may need to enter your password"
+    b=`dirname "$pf"`
+    if [ ! -d $b ] ; then
+       echo Cant find parent folder for $pf on build system
+       if SUDO mkdir -p $b && SUDO chown $USER:$USER $b ; then
+           true
+       else
+            prefix_error "$pf"
+       fi
+    fi
+
+    # Create the symlink that will simulate the final location for the applications 
+    if [ ! -e $pf ] ; then
+
+        SUDO ln -s $local_prefix $pf
+
+    else
+        if [ -L $pf -a  $pf -ef $local_prefix  ] ; then
+            #do nothing - link already in place
+            true
+        else
+            if [ $pf -ef $nmt100_local_prefix -o $pf -ef $nmt200_local_prefix  ] ; then
+                if sudo rm $pf && sudo ln -s $local_prefix $pf ; then
+                    true
+                else
+                   prefix_error "$pf"
+               fi
+            else
+                prefix_error "$pf"
+            fi
+        fi
+    fi
+
+    echo "using prefix `ls -ld $pf` : press enter to continue"
+    read xyz
+}
+prefix_error() {
+    pf="$1"
+    cat <<HERE
+
+    Unable to create build prefix $pf as $local_prefix
+
+HERE
+    exit 1
+}
+
+
+usage() {
+    cat <<HERE
+   
+    $0 [100|200] [configh|configp|configure|make] args
+
+    configp expands to  configure --prefix=toolchaindir 
+
+    configph expands to  configure --host=.... --prefix=toolchaindir 
+
+HERE
+}
+
+set_build() {
+    rm -f BUILD_NMT[12]00 && touch BUILD_$nmtarch
+}
+
+check_build() {
+
+    if [ ! -f BUILD_$nmtarch ] ; then 
+        echo "Expected file BUILD_$nmtarch"
+        exit 1
+    fi
+}
+
+log() {
+    echo "$@" >> $nmtarch.log
+}
+
+extract_prefix() {
+    echo "$*" | sed 's/.*--prefix=//;s/ .*//'
+}
+
+setup_NMT200() {
+    set -e
+    tc_file="mips-4.3-154-mips-linux-gnu-i686-pc-linux-gnu.tar.bz2"
+    tc_url="http://www.codesourcery.com/downloads/public/public/gnu_toolchain/mips-linux-gnu/$tc_file"
+    mkdir -p toolchain_200
+    cd toolchain_200
+    wget -c "$tc_url"
+    tar xjf "$tc_file"
+
+    # Some tweaks to make cross compiling a bit easier.
+
+    # Create stub files to invoke compiler with -EL -fPIC
+
+    #note we compute the location at compile time as symlinks may be used to point to
+    # the real location.
+    mkdir -p $root/sh 
+    cd $root/bin
+    for prg in *-gcc *-g++ *-ld *-c++ *-as ; do
+        b=`basename $prg`
+        stub=../sh/$prg
+
+        cat <<HERE > $stub
+exec \`dirname \$0\`/../bin/$b -EL -fPIC "\$@"
+HERE
+        chmod ogu+x $stub
+    done
+    set +e
+}
+setup_NMT100() {
+    set -e
+    tc_file="nmt-linux-intel-toolchain-gcc-4.0.4-linux-2.6.15.7-uclibc-0.9.28.3-lundman-P1.tgz"
+    tc_url="http://www.lundman.net/ftp/nmt/$tc_file"
+    taropt=xvzf
+    mkdir -p toolchain_100
+    cd toolchain_100
+    wget -c "$tc_url"
+    tar xzf "$tc_file"
+
+    # Some tweaks to make cross compiling a bit easier.
+
+    # replace mipsel-linux-uclibc with mipsel-linux-gnu
+    find $root -type f -name \*mipsel-linux-uclibc\*  | sed -r 's/(.*)(-uclibc)(.*)/ln -f \1\2\3 \1-gnu\3/' | sh
+    find $root -type d -name \*mipsel-linux-uclibc\*  | sed -r 's/(.*)(-uclibc)(.*)/ln -sf \1\2\3 \1-gnu\3/' | sh
+
+    # If linker is called with object files then use gcc instead
+    mkdir -p $root/sh
+    cat <<HERE > $root/sh/$host-ld
+case "\$*" in
+    *.o*) exec \`dirname \$0\`/../bin/$host-gcc -Wl,--dynamic-linker,/lib/ld-uClibc.so.0 -L$nmt100_local_prefix/lib "\$@" ;;
+    *) exec \`dirname \$0\`/../bin/$host-ld -L$nmt100_local_prefix/lib "\$@" ;;
+esac
+HERE
+    chmod ogu+x $root/sh/$host-ld
+
+    set +e
+}
+cfg() {
+    echo PREFIX = $prefix
+    case "$*" in 
+        *--prefix=*)
+          spoof_local_prefix "`extract_prefix $prefix`" ;;
+    esac
+    echo "./configure $@"
+    ./configure "$@"
+}
+Cfg() {
+    echo PREFIX = $prefix
+    case "$*" in 
+        *--prefix=*)
+          spoof_local_prefix "`extract_prefix $prefix`" ;;
+    esac
+    echo "./Configure $@"
+    ./Configure "$@"
+}
+
+build() {
+    choice=$1
+    shift
+    $d/$0 $choice "$@" && $d/$0 $choice make clean && $d/$0 $choice make && $d/$0 $choice make install
+}
+
+
+choice=$1
+case "$choice" in
+    *100) nmtarch=NMT100 ;;
+    *200) nmtarch=NMT200 ;;
+    *) usage ; exit 1 ;;
+esac
+
+shift;
+
+
+cmd="$1" ; shift
+
+env_$nmtarch
+
+if [ $cmd = setup ] ; then
+
+    setup_$nmtarch
+
+else
+
+    case "$*" in
+        *--prefix=*)  
+            prefix="--prefix=`extract_prefix "$*" `"
+            ;;
+        *)
+            prefix="--prefix=$nmt_final_prefix_path"
+            ;;
+    esac
+
+    echo PREFIX = $prefix
+
+
+    export LDFLAGS="-L$nmt_final_prefix_path/lib"
+    export CFLAGS="-I$nmt_final_prefix_path/include"
+    case "$cmd" in
+
+        configb)
+            cfg $prefix --build=i386 "$@" && log "$0 $choice $cmd $@" && set_build 
+            ;;
+
+        configbh|confighb)
+            cfg $prefix --host=$host --build=i386 "$@" && log "$0 $choice $cmd $@" && set_build 
+            ;;
+
+        Configh|Confighp|Configph)
+            Cfg $prefix --libdir=$nmt_final_prefix_path/lib  --host=$host "$@" && log "$0 $choice $cmd $@" && set_build 
+            ;;
+        configh|confighp|configph)
+            cfg $prefix --libdir=$nmt_final_prefix_path/lib  --host=$host "$@" && log "$0 $choice $cmd $@" && set_build 
+            ;;
+
+        configp|configure)
+            cfg $prefix "$@" && log "$0 $choice $cmd $@" && set_build
+            ;;
+
+        configure_nop)
+            cfg "$@" && log "$0 $choice $cmd $@" && set_build
+            ;;
+
+        make)
+            echo make "$@"
+            check_build && make "$@" && log "$0 $choice $cmd $@"
+            ;;
+
+        config_gawk)
+            build $choice configph --disable-libsigsegv
+            ;;
+        config_zlib)
+            dir=zlib-1.2.5
+            f=zlib-1.2.5.tar.gz
+            if [ ! -d "$dir" ] ; then
+                wget "http://prdownloads.sourceforge.net/libpng/$f?download"
+                tar xvzf $f
+            fi
+            cd "$dir"
+            build $choice configp 
+
+            # Also build the pnm converters.
+            cd contrib/pngminus
+            $d/$0 $choice make
+            ;;
+        config_jpeg)
+            # http://www.ijg.org/
+            # http://www.ijg.org/files/jpegsrc.v8b.tar.gz
+            dir=jpeg-8b
+            f=jpegsrc.v8b.tar.gz
+            if [ ! -d "$dir" ] ; then
+                wget http://www.ijg.org/files/$f
+                tar xvzf $f
+            fi
+            cd "$dir"
+            build $choice confighp
+            ;;
+
+        config_png)
+            # http://www.libpng.org/pub/png/libpng.html
+            dir=libpng-1.4.2
+            f=$dir.tar.gz
+            if [ ! -d "$dir" ] ; then
+                wget "http://prdownloads.sourceforge.net/libpng/$f?download"
+                tar xvzf $f
+            fi
+            cd "$dir"
+            build $choice confighp
+            ;;
+
+        *) echo $0 "configure|make|install"
+            ;;
+
+    esac
+
+fi
+
+######################################
+# Examples
+#
+# gawk :
+#   nmtdevel 200 configh  --disable-libsigsegv
+#   nmtdevel 200 make
+#   nmtdevel 100 configh
+#   nmtdevel 100 make
+

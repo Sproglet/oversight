@@ -24,7 +24,7 @@ maxthreads=1
 
 OVS_HOME=/share/Apps/oversight
 
-export PATH="$OVS_HOME/bin:$PATH"
+. $OVS_HOME/bin/ovsenv
 
 uid=nmt
 gid=nmt
@@ -33,23 +33,6 @@ prefix=ovsq.
 
 thread=0
 
-ARCH=
-if [ -f /mnt/syb8634/MIN_FIRMWARE_VER ] ;then
-    ARCH=nmt100
-    export PATH="$OVS_HOME/bin/$ARCH:$PATH"
-    export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
-else
-    if [ -f /nmt/apps/MIN_FIRMWARE_VER ] ; then
-        ARCH=nmt200
-        export PATH="$OVS_HOME/bin/$ARCH:$PATH"
-        export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
-    fi
-fi
-
-TMP=/share/Apps/oversight/tmp
-if [ ! -d $TMP ] ; then 
-    TMP=/tmp
-fi
 
 
 jpg_resize() {
@@ -65,6 +48,7 @@ jpg_resize() {
     initial_scale="$3"
 
     o=
+    boxset=
     case "$output" in 
 
         */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=85 ;;
@@ -75,7 +59,7 @@ jpg_resize() {
             # Pal is created from the SD but we need to maintain the quality
             o="-width=685 -height=542" ; q=90 ;;
 
-        */_J/*.thumb.jpg) o="-width=200" ; q=85 ;;
+        */_J/*.thumb.jpg) o="-width=200" ; q=85 ; boxset=1 ;;
 
         */_J/*.jpg) o="-width=400" ; q=85 ;;
 
@@ -96,6 +80,9 @@ jpg_resize() {
              pnmscalefixed $o > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
        cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
         perms "$output"
+        if [ -n "$boxset" ] ; then
+            $OVS_HOME/bin/add_boxset_icon "$output" 
+        fi
     else
         ERROR "Unable to generate $output from $input using $o"
     fi

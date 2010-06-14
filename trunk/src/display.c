@@ -1432,10 +1432,11 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
     return path;
 }
 
-char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type);
-char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type);
+char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type,char *newview);
+char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type,char *newview);
 
-char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type) {
+char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type,char *newview)
+{
 
     char *path = NULL;
     DbRowId *rid = sorted_rows[0];
@@ -1493,7 +1494,7 @@ TRACE;
     if (path == NULL) {
 
         // look in internal db
-        path = get_internal_image_path_any_season(num_rows,sorted_rows,image_type);
+        path = get_internal_image_path_any_season(num_rows,sorted_rows,image_type,newview);
     }
 
     return path;
@@ -1502,16 +1503,18 @@ TRACE;
 /**
  * If looking at the box set view try each season in turn
  */
-char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type)
+char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type,char *newview)
 {
 
     int i;
     int season=-2;
+
     char * path = NULL;
+    // Find first item that has some kind of season info - even movie where season=0 or -1
     for ( i= 0 ; path == NULL && i < num_rows ; i++ ) {
         if (season == -2 || sorted_rows[i]->season != season) {
             season = sorted_rows[i]->season;
-            path = get_existing_internal_image_path(sorted_rows[i],image_type);
+            path = get_existing_internal_image_path(sorted_rows[i],image_type,newview);
         }
     }
     return path;
@@ -1520,7 +1523,7 @@ char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,Imag
 /*
  * Get the full internal image path if it exists.
  */
-char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type)
+char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type,char *newview)
 {
     char *path = internal_image_path_static(rid,image_type);
 
@@ -1546,7 +1549,13 @@ TRACE;
 
         } else if (image_type == THUMB_IMAGE ) {
 
-            char *tmp = util_change_extension(path,".thumb.jpg");
+            char *ext = ".thumb.jpg";
+            if (newview) {
+                if ( strcmp(newview,VIEW_TVBOXSET)==0 || strcmp(newview,VIEW_MOVIEBOXSET)==0) {
+                    ext = ".thumb.boxset.jpg";
+                }
+            }
+            char *tmp = util_change_extension(path,ext);
             if (exists(tmp)) {
                 if(freepath) FREE(path);
                 path = tmp;
@@ -1567,14 +1576,15 @@ TRACE;
 }
 
 
-char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type) {
+char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type,char *newview)
+{
 
     assert(rowid);
     assert(attr);
 TRACE;
     char *result = NULL;
     
-    char *path = get_picture_path(1,&rowid,image_type);
+    char *path = get_picture_path(1,&rowid,image_type,newview);
     if (path) {
 
         result = get_local_image_link(path,rowid->title,attr);
@@ -2000,7 +2010,7 @@ int get_view_status(DbRowId *rowid) {
     return status;
 }
 
-char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class) {
+char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class,char *newview) {
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
@@ -2031,7 +2041,7 @@ char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class) 
     title = get_poster_image_tag(row_id,attr,THUMB_IMAGE);
     FREE(attr);
 #else
-    title = get_poster_image_tag(row_id,*font_class,THUMB_IMAGE);
+    title = get_poster_image_tag(row_id,*font_class,THUMB_IMAGE,newview);
 #endif
 
 TRACE;
@@ -2170,6 +2180,10 @@ char *get_simple_title(
 
         ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
 
+    } else if (STRCMP(newview,VIEW_MOVIEBOXSET) == 0) {
+
+        ovs_asprintf(&title,"%s [Boxset]",row_id->title);
+
     } else if (row_id->category=='T') {
 
         ovs_asprintf(&title,"%s S%d %s%s%s",row_id->title,row_id->season,
@@ -2261,7 +2275,7 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
         displaying_text=0;
 
-        if ((title = get_poster_mode_item(row_id,&font_class,&grid_class)) != NULL) {
+        if ((title = get_poster_mode_item(row_id,&font_class,&grid_class,newview)) != NULL) {
 
             if (*title != '<' && !util_starts_with(title,"<img")) {
                 displaying_text=1;

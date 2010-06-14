@@ -81,7 +81,7 @@ jpg_resize() {
        cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
         perms "$output"
         if [ -n "$boxset" ] ; then
-            $OVS_HOME/bin/add_boxset_icon "$output" 
+            "$OVS_HOME/bin/add_boxset_icon" "$output" 
         fi
     else
         ERROR "Unable to generate $output from $input using $o"

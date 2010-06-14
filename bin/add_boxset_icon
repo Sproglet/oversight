@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 # this requires
 # libjpeg commands cpeg and djpeg 
@@ -34,11 +34,11 @@ ERROR() {
 
 # make sure we have the overlay icon in pnm format.
 # original icon must be png.
-if [ ! -f "$icon_base.pnm" ] ; then
+if [ ! -f "$icon_base.pnm" -o ! -f "$icon_base.mask.pnm" ] ; then
     png2pnm "$icon_base.png" -a "$icon_base.mask.pnm" > "$icon_base.pnm"
 fi
 
-if [  ! -f "$icon_base.pnm" ] ; then
+if [ ! -f "$icon_base.pnm" -o ! -f "$icon_base.mask.pnm" ] ; then
     ERROR "Unable to find boxset overlay $icon_base.pnm"
     exit 1
 fi
@@ -56,7 +56,7 @@ fi
 
 # merge(composite)
 pnmcomp -align=right -valign=bottom -alpha "$icon_base.mask.pnm" "$icon_base.pnm" "$input.pnm" \
- | cjpeg "$output.pnm" > "$output" && perms "$output"
+ | cjpeg > "$output" && perms "$output"
 
 if [ -n "$remove_pnm" ] ; then
     rm -f "$remove_pnm"

@@ -6168,7 +6168,8 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
                     delete xml;
                     parseXML(txt,xml);
                     id=xml["/"type"#id"];
-                    parse=("X"id < "X"bestId );
+                    parse= (bestId == "") || ("X"id < "X"bestId );
+                    INF("["id "] < ["bestId "] = "parse);
                 }
 
             } else if (parse && index(txt,"<image") && index(txt,".jpg") ) {

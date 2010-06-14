@@ -3316,13 +3316,25 @@ long use_tv_boxsets()
     }
     return tv_boxsets;
 }
-long use_movie_boxsets()
+
+MovieBoxsetMode movie_boxset_mode()
 {
-    static long movie_boxsets = -1;
-    if(movie_boxsets == -1) {
-        if (!config_check_long(g_oversight_config,"ovs_movieboxsets",&movie_boxsets)) {
-            movie_boxsets = 0;
+    static MovieBoxsetMode movie_boxsets = MOVIE_BOXSETS_UNSET;
+    if(movie_boxsets == MOVIE_BOXSETS_UNSET) {
+        char *tmp = oversight_val("ovs_movieboxsets");
+        if (strcmp(tmp,"by_first") == 0) {
+            movie_boxsets = MOVIE_BOXSETS_FIRST;
+        } else if (strcmp(tmp,"by_last") == 0) {
+            movie_boxsets = MOVIE_BOXSETS_LAST;
+        } else if (strcmp(tmp,"by_any") == 0) {
+            movie_boxsets = MOVIE_BOXSETS_ANY;
+        } else if (strcmp(tmp,"disabled") == 0) {
+            movie_boxsets = MOVIE_BOXSETS_NONE;
+        } else {
+            HTML_LOG(0,"Unexpected movie boxset mode [%s]",tmp);
+            movie_boxsets = MOVIE_BOXSETS_NONE;
         }
+        HTML_LOG(0,"movie boxsets = [%s]=%d",tmp,movie_boxsets);
     }
     return movie_boxsets;
 }

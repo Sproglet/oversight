@@ -219,6 +219,18 @@ DbRowId *dbread_and_parse_row(
         }
     }
 
+#if 0
+    if (rowid) {
+        if (rowid->comes_after) {
+            HTML_LOG(0,"[%s/%d] comes_after [%s]",rowid->title,rowid->external_id,
+                    db_group_imdb_string_static(rowid->comes_after));
+        }
+        if (rowid->comes_before) {
+            HTML_LOG(0,"[%s/%d] comes_before [%s]",rowid->title,rowid->external_id,
+                    db_group_imdb_string_static(rowid->comes_before));
+        }
+    }
+#endif
     return rowid;
 }
 

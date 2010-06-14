@@ -17,7 +17,7 @@
 #define IMDB_GROUP_SEP ','
 #define IMDB_GROUP_BASE 128
 
-int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2);
+static inline int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2,MovieBoxsetMode movie_boxset_mode);
 
 DbGroupIMDB *db_group_imdb_new(
         int size // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
@@ -68,7 +68,7 @@ int in_db_name_season_group(DbRowId *rid,DbGroupNameSeason *g)
 int in_db_imdb_group(DbRowId *rid,DbGroupIMDB *g)
 {
     int result = 0 ;
-    if (rid->external_id ) {
+    if (g && rid->external_id ) {
         result = bchop(rid->external_id,g->dbgi_size,g->dbgi_ids) >= 0;
     } 
     return result;
@@ -212,13 +212,13 @@ int get_view_mode() {
  */
 int db_overview_general_eqf(void *rid1,void *rid2) {
     static int tvbox=-1;
-    static int moviebox=-1;
+    static MovieBoxsetMode moviebox=MOVIE_BOXSETS_UNSET;
     static int mode=-1;
     int ret=0;
 
     if (tvbox == -1) {
         tvbox = use_tv_boxsets();
-        moviebox = use_movie_boxsets();
+        moviebox = movie_boxset_mode();
         mode = get_view_mode();
     }
 
@@ -247,15 +247,8 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
     } else if (((DbRowId*)rid1)->category == 'M' ) {
         switch(mode) {
             case MENU_VIEW_ID:
-                if (!moviebox) {
-                    ret = EQ_FILE(rid1,rid2);
-
-                } else {
-                   
-                   ret = in_same_db_imdb_group(((DbRowId*)rid1),((DbRowId*)rid2));
-
-                }
-                break;
+               ret = in_same_db_imdb_group(((DbRowId*)rid1),((DbRowId*)rid2),moviebox);
+               break;
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
                 ret = EQ_MOVIE(rid1,rid2);
@@ -271,21 +264,112 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
 
 }
 
-int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2)
+// Used to iterate over the various movie connections.
+// return the next valid movie connection.
+// r = row id
+// *list = 1 (return from comes_after ) =2 return external_id , =3 return from comes_before
+// *idx = index within the above list.
+// If *idx exceeeds list size then *list is incremented.
+//
+static inline int get_imdbid_from_connections(DbRowId *r,int *list,int *idx) {
+    switch(*list) {
+        case 0:
+            if (r->comes_after==NULL || *idx >= r->comes_after->dbgi_size ) {
+                *idx = 0;
+                (*list)++;
+                // fall thru
+            } else {
+                return r->comes_after->dbgi_ids[*idx];
+            }
+        case 1:
+            if (*idx >= 1) {
+                *idx = 0;
+                (*list)++;
+                // fall thru
+            } else {
+                return r->external_id;
+            }
+        case 2:
+            if (r->comes_before==NULL || *idx >= r->comes_before->dbgi_size ) {
+                *idx = 0;
+                (*list)++;
+                // fall thru
+            } else {
+                return r->comes_before->dbgi_ids[*idx];
+            }
+        default:
+            return 0;
+    }
+}
+#define FIRST_CONNECTION(r) ((r)->comes_after?(r)->comes_after->dbgi_ids[0]:(r)->external_id)
+#define LAST_CONNECTION(r) ((r)->comes_before?(r)->comes_before->dbgi_ids[(r)->comes_before->dbgi_size-1]:(r)->external_id)
+
+static inline int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2,MovieBoxsetMode movie_boxset_mode)
 {
    int ret = 0;
+   //int log=0;
+
+   //HTML_LOG(0,"in_same_db_imdb_group [%s] against [%s]", rid1->title,rid2->title);
 
    if (rid1->external_id && rid2->external_id ) {
 
        if (rid1->external_id == rid2->external_id) {
            ret = 1;
-       } else if (rid1->external_id < rid2->external_id ) {
-           if (rid2->comes_after) {
-              ret = in_db_imdb_group(rid1,rid2->comes_after);
-           }
+
        } else {
-           if (rid1->comes_after) {
-              ret = in_db_imdb_group(rid2,rid1->comes_after);
+           //if (rid1->external_id == 78748) log=1;
+           //if (rid2->external_id == 78748) log=1;
+
+           switch(movie_boxset_mode) {
+               case MOVIE_BOXSETS_FIRST:
+                   ret = FIRST_CONNECTION(rid1) == FIRST_CONNECTION(rid2);
+                   break;
+               case MOVIE_BOXSETS_LAST:
+                   ret = LAST_CONNECTION(rid1) == LAST_CONNECTION(rid2);
+                   break;
+               case MOVIE_BOXSETS_ANY:
+                   {
+                       // Step over both rid1 and rid2 movie connections until we hit a connection.
+                       // This is coded to be a O(n) search. Step over both sets of movie connections 
+                       // at the same time.
+                       // The code is a little messy because movie connections are split into 3 parts
+                       // comes_after, external_id and comes_before.
+                       // We could join it together and have a neat iteration over a single array for each item but that is more clock cycles.
+                       int rid1list = 0;
+                       int rid2list = 0;
+                       int rid1idx = 0;
+                       int rid2idx = 0;
+
+                       while(1) {
+                           int imdb1 = get_imdbid_from_connections(rid1,&rid1list,&rid1idx);
+                           if (imdb1 == 0 ) break;
+
+                           int imdb2 = get_imdbid_from_connections(rid2,&rid2list,&rid2idx);
+                           if (imdb2 == 0 ) break;
+
+                           //if (log) {
+                               //HTML_LOG(0,"cmp [%s/%d/%d]=%d against [%s/%d/%d]=%d",
+                                       //rid1->title,rid1list,rid1idx,imdb1,
+                                       //rid2->title,rid2list,rid2idx,imdb2);
+                           //}
+
+                           if (imdb1 < imdb2 ) {
+                               rid1idx ++;
+                           } else if (imdb1 > imdb2 ) {
+                               rid2idx ++;
+                           } else {
+                               ret = 1;
+                               break;
+                           }
+                       }
+                   }
+                   break;
+               case MOVIE_BOXSETS_NONE:
+                   ret = EQ_FILE(rid1,rid2);
+                   break;
+               default:
+                   ret = EQ_FILE(rid1,rid2);
+                   break;
            }
        }
    }
@@ -296,13 +380,13 @@ int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2)
 unsigned int db_overview_general_hashf(void *rid)
 {
     static int tvbox=-1;
-    static int moviebox=-1;
+    static MovieBoxsetMode moviebox=MOVIE_BOXSETS_UNSET;
     static int mode=-1;
     int h=0;
 
     if (tvbox == -1) {
         tvbox = use_tv_boxsets();
-        moviebox = use_movie_boxsets();
+        moviebox = movie_boxset_mode();
         mode = get_view_mode();
     }
     switch(DBR(rid)->category) {
@@ -334,19 +418,44 @@ unsigned int db_overview_general_hashf(void *rid)
     case 'M':
         switch(mode) {
             case MENU_VIEW_ID:
-                if (!moviebox) {
-                    h  = stringhash(DBR(rid)->file);
-                } else if (DBR(rid)->external_id == 0) {
+                if (DBR(rid)->external_id == 0) {
                     // External ID not set - just use the title
                     h  = stringhash(DBR(rid)->file);
-                } else if (DBR(rid)->comes_after == NULL) {
-                    // If it doesnt follow anything then it is the main item
-                    h = DBR(rid)->external_id ;
                 } else {
-                    // The box set is identified by the first movie in the series.
-                    // This will not work for AvP series. May need to rewrite later.
-                    // To add an item to multiple sets.
-                    h = DBR(rid)->comes_after->dbgi_ids[0];
+                    switch(moviebox) {
+                        case MOVIE_BOXSETS_FIRST:
+                            if (DBR(rid)->comes_after == NULL) {
+                                // If it doesnt follow anything then it is the main item
+                                h = DBR(rid)->external_id ;
+                            } else {
+                                h = DBR(rid)->comes_after->dbgi_ids[0];
+                            }
+                            break;
+                        case MOVIE_BOXSETS_LAST:
+                            if (DBR(rid)->comes_before == NULL) {
+                                // If nothing follows it is the last item
+                                h = DBR(rid)->external_id ;
+                            } else {
+                                int size = DBR(rid)->comes_before->dbgi_size;
+                                h = DBR(rid)->comes_before->dbgi_ids[size-1];
+                            }
+                            break;
+                        case MOVIE_BOXSETS_ANY:
+                            // If we are comparing any item then all items 
+                            // have the same hash value and the eq fn does the 
+                            // heavy lifting.
+                            // This may not work as expected.
+                            h = 1;
+                            break;
+                        case MOVIE_BOXSETS_NONE:
+                            // All movies are unique by file
+                            h  = stringhash(DBR(rid)->file);
+                            break;
+                        default:
+                            // All movies are unique by file
+                            h  = stringhash(DBR(rid)->file);
+                            break;
+                    }
                 }
                 break;
             case MOVIEBOXSET_VIEW_ID:
@@ -602,7 +711,6 @@ DbGroupIMDB *parse_imdb_list(
         for(i = 0 ; i < group->dbgi_size ; i++ ) {
             HTML_LOG(0,"tt%d",group->dbgi_ids[i]);
         }
-        HTML_LOG(0,"expanded[%s]",db_group_imdb_string_static(group));
         HTML_LOG(0,"compressed[%s]",db_group_imdb_compressed_string_static(group));
     }
 #endif

@@ -6169,7 +6169,7 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
                     parseXML(txt,xml);
                     id=xml["/"type"#id"];
                     parse= (bestId == "") || ("X"id < "X"bestId );
-                    INF("["id "] < ["bestId "] = "parse);
+                    #INF("["id "] < ["bestId "] = "parse);
                 }
 
             } else if (parse && index(txt,"<image") && index(txt,".jpg") ) {

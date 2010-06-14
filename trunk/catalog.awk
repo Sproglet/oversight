@@ -3194,9 +3194,10 @@ imdb_title_q,imdb_id_q,connections,remakes) {
         if (search_order[s] == "IMDBLINKS") {
 
             #TODO Merge the web_search_frequent_imdb_link heuristics into this functions logic.
-            id1("Search Phase: "search_order[s]);
-            bestUrl=web_search_frequent_imdb_link(idx);
-            id0(bestUrl);
+            INF("DISABLED: Search Phase: "search_order[s]);
+            #id1("Search Phase: "search_order[s]);
+            #bestUrl=web_search_frequent_imdb_link(idx);
+            #id0(bestUrl);
 
         } else {
 

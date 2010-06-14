@@ -1,7 +1,7 @@
 # $Id: oversight.cfg.example 616 2009-12-09 06:32:45Z lordylordy $ 
 ovs_config_version=1
 ovs_tvboxsets=1
-ovs_movieboxsets=1
+ovs_movieboxsets="by_first"
 ovs_log_level=0
 ovs_new_days=3
 ovs_wan_admin=0

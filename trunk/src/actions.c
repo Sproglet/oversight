@@ -209,16 +209,17 @@ TRACE;
     //HTML_LOG(0,"poster[%s]",poster);
     if (poster) {
         array_add(a,STRDUP(poster));
-        array_add(a,replace_all(poster,"\\.jpg$",".thumb.jpg",0));
+        array_add(a,replace_all(poster,"\\.jpg$",IMAGE_EXT_THUMB,0));
+        array_add(a,replace_all(poster,"\\.jpg$",IMAGE_EXT_THUMB_BOXSET,0));
     }
 
     char *fanart = internal_image_path_static(rid,FANART_IMAGE);
     //HTML_LOG(0,"fanart[%s]",fanart);
     if (fanart) {
         array_add(a,STRDUP(fanart));
-        array_add(a,replace_all(fanart,"\\.jpg$",".hd.jpg",0));
-        array_add(a,replace_all(fanart,"\\.jpg$",".sd.jpg",0));
-        array_add(a,replace_all(fanart,"\\.jpg$",".pal.jpg",0));
+        array_add(a,replace_all(fanart,"\\.jpg$",IMAGE_EXT_HD,0));
+        array_add(a,replace_all(fanart,"\\.jpg$",IMAGE_EXT_SD,0));
+        array_add(a,replace_all(fanart,"\\.jpg$",IMAGE_EXT_PAL,0));
     }
 }
 

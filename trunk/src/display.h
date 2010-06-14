@@ -10,6 +10,13 @@
 #define REMOTE_VOD_PREFIX2 "vod.ovs." 
 #define REMOTE_VOD_PREFIX1 "remote.vod.ovs."
 
+#define IMAGE_EXT_SD ".sd.jpg"
+#define IMAGE_EXT_PAL ".pal.jpg"
+#define IMAGE_EXT_HD ".hd.jpg"
+#define IMAGE_EXT_THUMB ".thumb.jpg"
+#define IMAGE_EXT_THUMB_BOXSET ".thumb.boxset.jpg"
+
+
 typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
 
 void display_menu();

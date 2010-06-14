@@ -1533,14 +1533,14 @@ TRACE;
         path = get_path(rid,path,&freepath);
 
         if (image_type == FANART_IMAGE ) {
-            char *modifier=".hd.jpg";
+            char *modifier=IMAGE_EXT_HD;
 
             if (g_dimension->scanlines == 0 ) {
 
                 if (g_dimension->is_pal ) {
-                    modifier=".pal.jpg";
+                    modifier=IMAGE_EXT_PAL;
                 } else {
-                    modifier=".sd.jpg";
+                    modifier=IMAGE_EXT_SD;
                 }
             }
             char *tmp = util_change_extension(path,modifier);
@@ -1549,18 +1549,30 @@ TRACE;
 
         } else if (image_type == THUMB_IMAGE ) {
 
-            char *ext = ".thumb.jpg";
+            char *ext_list[] = { IMAGE_EXT_THUMB_BOXSET, IMAGE_EXT_THUMB , NULL };
+            int start_index = 1;
             if (newview) {
                 if ( strcmp(newview,VIEW_TVBOXSET)==0 || strcmp(newview,VIEW_MOVIEBOXSET)==0) {
-                    ext = ".thumb.boxset.jpg";
+                    start_index=0;
                 }
             }
-            char *tmp = util_change_extension(path,ext);
-            if (exists(tmp)) {
-                if(freepath) FREE(path);
-                path = tmp;
-            } else {
-                FREE(tmp);
+
+            char *ext;
+            int i;
+            int found=0;
+            for(i = start_index ; (ext = ext_list[i] ) != NULL ; i++ ) {
+                char *tmp = util_change_extension(path,ext);
+                if (exists(tmp)) {
+                    if(freepath) FREE(path);
+                    path = tmp;
+                    found = 1;
+                    break;
+                } else {
+                    FREE(tmp);
+                }
+            }
+            if (!found) {
+                // Use the original file
                 if(!freepath && path) {
                     path=STRDUP(path);
                 }

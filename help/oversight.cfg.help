@@ -7,6 +7,7 @@ ovs_show_repack:Identify Repacks and Propers (select Home Icon after changing)|1
 ovs_sort_order:Default Sort Order (select Home Icon after changing)|Age|Name=>s=_T
 ovs_age_field:Field to use for age|scantime|filetime
 ovs_tvboxsets:Use boxsets|1|0
+ovs_movieboxsets:Use boxsets by_first=Link by first movie, by_last=Link by last,by_any=any common prequel/sequel - may slow down gui|by_first|by_last|by_any|disabled
 ovs_default_view:Default Media View (select Home Icon after changing)|All|Movies=>_tf=M|Tv=>_tf=T
 ovs_crossview:Merge oversight view from another NMT player in the network share list.|0|1
 ovs_tv_play_via_pc:Start tv playback from browser|1|0

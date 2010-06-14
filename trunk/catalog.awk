@@ -5917,8 +5917,8 @@ poster_ref,internal_path) {
     }
 }
     
-# Check for locally held poster otherwise fetch one. This may be help locally(with media)
-#or internally in a common folder.
+# Check for locally held poster otherwise fetch one. This may be held locally(with media)
+# or internally in a common folder.
 # Note if poster may be url<tab>referer_url
 function download_image(field_id,url,idx,\
     poster_ref,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
@@ -6150,13 +6150,13 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
 
     search_url="http://api.themoviedb.org/2.1/Movie.getImages/en/xml/"g_api_tmdb"/"imdb_id;
 
-# We want the one with lowest id.
+# We want the one with lowest id. string comparison
 
     id1("get_moviedb_img "imdb_id" "type" "size);
     f=getUrl(search_url,"moviedb",0);
 
     #scan_xml_single_child(f,"/OpenSearchDescription/movies/movie/images",tagfilters,xmlout,\
-    bestId=0;
+    bestId="";
     if (f != "") {
         FS="\n";
         parse=0;
@@ -6168,10 +6168,10 @@ search_url,txt,xml,f,bestId,url,url2,parse,id) {
                     delete xml;
                     parseXML(txt,xml);
                     id=xml["/"type"#id"];
-                    parse=(bestId == 0 || id+0 < bestId);
+                    parse=("X"id < "X"bestId );
                 }
 
-            } else if (parse && index(txt,"<image") ) {
+            } else if (parse && index(txt,"<image") && index(txt,".jpg") ) {
 
                 delete xml;
                 parseXML(txt,xml);

@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh 
 
 # this requires
 # libjpeg commands cpeg and djpeg 

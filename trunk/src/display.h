@@ -19,6 +19,16 @@
 
 typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
 
+typedef enum MovieBoxsetMode_enum {
+    MOVIE_BOXSETS_UNSET , 
+    MOVIE_BOXSETS_NONE ,
+    MOVIE_BOXSETS_FIRST , // Box sets are related by first movie connection
+    MOVIE_BOXSETS_LAST , // Box sets are related by last movie connection 
+    MOVIE_BOXSETS_ANY    // Box sets are related by any movie connection
+} MovieBoxsetMode;
+
+MovieBoxsetMode movie_boxset_mode();
+
 void display_menu();
 
 FILE *playlist_open();

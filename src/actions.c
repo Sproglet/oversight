@@ -116,7 +116,7 @@ static void delete_file(char *dir,char *name) {
 }
 
 
-void delete_media(DbRowId *rid,int delete_related) {
+void delete_media(DbItem *rid,int delete_related) {
 
 
     Array *names_to_delete=NULL;
@@ -202,7 +202,7 @@ void delete_media(DbRowId *rid,int delete_related) {
  * Return list of images for this item - list will NOT free itself
  * The images will be passed to the delete queue.
  */
-static void insert_image_list(DbRowId *rid,Array *a) {
+static void insert_image_list(DbItem *rid,Array *a) {
 
 TRACE;
     char *poster = internal_image_path_static(rid,POSTER_IMAGE);
@@ -223,7 +223,7 @@ TRACE;
     }
 }
 
-void remove_internal_images_from_delete_queue(DbRowId *rid)
+void remove_internal_images_from_delete_queue(DbItem *rid)
 {
     int i;
 TRACE;
@@ -237,7 +237,7 @@ TRACE;
     }
 }
 
-void add_internal_images_to_delete_queue(DbRowId *rid)
+void add_internal_images_to_delete_queue(DbItem *rid)
 {
     int i;
     Array *a = array_new(NULL); // memory is taken over by delete queue
@@ -250,7 +250,7 @@ void add_internal_images_to_delete_queue(DbRowId *rid)
 
 
 
-void delete_queue_add(DbRowId *rid,char *path) {
+void delete_queue_add(DbItem *rid,char *path) {
 
     if (path) {
         int freepath;
@@ -277,7 +277,7 @@ void delete_queue_add(DbRowId *rid,char *path) {
 
 
 //Remove the filename from the delete queue
-void delete_queue_unqueue(DbRowId *rid,char *path) {
+void delete_queue_unqueue(DbItem *rid,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
         int freepath;
         char *real_path = get_path(rid,path,&freepath);

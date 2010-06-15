@@ -19,7 +19,7 @@
 
 
 
-static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int start_row,int copy_plot_text);
+static void set_plot_positions_by_db(Db *db,int num_rows,DbItem **rows,int start_row,int copy_plot_text);
 char *truncate_plot(char *plot,int *free_result);
 
 #define MAX_PLOT_LENGTH 10000
@@ -56,7 +56,7 @@ FILE *plot_open(Db*db)
 #define LOG_LVL 1
 
 #define MAX_PLOT_KEY_IDLEN 20
-void set_plot_keys(DbRowId *rid) {
+void set_plot_keys(DbItem *rid) {
 
     char id[MAX_PLOT_KEY_IDLEN+1];
 
@@ -94,7 +94,7 @@ void set_plot_keys(DbRowId *rid) {
             rid->plotkey[PLOT_MAIN],rid->plotkey[PLOT_EPISODE]);
 }
 
-static char *get_plot_by_key_static(DbRowId *rid,PlotType ptype)
+static char *get_plot_by_key_static(DbItem *rid,PlotType ptype)
 {
     int count=0;
 
@@ -165,7 +165,7 @@ static char *get_plot_by_key_static(DbRowId *rid,PlotType ptype)
     return result;
 }
 
-char *get_plot(DbRowId *rid,PlotType ptype)
+char *get_plot(DbItem *rid,PlotType ptype)
 {
     
     if (rid->plottext[ptype] == NULL) {
@@ -218,20 +218,20 @@ char *truncate_plot(char *plot,int *free_result)
  */
 #define NEEDS_PLOT(rid,ptype) (!EMPTY_STR((rid)->url) && !EMPTY_STR((rid)->plotkey[ptype]) && (rid)->plotoffset[ptype] == PLOT_POSITION_UNSET)
 
-void get_plot_offsets_and_text(int num_rows,DbRowId **rows,int copy_plot_text)
+void get_plot_offsets_and_text(int num_rows,DbItem **rows,int copy_plot_text)
 {
     int i;
     if (rows != NULL &&  num_rows > 0 ) {
            
 TRACE;
         for(i = 0 ; i < num_rows ; i ++ ) {
-            DbRowId *rid = rows[i];
+            DbItem *rid = rows[i];
             set_plot_keys(rid);
         }
 TRACE;
         for(i = 0 ; i < num_rows ; i ++ ) {
 
-            DbRowId *rid = rows[i];
+            DbItem *rid = rows[i];
 
             if (NEEDS_PLOT(rid,PLOT_MAIN) || NEEDS_PLOT(rid,PLOT_EPISODE)) {
 
@@ -254,7 +254,7 @@ TRACE;
 TRACE;
 }
 
-void check_and_copy_plot(int copy_plot_text,DbRowId *rid,PlotType ptype,long fpos,char *buf) {
+void check_and_copy_plot(int copy_plot_text,DbItem *rid,PlotType ptype,long fpos,char *buf) {
 
     char *key = rid->plotkey[ptype];
 
@@ -275,7 +275,7 @@ void check_and_copy_plot(int copy_plot_text,DbRowId *rid,PlotType ptype,long fpo
     }
 }
 
-static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int start_row,int copy_plot_text)
+static void set_plot_positions_by_db(Db *db,int num_rows,DbItem **rows,int start_row,int copy_plot_text)
 {
 
     int i;
@@ -301,7 +301,7 @@ static void set_plot_positions_by_db(Db *db,int num_rows,DbRowId **rows,int star
 
             for(i = start_row ; i < num_rows ; i ++ ) {
 
-                DbRowId *rid = rows[i];
+                DbItem *rid = rows[i];
 
                 if (rid->db == db ) {
 

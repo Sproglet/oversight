@@ -37,13 +37,13 @@ char *href_focus_event_fn(char *function_name_prefix,long function_id,int out_ac
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 void util_free_char_array(int size,char **a);
-char *get_date_static(DbRowId *rid);
-DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
-static inline void set_drilldown_view(DbRowId *rid);
+char *get_date_static(DbItem *rid);
+DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num);
+static inline void set_drilldown_view(DbItem *rid);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
-void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp);
+void get_watched_counts(DbItem *rid,int *watchedp,int *unwatchedp);
 char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
@@ -57,7 +57,7 @@ char *get_play_tvid(char *text) {
 }
 
 // Return a full path 
-char *get_path(DbRowId *rid,char *path,int *freepath) {
+char *get_path(DbItem *rid,char *path,int *freepath) {
 
 TRACE;
 
@@ -776,7 +776,7 @@ FILE *playlist_open() {
     return fp;
 }
 
-char *share_name(DbRowId *r,int *freeme) {
+char *share_name(DbItem *r,int *freeme) {
     char *out = NULL;
     *freeme = 0;
     if (*(r->db->source) != '*' ) {
@@ -794,7 +794,7 @@ char *share_name(DbRowId *r,int *freeme) {
     return out;
 }
 
-char *add_network_icon(DbRowId *r,char *text) {
+char *add_network_icon(DbItem *r,char *text) {
 
     char *icon;
     char *result=NULL;
@@ -827,7 +827,7 @@ char *vod_attr(char *file) {
 }
 
 //T2 just to avoid c string handling in calling functions!
-char *vod_link(DbRowId *rowid,char *title ,char *t2,
+char *vod_link(DbItem *rowid,char *title ,char *t2,
         char *source,char *file,char *href_name,char *href_attr,char *class){
 
     assert(title);
@@ -1274,7 +1274,7 @@ char *category(char cat) {
     }
 }
 
-char *file_style_custom(DbRowId *rowid,char *modifier) {
+char *file_style_custom(DbItem *rowid,char *modifier) {
 
     static char grid_class[50],c='\0';
 
@@ -1292,15 +1292,15 @@ char *file_style_custom(DbRowId *rowid,char *modifier) {
 
     return grid_class;
 }
-char *file_style(DbRowId *rowid) {
+char *file_style(DbItem *rowid) {
     return file_style_custom(rowid,"");
 }
-char *file_style_small(DbRowId *rowid) {
+char *file_style_small(DbItem *rowid) {
     return file_style_custom(rowid,"_small");
 }
 
 // Item is marked watched if all linked rows are watched.
-int is_watched(DbRowId *rowid) {
+int is_watched(DbItem *rowid) {
     int result=1;
     for( ; rowid ; rowid = rowid->linked ) {
         if (rowid->watched == 0) {
@@ -1313,7 +1313,7 @@ int is_watched(DbRowId *rowid) {
 
 
 
-int is_fresh(DbRowId *rowid) {
+int is_fresh(DbItem *rowid) {
     int result=0;
     static long fresh_time = -1;
 
@@ -1335,7 +1335,7 @@ int is_fresh(DbRowId *rowid) {
     return result;
 }
 
-char *watched_style(DbRowId *rowid) {
+char *watched_style(DbItem *rowid) {
 
     if (is_watched(rowid)) {
         return " class=watched ";
@@ -1345,7 +1345,7 @@ char *watched_style(DbRowId *rowid) {
         return file_style(rowid);
     }
 }
-char *watched_style_small(DbRowId *rowid) {
+char *watched_style_small(DbItem *rowid) {
 
     if (is_watched(rowid)) {
         return " class=watched_small ";
@@ -1374,7 +1374,7 @@ char *check_path(char *format, ... ) {
     return p;
 }
 
-char *internal_image_path_static(DbRowId *rid,ImageType image_type)
+char *internal_image_path_static(DbItem *rid,ImageType image_type)
 {
     // No pictures on filesystem - look in db
     // first build the name 
@@ -1432,14 +1432,14 @@ char *internal_image_path_static(DbRowId *rid,ImageType image_type)
     return path;
 }
 
-char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type,char *newview);
-char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type,char *newview);
+char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview);
+char *get_existing_internal_image_path(DbItem *rid,ImageType image_type,char *newview);
 
-char *get_picture_path(int num_rows,DbRowId **sorted_rows,ImageType image_type,char *newview)
+char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview)
 {
 
     char *path = NULL;
-    DbRowId *rid = sorted_rows[0];
+    DbItem *rid = sorted_rows[0];
     char *suffix ;     // given movie.avi look for movie.suffix.(jpg|png)
     char*default_name; // given movie.avi look for default_name.(jpg|png)
 
@@ -1503,7 +1503,7 @@ TRACE;
 /**
  * If looking at the box set view try each season in turn
  */
-char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,ImageType image_type,char *newview)
+char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview)
 {
 
     int i;
@@ -1523,7 +1523,7 @@ char *get_internal_image_path_any_season(int num_rows,DbRowId **sorted_rows,Imag
 /*
  * Get the full internal image path if it exists.
  */
-char *get_existing_internal_image_path(DbRowId *rid,ImageType image_type,char *newview)
+char *get_existing_internal_image_path(DbItem *rid,ImageType image_type,char *newview)
 {
     char *path = internal_image_path_static(rid,image_type);
 
@@ -1588,7 +1588,7 @@ TRACE;
 }
 
 
-char * get_poster_image_tag(DbRowId *rowid,char *attr,ImageType image_type,char *newview)
+char * get_poster_image_tag(DbItem *rowid,char *attr,ImageType image_type,char *newview)
 {
 
     assert(rowid);
@@ -1652,13 +1652,13 @@ char *icon_link(char *name) {
 
 
 
-char *build_ext_list(DbRowId *row_id) {
+char *build_ext_list(DbItem *row_id) {
 
     HTML_LOG(3,"ext=%s",row_id->ext);
     char *ext_icons = icon_link(row_id->ext);
     HTML_LOG(3,"ext_icons=%s",ext_icons);
 
-    DbRowId *ri;
+    DbItem *ri;
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
         if (ri->ext && (ext_icons==NULL || strstr(ext_icons,ri->ext) == NULL)) {
             char *new_ext;
@@ -1676,9 +1676,9 @@ char *build_ext_list(DbRowId *row_id) {
     return ext_icons;
 }
 
-char *add_one_source_to_idlist(DbRowId *row_id,char *current_idlist,int *mixed_sources) {
+char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_sources) {
 
-    DbRowId *ri;
+    DbItem *ri;
     char *idlist=NULL;
     assert(row_id);
     assert(row_id->db);
@@ -1726,7 +1726,7 @@ char *add_one_source_to_idlist(DbRowId *row_id,char *current_idlist,int *mixed_s
  * In the menu view all rows with the same season are linked.
  * in the tv view , rows with the same file are linked.
  */
-char *build_id_list(DbRowId *row_id) {
+char *build_id_list(DbItem *row_id) {
 
     int mixed_sources=0;
     char *idlist=NULL;
@@ -1744,7 +1744,7 @@ char *build_id_list(DbRowId *row_id) {
         // performance is O(n^2)
         struct hashtable *sources = string_string_hashtable("db_sources",4);
         hashtable_insert(sources,row_id->db->source,"1");
-        DbRowId *ri;
+        DbItem *ri;
 
         for( ri = row_id->linked ; ri ; ri=ri->linked ) {
             if (hashtable_search(sources,ri->db->source) == NULL) {
@@ -1768,7 +1768,7 @@ char *trim_title(char *title) {
 }
 
 
-char *select_checkbox(DbRowId *rid,char *text) {
+char *select_checkbox(DbItem *rid,char *text) {
     char *result = NULL;
     char *select = query_select_val();
 
@@ -1821,7 +1821,7 @@ void add_movie_part_row(Array *output,long fn_id,char *cell)
     array_add(output,tmp);
 }
 
-char *movie_listing(DbRowId *rowid)
+char *movie_listing(DbItem *rowid)
 {
     int show_names;
    
@@ -1942,7 +1942,7 @@ HTML_LOG(0,"mouse[%s]",mouse);
 
 
 // Count number of unique seasons in the list.
-int season_count(DbRowId *rid) {
+int season_count(DbItem *rid) {
 #define WORDS 8
 #define WORDBITS 16
 
@@ -1975,7 +1975,7 @@ int season_count(DbRowId *rid) {
     return total;
 }
 
-int group_count(DbRowId *rid) {
+int group_count(DbItem *rid) {
     int i=0;
     for(  ; rid ; rid=rid->linked) {
         i++;
@@ -1983,7 +1983,7 @@ int group_count(DbRowId *rid) {
     return i;
 }
 
-void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp) 
+void get_watched_counts(DbItem *rid,int *watchedp,int *unwatchedp) 
 {
     int watched=0;
     int unwatched=0;
@@ -1998,13 +1998,13 @@ void get_watched_counts(DbRowId *rid,int *watchedp,int *unwatchedp)
     if (unwatchedp) *unwatchedp = unwatched;
 }
     
-int unwatched_count(DbRowId *rid) {
+int unwatched_count(DbItem *rid) {
     int i=0;
     get_watched_counts(rid,NULL,&i);
     return i;
 }
 
-int watched_count(DbRowId *rid) {
+int watched_count(DbItem *rid) {
     int i=0;
     get_watched_counts(rid,&i,NULL);
     return i;
@@ -2012,7 +2012,7 @@ int watched_count(DbRowId *rid) {
 
 typedef enum { WATCHED , NORMAL , FRESH } ViewStatus;
 
-int get_view_status(DbRowId *rowid) {
+int get_view_status(DbItem *rowid) {
     ViewStatus status = NORMAL;
     if (is_watched(rowid)) {
         status = WATCHED;
@@ -2022,7 +2022,7 @@ int get_view_status(DbRowId *rowid) {
     return status;
 }
 
-char *get_poster_mode_item(DbRowId *row_id,char **font_class,char **grid_class,char *newview) {
+char *get_poster_mode_item(DbItem *row_id,char **font_class,char **grid_class,char *newview) {
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
@@ -2060,7 +2060,7 @@ TRACE;
     return title;
 }
 
-char *get_poster_mode_item_unknown(DbRowId *row_id,char **font_class,char **grid_class) {
+char *get_poster_mode_item_unknown(DbItem *row_id,char **font_class,char **grid_class) {
     HTML_LOG(2,"dbg: unclassified : set details as title");
     // Unclassified
 
@@ -2086,7 +2086,7 @@ char *get_poster_mode_item_unknown(DbRowId *row_id,char **font_class,char **grid
     return title;
 }
 
-char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,char *newview) {
+char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,char *newview) {
 
     // TEXT MODE
     HTML_LOG(2,"dbg: get text mode details ");
@@ -2169,7 +2169,7 @@ char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,cha
 }
 
 
-char *get_simple_title( DbRowId *row_id)
+char *get_simple_title( DbItem *row_id)
 {
 
     char *title;
@@ -2253,7 +2253,7 @@ char *td_mouse_event_fn(char *function_name_prefix,long function_id,int out_acti
     }
 }
 
-char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char *height_attr,
+char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char *height_attr,
         int left_scroll,int right_scroll,int selected_cell,char *idlist,int select_mode)
 {
 
@@ -2496,10 +2496,10 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
     return result;
 }
 
-static inline void set_drilldown_view(DbRowId *rid) {
+static inline void set_drilldown_view(DbItem *rid) {
 
     if (rid->drilldown_mode == UNSET_VIEW_ID) {
-        DbRowId *rid2;
+        DbItem *rid2;
         ViewMode m;
 
         switch (rid->category) {
@@ -2544,7 +2544,7 @@ static inline void set_drilldown_view(DbRowId *rid) {
 
 
 
-int check_and_prune_item(DbRowId *rowid,char *path) {
+int check_and_prune_item(DbItem *rowid,char *path) {
 
     int result = 0;
 
@@ -2581,7 +2581,7 @@ char *next_folder(char *path,char *root)
 
 // Delist a file if it's grandparent folder is present and not empty.
 // This is deleted from the db, which will be reflected in the next page draw.
-int delisted(DbRowId *rowid)
+int delisted(DbItem *rowid)
 {
 
     int freepath;
@@ -2629,9 +2629,9 @@ int delisted(DbRowId *rowid)
 }
 
 // Return 1 if this row and all of its linked items are delisted.
-int all_linked_rows_delisted(DbRowId *rowid)
+int all_linked_rows_delisted(DbItem *rowid)
 {
-    DbRowId *r;
+    DbItem *r;
 
     for(r = rowid ; r != NULL ; r = r->linked) {
         if (!delisted(r)) {
@@ -2642,7 +2642,7 @@ int all_linked_rows_delisted(DbRowId *rowid)
     return 1;
 }
 
-void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row_ids,char **idlist)
+void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_ids,char **idlist)
 {
     int i,r,c;
 
@@ -2662,7 +2662,7 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row
             i = c * rows + r ;
             if ( i < numids ) {
 
-                DbRowId *rid = row_ids[i];
+                DbItem *rid = row_ids[i];
 
                 int watched,unwatched;
                 get_watched_counts(rid,&watched,&unwatched);
@@ -2693,7 +2693,7 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row
 // Generate the HTML for the grid. 
 // Note that the row_ids have already been pruned to only contain the items
 // for the current page.
-char *render_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids,int page_before,int page_after) {
+char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int page_before,int page_after) {
 
     int rows = gs->dimensions.rows;
 
@@ -2719,7 +2719,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbRowId **row_ids,int p
     HTML_LOG(0,"input size = %d",numids);
     for(r=0 ; r<numids ; r++) {
         HTML_LOG(0,"get_grid row %d %s %s %s",r,row_ids[r]->db->source,row_ids[r]->title,row_ids[r]->file);
-        DbRowId *l =row_ids[r]->linked;
+        DbItem *l =row_ids[r]->linked;
         while (l) {
             HTML_LOG(0,"get_grid linked %d %s %s %s",r,l->db->source,l->title,l->file);
            l = l->linked;
@@ -2848,7 +2848,7 @@ TRACE;
 char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows) 
 {
     int numids = sorted_rows->num_rows;
-    DbRowId **row_ids = sorted_rows->rows;
+    DbItem **row_ids = sorted_rows->rows;
     // first loop through the selected rowids that we expect to draw.
     // If there are any that need pruning - remove them from the database and get another one.
     // This will possibly cause a temporary inconsistency in page numbering but
@@ -2864,10 +2864,10 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
 
     int total=0;
     // Create space for pruned rows
-    DbRowId **prunedRows = filter_page_items(start,numids,row_ids,gs->parent->page_size,&total);
+    DbItem **prunedRows = filter_page_items(start,numids,row_ids,gs->parent->page_size,&total);
 
     
-    DbRowId **segmentRows = prunedRows + gs->offset;
+    DbItem **segmentRows = prunedRows + gs->offset;
 
     int segment_total = total - gs->offset;
 
@@ -3043,7 +3043,7 @@ TRACE;
     struct hashtable *overview = db_overview_hash_create(rowsets);
 TRACE;
 
-    DbRowId **sorted_row_ids = NULL;
+    DbItem **sorted_row_ids = NULL;
     
     char *sort = DB_FLDID_TITLE;
 
@@ -3357,7 +3357,7 @@ int playlist_size(DbSortedRows *sorted_rows)
     int i;
     int count = 0;
     for(i = 0 ; i < sorted_rows->num_rows ; i++ ) {
-        DbRowId *rowid = sorted_rows->rows[i];
+        DbItem *rowid = sorted_rows->rows[i];
         if (rowid->playlist_names && rowid->playlist_paths) {
             count += rowid->playlist_names->size;
         }
@@ -3371,7 +3371,7 @@ void build_playlist(DbSortedRows *sorted_rows)
     int i;
     FILE *fp = NULL;
     for(i = 0 ; i < sorted_rows->num_rows ; i++ ) {
-        DbRowId *rowid = sorted_rows->rows[i];
+        DbItem *rowid = sorted_rows->rows[i];
         if (rowid->playlist_names && rowid->playlist_paths) {
             int j;
             HTML_LOG(0,"Adding files for [%s] to playlist",rowid->title);
@@ -3436,7 +3436,7 @@ void util_free_char_array(int size,char **a)
     FREE(a);
 }
 
-char *best_eptitle(DbRowId *rid,int *free_title) {
+char *best_eptitle(DbItem *rid,int *free_title) {
 
     *free_title=0;
     char *title=rid->eptitle;
@@ -3459,7 +3459,7 @@ char *best_eptitle(DbRowId *rid,int *free_title) {
  * The funtions are named using the address location of the data  structure.
  * eg plot12234() { return 'He came, he saw , he conquered'; }
  */
-char *create_episode_js_fn(int num_rows,DbRowId **sorted_rows) {
+char *create_episode_js_fn(int num_rows,DbItem **sorted_rows) {
 
     char *result = NULL;
 
@@ -3483,7 +3483,7 @@ TRACE;
     char *main_genre=NULL;
 
     for(i = 0 ; i < num_rows ; i++ ) {
-        DbRowId *rid = sorted_rows[i];
+        DbItem *rid = sorted_rows[i];
         if (EMPTY_STR(main_plot) && !EMPTY_STR(rid->plottext[PLOT_MAIN])) {
             main_plot = rid->plottext[PLOT_MAIN];
         }
@@ -3509,7 +3509,7 @@ TRACE;
 HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
-        DbRowId *rid = sorted_rows[i];
+        DbItem *rid = sorted_rows[i];
         char *date = get_date_static(rid);
         int free_title=0;
         char *title = best_eptitle(rid,&free_title);
@@ -3536,7 +3536,7 @@ TRACE;
     return result;
 }
 
-char *get_date_static(DbRowId *rid)
+char *get_date_static(DbItem *rid)
 {
     static char *old_date_format=NULL;
     static char *recent_date_format=NULL;
@@ -3572,16 +3572,16 @@ char *get_date_static(DbRowId *rid)
 }
 
 // Return all rows after delisting
-DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num)
+DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num)
 {
 
     int i;
     int total = 0;
 
-    DbRowId **new_list = CALLOC(max_new+1,sizeof(DbRowId *));
+    DbItem **new_list = CALLOC(max_new+1,sizeof(DbItem *));
 
     for ( i = start ; total < max_new && i < num_rows ; i++ ) {
-        DbRowId *rid = row_ids[i];
+        DbItem *rid = row_ids[i];
         if (rid) {
             if (rid->delist_checked) {
                 new_list[total++] = rid;
@@ -3598,7 +3598,7 @@ DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new
     return new_list;
 }
 
-char *pruned_tv_listing(int num_rows,DbRowId **sorted_rows,int rows,int cols)
+char *pruned_tv_listing(int num_rows,DbItem **sorted_rows,int rows,int cols)
 {
     int r,c;
 
@@ -3653,7 +3653,7 @@ TRACE;
                 int function_id = i+1;
                 char *episode_col = NULL;
 
-                DbRowId *rid = sorted_rows[i];
+                DbItem *rid = sorted_rows[i];
 
                 if (*select) {
                     episode_col = select_checkbox(
@@ -3771,7 +3771,7 @@ TRACE;
 char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
 {
     int pruned_num_rows;
-    DbRowId **pruned_rows;
+    DbItem **pruned_rows;
 
 
     html_log(-1,"tv_listing");
@@ -3915,11 +3915,11 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     return result;
 }
 
-void xx_dump_genre(char *file,int line,int num,DbRowId **rows) {
+void xx_dump_genre(char *file,int line,int num,DbItem **rows) {
     int i;
     HTML_LOG(0,"xx genre dump [%s:%d] num=%d",file,line,num);
     for(i = 0 ; i < num ; i++ ) {
-        DbRowId *rid = rows[i];
+        DbItem *rid = rows[i];
         HTML_LOG(0,"%d[%s][%s]",rid->id,rid->title,rid->genre);
     }
 }

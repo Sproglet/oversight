@@ -6,12 +6,12 @@
 
 void do_actions();
 void delete_queue_delete();
-void delete_queue_unqueue(DbRowId *rid,char *path);
-void delete_queue_add(DbRowId *rid,char *path);
-void delete_media(DbRowId *rid,int delete_related);
+void delete_queue_unqueue(DbItem *rid,char *path);
+void delete_queue_add(DbItem *rid,char *path);
+void delete_media(DbItem *rid,int delete_related);
 
-void add_internal_images_to_delete_queue(DbRowId *rid);
-void remove_internal_images_from_delete_queue(DbRowId *rid);
+void add_internal_images_to_delete_queue(DbItem *rid);
+void remove_internal_images_from_delete_queue(DbItem *rid);
 void set_start_cell();
 char *get_start_cell();
 

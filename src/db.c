@@ -180,7 +180,7 @@ DbRowSet *db_rowset(Db *db) {
 }
 
 
-void db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
+void db_rowset_add(DbRowSet *dbrs,DbItem *id) {
 
     assert(id);
     assert(dbrs);
@@ -188,9 +188,9 @@ void db_rowset_add(DbRowSet *dbrs,DbRowId *id) {
 
     if (dbrs->size >= dbrs->memsize) {
         dbrs->memsize += 100;
-        dbrs->rows = REALLOC(dbrs->rows,dbrs->memsize * sizeof(DbRowId));
+        dbrs->rows = REALLOC(dbrs->rows,dbrs->memsize * sizeof(DbItem));
     }
-    DbRowId *insert = dbrs->rows + dbrs->size;
+    DbItem *insert = dbrs->rows + dbrs->size;
     *insert = *id;
     (dbrs->size)++;
 
@@ -518,7 +518,7 @@ DbRowSet * db_scan_titles(
         rowset=db_rowset(db);
 
         int eof=0;
-        DbRowId rowid;
+        DbItem rowid;
         db_rowid_init(&rowid,db);
 
         unsigned char title_filter_start='\0';
@@ -784,7 +784,7 @@ void db_rowset_free(DbRowSet *dbrs) {
     int i;
 
     for(i = 0 ; i<dbrs->size ; i++ ) {
-        DbRowId *rid = dbrs->rows + i;
+        DbItem *rid = dbrs->rows + i;
         db_rowid_free(rid,0);
     }
 
@@ -799,7 +799,7 @@ void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
         HTML_LOG(level,"Rowset: %s : EMPTY",label);
     } else {
         for(i = 0 ; i<dbrs->size ; i++ ) {
-            DbRowId *rid = dbrs->rows + i;
+            DbItem *rid = dbrs->rows + i;
             HTML_LOG(level,"Rowset: %s [%s - %c - %d %s ]",label,rid->title,rid->category,rid->season,rid->poster);
         }
     }
@@ -890,7 +890,7 @@ HTML_LOG(1," begin open db");
                         // resources that are still in use.
                         // pass 1 = user delete/delist action
                         // pass 2 = render / auto delist.
-                        DbRowId rid;
+                        DbItem rid;
                         parse_row(ALL_IDS,NULL,0,buf,db,&rid);
                         if (delete_mode == DELETE_MODE_DELETE || delete_mode == DELETE_MODE_REMOVE) {
                             add_internal_images_to_delete_queue(&rid);
@@ -948,21 +948,21 @@ HTML_LOG(1," begin open db");
 
 }
 
-void db_remove_row_helper(DbRowId *rid,int mode) {
+void db_remove_row_helper(DbItem *rid,int mode) {
     char idlist[20];
     sprintf(idlist,"%ld",rid->id);
     db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,mode);
 }
 // remove item from list, keep media, and keep images. initiated by Auto delist.
-void db_auto_remove_row(DbRowId *rid) {
+void db_auto_remove_row(DbItem *rid) {
     db_remove_row_helper(rid,DELETE_MODE_AUTO_REMOVE);
 }
 // remove item from list, keep media, delete images. user initiated delist
-void db_remove_row(DbRowId *rid) {
+void db_remove_row(DbItem *rid) {
     db_remove_row_helper(rid,DELETE_MODE_REMOVE);
 }
 // remove item from list, delete everything. user initiated delete.
-void db_delete_row_and_media(DbRowId *rid) {
+void db_delete_row_and_media(DbItem *rid) {
     db_remove_row_helper(rid,DELETE_MODE_DELETE);
 }
 
@@ -1026,16 +1026,16 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
     }
 }
 
-void dump_row(char *prefix,DbRowId *rid)
+void dump_row(char *prefix,DbItem *rid)
 {
     HTML_LOG(0,"xx %s  %d:T[%s]S[%d]E[%s]w[%d]",prefix,rid->id,rid->title,rid->season,rid->episode,rid->watched);
 }
-void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows)
+void dump_all_rows(char *prefix,int num_rows,DbItem **sorted_rows)
 {
 #if 0
     int i;
     for(i = 0 ; i <  num_rows ; i ++ ) {
-        DbRowId *rid = sorted_rows[i];
+        DbItem *rid = sorted_rows[i];
         dump_row(prefix,rid);
         for( ; rid ; rid = rid->linked ) {
             dump_row("linked:",rid);
@@ -1043,12 +1043,12 @@ void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows)
     }
 #endif
 }
-void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[])
+void dump_all_rows2(char *prefix,int num_rows,DbItem sorted_rows[])
 {
 #if 0
     int i;
     for(i = 0 ; i <  num_rows ; i ++ ) {
-        DbRowId *rid = sorted_rows+i;
+        DbItem *rid = sorted_rows+i;
         dump_row(prefix,rid);
         for( ; rid ; rid = rid->linked ) {
             dump_row("linked:",rid);

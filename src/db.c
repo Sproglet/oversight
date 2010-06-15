@@ -170,17 +170,17 @@ TRACE;
 
 
 
-DbRowSet *db_rowset(Db *db) {
+DbItemSet *db_rowset(Db *db) {
     assert(db);
 
-    DbRowSet *dbrs = MALLOC(sizeof(DbRowSet));
-    memset(dbrs,0,sizeof(DbRowSet));
+    DbItemSet *dbrs = MALLOC(sizeof(DbItemSet));
+    memset(dbrs,0,sizeof(DbItemSet));
     dbrs->db = db;
     return dbrs;
 }
 
 
-void db_rowset_add(DbRowSet *dbrs,DbItem *id) {
+void db_rowset_add(DbItemSet *dbrs,DbItem *id) {
 
     assert(id);
     assert(dbrs);
@@ -242,7 +242,7 @@ int db_to_be_scanned(char *name) {
 }
 
 void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
-        int *rowset_count_ptr,DbRowSet ***row_set_ptr) {
+        int *rowset_count_ptr,DbItemSet ***row_set_ptr) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
 TRACE;
@@ -254,13 +254,13 @@ TRACE;
         if (db) {
 TRACE;
 
-            DbRowSet *r = db_scan_titles(db,name_filter,media_type,watched);
+            DbItemSet *r = db_scan_titles(db,name_filter,media_type,watched);
 
             if ( r != NULL ) {
 TRACE;
                 dump_all_rows2("rowset",r->size,r->rows);
 
-                (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbRowSet*));
+                (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbItemSet*));
                 (*row_set_ptr)[(*rowset_count_ptr)++] = r;
                 (*row_set_ptr)[(*rowset_count_ptr)]=NULL;
 
@@ -299,14 +299,14 @@ char *is_nmt_network_share(char *mtab_line) {
 
 //
 // Returns null terminated array of rowsets
-DbRowSet **db_crossview_scan_titles(
+DbItemSet **db_crossview_scan_titles(
         int crossview,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
         int watched         // 1=watched 2=unwatched 3=any
         ){
     int rowset_count=0;
-    DbRowSet **rowsets = NULL;
+    DbItemSet **rowsets = NULL;
 
 TRACE;
     HTML_LOG(1,"begin db_crossview_scan_titles");
@@ -354,9 +354,9 @@ TRACE;
     return rowsets;
 }
 
-void db_free_rowsets_and_dbs(DbRowSet **rowsets) {
+void db_free_rowsets_and_dbs(DbItemSet **rowsets) {
     if (rowsets) {
-        DbRowSet **r;
+        DbItemSet **r;
 TRACE;
         for(r = rowsets ; *r ; r++ ) {
 TRACE;
@@ -443,7 +443,7 @@ int *extract_idlist(char *db_name,int *num_ids) {
         )
 
 #define ANY_SEASON -10
-DbRowSet * db_scan_titles(
+DbItemSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
@@ -452,7 +452,7 @@ DbRowSet * db_scan_titles(
 
     regex_t pattern;
 
-    DbRowSet *rowset = NULL;
+    DbItemSet *rowset = NULL;
 
     char *view=query_view_val();
     int tv_or_movie_view = (STRCMP(view,VIEW_TV)==0 || STRCMP(view,VIEW_MOVIE) == 0);
@@ -780,7 +780,7 @@ char *compress_genre(char *genre_names)
 
 
 
-void db_rowset_free(DbRowSet *dbrs) {
+void db_rowset_free(DbItemSet *dbrs) {
     int i;
 
     for(i = 0 ; i<dbrs->size ; i++ ) {
@@ -793,7 +793,7 @@ void db_rowset_free(DbRowSet *dbrs) {
 }
 
 
-void db_rowset_dump(int level,char *label,DbRowSet *dbrs) {
+void db_rowset_dump(int level,char *label,DbItemSet *dbrs) {
     int i;
     if (dbrs->size == 0) {
         HTML_LOG(level,"Rowset: %s : EMPTY",label);

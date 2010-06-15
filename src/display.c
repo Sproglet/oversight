@@ -2794,20 +2794,20 @@ TRACE;
             int right_scroll = (page_after && c == cols-1 );
             int is_selected = (i == selected_cell);
 
-            char *item=NULL;
+            char *item_text=NULL;
             if ( i < numids ) {
-                item = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i],select_mode);
+                item_text = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i],select_mode);
             } else {
                 // only draw empty cells if there are two or more rows
                 if (rows > 1) {
-                    item = get_empty(width_attr,(c+r)&1,height_attr,left_scroll,right_scroll,is_selected);
+                    item_text = get_empty(width_attr,(c+r)&1,height_attr,left_scroll,right_scroll,is_selected);
                 } else {
-                    item = NULL;
+                    item_text = NULL;
                 }
 
             }
 
-            if (item) array_add(cellArray,item);
+            if (item_text) array_add(cellArray,item_text);
             HTML_LOG(1,"grid end col %d",c);
         }
 
@@ -3032,7 +3032,7 @@ TRACE;
     HTML_LOG(0,"Scan..");
 
     // Get array of rowsets. One item for each database source. 
-    DbRowSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
+    DbItemSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
 
 TRACE;
 

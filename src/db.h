@@ -54,15 +54,15 @@ typedef struct DbResults_struct {
     int series_total;
     int episode_total;
     int other_media_total;
-} DbRowSet;
+} DbItemSet;
 
 /**
- * All DbRowSets merged and sorted.
+ * All DbItemSets merged and sorted.
  */
 typedef struct DBSortedRows_struct {
 
     int num_rows;
-    DbRowSet **rowsets;
+    DbItemSet **rowsets;
     DbItem **rows;
 
 } DbSortedRows;
@@ -71,7 +71,7 @@ Db *db_init(char *filename, // path to the file
         char *source       // logical name or tag - local="*"
         );
 
-DbRowSet * db_scan_titles(
+DbItemSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
@@ -80,19 +80,19 @@ DbRowSet * db_scan_titles(
 
 int db_lock(Db *db);
 int db_unlock(Db *db);
-void db_rowset_free(DbRowSet *dbrs);
+void db_rowset_free(DbItemSet *dbrs);
 void db_rowid_free(DbItem *rid,int free_base);
 void db_free(Db *db);
 
-void db_rowset_dump(int level,char *label,DbRowSet *dbrs);
+void db_rowset_dump(int level,char *label,DbItemSet *dbrs);
 
-DbRowSet **db_crossview_scan_titles(
+DbItemSet **db_crossview_scan_titles(
         int crossview,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
         int watched         // 1=watched 2=unwatched 3=any
         );
-void db_free_rowsets_and_dbs(DbRowSet **rowsets);
+void db_free_rowsets_and_dbs(DbItemSet **rowsets);
 int db_full_size();
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);
 void db_auto_remove_row(DbItem *rid);

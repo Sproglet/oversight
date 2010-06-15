@@ -507,7 +507,7 @@ void overview_array_dump(int level,char *label,DbItem **arr) {
   Because an item can appear in multiple places we need to build a list of lists.
   */
  
-void db_set_visited(DbRowSet **rowsets,int val) {
+void db_set_visited(DbItemSet **rowsets,int val) {
     if (rowsets) {
 
         int i,j;
@@ -520,7 +520,7 @@ void db_set_visited(DbRowSet **rowsets,int val) {
     }
 }
 
-struct hashtable *db_overview_hash_create(DbRowSet **rowsets) {
+struct hashtable *db_overview_hash_create(DbItemSet **rowsets) {
     
     int total=0;
     struct hashtable *overview = NULL;
@@ -550,7 +550,7 @@ TRACE;
     if (rowsets) {
 TRACE;
 
-        DbRowSet **rowset_ptr;
+        DbItemSet **rowset_ptr;
         for(rowset_ptr = rowsets ; *rowset_ptr ; rowset_ptr++ ) {
 TRACE;
 

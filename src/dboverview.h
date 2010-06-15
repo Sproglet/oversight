@@ -48,7 +48,7 @@ int db_overview_cmp_by_title(DbItem **rid1,DbItem **rid2);
 int db_overview_cmp_by_age(DbItem **rid1,DbItem **rid2);
 int db_overview_name_eqf(DbItem *rid1,DbItem *rid2);
 DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbItem **));
-struct hashtable *db_overview_hash_create(DbRowSet **rowsets);
+struct hashtable *db_overview_hash_create(DbItemSet **rowsets);
 void db_overview_hash_destroy(struct hashtable *ovw_hash);
 
 #endif

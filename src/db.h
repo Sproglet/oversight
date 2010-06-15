@@ -4,7 +4,7 @@
 #include "hashtable.h"
 #include "util.h"
 #include "vasprintf.h"
-#include "dbrow.h"
+#include "dbitem.h"
 #include "dbfield.h"
 #include "time.h"
 

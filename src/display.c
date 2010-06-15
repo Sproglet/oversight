@@ -39,7 +39,7 @@ char *get_theme_image_tag(char *image_name,char *attr);
 void util_free_char_array(int size,char **a);
 char *get_date_static(DbRowId *rid);
 DbRowId **filter_page_items(int start,int num_rows,DbRowId **row_ids,int max_new,int *new_num);
-char *get_drilldown_view(DbRowId *rid);
+static inline void set_drilldown_view(DbRowId *rid);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
@@ -2169,17 +2169,14 @@ char *get_text_mode_item(DbRowId *row_id,char **font_class,char **grid_class,cha
 }
 
 
-char *get_simple_title(
-        DbRowId *row_id,
-        char *newview   // VIEW_TV , VIEW_MOVIE , VIEW_TVBOXSET , VIEW_MOVIEBOXSET , VIEW_MIXED
-        ) {
+char *get_simple_title( DbRowId *row_id)
+{
+
     char *title;
     char *source=row_id->db->source;
     int show_source = (source && *source != '*');
 
-    if (newview == NULL ) {
-        newview = get_drilldown_view(row_id);
-    }
+    set_drilldown_view(row_id);
 
     char *source_start,*source_end;
     source_start = source_end = "";
@@ -2188,11 +2185,11 @@ char *get_simple_title(
         source_end="]";
     }
 
-    if (STRCMP(newview,VIEW_TVBOXSET) == 0) {
+    if (row_id->drilldown_mode == TVBOXSET_VIEW_ID ) {
 
         ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
 
-    } else if (STRCMP(newview,VIEW_MOVIEBOXSET) == 0) {
+    } else if (row_id->drilldown_mode == MOVIEBOXSET_VIEW_ID ) {
 
         ovs_asprintf(&title,"%s [Boxset]",row_id->title);
 
@@ -2281,7 +2278,8 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
     char *first_space=NULL;
     int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
-    char *newview = get_drilldown_view(row_id);
+    set_drilldown_view(row_id);
+    char *newview = row_id->drilldown_view_static;
 
     if (IN_POSTER_MODE) {
 
@@ -2339,11 +2337,8 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
 
     if (g_dimension->title_bar && !select_mode) {
 
-        char *simple_title = get_simple_title(row_id,newview);
-
         focus_ev = href_focus_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
         mouse_ev = td_mouse_event_fn(JAVASCRIPT_MENU_FUNCTION_PREFIX,cell_no+1,1);
-        FREE(simple_title);
     }
 
 
@@ -2364,17 +2359,18 @@ char *get_item(int cell_no,DbRowId *row_id,int grid_toggle,char *width_attr,char
         HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
 
-        if (STRCMP(newview,VIEW_TV) == 0 ) {
-            // TV shows are drill down by title and season
-            cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
-
-        } else if (STRCMP(newview,VIEW_TVBOXSET) == 0 ) {
-            // Box sets or TV shows are drill down by title
-            cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
-
-        } else {
-            // Movies, movieboxsets, uncategorised video and mixed boxsets are drill down by ID
-            cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
+        switch(row_id->drilldown_mode) {
+            case TV_VIEW_ID:
+                // TV shows are drill down by title and season
+                cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
+                break;
+            case TVBOXSET_VIEW_ID:
+                // Box sets or TV shows are drill down by title
+                cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
+                break;
+            default:
+                // Movies, movieboxsets, uncategorised video and mixed boxsets are drill down by ID
+                cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
         }
         FREE(attr);
     }
@@ -2500,46 +2496,49 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
     return result;
 }
 
-char *get_drilldown_view(DbRowId *rid) {
+static inline void set_drilldown_view(DbRowId *rid) {
 
-    DbRowId *rid2;
-    char *view=NULL;
+    if (rid->drilldown_mode == UNSET_VIEW_ID) {
+        DbRowId *rid2;
+        ViewMode m;
 
-    switch (rid->category) {
-        case 'T':
-            view = VIEW_TV;
-            break;
-        case 'M': case 'F':
-            view = VIEW_MOVIE;
-            break;
-        default:
-            view = VIEW_MOVIE;
-            break;
-    }
+        switch (rid->category) {
+            case 'T':
+                m = TV_VIEW_ID;
+                break;
+            case 'M': case 'F':
+                m = MOVIE_VIEW_ID;
+                break;
+            default:
+                m = MOVIE_VIEW_ID;
+                break;
+        }
 
-    for( rid2=rid->linked ; rid2 ; rid2=rid2->linked ) {
+        for( rid2=rid->linked ; rid2 ; rid2=rid2->linked ) {
 
-        if (rid2->category != rid->category ) {
-            view = VIEW_MIXED;
-            break;
-        } else {
-            switch (rid2->category) {
-                case 'T':
-                    if (rid->season != rid2->season) {
-                        view=VIEW_TVBOXSET;
-                    }
-                    break;
-                case 'M': case 'F':
-                    // As soon as there are two linked movies its a box set
-                    view=VIEW_MOVIEBOXSET;
-                    break;
-                default:
-                    view=VIEW_MIXED;
-                    break;
+            if (rid2->category != rid->category ) {
+                m = MIXED_VIEW_ID;
+                break;
+            } else {
+                switch (rid2->category) {
+                    case 'T':
+                        if (rid->season != rid2->season) {
+                            m = TVBOXSET_VIEW_ID;
+                        }
+                        break;
+                    case 'M': case 'F':
+                        // As soon as there are two linked movies its a box set
+                        m = MOVIEBOXSET_VIEW_ID;
+                        break;
+                    default:
+                        m = MIXED_VIEW_ID;
+                        break;
+                }
             }
         }
+        rid->drilldown_mode = m;
+        rid->drilldown_view_static = view_mode_to_str(m);
     }
-    return view;
 }
 
 
@@ -2670,7 +2669,7 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbRowId **row
 
                 //HTML_LOG(0,"xx %s age = %x ",rid->title,*timestamp_ptr(rid));
 
-                char *title = get_simple_title(rid,NULL);
+                char *title = get_simple_title(rid);
                 if (rid->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s',%d,%d); }\n",
@@ -2969,7 +2968,7 @@ TRACE;
 
     int free_regex=0;
     char *regex = query_val(QUERY_PARAM_REGEX);
-    char *view = query_view_val();
+    ViewMode view = get_view_mode();
 
     if (EMPTY_STR(regex)) {
 TRACE;
@@ -3010,12 +3009,12 @@ TRACE;
     char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
     int media_type=DB_MEDIA_TYPE_ANY;
 
-    if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 || STRCMP(view,VIEW_TV)== 0 || STRCMP(view,VIEW_TVBOXSET) == 0 ) {
+    if(view == TV_VIEW_ID || view == TVBOXSET_VIEW_ID || STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 ) {
 
 TRACE;
         media_type=DB_MEDIA_TYPE_TV; 
 
-    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 || STRCMP(view,VIEW_MOVIE)== 0 || STRCMP(view,VIEW_MOVIEBOXSET) == 0 ) {
+    } else if(view == MOVIE_VIEW_ID || view == MOVIEBOXSET_VIEW_ID || STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 ) {
 
 TRACE;
         media_type=DB_MEDIA_TYPE_FILM; 
@@ -3053,20 +3052,31 @@ TRACE;
 TRACE;
 
     HTML_LOG(0,"Sort..");
-    if (STRCMP(query_view_val(),VIEW_TV) == 0) {
 
-        HTML_LOG(0,"sort by name [%s]",sort);
-        sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+    switch(view) {
+        case TV_VIEW_ID:
+            HTML_LOG(0,"sort by name [%s]",sort);
+            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+            break;
+        case TVBOXSET_VIEW_ID:
+            HTML_LOG(0,"TODO sort by SEASON[%s]",sort);
+            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+            break;
+        case MOVIEBOXSET_VIEW_ID:
+            HTML_LOG(0,"TODO sort by YEAR[%s]",sort);
+            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+            break;
+        default:
+            if (sort && STRCMP(sort,DB_FLDID_TITLE) == 0) {
 
-    } else  if (sort && STRCMP(sort,DB_FLDID_TITLE) == 0) {
+                HTML_LOG(0,"sort by name [%s]",sort);
+                sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
 
-        HTML_LOG(0,"sort by name [%s]",sort);
-        sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+            } else {
 
-    } else {
-
-        HTML_LOG(0,"sort by age [%s]",sort);
-        sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
+                HTML_LOG(0,"sort by age [%s]",sort);
+                sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
+            }
     }
 
     //Free hash without freeing keys
@@ -3163,13 +3173,16 @@ char *get_tvid_links()
 char *dimension_cell_name_suffix() {
     static char *name_suffix=NULL;
     if (!name_suffix) {
-        char *view = query_view_val();
-        if (STRCMP(view,"movieboxset") == 0) {
-            name_suffix = "_movieboxset";
-        } else if (STRCMP(view,"tvboxset") == 0) {
-            name_suffix = "_tvboxset";
-        } else {
-            name_suffix = "";
+        ViewMode view = get_view_mode();
+        switch(view) {
+            case MOVIEBOXSET_VIEW_ID:
+                name_suffix = "_movieboxset";
+                break;
+            case TVBOXSET_VIEW_ID:
+                name_suffix = "_tvboxset";
+                break;
+            default:
+                name_suffix = "";
         }
     }
     return name_suffix;

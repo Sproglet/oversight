@@ -12,7 +12,7 @@ typedef enum { PLOT_MAIN=0 , PLOT_EPISODE=1 } PlotType;
 
 #define PLOT_TYPE_COUNT 2
 
-OVS_TIME *timestamp_ptr(DbRowId *rowid);
+OVS_TIME *timestamp_ptr(DbItem *rowid);
 
 #define ALL_IDS -1
 
@@ -49,7 +49,7 @@ typedef struct DbResults_struct {
     Db *db;
     long size;
     long memsize;
-    DbRowId *rows; // Array of actual entries.
+    DbItem *rows; // Array of actual entries.
     int movie_total;
     int series_total;
     int episode_total;
@@ -63,7 +63,7 @@ typedef struct DBSortedRows_struct {
 
     int num_rows;
     DbRowSet **rowsets;
-    DbRowId **rows;
+    DbItem **rows;
 
 } DbSortedRows;
 
@@ -81,7 +81,7 @@ DbRowSet * db_scan_titles(
 int db_lock(Db *db);
 int db_unlock(Db *db);
 void db_rowset_free(DbRowSet *dbrs);
-void db_rowid_free(DbRowId *rid,int free_base);
+void db_rowid_free(DbItem *rid,int free_base);
 void db_free(Db *db);
 
 void db_rowset_dump(int level,char *label,DbRowSet *dbrs);
@@ -95,18 +95,18 @@ DbRowSet **db_crossview_scan_titles(
 void db_free_rowsets_and_dbs(DbRowSet **rowsets);
 int db_full_size();
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);
-void db_auto_remove_row(DbRowId *rid);
-void db_remove_row(DbRowId *rid);
-void db_delete_row_and_media(DbRowId *rid);
+void db_auto_remove_row(DbItem *rid);
+void db_remove_row(DbItem *rid);
+void db_delete_row_and_media(DbItem *rid);
 Array *get_genres();
 char *db_get_field(DbSortedRows *sorted_rows,int idx,char *fieldid);
-void dump_row(char *prefix,DbRowId *rid);
-void dump_all_rows(char *prefix,int num_rows,DbRowId **sorted_rows);
-void dump_all_rows2(char *prefix,int num_rows,DbRowId sorted_rows[]);
-OVS_TIME get_newest_linked_timestamp(DbRowId *rowid);
-void fix_file_paths(int num_row,DbRowId **rows);
+void dump_row(char *prefix,DbItem *rid);
+void dump_all_rows(char *prefix,int num_rows,DbItem **sorted_rows);
+void dump_all_rows2(char *prefix,int num_rows,DbItem sorted_rows[]);
+OVS_TIME get_newest_linked_timestamp(DbItem *rowid);
+void fix_file_paths(int num_row,DbItem **rows);
 char *get_crossview_local_copy(char *path,char *label);
 char *expand_genre(char *genre_keys);
 char *compress_genre(char *genre_names);
-char * db_rowid_get_field(DbRowId *rowid,char *name);
+char * db_rowid_get_field(DbItem *rowid,char *name);
 #endif

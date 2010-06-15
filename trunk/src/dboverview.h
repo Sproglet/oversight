@@ -43,11 +43,11 @@ DbGroupIMDB *db_group_imdb_new(int size);
 void db_group_imdb_free(DbGroupIMDB *g,int free_parent);
 DbGroupIMDB *parse_imdb_list(char *val,int val_len);
 
-unsigned int db_overview_hashf(DbRowId *rid);
-int db_overview_cmp_by_title(DbRowId **rid1,DbRowId **rid2);
-int db_overview_cmp_by_age(DbRowId **rid1,DbRowId **rid2);
-int db_overview_name_eqf(DbRowId *rid1,DbRowId *rid2);
-DbRowId **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbRowId **,DbRowId **));
+unsigned int db_overview_hashf(DbItem *rid);
+int db_overview_cmp_by_title(DbItem **rid1,DbItem **rid2);
+int db_overview_cmp_by_age(DbItem **rid1,DbItem **rid2);
+int db_overview_name_eqf(DbItem *rid1,DbItem *rid2);
+DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbItem **));
 struct hashtable *db_overview_hash_create(DbRowSet **rowsets);
 void db_overview_hash_destroy(struct hashtable *ovw_hash);
 

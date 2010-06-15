@@ -213,7 +213,7 @@ char *macro_fn_poster(MacroCallInfo *call_info) {
         return "?";
     }
 
-    DbRowId *rid=call_info->sorted_rows->rows[0];
+    DbItem *rid=call_info->sorted_rows->rows[0];
 
     if (call_info->sorted_rows->num_rows == 0) {
 
@@ -272,7 +272,7 @@ TRACE;
     int season = -1;
     int i;
     for ( i = 0 ; EMPTY_STR(result) && i < call_info->sorted_rows->num_rows ; i++ ) {
-        DbRowId *rid = call_info->sorted_rows->rows[i];
+        DbItem *rid = call_info->sorted_rows->rows[i];
         if (season == -1 || rid->season != season ) {
             season = rid->season;
             result = get_plot(rid,PLOT_MAIN);
@@ -504,7 +504,7 @@ char *macro_fn_runtime(MacroCallInfo *call_info) {
     int runtime = 0;
     int i;
     for(i = 0 ; i < call_info->sorted_rows->num_rows ; i++ ) {
-        DbRowId *rid = call_info->sorted_rows->rows[i];
+        DbItem *rid = call_info->sorted_rows->rows[i];
         if (rid->runtime > 0 ) {
             runtime = rid->runtime;
             break;
@@ -561,7 +561,7 @@ char *macro_fn_year(MacroCallInfo *call_info) {
    
     // look for item with year set - sometimes tv Pilot does not have airdate 
     for(i = 0 ; i < call_info->sorted_rows->num_rows && year_num <= 1900 ; i++ ) {
-        DbRowId *rid = call_info->sorted_rows->rows[i];
+        DbItem *rid = call_info->sorted_rows->rows[i];
 
         if (rid->category == 'T' ) {
 
@@ -798,7 +798,7 @@ char *macro_fn_tvids(MacroCallInfo *call_info)
     
 }
 
-char *get_rating_stars(DbRowId *rid,int num_stars)
+char *get_rating_stars(DbItem *rid,int num_stars)
 {
 
     double rating = rid->rating;
@@ -867,7 +867,7 @@ char *macro_fn_source(MacroCallInfo *call_info) {
         return "?";
     }
     if (call_info->sorted_rows->num_rows) {
-        DbRowId *r=call_info->sorted_rows->rows[0];
+        DbItem *r=call_info->sorted_rows->rows[0];
         int freeit;
         char *share = share_name(r,&freeit);
         result = add_network_icon(r,share);

@@ -16,9 +16,9 @@
 #define SEP(c)  ((c) == '\t' ) 
 #define TERM(c)  ( ( (c) == '\n' ) || ( (c) == '\r' ) || ( (c) == '\0' ) || (c) == EOF )
 
-static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view);
+static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val_len,int tv_or_movie_view);
 
-void db_rowid_free(DbRowId *rid,int free_base)
+void db_rowid_free(DbItem *rid,int free_base)
 {
 
     int i;
@@ -62,7 +62,7 @@ void db_rowid_free(DbRowId *rid,int free_base)
         FREE(rid);
     }
 }
-void set_title_as_folder(DbRowId *rowid)
+void set_title_as_folder(DbItem *rowid)
 {
 
     char *e=strrchr(rowid->file,'\0');
@@ -101,8 +101,8 @@ void set_title_as_folder(DbRowId *rowid)
 // use fread()
 // use read()
 //
-DbRowId *dbread_and_parse_row(
-        DbRowId *rowid,
+DbItem *dbread_and_parse_row(
+        DbItem *rowid,
         Db *db,
         ReadBuf *fp,
         int *eof,
@@ -234,9 +234,9 @@ DbRowId *dbread_and_parse_row(
     return rowid;
 }
 
-DbRowId *db_rowid_init(DbRowId *rowid,Db *db) {
+DbItem *db_rowid_init(DbItem *rowid,Db *db) {
     int i;
-    memset(rowid,0,sizeof(DbRowId));
+    memset(rowid,0,sizeof(DbItem));
     rowid->rating=0;
 
     rowid->db = db;
@@ -247,14 +247,14 @@ DbRowId *db_rowid_init(DbRowId *rowid,Db *db) {
     }
     return rowid;
 }
-DbRowId *db_rowid_new(Db *db) {
+DbItem *db_rowid_new(Db *db) {
 
-    DbRowId *rowid = MALLOC(sizeof(*rowid));
+    DbItem *rowid = MALLOC(sizeof(*rowid));
     db_rowid_init(rowid,db);
     return rowid;
 }
 
-void db_rowid_dump(DbRowId *rid)
+void db_rowid_dump(DbItem *rid)
 {
     
     time_t t;
@@ -293,7 +293,7 @@ int parse_row(
         int tv_or_movie_view, // true if looking at tv or moview view.
         char *buffer,  // The current buffer contaning a line of input from the database
         Db *db,        // the database
-        DbRowId *rowid// current rowid structure to populate.
+        DbItem *rowid// current rowid structure to populate.
         ) {
 
     assert(db);
@@ -395,7 +395,7 @@ int idlist_index(int id,int size,int *ids)
 #define ROW_SIZE 10000
 
 //changes here should be reflected in catalog.sh.full:createIndexRow()
-void write_row(FILE *fp,DbRowId *rid) {
+void write_row(FILE *fp,DbItem *rid) {
     fprintf(fp,"\t%s\t%ld",DB_FLDID_ID,rid->id);
     fprintf(fp,"\t%s\t%c",DB_FLDID_CATEGORY,rid->category);
     fprintf(fp,"\t%s\t%s",DB_FLDID_INDEXTIME,fmt_timestamp_static(rid->date));
@@ -518,8 +518,8 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 #define FIELD_TYPE_IMDB_LIST 'I'
 
 // Most field ids have the form _a or _ab. This function looks at th first few letters of the 
-// id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbRowId structure.
-static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void **offset,char *type,int *overview) {
+// id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbItem structure.
+static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void **offset,char *type,int *overview) {
 
     register char *p = name;
     *offset=NULL;
@@ -741,7 +741,7 @@ static inline int db_rowid_get_field_offset_type(DbRowId *rowid,char *name,void 
 }
 // Return string representation of a field the way a user would like to see it.
 // TODO: Need to add expand for genre codes.
-char * db_rowid_get_field(DbRowId *rowid,char *name)
+char * db_rowid_get_field(DbItem *rowid,char *name)
 {
 
     char *result=NULL;
@@ -787,7 +787,7 @@ char * db_rowid_get_field(DbRowId *rowid,char *name)
     return result;
 }
 
-static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
+static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val_len,int tv_or_movie_view) {
 
     void *offset;
     char type;
@@ -855,7 +855,7 @@ static inline void db_rowid_set_field(DbRowId *rowid,char *name,char *val,int va
 
 
 
-OVS_TIME *timestamp_ptr(DbRowId *rowid)
+OVS_TIME *timestamp_ptr(DbItem *rowid)
 {
     static int age_field_scantime = -1;
     if (age_field_scantime== -1) {
@@ -868,7 +868,7 @@ OVS_TIME *timestamp_ptr(DbRowId *rowid)
     }
 }
 
-void fix_file_path(DbRowId *rowid)
+void fix_file_path(DbItem *rowid)
 {
     // Append Network share path
     if (rowid->file[0] != '/') {
@@ -884,11 +884,11 @@ void fix_file_path(DbRowId *rowid)
     }
 }
 
-void fix_file_paths(int num_row,DbRowId **rows)
+void fix_file_paths(int num_row,DbItem **rows)
 {
     int i;
     for(i = 0 ; i < num_row ; i++ ) {
-        DbRowId *rid;
+        DbItem *rid;
         for(rid = rows[i] ; rid ; rid = rid->linked ) {
             // Append Network share path
             fix_file_path(rid);

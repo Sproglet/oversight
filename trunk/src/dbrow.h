@@ -95,14 +95,14 @@ typedef struct Dbrowid_struct {
     char *drilldown_view_static;
     enum ViewMode_enum drilldown_mode;
 
-} DbRowId;
+} DbItem;
 
-void db_rowid_dump(DbRowId *rid);
-void fix_file_paths(int num_row,DbRowId **rows);
-void fix_file_path(DbRowId *rowid);
+void db_rowid_dump(DbItem *rid);
+void fix_file_paths(int num_row,DbItem **rows);
+void fix_file_path(DbItem *rowid);
 int idlist_index(int id,int size,int *ids);
-DbRowId *db_rowid_new(struct Db_struct *db);
-DbRowId *db_rowid_init(DbRowId *rowid,struct Db_struct *db);
+DbItem *db_rowid_new(struct Db_struct *db);
+DbItem *db_rowid_init(DbItem *rowid,struct Db_struct *db);
 
 // TODO: 3 functions below need consolidation read_and_parse_row() and
 // parse_row() are usually called after some other time consuming action. eg
@@ -111,15 +111,15 @@ DbRowId *db_rowid_init(DbRowId *rowid,struct Db_struct *db);
 // it may not be simple to include this in consolidation and keep the
 // performance.
 
-DbRowId *read_and_parse_row(
-        DbRowId *rowid,
+DbItem *read_and_parse_row(
+        DbItem *rowid,
         struct Db_struct *db,
         FILE *fp,
         int *eof,
         int tv_or_movie_view // true if looking at tv or moview view.
         );
-DbRowId *dbread_and_parse_row(
-        DbRowId *rowid,
+DbItem *dbread_and_parse_row(
+        DbItem *rowid,
         struct Db_struct *db,
         ReadBuf *fp,
         int *eof,
@@ -131,6 +131,6 @@ int parse_row(
         int tv_or_movie_view, // true if looking at tv or moview view.
         char *buffer,  // The current buffer contaning a line of input from the database
         struct Db_struct *db,        // the database
-        DbRowId *rowid// current rowid structure to populate.
+        DbItem *rowid// current rowid structure to populate.
         );
 #endif

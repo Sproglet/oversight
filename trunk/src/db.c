@@ -784,8 +784,8 @@ void db_rowset_free(DbItemSet *dbrs) {
     int i;
 
     for(i = 0 ; i<dbrs->size ; i++ ) {
-        DbItem *rid = dbrs->rows + i;
-        db_rowid_free(rid,0);
+        DbItem *item = dbrs->rows + i;
+        db_rowid_free(item,0);
     }
 
     FREE(dbrs->rows);
@@ -799,8 +799,8 @@ void db_rowset_dump(int level,char *label,DbItemSet *dbrs) {
         HTML_LOG(level,"Rowset: %s : EMPTY",label);
     } else {
         for(i = 0 ; i<dbrs->size ; i++ ) {
-            DbItem *rid = dbrs->rows + i;
-            HTML_LOG(level,"Rowset: %s [%s - %c - %d %s ]",label,rid->title,rid->category,rid->season,rid->poster);
+            DbItem *item = dbrs->rows + i;
+            HTML_LOG(level,"Rowset: %s [%s - %c - %d %s ]",label,item->title,item->category,item->season,item->poster);
         }
     }
 }
@@ -890,15 +890,15 @@ HTML_LOG(1," begin open db");
                         // resources that are still in use.
                         // pass 1 = user delete/delist action
                         // pass 2 = render / auto delist.
-                        DbItem rid;
-                        parse_row(ALL_IDS,NULL,0,buf,db,&rid);
+                        DbItem item;
+                        parse_row(ALL_IDS,NULL,0,buf,db,&item);
                         if (delete_mode == DELETE_MODE_DELETE || delete_mode == DELETE_MODE_REMOVE) {
-                            add_internal_images_to_delete_queue(&rid);
+                            add_internal_images_to_delete_queue(&item);
                             if (delete_mode == DELETE_MODE_DELETE ) {
-                                delete_media(&rid,1);
+                                delete_media(&item,1);
                             }
                         }
-                        db_rowid_free(&rid,0);
+                        db_rowid_free(&item,0);
                         affected_total++;
 
                     } else if ( regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
@@ -948,22 +948,22 @@ HTML_LOG(1," begin open db");
 
 }
 
-void db_remove_row_helper(DbItem *rid,int mode) {
+void db_remove_row_helper(DbItem *item,int mode) {
     char idlist[20];
-    sprintf(idlist,"%ld",rid->id);
-    db_set_fields_by_source(DB_FLDID_ID,NULL,rid->db->source,idlist,mode);
+    sprintf(idlist,"%ld",item->id);
+    db_set_fields_by_source(DB_FLDID_ID,NULL,item->db->source,idlist,mode);
 }
 // remove item from list, keep media, and keep images. initiated by Auto delist.
-void db_auto_remove_row(DbItem *rid) {
-    db_remove_row_helper(rid,DELETE_MODE_AUTO_REMOVE);
+void db_auto_remove_row(DbItem *item) {
+    db_remove_row_helper(item,DELETE_MODE_AUTO_REMOVE);
 }
 // remove item from list, keep media, delete images. user initiated delist
-void db_remove_row(DbItem *rid) {
-    db_remove_row_helper(rid,DELETE_MODE_REMOVE);
+void db_remove_row(DbItem *item) {
+    db_remove_row_helper(item,DELETE_MODE_REMOVE);
 }
 // remove item from list, delete everything. user initiated delete.
-void db_delete_row_and_media(DbItem *rid) {
-    db_remove_row_helper(rid,DELETE_MODE_DELETE);
+void db_delete_row_and_media(DbItem *item) {
+    db_remove_row_helper(item,DELETE_MODE_DELETE);
 }
 
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode) {
@@ -1026,19 +1026,19 @@ void get_genre_from_string(char *gstr,struct hashtable **h) {
     }
 }
 
-void dump_row(char *prefix,DbItem *rid)
+void dump_row(char *prefix,DbItem *item)
 {
-    HTML_LOG(0,"xx %s  %d:T[%s]S[%d]E[%s]w[%d]",prefix,rid->id,rid->title,rid->season,rid->episode,rid->watched);
+    HTML_LOG(0,"xx %s  %d:T[%s]S[%d]E[%s]w[%d]",prefix,item->id,item->title,item->season,item->episode,item->watched);
 }
 void dump_all_rows(char *prefix,int num_rows,DbItem **sorted_rows)
 {
 #if 0
     int i;
     for(i = 0 ; i <  num_rows ; i ++ ) {
-        DbItem *rid = sorted_rows[i];
-        dump_row(prefix,rid);
-        for( ; rid ; rid = rid->linked ) {
-            dump_row("linked:",rid);
+        DbItem *item = sorted_rows[i];
+        dump_row(prefix,item);
+        for( ; item ; item = item->linked ) {
+            dump_row("linked:",item);
         }
     }
 #endif
@@ -1048,10 +1048,10 @@ void dump_all_rows2(char *prefix,int num_rows,DbItem sorted_rows[])
 #if 0
     int i;
     for(i = 0 ; i <  num_rows ; i ++ ) {
-        DbItem *rid = sorted_rows+i;
-        dump_row(prefix,rid);
-        for( ; rid ; rid = rid->linked ) {
-            dump_row("linked:",rid);
+        DbItem *item = sorted_rows+i;
+        dump_row(prefix,item);
+        for( ; item ; item = item->linked ) {
+            dump_row("linked:",item);
         }
     }
 #endif

@@ -37,13 +37,13 @@ char *href_focus_event_fn(char *function_name_prefix,long function_id,int out_ac
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char *get_theme_image_tag(char *image_name,char *attr);
 void util_free_char_array(int size,char **a);
-char *get_date_static(DbItem *rid);
+char *get_date_static(DbItem *item);
 DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num);
-static inline void set_drilldown_view(DbItem *rid);
+static inline void set_drilldown_view(DbItem *item);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
-void get_watched_counts(DbItem *rid,int *watchedp,int *unwatchedp);
+void get_watched_counts(DbItem *item,int *watchedp,int *unwatchedp);
 char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
@@ -57,7 +57,7 @@ char *get_play_tvid(char *text) {
 }
 
 // Return a full path 
-char *get_path(DbItem *rid,char *path,int *freepath) {
+char *get_path(DbItem *item,char *path,int *freepath) {
 
 TRACE;
 
@@ -78,14 +78,14 @@ TRACE;
 
     } else {
 
-        char *d=util_dirname(rid->file);
+        char *d=util_dirname(item->file);
        ovs_asprintf(&path_relative_to_host_nmt,"%s/%s",d,path);
        FREE(d);
        *freepath = 1;
     }
 
     int free2;
-    mounted_path=get_mounted_path(rid->db->source,path_relative_to_host_nmt,&free2);
+    mounted_path=get_mounted_path(item->db->source,path_relative_to_host_nmt,&free2);
     if (free2) {
         *freepath = 1;
     }
@@ -1374,7 +1374,7 @@ char *check_path(char *format, ... ) {
     return p;
 }
 
-char *internal_image_path_static(DbItem *rid,ImageType image_type)
+char *internal_image_path_static(DbItem *item,ImageType image_type)
 {
     // No pictures on filesystem - look in db
     // first build the name 
@@ -1388,7 +1388,7 @@ char *internal_image_path_static(DbItem *rid,ImageType image_type)
     p += sprintf(p,"ovs:%s/%s",
             (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
             catalog_val("catalog_poster_prefix"));
-    char *t=rid->title;
+    char *t=item->title;
 
     if (t) {
         // Add title replacing all runs of non-alnum with single _
@@ -1404,42 +1404,42 @@ char *internal_image_path_static(DbItem *rid,ImageType image_type)
             t++;
         }
     }
-    if (rid->category == 'T' ) {
-        p+= sprintf(p,"_%d_%d.jpg",rid->year,rid->season);
+    if (item->category == 'T' ) {
+        p+= sprintf(p,"_%d_%d.jpg",item->year,item->season);
     } else {
         char *imdbid=NULL;
-        if (!EMPTY_STR(rid->url ) ) {
-           if ( util_starts_with(rid->url,"tt")) {
-               imdbid = rid->url;
+        if (!EMPTY_STR(item->url ) ) {
+           if ( util_starts_with(item->url,"tt")) {
+               imdbid = item->url;
            } else {
-               imdbid = strstr(rid->url,"/tt");
+               imdbid = strstr(item->url,"/tt");
                if (imdbid && isdigit(imdbid[3])) imdbid ++;
            }
         }
         HTML_LOG(1,"imdbid=[%s]",imdbid);
         if (imdbid) {
-           p += sprintf(p,"_%d_%.9s.jpg",rid->year,imdbid);
+           p += sprintf(p,"_%d_%.9s.jpg",item->year,imdbid);
             HTML_LOG(1,"path=[%s]",path);
         } else {
             // Blank it all out
             *path = '\0';
-            HTML_LOG(2,"internal_image_path_static [%s] = NULL",rid->title);
+            HTML_LOG(2,"internal_image_path_static [%s] = NULL",item->title);
             return NULL;
         }
     }
-    HTML_LOG(2,"internal_image_path_static [%s] = [%s]",rid->title,path);
+    HTML_LOG(2,"internal_image_path_static [%s] = [%s]",item->title,path);
     assert(path[INTERNAL_IMAGE_PATH_LEN] == '\0');
     return path;
 }
 
 char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview);
-char *get_existing_internal_image_path(DbItem *rid,ImageType image_type,char *newview);
+char *get_existing_internal_image_path(DbItem *item,ImageType image_type,char *newview);
 
 char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview)
 {
 
     char *path = NULL;
-    DbItem *rid = sorted_rows[0];
+    DbItem *item = sorted_rows[0];
     char *suffix ;     // given movie.avi look for movie.suffix.(jpg|png)
     char*default_name; // given movie.avi look for default_name.(jpg|png)
 
@@ -1457,7 +1457,7 @@ char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,ch
     int freefile;
     // First check the filesystem. We do this via the mounted path.
     // This requires that the remote file is already mounted.
-    char *file = get_path(rid,rid->file,&freefile);
+    char *file = get_path(item,item->file,&freefile);
 TRACE;
     char *dir;
    
@@ -1470,7 +1470,7 @@ TRACE;
         char *dot = NULL;
 
         // First look for file.modifier.jpg file.modifier.png
-        if (rid->ext != NULL) { 
+        if (item->ext != NULL) { 
             dot = strrchr(file,'.');
         }
 
@@ -1523,14 +1523,14 @@ char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,Image
 /*
  * Get the full internal image path if it exists.
  */
-char *get_existing_internal_image_path(DbItem *rid,ImageType image_type,char *newview)
+char *get_existing_internal_image_path(DbItem *item,ImageType image_type,char *newview)
 {
-    char *path = internal_image_path_static(rid,image_type);
+    char *path = internal_image_path_static(item,image_type);
 
 TRACE;
     if (path) {
         int freepath=0;
-        path = get_path(rid,path,&freepath);
+        path = get_path(item,path,&freepath);
 
         if (image_type == FANART_IMAGE ) {
             char *modifier=IMAGE_EXT_HD;
@@ -1768,7 +1768,7 @@ char *trim_title(char *title) {
 }
 
 
-char *select_checkbox(DbItem *rid,char *text) {
+char *select_checkbox(DbItem *item,char *text) {
     char *result = NULL;
     char *select = query_select_val();
 
@@ -1776,9 +1776,9 @@ char *select_checkbox(DbItem *rid,char *text) {
 
         g_item_count ++;
 
-        char *id_list = build_id_list(rid);
+        char *id_list = build_id_list(item);
 
-        if (rid->watched && STRCMP(select,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
+        if (item->watched && STRCMP(select,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
 
             ovs_asprintf(&result,
                 "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" CHECKED >"
@@ -1942,7 +1942,7 @@ HTML_LOG(0,"mouse[%s]",mouse);
 
 
 // Count number of unique seasons in the list.
-int season_count(DbItem *rid) {
+int season_count(DbItem *item) {
 #define WORDS 8
 #define WORDBITS 16
 
@@ -1952,13 +1952,13 @@ int season_count(DbItem *rid) {
     unsigned long bitmask[WORDS];
     memset(bitmask,0,WORDS * sizeof(long));
 
-    //HTML_LOG(0,"Season count [%s]",rid->title);
-    for(  ; rid ; rid=rid->linked) {
-        if (rid->category == 'T') {
-            i=rid->season / WORDBITS;
-            j=rid->season % WORDBITS;
+    //HTML_LOG(0,"Season count [%s]",item->title);
+    for(  ; item ; item=item->linked) {
+        if (item->category == 'T') {
+            i=item->season / WORDBITS;
+            j=item->season % WORDBITS;
             bitmask[i] |= (1 << j ); // allow for season 0 - prequels - pilots.
-            //HTML_LOG(0,"%d -> [%d][%d]=%lx",rid->season,i,j,bitmask[i]);
+            //HTML_LOG(0,"%d -> [%d][%d]=%lx",item->season,i,j,bitmask[i]);
         }
     }
 
@@ -1975,20 +1975,20 @@ int season_count(DbItem *rid) {
     return total;
 }
 
-int group_count(DbItem *rid) {
+int group_count(DbItem *item) {
     int i=0;
-    for(  ; rid ; rid=rid->linked) {
+    for(  ; item ; item=item->linked) {
         i++;
     }
     return i;
 }
 
-void get_watched_counts(DbItem *rid,int *watchedp,int *unwatchedp) 
+void get_watched_counts(DbItem *item,int *watchedp,int *unwatchedp) 
 {
     int watched=0;
     int unwatched=0;
-    for(  ; rid ; rid=rid->linked) {
-        if (rid->watched ) {
+    for(  ; item ; item=item->linked) {
+        if (item->watched ) {
             watched++;
         } else {
             unwatched++;
@@ -1998,15 +1998,15 @@ void get_watched_counts(DbItem *rid,int *watchedp,int *unwatchedp)
     if (unwatchedp) *unwatchedp = unwatched;
 }
     
-int unwatched_count(DbItem *rid) {
+int unwatched_count(DbItem *item) {
     int i=0;
-    get_watched_counts(rid,NULL,&i);
+    get_watched_counts(item,NULL,&i);
     return i;
 }
 
-int watched_count(DbItem *rid) {
+int watched_count(DbItem *item) {
     int i=0;
-    get_watched_counts(rid,&i,NULL);
+    get_watched_counts(item,&i,NULL);
     return i;
 }
 
@@ -2496,13 +2496,13 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
     return result;
 }
 
-static inline void set_drilldown_view(DbItem *rid) {
+static inline void set_drilldown_view(DbItem *item) {
 
-    if (rid->drilldown_mode == UNSET_VIEW_ID) {
+    if (item->drilldown_mode == UNSET_VIEW_ID) {
         DbItem *rid2;
         ViewMode m;
 
-        switch (rid->category) {
+        switch (item->category) {
             case 'T':
                 m = TV_VIEW_ID;
                 break;
@@ -2514,15 +2514,15 @@ static inline void set_drilldown_view(DbItem *rid) {
                 break;
         }
 
-        for( rid2=rid->linked ; rid2 ; rid2=rid2->linked ) {
+        for( rid2=item->linked ; rid2 ; rid2=rid2->linked ) {
 
-            if (rid2->category != rid->category ) {
+            if (rid2->category != item->category ) {
                 m = MIXED_VIEW_ID;
                 break;
             } else {
                 switch (rid2->category) {
                     case 'T':
-                        if (rid->season != rid2->season) {
+                        if (item->season != rid2->season) {
                             m = TVBOXSET_VIEW_ID;
                         }
                         break;
@@ -2536,8 +2536,8 @@ static inline void set_drilldown_view(DbItem *rid) {
                 }
             }
         }
-        rid->drilldown_mode = m;
-        rid->drilldown_view_static = view_mode_to_str(m);
+        item->drilldown_mode = m;
+        item->drilldown_view_static = view_mode_to_str(m);
     }
 }
 
@@ -2662,15 +2662,15 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
             i = c * rows + r ;
             if ( i < numids ) {
 
-                DbItem *rid = row_ids[i];
+                DbItem *item = row_ids[i];
 
                 int watched,unwatched;
-                get_watched_counts(rid,&watched,&unwatched);
+                get_watched_counts(item,&watched,&unwatched);
 
-                //HTML_LOG(0,"xx %s age = %x ",rid->title,*timestamp_ptr(rid));
+                //HTML_LOG(0,"xx %s age = %x ",item->title,*timestamp_ptr(item));
 
-                char *title = get_simple_title(rid);
-                if (rid->category == 'T' ) {
+                char *title = get_simple_title(item);
+                if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s',%d,%d); }\n",
                             i+1+offset,title,idlist[i],
@@ -3436,18 +3436,18 @@ void util_free_char_array(int size,char **a)
     FREE(a);
 }
 
-char *best_eptitle(DbItem *rid,int *free_title) {
+char *best_eptitle(DbItem *item,int *free_title) {
 
     *free_title=0;
-    char *title=rid->eptitle;
+    char *title=item->eptitle;
     if (title == NULL || !*title) {
-        title=rid->eptitle_imdb;
+        title=item->eptitle_imdb;
     }
     if (title == NULL || !*title) {
-        title=rid->additional_nfo;
+        title=item->additional_nfo;
     }
     if (title == NULL || !*title) {
-        title=util_basename(rid->file);
+        title=util_basename(item->file);
         *free_title=1;
     }
     return title;
@@ -3483,12 +3483,12 @@ TRACE;
     char *main_genre=NULL;
 
     for(i = 0 ; i < num_rows ; i++ ) {
-        DbItem *rid = sorted_rows[i];
-        if (EMPTY_STR(main_plot) && !EMPTY_STR(rid->plottext[PLOT_MAIN])) {
-            main_plot = rid->plottext[PLOT_MAIN];
+        DbItem *item = sorted_rows[i];
+        if (EMPTY_STR(main_plot) && !EMPTY_STR(item->plottext[PLOT_MAIN])) {
+            main_plot = item->plottext[PLOT_MAIN];
         }
-        if (EMPTY_STR(main_genre) && !EMPTY_STR(rid->genre)) {
-            main_genre = rid->genre;
+        if (EMPTY_STR(main_genre) && !EMPTY_STR(item->genre)) {
+            main_genre = item->genre;
         }
     }
 
@@ -3509,15 +3509,15 @@ TRACE;
 HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
-        DbItem *rid = sorted_rows[i];
-        char *date = get_date_static(rid);
+        DbItem *item = sorted_rows[i];
+        char *date = get_date_static(item);
         int free_title=0;
-        char *title = best_eptitle(rid,&free_title);
+        char *title = best_eptitle(item,&free_title);
 
         int freeshare=0;
-        char *share = share_name(rid,&freeshare);
+        char *share = share_name(item,&freeshare);
 
-        tmp = ep_js_fn(result,i+1,idlist[i],NVL(rid->episode),NVL(rid->plottext[PLOT_EPISODE]),rid->file,title,date,share);
+        tmp = ep_js_fn(result,i+1,idlist[i],NVL(item->episode),NVL(item->plottext[PLOT_EPISODE]),item->file,title,date,share);
         FREE(result);
         if (free_title) FREE(title);
         if (freeshare) FREE(share);
@@ -3536,7 +3536,7 @@ TRACE;
     return result;
 }
 
-char *get_date_static(DbItem *rid)
+char *get_date_static(DbItem *item)
 {
     static char *old_date_format=NULL;
     static char *recent_date_format=NULL;
@@ -3552,9 +3552,9 @@ char *get_date_static(DbItem *rid)
     static char date_buf[DATE_BUF_SIZ];
 
 
-    OVS_TIME date=rid->airdate;
+    OVS_TIME date=item->airdate;
     if (date<=0) {
-        date=rid->airdate_imdb;
+        date=item->airdate_imdb;
     }
     *date_buf='\0';
     if (date > 0) {
@@ -3581,15 +3581,15 @@ DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,i
     DbItem **new_list = CALLOC(max_new+1,sizeof(DbItem *));
 
     for ( i = start ; total < max_new && i < num_rows ; i++ ) {
-        DbItem *rid = row_ids[i];
-        if (rid) {
-            if (rid->delist_checked) {
-                new_list[total++] = rid;
+        DbItem *item = row_ids[i];
+        if (item) {
+            if (item->delist_checked) {
+                new_list[total++] = item;
             } else {
-                if (!all_linked_rows_delisted(rid)) {
-                    new_list[total++] = rid;
+                if (!all_linked_rows_delisted(item)) {
+                    new_list[total++] = item;
                 }
-                rid->delist_checked = 1;
+                item->delist_checked = 1;
             }
         }
     }
@@ -3653,42 +3653,42 @@ TRACE;
                 int function_id = i+1;
                 char *episode_col = NULL;
 
-                DbItem *rid = sorted_rows[i];
+                DbItem *item = sorted_rows[i];
 
                 if (*select) {
                     episode_col = select_checkbox(
-                            rid,
-                            rid->episode);
+                            item,
+                            item->episode);
                 } else {
-                    char *ep = rid->episode;
+                    char *ep = item->episode;
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
                     char *href_attr = href_focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
                     episode_col = vod_link(
-                            rid,
+                            item,
                             ep,"",
-                            rid->db->source,
-                            rid->file,
+                            item->db->source,
+                            item->file,
                             ep,
                             NVL(href_attr),
-                            watched_style(rid));
+                            watched_style(item));
                     FREE(href_attr);
                 }
 
                 int free_eptitle=0;
                 char *episode_title = "";
                 if (show_episode_titles) {
-                    episode_title = best_eptitle(rid,&free_eptitle);
+                    episode_title = best_eptitle(item,&free_eptitle);
                 }
 
                 char *title_txt=NULL;
 
-                int is_proper = show_repacks && (util_strcasestr(rid->file,"proper"));
+                int is_proper = show_repacks && (util_strcasestr(item->file,"proper"));
 
-                int is_repack = show_repacks && (util_strcasestr(rid->file,"repack"));
+                int is_repack = show_repacks && (util_strcasestr(item->file,"repack"));
 
-                char *icon_text = icon_link(rid->file);
+                char *icon_text = icon_link(item->file);
 
                 ovs_asprintf(&title_txt,"%s%s%s",
                         episode_title,
@@ -3701,15 +3701,15 @@ TRACE;
 
 
                 //Date
-                char *date_buf=get_date_static(rid);
+                char *date_buf=get_date_static(item);
 
 
                 //network icon
-                char *network_icon = add_network_icon(rid,"");
+                char *network_icon = add_network_icon(item,"");
 
                 //Put Episode/Title/Date together in new cell.
                 char td_class[10];
-                sprintf(td_class,"ep%d%d",rid->watched,i%2);
+                sprintf(td_class,"ep%d%d",item->watched,i%2);
                 char *tmp;
 
                 char *td_plot_attr = td_mouse_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
@@ -3727,7 +3727,7 @@ TRACE;
 
                         td_class, width_txt_and_date, td_plot_attr,
 
-                        watched_style(rid), (network_icon?network_icon:""),
+                        watched_style(item), (network_icon?network_icon:""),
                         title_txt,
                         (show_episode_dates && *date_buf?date_buf:"")
                         );
@@ -3919,8 +3919,8 @@ void xx_dump_genre(char *file,int line,int num,DbItem **rows) {
     int i;
     HTML_LOG(0,"xx genre dump [%s:%d] num=%d",file,line,num);
     for(i = 0 ; i < num ; i++ ) {
-        DbItem *rid = rows[i];
-        HTML_LOG(0,"%d[%s][%s]",rid->id,rid->title,rid->genre);
+        DbItem *item = rows[i];
+        HTML_LOG(0,"%d[%s][%s]",item->id,item->title,item->genre);
     }
 }
 

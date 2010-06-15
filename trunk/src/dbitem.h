@@ -97,7 +97,7 @@ typedef struct Dbrowid_struct {
 
 } DbItem;
 
-void db_rowid_dump(DbItem *rid);
+void db_rowid_dump(DbItem *item);
 void fix_file_paths(int num_row,DbItem **rows);
 void fix_file_path(DbItem *rowid);
 int idlist_index(int id,int size,int *ids);

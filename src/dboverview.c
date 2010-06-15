@@ -48,42 +48,42 @@ void db_group_imdb_free(DbGroupIMDB *g,int free_parent)
     }
 }
 
-int in_db_custom_group(DbItem *rid,DbGroupCustom *g)
+int in_db_custom_group(DbItem *item,DbGroupCustom *g)
 {
     html_error("in_db_custom_group not implemented");
     return 0;
 }
 
-int in_db_name_season_group(DbItem *rid,DbGroupNameSeason *g)
+int in_db_name_season_group(DbItem *item,DbGroupNameSeason *g)
 {
     int result = 0 ;
-    if (rid->category == 'T' ) {
-        if (g->season <= 0 || g->season == rid->season) {
-            result = STRCMP(g->name,rid->title) == 0;
+    if (item->category == 'T' ) {
+        if (g->season <= 0 || g->season == item->season) {
+            result = STRCMP(g->name,item->title) == 0;
         }
     }
     return result;
 }
 
-int in_db_imdb_group(DbItem *rid,DbGroupIMDB *g)
+int in_db_imdb_group(DbItem *item,DbGroupIMDB *g)
 {
     int result = 0 ;
-    if (g && rid->external_id ) {
-        result = bchop(rid->external_id,g->dbgi_size,g->dbgi_ids) >= 0;
+    if (g && item->external_id ) {
+        result = bchop(item->external_id,g->dbgi_size,g->dbgi_ids) >= 0;
     } 
     return result;
 }
 
-int in_db_group(DbItem *rid,DbGroupDef *g)
+int in_db_group(DbItem *item,DbGroupDef *g)
 {
     int result = 0;
     switch(g->dbg_type) {
         case DB_GROUP_BY_CUSTOM_TAG:
-            result = in_db_custom_group(rid,&(g->u.dbgc));
+            result = in_db_custom_group(item,&(g->u.dbgc));
         case DB_GROUP_BY_NAME_TYPE_SEASON:
-            result = in_db_name_season_group(rid,&(g->u.dbgns));
+            result = in_db_name_season_group(item,&(g->u.dbgns));
         case DB_GROUP_BY_IMDB_LIST:
-            result = in_db_imdb_group(rid,&(g->u.dbgi));
+            result = in_db_imdb_group(item,&(g->u.dbgi));
         default:
             assert(0);
     }
@@ -163,10 +163,10 @@ int db_overview_name_eqf(DbItem *rid1,DbItem *rid2) {
     }
 }
 // overview hash function based on titles only. This is used in boxset mode.
-unsigned int db_overview_name_hashf(void *rid) {
+unsigned int db_overview_name_hashf(void *item) {
 
     unsigned int h;
-    h  = stringhash(((DbItem *)rid)->title);
+    h  = stringhash(((DbItem *)item)->title);
     return h;
 }
 
@@ -368,7 +368,7 @@ static inline int in_same_db_imdb_group(DbItem *rid1,DbItem *rid2,MovieBoxsetMod
 }
 
 #define DBR(x) ((DbItem *)(x))
-unsigned int db_overview_general_hashf(void *rid)
+unsigned int db_overview_general_hashf(void *item)
 {
     static int tvbox=-1;
     static MovieBoxsetMode moviebox=MOVIE_BOXSETS_UNSET;
@@ -380,58 +380,58 @@ unsigned int db_overview_general_hashf(void *rid)
         moviebox = movie_boxset_mode();
         mode = get_view_mode();
     }
-    switch(DBR(rid)->category) {
+    switch(DBR(item)->category) {
         case 'T':
         switch(mode) {
             case MENU_VIEW_ID:
                 if (tvbox) {
-                    h  = stringhash(DBR(rid)->title);
-                    HASH_ADD(h,DBR(rid)->year);
+                    h  = stringhash(DBR(item)->title);
+                    HASH_ADD(h,DBR(item)->year);
                 } else {
-                    h  = stringhash(DBR(rid)->title);
-                    HASH_ADD(h,DBR(rid)->year);
-                    HASH_ADD(h,DBR(rid)->season);
+                    h  = stringhash(DBR(item)->title);
+                    HASH_ADD(h,DBR(item)->year);
+                    HASH_ADD(h,DBR(item)->season);
                 }
                 break;
             case TVBOXSET_VIEW_ID:
-                h  = stringhash(DBR(rid)->title);
-                HASH_ADD(h,DBR(rid)->year);
-                HASH_ADD(h,DBR(rid)->season);
+                h  = stringhash(DBR(item)->title);
+                HASH_ADD(h,DBR(item)->year);
+                HASH_ADD(h,DBR(item)->season);
                 break;
             case TV_VIEW_ID:
-                h  = stringhash(DBR(rid)->file);
+                h  = stringhash(DBR(item)->file);
                 break;
             case ADMIN_VIEW_ID:
-                h  = stringhash(DBR(rid)->file);
+                h  = stringhash(DBR(item)->file);
                 break;
             default:
-                html_error("unknown view for item %d[%s - %s]",DBR(rid)->id,DBR(rid)->title,DBR(rid)->file);
+                html_error("unknown view for item %d[%s - %s]",DBR(item)->id,DBR(item)->title,DBR(item)->file);
                 assert(0);
         } 
         break;
     case 'M':
         switch(mode) {
             case MENU_VIEW_ID:
-                if (DBR(rid)->external_id == 0) {
+                if (DBR(item)->external_id == 0) {
                     // External ID not set - just use the title
-                    h  = stringhash(DBR(rid)->file);
+                    h  = stringhash(DBR(item)->file);
                 } else {
                     switch(moviebox) {
                         case MOVIE_BOXSETS_FIRST:
-                            if (DBR(rid)->comes_after == NULL) {
+                            if (DBR(item)->comes_after == NULL) {
                                 // If it doesnt follow anything then it is the main item
-                                h = DBR(rid)->external_id ;
+                                h = DBR(item)->external_id ;
                             } else {
-                                h = DBR(rid)->comes_after->dbgi_ids[0];
+                                h = DBR(item)->comes_after->dbgi_ids[0];
                             }
                             break;
                         case MOVIE_BOXSETS_LAST:
-                            if (DBR(rid)->comes_before == NULL) {
+                            if (DBR(item)->comes_before == NULL) {
                                 // If nothing follows it is the last item
-                                h = DBR(rid)->external_id ;
+                                h = DBR(item)->external_id ;
                             } else {
-                                int size = DBR(rid)->comes_before->dbgi_size;
-                                h = DBR(rid)->comes_before->dbgi_ids[size-1];
+                                int size = DBR(item)->comes_before->dbgi_size;
+                                h = DBR(item)->comes_before->dbgi_ids[size-1];
                             }
                             break;
                         case MOVIE_BOXSETS_ANY:
@@ -443,11 +443,11 @@ unsigned int db_overview_general_hashf(void *rid)
                             break;
                         case MOVIE_BOXSETS_NONE:
                             // All movies are unique by file
-                            h  = stringhash(DBR(rid)->file);
+                            h  = stringhash(DBR(item)->file);
                             break;
                         default:
                             // All movies are unique by file
-                            h  = stringhash(DBR(rid)->file);
+                            h  = stringhash(DBR(item)->file);
                             break;
                     }
                 }
@@ -455,15 +455,15 @@ unsigned int db_overview_general_hashf(void *rid)
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
             case ADMIN_VIEW_ID:
-                h  = stringhash(DBR(rid)->file);
+                h  = stringhash(DBR(item)->file);
                 break;
             default:
-                html_error("unknown view for item %d[%s - %s]",DBR(rid)->id,DBR(rid)->title,DBR(rid)->file);
+                html_error("unknown view for item %d[%s - %s]",DBR(item)->id,DBR(item)->title,DBR(item)->file);
                 assert(0);
         } 
         break;
     default:
-        h  = stringhash(((DbItem *)rid)->file);
+        h  = stringhash(((DbItem *)item)->file);
     }
     return h;
 
@@ -562,38 +562,38 @@ TRACE;
 
 
 TRACE;
-                DbItem *rid = (*rowset_ptr)->rows+i;
+                DbItem *item = (*rowset_ptr)->rows+i;
 
-                HTML_LOG(2,"dbg: overview merging [%s][%s]",rid->db->source,rid->title);
+                HTML_LOG(2,"dbg: overview merging [%s][%s]",item->db->source,item->title);
 
 
 TRACE;
-                DbItem *match = hashtable_search(overview,rid);
+                DbItem *match = hashtable_search(overview,item);
 TRACE;
 
                 if (match) {
 TRACE;
 
-                    HTML_LOG(1,"overview: match [%s] with [%s]",rid->title,match->title);
+                    HTML_LOG(1,"overview: match [%s] with [%s]",item->title,match->title);
 
                     //Move most recent age to the first overview item
-                    if (*timestamp_ptr(rid) > *timestamp_ptr(match) ) {
-                        *timestamp_ptr(match) = *timestamp_ptr(rid);
+                    if (*timestamp_ptr(item) > *timestamp_ptr(match) ) {
+                        *timestamp_ptr(match) = *timestamp_ptr(item);
                     }
 
-                    // Add rid to linked list at match->linked
-                    rid->linked = match->linked;
-                    match->linked = rid;
+                    // Add item to linked list at match->linked
+                    item->linked = match->linked;
+                    match->linked = item;
                     match->link_count++;
 
                 } else {
 TRACE;
 
-                    HTML_LOG(3,"overview: new entry [%s]",rid->title);
-                    hashtable_insert(overview,rid,rid);
+                    HTML_LOG(3,"overview: new entry [%s]",item->title);
+                    hashtable_insert(overview,item,item);
                 }
 TRACE;
-                //HTML_LOG(3,"dbg done [%s]",rid->title);
+                //HTML_LOG(3,"dbg done [%s]",item->title);
             }
 TRACE;
         }

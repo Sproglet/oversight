@@ -43,7 +43,7 @@ DbGroupIMDB *db_group_imdb_new(int size);
 void db_group_imdb_free(DbGroupIMDB *g,int free_parent);
 DbGroupIMDB *parse_imdb_list(char *val,int val_len);
 
-unsigned int db_overview_hashf(DbItem *rid);
+unsigned int db_overview_hashf(DbItem *item);
 int db_overview_cmp_by_title(DbItem **rid1,DbItem **rid2);
 int db_overview_cmp_by_age(DbItem **rid1,DbItem **rid2);
 int db_overview_name_eqf(DbItem *rid1,DbItem *rid2);

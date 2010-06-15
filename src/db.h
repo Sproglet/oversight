@@ -81,7 +81,7 @@ DbItemSet * db_scan_titles(
 int db_lock(Db *db);
 int db_unlock(Db *db);
 void db_rowset_free(DbItemSet *dbrs);
-void db_rowid_free(DbItem *rid,int free_base);
+void db_rowid_free(DbItem *item,int free_base);
 void db_free(Db *db);
 
 void db_rowset_dump(int level,char *label,DbItemSet *dbrs);
@@ -95,12 +95,12 @@ DbItemSet **db_crossview_scan_titles(
 void db_free_rowsets_and_dbs(DbItemSet **rowsets);
 int db_full_size();
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);
-void db_auto_remove_row(DbItem *rid);
-void db_remove_row(DbItem *rid);
-void db_delete_row_and_media(DbItem *rid);
+void db_auto_remove_row(DbItem *item);
+void db_remove_row(DbItem *item);
+void db_delete_row_and_media(DbItem *item);
 Array *get_genres();
 char *db_get_field(DbSortedRows *sorted_rows,int idx,char *fieldid);
-void dump_row(char *prefix,DbItem *rid);
+void dump_row(char *prefix,DbItem *item);
 void dump_all_rows(char *prefix,int num_rows,DbItem **sorted_rows);
 void dump_all_rows2(char *prefix,int num_rows,DbItem sorted_rows[]);
 OVS_TIME get_newest_linked_timestamp(DbItem *rowid);

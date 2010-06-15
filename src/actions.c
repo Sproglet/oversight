@@ -116,27 +116,27 @@ static void delete_file(char *dir,char *name) {
 }
 
 
-void delete_media(DbItem *rid,int delete_related) {
+void delete_media(DbItem *item,int delete_related) {
 
 
     Array *names_to_delete=NULL;
-    char *dir = util_dirname(rid->file);
+    char *dir = util_dirname(item->file);
 
     HTML_LOG(1,"%s %d begin delete_media",__FILE__,__LINE__);
-    if(is_dvd_folder(rid->file)) {
+    if(is_dvd_folder(item->file)) {
         // VIDEO_TS
-        if (!exists_file_in_dir(rid->file,"video_ts") &&  !exists_file_in_dir(rid->file,"VIDEO_TS")) {
+        if (!exists_file_in_dir(item->file,"video_ts") &&  !exists_file_in_dir(item->file,"VIDEO_TS")) {
             HTML_LOG(0,"folder doesnt look like dvd floder");
             return;
         }
-        util_rmdir(rid->file,".");
+        util_rmdir(item->file,".");
         names_to_delete = array_new(free);
     } else {
 
-        HTML_LOG(1,"delete main file [%s]",rid->file);
-        unlink(rid->file);
+        HTML_LOG(1,"delete main file [%s]",item->file);
+        unlink(item->file);
 
-        names_to_delete = split(rid->parts,"/",0);
+        names_to_delete = split(item->parts,"/",0);
 
         if (delete_related) {
 
@@ -160,11 +160,11 @@ void delete_media(DbItem *rid,int delete_related) {
     }
 
     //Delete the following files at the end if not used.
-    delete_queue_add(rid,rid->nfo);
+    delete_queue_add(item,item->nfo);
 
     // Delete all files with the same prefix.
     struct dirent *dp;
-    char *prefix = util_basename_no_ext(rid->file);
+    char *prefix = util_basename_no_ext(item->file);
     DIR *d = opendir(dir);
     if (d != NULL) {
         while((dp = readdir(d)) != NULL) {
@@ -191,7 +191,7 @@ void delete_media(DbItem *rid,int delete_related) {
     }
 
     // Delete the folder only if it's empty.
-    delete_queue_add(rid,dir);
+    delete_queue_add(item,dir);
 
     array_free(names_to_delete);
     FREE(dir);
@@ -202,10 +202,10 @@ void delete_media(DbItem *rid,int delete_related) {
  * Return list of images for this item - list will NOT free itself
  * The images will be passed to the delete queue.
  */
-static void insert_image_list(DbItem *rid,Array *a) {
+static void insert_image_list(DbItem *item,Array *a) {
 
 TRACE;
-    char *poster = internal_image_path_static(rid,POSTER_IMAGE);
+    char *poster = internal_image_path_static(item,POSTER_IMAGE);
     //HTML_LOG(0,"poster[%s]",poster);
     if (poster) {
         array_add(a,STRDUP(poster));
@@ -213,7 +213,7 @@ TRACE;
         array_add(a,replace_all(poster,"\\.jpg$",IMAGE_EXT_THUMB_BOXSET,0));
     }
 
-    char *fanart = internal_image_path_static(rid,FANART_IMAGE);
+    char *fanart = internal_image_path_static(item,FANART_IMAGE);
     //HTML_LOG(0,"fanart[%s]",fanart);
     if (fanart) {
         array_add(a,STRDUP(fanart));
@@ -223,40 +223,40 @@ TRACE;
     }
 }
 
-void remove_internal_images_from_delete_queue(DbItem *rid)
+void remove_internal_images_from_delete_queue(DbItem *item)
 {
     int i;
 TRACE;
     if (g_delete_queue != NULL ) {
         Array *a = array_new(free);
-        insert_image_list(rid,a);
+        insert_image_list(item,a);
         for(i=0 ; i < a->size ; i++ ) {
-            delete_queue_unqueue(rid,(char *)(a->array[i]));
+            delete_queue_unqueue(item,(char *)(a->array[i]));
         }
         array_free(a);
     }
 }
 
-void add_internal_images_to_delete_queue(DbItem *rid)
+void add_internal_images_to_delete_queue(DbItem *item)
 {
     int i;
     Array *a = array_new(NULL); // memory is taken over by delete queue
-    insert_image_list(rid,a);
+    insert_image_list(item,a);
     for(i=0 ; i < a->size ; i++ ) {
-        delete_queue_add(rid,(char *)(a->array[i]));
+        delete_queue_add(item,(char *)(a->array[i]));
     }
     array_free(a);
 }
 
 
 
-void delete_queue_add(DbItem *rid,char *path) {
+void delete_queue_add(DbItem *item,char *path) {
 
     if (path) {
         int freepath;
 
 
-        char *real_path=get_path(rid,path,&freepath);
+        char *real_path=get_path(item,path,&freepath);
 
         if (g_delete_queue == NULL) {
             g_delete_queue = string_string_hashtable("delete queue",16);
@@ -266,7 +266,7 @@ void delete_queue_add(DbItem *rid,char *path) {
                 FREE(real_path);
             }
         } else {
-            HTML_LOG(0,"delete_queue: pending delete item: [%s] of [%d:%s]",real_path,rid->id,rid->title);
+            HTML_LOG(0,"delete_queue: pending delete item: [%s] of [%d:%s]",real_path,item->id,item->title);
             if(!freepath) {
                 real_path = STRDUP(real_path);
             }
@@ -277,12 +277,12 @@ void delete_queue_add(DbItem *rid,char *path) {
 
 
 //Remove the filename from the delete queue
-void delete_queue_unqueue(DbItem *rid,char *path) {
+void delete_queue_unqueue(DbItem *item,char *path) {
     if (g_delete_queue != NULL && path != NULL ) {
         int freepath;
-        char *real_path = get_path(rid,path,&freepath);
+        char *real_path = get_path(item,path,&freepath);
         if (hashtable_remove(g_delete_queue,real_path,1) ) {
-            HTML_LOG(0,"delete_queue: unqueuing [%s] in use by [%d:%s]",real_path,rid->id,rid->title);
+            HTML_LOG(0,"delete_queue: unqueuing [%s] in use by [%d:%s]",real_path,item->id,item->title);
         }
         if (freepath) FREE(real_path);
     }

@@ -56,16 +56,16 @@ FILE *plot_open(Db*db)
 #define LOG_LVL 1
 
 #define MAX_PLOT_KEY_IDLEN 20
-void set_plot_keys(DbItem *rid) {
+void set_plot_keys(DbItem *item) {
 
     char id[MAX_PLOT_KEY_IDLEN+1];
 
     id[0]='\0';
 
-    if(!EMPTY_STR(rid->url)) {
-        char *tmp = rid->url;
-        if (util_starts_with(rid->url,"http:")) {
-            char  *tmp2 = strstr(rid->url,"/tt" );
+    if(!EMPTY_STR(item->url)) {
+        char *tmp = item->url;
+        if (util_starts_with(item->url,"http:")) {
+            char  *tmp2 = strstr(item->url,"/tt" );
             if (tmp2) tmp = tmp2+1;
         }
         if (util_starts_with(tmp,"tt")) {
@@ -78,51 +78,51 @@ void set_plot_keys(DbItem *rid) {
     }
     if (id[0]) {
 
-        if (rid->category == 'T' ) {
+        if (item->category == 'T' ) {
 
-            ovs_asprintf(&(rid->plotkey[PLOT_MAIN]),"_@%s@%d@@_",id,rid->season);
+            ovs_asprintf(&(item->plotkey[PLOT_MAIN]),"_@%s@%d@@_",id,item->season);
 
-            if(!EMPTY_STR(rid->episode)) {
-                ovs_asprintf(&(rid->plotkey[PLOT_EPISODE]),"_@%s@%d@%s@_",id,rid->season,NVL(rid->episode));
+            if(!EMPTY_STR(item->episode)) {
+                ovs_asprintf(&(item->plotkey[PLOT_EPISODE]),"_@%s@%d@%s@_",id,item->season,NVL(item->episode));
             }
 
         } else {
-            ovs_asprintf(&(rid->plotkey[PLOT_MAIN]),"_@%s@@@_",id);
+            ovs_asprintf(&(item->plotkey[PLOT_MAIN]),"_@%s@@@_",id);
         }
     }
-    HTML_LOG(1,"plot for %d/%s/%s/%d/%s=[%s][%s]",rid->id,rid->url,rid->title,rid->season,rid->episode,
-            rid->plotkey[PLOT_MAIN],rid->plotkey[PLOT_EPISODE]);
+    HTML_LOG(1,"plot for %d/%s/%s/%d/%s=[%s][%s]",item->id,item->url,item->title,item->season,item->episode,
+            item->plotkey[PLOT_MAIN],item->plotkey[PLOT_EPISODE]);
 }
 
-static char *get_plot_by_key_static(DbItem *rid,PlotType ptype)
+static char *get_plot_by_key_static(DbItem *item,PlotType ptype)
 {
     int count=0;
 
     char *type = (ptype == PLOT_MAIN ? "main" : "episode" );
 
-    char *key = rid->plotkey[ptype];
+    char *key = item->plotkey[ptype];
 
     if (key == NULL) {
-        HTML_LOG(1,"No plot for [%s]",rid->file);
+        HTML_LOG(1,"No plot for [%s]",item->file);
         return NULL;
     }
 
     if (!util_starts_with(key,PLOT_KEY_PREFIX)) {
         // If the plot does not start with the PLOT_KEY_PREFIX then assume
         // it is the old format where the plot was embedded in the main index.db file
-        HTML_LOG(LOG_LVL,"Using legacy format plot-key = plot for %s=[%s]",rid->file,key);
+        HTML_LOG(LOG_LVL,"Using legacy format plot-key = plot for %s=[%s]",item->file,key);
         return key;
     }
 
-    HTML_LOG(LOG_LVL,"Getting %s plot [%s] for [%s]",type,key[ptype],key,rid->file);
+    HTML_LOG(LOG_LVL,"Getting %s plot [%s] for [%s]",type,key[ptype],key,item->file);
     char *result = NULL;
-    FILE *fp = plot_open(rid->db);
+    FILE *fp = plot_open(item->db);
 
     if (fp) {
         if (!plot_buf) plot_buf = MALLOC(MAX_PLOT_LENGTH+1);
         PRE_CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
         if (!EMPTY_STR(key)) {
-            if (rid->plotoffset[ptype] == PLOT_POSITION_UNSET) {
+            if (item->plotoffset[ptype] == PLOT_POSITION_UNSET) {
 
                 rewind(fp);
                 fseek(fp,0L,SEEK_SET);
@@ -138,7 +138,7 @@ static char *get_plot_by_key_static(DbItem *rid,PlotType ptype)
                         chomp(plot_buf);
 
                         if (util_starts_with(plot_buf,key)) {
-                            rid->plotoffset[ptype] = fpos + strlen(key);
+                            item->plotoffset[ptype] = fpos + strlen(key);
                             result = plot_buf+strlen(key);
                             break;
                         }
@@ -147,8 +147,8 @@ static char *get_plot_by_key_static(DbItem *rid,PlotType ptype)
                 }
             } else {
                 count++;
-                HTML_LOG(LOG_LVL,"Direct seek to %ld",rid->plotoffset[ptype]);
-                fseek(fp,rid->plotoffset[ptype],SEEK_SET);
+                HTML_LOG(LOG_LVL,"Direct seek to %ld",item->plotoffset[ptype]);
+                fseek(fp,item->plotoffset[ptype],SEEK_SET);
                 fgets(plot_buf,MAX_PLOT_LENGTH,fp);
                 CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
                 plot_buf[MAX_PLOT_LENGTH] = '\0';
@@ -158,30 +158,30 @@ static char *get_plot_by_key_static(DbItem *rid,PlotType ptype)
         }
     }
     if (result == NULL) {
-        HTML_LOG(0,"no plot (%s) for [%s] in %d records",key,rid->file,count);
+        HTML_LOG(0,"no plot (%s) for [%s] in %d records",key,item->file,count);
     } else {
         HTML_LOG(LOG_LVL,"got plot (%s) =  [%s] in %d records",key,result,count);
     }
     return result;
 }
 
-char *get_plot(DbItem *rid,PlotType ptype)
+char *get_plot(DbItem *item,PlotType ptype)
 {
     
-    if (rid->plottext[ptype] == NULL) {
+    if (item->plottext[ptype] == NULL) {
         int free_short_plot;
-        set_plot_keys(rid);
-        char *plot = NVL(get_plot_by_key_static(rid,PLOT_MAIN));
+        set_plot_keys(item);
+        char *plot = NVL(get_plot_by_key_static(item,PLOT_MAIN));
         char *short_plot = truncate_plot(plot,&free_short_plot);
 
         if (free_short_plot) {
-            rid->plottext[ptype] =  short_plot;
+            item->plottext[ptype] =  short_plot;
         } else {
-            rid->plottext[ptype] =  STRDUP(short_plot);
+            item->plottext[ptype] =  STRDUP(short_plot);
         }
     }
-    HTML_LOG(1,"plot=[%s]",rid->plottext[ptype]);
-    return rid->plottext[ptype];
+    HTML_LOG(1,"plot=[%s]",item->plottext[ptype]);
+    return item->plottext[ptype];
 }
 
 char *truncate_plot(char *plot,int *free_result)
@@ -216,7 +216,7 @@ char *truncate_plot(char *plot,int *free_result)
  * so we have two loops on the row id list but resulting on only one sweep
  * of each plot.db file.
  */
-#define NEEDS_PLOT(rid,ptype) (!EMPTY_STR((rid)->url) && !EMPTY_STR((rid)->plotkey[ptype]) && (rid)->plotoffset[ptype] == PLOT_POSITION_UNSET)
+#define NEEDS_PLOT(item,ptype) (!EMPTY_STR((item)->url) && !EMPTY_STR((item)->plotkey[ptype]) && (item)->plotoffset[ptype] == PLOT_POSITION_UNSET)
 
 void get_plot_offsets_and_text(int num_rows,DbItem **rows,int copy_plot_text)
 {
@@ -225,17 +225,17 @@ void get_plot_offsets_and_text(int num_rows,DbItem **rows,int copy_plot_text)
            
 TRACE;
         for(i = 0 ; i < num_rows ; i ++ ) {
-            DbItem *rid = rows[i];
-            set_plot_keys(rid);
+            DbItem *item = rows[i];
+            set_plot_keys(item);
         }
 TRACE;
         for(i = 0 ; i < num_rows ; i ++ ) {
 
-            DbItem *rid = rows[i];
+            DbItem *item = rows[i];
 
-            if (NEEDS_PLOT(rid,PLOT_MAIN) || NEEDS_PLOT(rid,PLOT_EPISODE)) {
+            if (NEEDS_PLOT(item,PLOT_MAIN) || NEEDS_PLOT(item,PLOT_EPISODE)) {
 
-                Db *db = rid->db;
+                Db *db = item->db;
 
 TRACE;
                 // Open the database plot file
@@ -246,7 +246,7 @@ TRACE;
             int ptype;
             for (ptype = 0 ; ptype < PLOT_TYPE_COUNT ; ptype++ ) {
                 HTML_LOG(LOG_LVL,"plot %d : key[%s] offset[%d] text[%s]",i,
-                    rid->plotkey[ptype],rid->plotoffset[ptype],rid->plottext[ptype]);
+                    item->plotkey[ptype],item->plotoffset[ptype],item->plottext[ptype]);
             }
 
         }
@@ -254,13 +254,13 @@ TRACE;
 TRACE;
 }
 
-void check_and_copy_plot(int copy_plot_text,DbItem *rid,PlotType ptype,long fpos,char *buf) {
+void check_and_copy_plot(int copy_plot_text,DbItem *item,PlotType ptype,long fpos,char *buf) {
 
-    char *key = rid->plotkey[ptype];
+    char *key = item->plotkey[ptype];
 
     if (key && util_starts_with(buf,key)) {
 
-        rid->plotoffset[ptype] = fpos + strlen(key);
+        item->plotoffset[ptype] = fpos + strlen(key);
 
         if (copy_plot_text) {
             char *in = buf+strlen(key);
@@ -269,7 +269,7 @@ void check_and_copy_plot(int copy_plot_text,DbItem *rid,PlotType ptype,long fpos
             if (!free_plot) {
                 plot = STRDUP(plot);
             }
-            rid->plottext[ptype] = plot;
+            item->plottext[ptype] = plot;
         }
 
     }
@@ -301,18 +301,18 @@ static void set_plot_positions_by_db(Db *db,int num_rows,DbItem **rows,int start
 
             for(i = start_row ; i < num_rows ; i ++ ) {
 
-                DbItem *rid = rows[i];
+                DbItem *item = rows[i];
 
-                if (rid->db == db ) {
+                if (item->db == db ) {
 
 
                     int ptype;
                     for (ptype = 0 ; ptype < PLOT_TYPE_COUNT ; ptype++ ) {
-                        if (NEEDS_PLOT(rid,ptype)  && util_starts_with(plot_buf,rid->plotkey[ptype])) {
+                        if (NEEDS_PLOT(item,ptype)  && util_starts_with(plot_buf,item->plotkey[ptype])) {
 
-                            check_and_copy_plot(copy_plot_text,rid,ptype,fpos,plot_buf);
+                            check_and_copy_plot(copy_plot_text,item,ptype,fpos,plot_buf);
 
-                            HTML_LOG(0,"Got plot [%s] for [%s]",rid->plotkey[ptype],rid->file);
+                            HTML_LOG(0,"Got plot [%s] for [%s]",item->plotkey[ptype],item->file);
                         }
                     }
                 }

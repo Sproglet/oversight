@@ -18,48 +18,48 @@
 
 static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val_len,int tv_or_movie_view);
 
-void db_rowid_free(DbItem *rid,int free_base)
+void db_rowid_free(DbItem *item,int free_base)
 {
 
     int i;
-    assert(rid);
+    assert(item);
 
-//    HTML_LOG(0,"%s %lu %lu",rid->title,rid,rid->file);
-//    HTML_LOG(0,"%s",rid->file);
-    FREE(rid->title);
-    FREE(rid->poster);
-    FREE(rid->genre);
-    FREE(rid->file);
-    FREE(rid->episode);
+//    HTML_LOG(0,"%s %lu %lu",item->title,item,item->file);
+//    HTML_LOG(0,"%s",item->file);
+    FREE(item->title);
+    FREE(item->poster);
+    FREE(item->genre);
+    FREE(item->file);
+    FREE(item->episode);
     //Dont free ext as it points to file.
 
 
     // Following are only set in tv/movie view
-    FREE(rid->url);
-    FREE(rid->parts);
-    FREE(rid->fanart);
+    FREE(item->url);
+    FREE(item->parts);
+    FREE(item->fanart);
     for(i = 0 ; i < PLOT_TYPE_COUNT ; i++ ) {
-        FREE(rid->plotkey[i]);
-        FREE(rid->plottext[i]);
+        FREE(item->plotkey[i]);
+        FREE(item->plottext[i]);
     }
-    FREE(rid->eptitle);
-    FREE(rid->eptitle_imdb);
-    FREE(rid->additional_nfo);
+    FREE(item->eptitle);
+    FREE(item->eptitle_imdb);
+    FREE(item->additional_nfo);
 
-    ARRAY_FREE(rid->playlist_paths);
-    ARRAY_FREE(rid->playlist_names);
+    ARRAY_FREE(item->playlist_paths);
+    ARRAY_FREE(item->playlist_names);
 
     //Only populated if deleting
-    FREE(rid->nfo);
+    FREE(item->nfo);
 
-    FREE(rid->certificate);
+    FREE(item->certificate);
 
-    db_group_imdb_free(rid->comes_after,1);
-    db_group_imdb_free(rid->comes_before,1);
-    db_group_imdb_free(rid->remakes,1);
+    db_group_imdb_free(item->comes_after,1);
+    db_group_imdb_free(item->comes_before,1);
+    db_group_imdb_free(item->remakes,1);
 
     if (free_base) {
-        FREE(rid);
+        FREE(item);
     }
 }
 void set_title_as_folder(DbItem *rowid)
@@ -254,32 +254,32 @@ DbItem *db_rowid_new(Db *db) {
     return rowid;
 }
 
-void db_rowid_dump(DbItem *rid)
+void db_rowid_dump(DbItem *item)
 {
     
     time_t t;
-    HTML_LOG(1,"ROWID: id = %d",rid->id);
-    HTML_LOG(1,"ROWID: watched = %d",rid->watched);
-    HTML_LOG(1,"ROWID: title(%s)",rid->title);
-    HTML_LOG(1,"ROWID: file(%s)",rid->file);
-    HTML_LOG(1,"ROWID: ext(%s)",rid->ext);
-    HTML_LOG(1,"ROWID: season(%d)",rid->season);
-    HTML_LOG(1,"ROWID: episode(%s)",rid->episode);
-    HTML_LOG(1,"ROWID: genre(%s)",rid->genre);
-    HTML_LOG(1,"ROWID: ext(%c)",rid->category);
-    HTML_LOG(1,"ROWID: parts(%s)",rid->parts);
-    t = rid->date;
+    HTML_LOG(1,"ROWID: id = %d",item->id);
+    HTML_LOG(1,"ROWID: watched = %d",item->watched);
+    HTML_LOG(1,"ROWID: title(%s)",item->title);
+    HTML_LOG(1,"ROWID: file(%s)",item->file);
+    HTML_LOG(1,"ROWID: ext(%s)",item->ext);
+    HTML_LOG(1,"ROWID: season(%d)",item->season);
+    HTML_LOG(1,"ROWID: episode(%s)",item->episode);
+    HTML_LOG(1,"ROWID: genre(%s)",item->genre);
+    HTML_LOG(1,"ROWID: ext(%c)",item->category);
+    HTML_LOG(1,"ROWID: parts(%s)",item->parts);
+    t = item->date;
     HTML_LOG(1,"ROWID: date(%s)",asctime(localtime(&t)));
-    HTML_LOG(1,"ROWID: eptitle(%s)",rid->eptitle);
-    HTML_LOG(1,"ROWID: eptitle_imdb(%s)",rid->eptitle_imdb);
-    HTML_LOG(1,"ROWID: additional_nfo(%s)",rid->additional_nfo);
-    t = rid->airdate;
+    HTML_LOG(1,"ROWID: eptitle(%s)",item->eptitle);
+    HTML_LOG(1,"ROWID: eptitle_imdb(%s)",item->eptitle_imdb);
+    HTML_LOG(1,"ROWID: additional_nfo(%s)",item->additional_nfo);
+    t = item->airdate;
     HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime(&t)));
-    t = rid->airdate_imdb;
+    t = item->airdate_imdb;
     HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime(&t)));
-    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(rid->comes_after));
-    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(rid->comes_before));
-    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(rid->remakes));
+    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(item->comes_after));
+    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before));
+    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes));
     HTML_LOG(1,"----");
 }
 
@@ -395,58 +395,58 @@ int idlist_index(int id,int size,int *ids)
 #define ROW_SIZE 10000
 
 //changes here should be reflected in catalog.sh.full:createIndexRow()
-void write_row(FILE *fp,DbItem *rid) {
-    fprintf(fp,"\t%s\t%ld",DB_FLDID_ID,rid->id);
-    fprintf(fp,"\t%s\t%c",DB_FLDID_CATEGORY,rid->category);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_INDEXTIME,fmt_timestamp_static(rid->date));
-    fprintf(fp,"\t%s\t%d",DB_FLDID_WATCHED,rid->watched);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_TITLE,rid->title);
-    fprintf(fp,"\t%s\t%d",DB_FLDID_SEASON,rid->season);
-    fprintf(fp,"\t%s\t%.1lf",DB_FLDID_RATING,rid->rating);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_EPISODE,rid->episode);
-    //fprintf(fp,"\t%s\t%s",DB_FLDID_POSTER,rid->poster);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,rid->genre);
-    fprintf(fp,"\t%s\t%d",DB_FLDID_RUNTIME,rid->runtime);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,rid->parts);
-    fprintf(fp,"\t%s\t%x",DB_FLDID_YEAR,rid->year-HEX_YEAR_OFFSET);
+void write_row(FILE *fp,DbItem *item) {
+    fprintf(fp,"\t%s\t%ld",DB_FLDID_ID,item->id);
+    fprintf(fp,"\t%s\t%c",DB_FLDID_CATEGORY,item->category);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_INDEXTIME,fmt_timestamp_static(item->date));
+    fprintf(fp,"\t%s\t%d",DB_FLDID_WATCHED,item->watched);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_TITLE,item->title);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_SEASON,item->season);
+    fprintf(fp,"\t%s\t%.1lf",DB_FLDID_RATING,item->rating);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPISODE,item->episode);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_POSTER,item->poster);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_GENRE,item->genre);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_RUNTIME,item->runtime);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_PARTS,item->parts);
+    fprintf(fp,"\t%s\t%x",DB_FLDID_YEAR,item->year-HEX_YEAR_OFFSET);
 
     // Remove Network share path
-    if (util_starts_with(rid->file,NETWORK_SHARE)) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,rid->file+strlen(NETWORK_SHARE));
+    if (util_starts_with(item->file,NETWORK_SHARE)) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,item->file+strlen(NETWORK_SHARE));
     } else {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,rid->file);
+        fprintf(fp,"\t%s\t%s",DB_FLDID_FILE,item->file);
     }
 
-    fprintf(fp,"\t%s\t%s",DB_FLDID_ADDITIONAL_INFO,rid->additional_nfo);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_URL,rid->url);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,rid->certificate);
-    if (rid->director) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR,NVL(rid->director));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_ADDITIONAL_INFO,item->additional_nfo);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_URL,item->url);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,item->certificate);
+    if (item->director) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR,NVL(item->director));
     }
-    fprintf(fp,"\t%s\t%s",DB_FLDID_FILETIME,fmt_timestamp_static(rid->filetime));
-    fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(rid->downloadtime));
-    //fprintf(fp,"\t%s\t%s",DB_FLDID_PROD,rid->prod);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATE,fmt_date_static(rid->airdate));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_FILETIME,fmt_timestamp_static(item->filetime));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(item->downloadtime));
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_PROD,item->prod);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATE,fmt_date_static(item->airdate));
 
     // TODO: Deprecate
-    fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLEIMDB,rid->eptitle_imdb);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLEIMDB,item->eptitle_imdb);
     // TODO: Deprecate
-    fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATEIMDB,fmt_date_static(rid->airdate_imdb));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_AIRDATEIMDB,fmt_date_static(item->airdate_imdb));
 
-    fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,rid->eptitle);
-    fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,rid->nfo);
-    if (rid->comes_after) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_AFTER,db_group_imdb_compressed_string_static(rid->comes_after));
+    fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,item->eptitle);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,item->nfo);
+    if (item->comes_after) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_AFTER,db_group_imdb_compressed_string_static(item->comes_after));
     }
-    if (rid->comes_before) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_BEFORE,db_group_imdb_compressed_string_static(rid->comes_before));
+    if (item->comes_before) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_BEFORE,db_group_imdb_compressed_string_static(item->comes_before));
     }
-    if (rid->remakes) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_REMAKE,db_group_imdb_compressed_string_static(rid->remakes));
+    if (item->remakes) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_REMAKE,db_group_imdb_compressed_string_static(item->remakes));
     }
-    //fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,rid->fanart);
-    //fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,rid->plot_key);
-    //fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,rid->episode_plot_key);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,item->fanart);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,item->plot_key);
+    //fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,item->episode_plot_key);
     fprintf(fp,"\t\n");
     fflush(fp);
 }
@@ -888,10 +888,10 @@ void fix_file_paths(int num_row,DbItem **rows)
 {
     int i;
     for(i = 0 ; i < num_row ; i++ ) {
-        DbItem *rid;
-        for(rid = rows[i] ; rid ; rid = rid->linked ) {
+        DbItem *item;
+        for(item = rows[i] ; item ; item = item->linked ) {
             // Append Network share path
-            fix_file_path(rid);
+            fix_file_path(item);
         }
     }
 }

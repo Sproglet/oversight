@@ -213,7 +213,7 @@ char *macro_fn_poster(MacroCallInfo *call_info) {
         return "?";
     }
 
-    DbItem *rid=call_info->sorted_rows->rows[0];
+    DbItem *item=call_info->sorted_rows->rows[0];
 
     if (call_info->sorted_rows->num_rows == 0) {
 
@@ -222,7 +222,7 @@ char *macro_fn_poster(MacroCallInfo *call_info) {
 
     } else if (call_info->args && call_info->args->size  == 1) {
 
-        result = get_poster_image_tag(rid,call_info->args->array[0],POSTER_IMAGE,NULL);
+        result = get_poster_image_tag(item,call_info->args->array[0],POSTER_IMAGE,NULL);
 TRACE;
 
     } else if (!call_info->args || call_info->args->size == 0 ) {
@@ -232,9 +232,9 @@ TRACE;
         long width;
 
 
-        if (rid) {
+        if (item) {
 
-            if (rid->category == 'T') {
+            if (item->category == 'T') {
                 height=g_dimension->tv_img_height;
                 width=g_dimension->tv_img_width;
             } else {
@@ -243,7 +243,7 @@ TRACE;
             }
             ovs_asprintf(&attr," height=%d width=%d  ",height,width);
 
-            result =  get_poster_image_tag(rid,attr,POSTER_IMAGE,NULL);
+            result =  get_poster_image_tag(item,attr,POSTER_IMAGE,NULL);
 TRACE;
             FREE(attr);
 TRACE;
@@ -272,11 +272,11 @@ TRACE;
     int season = -1;
     int i;
     for ( i = 0 ; EMPTY_STR(result) && i < call_info->sorted_rows->num_rows ; i++ ) {
-        DbItem *rid = call_info->sorted_rows->rows[i];
-        if (season == -1 || rid->season != season ) {
-            season = rid->season;
-            result = get_plot(rid,PLOT_MAIN);
-            HTML_LOG(0,"plot for %s %d %s = [%s]",rid->title,rid->season,rid->episode,result);
+        DbItem *item = call_info->sorted_rows->rows[i];
+        if (season == -1 || item->season != season ) {
+            season = item->season;
+            result = get_plot(item,PLOT_MAIN);
+            HTML_LOG(0,"plot for %s %d %s = [%s]",item->title,item->season,item->episode,result);
         }
     }
     if (result) {
@@ -504,9 +504,9 @@ char *macro_fn_runtime(MacroCallInfo *call_info) {
     int runtime = 0;
     int i;
     for(i = 0 ; i < call_info->sorted_rows->num_rows ; i++ ) {
-        DbItem *rid = call_info->sorted_rows->rows[i];
-        if (rid->runtime > 0 ) {
-            runtime = rid->runtime;
+        DbItem *item = call_info->sorted_rows->rows[i];
+        if (item->runtime > 0 ) {
+            runtime = item->runtime;
             break;
         }
     }
@@ -561,20 +561,20 @@ char *macro_fn_year(MacroCallInfo *call_info) {
    
     // look for item with year set - sometimes tv Pilot does not have airdate 
     for(i = 0 ; i < call_info->sorted_rows->num_rows && year_num <= 1900 ; i++ ) {
-        DbItem *rid = call_info->sorted_rows->rows[i];
+        DbItem *item = call_info->sorted_rows->rows[i];
 
-        if (rid->category == 'T' ) {
+        if (item->category == 'T' ) {
 
-            HTML_LOG(0,"airdate[%s]=[%x]",rid->file,rid->airdate);
-            struct tm *t = internal_time2tm(rid->airdate,NULL);
+            HTML_LOG(0,"airdate[%s]=[%x]",item->file,item->airdate);
+            struct tm *t = internal_time2tm(item->airdate,NULL);
             year_num = t->tm_year+1900;
 
-        } else if (rid->category == 'M' ) {
+        } else if (item->category == 'M' ) {
 
-            year_num = rid->year;
+            year_num = item->year;
 
         } else {
-            struct tm *t = internal_time2tm(rid->date,NULL);
+            struct tm *t = internal_time2tm(item->date,NULL);
             year_num = t->tm_year+1900;
         }
     }
@@ -798,10 +798,10 @@ char *macro_fn_tvids(MacroCallInfo *call_info)
     
 }
 
-char *get_rating_stars(DbItem *rid,int num_stars)
+char *get_rating_stars(DbItem *item,int num_stars)
 {
 
-    double rating = rid->rating;
+    double rating = item->rating;
 
     Array *a = array_new(free);
 

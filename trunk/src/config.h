@@ -72,4 +72,6 @@ void query_update(char *name,char *new);
 void query_remove(char *name);
 char *query_view_val();
 char *query_select_val();
+enum ViewMode_enum get_view_mode();
+char *view_mode_to_str(enum ViewMode_enum m);
 #endif

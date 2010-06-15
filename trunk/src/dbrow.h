@@ -7,6 +7,17 @@
 #include "dbread.h"
 #include "array.h"
 
+typedef enum ViewMode_enum {
+    UNSET_VIEW_ID=0,
+    MENU_VIEW_ID,
+    TV_VIEW_ID,
+    MOVIE_VIEW_ID,
+    TVBOXSET_VIEW_ID,
+    MOVIEBOXSET_VIEW_ID,
+    ADMIN_VIEW_ID,
+    MIXED_VIEW_ID
+} ViewMode;
+
 typedef struct Dbrowid_struct {
 
     long id;
@@ -77,6 +88,12 @@ typedef struct Dbrowid_struct {
     struct DbGroupIMDB_struct *comes_after;
     struct DbGroupIMDB_struct *comes_before;
     struct DbGroupIMDB_struct *remakes;
+
+    // Set for first row in the list.
+    // These fields will be moved to the ItemList structure once I create a list of Items
+    // for each Grid position.
+    char *drilldown_view_static;
+    enum ViewMode_enum drilldown_mode;
 
 } DbRowId;
 

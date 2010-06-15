@@ -53,7 +53,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define VIEW_MOVIE "movie"
 #define VIEW_TVBOXSET "tvboxset"
 #define VIEW_MOVIEBOXSET "movieboxset"
-#define VIEW_MIXED "mixed"
+#define VIEW_MENU "menu"
 
 // Used in the resize view when QUERY_PARAM_ACTION=QUERY_PARAM_ACTION_VALUE_SET
 #define QUERY_PARAM_SET_NAME "set_name"
@@ -61,11 +61,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_SET_MIN "set_min"
 #define QUERY_PARAM_SET_MAX "set_max"
 
-#define MENU_VIEW_ID 1
-#define TV_VIEW_ID 2
-#define MOVIE_VIEW_ID 3
-#define TVBOXSET_VIEW_ID 10
-#define MOVIEBOXSET_VIEW_ID 11
+
 
 #define QUERY_ASSIGN_PREFIX "*"
 

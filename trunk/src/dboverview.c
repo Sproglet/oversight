@@ -170,24 +170,7 @@ unsigned int db_overview_name_hashf(void *rid) {
     return h;
 }
 
-int get_view_mode() {
-    static int mode=-1;
-    if (mode == -1 ) {
-        char *view=query_view_val();
-        if (STRCMP(view,VIEW_TV) == 0 ) {
-            mode = TV_VIEW_ID;
-        } else if (STRCMP(view,VIEW_MOVIE) == 0) {
-            mode = MOVIE_VIEW_ID;
-        } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
-            mode = TVBOXSET_VIEW_ID;
-        } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
-            mode = MOVIEBOXSET_VIEW_ID;
-        } else {
-            mode = MENU_VIEW_ID;
-        }
-    }
-    return mode;
-}
+
 
 // Compare numeric field of records. (casting void* to DbRowId*)
 #define EQ_NUM(rid1,rid2,fld) (((DbRowId*)(rid1))->fld == ((DbRowId*)(rid2))->fld)
@@ -238,6 +221,7 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
                ret = EQ_SEASON(rid1,rid2);
                 break;
             case TV_VIEW_ID:
+            case ADMIN_VIEW_ID:
                ret = EQ_FILE(rid1,rid2);
                 break;
             default:
@@ -252,6 +236,9 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
                 ret = EQ_MOVIE(rid1,rid2);
+                break;
+            case ADMIN_VIEW_ID:
+               ret = EQ_FILE(rid1,rid2);
                 break;
             default:
                 assert(0);
@@ -273,7 +260,7 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
 //
 static inline int get_imdbid_from_connections(DbRowId *r,int *list,int *idx) {
     switch(*list) {
-        case 0:
+        case 0: // looking at ->comes_after
             if (r->comes_after==NULL || *idx >= r->comes_after->dbgi_size ) {
                 *idx = 0;
                 (*list)++;
@@ -281,7 +268,7 @@ static inline int get_imdbid_from_connections(DbRowId *r,int *list,int *idx) {
             } else {
                 return r->comes_after->dbgi_ids[*idx];
             }
-        case 1:
+        case 1: // looking at ->external_id
             if (*idx >= 1) {
                 *idx = 0;
                 (*list)++;
@@ -289,7 +276,7 @@ static inline int get_imdbid_from_connections(DbRowId *r,int *list,int *idx) {
             } else {
                 return r->external_id;
             }
-        case 2:
+        case 2: // looking at ->comes_before
             if (r->comes_before==NULL || *idx >= r->comes_before->dbgi_size ) {
                 *idx = 0;
                 (*list)++;
@@ -328,7 +315,8 @@ static inline int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2,MovieBoxsetM
                    ret = LAST_CONNECTION(rid1) == LAST_CONNECTION(rid2);
                    break;
                case MOVIE_BOXSETS_ANY:
-                   {
+                       // only check for overlap if at least one of the movies has before/after sets
+                   if ( rid1->comes_before || rid1->comes_after || rid2->comes_before || rid2->comes_after ) {
                        // Step over both rid1 and rid2 movie connections until we hit a connection.
                        // This is coded to be a O(n) search. Step over both sets of movie connections 
                        // at the same time.
@@ -340,12 +328,15 @@ static inline int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2,MovieBoxsetM
                        int rid1idx = 0;
                        int rid2idx = 0;
 
+                       int imdb1,imdb2;
                        while(1) {
-                           int imdb1 = get_imdbid_from_connections(rid1,&rid1list,&rid1idx);
-                           if (imdb1 == 0 ) break;
+                           if ((imdb1= get_imdbid_from_connections(rid1,&rid1list,&rid1idx)) == 0 ) {
+                               break;
+                           }
 
-                           int imdb2 = get_imdbid_from_connections(rid2,&rid2list,&rid2idx);
-                           if (imdb2 == 0 ) break;
+                           if ((imdb2= get_imdbid_from_connections(rid2,&rid2list,&rid2idx)) == 0 ) {
+                               break;
+                           }
 
                            //if (log) {
                                //HTML_LOG(0,"cmp [%s/%d/%d]=%d against [%s/%d/%d]=%d",
@@ -363,15 +354,15 @@ static inline int in_same_db_imdb_group(DbRowId *rid1,DbRowId *rid2,MovieBoxsetM
                            }
                        }
                    }
-                   break;
-               case MOVIE_BOXSETS_NONE:
-                   ret = EQ_FILE(rid1,rid2);
-                   break;
-               default:
-                   ret = EQ_FILE(rid1,rid2);
-                   break;
-           }
-       }
+                  break;
+              case MOVIE_BOXSETS_NONE:
+                  ret = EQ_FILE(rid1,rid2);
+                  break;
+              default:
+                  ret = EQ_FILE(rid1,rid2);
+                  break;
+          }
+      }
    }
    return ret;
 }
@@ -408,6 +399,9 @@ unsigned int db_overview_general_hashf(void *rid)
                 HASH_ADD(h,DBR(rid)->season);
                 break;
             case TV_VIEW_ID:
+                h  = stringhash(DBR(rid)->file);
+                break;
+            case ADMIN_VIEW_ID:
                 h  = stringhash(DBR(rid)->file);
                 break;
             default:
@@ -460,6 +454,7 @@ unsigned int db_overview_general_hashf(void *rid)
                 break;
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
+            case ADMIN_VIEW_ID:
                 h  = stringhash(DBR(rid)->file);
                 break;
             default:

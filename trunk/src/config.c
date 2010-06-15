@@ -887,17 +887,60 @@ static inline void query_select_val_reset()
 /* ======================================================== */
 // Provide faster access to view query parameter.
 
+ViewMode convert_view_mode(char *view) {
+    ViewMode mode;
+    if (STRCMP(view,VIEW_TV) == 0 ) {
+        mode = TV_VIEW_ID;
+    } else if (STRCMP(view,VIEW_MOVIE) == 0) {
+        mode = MOVIE_VIEW_ID;
+    } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
+        mode = TVBOXSET_VIEW_ID;
+    } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
+        mode = MOVIEBOXSET_VIEW_ID;
+    } else if (STRCMP(view,VIEW_ADMIN) == 0) {
+        mode = ADMIN_VIEW_ID;
+    } else {
+        mode = MENU_VIEW_ID;
+    }
+    return mode;
+}
+char *view_mode_to_str(ViewMode m)
+{
+    switch(m) {
+        case ADMIN_VIEW_ID: return VIEW_ADMIN;
+        case TV_VIEW_ID: return VIEW_TV;
+        case TVBOXSET_VIEW_ID: return VIEW_TVBOXSET;
+        case MOVIE_VIEW_ID: return VIEW_MOVIE;
+        case MOVIEBOXSET_VIEW_ID: return VIEW_MOVIEBOXSET;
+        case MIXED_VIEW_ID:
+        default:
+              return VIEW_MENU;
+    }
+    return NULL;
+}
+
+
 static char *query_view_str = NULL;
+static ViewMode view_mode=UNSET_VIEW_ID;
 char *query_view_val()
 {
    if (query_view_str == NULL) {
        query_view_str = query_val(QUERY_PARAM_VIEW);
+       view_mode = convert_view_mode(query_view_str);
     }
    return query_view_str; 
+}
+ViewMode get_view_mode()
+{
+    if (view_mode == UNSET_VIEW_ID ) {
+        query_view_val();
+    }
+    return view_mode;
 }
 static inline void query_view_val_reset()
 {
     query_view_str = NULL;
+    view_mode = UNSET_VIEW_ID;
 }
 
 // vi:sw=4:et:ts=4

@@ -15,7 +15,7 @@
 
 #include "db.h"
 #include "dbread.h"
-#include "dbrow.h"
+#include "dbitem.h"
 #include "dboverview.h"
 #include "dbplot.h"
 #include "actions.h"

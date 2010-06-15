@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "dbrow.h"
+#include "dbitem.h"
 #include "dboverview.h"
 #include "dbplot.h"
 #include "config.h"

@@ -17,7 +17,7 @@
 #define IMDB_GROUP_SEP ','
 #define IMDB_GROUP_BASE 128
 
-static inline int in_same_db_imdb_group(DbItem *rid1,DbItem *rid2,MovieBoxsetMode movie_boxset_mode);
+static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode);
 
 DbGroupIMDB *db_group_imdb_new(
         int size // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
@@ -115,9 +115,9 @@ int numSTRCMP(char *a,char *b) {
 
 // This function is inverted to usual sense as we wnat the oldest first.
 // This function is just used for sorting the overview AFTER it has been created.
-int db_overview_cmp_by_age(DbItem **rid1,DbItem **rid2) {
-    //return (*rid2)->date - (*rid1)->date;
-    return *timestamp_ptr(*rid2)- *timestamp_ptr(*rid1);
+int db_overview_cmp_by_age(DbItem **item1,DbItem **item2) {
+    //return (*item2)->date - (*item1)->date;
+    return *timestamp_ptr(*item2)- *timestamp_ptr(*item1);
 }
 
 
@@ -130,36 +130,36 @@ int index_STRCMP(char *a,char *b) {
 }
 
 // This function is just used for sorting the overview AFTER it has been created.
-int db_overview_cmp_by_title(DbItem **rid1,DbItem **rid2) {
+int db_overview_cmp_by_title(DbItem **item1,DbItem **item2) {
 
     int c;
 
     // If titles are different - return comparison
-    if ((c=index_STRCMP(NVL((*rid1)->title),NVL((*rid2)->title))) != 0) {
+    if ((c=index_STRCMP(NVL((*item1)->title),NVL((*item2)->title))) != 0) {
         return c;
     }
 
-    if ((*rid1)->category == 'T' && (*rid2)->category=='T') {
+    if ((*item1)->category == 'T' && (*item2)->category=='T') {
         // Compare by season
 
-        int d = (*rid1)->season-(*rid2)->season;
+        int d = (*item1)->season-(*item2)->season;
         if (d == 0) {
-            d = numSTRCMP(NVL((*rid1)->episode),NVL((*rid2)->episode));
+            d = numSTRCMP(NVL((*item1)->episode),NVL((*item2)->episode));
         }
         return d;
     } else {
         // Same title - arbitrary comparison
-        return (*rid1) - (*rid2);
+        return (*item1) - (*item2);
     }
 }
 
 // overview equality function based on titles only. This is used in boxset mode.
-int db_overview_name_eqf(DbItem *rid1,DbItem *rid2) {
+int db_overview_name_eqf(DbItem *item1,DbItem *item2) {
 
-    if (rid1->category != rid2->category) {
+    if (item1->category != item2->category) {
         return 0;
     } else {
-        return STRCMP(rid1->title,rid2->title) ==0;
+        return STRCMP(item1->title,item2->title) ==0;
     }
 }
 // overview hash function based on titles only. This is used in boxset mode.
@@ -173,27 +173,27 @@ unsigned int db_overview_name_hashf(void *item) {
 
 
 // Compare numeric field of records. (casting void* to DbItem*)
-#define EQ_NUM(rid1,rid2,fld) (((DbItem*)(rid1))->fld == ((DbItem*)(rid2))->fld)
+#define EQ_NUM(item1,item2,fld) (((DbItem*)(item1))->fld == ((DbItem*)(item2))->fld)
 
 // Compare string field of records. (casting void* to DbItem*)
-#define EQ_STR(rid1,rid2,fld) (STRCMP(((DbItem*)(rid1))->fld,((DbItem*)(rid2))->fld) ==0)
+#define EQ_STR(item1,item2,fld) (STRCMP(((DbItem*)(item1))->fld,((DbItem*)(item2))->fld) ==0)
 
 // true if two records have the same file. (should never happen really so just return 0
-//#define EQ_FILE(rid1,rid2) EQ_STR(rid1,rid2,file) && EQ_SHOW(rid1,rid2,source)
-#define EQ_FILE(rid1,rid2) 0
+//#define EQ_FILE(item1,item2) EQ_STR(item1,item2,file) && EQ_SHOW(item1,item2,source)
+#define EQ_FILE(item1,item2) 0
 
-#define EQ_MOVIE(rid1,rid2) EQ_NUM(rid1,rid2,external_id)
+#define EQ_MOVIE(item1,item2) EQ_NUM(item1,item2,external_id)
 
 // true if two records are part of the same show. Assuemes category=T already tested.
-#define EQ_SHOW(rid1,rid2) (EQ_NUM(rid1,rid2,year) && EQ_STR(rid1,rid2,title))
+#define EQ_SHOW(item1,item2) (EQ_NUM(item1,item2,year) && EQ_STR(item1,item2,title))
 
 // true if two records are part of the same season. Assuemes category=T already tested.
-#define EQ_SEASON(rid1,rid2) (EQ_NUM(rid1,rid2,season) && EQ_SHOW((rid1),(rid2)))
+#define EQ_SEASON(item1,item2) (EQ_NUM(item1,item2,season) && EQ_SHOW((item1),(item2)))
 /*
  * This function may get called 1000s of times so avoid further function calls,
  * and use static data where possible.
  */
-int db_overview_general_eqf(void *rid1,void *rid2) {
+int db_overview_general_eqf(void *item1,void *item2) {
     static int tvbox=-1;
     static MovieBoxsetMode moviebox=MOVIE_BOXSETS_UNSET;
     static int mode=-1;
@@ -205,47 +205,47 @@ int db_overview_general_eqf(void *rid1,void *rid2) {
         mode = get_view_mode();
     }
 
-    if (((DbItem*)rid1)->category != ((DbItem*)rid2)->category) {
+    if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
         ret = 0;
 
-    } else if (((DbItem*)rid1)->category == 'T' ) {
+    } else if (((DbItem*)item1)->category == 'T' ) {
         switch(mode) {
             case MENU_VIEW_ID:
                 if (tvbox) {
-                   ret = EQ_SHOW(rid1,rid2);
+                   ret = EQ_SHOW(item1,item2);
                 } else {
-                   ret = EQ_SEASON(rid1,rid2);
+                   ret = EQ_SEASON(item1,item2);
                 }
                 break;
             case TVBOXSET_VIEW_ID:
-               ret = EQ_SEASON(rid1,rid2);
+               ret = EQ_SEASON(item1,item2);
                 break;
             case TV_VIEW_ID:
             case ADMIN_VIEW_ID:
-               ret = EQ_FILE(rid1,rid2);
+               ret = EQ_FILE(item1,item2);
                 break;
             default:
                 assert(0);
                 break;
         }
-    } else if (((DbItem*)rid1)->category == 'M' ) {
+    } else if (((DbItem*)item1)->category == 'M' ) {
         switch(mode) {
             case MENU_VIEW_ID:
-               ret = in_same_db_imdb_group(((DbItem*)rid1),((DbItem*)rid2),moviebox);
+               ret = in_same_db_imdb_group(((DbItem*)item1),((DbItem*)item2),moviebox);
                break;
             case MOVIEBOXSET_VIEW_ID:
             case MOVIE_VIEW_ID:
-                ret = EQ_MOVIE(rid1,rid2);
+                ret = EQ_MOVIE(item1,item2);
                 break;
             case ADMIN_VIEW_ID:
-               ret = EQ_FILE(rid1,rid2);
+               ret = EQ_FILE(item1,item2);
                 break;
             default:
                 assert(0);
                 break;
         } 
     } else {
-           ret = EQ_FILE(rid1,rid2);
+           ret = EQ_FILE(item1,item2);
     }
     return ret;
 
@@ -291,33 +291,33 @@ static inline int get_imdbid_from_connections(DbItem *r,int *list,int *idx) {
 #define FIRST_CONNECTION(r) ((r)->comes_after?(r)->comes_after->dbgi_ids[0]:(r)->external_id)
 #define LAST_CONNECTION(r) ((r)->comes_before?(r)->comes_before->dbgi_ids[(r)->comes_before->dbgi_size-1]:(r)->external_id)
 
-static inline int in_same_db_imdb_group(DbItem *rid1,DbItem *rid2,MovieBoxsetMode movie_boxset_mode)
+static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode)
 {
    int ret = 0;
    //int log=0;
 
-   //HTML_LOG(0,"in_same_db_imdb_group [%s] against [%s]", rid1->title,rid2->title);
+   //HTML_LOG(0,"in_same_db_imdb_group [%s] against [%s]", item1->title,item2->title);
 
-   if (rid1->external_id && rid2->external_id ) {
+   if (item1->external_id && item2->external_id ) {
 
-       if (rid1->external_id == rid2->external_id) {
+       if (item1->external_id == item2->external_id) {
            ret = 1;
 
        } else {
-           //if (rid1->external_id == 78748) log=1;
-           //if (rid2->external_id == 78748) log=1;
+           //if (item1->external_id == 78748) log=1;
+           //if (item2->external_id == 78748) log=1;
 
            switch(movie_boxset_mode) {
                case MOVIE_BOXSETS_FIRST:
-                   ret = FIRST_CONNECTION(rid1) == FIRST_CONNECTION(rid2);
+                   ret = FIRST_CONNECTION(item1) == FIRST_CONNECTION(item2);
                    break;
                case MOVIE_BOXSETS_LAST:
-                   ret = LAST_CONNECTION(rid1) == LAST_CONNECTION(rid2);
+                   ret = LAST_CONNECTION(item1) == LAST_CONNECTION(item2);
                    break;
                case MOVIE_BOXSETS_ANY:
                        // only check for overlap if at least one of the movies has before/after sets
-                   if ( rid1->comes_before || rid1->comes_after || rid2->comes_before || rid2->comes_after ) {
-                       // Step over both rid1 and rid2 movie connections until we hit a connection.
+                   if ( item1->comes_before || item1->comes_after || item2->comes_before || item2->comes_after ) {
+                       // Step over both item1 and item2 movie connections until we hit a connection.
                        // This is coded to be a O(n) search. Step over both sets of movie connections 
                        // at the same time.
                        // The code is a little messy because movie connections are split into 3 parts
@@ -330,18 +330,18 @@ static inline int in_same_db_imdb_group(DbItem *rid1,DbItem *rid2,MovieBoxsetMod
 
                        int imdb1,imdb2;
                        while(1) {
-                           if ((imdb1= get_imdbid_from_connections(rid1,&rid1list,&rid1idx)) == 0 ) {
+                           if ((imdb1= get_imdbid_from_connections(item1,&rid1list,&rid1idx)) == 0 ) {
                                break;
                            }
 
-                           if ((imdb2= get_imdbid_from_connections(rid2,&rid2list,&rid2idx)) == 0 ) {
+                           if ((imdb2= get_imdbid_from_connections(item2,&rid2list,&rid2idx)) == 0 ) {
                                break;
                            }
 
                            //if (log) {
                                //HTML_LOG(0,"cmp [%s/%d/%d]=%d against [%s/%d/%d]=%d",
-                                       //rid1->title,rid1list,rid1idx,imdb1,
-                                       //rid2->title,rid2list,rid2idx,imdb2);
+                                       //item1->title,rid1list,rid1idx,imdb1,
+                                       //item2->title,rid2list,rid2idx,imdb2);
                            //}
 
                            if (imdb1 < imdb2 ) {
@@ -356,10 +356,10 @@ static inline int in_same_db_imdb_group(DbItem *rid1,DbItem *rid2,MovieBoxsetMod
                    }
                   break;
               case MOVIE_BOXSETS_NONE:
-                  ret = EQ_FILE(rid1,rid2);
+                  ret = EQ_FILE(item1,item2);
                   break;
               default:
-                  ret = EQ_FILE(rid1,rid2);
+                  ret = EQ_FILE(item1,item2);
                   break;
           }
       }

@@ -2499,7 +2499,7 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
 static inline void set_drilldown_view(DbItem *item) {
 
     if (item->drilldown_mode == UNSET_VIEW_ID) {
-        DbItem *rid2;
+        DbItem *item2;
         ViewMode m;
 
         switch (item->category) {
@@ -2514,15 +2514,15 @@ static inline void set_drilldown_view(DbItem *item) {
                 break;
         }
 
-        for( rid2=item->linked ; rid2 ; rid2=rid2->linked ) {
+        for( item2=item->linked ; item2 ; item2=item2->linked ) {
 
-            if (rid2->category != item->category ) {
+            if (item2->category != item->category ) {
                 m = MIXED_VIEW_ID;
                 break;
             } else {
-                switch (rid2->category) {
+                switch (item2->category) {
                     case 'T':
-                        if (item->season != rid2->season) {
+                        if (item->season != item2->season) {
                             m = TVBOXSET_VIEW_ID;
                         }
                         break;

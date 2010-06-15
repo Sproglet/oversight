@@ -44,3 +44,9 @@ One of Oversight's goals is to act like a PVR, so the 'age' is generally the tim
 
 A. No one really ask this much, but it might cross their mind when using the site checker. To reduce false positives, some queries are performed against two different search engines. If they disagree, then a third engine is used for the casting vote. This has made searches much more accurate and reduced false positives. It is important that the search engines are not re-badged versions of one another or we'd get the same results.
 (eg Ask = Google)
+
+===Can I use Oversight to manage my home movies or Movies not in IMDB==
+
+At present, Oversight is not really ready to manage movies that do not have IMDB ids. Oversight needs the ability to edit the database, and read XMBC nfo informantion. Both of which are on the todo list.
+
+In the mean time, If you have a 200 series NMT a new firmware will be out soon that has some jukebox function that may suit your needs.

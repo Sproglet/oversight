@@ -1715,7 +1715,6 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
             if (mixed_sources) *mixed_sources=1;
         }
     }
-    HTML_LOG(0,"link count = %d",row_id->link_count);
     assert(p < out+len);
 
     ovs_asprintf(&p,"%s%s)",idlist,out);
@@ -2756,7 +2755,6 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
         height_attr=STRDUP("");
     }
 
-TRACE1;
     char **idlist = CALLOC(rows*cols,sizeof(char *));
 
     // Create the idlist for each item
@@ -2768,7 +2766,6 @@ TRACE1;
             }
         }
     }
-TRACE1;
 
     // First output the javascript functions - diretly to stdout - lazy.
     write_titlechanger(gs->offset,rows,cols,numids,row_ids,idlist);
@@ -2784,7 +2781,6 @@ TRACE;
     }
     HTML_LOG(0,"rows = %d",rows);
     
-TRACE1;
 
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
@@ -2826,11 +2822,9 @@ TRACE1;
         HTML_LOG(1,"grid end row %d",r);
 
     }
-TRACE1;
     //
     // Free all of the idlists
     util_free_char_array(rows*cols,idlist);
-TRACE1;
 
     char *w;
     if (!g_dimension->poster_mode) {
@@ -2838,11 +2832,9 @@ TRACE1;
     } else {
         w="";
     }
-TRACE1;
 
     result = array2dstr(rowArray);
     array_free(rowArray);
-TRACE1;
 
     ovs_asprintf(&tmp,"<center><table class=overview_poster %s>\n%s\n</table></center>\n",
             (g_dimension->poster_mode?"":" width=100%"),

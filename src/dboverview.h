@@ -45,7 +45,9 @@ DbGroupIMDB *parse_imdb_list(char *val,int val_len);
 
 unsigned int db_overview_hashf(DbItem *item);
 int db_overview_cmp_by_title(DbItem **item1,DbItem **item2);
-int db_overview_cmp_by_age(DbItem **item1,DbItem **item2);
+int db_overview_cmp_by_age_desc(DbItem **item1,DbItem **item2);
+int db_overview_cmp_by_year_asc(DbItem **item1,DbItem **item2);
+int db_overview_cmp_by_season_asc(DbItem **item1,DbItem **item2);
 int db_overview_name_eqf(DbItem *item1,DbItem *item2);
 DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbItem **));
 struct hashtable *db_overview_hash_create(DbItemSet **rowsets);

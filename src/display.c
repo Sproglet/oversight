@@ -3066,11 +3066,11 @@ TRACE;
             break;
         case TVBOXSET_VIEW_ID:
             HTML_LOG(0,"TODO sort by SEASON[%s]",sort);
-            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_season_asc);
             break;
         case MOVIEBOXSET_VIEW_ID:
             HTML_LOG(0,"TODO sort by YEAR[%s]",sort);
-            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_year_asc);
             break;
         default:
             if (sort && STRCMP(sort,DB_FLDID_TITLE) == 0) {
@@ -3081,7 +3081,7 @@ TRACE;
             } else {
 
                 HTML_LOG(0,"sort by age [%s]",sort);
-                sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age);
+                sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age_desc);
             }
     }
 

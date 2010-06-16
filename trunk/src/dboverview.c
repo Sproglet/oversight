@@ -115,9 +115,20 @@ int numSTRCMP(char *a,char *b) {
 
 // This function is inverted to usual sense as we wnat the oldest first.
 // This function is just used for sorting the overview AFTER it has been created.
-int db_overview_cmp_by_age(DbItem **item1,DbItem **item2) {
+int db_overview_cmp_by_age_desc(DbItem **item1,DbItem **item2)
+{
     //return (*item2)->date - (*item1)->date;
     return *timestamp_ptr(*item2)- *timestamp_ptr(*item1);
+}
+// This function is just used for sorting the overview AFTER it has been created.
+int db_overview_cmp_by_year_asc(DbItem **item1,DbItem **item2)
+{
+    return (*item1)->year - (*item2)->year;
+}
+// This function is just used for sorting the overview AFTER it has been created.
+int db_overview_cmp_by_season_asc(DbItem **item1,DbItem **item2)
+{
+    return (*item1)->season - (*item2)->season;
 }
 
 

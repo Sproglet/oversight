@@ -790,7 +790,7 @@ function lock(lock_file,fastfail,\
 attempts,sleep,backoff) {
     attempts=0;
     sleep=10;
-    split("10,10,20,30,60,120,300,600,600,600,600,1200",backoff,",");
+    split("10,10,20,30,60,120,300,300,300,300,300,600,600,600,600,600,1200",backoff,",");
     for(attempts=1 ; (attempts in backoff) ; attempts++) {
         if (is_locked(lock_file) == 0) {
             print PID > lock_file;

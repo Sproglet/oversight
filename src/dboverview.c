@@ -190,10 +190,10 @@ unsigned int db_overview_name_hashf(void *item) {
 #define EQ_STR(item1,item2,fld) (STRCMP(((DbItem*)(item1))->fld,((DbItem*)(item2))->fld) ==0)
 
 // true if two records have the same file. (should never happen really so just return 0
-//#define EQ_FILE(item1,item2) EQ_STR(item1,item2,file) && EQ_SHOW(item1,item2,source)
-#define EQ_FILE(item1,item2) 0
+//#define EQ_FILE(item1,item2) EQ_NUM(item1,item2,db) && EQ_STR(item1,item2,file) && EQ_SHOW(item1,item2,source)
+#define EQ_FILE(item1,item2) (item1 == item2)
 
-#define EQ_MOVIE(item1,item2) EQ_NUM(item1,item2,external_id)
+#define EQ_MOVIE(item1,item2) EQ_NUM(item1,item2,db) && EQ_NUM(item1,item2,external_id)
 
 // true if two records are part of the same show. Assuemes category=T already tested.
 #define EQ_SHOW(item1,item2) (EQ_NUM(item1,item2,year) && EQ_STR(item1,item2,title))

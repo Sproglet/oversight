@@ -1692,20 +1692,32 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
 
     if (mixed_sources) *mixed_sources=0;
 
-    char *out = MALLOC(10+10 * (1+row_id->link_count));
+    if (row_id->link_count == 0) {
+        DbItem *r;
+        for(r = row_id->linked ; r ; r=r->linked) {
+            row_id->link_count++;
+        }
+    }
+
+    int len = 10+10 * (1+row_id->link_count);
+    char *out = MALLOC(len);
 
     char *p = out;
 
     *p = '\0';
 
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-        if (STRCMP(ri->db->source,row_id->db->source) == 0) {
+        // if (STRCMP(ri->db->source,row_id->db->source) == 0) {
+        if (ri->db == row_id->db) {
 
             p += sprintf(p,"|%ld",ri->id);
         } else {
             if (mixed_sources) *mixed_sources=1;
         }
     }
+    HTML_LOG(0,"link count = %d",row_id->link_count);
+    assert(p < out+len);
+
     ovs_asprintf(&p,"%s%s)",idlist,out);
     FREE(idlist);
     FREE(out);
@@ -2744,6 +2756,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
         height_attr=STRDUP("");
     }
 
+TRACE1;
     char **idlist = CALLOC(rows*cols,sizeof(char *));
 
     // Create the idlist for each item
@@ -2755,6 +2768,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
             }
         }
     }
+TRACE1;
 
     // First output the javascript functions - diretly to stdout - lazy.
     write_titlechanger(gs->offset,rows,cols,numids,row_ids,idlist);
@@ -2770,6 +2784,7 @@ TRACE;
     }
     HTML_LOG(0,"rows = %d",rows);
     
+TRACE1;
 
     // Now build the table and return the text.
     for ( r = 0 ; r < rows ; r++ ) {
@@ -2811,9 +2826,11 @@ TRACE;
         HTML_LOG(1,"grid end row %d",r);
 
     }
+TRACE1;
     //
     // Free all of the idlists
     util_free_char_array(rows*cols,idlist);
+TRACE1;
 
     char *w;
     if (!g_dimension->poster_mode) {
@@ -2821,9 +2838,11 @@ TRACE;
     } else {
         w="";
     }
+TRACE1;
 
     result = array2dstr(rowArray);
     array_free(rowArray);
+TRACE1;
 
     ovs_asprintf(&tmp,"<center><table class=overview_poster %s>\n%s\n</table></center>\n",
             (g_dimension->poster_mode?"":" width=100%"),

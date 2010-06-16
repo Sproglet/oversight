@@ -1692,12 +1692,7 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
 
     if (mixed_sources) *mixed_sources=0;
 
-    int link_count = 0;
-    for( ri = row_id ; ri ; ri=ri->linked ) {
-        link_count++;
-    }
-
-    char *out = MALLOC(10+10 * link_count);
+    char *out = MALLOC(10+10 * (1+row_id->link_count));
 
     char *p = out;
 

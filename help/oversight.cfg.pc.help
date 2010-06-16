@@ -1,5 +1,5 @@
-ovs_poster_mode[720]:Display posters on main screen (720)|1|0
-ovs_rows[720]:Number of rows on front page (text mode only)
-ovs_cols[720]:Number of columns on front page (text mode only)
-ovs_font_size[720]:Font Size(720)|24
-ovs_button_size[720]:Button Size(720)|60
+ovs_poster_mode[pc]:Display posters on main screen|1|0
+ovs_rows[pc]:Number of rows on front page (text mode only)
+ovs_cols[pc]:Number of columns on front page (text mode only)
+ovs_font_size[pc]:Font Size|24
+ovs_button_size[pc]:Button Size|60

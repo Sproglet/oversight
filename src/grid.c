@@ -17,6 +17,7 @@ GridInfo *grid_info_init()
 {
     GridInfo *gi = CALLOC(1,sizeof(GridInfo));
     gi->page_size = DEFAULT_PAGE_SIZE;
+    gi->grid_direction = g_dimension->grid_direction;
     return gi;
 }
 
@@ -28,6 +29,7 @@ GridSegment *grid_info_add_segment(GridInfo *gi)
     GridSegment *gs = CALLOC(1,sizeof(GridSegment));
     array_add(gi->segments,gs);
     gs->parent = gi;
+    gs->grid_direction = gi->grid_direction;
     return gs;
 }
 

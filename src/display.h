@@ -19,15 +19,6 @@
 
 typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
 
-typedef enum MovieBoxsetMode_enum {
-    MOVIE_BOXSETS_UNSET , 
-    MOVIE_BOXSETS_NONE ,
-    MOVIE_BOXSETS_FIRST , // Box sets are related by first movie connection
-    MOVIE_BOXSETS_LAST , // Box sets are related by last movie connection 
-    MOVIE_BOXSETS_ANY    // Box sets are related by any movie connection
-} MovieBoxsetMode;
-
-MovieBoxsetMode movie_boxset_mode();
 
 void display_menu();
 
@@ -45,7 +36,7 @@ char *get_theme_image_return_link(char *href_attr,char *image_name,char *button_
 char *get_theme_image_link(char *qlist,char *href_attr,char *image_name,char *button_attr);
 char * get_poster_image_tag(DbItem *rowid,char *attr,ImageType image_type,char *newview);
 char *get_theme_image_tag(char *image_name,char *attr);
-char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows);
+char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows,GridDirection go);
 char *ovs_icon_type();
 char * get_local_image_link(char *path,char *alt_text,char *attr);
 char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,char *attr);

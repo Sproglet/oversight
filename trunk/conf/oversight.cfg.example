@@ -16,6 +16,7 @@ ovs_display_fanart=1
 ovs_display_certificate=1
 ovs_skin_name="classic"
 ovs_title_bar="poster_mode"
+ovs_grid_direction="horizontal"
 ovs_auto_prune=1
 ovs_use_folders_as_titles=0
 ovs_nas_timeout=90

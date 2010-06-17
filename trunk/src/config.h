@@ -4,12 +4,24 @@
 #include <stdio.h>
 #include "hashtable.h"
 #include "grid.h"
+#include "types.h"
 
 
 #define GRID_MAIN 0
 #define GRID_TVBOXSET 1
 #define GRID_MOVIEBOXSET 2
 
+
+
+typedef enum MovieBoxsetMode_enum {
+    MOVIE_BOXSETS_UNSET , 
+    MOVIE_BOXSETS_NONE ,
+    MOVIE_BOXSETS_FIRST , // Box sets are related by first movie connection
+    MOVIE_BOXSETS_LAST , // Box sets are related by last movie connection 
+    MOVIE_BOXSETS_ANY    // Box sets are related by any movie connection
+} MovieBoxsetMode;
+
+MovieBoxsetMode movie_boxset_mode();
 
 typedef struct dimension_str {
     int tv_mode;
@@ -32,6 +44,7 @@ typedef struct dimension_str {
     char *set_name; // eg 0=SD , 720=HD , pc=browser
     GridDimensions grids[3]; // main , tvboxset , movie boxset
     GridDimensions *current_grid;
+    GridDirection grid_direction;
 } Dimensions ;
 
 struct hashtable *config_load(char *filename,int include_unquoted_space);
@@ -74,4 +87,5 @@ char *query_view_val();
 char *query_select_val();
 enum ViewMode_enum get_view_mode();
 char *view_mode_to_str(enum ViewMode_enum m);
+GridDirection str2grid_direction(char *name);
 #endif

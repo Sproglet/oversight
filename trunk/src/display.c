@@ -2699,7 +2699,8 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
 // Generate the HTML for the grid. 
 // Note that the row_ids have already been pruned to only contain the items
 // for the current page.
-char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int page_before,int page_after) {
+char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int page_before,int page_after,GridDirection grid_direction)
+{
 
     int rows = gs->dimensions.rows;
 
@@ -2792,7 +2793,17 @@ TRACE;
         array_add(cellArray,tmp);
 
         for ( c = 0 ; c < cols ; c++ ) {
-            i = c * rows + r ;
+
+            switch(grid_direction) {
+                case GRID_ORDER_VERTICAL:
+                    i = c * rows + r ; break;
+                case GRID_ORDER_HORIZONTAL:
+                case GRID_ORDER_DEFAULT:
+                    i = r * cols + c ; break;
+
+                default:
+                    assert("bad grid order"==NULL);
+            }
 
             HTML_LOG(1,"grid col %d",c);
 
@@ -2851,7 +2862,7 @@ TRACE;
 }
 
 
-char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows) 
+char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows,GridDirection grid_direction) 
 {
     int numids = sorted_rows->num_rows;
     DbItem **row_ids = sorted_rows->rows;
@@ -2891,7 +2902,7 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
     int page_after = gs->offset + segment_total >= total;
 
 
-    char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after);
+    char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after,grid_direction);
     FREE(prunedRows);
     return ret;
 }
@@ -3334,28 +3345,6 @@ long use_tv_boxsets()
         }
     }
     return tv_boxsets;
-}
-
-MovieBoxsetMode movie_boxset_mode()
-{
-    static MovieBoxsetMode movie_boxsets = MOVIE_BOXSETS_UNSET;
-    if(movie_boxsets == MOVIE_BOXSETS_UNSET) {
-        char *tmp = oversight_val("ovs_movieboxsets");
-        if (strcmp(tmp,"by_first") == 0) {
-            movie_boxsets = MOVIE_BOXSETS_FIRST;
-        } else if (strcmp(tmp,"by_last") == 0) {
-            movie_boxsets = MOVIE_BOXSETS_LAST;
-        } else if (strcmp(tmp,"by_any") == 0) {
-            movie_boxsets = MOVIE_BOXSETS_ANY;
-        } else if (strcmp(tmp,"disabled") == 0) {
-            movie_boxsets = MOVIE_BOXSETS_NONE;
-        } else {
-            HTML_LOG(0,"Unexpected movie boxset mode [%s]",tmp);
-            movie_boxsets = MOVIE_BOXSETS_NONE;
-        }
-        HTML_LOG(0,"movie boxsets = [%s]=%d",tmp,movie_boxsets);
-    }
-    return movie_boxsets;
 }
 
 int playlist_size(DbSortedRows *sorted_rows)

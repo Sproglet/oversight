@@ -7,6 +7,7 @@
 #include <sys/statvfs.h>
 #include <sys/types.h>
 
+#include "grid.h"
 #include "template.h"
 #include "template_condition.h"
 #include "hashtable.h"
@@ -1038,8 +1039,11 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
         }
         gs->parent->page_size = atoi(tmp);
     }
+    if ((tmp = get_named_arg(h,"grid_order")) != NULL) {
+        gs->grid_direction = str2grid_direction(tmp);
+    }
 
-    char *result = get_grid(get_current_page(),gs,call_info->sorted_rows);
+    char *result = get_grid(get_current_page(),gs,call_info->sorted_rows,gs->grid_direction);
 
     free_named_args(h);
 

@@ -20,6 +20,61 @@ struct hashtable *config_load_fp(char *filename,FILE *fp,int include_unquoted_sp
 static inline void query_view_val_reset();
 static inline void query_select_val_reset();
 
+
+// ----------------------------------------------------------
+// Enumerations
+//
+typedef struct EnumSet_struct {
+    char *str;
+    int id;
+} EnumSet;
+
+int enum_name2id(char *name,EnumSet *es) {
+    int i;
+    for(i = 0 ; es[i].str ; i++ ) {
+        if (STRCMP(es[i].str,name) == 0) {
+            return es[i].id;
+        }
+    }
+    HTML_LOG(0,"Unexpected values [%s] defaults to [%d]",name,es[i].id);
+    return es[i].id; 
+}
+
+GridDirection str2grid_direction(char *tmp) {
+    static EnumSet s[] = {
+        { "default" , GRID_ORDER_DEFAULT } ,
+        { "horizontal" , GRID_ORDER_HORIZONTAL } ,
+        { "vertical" , GRID_ORDER_VERTICAL },
+        { NULL , GRID_ORDER_DEFAULT} } ;
+    return (GridDirection)enum_name2id(tmp,s);
+}
+
+// --------------------------------------------------------
+
+MovieBoxsetMode str2movie_boxset_mode(char *tmp)
+{
+    static EnumSet es[] = {
+        { "by_first", MOVIE_BOXSETS_FIRST },
+        { "by_last", MOVIE_BOXSETS_LAST },
+        { "by_any", MOVIE_BOXSETS_ANY },
+        { "disbled", MOVIE_BOXSETS_NONE },
+        { NULL, MOVIE_BOXSETS_NONE }
+    };
+    return (MovieBoxsetMode) enum_name2id(tmp,es);
+}
+
+MovieBoxsetMode movie_boxset_mode()
+{
+    static MovieBoxsetMode movie_boxsets = MOVIE_BOXSETS_UNSET;
+    if(movie_boxsets == MOVIE_BOXSETS_UNSET) {
+        char *tmp = oversight_val("ovs_movieboxsets");
+        movie_boxsets = str2movie_boxset_mode(tmp);
+    }
+    return movie_boxsets;
+}
+
+// ---------------------------------------------------------
+
 // Load all config files excep unpak.cfg - that is loaded on-demand by unpak_val()
 void load_ovs_configs()
 {
@@ -687,6 +742,9 @@ void config_read_dimensions() {
     if (g_oversight_config == NULL) {
         HTML_LOG(0,"No oversight config read");
     } else {
+
+        g_dimension->grid_direction = str2grid_direction(oversight_val("ovs_grid_direction"));
+
         config_get_long_indexed(g_oversight_config,"ovs_font_size",g_dimension->set_name,&(g_dimension->font_size));
         config_get_long_indexed(g_oversight_config,"ovs_title_size",g_dimension->set_name,&(g_dimension->title_size));
         config_get_long_indexed(g_oversight_config,"ovs_movie_poster_height",g_dimension->set_name,&(g_dimension->movie_img_height));

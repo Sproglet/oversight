@@ -679,12 +679,11 @@ DbGroupIMDB *parse_imdb_list(
         unsigned char *end = start+val_len;
         int id = 0;
         for(p = start ; p < end ; ) {
-            if (*p == 't') {
-                // Parse tt0000000
+            // tt or nm
+            if (( *p == 't' && p[1]=='t') || ( *p == 'n' && p[1]=='m')) {
+                // Parse tt0000000 or nm00000
+                p += 2;
                 char *q;
-                p++;
-                assert(*p == 't');
-                p ++;
                 id = strtol((char *)p,&q,10);
                 p = (unsigned char *)q;
 
@@ -760,7 +759,10 @@ char *db_group_imdb_compressed_string_static(DbGroupIMDB *g)
 }
 // Get string representation of a list of imdb ids.
 #define MAX_IMDB_IDLEN 9  // tt8888888
-char *db_group_imdb_string_static(DbGroupIMDB *g)
+char *db_group_imdb_string_static(
+        DbGroupIMDB *g,
+        char *prefix // tt or nm
+        )
 {
     static char buffer[(MAX_IMDB_IDLEN+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
     char *p = buffer;
@@ -773,7 +775,7 @@ char *db_group_imdb_string_static(DbGroupIMDB *g)
             if (i) {
                 *p++ = IMDB_GROUP_SEP;
             }
-            p += sprintf(p,"tt%07d",id);
+            p += sprintf(p,"%s%07d",prefix,id);
         }
     }
     *p = '\0';

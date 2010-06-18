@@ -109,10 +109,10 @@ if [ -z "${JOBID:-}" ] ; then
     JOBID=$$
 fi
 
-tmp_dir="$tmp_root/$JOBID"
-rm -fr "$tmp_dir"
-mkdir -p $tmp_dir
-PERMS $tmp_dir
+g_tmp_dir="$tmp_root/$JOBID"
+rm -fr "$g_tmp_dir"
+mkdir -p $g_tmp_dir
+PERMS $g_tmp_dir
 
 INDEX_DB="$APPDIR/index.db"
 if [ ! -s "$INDEX_DB" ] ; then
@@ -139,7 +139,7 @@ fi
 # note replace ^M with ^L-^N to avoid eol issues with subervsion
 # eol-style not doing as expected via cygwin/windows.
 if grep -q '[-]' "$CONF_FILE" ; then
-    tmpFile="$tmp_dir/catalog.cfg.$$"
+    tmpFile="$g_tmp_dir/catalog.cfg.$$"
     sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
     cat "$tmpFile" > "$CONF_FILE"
     rm -f "$tmpFile"
@@ -279,10 +279,33 @@ catalog() {
     "OVERSIGHT_ID=$OVERSIGHT_ID" \
     "AWK=$AWK" \
     "NMT_APP_DIR=$NMT_APP_DIR" \
-    g_tmp_dir="$tmp_dir" \
+    g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
+
+    update_imdb_list "directors.db"
+    update_imdb_list "actors.db"
+}
+
+# If a new file has been created - merge it with the existing one and sort.
+# We may need to specify the sort key more precisely if the id length varies.
+update_imdb_list() {
+
+    dnew="$g_tmp_dir/$1.$$"
+    dold="$APPDIR/db/$1"
+
+    set -x
+
+    if [ -f "$dnew" ] ; then
+        touch "$dold" || true
+        sort -u "$dnew" "$dold" > "$dnew.new" &&\
+        mv "$dnew.new" "$dold" &&\
+        PERMS "$dold" &&\
+        rm -f "$dnew"
+    fi
+     
+    set +x
 }
 
 tidy() {
@@ -306,7 +329,7 @@ main() {
     x=$?
     set -e
 
-    rm -fr -- "$tmp_dir"
+    rm -fr -- "$g_tmp_dir"
     chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$APPDIR/tmp" || true
     return $x
 }

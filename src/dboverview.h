@@ -36,7 +36,10 @@ typedef struct DbGroupDef_struct {
 
 } DbGroupDef;
 
-char *db_group_imdb_string_static(DbGroupIMDB *g);
+char *db_group_imdb_string_static(
+        DbGroupIMDB *g,
+        char *prefix // tt or nm
+        );
 char *db_group_imdb_compressed_string_static(DbGroupIMDB *g);
 
 DbGroupIMDB *db_group_imdb_new(int size);

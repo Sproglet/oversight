@@ -52,7 +52,6 @@ typedef struct Dbrowid_struct {
     char *fanart;
     char *parts;
     char *episode;
-    char *director;
 
     //only populate if deleting
     char *nfo;
@@ -88,6 +87,8 @@ typedef struct Dbrowid_struct {
     struct DbGroupIMDB_struct *comes_after;
     struct DbGroupIMDB_struct *comes_before;
     struct DbGroupIMDB_struct *remakes;
+
+    struct DbGroupIMDB_struct *directors;
 
     // Set for first row in the list.
     // These fields will be moved to the ItemList structure once I create a list of Items

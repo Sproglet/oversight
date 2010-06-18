@@ -219,18 +219,22 @@ DbItem *dbread_and_parse_row(
         }
     }
 
-#if 0
     if (rowid) {
+#if 0
         if (rowid->comes_after) {
             HTML_LOG(0,"[%s/%d] comes_after [%s]",rowid->title,rowid->external_id,
-                    db_group_imdb_string_static(rowid->comes_after));
+                    db_group_imdb_string_static(rowid->comes_after,"tt"));
         }
         if (rowid->comes_before) {
             HTML_LOG(0,"[%s/%d] comes_before [%s]",rowid->title,rowid->external_id,
-                    db_group_imdb_string_static(rowid->comes_before));
+                    db_group_imdb_string_static(rowid->comes_before,"tt"));
+        }
+#endif
+        if (rowid->directors) {
+            HTML_LOG(0,"[%s/%d] directors [%s]",rowid->title,rowid->external_id,
+                    db_group_imdb_string_static(rowid->directors,"nm"));
         }
     }
-#endif
     return rowid;
 }
 
@@ -277,9 +281,10 @@ void db_rowid_dump(DbItem *item)
     HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime(&t)));
     t = item->airdate_imdb;
     HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime(&t)));
-    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(item->comes_after));
-    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before));
-    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes));
+    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(item->comes_after,"tt"));
+    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before,"tt"));
+    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes,"tt"));
+    HTML_LOG(1,"ROWID: directors(%s)",db_group_imdb_string_static(item->directors,"nm"));
     HTML_LOG(1,"----");
 }
 
@@ -394,6 +399,9 @@ int idlist_index(int id,int size,int *ids)
 #define DB_VAL_BUF_SIZE 4000
 #define ROW_SIZE 10000
 
+// Not used at the moment, the code modifies the index.db using sed like behaviour
+// so no need to write a row ...yet.. but this may change once the db editor is implemented.
+#if 0
 //changes here should be reflected in catalog.sh.full:createIndexRow()
 void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t%s\t%ld",DB_FLDID_ID,item->id);
@@ -420,8 +428,8 @@ void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_ADDITIONAL_INFO,item->additional_nfo);
     fprintf(fp,"\t%s\t%s",DB_FLDID_URL,item->url);
     fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,item->certificate);
-    if (item->director) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR,NVL(item->director));
+    if (item->directors) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR,db_group_imdb_compressed_string_static(item->directors));
     }
     fprintf(fp,"\t%s\t%s",DB_FLDID_FILETIME,fmt_timestamp_static(item->filetime));
     fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(item->downloadtime));
@@ -450,6 +458,7 @@ void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t\n");
     fflush(fp);
 }
+#endif
 
 #define DB_SEP '\t'
 
@@ -571,8 +580,9 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                 break;
             case 'd':
                 if (*p == '\0') { // _d
-                    *offset=&(rowid->director);
-                    *type = FIELD_TYPE_STR;
+                    *offset=&(rowid->directors);
+                    *type = FIELD_TYPE_IMDB_LIST;
+                    *overview = 1;
                 }
                 break;
             case 'D':

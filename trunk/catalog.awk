@@ -6572,8 +6572,9 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 }
                 sec=POSTER;
             }
-            if (g_director[idx] == "" && index(line,"Director:")) {
-                g_director[idx] = scrape_until("idirector",f,"/name/",1);
+            if (g_director[idx] == "" && index(line,">Director")) {
+                g_director[idx] = get_directors(raw_scrape_until("director",f,"</div>",0));
+                g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
                 sec=DIRECTOR;
             }
 
@@ -6648,6 +6649,27 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
     }
     if (sec) delete isection[sec];
     return imdbContentPosition;
+}
+
+function get_directors(text,\
+dtext,dpos,dnum,i,id,name,dlist) {
+    dnum = get_regex_pos(text,"(/nm[0-9]+|>[^<]+</a>)",0,dtext,dpos);
+    for(i = 1 ; i <= dnum ; i++ ) {
+        INF("director["dtext[i]"]");
+        if (substr(dtext[i],1,3) == "/nm" ) {
+            id=substr(dtext[i],2);
+            getname=1;
+
+        } else if (id ) {
+            # Extract name from <a> tag
+            name=extractTagText("<a"dtext[i],"a");
+            dlist=dlist ","id;
+            print id":"name > g_tmp_dir"/directors.db."PID  ;
+            id="";
+        }
+    }
+    INF("directors"dlist);
+    return substr(dlist,2);
 }
 
 function extract_imdb_title_category(idx,title\
@@ -7800,7 +7822,7 @@ i,n,out,ids,m,id) {
     for(i = 1 ; i <= n ; i++ ) {
 
 
-        if (index(ids[i],"tt") == 1) {
+        if (index(ids[i],"tt") == 1 || index(ids[i],"nm") == 1) {
 
             id = substr(ids[i],3);
 

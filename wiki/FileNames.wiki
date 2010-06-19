@@ -95,10 +95,7 @@ The image sizes are :
 || Video mode || Resolution ||
 || SD NTSC || 685 x 460 ||
 || SD PAL || 685 x 542 (note this will appear stretched in a normal image viewer, but this will compensate for a bug in the GAYA viewer) ||
-|| HD 720 || 1280 x 720 ||
-|| HD 1080 on A110 etc || 1280 x 720 ||
-|| HD 1080 on C200 || TBD ||
-
+|| HD 720/1080 || 1280 x 720 ||
 
 
 Again this may change to automatically chose any landscape image in the same folder.

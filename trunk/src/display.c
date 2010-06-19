@@ -2803,6 +2803,7 @@ TRACE;
 
                 default:
                     assert("bad grid order"==NULL);
+                    i = r * cols + c ; break;
             }
 
             HTML_LOG(1,"grid col %d",c);

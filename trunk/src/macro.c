@@ -1969,7 +1969,7 @@ HTML_LOG(0,"%s = %d",class,group->dbgi_size);
 
                     i = r * cols + c;
                     if (  i < group->dbgi_size ) {
-                        ovs_asprintf(&tmp,"%d",group->dbgi_ids[i]);
+                        ovs_asprintf(&tmp,"nm%07d",group->dbgi_ids[i]);
                         array_add(out,tmp);
                     }
 

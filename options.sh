@@ -113,17 +113,20 @@ tmpf,count,err) {
 
     delete opts;
     tmpf = "'"$TMPDIR/option.$$"'";
-    cmd = cmd" > \""tmpf"\"";
+    cmd = cmd" > "quoteFile(tmpf);
     if (system(cmd) == 0 ) {
-        count = 0;
-        while ( err = (getline opts[++count] < tmpf ) > 0 ) {
+        count = 1;
+        while ( err = (getline opts[count] < tmpf ) > 0  ) {
+            count++;
         }
+        count--;
         if (err != -1)  {
             close(tmpf)
         }
     } else {
         print "<-- ERROR: failed to run ["cmd"] -->";
     }
+    system("rm -f "quoteFile(tmpf));
     return count;
 }
 

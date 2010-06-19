@@ -28,7 +28,7 @@
 #define DB_FLDID_GENRE "_G"
 #define DB_FLDID_RATING "_r"
 #define DB_FLDID_CERT "_R"
-#define DB_FLDID_DIRECTOR "_d"
+#define DB_FLDID_DIRECTOR_LIST "_d"
 #define DB_FLDID_EPPLOT "_ep"
 #define DB_FLDID_PLOT "_P"
 #define DB_FLDID_URL "_U"
@@ -50,6 +50,7 @@
 #define DB_FLDID_COMES_AFTER "_a"
 #define DB_FLDID_COMES_BEFORE "_b"
 #define DB_FLDID_REMAKE "_k"
+#define DB_FLDID_ACTOR_LIST "_A"
 
 
 char *dbf_macro_to_fieldid(char *macro);

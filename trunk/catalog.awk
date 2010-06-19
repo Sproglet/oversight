@@ -873,6 +873,7 @@ function set_db_fields() {
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
     TITLE=db_field("_T","Title","title",1) ;
     DIRECTOR=db_field("_d","Director","director",1) ;
+    ACTORS=db_field("_A","Actors","actors",1) ;
     CREATOR=db_field("_c","Creator","creator") ;
     AKA=db_field("_K","AKA","",1);
 
@@ -3342,6 +3343,7 @@ function clean_globals() {
     delete gCertRating;
     delete gCertCountry;
     delete g_director;
+    delete g_actors;
     delete g_poster;
     delete g_genre;
     delete g_runtime;
@@ -6572,8 +6574,13 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 }
                 sec=POSTER;
             }
+            if (g_actors[idx] == "" && index(line,">Cast")) {
+                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),10);
+                g_actors[idx] = imdb_list_shrink(g_actors[idx],",",128);
+                sec=ACTORS;
+            }
             if (g_director[idx] == "" && index(line,">Director")) {
-                g_director[idx] = get_directors(raw_scrape_until("director",f,"</div>",0));
+                g_director[idx] = get_names("directors",raw_scrape_until("director",f,"</div>",0),0);
                 g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
                 sec=DIRECTOR;
             }
@@ -6651,21 +6658,24 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
     return imdbContentPosition;
 }
 
-function get_directors(text,\
-dtext,dpos,dnum,i,id,name,dlist) {
+function get_names(name_db,text,maxnames,\
+dtext,dpos,dnum,i,id,name,dlist,count) {
     dnum = get_regex_pos(text,"(/nm[0-9]+|>[^<]+</a>)",0,dtext,dpos);
     for(i = 1 ; i <= dnum ; i++ ) {
-        INF("director["dtext[i]"]");
+        INF(name_db"["dtext[i]"]");
         if (substr(dtext[i],1,3) == "/nm" ) {
             id=substr(dtext[i],2);
-            getname=1;
 
         } else if (id ) {
             # Extract name from <a> tag
             name=extractTagText("<a"dtext[i],"a");
             dlist=dlist ","id;
-            print id":"name > g_tmp_dir"/directors.db."PID  ;
+            print id":"name > g_tmp_dir"/"name_db".db."PID  ;
             id="";
+            count++;
+            if (maxnames+0 > 0 && count+0 >= maxnames+0) {
+                break;
+            }
         }
     }
     INF("directors"dlist);
@@ -7462,6 +7472,7 @@ row,est,nfo,op,start) {
 
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
     if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i];
+    if (g_actors[i]) row=row"\t"ACTORS"\t"g_actors[i];
 
     row=row"\t"FILETIME"\t"shorttime(g_file_time[i]);
     row=row"\t"DOWNLOADTIME"\t"shorttime(est);
@@ -7892,10 +7903,13 @@ function lang_test(idx) {
 function first_result() {
     INF("first_result: not impleneted");
 }
+function get_director_name() {
+    INF("get_director_name: not impleneted");
+}
 function scrape_es(idx,details,\
 url) {
     delete details;
-    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"g_director[idx]"+"url_encode("inurl:http://www.filmaffinity.com/en"));
+    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"get_director_name(idx)"+"url_encode("inurl:http://www.filmaffinity.com/en"));
     if (sub("/en/","/es/",url)) {
         HTML_LOG(0,"es "url);
     }
@@ -7903,7 +7917,7 @@ url) {
 function scrape_fr(idx,details,\
 url) {
     delete details;
-    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"g_director[idx]"+"\
+    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"get_director_name(idx)"+"\
     url_encode("inurl:http://www.screenrush.co.uk")"+"\
     url_encode("inurlfichefilm_gen_cfilm"));
     if (sub("/screenrush.co.uk/","/allocine.fr/",url)) {
@@ -7913,7 +7927,7 @@ url) {
 function scrape_it(idx,details,\
 url) {
     delete details;
-    url=first_result(gTitle[idx]" "g_director[idx]" "url_encode("intitle:Scheda")"+"\
+    url=first_result(gTitle[idx]" "get_director_name(idx)" "url_encode("intitle:Scheda")"+"\
     url_encode("site:filmup.leonardo.it"));
     HTML_LOG(0,"it "url);
 }

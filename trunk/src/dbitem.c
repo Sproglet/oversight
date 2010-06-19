@@ -229,11 +229,15 @@ DbItem *dbread_and_parse_row(
             HTML_LOG(0,"[%s/%d] comes_before [%s]",rowid->title,rowid->external_id,
                     db_group_imdb_string_static(rowid->comes_before,"tt"));
         }
-#endif
         if (rowid->directors) {
             HTML_LOG(0,"[%s/%d] directors [%s]",rowid->title,rowid->external_id,
                     db_group_imdb_string_static(rowid->directors,"nm"));
         }
+        if (rowid->actors) {
+            HTML_LOG(0,"[%s/%d] actors [%s]",rowid->title,rowid->external_id,
+                    db_group_imdb_string_static(rowid->actors,"nm"));
+        }
+#endif
     }
     return rowid;
 }
@@ -285,6 +289,7 @@ void db_rowid_dump(DbItem *item)
     HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before,"tt"));
     HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes,"tt"));
     HTML_LOG(1,"ROWID: directors(%s)",db_group_imdb_string_static(item->directors,"nm"));
+    HTML_LOG(1,"ROWID: actors(%s)",db_group_imdb_string_static(item->actors,"nm"));
     HTML_LOG(1,"----");
 }
 
@@ -429,7 +434,9 @@ void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_URL,item->url);
     fprintf(fp,"\t%s\t%s",DB_FLDID_CERT,item->certificate);
     if (item->directors) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR,db_group_imdb_compressed_string_static(item->directors));
+        fprintf(fp,"\t%s\t%s",DB_FLDID_DIRECTOR_LIST,db_group_imdb_compressed_string_static(item->directors));
+    if (item->actors) {
+        fprintf(fp,"\t%s\t%s",DB_FLDID_ACTOR_LIST,db_group_imdb_compressed_string_static(item->actors));
     }
     fprintf(fp,"\t%s\t%s",DB_FLDID_FILETIME,fmt_timestamp_static(item->filetime));
     fprintf(fp,"\t%s\t%s",DB_FLDID_DOWNLOADTIME,fmt_timestamp_static(item->downloadtime));
@@ -560,6 +567,13 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                     }
                 } else if (*p == '\0' ) { // _a
                     *offset=&(rowid->comes_after);
+                    *type = FIELD_TYPE_IMDB_LIST;
+                    *overview = 1;
+                }
+                break;
+            case 'A':
+                if (*p == '\0') { // _A
+                    *offset=&(rowid->actors);
                     *type = FIELD_TYPE_IMDB_LIST;
                     *overview = 1;
                 }

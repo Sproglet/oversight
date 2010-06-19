@@ -33,5 +33,7 @@ read x
 
 svn commit -m "release $label"
 
+wget -O - "http://code.google.com/feeds/issues/p/oversight/issues/full?max-results=9999" | awk '{ gsub(/></,">\n<",$0); print }' > issue_list.xml
+
 #svn copy https://oversight.googlecode.com/svn/trunk/  "https://oversight.googlecode.com/svn/tags/$label" -m "$label"
 #./bundle.unpak

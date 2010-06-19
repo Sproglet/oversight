@@ -1946,6 +1946,74 @@ char *macro_fn_play_tvid(MacroCallInfo *call_info) {
     return result;
 }
 
+char *name_list_macro(DbGroupIMDB *group,char *class,int rows,int cols)
+{
+    char *result = NULL;
+TRACE1;
+HTML_LOG(0,"%s = %d",class,group);
+    if (group ) {
+HTML_LOG(0,"%s = %d",class,group->dbgi_size);
+        if (group->dbgi_size) {
+    TRACE1;
+            Array *out = array_new(free);
+            char *tmp;
+            ovs_asprintf(&tmp,"<table class=\"%s\">\n",class);
+            array_add(out,tmp);
+            
+            int r,c;
+            int i;
+            for (r = 0 ; r < rows ; r++ ) {
+                array_add(out,STRDUP("<tr>"));
+                for (c = 0 ; c < cols ; c++ ) {
+                    array_add(out,STRDUP("<td>"));
+
+                    i = r * cols + c;
+                    if (  i < group->dbgi_size ) {
+                        ovs_asprintf(&tmp,"%d",group->dbgi_ids[i]);
+                        array_add(out,tmp);
+                    }
+
+                    array_add(out,STRDUP("</td>"));
+                }
+                array_add(out,STRDUP("</tr>\n"));
+            }
+
+            array_add(out,STRDUP("</table>\n"));
+            result = arraystr(out);
+            array_free(out);
+        }
+    }
+    return result;
+}
+
+char *macro_fn_actors(MacroCallInfo *call_info) {
+    char *result = NULL;
+TRACE1;
+    if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
+        char *tmp;
+        int rows=3,cols=3;
+        struct hashtable *h = args_to_hash(call_info->args,"rows,cols",NULL);
+        if ((tmp = get_named_arg(h,"rows")) != NULL) {
+            cols = atoi(tmp);
+        }
+        if ((tmp = get_named_arg(h,"cols")) != NULL) {
+            rows = atoi(tmp);
+        }
+TRACE1;
+        result = name_list_macro(call_info->sorted_rows->rows[0]->actors,"actors",rows,cols);
+        free_named_args(h);
+    }
+    return result;
+}
+
+char *macro_fn_directors(MacroCallInfo *call_info) {
+    char *result = NULL;
+    if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
+        result = name_list_macro(call_info->sorted_rows->rows[0]->directors,"directors",1,2);
+    }
+    return result;
+}
+
 
 
 void macro_init() {
@@ -1954,6 +2022,7 @@ void macro_init() {
         //HTML_LOG(1,"begin macro init");
         macros = string_string_hashtable("macro_names",64);
 
+        hashtable_insert(macros,"ACTORS",macro_fn_actors);
         hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
@@ -1961,6 +2030,7 @@ void macro_init() {
         hashtable_insert(macros,"BODY_WIDTH",macro_fn_body_width);
         hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
+        hashtable_insert(macros,"DIRECTORS",macro_fn_directors);
         hashtable_insert(macros,"CONFIG_LINK",macro_fn_admin_config_link);
         hashtable_insert(macros,"DELETE_BUTTON",macro_fn_delete_button);
         hashtable_insert(macros,"EDIT_CONFIG",macro_fn_edit_config);

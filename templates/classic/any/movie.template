@@ -59,7 +59,7 @@ body { color:yellow ; background-color:black; }
                                 <td colspan=2 class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
                             </tr>
                             <tr>
-                                <td align="left" ><font id="genre">[:GENRE:]</font></td>
+                                <td align="left" ><font id="genre">[:GENRE:] / [:DIRECTORS:]</font></td>
                                 <td align="right" >[:RATING_STARS(5):][:RATING:]</td>
                             </tr>
                             <tr>
@@ -72,7 +72,7 @@ body { color:yellow ; background-color:black; }
 [:EXTERNAL_URL:]
 </td>
                             </tr>
-                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:]</span></td><tr>
+                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:] [:ACTORS(rows=>5,cols=>2):]</span></td><tr>
                             <tr><td colspan=2>[:MOVIE_LISTING:]</td></tr>
                             <tr><td colspan=2>
                                 [:INCLUDE_TEMPLATE(submit_btn):]

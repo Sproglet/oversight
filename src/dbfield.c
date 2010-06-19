@@ -26,7 +26,8 @@ void dbf_ids_init()
     add_label(DB_FLDID_FILE,"FILE");
     add_label(DB_FLDID_NAME,"NAME");
     add_label(DB_FLDID_DIR,"DIR");
-    add_label(DB_FLDID_DIRECTOR,"DIRECTOR");
+    add_label(DB_FLDID_DIRECTOR_LIST,"DIRECTORS");
+    add_label(DB_FLDID_ACTOR_LIST,"ACTORS");
 
 
     add_label(DB_FLDID_ORIG_TITLE,"ORIG_TITLE");

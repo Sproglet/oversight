@@ -1,5 +1,7 @@
 Checkin status:
 
+Add lazy evanluation for IMDB_LISTs. Just load the string. Parse when needed. esp Actors
+
 Movie boxsets must always be sort by Year - For Matrix may even need release date.
 
 HIGH:

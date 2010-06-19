@@ -656,9 +656,14 @@ void db_overview_hash_destroy(struct hashtable *ovw_hash) {
 void db_group_imdb_add(DbGroupIMDB *g,int id) {
 
     int size = g->dbgi_size;
-    assert(size < IMDB_GROUP_MAX_SIZE-1);
-    g->dbgi_ids[size++] = id;
-    g->dbgi_size = size;
+    //assert(size < IMDB_GROUP_MAX_SIZE-1);
+    if (size >= IMDB_GROUP_MAX_SIZE ) {
+        HTML_LOG(0,"truncated imdb starting %07d. %07d not added",
+                g->dbgi_ids[0],id);
+    } else {
+        g->dbgi_ids[size++] = id;
+        g->dbgi_size = size;
+    }
 }
 
 /**

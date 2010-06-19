@@ -149,6 +149,8 @@ TRACE;
     }
 TRACE;
     db->plot_file = replace_all(db->path,"index.db","plot.db",0);
+    db->directors_file = replace_all(db->path,"index.db","db/directors.db",0);
+    db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
 
 TRACE;
     db->source= STRDUP(source);

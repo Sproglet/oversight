@@ -16,6 +16,7 @@
 #include "db.h"
 #include "dbread.h"
 #include "dbitem.h"
+#include "dbnames.h"
 #include "dboverview.h"
 #include "dbplot.h"
 #include "actions.h"
@@ -163,6 +164,17 @@ TRACE;
 
 TRACE;
     db->locked_by_this_code=0;
+
+    // Test code
+    char *actor=query_val("actor");
+    char *director=query_val("director");
+    if (!EMPTY_STR(actor)) {
+        HTML_LOG(0,"actor [%s] = [%s]",actor,dbnames_fetch_static(actor,db->actors_file));
+    }
+    if (!EMPTY_STR(director)) {
+        HTML_LOG(0,"director [%s] = [%s]",director,dbnames_fetch_static(director,db->directors_file));
+    }
+
     return db;
 }
 

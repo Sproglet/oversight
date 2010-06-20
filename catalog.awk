@@ -165,6 +165,7 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    g_num_actors=15;
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
     g_max_db_len=4000;
@@ -6575,7 +6576,7 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 sec=POSTER;
             }
             if (g_actors[idx] == "" && index(line,">Cast")) {
-                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),10);
+                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),g_num_actors);
                 g_actors[idx] = imdb_list_shrink(g_actors[idx],",",128);
                 sec=ACTORS;
             }

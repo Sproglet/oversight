@@ -1,5 +1,6 @@
 Checkin status:
 
+Make IMDB Group self expanding. Start at 15 and expand by 15
 Add lazy evanluation for IMDB_LISTs. Just load the string. Parse when needed. esp Actors
 
 Movie boxsets must always be sort by Year - For Matrix may even need release date.

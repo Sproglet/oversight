@@ -26,6 +26,8 @@ update() {
     ratings
     release-dates';
 
+    files='actors';
+
     mirrors='ftp://ftp.fu-berlin.de/pub/misc/movies/database/
     ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/
     ftp://ftp.sunet.se/pub/tv+movies/imdb/';

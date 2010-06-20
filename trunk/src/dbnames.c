@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -42,29 +43,33 @@ static inline int full_record(char *name) {
 static inline long seek_back(FILE *fp,long start) {
 
     long result=-1;
+    long prev;
 
-    // goto start
+    // goto start - DB_PERSON_NAME_SIZE
     //HTML_LOG(0,"seek back from [%ld]",start);
-    if (fseek(fp,start,SEEK_SET) == 0) {
-
-        // go back max record size
-        if (fseek(fp,-DB_PERSON_NAME_SIZE,SEEK_CUR) == 0) {
-            long prev = ftell(fp);
-            long bytes;
-            // Read previous record (and also a bit more in case 'start' was pointing
-            // at m0001 and we just needed to go back 1 byte.
-            if ((bytes=fread(name,1,start-prev+PREFIX_LEN,fp)) >= 0) {
-                //HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name);
-                char *p;
-                for( p = name+bytes-PREFIX_LEN ; p >= name ; p--) {
-                    if (full_record(p)) {
-                        fseek(fp,prev+(p-name),SEEK_SET);
-                        //HTML_LOG(0,"seeked back to [%ld]",prev+(p-name));
-                        result = prev+(p-name);
-                        break;
-                    }
+    prev= start - DB_PERSON_NAME_SIZE;
+    if (prev< 0) {
+        prev= 0;
+    }
+    if (fseek(fp,prev,SEEK_SET) != 0) {
+        HTML_LOG(0,"seek start [%ld] failed. errno = %d",start,errno);
+    } else {
+        long bytes;
+        // Read previous record (and also a bit more in case 'start' was pointing
+        // at m0001 and we just needed to go back 1 byte.
+        if ((bytes=fread(name,1,start-prev+PREFIX_LEN,fp)) >= 0) {
+            //HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name);
+            char *p;
+            for( p = name+bytes-PREFIX_LEN ; p >= name ; p--) {
+                if (full_record(p)) {
+                    fseek(fp,prev+(p-name),SEEK_SET);
+                    //HTML_LOG(0,"seeked back to [%ld]",prev+(p-name));
+                    result = prev+(p-name);
+                    break;
                 }
             }
+        } else {
+            HTML_LOG(0,"Failed to read bytes [%ld]. errno = %d",bytes,errno);
         }
     }
 
@@ -132,8 +137,19 @@ char *dbnames_fetch_static(char *key,char *file)
         FILE *f = fopen(file,"rba");
         if (f) {
             result = dbnames_fetch_chop_static(key,f,0,st.st_size);
+
+            // Remove trailing \n \r
+            char *p = result+strlen(result);
+            if (result) {
+                if ((p=strchr(result,'\n')) != NULL) {
+                    *p = '\0';
+                }
+            }
+
             fclose(f);
         }
     }
+    HTML_LOG(0,"dbnames_fetch_chop_static[%s]=[%s]",key,result);
+
     return result;
 }

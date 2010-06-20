@@ -1950,12 +1950,8 @@ char *macro_fn_play_tvid(MacroCallInfo *call_info) {
 char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,int cols)
 {
     char *result = NULL;
-TRACE1;
-HTML_LOG(0,"%s = %d",class,group);
     if (group ) {
-HTML_LOG(0,"%s = %d",class,group->dbgi_size);
         if (group->dbgi_size) {
-    TRACE1;
             Array *out = array_new(free);
             char *tmp;
             ovs_asprintf(&tmp,"<table class=\"%s\">\n",class);
@@ -1996,8 +1992,8 @@ HTML_LOG(0,"%s = %d",class,group->dbgi_size);
 }
 
 char *macro_fn_actors(MacroCallInfo *call_info) {
+
     char *result = NULL;
-TRACE1;
     if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
         char *tmp;
         int rows=3,cols=3;
@@ -2010,7 +2006,7 @@ TRACE1;
         }
 
         DbItem *item = call_info->sorted_rows->rows[0];
-TRACE1;
+
         result = name_list_macro(item->db->actors_file,item->actors,"actors",rows,cols);
         free_named_args(h);
     }

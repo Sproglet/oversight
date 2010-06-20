@@ -16,6 +16,7 @@
 #include "util.h"
 #include "oversight.h"
 #include "db.h"
+#include "dbnames.h"
 #include "dbplot.h"
 #include "display.h"
 #include "dboverview.h"
@@ -1946,7 +1947,7 @@ char *macro_fn_play_tvid(MacroCallInfo *call_info) {
     return result;
 }
 
-char *name_list_macro(DbGroupIMDB *group,char *class,int rows,int cols)
+char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,int cols)
 {
     char *result = NULL;
 TRACE1;
@@ -1969,8 +1970,16 @@ HTML_LOG(0,"%s = %d",class,group->dbgi_size);
 
                     i = r * cols + c;
                     if (  i < group->dbgi_size ) {
-                        ovs_asprintf(&tmp,"nm%07d",group->dbgi_ids[i]);
-                        array_add(out,tmp);
+                        char id[10];
+                        char *name;
+
+                        sprintf(id,"nm%07d",group->dbgi_ids[i]);
+                        name=dbnames_fetch_static(id,name_file);
+
+
+                        //At present name is "nm0000000:First Last" but this may 
+                        //change.
+                        array_add(out,STRDUP(name?name+10:id));
                     }
 
                     array_add(out,STRDUP("</td>"));
@@ -1999,8 +2008,10 @@ TRACE1;
         if ((tmp = get_named_arg(h,"cols")) != NULL) {
             rows = atoi(tmp);
         }
+
+        DbItem *item = call_info->sorted_rows->rows[0];
 TRACE1;
-        result = name_list_macro(call_info->sorted_rows->rows[0]->actors,"actors",rows,cols);
+        result = name_list_macro(item->db->actors_file,item->actors,"actors",rows,cols);
         free_named_args(h);
     }
     return result;
@@ -2009,7 +2020,8 @@ TRACE1;
 char *macro_fn_directors(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
-        result = name_list_macro(call_info->sorted_rows->rows[0]->directors,"directors",1,2);
+        DbItem *item = call_info->sorted_rows->rows[0];
+        result = name_list_macro(item->db->directors_file,item->directors,"directors",1,2);
     }
     return result;
 }

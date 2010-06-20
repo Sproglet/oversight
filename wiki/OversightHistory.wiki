@@ -3,7 +3,7 @@
 Oversight grew out a requirement to easily find new stuff that had downloaded to my NMT.
 It didn't really start off with the intention of being a graphical jukebox.
 
-The NMT platform has a built in usenet client (nzbget) for which I wrote a post-processing script to automatically move and rename things in a tidy way. The problem was, because the NMT GUI does not have a 'search by date/age' feature, it was difficult to work out what had downloaded recently. Especially as nzbget did not have a history of jobs that could be easily inspected.
+The NMT platform has a built in usenet client (nzbget) for which I wrote a post-processing script to automatically move and rename things in a tidy way. The problem was, because the NMT GUI does not have a 'search by date/age' feature, it was difficult to work out what had downloaded recently. Especially as, at the time, nzbget did not have a history of jobs that could be easily inspected.
 
 First I started trying to create hard links to new media, so the new content would appear in the standard NMT file browser, with names that would show me the most recent downloads first.
 

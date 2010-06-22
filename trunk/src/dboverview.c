@@ -69,6 +69,7 @@ int in_db_imdb_group(DbItem *item,DbGroupIMDB *g)
 {
     int result = 0 ;
     if (g && item->external_id ) {
+        EVALUATE_GROUP(g);
         result = bchop(item->external_id,g->dbgi_size,g->dbgi_ids) >= 0;
     } 
     return result;
@@ -268,6 +269,7 @@ int db_overview_general_eqf(void *item1,void *item2) {
 // *list = 1 (return from comes_after ) =2 return external_id , =3 return from comes_before
 // *idx = index within the above list.
 // If *idx exceeeds list size then *list is incremented.
+// group must be evaluated first.
 //
 static inline int get_imdbid_from_connections(DbItem *r,int *list,int *idx) {
     switch(*list) {
@@ -299,8 +301,13 @@ static inline int get_imdbid_from_connections(DbItem *r,int *list,int *idx) {
             return 0;
     }
 }
-#define FIRST_CONNECTION(r) ((r)->comes_after?(r)->comes_after->dbgi_ids[0]:(r)->external_id)
-#define LAST_CONNECTION(r) ((r)->comes_before?(r)->comes_before->dbgi_ids[(r)->comes_before->dbgi_size-1]:(r)->external_id)
+#define FIRST_CONNECTION(r) ((r)->comes_after\
+        ?(r)->comes_after->dbgi_ids[0]\
+        :(r)->external_id)
+
+#define LAST_CONNECTION(r) ((r)->comes_before\
+        ?(r)->comes_before->dbgi_ids[(r)->comes_before->dbgi_size-1]\
+        :(r)->external_id)
 
 static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode)
 {
@@ -320,12 +327,20 @@ static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetM
 
            switch(movie_boxset_mode) {
                case MOVIE_BOXSETS_FIRST:
+                   //EVALUATE_GROUP(item1->comes_after);
+                   //EVALUATE_GROUP(item2->comes_after);
                    ret = FIRST_CONNECTION(item1) == FIRST_CONNECTION(item2);
                    break;
                case MOVIE_BOXSETS_LAST:
+                   //EVALUATE_GROUP(item1->comes_before);
+                   //EVALUATE_GROUP(item2->comes_before);
                    ret = LAST_CONNECTION(item1) == LAST_CONNECTION(item2);
                    break;
                case MOVIE_BOXSETS_ANY:
+                   //EVALUATE_GROUP(item1->comes_after);
+                   //EVALUATE_GROUP(item2->comes_after);
+                   //EVALUATE_GROUP(item1->comes_before);
+                   //EVALUATE_GROUP(item2->comes_before);
                        // only check for overlap if at least one of the movies has before/after sets
                    if ( item1->comes_before || item1->comes_after || item2->comes_before || item2->comes_after ) {
                        // Step over both item1 and item2 movie connections until we hit a connection.
@@ -666,6 +681,34 @@ void db_group_imdb_add(DbGroupIMDB *g,int id) {
     }
 }
 
+DbGroupIMDB *get_raw_imdb_list(
+        char *val,
+        int val_len
+        )
+{
+    DbGroupIMDB *group = NULL;
+    if (val != NULL && val_len > 0 ) {
+        group = db_group_imdb_new(0);
+        group->raw = COPY_STRING(val_len,val);
+        group->raw_len = val_len;
+        group->evaluated = 0;
+    }
+    return group;
+}
+
+void evaluate_group(DbGroupIMDB *group) 
+{
+    if (!group->evaluated) {
+        HTML_LOG(0,"Group eval");
+        if (parse_imdb_list(group->raw,group->raw_len,group) == group) {
+            FREE(group->raw);
+            group->raw = NULL;
+            group->raw_len = 0;
+            group->evaluated = 1;
+        }
+    }
+}
+
 /**
  * Parse a list of imdb ids. They may be ascii strings eg tt123,tt456
  * or in base IMDB_GROUP_BASE format with characters offset by 128.
@@ -675,10 +718,10 @@ void db_group_imdb_add(DbGroupIMDB *g,int id) {
  */
 DbGroupIMDB *parse_imdb_list(
         char *val,
-        int val_len
+        int val_len,
+        DbGroupIMDB *group // If NULL create new group.
         )
 {
-    DbGroupIMDB *group = NULL;
     if (val != NULL && val_len > 0 ) {
         unsigned char *p,*start = (unsigned char *)val;
         unsigned char *end = start+val_len;
@@ -712,6 +755,9 @@ DbGroupIMDB *parse_imdb_list(
             }
             db_group_imdb_add(group,id);
         }
+        if (group) {
+            group->evaluated = 1;
+        }
     }
 
 #if 0
@@ -738,6 +784,9 @@ char *db_group_imdb_compressed_string_static(DbGroupIMDB *g)
     char *p = buffer;
 
     if (g) {
+
+        EVALUATE_GROUP(g);
+
         int i;
         for(i = 0 ; i < g->dbgi_size ; i++ ) {
 
@@ -772,6 +821,8 @@ char *db_group_imdb_string_static(
     static char buffer[(MAX_IMDB_IDLEN+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
     char *p = buffer;
     if (g) {
+        EVALUATE_GROUP(g);
+
         int i;
         for(i = 0 ; i < g->dbgi_size ; i++ ) {
 

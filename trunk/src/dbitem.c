@@ -532,6 +532,7 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
 #define FIELD_TYPE_DATE 'd'
 #define FIELD_TYPE_TIMESTAMP 't'
 #define FIELD_TYPE_IMDB_LIST 'I'
+#define FIELD_TYPE_IMDB_LIST_NOEVAL 'j'
 
 // Most field ids have the form _a or _ab. This function looks at th first few letters of the 
 // id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbItem structure.
@@ -574,7 +575,7 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
             case 'A':
                 if (*p == '\0') { // _A
                     *offset=&(rowid->actors);
-                    *type = FIELD_TYPE_IMDB_LIST;
+                    *type = FIELD_TYPE_IMDB_LIST_NOEVAL;
                     *overview = 1;
                 }
                 break;
@@ -595,7 +596,7 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
             case 'd':
                 if (*p == '\0') { // _d
                     *offset=&(rowid->directors);
-                    *type = FIELD_TYPE_IMDB_LIST;
+                    *type = FIELD_TYPE_IMDB_LIST_NOEVAL;
                     *overview = 1;
                 }
                 break;
@@ -868,7 +869,10 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
                 *(long *)offset=strtol(val,&tmps,16) ;
                 break;
             case FIELD_TYPE_IMDB_LIST:
-                *(DbGroupIMDB **)offset = parse_imdb_list(val,val_len);
+                *(DbGroupIMDB **)offset = parse_imdb_list(val,val_len,NULL);
+                break;
+            case FIELD_TYPE_IMDB_LIST_NOEVAL:
+                *(DbGroupIMDB **)offset = get_raw_imdb_list(val,val_len);
                 break;
             default:
                 HTML_LOG(0,"Bad field type [%c]",type);

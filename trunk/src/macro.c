@@ -1950,7 +1950,8 @@ char *macro_fn_play_tvid(MacroCallInfo *call_info) {
 char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,int cols)
 {
     char *result = NULL;
-    if (group ) {
+    if (group) {
+        EVALUATE_GROUP(group);
         if (group->dbgi_size) {
             Array *out = array_new(free);
             char *tmp;

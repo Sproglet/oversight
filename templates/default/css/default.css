@@ -17,18 +17,6 @@ table.main {
 }
 
 
-.actors td {
-    background-color:green;
-}
-
-td.actors {
-    background-color:red;
-}
-
-.actors {
-    background-color:black;
-}
-
 table.listing {
  margin:0;
  border-spacing:0;

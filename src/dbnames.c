@@ -84,7 +84,7 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
     long mid;
     while(1) {
         mid = ( start + end ) / 2;
-        HTML_LOG(0,"chop[%ld][%ld][%ld]",start,mid,end);
+        //HTML_LOG(0,"chop[%ld][%ld][%ld]",start,mid,end);
         if (fseek(f,mid,SEEK_SET) == 0) {
 
             if ((state=fgets(name,DB_PERSON_NAME_SIZE,f)) != NULL) {

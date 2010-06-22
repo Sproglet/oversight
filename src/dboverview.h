@@ -11,6 +11,10 @@
 typedef enum DbGroupType_enum { DB_GROUP_BY_IMDB_LIST , DB_GROUP_BY_NAME_TYPE_SEASON , DB_GROUP_BY_CUSTOM_TAG } DbGroupType;
 
 typedef struct DbGroupIMDB_struct {
+    int evaluated; // To improve page load performance groups are only evaluated when needed.
+    char *raw; // Raw string for this group. This should be freed when the ids are evaluated.
+    int raw_len;
+
     int dbgi_max_size;
     int dbgi_size;
     int *dbgi_ids;
@@ -44,7 +48,8 @@ char *db_group_imdb_compressed_string_static(DbGroupIMDB *g);
 
 DbGroupIMDB *db_group_imdb_new(int size);
 void db_group_imdb_free(DbGroupIMDB *g,int free_parent);
-DbGroupIMDB *parse_imdb_list(char *val,int val_len);
+DbGroupIMDB *parse_imdb_list(char *val,int val_len,DbGroupIMDB *group);
+DbGroupIMDB *get_raw_imdb_list(char *val,int val_len);
 
 unsigned int db_overview_hashf(DbItem *item);
 int db_overview_cmp_by_title(DbItem **item1,DbItem **item2);
@@ -55,5 +60,8 @@ int db_overview_name_eqf(DbItem *item1,DbItem *item2);
 DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbItem **));
 struct hashtable *db_overview_hash_create(DbItemSet **rowsets);
 void db_overview_hash_destroy(struct hashtable *ovw_hash);
+void evaluate_group(DbGroupIMDB *group);
+
+#define EVALUATE_GROUP(g) if (!(g)->evaluated) evaluate_group(g);
 
 #endif

@@ -75,6 +75,8 @@ AWK=awk
 # nmt busybox wget is primitive.
 # nmt /bin/wget is buggy
 # nmt busybox gzip is not graceful for passthru of uncompressed data
+
+SORT=sort
 if [ -d "$APPDIR/bin" ] ; then
 
     if grep -q "MIPS 74K" /proc/cpuinfo ; then
@@ -82,6 +84,7 @@ if [ -d "$APPDIR/bin" ] ; then
     else
         BINDIR="$APPDIR/bin/nmt100"
     fi
+    SORT="$BINDIR/busybox sort"
 
     export PATH="$PATH:$BINDIR:$APPDIR/bin"
 
@@ -299,7 +302,7 @@ update_imdb_list() {
 
     if [ -f "$dnew" ] ; then
         touch "$dold" || true
-        sort -u "$dnew" "$dold" > "$dnew.new" &&\
+        $SORT -u "$dnew" "$dold" > "$dnew.new" &&\
         mv "$dnew.new" "$dold" &&\
         PERMS "$dold" &&\
         rm -f "$dnew"

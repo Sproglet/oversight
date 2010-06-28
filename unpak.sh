@@ -948,7 +948,7 @@ rar_sanity_check_nzb() {
             ;;
         *.rar) 
             offset=2
-            prenum="[._]r"
+            prenum="[._][rstu]"
             num="[0-9][0-9]" 
             num="[0-9]+"
             postnum=""
@@ -1294,7 +1294,7 @@ pause_nzbget() { nzbget_cmd -P; }
 unpause_nzbget() { nzbget_cmd -U; }
 
 #For now we can only do .01 .001 etc. Unfortunately par repair also uses .1 suffix for backups.
-rar_re='[._](part[0-9]+\.rar|rar|r[0-9]{2}|[0-9]{2,})$'
+rar_re='[._](part[0-9]+\.rar|rar|[rstu][0-9]{2}|[0-9]{2,})$'
 
 #Same as rarname but remove quotes.
 flagid() {

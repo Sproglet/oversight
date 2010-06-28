@@ -1183,8 +1183,9 @@ unrar_one() {
                 fi
                 ;;
             1)
-                if echo "$rarfile" | grep -q '\.0*1$' ; then
-                    #If check_header fails use the cat command. Not this only works if rar segments are in order
+                if echo "$rarfile" | grep -q '\.0*[01]$' ; then
+                    #If check_header fails with xxx.001 or xxx.000 then use the cat command.
+                    # This only works if rar segments are in order
                     WARNING "$rarfile does not appear to be a rar archive. Joining using cat"
                     mkdir -p "$dirname/$unrar_tmp_dir";
                     target="$dirname/$unrar_tmp_dir/`BASENAME $rarfile '\.0*1'`"

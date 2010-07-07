@@ -3251,7 +3251,9 @@ TRACE;
 
         media_type=DB_MEDIA_TYPE_TV; 
 
-    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 || STRCMP(view,VIEW_MOVIE)== 0 || STRCMP(view,VIEW_MOVIEBOXSET) == 0 ) {
+        // TODO Temporarily removed STRCMP(view,VIEW_MOVIE)==0 as it is stopping display of unknown items using movie template
+        // Will fix properly in testing release.
+    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 || STRCMP(view,VIEW_MOVIEBOXSET) == 0 ) {
 TRACE;
 
         media_type=DB_MEDIA_TYPE_FILM; 

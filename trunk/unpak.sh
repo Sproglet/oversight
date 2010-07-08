@@ -1864,7 +1864,7 @@ auto_category_from_newsgroups_inside_nzb() {
 
             DEBUG "Check category $keyword=$destination"
 
-            if grep -ql "<group>.*$keyword.*</group>" "$arg_nzb_file" "$arg_nzb_file".* 2>/dev/null ; then
+            if egrep -ql "<group>.*$keyword.*</group>" "$arg_nzb_file" "$arg_nzb_file".* 2>/dev/null ; then
 
                 INFO "Getting category from newsgroup matching [$keyword]"
 

@@ -185,8 +185,8 @@ unpak_nmt_pin_folder_scramble_windows_share=1
 #PIN:FOLDER will be automatically replaced with the Pin Folder location
 #defined by $unpak_nmt_pin_root and $unpak_nmt_pin
 unpak_auto_categorisation_from_newsgroups=1
-unpak_subfolder_by_newsgroup_0="erotica:PIN:FOLDER"
-unpak_subfolder_by_newsgroup_1="sounds:/share/Music"
+unpak_subfolder_by_newsgroup_0="(erotica|ijsklontje):PIN:FOLDER"
+unpak_subfolder_by_newsgroup_1="(sounds|music):/share/Music"
 unpak_subfolder_by_newsgroup_2="pictures:Pictures"
 unpak_subfolder_by_newsgroup_3="hou:PIN:FOLDER"
 

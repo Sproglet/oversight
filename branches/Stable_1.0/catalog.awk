@@ -6500,7 +6500,7 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                sec=GENRE;
             }
             if (g_runtime[idx] == "" && index(line,"Runtime:")) {
-                g_runtime[idx]=trimAll(scrape_until("irtime",f,"</div>",0));
+                g_runtime[idx]=trimAll(scrape_until("irtime",f,"</div>",1));
                 if (match(g_runtime[idx],"[0-9]+")) {
                     g_runtime[idx] = substr(g_runtime[idx],RSTART,RLENGTH);
                 }

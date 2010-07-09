@@ -1,6 +1,15 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+v1.0 
+  * Patched rc9 with missing files
+
+r1186-rc9
+
+  * Fix: Runtime scanning
+  * Enhancement: unpak rar extensions s00,s01.. (untested - naughty I know)
+  * Fix: Gui - allow drill down on items without posters.
+
 r1120-rc8
   * ignore underscore when extracting tv name details. (affected regex word boundaries)
  

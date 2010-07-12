@@ -1157,10 +1157,8 @@ char *macro_fn_media_type(MacroCallInfo *call_info) {
 char *macro_fn_version(MacroCallInfo *call_info) {
 
     char *version=OVS_VERSION;
-    if (strstr(version,"2009")) {
-        version +=4;
-    }
-    return replace_all(version,"BETA","b",0);
+    return replace_all(version,"beta","#x3b2;",REG_ICASE); 
+    return replace_all(version,"alpha","#x3b1;",REG_ICASE);
 
 }
 

@@ -13,9 +13,34 @@ echo ======= $v ==========
 
 chmod 775 *cgi *.sh *.awk
 
-label="$v$@"
+label="2.0$@-$v"
 
-( cd src && make ARCH=100 clean all && make ARCH=200 clean all )
+
+prompt() {
+
+    while true ; do
+        echo "$@ - continue y/n ?"
+        read x
+        case "x$x" in
+            xY|xy) return 0;;
+            xN|xn) return 1;;
+        esac
+    done
+
+}
+
+prompt "Release label is [$label]"
+
+cd src
+make ARCH=100 clean
+echo "$label" > verfile
+make ARCH=100 all
+
+make ARCH=200 clean 
+echo "$label" > verfile
+make ARCH=200 all 
+
+cd ..
 
 ../nmt-scripts/build `basename "$PWD"` "$label" \
     *.awk *.sh *.cgi *.html \
@@ -27,9 +52,7 @@ label="$v$@"
     imdb/imdb.sh \
     imdb/download/.keep logs/.keep tmp/.keep cache/.keep
 
-echo "Do svn commit and tag - ctrl -c to stop"
-
-read x
+prompt "Do svn commit and tag"
 
 svn commit -m "release $label"
 

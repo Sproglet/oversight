@@ -951,6 +951,8 @@ ViewMode convert_view_mode(char *view) {
         mode = TV_VIEW_ID;
     } else if (STRCMP(view,VIEW_MOVIE) == 0) {
         mode = MOVIE_VIEW_ID;
+    } else if (STRCMP(view,VIEW_OTHER) == 0) {
+        mode = OTHER_VIEW_ID;
     } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
         mode = TVBOXSET_VIEW_ID;
     } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
@@ -968,6 +970,7 @@ char *view_mode_to_str(ViewMode m)
         case ADMIN_VIEW_ID: return VIEW_ADMIN;
         case TV_VIEW_ID: return VIEW_TV;
         case TVBOXSET_VIEW_ID: return VIEW_TVBOXSET;
+        case OTHER_VIEW_ID: return VIEW_OTHER;
         case MOVIE_VIEW_ID: return VIEW_MOVIE;
         case MOVIEBOXSET_VIEW_ID: return VIEW_MOVIEBOXSET;
         case MIXED_VIEW_ID:

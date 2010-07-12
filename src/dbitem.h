@@ -12,6 +12,7 @@ typedef enum ViewMode_enum {
     MENU_VIEW_ID,
     TV_VIEW_ID,
     MOVIE_VIEW_ID,
+    OTHER_VIEW_ID,
     TVBOXSET_VIEW_ID,
     MOVIEBOXSET_VIEW_ID,
     ADMIN_VIEW_ID,

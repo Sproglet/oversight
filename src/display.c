@@ -2516,7 +2516,7 @@ static inline void set_drilldown_view(DbItem *item) {
                 m = MOVIE_VIEW_ID;
                 break;
             default:
-                m = MOVIE_VIEW_ID;
+                m = OTHER_VIEW_ID;
                 break;
         }
 
@@ -3037,7 +3037,7 @@ TRACE;
 TRACE;
         media_type=DB_MEDIA_TYPE_FILM; 
 
-    } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER) == 0) {
+    } else if(view == OTHER_VIEW_ID || STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER) == 0) {
 TRACE;
 
         media_type=DB_MEDIA_TYPE_OTHER; 

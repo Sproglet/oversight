@@ -220,7 +220,11 @@ int db_overview_tv_eqf(void *item1,void *item2) {
     return ret;
 }
 unsigned int db_overview_tv_hashf(void *item) {
-    return stringhash(DBR(item)->file);
+
+    if (DBR(item)->tmp_hash == 0) {
+        DBR(item)->tmp_hash = stringhash(DBR(item)->file);
+    }
+    return DBR(item)->tmp_hash;
 }
 
 int db_overview_tvboxset_eqf(void *item1,void *item2) {
@@ -237,10 +241,13 @@ int db_overview_tvboxset_eqf(void *item1,void *item2) {
 }
 unsigned int db_overview_tvboxset_hashf(void *item)
 {
-    int h  = stringhash(DBR(item)->title);
-    HASH_ADD(h,DBR(item)->year);
-    HASH_ADD(h,DBR(item)->season);
-    return h;
+    if (DBR(item)->tmp_hash == 0) {
+        unsigned int h  = stringhash(DBR(item)->title);
+        HASH_ADD(h,DBR(item)->year);
+        HASH_ADD(h,DBR(item)->season);
+        DBR(item)->tmp_hash = h;
+    }
+    return DBR(item)->tmp_hash;
 }
 
 int db_overview_movie_eqf(void *item1,void *item2)
@@ -258,7 +265,10 @@ int db_overview_movie_eqf(void *item1,void *item2)
 }
 unsigned int db_overview_movie_hashf(void *item)
 {
-    return stringhash(DBR(item)->file);
+    if (DBR(item)->tmp_hash == 0) {
+        DBR(item)->tmp_hash =  stringhash(DBR(item)->file);
+    }
+    return DBR(item)->tmp_hash;
 }
 
 // Movieboxset eq and hash
@@ -269,7 +279,10 @@ int db_overview_movieboxset_eqf(void *item1,void *item2)
 }
 unsigned int db_overview_movieboxset_hashf(void *item)
 {
-    return stringhash(DBR(item)->file);
+    if (DBR(item)->tmp_hash == 0) {
+        DBR(item)->tmp_hash =  stringhash(DBR(item)->file);
+    }
+    return DBR(item)->tmp_hash;
 }
 
 
@@ -287,7 +300,10 @@ int db_overview_other_eqf(void *item1,void *item2) {
 }
 unsigned int db_overview_other_hashf(void *item)
 {
-    return stringhash(DBR(item)->file);
+    if (DBR(item)->tmp_hash == 0) {
+        DBR(item)->tmp_hash =  stringhash(DBR(item)->file);
+    }
+    return DBR(item)->tmp_hash;
 }
 
 
@@ -311,19 +327,22 @@ int db_overview_mixed_eqf(void *item1,void *item2)
 }
 unsigned int db_overview_mixed_hashf(void *item)
 {
-    int h=0;
-    switch(((DbItem*)item)->category ) {
-        case 'T':
-            h = db_overview_tvboxset_hashf(item);
-            break;
-        case 'M':
-            h = db_overview_movieboxset_hashf(item);
-            break;
-        default:
-            h = db_overview_other_hashf(item);
-            break;
+    if (DBR(item)->tmp_hash == 0) {
+        int h=0;
+        switch(((DbItem*)item)->category ) {
+            case 'T':
+                h = db_overview_tvboxset_hashf(item);
+                break;
+            case 'M':
+                h = db_overview_movieboxset_hashf(item);
+                break;
+            default:
+                h = db_overview_other_hashf(item);
+                break;
+        }
+        DBR(item)->tmp_hash = h;
     }
-    return h;
+    return DBR(item)->tmp_hash;
 }
 
 int db_overview_menu_eqf(void *item1,void *item2) {
@@ -350,59 +369,67 @@ int db_overview_menu_eqf(void *item1,void *item2) {
 }
 unsigned int db_overview_menu_hashf(void *item)
 {
-    int h = -1;
-    switch(((DbItem*)item)->category ) {
-        case 'T':
-            h  = stringhash(DBR(item)->title);
-            HASH_ADD(h,DBR(item)->year);
-            if (!g_tvboxset_mode) {
-                HASH_ADD(h,DBR(item)->season);
-            }
-            break;
-        case 'M':
-            if (DBR(item)->external_id != 0) {
+    if (DBR(item)->tmp_hash == 0) {
+        unsigned int h;
 
-                switch(g_moviebox_mode) {
-                    case MOVIE_BOXSETS_FIRST:
-                        if (DBR(item)->comes_after == NULL) {
-                            // If it doesnt follow anything then it is the main item
-                            h = DBR(item)->external_id ;
-                        } else {
-                            h = DBR(item)->comes_after->dbgi_ids[0];
-                        }
-                        break;
-                    case MOVIE_BOXSETS_LAST:
-                        if (DBR(item)->comes_before == NULL) {
-                            // If nothing follows it is the last item
-                            h = DBR(item)->external_id ;
-                        } else {
-                            int size = DBR(item)->comes_before->dbgi_size;
-                            h = DBR(item)->comes_before->dbgi_ids[size-1];
-                        }
-                        break;
-                    case MOVIE_BOXSETS_ANY:
-                        // If we are comparing any item then all items 
-                        // have the same hash value and the eq fn does the 
-                        // heavy lifting.
-                        // This may not work as expected.
-                        h = 1;
-                        break;
-                    case MOVIE_BOXSETS_NONE:
-                        // All movies are unique by file
-                        h  = stringhash(DBR(item)->file);
-                        break;
-                    default:
-                        // All movies are unique by file
-                        h  = stringhash(DBR(item)->file);
-                        break;
+        switch(((DbItem*)item)->category ) {
+            case 'T':
+                h  = stringhash(DBR(item)->title);
+                HASH_ADD(h,DBR(item)->year);
+                if (!g_tvboxset_mode) {
+                    HASH_ADD(h,DBR(item)->season);
                 }
-            }
-            break;
+                break;
+            case 'M':
+                if (DBR(item)->external_id == 0) {
+
+                    h  = stringhash(DBR(item)->file);
+
+                } else {
+
+                    switch(g_moviebox_mode) {
+                        case MOVIE_BOXSETS_FIRST:
+                            if (DBR(item)->comes_after == NULL) {
+                                // If it doesnt follow anything then it is the main item
+                                h = DBR(item)->external_id ;
+                            } else {
+                                h = DBR(item)->comes_after->dbgi_ids[0];
+                            }
+                            break;
+                        case MOVIE_BOXSETS_LAST:
+                            if (DBR(item)->comes_before == NULL) {
+                                // If nothing follows it is the last item
+                                h = DBR(item)->external_id ;
+                            } else {
+                                int size = DBR(item)->comes_before->dbgi_size;
+                                h = DBR(item)->comes_before->dbgi_ids[size-1];
+                            }
+                            break;
+                        case MOVIE_BOXSETS_ANY:
+                            // If we are comparing any item then all items 
+                            // have the same hash value and the eq fn does the 
+                            // heavy lifting.
+                            // This may not work as expected.
+                            h = 1;
+                            break;
+                        case MOVIE_BOXSETS_NONE:
+                            // All movies are unique by file
+                            h  = stringhash(DBR(item)->file);
+                            break;
+                        default:
+                            // All movies are unique by file
+                            h  = stringhash(DBR(item)->file);
+                            break;
+                    }
+                }
+                //HTML_LOG(0,"%d title[%s (%d)] hash [%u]",g_moviebox_mode,DBR(item)->title,DBR(item)->year,h);
+                break;
+            default:
+                    h  = stringhash(DBR(item)->file);
+        }
+        DBR(item)->tmp_hash = h;
     }
-    if (h == -1) {
-        h  = stringhash(DBR(item)->file);
-    }
-    return h;
+    return DBR(item)->tmp_hash;
 }
 
 // Used to iterate over the various movie connections.
@@ -699,10 +726,10 @@ DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbIte
     DbItem **ids = flatten_hash_to_array(overview);
     int total = hashtable_count(overview);
 
-    HTML_LOG(0,"sorting %d items",total);
+    HTML_LOG(1,"sorting %d items",total);
     overview_array_dump(3,"ovw flatten",ids);
     qsort(ids,hashtable_count(overview),sizeof(DbItem *),(void *)cmp_fn);
-    HTML_LOG(0,"sorted %d items",total);
+    HTML_LOG(1,"sorted %d items",total);
     overview_array_dump(2,"ovw sorted",ids);
 
     return ids;

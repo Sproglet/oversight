@@ -106,4 +106,5 @@ char *get_crossview_local_copy(char *path,char *label);
 char *expand_genre(char *genre_keys);
 char *compress_genre(char *genre_names);
 char * db_rowid_get_field(DbItem *rowid,char *name);
+int local_db_size();
 #endif

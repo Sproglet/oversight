@@ -2985,9 +2985,9 @@ DbSortedRows *get_sorted_rows_from_params()
     HTML_LOG(1,"Crossview = %ld",crossview);
 
     //Tvid filter = this as the form 234
-    HTML_LOG(0,"begin hdump");
+    //HTML_LOG(1,"begin hdump");
     html_hashtable_dump(0,"query",g_query);
-    HTML_LOG(0,"end hdump");
+    //HTML_LOG(1,"end hdump");
 
 TRACE;
 
@@ -3006,7 +3006,7 @@ TRACE;
         }
     }
 TRACE;
-    HTML_LOG(0,"Regex filter = %s",regex);
+    HTML_LOG(1,"Regex filter = %s",regex);
 
     // Watched filter
     // ==============
@@ -3747,21 +3747,6 @@ char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
     return result;
 }
 
-int db_full_size(char *source,DbSortedRows *sorted_rows)
-{
-    int i;
-    HTML_LOG(0,"db_full_size %d",sorted_rows);
-    if (sorted_rows && sorted_rows->num_rows && sorted_rows->rowsets ) {
-        for (i = 0 ; sorted_rows->rowsets[i] ; i++ ) {
-            Db *db = sorted_rows->rowsets[i]->db;
-            if (STRCMP(db->source,source) == 0) {
-                return db->db_size;
-            }
-        }
-    }
-    return 0;
-}
-
 char *get_status(DbSortedRows *sorted_rows)
 {
     char *result=NULL;
@@ -3791,7 +3776,7 @@ char *get_status(DbSortedRows *sorted_rows)
 
         if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
             result = STRDUP("Scanning...");
-        } else if (db_full_size("*",sorted_rows) == 0 ) {
+        } else if (local_db_size() == 0) {
             result = STRDUP("Database empty. Goto [Setup]&gt;media sources and rescan.");
         }
     }

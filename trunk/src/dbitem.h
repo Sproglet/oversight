@@ -87,6 +87,9 @@ typedef struct Dbrowid_struct {
    // char *drilldown_view_static;
     ViewMode *drilldown_view;
 
+    // Holds hash value 
+    unsigned int tmp_hash;
+
 } DbItem;
 
 void db_rowid_dump(DbItem *item);

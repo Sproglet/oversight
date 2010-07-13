@@ -13,6 +13,7 @@
 #include "config.h"
 #include "hashtable.h"
 #include "array.h"
+#include "types.h"
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 OVS_EXTERN(struct hashtable *g_query,NULL);
@@ -44,17 +45,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define STRCMP(a,b) strcmp(NVL(a),NVL(b))
 #define STRCASECMP(a,b) strcasecmp(NVL(a),NVL(b))
 
-/*
-#define OVS_VERSION "20091123-5BETA"
-*/
 #define QUERY_PARAM_VIEW "view"
-#define VIEW_ADMIN "admin"
-#define VIEW_TV "tv"
-#define VIEW_MOVIE "movie"
-#define VIEW_OTHER "other"
-#define VIEW_TVBOXSET "tvboxset"
-#define VIEW_MOVIEBOXSET "movieboxset"
-#define VIEW_MENU "menu"
 
 // Used in the resize view when QUERY_PARAM_ACTION=QUERY_PARAM_ACTION_VALUE_SET
 #define QUERY_PARAM_SET_NAME "set_name"
@@ -129,6 +120,20 @@ char *get_mounted_path(char *source,char *path,int *freeit);
 // Value to represent an inherited dimension. ie for tvboxsets use the main menu dimensions,
 #define INHERIT_DIMENSION -1
 #define INHERIT_DIMENSION_STR "-1"
+
+OVS_EXTERN(ViewMode **g_view_modes,NULL);
+OVS_EXTERN1(ViewMode *VIEW_ADMIN);
+OVS_EXTERN1(ViewMode *VIEW_TV);
+OVS_EXTERN1(ViewMode *VIEW_MOVIE);
+OVS_EXTERN1(ViewMode *VIEW_OTHER);
+OVS_EXTERN1(ViewMode *VIEW_PERSON);
+OVS_EXTERN1(ViewMode *VIEW_TVBOXSET);
+OVS_EXTERN1(ViewMode *VIEW_MOVIEBOXSET);
+OVS_EXTERN1(ViewMode *VIEW_MENU);
+OVS_EXTERN1(ViewMode *VIEW_MIXED);
+
+OVS_EXTERN(long g_tvboxset_mode,-1);
+OVS_EXTERN(MovieBoxsetMode g_moviebox_mode,MOVIE_BOXSETS_UNSET);
 
 #endif
 

@@ -63,14 +63,14 @@ MovieBoxsetMode str2movie_boxset_mode(char *tmp)
     return (MovieBoxsetMode) enum_name2id(tmp,es);
 }
 
-MovieBoxsetMode movie_boxset_mode()
+void get_boxset_modes()
 {
-    static MovieBoxsetMode movie_boxsets = MOVIE_BOXSETS_UNSET;
-    if(movie_boxsets == MOVIE_BOXSETS_UNSET) {
-        char *tmp = oversight_val("ovs_movieboxsets");
-        movie_boxsets = str2movie_boxset_mode(tmp);
+    g_moviebox_mode = str2movie_boxset_mode(oversight_val("ovs_movieboxsets"));
+
+    if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&g_tvboxset_mode)) {
+        g_tvboxset_mode = 0;
     }
-    return movie_boxsets;
+
 }
 
 // ---------------------------------------------------------
@@ -83,6 +83,8 @@ void load_ovs_configs()
 
     g_catalog_config =
         config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
+
+    get_boxset_modes();
 
 }
 
@@ -770,10 +772,14 @@ void config_read_dimensions() {
         } else {
 
             // set the current grid dimensions
-            char *view = query_view_val();
-            if (STRCMP(view,VIEW_TVBOXSET) == 0) {
+            ViewMode *view = get_view_mode();
+
+            if (view == VIEW_TVBOXSET) {
+
                 g_dimension->current_grid = &(g_dimension->grids[GRID_TVBOXSET]);
-            } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
+
+            } else if (view == VIEW_MOVIEBOXSET) {
+
                 g_dimension->current_grid = &(g_dimension->grids[GRID_MOVIEBOXSET]);
             }
 
@@ -944,45 +950,33 @@ static inline void query_select_val_reset()
 
 /* ======================================================== */
 // Provide faster access to view query parameter.
+//
 
-ViewMode convert_view_mode(char *view) {
-    ViewMode mode;
-    if (STRCMP(view,VIEW_TV) == 0 ) {
-        mode = TV_VIEW_ID;
-    } else if (STRCMP(view,VIEW_MOVIE) == 0) {
-        mode = MOVIE_VIEW_ID;
-    } else if (STRCMP(view,VIEW_OTHER) == 0) {
-        mode = OTHER_VIEW_ID;
-    } else if (STRCMP(view,VIEW_TVBOXSET) == 0) {
-        mode = TVBOXSET_VIEW_ID;
-    } else if (STRCMP(view,VIEW_MOVIEBOXSET) == 0) {
-        mode = MOVIEBOXSET_VIEW_ID;
-    } else if (STRCMP(view,VIEW_ADMIN) == 0) {
-        mode = ADMIN_VIEW_ID;
-    } else {
-        mode = MENU_VIEW_ID;
+    
+
+// Return the 
+ViewMode *convert_view_mode(char *view)
+{
+
+    ViewMode *mode = VIEW_MENU;
+    int i;
+    for(i = 0 ; g_view_modes[i] ; i++ ) {
+        if (STRCMP(view,g_view_modes[i]->name) == 0) {
+            mode = g_view_modes[i];
+            break;
+        }
     }
     return mode;
 }
-char *view_mode_to_str(ViewMode m)
+
+char *view_mode_to_str(ViewMode *m)
 {
-    switch(m) {
-        case ADMIN_VIEW_ID: return VIEW_ADMIN;
-        case TV_VIEW_ID: return VIEW_TV;
-        case TVBOXSET_VIEW_ID: return VIEW_TVBOXSET;
-        case OTHER_VIEW_ID: return VIEW_OTHER;
-        case MOVIE_VIEW_ID: return VIEW_MOVIE;
-        case MOVIEBOXSET_VIEW_ID: return VIEW_MOVIEBOXSET;
-        case MIXED_VIEW_ID:
-        default:
-              return VIEW_MENU;
-    }
-    return NULL;
+    return m->name;
 }
 
 
 static char *query_view_str = NULL;
-static ViewMode view_mode=UNSET_VIEW_ID;
+static ViewMode *view_mode=NULL;
 char *query_view_val()
 {
    if (query_view_str == NULL) {
@@ -991,9 +985,9 @@ char *query_view_val()
     }
    return query_view_str; 
 }
-ViewMode get_view_mode()
+ViewMode *get_view_mode()
 {
-    if (view_mode == UNSET_VIEW_ID ) {
+    if (view_mode == NULL ) {
         query_view_val();
     }
     return view_mode;
@@ -1001,7 +995,7 @@ ViewMode get_view_mode()
 static inline void query_view_val_reset()
 {
     query_view_str = NULL;
-    view_mode = UNSET_VIEW_ID;
+    view_mode = NULL;
 }
 
 // vi:sw=4:et:ts=4

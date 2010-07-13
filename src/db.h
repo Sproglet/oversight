@@ -16,11 +16,6 @@ OVS_TIME *timestamp_ptr(DbItem *rowid);
 
 #define ALL_IDS -1
 
-#define DB_MEDIA_TYPE_TV 1
-#define DB_MEDIA_TYPE_FILM 2
-#define DB_MEDIA_TYPE_ANY 3
-#define DB_MEDIA_TYPE_OTHER 4
-
 #define DB_WATCHED_FILTER_YES 1
 #define DB_WATCHED_FILTER_NO 2
 #define DB_WATCHED_FILTER_ANY 3

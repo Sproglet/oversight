@@ -10,6 +10,7 @@
 #include <time.h>
 #include <ctype.h>
 
+#include "types.h"
 #include "display.h"
 #include "gaya_cgi.h"
 #include "util.h"
@@ -44,9 +45,9 @@ char *get_final_link_with_font(char *params,char *attr,char *title,char *font_at
 static char *get_drilldown_name(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
 void get_watched_counts(DbItem *item,int *watchedp,int *unwatchedp);
-char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
-char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
-char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *image_source(char *subfolder,char *image_name,char *ext);
 
 char *get_play_tvid(char *text) {
@@ -1432,10 +1433,10 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
     return path;
 }
 
-char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview);
-char *get_existing_internal_image_path(DbItem *item,ImageType image_type,char *newview);
+char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);
+char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview);
 
-char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview)
+char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview)
 {
 
     char *path = NULL;
@@ -1503,7 +1504,7 @@ TRACE;
 /**
  * If looking at the box set view try each season in turn
  */
-char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,char *newview)
+char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview)
 {
 
     int i;
@@ -1523,7 +1524,7 @@ char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,Image
 /*
  * Get the full internal image path if it exists.
  */
-char *get_existing_internal_image_path(DbItem *item,ImageType image_type,char *newview)
+char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview)
 {
     char *path = internal_image_path_static(item,image_type);
 
@@ -1551,10 +1552,9 @@ TRACE;
 
             char *ext_list[] = { IMAGE_EXT_THUMB_BOXSET, IMAGE_EXT_THUMB , NULL };
             int start_index = 1;
-            if (newview) {
-                if ( strcmp(newview,VIEW_TVBOXSET)==0 || strcmp(newview,VIEW_MOVIEBOXSET)==0) {
-                    start_index=0;
-                }
+
+            if (newview->view_class == VIEW_CLASS_BOXSET) {
+                start_index=0;
             }
 
             char *ext;
@@ -1588,7 +1588,7 @@ TRACE;
 }
 
 
-char * get_poster_image_tag(DbItem *rowid,char *attr,ImageType image_type,char *newview)
+char * get_poster_image_tag(DbItem *rowid,char *attr,ImageType image_type,ViewMode *newview)
 {
 
     assert(rowid);
@@ -2028,7 +2028,7 @@ int get_view_status(DbItem *rowid) {
     return status;
 }
 
-char *get_poster_mode_item(DbItem *row_id,char **font_class,char **grid_class,char *newview) {
+char *get_poster_mode_item(DbItem *row_id,char **font_class,char **grid_class,ViewMode *newview) {
 
     char *title = NULL;
     HTML_LOG(2,"dbg: tv or movie : set details as jpg");
@@ -2092,7 +2092,7 @@ char *get_poster_mode_item_unknown(DbItem *row_id,char **font_class,char **grid_
     return title;
 }
 
-char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,char *newview) {
+char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,ViewMode *newview) {
 
     // TEXT MODE
     HTML_LOG(2,"dbg: get text mode details ");
@@ -2103,11 +2103,19 @@ char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,char
     char *title = trim_title(row_id->title);
    
     char *tmp;
-    if (STRCMP(newview,VIEW_TVBOXSET) == 0) {
+    if (newview->view_class == VIEW_CLASS_BOXSET) {
+        if (strcmp(newview->name,"tvboxset") == 0) {
 
-        ovs_asprintf(&tmp,"%s [%d Seasons]",title,season_count(row_id));
-        FREE(title);
-        title = tmp;
+            ovs_asprintf(&tmp,"%s [%d Seasons]",title,season_count(row_id));
+            FREE(title);
+            title = tmp;
+
+        } else {
+
+            ovs_asprintf(&tmp,"[%s Boxset]",title);
+            FREE(title);
+            title = tmp;
+        }
 
     } else {
 
@@ -2191,13 +2199,16 @@ char *get_simple_title( DbItem *row_id)
         source_end="]";
     }
 
-    if (row_id->drilldown_mode == TVBOXSET_VIEW_ID ) {
+    if (row_id->drilldown_view->view_class == VIEW_CLASS_BOXSET ) {
 
-        ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
+        if (STRCMP(row_id->drilldown_view->name,"tvboxset") == 0) {
 
-    } else if (row_id->drilldown_mode == MOVIEBOXSET_VIEW_ID ) {
+            ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
 
-        ovs_asprintf(&title,"%s [Boxset]",row_id->title);
+        } else {
+
+            ovs_asprintf(&title,"%s [Boxset]",row_id->title);
+        }
 
     } else if (row_id->category=='T') {
 
@@ -2285,7 +2296,7 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
     int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
     set_drilldown_view(row_id);
-    char *newview = row_id->drilldown_view_static;
+    ViewMode *newview = row_id->drilldown_view;
 
     if (IN_POSTER_MODE) {
 
@@ -2365,17 +2376,14 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
         HTML_LOG(1,"dbg: scroll attributes [%s]",attr);
 
 
-        switch(row_id->drilldown_mode) {
-            case TV_VIEW_ID:
-                // TV shows are drill down by title and season
+        switch(row_id->drilldown_view->row_select) {
+            case ROW_BY_SEASON:
                 cell_text = get_tv_drilldown_link(newview,row_id->title,row_id->season,attr,title,font_class,cell_no_txt);
                 break;
-            case TVBOXSET_VIEW_ID:
-                // Box sets or TV shows are drill down by title
+            case ROW_BY_TITLE:
                 cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
                 break;
             default:
-                // Movies, movieboxsets, uncategorised video and mixed boxsets are drill down by ID
                 cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
         }
         FREE(attr);
@@ -2418,7 +2426,7 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
     return result;
 }
 
-char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt)
+char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
     char *result = NULL;
     static char *link_template = NULL;
@@ -2437,7 +2445,7 @@ char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *ti
     char *name2 = url_encode_static(name,&free_name2);
 
     result = replace_all_str(link_template,
-            "@VIEW@",view,
+            "@VIEW@",view->name,
             "@NAME@",name2,
             "@SEASON@",season_txt,
             "@ATTR@",attr,
@@ -2450,7 +2458,7 @@ char *get_tv_drilldown_link(char *view,char *name,int season,char *attr,char *ti
     return result;
 }
 
-char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt)
+char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
     char *result = NULL;
     static char *link_template = NULL;
@@ -2466,7 +2474,7 @@ char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,c
     char *name2 = url_encode_static(name,&free_name2);
 
     result = replace_all_str(link_template,
-            "@VIEW@",view,
+            "@VIEW@",view->name,
             "@NAME@",name2,
             "@ATTR@",attr,
             "@TITLE@",title,
@@ -2478,7 +2486,7 @@ char *get_tvboxset_drilldown_link(char *view,char *name,char *attr,char *title,c
     return result;
 }
 
-char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt)
+char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt)
 {
     char *result = NULL;
     static char *link_template = NULL;
@@ -2491,7 +2499,7 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
     }
 
     result = replace_all_str(link_template,
-            "@VIEW@",view,
+            "@VIEW@",view->name,
             "@IDLIST@",idlist,
             "@ATTR@",attr,
             "@TITLE@",title,
@@ -2504,46 +2512,45 @@ char *get_movie_drilldown_link(char *view,char *idlist,char *attr,char *title,ch
 
 static inline void set_drilldown_view(DbItem *item) {
 
-    if (item->drilldown_mode == UNSET_VIEW_ID) {
+    if (item->drilldown_view == NULL) {
         DbItem *item2;
-        ViewMode m;
+        ViewMode *m;
 
         switch (item->category) {
             case 'T':
-                m = TV_VIEW_ID;
+                m = VIEW_TV;
                 break;
             case 'M': case 'F':
-                m = MOVIE_VIEW_ID;
+                m = VIEW_MOVIE;
                 break;
             default:
-                m = OTHER_VIEW_ID;
+                m = VIEW_OTHER;
                 break;
         }
 
         for( item2=item->linked ; item2 ; item2=item2->linked ) {
 
             if (item2->category != item->category ) {
-                m = MIXED_VIEW_ID;
+                m = VIEW_MIXED;
                 break;
             } else {
                 switch (item2->category) {
                     case 'T':
                         if (item->season != item2->season) {
-                            m = TVBOXSET_VIEW_ID;
+                            m = VIEW_TVBOXSET;
                         }
                         break;
                     case 'M': case 'F':
                         // As soon as there are two linked movies its a box set
-                        m = MOVIEBOXSET_VIEW_ID;
+                        m = VIEW_MOVIEBOXSET;
                         break;
                     default:
-                        m = MIXED_VIEW_ID;
+                        m = VIEW_MIXED;
                         break;
                 }
             }
         }
-        item->drilldown_mode = m;
-        item->drilldown_view_static = view_mode_to_str(m);
+        item->drilldown_view = m;
     }
 }
 
@@ -2986,7 +2993,7 @@ TRACE;
 
     int free_regex=0;
     char *regex = query_val(QUERY_PARAM_REGEX);
-    ViewMode view = get_view_mode();
+    ViewMode *view = get_view_mode();
 
     if (EMPTY_STR(regex)) {
 TRACE;
@@ -3025,24 +3032,22 @@ TRACE;
     // Tv/Film filter
     // ==============
     char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
-    int media_type=DB_MEDIA_TYPE_ANY;
+    int media_type=view->media_type;
 
-    if(view == TV_VIEW_ID || view == TVBOXSET_VIEW_ID || STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 ) {
-
-TRACE;
-        media_type=DB_MEDIA_TYPE_TV; 
-
-    } else if(view == MOVIE_VIEW_ID || view == MOVIEBOXSET_VIEW_ID || STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 ) {
+    if(media_type == DB_WATCHED_FILTER_ANY) {
+       if (STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 ) {
 
 TRACE;
-        media_type=DB_MEDIA_TYPE_FILM; 
+            media_type=DB_MEDIA_TYPE_TV; 
 
-    } else if(view == OTHER_VIEW_ID || STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER) == 0) {
+        } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 ) {
+
 TRACE;
+            media_type=DB_MEDIA_TYPE_FILM; 
 
-        media_type=DB_MEDIA_TYPE_OTHER; 
+        } 
+    } 
 
-    }
     HTML_LOG(1,"Media type = %d",media_type);
 
 TRACE;
@@ -3058,7 +3063,7 @@ TRACE;
 
     HTML_LOG(0,"Overview..");
     // Merge the rowsets into a single view.
-    struct hashtable *overview = db_overview_hash_create(rowsets);
+    struct hashtable *overview = db_overview_hash_create(rowsets,view);
 TRACE;
 
     DbItem **sorted_row_ids = NULL;
@@ -3071,30 +3076,19 @@ TRACE;
 
     HTML_LOG(0,"Sort..");
 
-    switch(view) {
-        case TV_VIEW_ID:
-            HTML_LOG(0,"sort by name [%s]",sort);
-            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
-            break;
-        case TVBOXSET_VIEW_ID:
-            HTML_LOG(0,"TODO sort by SEASON[%s]",sort);
-            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_season_asc);
-            break;
-        case MOVIEBOXSET_VIEW_ID:
-            HTML_LOG(0,"TODO sort by YEAR[%s]",sort);
-            sorted_row_ids = sort_overview(overview,db_overview_cmp_by_year_asc);
-            break;
-        default:
-            if (sort && STRCMP(sort,DB_FLDID_TITLE) == 0) {
+    int (*sort_fn)(DbItem **,DbItem**) = view->default_sort;
 
-                HTML_LOG(0,"sort by name [%s]",sort);
-                sorted_row_ids = sort_overview(overview,db_overview_cmp_by_title);
+    if (sort_fn == NULL) {
+        if (sort && STRCMP(sort,DB_FLDID_TITLE) == 0) {
 
-            } else {
+            sort_fn = db_overview_cmp_by_title;
+        } else {
+            sort_fn = db_overview_cmp_by_age_desc;
+        }
+    }
 
-                HTML_LOG(0,"sort by age [%s]",sort);
-                sorted_row_ids = sort_overview(overview,db_overview_cmp_by_age_desc);
-            }
+    if (sort_fn) {
+        sorted_row_ids = sort_overview(overview,sort_fn);
     }
 
     //Free hash without freeing keys
@@ -3189,26 +3183,12 @@ char *get_tvid_links()
 #define ARROW_CLASS " class=\"resize_arrow\""
 
 char *dimension_cell_name_suffix() {
-    static char *name_suffix=NULL;
-    if (!name_suffix) {
-        ViewMode view = get_view_mode();
-        switch(view) {
-            case MOVIEBOXSET_VIEW_ID:
-                name_suffix = "_movieboxset";
-                break;
-            case TVBOXSET_VIEW_ID:
-                name_suffix = "_tvboxset";
-                break;
-            default:
-                name_suffix = "";
-        }
-    }
-    return name_suffix;
+    return NVL(get_view_mode()->dimension_cell_suffix);
 }
 
-char *dimension_cell_name(char *set_name,char *set_val) {
+char *dimension_cell_name(char *set_name,char *name_suffix,char *set_val) {
     char *name;
-    ovs_asprintf(&name,"%s%s%s",set_name,dimension_cell_name_suffix(),set_val);
+    ovs_asprintf(&name,"%s%s%s",set_name,name_suffix,set_val);
     return name;
 }
 
@@ -3220,7 +3200,7 @@ char *resize_link(char *name,char *increment,char *min,char *max,char *tvid,char
 
     char *name_suffix = dimension_cell_name_suffix();
 
-    char *cell_name = dimension_cell_name(name,increment);
+    char *cell_name = dimension_cell_name(name,name_suffix,increment);
 
     ovs_asprintf(&params,"action=" QUERY_PARAM_ACTION_VALUE_SET "&"
                          QUERY_PARAM_SET_NAME "=%s%s&" 
@@ -3335,17 +3315,6 @@ TRACE;
 //        FREE(control);
     }
     return result;
-}
-
-long use_tv_boxsets()
-{
-    static long tv_boxsets = -1;
-    if(tv_boxsets == -1) {
-        if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&tv_boxsets)) {
-            tv_boxsets = 0;
-        }
-    }
-    return tv_boxsets;
 }
 
 int playlist_size(DbSortedRows *sorted_rows)
@@ -3937,4 +3906,5 @@ char *get_selected_item()
     assert(selected_item);
     return selected_item;
 }
+
 // vi:sw=4:et:ts=4

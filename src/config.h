@@ -13,13 +13,6 @@
 
 
 
-typedef enum MovieBoxsetMode_enum {
-    MOVIE_BOXSETS_UNSET , 
-    MOVIE_BOXSETS_NONE ,
-    MOVIE_BOXSETS_FIRST , // Box sets are related by first movie connection
-    MOVIE_BOXSETS_LAST , // Box sets are related by last movie connection 
-    MOVIE_BOXSETS_ANY    // Box sets are related by any movie connection
-} MovieBoxsetMode;
 
 MovieBoxsetMode movie_boxset_mode();
 
@@ -85,7 +78,7 @@ void query_update(char *name,char *new);
 void query_remove(char *name);
 char *query_view_val();
 char *query_select_val();
-enum ViewMode_enum get_view_mode();
-char *view_mode_to_str(enum ViewMode_enum m);
+ViewMode *get_view_mode();
+char *view_mode_to_str(ViewMode *m);
 GridDirection str2grid_direction(char *name);
 #endif

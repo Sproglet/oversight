@@ -368,7 +368,7 @@ void do_actions() {
 
     set_start_cell();
 
-    char *view=query_view_val();
+    ViewMode *view=get_view_mode();
     char *action=query_val(QUERY_PARAM_ACTION);
     char *set_name=query_val(QUERY_PARAM_SET_NAME);
     char *set_val=query_val(QUERY_PARAM_SET_VAL);
@@ -388,7 +388,7 @@ void do_actions() {
         query_remove("searchb");
     }
 
-    if (allow_admin() && STRCMP(view,VIEW_ADMIN)==0 ) {
+    if (allow_admin() && view == VIEW_ADMIN) {
 
         if (STRCMP(action,"reinstall") == 0) {
 
@@ -630,7 +630,8 @@ TRACE;
         } else if (allow_admin() && STRCMP(action,QUERY_RESIZE_DIM_ACTION)==0 ) {
 
             char *dimension_set=query_val(QUERY_RESIZE_DIM_SET_NAME); // image or grid ie reset image height/width or grid rows/cols
-            if (STRCMP(view,"tvboxset") == 0) {
+            if (view == VIEW_TVBOXSET) {
+
                 if (STRCMP(dimension_set,QUERY_RESIZE_DIM_SET_GRID)==0) {
  
                     ovs_config_dimension_increment("ovs_poster_mode_rows_tvboxset","=-1",-1,-1);
@@ -647,7 +648,7 @@ TRACE;
                 } else {
                    html_error("unable to reset tvboxset dimensions");
                 }
-            } else if (STRCMP(view,"movieboxset") == 0) {
+            } else if (view == VIEW_MOVIEBOXSET) {
 
                 if (STRCMP(dimension_set,"grid")==0) {
 

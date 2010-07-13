@@ -6,18 +6,7 @@
 #include "time.h"
 #include "dbread.h"
 #include "array.h"
-
-typedef enum ViewMode_enum {
-    UNSET_VIEW_ID=0,
-    MENU_VIEW_ID,
-    TV_VIEW_ID,
-    MOVIE_VIEW_ID,
-    OTHER_VIEW_ID,
-    TVBOXSET_VIEW_ID,
-    MOVIEBOXSET_VIEW_ID,
-    ADMIN_VIEW_ID,
-    MIXED_VIEW_ID
-} ViewMode;
+#include "types.h"
 
 typedef struct Dbrowid_struct {
 
@@ -95,8 +84,8 @@ typedef struct Dbrowid_struct {
     // Set for first row in the list.
     // These fields will be moved to the ItemList structure once I create a list of Items
     // for each Grid position.
-    char *drilldown_view_static;
-    enum ViewMode_enum drilldown_mode;
+   // char *drilldown_view_static;
+    ViewMode *drilldown_view;
 
 } DbItem;
 

@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include "oversight.h"
 #include "db.h"
 #include "dboverview.h"
 #include "util.h"
@@ -205,62 +206,203 @@ unsigned int db_overview_name_hashf(void *item) {
  * This function may get called 1000s of times so avoid further function calls,
  * and use static data where possible.
  */
-int db_overview_general_eqf(void *item1,void *item2) {
-    static int tvbox=-1;
-    static MovieBoxsetMode moviebox=MOVIE_BOXSETS_UNSET;
-    static int mode=-1;
-    int ret=0;
+#define DBR(x) ((DbItem *)(x))
+int db_overview_tv_eqf(void *item1,void *item2) {
 
-    if (tvbox == -1) {
-        tvbox = use_tv_boxsets();
-        moviebox = movie_boxset_mode();
-        mode = get_view_mode();
-    }
-
+    int ret = 0;
     if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
-        ret = 0;
-
+       assert(0);
     } else if (((DbItem*)item1)->category == 'T' ) {
-        switch(mode) {
-            case MENU_VIEW_ID:
-                if (tvbox) {
+       ret = EQ_FILE(item1,item2);
+    } else {
+       assert(0);
+    }
+    return ret;
+}
+unsigned int db_overview_tv_hashf(void *item) {
+    return stringhash(DBR(item)->file);
+}
+
+int db_overview_tvboxset_eqf(void *item1,void *item2) {
+
+    int ret = 0;
+    if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
+       assert(0);
+    } else if (((DbItem*)item1)->category == 'T' ) {
+       ret = EQ_SEASON(item1,item2);
+    } else {
+       assert(0);
+    }
+    return ret;
+}
+unsigned int db_overview_tvboxset_hashf(void *item)
+{
+    int h  = stringhash(DBR(item)->title);
+    HASH_ADD(h,DBR(item)->year);
+    HASH_ADD(h,DBR(item)->season);
+    return h;
+}
+
+int db_overview_movie_eqf(void *item1,void *item2)
+{
+
+    int ret = 0;
+    if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
+       assert(0);
+    } else if (((DbItem*)item1)->category == 'M' ) {
+       ret = EQ_MOVIE(item1,item2);
+    } else {
+       assert(0);
+    }
+    return ret;
+}
+unsigned int db_overview_movie_hashf(void *item)
+{
+    return stringhash(DBR(item)->file);
+}
+
+// Movieboxset eq and hash
+//
+int db_overview_movieboxset_eqf(void *item1,void *item2)
+{
+    return db_overview_movie_eqf(item1,item2);
+}
+unsigned int db_overview_movieboxset_hashf(void *item)
+{
+    return stringhash(DBR(item)->file);
+}
+
+
+int db_overview_admin_eqf(void *item1,void *item2) {
+   return EQ_FILE(item1,item2);
+}
+unsigned int db_overview_admin_hashf(void *item)
+{
+    return stringhash(DBR(item)->file);
+}
+
+
+int db_overview_other_eqf(void *item1,void *item2) {
+   return EQ_FILE(item1,item2);
+}
+unsigned int db_overview_other_hashf(void *item)
+{
+    return stringhash(DBR(item)->file);
+}
+
+
+int db_overview_mixed_eqf(void *item1,void *item2)
+{
+    int ret = 0;
+   if (((DbItem*)item1)->category == ((DbItem*)item2)->category) {
+        switch(((DbItem*)item1)->category ) {
+            case 'T':
+                ret = db_overview_tvboxset_eqf(item1,item2);
+                break;
+            case 'M':
+                ret = db_overview_movieboxset_eqf(item1,item2);
+                break;
+            default:
+               ret = db_overview_other_eqf(item1,item2);
+               break;
+        }
+   }
+   return ret;
+}
+unsigned int db_overview_mixed_hashf(void *item)
+{
+    int h=0;
+    switch(((DbItem*)item)->category ) {
+        case 'T':
+            h = db_overview_tvboxset_hashf(item);
+            break;
+        case 'M':
+            h = db_overview_movieboxset_hashf(item);
+            break;
+        default:
+            h = db_overview_other_hashf(item);
+            break;
+    }
+    return h;
+}
+
+int db_overview_menu_eqf(void *item1,void *item2) {
+    int ret = 0 ;
+
+    if (((DbItem*)item1)->category == ((DbItem*)item2)->category) {
+        switch(((DbItem*)item1)->category ) {
+            case 'T':
+                if (g_tvboxset_mode) {
                    ret = EQ_SHOW(item1,item2);
                 } else {
                    ret = EQ_SEASON(item1,item2);
                 }
                 break;
-            case TVBOXSET_VIEW_ID:
-               ret = EQ_SEASON(item1,item2);
-                break;
-            case TV_VIEW_ID:
-            case ADMIN_VIEW_ID:
-               ret = EQ_FILE(item1,item2);
+            case 'M':
+               ret = in_same_db_imdb_group(((DbItem*)item1),((DbItem*)item2),g_moviebox_mode);
                 break;
             default:
-                assert(0);
-                break;
+               ret = EQ_FILE(item1,item2);
         }
-    } else if (((DbItem*)item1)->category == 'M' ) {
-        switch(mode) {
-            case MENU_VIEW_ID:
-               ret = in_same_db_imdb_group(((DbItem*)item1),((DbItem*)item2),moviebox);
-               break;
-            case MOVIEBOXSET_VIEW_ID:
-            case MOVIE_VIEW_ID:
-                ret = EQ_MOVIE(item1,item2);
-                break;
-            case ADMIN_VIEW_ID:
-               ret = EQ_FILE(item1,item2);
-                break;
-            default:
-                assert(0);
-                break;
-        } 
-    } else {
-           ret = EQ_FILE(item1,item2);
+
     }
     return ret;
+}
+unsigned int db_overview_menu_hashf(void *item)
+{
+    int h = -1;
+    switch(((DbItem*)item)->category ) {
+        case 'T':
+            h  = stringhash(DBR(item)->title);
+            HASH_ADD(h,DBR(item)->year);
+            if (!g_tvboxset_mode) {
+                HASH_ADD(h,DBR(item)->season);
+            }
+            break;
+        case 'M':
+            if (DBR(item)->external_id != 0) {
 
+                switch(g_moviebox_mode) {
+                    case MOVIE_BOXSETS_FIRST:
+                        if (DBR(item)->comes_after == NULL) {
+                            // If it doesnt follow anything then it is the main item
+                            h = DBR(item)->external_id ;
+                        } else {
+                            h = DBR(item)->comes_after->dbgi_ids[0];
+                        }
+                        break;
+                    case MOVIE_BOXSETS_LAST:
+                        if (DBR(item)->comes_before == NULL) {
+                            // If nothing follows it is the last item
+                            h = DBR(item)->external_id ;
+                        } else {
+                            int size = DBR(item)->comes_before->dbgi_size;
+                            h = DBR(item)->comes_before->dbgi_ids[size-1];
+                        }
+                        break;
+                    case MOVIE_BOXSETS_ANY:
+                        // If we are comparing any item then all items 
+                        // have the same hash value and the eq fn does the 
+                        // heavy lifting.
+                        // This may not work as expected.
+                        h = 1;
+                        break;
+                    case MOVIE_BOXSETS_NONE:
+                        // All movies are unique by file
+                        h  = stringhash(DBR(item)->file);
+                        break;
+                    default:
+                        // All movies are unique by file
+                        h  = stringhash(DBR(item)->file);
+                        break;
+                }
+            }
+            break;
+    }
+    if (h == -1) {
+        h  = stringhash(DBR(item)->file);
+    }
+    return h;
 }
 
 // Used to iterate over the various movie connections.
@@ -393,107 +535,6 @@ static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetM
    return ret;
 }
 
-#define DBR(x) ((DbItem *)(x))
-unsigned int db_overview_general_hashf(void *item)
-{
-    static int tvbox=-1;
-    static MovieBoxsetMode moviebox=MOVIE_BOXSETS_UNSET;
-    static int mode=-1;
-    int h=0;
-
-    if (tvbox == -1) {
-        tvbox = use_tv_boxsets();
-        moviebox = movie_boxset_mode();
-        mode = get_view_mode();
-    }
-    switch(DBR(item)->category) {
-        case 'T':
-        switch(mode) {
-            case MENU_VIEW_ID:
-                if (tvbox) {
-                    h  = stringhash(DBR(item)->title);
-                    HASH_ADD(h,DBR(item)->year);
-                } else {
-                    h  = stringhash(DBR(item)->title);
-                    HASH_ADD(h,DBR(item)->year);
-                    HASH_ADD(h,DBR(item)->season);
-                }
-                break;
-            case TVBOXSET_VIEW_ID:
-                h  = stringhash(DBR(item)->title);
-                HASH_ADD(h,DBR(item)->year);
-                HASH_ADD(h,DBR(item)->season);
-                break;
-            case TV_VIEW_ID:
-                h  = stringhash(DBR(item)->file);
-                break;
-            case ADMIN_VIEW_ID:
-                h  = stringhash(DBR(item)->file);
-                break;
-            default:
-                html_error("unknown view for item %d[%s - %s]",DBR(item)->id,DBR(item)->title,DBR(item)->file);
-                assert(0);
-        } 
-        break;
-    case 'M':
-        switch(mode) {
-            case MENU_VIEW_ID:
-                if (DBR(item)->external_id == 0) {
-                    // External ID not set - just use the title
-                    h  = stringhash(DBR(item)->file);
-                } else {
-                    switch(moviebox) {
-                        case MOVIE_BOXSETS_FIRST:
-                            if (DBR(item)->comes_after == NULL) {
-                                // If it doesnt follow anything then it is the main item
-                                h = DBR(item)->external_id ;
-                            } else {
-                                h = DBR(item)->comes_after->dbgi_ids[0];
-                            }
-                            break;
-                        case MOVIE_BOXSETS_LAST:
-                            if (DBR(item)->comes_before == NULL) {
-                                // If nothing follows it is the last item
-                                h = DBR(item)->external_id ;
-                            } else {
-                                int size = DBR(item)->comes_before->dbgi_size;
-                                h = DBR(item)->comes_before->dbgi_ids[size-1];
-                            }
-                            break;
-                        case MOVIE_BOXSETS_ANY:
-                            // If we are comparing any item then all items 
-                            // have the same hash value and the eq fn does the 
-                            // heavy lifting.
-                            // This may not work as expected.
-                            h = 1;
-                            break;
-                        case MOVIE_BOXSETS_NONE:
-                            // All movies are unique by file
-                            h  = stringhash(DBR(item)->file);
-                            break;
-                        default:
-                            // All movies are unique by file
-                            h  = stringhash(DBR(item)->file);
-                            break;
-                    }
-                }
-                break;
-            case MOVIEBOXSET_VIEW_ID:
-            case MOVIE_VIEW_ID:
-            case ADMIN_VIEW_ID:
-                h  = stringhash(DBR(item)->file);
-                break;
-            default:
-                html_error("unknown view for item %d[%s - %s]",DBR(item)->id,DBR(item)->title,DBR(item)->file);
-                assert(0);
-        } 
-        break;
-    default:
-        h  = stringhash(((DbItem *)item)->file);
-    }
-    return h;
-
-}
 
 void overview_dump(int level,char *label,struct hashtable *overview) {
     struct hashtable_itr *itr;
@@ -546,7 +587,7 @@ void db_set_visited(DbItemSet **rowsets,int val) {
     }
 }
 
-struct hashtable *db_overview_hash_create(DbItemSet **rowsets) {
+struct hashtable *db_overview_hash_create(DbItemSet **rowsets,ViewMode *view) {
     
     int total=0;
     struct hashtable *overview = NULL;
@@ -568,8 +609,13 @@ TRACE;
      * might have the same name. (esp movies with one word titles - eg Venom)
      */
     //TODO we need to find a generic image for the box set!
+     unsigned int (*hashf) (void*);
+     int (*eqf) (void*,void*);
 
-    overview = create_hashtable("db_overview",100,db_overview_general_hashf,db_overview_general_eqf);
+     hashf = view->item_hash_fn;
+     eqf = view->item_eq_fn;
+
+    overview = create_hashtable("db_overview",100,hashf,eqf);
 TRACE;
 
     int rowset_count=0;
@@ -837,5 +883,89 @@ char *db_group_imdb_string_static(
     *p = '\0';
     return buffer;
 }
+
+ViewMode *new_view(
+        char *name,
+        int view_class,
+        int row_select,
+        int has_playlist,
+        char *dimension_cell_suffix,
+        int media_type,
+        int (*default_sort)(),
+        int (*item_eq_fn)(void *,void *), // used to build hashtable of items
+        unsigned int (*item_hash_fn)(void *)) // used to build hashtable of items
+{
+    static int i = 0;
+    ViewMode *vm = CALLOC(sizeof(ViewMode),1);
+    vm->name = name;
+    vm->view_class = view_class;
+    vm->row_select = row_select;
+    vm->has_playlist = has_playlist;
+    vm->dimension_cell_suffix = dimension_cell_suffix;
+    vm->media_type = media_type;
+    vm->default_sort = default_sort;
+    vm->item_eq_fn = item_eq_fn;
+    vm->item_hash_fn = item_hash_fn;
+
+    i++;
+    g_view_modes = REALLOC(g_view_modes,(i+1) * sizeof(ViewMode *));
+    g_view_modes[i-1] = vm;
+    g_view_modes[i] = NULL;
+    return vm;
+}
+
+
+void init_view()
+{
+    VIEW_ADMIN
+        = new_view( "admin"       ,VIEW_CLASS_ADMIN,ROW_BY_ID, 0 , NULL, DB_MEDIA_TYPE_ANY , NULL,
+       db_overview_admin_eqf ,
+       db_overview_admin_hashf );
+
+    VIEW_TV
+        = new_view( "tv"          ,VIEW_CLASS_DETAIL,ROW_BY_SEASON, 1 , NULL, DB_MEDIA_TYPE_TV ,
+            db_overview_cmp_by_title,
+       db_overview_tv_eqf ,
+       db_overview_tv_hashf );
+
+    VIEW_MOVIE
+        = new_view( "movie"       ,VIEW_CLASS_DETAIL,ROW_BY_ID, 1 , NULL, DB_MEDIA_TYPE_FILM , NULL,
+       db_overview_movie_eqf ,
+       db_overview_movie_hashf );
+
+    VIEW_OTHER
+        = new_view( "other"       ,VIEW_CLASS_DETAIL,ROW_BY_ID, 1 , NULL, DB_MEDIA_TYPE_OTHER , NULL,
+       db_overview_other_eqf ,
+       db_overview_other_hashf );
+
+    VIEW_PERSON
+        = new_view( "person"      ,VIEW_CLASS_BOXSET,ROW_BY_ID, 0 , NULL, DB_MEDIA_TYPE_ANY ,
+            db_overview_cmp_by_year_asc,
+       db_overview_mixed_eqf ,
+       db_overview_mixed_hashf );
+
+    VIEW_TVBOXSET
+        = new_view( "tvboxset"    ,VIEW_CLASS_BOXSET,ROW_BY_TITLE, 0 ,"_tvboxset"  , DB_MEDIA_TYPE_TV ,
+            db_overview_cmp_by_season_asc,
+       db_overview_tvboxset_eqf ,
+       db_overview_tvboxset_hashf );
+
+    VIEW_MOVIEBOXSET
+        = new_view( "movieboxset" ,VIEW_CLASS_BOXSET,ROW_BY_ID, 0 , "_movieboxset" , DB_MEDIA_TYPE_FILM ,
+       db_overview_cmp_by_year_asc,
+       db_overview_movieboxset_eqf ,
+       db_overview_movieboxset_hashf );
+
+    VIEW_MENU
+        = new_view( "menu"        ,VIEW_CLASS_MENU,ROW_BY_ID, 0 , NULL  , DB_MEDIA_TYPE_ANY , NULL,
+       db_overview_menu_eqf ,
+       db_overview_menu_hashf );
+
+    VIEW_MIXED
+        = new_view( "mixed"       ,VIEW_CLASS_MENU,ROW_BY_ID, 0 , NULL  , DB_MEDIA_TYPE_ANY , NULL,
+       db_overview_mixed_eqf ,
+       db_overview_mixed_hashf );
+}
+
 
 // vi:sw=4:et:ts=4

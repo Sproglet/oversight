@@ -784,7 +784,7 @@ char *macro_fn_resize_controls(MacroCallInfo *call_info)
 {
 
     char *result = NULL;
-    if (get_view_mode() == VIEW_ADMIN) {
+    if (get_view_mode() != VIEW_ADMIN) {
         result = get_tvid_resize_links();
     }
     return result;
@@ -1906,6 +1906,11 @@ char *macro_fn_body_height(MacroCallInfo *call_info) {
     //return numeric_constant_arg_to_str(value,args);
 }
 
+char *macro_fn_display_type(MacroCallInfo *call_info) {
+    call_info->free_result = 0;
+    return g_dimension->set_name;
+}
+
 char *macro_fn_scanlines(MacroCallInfo *call_info) {
     return numeric_constant_arg_to_str(g_dimension->scanlines,call_info->args);
 }
@@ -2093,6 +2098,7 @@ void macro_init() {
         hashtable_insert(macros,"RIGHT_BUTTON",macro_fn_right_button);
         hashtable_insert(macros,"RUNTIME",macro_fn_runtime);
         hashtable_insert(macros,"SCANLINES",macro_fn_scanlines);
+        hashtable_insert(macros,"DISPLAY_TYPE",macro_fn_display_type);
         hashtable_insert(macros,"SEASON",macro_fn_season);
         hashtable_insert(macros,"SET",macro_fn_set);
         hashtable_insert(macros,"SELECT_CANCEL_SUBMIT",macro_fn_select_cancel_submit);

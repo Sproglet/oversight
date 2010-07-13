@@ -2487,6 +2487,9 @@ ret,p,pat,i,parts,sreg,ereg) {
     #s00e00 (allow d00a for BigBrother)
     pat[++p]="0@@s?"sreg"@[-/ .]?[e/][0-9]+[a-e]?@";
 
+    # season but no episode
+    pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"@@FILE";
+
     #00x00
     pat[++p]="1@[^a-z0-9]@"sreg"@[/ .]?x"ereg"@";
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
@@ -2822,13 +2825,18 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
 
         #Reject this could be 64(x264) or 80(hd1080)
 
-        #Match the episode first to handle 3453 and 456
-        match(line,episodeRe "$" );
-        ep = substr(line,RSTART,RLENGTH); 
-        if (seasonRe == "") {
-            season = 1; #mini-series without season qualifier
+        if (episodeRe == "") {
+            ep="0";
+            season = line;
         } else {
-            season = substr(line,1,RSTART-1);
+            #Match the episode first to handle 3453 and 456
+            match(line,episodeRe "$" );
+            ep = substr(line,RSTART,RLENGTH); 
+            if (seasonRe == "") {
+                season = 1; #mini-series without season qualifier
+            } else {
+                season = substr(line,1,RSTART-1);
+            }
         }
 
         if (season - 50 > 0 ) {

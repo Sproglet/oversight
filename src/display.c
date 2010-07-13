@@ -3249,7 +3249,7 @@ char *get_tvid_resize_links()
         char *wzero=resize_link("ovs_poster_mode_width" ,QUERY_ASSIGN_PREFIX"0","0","500","","auto_width");
         char *hzero=resize_link("ovs_poster_mode_height" ,QUERY_ASSIGN_PREFIX"0","0","750","","auto_height");
 
-        char *control=get_self_link("resizeon=&set_name=&set_val=&action=",ARROW_CLASS,"Off");
+        char *control=get_self_link(QUERY_PARAM_RESIZE"=&set_name=&set_val=&action=",ARROW_CLASS,"Off");
 
         char *grid_centre=NULL;
         char *poster_centre=NULL;

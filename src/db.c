@@ -41,8 +41,19 @@ static long keep_ticks=0;
 #define START_CLOCK(x) 
 #define STOP_CLOCK(x) 
 
+Db *g_local_db = NULL;
+
 char *copy_string(int len,char *s);
 void get_genre_from_string(char *gstr,struct hashtable **h);
+
+int local_db_size()
+{
+    if (g_local_db) {
+        return g_local_db->db_size;
+    } else {
+        return -1;
+    }
+}
 
 char *copy_string(int len,char *s)
 {
@@ -174,6 +185,11 @@ TRACE;
     if (!EMPTY_STR(director)) {
         HTML_LOG(0,"director [%s] = [%s]",director,dbnames_fetch_static(director,db->directors_file));
     }
+
+    if (STRCMP(db->source,"*") == 0) {
+        g_local_db = db;
+    }
+
 
     return db;
 }
@@ -364,7 +380,7 @@ TRACE;
         }
     }
 
-    HTML_LOG(0,"end db_crossview_scan_titles");
+    HTML_LOG(1,"end db_crossview_scan_titles");
     return rowsets;
 }
 
@@ -399,7 +415,7 @@ int *extract_idlist(char *db_name,int *num_ids) {
     char *query = query_val(QUERY_PARAM_IDLIST);
     int *result = NULL;
 
-    HTML_LOG(0,"extract_idlist from [%s]",query);
+    HTML_LOG(1,"extract_idlist from [%s]",query);
 
     if (*query) {
         *num_ids = 0;
@@ -433,10 +449,10 @@ int *extract_idlist(char *db_name,int *num_ids) {
     }
 
     if (*num_ids == ALL_IDS) {
-        HTML_LOG(0,"idlist:db: name=%s searching all ids",db_name);
+        HTML_LOG(1,"idlist:db: name=%s searching all ids",db_name);
     } else {
         int i;
-        HTML_LOG(0,"idlist:db: name=%s searching %d ids",db_name,*num_ids);
+        HTML_LOG(1,"idlist:db: name=%s searching %d ids",db_name,*num_ids);
         for(i  = 0 ; i < *num_ids ; i++ ) {
             HTML_LOG(0,"idlist:db: name=%s id %d",db_name,result[i]);
         }

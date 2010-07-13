@@ -1,8 +1,10 @@
 #ifndef __DB_OVERVIEW_ALORD__
 #define __DB_OVERVIEW_ALORD__
 
+#include "types.h"
 #include "db.h"
 
+void init_view();
 // A Group of related rows. This may be :
 // a movie boxset (a list of related imdb numbers)
 // a tv box set. ( a Title and a Season. )
@@ -58,7 +60,7 @@ int db_overview_cmp_by_year_asc(DbItem **item1,DbItem **item2);
 int db_overview_cmp_by_season_asc(DbItem **item1,DbItem **item2);
 int db_overview_name_eqf(DbItem *item1,DbItem *item2);
 DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbItem **));
-struct hashtable *db_overview_hash_create(DbItemSet **rowsets);
+struct hashtable *db_overview_hash_create(DbItemSet **rowsets,ViewMode *view);
 void db_overview_hash_destroy(struct hashtable *ovw_hash);
 void evaluate_group(DbGroupIMDB *group);
 

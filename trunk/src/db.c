@@ -468,8 +468,9 @@ DbItemSet * db_scan_titles(
 
     DbItemSet *rowset = NULL;
 
-    char *view=query_view_val();
-    int tv_or_movie_view = (STRCMP(view,VIEW_TV)==0 || STRCMP(view,VIEW_MOVIE) == 0);
+    ViewMode *view=get_view_mode();
+
+    int tv_or_movie_view = (view->view_class == VIEW_CLASS_DETAIL);
 
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);

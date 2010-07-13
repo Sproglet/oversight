@@ -103,6 +103,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     g_start_clock = time(NULL);
     assert(sizeof(long long) >= 8);
 
+    init_view();
     adjust_path();
 
     char *q=getenv("QUERY_STRING");
@@ -196,16 +197,16 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     HTML_LOG(0,"Begin Actions");
     do_actions();
    
-    char *view;
+    ViewMode *view;
 
     DbSortedRows *sortedRows = NULL;
 
 
     while(1) {
-        view=query_view_val();  
+        view=get_view_mode();  
 
         // If movie view but all ids have been removed , then move up
-        if (STRCMP(view,VIEW_MOVIE) == 0 && !*query_val(QUERY_PARAM_IDLIST)) {
+        if (view == VIEW_MOVIE && !*query_val(QUERY_PARAM_IDLIST)) {
             query_pop();
         }
 
@@ -218,7 +219,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         }
 
         // If it's not a tv/movie detail or boxset view then break
-        if (!*view || STRCMP(view,VIEW_ADMIN)==0) {
+        if (view == VIEW_MENU ||  view == VIEW_ADMIN ) {
             break;
         }
 
@@ -253,33 +254,16 @@ TRACE;
 TRACE;
         playlist_open();
 TRACE;
-        if (STRCMP(view,VIEW_MOVIE) == 0 ||
-                STRCMP(view,VIEW_TV) == 0 ||
-                STRCMP(view,VIEW_OTHER) == 0 ||
-                STRCMP(view,VIEW_MOVIEBOXSET) == 0 ||
-                STRCMP(view,VIEW_TVBOXSET) == 0 
-                ) {
-
-            display_template(skin_name,view,sortedRows);
-
-            if (STRCMP(view,VIEW_MOVIE) == 0 || STRCMP(view,VIEW_TV) == 0 ) {
-                build_playlist(sortedRows);
-            } 
-
-
-        } else if (STRCMP(view,VIEW_ADMIN) == 0) {
-
+        if (view->view_class == VIEW_CLASS_ADMIN) {
             setPermissions();
             display_admin(sortedRows);
-
         } else {
 
-            //create_file_to_url_symlink();
-
-            // main menu
-            display_template(skin_name,"menu",sortedRows);
-            build_playlist(sortedRows);
-        }
+            display_template(skin_name,view->name,sortedRows);
+            if (view->has_playlist) {
+                build_playlist(sortedRows);
+            } 
+        } 
     }
 
 TRACE;

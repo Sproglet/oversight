@@ -7,6 +7,7 @@
 #include <sys/statvfs.h>
 #include <sys/types.h>
 
+#include "types.h"
 #include "grid.h"
 #include "template.h"
 #include "template_condition.h"
@@ -783,7 +784,7 @@ char *macro_fn_resize_controls(MacroCallInfo *call_info)
 {
 
     char *result = NULL;
-    if (STRCMP(query_view_val(),VIEW_ADMIN) != 0) {
+    if (get_view_mode() == VIEW_ADMIN) {
         result = get_tvid_resize_links();
     }
     return result;
@@ -1068,7 +1069,7 @@ char *macro_fn_form_start(MacroCallInfo *call_info) {
     char *url=NULL;
 
 TRACE;
-    if (strcasecmp(query_view_val(),VIEW_ADMIN) == 0) {
+    if (get_view_mode() == VIEW_ADMIN) {
         char *action = query_val(QUERY_PARAM_ACTION);
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;

@@ -1980,10 +1980,21 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                         sprintf(id,"nm%07d",group->dbgi_ids[i]);
                         name=dbnames_fetch_static(id,name_file);
 
+                        if (name) {
+                            char *colon = strchr(name,':');
+                            if (colon) name = colon+1;
+                        } else {
+                            name = id;
+                        }
+
+                        char *link = get_person_drilldown_link(VIEW_PERSON,id,"",name,"","");
+
+
+
 
                         //At present name is "nm0000000:First Last" but this may 
                         //change.
-                        array_add(out,STRDUP(name?name+10:id));
+                        array_add(out,link);
                     }
 
                     array_add(out,STRDUP("</td>"));

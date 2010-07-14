@@ -68,4 +68,5 @@ char *return_query_string();
 void query_pop();
 void set_selected_item();
 char *get_selected_item();
+char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,char *font_class,char *cell_no_txt);
 #endif

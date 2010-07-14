@@ -2509,6 +2509,29 @@ char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *titl
 
     return result;
 }
+char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,char *font_class,char *cell_no_txt)
+{
+    char *result = NULL;
+    static char *link_template = NULL;
+    if (link_template == NULL ) {
+
+        // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
+        // return link. 
+        link_template = get_drilldown_link_with_font(
+               QUERY_PARAM_VIEW "=@VIEW@&p=&id=@ID@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
+    }
+
+    result = replace_all_str(link_template,
+            "@VIEW@",view->name,
+            "@ID@",id,
+            "@ATTR@",attr,
+            "@NAME@",name,
+            "@FONT_CLASS@",font_class,
+            "@CELLNO@",cell_no_txt,
+            NULL);
+
+    return result;
+}
 
 static inline void set_drilldown_view(DbItem *item) {
 

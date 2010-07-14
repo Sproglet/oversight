@@ -10,7 +10,7 @@ DIRNAME() {
 dbdir=`DIRNAME "$0"`
 dbdir=$( cd $dbdir ; pwd )
 dbdir="$dbdir/download"
-mkdir -p "$dbdir" && chown -R $user $dbdir
+mkdir -p "$dbdir" && ( chown -R $user $dbdir || true )
 
 
 update() {
@@ -26,7 +26,7 @@ update() {
     ratings
     release-dates';
 
-    files='actors';
+    files='movies';
 
     mirrors='ftp://ftp.fu-berlin.de/pub/misc/movies/database/
     ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/

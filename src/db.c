@@ -271,7 +271,7 @@ int db_to_be_scanned(char *name) {
     }
 }
 
-void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,
+void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,Exp *exp,
         int *rowset_count_ptr,DbItemSet ***row_set_ptr) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
@@ -284,7 +284,7 @@ TRACE;
         if (db) {
 TRACE;
 
-            DbItemSet *r = db_scan_titles(db,name_filter,media_type,watched);
+            DbItemSet *r = db_scan_titles(db,name_filter,media_type,watched,exp);
 
             if ( r != NULL ) {
 TRACE;
@@ -333,8 +333,8 @@ DbItemSet **db_crossview_scan_titles(
         int crossview,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched         // 1=watched 2=unwatched 3=any
-        ){
+        int watched,        // 1=watched 2=unwatched 3=any
+        Exp *exp){
     int rowset_count=0;
     DbItemSet **rowsets = NULL;
 
@@ -343,7 +343,7 @@ TRACE;
     // Add information from the local database
     db_scan_and_add_rowset(
         localDbPath(),"*",
-        name_filter,media_type,watched,
+        name_filter,media_type,watched,exp,
         &rowset_count,&rowsets);
 TRACE;
 
@@ -366,7 +366,7 @@ TRACE;
                         HTML_LOG(0,"crossview [%s]",path);
                         db_scan_and_add_rowset(
                             path,name,
-                            name_filter,media_type,watched,
+                            name_filter,media_type,watched,exp,
                             &rowset_count,&rowsets);
 
                     } else {
@@ -477,7 +477,8 @@ DbItemSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched        // 1=watched 2=unwatched 3=any
+        int watched,       // 1=watched 2=unwatched 3=any
+        Exp *exp            // general expression
         ){
 
     regex_t pattern;
@@ -688,6 +689,11 @@ TRACE;
                         }
                     }
                     //if (keeprow) HTML_LOG(0,"xx id ok");
+                    if (keeprow) {
+                        if (exp && evaluate_num(exp,&rowid) == 0) {
+                            keeprow = 0;
+                        }
+                    }
                 }
 
                 if (keeprow) {

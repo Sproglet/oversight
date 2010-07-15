@@ -7,6 +7,7 @@
 #include "dbitem.h"
 #include "dbfield.h"
 #include "time.h"
+#include "exp.h"
 
 typedef enum { PLOT_MAIN=0 , PLOT_EPISODE=1 } PlotType;
 
@@ -72,8 +73,8 @@ DbItemSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched        // 1=watched 2=unwatched 3=any
-        );
+        int watched,       // 1=watched 2=unwatched 3=any
+        Exp *exp);
 
 int db_lock(Db *db);
 int db_unlock(Db *db);
@@ -87,8 +88,8 @@ DbItemSet **db_crossview_scan_titles(
         int crossview,
         char *name_filter,  // only load lines whose titles match the filter
         int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched         // 1=watched 2=unwatched 3=any
-        );
+        int watched,        // 1=watched 2=unwatched 3=any
+        Exp *exp);
 void db_free_rowsets_and_dbs(DbItemSet **rowsets);
 int db_full_size();
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);

@@ -1602,6 +1602,10 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
 }
 
 // Very simple expression evaluator - no precedence, no brackets.
+// should be possible to use the url evaluator instead. see exp_test.
+// This would require the url operators (~a~ for AND etc) to be replaced
+// with more standard characters. 
+// Or simple enhance the OpDetails to have standard_text and url_text fields.
 long numeric_constant_eval_str(long val,char *expression) {
 
     char *p=expression;

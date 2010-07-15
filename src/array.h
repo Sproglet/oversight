@@ -1,14 +1,7 @@
 #ifndef __ARRAY_H_ALORD__
 #define __ARRAY_H_ALORD__
 
-struct array_str {
-    void **array;
-    int size;
-    int mem_size;
-    void (*free_fn)(void *);
-};
-
-typedef struct array_str Array;
+#include "types.h"
 
 void array_print(char *label,Array *a);
 void array_dump(int level,char *label,Array *a);

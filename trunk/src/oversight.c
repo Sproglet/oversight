@@ -23,6 +23,7 @@
 #include "gaya.h"
 #include "subtitles.h"
 #include "template.h"
+#include "exp.h"
 
 
 //void exec_old_cgi(int argc,char **argv);
@@ -254,6 +255,8 @@ TRACE;
 TRACE;
         playlist_open();
 TRACE;
+        exp_test();
+
         if (view->view_class == VIEW_CLASS_ADMIN) {
             setPermissions();
             display_admin(sortedRows);

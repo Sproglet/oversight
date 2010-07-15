@@ -128,4 +128,5 @@ int parse_row(
         struct Db_struct *db,        // the database
         DbItem *rowid// current rowid structure to populate.
         );
+int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void **offset,char *type,int *overview,char **imdb_prefix_ptr);
 #endif

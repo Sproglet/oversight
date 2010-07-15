@@ -24,6 +24,7 @@
 #include "macro.h"
 #include "mount.h"
 #include "template.h"
+#include "exp.h"
     
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
@@ -3074,11 +3075,18 @@ TRACE;
     HTML_LOG(1,"Media type = %d",media_type);
 
 TRACE;
+    Exp *query_exp = NULL;
+    char *query=query_val(QUERY_PARAM_QUERY);
+    if(query && *query) {
+        query_exp = parse_full_url_expression(query);
+    }
     
     HTML_LOG(0,"Scan..");
 
     // Get array of rowsets. One item for each database source. 
-    DbItemSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched);
+    DbItemSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched,query_exp);
+
+    exp_free(query_exp,1);
 
 TRACE;
 

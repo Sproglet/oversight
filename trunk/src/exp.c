@@ -54,6 +54,23 @@ int evaluate(Exp *e,DbItem *item)
     return result;
 }
 
+int evaluate_num(Exp *e,DbItem *item)
+{
+    int result = 0;
+    if (e) {
+        if (evaluate(e,item) == 0) {
+            if (e->val.type == VAL_TYPE_NUM) {
+                result = e->val.num_val;
+            } else {
+                html_error("number expected");
+                exp_dump(e,0,1);
+                assert(0);
+            }
+        }
+    }
+    return result;
+}
+
 int compare(Op op,int val) {
 
     int result=0;
@@ -193,6 +210,10 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
             if (evaluate_with_err(e->subexp[0],item,err) == 0) {
 
+                //HTML_LOG(0,"OP_DBFIELD item [%s]",item->title);
+                //exp_dump(e->subexp[0],0,1);
+                
+
                 void *offset;
                 char ftype;
                 int overview;
@@ -211,12 +232,25 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
                 } else {
 
+                    /*
+                    char *p = item->title;
+                    char *q = *(char **)offset;
+                    HTML_LOG(0,"OP_DBFIELD fname [%s]",fname);
+                    HTML_LOG(0,"OP_DBFIELD ftype [%c]",ftype);
+                    HTML_LOG(0,"OP_DBFIELD item [%lu]",(unsigned long)item);
+                    HTML_LOG(0,"OP_DBFIELD item->title [%lu]",(unsigned long)&(item->title));
+                    HTML_LOG(0,"OP_DBFIELD offset [%lu]",(unsigned long)offset);
+                    HTML_LOG(0,"OP_DBFIELD item->title [%s]",item->title);
+                    HTML_LOG(0,"OP_DBFIELD offset [%s]",offset);
+                    HTML_LOG(0,"OP_DBFIELD p [%lu] q[%lu]",p,q);
+                    HTML_LOG(0,"OP_DBFIELD p [%s] q[%s]",p,q);
+                    */
                     switch(ftype){
 
                         case FIELD_TYPE_STR:
                             e->val.type = VAL_TYPE_STR;
                             e->val.free_str = 0;
-                            e->val.str_val = offset;
+                            e->val.str_val = *(char **)offset;
                             break;
 
                         case FIELD_TYPE_CHAR:
@@ -398,6 +432,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 
     return result;
 }
+
 Exp *parse_full_url_expression(char *text_ptr)
 {
     Exp *result =  parse_url_expression(&text_ptr,0);
@@ -408,7 +443,8 @@ Exp *parse_full_url_expression(char *text_ptr)
 
 }
 
-void exp_dump(Exp *e,int depth,int show_holding_values) {
+void exp_dump(Exp *e,int depth,int show_holding_values)
+{
     if (e) {
         exp_dump(e->subexp[0],depth+1,show_holding_values);
 
@@ -426,7 +462,8 @@ void exp_dump(Exp *e,int depth,int show_holding_values) {
         exp_dump(e->subexp[1],depth+1,show_holding_values);
     }
 }
-void exp_free(Exp *e,int recursive) {
+void exp_free(Exp *e,int recursive)
+{
     if (e) {
         if (recursive)  {
             if (e->op != OP_VALUE) {

@@ -170,7 +170,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                     } else {
                         switch (e->subexp[0]->val.type ) {
                             case VAL_TYPE_STR:
-                                e->val.num_val = compare(e->op,STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
+                                e->val.num_val = compare(e->op,index_STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
                                 break;
                             case VAL_TYPE_NUM:
                                 e->val.num_val = compare(e->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
@@ -191,10 +191,14 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                         e->val.type = VAL_TYPE_NUM;
                         switch(e->op) {
                             case OP_STARTS_WITH:
-                                e->val.num_val = util_starts_with(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
+                                {
+                                char *p = e->subexp[0]->val.str_val;
+                                if (STARTS_WITH_THE(p)) p+= 4;
+                                e->val.num_val = util_starts_with_ignore_case(p,e->subexp[1]->val.str_val);
+                                }
                                 break;
                             case OP_CONTAINS:
-                                e->val.num_val = (strstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val) != NULL);
+                                e->val.num_val = (util_strcasestr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val) != NULL);
                                 break;
                             default:
                                 assert(0);
@@ -381,20 +385,20 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
            }
            //HTML_LOG(0,"value [%.*s]",p-*text_ptr,*text_ptr);
            if (**text_ptr == '\'' && p[-1] == '\'' ) {
+               // quoted string
                char *str = COPY_STRING(p-*text_ptr-2,*text_ptr+1);
                HTML_LOG(0,"str value [%s]",str);
                result = new_val_str(str,1);
            } else {
                char *end;
                double d = strtod(*text_ptr,&end);
-               //HTML_LOG(0,"num value [%lf]%.*s...",d,5,end);
                if (end != p) {
-                   html_error("parse double [%.*s] expected [%.*s]",
-                           end-*text_ptr,*text_ptr,
-                           p-*text_ptr,*text_ptr);
-                   assert(0);
+                   // Could not parse number - set as a string value
+                   result = new_val_str(COPY_STRING(p-*text_ptr,*text_ptr),1);
+               } else {
+                   // numeric value
+                   result = new_val_num(d);
                }
-               result = new_val_num(d);
            }
            *text_ptr = p;
        }

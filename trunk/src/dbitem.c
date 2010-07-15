@@ -286,11 +286,11 @@ void db_rowid_dump(DbItem *item)
     HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime(&t)));
     t = item->airdate_imdb;
     HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime(&t)));
-    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(item->comes_after,"tt"));
-    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before,"tt"));
-    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes,"tt"));
-    HTML_LOG(1,"ROWID: directors(%s)",db_group_imdb_string_static(item->directors,"nm"));
-    HTML_LOG(1,"ROWID: actors(%s)",db_group_imdb_string_static(item->actors,"nm"));
+    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(item->comes_after));
+    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before));
+    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes));
+    HTML_LOG(1,"ROWID: directors(%s)",db_group_imdb_string_static(item->directors));
+    HTML_LOG(1,"ROWID: actors(%s)",db_group_imdb_string_static(item->actors));
     HTML_LOG(1,"----");
 }
 
@@ -829,8 +829,9 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
     void *offset;
     char type;
     int overview;
+    char *prefix;
 
-    if (!db_rowid_get_field_offset_type_inline(rowid,name,&offset,&type,&overview,NULL)) {
+    if (!db_rowid_get_field_offset_type_inline(rowid,name,&offset,&type,&overview,&prefix)) {
         return;
     }
     //Dont get the field if this is the menu view and it is not an overview field 
@@ -881,10 +882,10 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
                 *(long *)offset=strtol(val,&tmps,16) ;
                 break;
             case FIELD_TYPE_IMDB_LIST:
-                *(DbGroupIMDB **)offset = parse_imdb_list(val,val_len,NULL);
+                *(DbGroupIMDB **)offset = parse_imdb_list(prefix,val,val_len,NULL);
                 break;
             case FIELD_TYPE_IMDB_LIST_NOEVAL:
-                *(DbGroupIMDB **)offset = get_raw_imdb_list(val,val_len);
+                *(DbGroupIMDB **)offset = get_raw_imdb_list(val,val_len,prefix);
                 break;
             default:
                 HTML_LOG(0,"Bad field type [%c]",type);

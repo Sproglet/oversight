@@ -25,10 +25,10 @@ typedef struct array_str {
     void (*free_fn)(void *);
 } Array;
 
-#define DB_MEDIA_TYPE_TV 1
-#define DB_MEDIA_TYPE_FILM 2
-#define DB_MEDIA_TYPE_ANY 3
-#define DB_MEDIA_TYPE_OTHER 4
+#define DB_MEDIA_TYPE_TV "T"
+#define DB_MEDIA_TYPE_FILM "M"
+#define DB_MEDIA_TYPE_ANY NULL
+#define DB_MEDIA_TYPE_OTHER "O"
 
 
 
@@ -38,7 +38,7 @@ typedef struct ViewMode_struct {
     int row_select; // How to select rows TV=by title_season tvboxset=by title  anything else by id;
     int has_playlist;
     char *dimension_cell_suffix; // get image dimensions from config file
-    int media_type;
+    char *media_types;
     int (*default_sort)(); // how to sort elements of this view
     //int (*default_sort)(DbItem **item1,DbItem **item2); // how to sort elements of this view
     int (*item_eq_fn)(void *,void *); // used to build hashtable of items
@@ -147,7 +147,53 @@ typedef struct Dbrowid_struct {
 
 } DbItem;
 
-// Expression 
+// GROUPS AND IMDB LISTS =========================================================================
+//
+// A Group of related rows. This may be :
+// a movie boxset (a list of related imdb numbers)
+// a tv box set. ( a Title and a Season. )
+// a tv box series. ( a Title . )
+// a custom group (A tag which will be stored against the item)
+typedef enum DbGroupType_enum {
+    DB_GROUP_BY_IMDB_LIST ,
+    DB_GROUP_BY_NAME_TYPE_SEASON ,
+    DB_GROUP_BY_CUSTOM_TAG
+} DbGroupType;
+
+typedef struct DbGroupIMDB_struct {
+    int evaluated; // To improve page load performance groups are only evaluated when needed.
+    char *raw; // Raw string for this group. This should be freed when the ids are evaluated.
+    int raw_len;
+
+    char *prefix; // tt or nm - do not free
+    int dbgi_max_size;
+    int dbgi_size;
+    int *dbgi_ids;
+    int dbgi_sorted;
+} DbGroupIMDB;
+
+typedef struct DbGroupNameSeason_struct {
+    char *name;
+    int type;
+    int season;
+} DbGroupNameSeason;
+
+typedef struct DbGroupCustom_struct {
+    char *dbgc_tag;
+} DbGroupCustom;
+
+typedef struct DbGroupDef_struct {
+    DbGroupType dbg_type;
+    union {
+        DbGroupIMDB dbgi;
+        DbGroupNameSeason dbgns;
+        DbGroupCustom dbgc;
+    } u;
+
+} DbGroupDef;
+
+// Expression  =============================================================================
+//
 typedef enum Op_enum {
     OP_VALUE=0,
     OP_ADD='+',
@@ -169,8 +215,10 @@ typedef enum Op_enum {
 } Op;
 
 typedef enum ValType_enum {
+    VAL_TYPE_IMDB_LIST='I',
     VAL_TYPE_NUM='i',
-    VAL_TYPE_STR='s'
+    VAL_TYPE_STR='s',
+    VAL_TYPE_CHAR='c'
 } ValType;
 
 typedef struct Value_struct {
@@ -178,6 +226,7 @@ typedef struct Value_struct {
     double num_val;
     char *str_val;
     int free_str;
+    DbGroupIMDB *imdb_list_val;
 
 } Value;
 

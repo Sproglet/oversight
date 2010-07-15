@@ -21,7 +21,8 @@
 static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode);
 
 DbGroupIMDB *db_group_imdb_new(
-        int size // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
+        int size,      // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
+        char *prefix   // IMDB id prefix tt or nm - do not free
 )
 {
     if (size == 0) {
@@ -35,6 +36,9 @@ DbGroupIMDB *db_group_imdb_new(
     g->dbgi_max_size = size;
     g->dbgi_size = 0;
     g->dbgi_ids = list;
+    g->prefix = prefix;
+    g->dbgi_sorted = 1; // Start off sorted.
+
 
 
     return g;
@@ -66,12 +70,42 @@ int in_db_name_season_group(DbItem *item,DbGroupNameSeason *g)
     return result;
 }
 
+#define IN_SORTED_IMDB_LIST(id,g) (bchop((id),(g)->dbgi_size,(g)->dbgi_ids) >= 0)
+
+
+int in_unsorted_imdb_list(int id,DbGroupIMDB *g)
+{
+    int i;
+    for(i = 0 ; i < g->dbgi_size ; i ++ ) { 
+        if (g->dbgi_ids[i] == id) return 1;
+    }
+    return 0;
+}
+
+int id_in_db_imdb_group(int id,DbGroupIMDB *g)
+{
+    int result=0;
+    if (g) {
+        EVALUATE_GROUP(g);
+        if (g->dbgi_sorted) {
+            result = IN_SORTED_IMDB_LIST(id,g);
+        } else {
+            result = in_unsorted_imdb_list(id,g);
+        }
+    }
+    return result;
+}
+
 int in_db_imdb_group(DbItem *item,DbGroupIMDB *g)
 {
     int result = 0 ;
     if (g && item->external_id ) {
         EVALUATE_GROUP(g);
-        result = bchop(item->external_id,g->dbgi_size,g->dbgi_ids) >= 0;
+        if (g->dbgi_sorted) {
+            result = IN_SORTED_IMDB_LIST(item->external_id,g);
+        } else {
+            result = in_unsorted_imdb_list(item->external_id,g);
+        }
     } 
     return result;
 }
@@ -741,6 +775,13 @@ void db_group_imdb_add(DbGroupIMDB *g,int id) {
         HTML_LOG(0,"truncated imdb starting %07d. %07d not added",
                 g->dbgi_ids[0],id);
     } else {
+
+        // If an item is added out of order - then clear dbgi_sorted field.
+        // This means we dont use bchop looking for items. Just a linear scan.
+        if (g->dbgi_sorted && size && id < g->dbgi_ids[size-1] ) {
+            g->dbgi_sorted = 0;
+        }
+
         g->dbgi_ids[size++] = id;
         g->dbgi_size = size;
     }
@@ -748,12 +789,13 @@ void db_group_imdb_add(DbGroupIMDB *g,int id) {
 
 DbGroupIMDB *get_raw_imdb_list(
         char *val,
-        int val_len
+        int val_len,
+        char *prefix
         )
 {
     DbGroupIMDB *group = NULL;
     if (val != NULL && val_len > 0 ) {
-        group = db_group_imdb_new(0);
+        group = db_group_imdb_new(0,prefix);
         group->raw = COPY_STRING(val_len,val);
         group->raw_len = val_len;
         group->evaluated = 0;
@@ -765,7 +807,7 @@ void evaluate_group(DbGroupIMDB *group)
 {
     if (!group->evaluated) {
         HTML_LOG(0,"Group eval");
-        if (parse_imdb_list(group->raw,group->raw_len,group) == group) {
+        if (parse_imdb_list(group->prefix,group->raw,group->raw_len,group) == group) {
             FREE(group->raw);
             group->raw = NULL;
             group->raw_len = 0;
@@ -782,20 +824,23 @@ void evaluate_group(DbGroupIMDB *group)
  * This compresses an id tt1999999 down to 3 bytes, .
  */
 DbGroupIMDB *parse_imdb_list(
+        char *prefix, // tt or nm
         char *val,
         int val_len,
         DbGroupIMDB *group // If NULL create new group.
         )
 {
+    int prefix_len = strlen(prefix);
+
     if (val != NULL && val_len > 0 ) {
         unsigned char *p,*start = (unsigned char *)val;
         unsigned char *end = start+val_len;
         int id = 0;
         for(p = start ; p < end ; ) {
             // tt or nm
-            if (( *p == 't' && p[1]=='t') || ( *p == 'n' && p[1]=='m')) {
+            if (*p == *prefix && util_starts_with((char *)p,prefix)) {
                 // Parse tt0000000 or nm00000
-                p += 2;
+                p += prefix_len;
                 char *q;
                 id = strtol((char *)p,&q,10);
                 p = (unsigned char *)q;
@@ -807,7 +852,7 @@ DbGroupIMDB *parse_imdb_list(
                 p++;
             } else {
                 if (group == NULL) {
-                    group = db_group_imdb_new(0);
+                    group = db_group_imdb_new(0,prefix);
                 }
                 db_group_imdb_add(group,id);
                 id = 0;
@@ -816,7 +861,7 @@ DbGroupIMDB *parse_imdb_list(
         }
         if (id != 0) {
             if (group == NULL) {
-                group = db_group_imdb_new(0);
+                group = db_group_imdb_new(0,prefix);
             }
             db_group_imdb_add(group,id);
         }
@@ -879,8 +924,7 @@ char *db_group_imdb_compressed_string_static(DbGroupIMDB *g)
 // Get string representation of a list of imdb ids.
 #define MAX_IMDB_IDLEN 9  // tt8888888
 char *db_group_imdb_string_static(
-        DbGroupIMDB *g,
-        char *prefix // tt or nm
+        DbGroupIMDB *g
         )
 {
     static char buffer[(MAX_IMDB_IDLEN+1)*IMDB_GROUP_MAX_SIZE]; // tt9999999=4 characters compressed.
@@ -896,7 +940,7 @@ char *db_group_imdb_string_static(
             if (i) {
                 *p++ = IMDB_GROUP_SEP;
             }
-            p += sprintf(p,"%s%07d",prefix,id);
+            p += sprintf(p,"%s%07d",g->prefix,id);
         }
     }
     *p = '\0';
@@ -909,7 +953,7 @@ ViewMode *new_view(
         int row_select,
         int has_playlist,
         char *dimension_cell_suffix,
-        int media_type,
+        char *media_types,
         int (*default_sort)(),
         int (*item_eq_fn)(void *,void *), // used to build hashtable of items
         unsigned int (*item_hash_fn)(void *)) // used to build hashtable of items
@@ -921,7 +965,7 @@ ViewMode *new_view(
     vm->row_select = row_select;
     vm->has_playlist = has_playlist;
     vm->dimension_cell_suffix = dimension_cell_suffix;
-    vm->media_type = media_type;
+    vm->media_types = media_types;
     vm->default_sort = default_sort;
     vm->item_eq_fn = item_eq_fn;
     vm->item_hash_fn = item_hash_fn;

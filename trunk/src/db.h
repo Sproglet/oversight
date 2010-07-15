@@ -17,10 +17,6 @@ OVS_TIME *timestamp_ptr(DbItem *rowid);
 
 #define ALL_IDS -1
 
-#define DB_WATCHED_FILTER_YES 1
-#define DB_WATCHED_FILTER_NO 2
-#define DB_WATCHED_FILTER_ANY 3
-
 /**
  * Details for a particualr index.db/plot.db
  **/
@@ -72,8 +68,6 @@ Db *db_init(char *filename, // path to the file
 DbItemSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
-        int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched,       // 1=watched 2=unwatched 3=any
         Exp *exp);
 
 int db_lock(Db *db);
@@ -87,8 +81,6 @@ void db_rowset_dump(int level,char *label,DbItemSet *dbrs);
 DbItemSet **db_crossview_scan_titles(
         int crossview,
         char *name_filter,  // only load lines whose titles match the filter
-        int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched,        // 1=watched 2=unwatched 3=any
         Exp *exp);
 void db_free_rowsets_and_dbs(DbItemSet **rowsets);
 int db_full_size();

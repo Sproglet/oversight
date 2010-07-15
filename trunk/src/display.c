@@ -24,7 +24,8 @@
 #include "macro.h"
 #include "mount.h"
 #include "template.h"
-#include "exp.h"
+//#include "exp.h"
+#include "filter.h"
     
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
@@ -3030,61 +3031,23 @@ TRACE;
         }
     }
 TRACE;
-    HTML_LOG(1,"Regex filter = %s",regex);
-
-    // Watched filter
-    // ==============
-    int watched = DB_WATCHED_FILTER_ANY;
-TRACE;
-    char *watched_param=query_val(QUERY_PARAM_WATCHED_FILTER);
-
-TRACE;
-    if (STRCMP(watched_param,QUERY_PARAM_WATCHED_VALUE_YES) == 0) {
-TRACE;
-
-        watched=DB_WATCHED_FILTER_YES;
-
-    } else if (STRCMP(watched_param,QUERY_PARAM_WATCHED_VALUE_NO) == 0) {
-TRACE;
-
-        watched=DB_WATCHED_FILTER_NO;
-    }
-
-TRACE;
-    HTML_LOG(1,"Watched filter = %ld",watched);
 
     // Tv/Film filter
     // ==============
-    char *media_type_str=query_val(QUERY_PARAM_TYPE_FILTER);
-    int media_type=view->media_type;
 
-    if(media_type == DB_WATCHED_FILTER_ANY) {
-       if (STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_TV) == 0 ) {
+    char *media_types=view->media_types;
 
-TRACE;
-            media_type=DB_MEDIA_TYPE_TV; 
-
-        } else if(STRCMP(media_type_str,QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE) == 0 ) {
-
-TRACE;
-            media_type=DB_MEDIA_TYPE_FILM; 
-
-        } 
-    } 
-
-    HTML_LOG(1,"Media type = %d",media_type);
-
-TRACE;
-    Exp *query_exp = NULL;
-    char *query=query_val(QUERY_PARAM_QUERY);
-    if(query && *query) {
-        query_exp = parse_full_url_expression(query);
+    if(media_types == DB_MEDIA_TYPE_ANY) {
+        media_types = query_val(QUERY_PARAM_TYPE_FILTER);
     }
+
+TRACE;
+    Exp *query_exp = build_filter(media_types);
     
     HTML_LOG(0,"Scan..");
 
     // Get array of rowsets. One item for each database source. 
-    DbItemSet **rowsets = db_crossview_scan_titles( crossview, regex, media_type, watched,query_exp);
+    DbItemSet **rowsets = db_crossview_scan_titles( crossview, regex, query_exp);
 
     exp_free(query_exp,1);
 

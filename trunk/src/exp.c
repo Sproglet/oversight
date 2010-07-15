@@ -22,7 +22,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err);
 
 Exp *new_val_str(char *s,int free_str)
 {
-    Exp *e = calloc(sizeof(Exp),1);
+    Exp *e = CALLOC(sizeof(Exp),1);
     e->op = OP_VALUE;
     e->val.type = VAL_TYPE_STR;
     e->val.str_val = s;
@@ -32,7 +32,7 @@ Exp *new_val_str(char *s,int free_str)
 
 Exp *new_val_num(double d)
 {
-    Exp *e = calloc(sizeof(Exp),1);
+    Exp *e = CALLOC(sizeof(Exp),1);
     e->op = OP_VALUE;
     e->val.type = VAL_TYPE_NUM;
     e->val.num_val = d;
@@ -40,7 +40,7 @@ Exp *new_val_num(double d)
 }
 Exp *new_exp(Op op,Exp *left,Exp *right)
 {
-    Exp *e = calloc(sizeof(Exp),1);
+    Exp *e = CALLOC(sizeof(Exp),1);
     e->op = op;
     e->subexp[0] = left;
     e->subexp[1] = right;
@@ -86,6 +86,16 @@ int compare(Op op,int val) {
             assert(0);
     }
     return result;
+}
+
+char *num2str_static(double d) {
+    static char s[30];
+    if (d == (int)d){
+        sprintf(s,"%.0lf",d);
+    } else {
+        sprintf(s,"%.1lf",d);
+    }
+    return s;
 }
 
 
@@ -172,6 +182,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                             case VAL_TYPE_STR:
                                 e->val.num_val = compare(e->op,index_STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
                                 break;
+                            case VAL_TYPE_CHAR:
                             case VAL_TYPE_NUM:
                                 e->val.num_val = compare(e->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
                                 break;
@@ -184,21 +195,103 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
         case OP_STARTS_WITH:
         case OP_CONTAINS:
+
             if (evaluate_with_err(e->subexp[0],item,err) == 0) {
                 if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    if (e->subexp[0]->val.type == e->subexp[1]->val.type && e->subexp[0]->val.type == VAL_TYPE_STR ) {
+                    //exp_dump(e->subexp[1],0,1);
 
-                        e->val.type = VAL_TYPE_NUM;
+                    // INT/STR = not supported
+                    // INT/INT = not supported
+                    // INT/LIST = not supported
+                    //
+                    // STR/STR = string functions
+                    // STR/INT = string functions
+                    // LIST/STR = string functions
+                    // LIST/INT = group function
+                    //
+                    // LIST/LIST = not supported
+                    // STR/LIST = not supported
+                    // INT/LIST = not supported
+                    char *left=NULL;
+                    char *right=NULL;
+                    int imdb_list_check = 0;
+
+                    int char_on_right = 0;
+
+                    char right_chr = '\0';
+
+                    switch(e->subexp[1]->val.type) {
+                        case VAL_TYPE_IMDB_LIST:
+                            html_error("2nd list argument not supported");
+                            assert(0);
+                            break;
+                        case VAL_TYPE_STR:
+                            right = e->subexp[1]->val.str_val;
+                            break;
+                        case VAL_TYPE_CHAR:
+                            right_chr = e->subexp[1]->val.num_val;
+                            char_on_right = 1;
+                            break;
+                        case VAL_TYPE_NUM:
+
+                            if (e->subexp[0]->val.type == VAL_TYPE_STR) {
+
+                                right = num2str_static(e->subexp[1]->val.num_val);
+
+                            } else if (e->subexp[0]->val.type == VAL_TYPE_IMDB_LIST) {
+                                imdb_list_check = 1;
+                            }
+                            break;
+                    }
+
+                    switch(e->subexp[0]->val.type) {
+                        case VAL_TYPE_CHAR:
+                            html_error("1st character argument not supported");
+                            assert(0);
+                            break;
+                        case VAL_TYPE_NUM:
+                            html_error("1st numeric argument not supported");
+                            assert(0);
+                            break;
+                        case VAL_TYPE_IMDB_LIST:
+                            if (!imdb_list_check) {
+                                left = db_group_imdb_string_static(e->subexp[0]->val.imdb_list_val);
+                            } 
+                            break;
+                        case VAL_TYPE_STR:
+                            left = e->subexp[0]->val.str_val;
+                            break;
+                    }
+                    e->val.type = VAL_TYPE_NUM;
+                    if (imdb_list_check) {
+                        int id = e->subexp[1]->val.num_val;
+                        int in_list = id_in_db_imdb_group(id,e->subexp[0]->val.imdb_list_val);
+                        e->val.num_val = in_list;
+
+                    } else if (char_on_right) {
+                        // String contains character
                         switch(e->op) {
                             case OP_STARTS_WITH:
-                                {
-                                char *p = e->subexp[0]->val.str_val;
-                                if (STARTS_WITH_THE(p)) p+= 4;
-                                e->val.num_val = util_starts_with_ignore_case(p,e->subexp[1]->val.str_val);
-                                }
+                                if (STARTS_WITH_THE(left)) left+= 4;
+                                e->val.num_val = (tolower(*left) == tolower(right_chr));
                                 break;
                             case OP_CONTAINS:
-                                e->val.num_val = (util_strcasestr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val) != NULL);
+                                e->val.num_val = (strchr(left,right_chr) != NULL);
+                                break;
+                            default:
+                                assert(0);
+                        }
+
+                    } else {
+
+                        // String contains string
+                        switch(e->op) {
+                            case OP_STARTS_WITH:
+                                if (STARTS_WITH_THE(left)) left+= 4;
+                                e->val.num_val = util_starts_with_ignore_case(left,right);
+                                break;
+                            case OP_CONTAINS:
+                                e->val.num_val = (util_strcasestr(left,right) != NULL);
                                 break;
                             default:
                                 assert(0);
@@ -258,7 +351,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                             break;
 
                         case FIELD_TYPE_CHAR:
-                            e->val.type = VAL_TYPE_NUM;
+                            e->val.type = VAL_TYPE_CHAR;
                             e->val.num_val = *(char *)offset;
                             break;
 
@@ -276,16 +369,9 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                         case FIELD_TYPE_IMDB_LIST:
                         case FIELD_TYPE_IMDB_LIST_NOEVAL:
 
-                            e->val.type = VAL_TYPE_STR;
+                            e->val.type = VAL_TYPE_IMDB_LIST;
                             e->val.free_str = 0;
-                            e->val.str_val = NULL;
-                            DbGroupIMDB *imdblist = offset;
-                            if (imdblist != NULL) {
-                                if (!(imdblist->evaluated)) {
-                                    evaluate_group(imdblist);
-                                }
-                                e->val.str_val = db_group_imdb_string_static(imdblist,imdb_prefix_ptr);
-                            }
+                            e->val.imdb_list_val = *(DbGroupIMDB **)offset;
                             break;
 
                         case FIELD_TYPE_DATE:
@@ -439,9 +525,12 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 
 Exp *parse_full_url_expression(char *text_ptr)
 {
-    Exp *result =  parse_url_expression(&text_ptr,0);
-    if (*text_ptr) {
-        html_error("unparsed [%.*s]",20,text_ptr);
+    Exp *result =  NULL;
+    if (text_ptr && *text_ptr) {
+        result = parse_url_expression(&text_ptr,0);
+        if (*text_ptr) {
+            html_error("unparsed [%.*s]",20,text_ptr);
+        }
     }
     return result;
 
@@ -456,10 +545,19 @@ void exp_dump(Exp *e,int depth,int show_holding_values)
             HTML_LOG(0,"%*s op[%c]",depth*4," ",e->op);
         }
         if (e->op == OP_VALUE || show_holding_values) {
-            if (e->val.type == VAL_TYPE_NUM) {
-                HTML_LOG(0,"%*s num[%lf]",depth*4," ",e->val.num_val);
-            } else {
-                HTML_LOG(0,"%*s str[%s]",depth*4," ",e->val.str_val);
+            switch(e->val.type) {
+                case VAL_TYPE_CHAR:
+                    HTML_LOG(0,"%*s char[%c]",depth*4," ",e->val.num_val);
+                    break;
+                case VAL_TYPE_NUM:
+                    HTML_LOG(0,"%*s num[%lf]",depth*4," ",e->val.num_val);
+                    break;
+                case VAL_TYPE_STR:
+                    HTML_LOG(0,"%*s str[%s]",depth*4," ",e->val.str_val);
+                    break;
+                case VAL_TYPE_IMDB_LIST:
+                    HTML_LOG(0,"%*s list[%s]",depth*4," ",db_group_imdb_string_static(e->val.imdb_list_val));
+                    break;
             }
         }
 

@@ -32,7 +32,10 @@ If you often use Oversight with the NAS switched off, then set this to a shorter
 If you have more than one NAS, then at present each one is probed in sequence, so bear that in mind when setting the timeout.
 
 ==Firewalls==
+
 If you have a software firewall between the NMT and the shared drive, it may block Oversights initial probe for the presence of the drive. In this case modify your firewall rules accordingly.
+
+Sometimes scans will work but Oversight GUI will still not be able to access the drive. This is because the GUI performs an initial 'high speed' port check which the firewall might not like.
 
 === Windows Home Server (WHS) Firewall ===
  

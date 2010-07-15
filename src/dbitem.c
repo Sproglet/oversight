@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "dbfield.h"
 #include "dbitem.h"
 #include "dboverview.h"
 #include "dbplot.h"
@@ -522,26 +523,24 @@ int parse_date(char *field_id,char *buffer,OVS_TIME *val_ptr,int quiet)
     return 0;
 }
 
-#define FIELD_TYPE_NONE '-'
-#define FIELD_TYPE_STR 's'
-#define FIELD_TYPE_DOUBLE 'f'
-#define FIELD_TYPE_CHAR 'c'
-#define FIELD_TYPE_LONG 'l'
-#define FIELD_TYPE_YEAR 'y'
-#define FIELD_TYPE_INT 'i'
-#define FIELD_TYPE_DATE 'd'
-#define FIELD_TYPE_TIMESTAMP 't'
-#define FIELD_TYPE_IMDB_LIST 'I'
-#define FIELD_TYPE_IMDB_LIST_NOEVAL 'j'
 
 // Most field ids have the form _a or _ab. This function looks at th first few letters of the 
 // id and returns its type (FIELD_TYPE_STR,FIELD_TYPE_INT etc) and its offset within the DbItem structure.
-static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void **offset,char *type,int *overview) {
+static inline int db_rowid_get_field_offset_type_inline(
+        DbItem *rowid,
+        char *name,
+        void **offset,
+        char *type,
+        int *overview,
+        char **imdb_prefix_ptr)
+{
 
     register char *p = name;
     *offset=NULL;
     *type = FIELD_TYPE_NONE;
     *overview = 0;
+
+    char *imdb_prefix=NULL;
 
 
 
@@ -570,6 +569,7 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                     *offset=&(rowid->comes_after);
                     *type = FIELD_TYPE_IMDB_LIST;
                     *overview = 1;
+                    imdb_prefix = "tt";
                 }
                 break;
             case 'A':
@@ -577,6 +577,7 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                     *offset=&(rowid->actors);
                     *type = FIELD_TYPE_IMDB_LIST_NOEVAL;
                     *overview = 1;
+                    imdb_prefix = "nm";
                 }
                 break;
             case 'b':
@@ -584,6 +585,7 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                     *offset=&(rowid->comes_before);
                     *type = FIELD_TYPE_IMDB_LIST;
                     *overview = 1;
+                    imdb_prefix = "tt";
                 }
                 break;
             case 'C':
@@ -598,6 +600,7 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                     *offset=&(rowid->directors);
                     *type = FIELD_TYPE_IMDB_LIST_NOEVAL;
                     *overview = 1;
+                    imdb_prefix = "nm";
                 }
                 break;
             case 'D':
@@ -757,6 +760,9 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
                 break;
         }
     }
+    if (imdb_prefix_ptr) {
+        *imdb_prefix_ptr = imdb_prefix;
+    }
     if (*type == FIELD_TYPE_NONE) {
         HTML_LOG(-1,"Unknown field [%s]",name);
         return 0;
@@ -764,6 +770,12 @@ static inline int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void *
     return 1;
 
 }
+
+int db_rowid_get_field_offset_type(DbItem *rowid,char *name,void **offset,char *type,int *overview,char **imdb_prefix_ptr)
+{
+    return db_rowid_get_field_offset_type_inline(rowid,name,offset,type,overview,imdb_prefix_ptr);
+}
+
 // Return string representation of a field the way a user would like to see it.
 // TODO: Need to add expand for genre codes.
 char * db_rowid_get_field(DbItem *rowid,char *name)
@@ -774,7 +786,7 @@ char * db_rowid_get_field(DbItem *rowid,char *name)
     char type;
     int overview;
 
-    if (!db_rowid_get_field_offset_type(rowid,name,&offset,&type,&overview)) {
+    if (!db_rowid_get_field_offset_type_inline(rowid,name,&offset,&type,&overview,NULL)) {
         return NULL;
     }
 
@@ -818,7 +830,7 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
     char type;
     int overview;
 
-    if (!db_rowid_get_field_offset_type(rowid,name,&offset,&type,&overview)) {
+    if (!db_rowid_get_field_offset_type_inline(rowid,name,&offset,&type,&overview,NULL)) {
         return;
     }
     //Dont get the field if this is the menu view and it is not an overview field 

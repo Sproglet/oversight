@@ -17,6 +17,7 @@ typedef struct DbGroupIMDB_struct {
     char *raw; // Raw string for this group. This should be freed when the ids are evaluated.
     int raw_len;
 
+    char *prefix; // tt or nm - do not free
     int dbgi_max_size;
     int dbgi_size;
     int *dbgi_ids;

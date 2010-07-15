@@ -52,6 +52,17 @@
 #define DB_FLDID_REMAKE "_k"
 #define DB_FLDID_ACTOR_LIST "_A"
 
+#define FIELD_TYPE_NONE '-'
+#define FIELD_TYPE_STR 's'
+#define FIELD_TYPE_DOUBLE 'f'
+#define FIELD_TYPE_CHAR 'c'
+#define FIELD_TYPE_LONG 'l'
+#define FIELD_TYPE_YEAR 'y'
+#define FIELD_TYPE_INT 'i'
+#define FIELD_TYPE_DATE 'd'
+#define FIELD_TYPE_TIMESTAMP 't'
+#define FIELD_TYPE_IMDB_LIST 'I'
+#define FIELD_TYPE_IMDB_LIST_NOEVAL 'j'
 
 char *dbf_macro_to_fieldid(char *macro);
 char *dbf_fieldid_to_macro(char *fieldid);

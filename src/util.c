@@ -1098,4 +1098,13 @@ int bchop(int id,int size,int *ids)
     //HTML_LOG("not found %d",id);
     return BCHOP_NOT_FOUND;
 }
+int index_STRCMP(char *a,char *b)
+{
+    if (STARTS_WITH_THE(a)) a+= 4;
+    if (STARTS_WITH_THE(b)) b+= 4;
+    //if (strncasecmp(a,"the ",4)==0) a+= 4;
+    //if (strncasecmp(b,"the ",4)==0) b+= 4;
+    return strcasecmp(a,b);
+}
+
 // vi:sw=4:et:ts=4

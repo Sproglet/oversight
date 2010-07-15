@@ -134,14 +134,6 @@ int db_overview_cmp_by_season_asc(DbItem **item1,DbItem **item2)
 }
 
 
-int index_STRCMP(char *a,char *b) {
-    if (STARTS_WITH_THE(a)) a+= 4;
-    if (STARTS_WITH_THE(b)) b+= 4;
-    //if (strncasecmp(a,"the ",4)==0) a+= 4;
-    //if (strncasecmp(b,"the ",4)==0) b+= 4;
-    return strcasecmp(a,b);
-}
-
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_title(DbItem **item1,DbItem **item2) {
 

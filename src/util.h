@@ -144,4 +144,5 @@ int is_nmt100();
 struct hashtable *array_to_set(Array *args);
 void set_free(struct hashtable *h);
 int bchop(int id,int size,int *ids);
+int index_STRCMP(char *a,char *b);
 #endif

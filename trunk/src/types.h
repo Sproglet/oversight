@@ -1,6 +1,8 @@
 #ifndef __OVS_TYPES_H__
 #define __OVS_TYPES_H__
 
+#include <regex.h>
+//
 // Types will be migrated here over time.
 
 
@@ -211,7 +213,11 @@ typedef enum Op_enum {
     OP_GE='}',
     OP_STARTS_WITH='^',
     OP_CONTAINS='#',
-    OP_DBFIELD='_'
+    OP_DBFIELD='_',
+
+    OP_REGEX_CONTAINS='r',
+    OP_REGEX_MATCH='R',
+    OP_REGEX_STARTS_WITH='s'
 } Op;
 
 typedef enum ValType_enum {
@@ -233,8 +239,10 @@ typedef struct Value_struct {
 typedef struct Exp_struct {
 
     Op op;
-    struct Exp_struct *subexp[2];
-    Value val;
+    struct Exp_struct *subexp[2]; // Child expressions for operators
+    Value val; // Used for atomic values and working values when calculating
+    regex_t *regex;
+    char *regex_str; // Holds string used to define regex
 } Exp;
 
 #endif

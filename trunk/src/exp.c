@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <ctype.h>
+#include <regex.h>
 
 #include "types.h"
 #include "exp.h"
@@ -18,7 +19,10 @@
 #include "vasprintf.h"
 #include "variables.h"
 
+//TODO Add macro or inline function to check access to val members is consistent with val.type
+
 static int evaluate_with_err(Exp *e,DbItem *item,int *err);
+int exp_compile(Exp *e,Exp *source);
 
 Exp *new_val_str(char *s,int free_str)
 {
@@ -389,12 +393,71 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 }
             }
             break;
+
+        case OP_REGEX_CONTAINS:
+        case OP_REGEX_STARTS_WITH:
+        case OP_REGEX_MATCH:
+            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
+                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
+                    if (exp_compile(e,e->subexp[1]) == 0) {
+                        e->val.type=VAL_TYPE_NUM;
+                        //HTML_LOG(0,"[%s] vs [%s]",e->subexp[0]->val.str_val,e->regex_str);
+                        e->val.num_val = (regexec(e->regex,e->subexp[0]->val.str_val,0,NULL,0) == 0);
+                    }
+                }
+            }
+            break;
+
         default:
             html_error("unknown op [%d]",e->op);
             assert(0);
 
     }
     return *err;
+}
+
+int exp_compile(Exp *e,Exp *source)
+{
+    int result = 0;
+    // Only compile strings
+    assert(source->val.type == VAL_TYPE_STR);
+
+    if ( e->regex_str == NULL || // first time
+        (source->op != OP_VALUE && STRCMP(e->regex_str,source->val.str_val) != 0) // not a constant and value has changed
+        
+        )  {
+        // Free the old pattern
+        if (e->regex) {
+            regfree(e->regex);
+        } else {
+            e->regex = MALLOC(sizeof(regex_t));
+        }
+
+        FREE(e->regex_str);
+
+        // Store the new string
+        e->regex_str = STRDUP(source->val.str_val);
+
+        // Add delimiters
+        char *tmp;
+        ovs_asprintf(&tmp,"%s%s%s",
+                (e->op == OP_REGEX_CONTAINS ? "" : "^" ),
+                e->regex_str,
+                (e->op == OP_REGEX_MATCH ? "$" : "" ));
+
+        HTML_LOG(0,"regex[%s]",tmp);
+
+        // compile it
+        if ((result = regcomp(e->regex,tmp,REG_EXTENDED|REG_ICASE)) != 0) {
+#define BUFSIZE 256
+            char buf[BUFSIZE];
+            regerror(result,e->regex,buf,BUFSIZE);
+            html_error("%s\n",buf);
+            assert(0);
+        }
+        FREE(tmp);
+    }
+    return result;
 }
 
 typedef struct {
@@ -443,6 +506,9 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
         { OP_GE      ,"~ge~" , 2 , 2 },
         { OP_STARTS_WITH,"~s~" , 2 , 2 },
         { OP_CONTAINS,"~c~"  , 2 , 2 },
+        { OP_REGEX_STARTS_WITH,"~rs~" , 2 , 2 },
+        { OP_REGEX_CONTAINS,"~rc~"  , 2 , 2 },
+        { OP_REGEX_MATCH,"~re~"  , 2 , 2 },
         { OP_DBFIELD,"~f~"   , 1 , 5 }
     };
 
@@ -576,6 +642,11 @@ void exp_free(Exp *e,int recursive)
         if (e->val.type == VAL_TYPE_STR && e->val.free_str) {
             FREE(e->val.str_val);
         }
+        if (e->regex) {
+            regfree(e->regex);
+            FREE(e->regex);
+        }
+        FREE(e->regex_str);
         FREE(e);
     }
 }

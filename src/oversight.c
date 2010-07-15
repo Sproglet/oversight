@@ -255,7 +255,7 @@ TRACE;
 TRACE;
         playlist_open();
 TRACE;
-        exp_test();
+        //exp_test();
 
         if (view->view_class == VIEW_CLASS_ADMIN) {
             setPermissions();

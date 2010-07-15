@@ -39,7 +39,8 @@ STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 # Most stable last to speed compile-fail cycle
-OBJS=exp.o dbnames.o types.o dbitem.o list.o gaya.o macro.o template.o template_condition.o  variables.o \
+OBJS=filter.o exp.o dbnames.o types.o dbitem.o list.o gaya.o \
+	 macro.o template.o template_condition.o  variables.o \
 	grid.o display.o oversight.o util.o \
 	config.o \
    	db.o dbfield.o dboverview.o actions.o \
@@ -86,12 +87,14 @@ $(ARCH):
 	touch $(ARCH)
 
 
-$(TARGET):  $(OBJS)
-	ctags -R .
+$(TARGET):  tags $(OBJS)
 	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
 	$(STRIP) $(TARGET)
 	cp $(TARGET) $(EXE)
 	sleep 1
+
+tags: $(SRC) $(HEADERS)
+	ctags *.[ch]
 
 daemon.o: daemon.c
 

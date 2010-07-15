@@ -271,7 +271,7 @@ int db_to_be_scanned(char *name) {
     }
 }
 
-void db_scan_and_add_rowset(char *path,char *name,char *name_filter,int media_type,int watched,Exp *exp,
+void db_scan_and_add_rowset(char *path,char *name,char *name_filter,Exp *exp,
         int *rowset_count_ptr,DbItemSet ***row_set_ptr) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
@@ -284,7 +284,7 @@ TRACE;
         if (db) {
 TRACE;
 
-            DbItemSet *r = db_scan_titles(db,name_filter,media_type,watched,exp);
+            DbItemSet *r = db_scan_titles(db,name_filter,exp);
 
             if ( r != NULL ) {
 TRACE;
@@ -332,8 +332,6 @@ char *is_nmt_network_share(char *mtab_line) {
 DbItemSet **db_crossview_scan_titles(
         int crossview,
         char *name_filter,  // only load lines whose titles match the filter
-        int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched,        // 1=watched 2=unwatched 3=any
         Exp *exp){
     int rowset_count=0;
     DbItemSet **rowsets = NULL;
@@ -343,7 +341,7 @@ TRACE;
     // Add information from the local database
     db_scan_and_add_rowset(
         localDbPath(),"*",
-        name_filter,media_type,watched,exp,
+        name_filter,exp,
         &rowset_count,&rowsets);
 TRACE;
 
@@ -366,7 +364,7 @@ TRACE;
                         HTML_LOG(0,"crossview [%s]",path);
                         db_scan_and_add_rowset(
                             path,name,
-                            name_filter,media_type,watched,exp,
+                            name_filter,exp,
                             &rowset_count,&rowsets);
 
                     } else {
@@ -472,12 +470,9 @@ int *extract_idlist(char *db_name,int *num_ids) {
              *title)\
         )
 
-#define ANY_SEASON -10
 DbItemSet * db_scan_titles(
         Db *db,
         char *name_filter,  // only load lines whose titles match the filter
-        int media_type,     // 1=TV 2=MOVIE 3=BOTH 
-        int watched,       // 1=watched 2=unwatched 3=any
         Exp *exp            // general expression
         ){
 
@@ -493,11 +488,6 @@ DbItemSet * db_scan_titles(
     int *ids = extract_idlist(db->source,&num_ids);
 
     char *title_filter = query_val(QUERY_PARAM_TITLE_FILTER);
-
-    int season = ANY_SEASON;
-    if (*query_val(QUERY_PARAM_SEASON) ) {
-        season = atol(query_val(QUERY_PARAM_SEASON));
-    }
 
     HTML_LOG(3,"Creating db scan pattern..");
 
@@ -602,10 +592,6 @@ TRACE;
                         get_genre_from_string(rowid.genre,&g_genre_hash);
                     }
 
-                    if (season != ANY_SEASON && rowid.season != season ) {
-                        keeprow = 0;
-                    }
-
                     if (title_filter_start && keeprow) {
 
                         unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
@@ -652,37 +638,7 @@ TRACE;
                             HTML_LOG(1,"matched [%s]",rowid.title);
                         }
                     }
-                    if (keeprow) {
-                        int is_tv = (rowid.category == *QUERY_PARAM_MEDIA_TYPE_VALUE_TV);
-                        int is_movie = (rowid.category == *QUERY_PARAM_MEDIA_TYPE_VALUE_MOVIE);
 
-                        switch(media_type) {
-                            case DB_MEDIA_TYPE_TV:
-                                if (!is_tv) {
-                                    keeprow=0;
-                                }
-                                break;
-                            case DB_MEDIA_TYPE_FILM:
-                                if (!is_movie) {
-                                    keeprow=0;
-                                }
-                                break;
-                            case DB_MEDIA_TYPE_OTHER:
-                                if (is_tv || is_movie) {
-                                    keeprow=0;
-                                }
-                                break;
-                        }
-                    }
-                    //if (keeprow) HTML_LOG(0,"xx type ok");
-
-                    if (keeprow) {
-                        switch(watched) {
-                            case DB_WATCHED_FILTER_NO : if (rowid.watched != 0 ) keeprow=0 ; break;
-                            case DB_WATCHED_FILTER_YES : if (rowid.watched != 1 ) keeprow=0 ; break;
-                        }
-                    }
-                    //if (keeprow) HTML_LOG(0,"xx watched ok");
                     if (keeprow) {
                         if (num_ids != ALL_IDS && idlist_index(rowid.id,num_ids,ids) == -1) {
                             keeprow = 0;

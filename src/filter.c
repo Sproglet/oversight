@@ -32,7 +32,7 @@ Exp *build_filter(char *media_types)
     // General query
     char *query=query_val(QUERY_PARAM_QUERY);
     if(query && *query) {
-        add_op_clause(&val,1,query,NULL,NULL);
+        add_op_clause(&val,1,NULL,query,NULL);
     }
     
     if (val) {
@@ -49,7 +49,7 @@ void add_op_clause(char **val,int allow_empty_parts,char *left,char *op,char *ri
         char *tmp;
         if (result == NULL) {
             // First clause
-            ovs_asprintf(&tmp,"%s%s%s",left,op,right);
+            ovs_asprintf(&tmp,"%s%s%s",NVL(left),op,NVL(right));
         } else {
             // Append clause
             ovs_asprintf(&tmp,"%s~a~(%s%s%s)",result,left,op,right);

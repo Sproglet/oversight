@@ -30,7 +30,7 @@
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
 #define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_REGEX "," QUERY_PARAM_SEASON
+#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
@@ -2437,7 +2437,7 @@ char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&"QUERY_PARAM_SEASON"=@SEASON@&@"QUERY_PARAM_SELECTED"=@CELLNO@",
+            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "@NAME@&"QUERY_PARAM_SEASON"=@SEASON@&@"QUERY_PARAM_SELECTED"=@CELLNO@",
             "@ATTR@","@TITLE@","@FONT_CLASS@");
     }
     char season_txt[9];
@@ -2469,7 +2469,7 @@ char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *tit
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_REGEX"="NAME_FILTER_STRING_FLAG"@NAME@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
+                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "@NAME@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
     }
 
     int free_name2;
@@ -3016,21 +3016,8 @@ DbSortedRows *get_sorted_rows_from_params()
 
 TRACE;
 
-    int free_regex=0;
-    char *regex = query_val(QUERY_PARAM_REGEX);
     ViewMode *view = get_view_mode();
 
-    if (EMPTY_STR(regex)) {
-TRACE;
-        //Check regex entered via text box
-
-        char *t =query_val(QUERY_PARAM_SEARCH_TEXT); 
-        if (*t && *query_val(QUERY_PARAM_SEARCH_MODE)) {
-            regex=util_tolower(t);
-            free_regex=1;
-        }
-    }
-TRACE;
 
     // Tv/Film filter
     // ==============
@@ -3047,13 +3034,11 @@ TRACE;
     HTML_LOG(0,"Scan..");
 
     // Get array of rowsets. One item for each database source. 
-    DbItemSet **rowsets = db_crossview_scan_titles( crossview, regex, query_exp);
+    DbItemSet **rowsets = db_crossview_scan_titles( crossview, query_exp);
 
     exp_free(query_exp,1);
 
 TRACE;
-
-    if (free_regex) { FREE(regex); }
 
     HTML_LOG(0,"Overview..");
     // Merge the rowsets into a single view.

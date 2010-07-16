@@ -27,19 +27,21 @@ int exp_compile(Exp *e,Exp *source);
 Exp *new_val_str(char *s,int free_str)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
-    e->op = OP_VALUE;
+    e->op = OP_CONSTANT;
     e->val.type = VAL_TYPE_STR;
     e->val.str_val = s;
     e->val.free_str = free_str;
+    HTML_LOG(0,"str value [%s]",s);
     return e;
 }
 
 Exp *new_val_num(double d)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
-    e->op = OP_VALUE;
+    e->op = OP_CONSTANT;
     e->val.type = VAL_TYPE_NUM;
     e->val.num_val = d;
+    HTML_LOG(0,"num value [%ld]",d);
     return e;
 }
 Exp *new_exp(Op op,Exp *left,Exp *right)
@@ -71,6 +73,7 @@ int evaluate_num(Exp *e,DbItem *item)
                 assert(0);
             }
         }
+        //exp_dump(e,0,1);
     }
     return result;
 }
@@ -108,7 +111,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
     if (*err) return *err;
 
     switch (e->op) {
-        case OP_VALUE:
+        case OP_CONSTANT:
             break;
         case OP_ADD:
             e->val.type = VAL_TYPE_NUM;
@@ -423,7 +426,7 @@ int exp_compile(Exp *e,Exp *source)
     assert(source->val.type == VAL_TYPE_STR);
 
     if ( e->regex_str == NULL || // first time
-        (source->op != OP_VALUE && STRCMP(e->regex_str,source->val.str_val) != 0) // not a constant and value has changed
+        (source->op != OP_CONSTANT && STRCMP(e->regex_str,source->val.str_val) != 0) // not a constant and value has changed
         
         )  {
         // Free the old pattern
@@ -488,9 +491,11 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 {
     Exp *result = NULL;
 
+    //HTML_LOG(0,"parse exp%d %*s[%s]",precedence,precedence*4,"",*text_ptr);
+
 #define ATOMIC_PRECEDENCE 6
     static OpDetails ops[] = {
-        { OP_VALUE   , ""    , 0 ,ATOMIC_PRECEDENCE },
+        { OP_CONSTANT   , ""    , 0 ,ATOMIC_PRECEDENCE },
         { OP_ADD     , "~A~" , 2 , 3 },
         { OP_SUBTRACT,"~S~"  , 2 , 3 },
         { OP_MULTIPLY,"~M~"  , 2 , 4 },
@@ -498,17 +503,21 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
         { OP_AND     ,"~a~"  , 2 , 0 },
         { OP_OR      ,"~o~"  , 2 , 0 },
         { OP_NOT      ,"~!~" , 1 , 5 },
-        { OP_EQ      ,"~eq~" , 2 , 1 },
         { OP_NE      ,"~ne~" , 2 , 1 },
         { OP_LE      ,"~le~" , 2 , 2 },
         { OP_LT      ,"~lt~" , 2 , 2 },
         { OP_GT      ,"~gt~" , 2 , 2 },
         { OP_GE      ,"~ge~" , 2 , 2 },
-        { OP_STARTS_WITH,"~s~" , 2 , 2 },
-        { OP_CONTAINS,"~c~"  , 2 , 2 },
-        { OP_REGEX_STARTS_WITH,"~rs~" , 2 , 2 },
-        { OP_REGEX_CONTAINS,"~rc~"  , 2 , 2 },
-        { OP_REGEX_MATCH,"~re~"  , 2 , 2 },
+
+        // Letters used for following operators are passed in URLs also
+        { OP_EQ      ,"~" QPARAM_FILTER_EQUALS "~" , 2 , 1 },
+        { OP_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH "~" , 2 , 2 },
+        { OP_CONTAINS,"~" QPARAM_FILTER_CONTAINS "~"  , 2 , 2 },
+
+        { OP_REGEX_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~" , 2 , 2 },
+        { OP_REGEX_CONTAINS,   "~" QPARAM_FILTER_CONTAINS QPARAM_FILTER_REGEX "~"  , 2 , 2 },
+        { OP_REGEX_MATCH,      "~" QPARAM_FILTER_EQUALS QPARAM_FILTER_REGEX "~"  , 2 , 2 },
+
         { OP_DBFIELD,"~f~"   , 1 , 5 }
     };
 
@@ -518,28 +527,33 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
         // Parse final value or ( exp )
 
 #define BROPEN "("
-#define BRCLOSE "("
+#define BRCLOSE ")"
 
        if (util_starts_with(*text_ptr,BROPEN)) {
 
             // parse ( exp )
            *text_ptr += strlen(BROPEN);
            result = parse_url_expression(text_ptr,0);
-           assert(util_starts_with(*text_ptr,BRCLOSE));
+           if (!util_starts_with(*text_ptr,BRCLOSE)) {
+               html_error("bad expression [%s]",*text_ptr);
+               assert(0);
+           }
            *text_ptr += strlen(BRCLOSE);
 
        } else {
 
            // parse atomic value
            char *p = *text_ptr;
-           while (*p && *p != '~' ) {
-               p++;
-           }
+           char *end_tok="~)";;
+           if (*p == '\'') {
+               end_tok = "\'";
+           } 
+           while (*p && strchr(end_tok,*p) == NULL ) { p++; }
+
            //HTML_LOG(0,"value [%.*s]",p-*text_ptr,*text_ptr);
            if (**text_ptr == '\'' && p[-1] == '\'' ) {
                // quoted string
                char *str = COPY_STRING(p-*text_ptr-2,*text_ptr+1);
-               HTML_LOG(0,"str value [%s]",str);
                result = new_val_str(str,1);
            } else {
                char *end;
@@ -582,6 +596,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
                 // Parse following expression 
                 exp2 = parse_url_expression(text_ptr,precedence+1);
             }
+            HTML_LOG(0,"new op [%s]",op_details->url_text);
             result = new_exp(op_details->op,result,exp2);
         }
     }
@@ -592,12 +607,15 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 Exp *parse_full_url_expression(char *text_ptr)
 {
     Exp *result =  NULL;
-    if (text_ptr && *text_ptr) {
-        result = parse_url_expression(&text_ptr,0);
-        if (*text_ptr) {
-            html_error("unparsed [%.*s]",20,text_ptr);
+    char *p = text_ptr;
+    if (p && *p) {
+        result = parse_url_expression(&p,0);
+        if (*p) {
+            html_error("unparsed [%.*s]",20,p);
         }
     }
+    HTML_LOG(0,"Exp [%s]=",text_ptr);
+    exp_dump(result,0,0);
     return result;
 
 }
@@ -607,10 +625,10 @@ void exp_dump(Exp *e,int depth,int show_holding_values)
     if (e) {
         exp_dump(e->subexp[0],depth+1,show_holding_values);
 
-        if (e->op != OP_VALUE) {
+        if (e->op != OP_CONSTANT) {
             HTML_LOG(0,"%*s op[%c]",depth*4," ",e->op);
         }
-        if (e->op == OP_VALUE || show_holding_values) {
+        if (e->op == OP_CONSTANT || show_holding_values) {
             switch(e->val.type) {
                 case VAL_TYPE_CHAR:
                     HTML_LOG(0,"%*s char[%c]",depth*4," ",e->val.num_val);
@@ -634,7 +652,7 @@ void exp_free(Exp *e,int recursive)
 {
     if (e) {
         if (recursive)  {
-            if (e->op != OP_VALUE) {
+            if (e->op != OP_CONSTANT) {
                 exp_free(e->subexp[0],recursive);
                 exp_free(e->subexp[1],recursive);
             }

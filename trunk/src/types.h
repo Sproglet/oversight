@@ -197,7 +197,7 @@ typedef struct DbGroupDef_struct {
 // Expression  =============================================================================
 //
 typedef enum Op_enum {
-    OP_VALUE=0,
+    OP_CONSTANT=0,
     OP_ADD='+',
     OP_SUBTRACT='-',
     OP_MULTIPLY='*',
@@ -245,4 +245,13 @@ typedef struct Exp_struct {
     char *regex_str; // Holds string used to define regex
 } Exp;
 
+/**
+ * String filter parameters may begin with the following codes to indicate the type of comparison
+ */
+#define QPARAM_FILTER_REGEX "r"
+#define QPARAM_FILTER_STRING "s"
+
+#define QPARAM_FILTER_STARTS_WITH "s"
+#define QPARAM_FILTER_CONTAINS "c"
+#define QPARAM_FILTER_EQUALS "e"
 #endif

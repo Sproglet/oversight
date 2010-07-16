@@ -2520,7 +2520,7 @@ char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,ch
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-               QUERY_PARAM_VIEW "=@VIEW@&p=&id=@ID@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
+               QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_PERSON"=@ID@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
     }
 
     result = replace_all_str(link_template,

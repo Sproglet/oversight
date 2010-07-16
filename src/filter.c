@@ -57,6 +57,15 @@ Exp *build_filter(char *media_types)
         }
     }
 
+    //Person
+    char *person = query_val(QUERY_PARAM_PERSON);
+    if (person && *person) {
+        char *q;
+        ovs_asprintf(&q,"("DB_FLDID_ACTOR_LIST FIELD_OP CONTAINS_OP "%s~o~" DB_FLDID_DIRECTOR_LIST FIELD_OP CONTAINS_OP "%s)",person,person);
+        add_op_clause(&val,1,NULL,q,NULL);
+        FREE(q);
+    }
+
     // General query
     char *query=query_val(QUERY_PARAM_QUERY);
     if(query && *query) {
@@ -80,7 +89,7 @@ void add_op_clause(char **val,int allow_empty_parts,char *left,char *op,char *ri
             ovs_asprintf(&tmp,"%s%s%s",NVL(left),op,NVL(right));
         } else {
             // Append clause
-            ovs_asprintf(&tmp,"%s~a~(%s%s%s)",result,left,op,right);
+            ovs_asprintf(&tmp,"%s~a~(%s%s%s)",result,NVL(left),op,NVL(right));
         }
         result = tmp;
         HTML_LOG(0,"filter [%s]",result);

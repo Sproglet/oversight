@@ -1933,7 +1933,9 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                         char id[10];
                         char *name;
 
-                        sprintf(id,"nm%07d",group->dbgi_ids[i]);
+#define ID_PREFIX "nm"
+                        sprintf(id, ID_PREFIX "%07d",group->dbgi_ids[i]);
+
                         name=dbnames_fetch_static(id,name_file);
 
                         if (name) {
@@ -1943,7 +1945,7 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                             name = id;
                         }
 
-                        char *link = get_person_drilldown_link(VIEW_PERSON,id,"",name,"","");
+                        char *link = get_person_drilldown_link(VIEW_PERSON,id+strlen(ID_PREFIX),"",name,"","");
 
 
 

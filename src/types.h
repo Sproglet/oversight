@@ -241,8 +241,16 @@ typedef struct Exp_struct {
     Op op;
     struct Exp_struct *subexp[2]; // Child expressions for operators
     Value val; // Used for atomic values and working values when calculating
+
+    // If op is a Regex function the regex details are held in the following fields.
     regex_t *regex;
     char *regex_str; // Holds string used to define regex
+
+    // If op is OP_DBFIELD then field offset info is held here
+    char fld_type;
+    int fld_offset;
+    int fld_overview;
+    char *fld_imdb_prefix;
 } Exp;
 
 /**

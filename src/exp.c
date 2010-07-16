@@ -50,6 +50,9 @@ Exp *new_exp(Op op,Exp *left,Exp *right)
     e->op = op;
     e->subexp[0] = left;
     e->subexp[1] = right;
+
+    // If op = OP_DBFIELD then the fld_* members will get set to save field type lookups.
+    e->fld_type = FIELD_TYPE_NONE;
     return e;
 }
 
@@ -319,9 +322,6 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 
 
                 void *offset;
-                char ftype;
-                int overview;
-                char *imdb_prefix_ptr;
                 char *fname =e->subexp[0]->val.str_val;
 
                 if (e->subexp[0]->val.type != VAL_TYPE_STR) {
@@ -329,12 +329,25 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                     html_error("string value expected");
                     *err = __LINE__;
 
-                } else if (!db_rowid_get_field_offset_type(item,fname,&offset,&ftype,&overview,&imdb_prefix_ptr)) {
-
-                    html_error("bad field [%s]",fname);
-                    *err = __LINE__;
-
                 } else {
+
+                    if (e->fld_type == FIELD_TYPE_NONE || e->subexp[0]->op != OP_CONSTANT ) {
+
+                        // Get the field attributes. Type, offset in DbItem, 
+                        // whether it is an overview field (or only parsed during detail view - eg PLOT)
+                       
+                        //HTML_LOG(0,"Fetching field details for [%s]",fname);
+                        if (!db_rowid_get_field_offset_type(item,fname,&offset,&(e->fld_type),&(e->fld_overview),&(e->fld_imdb_prefix))) {
+
+                            html_error("bad field [%s]",fname);
+                            *err = __LINE__;
+                        } else {
+                            e->fld_offset = (char *)offset - (char *)item;
+                        }
+
+                    }
+
+                    offset = (char *)item + e->fld_offset;
 
                     /*
                     char *p = item->title;
@@ -349,7 +362,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                     HTML_LOG(0,"OP_DBFIELD p [%lu] q[%lu]",p,q);
                     HTML_LOG(0,"OP_DBFIELD p [%s] q[%s]",p,q);
                     */
-                    switch(ftype){
+                    switch(e->fld_type){
 
                         case FIELD_TYPE_STR:
                             e->val.type = VAL_TYPE_STR;
@@ -386,11 +399,11 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
                         case FIELD_TYPE_DOUBLE:
                         case FIELD_TYPE_NONE:
-                            html_error("unsupported field type [%c]",ftype);
+                            html_error("unsupported field type [%c]",e->fld_type);
                             break;
 
                         default:
-                            html_error("unknown field type [%c]",ftype);
+                            html_error("unknown field type [%c]",e->fld_type);
                             *err = __LINE__;
                     }
                 }

@@ -452,17 +452,6 @@ int *extract_idlist(char *db_name,int *num_ids) {
     return result;
 }
 
-
-#define FIRST_TITLE_LETTER(title) \
-        (!title?\
-            '\0'\
-        :\
-            (*(title) == 'T' && (title)[1]=='h' && (title)[2] == 'e' && (title)[3]==' ' ?\
-                (title)[4]\
-             :\
-             *title)\
-        )
-
 DbItemSet * db_scan_titles( Db *db, Exp *exp)
 {
 

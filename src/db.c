@@ -271,7 +271,7 @@ int db_to_be_scanned(char *name) {
     }
 }
 
-void db_scan_and_add_rowset(char *path,char *name,char *name_filter,Exp *exp,
+void db_scan_and_add_rowset(char *path,char *name,Exp *exp,
         int *rowset_count_ptr,DbItemSet ***row_set_ptr) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
@@ -284,7 +284,7 @@ TRACE;
         if (db) {
 TRACE;
 
-            DbItemSet *r = db_scan_titles(db,name_filter,exp);
+            DbItemSet *r = db_scan_titles(db,exp);
 
             if ( r != NULL ) {
 TRACE;
@@ -331,7 +331,6 @@ char *is_nmt_network_share(char *mtab_line) {
 // Returns null terminated array of rowsets
 DbItemSet **db_crossview_scan_titles(
         int crossview,
-        char *name_filter,  // only load lines whose titles match the filter
         Exp *exp){
     int rowset_count=0;
     DbItemSet **rowsets = NULL;
@@ -339,10 +338,7 @@ DbItemSet **db_crossview_scan_titles(
 TRACE;
     HTML_LOG(1,"begin db_crossview_scan_titles");
     // Add information from the local database
-    db_scan_and_add_rowset(
-        localDbPath(),"*",
-        name_filter,exp,
-        &rowset_count,&rowsets);
+    db_scan_and_add_rowset( localDbPath(),"*", exp, &rowset_count,&rowsets);
 TRACE;
 
     if (crossview) {
@@ -362,10 +358,7 @@ TRACE;
                     if (is_file(path)) {
 
                         HTML_LOG(0,"crossview [%s]",path);
-                        db_scan_and_add_rowset(
-                            path,name,
-                            name_filter,exp,
-                            &rowset_count,&rowsets);
+                        db_scan_and_add_rowset( path,name, exp, &rowset_count,&rowsets);
 
                     } else {
                         HTML_LOG(0,"crossview search [%s] doesnt exist",path);
@@ -470,13 +463,8 @@ int *extract_idlist(char *db_name,int *num_ids) {
              *title)\
         )
 
-DbItemSet * db_scan_titles(
-        Db *db,
-        char *name_filter,  // only load lines whose titles match the filter
-        Exp *exp            // general expression
-        ){
-
-    regex_t pattern;
+DbItemSet * db_scan_titles( Db *db, Exp *exp)
+{
 
     DbItemSet *rowset = NULL;
 
@@ -487,26 +475,7 @@ DbItemSet * db_scan_titles(
     int num_ids;
     int *ids = extract_idlist(db->source,&num_ids);
 
-    char *title_filter = query_val(QUERY_PARAM_TITLE_FILTER);
-
     HTML_LOG(3,"Creating db scan pattern..");
-
-    // Special case if the name_filter starts with P then it is a regex. If it starts with S then a string
-    if (name_filter && *name_filter && *name_filter == NAME_FILTER_REGEX_FLAG[0] ) {
-        // Take the pattern and turn it into <TAB>_ID<TAB>pattern<TAB>
-        int status;
-
-        if ((status = regcomp(&pattern,name_filter,REG_EXTENDED|REG_ICASE)) != 0) {
-
-#define BUFSIZE 256
-            char buf[BUFSIZE];
-            regerror(status,&pattern,buf,BUFSIZE);
-            fprintf(stderr,"%s\n",buf);
-            assert(1);
-            return NULL;
-        }
-        HTML_LOG(0,"filtering by regex [%s]",name_filter);
-    }
 
     // For back compatability (and custom genre support) we serach for both compressed genres or normal.
     char *genre_filter = query_val(DB_FLDID_GENRE);
@@ -542,15 +511,6 @@ DbItemSet * db_scan_titles(
         int eof=0;
         DbItem rowid;
         db_rowid_init(&rowid,db);
-
-        unsigned char title_filter_start='\0';
-        unsigned char title_filter_end=255;
-        if (title_filter && *title_filter && *title_filter != '*') {
-            title_filter_start=*(unsigned char *)title_filter;
-            title_filter_end=*(unsigned char *)(title_filter+strlen(title_filter)-1);
-            HTML_LOG(0,"Title Filter [%c-%c]",title_filter_start,title_filter_end);
-        }
-
 
         while (eof == 0) {
             db->db_size++;
@@ -592,22 +552,6 @@ TRACE;
                         get_genre_from_string(rowid.genre,&g_genre_hash);
                     }
 
-                    if (title_filter_start && keeprow) {
-
-                        unsigned char first_letter = FIRST_TITLE_LETTER(rowid.title);
-
-                        if (first_letter) {
-                            if (title_filter_start < 'A' ) {
-                                // Non alpahbetic
-                                if (first_letter >= 'A' && first_letter <= 'Z') {
-                                    keeprow = 0;
-                                }
-                            } else if (first_letter < title_filter_start || first_letter > title_filter_end) {
-                                keeprow = 0;
-                            }
-                        }
-                    }
-
                     if (genre_filter && *genre_filter && keeprow) {
                         //HTML_LOG(0,"genre [%.*s]",10,rowid.genre);
                         if (EMPTY_STR(rowid.genre))  {
@@ -623,21 +567,6 @@ TRACE;
                     }
 
                     //if (keeprow) HTML_LOG(0,"xx genre ok");
-
-                    if (name_filter && *name_filter && keeprow) {
-                        int match=-1;
-                        if (*name_filter == NAME_FILTER_REGEX_FLAG[0]) {
-                            match= regexec(&pattern,rowid.title,0,NULL,0);
-                        } else if ( *name_filter == NAME_FILTER_STRING_FLAG[0] ) {
-                            match = STRCASECMP(rowid.title,name_filter+1);
-                        }
-                        if (match != 0 ) {
-                            HTML_LOG(5,"skipped %s!=%s",rowid.title,name_filter);
-                            keeprow=0;
-                        } else {
-                            HTML_LOG(1,"matched [%s]",rowid.title);
-                        }
-                    }
 
                     if (keeprow) {
                         if (num_ids != ALL_IDS && idlist_index(rowid.id,num_ids,ids) == -1) {

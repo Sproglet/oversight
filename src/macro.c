@@ -1085,7 +1085,7 @@ TRACE;
     }
 TRACE;
     char *hidden = add_hidden("idlist,view,page,sort,select,"
-            QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_REGEX","QUERY_PARAM_WATCHED_FILTER);
+            QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_WATCHED_FILTER);
     char *result;
     ovs_asprintf(&result,
             "<form action=\"%s\" enctype=\"multipart/form-data\" method=POST >"
@@ -1133,9 +1133,6 @@ char *macro_fn_start_cell(MacroCallInfo *call_info) {
 
         result = start_cell;
 
-    } else if (*query_val(QUERY_PARAM_REGEX)) {
-        result="filter5";
-
     } else {
         result= "selectedCell";
     }
@@ -1182,51 +1179,6 @@ char *macro_fn_sort_type_toggle(MacroCallInfo *call_info) {
     return get_toggle("blue",QUERY_PARAM_SORT,
             DB_FLDID_TITLE,"Name",
             DB_FLDID_INDEXTIME,"Age");
-}
-char *macro_fn_filter_bar(MacroCallInfo *call_info) {
-
-    char *result=NULL;
-
-    if (*query_val(QUERY_PARAM_SEARCH_MODE) || *query_val(QUERY_PARAM_REGEX)) {
-
-        if (g_dimension->local_browser) {
-            char *current_regex =query_val(QUERY_PARAM_REGEX);
-            char *left=NULL;
-            char *start = get_theme_image_link("p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=","","start-small","width=20 height=20");
-            printf("<font class=keypada>[%s]</font>",current_regex);
-
-            char *params;
-            
-            // Print icon to remove last digit from tvid search
-            int regex_len=strlen(current_regex);
-            if (regex_len >= 1 ) {
-                regex_len --;
-
-                ovs_asprintf(&params,"p=0&"QUERY_PARAM_SEARCH_MODE"=&"QUERY_PARAM_REGEX"=%.*s",
-                        regex_len,current_regex);
-                left = get_theme_image_link(params,"","left-small","width=20 height=20");
-                FREE(params);
-            }
-
-            ovs_asprintf(&result,"Use keypad to search%s<font class=keypada>[%s]</font>%s",
-                    start,current_regex,(left?left:""));
-            FREE(start);
-            if (left) FREE(left);
-
-        } else {
-
-            ovs_asprintf(&result,"<input type=text name="QUERY_PARAM_SEARCH_TEXT" value=\"%s\" >"
-                    "<input type=submit name=searchb value=Search >"
-                    "<input type=submit name=searchb value=Hide >"
-                    "<input type=hidden name="QUERY_PARAM_SEARCH_MODE" value=\"%s\" >"
-                    ,query_val(QUERY_PARAM_SEARCH_TEXT),query_val(QUERY_PARAM_SEARCH_MODE));
-
-        }
-
-    } else {
-        result = get_theme_image_link("p=0&" QUERY_PARAM_SEARCH_MODE "=1","","find","");
-    }
-    return result;
 }
 
 // Display a link back to this cgi file with paramters adjusted.
@@ -2074,7 +2026,6 @@ void macro_init() {
         hashtable_insert(macros,"EXTERNAL_URL",macro_fn_external_url);
         hashtable_insert(macros,"FANART_URL",macro_fn_fanart_url);
         hashtable_insert(macros,"FAVICON",macro_fn_favicon);
-        hashtable_insert(macros,"FILTER_BAR",macro_fn_filter_bar);
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"FORM_END",macro_fn_form_end);
         hashtable_insert(macros,"FORM_START",macro_fn_form_start);

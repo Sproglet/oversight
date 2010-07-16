@@ -1,3 +1,4 @@
+#include <assert.h>
 
 #include "exp.h"
 #include "filter.h"
@@ -7,7 +8,7 @@
 
 //TODO: These ops need to be defined in exp.h
 #define FIELD_OP "~f~"
-#define EQ_OP "~eq~"
+#define EQ_OP "~e~"
 #define CONTAINS_OP "~c~"
 
 void add_op_clause(char **val,int allow_empty_parts,char *left,char *op,char *right);
@@ -28,6 +29,33 @@ Exp *build_filter(char *media_types)
 
     // Watched
     add_op_clause(&val,0,DB_FLDID_WATCHED FIELD_OP,EQ_OP,query_val(QUERY_PARAM_WATCHED_FILTER));
+
+    // Title Filter
+    char *title_pat = query_val(QUERY_PARAM_TITLE_FILTER);
+    if (title_pat && *title_pat) {
+        if (title_pat[1] == 0) {
+            // Single letter - starts with.
+            add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~s~" , title_pat );
+        } else {
+
+            // First letter is [c]ontains [s]tarts with or [e]quals
+            // Second letter is [s]tring or [r]egex
+
+            char op_text[10];
+
+            char method = title_pat[0];
+            char expType = title_pat[1];
+            if (expType == QPARAM_FILTER_REGEX[0] ) {
+                sprintf(op_text,"~%c%s~",method,QPARAM_FILTER_REGEX);
+            } else if (expType == QPARAM_FILTER_STRING[0] ) {
+                sprintf(op_text,"~%c~",method);
+            } else {
+                assert(0);
+            }
+            add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, op_text , title_pat+2 );
+
+        }
+    }
 
     // General query
     char *query=query_val(QUERY_PARAM_QUERY);

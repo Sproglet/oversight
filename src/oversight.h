@@ -68,10 +68,8 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_GENRE "G"
 #define QUERY_PARAM_SORT "s"
 #define QUERY_PARAM_SEASON "_sn"
-#define QUERY_PARAM_REGEX "_rf"
 #define QUERY_PARAM_SEARCH_MODE "_sm"
 #define QUERY_PARAM_CHECKBOX_PREFIX "cb_"
-#define QUERY_PARAM_SEARCH_TEXT "searcht" //obsoleted?
 #define QUERY_PARAM_RESIZE "resizeon"
 
 #define QUERY_PARAM_ACTION "action"

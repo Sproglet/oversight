@@ -67,7 +67,6 @@ Db *db_init(char *filename, // path to the file
 
 DbItemSet * db_scan_titles(
         Db *db,
-        char *name_filter,  // only load lines whose titles match the filter
         Exp *exp);
 
 int db_lock(Db *db);
@@ -80,7 +79,6 @@ void db_rowset_dump(int level,char *label,DbItemSet *dbrs);
 
 DbItemSet **db_crossview_scan_titles(
         int crossview,
-        char *name_filter,  // only load lines whose titles match the filter
         Exp *exp);
 void db_free_rowsets_and_dbs(DbItemSet **rowsets);
 int db_full_size();

@@ -1,6 +1,10 @@
 #ifndef __OVS_TYPES_H__
 #define __OVS_TYPES_H__
 
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
 #include <regex.h>
 //
 // Types will be migrated here over time.

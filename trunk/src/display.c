@@ -376,7 +376,10 @@ char *drill_down_url(char *new_params)
 
                 for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
                     int depth = is_drilldown_of(qname,param_name);
-                    if (depth) {
+
+// If item is more than this deep - ignore it                    
+#define MAX_DRILLDOWN_DEPTH 4
+                    if (depth >= 1 && depth <= MAX_DRILLDOWN_DEPTH ) {
                         char *tmp;
 
                         int free_val;

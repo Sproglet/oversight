@@ -571,8 +571,12 @@ TRACE;
                     }
                     //if (keeprow) HTML_LOG(0,"xx id ok");
                     if (keeprow) {
-                        if (exp && evaluate_num(exp,&rowid) == 0) {
-                            keeprow = 0;
+                        if (exp ) {
+                           if ( evaluate_num(exp,&rowid) == 0) {
+                                keeprow = 0;
+                           } else {
+                               //exp_dump(exp,0,1);
+                           }
                         }
                     }
                 }

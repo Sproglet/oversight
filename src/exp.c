@@ -81,7 +81,7 @@ int evaluate_num(Exp *e,DbItem *item)
     return result;
 }
 
-int compare(Op op,int val) {
+int compare(Op op,double val) {
 
     int result=0;
     switch(op) {
@@ -194,6 +194,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                                 break;
                             case VAL_TYPE_CHAR:
                             case VAL_TYPE_NUM:
+                                //HTML_LOG(0,"XXX %lf %c %lf",e->subexp[0]->val.num_val,e->op,e->subexp[1]->val.num_val);
                                 e->val.num_val = compare(e->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
                                 break;
                             default:
@@ -386,6 +387,11 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                             e->val.num_val = *(int *)offset;
                             break;
 
+                        case FIELD_TYPE_DOUBLE:
+                            e->val.type = VAL_TYPE_NUM;
+                            e->val.num_val = *(double *)offset;
+                            break;
+
                         case FIELD_TYPE_IMDB_LIST:
                         case FIELD_TYPE_IMDB_LIST_NOEVAL:
 
@@ -397,7 +403,6 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                         case FIELD_TYPE_DATE:
                         case FIELD_TYPE_TIMESTAMP:
 
-                        case FIELD_TYPE_DOUBLE:
                         case FIELD_TYPE_NONE:
                             html_error("unsupported field type [%c]",e->fld_type);
                             break;
@@ -499,6 +504,11 @@ typedef struct {
 
 /**
  * Recursive descent parser
+ *
+ * ---------------------------------------------------
+ * TODO: If really needed we could identify common sub expressions eg..
+ * Rating Field > 5 AND Rating Field < 6
+ * The Expression 'Rating Field' shoud be a single node.
  */
 Exp *parse_url_expression(char **text_ptr,int precedence)
 {

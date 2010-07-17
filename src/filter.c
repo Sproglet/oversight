@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "exp.h"
 #include "filter.h"
@@ -68,6 +70,18 @@ Exp *build_filter(char *media_types)
         ovs_asprintf(&q,"("DB_FLDID_ACTOR_LIST FIELD_OP CONTAINS_OP "%s~o~" DB_FLDID_DIRECTOR_LIST FIELD_OP CONTAINS_OP "%s)",person,person);
         add_op_clause(&val,1,NULL,q,NULL);
         FREE(q);
+    }
+
+    // rating
+    char *rating_str = query_val(QUERY_PARAM_RATING);
+    if (rating_str && *rating_str) {
+        char *hyphen = strchr(rating_str,'-');
+        if (hyphen) {
+            *hyphen='\0';
+            add_op_clause(&val,0,DB_FLDID_RATING FIELD_OP,"~ge~",rating_str);
+            add_op_clause(&val,0,DB_FLDID_RATING FIELD_OP,"~le~",hyphen+1);
+            *hyphen='-';
+        }
     }
 
     // General query

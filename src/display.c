@@ -29,8 +29,23 @@
     
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
+//
+// If a paramter is in this list then it is effectively pushed onto a stack and cleared when the user drills down
+// If not in the list then the perameter will continue to be fully active when drilling down. (persistent)
+//
+// eg if QUERY_PARAM_RATING is in the list , then when the user drills down to a move box set view they will
+// only see items with the given rating.
+//
+// Drilldown (non-persistent) parameters do not apply to links on a detail page.
+// This is because it is assumed that once at the detail page you have viewed your target information.
+// (This needs some thought and discussion). eg.
+// say you filter on all moves score > 8. You see The Matrix. Go to Keanu Reeves Bio. What do you want to see
+// 1. All movies with Keanu.
+// 2. Only those moves with score > 8. 
+// Chances are 1. 
+// So add Rating to DRILLDOWN links.
 #define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON "," QUERY_PARAM_PERSON
+#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON "," QUERY_PARAM_PERSON "," QUERY_PARAM_RATING
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"

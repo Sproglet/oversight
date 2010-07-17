@@ -61,6 +61,7 @@ table.overview_poster {
                     <td align=center>[:WATCHED_SELECT:]</td>
                     <td align=center>[:MEDIA_SELECT:]</td>
                     <td align=center>[:GENRE_SELECT:]</td>
+                    <td align=center>[:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,8+/8-10):]</td>
 [:ENDIF:]
                     <td>[:SORT_TYPE_TOGGLE:]</td>
                     <td><span class="status">[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</span></td>

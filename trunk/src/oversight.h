@@ -63,6 +63,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_EPISODE_TITLES "_et"
 #define QUERY_PARAM_EPISODE_DATES "_ed"
 #define QUERY_PARAM_TYPE_FILTER "_tf"
+#define QUERY_PARAM_RATING "_r"
 #define QUERY_PARAM_WATCHED_FILTER "_wf"
 #define QUERY_PARAM_TITLE_FILTER "_Tf"
 #define QUERY_PARAM_GENRE "G"

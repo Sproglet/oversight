@@ -308,7 +308,48 @@ char *macro_fn_sort_select(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_media_select(MacroCallInfo *call_info) {
+/**
+ * Takes a parameter list of form
+ *
+ *  Label/Range   where Range=num1-num2 or Empty (all)
+ * eg.
+ *
+ * [:RATING_SELECT(All/,Low/0-6,Good/6.1-7.6,Classic/7.7-10):]
+ *
+ */
+char *macro_fn_rating_select(MacroCallInfo *call_info)
+{
+    static char *result=NULL;
+    if (!result) {
+        struct hashtable *rating = string_string_hashtable("rating",4);
+
+        char *first = NULL;
+        Array *args = call_info->args;
+        if (args) {
+            int i;
+            for(i = 0 ; i < args->size ; i++ ) { 
+
+                char *arg = args->array[i];
+
+                char *range = strchr(arg,'/');
+                if (range == NULL ){
+                    html_error("bad arg [%s] expect format label/num1-num2 or label/",arg);
+                } else {
+                    range++;
+                    if (first == NULL) first = range;
+                    hashtable_insert(rating,range,COPY_STRING(range-arg-1,arg));
+                }
+            }
+        }
+        result =  auto_option_list(QUERY_PARAM_RATING,first,rating);
+        hashtable_destroy(rating,0,1);
+    }
+    call_info->free_result = 0;
+    return result;
+}
+
+char *macro_fn_media_select(MacroCallInfo *call_info)
+{
     static char *result=NULL;
     if (!result) {
     //    char *label;
@@ -2079,6 +2120,7 @@ void macro_init() {
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
+        hashtable_insert(macros,"RATING_SELECT",macro_fn_rating_select);
         hashtable_insert(macros,"RATING",macro_fn_rating);
         hashtable_insert(macros,"RATING_STARS",macro_fn_rating_stars);
         hashtable_insert(macros,"RESIZE_CONTROLS",macro_fn_resize_controls);

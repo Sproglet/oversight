@@ -131,9 +131,9 @@ body { font-family:"arial"; color:white;  }
  color:#FF7777;
 }
 
-table.directors td  { background-color:black; }
-table.writers td  { background-color:black; }
-table.actors td  { background-color:black; }
+table.directors td  { width:100px; }
+table.writers td  { width:100px; }
+table.actors td  { width:100px; }
 
 /*
 vi:ts=4:sw=4:et:syntax=css

@@ -70,7 +70,12 @@
                             <tr>
                             	<td width=1%></td>
                             	<td colspan=2 align="left"><span class="plot">[:PLOT:]</span>
-                                [:ACTORS(rows=>2,cols=5):]</td>
+                                [:IF($@hd):]
+                                    [:ACTORS(rows=>2,cols=>9):]
+                                [:ELSE:]
+                                    [:ACTORS(rows=>1,cols=>3):]
+                                [:ENDIF:]
+                                </td>
                     			<td width=1%></td>
                             <tr>
 		                    <tr>

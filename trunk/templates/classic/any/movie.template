@@ -78,7 +78,14 @@ body { color:yellow ; background-color:black; }
 [:EXTERNAL_URL:]
 </td>
                             </tr>
-                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:] [:ACTORS(rows=>3,cols=>6):]</span></td><tr>
+                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:]
+                                [:IF($@hd):]
+                                    [:ACTORS(rows=>2,cols=>9):]
+                                [:ELSE:]
+                                    [:ACTORS(rows=>1,cols=>3):]
+                                [:ENDIF:]
+                                </span></td>
+                            <tr>
                             <tr><td colspan=2>[:MOVIE_LISTING:]</td></tr>
                             <tr><td colspan=2>
                                 [:INCLUDE_TEMPLATE(submit_btn):]

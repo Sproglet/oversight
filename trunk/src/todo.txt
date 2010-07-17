@@ -1,3 +1,9 @@
+Scrape Person Image
+Add Person Macros - Name - Image
+Add Web Scrape if no imdb pic
+
+=====
+
 Checkin status:
 
 Make IMDB Group self expanding. Start at 15 and expand by 15

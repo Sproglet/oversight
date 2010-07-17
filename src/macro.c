@@ -1916,6 +1916,8 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
     if (group) {
         EVALUATE_GROUP(group);
         if (group->dbgi_size) {
+            HTML_LOG(0,"%d rows %d cols",rows,cols);
+
             Array *out = array_new(free);
             char *tmp;
             ovs_asprintf(&tmp,"<table class=\"%s\">\n",class);
@@ -1926,9 +1928,9 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
             int prefix_len = strlen(NVL(group->prefix));
 
             for (r = 0 ; r < rows ; r++ ) {
-                array_add(out,STRDUP("<tr>"));
+                array_add(out,STRDUP("\n<tr>"));
                 for (c = 0 ; c < cols ; c++ ) {
-                    array_add(out,STRDUP("<td>"));
+                    array_add(out,STRDUP("\n<td>"));
 
                     i = r * cols + c;
                     if (  i < group->dbgi_size ) {
@@ -1954,7 +1956,7 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
 
                     }
 
-                    array_add(out,STRDUP("</td>"));
+                    array_add(out,STRDUP("</td>\n"));
                 }
                 array_add(out,STRDUP("</tr>\n"));
             }
@@ -1993,7 +1995,7 @@ char *macro_fn_actors(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->actors_file,"actors",item->actors,2,5);
+        result = people_table(call_info,item->db->actors_file,"actors",item->actors,2,6);
     }
     return result;
 }

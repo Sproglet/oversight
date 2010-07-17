@@ -67,6 +67,11 @@
                     	<td width=98% colspan=2 align="left"><font id=episode>Show Summary - </font><span class="plot" id=tvplot>[:PLOT:]</span></td>
                     	<td width=1%></td>
                     </tr>		
+                    <tr>
+                    	<td width=1%></td>
+                    	<td width=98% colspan=2 align="left"><span class="plot">[:ACTORS(rows=>2,cols=>7):]</td>
+                    	<td width=1%></td>
+                    </tr>		
                 </table>
             </td>
         </tr>	

@@ -160,6 +160,10 @@ body { font-family:"arial"; color:white;  }
  color:#FF7777;
 }
 
+table.actors    td { width:99px; }
+table.directors td { width:99px; }
+table.writers   td { width:99px; }
+
 /*
 vi:ts=4:sw=4:et:syntax=css
 */a{}

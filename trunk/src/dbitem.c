@@ -751,6 +751,14 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *overview = 1;
                 }
                 break;
+            case 'W':
+                if (*p == '\0') { // _d
+                    *offset=&(rowid->writers);
+                    *type = FIELD_TYPE_IMDB_LIST_NOEVAL;
+                    *overview = 1;
+                    imdb_prefix = "nm";
+                }
+                break;
             case 'Y':
                 if (*p == '\0') {
                     *offset=&(rowid->year) ;

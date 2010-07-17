@@ -51,6 +51,7 @@
 #define DB_FLDID_COMES_BEFORE "_b"
 #define DB_FLDID_REMAKE "_k"
 #define DB_FLDID_ACTOR_LIST "_A"
+#define DB_FLDID_WRITER_LIST "_W"
 
 #define FIELD_TYPE_NONE '-'
 #define FIELD_TYPE_STR 's'

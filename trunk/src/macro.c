@@ -1340,7 +1340,7 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info) {
 
 
 char *macro_fn_status(MacroCallInfo *call_info) {
-    return get_status(call_info->sorted_rows);
+    return get_status();
 }
 
 
@@ -1923,6 +1923,8 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
             
             int r,c;
             int i;
+            int prefix_len = strlen(NVL(group->prefix));
+
             for (r = 0 ; r < rows ; r++ ) {
                 array_add(out,STRDUP("<tr>"));
                 for (c = 0 ; c < cols ; c++ ) {
@@ -1933,8 +1935,7 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                         char id[10];
                         char *name;
 
-#define ID_PREFIX "nm"
-                        sprintf(id, ID_PREFIX "%07d",group->dbgi_ids[i]);
+                        sprintf(id, "%s%07d",NVL(group->prefix),group->dbgi_ids[i]);
 
                         name=dbnames_fetch_static(id,name_file);
 
@@ -1945,14 +1946,12 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                             name = id;
                         }
 
-                        char *link = get_person_drilldown_link(VIEW_PERSON,id+strlen(ID_PREFIX),"",name,"","");
-
-
-
+                        char *link = get_person_drilldown_link(VIEW_PERSON,id+prefix_len,"",name,"","");
 
                         //At present name is "nm0000000:First Last" but this may 
                         //change.
                         array_add(out,link);
+
                     }
 
                     array_add(out,STRDUP("</td>"));
@@ -1968,33 +1967,51 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
     return result;
 }
 
-char *macro_fn_actors(MacroCallInfo *call_info) {
+char *people_table(MacroCallInfo *call_info,char *people_file,char *class,DbGroupIMDB *people_field,
+        int default_rows,int default_cols) {
 
     char *result = NULL;
     if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
         char *tmp;
-        int rows=3,cols=3;
-        struct hashtable *h = args_to_hash(call_info->args,"rows,cols",NULL);
+        int rows=default_rows;
+        int cols=default_cols;
+        struct hashtable *h = args_to_hash(call_info->args,NULL,"rows,cols");
         if ((tmp = get_named_arg(h,"rows")) != NULL) {
-            cols = atoi(tmp);
-        }
-        if ((tmp = get_named_arg(h,"cols")) != NULL) {
             rows = atoi(tmp);
         }
+        if ((tmp = get_named_arg(h,"cols")) != NULL) {
+            cols = atoi(tmp);
+        }
 
-        DbItem *item = call_info->sorted_rows->rows[0];
-
-        result = name_list_macro(item->db->actors_file,item->actors,"actors",rows,cols);
+        result = name_list_macro(people_file,people_field,class,rows,cols);
         free_named_args(h);
+    }
+    return result;
+}
+
+char *macro_fn_actors(MacroCallInfo *call_info) {
+    char *result = NULL;
+    if (call_info->sorted_rows->num_rows) {
+        DbItem *item = call_info->sorted_rows->rows[0];
+        result = people_table(call_info,item->db->actors_file,"actors",item->actors,2,5);
     }
     return result;
 }
 
 char *macro_fn_directors(MacroCallInfo *call_info) {
     char *result = NULL;
-    if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
+    if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = name_list_macro(item->db->directors_file,item->directors,"directors",1,2);
+        result = people_table(call_info,item->db->directors_file,"directors",item->directors,1,2);
+    }
+    return result;
+}
+
+char *macro_fn_writers(MacroCallInfo *call_info) {
+    char *result = NULL;
+    if (call_info->sorted_rows->num_rows) {
+        DbItem *item = call_info->sorted_rows->rows[0];
+        result = people_table(call_info,item->db->writers_file,"writers",item->writers,1,2);
     }
     return result;
 }
@@ -2096,6 +2113,7 @@ void macro_init() {
         hashtable_insert(macros,"WATCHED_SELECT",macro_fn_watched_select);
         hashtable_insert(macros,"WATCHED_TOGGLE",macro_fn_watched_toggle);
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
+        hashtable_insert(macros,"WRITERS",macro_fn_writers);
         hashtable_insert(macros,"YEAR",macro_fn_year);
 
         //HTML_LOG(1,"end macro init");

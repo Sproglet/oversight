@@ -15,6 +15,8 @@ table.listing {
  border-width:0;
 }
 
+
+
 </style>
 
 <script type="text/javascript" src="[:TEMPLATE_URL(js/movie.js):]"></script>
@@ -35,7 +37,7 @@ body { color:yellow ; background-color:black; }
     <tr valign="middle">
 [:ENDIF:]
 
-    <td align="center" border=0 height=[:BODY_HEIGHT:]px >
+    <td align="center" border="0" height="[:BODY_HEIGHT:]" >
         [:FORM_START:]
             <table width=100%>
                 <tr valign="top">
@@ -59,8 +61,12 @@ body { color:yellow ; background-color:black; }
                                 <td colspan=2 class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
                             </tr>
                             <tr>
-                                <td align="left" ><font id="genre">[:GENRE:] / [:DIRECTORS:]</font></td>
+                                <td align="left" ><font id="genre">[:GENRE:]</font></td>
                                 <td align="right" >[:RATING_STARS(5):][:RATING:]</td>
+                            </tr>
+                            <tr>
+                                <td align="left" ><table><tr><td>Director</td><td>[:DIRECTORS:]</td></tr></table></td>
+                                <td align="left" ><table><tr><td>Writer</td><td>[:WRITERS:]</td></tr></table></td>
                             </tr>
                             <tr>
                                 <td colspan=2 align="left"><font class="info">[:CERTIFICATE_IMAGE:] [:SOURCE:]
@@ -72,7 +78,7 @@ body { color:yellow ; background-color:black; }
 [:EXTERNAL_URL:]
 </td>
                             </tr>
-                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:] [:ACTORS(rows=>5,cols=>2):]</span></td><tr>
+                            <tr><td colspan=2 align="left"><hr><span class="plot">&nbsp;[:PLOT:] [:ACTORS(rows=>3,cols=>6):]</span></td><tr>
                             <tr><td colspan=2>[:MOVIE_LISTING:]</td></tr>
                             <tr><td colspan=2>
                                 [:INCLUDE_TEMPLATE(submit_btn):]

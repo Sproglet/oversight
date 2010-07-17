@@ -364,7 +364,9 @@ int oversight_instead_of_wget(int argc, char **argv)
 {
     int ret = -1;
 
+#ifdef OVS_ABORT_FILE
     create_abort_file();
+#endif
 
     gaya_set_output(argc,argv);
     gaya_set_env(argc,argv);
@@ -375,7 +377,9 @@ int oversight_instead_of_wget(int argc, char **argv)
     args[1]=NULL;
     ret = oversight_main(1,args,0);
 
+#ifdef OVS_ABORT_FILE
     delete_abort_file();
+#endif
 
     return ret;
 

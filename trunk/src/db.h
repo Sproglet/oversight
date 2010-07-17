@@ -32,6 +32,7 @@ typedef struct Db_struct {
     int db_size;
     char *directors_file; // ..../db/directors.db (auto computed from source)
     char *actors_file; // ..../db/actors.db (auto computed from source)
+    char *writers_file; // ..../db/writers.db (auto computed from source)
 
 } Db;
 

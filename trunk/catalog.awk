@@ -875,6 +875,7 @@ function set_db_fields() {
     TITLE=db_field("_T","Title","title",1) ;
     DIRECTOR=db_field("_d","Director","director",1) ;
     ACTORS=db_field("_A","Actors","actors",1) ;
+    WRITERS=db_field("_W","Writers","writers",1) ;
     CREATOR=db_field("_c","Creator","creator") ;
     AKA=db_field("_K","AKA","",1);
 
@@ -3352,6 +3353,7 @@ function clean_globals() {
     delete gCertRating;
     delete gCertCountry;
     delete g_director;
+    delete g_writers;
     delete g_actors;
     delete g_poster;
     delete g_genre;
@@ -6593,6 +6595,11 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
                 sec=DIRECTOR;
             }
+            if (g_writers[idx] == "" && index(line,">Writer")) {
+                g_writers[idx] = get_names("writers",raw_scrape_until("writers",f,"</div>",0),0);
+                g_writers[idx] = imdb_list_shrink(g_writers[idx],",",128);
+                sec=WRITERS;
+            }
 
             if (g_plot[idx] == "" && index(line,"Plot:")) {
                 set_plot(idx,g_plot,scrape_until("iplot",f,"</div>",0));
@@ -7482,6 +7489,7 @@ row,est,nfo,op,start) {
     row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
     if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i];
     if (g_actors[i]) row=row"\t"ACTORS"\t"g_actors[i];
+    if (g_writers[i]) row=row"\t"WRITERS"\t"g_writers[i];
 
     row=row"\t"FILETIME"\t"shorttime(g_file_time[i]);
     row=row"\t"DOWNLOADTIME"\t"shorttime(est);

@@ -142,6 +142,10 @@ table.detail   { margin:0; border-spacing:3px; padding:3px ; }
  color:#FF7777;
 }
 
+table.actors    td { width:99px; }
+table.directors td { width:99px; }
+table.writers   td { width:99px; }
+
 /*
 vi:ts=4:sw=4:et:syntax=css
 */a{}

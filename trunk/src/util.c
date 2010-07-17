@@ -251,7 +251,7 @@ char *util_strreg(char *s,char *pattern,int reg_opts)
     regmatch_t pmatch[1];
     regex_t re;
 
-    util_regcomp(&re,pattern,0);
+    util_regcomp(&re,pattern,reg_opts);
 
     char *pos = NULL;
 

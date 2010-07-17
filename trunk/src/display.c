@@ -30,7 +30,7 @@
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
 #define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON
+#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON "," QUERY_PARAM_PERSON
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
@@ -615,7 +615,7 @@ static char *get_drilldown_name(char *root_name,int num_prefix)
 /**
  * link with all drilldown info removed
  */
-char *final_url(char *new_params,char *param_list) 
+char *final_url(char *new_params) 
 {
 
     char *new_drilldown_params = NULL;
@@ -743,7 +743,7 @@ char *final_link(char *params,char *attr,char *title) {
 
     HTML_LOG(1," begin final link for params[%s] attr[%s] title[%s]",params,attr,title);
 
-    char *url = final_url(params,DRILL_DOWN_PARAM_NAMES);
+    char *url = final_url(params);
     HTML_LOG(1," end final link [%s]",url);
 
     ovs_asprintf(&result,"<a href=\"%s\" %s>%s</a>",url,attr,title);
@@ -1622,7 +1622,7 @@ char *ovs_icon_type() {
     return icon_type;
 }
 
-char *container_icon(char *image_name,char *name) {
+char *container_icon(char *image_name) {
     char *result = template_image_link("",image_name,NULL,NULL,"class=\"codec\"");
     return result;
 }
@@ -1634,7 +1634,7 @@ char *icon_link(char *name) {
 
     if (name) {
         if (name[strlen(name)-1] == '/') {
-            result = container_icon("video_ts","vob");
+            result = container_icon("video_ts");
         } else {
             //char *ext = name + strlen(name) - 5;
             char *ext = strrchr(name,'.');
@@ -1642,7 +1642,7 @@ char *icon_link(char *name) {
                 ext++;
                 char *p;
                 if ((p = strstr("|iso|img|mkv|avi|",ext)) != NULL && p[-1] == '|' && p[strlen(ext)] == '|' ) {
-                    result = container_icon(ext,ext);
+                    result = container_icon(ext);
                 } else if (strcasecmp(ext,"avi") != 0) {
                     ovs_asprintf(&result,"<font size=\"-1\">[%s]</font>",ext);
                 }
@@ -2579,26 +2579,6 @@ static inline void set_drilldown_view(DbItem *item) {
     }
 }
 
-
-
-
-int check_and_prune_item(DbItem *rowid,char *path) {
-
-    int result = 0;
-
-    if (nmt_mount(path) ) {
-
-        if (exists(path) ) {
-
-            result = 1;
-
-        } else {
-
-        }
-    }
-    return result;
-}
-
 /*
  * Find the next folder after the mount point.
  * This is not calculated from the real mount point but where we
@@ -3022,11 +3002,16 @@ TRACE;
     // Tv/Film filter
     // ==============
 
+#if 0
     char *media_types=view->media_types;
 
     if(media_types == DB_MEDIA_TYPE_ANY) {
         media_types = query_val(QUERY_PARAM_TYPE_FILTER);
     }
+#else
+    // Not worth adding extra filtering for the view type
+    char *media_types = query_val(QUERY_PARAM_TYPE_FILTER);
+#endif
 
 TRACE;
     Exp *query_exp = build_filter(media_types);
@@ -3726,7 +3711,7 @@ char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
     return result;
 }
 
-char *get_status(DbSortedRows *sorted_rows)
+char *get_status()
 {
     char *result=NULL;
 #define MSG_SIZE 50

@@ -52,7 +52,11 @@ Exp *build_filter(char *media_types)
             } else {
                 assert(0);
             }
-            add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, op_text , title_pat+2 );
+            char *tmp;
+            ovs_asprintf(&tmp,"'%s'",title_pat+2);
+
+            add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, op_text , tmp );
+            FREE(tmp);
 
         }
     }

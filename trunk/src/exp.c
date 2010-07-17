@@ -559,15 +559,18 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
            char *p = *text_ptr;
            char *end_tok="~)";;
            if (*p == '\'') {
+               p++;
                end_tok = "\'";
            } 
            while (*p && strchr(end_tok,*p) == NULL ) { p++; }
 
-           //HTML_LOG(0,"value [%.*s]",p-*text_ptr,*text_ptr);
-           if (**text_ptr == '\'' && p[-1] == '\'' ) {
+           HTML_LOG(0,"value [%.*s]",p-*text_ptr,*text_ptr);
+           if (**text_ptr == '\'' && *p == '\'' ) {
                // quoted string
-               char *str = COPY_STRING(p-*text_ptr-2,*text_ptr+1);
+               char *str = COPY_STRING(p-*text_ptr-1,*text_ptr+1);
+               HTML_LOG(0,"string[%s]",str);
                result = new_val_str(str,1);
+               p++;
            } else {
                char *end;
                double d = strtod(*text_ptr,&end);

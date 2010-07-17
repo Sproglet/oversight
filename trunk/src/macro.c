@@ -2010,8 +2010,49 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
     return result;
 }
 
+Db *firstdb(MacroCallInfo *call_info)
+{
+    Db *result = NULL;
+    DbSortedRows *sorted_rows = call_info->sorted_rows;
+
+    if (sorted_rows && sorted_rows->num_rows) {
+        DbItem *item = sorted_rows->rows[0];
+        result = item->db;
+    }
+    return result;
+}
+
+char *macro_fn_actor_name(MacroCallInfo *call_info)
+{
+    char *result = NULL;
+
+    call_info->free_result = 0;
+
+    char *id=query_val(QUERY_PARAM_PERSON);
+    if (!EMPTY_STR(id)) {
+        Db *db = firstdb(call_info);
+        char *name = dbnames_fetch_static(id,db->actors_file);
+        if (name) {
+            result = name;
+        } else {
+            result = id;
+        }
+    }
+    return result;
+}
+/**
+ * Return the imdb id of the current actor. This is just the person parameter.(QUERY_PARAM_PERSON)
+ */
+char *macro_fn_actor_id(MacroCallInfo *call_info)
+{
+    call_info->free_result = 0;
+    char *result=query_val(QUERY_PARAM_PERSON);
+    return result;
+}
+
 char *people_table(MacroCallInfo *call_info,char *people_file,char *class,DbGroupIMDB *people_field,
-        int default_rows,int default_cols) {
+        int default_rows,int default_cols)
+{
 
     char *result = NULL;
     if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
@@ -2032,7 +2073,8 @@ char *people_table(MacroCallInfo *call_info,char *people_file,char *class,DbGrou
     return result;
 }
 
-char *macro_fn_actors(MacroCallInfo *call_info) {
+char *macro_fn_actors(MacroCallInfo *call_info)
+{
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
@@ -2041,7 +2083,8 @@ char *macro_fn_actors(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_directors(MacroCallInfo *call_info) {
+char *macro_fn_directors(MacroCallInfo *call_info)
+{
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
@@ -2068,6 +2111,8 @@ void macro_init() {
         macros = string_string_hashtable("macro_names",64);
 
         hashtable_insert(macros,"ACTORS",macro_fn_actors);
+        hashtable_insert(macros,"ACTOR_NAME",macro_fn_actor_name);
+        hashtable_insert(macros,"ACTOR_ID",macro_fn_actor_id);
         hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);

@@ -159,7 +159,13 @@ int db_overview_cmp_by_age_desc(DbItem **item1,DbItem **item2)
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_year_asc(DbItem **item1,DbItem **item2)
 {
-    return (*item1)->year - (*item2)->year;
+    int ret;
+    ret = (*item1)->year - (*item2)->year;
+    if (ret == 0) {
+        // Compare imdb ids if movie in the same year - eg Matrix Reloaded/Revolution
+        ret = (*item1)->external_id - (*item2)->external_id;
+    }
+    return ret;
 }
 // This function is just used for sorting the overview AFTER it has been created.
 int db_overview_cmp_by_season_asc(DbItem **item1,DbItem **item2)

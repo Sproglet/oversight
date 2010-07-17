@@ -4313,6 +4313,11 @@ attr,a_name,a_val,eq,attr_pairs) {
     # /tag1>midtext
     # tag2>text2
     # /tag2>
+    #
+    # <tag1><tag2 /></tag1> becomes
+    # tag1>
+    # tag2 />
+    # /tag1> 
 
     tag_data_count = split(line,lines,"<");
 
@@ -4330,12 +4335,16 @@ attr,a_name,a_val,eq,attr_pairs) {
 
         # lines[i] = tag>text
         # lines[i] = tag attr >text
+        # lines[i] = tag attr />
+        # lines[i] = /tag>
 
         #split <tag>text  [ or </tag>parenttext ]
         split(lines[i],parts,">");
 
         # part[1] = tag 
         # part[1] = tag attr1
+        # part[1] = tag attr1 /
+        # part[1] = /tag
         # part[2] = text
 
 
@@ -4351,21 +4360,31 @@ attr,a_name,a_val,eq,attr_pairs) {
             if (j) text = substr(text,1,j-1);
         }
 
-        if ((sp=index(tag," ")) != 0) {
-            #Remove attributes Possible bug if space before element name
-            tag=substr(tag,1,sp-1);
-        }
-
         slash = index(tag,"/");
         if (slash == 1 )  {
 
             # end tag
+            # part[1] = /tag
 
             currentTag = substr(currentTag,1,length(currentTag)-length(tag));
 
-        } else if (slash == 0 ) {
+        } else if ( slash == length(tag) ||  (slash != 0 && substr(tag,length(tag)) == "/")) {
 
-             currentTag = currentTag "/" tag;
+            # ignore <aaa/>
+            # part[1] = tag attr1 /
+            # Check appears more complex in case attribute contains slash.
+
+        } else {
+
+            # part[1] = tag 
+            # part[1] = tag attr1
+
+            if ((sp=index(tag," ")) != 0) {
+                #Remove attributes Possible bug if space before element name
+                tag=substr(tag,1,sp-1);
+            }
+
+            currentTag = currentTag "/" tag;
 
 
              #If merging element values add a sepearator
@@ -4373,9 +4392,6 @@ attr,a_name,a_val,eq,attr_pairs) {
                 text = sep text;
             }
 
-        } else {
-
-            # ignore <aaa/>
         }
 
         if (text) {
@@ -6094,7 +6110,7 @@ start,tries,timeout) {
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
 function getNiceMoviePosters(idx,imdb_id,\
-poster_url,backdrop_url) {
+poster_url,backdrop_url,xmlp,url,tagfilter) {
 
 
     if (getting_poster(idx,1) || getting_fanart(idx,1)) {
@@ -6103,12 +6119,31 @@ poster_url,backdrop_url) {
 
         #poster_url = bingimg(gTitle[idx]" "g_year[idx]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
-        if (poster_url == "" && getting_poster(idx,1) ) {
-            poster_url = get_moviedb_img(imdb_id,"poster","mid");
-        }
+        if (0) {
+            # Get posters from TMDB usiong the API. Unfortunately this doesnt expose poster rating.
+            if (poster_url == "" && getting_poster(idx,1) ) {
+                poster_url = get_moviedb_img(imdb_id,"poster","mid");
+            }
 
-        if (getting_fanart(idx,1) ) {
-            backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
+            if (getting_fanart(idx,1) ) {
+                backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
+            }
+        } else {
+            # Get highest rated posters by scraping the html
+            xmlp="/OpenSearchDescription/movies/movie/url";
+            url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_api_tmdb"/"imdb_id;
+            if (fetch_xml_single_child(url,"tmdb",xmlp,tagfilter,xml)) {
+                dump(0,"tmdb",xml);
+                url = xml[xmlp];
+                if (poster_url == "" && getting_poster(idx,1) ) {
+                    poster_url = scanPageFirstMatch(url,"/posters/","http:"g_nonquote_regex"+/posters/"g_nonquote_regex"+(jpg|png)",1);
+                    sub(/-cover\./,"-original.",poster_url);
+                }
+                if (getting_fanart(idx,1) ) {
+                    backdrop_url = scanPageFirstMatch(url,"/backdrops/","http:"g_nonquote_regex"+/backdrops/"g_nonquote_regex"+(jpg|png)",1);
+                }
+            }
+            
         }
 
         if (poster_url == "") {

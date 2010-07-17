@@ -47,7 +47,7 @@ char *movie_listing(DbItem *rowid);
 long use_tv_boxsets();
 long use_movie_boxsets();
 char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols);
-char *get_status(DbSortedRows *sorted_rows);
+char *get_status();
 char *cgi_url(int full);
 char *self_url(char *new_params);
 char *get_self_link(char *params,char *attr,char *title);

@@ -141,6 +141,7 @@ typedef struct Dbrowid_struct {
 
     struct DbGroupIMDB_struct *directors;
     struct DbGroupIMDB_struct *actors;
+    struct DbGroupIMDB_struct *writers;
 
     // Set for first row in the list.
     // These fields will be moved to the ItemList structure once I create a list of Items

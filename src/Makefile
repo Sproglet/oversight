@@ -36,6 +36,7 @@ CC=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 
+#CFLAGS=-O3 -Wall -Wunused-parameter -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 # Most stable last to speed compile-fail cycle

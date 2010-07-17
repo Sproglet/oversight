@@ -806,7 +806,7 @@ DbGroupIMDB *get_raw_imdb_list(
 void evaluate_group(DbGroupIMDB *group) 
 {
     if (!group->evaluated) {
-        HTML_LOG(0,"Group eval");
+        HTML_LOG(1,"Group eval");
         if (parse_imdb_list(group->prefix,group->raw,group->raw_len,group) == group) {
             FREE(group->raw);
             group->raw = NULL;

@@ -149,7 +149,7 @@ char *dbnames_fetch_static(char *key,char *file)
             fclose(f);
         }
     }
-    HTML_LOG(0,"dbnames_fetch_chop_static[%s]=[%s]",key,result);
+    HTML_LOG(1,"dbnames_fetch_chop_static[%s]=[%s]",key,result);
 
     return result;
 }

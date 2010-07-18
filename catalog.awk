@@ -1421,12 +1421,13 @@ function folderIsRelevant(dir) {
 # Google is MILES ahead of yahoo and bing for the kind of searching oversight is doing.
 # its a shame that it will blacklist repeat searches very quickly, so we use the 
 # other engines in round-robin. If they disagree then google cast the deciding vote.
-function web_search_first_imdb_link(qualifier) {
-    return web_search_first(qualifier,1,"imdbid","/tt",g_imdb_regex);
+#
+# Special case is if searching via IMDB search page - then the imdb_qual is used
+function web_search_first_imdb_link(qualifier,imdb_qual) {
+    return web_search_first(qualifier,imdb_qual,1,"imdbid","/tt",g_imdb_regex);
 }
-function web_search_first_imdb_title(qualifier\
-) {
-    return web_search_first(qualifier,0,"imdbtitle","",g_imdb_title_re);
+function web_search_first_imdb_title(qualifier,imdb_qual) {
+    return web_search_first(qualifier,imdb_qual,0,"imdbtitle","",g_imdb_title_re);
 }
 
 
@@ -1535,11 +1536,12 @@ t,t2,y) {
     dump(0,"normalise title matches out",normed);
 }
 
+# Special case is if searching via IMDB search page - then the imdb_qual is used
 # the help text just helps avoid overhead of regex matching.
 # freqOrFirst =0 freq match | =1 first match
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
-function web_search_first(qualifier,freqOrFirst,mode,helptxt,regex,\
+function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
 u,s,pages,subtotal,ret,i,matches,m,src) {
 
 
@@ -1548,6 +1550,7 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
     u[1] = search_url("SEARCH" qualifier);
     u[2] = search_url("SEARCH" qualifier);
     u[3] = g_search_google qualifier;
+    u[4] = "http://www.imdb.com/find?s=tt&q=" imdb_qual;
     
     #The search string itself will be present not only in the serp but also in the title and input box
     #So if searching for "DVD Aliens (1981)" then the most popular result may include DVD.
@@ -1578,24 +1581,37 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
 
         } else {
 
-            # Still nothing appears twice. 
-            #Go through each match and see how many times it appears on the other pages.
-            # this is why we track the matching urls in the src array.
-            for(m in matches) {
-                id1("cross_page_rank "m"|");
-                pages=0;
-                subtotal=0;
-                for(i = 1 ; i-3 <= 0 ; i++ ) {
-                    if (index(src[m],":"u[i]":") == 0) {
-                        s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
-                        if (s != 0) pages++;
-                        subtotal += s;
-                    }
+            if (imdb_qual != "" ) {
+                # TODO Try direct imdb search
+                scrapeMatches(u[4],freqOrFirst,helptxt,regex,matches,src);
+                
+                if (bestScores(matches,matches,0) == 2 ) {
+
+                    ret = firstIndex(matches);
                 }
-                matches[m] += pages * subtotal;
-                id0(pages*subtotal);
             }
-            ret = getMax(matches,4,1);
+            
+            if (ret == "") {
+
+                # Still nothing appears twice. 
+                #Go through each match and see how many times it appears on the other pages.
+                # this is why we track the matching urls in the src array.
+                for(m in matches) {
+                    id1("cross_page_rank "m"|");
+                    pages=0;
+                    subtotal=0;
+                    for(i = 1 ; i-3 <= 0 ; i++ ) {
+                        if (index(src[m],":"u[i]":") == 0) {
+                            s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
+                            if (s != 0) pages++;
+                            subtotal += s;
+                        }
+                    }
+                    matches[m] += pages * subtotal;
+                    id0(pages*subtotal);
+                }
+                ret = getMax(matches,4,1);
+            }
         }
     }
 
@@ -3235,7 +3251,7 @@ imdb_title_q,imdb_id_q,connections,remakes) {
 
                         #This is a web search of imdb site returning the first match.
 
-                        bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"));
+                        bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"),name_try);
 
                     } else if (search_order[s] == "IMDBFIRST") {
 
@@ -3254,18 +3270,18 @@ imdb_title_q,imdb_id_q,connections,remakes) {
                         #imdb_id_q = url_encode("site:imdb.com");
                         #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
 
-                        bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q);
+                        bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q,name_try);
                         if (bestUrl == "" ) {
 
                             # look for imdb style titles 
-                            title = web_search_first_imdb_title(name_try);
+                            title = web_search_first_imdb_title(name_try,"");
                             if (title == "" ) {
-                                title = web_search_first_imdb_title(name_try"+movie");
+                                title = web_search_first_imdb_title(name_try"+movie","");
                             }
                             if (title != "" && title != name_try) {
-                                bestUrl=web_search_first_imdb_link(title"+"imdb_title_q);
+                                bestUrl=web_search_first_imdb_link(title"+"imdb_title_q,title);
                                 if (bestUrl == "") {
-                                    bestUrl=web_search_first_imdb_link(title"+"imdb_id_q);
+                                    bestUrl=web_search_first_imdb_link(title"+"imdb_id_q,title);
                                 }
                             }
                         }
@@ -3310,7 +3326,7 @@ imdb_title_q,imdb_id_q,connections,remakes) {
 }
 
 function tv2imdb(idx,\
-url,key) {
+terms,key) {
 
     if (g_imdb[idx] == "") {
     
@@ -3319,10 +3335,9 @@ url,key) {
         if (!(key in g_tv2imdb)) {
 
             # Search for imdb page  - try to filter out Episode pages.
-            #url=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons ";
-            url=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"";
+            #terms=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons ";
         
-            g_tv2imdb[key] = web_search_first_imdb_link(url); 
+            g_tv2imdb[key] = web_search_first_imdb_link(terms" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"",terms); 
         }
         g_imdb[idx] = g_tv2imdb[key];
     }
@@ -4287,7 +4302,7 @@ f,line,result) {
 function parseXML(line,info,ignorePaths,\
 sep,\
 currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,\
-attr,a_name,a_val,eq,attr_pairs) {
+attr,a_name,a_val,eq,attr_pairs,single_tag) {
 
     if (index(line,"<?")) return;
 
@@ -4350,6 +4365,7 @@ attr,a_name,a_val,eq,attr_pairs) {
 
         tag = parts[1];
         text = parts[2];
+        single_tag = 0;
 
         if (i == tag_data_count) {
             # Carriage returns mess up parsing
@@ -4368,16 +4384,18 @@ attr,a_name,a_val,eq,attr_pairs) {
 
             currentTag = substr(currentTag,1,length(currentTag)-length(tag));
 
-        } else if ( slash == length(tag) ||  (slash != 0 && substr(tag,length(tag)) == "/")) {
-
-            # ignore <aaa/>
-            # part[1] = tag attr1 /
-            # Check appears more complex in case attribute contains slash.
-
         } else {
 
             # part[1] = tag 
             # part[1] = tag attr1
+            # part[1] = tag attr1 /
+
+            if ( slash == length(tag) ||  (slash != 0 && substr(tag,length(tag)) == "/")) {
+                # part[1] = tag attr1 /
+                # Check appears more complex in case attribute contains slash.
+                single_tag = 1;
+            }
+
 
             if ((sp=index(tag," ")) != 0) {
                 #Remove attributes Possible bug if space before element name
@@ -4402,7 +4420,7 @@ attr,a_name,a_val,eq,attr_pairs) {
 
         #parse attributes.
         
-        if (slash == 0 && index(parts[1],"=")) {
+        if (index(parts[1],"=")) {
             get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ \"'>=]*))",0,attr_pairs);
             for(attr in attr_pairs) {
                 eq=index(attr,"=");
@@ -4415,6 +4433,9 @@ attr,a_name,a_val,eq,attr_pairs) {
                 info[currentTag"#"a_name]=a_val;
             }
 
+        }
+        if (single_tag) {
+            currentTag = substr(currentTag,1,length(currentTag)-length(tag));
         }
 
     }
@@ -6110,7 +6131,7 @@ start,tries,timeout) {
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
 function getNiceMoviePosters(idx,imdb_id,\
-poster_url,backdrop_url,xmlp,url,tagfilter) {
+poster_url,backdrop_url,xmlp,url,tagfilter,xml) {
 
 
     if (getting_poster(idx,1) || getting_fanart(idx,1)) {
@@ -6119,7 +6140,7 @@ poster_url,backdrop_url,xmlp,url,tagfilter) {
 
         #poster_url = bingimg(gTitle[idx]" "g_year[idx]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
-        if (0) {
+        if (1) {
             # Get posters from TMDB usiong the API. Unfortunately this doesnt expose poster rating.
             if (poster_url == "" && getting_poster(idx,1) ) {
                 poster_url = get_moviedb_img(imdb_id,"poster","mid");
@@ -6129,20 +6150,21 @@ poster_url,backdrop_url,xmlp,url,tagfilter) {
                 backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
             }
         } else {
-            # Get highest rated posters by scraping the html
-            xmlp="/OpenSearchDescription/movies/movie/url";
-            url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_api_tmdb"/"imdb_id;
-            if (fetch_xml_single_child(url,"tmdb",xmlp,tagfilter,xml)) {
-                dump(0,"tmdb",xml);
-                url = xml[xmlp];
-                if (poster_url == "" && getting_poster(idx,1) ) {
-                    poster_url = scanPageFirstMatch(url,"/posters/","http:"g_nonquote_regex"+/posters/"g_nonquote_regex"+(jpg|png)",1);
-                    sub(/-cover\./,"-original.",poster_url);
-                }
-                if (getting_fanart(idx,1) ) {
-                    backdrop_url = scanPageFirstMatch(url,"/backdrops/","http:"g_nonquote_regex"+/backdrops/"g_nonquote_regex"+(jpg|png)",1);
-                }
-            }
+#DELETE#            # Get highest rated posters by scraping the html
+#DELETE#            xmlp="/OpenSearchDescription/movies/movie/url";
+#DELETE#            url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_api_tmdb"/"imdb_id;
+#DELETE#            if (fetch_xml_single_child(url,"tmdb",xmlp,tagfilter,xml)) {
+#DELETE#                dump(0,"tmdb",xml);
+#DELETE#                url = xml[xmlp];
+#DELETE#                if (poster_url == "" && getting_poster(idx,1) ) {
+#DELETE#                    poster_url = scanPageFirstMatch(url,"/posters/","http:"g_nonquote_regex"+/posters/"g_nonquote_regex"+(jpg|png)",1);
+#DELETE#                    sub(/-cover\./,"-original.",poster_url);
+#DELETE#                }
+#DELETE#                if (getting_fanart(idx,1) ) {
+#DELETE#                    backdrop_url = scanPageFirstMatch(url,"/backdrops/","http:"g_nonquote_regex"+/backdrops/"g_nonquote_regex"+(jpg|png)",1);
+#DELETE#                }
+#DELETE#            }
+            i=i;
             
         }
 
@@ -6195,41 +6217,31 @@ referer_url,url,url2) {
 #              </poster>
 #
 function get_moviedb_img(imdb_id,type,size,\
-search_url,txt,xml,f,bestId,url,url2,parse,id) {
+search_url,txt,xml,f,url,url2) {
 
-    search_url="http://api.themoviedb.org/2.1/Movie.getImages/en/xml/"g_api_tmdb"/"imdb_id;
+    search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_api_tmdb"/"imdb_id;
 
-# We want the one with lowest id. string comparison
+# the first one is the one with the highest ratings. At present rating order is NOT returned using 
+# getImages so using imdbLookup instead.
 
     id1("get_moviedb_img "imdb_id" "type" "size);
     f=getUrl(search_url,"moviedb",0);
 
     #scan_xml_single_child(f,"/OpenSearchDescription/movies/movie/images",tagfilters,xmlout,\
-    bestId="";
     if (f != "") {
         FS="\n";
-        parse=0;
         while((getline txt < f) > 0 ) {
-            if (match(txt,"<(poster|backdrop)") ) {
 
-                parse = 0;
-                if (index(txt,"<"type)) {
-                    delete xml;
-                    parseXML(txt,xml);
-                    id=xml["/"type"#id"];
-                    parse= (bestId == "") || ("X"id < "X"bestId );
-                    #INF("["id "] < ["bestId "] = "parse);
-                }
-
-            } else if (parse && index(txt,"<image") && index(txt,".jpg") ) {
+            if (index(txt,"<image")) {
 
                 delete xml;
                 parseXML(txt,xml);
-                if (xml["/image#size"] == size ) {
+                dump(0,"image",xml);
+                if (xml["/image#type"] == type && xml["/image#size"] == size ) {
                     url2=url_encode(html_decode(xml["/image#url"]));
                     if (exec("wget "g_wget_opts" --spider "url2) == 0 ) {
                         url = url2;
-                        bestId = id;
+                        break;
                     }
                 }
             }

@@ -2033,7 +2033,7 @@ char *macro_fn_actor_name(MacroCallInfo *call_info)
         Db *db = firstdb(call_info);
         char *name = dbnames_fetch_static(id,db->actors_file);
         if (name) {
-            result = name;
+            result = strstr(name,id) + strlen(id) + 1;
         } else {
             result = id;
         }
@@ -2088,7 +2088,7 @@ char *macro_fn_directors(MacroCallInfo *call_info)
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->directors_file,"directors",item->directors,1,2);
+        result = people_table(call_info,item->db->actors_file,"directors",item->directors,1,2);
     }
     return result;
 }
@@ -2097,7 +2097,7 @@ char *macro_fn_writers(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->writers_file,"writers",item->writers,1,2);
+        result = people_table(call_info,item->db->actors_file,"writers",item->writers,1,2);
     }
     return result;
 }

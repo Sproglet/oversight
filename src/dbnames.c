@@ -21,7 +21,7 @@
 
 #define DB_PERSON_NAME_SIZE 110
 #define PREFIX_LEN 3 // allow a bit more space to read start of next record when required \nnm0
-static char name[DB_PERSON_NAME_SIZE+PREFIX_LEN+1];
+static char name_record[DB_PERSON_NAME_SIZE+PREFIX_LEN+1];
 // IMDB has some gems such as nm2770034 "11th Naval District United States Coast Guard Band"
 // The longest name at the moment is 83 characters.
 // nm2863306
@@ -57,14 +57,14 @@ static inline long seek_back(FILE *fp,long start) {
         long bytes;
         // Read previous record (and also a bit more in case 'start' was pointing
         // at m0001 and we just needed to go back 1 byte.
-        if ((bytes=fread(name,1,start-prev+PREFIX_LEN,fp)) >= 0) {
-            //HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name);
+        if ((bytes=fread(name_record,1,start-prev+PREFIX_LEN,fp)) >= 0) {
+            //HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name_record);
             char *p;
-            for( p = name+bytes-PREFIX_LEN ; p >= name ; p--) {
+            for( p = name_record+bytes-PREFIX_LEN ; p >= name_record ; p--) {
                 if (full_record(p)) {
-                    fseek(fp,prev+(p-name),SEEK_SET);
-                    //HTML_LOG(0,"seeked back to [%ld]",prev+(p-name));
-                    result = prev+(p-name);
+                    fseek(fp,prev+(p-name_record),SEEK_SET);
+                    //HTML_LOG(0,"seeked back to [%ld]",prev+(p-name_record));
+                    result = prev+(p-name_record);
                     break;
                 }
             }
@@ -76,20 +76,34 @@ static inline long seek_back(FILE *fp,long start) {
     return result;
 }
 
+/**
+ * returns record in name file that matches the name id.
+ * This has format 
+ * nm0000000:John Doe
+ */
 char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
 {
     char *state;
     char *result = NULL;
-    int keylen = strlen(key);
+
+    char full_key[20];
+   
+    if (util_starts_with(key,"nm")) {
+        strcpy(full_key,key);
+    } else {
+        sprintf(full_key,"nm%s",key);
+    }
+
+    int keylen = strlen(full_key);
     long mid;
     while(1) {
         mid = ( start + end ) / 2;
         //HTML_LOG(0,"chop[%ld][%ld][%ld]",start,mid,end);
         if (fseek(f,mid,SEEK_SET) == 0) {
 
-            if ((state=fgets(name,DB_PERSON_NAME_SIZE,f)) != NULL) {
-                //HTML_LOG(0,"mid[%ld][%s]",mid,name);
-                if (!full_record(name)) {
+            if ((state=fgets(name_record,DB_PERSON_NAME_SIZE,f)) != NULL) {
+                //HTML_LOG(0,"mid[%ld][%s]",mid,name_record);
+                if (!full_record(name_record)) {
                     // We have jumped into the middle of a record.
                     mid = seek_back(f,mid);
                     if (mid < 0) {
@@ -97,21 +111,21 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
                         break;
                     } 
 
-                    state = fgets(name,DB_PERSON_NAME_SIZE,f);
-                    //HTML_LOG(0,"new mid[%ld][%s]",mid,name);
+                    state = fgets(name_record,DB_PERSON_NAME_SIZE,f);
+                    //HTML_LOG(0,"new mid[%ld][%s]",mid,name_record);
 
-                    if (state && !full_record(name)) {
+                    if (state && !full_record(name_record)) {
                         // Cant find start of record?
                         // This shouldnt happen because seek back checks this also.
                         break;
                     }
-                    //HTML_LOG(0,"back[%ld][%s]",mid,name);
+                    //HTML_LOG(0,"back[%ld][%s]",mid,name_record);
                 }
             }
             if (state) {
-                int cmp = strncmp(key,name,keylen);
+                int cmp = strncmp(full_key,name_record,keylen);
                 if (cmp == 0) {
-                    result = name;
+                    result = name_record;
                     break;
                 } else if (cmp < 0) {
                     end = mid;
@@ -128,6 +142,11 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
     return result;
 }
 
+/**
+ * returns record in name file that matches the name id.
+ * This has format 
+ * nm0000000:John Doe
+ */
 char *dbnames_fetch_static(char *key,char *file)
 {
     char *result = NULL;

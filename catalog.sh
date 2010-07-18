@@ -287,9 +287,9 @@ catalog() {
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
 
-    update_imdb_list "directors.db"
+    #update_imdb_list "directors.db"
     update_imdb_list "actors.db"
-    update_imdb_list "writers.db"
+    #update_imdb_list "writers.db"
 }
 
 # If a new file has been created - merge it with the existing one and sort.

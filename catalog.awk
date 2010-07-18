@@ -6638,12 +6638,12 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 sec=ACTORS;
             }
             if (g_director[idx] == "" && index(line,">Director")) {
-                g_director[idx] = get_names("directors",raw_scrape_until("director",f,"</div>",0),0);
+                g_director[idx] = get_names("actors",raw_scrape_until("director",f,"</div>",0),0);
                 g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
                 sec=DIRECTOR;
             }
             if (g_writers[idx] == "" && index(line,">Writer")) {
-                g_writers[idx] = get_names("writers",raw_scrape_until("writers",f,"</div>",0),0);
+                g_writers[idx] = get_names("actors",raw_scrape_until("writers",f,"</div>",0),0);
                 g_writers[idx] = imdb_list_shrink(g_writers[idx],",",128);
                 sec=WRITERS;
             }

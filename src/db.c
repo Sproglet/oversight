@@ -161,9 +161,7 @@ TRACE;
     }
 TRACE;
     db->plot_file = replace_all(db->path,"index.db","plot.db",0);
-    db->directors_file = replace_all(db->path,"index.db","db/directors.db",0);
     db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
-    db->writers_file = replace_all(db->path,"index.db","db/writers.db",0);
 
 TRACE;
     db->source= STRDUP(source);
@@ -180,16 +178,8 @@ TRACE;
     // Test code
 #ifdef UNIT_TEST
     char *actor=query_val("actors");
-    char *director=query_val("directors");
-    char *writer=query_val("writers");
     if (!EMPTY_STR(actor)) {
         HTML_LOG(0,"actor [%s] = [%s]",actor,dbnames_fetch_static(actor,db->actors_file));
-    }
-    if (!EMPTY_STR(director)) {
-        HTML_LOG(0,"director [%s] = [%s]",director,dbnames_fetch_static(director,db->directors_file));
-    }
-    if (!EMPTY_STR(writer)) {
-        HTML_LOG(0,"director [%s] = [%s]",writer,dbnames_fetch_static(writer,db->writers_file));
     }
 #endif
 
@@ -624,9 +614,7 @@ void db_free(Db *db) {
     FREE(db->source);
     FREE(db->path);
     FREE(db->plot_file);
-    FREE(db->directors_file);
     FREE(db->actors_file);
-    FREE(db->writers_file);
     FREE(db->lockfile);
     FREE(db->backup);
     FREE(db);

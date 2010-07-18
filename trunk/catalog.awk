@@ -1894,7 +1894,7 @@ f,line,imdbContentPosition,isection) {
 
         FS="\n";
         while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-            imdbContentPosition=scrapeIMDBLine(line[1],imdbContentPosition,idx,f,isection);
+            imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,idx,f,isection);
         }
         enc_close(f);
 
@@ -6565,7 +6565,7 @@ count,fcount,i,parts,start) {
 }
 
 # isection tracks sections found. This helps alert us to IMDB changes.
-function scrapeIMDBLine(line,imdbContentPosition,idx,f,isection,\
+function scrape_imdb_line(line,imdbContentPosition,idx,f,isection,\
 title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country) {
 
 
@@ -6623,8 +6623,7 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 poster_imdb_url = extractAttribute(substr(line,i-1),"img","src");
                 if (poster_imdb_url != "") {
                     #Get high quality one
-                    sub(/SX[0-9]{2,3}_/,"SX400_",poster_imdb_url);
-                    sub(/SY[0-9]{2,3}_/,"SY400_",poster_imdb_url);
+                    sub(/\._SX[0-9]{2,3}_SY[0-9]{2,3}_/,"",poster_imdb_url);
 
                     #Save it for later. 
                     g_imdb_img[idx]=poster_imdb_url;

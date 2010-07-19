@@ -1,94 +1,65 @@
 #sidebar TableOfContents
 <wiki:toc max_depth="3" />
 
+[Auto-generated at Mon Jul 19 18:26:55 GMTDT 2010 from comments in macro.c using macro_doc in trunk/src]
+
 Oversight skins are html with special macros that are replaced with html text on the fly.
 
 The macros are detailed below.
 If this page becomes out of date, refer to macro.c
-
-==BACK_BUTTON==
-==BODY_HEIGHT==
-==BODY_WIDTH==
-==CERTIFICATE_IMAGE==
-==CHECKBOX==
-==CONFIG_LINK==
-==DELETE_BUTTON==
-==EDIT_CONFIG==
-==ELSE==
-==ELSEIF==
-==ENDIF==
-==EPISODE_TOTAL==
-==EVAL==
-==EXIT_BUTTON==
-==EXTERNAL_URL==
-==FANART_URL==
-==FAVICON==
-==FILTER_BAR==
-==FONT_SIZE==
-==FORM_END==
-==FORM_START==
-==GAYA_FOLDER==
-==GAYA_LIST_ROWS==
-==GAYA_ROOT_FOLDER_NAME==
-==GENRE==
-==GENRE_SELECT==
 ==GRID==
-==HEADER==
-==HELP_BUTTON==
-==HOME_BUTTON==
-==HOSTNAME==
-==ICON==
-==ICON_LINK==
+Grid Macro has format
+[:GRID(rows=>r,cols=>c,img_height=>300,img_width=>200,offset=>0,page_size=>50):]
+
+All parameters are optional.
+rows,cols            = row and columns of thumb images in the grid (defaults to config file settings for that view)
+img_height,img_width = thumb image dimensions ( defaults to config file settings for that view)
+offset               = This setting is to allow multiple grids on the same page. eg. 
+for a layout where X represents a thumb you mak have:
+
+XXXX
+XX
+XX
+
+This could be two grids
+[:GRID(rows=>1,cols=>4,offset=>0):]
+[:GRID(rows=>2,cols=>2,offset=>4):]
+
+In this secnario oversight also needs to know which is the last grid on the page, so it can add the page navigation to 
+the correct grid. As the elements may occur in
+any order in the template, this would either require two passes of the template, or the user to indicate the 
+last grid. I took the easy option , so the user must spacify the total thumbs on the page.
+
+[:GRID(rows=>1,cols=>4,offset=>0):]
+[:GRID(rows=>2,cols=>2,offset=>4,last=>1):]
+
 ==IF==
-==IMAGE==
-==INCLUDE_TEMPLATE==
-==IS_GAYA==
-==LEFT_BUTTON==
-==LINK==
-==MARK_BUTTON==
-==MEDIA_SELECT==
-==MEDIA_TOGGLE==
-==MEDIA_TYPE==
-==MENU_TVID==
-==MOUNT_STATUS==
-==MOVIE_LISTING==
-==MOVIE_TOTAL==
-==NUMBER==
-==OTHER_MEDIA_TOTAL==
-==PAYPAL==
-==PLAY_TVID==
-==PLOT==
-==POSTER==
-==RATING==
-==RATING_STARS==
-==RIGHT_BUTTON==
-==RUNTIME==
-==SCANLINES==
-==SEASON==
-==SELECT_CANCEL_SUBMIT==
-==SELECT_DELETE_SUBMIT==
-==SELECT_DELIST_SUBMIT==
-==SELECT_MARK_SUBMIT==
-==SETUP_BUTTON==
-==SKIN_NAME==
-==SORT_SELECT==
-==SORT_TYPE_TOGGLE==
-==SOURCE==
-==START_CELL==
-==STATUS==
-==SYS_DISK_USED==
-==SYS_LOAD_AVG==
-==SYS_UPTIME==
-==TAB_TVID==
-==TITLE==
-==TITLE_SELECT==
-==TITLE_SIZE==
-==TVIDS==
-==TV_LISTING==
-==TV_MODE==
-==URL_BASE==
-==VERSION==
-==WATCHED_SELECT==
-==WATCHED_TOGGLE==
-==WEB_STATUS==
-==YEAR==
+Multi line form:
+
+[:IF(exp):]
+[:ELSE:]
+[:ENDIF:]
+
+Single line form
+
+[:IF(exp,text):]
+[:IF(exp,text,alternative_text):]
+
+==ELSEIF==
+see multiline [IF]
+==ELSE==
+see multiline [IF]
+==ENDIF==
+see multiline [IF]
+==EVAL==
+Compute a value and insert into html output
+Example:
+   td { width:[:EVAL($@poster_menu_img_width-2):]px; }
+
+==FONT_SIZE==
+Compute font_size relative to user configured font size.
+Examples:
+     {{{
+    .eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
+    td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
+    }}}

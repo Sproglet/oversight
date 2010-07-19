@@ -25,6 +25,10 @@ ovs_m_runtime_format="%d&nbsp;min"
 ovs_movie_filename=0
 ovs_age_field="filetime"
 
+ovs_get_posters=1
+ovs_get_fanart=1
+ovs_get_portraits=1
+
 ovs_tvid_delist=CLEAR
 ovs_tvid_delete=1111
 ovs_tvid_mark=RED

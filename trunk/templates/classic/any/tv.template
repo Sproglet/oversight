@@ -137,7 +137,12 @@ hr { color:#FBB917 }
                     </tr>
 
 <!-- </table> <table width="100%" class="transparent" > -->
-                    <tr><td colspan=2 align=left><hr><span class="plot" id=tvplot>&nbsp;[:PLOT:]</font></td><tr>
+                    <tr><td colspan=2 align=left><hr><span class="plot" id=tvplot>&nbsp;[:PLOT:]</span></td><tr>
+[:IF($@hd):]
+                    <tr><td colspan=2 align="left">[:ACTORS(rows=>2,cols=>7):]</td></tr>
+[:ELSE:]
+                    <tr><td colspan=2 align="left">[:ACTORS(rows=>1,cols=>2):]</td></tr>
+[:ENDIF:]
                 </table>
             </td>
         </tr>

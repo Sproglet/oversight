@@ -222,6 +222,15 @@ Array *split1ch(char *s_in,char *sep)
  */
 Array *splitstr(char *s_in,char *sep)
 {
+    return splitstr_max(s_in,sep,-1);
+}
+
+/*
+ * Split a strin s_in into an array using character ch.
+ * Max n parts. 0 = all parts.
+ */
+Array *splitstr_max(char *s_in,char *sep,int n)
+{
     Array *a = array_new(free);
     char *s = s_in;
     char *p;
@@ -234,7 +243,7 @@ Array *splitstr(char *s_in,char *sep)
     }
 
 
-    while ((p=strstr(s,sep)) != NULL ) {
+    while ((p=strstr(s,sep)) != NULL && n != 0 ) {
 
         char *part;
 
@@ -246,6 +255,8 @@ Array *splitstr(char *s_in,char *sep)
         array_add(a,part);
 
         s = p+seplen;
+
+        if (n>0) n--;
     }
     array_add(a,STRDUP(s));
 

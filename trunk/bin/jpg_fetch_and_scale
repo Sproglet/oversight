@@ -130,6 +130,13 @@ resize_img() {
             jpg_resize "$2" "$2" "1/1"
             jpg_resize "$2" "$base.thumb.jpg" "1/2"
             ;;
+        actor)
+            # donothing
+            true
+            ;;
+        *)
+            echo "$0: unknown image class [$1]"
+            ;;
     esac
     rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm" "$base.thumb.jpg.pnm"
 }
@@ -225,7 +232,7 @@ start_thread() {
     thread=$pid.$1
     INFO "Thread $pid starting ($$)"
     echo $pid > `thread_prefix`.pid
-    while process_queue "$Q.poster" 1 || process_queue "$Q.fanart" 0 ; do
+    while process_queue "$Q.poster" 1 || process_queue "$Q.actor" 1 ||  process_queue "$Q.fanart" 0 ; do
         true
     done
     INFO "Thread $pid stopping ($$)"

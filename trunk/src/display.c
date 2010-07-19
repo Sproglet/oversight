@@ -1266,14 +1266,13 @@ char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,c
 // Used for poster and fanart links.
 char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
-    assert(path);
     assert(alt_text);
     assert(attr);
 
     char *result;
 
 
-    if (!exists(path) ) {
+    if (path == NULL || !exists(path) ) {
         result = STRDUP(alt_text);
         HTML_LOG(0,"%s doesnt exist",path);
     } else {
@@ -1395,6 +1394,31 @@ char *check_path(char *format, ... ) {
     return p;
 }
 
+/**
+ * Get actor path.
+ * A DbItem row must be passed as this will contain infomation to find the correct
+ * oversight database. If using crossview.
+ */
+char *actor_image_path(DbItem *item,char *name_id)
+{
+    int free_path;
+
+    char *logical_path;
+    ovs_asprintf(&logical_path,"ovs:%s/%s%s%s.jpg",
+            DB_FLDID_ACTOR_LIST,
+            catalog_val("catalog_poster_prefix"),
+            (util_starts_with(name_id,"nm")?"":"nm"),
+            name_id);
+
+    char *result = get_path(item,logical_path,&free_path);
+    if (free_path) {
+        FREE(logical_path);
+    }
+
+    return result;
+
+}
+
 char *internal_image_path_static(DbItem *item,ImageType image_type)
 {
     // No pictures on filesystem - look in db
@@ -1406,9 +1430,11 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
     static char path[INTERNAL_IMAGE_PATH_LEN+1];
     path[INTERNAL_IMAGE_PATH_LEN] = '\0';
     char *p = path;
+
     p += sprintf(p,"ovs:%s/%s",
             (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
             catalog_val("catalog_poster_prefix"));
+
     char *t=item->title;
 
     if (t) {

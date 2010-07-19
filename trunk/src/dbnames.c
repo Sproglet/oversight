@@ -19,6 +19,7 @@
 // The file must be sorted.
 
 
+#define NAME_SEP "\t"
 #define DB_PERSON_NAME_SIZE 110
 #define PREFIX_LEN 3 // allow a bit more space to read start of next record when required \nnm0
 static char name_record[DB_PERSON_NAME_SIZE+PREFIX_LEN+1];
@@ -157,18 +158,38 @@ char *dbnames_fetch_static(char *key,char *file)
         if (f) {
             result = dbnames_fetch_chop_static(key,f,0,st.st_size);
 
-            // Remove trailing \n \r
-            char *p = result+strlen(result);
-            if (result) {
-                if ((p=strchr(result,'\n')) != NULL) {
-                    *p = '\0';
-                }
-            }
+            chomp(result);
 
             fclose(f);
         }
     }
     HTML_LOG(1,"dbnames_fetch_chop_static[%s]=[%s]",key,result);
 
+    return result;
+}
+
+/**
+ * Return actor information
+ * [0]=id
+ * [1]=name
+ * [2]=image url
+ */
+Array *dbnames_fetch(char *key,char *file) 
+{
+    Array *result = NULL;
+    char *record = dbnames_fetch_static(key,file);
+    if (record) {
+
+        // Find character after key and use as seperator
+        char *p = strstr(record,key);
+        if (p) {
+            result = splitstr(record,NAME_SEP);
+            if (result->size != 2 && result->size != 3) {
+                HTML_LOG(0,"Bad actor info [%s]",record);
+                array_free(result);
+                result = NULL;
+            }
+        }
+    }
     return result;
 }

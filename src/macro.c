@@ -1046,8 +1046,11 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
 }
 
 /*
+ *
+ * =begin wiki
+ * ==GRID==
  * Grid Macro has format
- * GRID(rows=>r,cols=>c,img_height=300,img_width=200,offset=0,page_size=50);
+ * [:GRID(rows=>r,cols=>c,img_height=>300,img_width=>200,offset=>0,page_size=>50):]
  *
  * All parameters are optional.
  * rows,cols            = row and columns of thumb images in the grid (defaults to config file settings for that view)
@@ -1060,16 +1063,17 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
  * XX
  *
  * This could be two grids
- * GRID(rows=>1,cols=>4,offset=0);
- * GRID(rows=>2,cols=>2,offset=4);
+ * [:GRID(rows=>1,cols=>4,offset=>0):]
+ * [:GRID(rows=>2,cols=>2,offset=>4):]
  *
  * In this secnario oversight also needs to know which is the last grid on the page, so it can add the page navigation to 
  * the correct grid. As the elements may occur in
  * any order in the template, this would either require two passes of the template, or the user to indicate the 
  * last grid. I took the easy option , so the user must spacify the total thumbs on the page.
  *
- * GRID(rows=>1,cols=>4,offset=0);
- * GRID(rows=>2,cols=>2,offset=4,last=1);
+ * [:GRID(rows=>1,cols=>4,offset=>0):]
+ * [:GRID(rows=>2,cols=>2,offset=>4,last=>1):]
+ * =end wiki
  */
 static GridInfo *grid_info=NULL; // At the moment only one Grid(multi segments) per page.
 
@@ -1615,6 +1619,16 @@ char *macro_fn_select_cancel_submit(MacroCallInfo *call_info) {
     }
     return result;
 }
+
+/*
+ * =begin wiki
+ * ==EXTERNAL_URL==
+ *
+ * Display a link to IMDB, if person=id is present then a person link otherwise a title link.
+ *
+ * [:EXTERNAL_URL:]
+ * =end wiki
+ */
 char *macro_fn_external_url(MacroCallInfo *call_info) {
     char *result=NULL;
     if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
@@ -1622,16 +1636,29 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
         return "?";
     }
     if (!g_dimension->local_browser){
-        char *url=call_info->sorted_rows->rows[0]->url;
-        if (url != NULL) {
-            char *image=get_theme_image_tag("upgrade"," alt=External ");
-            char *website="";
-            if (util_starts_with(url,"tt")) {
-                website = "http://www.imdb.com/title/";
+        char *image=get_theme_image_tag("upgrade"," alt=External ");
+        char *person=query_val(QUERY_PARAM_PERSON);
+        char *website="";
+
+        if (!EMPTY_STR(person)) {
+
+            // Person link
+            ovs_asprintf(&result,"<a href=\"http://www.imdb.com/name/%s%s\">%s</a>",
+                    (util_starts_with(person,"nm")?"":"nm"),
+                    person,
+                    image);
+        } else {
+
+            // Title link
+            char *url=call_info->sorted_rows->rows[0]->url;
+            if (url != NULL) {
+                if (util_starts_with(url,"tt")) {
+                    website = "http://www.imdb.com/title/";
+                }
+                ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
             }
-            ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
-            FREE(image);
         }
+        FREE(image);
     }
     return result;
 }
@@ -1810,6 +1837,9 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
 
 
 /**
+ * =begin wiki
+ *
+ * ==IF==
  * Multi line form:
  *
  * [:IF(exp):]
@@ -1820,6 +1850,8 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
  *
  * [:IF(exp,text):]
  * [:IF(exp,text,alternative_text):]
+ *
+ * ==end wiki
  *
  */
 char *macro_fn_if(MacroCallInfo *call_info)
@@ -1845,6 +1877,12 @@ char *macro_fn_if(MacroCallInfo *call_info)
     }
     return NULL;
 }
+/*
+ * =begin wiki
+ * ==ELSEIF==
+ * see multiline [IF]
+ * ==end wiki
+ */
 char *macro_fn_elseif(MacroCallInfo *call_info)
 {
     char *result = NULL;
@@ -1859,6 +1897,12 @@ char *macro_fn_elseif(MacroCallInfo *call_info)
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==ELSE==
+ * see multiline [IF]
+ * ==end wiki
+ */
 char *macro_fn_else(MacroCallInfo *call_info) {
 
     char *result = NULL;
@@ -1871,6 +1915,12 @@ char *macro_fn_else(MacroCallInfo *call_info) {
 
     return result;
 }
+/*
+ * =begin wiki
+ * ==ENDIF==
+ * see multiline [IF]
+ * ==end wiki
+ */
 char *macro_fn_endif(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->args && call_info->args->size ) {
@@ -1882,16 +1932,33 @@ char *macro_fn_endif(MacroCallInfo *call_info) {
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==EVAL==
+ * Compute a value and insert into html output
+ * Example:
+   td { width:[:EVAL($@poster_menu_img_width-2):]px; }
+ * ==end wiki
+ */
 char *macro_fn_eval(MacroCallInfo *call_info)
 {
     call_info->free_result = 1;
     return numeric_constant_arg_to_str(0,call_info->args);
 }
 
-char *macro_fn_number(MacroCallInfo *call_info)
-{
-    return numeric_constant_arg_to_str(0,call_info->args);
-}
+/*
+ * =begin wiki
+ *
+ * ==FONT_SIZE==
+ * Compute font_size relative to user configured font size.
+ * Examples:
+     {{{
+    .eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
+    td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
+    }}}
+ * ==end wiki
+ */
+
 char *macro_fn_font_size(MacroCallInfo *call_info)
 {
     return numeric_constant_arg_to_str(g_dimension->font_size,call_info->args);
@@ -2211,7 +2278,6 @@ void macro_init() {
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
-        hashtable_insert(macros,"NUMBER",macro_fn_number);
         hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);

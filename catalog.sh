@@ -177,6 +177,7 @@ if [ -z "$*" ] ; then
              [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN]
              [GET_POSTERS] [UPDATE_POSTERS]
              [GET_FANART] [UPDATE_FANART]
+             [GET_PORTRAITS] [UPDATE_PORTRAITS]
              ..folders..
 ____________________________________________________________________________________________________________________    
 To simply index all files in a folder:
@@ -204,6 +205,8 @@ Other options
     UPDATE_POSTERS- Fetch new posters for each scanned item.
     GET_FANART     - Download fanart
     UPDATE_FANART - Fetch new fanart for each scanned item.
+    GET_PORTRAITS    - Download actor portraits
+    UPDATE_PORTRAITS - Fetch new actor portrait for each scanned item.
 USAGE
     exit 0
 fi
@@ -307,6 +310,8 @@ update_imdb_list() {
         mv "$dnew.new" "$dold" &&\
         PERMS "$dold" &&\
         rm -f "$dnew"
+        # convert colons to tabs
+        sed -i 's/\(^nm.......\):/\1\t/' "$dold"
     fi
      
     set +x

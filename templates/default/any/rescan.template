@@ -42,10 +42,13 @@ body { font-size:20; font-family:"arial"; color:white; }
                     </td>
                     <td align=left>
                         <table>
-                            <tr><td><input type=checkbox name=rescan_opt_GET_POSTERS checked>get posters</td></tr>
+                            <tr><td>
+                                <input type=checkbox name=rescan_opt_GET_POSTERS [:IF($ovs_get_posters,checked):] >get posters</td></tr>
                             <tr><td align=right><input type=checkbox name=rescan_opt_UPDATE_POSTERS>overwrite</td></tr>
-                            <tr><td><input type=checkbox name=rescan_opt_GET_FANART checked>get fanart</td></tr>
+                            <tr><td><input type=checkbox name=rescan_opt_GET_FANART [:IF($ovs_get_fanart,checked):] >get fanart</td></tr>
                             <tr><td align=right><input type=checkbox name=rescan_opt_UPDATE_FANART>overwrite</td></tr>
+                            <tr><td><input type=checkbox name=rescan_opt_GET_PORTRAITS [:IF($ovs_get_portraits,checked):] >get portraits</td></tr>
+                            <tr><td align=right><input type=checkbox name=rescan_opt_UPDATE_PORTRAITS>overwrite</td></tr>
                         </table>
                         <hr>
 <!--

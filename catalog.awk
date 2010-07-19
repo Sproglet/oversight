@@ -210,8 +210,10 @@ BEGIN {
     UPDATE_MOVIES=1;
     GET_POSTERS=0;
     GET_FANART=0;
+    GET_PORTRAITS=0;
     UPDATE_POSTERS=0;
     UPDATE_FANART=0;
+    UPDATE_PORTRAITS=0;
 
     g_api_tvdb="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
     g_api_tmdb="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
@@ -475,14 +477,6 @@ END{
     load_catalog_settings();
 
     split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep);
-
-    if (g_settings["catalog_fetch_posters"] == "yes") {
-        GET_POSTERS=1;
-    }
-
-    if (g_settings["catalog_fetch_fanart"] == "yes") {
-        GET_FANART=1;
-    }
 
 #    split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep);
 #    g_tv_plugin_list = g_tv_plugin_list[1];
@@ -6140,32 +6134,13 @@ poster_url,backdrop_url,xmlp,url,tagfilter,xml) {
 
         #poster_url = bingimg(gTitle[idx]" "g_year[idx]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
-        if (1) {
             # Get posters from TMDB usiong the API. Unfortunately this doesnt expose poster rating.
-            if (poster_url == "" && getting_poster(idx,1) ) {
-                poster_url = get_moviedb_img(imdb_id,"poster","mid");
-            }
+        if (poster_url == "" && getting_poster(idx,1) ) {
+            poster_url = get_moviedb_img(imdb_id,"poster","mid");
+        }
 
-            if (getting_fanart(idx,1) ) {
-                backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
-            }
-        } else {
-#DELETE#            # Get highest rated posters by scraping the html
-#DELETE#            xmlp="/OpenSearchDescription/movies/movie/url";
-#DELETE#            url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_api_tmdb"/"imdb_id;
-#DELETE#            if (fetch_xml_single_child(url,"tmdb",xmlp,tagfilter,xml)) {
-#DELETE#                dump(0,"tmdb",xml);
-#DELETE#                url = xml[xmlp];
-#DELETE#                if (poster_url == "" && getting_poster(idx,1) ) {
-#DELETE#                    poster_url = scanPageFirstMatch(url,"/posters/","http:"g_nonquote_regex"+/posters/"g_nonquote_regex"+(jpg|png)",1);
-#DELETE#                    sub(/-cover\./,"-original.",poster_url);
-#DELETE#                }
-#DELETE#                if (getting_fanart(idx,1) ) {
-#DELETE#                    backdrop_url = scanPageFirstMatch(url,"/backdrops/","http:"g_nonquote_regex"+/backdrops/"g_nonquote_regex"+(jpg|png)",1);
-#DELETE#                }
-#DELETE#            }
-            i=i;
-            
+        if (getting_fanart(idx,1) ) {
+            backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
         }
 
         if (poster_url == "") {
@@ -6236,7 +6211,6 @@ search_url,txt,xml,f,url,url2) {
 
                 delete xml;
                 parseXML(txt,xml);
-                dump(0,"image",xml);
                 if (xml["/image#type"] == type && xml["/image#size"] == size ) {
                     url2=url_encode(html_decode(xml["/image#url"]));
                     if (exec("wget "g_wget_opts" --spider "url2) == 0 ) {
@@ -6564,6 +6538,12 @@ count,fcount,i,parts,start) {
     return 0+count;
 }
 
+#Get highest quality imdb image by removing dimension info
+function imdb_img_url(url) {
+    sub(/\._S[XY][0-9]+_S[XY][0-9]+_/,"",url);
+    return url;
+}
+
 # isection tracks sections found. This helps alert us to IMDB changes.
 function scrape_imdb_line(line,imdbContentPosition,idx,f,isection,\
 title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country) {
@@ -6622,11 +6602,9 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             if ((i=index(line,"a name=\"poster\"")) > 0) {
                 poster_imdb_url = extractAttribute(substr(line,i-1),"img","src");
                 if (poster_imdb_url != "") {
-                    #Get high quality one
-                    sub(/\._SX[0-9]{2,3}_SY[0-9]{2,3}_/,"",poster_imdb_url);
 
                     #Save it for later. 
-                    g_imdb_img[idx]=poster_imdb_url;
+                    g_imdb_img[idx]=imdb_img_url(poster_imdb_url);
                     DEBUG("IMDB: Got imdb poster ["g_imdb_img[idx]"]");
                 }
                 sec=POSTER;
@@ -6708,7 +6686,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 if (orig_country_pos > 0 ) {
                     if (aka_title_country == "" ||  orig_country_pos <= aka_country_pos ) {
                         adjustTitle(idx,gOriginalTitle[idx],"imdb_orig"); 
-                        INF("TODO DELETE READJUST TITLE=["gOriginalTitle[idx]"]");
                     }
                 }
             }
@@ -6721,27 +6698,62 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
 }
 
 function get_names(name_db,text,maxnames,\
-dtext,dpos,dnum,i,id,name,dlist,count) {
-    dnum = get_regex_pos(text,"(/nm[0-9]+|>[^<]+</a>)",0,dtext,dpos);
+dtext,dpos,dnum,i,id,name,dlist,count,img) {
+    # Extract nm0000 text OR anchor text(actor name) OR jpg url
+    dnum = get_regex_pos(text,"(/nm[0-9]+|>[^<]+</a>|"g_nonquote_regex"+\\.jpg)",0,dtext,dpos);
     for(i = 1 ; i <= dnum ; i++ ) {
-        INF(name_db"["dtext[i]"]");
-        if (substr(dtext[i],1,3) == "/nm" ) {
+        #INF(name_db"["dtext[i]"]");
+
+        if (dtext[i] ~ "jpg$") {
+
+            img = imdb_img_url(dtext[i]);
+
+        } else if (substr(dtext[i],1,3) == "/nm" ) {
+
             id=substr(dtext[i],2);
 
         } else if (id ) {
-            # Extract name from <a> tag
-            name=extractTagText("<a"dtext[i],"a");
-            dlist=dlist ","id;
-            print id":"name > g_tmp_dir"/"name_db".db."PID  ;
+            if (index(dlist,","id) == 0) {
+                # Extract name from <a> tag
+                name=extractTagText("<a"dtext[i],"a");
+                dlist=dlist ","id;
+                print id"\t"name > g_tmp_dir"/"name_db".db."PID  ;
+
+                INF(name_db"|"id"|"name"|"img);
+
+                # Seems to have a lot of portraits
+                if (img == "") {
+                    img = "http://www.turkcealtyazi.org/film/images/"id".jpg";
+                    # http://ownfilmcollection.com/ERaImage/DCimages/name/nm2652511.jpg
+                }
+
+                get_image(id,img,APPDIR"/db/global/_A/"g_settings["catalog_poster_prefix"] id".jpg");
+                count++;
+                if (maxnames+0 > 0 && count+0 >= maxnames+0) {
+                    break;
+                }
+            }
             id="";
-            count++;
-            if (maxnames+0 > 0 && count+0 >= maxnames+0) {
-                break;
+            img="";
+        }
+    }
+    #INF(name_db":"dlist);
+    return substr(dlist,2);
+}
+
+function get_image(id,url,file,\
+ret) {
+    ret = 0;
+    if (url && GET_PORTRAITS && !(id in g_portrait)) {
+        if (UPDATE_PORTRAITS || !hasContent(file) ) {
+            if (preparePath(file) == 0) {
+                g_portrait[id]=1;
+                #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
+                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "PID" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\" &");
             }
         }
     }
-    INF("directors"dlist);
-    return substr(dlist,2);
+    return ret;
 }
 
 function extract_imdb_title_category(idx,title\
@@ -7835,6 +7847,13 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "UPDATE_FANART" )  {
             UPDATE_FANART=1;
             GET_FANART=1;
+            moveDown++;
+        } else if (ARGV[i] == "GET_PORTRAITS" )  {
+            GET_PORTRAITS=1;
+            moveDown++;
+        } else if (ARGV[i] == "UPDATE_PORTRAITS" )  {
+            UPDATE_PORTRAITS=1;
+            GET_PORTRAITS=1;
             moveDown++;
         } else if (ARGV[i] == "NEWSCAN" )  {
             NEWSCAN=1;

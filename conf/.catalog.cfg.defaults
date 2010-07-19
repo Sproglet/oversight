@@ -32,8 +32,6 @@ catalog_nfo_write="never"
 #catalog_nfo_format="xmbc|flat"
 catalog_nfo_format="xmbc"
 
-catalog_fetch_posters="yes"
-catalog_fetch_fanart="yes"
 catalog_poster_prefix="ovs_"
 
 catalog_format_tags="bd,dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,avchd,blu720p,blu1080p,bluray,brrip,dsrip,img,hdtv,pal\>,ntsc\>,pdtv,r5,repost,screener,workprint,ws\>,x264,xvid,yenc,par2,remaster,download,subtitle,720x,1280x,1920x"

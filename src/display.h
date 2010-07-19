@@ -69,4 +69,5 @@ void query_pop();
 void set_selected_item();
 char *get_selected_item();
 char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,char *font_class,char *cell_no_txt);
+char *actor_image_path(DbItem *item,char *name_id);
 #endif

@@ -37,6 +37,7 @@ img.nasstatus { width:15; height:15; }
 
             <td width=5%>[:ICON(catalog):]</td>
             <td align=left width=28%>
+                [:CONFIG_LINK(oversight.cfg,rescan.help,Rescan Defaults):]<br>
                 [:CONFIG_LINK(catalog.cfg,input.help,Media Sources):]<br>
                 [:CONFIG_LINK(catalog.cfg,detect.help,Scraping):]<br>
                 [:CONFIG_LINK(catalog.cfg,output.help,Renaming):]<br>

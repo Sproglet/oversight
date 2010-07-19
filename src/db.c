@@ -175,14 +175,6 @@ TRACE;
 TRACE;
     db->locked_by_this_code=0;
 
-    // Test code
-#ifdef UNIT_TEST
-    char *actor=query_val("actors");
-    if (!EMPTY_STR(actor)) {
-        HTML_LOG(0,"actor [%s] = [%s]",actor,dbnames_fetch_static(actor,db->actors_file));
-    }
-#endif
-
     if (STRCMP(db->source,"*") == 0) {
         g_local_db = db;
     }

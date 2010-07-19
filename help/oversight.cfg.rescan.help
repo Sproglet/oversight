@@ -1,0 +1,4 @@
+ovs_get_posters:Download DVD posters (default option)|1|0
+ovs_get_fanart:Download fanart (default option)|1|0
+ovs_get_portraits:Download actor portraits (default option)|1|0
+

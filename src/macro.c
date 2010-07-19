@@ -208,7 +208,49 @@ char *macro_fn_mount_status(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_poster(MacroCallInfo *call_info) {
+/**
+ * Return Actor Image tag. additional tag attributes can be passed as argument.
+ * [:ACTOR_IMAGE:]
+ * [:ACTOR_IMAGE(attributes):]
+ *
+ * Example:
+ * [:ACTOR_IMAGE(height="100px"):]
+ *
+ */
+char *macro_fn_actor_image(MacroCallInfo *call_info)
+{
+    char *attr = "";
+    char *result = NULL;
+    char *name_id = query_val(QUERY_PARAM_PERSON);
+    if (!EMPTY_STR(name_id)) {
+
+        // We need one DbItem to get Db information if we need to mount crossview etc.
+        DbItem *item = NULL;
+        if (call_info->sorted_rows->num_rows) {
+            item = call_info->sorted_rows->rows[0];
+
+            //Get class info from parameter
+            
+            if (call_info->args && call_info->args->size ) {
+                attr=(char *)call_info->args->array[0];
+            }
+            char *path = actor_image_path(item,name_id);
+
+            Array *name_info = dbnames_fetch(name_id,item->db->actors_file);
+
+            result = get_local_image_link(path,"",attr);
+
+            FREE(path);
+            array_free(name_info);
+        } else {
+            HTML_LOG(0,"no db row to get actor info");
+        }
+    }
+    return result;
+}
+
+char *macro_fn_poster(MacroCallInfo *call_info)
+{
     char *result = NULL;
 
     if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
@@ -1767,6 +1809,19 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
 }
 
 
+/**
+ * Multi line form:
+ *
+ * [:IF(exp):]
+ * [:ELSE:]
+ * [:ENDIF:]
+ *
+ * Single line form
+ *
+ * [:IF(exp,text):]
+ * [:IF(exp,text,alternative_text):]
+ *
+ */
 char *macro_fn_if(MacroCallInfo *call_info)
 {
     long l = numeric_constant_eval_first_arg(0,call_info->args);
@@ -1976,24 +2031,20 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                     i = r * cols + c;
                     if (  i < group->dbgi_size ) {
                         char id[10];
-                        char *name;
 
                         sprintf(id, "%s%07d",NVL(group->prefix),group->dbgi_ids[i]);
 
-                        name=dbnames_fetch_static(id,name_file);
+                        Array *name_info=dbnames_fetch(id,name_file);
+                        if (name_info) {
 
-                        if (name) {
-                            char *colon = strchr(name,':');
-                            if (colon) name = colon+1;
-                        } else {
-                            name = id;
+                            char *link = get_person_drilldown_link(VIEW_PERSON,id+prefix_len,"",name_info->array[1],"","");
+
+                            //At present name is "nm0000000:First Last" but this may 
+                            //change.
+                            array_add(out,link);
+
+                            array_free(name_info);
                         }
-
-                        char *link = get_person_drilldown_link(VIEW_PERSON,id+prefix_len,"",name,"","");
-
-                        //At present name is "nm0000000:First Last" but this may 
-                        //change.
-                        array_add(out,link);
 
                     }
 
@@ -2031,9 +2082,9 @@ char *macro_fn_actor_name(MacroCallInfo *call_info)
     char *id=query_val(QUERY_PARAM_PERSON);
     if (!EMPTY_STR(id)) {
         Db *db = firstdb(call_info);
-        char *name = dbnames_fetch_static(id,db->actors_file);
-        if (name) {
-            result = strstr(name,id) + strlen(id) + 1;
+        Array *actor_info = dbnames_fetch(id,db->actors_file);
+        if (actor_info) {
+            result = actor_info->array[1];
         } else {
             result = id;
         }
@@ -2113,6 +2164,7 @@ void macro_init() {
         hashtable_insert(macros,"ACTORS",macro_fn_actors);
         hashtable_insert(macros,"ACTOR_NAME",macro_fn_actor_name);
         hashtable_insert(macros,"ACTOR_ID",macro_fn_actor_id);
+        hashtable_insert(macros,"ACTOR_IMAGE",macro_fn_actor_image);
         hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);

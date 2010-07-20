@@ -458,6 +458,7 @@ int chomp(char *str) {
     return i;
 }
 
+
 // Return substr within buf if it is preceeded by prefix and followed by suffix.
 // if match_start is true the prefix is not required at the start.
 // if match_end is true the suffix is not required at the end.
@@ -834,29 +835,52 @@ int util_starts_with_ignore_case(char *a,char *b)
     return *b == '\0';
 }
 
-void util_rmdir(char *path,char *name)
+// recursive delete
+int util_rm(char *path)
 {
-    char *full_path;
-    ovs_asprintf(&full_path,"%s/%s",path,name);
-    if (is_dir(full_path)) {
-        DIR *d = opendir(full_path);
-        if (d) {
-            struct dirent *dp;
-            while((dp = readdir(d)) != NULL) {
-                if(STRCMP(dp->d_name,".") != 0 && STRCMP(dp->d_name,"..") != 0) {
-                    util_rmdir(full_path,dp->d_name);
+
+    int result=-1;
+    struct stat st;
+    stat(path,&st);
+
+    if (S_ISREG(st.st_mode)) {
+
+        result = unlink(path);
+        HTML_LOG(1,"unlink [%s] = %d",path,result);
+
+    } else if (S_ISDIR(st.st_mode)) {
+
+        result = 0;
+        DIR *d = opendir(path);
+        if (d == NULL) {
+
+            result = errno;
+
+        } else {
+
+            struct dirent *sub ;
+
+            while(result == 0 && (sub = readdir(d)) != NULL) {
+
+                if (sub->d_type == DT_REG ||
+                    (sub->d_type == DT_DIR && strcmp(sub->d_name,".") && strcmp(sub->d_name,".."))) {
+                    char *tmp;
+                    ovs_asprintf(&tmp,"%s/%s",path,sub->d_name);
+                    result = util_rm(tmp);
+                    FREE(tmp);
                 }
             }
             closedir(d);
-            HTML_LOG(1,"rmdir [%s]",full_path);
-            rmdir(full_path);
+
+            if (result == 0) {
+                result = rmdir(path);
+            }
         }
-    } else {
-        HTML_LOG(1,"unlink [%s]",full_path);
-        unlink(full_path);
+        HTML_LOG(1,"rmdir [%s] = %d",path,result);
     }
-    FREE(full_path);
+    return result;
 }
+
 int count_chr(char *str,char c)
 {
     int count = 0;
@@ -870,14 +894,14 @@ int count_chr(char *str,char c)
     return count;
 }
 
-int exists_file_in_dir(char *dir,char *name)
+int exists_in_dir(char *dir,char *name)
 {
 
     char *filename;
     int result = 0;
 
     ovs_asprintf(&filename,"%s/%s",dir,name);
-    result = is_file(filename);
+    result = exists(filename);
     FREE(filename);
     return result;
 }

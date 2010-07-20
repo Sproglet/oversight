@@ -3782,7 +3782,7 @@ char *get_status()
 
     if (result == NULL) {
 
-        if (exists_file_in_dir(tmpDir(),"cmd.pending")) {
+        if (exists_in_dir(tmpDir(),"cmd.pending")) {
             result = STRDUP("Scanning...");
         } else if (local_db_size() == 0) {
             result = STRDUP("Database empty. Goto [Setup]&gt;media sources and rescan.");

@@ -59,13 +59,14 @@ char *get_date_static(DbItem *item);
 DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num);
 static inline void set_drilldown_view(DbItem *item);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
-static char *get_drilldown_name(char *root_name,int num_prefix);
+static char *get_drilldown_name_static(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
 void get_watched_counts(DbItem *item,int *watchedp,int *unwatchedp);
 char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *image_source(char *subfolder,char *image_name,char *ext);
+int is_drilldown_of(char *param_name,char *root_name) ;
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -290,26 +291,6 @@ char *remove_blank_params(char *input)
 }
 
 
-/*
- * True if param_name ~ ^DRILLDOWN_CHAR*root$
- * eg. @@@p is_drilldown_of p
- * @returns 0(no match) , 1=exact match , else 1+number of DRILLDOWN_CHAR
- */
-
-int is_drilldown_of(char *param_name,char *root_name) 
-{
-    int result=0;
-    char *p=param_name;
-    while (*p && *p == DRILLDOWN_CHAR ) {
-        p++;
-    }
-    if ( STRCMP(p,root_name) ==0 ) {
-        result = (p-param_name)+1;
-    }
-    //HTML_LOG(0,"is_drilldown_of(%s,%s)=%d",param_name,root_name,result);
-    return result;
-}
-
 static char *self_url2(char *q1,char *q2)
 {
 
@@ -386,7 +367,10 @@ char *drill_down_url(char *new_params)
                 struct hashtable_itr *itr;
                 char *qname;
                 char *qval;
-                int min_depth = 0; // we need to track the item with fewest DRILLDOWN_CHAR and remove it
+                int min_depth = 0;
+                // we need to track the item with fewest DRILLDOWN_CHAR and remove it
+                // eg @p=1&@@q=2 becomes
+                // eg @@p=1&@@@q=2 becomes
 
 
                 for(itr=hashtable_loop_init(g_query) ; hashtable_loop_more(itr,&qname,&qval) ; ) {
@@ -400,10 +384,13 @@ char *drill_down_url(char *new_params)
                         int free_val;
                         char *encoded_val = url_encode_static(qval,&free_val);
 
-                        ovs_asprintf(&tmp,"%s%s%c%s=%s",
+                        char *new_name = get_drilldown_name_static(param_name,depth);
+
+                        ovs_asprintf(&tmp,"%s%s%s=%s",
                                     NVL(new_drilldown_params),
                                     (new_drilldown_params?"&":""),
-                                    DRILLDOWN_CHAR,qname,encoded_val);
+                                    new_name,encoded_val);
+
                         FREE(new_drilldown_params);
                         new_drilldown_params = tmp;
 
@@ -417,7 +404,7 @@ char *drill_down_url(char *new_params)
                 }
                 // Find item with fewest prefix. If it is not in the new_params then remove it
                 if (min_depth) {
-                    char *top_name = get_drilldown_name(param_name,min_depth-1);
+                    char *top_name = get_drilldown_name_static(param_name,min_depth-1);
 
                     if (!delimited_substring(new_params,"&",top_name,"&=",1,1)) {
                         char *tmp;
@@ -425,8 +412,6 @@ char *drill_down_url(char *new_params)
                         FREE(new_drilldown_params);
                         new_drilldown_params = tmp;
                     }
-
-                    FREE(top_name);
                 }
             }
         }
@@ -493,7 +478,7 @@ char *return_query_string()
                     if (depth > 1) {
                         char *tmp;
 
-                        char *new_name = qname + 1;
+                        char *new_name = get_drilldown_name_static(param_name,depth -2);
 
                         int free_val;
                         char *encoded_val = url_encode_static(qval,&free_val);
@@ -512,7 +497,7 @@ char *return_query_string()
                 // if p=1&@p=2&@@p=3 becomes p=2&@p=3 we need to add @@p=
                 if (max_depth > 0 ) {
                     int num_prefix = max_depth - 1;
-                    char *last_name = get_drilldown_name(param_name,num_prefix);
+                    char *last_name = get_drilldown_name_static(param_name,num_prefix);
 
                     char *tmp;
                     ovs_asprintf(&tmp,"&%s=",last_name);
@@ -618,16 +603,63 @@ char *return_url() {
     return final;
 }
 
-static char *get_drilldown_name(char *root_name,int num_prefix)
+#define NEW_DRILLDOWN_STYLE
+static char *get_drilldown_name_static(char *root_name,int num_prefix)
 {
-    char *name = MALLOC(num_prefix + strlen(root_name) + 5 ) ;
+#define MAX_PARAM_NAME_LEN 30
+    static char name[MAX_PARAM_NAME_LEN];
+   
+#ifdef NEW_DRILLDOWN_STYLE
+    int i;
+    if (num_prefix) {
+        i =sprintf(name,"%c%c%s",DRILLDOWN_CHAR, 'A' + num_prefix -1 , root_name );
+    } else {
+        i =sprintf(name,"%s", root_name );
+    }
+    assert(i <= MAX_PARAM_NAME_LEN);
+#else
+
     int i;
     for( i = 0 ; i < num_prefix ; i++ ) {
         name[i] = DRILLDOWN_CHAR;
     }
     strcpy(name+i,root_name);
+#endif
     return name;
 }
+/*
+ * True if param_name ~ ^DRILLDOWN_CHAR*root$
+ * eg. @@@p is_drilldown_of p
+ * @returns 0(no match) , 1=exact match , else 1+number of DRILLDOWN_CHAR
+ */
+
+int is_drilldown_of(char *param_name,char *root_name) 
+{
+#ifdef NEW_DRILLDOWN_STYLE
+    int result=1;
+    char *p=param_name;
+    if (*p == DRILLDOWN_CHAR) {
+        p++;
+        result=*p-'A'+2;
+        p++;
+    } 
+    if (STRCMP(p,root_name) != 0) {
+        result = 0;
+    }
+#else
+    int result=0;
+    char *p=param_name;
+    while (*p && *p == DRILLDOWN_CHAR ) {
+        p++;
+    }
+    if ( STRCMP(p,root_name) ==0 ) {
+        result = (p-param_name)+1;
+    }
+#endif
+    //HTML_LOG(0,"is_drilldown_of(%s,%s)=%d",param_name,root_name,result);
+    return result;
+}
+
 
 /**
  * link with all drilldown info removed
@@ -2480,7 +2512,7 @@ char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "@NAME@&"QUERY_PARAM_SEASON"=@SEASON@&@"QUERY_PARAM_SELECTED"=@CELLNO@",
+            QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "@NAME@&"QUERY_PARAM_SEASON"=@SEASON@&@CELLNO_PARAM@=@CELLNO@",
             "@ATTR@","@TITLE@","@FONT_CLASS@");
     }
     char season_txt[9];
@@ -2495,6 +2527,7 @@ char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char
             "@SEASON@",season_txt,
             "@ATTR@",attr,
             "@TITLE@",title,
+            "@CELLNO_PARAM@",get_drilldown_name_static(QUERY_PARAM_SELECTED,1),
             "@CELLNO@",cell_no_txt,
             "@FONT_CLASS@",font_class,
             NULL);
@@ -2512,7 +2545,7 @@ char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *tit
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "@NAME@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
+                QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "@NAME@&@CELLNO_PARAM@=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
     }
 
     int free_name2;
@@ -2524,6 +2557,7 @@ char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *tit
             "@ATTR@",attr,
             "@TITLE@",title,
             "@FONT_CLASS@",font_class,
+            "@CELLNO_PARAM@",get_drilldown_name_static(QUERY_PARAM_SELECTED,1),
             "@CELLNO@",cell_no_txt,
             NULL);
 
@@ -2540,7 +2574,7 @@ char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *titl
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-               QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
+               QUERY_PARAM_VIEW "=@VIEW@&p=&idlist=@IDLIST@&@CELLNO_PARAM@=@CELLNO@","@ATTR@","@TITLE@","@FONT_CLASS@");
     }
 
     result = replace_all_str(link_template,
@@ -2549,6 +2583,7 @@ char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *titl
             "@ATTR@",attr,
             "@TITLE@",title,
             "@FONT_CLASS@",font_class,
+            "@CELLNO_PARAM@",get_drilldown_name_static(QUERY_PARAM_SELECTED,1),
             "@CELLNO@",cell_no_txt,
             NULL);
 
@@ -2563,7 +2598,7 @@ char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,ch
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-               QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_PERSON"=@ID@&@"QUERY_PARAM_SELECTED"=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
+               QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_PERSON"=@ID@&@CELLNO_PARAM@=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
     }
 
     result = replace_all_str(link_template,
@@ -2572,6 +2607,7 @@ char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,ch
             "@ATTR@",attr,
             "@NAME@",name,
             "@FONT_CLASS@",font_class,
+            "@CELLNO_PARAM@",get_drilldown_name_static(QUERY_PARAM_SELECTED,1),
             "@CELLNO@",cell_no_txt,
             NULL);
 

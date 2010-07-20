@@ -400,13 +400,12 @@ char *drill_down_url(char *new_params)
                         int free_val;
                         char *encoded_val = url_encode_static(qval,&free_val);
 
-                        if (new_drilldown_params == NULL) {
-                            ovs_asprintf(&new_drilldown_params,"%c%s=%s",DRILLDOWN_CHAR,qname,encoded_val);
-                        } else {
-                            ovs_asprintf(&tmp,"%s&%c%s=%s",new_drilldown_params,DRILLDOWN_CHAR,qname,encoded_val);
-                            FREE(new_drilldown_params);
-                            new_drilldown_params = tmp;
-                        }
+                        ovs_asprintf(&tmp,"%s%s%c%s=%s",
+                                    NVL(new_drilldown_params),
+                                    (new_drilldown_params?"&":""),
+                                    DRILLDOWN_CHAR,qname,encoded_val);
+                        FREE(new_drilldown_params);
+                        new_drilldown_params = tmp;
 
                         if (free_val) FREE(encoded_val);
 

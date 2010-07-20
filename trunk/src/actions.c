@@ -125,11 +125,12 @@ void delete_media(DbItem *item,int delete_related) {
     HTML_LOG(1,"%s %d begin delete_media",__FILE__,__LINE__);
     if(is_dvd_folder(item->file)) {
         // VIDEO_TS
-        if (!exists_file_in_dir(item->file,"video_ts") &&  !exists_file_in_dir(item->file,"VIDEO_TS")) {
-            HTML_LOG(0,"folder doesnt look like dvd floder");
+        if (!exists_in_dir(item->file,"video_ts") &&  !exists_in_dir(item->file,"VIDEO_TS") && 
+             !exists_in_dir(item->file,"bdmv") &&  !exists_in_dir(item->file,"BDMV") ) {
+            HTML_LOG(0,"folder [%s] doesnt look like dvd folder");
             return;
         }
-        util_rmdir(item->file,".");
+        util_rm(item->file);
         names_to_delete = array_new(free);
     } else {
 
@@ -307,7 +308,8 @@ void delete_queue_delete() {
            if (is_dir(k)) {
                if (count_chr(k,'/') > 2) {
                    HTML_LOG(0,"delete_queue_delete: folder [%s]",k);
-                   rmdir(k); // silently fail if folder is not empty.
+
+                   rmdir(k); // silently fail if folder is not empty. - Dont use recursive fn util_rm()
                } else {
                    HTML_LOG(0,"delete_queue_delete: skipping folder [%s]",k);
                }
@@ -411,7 +413,7 @@ void do_actions() {
 
         } else if (STRCMP(action,"clear_cache") == 0) {
 
-            util_rmdir("/mnt/.cache",".");
+            util_rm("/mnt/.cache");
 
         } else if (STRCMP(action,"rescan_request") == 0) {
 

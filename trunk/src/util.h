@@ -87,7 +87,7 @@ int util_system(char *cmd);
     FILE *fp=fopen("/share/Apps/oversight/index.db","r");\
     fclose(fp);\
 } while(0)
-void util_rmdir(char *path,char *name);
+int util_rm(char *path);
 
 #define HTML_LOG(level,format...) do {\
     if (level <= html_log_level ) {\
@@ -126,7 +126,7 @@ void util_rmdir(char *path,char *name);
 #define CHECK_FGETS(b,sz) assert(b[(sz)-2]=='\0')
 
 int count_chr(char *str,char c);
-int exists_file_in_dir(char *dir,char *name);
+int exists_in_dir(char *dir,char *name);
 Array *util_hashtable_keys(struct hashtable *h,int take_ownership_of_keys);
 char *util_day_static();
 char *clean_js_string(char *in);

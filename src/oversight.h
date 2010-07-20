@@ -72,7 +72,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_SEARCH_MODE "_sm"
 #define QUERY_PARAM_CHECKBOX_PREFIX "cb_"
 #define QUERY_PARAM_RESIZE "resizeon"
-#define QUERY_PARAM_PERSON "person"
+#define QUERY_PARAM_PERSON "P"
 
 #define QUERY_PARAM_ACTION "action"
 #define QUERY_PARAM_ACTION_VALUE_SET "set"

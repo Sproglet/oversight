@@ -151,6 +151,8 @@ typedef struct Dbrowid_struct {
 
     // Holds hash value 
     unsigned int tmp_hash;
+    // Holds idlist text string for items in the grid
+    char *idlist;
 
 } DbItem;
 

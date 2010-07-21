@@ -2472,7 +2472,9 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
     // Add a horizontal image to stop cell shrinkage.
     char *add_spacer = "";
     if (IN_POSTER_MODE && displaying_text) {
-        ovs_asprintf(&add_spacer,"<br><img src=\"images/1h.jpg\" %s height=1px>",width_attr);
+        ovs_asprintf(&add_spacer,"<br><div %s height=0px />",width_attr);
+        //ovs_asprintf(&add_spacer,"<br><img src=\"images/1h.jpg\" %s height=1px>",width_attr);
+        //ovs_asprintf(&add_spacer,"<br><table %s><tr><td align=\"right\">|&nbsp;</td></tr></table>",width_attr);
     }
 
     char *result;
@@ -2866,7 +2868,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
     write_titlechanger(gs->offset,rows,cols,numids,row_ids,idlist);
 
 TRACE;
-    Array *rowArray = array_new((void(*)(void *))array_free);
+    Array *rowArray = array_new(free);
 
     int selected_cell = -1;
     if (*get_selected_item()) {
@@ -2881,11 +2883,10 @@ TRACE;
     for ( r = 0 ; r < rows ; r++ ) {
 
         HTML_LOG(1,"grid row %d",r);
-        Array *cellArray = array_new(free);
 
-        ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
+        ovs_asprintf(&tmp,"<tr class=\"grid_row%d\" >\n",(r&1));
 
-        array_add(cellArray,tmp);
+        array_add(rowArray,tmp);
 
         for ( c = 0 ; c < cols ; c++ ) {
 
@@ -2920,12 +2921,11 @@ TRACE;
 
             }
 
-            if (item_text) array_add(cellArray,item_text);
+            if (item_text) array_add(rowArray,item_text);
             HTML_LOG(1,"grid end col %d",c);
         }
 
-        array_add(cellArray,STRDUP("</tr>\n"));
-        array_add(rowArray,cellArray);
+        array_add(rowArray,STRDUP("</tr>\n"));
         HTML_LOG(1,"grid end row %d",r);
 
     }
@@ -2940,7 +2940,7 @@ TRACE;
         w="";
     }
 
-    result = array2dstr(rowArray);
+    result = arraystr(rowArray);
     array_free(rowArray);
 
     ovs_asprintf(&tmp,"<center><table class=overview_poster %s>\n%s\n</table></center>\n",

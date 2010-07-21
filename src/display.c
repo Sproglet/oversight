@@ -1817,28 +1817,31 @@ char *build_id_list(DbItem *row_id) {
     assert(row_id->db);
     assert(row_id->db->source);
 
-    idlist = add_one_source_to_idlist(row_id,NULL,&mixed_sources);
+    if (row_id->idlist == NULL) {
+        idlist = add_one_source_to_idlist(row_id,NULL,&mixed_sources);
 
-    idlist[strlen(idlist)-1] = ')';
+        idlist[strlen(idlist)-1] = ')';
 
-    if (mixed_sources) {
-        // Add rows from other sources. This could be merged with the loop above
-        // but to help performance we only track sources if we need to as the loop
-        // performance is O(n^2)
-        struct hashtable *sources = string_string_hashtable("db_sources",4);
-        hashtable_insert(sources,row_id->db->source,"1");
-        DbItem *ri;
+        if (mixed_sources) {
+            // Add rows from other sources. This could be merged with the loop above
+            // but to help performance we only track sources if we need to as the loop
+            // performance is O(n^2)
+            struct hashtable *sources = string_string_hashtable("db_sources",4);
+            hashtable_insert(sources,row_id->db->source,"1");
+            DbItem *ri;
 
-        for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-            if (hashtable_search(sources,ri->db->source) == NULL) {
-                hashtable_insert(sources,ri->db->source,"1");
-                idlist = add_one_source_to_idlist(ri,idlist,&mixed_sources);
+            for( ri = row_id->linked ; ri ; ri=ri->linked ) {
+                if (hashtable_search(sources,ri->db->source) == NULL) {
+                    hashtable_insert(sources,ri->db->source,"1");
+                    idlist = add_one_source_to_idlist(ri,idlist,&mixed_sources);
+                }
             }
+            hashtable_destroy(sources,0,0);
         }
-        hashtable_destroy(sources,0,0);
+        row_id->idlist = idlist;
     }
 
-    return idlist;
+    return row_id->idlist;
 }
 
 #define MAX_TITLE_LEN 50
@@ -2348,7 +2351,7 @@ char *td_mouse_event_fn(char *function_name_prefix,long function_id,int out_acti
 }
 
 char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char *height_attr,
-        int left_scroll,int right_scroll,int selected_cell,char *idlist,int select_mode)
+        int left_scroll,int right_scroll,int selected_cell,int select_mode)
 {
 
     //TODO:Highlight matched bit
@@ -2461,7 +2464,7 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
                 cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
                 break;
             default:
-                cell_text = get_movie_drilldown_link(newview,idlist,attr,title,font_class,cell_no_txt);
+                cell_text = get_movie_drilldown_link(newview,row_id->idlist,attr,title,font_class,cell_no_txt);
         }
         FREE(attr);
     }
@@ -2854,7 +2857,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
         for ( c = 0 ; c < cols ; c++ ) {
             i = c * rows + r ;
             if (i < numids) {
-                idlist[i] = build_id_list(row_ids[i]);
+                row_ids[i]->idlist = build_id_list(row_ids[i]);
             }
         }
     }
@@ -2878,9 +2881,10 @@ TRACE;
     for ( r = 0 ; r < rows ; r++ ) {
 
         HTML_LOG(1,"grid row %d",r);
+        Array *cellArray = array_new(free);
+
         ovs_asprintf(&tmp,"%s<tr class=\"grid_row%d\" >\n",(result?result:""),(r&1));
 
-        Array *cellArray = array_new(free);
         array_add(cellArray,tmp);
 
         for ( c = 0 ; c < cols ; c++ ) {
@@ -2905,7 +2909,7 @@ TRACE;
 
             char *item_text=NULL;
             if ( i < numids ) {
-                item_text = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,idlist[i],select_mode);
+                item_text = get_item(gs->offset+i,row_ids[i],(c+r)&1,width_attr,height_attr,left_scroll,right_scroll,is_selected,select_mode);
             } else {
                 // only draw empty cells if there are two or more rows
                 if (rows > 1) {
@@ -3479,12 +3483,6 @@ TRACE;
     get_plot_offsets_and_text(num_rows,sorted_rows,1);
 
 TRACE;
-    // build the idlist
-    char **idlist = CALLOC(num_rows,sizeof(char *));
-    for(i = 0 ; i < num_rows ; i++ ) {
-        idlist[i] = build_id_list(sorted_rows[i]);
-    }
-TRACE;
 
     // Find the first plot and genre
     char *main_plot=NULL;
@@ -3525,7 +3523,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
         int freeshare=0;
         char *share = share_name(item,&freeshare);
 
-        tmp = ep_js_fn(result,i+1,idlist[i],NVL(item->episode),NVL(item->plottext[PLOT_EPISODE]),item->file,title,date,share);
+        tmp = ep_js_fn(result,i+1,item->idlist,NVL(item->episode),NVL(item->plottext[PLOT_EPISODE]),item->file,title,date,share);
         FREE(result);
         if (free_title) FREE(title);
         if (freeshare) FREE(share);
@@ -3537,8 +3535,6 @@ HTML_LOG(0,"num rows = %d",num_rows);
     FREE(result);
     result = tmp;
 
-TRACE;
-    util_free_char_array(num_rows,idlist);
 TRACE;
 
     return result;

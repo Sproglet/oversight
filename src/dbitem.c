@@ -59,6 +59,8 @@ void db_rowid_free(DbItem *item,int free_base)
     db_group_imdb_free(item->comes_before,1);
     db_group_imdb_free(item->remakes,1);
 
+    FREE(item->idlist);
+
     if (free_base) {
         FREE(item);
     }

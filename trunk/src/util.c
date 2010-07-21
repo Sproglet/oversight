@@ -126,25 +126,51 @@ char *translate_inplace(
     return str;
 }
 
-// TODO: this could be optimized to scan for number of occurrences then malloc once then build new string.
-// but at the moment it does not get called enough
 char *replace_str(char *s_in,char *match,char *replace)
 {
-    char *tmp;
-    char *p=NULL;
-    char *out = s_in;
-    int matchlen = strlen(match);
+    char *out,*p;
+    char *m,*s,*s1;
+   
+    int matchlen = strlen(NVL(match));
     int replen = strlen(replace);
-    int offset=0;
-    while((p = strstr(out+offset,match)) != NULL) {
-        ovs_asprintf(&tmp,"%.*s%s%s",p-out,out,NVL(replace),p+matchlen);
-        offset  = p-out + replen;
-        if (out != s_in) FREE(out);
-        out = tmp;
+
+    assert(matchlen);
+
+    int old_size = strlen(s_in);
+
+    int new_size; 
+    // Estimate max length of new string
+    if (replen < matchlen ) {
+        new_size = old_size + 1;
+    } else {
+        new_size = replen * ( old_size / matchlen ) + old_size % matchlen + 1;
     }
-    if (out == s_in) {
-        out = STRDUP(s_in);
+
+    // Now look for 'match' in 's_in'
+    s = s_in;
+    p = out = MALLOC(new_size);
+    while (*s) {
+        s1 = s;
+        m = match;
+        // Try to match against current s1 position
+        while(*s1 && *m && *s1 == *m ) {
+            s1++;
+            m++;
+        }
+        if (*m) {
+            // NO MATCH - copy all matching (from s to s1) AND the additional character that broke the match
+            // Hence s <= s1 rather than s<s1
+            while(s <= s1) {
+                *p++ = *s++;
+            }
+        } else {
+            // MATCH
+            strcpy(p,replace);
+            p += replen;
+            s = s1;
+        }
     }
+    *p = '\0';
     return out;
 }
 /*

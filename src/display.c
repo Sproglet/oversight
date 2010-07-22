@@ -3650,6 +3650,7 @@ TRACE;
     HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
 #endif
 
+    int i;
     for(r=0 ; r < rows ; r++ ) {
         HTML_LOG(1,"tvlisting row %d",r);
         char *row_text = NULL;
@@ -3657,7 +3658,7 @@ TRACE;
             HTML_LOG(1,"tvlisting col %d",c);
 
             //int i = c * rows + r;
-            int i = r * cols + c;
+            i = r * cols + c;
             if (i < num_rows) {
 
                 int function_id = i+1;
@@ -3769,6 +3770,7 @@ TRACE;
             FREE(listing);
             listing=tmp;
         }
+        if (i >= num_rows) break;
     }
 
 

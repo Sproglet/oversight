@@ -249,6 +249,16 @@ char *macro_fn_actor_image(MacroCallInfo *call_info)
     return result;
 }
 
+/**
+ * =begin wiki
+ *
+ * Display poster for current item.
+ *
+ * [:POSTER:]
+ * [:POSTER(attributes):]
+ *
+ * =end wiki
+ */
 char *macro_fn_poster(MacroCallInfo *call_info)
 {
     char *result = NULL;

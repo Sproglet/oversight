@@ -36,29 +36,19 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
   char *p = format;
   /* Add one to make sure that it is never zero, which might cause MALLOC
      to return NULL.  */
-  int total_width = strlen (format) + 1;
+  int total_width = 0;
 
   va_list ap;
 
   memcpy(&ap,&args,sizeof(va_list));
 
-  while (*p != '\0') {
+  while (*p) {
 
       if (*p == '%') {
 
           p++;
           
-          // Repeat %s logic here because this is most common format option
-          // It is also at the end of the case statement after qualifiers %.*s etc.
-          if (*p == 's')  {
-              char *ss=va_arg (ap, char *);
-              if (ss) {
-                  total_width += strlen(ss);
-              } else {
-                  total_width += 7; /* "(null)" */
-              }
-
-          } else if (*p == '%') {
+          if (*p == '%') {
 
               p++;
 
@@ -219,6 +209,9 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
             p++;
         }
     }
+
+  // Add space for non-formatting characters
+  total_width += (p - format) + 1;
 
   *result = MALLOC (total_width);
 

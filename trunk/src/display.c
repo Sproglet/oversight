@@ -3675,7 +3675,7 @@ TRACE;
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
-                    char *href_attr = href_focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,1);
+                    char *href_attr = href_focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id,0);
                     episode_col = vod_link(
                             item,
                             ep,"",

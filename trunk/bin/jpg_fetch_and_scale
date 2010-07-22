@@ -63,6 +63,10 @@ jpg_resize() {
 
         */_J/*.jpg) o="-width=400" ; q=85 ;;
 
+        */_A/*.jpg)
+            #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px
+            o="-height=400" ; q=85 ;;
+
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac
 
@@ -111,6 +115,10 @@ fetch_resize() {
     fi
 }
 
+sizekb() {
+    ls -s "$1" | awk '{print $1}'
+}
+
 # $1 = fanart | poster
 # $2 = source file
 resize_img() {
@@ -131,8 +139,9 @@ resize_img() {
             jpg_resize "$2" "$base.thumb.jpg" "1/2"
             ;;
         actor)
-            # donothing
-            true
+            if [ `sizekb "$2"` -gt 30 ] ; then
+                jpg_resize "$2" "$2" "1/1"
+            fi
             ;;
         *)
             echo "$0: unknown image class [$1]"

@@ -2472,9 +2472,15 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
     // Add a horizontal image to stop cell shrinkage.
     char *add_spacer = "";
     if (IN_POSTER_MODE && displaying_text) {
-        ovs_asprintf(&add_spacer,"<br><div %s height=0px />",width_attr);
-        //ovs_asprintf(&add_spacer,"<br><img src=\"images/1h.jpg\" %s height=1px>",width_attr);
-        //ovs_asprintf(&add_spacer,"<br><table %s><tr><td align=\"right\">|&nbsp;</td></tr></table>",width_attr);
+        // NMT browser seems to collapse width of table cells that do no contain poster images.
+        // It seems to ignore most common CSS to fix the width.
+        // This problem occurs if an entire column has no posters. (set rows=1 to make this happen more often).
+        // There may be a nice way to fix with css but in the mean time I'll use an image.
+        //
+        // I does work if the image doesnt exists but this slows the NMT browser down.
+        char *img = get_theme_image_tag("1000x1",width_attr);
+        ovs_asprintf(&add_spacer,"<br>%s",img);
+        FREE(img);
     }
 
     char *result;

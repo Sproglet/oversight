@@ -2464,7 +2464,7 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
                 cell_text = get_tvboxset_drilldown_link(newview,row_id->title,attr,title,font_class,cell_no_txt);
                 break;
             default:
-                cell_text = get_movie_drilldown_link(newview,row_id->idlist,attr,title,font_class,cell_no_txt);
+                cell_text = get_movie_drilldown_link(newview,build_id_list(row_id),attr,title,font_class,cell_no_txt);
         }
         FREE(attr);
     }
@@ -2750,7 +2750,7 @@ int all_linked_rows_delisted(DbItem *rowid)
     return 1;
 }
 
-void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_ids,char **idlist)
+void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_ids)
 {
     int i,r,c;
 
@@ -2781,14 +2781,14 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
                 if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s',%d,%d); }\n",
-                            i+1+offset,title,idlist[i],
+                            i+1+offset,title,build_id_list(item),
                             unwatched,
                             watched
                             );
                 } else {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s','-','-'); }\n",
-                            i+1+offset,title,idlist[i]);
+                            i+1+offset,title,build_id_list(item));
                 }
                 FREE(title);
             }
@@ -2858,20 +2858,8 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
         height_attr=STRDUP("");
     }
 
-    char **idlist = CALLOC(rows*cols,sizeof(char *));
-
-    // Create the idlist for each item
-    for ( r = 0 ; r < rows ; r++ ) {
-        for ( c = 0 ; c < cols ; c++ ) {
-            i = c * rows + r ;
-            if (i < numids) {
-                row_ids[i]->idlist = build_id_list(row_ids[i]);
-            }
-        }
-    }
-
     // First output the javascript functions - diretly to stdout - lazy.
-    write_titlechanger(gs->offset,rows,cols,numids,row_ids,idlist);
+    write_titlechanger(gs->offset,rows,cols,numids,row_ids);
 
 TRACE;
     Array *rowArray = array_new(free);
@@ -2935,9 +2923,6 @@ TRACE;
         HTML_LOG(1,"grid end row %d",r);
 
     }
-    //
-    // Free all of the idlists
-    util_free_char_array(rows*cols,idlist);
 
     char *w;
     if (!g_dimension->poster_mode) {
@@ -3392,13 +3377,13 @@ void build_playlist(DbSortedRows *sorted_rows)
         DbItem *rowid = sorted_rows->rows[i];
         if (rowid->playlist_names && rowid->playlist_paths) {
             int j;
-            HTML_LOG(0,"Adding files for [%s] to playlist",rowid->title);
+            HTML_LOG(1,"Adding files for [%s] to playlist",rowid->title);
             assert(rowid->playlist_names->size == rowid->playlist_paths->size);
             for(j = 0 ; j < rowid->playlist_names->size ; j++ ) {
 
                 char *name = rowid->playlist_names->array[j]; 
                 char *path = rowid->playlist_paths->array[j]; 
-                HTML_LOG(0,"Adding [%s] to playlist",path);
+                HTML_LOG(1,"Adding [%s] to playlist",path);
 
                 if (fp == NULL) fp = playlist_open();
                 fprintf(fp,"%s|0|0|file://%s|",name,path);
@@ -3529,7 +3514,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
         int freeshare=0;
         char *share = share_name(item,&freeshare);
 
-        tmp = ep_js_fn(result,i+1,item->idlist,NVL(item->episode),NVL(item->plottext[PLOT_EPISODE]),item->file,title,date,share);
+        tmp = ep_js_fn(result,i+1,build_id_list(item),NVL(item->episode),NVL(item->plottext[PLOT_EPISODE]),item->file,title,date,share);
         FREE(result);
         if (free_title) FREE(title);
         if (freeshare) FREE(share);
@@ -3650,7 +3635,7 @@ TRACE;
     HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
 #endif
 
-    int i;
+    int i=0;
     for(r=0 ; r < rows ; r++ ) {
         HTML_LOG(1,"tvlisting row %d",r);
         char *row_text = NULL;
@@ -3858,7 +3843,7 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     Array *keys = util_hashtable_keys(vals,0);
     array_sort(keys,array_strcasecmp);
 
-    ovs_asprintf(&params,"p=&idlist=&%s=" PLACEHOLDER,name);
+    ovs_asprintf(&params,QUERY_PARAM_PAGE"=&"QUERY_PARAM_IDLIST"=&%s=" PLACEHOLDER,name);
     char *link=self_url(params);
     FREE(params);
     Array *link_parts = splitstr(strchr(link,'?'),PLACEHOLDER);

@@ -607,10 +607,11 @@ int nmt_mkdir(char *d) {
 
 static struct passwd *nmt_passwd = NULL;
 
+#define NMT_USER "nmt"
 int nmt_uid() {
 
     if (nmt_passwd == NULL ) {
-        nmt_passwd = getpwnam("nmt");
+        nmt_passwd = getpwnam(NMT_USER);
     }
     if (nmt_passwd != NULL ) {
         return nmt_passwd->pw_uid;
@@ -622,7 +623,7 @@ int nmt_uid() {
 int nmt_gid() {
 
     if (nmt_passwd == NULL ) {
-        nmt_passwd = getpwnam("nmt");
+        nmt_passwd = getpwnam(NMT_USER);
     }
     if (nmt_passwd != NULL ) {
         return nmt_passwd->pw_gid;
@@ -861,15 +862,25 @@ int util_starts_with_ignore_case(char *a,char *b)
     return *b == '\0';
 }
 
+int util_stat(char *path,struct stat *st)
+{
+    int result = 0;
+    if ((result =stat(path,st)) != 0 ) {
+        HTML_LOG(0,"stat error %d for [%s]",errno,path);
+    }
+    return result;
+}
+
 // recursive delete
 int util_rm(char *path)
 {
 
     int result=-1;
     struct stat st;
-    stat(path,&st);
+    if (util_stat(path,&st) ) {
+        
 
-    if (S_ISREG(st.st_mode)) {
+    } else if (S_ISREG(st.st_mode)) {
 
         result = unlink(path);
         HTML_LOG(1,"unlink [%s] = %d",path,result);

@@ -24,18 +24,24 @@ function ovs_info() {
 }
 function ovs_watched() {
     if (g_epno != '') {
-        //if (confirm("Mark episode "+g_epno+"\n as watched?")) {
-            action('watch');
-        //}
+        action('watch');
     }
 }
 
 function ovs_unwatched() {
     if (g_epno != '') {
-        //if (confirm("Mark episode"+g_epno+"\nas NOT watched?")) {
-            action('unwatch');
-        //}
+        action('unwatch');
     }
+}
+function ovs_lock() {
+    if (g_epno != '') {
+          action('lock');
+   	}
+}
+function ovs_unlock() {
+    if (g_epno != '') {
+          action('unlock');
+   	}
 }
 
 function action(a) {

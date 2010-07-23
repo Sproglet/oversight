@@ -33,6 +33,17 @@ function ovs_unwatched() {
     	action('unwatch');
     }
 }
+function ovs_lock() {
+    if (g_idlist) {	        
+          action('lock');
+   	}
+}
+function ovs_unlock() {
+    if (g_idlist) {	        
+          action('unlock');
+   	}
+}
+
 
 function action(a) {
     var sep;

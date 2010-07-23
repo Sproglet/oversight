@@ -1615,17 +1615,35 @@ char *macro_fn_select_delete_submit(MacroCallInfo *call_info) {
     }
     return result;
 }
-char *macro_fn_select_delist_submit(MacroCallInfo *call_info) {
+char *macro_fn_select_delist_submit(MacroCallInfo *call_info)
+{
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
         ovs_asprintf(&result,"<input type=submit name=action value=Remove_From_List >");
     }
     return result;
 }
-char *macro_fn_select_cancel_submit(MacroCallInfo *call_info) {
+char *macro_fn_select_cancel_submit(MacroCallInfo *call_info)
+{
     char *result=NULL;
     if (*query_select_val()) {
         ovs_asprintf(&result,"<input type=submit name=select value=Cancel >");
+    }
+    return result;
+}
+char *macro_fn_select_lock_submit(MacroCallInfo *call_info)
+{
+    char *result=NULL;
+    if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
+        ovs_asprintf(&result,"<input type=submit name=select value=Lock >");
+    }
+    return result;
+}
+char *macro_fn_select_unlock_submit(MacroCallInfo *call_info)
+{
+    char *result=NULL;
+    if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
+        ovs_asprintf(&result,"<input type=submit name=select value=Unlock >");
     }
     return result;
 }
@@ -2306,7 +2324,9 @@ void macro_init() {
         hashtable_insert(macros,"SELECT_CANCEL_SUBMIT",macro_fn_select_cancel_submit);
         hashtable_insert(macros,"SELECT_DELETE_SUBMIT",macro_fn_select_delete_submit);
         hashtable_insert(macros,"SELECT_DELIST_SUBMIT",macro_fn_select_delist_submit);
+        hashtable_insert(macros,"SELECT_LOCK_SUBMIT",macro_fn_select_lock_submit);
         hashtable_insert(macros,"SELECT_MARK_SUBMIT",macro_fn_select_mark_submit);
+        hashtable_insert(macros,"SELECT_UNLOCK_SUBMIT",macro_fn_select_unlock_submit);
         hashtable_insert(macros,"SETUP_BUTTON",macro_fn_setup_button);
         hashtable_insert(macros,"SKIN_NAME",macro_fn_skin_name);
         hashtable_insert(macros,"SORT_SELECT",macro_fn_sort_select);

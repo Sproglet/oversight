@@ -156,6 +156,11 @@ long allow_delist() {
     if (result == -1) result = allow_access("ovs_wan_delist");
     return result;
 }
+long allow_locking() {
+    static long result = -1;
+    if (result == -1) result = allow_access("ovs_wan_locking");
+    return result;
+}
 
 long allow_admin() {
     static long result = -1;

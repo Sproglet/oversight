@@ -312,7 +312,7 @@ static void set_plot_positions_by_db(Db *db,int num_rows,DbItem **rows,int start
 
                             check_and_copy_plot(copy_plot_text,item,ptype,fpos,plot_buf);
 
-                            HTML_LOG(0,"Got plot [%s] for [%s]",item->plotkey[ptype],item->file);
+                            HTML_LOG(1,"Got plot [%s] for [%s]",item->plotkey[ptype],item->file);
                         }
                     }
                 }

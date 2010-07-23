@@ -64,6 +64,7 @@ long allow_admin();
 long allow_delist();
 long allow_delete();
 long allow_mark();
+long allow_locking();
 int in_poster_mode();
 int in_text_mode();
 int browsing_from_lan();

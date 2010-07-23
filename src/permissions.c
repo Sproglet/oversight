@@ -3,37 +3,57 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "util.h"
 #include "gaya_cgi.h"
+#include "dirent.h"
 
-#define NMT_USER "nmt"
 
-void permissions(uid_t uid,gid_t gid,char *path)
+void permissions(uid_t uid,gid_t gid,int mode,int recursive,char *path)
 {
+    int result = 0;
+    struct stat st;
+    stat(path,&st);
+
     chown(path,uid,gid);
-    chmod(path,0775);
+    result = chmod(path,mode);
+    if (recursive && S_ISDIR(st.st_mode)) {
+        DIR *d = opendir(path);
+        if (d) {
+            struct dirent *sub ;
+
+              while((sub = readdir(d)) != NULL) {
+                  if (sub->d_type == DT_REG ||
+                        (sub->d_type == DT_DIR && strcmp(sub->d_name,".") && strcmp(sub->d_name,".."))) {
+                        char *tmp;
+                        ovs_asprintf(&tmp,"%s/%s",path,sub->d_name);
+                        permissions(uid,gid,mode,recursive,tmp);
+                        FREE(tmp);
+                  }
+              }
+            closedir(d);
+        }
+    } 
 }
 void setPermissions()
 {
 
     HTML_LOG(0,"start permissions");
-    struct passwd *pwd = getpwnam(NMT_USER);
 
-    if (pwd != NULL) {
-        chdir(appDir());
-        permissions(pwd->pw_uid,pwd->pw_gid,"tmp");
-        permissions(pwd->pw_uid,pwd->pw_gid,"logs");
-        permissions(pwd->pw_uid,pwd->pw_gid,".");
-        permissions(pwd->pw_uid,pwd->pw_gid,"index.db");
-        permissions(pwd->pw_uid,pwd->pw_gid,"plot.db");
-        permissions(pwd->pw_uid,pwd->pw_gid,"db");
-        permissions(pwd->pw_uid,pwd->pw_gid,"db/global");
-        permissions(pwd->pw_uid,pwd->pw_gid,"db/global/_J"); //posters
-        permissions(pwd->pw_uid,pwd->pw_gid,"db/global/_fa"); //fanart
-        HTML_LOG(0,"end permissions");
-    } else {
-        HTML_LOG(0,"user [%s] not found",NMT_USER);
-    }
+    chdir(appDir());
+    permissions(nmt_uid(),nmt_gid(),0775,0,"tmp");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"logs");
+    permissions(nmt_uid(),nmt_gid(),0775,0,".");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"index.db");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"plot.db");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"db");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"db/global");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"db/global/_J");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"db/global/_fa");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"db/global/_A");
+    HTML_LOG(0,"end permissions");
 }
 // vi:sw=4:et:ts=4

@@ -10,6 +10,8 @@
 #include "gaya_cgi.h"
 #include "display.h"
 #include "hashtable_loop.h"
+#include "mount.h"
+#include "permissions.h"
 
 // If a paramter begins with this prefix then the remaining part 
 // of the parameter name is passed as an option to the catalog.sh command
@@ -26,10 +28,13 @@
 struct hashtable *get_newly_selected_ids_by_source(int *totalp);
 struct hashtable *get_newly_deselected_ids_by_source(int *totalp);
 int count_unchecked();
+void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *));
 // Add val=src1(id|..)src2(id|..) to hash table.
 int idlist_to_idhash(struct hashtable *h,char *val);
 int idcount(char *idlist);
 void update_idlist(struct hashtable *source_id_hash_removed);
+void lock_item(DbItem *item);
+void unlock_item(DbItem *item);
 
 //True if there was post data.
 int has_post_data() {
@@ -161,7 +166,7 @@ void delete_media(DbItem *item,int delete_related) {
     }
 
     //Delete the following files at the end if not used.
-    delete_queue_add(item,item->nfo);
+    delete_queue_add(item,0,item->nfo);
 
     // Delete all files with the same prefix.
     struct dirent *dp;
@@ -192,7 +197,7 @@ void delete_media(DbItem *item,int delete_related) {
     }
 
     // Delete the folder only if it's empty.
-    delete_queue_add(item,dir);
+    delete_queue_add(item,0,dir);
 
     array_free(names_to_delete);
     FREE(dir);
@@ -244,14 +249,14 @@ void add_internal_images_to_delete_queue(DbItem *item)
     Array *a = array_new(NULL); // memory is taken over by delete queue
     insert_image_list(item,a);
     for(i=0 ; i < a->size ; i++ ) {
-        delete_queue_add(item,(char *)(a->array[i]));
+        delete_queue_add(item,1,(char *)(a->array[i]));
     }
     array_free(a);
 }
 
 
 
-void delete_queue_add(DbItem *item,char *path) {
+void delete_queue_add(DbItem *item,int force,char *path) {
 
     if (path) {
         int freepath;
@@ -259,19 +264,31 @@ void delete_queue_add(DbItem *item,char *path) {
 
         char *real_path=get_path(item,path,&freepath);
 
-        if (g_delete_queue == NULL) {
-            g_delete_queue = string_string_hashtable("delete queue",16);
-        }
-        if (hashtable_search(g_delete_queue,real_path)) {
-            if(freepath) {
-                FREE(real_path);
+        struct stat st;
+
+        if (util_stat(real_path,&st) == 0) {
+
+            if (!force && strcmp(item->db->source,"*") == 0 && st.st_uid != nmt_uid()) {
+
+                HTML_LOG(0,"Error: no permission to delete [%s]",item->file);
+
+            } else {
+
+                if (g_delete_queue == NULL) {
+                    g_delete_queue = string_string_hashtable("delete queue",16);
+                }
+                if (hashtable_search(g_delete_queue,real_path)) {
+                    if(freepath) {
+                        FREE(real_path);
+                    }
+                } else {
+                    HTML_LOG(0,"delete_queue: pending delete item: [%s] of [%d:%s]",real_path,item->id,item->title);
+                    if(!freepath) {
+                        real_path = STRDUP(real_path);
+                    }
+                    hashtable_insert(g_delete_queue,real_path,"1");
+                }
             }
-        } else {
-            HTML_LOG(0,"delete_queue: pending delete item: [%s] of [%d:%s]",real_path,item->id,item->title);
-            if(!freepath) {
-                real_path = STRDUP(real_path);
-            }
-            hashtable_insert(g_delete_queue,real_path,"1");
         }
     }
 }
@@ -566,7 +583,13 @@ void do_actions() {
                     update_idlist(changed_source_id_hash);
                 }
 
+            } else if (allow_locking() && STRCMP(action,"lock") == 0) {
 
+                do_action_by_id(changed_source_id_hash,lock_item);
+
+            } else if (allow_locking() && STRCMP(action,"unlock") == 0) {
+
+                do_action_by_id(changed_source_id_hash,unlock_item);
             }
             query_remove(QUERY_PARAM_ACTION);
             query_remove("actionids");
@@ -614,6 +637,20 @@ TRACE;
                 }
                 hashtable_destroy(changed_source_id_hash,1,1);
                 query_remove(QUERY_PARAM_ACTION);
+
+        } else if (allow_locking() && STRCMP(action,FORM_PARAM_SELECT_VALUE_LOCK) == 0) {
+
+                // The following actions are invoked when delisting via PC browser and form.
+                // In this case the post data has a select box variable for each item
+                changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+                do_action_by_id(changed_source_id_hash,lock_item);
+
+        } else if (allow_locking() && STRCMP(action,FORM_PARAM_SELECT_VALUE_UNLOCK) == 0) {
+
+                // The following actions are invoked when delisting via PC browser and form.
+                // In this case the post data has a select box variable for each item
+                changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+                do_action_by_id(changed_source_id_hash,unlock_item);
 
         } else if (allow_admin() && STRCMP(action,QUERY_PARAM_ACTION_VALUE_SET)==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
 
@@ -951,6 +988,46 @@ struct hashtable *get_newly_deselected_ids_by_source(int *totalp)
     if (totalp) *totalp = total;
 HTML_LOG(1," end get_newly_deselected_ids_by_source");
     return h;
+}
+
+void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *))
+{
+    struct hashtable_itr *itr;
+    char *source;
+    char *idlist;
+
+    for(itr=hashtable_loop_init(ids_by_source) ; hashtable_loop_more(itr,&source,&idlist) ; ) {
+
+        int num_ids;
+        int *ids = extract_ids(idlist,&num_ids);
+
+        Db *db = db_init(NULL,source);
+        DbItemSet *is = db_scan_titles(db,NULL,num_ids,ids,action);
+
+
+        // cleanup
+        db_rowset_free(is);
+        db_free(db);
+        FREE(ids);
+    }
+}
+
+void lock_item(DbItem *item)
+{
+    if (nmt_mount(item->file)) {
+        if (is_file(item->file)) {
+            permissions(0,0,0755,1,item->file);
+        }
+    }
+}
+
+void unlock_item(DbItem *item)
+{
+    if (nmt_mount(item->file)) {
+        if (is_file(item->file)) {
+            permissions(nmt_uid(),nmt_gid(),0755,1,item->file);
+        }
+    }
 }
 
 

@@ -7,7 +7,7 @@
 void do_actions();
 void delete_queue_delete();
 void delete_queue_unqueue(DbItem *item,char *path);
-void delete_queue_add(DbItem *item,char *path);
+void delete_queue_add(DbItem *item,int force,char *path);
 void delete_media(DbItem *item,int delete_related);
 
 void add_internal_images_to_delete_queue(DbItem *item);

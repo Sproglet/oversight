@@ -23,19 +23,6 @@ function ovs_delete() {
 	}
 }
 
-function ovs_del() {
-    if (g_epno != '') {
-        if (confirm("Remove ["+g_epno+"]?")) {
-            if (confirm("WARNING: Also Delete "+g_info+" Files?")) {
-                if(confirm("Deleting media files") ) {
-                    action('delete');
-                }
-            } else {
-                action('delist');
-            }
-        }
-    }
-}
 function ovs_info() {
     alert(g_info);
 }
@@ -49,6 +36,16 @@ function ovs_unwatched() {
     if (g_epno != '') {
         action('unwatch');
     }
+}
+function ovs_lock() {
+    if (g_epno != '') {
+          action('lock');
+   	}
+}
+function ovs_unlock() {
+    if (g_epno != '') {
+          action('unlock');
+   	}
 }
 
 function action(a) {

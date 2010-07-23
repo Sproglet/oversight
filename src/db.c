@@ -273,7 +273,9 @@ TRACE;
         if (db) {
 TRACE;
 
-            DbItemSet *r = db_scan_titles(db,exp);
+            int num_ids;
+            int *ids = extract_ids_by_source(query_val(QUERY_PARAM_IDLIST),db->source,&num_ids);
+            DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL);
 
             if ( r != NULL ) {
 TRACE;
@@ -387,40 +389,49 @@ int id_cmp_fn(const void *i,const void *j) {
     return (*(const int *)i) - (*(const int *)j);
 }
 
+// Parse "(1|2|3|4) into array of integers
+int *extract_ids(char *s,int *num_ids)
+{
+    int *result = NULL;
+
+    Array *idstrings = split(s,"|",0);
+    if (idstrings) {
+        result = malloc(idstrings->size * sizeof(int));
+        int i;
+        for(i = 0 ; i < idstrings->size ; i++ ) {
+            char ch;
+            result[i]=0;
+            sscanf(idstrings->array[i],"%d%c",result+i,&ch);
+        }
+        // Sort the ids.
+        qsort(result,idstrings->size,sizeof(int),id_cmp_fn);
+        *num_ids = idstrings->size;
+
+        array_free(idstrings);
+    }
+    return result;
+}
+
 // For a given db name - extract and sort the list of ids in the idlist query param
 // eg idlist=dbname(id1|id2|id3)name2(id4|id5)...
 // if there is no idlist then ALL ids are OK. to indicate this num_ids = -1
-int *extract_idlist(char *db_name,int *num_ids) {
+int *extract_ids_by_source(char *query,char *dbsource,int *num_ids)
+{
 
-    char *query = query_val(QUERY_PARAM_IDLIST);
     int *result = NULL;
 
     HTML_LOG(1,"extract_idlist from [%s]",query);
 
     if (*query) {
         *num_ids = 0;
-        char *p = delimited_substring(query,")",db_name,"(",1,0);
+        char *p = delimited_substring(query,")",dbsource,"(",1,0);
         if (p) {
-            p += strlen(db_name)+1;
+            p += strlen(dbsource)+1;
             char *q = strchr(p,')');
             if (q) {
                 *q = '\0';
-                Array *idstrings = split(p,"|",0);
+                result = extract_ids(p,num_ids);
                 *q = ')';
-                if (idstrings) {
-                    result = malloc(idstrings->size * sizeof(int));
-                    int i;
-                    for(i = 0 ; i < idstrings->size ; i++ ) {
-                        char ch;
-                        result[i]=0;
-                        sscanf(idstrings->array[i],"%d%c",result+i,&ch);
-                    }
-                    // Sort the ids.
-                    qsort(result,idstrings->size,sizeof(int),id_cmp_fn);
-                    *num_ids = idstrings->size;
-
-                    array_free(idstrings);
-                }
             }
         }
 
@@ -429,19 +440,19 @@ int *extract_idlist(char *db_name,int *num_ids) {
     }
 
     if (*num_ids == ALL_IDS) {
-        HTML_LOG(1,"idlist:db: name=%s searching all ids",db_name);
+        HTML_LOG(1,"idlist:db: name=%s searching all ids",dbsource);
     } else {
         int i;
-        HTML_LOG(1,"idlist:db: name=%s searching %d ids",db_name,*num_ids);
+        HTML_LOG(1,"idlist:db: name=%s searching %d ids",dbsource,*num_ids);
         for(i  = 0 ; i < *num_ids ; i++ ) {
-            HTML_LOG(0,"idlist:db: name=%s id %d",db_name,result[i]);
+            HTML_LOG(0,"idlist:db: name=%s id %d",dbsource,result[i]);
         }
     }
 
     return result;
 }
 
-DbItemSet * db_scan_titles( Db *db, Exp *exp)
+DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *))
 {
 
     DbItemSet *rowset = NULL;
@@ -450,8 +461,6 @@ DbItemSet * db_scan_titles( Db *db, Exp *exp)
 
     int tv_or_movie_view = (view->view_class == VIEW_CLASS_DETAIL);
 
-    int num_ids;
-    int *ids = extract_idlist(db->source,&num_ids);
 
     HTML_LOG(3,"Creating db scan pattern..");
 
@@ -870,7 +879,6 @@ void db_remove_row(DbItem *item) {
 void db_delete_row_and_media(DbItem *item) {
     db_remove_row_helper(item,DELETE_MODE_DELETE);
 }
-
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode) {
     struct hashtable_itr *itr;
     char *source;

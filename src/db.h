@@ -69,10 +69,7 @@ Db *db_init(char *filename, // path to the file
         char *source       // logical name or tag - local="*"
         );
 
-DbItemSet * db_scan_titles(
-        Db *db,
-        Exp *exp);
-
+DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *));
 int db_lock(Db *db);
 int db_unlock(Db *db);
 void db_rowset_free(DbItemSet *dbrs);
@@ -102,4 +99,6 @@ char *expand_genre(char *genre_keys);
 char *compress_genre(char *genre_names);
 char * db_rowid_get_field(DbItem *rowid,char *name);
 int local_db_size();
+int *extract_ids_by_source(char *query,char *dbsource,int *num_ids);
+int *extract_ids(char *s,int *num_ids);
 #endif

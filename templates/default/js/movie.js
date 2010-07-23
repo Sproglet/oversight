@@ -30,6 +30,12 @@ function ovs_watched() {
 function ovs_unwatched() {
     action('unwatch');
 }
+function ovs_lock() {
+    action('lock');
+}
+function ovs_unlock() {
+    action('unlock');
+}
 
 function action(a) {
     var sep;

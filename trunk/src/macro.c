@@ -877,7 +877,7 @@ char *macro_fn_resize_controls(MacroCallInfo *call_info)
 {
 
     char *result = NULL;
-    if (get_view_mode() != VIEW_ADMIN) {
+    if (get_view_mode(0) != VIEW_ADMIN) {
         result = get_tvid_resize_links();
     }
     return result;
@@ -1166,7 +1166,7 @@ char *macro_fn_form_start(MacroCallInfo *call_info) {
     char *url=NULL;
 
 TRACE;
-    if (get_view_mode() == VIEW_ADMIN) {
+    if (get_view_mode(0) == VIEW_ADMIN) {
         char *action = query_val(QUERY_PARAM_ACTION);
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
             return NULL;
@@ -1578,10 +1578,13 @@ char *macro_fn_mark_button(MacroCallInfo *call_info) {
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("mark",NULL);
             ovs_asprintf(&result,
-                    "<a href=\"javascript:alert('Select item then remote\n[RED] to mark watched,\nGREEN for not watched')\">%s</a>",tag);
+                    "<a href=\"javascript:alert('Select item then remote\n[%s]=watched,\n[%s]=not watched')\">%s</a>",
+                oversight_val("ovs_tvid_mark"),
+                oversight_val("ovs_tvid_unmark"),
+                tag);
             FREE(tag);
         } else {
-            result = get_theme_image_link("select=Mark","","mark","");
+            result = get_theme_image_link("select="FORM_PARAM_SELECT_VALUE_MARK,"","mark","");
         }
     }
     return result;
@@ -1593,10 +1596,30 @@ char *macro_fn_delete_button(MacroCallInfo *call_info) {
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("delete",NULL);
             ovs_asprintf(&result,
-                "<a href=\"javascript:alert('Select item then remote\n[DELETE/CLEAR] button')\">%s</a>",tag);
+                "<a href=\"javascript:alert('Select item then remote\ndelist=[%s]\ndelete=[%s]')\">%s</a>",
+                oversight_val("ovs_tvid_delist"),
+                oversight_val("ovs_tvid_delete"),
+                    tag);
             FREE(tag);
         } else {
-            result = get_theme_image_link("select=Delete","","delete","");
+            result = get_theme_image_link("select="FORM_PARAM_SELECT_VALUE_DELETE,"","delete","");
+        }
+    }
+    return result;
+}
+char *macro_fn_lock_button(MacroCallInfo *call_info) {
+    char *result=NULL;
+    if (!*query_select_val() && allow_locking() ) {
+        if (g_dimension->local_browser) {
+            char *tag=get_theme_image_tag("security",NULL);
+            ovs_asprintf(&result,
+                "<a href=\"javascript:alert('Select item then remote\n[%s]/[%s] button')\">%s</a>",
+                oversight_val("ovs_tvid_lock"),
+                oversight_val("ovs_tvid_unlock"),
+                tag);
+            FREE(tag);
+        } else {
+            result = get_theme_image_link("select="FORM_PARAM_SELECT_VALUE_LOCK,"","security","");
         }
     }
     return result;
@@ -1634,15 +1657,15 @@ char *macro_fn_select_cancel_submit(MacroCallInfo *call_info)
 char *macro_fn_select_lock_submit(MacroCallInfo *call_info)
 {
     char *result=NULL;
-    if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
-        ovs_asprintf(&result,"<input type=submit name=select value=Lock >");
+    if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_LOCK)==0) {
+        ovs_asprintf(&result,"<input type=submit name=action value=Lock >");
     }
     return result;
 }
 char *macro_fn_select_unlock_submit(MacroCallInfo *call_info)
 {
     char *result=NULL;
-    if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
+    if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_LOCK)==0) {
         ovs_asprintf(&result,"<input type=submit name=select value=Unlock >");
     }
     return result;
@@ -2298,6 +2321,7 @@ void macro_init() {
         hashtable_insert(macros,"IS_GAYA",macro_fn_is_gaya);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"LINK",macro_fn_link);
+        hashtable_insert(macros,"LOCK_BUTTON",macro_fn_lock_button);
         hashtable_insert(macros,"MARK_BUTTON",macro_fn_mark_button);
         hashtable_insert(macros,"MEDIA_SELECT",macro_fn_media_select);
         hashtable_insert(macros,"MEDIA_TOGGLE",macro_fn_media_toggle);

@@ -135,12 +135,12 @@ void delete_media(DbItem *item,int delete_related) {
             HTML_LOG(0,"folder [%s] doesnt look like dvd folder");
             return;
         }
-        util_rm(item->file);
+        util_rmq(item->file,1);
         names_to_delete = array_new(free);
     } else {
 
         HTML_LOG(1,"delete main file [%s]",item->file);
-        unlink(item->file);
+        util_rmq(item->file,0);
 
         names_to_delete = split(item->parts,"/",0);
 

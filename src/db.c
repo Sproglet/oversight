@@ -158,11 +158,9 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
         db->path =  STRDUP(filename);
     }
     HTML_LOG(0,"db path[%s]",db->path);
-    db->plot_file = replace_all(db->path,"index.db","plot.db",0);
-    //db->plot_file = replace_str(db->path,"index.db","plot.db");
+    db->plot_file = replace_str(db->path,"index.db","plot.db");
     HTML_LOG(0,"db path[%s]",db->plot_file);
-    //db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
-    db->actors_file = replace_str(db->path,"index.db","db/actors.db");
+    db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
 
     db->source= STRDUP(source);
 

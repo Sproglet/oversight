@@ -1634,7 +1634,7 @@ char *macro_fn_select_mark_submit(MacroCallInfo *call_info) {
 char *macro_fn_select_delete_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
-        ovs_asprintf(&result,"<input type=submit name=action value=Delete onclick=\"return confirm('STOP! REALLY DELETE FILES?');\" >");
+        ovs_asprintf(&result,"<input type=submit name=action value=Delete onclick=\"return confirm('Delete Files?');\" >");
     }
     return result;
 }

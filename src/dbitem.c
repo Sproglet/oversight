@@ -23,46 +23,47 @@ void db_rowid_free(DbItem *item,int free_base)
 {
 
     int i;
-    assert(item);
+    if(item) {
 
-//    HTML_LOG(0,"%s %lu %lu",item->title,item,item->file);
-//    HTML_LOG(0,"%s",item->file);
-    FREE(item->title);
-    FREE(item->poster);
-    FREE(item->genre);
-    FREE(item->file);
-    FREE(item->episode);
-    //Dont free ext as it points to file.
+    //    HTML_LOG(0,"%s %lu %lu",item->title,item,item->file);
+    //    HTML_LOG(0,"%s",item->file);
+        FREE(item->title);
+        FREE(item->poster);
+        FREE(item->genre);
+        FREE(item->file);
+        FREE(item->episode);
+        //Dont free ext as it points to file.
 
 
-    // Following are only set in tv/movie view
-    FREE(item->url);
-    FREE(item->parts);
-    FREE(item->fanart);
-    for(i = 0 ; i < PLOT_TYPE_COUNT ; i++ ) {
-        FREE(item->plotkey[i]);
-        FREE(item->plottext[i]);
-    }
-    FREE(item->eptitle);
-    FREE(item->eptitle_imdb);
-    FREE(item->additional_nfo);
+        // Following are only set in tv/movie view
+        FREE(item->url);
+        FREE(item->parts);
+        FREE(item->fanart);
+        for(i = 0 ; i < PLOT_TYPE_COUNT ; i++ ) {
+            FREE(item->plotkey[i]);
+            FREE(item->plottext[i]);
+        }
+        FREE(item->eptitle);
+        FREE(item->eptitle_imdb);
+        FREE(item->additional_nfo);
 
-    ARRAY_FREE(item->playlist_paths);
-    ARRAY_FREE(item->playlist_names);
+        ARRAY_FREE(item->playlist_paths);
+        ARRAY_FREE(item->playlist_names);
 
-    //Only populated if deleting
-    FREE(item->nfo);
+        //Only populated if deleting
+        FREE(item->nfo);
 
-    FREE(item->certificate);
+        FREE(item->certificate);
 
-    db_group_imdb_free(item->comes_after,1);
-    db_group_imdb_free(item->comes_before,1);
-    db_group_imdb_free(item->remakes,1);
+        db_group_imdb_free(item->comes_after,1);
+        db_group_imdb_free(item->comes_before,1);
+        db_group_imdb_free(item->remakes,1);
 
-    FREE(item->idlist);
+        FREE(item->idlist);
 
-    if (free_base) {
-        FREE(item);
+        if (free_base) {
+            FREE(item);
+        }
     }
 }
 void set_title_as_folder(DbItem *rowid)

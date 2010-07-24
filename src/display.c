@@ -1784,7 +1784,6 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
     *p = '\0';
 
     for( ri = row_id->linked ; ri ; ri=ri->linked ) {
-        // if (STRCMP(ri->db->source,row_id->db->source) == 0) {
         if (ri->db == row_id->db) {
 
             p += sprintf(p,"|%ld",ri->id);
@@ -1864,21 +1863,53 @@ char *select_checkbox(DbItem *item,char *text) {
 
         char *id_list = build_id_list(item);
 
-        if (item->watched && STRCMP(select,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
+        int checked = 0;
+        char *disabled = "";
+        char *disabled_image="";
+
+        if (STRCMP(select,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
+
+            checked = item->watched;
+
+        } else if (STRCMP(select,FORM_PARAM_SELECT_VALUE_LOCK) == 0) {
+
+            checked = is_locked(item);
+
+        } else {
+            // delist delete
+            if (is_locked(item)) {
+                disabled=" disabled ";
+                disabled_image=get_theme_image_tag("security"," width=\"20px\" height=\"20px\" ");
+            }
+        }
+
+        if (*disabled) {
 
             ovs_asprintf(&result,
-                "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" CHECKED >"
+
+                "%s<br><font class=%s>%s</font>",
+                    disabled_image,
+                    select,text);
+
+        } else if (checked) {
+
+            ovs_asprintf(&result,
+                "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" CHECKED %s >%s"
                 "<input type=hidden name=\"orig_"CHECKBOX_PREFIX"%s\" value=on>"
                 "<font class=%s>%s</font>",
                     id_list,
+                    disabled,
+                    disabled_image,
                     id_list,
                     select,text);
         } else {
 
             ovs_asprintf(&result,
-                "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" >"
+                "<input type=checkbox name=\""CHECKBOX_PREFIX"%s\" %s >%s"
                 "<font class=%s>%s</font>",
                     id_list,
+                    disabled,
+                    disabled_image,
                     select,text);
         }
         FREE(id_list);
@@ -2106,6 +2137,22 @@ int get_view_status(DbItem *rowid) {
         status = FRESH;
     }
     return status;
+}
+
+int is_locked(DbItem *item)
+{
+
+    int result = 1;
+    struct stat64 st;
+
+    nmt_mount(item->file);
+
+    HTML_LOG(0,"is_locked[%s]",item->file);
+    if (util_stat(item->file,&st) == 0) {
+        HTML_LOG(0,"is_locked uid=[%d] vs %d",st.st_uid,nmt_uid());
+        result = (st.st_uid != nmt_uid())  ;
+    }
+    return result;
 }
 
 char *get_poster_mode_item(DbItem *row_id,char **font_class,char **grid_class,ViewMode *newview) {
@@ -2440,7 +2487,6 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
 
 
 
-    // Newview should be a specific char constant so using == not strcmp.
     if (select_mode) {
 
         cell_text = select_checkbox(row_id,NVL(title));
@@ -2818,7 +2864,6 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
     int centre_col = cols/2;
     int r,c;
 
-
     int cell_margin=2;
 
     HTML_LOG(0,"render page %ld rows %d cols %d",page,rows,cols);
@@ -2835,7 +2880,6 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
         }
     }
 #endif
-
 
     char *result=NULL;
     int i;
@@ -3070,7 +3114,7 @@ DbSortedRows *get_sorted_rows_from_params()
 
 TRACE;
 
-    ViewMode *view = get_view_mode();
+    ViewMode *view = get_view_mode(0);
 
 
     // Tv/Film filter
@@ -3221,7 +3265,7 @@ char *get_tvid_links()
 #define ARROW_CLASS " class=\"resize_arrow\""
 
 char *dimension_cell_name_suffix() {
-    return NVL(get_view_mode()->dimension_cell_suffix);
+    return NVL(get_view_mode(0)->dimension_cell_suffix);
 }
 
 char *dimension_cell_name(char *set_name,char *name_suffix,char *set_val) {

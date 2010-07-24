@@ -37,7 +37,7 @@ LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 
 #CFLAGS=-O3 -Wall -Wunused-parameter -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
-CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
+CFLAGS=-O3 -Wall -DOUT=$(OUT) -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 
 # Most stable last to speed compile-fail cycle
 OBJS=filter.o exp.o dbnames.o types.o dbitem.o list.o gaya.o \

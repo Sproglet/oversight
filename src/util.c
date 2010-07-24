@@ -528,8 +528,8 @@ int is_executable(char *path) {
 }
 
 int is_file(char *path) {
-    struct stat s;
-    if (stat(path,&s) == 0) {
+    struct stat64 s;
+    if (stat64(path,&s) == 0) {
         return S_ISREG(s.st_mode);
     } else {
         return 0;
@@ -537,8 +537,8 @@ int is_file(char *path) {
 }
 
 int is_dir(char *path) {
-    struct stat s;
-    if (stat(path,&s) == 0) {
+    struct stat64 s;
+    if (stat64(path,&s) == 0) {
         return S_ISDIR(s.st_mode);
     } else {
         return 0;
@@ -862,11 +862,13 @@ int util_starts_with_ignore_case(char *a,char *b)
     return *b == '\0';
 }
 
-int util_stat(char *path,struct stat *st)
+int util_stat(char *path,struct stat64 *st)
 {
-    int result = 0;
-    if ((result =stat(path,st)) != 0 ) {
+    int result = stat64(path,st);
+    if (result) {
         HTML_LOG(0,"stat error %d for [%s]",errno,path);
+        HTML_LOG(0,"uid %d gid %d ",st->st_uid,st->st_gid);
+
     }
     return result;
 }
@@ -876,7 +878,7 @@ int util_rm(char *path)
 {
 
     int result=-1;
-    struct stat st;
+    struct stat64 st;
     if (util_stat(path,&st) ) {
         
 
@@ -1064,8 +1066,8 @@ char *file_name(char *path)
 // Return age of file in seconds. -1 = doesnt exist or error
 int file_age(char *path)
 {
-    struct stat s;
-    if (stat(path,&s) == 0) {
+    struct stat64 s;
+    if (util_stat(path,&s) == 0) {
         return time(NULL) - s.st_mtime;
     } else {
         return -1;

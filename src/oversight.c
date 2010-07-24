@@ -204,7 +204,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
 
     while(1) {
-        view=get_view_mode();  
+        view=get_view_mode(1);  
 
         // If movie view but all ids have been removed , then move up
         if (view == VIEW_MOVIE && !*query_val(QUERY_PARAM_IDLIST)) {

@@ -151,9 +151,9 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
 char *dbnames_fetch_static(char *key,char *file)
 {
     char *result = NULL;
-    struct stat st;
+    struct stat64 st;
 
-    if (stat(file,&st) == 0) {
+    if (util_stat(file,&st) == 0) {
         FILE *f = fopen(file,"rba");
         if (f) {
             result = dbnames_fetch_chop_static(key,f,0,st.st_size);

@@ -777,7 +777,7 @@ void config_read_dimensions() {
         } else {
 
             // set the current grid dimensions
-            ViewMode *view = get_view_mode();
+            ViewMode *view = get_view_mode(1);
 
             if (view == VIEW_TVBOXSET) {
 
@@ -990,8 +990,11 @@ char *query_view_val()
     }
    return query_view_str; 
 }
-ViewMode *get_view_mode()
+ViewMode *get_view_mode(int reset)
 {
+    if (reset) {
+        query_view_val_reset();
+    }
     if (view_mode == NULL ) {
         query_view_val();
     }
@@ -999,6 +1002,7 @@ ViewMode *get_view_mode()
 }
 static inline void query_view_val_reset()
 {
+    HTML_LOG(0,"query_view_val_reset");
     query_view_str = NULL;
     view_mode = NULL;
 }

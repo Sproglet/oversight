@@ -264,7 +264,7 @@ void delete_queue_add(DbItem *item,int force,char *path) {
 
         char *real_path=get_path(item,path,&freepath);
 
-        struct stat st;
+        struct stat64 st;
 
         if (util_stat(real_path,&st) == 0) {
 
@@ -387,7 +387,7 @@ void do_actions() {
 
     set_start_cell();
 
-    ViewMode *view=get_view_mode();
+    ViewMode *view=get_view_mode(1);
     char *action=query_val(QUERY_PARAM_ACTION);
     char *set_name=query_val(QUERY_PARAM_SET_NAME);
     char *set_val=query_val(QUERY_PARAM_SET_VAL);
@@ -644,13 +644,13 @@ TRACE;
                 // In this case the post data has a select box variable for each item
                 changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
                 do_action_by_id(changed_source_id_hash,lock_item);
+                hashtable_destroy(changed_source_id_hash,1,1);
 
-        } else if (allow_locking() && STRCMP(action,FORM_PARAM_SELECT_VALUE_UNLOCK) == 0) {
-
-                // The following actions are invoked when delisting via PC browser and form.
-                // In this case the post data has a select box variable for each item
-                changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
+                changed_source_id_hash = get_newly_deselected_ids_by_source(&total_deleted);
                 do_action_by_id(changed_source_id_hash,unlock_item);
+                hashtable_destroy(changed_source_id_hash,1,1);
+
+                query_remove(QUERY_PARAM_ACTION);
 
         } else if (allow_admin() && STRCMP(action,QUERY_PARAM_ACTION_VALUE_SET)==0 && util_starts_with(set_name,"ovs_poster_mode_")) {
 
@@ -1002,11 +1002,11 @@ void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *))
         int *ids = extract_ids(idlist,&num_ids);
 
         Db *db = db_init(NULL,source);
+
         DbItemSet *is = db_scan_titles(db,NULL,num_ids,ids,action);
 
-
-        // cleanup
         db_rowset_free(is);
+
         db_free(db);
         FREE(ids);
     }
@@ -1014,19 +1014,19 @@ void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *))
 
 void lock_item(DbItem *item)
 {
-    if (nmt_mount(item->file)) {
-        if (is_file(item->file)) {
-            permissions(0,0,0755,1,item->file);
-        }
+    HTML_LOG(0,"lock_item[%d][%s]",item->id,item->file);
+    nmt_mount(item->file);
+    if (is_file(item->file)) {
+        permissions(0,0,0755,1,item->file);
     }
 }
 
 void unlock_item(DbItem *item)
 {
-    if (nmt_mount(item->file)) {
-        if (is_file(item->file)) {
-            permissions(nmt_uid(),nmt_gid(),0755,1,item->file);
-        }
+    HTML_LOG(0,"unlock_item[%d][%s]",item->id,item->file);
+    nmt_mount(item->file);
+    if (is_file(item->file)) {
+        permissions(nmt_uid(),nmt_gid(),0755,1,item->file);
     }
 }
 

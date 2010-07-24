@@ -15,9 +15,10 @@
 void permissions(uid_t uid,gid_t gid,int mode,int recursive,char *path)
 {
     int result = 0;
-    struct stat st;
-    stat(path,&st);
+    struct stat64 st;
+    util_stat(path,&st);
 
+    HTML_LOG(0,"chown %d:%d chmod %o [%s]",uid,gid,mode,path);
     chown(path,uid,gid);
     result = chmod(path,mode);
     if (recursive && S_ISDIR(st.st_mode)) {

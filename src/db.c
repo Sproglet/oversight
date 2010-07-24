@@ -147,10 +147,8 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
 {
     int freepath;
 
-TRACE;
-    Db *db = CALLOC(1,sizeof(Db));
+    Db *db = CALLOC(sizeof(Db),1);
 
-TRACE;
     if (filename == NULL) {
         db->path = get_mounted_path(source,"/share/Apps/oversight/index.db",&freepath);
         if (!freepath) {
@@ -159,20 +157,19 @@ TRACE;
     } else {
         db->path =  STRDUP(filename);
     }
-TRACE;
+    HTML_LOG(0,"db path[%s]",db->path);
     db->plot_file = replace_all(db->path,"index.db","plot.db",0);
-    db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
+    //db->plot_file = replace_str(db->path,"index.db","plot.db");
+    HTML_LOG(0,"db path[%s]",db->plot_file);
+    //db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
+    db->actors_file = replace_str(db->path,"index.db","db/actors.db");
 
-TRACE;
     db->source= STRDUP(source);
 
-TRACE;
     ovs_asprintf(&(db->backup),"%s.%s",db->path,util_day_static());
 
-TRACE;
-    db->lockfile = replace_all(db->path,"index.db","catalog.lck",0);
+    db->lockfile = replace_str(db->path,"index.db","catalog.lck");
 
-TRACE;
     db->locked_by_this_code=0;
 
     if (STRCMP(db->source,"*") == 0) {
@@ -192,8 +189,7 @@ TRACE;
 DbItemSet *db_rowset(Db *db) {
     assert(db);
 
-    DbItemSet *dbrs = MALLOC(sizeof(DbItemSet));
-    memset(dbrs,0,sizeof(DbItemSet));
+    DbItemSet *dbrs = CALLOC(sizeof(DbItemSet),1);
     dbrs->db = db;
     return dbrs;
 }
@@ -264,21 +260,19 @@ void db_scan_and_add_rowset(char *path,char *name,Exp *exp,
         int *rowset_count_ptr,DbItemSet ***row_set_ptr) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
-TRACE;
     if (db_to_be_scanned(name)) {
-TRACE;
 
         Db *db = db_init(path,name);
 
         if (db) {
-TRACE;
 
             int num_ids;
             int *ids = extract_ids_by_source(query_val(QUERY_PARAM_IDLIST),db->source,&num_ids);
             DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL);
 
+            FREE(ids);
+
             if ( r != NULL ) {
-TRACE;
                 dump_all_rows2("rowset",r->size,r->rows);
 
                 (*row_set_ptr) = REALLOC(*row_set_ptr,((*rowset_count_ptr)+2)*sizeof(DbItemSet*));
@@ -457,7 +451,7 @@ DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)
 
     DbItemSet *rowset = NULL;
 
-    ViewMode *view=get_view_mode();
+    ViewMode *view=get_view_mode(1);
 
     int tv_or_movie_view = (view->view_class == VIEW_CLASS_DETAIL);
 
@@ -573,6 +567,10 @@ TRACE;
                 }
 
                 if (keeprow) {
+                    if (action) {
+                        HTML_LOG(0,"Doing action for [%d][%s]",rowid.id,rowid.file);
+                        action(&rowid);
+                    }
                     db_rowset_add(rowset,&rowid);
                     //HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
                 } else {
@@ -580,45 +578,40 @@ TRACE;
                 }
             }
         }
-
-        /*
-        HTML_LOG(0,"read_and_parse_row_ticks %d",read_and_parse_row_ticks/1000);
-        HTML_LOG(0,"inner_date_ticks %d",inner_date_ticks/1000);
-        HTML_LOG(0,"date_ticks %d",date_ticks/1000);
-        HTML_LOG(0,"assign_ticks %d",assign_ticks/1000);
-        HTML_LOG(0,"filter_ticks %d",filter_ticks/1000);
-        HTML_LOG(0,"keep_ticks %d",keep_ticks/1000);
-        HTML_LOG(0,"discard_ticks %d",discard_ticks/1000);
-        */
-
         dbreader_close(fp);
     }
     if (path != db->path) FREE(path);
     HTML_LOG(0,"db[%s] filtered %d of %d rows",db->source,(rowset?rowset->size:0),db->db_size);
-    FREE(ids);
     if (!EMPTY_STR(compressed_genre_filter)) FREE(compressed_genre_filter);
+
     HTML_LOG(1,"return rowset");
     return rowset;
 }
 
-void db_free(Db *db) {
+void db_free(Db *db)
+{
+    if (db) {
 
+        if (STRCMP(db->source,"*") == 0) {
+            g_local_db = NULL;
+        }
 
-    if (db->locked_by_this_code) {
-        db_unlock(db);
+        if (db->locked_by_this_code) {
+            db_unlock(db);
+        }
+        if (db->plot_fp) {
+            fclose(db->plot_fp);
+            db->plot_fp = NULL;
+        }
+
+        FREE(db->source);
+        FREE(db->path);
+        FREE(db->plot_file);
+        FREE(db->actors_file);
+        FREE(db->lockfile);
+        FREE(db->backup);
+        FREE(db);
     }
-    if (db->plot_fp) {
-        fclose(db->plot_fp);
-        db->plot_fp = NULL;
-    }
-
-    FREE(db->source);
-    FREE(db->path);
-    FREE(db->plot_file);
-    FREE(db->actors_file);
-    FREE(db->lockfile);
-    FREE(db->backup);
-    FREE(db);
 
 }
 
@@ -697,13 +690,15 @@ char *compress_genre(char *genre_names)
 void db_rowset_free(DbItemSet *dbrs) {
     int i;
 
-    for(i = 0 ; i<dbrs->size ; i++ ) {
-        DbItem *item = dbrs->rows + i;
-        db_rowid_free(item,0);
-    }
+    if (dbrs) {
+        for(i = 0 ; i<dbrs->size ; i++ ) {
+            DbItem *item = dbrs->rows + i;
+            db_rowid_free(item,0);
+        }
 
-    FREE(dbrs->rows);
-    FREE(dbrs);
+        FREE(dbrs->rows);
+        FREE(dbrs);
+    }
 }
 
 
@@ -1002,12 +997,12 @@ char *get_crossview_local_copy(char *path,char *label)
 
     if (util_starts_with(path,NETWORK_SHARE) ) {
 
-        struct stat remote_s;
-        if (stat(path,&remote_s) == 0) {
+        struct stat64 remote_s;
+        if (util_stat(path,&remote_s) == 0) {
             char *tmp;
             ovs_asprintf(&tmp,"%s/tmp/%s.%s",appDir(),util_basename(path),label);
-            struct stat local_s;
-            if (stat(tmp,&local_s) != 0 || remote_s.st_mtime > local_s.st_mtime ) {
+            struct stat64 local_s;
+            if (util_stat(tmp,&local_s) != 0 || remote_s.st_mtime > local_s.st_mtime ) {
                 // copy remote file
                 if (copy_file(path,tmp) == 0) {
                     local_path = tmp;

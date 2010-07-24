@@ -78,8 +78,8 @@ char *unpak_val(char *name);
 void query_update(char *name,char *new);
 void query_remove(char *name);
 char *query_view_val();
+ViewMode *get_view_mode(int reset);
 char *query_select_val();
-ViewMode *get_view_mode();
 char *view_mode_to_str(ViewMode *m);
 GridDirection str2grid_direction(char *name);
 #endif

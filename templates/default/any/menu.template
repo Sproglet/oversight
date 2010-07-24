@@ -103,7 +103,6 @@ table.overview_poster {
                     [<td align=center class=delist>:SELECT_DELIST_SUBMIT:</td>]
                     [<td align=center class=delete>:SELECT_DELETE_SUBMIT:</td>]
                     [<td align=center class=delete>:SELECT_LOCK_SUBMIT:</td>]
-                    [<td align=center class=delete>:SELECT_UNLOCK_SUBMIT:</td>]
                     <td align=right>[:RIGHT_BUTTON:]&nbsp;</td>
                 </tr>
             </table>

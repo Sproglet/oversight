@@ -1252,8 +1252,8 @@ char *macro_fn_media_type(MacroCallInfo *call_info) {
 char *macro_fn_version(MacroCallInfo *call_info) {
 
     char *version=OVS_VERSION;
-    char *tmp = replace_all(version,"beta","&#x3b2;",REG_ICASE); 
-    char *result =  replace_all(tmp,"alpha","&#x3b1;",REG_ICASE);
+    char *tmp = replace_str(version,"beta","&#x3b2;"); 
+    char *result =  replace_str(tmp,"alpha","&#x3b1;");
 
     FREE(tmp);
     return result;

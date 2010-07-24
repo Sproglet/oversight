@@ -873,6 +873,18 @@ int util_stat(char *path,struct stat64 *st)
     return result;
 }
 
+// Delete a file using seperate process
+void util_rmq(char *path,int recursive)
+{
+    char *f = replace_str(path,"'","\\'");
+    char *cmd;
+    ovs_asprintf(&cmd,"daemon rm %s '%s'", (recursive?"-fr":"--"),f);
+    util_system(cmd);
+    FREE(cmd);
+    FREE(f);
+}
+
+
 // recursive delete
 int util_rm(char *path)
 {
@@ -999,17 +1011,17 @@ char *clean_js_string(char *in)
 
     if (in != NULL) {
         if (strchr(out,'\'')) {
-            char *tmp = replace_all(out,"'","\\'",0);
+            char *tmp = replace_str(out,"'","\\'");
             if (out != in) FREE(out);
             out = tmp;
         }
         if (strstr(out,"&quot;")) {
-            char *tmp = replace_all(out,"&quot;","\\'",0);
+            char *tmp = replace_str(out,"&quot;","\\'");
             if (out != in) FREE(out);
             out = tmp;
         }
         if (strstr(out,"&amp;")) {
-            char *tmp = replace_all(out,"&amp;","&",0);
+            char *tmp = replace_str(out,"&amp;","&");
             if (out != in) FREE(out);
             out = tmp;
         }

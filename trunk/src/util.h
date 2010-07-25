@@ -24,6 +24,7 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts);
 char *replace_all_str(char *s_in,...);
 char *replace_url_params(char *s_in,...);
 char *replace_str(char *s_in,char *match,char *replace);
+char *replace_str_num(char *s_in,char *match,char *replace,int num);
 char *translate_inplace(
         char *str, // input text
         char *a,  // ordered list to translate characters from

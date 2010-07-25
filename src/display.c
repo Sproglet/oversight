@@ -3577,7 +3577,6 @@ HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
     for(i = 0 ; i < num_rows ; i++ ) {
         DbItem *item = sorted_rows[i];
-        char *date = get_date_static(item);
         int free_title=0;
         char *title = best_eptitle(item,&free_title);
 
@@ -3590,8 +3589,10 @@ HTML_LOG(0,"num rows = %d",num_rows);
                 "plot",NVL(item->plottext[PLOT_EPISODE]),
                 "info",item->file,
                 "title",title,
-                "date",date,
+                "date",get_date_static(item),
                 "share",share,
+                "watched",(item->watched?"1":"0"),
+                "locked",(is_locked(item)?"1":"0"),
                 NULL);
 
         array_add(outa,tmp);
@@ -3620,10 +3621,10 @@ char *get_date_static(DbItem *item)
     static char *recent_date_format=NULL;
     // Date format
     if (recent_date_format == NULL && !config_check_str(g_oversight_config,"ovs_date_format",&recent_date_format)) {
-        recent_date_format=" - %d %b";
+        recent_date_format="%d %b";
     }
     if (old_date_format == NULL && !config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
-        old_date_format=" - %d %b %y";
+        old_date_format="%d %b %y";
     }
 
 #define DATE_BUF_SIZ 40

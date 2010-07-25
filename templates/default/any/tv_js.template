@@ -1,58 +1,45 @@
-<!-- Template to map through to the appropriate JS compatability version -->
 <script type="text/javascript">
-
-function show(idlist,epno,plot_text,info,eptitle)
-{
-
-	var arrContent = eptitle.split("-"),
-		arrLength = arrContent.length,
-		episodeDate = "unknown",
-		showDate = true,
-		episodeTitle,
-		checkTitle,
-		checkEpno;
-		
-	if (arrLength > 1) {
-		episodeDate = arrContent[arrLength - 1];
-	}
-	episodeTitle = eptitle.replace("-" + episodeDate, "");
-	if (episodeTitle == "") { 
-		episodeTitle = eptitle;
-		showDate = false;
-	}
-	checkTitle = episodeTitle.replace(" ", "");
-	if (checkTitle == "") { 
-		episodeDate = "unknown";
-		episodeTitle = eptitle.replace("- ", "");
-	}
-    g_idlist = idlist;
-    g_epno = epno;
-    g_info = info;
-    titlecell.nodeValue = plot_text;
-	checkEpno = epno.replace(" ", "");
-	checkTitle = checkTitle.substring(0, checkTitle.length -1);
-    if (epno != "" ) {
-		if (checkTitle.indexOf(checkEpno) != -1) {
-			showDate = true;
-			episodecell.nodeValue = epno + " - ";
-		} else {
-			episodecell.nodeValue = epno + " : " + episodeTitle + " - ";
-		}
-		if (showDate && episodeDate != "unknown") {
-        	episodedatecell.nodeValue = "( " + episodeDate + " )";
-		} else {
-			episodedatecell.nodeValue = "";
-		}
-    } else {
-        episodecell.nodeValue = "Show Summary - ";
-        episodedatecell.nodeValue = "";
-    }
-}
 
 function showep(ep)
 {
-    show(ep["idlist"],ep["episode"],ep["plot"],ep["info"],ep["title"]);
+    var epTitle = ep["title"];
+    var epDate = ep["date"];
+    var epNo =  ep["episode"];
+
+    // Set globals for mark/delist/delete functions.
+
+    g_idlist = ep["idlist"];
+    g_epno =  ep["episode"];
+    g_info = ep["info"];
+
+    // Create nicer skin specific date and titles.
+    if (epNo == "") {
+
+        // Main show
+        epTitle = "Show Summary - ";
+        epDate = "";
+
+    } else {
+
+        // Episode
+        if (epDate != "" ) {
+            epDate = "("+epDate+")";
+        }
+
+        if (epNo != "" && epTitle.indexOf(epNo) >= 0) {
+            epTitle = epNo  + " - ";
+        } else {
+            epTitle = epNo + " : " + epTitle  + " - ";
+        }
+    }
+
+    // Set cell content based on selected episode
+
+    titlecell.nodeValue = ep["plot"];
+    episodecell.nodeValue = epTitle;
+    episodedatecell.nodeValue = epDate;
 }
 
+// vi:sw=4:et:ts=4:syntax=javascript
+
 </script>
-[:INCLUDE_TEMPLATE(tv_js_basic):]

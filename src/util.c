@@ -126,7 +126,10 @@ char *translate_inplace(
     return str;
 }
 
-char *replace_str(char *s_in,char *match,char *replace)
+/*
+ * replace match with relace. num=-1 = all occurences.
+ */
+char *replace_str_num(char *s_in,char *match,char *replace,int num)
 {
     char *out,*p;
     char *m,*s,*s1;
@@ -157,7 +160,7 @@ char *replace_str(char *s_in,char *match,char *replace)
             s1++;
             m++;
         }
-        if (*m) {
+        if (*m || num == 0) {
             // NO MATCH - copy all matching (from s to s1) AND the additional character that broke the match
             // Hence s <= s1 rather than s<s1
             while(s <= s1) {
@@ -168,13 +171,21 @@ char *replace_str(char *s_in,char *match,char *replace)
             strcpy(p,replace);
             p += replen;
             s = s1;
+            if (num > 0 ) {
+                num--;
+            }
         }
     }
     *p = '\0';
     return out;
 }
+char *replace_str(char *s_in,char *match,char *replace)
+{
+    return replace_str_num(s_in,match,replace,-1);
+}
+
 /*
- * Split a strin s_in into an array using regex pattern.
+ * Split a string s_in into an array using regex pattern.
  * If pattern is one character long then a simple
  * character split is used.
  */

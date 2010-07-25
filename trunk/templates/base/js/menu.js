@@ -73,5 +73,9 @@ function showt(title_text,idlist,unwatched,watched)
        unwatchedNode.nodeValue = ' ';
     }
 }
+function showmenut(menu)
+{
+    showt(menu["title"],menu["idlist"],menu["unwatched"],menu["watched"]);
+}
 
-function title0() { showt('.','','',''); }
+function title0() { showt({title:'.',idlist:'',unwatched:'',watched:''}); }

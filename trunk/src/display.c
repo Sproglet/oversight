@@ -2826,14 +2826,14 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
                 char *title = get_simple_title(item);
                 if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s',%d,%d); }\n",
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showmenut({ title:'%s',idlist:'%s',unwatched:%d,watched:%d }); }\n",
                             i+1+offset,title,build_id_list(item),
                             unwatched,
                             watched
                             );
                 } else {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showt('%s','%s','-','-'); }\n",
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showmenut({ title:'%s',idlist:'%s',unwatched:'-',watched:'-' }); }\n",
                             i+1+offset,title,build_id_list(item));
                 }
                 FREE(title);
@@ -3444,32 +3444,57 @@ void build_playlist(DbSortedRows *sorted_rows)
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-char *ep_js_fn(char *script_so_far,long fn_id,char *idlist,char *episode,char *plot,char *info,char *eptitle_or_genre,char *date,char *share) {
-    char *result = NULL;
+char *ep_js_fn(long fn_id,...) {
+    
+    va_list args;
+    va_start(args,fn_id);
 
-    char *js_plot = clean_js_string(plot);
-    char *js_info = clean_js_string(info);
-    char *js_eptitle = clean_js_string(eptitle_or_genre);
-    char *js_date = clean_js_string(date);
-    char *episode_prefix = "";
-    if (!EMPTY_STR(episode) && !util_starts_with(episode,"DVD")) {
-        episode_prefix="Episode ";
+    Array *a = array_new(free);
+
+    char sep = '{';
+    char *s;
+
+    while(1) {
+        
+        char *tmp;
+
+        s = va_arg(args,char *);
+        if (s==NULL) break;
+
+        //member name
+        ovs_asprintf(&tmp,"%c\n\t%s:",sep,s);
+        array_add(a,tmp);
+        sep=',';
+
+        //value
+        s = va_arg(args,char *);
+        if(s == NULL) {
+            s = STRDUP("");
+        }
+        char *tmp2 = clean_js_string(s);
+        ovs_asprintf(&tmp,"'%s'",tmp2);
+        if (tmp2 != s ) FREE(tmp2);
+        array_add(a,tmp);
     }
 
-    ovs_asprintf(&result,"%sfunction " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%lx() { show('%s','%s%s','%s','%s','%s%s%s%s%s'); }\n",
-            NVL(script_so_far),fn_id,
-                idlist,
-                episode_prefix,
-                episode,
-                IFEMPTY(js_plot,"(no plot info)"),
-                js_info,
-                NVL(js_eptitle),NVL(js_date),
-                (share?" [":""),NVL(share),(share?"]":""));
 
-    if (js_plot != plot) FREE(js_plot);
-    if (js_info != info) FREE(js_info);
-    if (js_eptitle != eptitle_or_genre) FREE(js_eptitle);
-    if (js_date != date) FREE(js_date);
+
+    char *tmp = arraystr(a);
+    array_free(a);
+
+    //char *js_plot = clean_js_string(plot);
+    //char *js_info = clean_js_string(info);
+    //char *js_eptitle = clean_js_string(eptitle_or_genre);
+    //char *js_date = clean_js_string(date);
+    //char *episode_prefix = "";
+    //if (!EMPTY_STR(episode) && !util_starts_with(episode,"DVD")) {
+        //episode_prefix="Episode ";
+    //}
+    char *result;
+
+    ovs_asprintf(&result,
+            "function " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%lx() { showep( %s\n} ); }\n",fn_id,tmp);
+    FREE(tmp);
 
     return result;
 }
@@ -3512,6 +3537,7 @@ char *create_episode_js_fn(int num_rows,DbItem **sorted_rows) {
 
     int i;
     char *tmp;
+    Array *outa = array_new(free);
 
 TRACE;
     // get titles from plot.db
@@ -3542,10 +3568,10 @@ TRACE;
 
 TRACE;
 
-    tmp = ep_js_fn(result,0,"","",NVL(main_plot),"",NVL(main_genre),NULL,NULL);
+    tmp = ep_js_fn(0,"plot",NVL(main_plot),"genre",NVL(main_genre),NULL);
+    array_add(outa,tmp);
+
     FREE(main_genre);
-    FREE(result);
-    result = tmp;
 
 HTML_LOG(0,"num rows = %d",num_rows);
     // Episode Plots
@@ -3558,15 +3584,28 @@ HTML_LOG(0,"num rows = %d",num_rows);
         int freeshare=0;
         char *share = share_name(item,&freeshare);
 
-        tmp = ep_js_fn(result,i+1,build_id_list(item),NVL(item->episode),NVL(item->plottext[PLOT_EPISODE]),item->file,title,date,share);
-        FREE(result);
+        tmp = ep_js_fn(i+1,
+                "idlist",build_id_list(item),
+                "episode",NVL(item->episode),
+                "plot",NVL(item->plottext[PLOT_EPISODE]),
+                "info",item->file,
+                "title",title,
+                "date",date,
+                "share",share,
+                NULL);
+
+        array_add(outa,tmp);
+
         if (free_title) FREE(title);
         if (freeshare) FREE(share);
-        result = tmp;
 
     }
 
-    ovs_asprintf(&tmp,"<script type=\"text/javascript\"><!--\n%s\n--></script>\n",result);
+    result = arraystr(outa);
+
+    array_free(outa);
+
+    ovs_asprintf(&tmp,"<script type=\"text/javascript\"><!--\n%s\n--></script>\n",NVL(result));
     FREE(result);
     result = tmp;
 

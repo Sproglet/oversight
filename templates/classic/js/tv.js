@@ -54,6 +54,7 @@ function action(a) {
 
     location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
 }
+
 function show(idlist,epno,plot_text,info,eptitle)
 {
     g_idlist = idlist;
@@ -65,4 +66,9 @@ function show(idlist,epno,plot_text,info,eptitle)
     } else {
         genrecell.nodeValue = eptitle;
     }
+}
+
+function showep(ep)
+{
+    show(ep["idlist"],ep["episode"],ep["plot"],ep["info"],ep["title"]);
 }

@@ -114,7 +114,6 @@
 [:MENU_TVID:]
 [:PLAY_TVID:]
 <script type="text/javascript" src="[:TEMPLATE_URL(js/tv.js):]"></script>
-[:INCLUDE_TEMPLATE(tv_js):]
 
 [:INCLUDE_TEMPLATE(common):]
 <!-- Title toggle -->

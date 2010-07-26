@@ -55,20 +55,23 @@ function action(a) {
     location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
 }
 
-function show(idlist,epno,plot_text,info,eptitle)
+function showep(ep)
 {
-    g_idlist = idlist;
-    g_epno = epno;
-    g_info = info;
-    titlecell.nodeValue = plot_text;
+    g_idlist = ep["idlist"];
+    g_epno = ep["episode"];
+    g_info = ep["info"];
+    var eptitle = ep["title"];
+
     if (epno != '' ) {
-        genrecell.nodeValue = epno + ' : ' + eptitle;
+        genrecell.nodeValue = g_epno + ' : ' + eptitle;
     } else {
         genrecell.nodeValue = eptitle;
     }
+    titlecell.nodeValue = ep["plot_text"];
 }
 
-function showep(ep)
+// deprecated function - use ovs_ep directly
+function show(idlist,epno,plot_text,info,eptitle)
 {
-    show(ep["idlist"],ep["episode"],ep["plot"],ep["info"],ep["title"]);
+    ovs_ep( { idlist:idlist , episode:epno , plot:plot_text , info:info , title:eptitle } );
 }

@@ -4,15 +4,11 @@
 var g_info='';
 
 function ovs_delist() {   
-	if (confirm("Delist "+g_title+"?")) {
-          action('delist');
-     }
+    ovs_util_action('delist',g_idlist,"Delist "+g_title+"?");
 }
 
 function ovs_delete() {   
-	if (confirm("Are you sure you want to DELETE the FILES for "+g_title+"?")) {
-          action('delete');
-     }
+    ovs_util_action('delete',g_idlist,"Delete files for "+g_title+"?");
 }
 
 function set_info(info) {
@@ -24,26 +20,15 @@ function ovs_info() {
 }
 
 function ovs_watched() {
-    action('watch');
+    ovs_util_action('watch',g_idlist);
 }
 
 function ovs_unwatched() {
-    action('unwatch');
+    ovs_util_action('unwatch',g_idlist);
 }
 function ovs_lock() {
-    action('lock');
+    ovs_util_action('lock',g_idlist);
 }
 function ovs_unlock() {
-    action('unlock');
-}
-
-function action(a) {
-    var sep;
-    if (window.location.href.indexOf('?') == -1 ) {
-        sep='?';
-    } else {
-        sep = '&';
-    }
-
-    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
+    ovs_util_action('unlock',g_idlist);
 }

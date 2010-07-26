@@ -126,6 +126,7 @@ table.overview_poster {
 [:ELSE:]
     <img class=fanartSegment src="[:FANART_URL(lightwave.jpg):]"/>
 [:ENDIF:]
+<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->
 [:TVIDS:]

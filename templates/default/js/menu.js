@@ -1,71 +1,32 @@
 // $Id:$
-var title = document.getElementById('menutitle').firstChild;
-var watchedNode = document.getElementById('watchedtotal').firstChild;
-var unwatchedNode = document.getElementById('unwatchedtotal').firstChild;
+var title = ovs_util_getcell('menutitle');
+var watchedNode = ovs_util_getcell('watchedtotal');
+var unwatchedNode = ovs_util_getcell('unwatchedtotal');
 
 var g_idlist = '';
 var g_title = '';
 
 function ovs_delist() {
-    if (g_idlist) {	        
-		if (confirm("Delist "+g_title+"?")) {
-	          action('delist');
-	     }
-   	}
+    ovs_util_action('delist',g_idlist,"Delist "+g_title+"?");
 }
 
 function ovs_delete() {
-    if (g_idlist) {	        
-		if (confirm("Delete files for "+g_title+"?")) {
-	          action('delete');
-	     }
-   	}
+    ovs_util_action('delete',g_idlist,"Delete files for "+g_title+"?");
 }
 
 function ovs_watched() {
-    if (g_idlist) {
-    	action('watch');
-    }
+    ovs_util_action('watch',g_idlist);
 }
 
 function ovs_unwatched() {
-    if (g_idlist) {
-    	action('unwatch');
-    }
+   	ovs_util_action('unwatch',g_idlist);
 }
 function ovs_lock() {
-    if (g_idlist) {	        
-          action('lock');
-   	}
+    ovs_util_action('lock',g_idlist);
 }
 function ovs_unlock() {
-    if (g_idlist) {	        
-          action('unlock');
-   	}
+    ovs_util_action('unlock',g_idlist);
 }
-
-
-function action(a) {
-    var sep;
-    if (window.location.href.indexOf('?') == -1 ) {
-        sep='?';
-    } else {
-        sep = '&';
-    }
-
-    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
-}
-
-function getPixelsFromTop(obj){
-	var objFromTop = obj.offsetTop;
-	while(obj.offsetParent!=null) {
-		var objParent = obj.offsetParent;
-		objFromTop += objParent.offsetTop;
-		var obj = objParent;
-	}
-	return objFromTop;
-}
-
 
 // Deperecated function so external skins will work
 // New skins should call ovs_menu directly

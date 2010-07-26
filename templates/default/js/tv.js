@@ -1,63 +1,37 @@
 // $Id:$
 var g_idlist='';
-var titlecell = document.getElementById('tvplot').firstChild;
-var genrecell = document.getElementById('genre').firstChild;
-var episodecell = document.getElementById('episode').firstChild;
-var episodedatecell = document.getElementById('epDate').firstChild;
+var titlecell = ovs_util_getcell('tvplot');
+var genrecell = ovs_util_getcell('genre');
+var episodecell = ovs_util_getcell('episode');
+var episodedatecell = ovs_util_getcell('epDate');
 var g_epno='';
 var g_info='';
 
 function ovs_delist() {  
-    if (g_epno != '') {
-		if (confirm("Delist " + g_epno + "?")) {
-			action('delist');
-		}
-	}
+    ovs_util_action('delist',g_idlist,"Delist "+g_epno+"?");
 }
 
 function ovs_delete() {   
-    if (g_epno != '') {
-		if (confirm("Are you sure you want to DELETE the FILES for " + g_epno + "?")) {
-			action('delete');
-		}
-	}
+    ovs_util_action('delete',g_idlist,"Delete files for "+g_epno+"?");
 }
 
 function ovs_info() {
     alert(g_info);
 }
 function ovs_watched() {
-    if (g_epno != '') {
-        action('watch');
-    }
+    ovs_util_action('watch',g_idlist);
 }
 
 function ovs_unwatched() {
-    if (g_epno != '') {
-        action('unwatch');
-    }
+    ovs_util_action('unwatch',g_idlist);
 }
 function ovs_lock() {
-    if (g_epno != '') {
-          action('lock');
-   	}
+    ovs_util_action('lock',g_idlist);
 }
 function ovs_unlock() {
-    if (g_epno != '') {
-          action('unlock');
-   	}
+    ovs_util_action('unlock',g_idlist);
 }
 
-function action(a) {
-    var sep;
-    if (window.location.href.indexOf('?') == -1 ) {
-        sep='?';
-    } else {
-        sep = '&';
-    }
-
-    location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
-}
 
 function ovs_ep(ep)
 {

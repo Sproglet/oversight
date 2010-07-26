@@ -9,6 +9,7 @@
             [:INCLUDE_TEMPLATE(css):]
 		</style>
 
+        <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
         <script type="text/javascript" src="[:TEMPLATE_URL(js/movie.js):]"></script>
 
 		<!-- Default Fanart Movie Template  $Id:$ -->

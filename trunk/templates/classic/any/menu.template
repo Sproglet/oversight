@@ -110,6 +110,7 @@ table.overview_poster {
         </td></tr></table>
 [:ENDIF:]
 [:FORM_END:]
+<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <script type="text/javascript">
 function info() {

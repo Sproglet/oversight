@@ -20,6 +20,7 @@ OVS_EXTERN(struct hashtable *g_query,NULL);
 OVS_EXTERN(struct hashtable *g_oversight_config,NULL);
 OVS_EXTERN(struct hashtable *g_unpack_config,NULL);
 OVS_EXTERN(struct hashtable *g_catalog_config,NULL);
+OVS_EXTERN(struct hashtable *g_skin_config,NULL);
 OVS_EXTERN(struct hashtable *g_nmt_settings,NULL);
 OVS_EXTERN(struct hashtable *g_genre_hash,NULL);
 OVS_EXTERN(struct hashtable *g_first_two_letters,NULL);

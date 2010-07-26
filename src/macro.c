@@ -571,7 +571,7 @@ char *macro_fn_set(MacroCallInfo *call_info)
     if (call_info->args == NULL || call_info->args->size != 2 ) {
         html_error("invalid arguments [:%s(name,val):]",call_info->call);
     } else {
-        set_skin_variable(call_info->args->array[0],call_info->args->array[1]);
+        set_tmp_skin_variable(call_info->args->array[0],call_info->args->array[1]);
     }
     return NULL;
 }
@@ -1132,9 +1132,9 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
     }
     if ((tmp = get_named_arg(h,"offset")) != NULL) {
         gs->offset = atoi(tmp);
-        tmp = get_skin_variable("skin_grid_size");
+        tmp = get_tmp_skin_variable("_grid_size");
         if (tmp == NULL) {
-            html_error("GRID: skin_grid_size must be set when using GRID segments. [:SET(skin_grid_size,value):]");
+            html_error("GRID: _grid_size must be set when using GRID segments. [:SET(_grid_size,value):]");
         }
         gs->parent->page_size = atoi(tmp);
     }
@@ -1518,7 +1518,7 @@ char *macro_fn_right_button(MacroCallInfo *call_info) {
 
     int page_size = g_dimension->current_grid->rows*g_dimension->current_grid->cols;
     HTML_LOG(0,"page_size=%d",page_size);
-    char *custom_grid_size = get_skin_variable("skin_grid_size");
+    char *custom_grid_size = get_tmp_skin_variable("_grid_size");
     if (!EMPTY_STR(custom_grid_size)) {
         page_size = atoi(custom_grid_size);
         HTML_LOG(0,"grid_size=%d",page_size);

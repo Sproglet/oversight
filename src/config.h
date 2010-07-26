@@ -74,6 +74,7 @@ char *query_val(char *name);
 char *catalog_val(char *name);
 char *setting_val(char *name);
 char *oversight_val(char *name);
+char *skin_val(char *name);
 char *unpak_val(char *name);
 void query_update(char *name,char *new);
 void query_remove(char *name);

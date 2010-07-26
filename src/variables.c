@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include "variables.h"
+#include <assert.h>
 
+#include "variables.h"
 #include "oversight.h"
 #include "util.h"
 #include "gaya.h"
@@ -184,21 +185,25 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
         result = get_indexed_field(f,sorted_rows);
 
 
-    } else if (util_starts_with(vname,"ovs_") ) {
+    } else if (util_starts_with(vname,VAR_PREFIX_SETTING_OVERSIGHT) ) {
 
         result = oversight_val(vname);
 
-    } else if (util_starts_with(vname,"catalog_")) {
+    } else if (util_starts_with(vname,VAR_PREFIX_SETTING_CATALOG)) {
 
         result = catalog_val(vname);
 
-    } else if (util_starts_with(vname,"unpak_")) {
+    } else if (util_starts_with(vname,VAR_PREFIX_SETTING_SKIN)) {
+
+        result = skin_val(vname);
+
+    } else if (util_starts_with(vname,VAR_PREFIX_SETTING_UNPAK)) {
 
         result = unpak_val(vname);
 
-    } else if (util_starts_with(vname,"skin_")) {
+    } else if (util_starts_with(vname,VAR_PREFIX_TMP_SKIN)) {
 
-        result = get_skin_variable(vname);
+        result = get_tmp_skin_variable(vname);
     }
     if (convert_int) {
         ovs_asprintf(&result,"%d",int_val);
@@ -208,19 +213,33 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
     return result;
 }
 
+/*
+ * Hold values of temporary variables that are defined while processing the template.
+ */
 static struct hashtable *vars = NULL;
-int set_skin_variable(char *name,char *value)
+int set_tmp_skin_variable(char *name,char *value)
 {
     int ret;
     if (vars == NULL) {
-        vars = string_string_hashtable("skin_vars",16);
+        vars = string_string_hashtable("tmp_vars",16);
     }
     ret = hashtable_insert(vars,STRDUP(name),STRDUP(value));
     HTML_LOG(0,"[%s=%s]",name,value);
     return ret;
 }
-char *get_skin_variable(char *name)
+
+void check_prefix(char *name,char *prefix)
 {
+    if (!util_starts_with(name,prefix)) {
+        HTML_LOG(0,"[%s] doesn\'t begin with [%s]",name,prefix);
+        assert(0);
+    }
+}
+
+char *get_tmp_skin_variable(char *name)
+{
+    check_prefix(name,VAR_PREFIX_TMP_SKIN);
+
     if (vars == NULL) {
         return NULL;
     } else {

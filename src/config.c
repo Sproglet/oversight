@@ -11,6 +11,7 @@
 #include "hashtable_loop.h"
 #include "gaya_cgi.h"
 #include "vasprintf.h"
+#include "variables.h"
 
 
 int rename_cfg(char *old,char *new);
@@ -83,6 +84,12 @@ void load_ovs_configs()
 
     g_catalog_config =
         config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
+
+    char *f;
+    ovs_asprintf(&f,"%s/templates/%s",appDir(),oversight_val("ovs_skin_name"));
+    g_skin_config = config_load_wth_defaults(f,".skin.cfg.defaults","skin.cfg");
+
+    FREE(f);
 
     get_boxset_modes();
 
@@ -195,34 +202,30 @@ void config_write_fp(struct hashtable *cfg,FILE *fp) {
     }
 }
 
-struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file) {
-
+struct hashtable *config_load_one(char *d,char *file)
+{
     char *f;
-    struct hashtable *out = NULL;
-    struct hashtable *new = NULL;
+    struct hashtable *result = NULL;
+    ovs_asprintf(&f,"%s/%s",d,file);
+
+    if (is_file(f)) {
+        result = config_load(f,0);
+    } else {
+        result = string_string_hashtable(f,16);
+    }
+    FREE(f);
+    return result;
+}
+
+struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *main_file)
+{
+
+    struct hashtable *out,*new;
    
-    // load the default settings
-    ovs_asprintf(&f,"%s/%s",d,defaults_file);
+    out = config_load_one(d,defaults_file);
+    new = config_load_one(d,main_file);
 
-    if (is_file(f)) {
-        out = config_load(f,0);
-    } else {
-        out = string_string_hashtable(f,16);
-    }
-    FREE(f);
-
-    // load the main settings
-    f = MALLOC(strlen(d)+strlen(main_file)+3);
-    sprintf(f,"%s/%s",d,main_file);
-
-    if (is_file(f)) {
-        new = config_load(f,0);
-    } else {
-        new = string_string_hashtable(f,16);
-    }
-    FREE(f);
-
-    merge_hashtables(out,new,1);
+    merge_hashtables(out,new,0);
 
     return out;
 
@@ -898,6 +901,7 @@ char *query_val(char *name)
 char *catalog_val(char *name)
 {
     char *val;
+    check_prefix(name,VAR_PREFIX_SETTING_CATALOG);
     if (config_check_str(g_catalog_config,name,&val)) {
         return val;
     } else {
@@ -907,7 +911,19 @@ char *catalog_val(char *name)
 char *oversight_val(char *name)
 {
     char *val;
+    check_prefix(name,VAR_PREFIX_SETTING_OVERSIGHT);
+
     if (config_check_str(g_oversight_config,name,&val)) {
+        return val;
+    } else {
+        return "";
+    }
+}
+char *skin_val(char *name)
+{
+    char *val;
+    check_prefix(name,VAR_PREFIX_SETTING_SKIN);
+    if (config_check_str(g_skin_config,name,&val)) {
         return val;
     } else {
         return "";
@@ -926,6 +942,7 @@ char *unpak_val(char *name)
 {
     char *val;
 
+    assert(util_starts_with(name,VAR_PREFIX_SETTING_UNPAK));
     if (g_unpack_config == NULL) {
         g_unpack_config = config_load_wth_defaults(appDir(),"conf/unpak.cfg.example","conf/unpak.cfg");
     }

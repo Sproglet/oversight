@@ -1,6 +1,7 @@
 # box set view - main menus need to be removed - or they need to strip idlist.
 #
 #
+#change ovs cells to ovs_
 
 add new config skin.cfg and skin.help and allow editing.
 

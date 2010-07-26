@@ -402,12 +402,14 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
        for(itr = hashtable_loop_init(h2); hashtable_loop_more(itr,&k,&v) ; ) {
 
             if (copy) {
-                v = strdup((char *)v);
-                assert(v);
+                v = STRDUP((char *)v);
             }
 
             if ( hashtable_change(h1,k,v) ) {
                 HTML_LOG(3,"Changed [ %s ] = [ %s ]",k,v);
+            } else if (copy) {
+                hashtable_insert(h1,STRDUP(k),v);
+                HTML_LOG(5,"Added [ %s ] = [ %s ]",k,v);
             } else {
                 hashtable_insert(h1,k,v);
                 HTML_LOG(5,"Added [ %s ] = [ %s ]",k,v);

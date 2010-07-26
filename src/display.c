@@ -2826,14 +2826,19 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
                 char *title = get_simple_title(item);
                 if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showmenut({ title:'%s',idlist:'%s',unwatched:%d,watched:%d }); }\n",
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { ovs_menu({"
+                                "\n\ttitle:'%s',"
+                                "\n\tidlist:'%s',"
+                                "\n\tunwatched:%d,"
+                                "\n\twatched:%d"
+                               "\n}); }\n",
                             i+1+offset,title,build_id_list(item),
                             unwatched,
                             watched
                             );
                 } else {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { showmenut({ title:'%s',idlist:'%s',unwatched:'-',watched:'-' }); }\n",
+                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { ovs_menu({ title:'%s',idlist:'%s',unwatched:'-',watched:'-' }); }\n",
                             i+1+offset,title,build_id_list(item));
                 }
                 FREE(title);
@@ -3493,7 +3498,7 @@ char *ep_js_fn(long fn_id,...) {
     char *result;
 
     ovs_asprintf(&result,
-            "function " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%lx() { showep( %s\n} ); }\n",fn_id,tmp);
+            "function " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%lx() { ovs_ep( %s\n} ); }\n",fn_id,tmp);
     FREE(tmp);
 
     return result;

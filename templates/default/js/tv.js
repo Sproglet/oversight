@@ -58,3 +58,43 @@ function action(a) {
 
     location.replace(window.location.href + sep + "action="+a+"&actionids="+g_idlist);
 }
+
+function ovs_ep(ep)
+{
+    var epTitle = ep["title"];
+    var epDate = ep["date"];
+    var epNo =  ep["episode"];
+
+    // Set globals for mark/delist/delete functions.
+
+    g_idlist = ep["idlist"];
+    g_epno =  ep["episode"];
+    g_info = ep["info"];
+
+    // Create nicer skin specific date and titles.
+    if (epNo == "") {
+
+        // Main show
+        epTitle = "Show Summary - ";
+        epDate = "";
+
+    } else {
+
+        // Episode
+        if (epDate != "" ) {
+            epDate = "("+epDate+")";
+        }
+
+        if (epNo != "" && epTitle.indexOf(epNo) >= 0) {
+            epTitle = epNo  + " - ";
+        } else {
+            epTitle = epNo + " : " + epTitle  + " - ";
+        }
+    }
+
+    // Set cell content based on selected episode
+
+    titlecell.nodeValue = ep["plot"];
+    episodecell.nodeValue = epTitle;
+    episodedatecell.nodeValue = epDate;
+}

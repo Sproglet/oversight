@@ -16,7 +16,7 @@ function ovs_delist() {
 
 function ovs_delete() {
     if (g_idlist) {	        
-		if (confirm("Are you sure you want to DELETE the FILES for "+g_title+"?")) {
+		if (confirm("Delete files for "+g_title+"?")) {
 	          action('delete');
 	     }
    	}
@@ -66,28 +66,53 @@ function getPixelsFromTop(obj){
 	return objFromTop;
 }
 
+
+// Deperecated function so external skins will work
+// New skins should call ovs_menu directly
 function showt(title_text,idlist,unwatched,watched)
 {
-   if (idlist != '') g_idlist = idlist;
-   g_title = title_text;
-   if (unwatched == '-' ) {
-       title.nodeValue = g_title;
-       watchedNode.nodeValue = '';
-       unwatchedNode.nodeValue = '';
-    } else if (unwatched > 0 ) {
-       title.nodeValue = '';
-       watchedNode.nodeValue = '';
-       unwatchedNode.nodeValue = g_title;
-    } else {
-       title.nodeValue = ' ';
-       watchedNode.nodeValue = g_title;
-       unwatchedNode.nodeValue = ' ';
-    }
+    var item = {
+        title:title_text,
+        idlist:idlist,
+        unwatched:unwatched,
+        watched:watched
+    };
+    ovs_menu(item);
 }
-function showmenut(menu)
+
+function ovs_menu(menu)
 {
-    showt(menu["title"],menu["idlist"],menu["unwatched"],menu["watched"]);
+    var watched = menu["watched"];
+    var unwatched = menu["unwatched"];
+
+   // Set global values for mark and delist functions
+   if (menu["idlist"] != '') {
+       g_idlist = menu["idlist"];
+   }
+   g_title = menu["title"];
+
+   // To get multi-colour text is displated in different cells
+   // depending on watched/unwatched count.
+   var title_text = "";
+   var watched_text = '';
+   var unwatched_text = '';
+
+   if (unwatched == '-' ) {
+       // Neutral colour
+       title_text = g_title;
+
+    } else if (unwatched > 0 ) {
+       // Unwatched colour - default green
+       unwatched_text = g_title;
+    } else {
+       // watched colour - default red
+       watched_text = g_title;
+    }
+
+   // Set cell values
+    title.nodeValue = title_text;
+    watchedNode.nodeValue = watched_text;
+    unwatchedNode.nodeValue = unwatched_text;
 }
 
-
-function title0() { showt({title:'.',idlist:'',unwatched:'',watched:''}); }
+function title0() { ovs_menu({title:'.',idlist:'',unwatched:'',watched:''}); }

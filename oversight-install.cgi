@@ -83,6 +83,23 @@ UPGRADE_CONFIG() {
     fi
 }
 
+SKIN_INSTALL() {
+
+    # run any skin installers
+    for inst in "$INSTALL_DIR"/templates/*/install.sh ; do
+
+        if [ -f "$inst" ] ; then
+
+            /bin/sh "$inst"
+
+        fi
+
+    done
+
+    # remove bad skin
+    rm -fr "$INSTALL_DIR/templates/gaya"
+}
+
 INSTALL() {
         "$shPath" UNINSTALL
         NZBGET_UNPAK_INSTALL 
@@ -94,8 +111,8 @@ INSTALL() {
         if [ -f /share/bin/wget ] ; then
             mv /share/bin/wget /share/bin/wget2 || true
         fi
-        # remove bad skin
-        rm -fr "$INSTALL_DIR/templates/gaya"
+
+        SKIN_INSTALL
 
         chmod -R 775 "$INSTALL_DIR"
         chown -R nmt:nmt "$INSTALL_DIR"

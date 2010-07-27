@@ -67,6 +67,7 @@ char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *tit
 char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *image_source(char *subfolder,char *image_name,char *ext);
 int is_drilldown_of(char *param_name,char *root_name) ;
+char *menu_js_fn(long fn_id,...);
 
 char *get_play_tvid(char *text) {
     char *result;
@@ -2826,16 +2827,13 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
                 char *title = get_simple_title(item);
                 if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { ovs_menu({"
-                                "\n\ttitle:'%s',"
-                                "\n\tidlist:'%s',"
-                                "\n\tunwatched:%d,"
-                                "\n\twatched:%d"
-                               "\n}); }\n",
-                            i+1+offset,title,build_id_list(item),
-                            unwatched,
-                            watched
-                            );
+                    menu_js_fn(i+1+offset,
+                            JS_ARG_STRING,"title",title,
+                            JS_ARG_STRING,"idlist",build_id_list(item),
+                            JS_ARG_INT,"unwatched",unwatched,
+                            JS_ARG_INT,"watched",watched,
+                            JS_ARG_END);
+
                 } else {
                     // Write the call to the show function and also tract the idlist;
                     printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { ovs_menu({ title:'%s',idlist:'%s',unwatched:'-',watched:'-' }); }\n",
@@ -3449,58 +3447,88 @@ void build_playlist(DbSortedRows *sorted_rows)
 
 // Add a javascript function to return a plot string.
 // returns number of characters in javascript.
-char *ep_js_fn(long fn_id,...) {
+//
+// Create a function call 
+// <function_prefix>id() { <called_function>( {field:value pairs} ) };
+//
+// This will probably change to just a js array element soon, so the calling js, can
+// walk through all items on page.
+//
+char *js_function(char *function_prefix,char *called_function,long fn_id,va_list ap) {
     
-    va_list args;
-    va_start(args,fn_id);
-
     Array *a = array_new(free);
 
     char sep = '{';
-    char *s;
+    char *s_member,*s_val;
+    int i_val;
 
     while(1) {
         
-        char *tmp;
+        char *tmp,*tmp2;
 
-        s = va_arg(args,char *);
-        if (s==NULL) break;
+        // Field type
+        JavascriptArgType js_arg_type = va_arg(ap,JavascriptArgType);
 
-        //member name
-        ovs_asprintf(&tmp,"%c\n\t%s:",sep,s);
+        if (js_arg_type == JS_ARG_END ) break;
+
+        // Field/Member name
+        s_member = va_arg(ap,char *);
+        ovs_asprintf(&tmp,"%c\n\t%s:",sep,s_member);
         array_add(a,tmp);
         sep=',';
 
         //value
-        s = va_arg(args,char *);
-        if(s == NULL) {
-            s = STRDUP("");
+        switch(js_arg_type) {
+            case JS_ARG_STRING:
+                s_val = va_arg(ap,char *);
+                tmp2 = clean_js_string(s_val);
+                ovs_asprintf(&tmp,"'%s'",tmp2);
+                if (tmp2 != s_val ) FREE(tmp2);
+                array_add(a,tmp);
+                break;
+            case JS_ARG_INT:
+                i_val = va_arg(ap,int);
+                ovs_asprintf(&tmp,"%d",i_val);
+                array_add(a,tmp);
+                break;
+            case JS_ARG_END:
+                assert(1);
         }
-        char *tmp2 = clean_js_string(s);
-        ovs_asprintf(&tmp,"'%s'",tmp2);
-        if (tmp2 != s ) FREE(tmp2);
-        array_add(a,tmp);
     }
-
-
 
     char *tmp = arraystr(a);
     array_free(a);
 
-    //char *js_plot = clean_js_string(plot);
-    //char *js_info = clean_js_string(info);
-    //char *js_eptitle = clean_js_string(eptitle_or_genre);
-    //char *js_date = clean_js_string(date);
-    //char *episode_prefix = "";
-    //if (!EMPTY_STR(episode) && !util_starts_with(episode,"DVD")) {
-        //episode_prefix="Episode ";
-    //}
     char *result;
 
     ovs_asprintf(&result,
-            "function " JAVASCRIPT_EPINFO_FUNCTION_PREFIX "%lx() { ovs_ep( %s\n} ); }\n",fn_id,tmp);
+            "function %s" "%lx() { %s( %s\n} ); }\n",function_prefix,fn_id,called_function,tmp);
     FREE(tmp);
 
+    return result;
+}
+
+char *ep_js_fn(long fn_id,...)
+{
+
+    char *result = NULL;
+
+    va_list ap;
+    va_start(ap,fn_id);
+    result = js_function(JAVASCRIPT_EPINFO_FUNCTION_PREFIX ,"ovs_ep",fn_id,ap);
+    va_end(ap);
+    return result;
+}
+
+char *menu_js_fn(long fn_id,...)
+{
+
+    char *result = NULL;
+
+    va_list ap;
+    va_start(ap,fn_id);
+    result = js_function(JAVASCRIPT_MENU_FUNCTION_PREFIX ,"ovs_menu",fn_id,ap);
+    va_end(ap);
     return result;
 }
 
@@ -3573,7 +3601,10 @@ TRACE;
 
 TRACE;
 
-    tmp = ep_js_fn(0,"plot",NVL(main_plot),"genre",NVL(main_genre),NULL);
+    tmp = ep_js_fn(0,
+            JS_ARG_STRING,"plot",NVL(main_plot),
+            JS_ARG_STRING,"genre",NVL(main_genre),
+            JS_ARG_END);
     array_add(outa,tmp);
 
     FREE(main_genre);
@@ -3589,16 +3620,16 @@ HTML_LOG(0,"num rows = %d",num_rows);
         char *share = share_name(item,&freeshare);
 
         tmp = ep_js_fn(i+1,
-                "idlist",build_id_list(item),
-                "episode",NVL(item->episode),
-                "plot",NVL(item->plottext[PLOT_EPISODE]),
-                "info",item->file,
-                "title",title,
-                "date",get_date_static(item),
-                "share",share,
-                "watched",(item->watched?"1":"0"),
-                "locked",(is_locked(item)?"1":"0"),
-                NULL);
+                JS_ARG_STRING,"idlist",build_id_list(item),
+                JS_ARG_STRING,"episode",NVL(item->episode),
+                JS_ARG_STRING,"plot",NVL(item->plottext[PLOT_EPISODE]),
+                JS_ARG_STRING,"info",item->file,
+                JS_ARG_STRING,"title",title,
+                JS_ARG_STRING,"date",get_date_static(item),
+                JS_ARG_STRING,"share",share,
+                JS_ARG_INT,"watched",item->watched,
+                JS_ARG_INT,"locked",is_locked(item),
+                JS_ARG_END);
 
         array_add(outa,tmp);
 

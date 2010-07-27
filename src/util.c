@@ -1022,7 +1022,9 @@ char *clean_js_string(char *in)
 {
     char *out = in;
 
-    if (in != NULL) {
+    if (in == NULL) {
+        return STRDUP("");
+    } else {
         if (strchr(out,'\'')) {
             char *tmp = replace_str(out,"'","\\'");
             if (out != in) FREE(out);

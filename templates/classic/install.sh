@@ -16,6 +16,7 @@ install_skin() {
 
 
     rm -fr "$skin_home/js"
+    rm -fr "$skin_home/css/default.css"
     rm -fr "$skin_home/any/"{movie,tv,tv_css,tv_js_basic,tv_js_advanced,tv_js}.template
 
 }

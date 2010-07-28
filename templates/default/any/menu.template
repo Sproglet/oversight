@@ -51,7 +51,7 @@ table.overview_poster {
                     <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
                     <td align=left>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>
 [:ELSE:]
-                    <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,8+/8-10):]</td>
+                    <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):]</td>
 [:ENDIF:]
                     <td align=left>[:SORT_TYPE_TOGGLE:]</td>
 [:IF($?resizeon):]

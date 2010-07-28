@@ -54,7 +54,7 @@ font.unwatched {
 
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { background-color:red; }
-.delist { background-color:yellow; }
+.delist { ; }
 .cancel { ; }
 .mark { ; }
 

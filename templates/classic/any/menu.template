@@ -91,18 +91,7 @@ table.overview_poster {
             <table class=footer width=100%>
                 <tr valign=top>
                     <td width=10%>[:LEFT_BUTTON:]</td>
-                    [<td align=center>:BACK_BUTTON:</td>]
-[:IF($@gaya):]
-[:ELSE:]
-                    [<td align=center>:MARK_BUTTON:</td>]
-                    [<td align=center>:LOCK_BUTTON:</td>]
-                    [<td align=center>:DELETE_BUTTON:</td>]
-[:ENDIF:]
-                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
-                    [<td align=center class=cancel >:SELECT_CANCEL_SUBMIT:</td>]
-                    [<td align=center class=delist >:SELECT_DELIST_SUBMIT:</td>]
-                    [<td align=center class=delete >:SELECT_DELETE_SUBMIT:</td>]
-                    [<td align=center class=delete >:SELECT_LOCK_SUBMIT:</td>]
+                    [:INCLUDE_TEMPLATE(menu_buttons):]
                     <td width=10% align=right>[:RIGHT_BUTTON:]</td>
                 </tr>
             </table>

@@ -1025,11 +1025,6 @@ char *clean_js_string(char *in)
     if (in == NULL) {
         return STRDUP("");
     } else {
-        if (strchr(out,'\'')) {
-            char *tmp = replace_str(out,"'","\\'");
-            if (out != in) FREE(out);
-            out = tmp;
-        }
         if (strstr(out,"&quot;")) {
             char *tmp = replace_str(out,"&quot;","\\'");
             if (out != in) FREE(out);
@@ -1043,6 +1038,30 @@ char *clean_js_string(char *in)
         replace_char(out,'\r',' ');
         replace_char(out,'\n',' ');
 
+        // Escape any quotes that are not already escaped
+        // this allows multiple calls for clean_js_string
+        if (strchr(out,'\'')) {
+            char *q,*p,*tmp;
+            tmp = q = MALLOC(2*strlen(out));
+            p = out;
+            while(*p) {
+                switch(*p) {
+                    case '\\':
+                        *q++ = *p++;
+                        *q++ = *p++;
+                        break;
+                    case '\'':
+                        *q++ = '\\';
+                        *q++ = *p++;
+                        break;
+                    default:
+                        *q++ = *p++;
+                }
+            }
+            *q = '\0';
+            if (out != in) FREE(out);
+            out = tmp;
+        }
     }
     return out;
 }

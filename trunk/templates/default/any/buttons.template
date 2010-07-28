@@ -4,6 +4,7 @@
 [:IF($@gaya):]
 [:ELSE:]
     [:MARK_BUTTON:]
+    [:LOCK_BUTTON:]
     [:DELETE_BUTTON:]
 [:ENDIF:]
 

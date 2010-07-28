@@ -47,21 +47,7 @@ table.overview_poster {
             <table class=header width=100% background="[:IMAGE_URL(images/bluemenu2.png):]" >
 [:ENDIF:]
                 <tr>
-                    [<td>&nbsp;:BACK_BUTTON:&nbsp;&nbsp;&nbsp;&nbsp;</td>]
-[:IF($?resizeon):]
-                    <td>[:RESIZE_CONTROLS:]</td>
-[:ELSE:]
-                    <td>[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
-[:ENDIF:]
-[:IF($@gaya):]
-[:ELSE:]
-                    <td>[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
-                    <td>[:MARK_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
-[:ENDIF:]
-                    [<td align="center" width="20%">:SELECT_MARK_SUBMIT:</td>]
-                    [<td align="center" width="20%">:SELECT_CANCEL_SUBMIT:</td>]
-                    [<td align="center" width="20%">:SELECT_DELIST_SUBMIT:</td>]
-                    [<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>]
+                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
                     	<span class=menubarTitle><b>[:TITLE:]</b>&nbsp;&nbsp;</span>
                     </td>

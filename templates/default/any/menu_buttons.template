@@ -10,4 +10,6 @@
 [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
 [<td align=center class=delete>:SELECT_LOCK_SUBMIT:</td>]
 
-<!-- vi:ts=4:sw=4:et:syntax=html -->
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

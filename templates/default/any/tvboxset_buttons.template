@@ -1,0 +1,21 @@
+[<td>&nbsp;:BACK_BUTTON:&nbsp;&nbsp;&nbsp;&nbsp;</td>]
+[:IF($?resizeon):]
+    <td>[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
+	<td>[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+[:ENDIF:]
+[:IF($@gaya):]
+[:ELSE:]
+	<td>[:MARK_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td>[:LOCK_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td>[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
+[:ENDIF:]
+
+[<td align="center" width="20%">:SELECT_MARK_SUBMIT:</td>]
+[<td align="center" width="20%">:SELECT_CANCEL_SUBMIT:</td>]
+[<td align="center" width="20%">:SELECT_DELIST_SUBMIT:</td>]
+[<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>]
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

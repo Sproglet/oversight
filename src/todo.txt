@@ -5,6 +5,8 @@ Scrape Person Image
 Add Person Macros - Name - Image
 Add Web Scrape if no imdb pic
 
+Make watch/unwatch toggle off single button (ie green). Get status of first item, invert it and set all to same value.
+
 =====
 
 Checkin status:

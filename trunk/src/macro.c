@@ -2153,6 +2153,8 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                         sprintf(id, "%s%07d",NVL(group->prefix),group->dbgi_ids[i]);
 
                         Array *name_info=dbnames_fetch(id,name_file);
+
+
                         if (name_info) {
 
                             char *link = get_person_drilldown_link(VIEW_PERSON,id+prefix_len,"",name_info->array[1],"","");
@@ -2162,6 +2164,8 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
                             array_add(out,link);
 
                             array_free(name_info);
+                        } else {
+                            array_add(out,STRDUP(id));
                         }
 
                     }

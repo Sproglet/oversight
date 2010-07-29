@@ -104,18 +104,12 @@ table.overview_poster {
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <script type="text/javascript">
 function info() {
-    alert('[[:$ovs_tvid_mark:]] - mark watched\n[[:$ovs_tvid_unmark:]] - unwatch\n[[:$ovs_tvid_delist:]] - delist\n[[:$ovs_tvid_delete:]] Delete Media');
+    alert('[[:$ovs_tvid_mark:]]/[[:$ovs_tvid_unmark:]] - mark/unmark\n - unwatch\n[[:$ovs_tvid_delist:]] - delist\n[[:$ovs_tvid_delete:]] Delete Media\n[[:$ovs_tvid_lock:]] - lock');
 }
 </script>
 <!-- tvids -->
 [:TVIDS:]
-<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
-<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
-<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
-<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
-<a href="javascript:info();" tvid="INFO"></a>
-<a href="javascript:ovs_lock();" tvid="[:$ovs_tvid_lock:]"></a>
-<a href="javascript:ovs_unlock();" tvid="[:$ovs_tvid_unlock:]"></a>
+[:INCLUDE_TEMPLATE(common):]
     </body>
 </html>
 <!--

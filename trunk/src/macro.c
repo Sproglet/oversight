@@ -1578,9 +1578,8 @@ char *macro_fn_mark_button(MacroCallInfo *call_info) {
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("mark",NULL);
             ovs_asprintf(&result,
-                    "<a href=\"javascript:alert('Select item then remote\n[%s]=watched,\n[%s]=not watched')\">%s</a>",
+                    "<a href=\"javascript:alert('Select item then remote\n[%s] button')\">%s</a>",
                 oversight_val("ovs_tvid_mark"),
-                oversight_val("ovs_tvid_unmark"),
                 tag);
             FREE(tag);
         } else {
@@ -1613,9 +1612,8 @@ char *macro_fn_lock_button(MacroCallInfo *call_info) {
         if (g_dimension->local_browser) {
             char *tag=get_theme_image_tag("security",NULL);
             ovs_asprintf(&result,
-                "<a href=\"javascript:alert('Select item then remote\n[%s]/[%s] button')\">%s</a>",
+                "<a href=\"javascript:alert('Select item then remote\n[%s] button')\">%s</a>",
                 oversight_val("ovs_tvid_lock"),
-                oversight_val("ovs_tvid_unlock"),
                 tag);
             FREE(tag);
         } else {

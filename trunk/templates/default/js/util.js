@@ -11,7 +11,7 @@ function ovs_util_getcell(name) {
 function ovs_util_action(a,idlist,prompt_str) {
     var sep;
     if (idlist) {
-        if (prompt_str=="" || confirm(prompt_str)) {
+        if (prompt_str=="" || !prompt_str || confirm(prompt_str)) {
             if (window.location.href.indexOf('?') == -1 ) {
                 sep='?';
             } else {

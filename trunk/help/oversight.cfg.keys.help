@@ -1,5 +1,5 @@
-ovs_tvid_delete:Remote Delete sequence|1111
+ovs_tvid_delete:Remote Delete sequence|RED
 ovs_tvid_delist:Remote Delist sequence|CLEAR
-ovs_tvid_mark:Remote Mark sequence|RED
-ovs_tvid_unmark:Remote UnMark sequence|GREEN
+ovs_tvid_mark:Remote Mark sequence|GREEN
+ovs_tvid_lock:Remote Lock sequence|YELLOW
 

@@ -25,16 +25,25 @@
 // is passed as an option to the catalog.sh command
 // This is to allow for radio buttons.
 #define RESCAN_OPT_GROUP_PREFIX "rescan_opt_@group"
+
+
+typedef enum { LOCK_STATUS_UNKNOWN , LOCK_STATUS_LOCK , LOCK_STATUS_UNLOCK } LockMode;
+typedef enum { MARKED_STATUS_UNKNOWN , MARKED_STATUS_MARKED , MARKED_STATUS_UNMARKED } MarkedStatus;
+
+
 struct hashtable *get_newly_selected_ids_by_source(int *totalp);
 struct hashtable *get_newly_deselected_ids_by_source(int *totalp);
 int count_unchecked();
-void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *));
+void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *,void *),void *action_data);
 // Add val=src1(id|..)src2(id|..) to hash table.
 int idlist_to_idhash(struct hashtable *h,char *val);
 int idcount(char *idlist);
 void update_idlist(struct hashtable *source_id_hash_removed);
-void lock_item(DbItem *item);
-void unlock_item(DbItem *item);
+
+void lock_item_cb(DbItem *item,void *action_data);
+void unlock_item_cb(DbItem *item,void *action_data);
+void lock_toggle_item_cb(DbItem *item,void *action_data);
+void get_marked_status_cb(DbItem *item,void *data);
 
 //True if there was post data.
 int has_post_data() {
@@ -561,11 +570,15 @@ void do_actions() {
 
             if (allow_mark() && STRCMP(action,"watch") == 0) {
 
-                db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
-
-            } else if (allow_mark() && STRCMP(action,"unwatch") == 0) {
-
-                db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
+                MarkedStatus m = MARKED_STATUS_UNKNOWN;
+                do_action_by_id(changed_source_id_hash,get_marked_status_cb,&m);
+                char *val=NULL;
+                switch(m) {
+                    case MARKED_STATUS_MARKED: val = "0" ; break;
+                    case MARKED_STATUS_UNMARKED: val = "1" ; break;
+                    default: assert(0);
+                }
+                db_set_fields(DB_FLDID_WATCHED,val,changed_source_id_hash,DELETE_MODE_NONE);
 
             } else if (allow_delete() && STRCMP(action,"delete") == 0) {
 
@@ -585,11 +598,9 @@ void do_actions() {
 
             } else if (allow_locking() && STRCMP(action,"lock") == 0) {
 
-                do_action_by_id(changed_source_id_hash,lock_item);
+                LockMode mode = LOCK_STATUS_UNKNOWN;
+                do_action_by_id(changed_source_id_hash,lock_toggle_item_cb,&mode);
 
-            } else if (allow_locking() && STRCMP(action,"unlock") == 0) {
-
-                do_action_by_id(changed_source_id_hash,unlock_item);
             }
             query_remove(QUERY_PARAM_ACTION);
             query_remove("actionids");
@@ -643,11 +654,11 @@ TRACE;
                 // The following actions are invoked when delisting via PC browser and form.
                 // In this case the post data has a select box variable for each item
                 changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
-                do_action_by_id(changed_source_id_hash,lock_item);
+                do_action_by_id(changed_source_id_hash,lock_item_cb,NULL);
                 hashtable_destroy(changed_source_id_hash,1,1);
 
                 changed_source_id_hash = get_newly_deselected_ids_by_source(&total_deleted);
-                do_action_by_id(changed_source_id_hash,unlock_item);
+                do_action_by_id(changed_source_id_hash,unlock_item_cb,NULL);
                 hashtable_destroy(changed_source_id_hash,1,1);
 
                 query_remove(QUERY_PARAM_ACTION);
@@ -990,7 +1001,7 @@ HTML_LOG(1," end get_newly_deselected_ids_by_source");
     return h;
 }
 
-void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *))
+void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *,void *),void *action_data)
 {
     struct hashtable_itr *itr;
     char *source;
@@ -1003,7 +1014,7 @@ void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *))
 
         Db *db = db_init(NULL,source);
 
-        DbItemSet *is = db_scan_titles(db,NULL,num_ids,ids,action);
+        DbItemSet *is = db_scan_titles(db,NULL,num_ids,ids,action,action_data);
 
         db_rowset_free(is);
 
@@ -1012,21 +1023,61 @@ void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *))
     }
 }
 
-void lock_item(DbItem *item)
+void lock_item_cb(DbItem *item,void *action_data)
 {
-    HTML_LOG(0,"lock_item[%d][%s]",item->id,item->file);
+    HTML_LOG(0,"lock_item_cb[%d][%s]",item->id,item->file);
     nmt_mount(item->file);
     if (is_file(item->file)) {
         permissions(0,0,0755,1,item->file);
     }
 }
 
-void unlock_item(DbItem *item)
+void unlock_item_cb(DbItem *item,void *action_data)
 {
-    HTML_LOG(0,"unlock_item[%d][%s]",item->id,item->file);
+    HTML_LOG(0,"unlock_item_cb[%d][%s]",item->id,item->file);
     nmt_mount(item->file);
     if (is_file(item->file)) {
         permissions(nmt_uid(),nmt_gid(),0755,1,item->file);
+    }
+}
+
+void lock_toggle_item_cb(DbItem *item,void *action_data)
+{
+    // Get the locking mode
+    LockMode mode = *(LockMode *)action_data;
+
+    // If lock mode not set then make it opposite of current items lock status
+    if (mode == LOCK_STATUS_UNKNOWN) {
+        if (is_locked(item)) {
+            mode = LOCK_STATUS_UNLOCK;
+        } else {
+            mode = LOCK_STATUS_LOCK;
+        }
+        *(LockMode *)action_data = mode;
+    }
+    switch(mode) {
+        case LOCK_STATUS_LOCK:
+            lock_item_cb(item,NULL); break;
+        case LOCK_STATUS_UNLOCK:
+            unlock_item_cb(item,NULL); break;
+        case LOCK_STATUS_UNKNOWN:
+            assert(0);
+    }
+}
+
+
+void get_marked_status_cb(DbItem *item,void *data)
+{
+    MarkedStatus status = *(int *)data;
+    if (status == MARKED_STATUS_UNKNOWN) {
+        if (item->watched) {
+            HTML_LOG(0,"Got marked status");
+            status = MARKED_STATUS_MARKED;
+        } else {
+            HTML_LOG(0,"Got unmarked status");
+            status = MARKED_STATUS_UNMARKED;
+        }
+        *(MarkedStatus *)data = status;
     }
 }
 

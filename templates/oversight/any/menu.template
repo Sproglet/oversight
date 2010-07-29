@@ -78,16 +78,6 @@ table.overview_poster {
                 <tr valign=top>
                     <td width=10%>[:LEFT_BUTTON:]</td>
                     [:INCLUDE_TEMPLATE(menu_buttons):]
-                    [<td align=center>:BACK_BUTTON:</td>]
-[:IF($@gaya):]
-[:ELSE:]
-                    [<td align=center>:MARK_BUTTON:</td>]
-                    [<td align=center>:DELETE_BUTTON:</td>]
-[:ENDIF:]
-                    [<td align=center>:SELECT_MARK_SUBMIT:</td>]
-                    [<td align=center class=cancel width=26%>:SELECT_CANCEL_SUBMIT:</td>]
-                    [<td align=center class=delist width=26%>:SELECT_DELIST_SUBMIT:</td>]
-                    [<td align=center class=delete width=26%>:SELECT_DELETE_SUBMIT:</td>]
                     <td><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
 
                     <td width=10% align=right>[:RIGHT_BUTTON:]</td>
@@ -106,11 +96,7 @@ function info() {
 </script>
 <!-- tvids -->
 [:TVIDS:]
-<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
-<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
-<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
-<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
-<a href="javascript:info();" tvid="INFO"></a>
+[:INCLUDE_TEMPLATE(common):]
     </body>
 </html>
 <!--

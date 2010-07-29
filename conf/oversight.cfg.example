@@ -30,9 +30,9 @@ ovs_get_fanart=1
 ovs_get_portraits=1
 
 ovs_tvid_delist=CLEAR
-ovs_tvid_delete=1111
-ovs_tvid_mark=RED
-ovs_tvid_unmark=GREEN
+ovs_tvid_delete=RED
+ovs_tvid_mark=GREEN
+ovs_tvid_lock=YELLOW
 
 ovs_poster_mode[0]=1
 ovs_rows[0]=9

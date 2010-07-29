@@ -108,12 +108,7 @@ function info() {
 </script>
 <!-- tvids -->
 [:TVIDS:]
-
-<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
-<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
-<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
-<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
-<a href="javascript:info();" tvid="INFO"></a>
+[:INCLUDE_TEMPLATE(common):]
     </body>
 </html>
 <!--

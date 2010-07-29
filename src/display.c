@@ -2797,19 +2797,17 @@ int all_linked_rows_delisted(DbItem *rowid)
     return 1;
 }
 
-void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_ids)
+char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_ids)
 {
     int i,r,c;
+    Array *script = array_new(free);
 
-    HTML_LOG(0,"%s script start offset %d %dx%d",__func__,offset,rows,cols);
 
-
-    printf("<script type=\"text/javascript\"><!--\n");
     
     static int first_time=1;
     if (first_time) {
         first_time = 0;
-        printf("function t_0() { ; }\n");
+        array_add(script,STRDUP("function t_0() { ; }\n"));
     }
 
     for ( r = 0 ; r < rows ; r++ ) {
@@ -2823,11 +2821,12 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
                 get_watched_counts(item,&watched,&unwatched);
 
                 //HTML_LOG(0,"xx %s age = %x ",item->title,*timestamp_ptr(item));
+                char *js_fn_call;
 
                 char *title = get_simple_title(item);
                 if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    menu_js_fn(i+1+offset,
+                    js_fn_call = menu_js_fn(i+1+offset,
                             JS_ARG_STRING,"title",title,
                             JS_ARG_STRING,"idlist",build_id_list(item),
                             JS_ARG_INT,"unwatched",unwatched,
@@ -2835,16 +2834,24 @@ void write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_
                             JS_ARG_END);
 
                 } else {
-                    // Write the call to the show function and also tract the idlist;
-                    printf("function " JAVASCRIPT_MENU_FUNCTION_PREFIX "%x() { ovs_menu({ title:'%s',idlist:'%s',unwatched:'-',watched:'-' }); }\n",
-                            i+1+offset,title,build_id_list(item));
+                    // Dont show watched/unwatched for movies
+                    js_fn_call = menu_js_fn(i+1+offset,
+                            JS_ARG_STRING,"title",title,
+                            JS_ARG_STRING,"idlist",build_id_list(item),
+                            JS_ARG_STRING,"unwatched","-",
+                            JS_ARG_STRING,"watched","-",
+                            JS_ARG_END);
                 }
+                array_add(script,js_fn_call);
+
                 FREE(title);
             }
         }
     }
-    printf("--></script>\n");
+    char *result = arraystr(script);
+    array_free(script);
     HTML_LOG(0,"write_titlechanger end");
+    return result;
 }
 
 // Generate the HTML for the grid. 
@@ -2905,8 +2912,7 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
         height_attr=STRDUP("");
     }
 
-    // First output the javascript functions - diretly to stdout - lazy.
-    write_titlechanger(gs->offset,rows,cols,numids,row_ids);
+    char *title_change_script = write_titlechanger(gs->offset,rows,cols,numids,row_ids);
 
 TRACE;
     Array *rowArray = array_new(free);
@@ -2981,10 +2987,15 @@ TRACE;
     result = arraystr(rowArray);
     array_free(rowArray);
 
-    ovs_asprintf(&tmp,"<center><table class=overview_poster %s>\n%s\n</table></center>\n",
+    ovs_asprintf(&tmp,
+            "<script type=\"text/javascript\"><!--\n%s\n--></script>\n"
+            "<center><table class=overview_poster %s>\n%s\n</table></center>\n",
+            title_change_script,
             (g_dimension->poster_mode?"":" width=100%"),
             (result?result:"<tr><td>No results</td><tr>")
     );
+
+    FREE(title_change_script);
 
     FREE(result);
     result=tmp;

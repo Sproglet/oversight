@@ -131,11 +131,7 @@ table.overview_poster {
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->
 [:TVIDS:]
-<a href="javascript:ovs_info();" tvid="INFO"></a>
-<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
-<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
-<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
-<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
+[:INCLUDE_TEMPLATE(common):]
     </body>
 </html>
 <!--

@@ -69,7 +69,7 @@ Db *db_init(char *filename, // path to the file
         char *source       // logical name or tag - local="*"
         );
 
-DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *));
+DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *,void *),void *action_data);
 int db_lock(Db *db);
 int db_unlock(Db *db);
 void db_rowset_free(DbItemSet *dbrs);

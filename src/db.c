@@ -266,7 +266,7 @@ void db_scan_and_add_rowset(char *path,char *name,Exp *exp,
 
             int num_ids;
             int *ids = extract_ids_by_source(query_val(QUERY_PARAM_IDLIST),db->source,&num_ids);
-            DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL);
+            DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL,NULL);
 
             FREE(ids);
 
@@ -444,7 +444,7 @@ int *extract_ids_by_source(char *query,char *dbsource,int *num_ids)
     return result;
 }
 
-DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *))
+DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *,void *),void *action_data)
 {
 
     DbItemSet *rowset = NULL;
@@ -567,7 +567,7 @@ TRACE;
                 if (keeprow) {
                     if (action) {
                         HTML_LOG(0,"Doing action for [%d][%s]",rowid.id,rowid.file);
-                        action(&rowid);
+                        action(&rowid,action_data);
                     }
                     db_rowset_add(rowset,&rowid);
                     //HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);

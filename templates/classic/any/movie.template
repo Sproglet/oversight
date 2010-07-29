@@ -100,17 +100,9 @@ body { color:yellow ; background-color:black; }
     </td>
     </tr>
 </table>
-    </body>
-<!--
-vi:ts=4:sw=4:et:syntax=html
--->
 
+[:INCLUDE_TEMPLATE(common):]
 
-<a href="javascript:ovs_info();" tvid="INFO"></a>
-<a href="javascript:ovs_delist();" tvid="[:$ovs_tvid_delist:]"></a>
-<a href="javascript:ovs_delete();" tvid="[:$ovs_tvid_delete:]"></a>
-<a href="javascript:ovs_unwatched();" tvid="[:$ovs_tvid_unmark:]"></a>
-<a href="javascript:ovs_watched();" tvid="[:$ovs_tvid_mark:]"></a>
 </body>
 </html>
 <!--

@@ -1,8 +1,9 @@
 // $Id:$
-var title = ovs_util_getcell('menutitle');
+var titleNode = ovs_util_getcell('menutitle');
 var watchedNode = ovs_util_getcell('watchedtotal');
 var unwatchedNode = ovs_util_getcell('unwatchedtotal');
 
+var g_item;
 var g_idlist = '';
 var g_title = '';
 
@@ -41,16 +42,18 @@ function showt(title_text,idlist,unwatched,watched)
     ovs_menu(item);
 }
 
+// This is called when the focus moves away from a grid media item
+function ovs_menu_clear() {
+    ovs_menu( { } );
+}
+
+// This is called when the focus on to a grid media item
 function ovs_menu(menu)
 {
+    g_item = menu;
+    var title = '';
     var watched = menu["watched"];
     var unwatched = menu["unwatched"];
-
-   // Set global values for mark and delist functions
-   if (menu["idlist"] != '') {
-       g_idlist = menu["idlist"];
-   }
-   g_title = menu["title"];
 
    // To get multi-colour text is displated in different cells
    // depending on watched/unwatched count.
@@ -58,20 +61,47 @@ function ovs_menu(menu)
    var watched_text = '';
    var unwatched_text = '';
 
-   if (unwatched == '-' ) {
-       // Neutral colour
-       title_text = g_title;
+   if (menu["title"]) {
+       title = menu["title"];
+       if (menu["view"] == "tvboxset" ) {
 
-    } else if (unwatched > 0 ) {
-       // Unwatched colour - default green
-       unwatched_text = g_title;
-    } else {
-       // watched colour - default red
-       watched_text = g_title;
+           title = title + " - [ Boxset - "+menu["num_seasons"] + " seasons ]";
+
+       } else if (menu["view"] == "movieboxset" ) {
+
+           title = title + "- [ Boxset - "+menu["count"] + " movies ]";
+
+       } else if (menu["view"] == "tv" ) {
+
+           title = title + " - Season " + menu["season"];
+
+       } else if (menu["view"] == "movie" ) {
+
+           title = title + " - " + menu["cert"] + " (" + menu["year"] + ")";
+
+       }
+
+       var show_movie_watch_state = 1;
+
+       if (!show_movie_watch_state && menu["view"] && menu["view"].indexOf("movie") >= 0 ) {
+           // Neutral colour
+           title_text = title;
+
+        } else if (unwatched > 0 ) {
+           // Unwatched colour - default green
+           unwatched_text = title;
+        } else {
+           // watched colour - default red
+           watched_text = title;
+        }
     }
 
+   // Set global values for mark and delist functions
+   g_idlist = menu["idlist"];
+   g_title = title;
+
    // Set cell values
-    title.nodeValue = title_text;
+    titleNode.nodeValue = title_text;
     watchedNode.nodeValue = watched_text;
     unwatchedNode.nodeValue = unwatched_text;
 }

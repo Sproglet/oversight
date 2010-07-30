@@ -2314,56 +2314,6 @@ char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,View
 }
 
 
-char *get_simple_title( DbItem *row_id)
-{
-
-    char *title;
-    char *source=row_id->db->source;
-    int show_source = (source && *source != '*');
-
-    char *source_start,*source_end;
-    source_start = source_end = "";
-    if (show_source) {
-        source_start=" [";
-        source_end="]";
-    }
-
-    ViewMode *view_mode = get_drilldown_view(row_id);
-
-    HTML_LOG(0,"drilldown = %s",view_mode->name);
-
-    if (view_mode->view_class == VIEW_CLASS_BOXSET ) {
-
-        if (STRCMP(row_id->drilldown_view->name,"tvboxset") == 0) {
-
-            ovs_asprintf(&title,"%s [%d Seasons]",row_id->title,season_count(row_id));
-
-        } else {
-
-            ovs_asprintf(&title,"%s [Boxset]",row_id->title);
-        }
-
-    } else if (row_id->category=='T') {
-
-        ovs_asprintf(&title,"%s S%d %s%s%s",row_id->title,row_id->season,
-            source_start,(show_source?source:""),source_end);
-
-    } else if (row_id->year) {
-
-        ovs_asprintf(&title,"%s (%d) %s %s%s%s",row_id->title,row_id->year,
-                NVL(row_id->certificate),
-                source_start,(show_source?source:""),source_end);
-
-    } else {
-
-        ovs_asprintf(&title,"%s %s %s%s%s",row_id->title,
-                NVL(row_id->certificate),
-                source_start,(show_source?source:""),source_end);
-    }
-
-    return title;
-}
-
 char *mouse_or_focus_event_fn(char *function_name_prefix,long function_id,char *on_event,char *off_event) {
     char *result = NULL;
     if (off_event != NULL) {
@@ -2809,7 +2759,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
     static int first_time=1;
     if (first_time) {
         first_time = 0;
-        array_add(script,STRDUP("function t_0() { ; }\n"));
+        array_add(script,STRDUP("function t_0() { ovs_menu_clear(); }\n"));
     }
 
     for ( r = 0 ; r < rows ; r++ ) {
@@ -2824,7 +2774,6 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
 
                 char *js_fn_call=NULL;
 
-                char *title = get_simple_title(item);
                 int season = -1;
                 ViewMode *view_mode = get_drilldown_view(item);
                 if (view_mode == VIEW_TV) {
@@ -2835,7 +2784,8 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                     // Write the call to the show function and also tract the idlist;
                     if (view_mode == VIEW_TVBOXSET) {
                         js_fn_call = menu_js_fn(i+1+offset,
-                                JS_ARG_STRING,"title",title,
+                                JS_ARG_STRING,"title",item->title,
+                                JS_ARG_STRING,"cert",item->certificate,
                                 JS_ARG_STRING,"idlist",build_id_list(item),
                                 JS_ARG_INT,"year",item->year,
                                 JS_ARG_STRING,"view",view_mode->name,
@@ -2846,7 +2796,8 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                                 JS_ARG_END);
                     } else {
                         js_fn_call = menu_js_fn(i+1+offset,
-                                JS_ARG_STRING,"title",title,
+                                JS_ARG_STRING,"title",item->title,
+                                JS_ARG_STRING,"cert",item->certificate,
                                 JS_ARG_STRING,"idlist",build_id_list(item),
                                 JS_ARG_INT,"year",item->year,
                                 JS_ARG_STRING,"view",view_mode->name,
@@ -2860,20 +2811,20 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                 } else {
                     // Dont show watched/unwatched for movies
                     js_fn_call = menu_js_fn(i+1+offset,
-                            JS_ARG_STRING,"title",title,
+                            JS_ARG_STRING,"title",item->title,
+                            JS_ARG_STRING,"cert",item->certificate,
                             JS_ARG_STRING,"idlist",build_id_list(item),
                             JS_ARG_INT,"year",item->year,
                             JS_ARG_STRING,"view",view_mode->name,
                             JS_ARG_INT,"unwatched",unwatched,
                             JS_ARG_INT,"watched",watched,
+                            JS_ARG_INT,"source",item->db->source,
                             JS_ARG_INT,"count",item->link_count+1,
                             JS_ARG_END);
                 }
                 if (js_fn_call) {
                     array_add(script,js_fn_call);
                 }
-
-                FREE(title);
             }
         }
     }

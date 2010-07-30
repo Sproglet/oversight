@@ -57,7 +57,7 @@ char *get_theme_image_tag(char *image_name,char *attr);
 void util_free_char_array(int size,char **a);
 char *get_date_static(DbItem *item);
 DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num);
-static inline void set_drilldown_view(DbItem *item);
+static inline ViewMode*get_drilldown_view(DbItem *item);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name_static(char *root_name,int num_prefix);
 char *remove_blank_params(char *input);
@@ -2061,36 +2061,39 @@ HTML_LOG(0,"mouse[%s]",mouse);
 
 // Count number of unique seasons in the list.
 int season_count(DbItem *item) {
-#define WORDS 8
+
+#define MAX_SEASON 200
 #define WORDBITS 16
+#define WORDS ((MAX_SEASON/WORDBITS)+1)
 
-    // First push seasons into a set (bits)
-    int i=0;
-    int j=0;
-    unsigned long bitmask[WORDS];
-    memset(bitmask,0,WORDS * sizeof(long));
+    if (item->num_seasons == 0) {
+        // First push seasons into a set (bits)
+        unsigned int i=0;
+        unsigned int j=0;
+        unsigned long bitmask[WORDS+1];
+        memset(bitmask,0,WORDS * sizeof(long));
 
-    //HTML_LOG(0,"Season count [%s]",item->title);
-    for(  ; item ; item=item->linked) {
-        if (item->category == 'T') {
-            i=item->season / WORDBITS;
-            j=item->season % WORDBITS;
-            bitmask[i] |= (1 << j ); // allow for season 0 - prequels - pilots.
-            //HTML_LOG(0,"%d -> [%d][%d]=%lx",item->season,i,j,bitmask[i]);
+        DbItem *item2;
+        for( item2 = item  ; item2 ; item2=item2->linked) {
+            if (item2->category == 'T') {
+                i=item2->season / WORDBITS;
+                j=item2->season % WORDBITS;
+                bitmask[i] |= (1 << (j-1) ); // allow for season 0 - prequels - pilots.
+            }
         }
-    }
 
 
-    // Now count total bits set.
-    int total=0;
-    for(i=0 ; i < WORDS ; i++ ) {
-        for(j=1 ; j ; j = j << 1 ) {
-           if (bitmask[i] & j ) total++;
+        // Now count total bits set.
+        int total=0;
+        for(i=0 ; i < WORDS ; i++ ) {
+            for(j=1<<(WORDBITS-1) ; j ; j = j >> 1 ) {
+               if (bitmask[i] & j ) total++;
+            }
         }
-        //HTML_LOG(0,"total at word %d -> %d",i,total);
+    
+        item->num_seasons = total;
     }
-
-    return total;
+    return item->num_seasons;
 }
 
 int group_count(DbItem *item) {
@@ -2318,8 +2321,6 @@ char *get_simple_title( DbItem *row_id)
     char *source=row_id->db->source;
     int show_source = (source && *source != '*');
 
-    set_drilldown_view(row_id);
-
     char *source_start,*source_end;
     source_start = source_end = "";
     if (show_source) {
@@ -2327,7 +2328,11 @@ char *get_simple_title( DbItem *row_id)
         source_end="]";
     }
 
-    if (row_id->drilldown_view->view_class == VIEW_CLASS_BOXSET ) {
+    ViewMode *view_mode = get_drilldown_view(row_id);
+
+    HTML_LOG(0,"drilldown = %s",view_mode->name);
+
+    if (view_mode->view_class == VIEW_CLASS_BOXSET ) {
 
         if (STRCMP(row_id->drilldown_view->name,"tvboxset") == 0) {
 
@@ -2355,11 +2360,7 @@ char *get_simple_title( DbItem *row_id)
                 NVL(row_id->certificate),
                 source_start,(show_source?source:""),source_end);
     }
-    if (strchr(title,'\'')) {
-        char *tmp = replace_str(title,"\'","\\\'");
-        FREE(title);
-        title=tmp;
-    }
+
     return title;
 }
 
@@ -2423,7 +2424,7 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
     char *first_space=NULL;
     int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
-    set_drilldown_view(row_id);
+    get_drilldown_view(row_id);
     ViewMode *newview = row_id->drilldown_view;
 
     if (IN_POSTER_MODE) {
@@ -2672,7 +2673,7 @@ char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,ch
     return result;
 }
 
-static inline void set_drilldown_view(DbItem *item) {
+static inline ViewMode *get_drilldown_view(DbItem *item) {
 
     if (item->drilldown_view == NULL) {
         DbItem *item2;
@@ -2714,6 +2715,7 @@ static inline void set_drilldown_view(DbItem *item) {
         }
         item->drilldown_view = m;
     }
+    return item->drilldown_view;
 }
 
 /*
@@ -2820,29 +2822,56 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                 int watched,unwatched;
                 get_watched_counts(item,&watched,&unwatched);
 
-                //HTML_LOG(0,"xx %s age = %x ",item->title,*timestamp_ptr(item));
-                char *js_fn_call;
+                char *js_fn_call=NULL;
 
                 char *title = get_simple_title(item);
+                int season = -1;
+                ViewMode *view_mode = get_drilldown_view(item);
+                if (view_mode == VIEW_TV) {
+                    season = item->season;
+                }
+
                 if (item->category == 'T' ) {
                     // Write the call to the show function and also tract the idlist;
-                    js_fn_call = menu_js_fn(i+1+offset,
-                            JS_ARG_STRING,"title",title,
-                            JS_ARG_STRING,"idlist",build_id_list(item),
-                            JS_ARG_INT,"unwatched",unwatched,
-                            JS_ARG_INT,"watched",watched,
-                            JS_ARG_END);
+                    if (view_mode == VIEW_TVBOXSET) {
+                        js_fn_call = menu_js_fn(i+1+offset,
+                                JS_ARG_STRING,"title",title,
+                                JS_ARG_STRING,"idlist",build_id_list(item),
+                                JS_ARG_INT,"year",item->year,
+                                JS_ARG_STRING,"view",view_mode->name,
+                                JS_ARG_INT,"unwatched",unwatched,
+                                JS_ARG_INT,"watched",watched,
+                                JS_ARG_INT,"num_seasons",season_count(item),
+                                JS_ARG_INT,"count",item->link_count+1,
+                                JS_ARG_END);
+                    } else {
+                        js_fn_call = menu_js_fn(i+1+offset,
+                                JS_ARG_STRING,"title",title,
+                                JS_ARG_STRING,"idlist",build_id_list(item),
+                                JS_ARG_INT,"year",item->year,
+                                JS_ARG_STRING,"view",view_mode->name,
+                                JS_ARG_INT,"unwatched",unwatched,
+                                JS_ARG_INT,"watched",watched,
+                                JS_ARG_INT,"season",season,
+                                JS_ARG_INT,"count",item->link_count+1,
+                                JS_ARG_END);
+                    }
 
                 } else {
                     // Dont show watched/unwatched for movies
                     js_fn_call = menu_js_fn(i+1+offset,
                             JS_ARG_STRING,"title",title,
                             JS_ARG_STRING,"idlist",build_id_list(item),
-                            JS_ARG_STRING,"unwatched","-",
-                            JS_ARG_STRING,"watched","-",
+                            JS_ARG_INT,"year",item->year,
+                            JS_ARG_STRING,"view",view_mode->name,
+                            JS_ARG_INT,"unwatched",unwatched,
+                            JS_ARG_INT,"watched",watched,
+                            JS_ARG_INT,"count",item->link_count+1,
                             JS_ARG_END);
                 }
-                array_add(script,js_fn_call);
+                if (js_fn_call) {
+                    array_add(script,js_fn_call);
+                }
 
                 FREE(title);
             }

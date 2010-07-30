@@ -154,6 +154,7 @@ typedef struct Dbrowid_struct {
     // Holds idlist text string for items in the grid
     char *idlist;
 
+    int num_seasons; // If this item represents a boxset - this is total number of seasons.
 } DbItem;
 
 // GROUPS AND IMDB LISTS =========================================================================

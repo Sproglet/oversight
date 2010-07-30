@@ -1,13 +1,10 @@
-Change drilldown links to use @A @B instead of @ @@ etc.
+Cant drill down on Dragon's Den - Bad Expression - quouted strings.
 
 Add view=dir&dir=/share/Movies etc. Or create cgi script to do it.
 Scrape Person Image
 Add Person Macros - Name - Image
 Add Web Scrape if no imdb pic
 
-Make watch/unwatch toggle off single button (ie green). Get status of first item, invert it and set all to same value.
-
-TV show titles not updating in main menu
 
 =====
 

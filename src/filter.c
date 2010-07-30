@@ -36,8 +36,12 @@ Exp *build_filter(char *media_types)
     char *title_pat = query_val(QUERY_PARAM_TITLE_FILTER);
     if (title_pat && *title_pat) {
         if (title_pat[1] == 0) {
-            // Single letter - starts with.
-            add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~s~" , title_pat );
+            if (title_pat[0] == '1') {
+                add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~"QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~" , "[^a-zA-Z]" );
+            } else {
+                // Single letter - starts with.
+                add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~"QPARAM_FILTER_STARTS_WITH"~" , title_pat );
+            }
         } else {
 
             // First letter is [c]ontains [s]tarts with or [e]quals

@@ -13,13 +13,7 @@ utf:
      Rather tvrage should fix their brokenness.
 
 
-check re-install button
-checking planet earth
-
-
 Certificate Filter
-
-IMDB Movie director search is broken
 
 =================
 How to get allocine.fr  id..

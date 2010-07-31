@@ -1962,7 +1962,7 @@ run_catalog() {
     shift
     if [ -f "$script_folder/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
-        JOBID="$log_name" "$script_folder/catalog.sh" "$folder" GET_POSTERS GET_FANART "$@" || true
+        JOBID="$log_name" "$script_folder/catalog.sh" "$folder" GET_POSTERS GET_FANART GET_PORTRAITS "$@" || true
         #create_resume_file "$folder/unpak.resume" "$script_folder/catalog.sh" "$folder" "$@"
     else
         INFO "Catalog script not present in $script_folder"

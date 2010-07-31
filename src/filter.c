@@ -59,7 +59,11 @@ Exp *build_filter(char *media_types)
                 assert(0);
             }
             char *tmp;
-            ovs_asprintf(&tmp,"'%s'",title_pat+2);
+            char *tmp2 = escape(title_pat+2,'\\',"'");
+            ovs_asprintf(&tmp,"'%s'",tmp2);
+            if (tmp2 != title_pat+2) {
+                FREE(tmp2);
+            }
 
             add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, op_text , tmp );
             FREE(tmp);

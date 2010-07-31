@@ -1062,6 +1062,48 @@ char *escape(char *in,char esc,char *meta)
     }
     return out;
 }
+/**
+ * Remove escape characters from a string.
+ * If no change the SAME string is returned.
+ */
+char *unescape(char *in,char esc)
+{
+    char *out,*inp,*outp;
+   
+    out =  inp = in;
+
+    if (in) {
+
+        while(*inp) {
+            if (*inp == esc ) {
+                outp = out = MALLOC(strlen(in)+1);
+                break;
+            }
+            inp++;
+        }
+        if (out != in) {
+
+            HTML_LOG(0,"unescape in[%s]",in);
+
+            // copy string up to first esc char
+            memcpy(outp,in,inp-in);
+            outp += (inp-in);
+
+            // copy rest of string  - removing escapes
+            while (*inp) {
+
+                if ( *inp == esc ) {
+
+                    inp++;
+                }
+                *outp++ = *inp++;
+            }
+            *outp = '\0';
+            HTML_LOG(0,"unescape out[%s]",out);
+        }
+    }
+    return out;
+}
 
 // If no change the SAME string is returned.
 char *clean_js_string(char *in)

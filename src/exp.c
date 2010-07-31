@@ -572,12 +572,32 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
                p++;
                end_tok = "\'";
            } 
-           while (*p && strchr(end_tok,*p) == NULL ) { p++; }
+
+           int remove_escapes = 0;
+           while (*p) {
+              if (*p == '\\') {
+                 p++;
+                 remove_escapes = 1;
+                 if (!*p) break;
+
+              } else if (strchr(end_tok,*p)) {
+                 break;
+              }
+              p++;
+           }
 
            HTML_LOG(0,"value [%.*s]",p-*text_ptr,*text_ptr);
            if (**text_ptr == '\'' && *p == '\'' ) {
                // quoted string
                char *str = COPY_STRING(p-*text_ptr-1,*text_ptr+1);
+               if (remove_escapes) {
+                   char *tmp = unescape(str,'\\');
+                   if (tmp != str) {
+                       FREE(str);
+                       str = tmp;
+                   }
+               }
+                        
                HTML_LOG(0,"string[%s]",str);
                result = new_val_str(str,1);
                p++;

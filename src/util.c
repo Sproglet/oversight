@@ -1018,20 +1018,67 @@ void replace_char(char *string,char in,char out)
     }
 }
 
+// Escape all meta characters in input string.
+// If no change the SAME string is returned.
+char *escape(char *in,char esc,char *meta)
+{
+    char *out,*inp,*outp;
+   
+    out =  inp = in;
+
+    if (in) {
+        while(*inp) {
+            if (strchr(meta,*inp) || *inp == esc ) {
+                outp = out = MALLOC(2*strlen(in)+1);
+                break;
+            }
+            inp++;
+        }
+        if (out != in) {
+
+            HTML_LOG(0,"escape in[%s]",in);
+
+            // copy string up to first meta char
+            memcpy(outp,in,inp-in);
+            outp += (inp-in);
+
+            // copy rest of string  - escaping meta chars 
+            while (*inp) {
+
+                if ( *inp == esc ) {
+
+                    *outp++ = *inp++;
+
+                } else if(strchr(meta,*inp)) {
+
+                    *outp++ = esc;
+                }
+                *outp++ = *inp++;
+
+            }
+            *outp = '\0';
+            HTML_LOG(0,"escape out[%s]",out);
+        }
+    }
+    return out;
+}
+
+// If no change the SAME string is returned.
 char *clean_js_string(char *in)
 {
+    char *tmp;
     char *out = in;
 
     if (in == NULL) {
         return STRDUP("");
     } else {
         if (strstr(out,"&quot;")) {
-            char *tmp = replace_str(out,"&quot;","\\'");
+            tmp = replace_str(out,"&quot;","\\'");
             if (out != in) FREE(out);
             out = tmp;
         }
         if (strstr(out,"&amp;")) {
-            char *tmp = replace_str(out,"&amp;","&");
+            tmp = replace_str(out,"&amp;","&");
             if (out != in) FREE(out);
             out = tmp;
         }
@@ -1040,25 +1087,8 @@ char *clean_js_string(char *in)
 
         // Escape any quotes that are not already escaped
         // this allows multiple calls for clean_js_string
-        if (strchr(out,'\'')) {
-            char *q,*p,*tmp;
-            tmp = q = MALLOC(2*strlen(out));
-            p = out;
-            while(*p) {
-                switch(*p) {
-                    case '\\':
-                        *q++ = *p++;
-                        *q++ = *p++;
-                        break;
-                    case '\'':
-                        *q++ = '\\';
-                        *q++ = *p++;
-                        break;
-                    default:
-                        *q++ = *p++;
-                }
-            }
-            *q = '\0';
+        tmp = escape(out,'\\',"'");
+        if (tmp != out) {
             if (out != in) FREE(out);
             out = tmp;
         }

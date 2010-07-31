@@ -1036,8 +1036,6 @@ char *escape(char *in,char esc,char *meta)
         }
         if (out != in) {
 
-            HTML_LOG(0,"escape in[%s]",in);
-
             // copy string up to first meta char
             memcpy(outp,in,inp-in);
             outp += (inp-in);
@@ -1057,7 +1055,6 @@ char *escape(char *in,char esc,char *meta)
 
             }
             *outp = '\0';
-            HTML_LOG(0,"escape out[%s]",out);
         }
     }
     return out;
@@ -1083,7 +1080,6 @@ char *unescape(char *in,char esc)
         }
         if (out != in) {
 
-            HTML_LOG(0,"unescape in[%s]",in);
 
             // copy string up to first esc char
             memcpy(outp,in,inp-in);
@@ -1099,7 +1095,6 @@ char *unescape(char *in,char esc)
                 *outp++ = *inp++;
             }
             *outp = '\0';
-            HTML_LOG(0,"unescape out[%s]",out);
         }
     }
     return out;

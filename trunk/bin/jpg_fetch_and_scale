@@ -241,7 +241,10 @@ start_thread() {
     thread=$pid.$1
     INFO "Thread $pid starting ($$)"
     echo $pid > `thread_prefix`.pid
-    while process_queue "$Q.poster" 1 || process_queue "$Q.actor" 1 ||  process_queue "$Q.fanart" 0 ; do
+    while \
+        process_queue "$Q.poster" 1 || \
+        process_queue "$Q.fanart" 0 || \
+        process_queue "$Q.actor" 0 ; do
         true
     done
     INFO "Thread $pid stopping ($$)"

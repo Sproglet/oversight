@@ -34,11 +34,22 @@ body { font-size:20; font-family:"arial"; color:white; }
             </table>
 
             <table>
+                    <td align=center colspan=3>
+                        <hr>
+                    </td>
+                <tr><th>Scan mode</th><th>Sources</th><th>Images</th></tr>
                 <tr valign=top>
+                    <td align=left>
+                        <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>new/unknown media
+                        <br>
+                        <input type=radio name=rescan_opt_@group1 value=RESCAN>all media
+                    </td>
                     <td>
                         [:CHECKBOX(rescan_dir_,checked,<br>,[:$catalog_scan_paths:],[:$catalog_watch_paths:]):]
+<!--
                         <hr>
                         <input type=checkbox name=rescan_opt_PARALLEL_SCAN>scan in parallel
+-->
                     </td>
                     <td align=left>
                         <table>
@@ -50,20 +61,17 @@ body { font-size:20; font-family:"arial"; color:white; }
                             <tr><td><input type=checkbox name=rescan_opt_GET_PORTRAITS [:IF($ovs_get_portraits,checked):] >get portraits</td></tr>
                             <tr><td align=right><input type=checkbox name=rescan_opt_UPDATE_PORTRAITS>overwrite</td></tr>
                         </table>
-                        <hr>
 <!--
                         <input type=checkbox name=rescan_opt_UPDATE_TV checked>TV Shows<br>
                         <input type=checkbox name=rescan_opt_UPDATE_MOVIES checked>Movies<br>
                         <hr>
 -->
-                        <input type=radio name=rescan_opt_@group1 value=NEWSCAN checked>new/unknown media
-                        <br>
-                        <input type=radio name=rescan_opt_@group1 value=RESCAN>all media
                     </td>
                 </tr>
                 <tr>
-                    <td align=center colspan=2>
-                        <input type=submit name=action value="rescan_request">
+                    <td align=center colspan=3>
+                        <hr>
+                        <input type=submit name=action value="rescan_request">&nbsp;&nbsp;
                         <input type=submit name=action value="Cancel">
                     </td>
                 </tr>

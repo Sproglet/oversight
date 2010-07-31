@@ -911,7 +911,7 @@ char *catalog_val(char *name)
 char *oversight_val(char *name)
 {
     char *val;
-    check_prefix(name,VAR_PREFIX_SETTING_OVERSIGHT);
+    //check_prefix(name,VAR_PREFIX_SETTING_OVERSIGHT);
 
     if (config_check_str(g_oversight_config,name,&val)) {
         return val;

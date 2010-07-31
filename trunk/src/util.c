@@ -276,7 +276,7 @@ void util_regcomp(regex_t *re,char *pattern,int flags)
         char buf[BUFSIZE];
         regerror(status,re,buf,BUFSIZE);
         fprintf(stderr,"%s\n",buf);
-        assert(1);
+        assert(0);
     }
 }
 /* return position of regex in a string. NULL if no match  */

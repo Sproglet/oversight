@@ -3505,7 +3505,7 @@ char *js_function(char *function_prefix,char *called_function,long fn_id,va_list
                 array_add(a,tmp);
                 break;
             case JS_ARG_END:
-                assert(1);
+                assert(0);
         }
     }
 

@@ -18,24 +18,12 @@ body { font-size:20; font-family:"arial"; color:white; }
         <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Diagnostics</h1>
 
             <p> Log file diagnostics. Only works from PC at the moment.
-            <table>
-                <tr>
-                    <td align=center>
-                        Scan logs  <a href="/oversight/logs/last.log">{Last}</a> <a href="/oversight/logs/prev.log">{Prev}</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td align=center>
-                        <a href="/oversight/logs/last.unpak.log">{Last unpak log}</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td align=center>
-                        <a href="/oversight/logs/gui.log">{Last TV gui log}</a>
-                    </td>
-                </tr>
-                </tr>
-            </table>
+            <ul>
+                <li><a href="/oversight/logs/last.log">{Last scan log}</a></li>
+                <li><a href="/oversight/logs/prev.log">{Previous scan log}</a></li>
+                <li><a href="/oversight/logs/last.unpak.log">{Last unpak log}</a></li>
+                <li><a href="/oversight/logs/gui.log">{Last TV gui log}</a></li>
+            </ul>
     </body>
 </html>
 <!--

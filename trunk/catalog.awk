@@ -7972,8 +7972,12 @@ function load_catalog_settings() {
 
     g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"]);
 
-    if (g_settings["catalog_ignore_paths"] == "^" ) {
+    INF("ignore path = ["g_settings["catalog_ignore_paths"]"]");
+
+    # Check for empty ignore path
+    if ( "x" ~ "^"g_settings["catalog_ignore_paths"]"x$" ) {
         g_settings["catalog_ignore_paths"] = "^$"; #regex will only match empty path
+        INF("ignore path = ["g_settings["catalog_ignore_paths"]"]");
     }
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));

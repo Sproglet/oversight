@@ -1538,36 +1538,54 @@ char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,Vi
     // This requires that the remote file is already mounted.
     char *file = get_path(item,item->file,&freefile);
 TRACE;
-    char *dir;
-   
+    char *dir=NULL,*base=NULL;
     if (is_dvd_folder(file)) {
-       dir = file;
-    } else {
-       dir = util_dirname(file);
 
+        // file=/some/path/file/
+
+
+        // dir=/some/path/file
+        dir = STRDUP(file);
+        char *last = strrchr(dir,'/');
+        if (last) *last = '\0';
+
+        // base=/some/path/file
+        last = strrchr(dir,'/');
+        if (last) base = STRDUP(last+1);
+
+    } else {
+        // file=some/path/file.avi
+        
+        // dir=/some/path
+        dir = util_dirname(file);
+
+        // base=file.avi
+        base = util_basename(file);
         // Find position of file extension.
         char *dot = NULL;
 
         // First look for file.modifier.jpg file.modifier.png
         if (item->ext != NULL) { 
-            dot = strrchr(file,'.');
+            dot = strrchr(base,'.');
         }
-
-        //check movie.fanart.(png|jpg) or movie.(png|jpg)
         if (dot) {
-
-            for(i=0 ; path==NULL && ext[i] ; i++ ) {
-                path=check_path("%.*s%s%s",dot-file,file,suffix,ext[i]);
-            }
+            *dot = '\0';
         }
+    }
+
+    //check movie.fanart.(png|jpg) or movie.(png|jpg)
+
+    for(i=0 ; path==NULL && ext[i] ; i++ ) {
+        path=check_path("%s/%s%s%s",dir,base,suffix,ext[i]);
     }
 
     //check default_name.(png|jpg) ie. fanart.(png|jpg) or poster.(png|jpg)
     for(i=0 ; path==NULL && ext[i] ; i++ ) {
         path=check_path("%s/%s%s",dir,default_name,ext[i]);
     }
+    FREE(dir);
+    FREE(base);
 
-    if (dir != file) FREE(dir);
     if (freefile) FREE(file);
 
     if (path == NULL) {

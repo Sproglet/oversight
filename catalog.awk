@@ -165,7 +165,6 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
-    g_num_actors=15;
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
     g_max_db_len=4000;
@@ -475,6 +474,10 @@ END{
     report_status("scanning");
 
     load_catalog_settings();
+
+    g_max_actors=g_settings["catalog_max_actors"];
+    g_max_directors = 3;
+    g_max_writers = 3;
 
     split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep);
 
@@ -6610,17 +6613,17 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 sec=POSTER;
             }
             if (g_actors[idx] == "" && index(line,">Cast")) {
-                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),g_num_actors);
+                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),g_max_actors);
                 g_actors[idx] = imdb_list_shrink(g_actors[idx],",",128);
                 sec=ACTORS;
             }
             if (g_director[idx] == "" && index(line,">Director")) {
-                g_director[idx] = get_names("actors",raw_scrape_until("director",f,"</div>",0),0);
+                g_director[idx] = get_names("actors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
                 g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
                 sec=DIRECTOR;
             }
             if (g_writers[idx] == "" && index(line,">Writer")) {
-                g_writers[idx] = get_names("actors",raw_scrape_until("writers",f,"</div>",0),0);
+                g_writers[idx] = get_names("actors",raw_scrape_until("writers",f,"</div>",0),g_max_writers);
                 g_writers[idx] = imdb_list_shrink(g_writers[idx],",",128);
                 sec=WRITERS;
             }
@@ -6697,6 +6700,9 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
     return imdbContentPosition;
 }
 
+# name_db is always "actors"
+# text = imdb text to be parsed for nm0000 ids.
+# maxnames = max number of names to fetch ( -1 = all )
 function get_names(name_db,text,maxnames,\
 dtext,dpos,dnum,i,id,name,dlist,count,img) {
     # Extract nm0000 text OR anchor text(actor name) OR jpg url
@@ -6714,6 +6720,10 @@ dtext,dpos,dnum,i,id,name,dlist,count,img) {
 
         } else if (id ) {
             if (index(dlist,","id) == 0) {
+                count++;
+                if (maxnames+0 >= 0 && count+0 > maxnames+0) {
+                    break;
+                }
                 # Extract name from <a> tag
                 name=extractTagText("<a"dtext[i],"a");
                 dlist=dlist ","id;
@@ -6728,10 +6738,6 @@ dtext,dpos,dnum,i,id,name,dlist,count,img) {
                 }
 
                 get_image(id,img,APPDIR"/db/global/_A/"g_settings["catalog_poster_prefix"] id".jpg");
-                count++;
-                if (maxnames+0 > 0 && count+0 >= maxnames+0) {
-                    break;
-                }
             }
             id="";
             img="";

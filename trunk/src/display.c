@@ -840,7 +840,7 @@ char *share_name(DbItem *r,int *freeme) {
         if (q == NULL) {
             out = p;
         } else {
-            ovs_asprintf(&out,"%.*s",q-p,p);
+            out = COPY_STRING(q-p,p);
             *freeme = 1;
         }
     }
@@ -2809,6 +2809,8 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                     }
 
                 } else {
+                    int freeshare=0;
+                    char *share = share_name(item,&freeshare);
                     // Dont show watched/unwatched for movies
                     js_fn_call = menu_js_fn(i+1+offset,
                             JS_ARG_STRING,"title",item->title,
@@ -2818,9 +2820,11 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                             JS_ARG_STRING,"view",view_mode->name,
                             JS_ARG_INT,"unwatched",unwatched,
                             JS_ARG_INT,"watched",watched,
-                            JS_ARG_INT,"source",item->db->source,
+                            JS_ARG_STRING,"source",item->db->source,
+                            JS_ARG_STRING,"share",share,
                             JS_ARG_INT,"count",item->link_count+1,
                             JS_ARG_END);
+                    if (freeshare) FREE(share);
                 }
                 if (js_fn_call) {
                     array_add(script,js_fn_call);
@@ -3620,6 +3624,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
                 JS_ARG_STRING,"share",share,
                 JS_ARG_INT,"watched",item->watched,
                 JS_ARG_INT,"locked",is_locked(item),
+                JS_ARG_STRING,"source",item->db->source,
                 JS_ARG_END);
 
         array_add(outa,tmp);

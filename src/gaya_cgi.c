@@ -34,16 +34,7 @@ void add_default_html_parameters(struct hashtable *query_hash)
            char *p = strstr(v,OPTION_HTML_GET_FLAG);
            if (p) {
                p += strlen(OPTION_HTML_GET_FLAG);
-               // Split the value DisplayText=>htmlname=htmlval
-               char *equals=strchr(p,'=');
-               char *htmlname;
-               char *htmlval;
-               if (equals) {
-                   ovs_asprintf(&htmlname,"%.*s",equals-p,p);
-                   htmlval = STRDUP(equals+1);
-                   HTML_LOG(0,"Default url [%s]=[%s] (from config [%s]=[%s])",htmlname,htmlval,k,v);
-                   hashtable_insert(query_hash,htmlname,htmlval);
-               }
+               parse_query_string(p,query_hash);
            }
        }
    }
@@ -53,7 +44,8 @@ void add_default_html_parameters(struct hashtable *query_hash)
 * Parse the query string into a hashtable
 * if hashtable is NULL a new one is created.
 */
-struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
+struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in)
+{
 
     int i;
     Array *qarr = split1ch(q,"&;");
@@ -88,6 +80,7 @@ struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in) {
         }
 
     }
+    get_view_mode(1);  
 
     array_free(qarr);
 

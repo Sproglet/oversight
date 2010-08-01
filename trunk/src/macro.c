@@ -36,6 +36,9 @@
 static struct hashtable *macros = NULL;
 char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
+struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_list);
+int get_page_size(int allow_default_size);
+void free_named_args(struct hashtable *h);
 
 long get_current_page() {
     long page;
@@ -313,7 +316,71 @@ TRACE;
     return result;
 }
 
-char *macro_fn_plot(MacroCallInfo *call_info) {
+/**
+ * Return the current menu page number.
+ */
+char *macro_fn_page(MacroCallInfo *call_info)
+{
+    call_info->free_result=1;
+    char *result = NULL;
+
+    char *p = query_val(QUERY_PARAM_PAGE);
+    int page = 1;
+    if (p && *p) {
+        page = atoi(p)+1;
+    }
+    ovs_asprintf(&result,"%d",page);
+
+    return result;
+}
+
+/**
+ * =begin wiki
+ * Return the last page number by dividing number of items by the page size (aka grid size).
+ * This does not take delisting into account, which may reduce the number of items.
+ *
+ * the page size is determined from the following items:
+ * 1 A page size argument can be supplied, if not
+ * 2. the _grid_size skin variable can be used (see [:SET(...}:]
+ * 3. If the variable is not set then it is computed from current rows*cols.
+ *
+ * Example:
+ * [:PAGE_MAX:]
+ * =end wiki
+ */
+char *macro_fn_page_max(MacroCallInfo *call_info)
+{
+    call_info->free_result=1;
+    char *result = NULL;
+    char *tmp;
+
+    int size=10;
+
+    struct hashtable *h = args_to_hash(call_info->args,NULL,"page_size");
+
+    if ((tmp = get_named_arg(h,"page_size")) != NULL) {
+
+        size = atoi(tmp);
+
+    } else {
+        size = get_page_size(1);
+    }
+
+    if (size > 0 ) {
+        int p = 1 + call_info->sorted_rows->num_rows / size;
+
+        ovs_asprintf(&result,"%d",p);
+    } else {
+        HTML_LOG(0,"zero page size");
+    }
+
+    free_named_args(h);
+
+    return result;
+}
+
+char *macro_fn_plot(MacroCallInfo *call_info)
+{
 
     call_info->free_result=1;
     char *result = NULL;
@@ -992,7 +1059,8 @@ char *macro_fn_rating(MacroCallInfo *call_info) {
 
 // If a macro has arguments like, 1,cols=>3,rows=>4,5  then create a hashtable cols=>3,rows=>4
 #define HASH_ASSIGN "=>"
-struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_list) {
+struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_list)
+{
     int i;
 
     struct hashtable *required_set = NULL;
@@ -1095,10 +1163,28 @@ char *get_named_arg(struct hashtable *h,char *name)
     }
     return ret;
 }
-void free_named_args(struct hashtable *h) {
+
+void free_named_args(struct hashtable *h)
+{
     if (h) {
         hashtable_destroy(h,1,1);
     }
+}
+
+int get_page_size(int allow_default_size)
+{
+    int size;
+
+    char *tmp = get_tmp_skin_variable("_grid_size");
+    if (tmp == NULL) {
+        size = g_dimension->current_grid->rows * g_dimension->current_grid->cols;
+        if (!allow_default_size) {
+            html_error("GRID: _grid_size must be set when using GRID segments. [:SET(_grid_size,value):]");
+        }
+    } else {
+        size = atoi(tmp);
+    }
+    return size;
 }
 
 char *macro_fn_grid(MacroCallInfo *call_info) {
@@ -1132,11 +1218,7 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
     }
     if ((tmp = get_named_arg(h,"offset")) != NULL) {
         gs->offset = atoi(tmp);
-        tmp = get_tmp_skin_variable("_grid_size");
-        if (tmp == NULL) {
-            html_error("GRID: _grid_size must be set when using GRID segments. [:SET(_grid_size,value):]");
-        }
-        gs->parent->page_size = atoi(tmp);
+        gs->parent->page_size = get_page_size(0);
     }
     if ((tmp = get_named_arg(h,"grid_order")) != NULL) {
         gs->grid_direction = str2grid_direction(tmp);
@@ -1150,6 +1232,7 @@ HTML_LOG(0,"macro length = %d",NVL(result));
 
     return result;
 }
+
 
 char *macro_fn_header(MacroCallInfo *call_info) {
     return STRDUP("header");
@@ -2335,6 +2418,8 @@ void macro_init() {
         hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
+        hashtable_insert(macros,"PAGE",macro_fn_page);
+        hashtable_insert(macros,"PAGE_MAX",macro_fn_page_max);
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
         hashtable_insert(macros,"RATING_SELECT",macro_fn_rating_select);

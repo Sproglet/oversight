@@ -151,6 +151,9 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
             convert_int=1;
             int_val = g_dimension->current_grid->img_height;
 
+        } else if (STRCMP(vname+1,"selection_count") == 0) {
+            convert_int=1;
+            int_val = sorted_rows->num_rows;
 #if 0
         } else if (STRCMP(vname+1,"item_count") == 0) {
 

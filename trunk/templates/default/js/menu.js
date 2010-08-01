@@ -57,7 +57,7 @@ function ovs_menu(menu)
 
    // To get multi-colour text is displated in different cells
    // depending on watched/unwatched count.
-   var title_text = "";
+   var title_text = ovs_nbsp();
    var watched_text = '';
    var unwatched_text = '';
 
@@ -101,9 +101,9 @@ function ovs_menu(menu)
    g_title = title;
 
    // Set cell values
-    titleNode.nodeValue = title_text;
-    watchedNode.nodeValue = watched_text;
-    unwatchedNode.nodeValue = unwatched_text;
+    titleNode.firstChild.nodeValue = title_text;
+    watchedNode.firstChild.nodeValue = watched_text;
+    unwatchedNode.firstChild.nodeValue = unwatched_text;
 }
 
 function title0() { ovs_menu({title:'.',idlist:'',unwatched:'',watched:''}); }

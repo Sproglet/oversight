@@ -56,9 +56,10 @@ table.overview_poster {
                     <td width="1%" align=right>[:WATCHED_SELECT:][:TITLE_SELECT:]</td>
                     <td width="1%" align=left>[:MEDIA_SELECT:][:GENRE_SELECT:]</td>
                     <td align=right width="75%">
-                    	<span class=boxtitle id="menutitle">&nbsp;</span>
+                        <span class=boxtitle id="menutitle">&nbsp;</span>
                         <span class=boxtitle id="unwatchedtotal">&nbsp;</span>
                         <span class=boxtitle id="watchedtotal">&nbsp;</span>
+                        [:PAGE:]/[:PAGE_MAX:]
                     </td>
                     <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
                 </tr>

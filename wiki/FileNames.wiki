@@ -68,10 +68,25 @@ At present Posters should either
   # Just be called poster.jpg or poster.png OR
   # have the same name as the file but the .jpg or .png extension .e.g.
 
-The-Wrestler.jpg
+{{{
 The-Wrestler.avi
 
-For Standard Definition NTSC the recommended size is 685 wide * 460 high
+The-Wrestler.jpg
+or
+poster.jpg
+}}}
+
+and for DVD structures ...
+
+{{{
+The-Wrestler/VIDEO_TS
+
+The-Wrestler/The-Wrestler.jpg
+or
+The-Wrestler/poster.jpg
+}}}
+
+
 
 The image size does not really matter as it is scaled to fit.
 The aspect ratio is approximately (1.5 x 1 eg 300x200 , 1500x1000 etc)
@@ -86,9 +101,23 @@ At present Fanart should either
   # Just be called fanart.jpg or fanart.png OR
   # have the same name as the file but the .fanart.jpg or .fanart.png extension. eg
 
-The-Wrestler.fanart.jpg
+{{{
 The-Wrestler.avi
 
+The-Wrestler.fanart.jpg
+or
+fanart.jpg
+}}}
+
+and for DVD structures...
+
+{{{
+The-Wrestler/VIDEO_TS
+
+The-Wrestler/The-Wrestler.fanart.jpg
+or
+The-Wrestler/fanart.jpg
+}}}
 
 The image sizes are :
 

@@ -59,6 +59,9 @@ table.overview_poster {
                         <span class=boxtitle id="menutitle">&nbsp;</span>
                         <span class=boxtitle id="unwatchedtotal">&nbsp;</span>
                         <span class=boxtitle id="watchedtotal">&nbsp;</span>
+                        &nbsp;
+                    </td>
+                    <td>
                         [:PAGE:]/[:PAGE_MAX:]
                     </td>
                     <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>

@@ -63,7 +63,8 @@ table.overview_poster {
                     <td align=center>[:GENRE_SELECT:]</td>
 [:ENDIF:]
                     <td align=right width="50%">
-                    	<span class=menubarTitle><b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]&nbsp;&nbsp;</span>
+                    	[:PAGE:]/[:PAGE_MAX:]
+                        <span class=menubarTitle><b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]&nbsp;</span>
                     	<!--<font color=#66CCFF>[:SORT_TYPE_TOGGLE:]</font>-->
                     </td>
                     <td><span class="status">&nbsp;&nbsp;[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</span></td>

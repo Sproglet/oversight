@@ -68,7 +68,7 @@ function ovs_ep(ep)
 
     // Set cell content based on selected episode
 
-    titlecell.nodeValue = ep["plot"];
-    episodecell.nodeValue = epTitle;
-    episodedatecell.nodeValue = epDate;
+    titlecell.firstChild.nodeValue = ep["plot"];
+    episodecell.firstChild.nodeValue = epTitle;
+    episodedatecell.firstChild.nodeValue = epDate;
 }

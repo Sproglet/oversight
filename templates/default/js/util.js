@@ -1,8 +1,12 @@
 // $Id:$
+function ovs_nbsp() {
+   return   " "; // nbsp - u00A0 in vim crtl-V u A0
+}
+
 function ovs_util_getcell(name) {
     var v = document.getElementById(name);
     if (v) {
-        return v.firstChild;
+        return v;
     } else {
         alert("missing page element "+name);
     }

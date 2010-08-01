@@ -62,7 +62,7 @@ table.overview_poster {
                     <td align=center>[:GENRE_SELECT:]</td>
 [:ENDIF:]
                     <td align=right width="40%">[:SORT_TYPE_TOGGLE:]</td>
-					<td align=right width="30%"><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
+					<td align=right width="30%"><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):][:PAGE:]/[:PAGE_MAX:]&nbsp;&nbsp;</span></td>
                     <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
                 </tr>
                 <tr>

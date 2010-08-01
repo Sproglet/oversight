@@ -59,11 +59,10 @@ table.overview_poster {
 [:ELSE:]
 					<td align=center>[:HOME_BUTTON:]</td>
 [:ENDIF:]
-					<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
+					<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):][:PAGE:]/[:PAGE_MAX:] [:EVAL($@selection_count):]&nbsp;&nbsp;</span></td>
 					[<td align=right>:HELP_BUTTON:</td>]
                     <td align=right>[:SETUP_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
                 </tr>
-[:IF(0):]
                 <tr>
 [:IF($@sd):]
                     <td colspan=7 align=center >
@@ -75,7 +74,6 @@ table.overview_poster {
                         <span class=menutitle id="watchedtotal">&nbsp;</span>
                     </td>
                 </tr>
-[:ENDIF:]
             </table>
 [:IF(0):]
         </td></tr><tr><td>

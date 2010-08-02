@@ -861,6 +861,7 @@ function set_db_fields() {
     ID=db_field("_id","ID","",0);
 
     WATCHED=db_field("_w","Watched","watched") ;
+    LOCKED=db_field("_l","Locked","locked") ;
     PARTS=db_field("_pt","PARTS","");
     FILE=db_field("_F","FILE","filenameandpath");
     NAME=db_field("_N","NAME","");
@@ -1994,7 +1995,7 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
             idx=gMovieFilePresent[f];
             if (idx != -1 ) {
                 # Update the old entry with the new data
-                dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],""); #dbfields[INDEXTIME]);
+                dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],dbfields[LOCKED],""); #dbfields[INDEXTIME]);
                 if (length(dbline2) - g_max_db_len < 0) {
                     print dbline2"\t" >> new_db_file;
                     updated_count++;
@@ -7468,7 +7469,7 @@ function file_time(f) {
 }
 
 # changes here should be reflected in db.c:write_row()
-function createIndexRow(i,db_index,watched,index_time,\
+function createIndexRow(i,db_index,watched,locked,index_time,\
 row,est,nfo,op,start) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
@@ -7511,6 +7512,7 @@ row,est,nfo,op,start) {
     row=row"\t"INDEXTIME"\t"shorttime(index_time);
 
     row=row"\t"WATCHED"\t"watched;
+    row=row"\t"LOCKED"\t"locked;
 
     #Title and Season must be kept next to one another to aid grepping.
     #Put the overview items near the start to speed up scanning
@@ -7643,7 +7645,7 @@ i,row,f) {
 
         add_file(g_fldr[i]"/"g_media[i]);
 
-        row=createIndexRow(i,-1,0,"");
+        row=createIndexRow(i,-1,0,0,"");
         if (length(row) - g_max_db_len < 0) {
 
             print row"\t" >> output_file;

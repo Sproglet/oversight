@@ -339,7 +339,7 @@ main() {
     set -e
 
     rm -fr -- "$g_tmp_dir"
-    chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$APPDIR/tmp" || true
+    chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$APPDIR/tmp" 2>/dev/null || true
     return $x
 }
 
@@ -358,7 +358,7 @@ clean_files() {
 }
 
 clean_all_files() {
-    clean_files "$tmp_root" "." 2
+    clean_files "$tmp_root" "*" 2
     clean_files "$APPDIR/logs" "catalog.*.log" 5 
     clean_files "$APPDIR/cache" "tt*" 30
 }

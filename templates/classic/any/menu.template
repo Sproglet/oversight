@@ -61,6 +61,7 @@ table.overview_poster {
                     <td align=center>[:WATCHED_SELECT:]</td>
                     <td align=center>[:MEDIA_SELECT:]</td>
                     <td align=center>[:GENRE_SELECT:]</td>
+                    <td align=center>[:LOCKED_SELECT:]</td>
                     <td align=center>[:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):]</td>
 [:ENDIF:]
                     <td>[:SORT_TYPE_TOGGLE:]</td>
@@ -69,9 +70,9 @@ table.overview_poster {
                 </tr>
                 <tr>
 [:IF($@sd):]
-                    <td colspan=6 align=center >
+                    <td colspan=7 align=center >
 [:ELSE:]
-                    <td colspan=8 align=center >
+                    <td colspan=9 align=center >
 [:ENDIF:]
                         <span class=menutitle id="menutitle">&nbsp;</span>
                         <span class=menutitle id="unwatchedtotal">&nbsp;</span>

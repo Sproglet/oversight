@@ -4,6 +4,7 @@
 #define DB_FLDID_ID "_id"
 
 #define DB_FLDID_WATCHED "_w"
+#define DB_FLDID_LOCKED "_l"
 #define DB_FLDID_ACTION "_a"
 #define DB_FLDID_PARTS "_pt"
 #define DB_FLDID_FILE "_F"

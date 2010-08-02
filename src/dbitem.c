@@ -417,6 +417,7 @@ void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t%s\t%c",DB_FLDID_CATEGORY,item->category);
     fprintf(fp,"\t%s\t%s",DB_FLDID_INDEXTIME,fmt_timestamp_static(item->date));
     fprintf(fp,"\t%s\t%d",DB_FLDID_WATCHED,item->watched);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_LOCKED,item->locked);
     fprintf(fp,"\t%s\t%s",DB_FLDID_TITLE,item->title);
     fprintf(fp,"\t%s\t%d",DB_FLDID_SEASON,item->season);
     fprintf(fp,"\t%s\t%.1lf",DB_FLDID_RATING,item->rating);
@@ -679,6 +680,13 @@ static inline int db_rowid_get_field_offset_type_inline(
                 if (*p == '\0' ) { // _k
                     *offset=&(rowid->remakes);
                     *type = FIELD_TYPE_IMDB_LIST;
+                    *overview = 1;
+                }
+                break;
+            case 'l':
+                if (*p == '\0') {
+                    *offset=&(rowid->locked);
+                    *type = FIELD_TYPE_INT;
                     *overview = 1;
                 }
                 break;
@@ -947,3 +955,22 @@ void fix_file_paths(int num_row,DbItem **rows)
         }
     }
 }
+
+int is_on_internal_hdd(DbItem *item)
+{
+    return (is_on_local_oversight(item) && util_starts_with(item->file,"/share/"));
+}
+// true if internal hdd or USB
+int is_on_local_storage(DbItem *item)
+{
+    return (is_on_local_oversight(item) && !util_starts_with(item->file,NETWORK_SHARE));
+}
+int is_on_local_oversight(DbItem *item)
+{
+    return (*(item->db->source) == '*' );
+}
+int is_on_remote_oversight(DbItem *item)
+{
+    return (*(item->db->source) != '*' );
+}
+

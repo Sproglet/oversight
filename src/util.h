@@ -148,7 +148,7 @@ void set_free(struct hashtable *h);
 int bchop(int id,int size,int *ids);
 int index_STRCMP(char *a,char *b);
 int util_stat(char *path,struct stat64 *st);
-void util_rmq(char *path,int recursive);
+void util_file_command(char *command_and_args,char *path);
 char *unescape(char *in,char esc);
 char *escape(char *in,char esc,char *meta);
 #endif

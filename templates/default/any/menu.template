@@ -51,7 +51,7 @@ table.overview_poster {
                     <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
                     <td align=left>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>
 [:ELSE:]
-                    <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):]</td>
+                    <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):][:LOCKED_SELECT:]</td>
 [:ENDIF:]
                     <td align=left>[:SORT_TYPE_TOGGLE:]</td>
 [:IF($?resizeon):]
@@ -59,7 +59,7 @@ table.overview_poster {
 [:ELSE:]
 					<td align=center>[:HOME_BUTTON:]</td>
 [:ENDIF:]
-					<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):][:PAGE:]/[:PAGE_MAX:] [:EVAL($@selection_count):]&nbsp;&nbsp;</span></td>
+					<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
 					[<td align=right>:HELP_BUTTON:</td>]
                     <td align=right>[:SETUP_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
                 </tr>
@@ -94,6 +94,7 @@ table.overview_poster {
                     <td align=right>[:RIGHT_BUTTON:]&nbsp;</td>
                 </tr>
             </table>
+    [:PAGE:]/[:PAGE_MAX:] [:EVAL($@selection_count):]
 [:IF(0):]
         </td></tr></table>
 [:ENDIF:]

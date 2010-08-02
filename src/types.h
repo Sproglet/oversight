@@ -76,6 +76,7 @@ typedef struct Dbrowid_struct {
     long offset;
     OVS_TIME date;
     int watched;
+    int locked;
     char *title;
     char *orig_title;
     char *poster;

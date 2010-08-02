@@ -44,6 +44,7 @@ void lock_item_cb(DbItem *item,void *action_data);
 void unlock_item_cb(DbItem *item,void *action_data);
 void lock_toggle_item_cb(DbItem *item,void *action_data);
 void get_marked_status_cb(DbItem *item,void *data);
+void get_locked_status_cb(DbItem *item,void *data);
 
 //True if there was post data.
 int has_post_data() {
@@ -144,12 +145,12 @@ void delete_media(DbItem *item,int delete_related) {
             HTML_LOG(0,"folder [%s] doesnt look like dvd folder");
             return;
         }
-        util_rmq(item->file,1);
+        util_file_command("daemon rm -fr ",item->file);
         names_to_delete = array_new(free);
     } else {
 
         HTML_LOG(1,"delete main file [%s]",item->file);
-        util_rmq(item->file,0);
+        util_file_command("daemon rm --",item->file);
 
         names_to_delete = split(item->parts,"/",0);
 
@@ -598,8 +599,21 @@ void do_actions() {
 
             } else if (allow_locking() && STRCMP(action,"lock") == 0) {
 
-                LockMode mode = LOCK_STATUS_UNKNOWN;
-                do_action_by_id(changed_source_id_hash,lock_toggle_item_cb,&mode);
+                LockMode m = LOCK_STATUS_UNKNOWN;
+                do_action_by_id(changed_source_id_hash,get_locked_status_cb,&m);
+                char *val=NULL;
+                void (*fn)(DbItem *,void *) = NULL;
+
+                switch(m) {
+                    case LOCK_STATUS_LOCK: val = "0" ; fn = unlock_item_cb ; break;
+                    case LOCK_STATUS_UNLOCK: val = "1" ; fn = lock_item_cb ;  break;
+                    default: assert(0);
+                }
+                do_action_by_id(changed_source_id_hash,fn,NULL);
+                db_set_fields(DB_FLDID_LOCKED,val,changed_source_id_hash,DELETE_MODE_NONE);
+
+                //LockMode mode = LOCK_STATUS_UNKNOWN;
+                //do_action_by_id(changed_source_id_hash,lock_toggle_item_cb,&mode);
 
             }
             query_remove(QUERY_PARAM_ACTION);
@@ -655,10 +669,12 @@ TRACE;
                 // In this case the post data has a select box variable for each item
                 changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
                 do_action_by_id(changed_source_id_hash,lock_item_cb,NULL);
+                db_set_fields(DB_FLDID_LOCKED,"1",changed_source_id_hash,DELETE_MODE_NONE);
                 hashtable_destroy(changed_source_id_hash,1,1);
 
                 changed_source_id_hash = get_newly_deselected_ids_by_source(&total_deleted);
                 do_action_by_id(changed_source_id_hash,unlock_item_cb,NULL);
+                db_set_fields(DB_FLDID_LOCKED,"0",changed_source_id_hash,DELETE_MODE_NONE);
                 hashtable_destroy(changed_source_id_hash,1,1);
 
                 query_remove(QUERY_PARAM_ACTION);
@@ -1023,21 +1039,27 @@ void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *,voi
     }
 }
 
+// Lock the file on the file system if it is a local file
 void lock_item_cb(DbItem *item,void *action_data)
 {
-    HTML_LOG(0,"lock_item_cb[%d][%s]",item->id,item->file);
-    nmt_mount(item->file);
-    if (is_file(item->file)) {
-        permissions(0,0,0755,1,item->file);
+    if (is_on_internal_hdd(item)) {
+        HTML_LOG(0,"lock_item_cb[%d][%s]",item->id,item->file);
+        if (is_file(item->file)) {
+            permissions(0,0,0755,1,item->file);
+        }
     }
 }
 
+// Un Lock the file on the file system if it is a local file
 void unlock_item_cb(DbItem *item,void *action_data)
 {
-    HTML_LOG(0,"unlock_item_cb[%d][%s]",item->id,item->file);
-    nmt_mount(item->file);
-    if (is_file(item->file)) {
-        permissions(nmt_uid(),nmt_gid(),0755,1,item->file);
+    if (is_on_internal_hdd(item)) {
+        HTML_LOG(0,"unlock_item_cb[%d][%s]",item->id,item->file);
+        // should call chattr +i but need to call via
+
+        if (is_file(item->file)) {
+            permissions(nmt_uid(),nmt_gid(),0755,1,item->file);
+        }
     }
 }
 
@@ -1065,6 +1087,21 @@ void lock_toggle_item_cb(DbItem *item,void *action_data)
     }
 }
 
+
+void get_locked_status_cb(DbItem *item,void *data)
+{
+    LockMode status = *(int *)data;
+    if (status == LOCK_STATUS_UNKNOWN) {
+        if (item->locked) {
+            HTML_LOG(0,"Got locked status");
+            status = LOCK_STATUS_LOCK;
+        } else {
+            HTML_LOG(0,"Got unlocked status");
+            status = LOCK_STATUS_UNLOCK;
+        }
+        *(LockMode *)data = status;
+    }
+}
 
 void get_marked_status_cb(DbItem *item,void *data)
 {

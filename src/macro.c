@@ -493,6 +493,13 @@ char *macro_fn_media_select(MacroCallInfo *call_info)
     return result;
 }
 
+/*
+ * =begin wiki
+ * Display Watched/Unwatched selection.
+ *
+ * [:WATCHED_SELECT:]
+ * =end wiki
+ */
 char *macro_fn_watched_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
@@ -502,6 +509,27 @@ char *macro_fn_watched_select(MacroCallInfo *call_info) {
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched");
         result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"",watched);
         hashtable_destroy(watched,0,0);
+    }
+    call_info->free_result = 0;
+    return result;
+}
+
+/*
+ * =begin wiki
+ * Display Locked/Unlocked selection.
+ *
+ * [:LOCKED_SELECT:]
+ * =end wiki
+ */
+char *macro_fn_locked_select(MacroCallInfo *call_info) {
+    static char *result=NULL;
+    if (!result) {
+        struct hashtable *locked = string_string_hashtable("locked_menu",4);
+        hashtable_insert(locked,"","---");
+        hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_YES,"Locked");
+        hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_NO,"Unlocked");
+        result =  auto_option_list(QUERY_PARAM_LOCKED_FILTER,"",locked);
+        hashtable_destroy(locked,0,0);
     }
     call_info->free_result = 0;
     return result;
@@ -2407,6 +2435,7 @@ void macro_init() {
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"LINK",macro_fn_link);
         hashtable_insert(macros,"LOCK_BUTTON",macro_fn_lock_button);
+        hashtable_insert(macros,"LOCKED_SELECT",macro_fn_locked_select);
         hashtable_insert(macros,"MARK_BUTTON",macro_fn_mark_button);
         hashtable_insert(macros,"MEDIA_SELECT",macro_fn_media_select);
         hashtable_insert(macros,"MEDIA_TOGGLE",macro_fn_media_toggle);

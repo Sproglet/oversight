@@ -832,7 +832,7 @@ FILE *playlist_open() {
 char *share_name(DbItem *r,int *freeme) {
     char *out = NULL;
     *freeme = 0;
-    if (*(r->db->source) != '*' ) {
+    if (is_on_remote_oversight(r) ) {
         out = r->db->source;
     } else if (util_starts_with(r->file,NETWORK_SHARE)) {
         char *p = r->file + strlen(NETWORK_SHARE);
@@ -852,7 +852,7 @@ char *add_network_icon(DbItem *r,char *text) {
     char *icon;
     char *result=NULL;
 
-    if (*(r->db->source) == '*' && !util_starts_with(r->file,NETWORK_SHARE)) {
+    if (is_on_local_storage(r)) {
 
         //icon =  get_theme_image_tag("harddisk"," width=20 height=15 ");
         //ovs_asprintf(&result,"%s %s",icon,text);
@@ -2163,18 +2163,7 @@ int get_view_status(DbItem *rowid) {
 
 int is_locked(DbItem *item)
 {
-
-    int result = 1;
-    struct stat64 st;
-
-    nmt_mount(item->file);
-
-    HTML_LOG(0,"is_locked[%s]",item->file);
-    if (util_stat(item->file,&st) == 0) {
-        HTML_LOG(0,"is_locked uid=[%d] vs %d",st.st_uid,nmt_uid());
-        result = (st.st_uid != nmt_uid())  ;
-    }
-    return result;
+    return item->locked;
 }
 
 char *get_poster_mode_item(DbItem *row_id,char **font_class,char **grid_class,ViewMode *newview) {
@@ -2319,7 +2308,7 @@ char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,View
 
         long crossview=0;
         config_check_long(g_oversight_config,"ovs_crossview",&crossview);
-        if (crossview == 1 && *(row_id->db->source) != '*') {
+        if (crossview == 1 && is_on_remote_oversight(row_id)) {
             HTML_LOG(2,"dbg: add network icon");
            char *tmp =add_network_icon(row_id,title);
            FREE(title);
@@ -2720,7 +2709,7 @@ int delisted(DbItem *rowid)
     }
 
     // Dont check media if it is on another oversight db. Let each one manage itself.
-    if (rowid->db->source[0] != '*' ) {
+    if (is_on_remote_oversight(rowid)) {
         return 0;
     }
 

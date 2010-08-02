@@ -737,17 +737,17 @@ void db_set_fields_by_source(
     char *id_regex_text;
     regex_t id_regex_ptn;
 
-    char *regex_text;
-    regex_t regex_ptn;
+    char *fld_regex_text;
+    regex_t fld_regex_ptn;
 
     char buf[DB_ROW_BUF_SIZE+1];
     PRE_CHECK_FGETS(buf,DB_ROW_BUF_SIZE);
 
     regmatch_t pmatch[5];
 
-    ovs_asprintf(&regex_text,"\t%s\t([^\t]+)\t",field_id);
-    util_regcomp(&regex_ptn,regex_text,0);
-    HTML_LOG(1,"regex filter [%s]",regex_text);
+    ovs_asprintf(&fld_regex_text,"\t%s\t([^\t]+)\t",field_id);
+    util_regcomp(&fld_regex_ptn,fld_regex_text,0);
+    HTML_LOG(1,"regex filter [%s]",fld_regex_text);
 
     ovs_asprintf(&id_regex_text,"\t%s\t(%s)\t",DB_FLDID_ID,idlist);
     util_regcomp(&id_regex_ptn,id_regex_text,0);
@@ -808,20 +808,20 @@ HTML_LOG(1," begin open db");
                         db_rowid_free(&item,0);
                         affected_total++;
 
-                    } else if ( regexec(&regex_ptn,buf,2,pmatch,0) == 0) {
+                    } else if ( regexec(&fld_regex_ptn,buf,2,pmatch,0) == 0) {
                         // Field is present - change it and write the modified field.
                         int spos=pmatch[1].rm_so;
                         int epos=pmatch[1].rm_eo;
 
-                        HTML_LOG(0," got regexec %s %s from %d to %d ",id_regex_text,regex_text,spos,epos);
+                        HTML_LOG(0," got regexec %s %s from %d to %d ",id_regex_text,fld_regex_text,spos,epos);
 
                         HTML_LOG(0,"%.*s[[%s]]%s",spos,buf,new_value,buf+epos);
                         fprintf(db_out,"%.*s%s%s",spos,buf,new_value,buf+epos);
                         affected_total++;
 
                     } else {
-                        // field not present so just emit
-                        fprintf(db_out,"%s",buf);
+                        // field not present so add it to the current line
+                        fprintf(db_out,"\t%s\t%s%s",field_id,new_value,buf);
 
                     }
 
@@ -848,9 +848,9 @@ HTML_LOG(1," begin open db");
         db_free(db);
     }
     HTML_LOG(0," end db_set_fields_by_source - %d of %d records changed",affected_total,dbsize);
-    regfree(&regex_ptn);
+    regfree(&fld_regex_ptn);
     regfree(&id_regex_ptn);
-    FREE(regex_text);
+    FREE(fld_regex_text);
     FREE(id_regex_text);
 
 }

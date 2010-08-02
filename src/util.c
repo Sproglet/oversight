@@ -887,16 +887,15 @@ int util_stat(char *path,struct stat64 *st)
 }
 
 // Delete a file using seperate process
-void util_rmq(char *path,int recursive)
+void util_file_command(char *command_and_args,char *path)
 {
     char *f = replace_str(path,"'","\\'");
     char *cmd;
-    ovs_asprintf(&cmd,"daemon rm %s '%s'", (recursive?"-fr":"--"),f);
+    ovs_asprintf(&cmd,"%s '%s'", command_and_args,f);
     util_system(cmd);
     FREE(cmd);
     FREE(f);
 }
-
 
 // recursive delete
 int util_rm(char *path)

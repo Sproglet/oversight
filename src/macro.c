@@ -254,6 +254,7 @@ char *macro_fn_actor_image(MacroCallInfo *call_info)
 
 /**
  * =begin wiki
+ * ==POSTER==
  *
  * Display poster for current item.
  *
@@ -336,6 +337,7 @@ char *macro_fn_page(MacroCallInfo *call_info)
 
 /**
  * =begin wiki
+ * ==PAGE_MAX==
  * Return the last page number by dividing number of items by the page size (aka grid size).
  * This does not take delisting into account, which may reduce the number of items.
  *
@@ -495,6 +497,7 @@ char *macro_fn_media_select(MacroCallInfo *call_info)
 
 /*
  * =begin wiki
+ * ==WATCHED_SELECT==
  * Display Watched/Unwatched selection.
  *
  * [:WATCHED_SELECT:]
@@ -516,6 +519,7 @@ char *macro_fn_watched_select(MacroCallInfo *call_info) {
 
 /*
  * =begin wiki
+ * ==LOCKED_SELECT==
  * Display Locked/Unlocked selection.
  *
  * [:LOCKED_SELECT:]
@@ -1162,11 +1166,12 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
  * rows,cols            = row and columns of thumb images in the grid (defaults to config file settings for that view)
  * img_height,img_width = thumb image dimensions ( defaults to config file settings for that view)
  * offset               = This setting is to allow multiple grids on the same page. eg. 
- * for a layout where X represents a thumb you mak have:
+ * for a layout where X represents a thumb you may have:
  *
+ * {{{
  * XXXX
  * XX
- * XX
+ * }}}
  *
  * This could be two grids
  * [:GRID(rows=>1,cols=>4,offset=>0):]
@@ -1430,12 +1435,15 @@ char *macro_fn_icon_link(MacroCallInfo *call_info) {
 }
 
 /**
+  =begin wiki
+  ==BACKGROUND_URL==
   BACKGROUND_URL(image name)
   Display image from skin/720 or skin/sd folder. Also see FANART_URL
-**/  
-/**
+
+  ==BACKGROUND_IMAGE==
   BACKGROUND_IMAGE(image name) - deprecated - use BACKGROUND_URL() 
   Display image from skin/720 or skin/sd folder. Also see BACKGROUND_URL,FANART_URL
+  =end wiki
 **/  
 char *macro_fn_background_url(MacroCallInfo *call_info) {
     char *result=NULL;
@@ -1449,7 +1457,16 @@ char *macro_fn_background_url(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_favicon(MacroCallInfo *call_info) {
+/**
+  =begin wiki
+  ==FAVICON==
+
+  Display favicon html link.
+  [:FAVICON:]
+  =end wiki
+**/  
+char *macro_fn_favicon(MacroCallInfo *call_info)
+{
     char *result="";
     call_info->free_result = 0;
     if (is_pc_browser()) {
@@ -1458,15 +1475,27 @@ char *macro_fn_favicon(MacroCallInfo *call_info) {
     return  result;
 }
 
-char *macro_fn_skin_name(MacroCallInfo *call_info) {
+/**
+  =begin wiki
+  ==SKIN_NAME==
+
+  Replace with name of the currently selected skin.
+  =end wiki
+**/  
+char *macro_fn_skin_name(MacroCallInfo *call_info)
+{
     call_info->free_result = 0;
     return skin_name();
 }
 
 /**
+  =begin wiki
+ * ==TEMPLATE_URL==
  * TEMPLATE_URL(file path)
  * Return URL to a file within the current skin/template. Fall back to default skin if not found in current skin.
- * eg. TEMPLATE_URL(css/default.css)
+ * eg.
+ * [:TEMPLATE_URL(css/default.css):]
+  =end wiki
  */
 char *macro_fn_template_url(MacroCallInfo *call_info)
 {
@@ -1484,7 +1513,18 @@ char *macro_fn_template_url(MacroCallInfo *call_info)
     return result;
 }
 
-// Display a template image from images folder - if not present look in defaults.
+/**
+  =begin wiki
+  ==IMAGE_URL==
+    Description:
+    Generate a url for a template image from current skins images folder - if not present look in defaults.
+    This is just the url - no html tag is included.
+  Syntax:
+  [:IMAGE_URL(image name):]
+  Example:
+  [:IMAGE_URL(stop):]
+  =end wiki
+**/  
 char *macro_fn_image_url(MacroCallInfo *call_info)
 {
     char *result=NULL;
@@ -1501,7 +1541,17 @@ char *macro_fn_image_url(MacroCallInfo *call_info)
     }
     return result;
 }
-// Display an icon ICON(name,[attribute]) - if not present look in defaults.
+/**
+  =begin wiki
+  ==IMAGE_URL==
+    Description:
+    Generate html <img> tag to display an icon  - if not present look in defaults.
+  Syntax:
+  [:ICON(name,[attribute]):]
+  Example:
+  [:ICON(stop,width=20):]
+  =end wiki
+**/  
 char *macro_fn_icon(MacroCallInfo *call_info) {
     char *result=NULL;
     if (call_info->args && call_info->args->size == 1) {
@@ -1519,7 +1569,8 @@ char *macro_fn_icon(MacroCallInfo *call_info) {
     return result;
 }
 
-char *config_link(char *config_file,char *help_suffix,char *html_attributes,char *text) {
+char *config_link(char *config_file,char *help_suffix,char *html_attributes,char *text)
+{
     char *params,*link;
     ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",config_file,help_suffix,text);
     link = get_self_link(params,html_attributes,text);
@@ -1527,6 +1578,16 @@ char *config_link(char *config_file,char *help_suffix,char *html_attributes,char
     return link;
 }
 
+/**
+  =begin wiki
+  ==CONFIG_LINK==
+    Description:
+    Generate text to link to a settings configuration form for a config file.
+  Syntax:
+  [:CONFIG_LINK(config_file,help_suffix,text[,html_attributes]):]
+  Example:
+  =end wiki
+**/  
 char *macro_fn_admin_config_link(MacroCallInfo *call_info) {
 
     char *result=NULL;
@@ -1547,19 +1608,48 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info) {
 }
 
 
-char *macro_fn_status(MacroCallInfo *call_info) {
+/**
+  =begin wiki
+  ==STATUS==
+    Description:
+    Replace with current status passed from the scanner.
+  Syntax:
+  [:STATUS:]
+  Example:
+  [:STATUS:]
+  =end wiki
+**/  
+char *macro_fn_status(MacroCallInfo *call_info)
+{
     return get_status();
 }
 
 
-char *macro_fn_help_button(MacroCallInfo *call_info) {
+/**
+  =begin wiki
+  ==HELP_BUTTON==
+    Description:
+    Display a template image from current skins images folder - if not present look in defaults.
+  Syntax:
+  [:HELP_BUTTON:]
+  Example:
+  [:HELP_BUTTON:]
+  =end wiki
+**/  
+char *macro_fn_help_button(MacroCallInfo *call_info)
+{
     char *result = NULL;
     char *tag=get_theme_image_tag("help",NULL);
     if (!g_dimension->local_browser) {
 #define PROJECT_HOME "http://code.google.com/p/oversight/wiki/OversightIntro"
         ovs_asprintf(&result,"<a href=\"" PROJECT_HOME"\" target=\"ovshelp\">%s</a>",tag);
     } else {
-        ovs_asprintf(&result,"<a href=\"javascript:alert('[RED] mark\n[GREEN] unmark\n[DELETE] delist/delete');\" >%s</a>",tag);
+        ovs_asprintf(&result,"<a href=\"javascript:alert('[%s] mark\n[%s] lock\n[%s] delist\n[%s] delete');\" >%s</a>",
+                oversight_val("ovs_tvid_mark"),
+                oversight_val("ovs_tvid_lock"),
+                oversight_val("ovs_tvid_delist"),
+                oversight_val("ovs_tvid_delete"),
+                tag);
     }
     FREE(tag);
     return result;
@@ -1998,7 +2088,6 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
 
 /**
  * =begin wiki
- *
  * ==IF==
  * Multi line form:
  *

@@ -153,18 +153,20 @@ resize_img() {
 Q=$TMP/resize.queue
 
 add_queue() {
-    args=
-    type="$2"
-    for i in "$@" ; do
-        i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
-        args="$args $i"
-    done
-    mkdir -p "$Q.$type"
-    perms "$Q.$type"
-    echo "$args" >> "$Q.$type/$prefix$$"
-    chmod 666 "$Q.$type/$prefix$$"
-    perms "$Q.$type/$prefix$$"
-    INFO "Queued $args"
+    if [ -n "$1" ] ; then
+        args=
+        type="$2"
+        for i in "$@" ; do
+            i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
+            args="$args $i"
+        done
+        mkdir -p "$Q.$type"
+        perms "$Q.$type"
+        echo "$args" >> "$Q.$type/$prefix$$"
+        chmod 666 "$Q.$type/$prefix$$"
+        perms "$Q.$type/$prefix$$"
+        INFO "Queued $args"
+    fi
 }
 
 
@@ -314,8 +316,21 @@ check_pal() {
 }
 
 if [ -z "$1" ] ; then
-	echo "usage $0 [poster|fanart] url file wget options"
-	echo "usage $0 START"
+    cat <<HERE
+	usage:
+
+        Queue an item
+            $0 [actor|poster|fanart] url file wget options
+
+        Queue an item and start processing queues
+            $0 START [actor|poster|fanart] url file wget options
+        
+        Start processing queues
+            $0 START
+
+        Stop processing queues
+            $0 STOP
+HERE
 	exit 1
 fi
 
@@ -332,6 +347,8 @@ case "$1" in
         ;;
 
     START)
+        shift
+        add_queue  "$@"
         startup
         ;;
 
@@ -340,9 +357,6 @@ case "$1" in
         ;;
 
     *)
-        if [ -n "$*" ] ; then
-            add_queue  "$@"
-        fi
-        startup
+        add_queue  "$@"
         ;;
 esac

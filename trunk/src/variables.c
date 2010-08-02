@@ -119,7 +119,12 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
 #endif
             
             
-        if (STRCMP(vname+1,"nmt100") == 0) {
+        if (STRCMP(vname+1,"gaya") == 0) {
+
+            convert_int=1;
+            int_val = g_dimension->local_browser;
+
+        } else if (STRCMP(vname+1,"nmt100") == 0) {
             convert_int=1;
             int_val = is_nmt100();
 

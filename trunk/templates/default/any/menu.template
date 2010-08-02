@@ -41,10 +41,6 @@ table.overview_poster {
     </head>
     <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
         [:FORM_START:]
-[:IF(0):]
-        <table class=main width=100% height=100%>
-        <tr><td>
-[:ENDIF:]
             <table class=header width=100%>
                 <tr>
 [:IF($@sd):]
@@ -67,26 +63,23 @@ table.overview_poster {
 [:IF($@sd):]
                     <td colspan=7 align=center >
 [:ELSE:]
-                    <td colspan=6 align=center >
+                    <td colspan=5 align=center >
 [:ENDIF:]
                         <span class=menutitle id="menutitle">&nbsp;</span>
                         <span class=menutitle id="unwatchedtotal">&nbsp;</span>
                         <span class=menutitle id="watchedtotal">&nbsp;</span>
                     </td>
+                    <td align=right>
+                        [:PAGE:]/[:PAGE_MAX:] ([:EVAL($@selection_count):])
+                    </td>
                 </tr>
             </table>
-[:IF(0):]
-        </td></tr><tr><td>
-[:ENDIF:]
             <center>
             	<div>
             		[:GRID:]
             	</div
             </center>
 			<br/>
-[:IF(0):]
-        </td></tr><tr><td>
-[:ENDIF:]       
             <table class=footer width=100%>
                 <tr valign=top>
                     <td align=left>&nbsp;[:LEFT_BUTTON:]</td>
@@ -94,10 +87,6 @@ table.overview_poster {
                     <td align=right>[:RIGHT_BUTTON:]&nbsp;</td>
                 </tr>
             </table>
-    [:PAGE:]/[:PAGE_MAX:] [:EVAL($@selection_count):]
-[:IF(0):]
-        </td></tr></table>
-[:ENDIF:]
 [:FORM_END:]
 <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>

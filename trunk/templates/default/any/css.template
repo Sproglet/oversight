@@ -66,10 +66,9 @@ img.poster_watched {
     font-weight:bold;
 }
 
-.actors {
-    color:white;
-    font-size:[:$ovs_font_size_plot:]% ;
-    font-weight:normal;
+.moviePoster {
+	border-spacing: 0;
+	margin: 0;
 }
 
 .title {

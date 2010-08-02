@@ -160,9 +160,12 @@ body { font-family:"arial"; color:white;  }
  color:#FF7777;
 }
 
-table.actors    td { width:99px; }
-table.directors td { width:99px; }
-table.writers   td { width:99px; }
+table.actors    td { margin:10px; padding:10px; font-size:90%; }
+table.directors td { margin:10px; padding:10px; font-size:90%; }
+table.writers   td { margin:10px; padding:10px; font-size:90%; }
+table.actors	font {color: #FFBB66;}
+table.directors	font {color: #FFBB66;}
+table.writers	font {color: #FFBB66;}
 
 /*
 vi:ts=4:sw=4:et:syntax=css

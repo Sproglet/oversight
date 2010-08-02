@@ -32,6 +32,9 @@ Exp *build_filter(char *media_types)
     // Watched
     add_op_clause(&val,0,DB_FLDID_WATCHED FIELD_OP,EQ_OP,query_val(QUERY_PARAM_WATCHED_FILTER));
 
+    // Locked
+    add_op_clause(&val,0,DB_FLDID_LOCKED FIELD_OP,EQ_OP,query_val(QUERY_PARAM_LOCKED_FILTER));
+
     // Title Filter
     char *title_pat = query_val(QUERY_PARAM_TITLE_FILTER);
     if (title_pat && *title_pat) {

@@ -22,6 +22,7 @@ void dbf_ids_init()
 
     add_label(DB_FLDID_ID,"ID");
     add_label(DB_FLDID_WATCHED,"WATCHED");
+    add_label(DB_FLDID_LOCKED,"LOCKED");
     add_label(DB_FLDID_PARTS,"PARTS");
     add_label(DB_FLDID_FILE,"FILE");
     add_label(DB_FLDID_NAME,"NAME");

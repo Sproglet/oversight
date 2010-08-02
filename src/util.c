@@ -889,7 +889,7 @@ int util_stat(char *path,struct stat64 *st)
 // Delete a file using seperate process
 void util_file_command(char *command_and_args,char *path)
 {
-    char *f = replace_str(path,"'","\\'");
+    char *f = replace_str(path,"'","'\\''");
     char *cmd;
     ovs_asprintf(&cmd,"%s '%s'", command_and_args,f);
     util_system(cmd);

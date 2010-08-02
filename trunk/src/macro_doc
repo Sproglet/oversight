@@ -1,0 +1,48 @@
+# #!/bin/sh
+# generate wiki page from macro.c
+
+extract() {
+
+awk '
+/=begin wiki/,/=end wiki/ {
+    if (match($0,"==[^=]+==")) {
+        section = substr($0,RSTART+2,RLENGTH-4);
+        sub(/^ */,"",section);
+        sub(/ *$/,"",section);
+    }
+    sub(/^ *\*+ ?/,"",$0);
+
+    if (index($0,"{{{")) br++;
+    if (index($0,"}}}")) br--;
+
+    if (!br && match($0,"[][]")) {
+        $0 = "{{{ "$0" }}}";
+    }
+
+    if (!match($0,"=(begin|end) wiki")) {
+        printf "%s %05x:%s\n",section,NR,$0;
+    }
+} ' 
+
+}
+
+
+
+
+header() {
+cat <<HERE
+#sidebar TableOfContents
+<wiki:toc max_depth="3" />
+
+[Auto-generated at `date` from comments in macro.c using macro_doc in trunk/src]
+
+Oversight skins are html with special macros that are replaced with html text on the fly.
+
+The macros are detailed below.
+If this page becomes out of date, refer to macro.c
+HERE
+}
+
+header 
+cat macro.c | extract  | sort -k 1,1 | sed -r 's/^[^:]+://'
+#cat macro.c | extract | sort | sed -r 's/^[^:]+://'

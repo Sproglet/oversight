@@ -32,7 +32,11 @@
 							<tr><td align=right>[:POSTER:]</td></tr>					
 		            	</table>
 		            </td>
-                    <td class="main" >
+[:IF($@gaya):]
+                    <td class="main">
+[:ELSE:]
+                    <td class="main" rowspan=2>
+[:ENDIF:]
 [:IF($ovs_fade):]
                         <table width="100%" background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]" >
 [:ELSE:]
@@ -70,12 +74,18 @@
 		                    <tr>		
                             <tr>
                             	<td width=1%></td>
-                            	<td colspan=2 align="left"><span class="plot">[:PLOT:]</span>
-                                [:IF($@hd):]
-                                    [:ACTORS(rows=>2,cols=>9):]
-                                [:ELSE:]
-                                    [:ACTORS(rows=>1,cols=>3):]
-                                [:ENDIF:]
+                            	<td colspan=2 align=left><span class="plot">[:PLOT:]</span>
+                                </td>
+                    			<td width=1%></td>
+                            <tr>		
+                            <tr>
+                            	<td width=1%></td>
+                            	<td colspan=2 align=left><span class="detailHeading"><br/>Cast:</span>
+	                                [:IF($@hd):]
+	                                    [:ACTORS(rows=>2,cols=>5):]
+	                                [:ELSE:]
+	                                    [:ACTORS(rows=>1,cols=>3):]
+	                                [:ENDIF:]
                                 </td>
                     			<td width=1%></td>
                             <tr>

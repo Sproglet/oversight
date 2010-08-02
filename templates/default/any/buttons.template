@@ -3,6 +3,7 @@
     [:HOME_BUTTON:]
 [:IF($@gaya):]
 [:ELSE:]
+	<br/>
     [:MARK_BUTTON:]
     [:LOCK_BUTTON:]
     [:DELETE_BUTTON:]

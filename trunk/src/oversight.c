@@ -62,15 +62,15 @@ int ls(char *path) {
                 char *tmp;
                 switch(f->d_type) {
                     case DT_REG:
-                        ovs_asprintf(&tmp,"<br><a href=%s>%s</a>",u,f->d_name);
+                        ovs_asprintf(&tmp,"<br><a href=\"%s\">%s</a>",u,f->d_name);
                         array_add(files,tmp);
                         break;
                     case DT_DIR:
-                        ovs_asprintf(&tmp,"<br><a href=%s>%s [DIR]</a>",u,f->d_name);
+                        ovs_asprintf(&tmp,"<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ",u,f->d_name);
                         array_add(dirs,tmp);
                         break;
                     default:
-                        ovs_asprintf(&tmp,"<br><a href=%s>%s [?]</a>",u,f->d_name);
+                        ovs_asprintf(&tmp,"<br><a href=\"%s\">%s [?]</a>",u,f->d_name);
                         array_add(files,tmp);
                         break;
                 }
@@ -84,13 +84,17 @@ int ls(char *path) {
         char *out;
         array_sort(dirs,NULL);
         out = arraystr(dirs);
-        printf("%s",out);
+        if (out) {
+            printf("%s",out);
+        }
         FREE(out);
 
         printf("<hr>");
         array_sort(files,NULL);
         out = arraystr(files);
-        printf("%s",out);
+        if (out) {
+            printf("%s",out);
+        }
         FREE(out);
 
         array_free(dirs);

@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
+#include <dirent.h>
+#include <libgen.h>
 
 #define OVS_MAIN 1
 #include "oversight.h"
@@ -33,7 +35,76 @@ void clear_playlist() {
     truncate(NMT_PLAYLIST,0);
 }
 
-void cat(char *content,char *file) {
+int ls(char *path) {
+    int result = 0;
+    printf("Content-Type: text/html\n\n<html><head><title>%s</title></head><body>%s<br>",path,path);
+    DIR *d = opendir(path);
+    if (d) {
+        Array *dirs = array_new(free);
+        Array *files = array_new(free);
+        struct dirent *f ;
+        while((f = readdir(d)) != NULL) {
+            
+            char *p,*u;
+            ovs_asprintf(&p,"%s/%s",path,f->d_name);
+            //printf("<br>checking %s\n",p);
+            //u = file_to_url(p);
+
+            ovs_asprintf(&u,"?%s",p);
+            if (strcmp(f->d_name,"..") == 0) {
+                // find parent folder name
+                char *tmp = STRDUP(path);
+                ovs_asprintf(&u,"?%s",dirname(tmp));
+                FREE(tmp);
+            }
+
+            if (strcmp(f->d_name,".") != 0) {
+                char *tmp;
+                switch(f->d_type) {
+                    case DT_REG:
+                        ovs_asprintf(&tmp,"<br><a href=%s>%s</a>",u,f->d_name);
+                        array_add(files,tmp);
+                        break;
+                    case DT_DIR:
+                        ovs_asprintf(&tmp,"<br><a href=%s>%s [DIR]</a>",u,f->d_name);
+                        array_add(dirs,tmp);
+                        break;
+                    default:
+                        ovs_asprintf(&tmp,"<br><a href=%s>%s [?]</a>",u,f->d_name);
+                        array_add(files,tmp);
+                        break;
+                }
+            }
+            FREE(u);
+            FREE(p);
+        }
+
+        closedir(d);
+
+        char *out;
+        array_sort(dirs,NULL);
+        out = arraystr(dirs);
+        printf("%s",out);
+        FREE(out);
+
+        printf("<hr>");
+        array_sort(files,NULL);
+        out = arraystr(files);
+        printf("%s",out);
+        FREE(out);
+
+        array_free(dirs);
+        array_free(files);
+    } else {
+        fprintf(stderr,"Error %d opening [%s]\n",errno,path);
+        result = errno;
+    }
+    printf("</body></html>");
+    return result;
+}
+
+
+int cat(char *content,char *file) {
     printf("Content-Type: %s\n\n",content);
     FILE *fp = fopen (file,"r");
 #define CATBUFLEN 1000
@@ -44,10 +115,10 @@ void cat(char *content,char *file) {
             fwrite(catbuf,1,bytes,stdout);
         }
         fclose(fp);
-        exit(0);
+        return 0;
     } else {
         fprintf(stderr,"Error %d opening [%s|%s]\n",errno,content,file);
-        exit(1);
+        return errno;
     }
 }
 
@@ -119,27 +190,33 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 exit(0);
 
             } else {
-                char *img = url_decode(argv[1]);
-                char *dot = strrchr(img,'.');
+                char *path = url_decode(argv[1]);
+                char *dot = strrchr(path,'.');
+                int result = 0;
 
-                if (dot) {
+                if (dot && STRCMP(dot,".png") == 0 ) {
 
+                    result = cat("image/png",path);
 
-                    if (STRCMP(dot,".png") == 0 ) {
+                } else if (dot &&  STRCMP(dot,".jpg") == 0 ) {
 
-                        cat("image/png",img);
+                    result = cat("image/jpeg",path);
 
-                    } else if ( STRCMP(dot,".jpg") == 0 ) {
+                } else if (dot &&  STRCMP(dot,".gif") == 0) {
 
-                        cat("image/jpeg",img);
+                    result = cat("image/gif",path);
 
-                    } else if ( STRCMP(dot,".gif") == 0) {
+                } else if (is_file(path) && browsing_from_lan() ) {
 
-                        cat("image/gif",img);
+                    result = cat("text/plain",path);
 
-                    }
+                } else if (is_dir(path) && browsing_from_lan()) {
+
+                    // load_configs(); // load configs so we can use file_to_url() functions 
+                    result = ls(path);
                 }
-                FREE(img);
+                FREE(path);
+                exit(result);
             }
         }
     }

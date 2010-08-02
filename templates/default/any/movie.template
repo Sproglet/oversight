@@ -23,20 +23,16 @@
             <table class="main" width="100%"  >
 [:IF($@gaya):]
 [:ELSE:]
-    			<tr valign=top><td height=100%></td></tr>
+    			<tr valign=top><td height=100% colspan=2></td></tr>
 [:ENDIF:]
-                <tr valign="bottom" >
-		            <td class=main width=1% align=left>
+                <tr valign=bottom >
+		            <td class=main width=1% align=right>
 		            	[:INCLUDE_TEMPLATE(buttons):]
-		            	<table class=main>
+		            	<table class=moviePoster>
 							<tr><td align=right>[:POSTER:]</td></tr>					
 		            	</table>
 		            </td>
-[:IF($@gaya):]
                     <td class="main">
-[:ELSE:]
-                    <td class="main" rowspan=2>
-[:ENDIF:]
 [:IF($ovs_fade):]
                         <table width="100%" background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]" >
 [:ELSE:]

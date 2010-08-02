@@ -142,9 +142,9 @@ table.detail   { margin:0; border-spacing:3px; padding:3px ; }
  color:#FF7777;
 }
 
-table.actors    td { width:99px; font-size:90%; }
-table.directors td { width:99px; font-size:90%; }
-table.writers   td { width:99px; font-size:90%; }
+table.actors    td { margin:10px; padding:10px; font-size:90%; }
+table.directors td { margin:10px; padding:10px; font-size:90%; }
+table.writers   td { margin:10px; padding:10px; font-size:90%; }
 
 /*
 vi:ts=4:sw=4:et:syntax=css

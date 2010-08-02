@@ -175,6 +175,9 @@ BEGIN {
     g_thetvdb_web="http://www.thetvdb.com";
     g_tvrage_web="http://www.tvrage.com";
 
+    # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
+    #g_fetch_images_concurrently="START";
+
     g_tv_check_urls["TVRAGE"]=g_tvrage_web;
     g_tv_check_urls["THETVDB"]=g_thetvdb_web;
 
@@ -671,6 +674,9 @@ END{
             system(g_plot_app" compact "qa(g_plot_file)" "qa(INDEX_DB));
             unlock(g_db_lock_file);
         }
+    }
+    if (g_fetch_images_concurrently == "") {
+        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" START &");
     }
 }
 
@@ -6031,7 +6037,7 @@ function download_image(field_id,url,idx,\
 
 
             rm(internal_path,1);
-            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
+            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "g_fetch_images_concurrently" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
             g_image_inspected[internal_path]=1;
         }
     }
@@ -6756,7 +6762,7 @@ ret) {
             if (preparePath(file) == 0) {
                 g_portrait[id]=1;
                 #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
-                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "PID" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\" &");
+                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "g_fetch_images_concurrently" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\" &");
             }
         }
     }

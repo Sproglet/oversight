@@ -113,24 +113,25 @@ void reload_configs()
     load_ovs_configs();
     config_read_dimensions();
 }
+
+// Dont check g_dimension->local_browser as this may be called before configuration is read
 int browsing_from_lan() {
     static int result = -1;
     if (result == -1) {
         result = 0;
-        if (g_dimension->local_browser) {
-            result = 1;
-        } else {
             char *ip = getenv("REMOTE_ADDR");
             if (ip) {
-                if (util_starts_with(ip,"192.168.") ||
+                if (
+                    util_starts_with(ip,"127.0.0.") ||
+                    util_starts_with(ip,"192.168.") ||
                     util_starts_with(ip,"10.")  ||
                     ( util_starts_with(ip,"172.")  &&
                     util_strreg(ip,"172\\.([0-9]|[12][0-9]|3[01])\\.",0) != NULL ) ) {
                     result = 1;
                 }
             }
-        }
-        HTML_LOG(0,"browsing from lan = %d",result);
+        printf("<!-- browsing from lan = %d -->",result);
+        //HTML_LOG(0,"browsing from lan = %d",result);
     }
     return result;
 }

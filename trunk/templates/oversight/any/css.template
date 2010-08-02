@@ -60,6 +60,18 @@ img.poster_watched {
     font-weight:normal;
 }
 
+.detailHeading {
+    color:white;
+    font-size:[:$ovs_font_size_plot:]% ;
+    font-weight:bold;
+}
+
+.actors {
+    color:#FFBB66;
+    font-size:[:$ovs_font_size_plot:]% ;
+    font-weight:normal;
+}
+
 .title {
  text-align:left;
  font-size:[:TITLE_SIZE:];

@@ -193,7 +193,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 gaya_auto_load(argv[1]+strlen(REMOTE_VOD_PREFIX2));
                 exit(0);
 
-            } else {
+            } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
+                // Single argument passed.
+                //
                 char *path = url_decode(argv[1]);
                 char *dot = strrchr(path,'.');
                 int result = 0;

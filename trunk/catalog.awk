@@ -676,7 +676,7 @@ END{
         }
     }
     if (g_fetch_images_concurrently == "") {
-        exec(APPDIR"/bin/jpg_fetch_and_scale "PID" START &");
+        exec(APPDIR"/bin/jpg_fetch_and_scale START &");
     }
 }
 
@@ -1393,7 +1393,7 @@ nfo,lcNfo) {
 function exec(cmd,\
 err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   #DEBUG("SYSTEM : [["cmd"]]");
+   DEBUG("SYSTEM : [["cmd"]]");
    if ((err=system(cmd)) != 0) {
       ERR("Return code "err" executing "cmd) ;
   }
@@ -6037,7 +6037,7 @@ function download_image(field_id,url,idx,\
 
 
             rm(internal_path,1);
-            exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "g_fetch_images_concurrently" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
+            exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
             g_image_inspected[internal_path]=1;
         }
     }
@@ -6762,7 +6762,7 @@ ret) {
             if (preparePath(file) == 0) {
                 g_portrait[id]=1;
                 #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
-                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "PID" "g_fetch_images_concurrently" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\" &");
+                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\" &");
             }
         }
     }

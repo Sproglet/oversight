@@ -61,7 +61,7 @@ table.overview_poster {
         <table class="main" width="100%" height="100%">
             <tr>
                 <td>
-		            <table height=50px class="header" background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/trans50.png">
+		            <table height=50px class="header" background="[:URL_BASE:]/templates/default/images/trans50.png">
 		                <tr>
 		                    [<td>&nbsp;:BACK_BUTTON:&nbsp;&nbsp;&nbsp;&nbsp;</td>]
 [:IF($?resizeon):]
@@ -77,10 +77,7 @@ table.overview_poster {
 		                    [<td align="center" width="20%">:SELECT_MARK_SUBMIT:</td>]
 		                    [<td align="center" width="20%">:SELECT_CANCEL_SUBMIT:</td>]
 		                    [<td align="center" width="20%">:SELECT_DELIST_SUBMIT:</td>]
-		                    [<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>][:IF($@gaya):]		
-			                <td align=right>
-			                    <img class=fanartIcon src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/tv_icon.png"/>&nbsp;
-			                </td>		
+		                    [<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>][:IF($@gaya):]	
 [:ELSE:]
 			                <td align=right>
 			                    [:EXTERNAL_URL:]&nbsp;

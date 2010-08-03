@@ -83,7 +83,6 @@ table.overview_poster {
                     <td width=10%>[:LEFT_BUTTON:]</td>
                     [:INCLUDE_TEMPLATE(menu_buttons):]
                     <td><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
-
                     <td width=10% align=right>[:RIGHT_BUTTON:]</td>
                 </tr>
             </table>

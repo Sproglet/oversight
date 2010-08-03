@@ -97,7 +97,7 @@ table.overview_poster {
                             </tr>
                             <tr>
                                 <td >
-                                    <div id=gridWrapper>[:GRID(rows=>1,cols=>6):]</div>
+                                    <div id=gridWrapper>[:GRID:]</div>
 								<table class=footer width=100%>
 				                	<tr valign=top>
 				                        <td width=10%>[:LEFT_BUTTON:]</td>

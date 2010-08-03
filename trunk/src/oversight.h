@@ -44,6 +44,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 
 #define NVL(s) ((s)?(s):"")
 #define STRCMP(a,b) strcmp(NVL(a),NVL(b))
+
 #define STRCASECMP(a,b) strcasecmp(NVL(a),NVL(b))
 
 #define QUERY_PARAM_VIEW "view"
@@ -102,7 +103,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define NETWORK_SYMLINK "/opt/sybhttpd/default/.network"
 
 #define NON_EMPTY_STR(str) ((str) && (*(str)))
-#define EMPTY_STR(str) ((str) == NULL || (*(str)) == '\0')
+#define EMPTY_STR(str) ((str) == NULL || (*(char *)(str)) == '\0')
 #define IFEMPTY(s,alt) (EMPTY_STR(s)?(alt):(s))
 
 #define NAME_FILTER_REGEX_FLAG "R"

@@ -29,8 +29,8 @@
 // vi:sw=4:et:ts=4
 
 char *scanlines_to_text(long scanlines);
-char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
-int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
+char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *);
+int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *);
 int template_replace(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
 
 int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows)
@@ -131,13 +131,14 @@ int template_replace(char *skin_name,char *orig_skin,char *input,DbSortedRows *s
 TRACE;
 
     // first replace simple variables in the buffer.
-    char *newline=template_replace_only(skin_name,orig_skin,input,sorted_rows);
+    int has_macros = 0;
+    char *newline=template_replace_only(skin_name,orig_skin,input,sorted_rows,&has_macros);
     if (newline != input) {
         HTML_LOG(2,"old line [%s]",input);
         HTML_LOG(2,"new line [%s]",newline);
     }
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
-    int count = template_replace_and_emit(skin_name,orig_skin,newline,sorted_rows);
+    int count = template_replace_and_emit(skin_name,orig_skin,newline,sorted_rows,&has_macros);
     if (newline !=input) FREE(newline);
     return count;
 }
@@ -157,13 +158,14 @@ int replace_macro(char *macro_name) {
 }
 
 
-char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows)
+char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows, int *has_macros_ptr)
 {
 
 TRACE;
     char *newline = input;
     char *macro_start = NULL;
     int count = 0;
+    int newline_len = strlen(input);
 
 
     macro_start = strstr(input,MACRO_STR_START);
@@ -173,12 +175,15 @@ TRACE;
         char *macro_name_end = NULL;
         char *macro_end = NULL;
 
+        (*has_macros_ptr)++;
+
         // Check we have MACRO_STR_START .. MACRO_STR_START_INNER MACRO_NAME MACRO_STR_END_INNER .. MACRO_STR_END
         // eg [text1:name:text2]
         // If the macro "name" is non-empty then "text1 macro-out text2" is printed.
         macro_name_start=strstr(macro_start,MACRO_STR_START_INNER);
         if (macro_name_start) {
-            macro_name_start++;
+            macro_name_start+= strlen(MACRO_STR_START_INNER);
+
             macro_name_end = strstr(macro_name_start,MACRO_STR_END_INNER);
             if (macro_name_end) {
                 macro_end=strstr(macro_name_end,MACRO_STR_END);
@@ -204,30 +209,49 @@ TRACE;
             *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output) {
 
-
                 //convert AA[BB:$CC:DD]EE to AABBnewDDEE
+                static int meta_char_count = -1;
+                if (meta_char_count == -1) {
+                    meta_char_count = strlen(MACRO_STR_START) + strlen(MACRO_STR_START_INNER) +
+                            strlen(MACRO_STR_END_INNER) + strlen(MACRO_STR_END);
+                }
+                int new_len = strlen(macro_output); // "new"
 
-                *macro_start = '\0';   //terminate AA
-                 macro_name_start[-1] = '\0';  // terminate BB
-                 *macro_end = '\0'; // terminate DD
+                char *prefix_start = macro_start + strlen(MACRO_STR_START);
+                char *prefix_end = macro_name_start - strlen(MACRO_STR_START_INNER);
+                char *suffix_start = macro_name_end + strlen(MACRO_STR_END_INNER);
+                char *suffix_end = macro_end;
 
-                 char *tmp;
+                int macro_prefix_len = prefix_end - prefix_start; // BB
+                int macro_name_len = macro_name_end - macro_name_start; // $CC
+                int macro_suffix_len = suffix_end - suffix_start; // DD
 
-                 ovs_asprintf(&tmp,"%s%s%s%s%s",newline,macro_start+1,macro_output,macro_name_end+1,macro_end+1);
+                 char *newline2;
 
-                 // Adjust the end pointer so it is relative to the new buffer.
-                 char *new_macro_end = tmp + strlen(newline)+strlen(macro_start+1)+strlen(macro_output)+strlen(macro_name_end+1);
-                 
-                 // put back the characters we just nulled.
-                 *macro_start = *MACRO_STR_START;
-                 macro_name_start[-1] = *MACRO_STR_START_INNER;
-                 *macro_end = *MACRO_STR_END;
+                 char *p;
+                 int size_change = ( new_len - macro_name_len - meta_char_count);
+                 //[newline] AA [macro_start] BB [macro_name_start] CC [macro_name_end] DD [macro_end] EE
+                 if (size_change <= 0) {
+                     // We can copy in place
+                     newline2 = newline;
+                     p = macro_start;
+                 } else {
+                     newline2 = p = MALLOC( newline_len + size_change);
+                     strncpy(p,newline,macro_start-newline);
+                 }
+                 strncpy(p,prefix_start,macro_prefix_len); p += macro_prefix_len; // BB
+                 strcpy(p,macro_output); p += new_len;                            // new
+                 strncpy(p,suffix_start,macro_suffix_len); p += macro_suffix_len; // DD
+                 strcpy(p,macro_end+strlen(MACRO_STR_END));                       // EE
 
                  if (free_result) FREE(macro_output);
-                 if (newline != input) FREE(newline);
-                 newline = tmp;
+                 // Adjust the end pointer so it is relative to the new buffer.
+                 macro_end += newline2 - newline;
+                 newline_len += size_change;
 
-                 macro_end = new_macro_end;
+                 if (newline != input && newline != newline2) FREE(newline);
+                 newline = newline2;
+
             } else {
                 //convert AA[BB:$CC:DD]EE to AAEE
                 char *p=macro_end+1;
@@ -243,7 +267,8 @@ TRACE;
     }
     return newline;
 }
-int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows) {
+int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macros_ptr)
+{
 
 TRACE;
     char *macro_start = NULL;
@@ -255,80 +280,82 @@ TRACE;
         p++;
     }
     macro_start = strstr(p,MACRO_STR_START);
-    while (macro_start ) {
+    if (*has_macros_ptr) {
+        while (macro_start ) {
 
-        char *macro_name_start = NULL;
-        char *macro_name_end = NULL;
-        char *macro_end = NULL;
+            char *macro_name_start = NULL;
+            char *macro_name_end = NULL;
+            char *macro_end = NULL;
 
-        // Check we have MACRO_STR_START .. MACRO_STR_START_INNER MACRO_NAME MACRO_STR_END_INNER .. MACRO_STR_END
-        // eg [text1:name:text2]
-        // If the macro "name" is non-empty then "text1 macro-out text2" is printed.
-        macro_name_start=strstr(macro_start,MACRO_STR_START_INNER);
-        if (macro_name_start) {
-            macro_name_start++;
-            macro_name_end = strstr(macro_name_start,MACRO_STR_END_INNER);
-            if (macro_name_end) {
-                macro_end=strstr(macro_name_end,MACRO_STR_END);
-            }
-        }
-
-        // Cant identify macro - advance to next character.
-        if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL  ) {
-
-            //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
-            if (output_state() ) {
-                PRINTSPAN(p,macro_start);
-                putc(*MACRO_STR_START,stdout);
-            }
-            macro_end = macro_start;
-
-        } else if (!replace_macro(macro_name_start)) {
-
-            //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
-            if (output_state() ) {
-                PRINTSPAN(p,macro_start);
-                putc(*MACRO_STR_START,stdout);
-            }
-            macro_end = macro_start;
-
-        } else {
-
-            int free_result=0;
-            *macro_name_end = '\0';
-            char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
-
-            //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
-            if (macro_start > p ) {
-                if (output_state() ) {
-                    printf("%.*s",macro_start-p,p); 
+            // Check we have MACRO_STR_START .. MACRO_STR_START_INNER MACRO_NAME MACRO_STR_END_INNER .. MACRO_STR_END
+            // eg [text1:name:text2]
+            // If the macro "name" is non-empty then "text1 macro-out text2" is printed.
+            macro_name_start=strstr(macro_start,MACRO_STR_START_INNER);
+            if (macro_name_start) {
+                macro_name_start++;
+                macro_name_end = strstr(macro_name_start,MACRO_STR_END_INNER);
+                if (macro_name_end) {
+                    macro_end=strstr(macro_name_end,MACRO_STR_END);
                 }
             }
 
-            count++;
-            *macro_name_end = *MACRO_STR_START_INNER;
-            if (macro_output && *macro_output) {
+            // Cant identify macro - advance to next character.
+            if (macro_name_start == NULL || macro_name_end == NULL || macro_end == NULL  ) {
 
-                 if (output_state() ) {
-                     // Print bit before macro call
-                     PRINTSPAN(macro_start+1,macro_name_start-1);
-                     fflush(stdout);
+                //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
+                if (output_state() ) {
+                    PRINTSPAN(p,macro_start);
+                    putc(*MACRO_STR_START,stdout);
+                }
+                macro_end = macro_start;
 
-                     printf("%s",macro_output);
-                     fflush(stdout);
+            } else if (!replace_macro(macro_name_start)) {
 
-                     // Print bit after macro call
-                     PRINTSPAN(macro_name_end+1,macro_end);
-                     fflush(stdout);
+                //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
+                if (output_state() ) {
+                    PRINTSPAN(p,macro_start);
+                    putc(*MACRO_STR_START,stdout);
+                }
+                macro_end = macro_start;
+
+            } else {
+
+                int free_result=0;
+                *macro_name_end = '\0';
+                char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
+
+                //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
+                if (macro_start > p ) {
+                    if (output_state() ) {
+                        printf("%.*s",macro_start-p,p); 
+                    }
+                }
+
+                count++;
+                *macro_name_end = *MACRO_STR_START_INNER;
+                if (macro_output && *macro_output) {
+
+                     if (output_state() ) {
+                         // Print bit before macro call
+                         PRINTSPAN(macro_start+1,macro_name_start-1);
+                         fflush(stdout);
+
+                         printf("%s",macro_output);
+                         fflush(stdout);
+
+                         // Print bit after macro call
+                         PRINTSPAN(macro_name_end+1,macro_end);
+                         fflush(stdout);
+                     }
+                     if (free_result) FREE(macro_output);
                  }
-                 if (free_result) FREE(macro_output);
-             }
+            }
+
+            p=macro_end+1;
+
+            macro_start=strstr(p,MACRO_STR_START);
+
         }
-
-        p=macro_end+1;
-
-        macro_start=strstr(p,MACRO_STR_START);
-
     }
 
     if (output_state() ) {

@@ -579,6 +579,9 @@ END{
     THIS_YEAR=substr(NOW,1,4);
 
     scan_options="-Rl";
+    if (g_settings["catalog_follow_symlinks"]==1) {
+        scan_options= scan_options"L";
+    }
 
     if (RESCAN == 1 || NEWSCAN == 1) {
         if (!(1 in FOLDER_ARR)) {
@@ -1032,8 +1035,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     # We want to list a file which may be a file, folder or symlink.
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
+    # note ls -L will follow symlinks at any depth - this is passed via catalog_follow_symlinks
     exec("( "LS" "scan_options" "quotedRoot"/ || "LS" "scan_options" "quotedRoot" ) > "qa(tempFile) );
-    exec("ls -l "qa(tempFile));
     currentFolder = root;
     skipFolder=0;
     folderNameNext=1;

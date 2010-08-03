@@ -1,15 +1,15 @@
-<!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
+        [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
         [:FAVICON:]
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
 
 body.menu_background {
-    color:#66CCFF;
+    color:yellow;
     background-color:black;
 }
 
@@ -31,10 +31,10 @@ table.overview_poster {
 }
 
 .XTitle {
- text-align:left;
+ text-align:center;
  font-size:[:TITLE_SIZE:];
  font-weight:bold;
- color:#66CCFF;
+ color:#FFCF2F;
 }
 
         </style>
@@ -42,13 +42,13 @@ table.overview_poster {
 
 [:IF($ovs_display_fanart):]
 
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:FANART_URL(abstract_circles.jpg):]" >
+    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:FANART_URL(default.jpg):]" >
     <table class=main width=100%>
     <tr valign=bottom>
 
 [:ELSE:]
 
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/abstract_circles.jpg">
+    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
     <table class="main" width="100%">
     <tr valign="middle">
 
@@ -63,7 +63,7 @@ table.overview_poster {
                 <td>
 		            <table height=50px class="header" background="[:URL_BASE:]/templates/default/images/trans50.png">
 		                <tr>
-		                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
+		                	[:INCLUDE_TEMPLATE(tvboxset_buttons):]
 [:IF($@gaya):]	
 [:ELSE:]
 			                <td align=right>
@@ -83,18 +83,6 @@ table.overview_poster {
                 <td>
                     <center>
                         <table >
-                            <tr>
-                                <td>
-                                    <center>
-                                        <table>
-                                            <tr>
-                                                <td align="center" >
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </center>
-                                </td>
-                            </tr>
                             <tr>
                                 <td >
                                     <div id=gridWrapper>[:GRID(rows=>1,cols=>6):]</div>

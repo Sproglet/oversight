@@ -3972,6 +3972,9 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
     Array *link_parts = splitstr(strchr(link,'?'),PLACEHOLDER);
     FREE(link);
 
+    char *first = NULL;
+    Array *out = array_new(free);
+
     //GAYA does seem to like passing just the options to the link
     //eg just "?a=b"
     //we have to pass a more substantial path. eg. .?a=b
@@ -3989,32 +3992,28 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) 
 
             char *selected_text=(STRCMP(selected,k)==0?"selected":"");
 
-            char *prefix="";
-            char *suffix="";
+            ovs_asprintf(&tmp, "<option value=\"%s\" %s >%s</option>\n", link, selected_text, v );
 
             if (firstItem != NULL && STRCMP(firstItem,k) == 0 ) {
-                // Add item to the start
-                suffix=NVL(result);
+                first = tmp;
             } else {
-                prefix = NVL(result);
+                array_add(out,tmp);
             }
-            ovs_asprintf(&tmp,
-                    "%s<option value=\"%s\" %s >%s</option>\n%s",
-                    prefix,link, selected_text, v, suffix);
 
             FREE(link);
-            FREE(result);
-            result=tmp;
         }
     }
-    if (result) {
+
+    result = arraystr(out);
+    array_free(out);
+
+    if ( !EMPTY_STR(result) || !EMPTY_STR(first)) {
         char *tmp;
-        ovs_asprintf(&tmp,"<select %s>\n%s</select>",
-                //name,
-                attr, result);
+        ovs_asprintf(&tmp,"<select %s>\n%s\n%s</select>", attr,NVL(first),NVL(result));
         FREE(result);
         result = tmp;
     }
+    FREE(first);
     array_free(link_parts);
     array_free(keys);
     return result;

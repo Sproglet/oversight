@@ -1,0 +1,42 @@
+#summary One-sentence summary of this page.
+
+==Skin Macros==
+
+Go to [SkinMacros] for more information on Skin Macros. If the documentation is lacking see section "Examining the source code"
+
+==Variables==
+
+==Skin Config Files==
+
+==Examining the source code==
+
+Until the documentation is completed the best place for information are the existing templates and the source code.
+
+===Macros===
+
+For macros eg [:XXX:] look in http://code.google.com/p/oversight/source/browse/trunk/src/macro.c
+
+Eg for information on the "POSTER" macro, search the file for "POSTER" you will find a line like
+{{{ hashtable_insert(macros,"POSTER",macro_fn_poster); }}}
+
+Then search for the corresponding function (in this case function macro_fn_poster ) and review the function. Especially call_info->args
+{{{
+/**
+* =begin wiki
+* ==POSTER==
+*
+* Display poster for current item.
+*
+* [:POSTER:]
+* [:POSTER(attributes):]
+*
+* =end wiki
+*/
+char *macro_fn_poster(MacroCallInfo *call_info)
+{
+}}}
+
+===Variables===
+
+For predefined variables eg @sd of [:IF($@sd):] look in http://code.google.com/p/oversight/source/browse/trunk/src/variables.c
+

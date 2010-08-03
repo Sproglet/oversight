@@ -160,12 +160,12 @@ body { font-family:"arial"; color:white;  }
  color:#FF7777;
 }
 
-table.actors    { width:100%; }
-table.directors { width:100%; }
-table.writers   { width:100%; }
-table.actors    td { font-size:100%; text-align:center; }
-table.directors td { font-size:100%; text-align:center; }
-table.writers   td { font-size:100%; text-align:center; }
+table.actors    { width:500px; }
+table.directors { width:250px; }
+table.writers   { width:250px; }
+table.actors    td { font-size:100%; text-align:left; }
+table.directors td { font-size:100%; text-align:left; }
+table.writers   td { font-size:100%; text-align:left; }
 table.actors	font {color: #FFBB66;}
 table.directors	font {color: #FFBB66;}
 table.writers	font {color: #FFBB66;}

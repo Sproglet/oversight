@@ -70,7 +70,7 @@
 		                    <tr>		
                             <tr>
                             	<td width=1%></td>
-                            	<td colspan=2 align=left><span class="plot">[:PLOT:]<br/></span>
+                            	<td colspan=2 align=left><span class="plot">[:PLOT:]</span>
                                 </td>
                     			<td width=1%></td>
                             <tr>		
@@ -79,22 +79,25 @@
                             	<td colspan=2 align=left>
                                 </td>
                     			<td width=1%></td>
-                            <tr>		
+                            <tr>			
+		                    <tr>
+		                    	<td colspan=4 height=5px>&nbsp;</td>
+		                    </tr>	
                             <tr>
                             	<td width=1%></td>
                             	<td colspan=2 align=left>
                             		<table width=100%>
                             			<tr>
-                            				<td width=10% valign=top><span class="detailHeading">Director:</span></td>
-											<td width=40%>
+                            				<td width=100px valign=top><span class="detailHeading">Director:</span></td>
+											<td width=250px valign=top>
 				                                [:IF($@hd):]
 				                                    [:DIRECTORS(rows=>2,cols=>1):]
 				                                [:ELSE:]
 				                                    [:DIRECTORS(rows=>1,cols=>1):]
 				                                [:ENDIF:]
 											</td>
-                            				<td width=10% valign=top rowspan=2><span class="detailHeading">Cast:</span></td>
-											<td width=40% rowspan=2>
+                            				<td width=100px valign=top rowspan=2><span class="detailHeading">Cast:</span></td>
+											<td width=250px valign=top rowspan=2>
 				                                [:IF($@hd):]
 				                                    [:ACTORS(rows=>4,cols=>1):]
 				                                [:ELSE:]
@@ -103,8 +106,8 @@
 											</td>
 										</tr>
 										<tr>
-                            				<td width=10% valign=top><span class="detailHeading">Writer:</span></td>
-											<td width=40%>
+                            				<td width=100px valign=top><span class="detailHeading">Writer:</span></td>
+											<td width=250px valign=top>
 				                                [:IF($@hd):]
 				                                    [:WRITERS(rows=>2,cols=>1):]
 				                                [:ELSE:]

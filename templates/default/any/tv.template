@@ -19,9 +19,9 @@
     	<tr valign=top><td height=100% colspan=2></td></tr>
 [:ENDIF:]
         <tr valign="bottom" class=main>
-            <td class=main width=1% align=left>
+            <td class=main width=1% align=right>
             	[:INCLUDE_TEMPLATE(buttons):]
-            	<table class=main>
+            	<table class=moviePoster>
 					<tr><td align=right>[:POSTER:]</td></tr>					
             	</table>
             </td>
@@ -64,18 +64,27 @@
                     </tr>		
                     <tr>
                     	<td width=1%></td>
-                    	<td width=98% colspan=2 align="left"><font id=episode>Show Summary - </font><span class="plot" id=tvplot>[:PLOT:]</span></td>
+                    	<td width=98% colspan=2 align="left"><font id=episode>Show Summary - </font><span class="plot" id=tvplot>[:PLOT:]<br/><br/></span></td>
                     	<td width=1%></td>
-                    </tr>		
+                    </tr>			
                     <tr>
                     	<td width=1%></td>
-[:IF($@hd):]
-                    	<td width=98% colspan=2 align="left"><span class="plot">[:ACTORS(rows=>2,cols=>7):]</td>
-[:ELSE:]
-                    	<td width=98% colspan=2 align="left"><span class="plot">[:ACTORS(rows=>1,cols=>2):]</td>
-[:ENDIF:]
-                    	<td width=1%></td>
-                    </tr>		
+                    	<td colspan=2 align=left>
+                    		<table width=100%>
+                    			<tr>
+                    				<td width=10% valign=top><span class="detailHeading">Cast:</span></td>
+									<td width=90%>
+		                                [:IF($@hd):]
+		                                    [:ACTORS(rows=>4,cols=>2):]
+		                                [:ELSE:]
+		                                    [:ACTORS(rows=>2,cols=>2):]
+		                                [:ENDIF:]
+									</td>
+								</tr>
+							</table>
+                        </td>
+            			<td width=1%></td>
+                    <tr>	
                 </table>
             </td>
         </tr>	
@@ -86,7 +95,7 @@
 [:IF(1-$ovs_display_fanart):]
                 <table width=100% >
 [:ELSE:]
-                <table width=100% background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/trans[:$ovs_transparency:].png" >
+                <table width=100% background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
 [:ENDIF:]		
                     <tr>
                     	<td colspan=3 height=10px></td>

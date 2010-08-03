@@ -221,16 +221,20 @@ int ovs_vasprintf (char **result, char *format, va_list args) {
     return 0;
 }
 #else
+#define COPY_STRING(len,from) ((from)?memcpy(CALLOC((len)+1,1),(from),(len)):NULL)
 int ovs_vasprintf (char **result, char *format, va_list args) {
-#define BUFLEN 300
+#define BUFLEN 9999
     char buf[BUFLEN];
     int result_len;
 
-    vsnprintf(buf,BUFLEN,format,args);
-    buf[BUFLEN]='\0';
+    result_len = vsnprintf(buf,BUFLEN,format,args);
+    buf[BUFLEN-1]='\0';
+    assert(result_len < BUFLEN);
 
-    result_len = strlen(buf);
-    *result=strdup(buf);
+
+    *result=MALLOC(result_len+1);
+    memcpy(*result,buf,result_len+1);
+    //*result=strdup(buf);
     return result_len;
 }
 #endif

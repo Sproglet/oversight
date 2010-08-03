@@ -276,11 +276,11 @@ TRACE;
 
 
     char *p = input;
-    while(isspace(*p)) {
-        p++;
-    }
-    macro_start = strstr(p,MACRO_STR_START);
     if (*has_macros_ptr) {
+        while(isspace(*p)) {
+            p++;
+        }
+        macro_start = strstr(p,MACRO_STR_START);
         while (macro_start ) {
 
             char *macro_name_start = NULL;

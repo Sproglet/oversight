@@ -70,18 +70,49 @@
 		                    <tr>		
                             <tr>
                             	<td width=1%></td>
-                            	<td colspan=2 align=left><span class="plot">[:PLOT:]</span>
+                            	<td colspan=2 align=left><span class="plot">[:PLOT:]<br/></span>
                                 </td>
                     			<td width=1%></td>
                             <tr>		
                             <tr>
                             	<td width=1%></td>
-                            	<td colspan=2 align=left><span class="detailHeading"><br/>Cast:</span>
-	                                [:IF($@hd):]
-	                                    [:ACTORS(rows=>2,cols=>5):]
-	                                [:ELSE:]
-	                                    [:ACTORS(rows=>1,cols=>3):]
-	                                [:ENDIF:]
+                            	<td colspan=2 align=left>
+                                </td>
+                    			<td width=1%></td>
+                            <tr>		
+                            <tr>
+                            	<td width=1%></td>
+                            	<td colspan=2 align=left>
+                            		<table width=100%>
+                            			<tr>
+                            				<td width=10% valign=top><span class="detailHeading">Director:</span></td>
+											<td width=40%>
+				                                [:IF($@hd):]
+				                                    [:DIRECTORS(rows=>2,cols=>1):]
+				                                [:ELSE:]
+				                                    [:DIRECTORS(rows=>1,cols=>1):]
+				                                [:ENDIF:]
+											</td>
+                            				<td width=10% valign=top rowspan=2><span class="detailHeading">Cast:</span></td>
+											<td width=40% rowspan=2>
+				                                [:IF($@hd):]
+				                                    [:ACTORS(rows=>4,cols=>1):]
+				                                [:ELSE:]
+				                                    [:ACTORS(rows=>2,cols=>1):]
+				                                [:ENDIF:]
+											</td>
+										</tr>
+										<tr>
+                            				<td width=10% valign=top><span class="detailHeading">Writer:</span></td>
+											<td width=40%>
+				                                [:IF($@hd):]
+				                                    [:WRITERS(rows=>2,cols=>1):]
+				                                [:ELSE:]
+				                                    [:WRITERS(rows=>1,cols=>1):]
+				                                [:ENDIF:]
+											</td>
+										</tr>
+									</table>
                                 </td>
                     			<td width=1%></td>
                             <tr>

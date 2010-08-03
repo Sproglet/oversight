@@ -96,3 +96,5 @@ catalog_cache_film_info="yes"
 catalog_genre="Action,a,Adventure,e,Animation,i,Biography,b,Comedy,c,Crime,j,Documentary,k,Drama,d,Family,f,Fantasy,l,Film-Noir,o,Game-Show,g,History,p,Horror,h,Music,q,Musical,m,Mystery,u,News,n,Reality-TV,v,Romance,r,Sci-Fi,s,Short,x,Sport,y,Talk-Show,z,Thriller,t,War,w";
 
 catalog_max_actors=4
+
+catalog_follow_symlinks=0

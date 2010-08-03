@@ -77,6 +77,7 @@ AWK=awk
 # nmt busybox gzip is not graceful for passthru of uncompressed data
 
 SORT=sort
+LS=ls
 if [ -d "$APPDIR/bin" ] ; then
 
     if grep -q "MIPS 74K" /proc/cpuinfo ; then
@@ -85,6 +86,7 @@ if [ -d "$APPDIR/bin" ] ; then
         BINDIR="$APPDIR/bin/nmt100"
     fi
     SORT="$BINDIR/busybox sort"
+    LS="$BINDIR/busybox ls"
 
     export PATH="$PATH:$BINDIR:$APPDIR/bin"
 
@@ -258,13 +260,6 @@ catalog() {
 
     Q="'"
 
-    #for nmt platform use /share/bin/ls for ls if available, but
-    #we cant just add /share/bin to path as this forces busybox wget.
-
-    LS=ls
-    if [ -f /share/bin/ls ] ; then
-        LS=/share/bin/ls
-    fi
 
     # use index before match
     # clear arrays using split("",array,"")

@@ -1,6 +1,16 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+v2.0testing-r1298
+  * Actor/Writer/Director scraping
+  * File locking
+  * IMDB Rating filter
+  * Better skin support.
+  * Faster page loading
+  * Follow symlink option.
+  * Remote File system browsing ( http://ip:8883/oversight/oversight.cgi?/path/to/file ) 
+  * Many bug fixes.
+
 v1.0 
   * Patched rc9 with missing files
 

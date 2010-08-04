@@ -7,35 +7,6 @@
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type=text/css>
             [:INCLUDE_TEMPLATE(css):]
-
-body.menu_background {
-    color:#66CCFF;
-    background-color:black;
-	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/lightwave.jpg'); 
-}
-
-td.grid_background {
-    text-align:center;
-    margin:0px;
-    padding:0px;
-    border:0px;
-}
-
-[:IF($@poster_mode):]
-    .overview_poster {
-        text-align:center;
-    }
-[:ENDIF:]
-
-table.overview_poster {
-    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
-}
-
-.XTitle {
-	font-size:[:TITLE_SIZE(-5):];
-	font-weight:bold;
-	color:#66CCFF;
-}
         </style>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(lightwave.jpg):]">
@@ -44,7 +15,7 @@ table.overview_poster {
         <table class=main width=100% height=100%>
         <tr><td>
 [:ENDIF:]
-            <table class=header width=100% background="[:IMAGE_URL(images/bluemenu2.png):]" >
+            <table class=header width=100% background="[:IMAGE_URL(bluemenu2.png):]" >
 [:ENDIF:]
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]

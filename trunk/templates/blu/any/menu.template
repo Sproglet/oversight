@@ -7,35 +7,6 @@
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-
-body.menu_background { 
-	color:white ; 
-	background-color:black; 
-}
-
-table.overview_poster {
-    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
-}
-.overview_poster {
-    text-align:center;
-[:IF($@poster_mode):]
-    [:IF($@gaya):]
-        width:100%;
-    [:ELSE:]
-        width:1%;
-    [:ENDIF:]
-[:ELSE:]
-    width:100%;
-[:ENDIF:]
-}
-
-.Xtitle {
- font-size:[:TITLE_SIZE(-5):];
- font-weight:bold;
- color:#66CCFF;
-}
-
-
         </style>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_IMAGE(lightwave.jpg):]" >
@@ -57,12 +28,18 @@ table.overview_poster {
                     <td align=center>[:MEDIA_SELECT:]</td>
                     <td align=center>[:TITLE_SELECT:]</td>
                     <td align=center>[:GENRE_SELECT:]</td>
+                    <td align=center>[:LOCKED_SELECT:]</td>
 [:ENDIF:]
                     <td align=right width="50%">
-                        <span class=menubarTitle><b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]&nbsp;</span>
-                    	<!--<font color=#66CCFF>[:SORT_TYPE_TOGGLE:]</font>-->
+                        <span class=menubarTitle>
+                        	<b>OVERSIGHT</b>&nbsp;-&nbsp;
+	                        [:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
+								[Status - :STATUS:]
+							[:ELSE:]
+								[:HOSTNAME:]
+							[:ENDIF:]
+						&nbsp;</span>
                     </td>
-                    <td><span class="status">&nbsp;&nbsp;[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]</span></td>
                     <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
                 </tr>
             </table>

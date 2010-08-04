@@ -178,9 +178,25 @@ body { font-family:"arial"; color:white;  }
  color:#FF7777;
 }
 
-table.actors    td { margin:10px; padding:10px; font-size:90%; }
-table.directors td { margin:10px; padding:10px; font-size:90%; }
-table.writers   td { margin:10px; padding:10px; font-size:90%; }
+body.menu_background {
+    color:white;
+    background-color:black;
+}
+
+td.grid_background {
+    text-align:center;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+
+table.actors    { width:500px; }
+table.directors { width:250px; }
+table.writers   { width:250px; }
+table.actors    td { font-size:100%; text-align:left; }
+table.directors td { font-size:100%; text-align:left; }
+table.writers   td { font-size:100%; text-align:left; }
 
 /*
 vi:ts=4:sw=4:et:syntax=css

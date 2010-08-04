@@ -1,9 +1,8 @@
-<!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
         <meta name=robots content=nofollow>
         [:FAVICON:]
-        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type=text/css>
             [:INCLUDE_TEMPLATE(css):]
@@ -20,7 +19,7 @@
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
-                    	<span class=menubarTitle><b>[:TITLE:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
+                    	<span class=menubarTitle><b>[:TITLE:] Boxset</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
 [:IF($@gaya):]
 	                <td align=right width="8%">

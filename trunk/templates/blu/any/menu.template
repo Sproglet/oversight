@@ -51,9 +51,9 @@
             </center>
                 <table width="100%"><tr>
                     <td width="90%" align=center >
-                        <span class=Xtitle id="menutitle">&nbsp;</span>
-                        <span class=Xtitle id="unwatchedtotal">&nbsp;</span>
-                        <span class=Xtitle id="watchedtotal">&nbsp;</span>
+                        <span class=boxtitle id="menutitle">&nbsp;</span>
+                        <span class=boxtitle id="unwatchedtotal">&nbsp;</span>
+                        <span class=boxtitle id="watchedtotal">&nbsp;</span>
                     </td>
                     </tr>
                 </table></tr>

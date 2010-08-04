@@ -3,7 +3,7 @@
     <head>
         <meta name=robots content=nofollow>
         [:FAVICON:]
-        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+        <title>Oversight ([:HOSTNAME:]) - [:ACTOR_NAME:]</title>
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type=text/css>
             [:INCLUDE_TEMPLATE(css):]
@@ -20,7 +20,7 @@
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
-                    	<span class=menubarTitle><b>[:TITLE:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
+                    	<span class=menubarTitle><b>PROFILE: [:ACTOR_NAME:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
 [:IF($@gaya):]
 	                <td align=right width="8%">
@@ -39,7 +39,7 @@
             <center>
             	<br/>
             	<div id=gridWrapper>
-            		[:GRID:]
+            		[:GRID(rows=>1):]
             	</div>
             </center>
 [:IF(0):]
@@ -54,19 +54,7 @@
                         <span class="boxtitle" id="menutitle">&nbsp;</span>
                         <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
                         <span class="boxtitle" id="watchedtotal">&nbsp;</span>
-                    </td>                    
-[:IF($@sd):]
-[:ELSE:]
-[:IF($@gaya):]
-                    <script type="text/javascript">
-	                    var fanartLoc = [:FANART_URL(lightwave.jpg):];
-	                    if([:EVAL($@poster_menu_img_height):] < 200) {
-							document.write("<tr valign=bottom><td align=right>");
-	              			document.write("<div id=gayaFanart><img class=fanartGaya src='" + fanartLoc + "'/></div>");
-	              			document.write("</td></tr>");
-	                    }
-              		</script>
-[:ENDIF:][:ENDIF:]
+                    </td>    
                 </table></tr>
             <table class=footer width=100%>
                 <tr valign=top>
@@ -78,10 +66,7 @@
         </td></tr></table>
 [:ENDIF:]
 </form>      
-[:IF($@gaya):]
-[:ELSE:]
-    <img class=fanartSegment src="[:FANART_URL(lightwave.jpg):]"/>
-[:ENDIF:]
+    <div class=fanartSegment>[:ACTOR_IMAGE(height=200px):]</div>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->

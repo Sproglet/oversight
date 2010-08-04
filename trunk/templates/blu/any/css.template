@@ -68,7 +68,7 @@ img.poster_watched {
 }
 
 .boxtitle {
- font-size:[:TITLE_SIZE(-2):];
+ font-size:[:TITLE_SIZE(-7):];
  font-family:"arial";
  font-weight:bold;
 }
@@ -79,7 +79,7 @@ img.poster_watched {
 }
 
 .Xtitle {
- font-size:[:TITLE_SIZE(-7):];
+ font-size:[:TITLE_SIZE(-2):];
  font-weight:bold;
  color:#66CCFF;
 }

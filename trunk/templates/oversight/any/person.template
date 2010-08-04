@@ -2,68 +2,65 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
+        <title>Oversight ([:HOSTNAME:]) - [:ACTOR_NAME:]</title>
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
 
-[:IF($ovs_display_fanart):]
-
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:FANART_URL(default.jpg):]" >
-    <table class=main width=100%>
-    <tr valign=bottom>
-
-[:ELSE:]
-
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
     <table class="main" width="100%">
     <tr valign="middle">
-
-[:ENDIF:]
 
         <td align="center" border="0" height="[:BODY_HEIGHT:]" >
 
 [:FORM_START:]
     <center>
         <table class="main" width="100%" height="100%">
-            <tr>
-                <td align=right>
-		            <table height=50px class="header">
+        	<tr valign=bottom>
+        		<td align=center>
+		            <table height=200px class="header" background="[:URL_BASE:]/templates/default/images/trans50.png">
+		            	<tr><td colspan=3 height=5px></td></tr>
+		            	<tr>
+			                <td colspan=3 align=center>
+			                    <span class="boxtitle" >[:ACTOR_IMAGE(height=200px):]</span>
+			                <td>
+		            	</tr>
 		                <tr>
-				            <td align="center">
-				                <span class="boxtitle" id="menutitle">[:TITLE:]</span>
-				                <span class="boxtitle" id="unwatchedtotal">&nbsp;&nbsp;</span>
-				                <span class="boxtitle" id="watchedtotal">&nbsp;&nbsp;</span>
-				            </td>
-							<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-		                    [<td>&nbsp;:BACK_BUTTON:&nbsp;&nbsp;&nbsp;&nbsp;</td>]
-[:IF($?resizeon):]
-                            <td>[:RESIZE_CONTROLS:]</td>
-[:ELSE:]
-		                    <td>[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
-[:ENDIF:]
-[:IF($@gaya):]
-[:ELSE:]
-		                    <td>[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
-		                    <td>[:MARK_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;</td>
-[:ENDIF:]
-		                    [<td align="center" width="20%">:SELECT_MARK_SUBMIT:</td>]
-		                    [<td align="center" width="20%">:SELECT_CANCEL_SUBMIT:</td>]
-		                    [<td align="center" width="20%">:SELECT_DELIST_SUBMIT:</td>]
-		                    [<td align="center" width="20%">:SELECT_DELETE_SUBMIT:</td>]
+		                	<td width=8px></td>
+				            <td align=center>
+				                <span class="boxtitle">PROFILE: [:ACTOR_NAME:]</span>
+							</td>
+							<td width=8px></td>
+		                </tr>
+						<tr><td colspan=3 height=5px></td></tr>
+		            </table>					
+        		</td>
+			</tr>
+            <tr valign=bottom>
+                <td>
+		            <table height=50px class="header" background="[:URL_BASE:]/templates/default/images/trans50.png">
+		                <tr>
+		                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
 [:IF($@gaya):]		
+			                <td align=right></td>
 [:ELSE:]
 			                <td align=right>
 			                    [:EXTERNAL_URL:]&nbsp;
 			                </td>
 [:ENDIF:]
+				            <td align=right>
+				                <span class="boxtitle" id="menutitle">&nbsp;</span>
+				                <span class="boxtitle" id="unwatchedtotal">&nbsp;&nbsp;</span>
+				                <span class="boxtitle" id="watchedtotal">&nbsp;&nbsp;</span>
+								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				            </td>
 		                </tr>
 		            </table>
                 </td>
             </tr>
-			<tr><td></td>
+			<tr><td</td>
 			</tr>
             <tr>
                 <td>
@@ -83,7 +80,7 @@
                             </tr>
                             <tr>
                                 <td >
-                                    <div id=gridWrapper>[:GRID:]</div>
+                                    <div id=gridWrapper>[:GRID(rows=>1):]</div>
 								<table class=footer width=100%>
 				                	<tr valign=top>
 				                        <td width=10%>[:LEFT_BUTTON:]</td>

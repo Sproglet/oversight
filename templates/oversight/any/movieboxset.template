@@ -40,7 +40,7 @@
 			                </td>
 [:ENDIF:]
 		                    <td align=right>
-		                        <span class="boxtitle" id="menutitle">[:TITLE:]</span>
+		                        <span class="boxtitle" id="menutitle">&nbsp;</span>
 		                        <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
 		                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>
 								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -56,9 +56,10 @@
                             <tr>
                                 <td >
                                     <div id=gridWrapper>[:GRID(rows=>1,cols=>6):]</div>
-								<table class=footer width=100%>
+								<table class=footer width=100%  background="[:URL_BASE:]/templates/default/images/trans50.png">
 				                	<tr valign=top>
 				                        <td width=10%>[:LEFT_BUTTON:]</td>
+										<td align=center><span class="boxtitle">[:TITLE:] Boxed set</span></td>
 				                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
 				                	</tr>
 				            	</table>

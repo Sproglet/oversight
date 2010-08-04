@@ -81,7 +81,7 @@
                             <tr>
                                 <td >
                                     <div id=gridWrapper>[:GRID(rows=>1):]</div>
-								<table class=footer width=100%>
+								<table class=footer width=100%  background="[:URL_BASE:]/templates/default/images/trans50.png">
 				                	<tr valign=top>
 				                        <td width=10%>[:LEFT_BUTTON:]</td>
 				                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>

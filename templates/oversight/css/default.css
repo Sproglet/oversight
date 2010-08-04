@@ -160,6 +160,18 @@ body { font-family:"arial"; color:white;  }
  color:#FF7777;
 }
 
+body.menu_background {
+    color:#66CCFF;
+    background-color:black;
+}
+
+td.grid_background {
+    text-align:center;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
 table.actors    { width:500px; }
 table.directors { width:250px; }
 table.writers   { width:250px; }

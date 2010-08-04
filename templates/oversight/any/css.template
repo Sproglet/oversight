@@ -107,6 +107,15 @@ img.poster_watched {
  font-weight:bold;
 }
 
+[:IF($@poster_mode):]
+    .overview_poster {
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
+}
 
 /*
 vi:ts=4:sw=4:et:syntax=css

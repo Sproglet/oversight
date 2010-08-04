@@ -7,36 +7,6 @@
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-
-body.menu_background {
-    color:yellow;
-    background-color:black;
-}
-
-td.grid_background {
-    text-align:center;
-    margin:0px;
-    padding:0px;
-    border:0px;
-}
-
-[:IF($@poster_mode):]
-    .overview_poster {
-        text-align:center;
-    }
-[:ENDIF:]
-
-table.overview_poster {
-    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/40):]px; padding:0 ; border-width:0 ;
-}
-
-.XTitle {
- text-align:center;
- font-size:[:TITLE_SIZE:];
- font-weight:bold;
- color:#FFCF2F;
-}
-
         </style>
     </head>
 

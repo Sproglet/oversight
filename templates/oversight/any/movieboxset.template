@@ -6,48 +6,18 @@
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-
-body.menu_background {
-    color:yellow;
-    background-color:black;
-}
-
-td.grid_background {
-    text-align:center;
-    margin:0px;
-    padding:0px;
-    border:0px;
-}
-
-[:IF($@poster_mode):]
-    .overview_poster {
-        text-align:center;
-    }
-[:ENDIF:]
-
-table.overview_poster {
-    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
-}
-
-.XTitle {
- text-align:center;
- font-size:[:TITLE_SIZE:];
- font-weight:bold;
- color:#FFCF2F;
-}
-
         </style>
     </head>
 
 [:IF($ovs_display_fanart):]
 
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:FANART_URL(default.jpg):]" >
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:FANART_URL(default.jpg):]" >
     <table class=main width=100%>
     <tr valign=bottom>
 
 [:ELSE:]
 
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
     <table class="main" width="100%">
     <tr valign="middle">
 
@@ -69,10 +39,11 @@ table.overview_poster {
 			                    [:EXTERNAL_URL:]&nbsp;
 			                </td>
 [:ENDIF:]
-		                    <td align=right>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		                    <td align=right>
 		                        <span class="boxtitle" id="menutitle">[:TITLE:]</span>
 		                        <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
-		                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>&nbsp;
+		                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>
+								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 		                    </td>
 		                </tr>
 		            </table>

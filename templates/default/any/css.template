@@ -253,6 +253,23 @@ h1 { text-align:center; font-size:[:TITLE_SIZE:]; font-weight:bold; color:#FFFF0
     color:white;
 }
 
+[:IF($@poster_mode):]
+    .overview_poster {
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/40):]px; padding:0 ; border-width:0 ;
+}
+
+.XTitle {
+ text-align:center;
+ font-size:[:TITLE_SIZE:];
+ font-weight:bold;
+ color:#FFCF2F;
+}
+
 
 /*
 vi:ts=4:sw=4:et:syntax=css

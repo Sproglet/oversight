@@ -22,9 +22,7 @@
                     	<span class=menubarTitle><b>[:TITLE:] Boxset</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
 [:IF($@gaya):]
-	                <td align=right width="8%">
-	                    <img class=fanartIcon src="[:FANART_URL(lightwave.jpg):]"/>&nbsp;
-	                </td>					
+	                <td align=right width="8%">&nbsp;</td>					
 [:ELSE:]
 	                <td align=right width="8%">
 	                    [:EXTERNAL_URL:]&nbsp;
@@ -53,19 +51,7 @@
                         <span class="boxtitle" id="menutitle">&nbsp;</span>
                         <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
                         <span class="boxtitle" id="watchedtotal">&nbsp;</span>
-                    </td>                    
-[:IF($@sd):]
-[:ELSE:]
-[:IF($@gaya):]
-                    <script type="text/javascript">
-	                    var fanartLoc = [:FANART_URL(lightwave.jpg):];
-	                    if([:EVAL($@poster_menu_img_height):] < 200) {
-							document.write("<tr valign=bottom><td align=right>");
-	              			document.write("<div id=gayaFanart><img class=fanartGaya src='" + fanartLoc + "'/></div>");
-	              			document.write("</td></tr>");
-	                    }
-              		</script>
-[:ENDIF:][:ENDIF:]
+                    </td>    
                 </table></tr>
             <table class=footer width=100%>
                 <tr valign=top>
@@ -76,11 +62,8 @@
 [:IF(0):]
         </td></tr></table>
 [:ENDIF:]
-</form>      
-[:IF($@gaya):]
-[:ELSE:]
-    <img class=fanartSegment src="[:FANART_URL(lightwave.jpg):]"/>
-[:ENDIF:]
+</form>   
+<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->

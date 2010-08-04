@@ -50,27 +50,8 @@ td.gc_watched_small { font-size:10pt; }
  color:#FFFFFF;	
 }
 
-.fanartIcon {
-	height: 40px;
- 	border-color:#FFFFFF;
-}
-
-.fanartGaya {
+.fanartImage {
 	height: 247px;
- 	border-color:#FFFFFF;
- 	border-width:3px;
- 	margin:45px;
-}
-
-.fanartSegment {
-	float:right;
-	position: absolute;
-	height: 247px;
-	bottom: 50px;
-	right: 50px;
-	z-index:-2;
- 	border-color:#FFFFFF;
- 	border-width:3px;
 }
 
 font.Delete {color:#FF9966; font-weight:normal; }

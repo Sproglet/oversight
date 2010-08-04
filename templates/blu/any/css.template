@@ -79,7 +79,7 @@ img.poster_watched {
 }
 
 .Xtitle {
- font-size:[:TITLE_SIZE(-2):];
+ font-size:[:TITLE_SIZE(-4):];
  font-weight:bold;
  color:#66CCFF;
 }
@@ -114,6 +114,50 @@ table.overview_poster {
     [:ENDIF:]
 [:ELSE:]
     width:100%;
+[:ENDIF:]
+}
+
+.portraitLayer {
+	position: absolute;
+	height: 247px;
+	z-index:1;
+	border-style:solid;
+ 	border-color:white;
+ 	border-width:3px;
+[:IF($@gaya):]
+	[:IF($@sd):]
+		top: 130px;
+		left: 400px;
+	[:ELSE:]
+		top: 380px;
+		left: 980px;
+	[:ENDIF:]
+[:ELSE:]
+	float:right;
+	bottom: 50px;
+	right: 50px;
+[:ENDIF:]
+}
+
+.fanartLayer {
+	position: absolute;
+	height: 247px;
+	z-index:1;
+	border-style:solid;
+ 	border-color:white;
+ 	border-width:3px;
+[:IF($@gaya):]
+	[:IF($@sd):]
+		top: 130px;
+		left: 200px;
+	[:ELSE:]
+		top: 380px;
+		left: 690px;
+	[:ENDIF:]
+[:ELSE:]
+	float:right;
+	bottom: 50px;
+	right: 50px;
 [:ENDIF:]
 }
 

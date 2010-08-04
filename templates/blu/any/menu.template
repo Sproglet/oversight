@@ -38,7 +38,7 @@
 							[:ELSE:]
 								[:HOSTNAME:]
 							[:ENDIF:]
-						&nbsp;</span>
+						&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
                     <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
                 </tr>
@@ -54,9 +54,6 @@
                         <span class=Xtitle id="menutitle">&nbsp;</span>
                         <span class=Xtitle id="unwatchedtotal">&nbsp;</span>
                         <span class=Xtitle id="watchedtotal">&nbsp;</span>
-                    </td>
-                    <td align=right>
-                    	[:PAGE:]/[:PAGE_MAX:]
                     </td>
                     </tr>
                 </table></tr>

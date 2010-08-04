@@ -79,7 +79,7 @@ img.poster_watched {
 }
 
 .Xtitle {
- font-size:[:TITLE_SIZE(-5):];
+ font-size:[:TITLE_SIZE(-7):];
  font-weight:bold;
  color:#66CCFF;
 }
@@ -104,11 +104,6 @@ table.overview_poster {
     margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
 }
 
-.BoxedSetTitle {
-	font-size:[:TITLE_SIZE(-5):];
-	font-weight:bold;
-	color:#66CCFF;
-}
 .overview_poster {
     text-align:center;
 [:IF($@poster_mode):]

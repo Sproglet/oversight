@@ -197,6 +197,9 @@ table.writers   { width:250px; }
 table.actors    td { font-size:100%; text-align:left; }
 table.directors td { font-size:100%; text-align:left; }
 table.writers   td { font-size:100%; text-align:left; }
+table.actors	font {color: #FFBB66;}
+table.directors	font {color: #FFBB66;}
+table.writers	font {color: #FFBB66;}
 
 /*
 vi:ts=4:sw=4:et:syntax=css

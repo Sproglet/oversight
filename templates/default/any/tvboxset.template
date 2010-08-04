@@ -29,12 +29,23 @@
 [:FORM_START:]
     <center>
         <table class="main" width="100%" height="100%">
+        	<tr valign=top>
+        		<td align=center>
+		            <table class="header">
+		                <tr>
+				            <td align=center>
+				                <span class="boxtitle">[:TITLE:]</span>
+							</td>
+		                </tr>
+		            </table>					
+        		</td>
+			</tr>
             <tr>
                 <td align=right>
 		            <table height=50px class="header">
 		                <tr>
 				            <td align="center">
-				                <span class="boxtitle" id="menutitle">[:TITLE:]</span>
+				                <span class="boxtitle" id="menutitle">&nbsp;</span>
 				                <span class="boxtitle" id="unwatchedtotal">&nbsp;&nbsp;</span>
 				                <span class="boxtitle" id="watchedtotal">&nbsp;&nbsp;</span>
 				            </td>

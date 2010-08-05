@@ -63,8 +63,7 @@
 [:ELSE:]
 	<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
 [:ENDIF:]
-<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
-<script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
+[:INCLUDE_TEMPLATE(javascript_common):]
 <!-- tvids -->
 [:TVIDS:]
 [:INCLUDE_TEMPLATE(common):]

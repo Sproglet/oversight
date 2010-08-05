@@ -73,16 +73,16 @@
                             	<td colspan=2 align=left><span class="plot">[:PLOT:]</span>
                                 </td>
                     			<td width=1%></td>
-                            <tr>		
-                            <tr>
-                            	<td width=1%></td>
-                            	<td colspan=2 align=left>
-                                </td>
-                    			<td width=1%></td>
-                            <tr>			
+                            <tr>				
 		                    <tr>
 		                    	<td colspan=4 height=5px>&nbsp;</td>
 		                    </tr>	
+                            <tr>
+                            	<td width=1%></td>
+                            	<td colspan=2 align=left>[:MOVIE_LISTING:]
+                                </td>
+                    			<td width=1%></td>
+                            <tr>	
                             <tr>
                             	<td width=1%></td>
                             	<td colspan=2 align=left>
@@ -119,14 +119,6 @@
                                 </td>
                     			<td width=1%></td>
                             <tr>
-		                    <tr>
-		                    	<td colspan=4 height=2%>&nbsp;</td>
-		                    <tr>					
-                            <tr>
-                            	<td width=1%></td>
-                            	<td colspan=2>[:MOVIE_LISTING:]</td>
-                    			<td width=1%></td>
-                            </tr>
                             <tr><td colspan=4>
                                 [:INCLUDE_TEMPLATE(submit_btn):]
                             </td></tr>

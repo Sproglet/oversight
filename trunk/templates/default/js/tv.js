@@ -6,6 +6,8 @@ var episodecell = ovs_util_getcell('episode');
 var episodedatecell = ovs_util_getcell('epDate');
 var g_epno='';
 var g_info='';
+var originalTitle = episodecell.firstChild.nodeValue;
+var originalPlot = titlecell.firstChild.nodeValue;
 
 function ovs_delist() {  
     ovs_util_action('delist',g_idlist,"Delist "+g_epno+"?");
@@ -38,6 +40,7 @@ function ovs_ep(ep)
     var epTitle = ep["title"];
     var epDate = ep["date"];
     var epNo =  ep["episode"];
+	var epPlot = ep["plot"];
 
     // Set globals for mark/delist/delete functions.
 
@@ -49,8 +52,9 @@ function ovs_ep(ep)
     if (epNo == "") {
 
         // Main show
-        epTitle = "Show Summary - ";
+        epTitle = originalTitle;
         epDate = "";
+		epPlot = originalPlot;
 
     } else {
 
@@ -68,7 +72,7 @@ function ovs_ep(ep)
 
     // Set cell content based on selected episode
 
-    titlecell.firstChild.nodeValue = ep["plot"];
+    titlecell.firstChild.nodeValue = epPlot;
     episodecell.firstChild.nodeValue = epTitle;
     episodedatecell.firstChild.nodeValue = epDate;
 }

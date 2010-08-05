@@ -130,7 +130,7 @@ table.overview_poster {
 		left: 400px;
 	[:ELSE:]
 		top: 380px;
-		left: 980px;
+		left: 930px;
 	[:ENDIF:]
 [:ELSE:]
 	float:right;
@@ -141,23 +141,39 @@ table.overview_poster {
 
 .fanartLayer {
 	position: absolute;
-	height: 247px;
-	z-index:1;
-	border-style:solid;
- 	border-color:white;
- 	border-width:3px;
+	width: 440px;
+	z-index:-1;
+	text-align:right;
 [:IF($@gaya):]
 	[:IF($@sd):]
 		top: 130px;
 		left: 200px;
 	[:ELSE:]
 		top: 380px;
-		left: 690px;
+		left: 650px;
 	[:ENDIF:]
 [:ELSE:]
 	float:right;
 	bottom: 50px;
 	right: 50px;
+[:ENDIF:]
+}
+
+.titleLayer {
+	position: absolute;
+	z-index:2;
+[:IF($@gaya):]
+	[:IF($@sd):]
+		top: 330px;
+		left: 10px;
+	[:ELSE:]
+		top: 590px;
+		left: 10px;
+	[:ENDIF:]
+[:ELSE:]
+	float:left;
+	bottom: 50px;
+	left: 25px;
 [:ENDIF:]
 }
 

@@ -23,7 +23,7 @@
                     	<span class=menubarTitle><b>PROFILE: [:ACTOR_NAME:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
 [:IF($@gaya):]
-	                <td align=right width="8%">&nbsp;</td>					
+	                <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>					
 [:ELSE:]
 	                <td align=right width="8%">
 	                    [:EXTERNAL_URL:]&nbsp;
@@ -43,17 +43,6 @@
 [:IF(0):]
         </td></tr><tr><td>
 [:ENDIF:]
-                <table width="100%"><tr>
-[:IF($@sd):]
-                    <td colspan=6 align=center >
-[:ELSE:]
-                    <td colspan=8 align=center >
-[:ENDIF:]
-                        <span class="boxtitle" id="menutitle">&nbsp;</span>
-                        <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
-                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>
-                    </td>    
-                </table></tr>
             <table class=footer width=100%>
                 <tr valign=top>
                         <td width=10%>[:LEFT_BUTTON:]</td>
@@ -64,7 +53,12 @@
         </td></tr></table>
 [:ENDIF:]
 </form>    
-<div class=portraitLayer>[:ACTOR_IMAGE(height=247px):]</div>
+<div class=titleLayer>
+    <span class="boxtitle" id="menutitle">&nbsp;</span>
+    <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
+    <span class="boxtitle" id="watchedtotal">&nbsp;</span>
+</div>
+<div class=fanartLayer>[:ACTOR_IMAGE(height=247px):]</div>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->

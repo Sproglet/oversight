@@ -69,9 +69,10 @@ img.poster_watched {
 }
 
 .boxtitle {
+ text-align:left;
  font-size:[:TITLE_SIZE:];
- font-family:"arial";
  font-weight:bold;
+ color:#FFCF2F;
 }
 .menutitle {
  font-size:[:TITLE_SIZE(-2):];

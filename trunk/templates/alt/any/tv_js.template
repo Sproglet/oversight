@@ -1,2 +1,0 @@
-<!-- Template to map through to the appropriate JS compatability version -->
-[:INCLUDE_TEMPLATE(tv_js_basic):]

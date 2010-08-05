@@ -55,7 +55,7 @@ function ovs_menu(menu)
     var watched = menu["watched"];
     var unwatched = menu["unwatched"];
 
-   // To get multi-colour text is displated in different cells
+   // To get multi-colour text is displayed in different cells
    // depending on watched/unwatched count.
    var title_text = ovs_nbsp();
    var watched_text = '';
@@ -65,19 +65,19 @@ function ovs_menu(menu)
        title = menu["title"];
        if (menu["view"] == "tvboxset" ) {
 
-           title = title + " - [ Boxset - "+menu["num_seasons"] + " seasons ]";
+           title = ovsString_tvBoxset(title, menu["num_seasons"]);
 
        } else if (menu["view"] == "movieboxset" ) {
 
-           title = title + "- [ Boxset - "+menu["count"] + " movies ]";
+           title = ovsString_movieBoxset(title, menu["count"]);
 
        } else if (menu["view"] == "tv" ) {
 
-           title = title + " - Season " + menu["season"];
+           title = ovsString_tv(title, menu["season"]);
 
        } else if (menu["view"] == "movie" ) {
 
-           title = title + " - " + menu["cert"] + " (" + menu["year"] + ")";
+           title = ovsString_movie(title, menu["year"], menu["cert"]);
 
        }
 

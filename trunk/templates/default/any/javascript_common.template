@@ -1,0 +1,5 @@
+<!-- Default Common Javascript Template  $Id:$ -->
+<script type="text/javascript" src="[:TEMPLATE_URL(js/strings.js):]"></script>
+<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
+<script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
+

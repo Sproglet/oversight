@@ -31,12 +31,11 @@
                     <td align=center>[:LOCKED_SELECT:]</td>
 [:ENDIF:]
                     <td align=right width="50%">
-                        <span class=menubarTitle>
-                        	<b>OVERSIGHT</b>&nbsp;-&nbsp;
+                        <span class=menubarTitle>                        	
 	                        [:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
 								[Status - :STATUS:]
 							[:ELSE:]
-								[:HOSTNAME:]
+								<b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]
 							[:ENDIF:]
 						&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>

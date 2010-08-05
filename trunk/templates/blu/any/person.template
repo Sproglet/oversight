@@ -20,7 +20,7 @@
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
-                    	<span class=menubarTitle><b>PROFILE: [:ACTOR_NAME:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
+                    	<span class=menubarTitle><b>PROFILE - [:ACTOR_NAME:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
 [:IF($@gaya):]
 	                <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>					

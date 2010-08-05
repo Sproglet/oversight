@@ -65,7 +65,7 @@ function ovs_menu(menu)
        title = menu["title"];
        if (menu["view"] == "tvboxset" ) {
 
-           title = ovsString_tvBoxset(title, menu["num_seasons"]);
+           title = ovsString_tvBoxset(title, menu["num_seasons"], menu["year"]);
 
        } else if (menu["view"] == "movieboxset" ) {
 
@@ -73,7 +73,7 @@ function ovs_menu(menu)
 
        } else if (menu["view"] == "tv" ) {
 
-           title = ovsString_tv(title, menu["season"]);
+           title = ovsString_tv(title, menu["season"], menu["cert"]);
 
        } else if (menu["view"] == "movie" ) {
 

@@ -29,17 +29,6 @@
 [:FORM_START:]
     <center>
         <table class="main" width="100%" height="100%">
-        	<tr valign=top>
-        		<td align=center>
-		            <table class="header">
-		                <tr>
-				            <td align=center>
-				                <span class="boxtitle">[:TITLE:]</span>
-							</td>
-		                </tr>
-		            </table>					
-        		</td>
-			</tr>
             <tr>
                 <td align=right>
 		            <table height=50px class="header">
@@ -85,6 +74,7 @@
 								<table class=footer width=100%>
 				                	<tr valign=top>
 				                        <td width=10%>[:LEFT_BUTTON:]</td>
+										<td align=center><span class="boxtitle">[:TITLE:]</span></td>
 				                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
 				                	</tr>
 				            	</table>

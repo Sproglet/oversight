@@ -59,7 +59,10 @@
     <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
     <span class="boxtitle" id="watchedtotal">&nbsp;</span>
 </div>
-<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
+[:IF($@sd):]
+[:ELSE:]
+	<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
+[:ENDIF:]
 <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 <script type="text/javascript" src="[:TEMPLATE_URL(js/menu.js):]"></script>
 <!-- tvids -->

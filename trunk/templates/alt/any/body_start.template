@@ -1,9 +1,0 @@
-[:IF($ovs_display_fanart):]
-<body focuscolor=#FFCF2F focustext=black background="[:FANART_URL(default.jpg):]" >
-<table class=main width=100%>
-<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
-[:ELSE:]
-<body focuscolor=#FFCF2F focustext=black background="[:BACKGROUND_IMAGE(default.jpg):]" >
-<table class=main width=100%>
-<tr valign=middle><td align="center" border=0 height=[:BODY_HEIGHT:] >
-[:ENDIF:]

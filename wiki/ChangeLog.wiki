@@ -2,6 +2,7 @@
 = Oversight Change Log =
 
 v2.0testing-r1298
+  * Scan best rated images from http://themoviedb.org
   * Actor/Writer/Director scraping
   * File locking
   * IMDB Rating filter

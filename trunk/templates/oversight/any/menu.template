@@ -1,78 +1,19 @@
-<!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
-        <title>Oversight ([:HOSTNAME:])</title>
+        <title>Oversight [:VERSION:] ([:HOSTNAME:])</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=main_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/abstract_circles.jpg">
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=main_background background="[:BACKGROUND_IMAGE(default.jpg):]">
         [:FORM_START:]
-[:IF(0):]
-        <table class=main width=100% height=100%>
-        <tr><td>
-[:ENDIF:]
-            <table class=header width=100% background="[:URL_BASE:]/templates/default/images/trans60.png">
-                <tr>
-[:IF($?resizeon):]
-                    <td>[:RESIZE_CONTROLS:]</td>
-[:ELSE:]
-                    <td width="7%">&nbsp;[:HOME_BUTTON:]</td>
-[:ENDIF:]
-
-                    <td width="1%" align=right>[:WATCHED_SELECT:][:LOCKED_SELECT:]</td>
-                    <td width="1%" align=left><nobr>[:MEDIA_SELECT:][:TITLE_SELECT:]</nobr>[:GENRE_SELECT:]</td>
-                    <td align=right width="75%">
-                        <span class=boxtitle id="menutitle">&nbsp;</span>
-                        <span class=boxtitle id="unwatchedtotal">&nbsp;</span>
-                        <span class=boxtitle id="watchedtotal">&nbsp;</span>
-                        &nbsp;
-                    </td>
-                    <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
-                </tr>
-            </table>
-[:IF(0):]
-        </td></tr><tr><td>
-[:ENDIF:]
+			[:INCLUDE_TEMPLATE(menu_header):]
             <center>
             	<div>
             		[:GRID:]
             	</div>
             </center>
-[:IF(0):]
-        </td></tr><tr><td>
-[:ENDIF:]
-            <table class=footer width=100% background="[:URL_BASE:]/templates/default/images/trans60.png">
-                <tr valign=middle>
-                    <td>[:LEFT_BUTTON:]</td>
-                    <td align=left><span class="status">&nbsp;&nbsp;
-                    	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
-							[Status - :STATUS:]
-						[:ELSE:]
-							Oversight ([:HOSTNAME:])
-						[:ENDIF:]
-						&nbsp;&nbsp;</span>
-					</td>
-					<td align=center>
-                    	[:INCLUDE_TEMPLATE(menu_buttons):]
-					</td>
-                    <td align=right>
-                        [:PAGE:]/[:PAGE_MAX:]
-                    </td>
-                    <td align=right>[:RIGHT_BUTTON:]</td>
-                </tr>
-            </table>
-[:IF(0):]
-        </td></tr></table>
-[:ENDIF:]
-</form>
-[:INCLUDE_TEMPLATE(javascript_common):]
-<script type="text/javascript">
-function info() {
-    alert('[[:$ovs_tvid_mark:]] - mark watched\n[[:$ovs_tvid_unmark:]] - unwatch\n[[:$ovs_tvid_delist:]] - delist\n[[:$ovs_tvid_delete:]] Delete Media');
-}
-</script>
-<!-- tvids -->
-[:TVIDS:]
-[:INCLUDE_TEMPLATE(common):]
+			[:INCLUDE_TEMPLATE(menu_footer):]
+		[:FORM_END:]
+		[:INCLUDE_TEMPLATE(menu_closing_scripts):]
     </body>
 </html>
 <!--

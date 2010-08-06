@@ -1,0 +1,16 @@
+<table width="100%">
+	<tr>
+        <td width="90%" align=center >
+            <span class=boxtitle id="menutitle">&nbsp;</span>
+            <span class=boxtitle id="unwatchedtotal">&nbsp;</span>
+            <span class=boxtitle id="watchedtotal">&nbsp;</span>
+        </td>
+    </tr>
+</table>
+<table class=footer width=100%>
+    <tr valign=top>
+        <td width=10%>[:LEFT_BUTTON:]</td>
+        [:INCLUDE_TEMPLATE(menu_buttons):]
+        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+    </tr>
+</table>

@@ -1,0 +1,7 @@
+<table class=footer width=100%>
+    <tr valign=top>
+        <td align=left>&nbsp;[:LEFT_BUTTON:]</td>
+        [:INCLUDE_TEMPLATE(menu_buttons):]
+        <td align=right>[:RIGHT_BUTTON:]&nbsp;</td>
+    </tr>
+</table>

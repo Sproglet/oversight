@@ -1,0 +1,33 @@
+<table class=header width=100%>
+    <tr>
+[:IF($@sd):]
+        <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:] <br> [:MEDIA_SELECT:]</td>
+        <td align=left>[:WATCHED_SELECT:] <br>[:GENRE_SELECT:]</td>
+[:ELSE:]
+        <td align=left>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[:TITLE_SELECT:]&nbsp;[:WATCHED_SELECT:]&nbsp;[:MEDIA_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):][:LOCKED_SELECT:]</td>
+[:ENDIF:]
+        <td align=left>[:SORT_TYPE_TOGGLE:]</td>
+[:IF($?resizeon):]
+		<td align=center>[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
+		<td align=center>[:HOME_BUTTON:]</td>
+[:ENDIF:]
+		<td align=right><span class="status" align=right>[Status - :STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]&nbsp;&nbsp;</span></td>
+		[<td align=right>:HELP_BUTTON:</td>]
+        <td align=right>[:SETUP_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    </tr>
+    <tr>
+[:IF($@sd):]
+        <td colspan=7 align=center >
+[:ELSE:]
+        <td colspan=5 align=center >
+[:ENDIF:]
+            <span class=menutitle id="menutitle">&nbsp;</span>
+            <span class=menutitle id="unwatchedtotal">&nbsp;</span>
+            <span class=menutitle id="watchedtotal">&nbsp;</span>
+        </td>
+        <td align=right>
+            [:PAGE:]/[:PAGE_MAX:] ([:EVAL($@selection_count):])
+        </td>
+    </tr>
+</table>

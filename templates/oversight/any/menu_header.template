@@ -9,9 +9,7 @@
         <td width="1%" align=right>[:WATCHED_SELECT:][:LOCKED_SELECT:]</td>
         <td width="1%" align=left><nobr>[:MEDIA_SELECT:][:TITLE_SELECT:]</nobr>[:GENRE_SELECT:]</td>
         <td align=right width="75%">
-            <span class=boxtitle id="menutitle">&nbsp;</span>
-            <span class=boxtitle id="unwatchedtotal">&nbsp;</span>
-            <span class=boxtitle id="watchedtotal">&nbsp;</span>
+            [:INCLUDE_TEMPLATE(menu_titles):]
             &nbsp;
         </td>
         <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>

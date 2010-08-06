@@ -26,9 +26,7 @@
 [:ELSE:]
         <td colspan=9 align=center >
 [:ENDIF:]
-            <span class=menutitle id="menutitle">&nbsp;</span>
-            <span class=menutitle id="unwatchedtotal">&nbsp;</span>
-            <span class=menutitle id="watchedtotal">&nbsp;</span>
+			[:INCLUDE_TEMPLATE(menu_titles):]
         </td>
         <td align=right>[:PAGE:]/[:PAGE_MAX:]</td>
     </tr>

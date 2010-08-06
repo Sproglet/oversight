@@ -96,7 +96,7 @@ img.poster_watched {
  font-weight:bold;
 }
 .menutitle {
- font-size:[:TITLE_SIZE(-2):];
+ font-size:120%;
  font-family:"arial";
  font-weight:bold;
 }

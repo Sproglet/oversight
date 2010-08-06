@@ -57,10 +57,7 @@
 [:ELSE:]
 	<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
 [:ENDIF:]
-[:INCLUDE_TEMPLATE(javascript_common):]
-<!-- tvids -->
-[:TVIDS:]
-[:INCLUDE_TEMPLATE(common):]
+[:INCLUDE_TEMPLATE(box_closing_scripts):]
     </body>
 </html>
 <!--

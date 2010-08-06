@@ -1,0 +1,4 @@
+[:INCLUDE_TEMPLATE(javascript_common):]
+<!-- tvids -->
+[:TVIDS:]
+[:INCLUDE_TEMPLATE(common):]

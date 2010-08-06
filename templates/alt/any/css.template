@@ -98,6 +98,29 @@ img.poster_watched {
  font-weight:bold;
 }
 
+body.menu_background { 
+	color:yellow ; 
+	background-color:black; 
+	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg'); 
+}
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/30):]px; padding:0 ; border-width:0 ;
+}
+
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:100%;
+[:ENDIF:]
+}
+
 
 /*
 vi:ts=4:sw=4:et:syntax=css

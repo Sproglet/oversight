@@ -1,12 +1,7 @@
 <html>
     <head>
-        [:FAVICON:]
-        <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
-        <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
-        <style type="text/css">
-            [:INCLUDE_TEMPLATE(css):]
-        </style>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
 
 [:IF($ovs_display_fanart):]

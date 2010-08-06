@@ -1,0 +1,6 @@
+[:FAVICON:]
+<meta name="robots" content="nofollow">
+<link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
+<style type="text/css">
+    [:INCLUDE_TEMPLATE(css):]
+</style>

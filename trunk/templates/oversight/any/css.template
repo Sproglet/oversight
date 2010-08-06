@@ -129,6 +129,25 @@ table.overview_poster {
     margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
 }
 
+body.menu_background { 
+	color:white ; 
+	background-color:black; 
+	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/abstract_circles.jpg'); 
+}
+
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:100%;
+[:ENDIF:]
+}
+
 /*
 vi:ts=4:sw=4:et:syntax=css
 */a{}

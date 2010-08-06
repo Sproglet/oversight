@@ -7,36 +7,6 @@
         <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-
-body.menu_background { 
-	color:yellow ; 
-	background-color:black; 
-	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg'); 
-}
-
-table.overview_poster {
-    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/40):]px; padding:0 ; border-width:0 ;
-}
-.overview_poster {
-    text-align:center;
-[:IF($@poster_mode):]
-    [:IF($@gaya):]
-        width:100%;
-    [:ELSE:]
-        width:1%;
-    [:ENDIF:]
-[:ELSE:]
-    width:100%;
-[:ENDIF:]
-}
-
-.Xtitle {
- font-size:[:TITLE_SIZE(-5):];
- font-weight:bold;
- color:white;
-}
-
-
         </style>
     </head>
     <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">

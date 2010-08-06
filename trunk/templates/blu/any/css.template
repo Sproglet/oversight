@@ -125,28 +125,6 @@ table.overview_poster {
 [:ENDIF:]
 }
 
-.portraitLayer {
-	position: absolute;
-	height: 247px;
-	z-index:1;
-	border-style:solid;
- 	border-color:white;
- 	border-width:3px;
-[:IF($@gaya):]
-	[:IF($@sd):]
-		top: 130px;
-		left: 400px;
-	[:ELSE:]
-		top: 380px;
-		left: 930px;
-	[:ENDIF:]
-[:ELSE:]
-	float:right;
-	bottom: 50px;
-	right: 50px;
-[:ENDIF:]
-}
-
 .fanartLayer {
 	position: absolute;
 	width: 440px;

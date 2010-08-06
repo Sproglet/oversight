@@ -1,15 +1,10 @@
 <!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
-        <meta name="robots" content="nofollow">
         <title>Oversight [:VERSION:] ([:HOSTNAME:])</title>
-        [:FAVICON:]
-        <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
-        <style type="text/css">
-            [:INCLUDE_TEMPLATE(css):]
-        </style>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
+    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=main_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
         [:FORM_START:]
 [:IF(0):]
         <table class=main width=100% height=100%>

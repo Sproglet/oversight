@@ -98,7 +98,7 @@ img.poster_watched {
  font-weight:bold;
 }
 
-body.menu_background { 
+body.main_background { 
 	color:yellow ; 
 	background-color:black; 
 	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg'); 

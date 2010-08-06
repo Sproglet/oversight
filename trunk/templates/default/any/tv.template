@@ -1,12 +1,9 @@
 <!-- Default Tv Template  $Id:$ -->
 <html>
     <head>
-        [:FAVICON:]
-        <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:][ Season :SEASON:]</title>
-        <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
         <style type="text/css">
-            [:INCLUDE_TEMPLATE(css):]
             [:INCLUDE_TEMPLATE(tv_css):]
 		</style>
 </head>

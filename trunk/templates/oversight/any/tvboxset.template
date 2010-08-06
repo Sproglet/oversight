@@ -1,13 +1,8 @@
 <!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
-        <meta name="robots" content="nofollow">
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
-        [:FAVICON:]
-        <link rel="stylesheet" type="text/css" href=[:TEMPLATE_URL(css/default.css):] />
-        <style type="text/css">
-            [:INCLUDE_TEMPLATE(css):]
-        </style>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
 
 [:IF($ovs_display_fanart):]

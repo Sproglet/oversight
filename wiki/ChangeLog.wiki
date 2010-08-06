@@ -3,6 +3,7 @@
 
 v2.0testing-r1298
   * Scan best rated images from http://themoviedb.org
+  * Automatic Movie boxsets and boxset icons. (using IMDB follows/followed by)
   * Actor/Writer/Director scraping
   * File locking
   * IMDB Rating filter

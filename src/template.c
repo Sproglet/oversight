@@ -64,7 +64,7 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
         if (strstr(file_path,"css")) {
             printf("/* Reading %s */%s\n",file_path,dummy_css);
         } else {
-            HTML_LOG(0,"Reading %s",file_path);
+            HTML_LOG(1,"Reading %s",file_path);
         }
 #define HTML_BUF_SIZE 999
         ret = 0;

@@ -3,94 +3,75 @@
         <title>Oversight ([:HOSTNAME:]) - [:ACTOR_NAME:]</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-
-    <body [onloadset=:START_CELL:] focuscolor=#FFCF2F focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/default.jpg">
-    <table class="main" width="100%">
-    <tr valign="middle">
-
-        <td align="center" border="0" height="[:BODY_HEIGHT:]" >
-
-[:FORM_START:]
-    <center>
-        <table class="main" width="100%" height="100%">
-        	<tr valign=bottom>
-        		<td align=center>
-		            <table height=200px class="header">
-		            	<tr>
-			                <td align=center>
-			                    <span class="boxtitle" >[:ACTOR_IMAGE(height=200px):]</span>
-			                <td>
-		            	</tr>
-		                <tr>
-				            <td align=center>
-				                <span class="boxtitle">PROFILE: [:ACTOR_NAME:]</span>
-							</td>
-		                </tr>
-		            </table>					
-        		</td>
-			</tr>
-            <tr valign=bottom>
-                <td align=right>
-		            <table height=50px class="header">
-		                <tr>
-				            <td align="center">
-				                <span class="boxtitle" id="menutitle">&nbsp;</span>
-				                <span class="boxtitle" id="unwatchedtotal">&nbsp;&nbsp;</span>
-				                <span class="boxtitle" id="watchedtotal">&nbsp;&nbsp;</span>
-				            </td>
-							<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-		                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
-[:IF($@gaya):]		
-			                <td align=right></td>
-[:ELSE:]
-			                <td align=right>
-			                    [:EXTERNAL_URL:]&nbsp;
-			                </td>
-[:ENDIF:]
-		                </tr>
-		            </table>
-                </td>
-            </tr>
-			<tr><td</td>
-			</tr>
-            <tr>
-                <td>
-                    <center>
-                        <table >
-                            <tr>
-                                <td>
-                                    <center>
-                                        <table>
-                                            <tr>
-                                                <td align="center" >
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(default.jpg):]">
+    	<table class="main" width="100%">
+    		<tr valign="middle">
+        		<td align="center" border="0" height="[:BODY_HEIGHT:]" >
+					[:FORM_START:]
+					    <center>
+					        <table class="main" width="100%" height="100%">
+					            <tr valign=bottom>
+					                <td align=center>
+							            <table height=200px class="header">
+	                                        <tr>
+	                                            <td align=center>
+	                                                <span class="boxtitle">[:ACTOR_IMAGE(height=200px):]</span>
+	                                            </td>
+	                                        </tr>
+	                                        <tr>
+                                                <td align=center>
+                                                    <span class="boxtitle">PROFILE: [:ACTOR_NAME:]</span>
                                                 </td>
                                             </tr>
-                                        </table>
-                                    </center>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td >
-                                    <div id=gridWrapper>[:GRID(rows=>1):]</div>
-								<table class=footer width=100%>
-				                	<tr valign=top>
-				                        <td width=10%>[:LEFT_BUTTON:]</td>
-				                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
-				                	</tr>
-				            	</table>
-                                </td >
-                            </tr>
-                        </table>
-                    </center>
-                </td>
-            </tr>
-        </table>
-    </center>
-[:FORM_END:]
-
-</td></tr></table>
-
-[:INCLUDE_TEMPLATE(box_closing_scripts):]
+							            </table>
+					                </td>
+					            </tr>
+                                <tr><td height=20px></td></tr>
+					            <tr valign=bottom>
+					                <td>
+							            <table height=50px class="header" align=right>
+							                <tr>
+									            <td align="center">
+									                [:INCLUDE_TEMPLATE(box_titles):]
+									            </td>
+												<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+							                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
+[:IF($@gaya):]	
+[:ELSE:]
+								                <td align=right>
+								                    [:EXTERNAL_URL:]&nbsp;
+								                </td>
+[:ENDIF:]
+							                </tr>
+							            </table>
+					                </td>
+					            </tr>
+					            <tr>
+					                <td>
+					                    <center>
+					                        <table >
+					                            <tr>
+					                                <td >
+					                                    <div id=gridWrapper>[:GRID(rows=>1):]</div>
+														<table class=footer width=100%">
+															<tr valign=center>
+														        <td width=10%>[:LEFT_BUTTON:]</td>
+														        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+															</tr>
+														</table>
+					                                </td >
+					                            </tr>
+					                        </table>
+					                    </center>
+					                </td>
+					            </tr>
+					        </table>
+					    </center>
+					[:FORM_END:]
+				</td>
+			</tr>
+		</table>
+		[:INCLUDE_TEMPLATE(box_closing_scripts):]
     </body>
 </html>
 <!--

@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <ctype.h>
 
 #if (HAVE_SYS_CAPABILITY_H)
 #undef _POSIX_SOURCE
@@ -28,55 +29,15 @@
 #endif
 
 #include "gaya_cgi.h"
+#include "network.h"
 
 long ping_timeout();
-
-#if 0
-/**
- * Ping: reference <Unix network programming>, volume 1, third edition.
- */
-static uint16_t in_checkksum(uint16_t *addr, int len)
-{
-	int nleft = len;
-	uint32_t sum = 0;
-	uint16_t *w = addr;
-	uint16_t answer = 0;
-
-	while (nleft > 1) {
-		sum += *w++;
-		nleft -= 2;
-	}
-	if (nleft == 1) {
-		*(unsigned char *) (&answer) = *(unsigned char *) w;
-		sum += answer;
-	}
-	sum = (sum >> 16) + (sum & 0xffff);
-	sum += (sum >> 16);
-	answer = ~sum;
-	return (answer);
-}
-
-#ifndef NI_MAXHOST
-#define NI_MAXHOST 200
-#endif
-int dump_addr(struct addrinfo *i)
-{
-    for( ; i ; i=i->ai_next) {
-        char hostname[NI_MAXHOST]="";
-        int e = getnameinfo(i->ai_addr,i->ai_addrlen,hostname,NI_MAXHOST,NULL,0,0);
-        if (e != 0 ) {
-            HTML_LOG(0,"Error in getnameinfo: %s\n", gai_strerror(e));
-        } else if (hostname[0]) {
-            HTML_LOG(0," found hostname [%s]\n", hostname);
-        }
-    }
-}
-#endif
+int connect_tcp_socket(struct sockaddr *addr,size_t addrlen,int port,long timeout_millis);
 
 /**
  * FIXME: resolve_timeout
  */
-struct addrinfo * get_remote_addr(char *host, char * port, int family, int socktype,
+struct addrinfo * get_remote_addr(char *host, char * service, int family, int socktype,
 	int protocol, int resolve_timeout)
 {
 	struct addrinfo hints, *info = NULL;
@@ -86,7 +47,7 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 	hints.ai_protocol = protocol;
 	hints.ai_flags = AI_CANONNAME;
 
-	int ret = getaddrinfo(host, port, &hints, &info);
+	int ret = getaddrinfo(host, service, &hints, &info);
 	if (ret != 0) {
 		if (info) {
             HTML_LOG(0,"No address!!!!");
@@ -100,89 +61,6 @@ struct addrinfo * get_remote_addr(char *host, char * port, int family, int sockt
 #endif
 	return info;
 }
-
-#if 0
-
-/**
- * Need root privilege
- * @return:
- * > 0 -- ok,
- * < 0 -- failed.
- * Ping: reference <Unix network programming>, volume 1, third edition.
- */
-
-#define USE_SELECT
-// If USE_SELECT then select() is used for timeout rather than the original setsockopt/recvmsg
-// This is because setsockopt SO_SNDTIMEO does not work on NMT.
-//
-// http://www.developerweb.net/forum/showthread.php?p=13486
-//
-
-int ping (char *host,long timeout_millis)
-{
-	#define BUF_SIZE	1500
-	#define ICMP_REQUEST_DATA_LEN 56
-    if (timeout_millis == 0) {
-        timeout_millis = ping_timeout();
-    }
-    HTML_LOG(0,"ping %s within %ldms...",host,timeout_millis);
-
-	struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_RAW, IPPROTO_ICMP, 5);
-	if (ai == NULL)
-		return -2;
-
-	pid_t pid = getpid() & 0xffff; /* ICMP ID field is 16 bits */
-
-	char send_buf[BUF_SIZE];
-
-	int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-
-    long timeout_secs = timeout_millis / 1000;
-    long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
-
-	struct timeval timeout = {timeout_secs, timeout_usecs };
-
-	/* don't need special permissions any more */
-	setuid(getuid());
-
-	struct icmp *icmp;
-	icmp = (struct icmp *) send_buf;
-	icmp->icmp_type = ICMP_ECHO;
-	icmp->icmp_code = 0;
-	icmp->icmp_id = pid;
-	icmp->icmp_seq = 0;
-	memset(icmp->icmp_data, 0xa5, ICMP_REQUEST_DATA_LEN);
-	gettimeofday((struct timeval *) icmp->icmp_data, NULL);
-	int len = 8 + ICMP_REQUEST_DATA_LEN;
-	icmp->icmp_cksum = 0;
-	icmp->icmp_cksum = in_checkksum((u_short *) icmp, len);
-
-	int ret = -1;
-
-	if (sendto(sockfd, send_buf, len, 0, ai->ai_addr, ai->ai_addrlen) <= 0) {
-		ret = -4;
-	} else {
-        //Slight risk is that we are not looking at the return packet. But chances 
-        //are anything that responds within the shot timeouts required for oversight
-        //(100ms) is in working order.
-        fd_set set;
-        FD_ZERO(&set);
-        FD_SET(sockfd,&set);
-
-        if (select(1+sockfd,&set,NULL,NULL,&timeout) == 1) {
-            ret = 0;
-        }
-	}
-
-	free(ai);
-	close(sockfd);
-
-    HTML_LOG(0,"ping %s within %dms = %d = %s",host,timeout_millis,ret,(ret?"bad":"good"));
-
-	return ret;
-}
-
-#endif
 
 int routable(struct sockaddr *addr,int addrlen) {
 
@@ -211,22 +89,14 @@ int routable(struct sockaddr *addr,int addrlen) {
 
 // connect to a port and disconnect
 // 0 = success
-int connect_service(char *host,long timeout_millis,int port)
+int connect_service(char *host,long timeout_millis,...)
 {
+    va_list ap;
+
     int ret = -1;
     
-    struct timeval t1,t2;
-    long elapsed=-1;
-
 	#define BUF_SIZE	1500
 	#define ICMP_REQUEST_DATA_LEN 56
-    if (timeout_millis == 0) {
-        timeout_millis = ping_timeout();
-    }
-    long timeout_secs = timeout_millis / 1000;
-    long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
-
-	struct timeval timeout = {timeout_secs, timeout_usecs };
 
 
     // The Address ai->ai_addr
@@ -244,79 +114,128 @@ int connect_service(char *host,long timeout_millis,int port)
             ret  = -3;
         } else {
 
+            va_start(ap,timeout_millis);
             // The socket
-            //
-            int sockfd = socket(PF_INET,SOCK_STREAM,0);
-            if (sockfd < 0 ) {
+            int port;
 
-                HTML_LOG(0,"socket error: create %d",errno);
-                ret  = -4;
+            while (( port = va_arg(ap,int)) != 0) {
 
-            } else {
+                ret = connect_tcp_socket(ai->ai_addr,ai->ai_addrlen,port,timeout_millis);
 
-                // Using http://www.developerweb.net/forum/showthread.php?t=3000
-                //
-                // Set socket non-blocking
-                int flags;
-                if ((flags = fcntl(sockfd,F_GETFL)) < 0 ) {
+                if (ret == 0 ) {
 
-                    HTML_LOG(0,"socket error: get flags %d",errno);
-                    ret = -5;
+                    break;
 
-                } else if (fcntl(sockfd,F_SETFL, flags | O_NONBLOCK) < 0 ) {
-
-                    HTML_LOG(0,"socket error: set blocking %d",errno);
-                    ret = -6;
-
-                } else if (connect(sockfd,ai->ai_addr,ai->ai_addrlen) != 0) {
-
-                    if (errno != 150) {
-                        // this seems to be OK for a non-blocking socket but the 
-                        // cosde returned is not EINPROGRESS(119) or EALREADY(120)
-                        HTML_LOG(0,"socket error: connect %d",errno);
-                        ret = -7;
-
-                    } else {
-
-                        int num_responses=0;
-                        fd_set set;
-                        FD_ZERO(&set);
-                        FD_SET(sockfd,&set);
-
-                        gettimeofday(&t1,NULL);
-                        num_responses = select(1+sockfd,&set,NULL,NULL,&timeout);
-                        switch(num_responses) {
-                            case 0: //timeout
-                                ret = -8;
-                                break;
-                            case 1: // success
-                                ret = 0;
-                                break;
-                            default: // Error or more than one response!?!?!
-                                ret = errno;
-                                break;
-                        }
-                        gettimeofday(&t2,NULL);
-                        if (ret == 0) {
-                            elapsed = ( t2.tv_sec - t1.tv_sec ) * 1000;
-                            elapsed += ( t2.tv_usec - t1.tv_usec ) / 1000;
-                            HTML_LOG(0,"connect succeeded %s:%d within %dms (%ldms)",
-                                    host,port,timeout_millis,elapsed);
-                        }
-                    }
                 }
 
-                close(sockfd);
+            }
+            va_end(ap);
 
+
+        }
+        FREE(ai);
+    }
+
+    return ret;
+}
+
+int connect_tcp_socket(struct sockaddr *addr,size_t addrlen,int port,long timeout_millis)
+{
+    int ret = 0;
+    int sockfd = socket(AF_INET,SOCK_STREAM,0);
+
+    if (timeout_millis == 0) {
+        timeout_millis = ping_timeout();
+    }
+    long timeout_secs = timeout_millis / 1000;
+    long timeout_usecs = (timeout_millis - timeout_secs * 1000) * 1000;
+
+    struct timeval timeout = {timeout_secs, timeout_usecs };
+
+    struct sockaddr_in *sin = (void *)addr;
+
+    char *host = inet_ntoa(sin->sin_addr);
+    long elapsed=-1;
+
+    if (sockfd < 0 ) {
+
+        HTML_LOG(0,"socket error: create %d",errno);
+        ret  = errno;
+
+    } else {
+
+        // Using http://www.developerweb.net/forum/showthread.php?t=3000
+        //
+        // Set socket non-blocking
+        int flags;
+        if ((flags = fcntl(sockfd,F_GETFL)) < 0 ) {
+
+            HTML_LOG(0,"socket error: get flags %d",errno);
+            ret = errno;
+
+        } else if (fcntl(sockfd,F_SETFL, flags | O_NONBLOCK) < 0 ) {
+
+            HTML_LOG(0,"socket error: set blocking %d",errno);
+            ret = errno;
+
+        } else {
+
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(port);
+
+
+            if (connect(sockfd,addr,addrlen) != 0) {
+
+
+                if (errno != 150) {
+                    // this seems to be OK for a non-blocking socket but the 
+                    // cosde returned is not EINPROGRESS(119) or EALREADY(120)
+                    HTML_LOG(0,"socket error: connect %d",errno);
+                    ret = errno;
+                }
+                HTML_LOG(0,"sent to [%s:%d] fam=%u ",host,port,sin->sin_family);
+            }
+
+            if(ret == 0) {
+
+                struct timeval t1,t2;
+
+                int num_responses=0;
+                fd_set read_set,write_set;
+                FD_ZERO(&read_set);
+                FD_SET(sockfd,&read_set);
+
+                FD_ZERO(&write_set);
+                FD_SET(sockfd,&write_set);
+
+                gettimeofday(&t1,NULL);
+                num_responses = select(1+sockfd,&read_set,&write_set,NULL,&timeout);
+                switch(num_responses) {
+                    case 0: //timeout
+                        HTML_LOG(0,"timeout after %dms",timeout_millis);
+                            ret = ETIMEDOUT;
+                        break;
+                    case 1: // success
+                        ret = 0;
+                        break;
+                    default: // Error or more than one response!?!?!
+                        ret = errno;
+                        HTML_LOG(0,"error after %dms",timeout_millis);
+                        break;
+                }
+                gettimeofday(&t2,NULL);
+                if (ret == 0) {
+                    elapsed = ( t2.tv_sec - t1.tv_sec ) * 1000;
+                    elapsed += ( t2.tv_usec - t1.tv_usec ) / 1000;
+                }
+                close(sockfd);
             }
         }
-        free(ai);
     }
-    if (ret != 0) {
-        HTML_LOG(0,"connect %s:%d failed within %dms : error %d",host,port,timeout_millis,ret);
-    }
-
-
+    HTML_LOG(0,"connect %s:%d %s within %dms : error %d : elapsed %ldms",
+                host,port,
+                (ret == 0 ? "ok" : "*FAILED*" ),
+                timeout_millis,ret,elapsed);
     return ret;
 }
 

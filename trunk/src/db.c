@@ -157,9 +157,10 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
     } else {
         db->path =  STRDUP(filename);
     }
-    HTML_LOG(0,"db path[%s]",db->path);
+    HTML_LOG(1,"db path[%s]",db->path);
     db->plot_file = replace_str(db->path,"index.db","plot.db");
-    HTML_LOG(0,"db path[%s]",db->plot_file);
+
+    HTML_LOG(1,"db path[%s]",db->plot_file);
     db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
 
     db->source= STRDUP(source);
@@ -173,7 +174,6 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
     if (STRCMP(db->source,"*") == 0) {
         g_local_db = db;
     }
-
 
     return db;
 }

@@ -106,7 +106,7 @@ char *macro_fn_fanart_url(MacroCallInfo *call_info) {
         }
 
         char *fanart = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,FANART_IMAGE,NULL);
-TRACE;
+
 
         if (!fanart || !exists(fanart)) {
 
@@ -282,7 +282,7 @@ char *macro_fn_poster(MacroCallInfo *call_info)
     } else if (call_info->args && call_info->args->size  == 1) {
 
         result = get_poster_image_tag(item,call_info->args->array[0],POSTER_IMAGE,NULL);
-TRACE;
+
 
     } else if (!call_info->args || call_info->args->size == 0 ) {
 
@@ -303,9 +303,9 @@ TRACE;
             ovs_asprintf(&attr," height=%d width=%d  ",height,width);
 
             result =  get_poster_image_tag(item,attr,POSTER_IMAGE,NULL);
-TRACE;
+
             FREE(attr);
-TRACE;
+
         } 
 
 
@@ -392,7 +392,7 @@ char *macro_fn_plot(MacroCallInfo *call_info)
         return "?";
     }
 
-TRACE;
+
     int season = -1;
     int i;
     for ( i = 0 ; EMPTY_STR(result) && i < call_info->sorted_rows->num_rows ; i++ ) {
@@ -406,11 +406,11 @@ TRACE;
     if (result) {
         result = STRDUP(result);
     }
-TRACE;
+
     HTML_LOG(1,"plot[%s]",result);
 
     //char *clean = clean_js_string(result);
-TRACE;
+
     return result;
 }
 
@@ -816,7 +816,7 @@ char *macro_fn_tv_listing(MacroCallInfo *call_info) {
     int rows=0;
     int cols=0;
     HTML_LOG(1,"macro_fn_tv_listing");
-TRACE;
+
     if (!get_rows_cols(call_info->call,call_info->args,&rows,&cols)) {
         char sl[20];
         long rl=0,cl=0;
@@ -1261,8 +1261,6 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
 
     free_named_args(h);
 
-HTML_LOG(0,"macro length = %d",NVL(result));
-
     return result;
 }
 
@@ -1281,7 +1279,6 @@ char *macro_fn_form_start(MacroCallInfo *call_info) {
     int free_url=0;
     char *url=NULL;
 
-TRACE;
     if (get_view_mode(0) == VIEW_ADMIN) {
         char *action = query_val(QUERY_PARAM_ACTION);
         if (strcasecmp(action,"ask") == 0 || strcasecmp(action,"cancel") == 0) {
@@ -1290,13 +1287,12 @@ TRACE;
             url=cgi_url(1);// clear URL
         } 
     } else {
-TRACE;
         //we dont want it in the URL after the form is submitted.
         //keep query string eg when marking deleting. Select is passed as post variable
         url=self_url("select=");
         free_url=1;
     }
-TRACE;
+
     char *hidden = add_hidden("idlist,view,page,sort,select,"
             QUERY_PARAM_TYPE_FILTER","QUERY_PARAM_WATCHED_FILTER);
     char *result;
@@ -2591,7 +2587,7 @@ char *macro_call(char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted
 {
 
 
-TRACE;
+
     if (macros == NULL) macro_init();
 
     char *result = NULL;
@@ -2601,7 +2597,7 @@ TRACE;
     if (*call == MACRO_VARIABLE_PREFIX) {
 
 
-TRACE;
+
         result=get_variable(call+1,free_result,sorted_rows);
 
         if (result == NULL) {
@@ -2613,7 +2609,7 @@ TRACE;
     } else {
 
         //Macro call
-TRACE;
+
 
         char *p = strchr(call,'(');
         if (p == NULL) {
@@ -2623,7 +2619,7 @@ TRACE;
             if (q == NULL) {
                 html_error("missing ) for [%s]",call);
             } else {
-TRACE;
+
                 // Get the arguments
                 *q='\0';
                 args = split(p+1,",",0);
@@ -2647,11 +2643,11 @@ TRACE;
         call_info.free_result = 1;
 
         if (fn) {
-TRACE;
+
             //HTML_LOG(1,"begin macro [%s]",call);
             result =  (*fn)(&call_info);
             *free_result=call_info.free_result;
-TRACE;
+
             //HTML_LOG(1,"end macro [%s]",call);
         } else {
             printf("?%s?",call);

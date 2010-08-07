@@ -156,7 +156,7 @@ void read_data(ReadBuf *b)
         HTML_LOG(0,"read %d of %d bytes",bytes,buf_remain);
 
         if (bytes < buf_remain) {
-            HTML_LOG(0,"eof0 ");
+            HTML_LOG(1,"eof0 ");
             b->eof_internal = 1;
         }
         b->data_end += bytes;

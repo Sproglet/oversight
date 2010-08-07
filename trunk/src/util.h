@@ -91,7 +91,17 @@ int util_system(char *cmd);
 } while(0)
 int util_rm(char *path);
 
+#ifdef NOLOG
+#define HTML_LOG(level,format...) ;
+#else
 #define HTML_LOG(level,format...) do {\
+    if (level <= html_log_level ) {\
+        html_log(level,format);\
+    }\
+}while(0);
+#endif
+
+#define HTML_LOG1(level,format...) do {\
     if (level <= html_log_level ) {\
         html_log(level,format);\
     }\

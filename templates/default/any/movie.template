@@ -3,15 +3,8 @@
     <head>
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:] [(:YEAR:)]</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
-        <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
-        <script type="text/javascript" src="[:TEMPLATE_URL(js/movie.js):]"></script>
-		<!-- Default Fanart Movie Template  $Id:$ -->
-		<style type="text/css">
-			body { color:#66CCFF ; background-color:black; }
-		</style>
     </head>
-
-[:INCLUDE_TEMPLATE(body_start):]
+	[:INCLUDE_TEMPLATE(body_start):]
         [:FORM_START:]
             <table class="main" width="100%"  >
 [:IF($@gaya):]
@@ -31,18 +24,14 @@
 [:ELSE:]
                         <table width="100%" background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
 [:ENDIF:]
-		                    <tr>
-		                    	<td colspan=4 height=10%>&nbsp;</td>
-		                    <tr>	
+		                    <tr><td colspan=4 height=10%>&nbsp;</td><tr>	
 		                    <tr>
 		                    	<td width=1%></td>
 		                        <td width=79% class=Xtitle>[:TITLE:]</td>
 		                        <td align=right class=Xyear>[ (:$%YEAR:)]</td>
                     			<td width=1%></td>
 		                    </tr>
-		                    <tr>
-		                    	<td colspan=4 height=2%>&nbsp;</td>
-		                    <tr>	
+		                    <tr><td colspan=4 height=2%>&nbsp;</td><tr>	
 		                    <tr>
 		                    	<td width=1%></td>
 		                        <td width=79% align=left><font class=Xgenre>[:GENRE:]</font></td>
@@ -58,24 +47,20 @@
 									[:RUNTIME:]
 								[:ENDIF:]</td>
 		                    </tr>	
-		                    <tr>
-		                    	<td colspan=4 height=1%>&nbsp;</td>
-		                    <tr>		
+		                    <tr><td colspan=4 height=1%>&nbsp;</td></tr>		
                             <tr>
                             	<td width=1%></td>
                             	<td colspan=2 align=left><span class="plot">[:PLOT:]</span>
                                 </td>
                     			<td width=1%></td>
-                            <tr>				
-		                    <tr>
-		                    	<td colspan=4 height=5px>&nbsp;</td>
-		                    </tr>	
+                            </tr>				
+		                    <tr><td colspan=4 height=5px>&nbsp;</td></tr>	
                             <tr>
                             	<td width=1%></td>
                             	<td colspan=2 align=left>[:MOVIE_LISTING:]
                                 </td>
                     			<td width=1%></td>
-                            <tr>	
+                            </tr>	
                             <tr>
                             	<td width=1%></td>
                             	<td colspan=2 align=left>
@@ -111,27 +96,22 @@
 									</table>
                                 </td>
                     			<td width=1%></td>
+                            </tr>
                             <tr>
-                            <tr><td colspan=4>
-                                [:INCLUDE_TEMPLATE(submit_btn):]
-                            </td></tr>
+                            	<td colspan=4>
+                                	[:INCLUDE_TEMPLATE(submit_btn):]
+                            	</td>
+							</tr>
                         </table>
                     </td>
                 </tr>
             </table>
         [:FORM_END:]
         [:PLAY_TVID:]
-    </td>
-    </tr>
-</table>
-    </body>
-<!--
-vi:ts=4:sw=4:et:syntax=html
--->
-
-
-[:INCLUDE_TEMPLATE(common):]
-</body>
+        <script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
+        <script type="text/javascript" src="[:TEMPLATE_URL(js/movie.js):]"></script>
+		[:INCLUDE_TEMPLATE(common):]
+	</body>
 </html>
 <!--
 vi:ts=4:sw=4:et:syntax=html

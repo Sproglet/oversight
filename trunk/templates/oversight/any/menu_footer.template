@@ -1,4 +1,4 @@
-<table class=footer width=100% background="[:URL_BASE:]/templates/default/images/trans60.png">
+<table class=footer width=100% background="[:IMAGE_URL(trans60.png):]">
     <tr valign=middle>
         <td>[:LEFT_BUTTON:]</td>
         <td align=left><span class="status">&nbsp;&nbsp;

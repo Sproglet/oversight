@@ -94,7 +94,7 @@ void get_mount_points() {
 
             while(fgets(buf,BUFSIZE,fp) != NULL) {
 
-                HTML_LOG(0,"mount[%s]",buf);
+                HTML_LOG(1,"mount[%s]",buf);
 
                 CHECK_FGETS(buf,BUFSIZE);
 

@@ -144,9 +144,10 @@ long allow_access(char *config_name) {
     } else if (!config_check_long(g_oversight_config,config_name,&result)) {
         result=0;
     }
-    HTML_LOG(0,"allow %s = %d",config_name,result);
+    HTML_LOG(1,"allow %s = %d",config_name,result);
     return result;
 }
+
 long allow_mark() {
     static long result = -1;
     if (result == -1) result = allow_access("ovs_wan_mark");
@@ -1020,7 +1021,7 @@ ViewMode *get_view_mode(int reset)
 }
 static inline void query_view_val_reset()
 {
-    HTML_LOG(0,"query_view_val_reset");
+    HTML_LOG(1,"query_view_val_reset");
     query_view_str = NULL;
     view_mode = NULL;
 }

@@ -3161,7 +3161,7 @@ TRACE;
     int numrows = hashtable_count(overview);
 TRACE;
 
-    HTML_LOG(0,"Sort..");
+    HTML_LOG(1,"Sort..");
 
     int (*sort_fn)(DbItem **,DbItem**) = view->default_sort;
 

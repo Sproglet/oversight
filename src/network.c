@@ -193,7 +193,6 @@ int connect_tcp_socket(struct sockaddr *addr,size_t addrlen,int port,long timeou
                     HTML_LOG(0,"socket error: connect %d",errno);
                     ret = errno;
                 }
-                HTML_LOG(0,"sent to [%s:%d] fam=%u ",host,port,sin->sin_family);
             }
 
             if(ret == 0) {
@@ -232,10 +231,10 @@ int connect_tcp_socket(struct sockaddr *addr,size_t addrlen,int port,long timeou
             }
         }
     }
-    HTML_LOG(0,"connect %s:%d %s within %dms : error %d : elapsed %ldms",
+    HTML_LOG(0,"connect %s:%d %s : error %d : elapsed %ldms/%dms",
                 host,port,
                 (ret == 0 ? "ok" : "*FAILED*" ),
-                timeout_millis,ret,elapsed);
+                ret,elapsed,timeout_millis);
     return ret;
 }
 

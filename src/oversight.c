@@ -395,7 +395,7 @@ TRACE;
         */
 #endif
 
-    HTML_LOG(0,"end=%d",result);
+    HTML_LOG1(0,"end=%d",result);
 
 
     return result;

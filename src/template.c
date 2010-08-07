@@ -104,9 +104,6 @@ int display_template(char*skin_name,char *file_name,DbSortedRows *sorted_rows)
 {
     int ret = 0;
 
-    HTML_LOG(0,"begin template");
-    HTML_LOG(0,"begin template %d",sorted_rows);
-
     char *resolution = scanlines_to_text(g_dimension->scanlines);
     if (display_template_file(skin_name,skin_name,resolution,file_name,sorted_rows) != 0) {
         if (display_template_file(skin_name,skin_name,"any",file_name,sorted_rows) != 0) {
@@ -205,7 +202,6 @@ TRACE;
             char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
             *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output) {
-
 
                 //convert AA[BB:$CC:DD]EE to AABBnewDDEE
 
@@ -412,8 +408,11 @@ char *file_source(char *subfolder,char *image_name,char *ext)
             (EMPTY_STR(ext)?"":"."),
             ext);
 
-    if (!exists(path) && !is_default_skin) {
-        HTML_LOG(0,"[%s] not found",path);
+    if (!exists(path)) {
+
+        if (is_default_skin) {
+            HTML_LOG(0,"[%s] not found",path);
+        }
         FREE(path);
 
         ovs_asprintf(&path,"%s/templates/default%s%s/%s%s%s",

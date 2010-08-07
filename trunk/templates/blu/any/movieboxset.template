@@ -3,61 +3,33 @@
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(lightwave.jpg):]">
-[:FORM_START:]
-[:IF(0):]
-        <table class=main width=100% height=100%>
-        <tr><td>
-[:ENDIF:]
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(default.jpg):]">
+		[:FORM_START:]
             <table class=header width=100% background="[:IMAGE_URL(bluemenu2.png):]" >
-[:ENDIF:]
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
                     	<span class=menubarTitle><b>[:TITLE:] Boxset</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
                     </td>
-[:IF($@gaya):]
-	                <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>					
-[:ELSE:]
-	                <td align=right width="8%">
-	                    [:EXTERNAL_URL:]&nbsp;
-	                </td>
-[:ENDIF:]
-                </tr>
+					[:INCLUDE_TEMPLATE(right_button):]
+				</tr>
             </table>
-[:IF(0):]
-        </td></tr><tr id=gridRow><td id=gridCell>
-[:ENDIF:]
             <center>
             	<br/>
             	<div id=gridWrapper>
             		[:GRID:]
             	</div>
             </center>
-[:IF(0):]
-        </td></tr>
-[:ENDIF:]
-        </td></tr></table>
-            <table class=footer width=100%>
-                <tr valign=top>
-                        <td width=10%>[:LEFT_BUTTON:]</td>
-                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
-                </tr>
-            </table>
-[:IF(0):]
-        </td></tr></table>
-[:ENDIF:]
-</form>
-<div class=titleLayer>
-    <span class="boxtitle" id="menutitle">&nbsp;</span>
-    <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
-    <span class="boxtitle" id="watchedtotal">&nbsp;</span>
-</div>
+            [:INCLUDE_TEMPLATE(box_footer):]
+		[:FORM_END:]
+		<div class=titleLayer>
+			[:INCLUDE_TEMPLATE(box_titles):]
+		</div>
 [:IF($@sd):]
 [:ELSE:]
-	<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
+		<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
 [:ENDIF:]
-[:INCLUDE_TEMPLATE(box_closing_scripts):]
+		[:INCLUDE_TEMPLATE(box_closing_scripts):]
     </body>
 </html>
 <!--

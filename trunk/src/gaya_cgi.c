@@ -425,7 +425,8 @@ void html_vacomment(char *format,va_list ap) {
     if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
         // char *s2;
         //s2=html_encode(s1);
-        printf("<!-- %ld/%ld %s -->\n",clock()>>10,time(NULL)-g_start_clock,s1);
+        printf("<!-- %ld/%ld %s -->\n",clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1);
+        // approx *1000/CLOCKS_PER_SEC = >>10
         fflush(stdout);
         //FREE(s2);
         FREE(s1);

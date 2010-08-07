@@ -597,7 +597,7 @@ char *macro_fn_title_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
 
-        HTML_LOG(0,"macro_fn_title_select");
+        HTML_LOG(1,"macro_fn_title_select");
         struct hashtable *title = string_string_hashtable("title-menu",30);
 
         char *letters[]= 
@@ -1527,7 +1527,7 @@ char *macro_fn_image_url(MacroCallInfo *call_info)
     if (call_info->args && call_info->args->size >= 1) {
 
         char *name = arraystr(call_info->args);
-        HTML_LOG(0,"IMAGE_URL(%s)",name);
+        HTML_LOG(1,"IMAGE_URL(%s)",name);
         result = image_source("",name,""); 
         FREE(name);
 

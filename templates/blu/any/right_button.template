@@ -1,0 +1,9 @@
+[:IF($@gaya):]
+<td align=right width="8%">
+	[:SETUP_BUTTON:]&nbsp;
+</td>					
+[:ELSE:]
+<td align=right width="8%">
+    [:EXTERNAL_URL:]&nbsp;
+</td>
+[:ENDIF:]

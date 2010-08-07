@@ -1,89 +1,67 @@
-<!-- Default Menu Template  $Id:$ -->
 <html>
     <head>
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-
 [:IF($ovs_display_fanart):]
-
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:FANART_URL(abstract_circles.jpg):]" >
-    <table class=main width=100%>
-    <tr valign=bottom>
-
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:FANART_URL(default.jpg):]" >
+    	<table class=main width=100%>
+    		<tr valign=bottom>
 [:ELSE:]
-
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/abstract_circles.jpg">
-    <table class="main" width="100%">
-    <tr valign="middle">
-
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(default.jpg):]">
+    	<table class="main" width="100%">
+    		<tr valign="middle">
 [:ENDIF:]
-
-        <td align="center" border="0" height="[:BODY_HEIGHT:]" >
-
-[:FORM_START:]
-    <center>
-        <table class="main" width="100%" height="100%">
-            <tr>
-                <td>
-		            <table height=50px class="header" background="[:URL_BASE:]/templates/default/images/trans50.png">
-		                <tr>
-		                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
+        		<td align="center" border="0" height="[:BODY_HEIGHT:]" >
+					[:FORM_START:]
+					    <center>
+					        <table class="main" width="100%" height="100%">
+					            <tr>
+					                <td>
+							            <table height=50px class="header" background="[:IMAGE_URL(trans50.png):]">
+							                <tr>
+							                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
 [:IF($@gaya):]	
 [:ELSE:]
-			                <td align=right>
-			                    [:EXTERNAL_URL:]&nbsp;
-			                </td>
+								                <td align=right>
+								                    [:EXTERNAL_URL:]&nbsp;
+								                </td>
 [:ENDIF:]
-		                    <td align=right>
-		                        <span class="boxtitle" id="menutitle">&nbsp;</span>
-		                        <span class="boxtitle" id="unwatchedtotal">&nbsp;</span>
-		                        <span class="boxtitle" id="watchedtotal">&nbsp;</span>
-								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-		                    </td>
-		                </tr>
-		            </table>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <center>
-                        <table >
-                            <tr>
-                                <td>
-                                    <center>
-                                        <table>
-                                            <tr>
-                                                <td align="center" >
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </center>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td >
-                                    <div id=gridWrapper>[:GRID:]</div>
-								<table class=footer width=100%  background="[:URL_BASE:]/templates/default/images/trans50.png">
-				                	<tr valign=top>
-				                        <td width=10%>[:LEFT_BUTTON:]</td>
-										<td align=center><span class="boxtitle">[:TITLE:]</span></td>
-				                        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
-				                	</tr>
-				            	</table>
-                                </td >
-                            </tr>
-                        </table>
-                    </center>
-                </td>
-            </tr>
-        </table>
-    </center>
-[:FORM_END:]
-
-</td></tr></table>
-
-[:INCLUDE_TEMPLATE(box_closing_scripts):]
+							                    <td align=right>
+							                        [:INCLUDE_TEMPLATE(box_titles):]
+													&nbsp;&nbsp;&nbsp;
+							                    </td>
+							                </tr>
+							            </table>
+					                </td>
+					            </tr>
+					            <tr>
+					                <td>
+					                    <center>
+					                        <table >
+					                            <tr>
+					                                <td >
+					                                    <div id=gridWrapper>[:GRID:]</div>
+														<table class=footer width=100%  background="[:IMAGE_URL(trans50.png):]">
+															<tr valign=center>
+														        <td width=10%>[:LEFT_BUTTON:]</td>
+																<td align=center><span class="boxtitle">[:TITLE:]</span></td>
+														        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+															</tr>
+														</table>
+					                                </td >
+					                            </tr>
+					                        </table>
+					                    </center>
+					                </td>
+					            </tr>
+					        </table>
+					    </center>
+					[:FORM_END:]
+				</td>
+			</tr>
+		</table>
+		[:INCLUDE_TEMPLATE(box_closing_scripts):]
     </body>
 </html>
 <!--

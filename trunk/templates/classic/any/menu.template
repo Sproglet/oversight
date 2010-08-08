@@ -79,7 +79,7 @@ table.overview_poster {
                 </tr>
             </table>
             <center>
-            [:GRID:] 
+            [:GRID(rows=>$skin_grid_rows,cols=>$skin_grid_cols):] 
             </center>
             <table class=footer width=100%>
                 <tr valign=top>

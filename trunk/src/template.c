@@ -359,6 +359,16 @@ char *skin_name()
     return template_name;
 }
 
+char *skin_path()
+{
+    static char *path = NULL;
+    if (path == NULL) {
+        ovs_asprintf(&path,"%s/templates/%s",appDir(),skin_name());
+    }
+    return path;
+}
+
+
 // Get an icon file from the root folder. Fall back to default folder if it doesnt exist.
 char *icon_source(char *image_name) {
     return image_source("",image_name,NULL);

@@ -27,21 +27,22 @@ img.nasstatus { width:15; height:15; }
                 [:ICON(rescan):]
             </td>
             <td align=left width=28%>
-                [:CONFIG_LINK(oversight.cfg,help,General Settings):]<br>
-                [:CONFIG_LINK(oversight.cfg,keys.help,Keys):] / [:LINK(action=template_resize,Resize):]<br>
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>help,text=>General Settings):]<br>
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>Keys):] / [:LINK(action=template_resize,Resize):]<br>
                 [:LINK(action=confirm_rescan,Rescan Media):]<br>
-                [:LINK(action=template_diagnostics,Diagnostics):]
+                [:LINK(action=template_diagnostics,Diagnostics):]<br>
+                [:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]<br>
             </td>
 
             <!-- =============== -->
 
             <td width=5%>[:ICON(catalog):]</td>
             <td align=left width=28%>
-                [:CONFIG_LINK(oversight.cfg,rescan.help,Rescan Defaults):]<br>
-                [:CONFIG_LINK(catalog.cfg,input.help,Media Sources):]<br>
-                [:CONFIG_LINK(catalog.cfg,detect.help,Scraping):]<br>
-                [:CONFIG_LINK(catalog.cfg,output.help,Renaming):]<br>
-                [:CONFIG_LINK(catalog.cfg,search.help,Advanced Search):]
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>rescan.help,text=>Rescan Defaults):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>Media Sources):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>detect.help,text=>Scraping):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>output.help,text=>Renaming):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>search.help,text=>Advanced Search):]
             </td>
 
             <!-- =============== -->
@@ -56,11 +57,11 @@ img.nasstatus { width:15; height:15; }
             <!-- =============== -->
 
             <td>[:ICON(internet):]</td>
-            <td align=left>[:CONFIG_LINK(oversight.cfg,secure.help,Internet Access):]</td>
+            <td align=left>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>Internet Access):]</td>
             <!-- =============== -->
 
             <td>[:ICON(unpak):]</td>
-            <td align=left>[:CONFIG_LINK(unpak.cfg,help,Nzbget Unpacking):]</td>
+            <td align=left>[:CONFIG_LINK(conf_file=>unpak.cfg,help_suffix=>help,text=>Nzbget Unpacking):]</td>
             <!-- =============== -->
 
             <td>[:ICON(reinstall):]</td>

@@ -12,6 +12,7 @@
 #include "gaya_cgi.h"
 #include "vasprintf.h"
 #include "variables.h"
+#include "template.h"
 
 
 int rename_cfg(char *old,char *new);
@@ -85,11 +86,8 @@ void load_ovs_configs()
     g_catalog_config =
         config_load_wth_defaults(appDir(),"conf/.catalog.cfg.defaults","conf/catalog.cfg");
 
-    char *f;
-    ovs_asprintf(&f,"%s/templates/%s",appDir(),oversight_val("ovs_skin_name"));
-    g_skin_config = config_load_wth_defaults(f,".skin.cfg.defaults","skin.cfg");
+    g_skin_config = config_load_wth_defaults(skin_path(),"conf/.skin.cfg.defaults","conf/skin.cfg");
 
-    FREE(f);
 
     get_boxset_modes();
 

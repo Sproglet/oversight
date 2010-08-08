@@ -15,7 +15,7 @@
     			<tr valign=top><td height=100% colspan=2></td></tr>
 [:ENDIF:]
 		        <tr valign="bottom" class=main>
-		            <td class=main width=1% align=right>
+		            <td class=main width=1% align=right >
 		            	[:INCLUDE_TEMPLATE(buttons):]
 		            	<table class=moviePoster>
 							<tr>

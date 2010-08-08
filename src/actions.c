@@ -12,6 +12,7 @@
 #include "hashtable_loop.h"
 #include "mount.h"
 #include "permissions.h"
+#include "template.h"
 
 // If a paramter begins with this prefix then the remaining part 
 // of the parameter name is passed as an option to the catalog.sh command
@@ -372,7 +373,7 @@ static void send_command(char *source,char *remote_cmd)
 
     HTML_LOG(0,"send command:%s",cmd);
 
-    system(cmd);
+    util_system(cmd);
 
     if (freepath) {
         FREE(script);
@@ -527,12 +528,14 @@ void do_actions() {
                         HTML_LOG(1,"new name value [%s]=[%s]=[%s]",option_name,real_name,value);
                         HTML_LOG(1,"old name value [%s]=[%s]",old_name,old_value);
 
+                        char *file = query_val("file");
                         char *cmd;
-                        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"conf/%s\" \"%s\" \"%s\"",
-                                appDir(),
-                                query_val("file"),
-                                real_name,
-                                value);
+                        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s/conf/%s\" \"%s\" \"%s\"",
+                            appDir(),
+                            (strcmp(file,"skin.cfg")==0  ? skin_path() : appDir()),
+                            file,
+                            real_name,
+                            value);
                         util_system(cmd);
                         FREE(cmd);
 

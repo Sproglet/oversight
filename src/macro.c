@@ -31,12 +31,10 @@
 #include "vasprintf.h"
 #include "variables.h"
 
-
-
 static struct hashtable *macros = NULL;
 char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
-struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_list);
+struct hashtable *args_to_hash(MacroCallInfo *call,char *required_list,char *optional_list);
 int get_page_size(int allow_default_size);
 void free_named_args(struct hashtable *h);
 
@@ -358,7 +356,7 @@ char *macro_fn_page_max(MacroCallInfo *call_info)
 
     int size=10;
 
-    struct hashtable *h = args_to_hash(call_info->args,NULL,"page_size");
+    struct hashtable *h = args_to_hash(call_info,NULL,"page_size");
 
     if ((tmp = get_named_arg(h,"page_size")) != NULL) {
 
@@ -1091,9 +1089,12 @@ char *macro_fn_rating(MacroCallInfo *call_info) {
 
 // If a macro has arguments like, 1,cols=>3,rows=>4,5  then create a hashtable cols=>3,rows=>4
 #define HASH_ASSIGN "=>"
-struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_list)
+struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char *optional_list)
 {
+    int ok=1;
     int i;
+
+    Array *args = call_info->args;
 
     struct hashtable *required_set = NULL;
     struct hashtable *optional_set = NULL;
@@ -1133,7 +1134,7 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
                         hashtable_insert(h,name,val);
                     }
                 } else {
-                    html_error("ignore arg[%s] not in [%s][%s]",name,NVL(required_list),NVL(optional_list));
+                    ok = 0;
                 }
             }
         }
@@ -1145,6 +1146,7 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
         for(itr=hashtable_loop_init(required_set) ; hashtable_loop_more(itr,&name,&value) ; ) {
             if (!get_named_arg(h,name)) {
                 html_error("required arg[%s] missing",name);
+                ok = 0;
             }
         }
     }
@@ -1152,6 +1154,16 @@ struct hashtable *args_to_hash(Array *args,char *required_list,char *optional_li
 
     set_free(required_set);
     set_free(optional_set);
+    if (!ok) {
+        html_error("usage %s(%s%s[%s])",
+                call_info->call,
+                NVL(required_list),
+                (EMPTY_STR(required_list)?"":","),
+                NVL(optional_list) ) ;
+
+        free_named_args(h);
+        h = NULL;
+    }
     return h;
 }
 
@@ -1222,7 +1234,7 @@ int get_page_size(int allow_default_size)
 
 char *macro_fn_grid(MacroCallInfo *call_info) {
 
-    struct hashtable *h = args_to_hash(call_info->args,NULL,"rows,cols,img_height,img_width,offset");
+    struct hashtable *h = args_to_hash(call_info,NULL,"rows,cols,img_height,img_width,offset");
     
     if (grid_info == NULL) {
         grid_info = grid_info_init();
@@ -1565,44 +1577,37 @@ char *macro_fn_icon(MacroCallInfo *call_info) {
     return result;
 }
 
-char *config_link(char *config_file,char *help_suffix,char *html_attributes,char *text)
-{
-    char *params,*link;
-    ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",config_file,help_suffix,text);
-    link = get_self_link(params,html_attributes,text);
-    FREE(params);
-    return link;
-}
-
 /**
   =begin wiki
   ==CONFIG_LINK==
     Description:
     Generate text to link to a settings configuration form for a config file.
   Syntax:
-  [:CONFIG_LINK(config_file,help_suffix,text[,html_attributes]):]
+  [:CONFIG_LINK(conf=>,help=>,text=>link text,attr=>html_attributes,skin=1):]
   Example:
   =end wiki
 **/  
-char *macro_fn_admin_config_link(MacroCallInfo *call_info) {
+char *macro_fn_admin_config_link(MacroCallInfo *call_info)
+{
 
     char *result=NULL;
+    struct hashtable *h = args_to_hash(call_info,"conf_file,help_suffix,text","attr");
 
-    if (call_info->args && call_info->args->size == 3) {
+    if (h) {
+        char *conf = get_named_arg(h,"conf_file");
+        char *help = get_named_arg(h,"help_suffix");
+        char *text = get_named_arg(h,"text");
+        char *attr = NVL(get_named_arg(h,"attr"));
 
-        result= config_link(call_info->args->array[0],call_info->args->array[1],"",call_info->args->array[2]);
+        char *params;
+        ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",conf,help,text);
+        result = get_self_link(params,attr,text);
+        FREE(params);
 
-    } else if (call_info->args && call_info->args->size == 4) {
-
-        result= config_link(call_info->args->array[0],call_info->args->array[1],call_info->args->array[3],call_info->args->array[2]);
-
-    } else {
-
-        printf("%s(config_file,help_suffix,text[,html_attributes])",call_info->call);
+        free_named_args(h);
     }
     return result;
 }
-
 
 /**
   =begin wiki
@@ -2279,28 +2284,65 @@ char *macro_fn_scanlines(MacroCallInfo *call_info) {
     return numeric_constant_arg_to_str(g_dimension->scanlines,call_info->args);
 }
 
-// Write a html input table for a configuration file. The help file(arg2) decides which options to show.
+/**
+ * =begin wiki
+ * ==EDIT_CONFIG==
+ *
+ * Write a html input table for a configuration file.
+ * The config file is expected to have format 
+ * name=value
+ *
+ * The help file has format
+ * name:help text
+ * OR
+ * name:help text|val1|val2|...|valn
+ *
+ * At present it calls an external file "options.sh" to generate the HTML table. 
+ * This script was kept from the original awk version of oversight as performance is not an issue 
+ * It may get ported to native code one day.
+ *
+ * [:EDIT_CONFIG:]
+ * [:EDIT_CONFIG(conf=>name of config file,help=>help file suffix):]
+ *
+ * Default path for conf and help files is oversight/{conf,help}
+ * if file = skin.cfg folder is the oversight/templates/skin/{conf,help}
+ *
+ * =end wiki
+ */
 char *macro_fn_edit_config(MacroCallInfo *call_info) {
 
     char *result = NULL;
-    if (call_info->args && call_info->args->size == 2) {
-        char *file=call_info->args->array[0];
-        char *help_suffix=call_info->args->array[1];
+    struct hashtable *h = args_to_hash(call_info,"conf_file,help_suffix",NULL);
+    if (h) {
+        char *file=get_named_arg(h,"conf_file");
+        char *help_suffix=get_named_arg(h,"help_suffix");
         char *cmd;
 
-        //Note this outputs directly to stdout so always returns null
-        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE \"help/%s.%s\" \"conf/.%s.defaults\" \"conf/%s\" HIDE_VAR_PREFIX=1",
-                appDir(),file,help_suffix,file,file);
+        char *prefix;
+        prefix = appDir();
+        if (STRCMP(file,"skin.cfg") == 0) {
+            prefix = skin_path();
+        }
 
-        system(cmd);
+        HTML_LOG(0,"file[%s]",file);
+        HTML_LOG(0,"help[%s]",help_suffix);
+        HTML_LOG(0,"call[%s]",call_info->call);
+
+        //Note this outputs directly to stdout so always returns null
+        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE \"%s/help/%s.%s\" \"%s/conf/.%s.defaults\" \"%s/conf/%s\" HIDE_VAR_PREFIX=1",
+                appDir(),
+                prefix,file,help_suffix,
+                prefix,file,
+                prefix,file);
+
+        util_system(cmd);
         FREE(cmd);
 
         call_info->free_result = 0;
-
         result="";
 
-    } else {
-        ovs_asprintf(&result,"%s(config_file,help_suffix)",call_info->call);
+        free_named_args(h);
+
     }
     return result;
 }
@@ -2426,7 +2468,7 @@ char *people_table(MacroCallInfo *call_info,char *people_file,char *class,DbGrou
         char *tmp;
         int rows=default_rows;
         int cols=default_cols;
-        struct hashtable *h = args_to_hash(call_info->args,NULL,"rows,cols");
+        struct hashtable *h = args_to_hash(call_info,NULL,"rows,cols");
         if ((tmp = get_named_arg(h,"rows")) != NULL) {
             rows = atoi(tmp);
         }

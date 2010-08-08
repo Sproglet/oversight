@@ -21,7 +21,7 @@ th.optionhelp { width:60%; }
 
         [:FORM_START:]
 
-            [:EDIT_CONFIG($?file,$?help):]
+            [:EDIT_CONFIG(conf_file=>$?file,help_suffix=>$?help):]
 
             <input type=hidden name=file value="[:$?file:]">
             <!-- <input type=hidden name=view value="[:$?view:]"> -->

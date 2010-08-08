@@ -53,9 +53,9 @@ resize mode.
                 <td align=left colspan=3>Display<br>
                     <table width=100%>
                         <tr>
-                            <td>[:CONFIG_LINK(oversight.cfg,sd.help,SD text mode,class=scanlines0):]</td>
-                            <td>[:CONFIG_LINK(oversight.cfg,sd-poster.help,SD poster mode,class=scanlines0):]</td>
-                            <td>[:CONFIG_LINK(oversight.cfg,sd-detail.help,SD detail view,class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd.help,text=>SD text mode,attr=>class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd-poster.help,text=>SD poster mode,attr=>class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd-detail.help,text=>SD detail view,attr=>class=scanlines0):]</td>
                         </tr>
                     </table>
                 </td>
@@ -66,9 +66,9 @@ resize mode.
                 <td align=left colspan=3>
                     <table width=100%>
                         <tr>
-                            <td>[:CONFIG_LINK(oversight.cfg,720.help,HD text mode,class=scanlines720):]</td>
-                            <td>[:CONFIG_LINK(oversight.cfg,720-poster.help,HD poster mode,class=scanlines720):]</td>
-                            <td>[:CONFIG_LINK(oversight.cfg,720-detail.help,HD detail view,class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720.help,text=>HD text mode,attr=>class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720-poster.help,text=>HD poster mode,attr=>class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720-detail.help,text=>HD detail view,attr=>class=scanlines720):]</td>
                         </tr>
                     </table>
                 </td>
@@ -79,9 +79,9 @@ resize mode.
                 <td align=left colspan=3>
                     <table width=100%>
                         <tr>
-                            <td>[:CONFIG_LINK(oversight.cfg,pc.help,PC text mode,class=scanlinespc):]</td>
-                            <td>[:CONFIG_LINK(oversight.cfg,pc-poster.help,PC poster mode,class=scanlinespc):]</td>
-                            <td>[:CONFIG_LINK(oversight.cfg,pc-detail.help,PC detail view,class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc.help,text=>PC text mode,attr=>class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc-poster.help,text=>PC poster mode,attr=>class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc-detail.help,text=>PC detail view,attr=>class=scanlinespc):]</td>
                         </tr>
                     </table>
                 </td>

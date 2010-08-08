@@ -1,9 +1,9 @@
 <html>
     <head>
-        <title>Oversight [:VERSION:] ([:HOSTNAME:])</title>
+        <title>Oversight ([:HOSTNAME:])</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=main_background background="[:BACKGROUND_IMAGE(default.jpg):]">
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(default.jpg):]">
         [:FORM_START:]
 			[:INCLUDE_TEMPLATE(menu_header):]
             <center>

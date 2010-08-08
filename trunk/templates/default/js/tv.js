@@ -49,7 +49,7 @@ function ovs_ep(ep)
     g_info = ep["info"];
 
     // Create nicer skin specific date and titles.
-    if (epNo == "") {
+    if (epNo == undefined || epNo == "") {
 
         // Main show
         epTitle = originalTitle;

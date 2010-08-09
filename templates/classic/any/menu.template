@@ -40,7 +40,7 @@ table.overview_poster {
 }
         </style>
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=yellow focustext=black class=menu_background background="[:BACKGROUND_IMAGE(default.jpg):]" >
+    <body [onloadset=:START_CELL:] [:$skin_cursor_style:] class=menu_background background="[:BACKGROUND_IMAGE(default.jpg):]" >
         [:FORM_START:]
             <table class=header width=100% >
                 <tr>

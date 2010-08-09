@@ -1023,5 +1023,32 @@ static inline void query_view_val_reset()
     query_view_str = NULL;
     view_mode = NULL;
 }
+char *config_root_static(char *conf_file) 
+{
+    if (STRCMP(conf_file,"skin.cfg") == 0) {
+        return skin_path();
+    } else {
+        return appDir();
+    }
+}
+
+char *config_path(char *conf_file) 
+{
+    char *p;
+    ovs_asprintf(&p,"%s/conf/%s",config_root_static(conf_file),conf_file);
+    return p;
+}
+char *config_defaults_path(char *conf_file) 
+{
+    char *p;
+    ovs_asprintf(&p,"%s/conf/.%s.defaults",config_root_static(conf_file),conf_file);
+    return p;
+}
+char *config_help_path(char *conf_file,char *help_suffix) 
+{
+    char *p;
+    ovs_asprintf(&p,"%s/help/%s.%s",config_root_static(conf_file),conf_file,help_suffix);
+    return p;
+}
 
 // vi:sw=4:et:ts=4

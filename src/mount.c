@@ -469,8 +469,12 @@ char *get_mount_command(char *link,char *path,char *user,char *passwd) {
 
             // link = smb://host/share
             // mount -t cifs -o username=,password= //host/share /path/to/network
-            ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -t cifs -o username=%s,password=%s \"//%s\" \"%s\" 2> \"%s\"",
-                    path,log,user,passwd,host,path,log);
+            ovs_asprintf(&cmd,"mkdir -p \"%s\" 2> \"%s\" && mount -t cifs -o %s%s%s%s%s \"//%s\" \"%s\" 2> \"%s\"",
+                    path,log,
+                    (EMPTY_STR(user)?"":"username="),user,
+                    ((!EMPTY_STR(user))?",":""), // option sep
+                    "password=",NVL(passwd),
+                    host,path,log);
         } else {
             html_log(0,"Dont know how to mount [%s]",link);
         }

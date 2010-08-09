@@ -14,18 +14,8 @@
 #include "oversight.h"
 #include "config.h"
 #include "network.h"
+#include "mount.h"
 
-// Mounted and working
-#define MOUNT_STATUS_OK "1"
-
-// Unpingable or something else nasty
-#define MOUNT_STATUS_BAD "0"
-
-// In mtab but might be good or stale
-#define MOUNT_STATUS_IN_MTAB "?"
-
-// Not in mtab
-#define MOUNT_STATUS_NOT_IN_MTAB "-"
 
 int ping_link(char *link);
 int check_accessible(char *path,int timeout_secs);
@@ -49,11 +39,11 @@ void set_mount_status(char *p,char *val) {
 
     char *current = hashtable_search(mount_points,p);
     if (current == NULL) {
-        HTML_LOG(1,"Adding mount point [%s] = %s",p,val);
+        HTML_LOG(0,"Adding mount point [%s] = %s",p,val);
         hashtable_insert(mount_points,STRDUP(p),val);
     } else if ( STRCMP(current,val) != 0) {
         hashtable_remove(mount_points,p,1);
-        HTML_LOG(1,"mount point [%s] status changed from [%s] to [%s]",p,current,val);
+        HTML_LOG(0,"mount point [%s] status changed from [%s] to [%s]",p,current,val);
         hashtable_insert(mount_points,STRDUP(p),val);
     }
 }

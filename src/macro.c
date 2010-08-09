@@ -30,6 +30,7 @@
 #include "actions.h"
 #include "vasprintf.h"
 #include "variables.h"
+#include "mount.h"
 
 static struct hashtable *macros = NULL;
 char *image_path_by_resolution(char *skin_name,char *name);
@@ -190,13 +191,22 @@ char *macro_fn_mount_status(MacroCallInfo *call_info) {
                 if (util_starts_with(k,NETWORK_SHARE)) {
                     k += strlen(NETWORK_SHARE);
                 }
-                // We also show - unknown mount status as good - keep things simple
-                ovs_asprintf(&tmp,"%s<tr><td class=mount%s>%s %s</td></tr>",
-                        NVL(result),v,(*v=='0'?bad:good),k);
-                //ovs_asprintf(&tmp,"%s<tr><td>%s</td><td class=mount%s>%s</td></tr>",
-                        //NVL(result),k,v,(*v=='1'?good:bad));
-                FREE(result);
-                result = tmp;
+                char *image = NULL;
+
+                if (strcmp(v,MOUNT_STATUS_IN_MTAB) == 0 ||  strcmp(v,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
+                    image = NULL;
+                } else if (strcmp(v,MOUNT_STATUS_OK) == 0) {
+                    image = good;
+                } else if (strcmp(v,MOUNT_STATUS_BAD) == 0) {
+                    image = bad;
+                }
+
+                if (image) {
+                    ovs_asprintf(&tmp,"%s<tr><td class=mount%s>%s %s</td></tr>",
+                        NVL(result),v,image,k);
+                    FREE(result);
+                    result = tmp;
+                }
             }
         }
         FREE(good);

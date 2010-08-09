@@ -37,7 +37,7 @@ table.overview_poster {
 
 [:IF($ovs_display_fanart):]
 
-    <body [onloadset=:START_CELL:] focuscolor=#FBB917 focustext=black class=menu_background background="[:FANART_URL(black_desert.jpg):]" >
+    <body [onloadset=:START_CELL:] [:$skin_cursor_style:] class=menu_background background="[:FANART_URL(black_desert.jpg):]" >
     <table class=main width=100%>
     <tr valign=bottom>
 

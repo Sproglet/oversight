@@ -2,3 +2,4 @@
 # See skiining wiki for for info.
 skin_grid_rows:number of rows
 skin_grid_cols:number of cols
+skin_cursor_style:Cursor style|focuscolor=red focustext=back|focuscolor=yellow focustext=back

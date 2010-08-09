@@ -85,6 +85,19 @@ UPGRADE_CONFIG() {
 
 SKIN_INSTALL() {
 
+    # Move new skins into place
+    if [ -d templates.new ] ; then
+
+        rm -fr templates.old
+        mv templates templates.old || true
+        mv templates.new templates
+
+        # copy config files
+        if [ -d templates.old ] ; then
+            ( cd templates.old ; tar cf - */conf/*.cfg ) | ( cd templates ; tar xf - ) || true
+        fi
+    fi
+
     # run any skin installers
     for inst in "$INSTALL_DIR"/templates/*/install.sh ; do
 

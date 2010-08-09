@@ -418,13 +418,31 @@ void html_comment(char *format,...) {
     va_end(ap);
 }
 
-void html_vacomment(char *format,va_list ap) {
+void remove_password(char *s)
+{
+    // char *s2;
+    //s2=html_encode(s1);
+   char *start = s; 
+       
+   while (1) {
+        char  *p = strstr(start,"passwd=");
+        if (p == NULL) p = strstr(start,"password=");
+        if (p == NULL) p = strstr(start,"pwd=");
+        if (p == NULL) break;
+        p = strchr(p,'=') + 1;
+        while(*p && !isspace(*p)) *p++ = '*';
+        start = p;
+    }
+}
+
+void html_vacomment(char *format,va_list ap)
+{
     int len;
     char *s1;
 
     if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
-        // char *s2;
-        //s2=html_encode(s1);
+
+        remove_password(s1);
         printf("<!-- %ld/%ld %s -->\n",clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1);
         // approx *1000/CLOCKS_PER_SEC = >>10
         fflush(stdout);

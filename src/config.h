@@ -83,4 +83,7 @@ ViewMode *get_view_mode(int reset);
 char *query_select_val();
 char *view_mode_to_str(ViewMode *m);
 GridDirection str2grid_direction(char *name);
+char *config_path(char *conf_file) ;
+char *config_defaults_path(char *conf_file) ;
+char *config_help_path(char *conf_file,char *help_suffix) ;
 #endif

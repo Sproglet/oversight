@@ -1577,6 +1577,7 @@ char *macro_fn_icon(MacroCallInfo *call_info) {
     return result;
 }
 
+
 /**
   =begin wiki
   ==CONFIG_LINK==
@@ -1599,11 +1600,17 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info)
         char *text = get_named_arg(h,"text");
         char *attr = NVL(get_named_arg(h,"attr"));
 
-        char *params;
-        ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",conf,help,text);
-        result = get_self_link(params,attr,text);
-        FREE(params);
+        char *c = config_path(conf);
+        char *d = config_defaults_path(conf);
+        if (exists(d) || exists(d)) {
 
+            char *params;
+            ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",conf,help,text);
+            result = get_self_link(params,attr,text);
+            FREE(params);
+        } else {
+            HTML_LOG(0,"missing conf file [%s] or [%s]",c,d);
+        }
         free_named_args(h);
     }
     return result;
@@ -2318,22 +2325,21 @@ char *macro_fn_edit_config(MacroCallInfo *call_info) {
         char *help_suffix=get_named_arg(h,"help_suffix");
         char *cmd;
 
-        char *prefix;
-        prefix = appDir();
-        if (STRCMP(file,"skin.cfg") == 0) {
-            prefix = skin_path();
-        }
-
         HTML_LOG(0,"file[%s]",file);
         HTML_LOG(0,"help[%s]",help_suffix);
         HTML_LOG(0,"call[%s]",call_info->call);
 
+        char *help_path = config_help_path(file,help_suffix);
+        char *conf_path = config_path(file);
+        char *def_path = config_defaults_path(file);
+
         //Note this outputs directly to stdout so always returns null
-        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE \"%s/help/%s.%s\" \"%s/conf/.%s.defaults\" \"%s/conf/%s\" HIDE_VAR_PREFIX=1",
-                appDir(),
-                prefix,file,help_suffix,
-                prefix,file,
-                prefix,file);
+        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE \"%s\" \"%s\" \"%s\" HIDE_VAR_PREFIX=1",
+                appDir(),help_path,def_path,conf_path);
+
+        FREE(help_path);
+        FREE(def_path);
+        FREE(conf_path);
 
         util_system(cmd);
         FREE(cmd);

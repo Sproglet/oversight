@@ -122,6 +122,8 @@ int util_rm(char *path);
 }while(0);
 
 #define PRINTSPAN(p,q) do { if (q>p) printf("%.*s",((q)-(p)),(p)); } while(0)
+#define FPRINTSPAN(fp,p,q) do { if (q>p) fprintf(fp,"%.*s",((q)-(p)),(p)); } while(0)
+
 #define PRINTNSTR(n,p) do { if (n) printf("%.*s",(n),(p)); } while(0)
 #define UNSET -2
 #define UNSET_PTR ((void *)(-2))

@@ -29,26 +29,18 @@
 // vi:sw=4:et:ts=4
 
 char *scanlines_to_text(long scanlines);
-char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr);
-int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr);
-int template_replace(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows);
+char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out);
+int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out);
+int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out);
 
-int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows)
+int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows,FILE *out)
 {
 
     int ret = 1;
-    char *file_path;
 
-    ovs_asprintf(&file_path,"%s/templates/%s/%s/%s.template",appDir(),
-            skin_name,
-            resolution,
-            file_name);
+    if (in == NULL) {
 
-
-    FILE *fp=fopen(file_path,"r");
-    if (fp == NULL) {
-
-        HTML_LOG(1,"Unable to open %s : error %d",file_path,errno);
+        HTML_LOG(1,"Unable to open template : error %d",errno);
 
     } else {
         // gaya has css bug. item after comments is ignored.
@@ -61,11 +53,6 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
             dummy_css = ".a {}\n";
         }
 
-        if (strstr(file_path,"css")) {
-            printf("/* Reading %s */%s\n",file_path,dummy_css);
-        } else {
-            HTML_LOG(1,"Reading %s",file_path);
-        }
 #define HTML_BUF_SIZE 999
         ret = 0;
 
@@ -73,7 +60,7 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
 
 
         PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
-        while(fgets(buffer,HTML_BUF_SIZE,fp) != NULL) {
+        while(fgets(buffer,HTML_BUF_SIZE,in) != NULL) {
             CHECK_FGETS(buffer,HTML_BUF_SIZE);
 
             int count = 0; 
@@ -81,7 +68,7 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
 //            while(*p == ' ') {
 //                p++;
 //            }
-            if ((count=template_replace(skin_name,orig_skin,p,sorted_rows)) != 0 ) {
+            if ((count=template_line_replace(pass,skin_name,orig_skin,p,sorted_rows,out)) != 0 ) {
                 HTML_LOG(4,"macro count %d",count);
             }
 
@@ -90,31 +77,98 @@ int display_template_file(char*skin_name,char *orig_skin,char *resolution,char *
             }
 
         }
-        fflush(stdout);
-        fclose(fp);
+        fflush(out);
     }
 
-    if (file_path) FREE(file_path);
     HTML_LOG(1,"end template");
     return ret;
 }
 
-// 0 = success
-int display_template(char*skin_name,char *file_name,DbSortedRows *sorted_rows)
+char *get_template_path(char *skin_name,char *file_name)
 {
-    int ret = 0;
+    char *path=NULL;
 
     char *resolution = scanlines_to_text(g_dimension->scanlines);
-    if (display_template_file(skin_name,skin_name,resolution,file_name,sorted_rows) != 0) {
-        if (display_template_file(skin_name,skin_name,"any",file_name,sorted_rows) != 0) {
-            if (display_template_file("default",skin_name,resolution,file_name,sorted_rows) != 0) {
-                if (display_template_file("default",skin_name,"any",file_name,sorted_rows) != 0) {
-                    html_error("failed to load template %s",file_name);
-                    ret = 1;
+
+    char *skin[] = { skin_name , "default" , NULL };
+    char *res[] = { resolution , "any" , NULL };
+    int s;
+    int r;
+
+    for(s = 0 ; skin[s] ; s++ ) {
+        for (r = 0 ; res[r] ; r++ ) {
+            ovs_asprintf(&path,"%s/templates/%s/%s/%s.template",appDir(),skin[s],res[r],file_name);
+
+            if (exists(path)) {
+                if (strstr(file_name,"css")) {
+                    printf("/* Reading %s */.a {};\n",path);
+                } else {
+                    HTML_LOG(1,"Reading %s",path);
                 }
+                break;
+            }
+            FREE(path);
+            path = NULL;
+        }
+    }
+
+
+    return path;
+}
+
+int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_rows)
+{
+    int ret = -1;
+    int pass=0;
+    char *pass1_file = "/tmp/ovs1";
+    FILE *pass1_fp = fopen(pass1_file,"w");
+    if (pass1_fp) {
+        ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
+        fclose(pass1_fp);
+
+        if (ret == 0) {
+            pass1_fp = fopen(pass1_file,"r");
+            FILE *pass2_fp = stdout;
+            if (pass1_fp) {
+                ret = display_template(++pass,pass1_fp,skin_name,file_name,sorted_rows,pass2_fp);
+                fclose(pass1_fp);
             }
         }
     }
+
+    return ret;
+
+}
+
+// 0 = success
+int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRows *sorted_rows,FILE *out)
+{
+    int ret = -1;
+
+    char *path = NULL;
+
+    html_set_output(out);
+    char *resolution = scanlines_to_text(g_dimension->scanlines);
+
+    if (in == NULL) {
+        path = get_template_path(skin_name,file_name);
+        if (path != NULL) {
+            in = fopen(path,"r");
+        }
+        if (in == NULL) {
+            html_error("failed to load template %s",file_name);
+        }
+
+    }
+    if (in) {
+        ret = display_template_file(pass,in,skin_name,skin_name,resolution,file_name,sorted_rows,out);
+        if (path) {
+            fclose(in);
+        }
+    }
+
+    FREE(path);
+
     return ret;
 }
 
@@ -122,7 +176,7 @@ int display_template(char*skin_name,char *file_name,DbSortedRows *sorted_rows)
 #define MACRO_STR_END "]"
 #define MACRO_STR_START_INNER ":"
 #define MACRO_STR_END_INNER ":"
-int template_replace(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows)
+int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out)
 {
 
 TRACE;
@@ -130,14 +184,14 @@ TRACE;
     int has_macro = 0;
 
     // first replace simple variables in the buffer.
-    char *newline=template_replace_only(skin_name,orig_skin,input,sorted_rows,&has_macro);
+    char *newline=template_line_replace_only(pass,skin_name,orig_skin,input,sorted_rows,&has_macro,out);
 
     if (newline != input) {
         HTML_LOG(2,"old line [%s]",input);
         HTML_LOG(2,"new line [%s]",newline);
     }
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
-    int count = template_replace_and_emit(skin_name,orig_skin,newline,sorted_rows,&has_macro);
+    int count = template_line_replace_and_emit(pass,skin_name,orig_skin,newline,sorted_rows,&has_macro,out);
     if (newline !=input) FREE(newline);
     return count;
 }
@@ -157,7 +211,7 @@ int replace_macro(char *macro_name) {
 }
 
 
-char *template_replace_only(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr)
+char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out)
 {
 
 TRACE;
@@ -199,7 +253,7 @@ TRACE;
             int free_result=0;
             *macro_name_end = '\0';
 
-            char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
+            char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out);
             *macro_name_end = *MACRO_STR_START_INNER;
             if (macro_output) {
 
@@ -242,13 +296,13 @@ TRACE;
     return newline;
 }
 
-int template_replace_and_emit(char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr)
+int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out)
 {
 
 TRACE;
     char *macro_start = NULL;
     int count = 0;
-
+    int flush = 0;
 
     char *p = input;
 
@@ -258,6 +312,7 @@ TRACE;
         }
         macro_start = strstr(p,MACRO_STR_START);
         while (macro_start ) {
+
 
             char *macro_name_start = NULL;
             char *macro_name_end = NULL;
@@ -280,8 +335,8 @@ TRACE;
 
                 //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
                 if (output_state() ) {
-                    PRINTSPAN(p,macro_start);
-                    putc(*MACRO_STR_START,stdout);
+                    FPRINTSPAN(out,p,macro_start);
+                    fputc(*MACRO_STR_START,out);
                 }
                 macro_end = macro_start;
 
@@ -289,8 +344,8 @@ TRACE;
 
                 //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
                 if (output_state() ) {
-                    PRINTSPAN(p,macro_start);
-                    putc(*MACRO_STR_START,stdout);
+                    FPRINTSPAN(out,p,macro_start);
+                    fputc(*MACRO_STR_START,out);
                 }
                 macro_end = macro_start;
 
@@ -298,12 +353,12 @@ TRACE;
 
                 int free_result=0;
                 *macro_name_end = '\0';
-                char *macro_output = macro_call(skin_name,orig_skin,macro_name_start,sorted_rows,&free_result);
+                char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out);
 
                 //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
                 if (macro_start > p ) {
                     if (output_state() ) {
-                        printf("%.*s",macro_start-p,p); 
+                        fprintf(out,"%.*s",macro_start-p,p); 
                     }
                 }
 
@@ -313,15 +368,15 @@ TRACE;
 
                      if (output_state() ) {
                          // Print bit before macro call
-                         PRINTSPAN(macro_start+1,macro_name_start-1);
-                         fflush(stdout);
+                         FPRINTSPAN(out,macro_start+1,macro_name_start-1);
 
-                         printf("%s",macro_output);
-                         fflush(stdout);
+                         fputs(macro_output,out);
 
                          // Print bit after macro call
-                         PRINTSPAN(macro_name_end+1,macro_end);
-                         fflush(stdout);
+                         FPRINTSPAN(out,macro_name_end+1,macro_end);
+
+                         flush++;
+
                      }
                      if (free_result) FREE(macro_output);
                  }
@@ -336,8 +391,11 @@ TRACE;
 
     if (output_state() ) {
         // Print the last bit
-        printf("%s",p);
-        fflush(stdout);
+        fputs(p,out);
+        flush++;
+    }
+    if (flush) {
+        fflush(out);
     }
 TRACE;
     return count;

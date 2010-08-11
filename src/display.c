@@ -2841,7 +2841,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
 // Generate the HTML for the grid. 
 // Note that the row_ids have already been pruned to only contain the items
 // for the current page.
-char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int page_before,int page_after,GridDirection grid_direction)
+char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int page_before,int page_after)
 {
 
     int rows = gs->dimensions.rows;
@@ -2921,7 +2921,7 @@ TRACE;
 
         for ( c = 0 ; c < cols ; c++ ) {
 
-            switch(grid_direction) {
+            switch(gs->grid_direction) {
                 case GRID_ORDER_VERTICAL:
                     i = c * rows + r ; break;
                 case GRID_ORDER_HORIZONTAL:
@@ -2991,7 +2991,7 @@ TRACE;
 }
 
 
-char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows,GridDirection grid_direction) 
+char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows) 
 {
     int numids = sorted_rows->num_rows;
     DbItem **row_ids = sorted_rows->rows;
@@ -3031,7 +3031,7 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows,GridDirection
     int page_after = gs->offset + segment_total >= total;
 
 
-    char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after,grid_direction);
+    char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after);
     FREE(prunedRows);
     return ret;
 }

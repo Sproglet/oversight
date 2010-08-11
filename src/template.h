@@ -3,7 +3,8 @@
 #define __OVS_TEMPLATE_H_
 #include "db.h"
 
-int display_template(char*template_name,char *file_name,DbSortedRows *sorted_rows);
+int display_main_template(char*template_name,char *file_name,DbSortedRows *sorted_rows);
+int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRows *sorted_rows,FILE *out);
 char *skin_name();
 char *skin_path();
 char *icon_source(char *image_name);

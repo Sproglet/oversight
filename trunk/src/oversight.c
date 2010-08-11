@@ -347,7 +347,7 @@ TRACE;
             display_admin(sortedRows);
         } else {
 
-            display_template(skin_name,view->name,sortedRows);
+            display_main_template(skin_name,view->name,sortedRows);
             if (view->has_playlist) {
                 build_playlist(sortedRows);
             } 

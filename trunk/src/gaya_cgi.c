@@ -435,6 +435,13 @@ void remove_password(char *s)
     }
 }
 
+static FILE *html_out=NULL;
+
+void html_set_output(FILE *fp)
+{
+    html_out=fp;
+}
+
 void html_vacomment(char *format,va_list ap)
 {
     int len;
@@ -443,9 +450,12 @@ void html_vacomment(char *format,va_list ap)
     if ((len=ovs_vasprintf(&s1,format,ap)) >= 0) {
 
         remove_password(s1);
-        printf("<!-- %ld/%ld %s -->\n",clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1);
+
+        if (html_out == NULL) html_set_output(stdout);
+
+        fprintf(html_out,"<!-- %ld/%ld %s -->\n",clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1);
         // approx *1000/CLOCKS_PER_SEC = >>10
-        fflush(stdout);
+        fflush(html_out);
         //FREE(s2);
         FREE(s1);
     }

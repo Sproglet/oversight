@@ -356,6 +356,7 @@ char *macro_fn_page(MacroCallInfo *call_info)
  *
  * Example:
  * [:PAGE_MAX:]
+ * [:PAGE_MAX(page_size):]
  * =end wiki
  */
 char *macro_fn_page_max(MacroCallInfo *call_info)
@@ -1242,15 +1243,41 @@ int get_page_size(int allow_default_size)
     return size;
 }
 
+/**
+ * =begin wiki
+ * ==GRID==
+ *
+ * Display poster for current item.
+ *
+ * [:GRID:]
+ * [:GRID(rows,cols,img_height,img_width,offset,order):]
+ *
+ * offset = number of first item in this grid segment. ITem numbering starts from 0.
+ * if no offset supplied then it is computed from the size of the previous GRID.
+ * This works as long as the grids appear in order within the HTML
+ *
+ * orientation=horizontal, vertical :  determines sort order within the grid.
+ *
+ * Example:
+ *
+ * [:SET(_grid_size,7):]
+ * [:GRID(rows=>1,cols=>4,offset=>0,order=Horizontal):]
+ * [:GRID(rows=>3,cols=>1,offset=>4,order=Vertical):]
+ *
+ * =end wiki
+ */
 char *macro_fn_grid(MacroCallInfo *call_info) {
 
-    struct hashtable *h = args_to_hash(call_info,NULL,"rows,cols,img_height,img_width,offset");
+    static int running_offset = 0;
+    struct hashtable *h = args_to_hash(call_info,NULL,"rows,cols,img_height,img_width,offset,order");
     
     if (grid_info == NULL) {
         grid_info = grid_info_init();
     }
 
     GridSegment *gs = grid_info_add_segment(grid_info);
+
+    gs->offset = running_offset;
 
     // Copy default grid size and dimensions
     gs->dimensions = *(g_dimension->current_grid);
@@ -1272,14 +1299,17 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
         gs->dimensions.img_width = atoi(tmp);
     }
     if ((tmp = get_named_arg(h,"offset")) != NULL) {
-        gs->offset = atoi(tmp);
+        running_offset = gs->offset = atoi(tmp);
         gs->parent->page_size = get_page_size(0);
     }
     if ((tmp = get_named_arg(h,"grid_order")) != NULL) {
         gs->grid_direction = str2grid_direction(tmp);
     }
 
-    char *result = get_grid(get_current_page(),gs,call_info->sorted_rows,gs->grid_direction);
+    char *result = get_grid(get_current_page(),gs,call_info->sorted_rows);
+
+    // Update the offset between grids.
+    running_offset += gs->dimensions.rows * gs->dimensions.cols;
 
     free_named_args(h);
 
@@ -1346,7 +1376,15 @@ char *macro_fn_is_gaya(MacroCallInfo *call_info) {
 
 char *macro_fn_include(MacroCallInfo *call_info) {
     if (call_info->args && call_info->args->size == 1) {
-        display_template(call_info->orig_skin_name,call_info->args->array[0],call_info->sorted_rows);
+
+        display_template(
+                call_info->pass,
+                NULL,
+                call_info->orig_skin_name,
+                call_info->args->array[0],
+                call_info->sorted_rows,
+                call_info->outfp);
+
     } else if (!call_info->args) {
         html_error("missing  args for include");
     } else {
@@ -2641,7 +2679,7 @@ void macro_init() {
 }
 
 
-char *macro_call(char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted_rows,int *free_result)
+char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted_rows,int *free_result,FILE *out)
 {
 
 
@@ -2699,6 +2737,8 @@ char *macro_call(char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted
         call_info.args = args;
         call_info.sorted_rows = sorted_rows;
         call_info.free_result = 1;
+        call_info.pass = pass;
+        call_info.outfp = out;
 
         if (fn) {
 

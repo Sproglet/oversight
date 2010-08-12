@@ -95,16 +95,17 @@ char *get_template_path(char *skin_name,char *file_name)
     int s;
     int r;
 
-    for(s = 0 ; skin[s] ; s++ ) {
-        for (r = 0 ; res[r] ; r++ ) {
+    html_set_comment("<!-- ","-->");
+
+    for(s = 0 ; skin[s] && !path ; s++ ) {
+        for (r = 0 ; res[r] && !path ; r++ ) {
             ovs_asprintf(&path,"%s/templates/%s/%s/%s.template",appDir(),skin[s],res[r],file_name);
 
             if (exists(path)) {
                 if (strstr(file_name,"css")) {
-                    printf("/* Reading %s */.a {};\n",path);
-                } else {
-                    HTML_LOG(1,"Reading %s",path);
+                    html_set_comment("/* ","*/ .a {};");
                 }
+                HTML_LOG(0,"Reading %s",path);
                 break;
             }
             FREE(path);
@@ -123,17 +124,24 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
     char *pass1_file = "/tmp/ovs1";
     FILE *pass1_fp = fopen(pass1_file,"w");
     if (pass1_fp) {
+        html_set_output(pass1_fp);
+        HTML_LOG(0,"begin pass1");
         ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
+        HTML_LOG(0,"end pass1");
         fclose(pass1_fp);
 
         if (ret == 0) {
             pass1_fp = fopen(pass1_file,"r");
             FILE *pass2_fp = stdout;
             if (pass1_fp) {
+                html_set_output(pass2_fp);
+                HTML_LOG(0,"begin pass2");
                 ret = display_template(++pass,pass1_fp,skin_name,file_name,sorted_rows,pass2_fp);
+                HTML_LOG(0,"end pass2");
                 fclose(pass1_fp);
             }
         }
+        unlink(pass1_file);
     }
 
     return ret;

@@ -436,10 +436,18 @@ void remove_password(char *s)
 }
 
 static FILE *html_out=NULL;
+static char *html_comment_start="<!--";
+static char *html_comment_end="-->";
 
 void html_set_output(FILE *fp)
 {
     html_out=fp;
+}
+
+void html_set_comment(char *start,char *end)
+{
+    html_comment_start = start;
+    html_comment_end = end;
 }
 
 void html_vacomment(char *format,va_list ap)
@@ -453,7 +461,10 @@ void html_vacomment(char *format,va_list ap)
 
         if (html_out == NULL) html_set_output(stdout);
 
-        fprintf(html_out,"<!-- %ld/%ld %s -->\n",clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1);
+        fprintf(html_out,"%s %ld/%ld %s %s\n",
+                html_comment_start,
+                clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1,
+                html_comment_end);
         // approx *1000/CLOCKS_PER_SEC = >>10
         fflush(html_out);
         //FREE(s2);
@@ -484,9 +495,9 @@ void html_log(int level,char *format,...) {
 void html_error(char *format,...) {
     va_list ap;
     va_start(ap,format);
-    printf("<!-- ERROR -->");
-    vprintf(format,ap);
-    fflush(stdout);
+    fprintf(html_out,"<!-- ERROR -->");
+    vfprintf(html_out,format,ap);
+    fflush(html_out);
     //html_vacomment(format,ap);
     va_end(ap);
 }

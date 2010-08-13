@@ -1,0 +1,19 @@
+#summary Getting Oversight.
+
+
+All downloads are listed [http://code.google.com/p/oversight/downloads/list here] 
+
+==Latest Versions==
+
+If you want the latest version use the [http://www.nmtinstaller.com/ Community Software Installer (CSI)] or the [http://code.google.com/p/nmt-mini-installer/ mini-installer] to download it for you. 
+
+==Older Versions==
+
+If you want a specific version then either:
+
+1. Download the csi_oversight_VERSION.zip and use the [http://www.nmtinstaller.com/ CSI] Install From File option 
+
+OR
+
+2. Use the [http://code.google.com/p/nmt-mini-installer/ Mini-Installer] and select the required version.
+

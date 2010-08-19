@@ -3333,18 +3333,16 @@ imdb_title_q,imdb_id_q,connections,remakes) {
 }
 
 function tv2imdb(idx,\
-terms,key) {
+key) {
 
     if (g_imdb[idx] == "") {
     
-        key=gTitle[idx]"+"g_year[idx];
+        key=gTitle[idx]" "g_year[idx];
         DEBUG("tv2imdb key=["key"]");
         if (!(key in g_tv2imdb)) {
 
             # Search for imdb page  - try to filter out Episode pages.
-            #terms=gTitle[idx]" "g_year[idx]" +site:imdb.com \"TV Series\" \"User Rating\" Moviemeter Seasons ";
-        
-            g_tv2imdb[key] = web_search_first_imdb_link(terms" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"",terms); 
+            g_tv2imdb[key] = web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"",key); 
         }
         g_imdb[idx] = g_tv2imdb[key];
     }

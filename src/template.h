@@ -5,7 +5,7 @@
 
 int display_main_template(char*template_name,char *file_name,DbSortedRows *sorted_rows);
 int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRows *sorted_rows,FILE *out);
-char *skin_name();
+char *get_skin_name();
 char *skin_path();
 char *icon_source(char *image_name);
 char *image_source(char *subfolder,char *image_name,char *ext);

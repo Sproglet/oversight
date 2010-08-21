@@ -28,8 +28,10 @@ typedef struct grid_info_str {
     GridDirection grid_direction;
 } GridInfo;
 
-GridInfo *grid_info_init();
+GridInfo *get_grid_info();
 GridSegment *grid_info_add_segment(GridInfo *gi);
 void grid_info_free(GridInfo *gi);
+char *grid_calculate_offsets(GridInfo *gi);
+int grid_size(GridInfo *gi);
 
 #endif

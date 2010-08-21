@@ -58,6 +58,7 @@ int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char 
 
         char buffer[HTML_BUF_SIZE];
 
+//TRACE1;
 
         PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
         while(fgets(buffer,HTML_BUF_SIZE,in) != NULL) {
@@ -95,8 +96,6 @@ char *get_template_path(char *skin_name,char *file_name)
     int s;
     int r;
 
-    html_set_comment("<!-- ","-->");
-
     for(s = 0 ; skin[s] && !path ; s++ ) {
         for (r = 0 ; res[r] && !path ; r++ ) {
             ovs_asprintf(&path,"%s/templates/%s/%s/%s.template",appDir(),skin[s],res[r],file_name);
@@ -117,18 +116,46 @@ char *get_template_path(char *skin_name,char *file_name)
     return path;
 }
 
+/*
+ * return NULL=ok else error message
+ */
+char *end_pass1() 
+{
+    char *error_text = NULL;
+    error_text = grid_calculate_offsets(get_grid_info());
+    return error_text;
+}
+
 int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_rows)
 {
     int ret = -1;
     int pass=0;
+TRACE1;
     char *pass1_file = "/tmp/ovs1";
     FILE *pass1_fp = fopen(pass1_file,"w");
+TRACE1;
     if (pass1_fp) {
+TRACE1;
         html_set_output(pass1_fp);
+TRACE1;
         HTML_LOG(0,"begin pass1");
+TRACE1;
         ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
+TRACE1;
         HTML_LOG(0,"end pass1");
         fclose(pass1_fp);
+        html_set_output(stdout);
+
+        if (ret == 0) {
+
+            char *error_text = end_pass1();
+            if (error_text) {
+                HTML_LOG(0,"pass1 error [ %s ]",error_text);
+                ret = -1 ;
+            }
+        }
+
+TRACE1;
 
         if (ret == 0) {
             pass1_fp = fopen(pass1_file,"r");
@@ -136,7 +163,9 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
             if (pass1_fp) {
                 html_set_output(pass2_fp);
                 HTML_LOG(0,"begin pass2");
+TRACE1;
                 ret = display_template(++pass,pass1_fp,skin_name,file_name,sorted_rows,pass2_fp);
+TRACE1;
                 HTML_LOG(0,"end pass2");
                 fclose(pass1_fp);
             }
@@ -158,6 +187,7 @@ int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRo
     html_set_output(out);
     char *resolution = scanlines_to_text(g_dimension->scanlines);
 
+    html_set_comment("<!-- ","-->");
     if (in == NULL) {
         path = get_template_path(skin_name,file_name);
         if (path != NULL) {
@@ -174,6 +204,8 @@ int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRo
             fclose(in);
         }
     }
+    html_set_comment("<!-- ","-->");
+
 
     FREE(path);
 
@@ -263,7 +295,11 @@ TRACE;
 
             char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out);
             *macro_name_end = *MACRO_STR_START_INNER;
-            if (macro_output) {
+
+            if (macro_output == CALL_UNCHANGED ) {
+                // unchanged - do nothing
+                
+            } else if (macro_output) {
 
                 //convert AA[BB:$CC:DD]EE to AABBnewDDEE
 
@@ -283,7 +319,7 @@ TRACE;
                  macro_name_start[-1] = *MACRO_STR_START_INNER;
                  *macro_end = *MACRO_STR_END;
 
-                 if (free_result) FREE(macro_output);
+                 if (free_result && macro_output != CALL_UNCHANGED) FREE(macro_output);
                  if (newline != input) FREE(newline);
                  newline = tmp;
 
@@ -372,21 +408,29 @@ TRACE;
 
                 count++;
                 *macro_name_end = *MACRO_STR_START_INNER;
-                if (macro_output && *macro_output) {
+                if (macro_output ) {
 
                      if (output_state() ) {
-                         // Print bit before macro call
-                         FPRINTSPAN(out,macro_start+1,macro_name_start-1);
 
-                         fputs(macro_output,out);
+                        if (macro_output == CALL_UNCHANGED ) {
 
-                         // Print bit after macro call
-                         FPRINTSPAN(out,macro_name_end+1,macro_end);
+                            // unchanged.
+                            FPRINTSPAN(out,macro_start,macro_end+strlen(MACRO_STR_END));
+
+                        } else {
+                            // Print bit before macro call
+                            FPRINTSPAN(out,macro_start+1,macro_name_start-1);
+
+                            fputs(macro_output,out);
+
+                            // Print bit after macro call
+                            FPRINTSPAN(out,macro_name_end+1,macro_end);
+                        }
 
                          flush++;
 
                      }
-                     if (free_result) FREE(macro_output);
+                     if (free_result && (macro_output != CALL_UNCHANGED)) FREE(macro_output);
                  }
             }
 
@@ -418,7 +462,7 @@ char *scanlines_to_text(long scanlines)
     }
 }
 
-char *skin_name()
+char *get_skin_name()
 {
     static char *template_name=NULL;
     if (!template_name) template_name=oversight_val("ovs_skin_name");
@@ -429,7 +473,7 @@ char *skin_path()
 {
     static char *path = NULL;
     if (path == NULL) {
-        ovs_asprintf(&path,"%s/templates/%s",appDir(),skin_name());
+        ovs_asprintf(&path,"%s/templates/%s",appDir(),get_skin_name());
     }
     return path;
 }
@@ -468,7 +512,7 @@ char *file_source(char *subfolder,char *image_name,char *ext)
 
     static int is_default_skin = UNSET;
     if (is_default_skin == UNSET) {
-        is_default_skin = (STRCMP(skin_name(),"default") == 0);
+        is_default_skin = (STRCMP(get_skin_name(),"default") == 0);
     }
 
     if (subfolder == NULL) {
@@ -477,7 +521,7 @@ char *file_source(char *subfolder,char *image_name,char *ext)
 
     ovs_asprintf(&path,"%s/templates/%s%s%s/%s%s%s",
             appDir(),
-            skin_name(),
+            get_skin_name(),
             (EMPTY_STR(subfolder)?"":"/"),
             NVL(subfolder),
             image_name,

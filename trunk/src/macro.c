@@ -36,7 +36,6 @@ static struct hashtable *macros = NULL;
 char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
 struct hashtable *args_to_hash(MacroCallInfo *call,char *required_list,char *optional_list);
-int get_page_size(int allow_default_size);
 void free_named_args(struct hashtable *h);
 
 long get_current_page() {
@@ -356,39 +355,39 @@ char *macro_fn_page(MacroCallInfo *call_info)
  *
  * Example:
  * [:PAGE_MAX:]
- * [:PAGE_MAX(page_size):]
  * =end wiki
  */
 char *macro_fn_page_max(MacroCallInfo *call_info)
 {
-    call_info->free_result=1;
     char *result = NULL;
-    char *tmp;
 
-    int size=10;
+    switch(call_info->pass) {
 
-    struct hashtable *h = args_to_hash(call_info,NULL,"page_size");
+        case 1:
+            // do nothing
+            result = CALL_UNCHANGED;
+            break;
 
-    if ((tmp = get_named_arg(h,"page_size")) != NULL) {
+        case 2:
+            {
+                if ( get_grid_info()->page_size  > 0 ) {
+                    int p = 1 + call_info->sorted_rows->num_rows / get_grid_info()->page_size  ;
 
-        size = atoi(tmp);
+                    ovs_asprintf(&result,"%d",p);
+                } else {
+                    HTML_LOG(0,"zero page size");
+                }
 
-    } else {
-        size = get_page_size(1);
+            }
+            break;
+
+        default:
+            assert(0);
     }
-
-    if (size > 0 ) {
-        int p = 1 + call_info->sorted_rows->num_rows / size;
-
-        ovs_asprintf(&result,"%d",p);
-    } else {
-        HTML_LOG(0,"zero page size");
-    }
-
-    free_named_args(h);
 
     return result;
 }
+
 
 char *macro_fn_plot(MacroCallInfo *call_info)
 {
@@ -1183,7 +1182,7 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
  * =begin wiki
  * ==GRID==
  * Grid Macro has format
- * [:GRID(rows=>r,cols=>c,img_height=>300,img_width=>200,offset=>0,page_size=>50):]
+ * [:GRID(rows=>r,cols=>c,img_height=>300,img_width=>200,offset=>0):]
  *
  * All parameters are optional.
  * rows,cols            = row and columns of thumb images in the grid (defaults to config file settings for that view)
@@ -1209,8 +1208,6 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
  * [:GRID(rows=>2,cols=>2,offset=>4,last=>1):]
  * =end wiki
  */
-static GridInfo *grid_info=NULL; // At the moment only one Grid(multi segments) per page.
-
 char *get_named_arg(struct hashtable *h,char *name)
 {
     char *ret = NULL;
@@ -1225,22 +1222,6 @@ void free_named_args(struct hashtable *h)
     if (h) {
         hashtable_destroy(h,1,1);
     }
-}
-
-int get_page_size(int allow_default_size)
-{
-    int size;
-
-    char *tmp = get_tmp_skin_variable("_grid_size");
-    if (tmp == NULL) {
-        size = g_dimension->current_grid->rows * g_dimension->current_grid->cols;
-        if (!allow_default_size) {
-            html_error("GRID: _grid_size must be set when using GRID segments. [:SET(_grid_size,value):]");
-        }
-    } else {
-        size = atoi(tmp);
-    }
-    return size;
 }
 
 /**
@@ -1268,53 +1249,66 @@ int get_page_size(int allow_default_size)
  */
 char *macro_fn_grid(MacroCallInfo *call_info) {
 
-    static int running_offset = 0;
     struct hashtable *h = args_to_hash(call_info,NULL,"rows,cols,img_height,img_width,offset,order");
     
-    if (grid_info == NULL) {
-        grid_info = grid_info_init();
-    }
+    GridSegment *gs ;
+    char *result = NULL;
+   
+    if (call_info->pass == 1 ) {
+       
+        gs = grid_info_add_segment(get_grid_info());
 
-    GridSegment *gs = grid_info_add_segment(grid_info);
+        // Copy default grid size and dimensions
+        gs->dimensions = *(g_dimension->current_grid);
 
-    gs->offset = running_offset;
+        char *tmp;
 
-    // Copy default grid size and dimensions
-    gs->dimensions = *(g_dimension->current_grid);
-    gs->offset = 0;
-    
-    char *tmp;
+        if ((tmp = get_named_arg(h,"rows")) != NULL) {
+            gs->dimensions.rows = atoi(tmp);
+        }
+        if ((tmp = get_named_arg(h,"cols")) != NULL) {
+            gs->dimensions.cols = atoi(tmp);
+        }
 
-    if ((tmp = get_named_arg(h,"rows")) != NULL) {
-        gs->dimensions.rows = atoi(tmp);
-    }
-    if ((tmp = get_named_arg(h,"cols")) != NULL) {
-        gs->dimensions.cols = atoi(tmp);
-    }
+        if ((tmp = get_named_arg(h,"img_height")) != NULL) {
+            gs->dimensions.img_height = atoi(tmp);
+        }
+        if ((tmp = get_named_arg(h,"img_width")) != NULL) {
+            gs->dimensions.img_width = atoi(tmp);
+        }
+        if ((tmp = get_named_arg(h,"offset")) != NULL) {
+            gs->offset = atoi(tmp);
+        }
+        if ((tmp = get_named_arg(h,"grid_order")) != NULL) {
+            gs->grid_direction = str2grid_direction(tmp);
+        }
 
-    if ((tmp = get_named_arg(h,"img_height")) != NULL) {
-        gs->dimensions.img_height = atoi(tmp);
-    }
-    if ((tmp = get_named_arg(h,"img_width")) != NULL) {
-        gs->dimensions.img_width = atoi(tmp);
-    }
-    if ((tmp = get_named_arg(h,"offset")) != NULL) {
-        running_offset = gs->offset = atoi(tmp);
-        gs->parent->page_size = get_page_size(0);
-    }
-    if ((tmp = get_named_arg(h,"grid_order")) != NULL) {
-        gs->grid_direction = str2grid_direction(tmp);
-    }
+        // leave text for next pass
+        result = CALL_UNCHANGED;
 
-    char *result = get_grid(get_current_page(),gs,call_info->sorted_rows);
+    } else if (call_info->pass == 2 ) {
 
-    // Update the offset between grids.
-    running_offset += gs->dimensions.rows * gs->dimensions.cols;
+        static int grid_no = 0;
+
+        result = grid_calculate_offsets(get_grid_info());
+
+        if (result != NULL) {
+            // An error occured - error message is in result
+            // do - nothing. Error message passed to output.
+        } else {
+            gs = get_grid_info()->segments->array[grid_no++];
+            result = get_grid(get_current_page(),gs,call_info->sorted_rows);
+        }
+
+    } else {
+        assert(0);
+    }
 
     free_named_args(h);
 
     return result;
 }
+
 
 
 char *macro_fn_header(MacroCallInfo *call_info) {
@@ -1541,7 +1535,7 @@ char *macro_fn_favicon(MacroCallInfo *call_info)
 char *macro_fn_skin_name(MacroCallInfo *call_info)
 {
     call_info->free_result = 0;
-    return skin_name();
+    return get_skin_name();
 }
 
 /**
@@ -1773,19 +1767,28 @@ char *macro_fn_left_button(MacroCallInfo *call_info) {
 
 char *macro_fn_right_button(MacroCallInfo *call_info) {
 
-    int page_size = g_dimension->current_grid->rows*g_dimension->current_grid->cols;
-    HTML_LOG(0,"page_size=%d",page_size);
-    char *custom_grid_size = get_tmp_skin_variable("_grid_size");
-    if (!EMPTY_STR(custom_grid_size)) {
-        page_size = atoi(custom_grid_size);
-        HTML_LOG(0,"grid_size=%d",page_size);
+    char *result=NULL;
+
+    switch(call_info->pass) {
+
+        case 1:
+            result = CALL_UNCHANGED;
+            break;
+
+        case 2:
+            {
+                int page_size = get_grid_info()->page_size;
+                int on = ((get_current_page()+1)*page_size < call_info->sorted_rows->num_rows);
+                result = get_page_control(on,1,"pgdn","right");
+            }
+            break;
+
+        default:
+            assert(0);
     }
-    int on = ((get_current_page()+1)*page_size < call_info->sorted_rows->num_rows);
 
-    return get_page_control(on,1,"pgdn","right");
+    return result;
 }
-
-
 
 char *macro_fn_back_button(MacroCallInfo *call_info) {
     char *result=NULL;
@@ -1863,6 +1866,7 @@ char *macro_fn_delete_button(MacroCallInfo *call_info) {
     }
     return result;
 }
+
 char *macro_fn_lock_button(MacroCallInfo *call_info) {
     char *result=NULL;
     if (!*query_select_val() && allow_locking() ) {
@@ -1879,6 +1883,7 @@ char *macro_fn_lock_button(MacroCallInfo *call_info) {
     }
     return result;
 }
+
 char *macro_fn_select_mark_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_MARK)==0) {
@@ -1886,6 +1891,7 @@ char *macro_fn_select_mark_submit(MacroCallInfo *call_info) {
     }
     return result;
 }
+
 char *macro_fn_select_delete_submit(MacroCallInfo *call_info) {
     char *result=NULL;
     if (STRCMP(query_select_val(),FORM_PARAM_SELECT_VALUE_DELETE)==0) {
@@ -2681,9 +2687,6 @@ void macro_init() {
 
 char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted_rows,int *free_result,FILE *out)
 {
-
-
-
     if (macros == NULL) macro_init();
 
     char *result = NULL;
@@ -2752,6 +2755,7 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
         }
         array_free(args);
     }
+//TRACE1;
     return result;
 }
 

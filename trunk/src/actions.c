@@ -91,9 +91,9 @@ static void clear_selection() {
         }
     }
 
+TRACE1;
     int i;
     for(i=0 ; i<a->size ; i++) {
-        HTML_LOG(1,"removing query[%s]",a->array[i]);
         query_remove(a->array[i]);
     }
     array_free(a);

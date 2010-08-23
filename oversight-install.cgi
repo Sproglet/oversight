@@ -92,9 +92,20 @@ SKIN_INSTALL() {
         mv templates templates.old || true
         mv templates.new templates
 
-        # copy config files
         if [ -d templates.old ] ; then
+            # Move skins that are not superceeded.
+            ( cd templates.old ;
+              for i in * ; do
+                  if [ -e "$i" ] ; then
+                      if [ ! -e "../templates/$i" ] ; then
+                          cp -a "$i" "../templates/$i"
+                      fi
+                  fi
+              done
+            )
+            # copy config files
             ( cd templates.old ; tar cf - */conf/*.cfg ) | ( cd templates ; tar xf - ) || true
+
         fi
     fi
 

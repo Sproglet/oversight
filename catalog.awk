@@ -207,6 +207,11 @@ BEGIN {
     g_year_re="(20[01][0-9]|19[0-9][0-9])";
     g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]* \\(?"g_year_re"\\)?";
 
+    g_roman_regex="i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv";
+
+    split(g_roman_regex,g_roman1,"[|]");
+    hash_invert(g_roman1,g_roman);
+
     ELAPSED_TIME=systime();
     UPDATE_TV=1;
     UPDATE_MOVIES=1;
@@ -578,6 +583,8 @@ END{
 
     THIS_YEAR=substr(NOW,1,4);
 
+    unit();
+
     scan_options="-Rl";
     if (g_settings["catalog_follow_symlinks"]==1) {
         scan_options= scan_options"L";
@@ -629,8 +636,6 @@ END{
     findLSFormat();
 
     plugin_check();
-
-    #unit_tests();
 
     if (hash_size(FOLDER_ARR)) {
 
@@ -2372,11 +2377,12 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
            ret = 1;
            break;
        }
-       if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
-          dump(0,"details",details);
-          ret = 1;
-          break;
-       }
+
+#ALL#       if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
+#ALL#          dump(0,"details",details);
+#ALL#          ret = 1;
+#ALL#          break;
+#ALL#       }
        if (d == dirLevels) {
            INF("No tv series-episode format in ["line"]");
            break;
@@ -2516,6 +2522,8 @@ ret,p,pat,i,parts,sreg,ereg) {
 
     #00x00
     pat[++p]="1@[^a-z0-9]@"sreg"@[/ .]?x"ereg"@";
+
+
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
     #TODO blank idx passed. need to tidy up code here?
     # extractEpisodeByDates is also called by other logic. 
@@ -2523,6 +2531,10 @@ ret,p,pat,i,parts,sreg,ereg) {
     pat[++p]="DATE";
     ## just numbers.
     pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@";
+
+    # Part n - no season
+    pat[++p]="0@\\<@@\\<(part|pt)[^a-z0-9]?("ereg"|"g_roman_regex")@Part";
+    pat[++p]="0@\\<@@\\<(episode|ep)[^a-z0-9]?("ereg"|"g_roman_regex")@Ep";
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
@@ -2861,7 +2873,9 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
             } else {
                 season = substr(line,1,RSTART-1);
             }
+            ep = roman_replace(ep);
         }
+
 
         if (season - 50 > 0 ) {
 
@@ -2892,6 +2906,19 @@ tmpTitle,ret,reg_len,ep,season,title,inf) {
     if (ret != 1 ) delete details;
     id0(ret);
     return ret;
+}
+
+#replace last roman characters - eg 'fredii' becoumes 'fred2'
+#input should be lower case.
+function roman_replace(s,\
+out) {
+    if (match(s,"("g_roman_regex")$")) {
+        out = substr(s,1,RSTART-1) g_roman[substr(s,RSTART,RLENGTH)];
+        INF("roman_replace = "s);
+        INF("roman_replace = "out);
+        s = out;
+    }
+    return s;
 }
 
 ############### GET IMDB URL FROM NFO ########################################
@@ -3748,13 +3775,22 @@ initial) {
     dump(0,"abbrev["abbrev"]",alternateTitles);
 }
 
+#result in a2
+function hash_invert(a1,a2) {
+    delete a2;
+    for(i in a1) a2[a1[i]] = i;
+}
+
+# result in a1
 function hash_copy(a1,a2) {
     delete a1 ; hash_merge(a1,a2) ;
 }
+# result in a1
 function hash_merge(a1,a2,\
 i) {
     for(i in a2) a1[i] = a2[i];
 }
+# result in a1
 function hash_add(a1,a2,\
 i) {
     for(i in a2) a1[i] += a2[i];
@@ -5087,7 +5123,7 @@ function setFirst(array,field,value) {
     }
 }
 
-function remove_year(t) {
+function remove_br_year(t) {
     sub(" *\\("g_year_re"\\)","",t); #remove year
     return t;
 }
@@ -5111,7 +5147,6 @@ function set_plot(idx,plotv,txt) {
 function get_tv_series_info_tvdb(idx,tvDbSeriesUrl,\
 seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
-
     result=0;
     
     #fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
@@ -5122,7 +5157,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
         setFirst(g_imdb,idx,extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]));
         #Refine the title.
-        adjustTitle(idx,remove_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb");
+        adjustTitle(idx,remove_br_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb");
 
         g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
@@ -5175,7 +5210,6 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
     } else {
         WARNING("Failed to find ID in XML");
     }
-
 
     if (g_imdb[idx] == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at "g_thetvdb_web);
@@ -5245,7 +5279,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
     ignore="/Show/Episodelist";
     if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
         dump(0,"tvrage series",seriesInfo);
-        adjustTitle(idx,remove_year(seriesInfo["/Show/name"]),pi);
+        adjustTitle(idx,remove_br_year(seriesInfo["/Show/name"]),pi);
         g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
         setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
 
@@ -5267,7 +5301,6 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
                 }
             }
         }
-
 
         e="/Show/Episodelist/Season/episode";
         if (g_episode[idx] ~ "^[0-9,]+$" ) {
@@ -8032,5 +8065,11 @@ url) {
     url_encode("site:filmup.leonardo.it"));
     HTML_LOG(0,"it "url);
 }
+
+function unit() {
+    print "Roman" (roman_replace("fredii") == "fred2" ? "OK" : "Failed" );
+}
+
 #ENDAWK
 # vi:sw=4:et:ts=4
+

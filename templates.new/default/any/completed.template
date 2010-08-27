@@ -8,7 +8,7 @@
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
-    <body focuscolor=yellow focustext=black [class=admin_background:IS_GAYA:] >
+    <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
         <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask&old_action=,back):] Oversight Configuration</h1>
 
         [:$?old_action:] completed.

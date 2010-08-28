@@ -66,20 +66,20 @@ table.overview_poster {
                     <td align=right>[:SETUP_BUTTON:]</td>
                 </tr>
                 <tr>
-[:IF($@sd):]
-                    <td colspan=4 align=center >
-[:ELSE:]
-                    <td colspan=8 align=center >
-[:ENDIF:]
-                        <span class=menutitle id="menutitle">&nbsp;</span>
-                        <span class=menutitle id="unwatchedtotal">&nbsp;</span>
-                        <span class=menutitle id="watchedtotal">&nbsp;</span>
-                    </td>
-                    <td align=right class=page colspan=2>[:PAGE:]/[:PAGE_MAX:]</td>
+            </table>
+            <table width=100% >
+                <tr>
+                    <td align=right class=page >[:PAGE:]/[:PAGE_MAX:]</td>
                 </tr>
             </table>
             <center>
             [:GRID(rows=>$skin_grid_rows,cols=>$skin_grid_cols):] 
+            <br>
+            <span class=menutitle id="menutitle">&nbsp;</span>
+            <span class=menutitle id="unwatchedtotal">&nbsp;</span>
+            <span class=menutitle id="watchedtotal">&nbsp;</span>
+            <br>
+            [:GRID(rows=>$skin_grid_rows2,cols=>$skin_grid_cols2):] 
             </center>
             <table class=footer width=100%>
                 <tr valign=top>

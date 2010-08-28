@@ -19,15 +19,17 @@ a { color:yellow; }
         [:FORM_START:]
 
             <center>
-            <p>Scan Paths : <font color=cyan>[:$catalog_scan_paths:]</font>
-            <p>Watch Paths : <font color=cyan>[:$catalog_watch_paths:]</font>
+
             <table width="70%">
                 <tr>
                     <td align=center>
-                        [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>{change scan paths},attr=>style="color=red;"):]
+                        [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>{scan paths},attr=>style="color=red;"):]
                     </td>
                     <td align=center>
                         [:LINK(action=template_scan_status,{site checker}):]
+                    </td>
+                    <td align=center>
+                        [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>rescan.help,text=>{image defaults}):]<br>
                     </td>
                 </tr>
             </table>

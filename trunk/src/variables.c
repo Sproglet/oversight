@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/statvfs.h>
 
 #include "variables.h"
 #include "oversight.h"
@@ -14,56 +15,6 @@
 // unpak_xxx = unpak config
 // skin_xxx = macro variable
 //
-
-
-#if 0
-// deprecated
-//
-char *get_gaya_variable(char *vname,int *free_result)
-{
-    int int_val=0;
-
-    *free_result = 0;
-    char *result=NULL;
-    if (STRCMP(vname+1,"gaya") == 0) {
-
-        int_val = g_dimension->local_browser;
-
-    } else if (STRCMP(vname+1,"gaya_page") == 0) {
-
-        int_val = get_gaya_page();
-
-    } else if (STRCMP(vname+1,"gaya_file_total") == 0) {
-
-        int_val = gaya_file_total();
-
-    } else if (STRCMP(vname+1,"gaya_prev_page") == 0) {
-
-        int_val = gaya_prev_page();
-
-    } else if (STRCMP(vname+1,"gaya_next_page") == 0) {
-
-        int_val = gaya_next_page();
-
-    } else if (STRCMP(vname+1,"gaya_first_file") == 0) {
-
-        int_val = gaya_first_file();
-
-    } else if (STRCMP(vname+1,"gaya_last_file") == 0) {
-
-        int_val = gaya_last_file();
-
-    } else if (STRCMP(vname+1,"gaya_prev_file") == 0) {
-
-        int_val = gaya_prev_file();
-    }
-
-    ovs_asprintf(&result,"%d",int_val);
-    *free_result = 1;
-
-    return result;
-}
-#endif
 
 /**
  * convert TITLE:n to the title of the N'th row of the sorted results.
@@ -102,6 +53,9 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
 
     int convert_int = 0;
     int int_val=0;
+
+    int convert_double = 0;
+    double dval=0.0;
 
     *free_result = 0;
     char *result=NULL;
@@ -159,6 +113,56 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
         } else if (STRCMP(vname+1,"selection_count") == 0) {
             convert_int=1;
             int_val = sorted_rows->num_rows;
+
+        } else if (util_starts_with(vname+1,"sys_share_")) {
+
+TRACE1;
+            
+            static int first_time = 1;
+            static struct statvfs *s = NULL;
+            if (first_time) {
+                first_time = 0;
+                s = MALLOC(sizeof(struct statvfs));
+                if (s) {
+                   if (statvfs("/share/.",s) != 0) {
+                       HTML_LOG(0,"Error getting file system info");
+                       FREE(s);
+                       s = NULL;
+                   }
+                }
+            }
+
+            if (s != NULL) {
+TRACE1;
+
+                convert_double = 1;
+
+                if (STRCMP(vname+1,"sys_share_used_gb") == 0) {
+TRACE1;
+
+                    dval = ( s->f_blocks - s->f_bfree );
+                    dval *= s->f_bsize;
+                    dval /= (1024*1024*1024);
+
+                } else if (STRCMP(vname+1,"sys_share_used_percent") == 0) {
+TRACE1;
+
+                    dval = 100 - ( 100.0 * s->f_bfree ) /  s->f_blocks;
+
+                } else if (STRCMP(vname+1,"sys_share_free_gb") == 0) {
+TRACE1;
+
+                    dval = s->f_bfree;
+                    dval *= s->f_bsize;
+                    dval /= (1024*1024*1024);
+
+                } else if (STRCMP(vname+1,"sys_share_free_percent") == 0) {
+TRACE1;
+
+                    dval = ( 100.0 * s->f_bfree ) /  s->f_blocks;
+
+                }
+            }
 #if 0
         } else if (STRCMP(vname+1,"item_count") == 0) {
 
@@ -215,6 +219,9 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
     }
     if (convert_int) {
         ovs_asprintf(&result,"%d",int_val);
+        *free_result = 1;
+    } else if (convert_double) {
+        ovs_asprintf(&result,"%.1lf",dval);
         *free_result = 1;
     }
 

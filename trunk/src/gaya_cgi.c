@@ -442,7 +442,6 @@ static char *html_comment_end="-->";
 void html_set_output(FILE *fp)
 {
     html_out=fp;
-TRACE1;
 }
 
 void html_set_comment(char *start,char *end)

@@ -2533,8 +2533,8 @@ ret,p,pat,i,parts,sreg,ereg) {
     pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@";
 
     # Part n - no season
-    pat[++p]="0@\\<@@\\<(part|pt)[^a-z0-9]?("ereg"|"g_roman_regex")@Part";
-    pat[++p]="0@\\<@@\\<(episode|ep)[^a-z0-9]?("ereg"|"g_roman_regex")@Ep";
+    pat[++p]="0@\\<@@\\<(part|pt)[^a-z0-9]?("ereg"|"g_roman_regex")@";
+    pat[++p]="0@\\<@@\\<(episode|ep)[^a-z0-9]?("ereg"|"g_roman_regex")@";
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {

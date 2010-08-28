@@ -858,32 +858,6 @@ char *macro_fn_tv_mode(MacroCallInfo *call_info) {
 
     return result;
 }
-char *macro_fn_sys_disk_used(MacroCallInfo *call_info) {
-    call_info->free_result=0;
-    static char result[50] = "";
-
-    if (!*result) {
-
-        struct statvfs s;
-
-        if (statvfs("/share/.",&s) == 0) {
-
-            //use doubles to avoid overflow
-            double free = s.f_bfree;
-
-            free *= s.f_bsize;  //bytes
-
-            free /= (1024*1024*1024) ; //Gigs
-
-            double free_percent = 100.0 * s.f_bfree / s.f_blocks;
-
-            sprintf(result,"%.1lfG free (%.1lf%%)",free,free_percent);
-        
-        }
-    }
-
-    return result;
-}
 
 char *macro_fn_paypal(MacroCallInfo *call_info) {
     char *p = NULL;
@@ -2661,7 +2635,6 @@ void macro_init() {
         hashtable_insert(macros,"SOURCE",macro_fn_source);
         hashtable_insert(macros,"START_CELL",macro_fn_start_cell);
         hashtable_insert(macros,"STATUS",macro_fn_status);
-        hashtable_insert(macros,"SYS_DISK_USED",macro_fn_sys_disk_used);
         hashtable_insert(macros,"SYS_LOAD_AVG",macro_fn_sys_load_avg);
         hashtable_insert(macros,"SYS_UPTIME",macro_fn_sys_uptime);
         hashtable_insert(macros,"TAB_TVID",macro_fn_menu_tvid);
@@ -2755,7 +2728,6 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
         }
         array_free(args);
     }
-//TRACE1;
     return result;
 }
 

@@ -91,7 +91,6 @@ static void clear_selection() {
         }
     }
 
-TRACE1;
     int i;
     for(i=0 ; i<a->size ; i++) {
         query_remove(a->array[i]);

@@ -98,42 +98,49 @@ int connect_service(char *host,long timeout_millis,...)
 	#define BUF_SIZE	1500
 	#define ICMP_REQUEST_DATA_LEN 56
 
-
-    // The Address ai->ai_addr
-	struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP, 5);
-	if (ai == NULL) {
-        HTML_LOG(0,"Unable to get remote address for [%s]",host);
-		ret = -2;
+    // Assume success if timeout is zero
+    if (timeout_millis == 0) {
+        HTML_LOG(0,"port probe disabled");
+        ret = 0;
     } else {
 
-        if (routable(ai->ai_addr,ai->ai_addrlen)) {
 
-            // Open DNS map all unknown host lookups to an OpenDNS
-            // ip address. We have to trap these bogus lookups. No such thing as a free lunch !!
-            HTML_LOG(0,"[%s] appears to be outside your network. Ignoring.",host);
-            ret  = -3;
+        // The Address ai->ai_addr
+        struct addrinfo *ai = get_remote_addr(host, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP, 5);
+        if (ai == NULL) {
+            HTML_LOG(0,"Unable to get remote address for [%s]",host);
+            ret = -2;
         } else {
 
-            va_start(ap,timeout_millis);
-            // The socket
-            int port;
+            if (routable(ai->ai_addr,ai->ai_addrlen)) {
 
-            while (( port = va_arg(ap,int)) != 0) {
+                // Open DNS map all unknown host lookups to an OpenDNS
+                // ip address. We have to trap these bogus lookups. No such thing as a free lunch !!
+                HTML_LOG(0,"[%s] appears to be outside your network. Ignoring.",host);
+                ret  = -3;
+            } else {
 
-                ret = connect_tcp_socket(ai->ai_addr,ai->ai_addrlen,port,timeout_millis);
+                va_start(ap,timeout_millis);
+                // The socket
+                int port;
 
-                if (ret == 0 ) {
+                while (( port = va_arg(ap,int)) != 0) {
 
-                    break;
+                    ret = connect_tcp_socket(ai->ai_addr,ai->ai_addrlen,port,timeout_millis);
+
+                    if (ret == 0 ) {
+
+                        break;
+
+                    }
 
                 }
+                va_end(ap);
+
 
             }
-            va_end(ap);
-
-
+            FREE(ai);
         }
-        FREE(ai);
     }
 
     return ret;

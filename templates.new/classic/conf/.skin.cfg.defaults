@@ -1,4 +1,6 @@
 # This is a simple example of how to implement user skin config.
-skin_grid_rows=2
-skin_grid_cols=7
+skin_grid_rows=1
+skin_grid_cols=5
+skin_grid_rows2=1
+skin_grid_cols2=7
 skin_cursor_style='focuscolor="red" tocustest=black"'

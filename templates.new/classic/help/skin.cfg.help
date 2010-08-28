@@ -1,5 +1,7 @@
 # This is a simple example of how to implement user skin help file.
 # See skiining wiki for for info.
-skin_grid_rows:number of rows
-skin_grid_cols:number of cols
+skin_grid_rows:number of rows upper half
+skin_grid_cols:number of cols upper half
+skin_grid_rows2:number of rows lower half
+skin_grid_cols2:number of cols lower half
 skin_cursor_style:Cursor style|focuscolor=red focustext=back|focuscolor=yellow focustext=back

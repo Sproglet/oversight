@@ -10,6 +10,8 @@ td.mount1 { color:white; }
 td.mount0 { color:white; }
 img.nasstatus { width:15; height:15; }
 
+td.label { color:gray; }
+
             [:INCLUDE_TEMPLATE(css):]
 
 
@@ -23,52 +25,54 @@ img.nasstatus { width:15; height:15; }
             <!-- =============== -->
 
             <td width=5%>
-                <br>
                 [:ICON(rescan):]
             </td>
-            <td align=left width=28%>
-                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>help,text=>General Settings):]<br>
-                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>Keys):] / [:LINK(action=template_resize,Resize):]<br>
-                [:LINK(action=confirm_rescan,Rescan Media):]<br>
-                [:LINK(action=template_diagnostics,Diagnostics):]<br>
-                [:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]<br>
+            <td align=left >
+                [:LINK(action=confirm_rescan,rescan):]
             </td>
 
             <!-- =============== -->
 
             <td width=5%>[:ICON(catalog):]</td>
             <td align=left width=28%>
-                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>rescan.help,text=>Rescan Defaults):]<br>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>Media Sources):]<br>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>detect.help,text=>Scraping):]<br>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>output.help,text=>Renaming):]<br>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>search.help,text=>Advanced Search):]
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>media sources):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>detect.help,text=>scraping):]<br>
             </td>
 
             <!-- =============== -->
-
-            <td width=5%>[:ICON(nas):]</td>
-            <td align=left width=28%>
-                [:MOUNT_STATUS:]
+            <td>[:ICON(reinstall):]</td>
+            <td align=left >
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>security):]
+                <br>[:LINK(action=confirm_reset,restore defaults):]
+                <br>[:LINK(action=confirm_clear_cache,clear NMT cache):]
+                <br>[:LINK(action=confirm_reinstall,reinstall):]
             </td>
+
 
         </tr>
         <tr>
             <!-- =============== -->
 
-            <td>[:ICON(internet):]</td>
-            <td align=left>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>Internet Access):]</td>
+            <td width=5%>
+            </td>
+            <td align=left width=28%>
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>help,text=>appearance):]<br>
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>keys):] / [:LINK(action=template_resize,resize):]<br>
+                [:LINK(action=template_diagnostics,diagnostics):]<br>
+                [:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]<br>
+            </td>
             <!-- =============== -->
 
             <td>[:ICON(unpak):]</td>
-            <td align=left>[:CONFIG_LINK(conf_file=>unpak.cfg,help_suffix=>help,text=>Nzbget Unpacking):]</td>
+            <td align=left>
+                [:CONFIG_LINK(conf_file=>unpak.cfg,help_suffix=>help,text=>nzbget unpacking):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>output.help,text=>nzbget renaming):]
+            </td>
             <!-- =============== -->
 
-            <td>[:ICON(reinstall):]</td>
-            <td align=left >
-                [:LINK(action=confirm_reset,Default Settings):]
-                <br>[:LINK(action=confirm_clear_cache,Clear NMT Cache):]
-                <br>[:LINK(action=confirm_reinstall,Reinstall):]
+            <td width=5%>[:ICON(nas):]</td>
+            <td align=left width=28%>
+                [:MOUNT_STATUS:]
             </td>
         </tr>
         </table>
@@ -77,26 +81,26 @@ img.nasstatus { width:15; height:15; }
             <tr>
                 <td width="20%">
                     <table class="narrow">
-                    <tr><td align="right">Version:</td><td>[:VERSION:]</td></tr>
-                    <tr><td align="right">Tv_Mode:</td><td>[:TV_MODE:]</td></tr>
+                    <tr><td class="label" >version:</td><td>[:VERSION:]</td></tr>
+                    <tr><td class="label" >vmode:</td><td>[:TV_MODE:]</td></tr>
                     </table>
                 </td>
                 <td width="20%">
                     <table class="narrow">
-                    <tr><td align="right">Movies:</td><td>[:MOVIE_TOTAL:]</td></tr>
-                    <tr><td align="right">Episodes:</td><td>[:EPISODE_TOTAL:]</td></tr>
-                    <tr><td align="right">Other:</td><td>[:OTHER_MEDIA_TOTAL:]</td></tr>
+                    <tr><td class="label" >movies:</td><td>[:MOVIE_TOTAL:]</td></tr>
+                    <tr><td class="label" >episodes:</td><td>[:EPISODE_TOTAL:]</td></tr>
+                    <tr><td class="label" >other:</td><td>[:OTHER_MEDIA_TOTAL:]</td></tr>
                     </table>
                 </td>
                 <td width="60%">
                     <table class="narrow" width="100%" >
-                        <tr><td align="right">Uptime:</td><td>[:SYS_UPTIME:]</td></tr>
-                        <tr><td align="right">Load Av:</td><td>[:SYS_LOAD_AVG:]</td></tr>
-                        <tr><td align="right">Disk:</td><td width="80%">[:SYS_DISK_USED:]
+                        <tr><td class="label" >uptime:</td><td>[:SYS_UPTIME:]</td></tr>
+                        <tr><td class="label" >load:</td><td>[:SYS_LOAD_AVG:]</td></tr>
+                        <tr><td class="label" >/share:</td><td width="80%">[:$@sys_share_free_gb:]Gb [:$@sys_share_free_percent:]% free 
                             <table width="100%" >
                                 <tr>
-                                    <td align="right" bgcolor="#880000" width=[:(@sys_used_percent):]%></td>
-                                    <td align="right" bgcolor="#008800" ></td>
+                                    <td align="right" bgcolor="red" width="[:$@sys_share_used_percent:]%" ></td>
+                                    <td align="right" bgcolor="green" width="[:$@sys_share_free_percent:]%" ></td>
                                 </tr>
                             </table>
                         </td></tr>

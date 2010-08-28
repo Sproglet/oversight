@@ -1,0 +1,52 @@
+<!-- Default Admin Template  $Id:$ -->
+<html>
+    <head>
+        [:FAVICON:]
+        <meta name="robots" content="nofollow">
+        <title>Donate [:HOSTNAME:]</title>
+        <style type="text/css">
+
+td.mount1 { color:white; }
+td.mount0 { color:white; }
+img.nasstatus { width:15; height:15; }
+
+            [:INCLUDE_TEMPLATE(css):]
+
+
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=,back):] Oversight Donations</h1>
+
+        <div>
+            <td width=5%>[:ICON(catalog):]</td>
+
+            <h2>Have you considered donating?</h2>
+
+            <br>Oversight is the result of many hundreds of hours of work. 
+
+            <br>Oversight started as a personal project, but now supports many features, specifically requested by end-users.
+            <br>If you enjoy using Oversight then please consider making a donation (however small).
+            This really encourages me to keep improving it, especially when the effort required 
+            pushes it beyond 'hobby' demands.
+
+            <table width=100%>
+                <tr>
+[:IF(@gaya):]
+                    <td>Please visit setup link via a web browser to respond. Thank you very much.</td>
+[:ELSE:]
+                    <td>[:PAYPAL:]</td>
+                    <td>[:LINK(action=donate_done,I've Already Donated):]</td>
+                    <td>[:LINK(action=donate_no,No thanks):]</td>
+[:ENDIF:]
+                </tr>
+            </table>
+
+            [:PAYPAL:]
+        </div>
+    </body>
+</html>
+
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

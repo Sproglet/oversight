@@ -3,7 +3,7 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>oVERSIght Admin Menu [:HOSTNAME:]</title>
+        <title>Oversight Admin Menu [:HOSTNAME:]</title>
         <STYLE type="text/css">
 
 td.mount1 { color:white; }

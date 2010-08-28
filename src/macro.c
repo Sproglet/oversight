@@ -2369,7 +2369,7 @@ char *macro_fn_edit_config(MacroCallInfo *call_info) {
         FREE(def_path);
         FREE(conf_path);
 
-        util_system(cmd);
+        util_system_htmlout(cmd);
         FREE(cmd);
 
         call_info->free_result = 0;

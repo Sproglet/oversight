@@ -969,6 +969,57 @@ int exists_in_dir(char *dir,char *name)
     return result;
 }
 
+int append_content(FILE *from_fp,FILE *to_fp)
+{
+    int ret = 0;
+#define CATBUFLEN 1000
+    char catbuf[CATBUFLEN+1];
+    size_t bytes;
+    if (from_fp && to_fp) {
+        ret = 0;
+        while((bytes=fread(catbuf,1,CATBUFLEN,from_fp)) > 0)  {
+            if (fwrite(catbuf,1,bytes,to_fp) != bytes) {
+                ret = errno;
+                break;
+            }
+        }
+        if (ret == 0) {
+            ret = ferror(from_fp);
+        }
+    }
+    return ret;
+}
+
+int util_system_htmlout(char *cmd)
+{
+    int ret = -1;
+    char *t = "/tmp/ovs.XXXXXX";
+    char *n = STRDUP(t);
+    int fd;
+    if ((fd = mkstemp(n)) == -1) {
+
+        ret = errno;
+
+    } else {
+
+        close(fd);
+
+        HTML_LOG(0,"filename[%s]",n);
+
+        char *cmd2;
+        ovs_asprintf(&cmd2,"%s > '%s'",cmd,n);
+        ret = util_system(cmd2);
+        FILE *in_fp = fopen(n,"r");
+        if (in_fp) {
+            append_content(in_fp,html_get_output());
+            fclose(in_fp);
+        }
+        unlink(n);
+        FREE(cmd2);
+    }
+    HTML_LOG(0,"util_system_htmlout=%d",ret);
+    return ret;
+}
 int util_system(char *cmd)
 {
     int result;

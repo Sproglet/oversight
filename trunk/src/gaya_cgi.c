@@ -439,6 +439,11 @@ static FILE *html_out=NULL;
 static char *html_comment_start="<!--";
 static char *html_comment_end="-->";
 
+FILE *html_get_output()
+{
+    return html_out;
+}
+
 void html_set_output(FILE *fp)
 {
     html_out=fp;

@@ -163,4 +163,6 @@ int util_stat(char *path,struct stat64 *st);
 void util_file_command(char *command_and_args,char *path);
 char *unescape(char *in,char esc);
 char *escape(char *in,char esc,char *meta);
+int append_content(FILE *from_fp,FILE *to_fp);
+int util_system_htmlout(char *cmd);
 #endif

@@ -130,18 +130,12 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 {
     int ret = -1;
     int pass=0;
-TRACE1;
     char *pass1_file = "/tmp/ovs1";
     FILE *pass1_fp = fopen(pass1_file,"w");
-TRACE1;
     if (pass1_fp) {
-TRACE1;
         html_set_output(pass1_fp);
-TRACE1;
         HTML_LOG(0,"begin pass1");
-TRACE1;
         ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
-TRACE1;
         HTML_LOG(0,"end pass1");
         fclose(pass1_fp);
         html_set_output(stdout);
@@ -155,17 +149,13 @@ TRACE1;
             }
         }
 
-TRACE1;
-
         if (ret == 0) {
             pass1_fp = fopen(pass1_file,"r");
             FILE *pass2_fp = stdout;
             if (pass1_fp) {
                 html_set_output(pass2_fp);
                 HTML_LOG(0,"begin pass2");
-TRACE1;
                 ret = display_template(++pass,pass1_fp,skin_name,file_name,sorted_rows,pass2_fp);
-TRACE1;
                 HTML_LOG(0,"end pass2");
                 fclose(pass1_fp);
             }

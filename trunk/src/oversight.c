@@ -108,16 +108,12 @@ int ls(char *path) {
 }
 
 
-int cat(char *content,char *file) {
+int cat(char *content,char *file)
+{
     printf("Content-Type: %s\n\n",content);
     FILE *fp = fopen (file,"r");
-#define CATBUFLEN 1000
-    char catbuf[CATBUFLEN+1];
-    size_t bytes;
     if (fp) {
-        while((bytes=fread(catbuf,1,CATBUFLEN,fp)) > 0)  {
-            fwrite(catbuf,1,bytes,stdout);
-        }
+        append_content(fp,stdout);
         fclose(fp);
         return 0;
     } else {
@@ -353,7 +349,6 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         } 
     }
 
-TRACE1;
 
     // When troubleshooting we should clean up properly as this may reveal
     // malloc errors. 

@@ -116,7 +116,6 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows)
 
         } else if (util_starts_with(vname+1,"sys_share_")) {
 
-TRACE1;
             
             static int first_time = 1;
             static struct statvfs *s = NULL;
@@ -133,31 +132,26 @@ TRACE1;
             }
 
             if (s != NULL) {
-TRACE1;
 
                 convert_double = 1;
 
                 if (STRCMP(vname+1,"sys_share_used_gb") == 0) {
-TRACE1;
 
                     dval = ( s->f_blocks - s->f_bfree );
                     dval *= s->f_bsize;
                     dval /= (1024*1024*1024);
 
                 } else if (STRCMP(vname+1,"sys_share_used_percent") == 0) {
-TRACE1;
 
                     dval = 100 - ( 100.0 * s->f_bfree ) /  s->f_blocks;
 
                 } else if (STRCMP(vname+1,"sys_share_free_gb") == 0) {
-TRACE1;
 
                     dval = s->f_bfree;
                     dval *= s->f_bsize;
                     dval /= (1024*1024*1024);
 
                 } else if (STRCMP(vname+1,"sys_share_free_percent") == 0) {
-TRACE1;
 
                     dval = ( 100.0 * s->f_bfree ) /  s->f_blocks;
 

@@ -515,7 +515,7 @@ char *macro_fn_watched_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
         struct hashtable *watched = string_string_hashtable("watched_menu",4);
-        hashtable_insert(watched,"","---");
+        hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_ANY,"---");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched");
         result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"",watched);
@@ -537,7 +537,7 @@ char *macro_fn_locked_select(MacroCallInfo *call_info) {
     static char *result=NULL;
     if (!result) {
         struct hashtable *locked = string_string_hashtable("locked_menu",4);
-        hashtable_insert(locked,"","---");
+        hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_ANY,"---");
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_YES,"Locked");
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_NO,"Unlocked");
         result =  auto_option_list(QUERY_PARAM_LOCKED_FILTER,"",locked);

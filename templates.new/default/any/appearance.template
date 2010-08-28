@@ -1,0 +1,73 @@
+<!-- Default Rescan Template  $Id:$ -->
+<html>
+    <head>
+        [:FAVICON:]
+        <meta name="robots" content="nofollow">
+        <title>Oversight [:HOSTNAME:]: Appearance</title>
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(css):]
+        </style>
+        <style type="text/css">
+img.webstatus { width:15; height:15; }
+td.webstatus { font-size:90% ; }
+a { color:yellow; }
+        </style>
+    </head>
+    <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
+        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Appearance </h1>
+
+            <center>
+
+            <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>menu.help,text=>general):]
+            <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>detail.help,text=>tv and movie details):]
+            <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>keys):]
+            <p>[:LINK(action=template_resize,interactive resize):]
+            <p>[:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]
+
+            </center>
+        <table width="100%">
+            <tr>
+                <td>[:ICON(display):]</td>
+                <td align=left colspan=3>
+                    <table width=100%>
+                        <tr>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd.help,text=>SD text mode,attr=>class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd-poster.help,text=>SD poster mode,attr=>class=scanlines0):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd-detail.help,text=>SD detail view,attr=>class=scanlines0):]</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td>[:ICON(display):]</td>
+                <td align=left colspan=3>
+                    <table width=100%>
+                        <tr>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720.help,text=>HD text mode,attr=>class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720-poster.help,text=>HD poster mode,attr=>class=scanlines720):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720-detail.help,text=>HD detail view,attr=>class=scanlines720):]</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td>[:ICON(display):]</td>
+                <td align=left colspan=3>
+                    <table width=100%>
+                        <tr>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc.help,text=>PC text mode,attr=>class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc-poster.help,text=>PC poster mode,attr=>class=scanlinespc):]</td>
+                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc-detail.help,text=>PC detail view,attr=>class=scanlinespc):]</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+        </table>
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

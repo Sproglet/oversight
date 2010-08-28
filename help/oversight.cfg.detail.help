@@ -1,0 +1,10 @@
+ovs_show_episode_titles:Display Episode Titles (select Home Icon after changing)|No|Yes=>_et=1
+ovs_show_episode_dates:Display Episode Dates (select Home Icon after changing)|No|Yes=>_ed=1
+ovs_show_repack:Identify Repacks and Propers (select Home Icon after changing)|1|0
+ovs_display_rating:Display Ratings|1|0
+ovs_display_certificate:Display Certificates|1|0
+ovs_display_fanart:Display fanart - Fan art must be previously downloaded by catalog.sh and also in skin|0|1
+ovs_hm_runtime_format:Format for runtime >=1 hour |%dh %dm
+ovs_m_runtime_format:Format for runtime < 1 hour|%d mins
+ovs_movie_filename:Display filename on movie details screen|0|1
+

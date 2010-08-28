@@ -55,9 +55,7 @@ td.label { color:gray; }
             <td width=5%>
             </td>
             <td align=left width=28%>
-                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>help,text=>appearance):]<br>
-                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>keys):] / [:LINK(action=template_resize,resize):]<br>
-                [:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]<br>
+                <br>[:LINK(action=confirm_appearance,appearance):]
             </td>
             <!-- =============== -->
 

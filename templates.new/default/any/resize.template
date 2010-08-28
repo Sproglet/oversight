@@ -45,49 +45,6 @@ body { font-size:20; font-family:"arial"; color:white; }
         <p>You can also use the onscreen arrows. To change the boxset values, navigate to a boxset view whilst in 
 resize mode.
 
-        <p><u>Edit Configuration</u>
-        <p>You can also fine tune the values by editing them directly using the links below.
-        <table width="100%">
-            <tr>
-                <td>[:ICON(display):]</td>
-                <td align=left colspan=3>Display<br>
-                    <table width=100%>
-                        <tr>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd.help,text=>SD text mode,attr=>class=scanlines0):]</td>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd-poster.help,text=>SD poster mode,attr=>class=scanlines0):]</td>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>sd-detail.help,text=>SD detail view,attr=>class=scanlines0):]</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-
-            <tr>
-                <td>[:ICON(display):]</td>
-                <td align=left colspan=3>
-                    <table width=100%>
-                        <tr>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720.help,text=>HD text mode,attr=>class=scanlines720):]</td>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720-poster.help,text=>HD poster mode,attr=>class=scanlines720):]</td>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>720-detail.help,text=>HD detail view,attr=>class=scanlines720):]</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-
-            <tr>
-                <td>[:ICON(display):]</td>
-                <td align=left colspan=3>
-                    <table width=100%>
-                        <tr>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc.help,text=>PC text mode,attr=>class=scanlinespc):]</td>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc-poster.help,text=>PC poster mode,attr=>class=scanlinespc):]</td>
-                            <td>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>pc-detail.help,text=>PC detail view,attr=>class=scanlinespc):]</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-
-        </table>
     </body>
 </html>
 <!--

@@ -1,0 +1,15 @@
+ovs_new_days:Highlight as new if video newer than this number of days|0|1|2|3|4|5|6|7|10|14|30
+ovs_sort_order:Default Sort Order (select Home Icon after changing)|Age|Name=>s=_T
+ovs_age_field:Field to use for age|scantime|filetime
+ovs_tvboxsets:Use boxsets|1|0
+ovs_grid_direction:Order of items in a grid|horizontal|vertical
+ovs_movieboxsets:Use boxsets by_first=Link by first movie, by_last=Link by last,by_any=any common prequel/sequel - may slow down gui|by_first|by_last|by_any|disabled
+ovs_default_view:Default Media View (select Home Icon after changing)|All|Movies=>_tf=M|Tv=>_tf=T|Unwatched=>_wf=0
+ovs_crossview:Merge oversight view from another NMT player in the network share list.|0|1
+ovs_tv_play_via_pc:Start tv playback from browser|1|0
+ovs_skin_name:Name of skin (must be in templates folder)|@CMD:ls -d templates/*/any | sed -n "/templates/ { s@templates/@@;s@/any@@;p }" 
+ovs_log_level:Amount of logging within html comments|0|1|2|3|4|5
+ovs_use_folders_as_titles:Display the containing folder name in place of the video title|0|1
+ovs_nas_timeout:Max time to detect NAS service in millis|50
+ovs_title_bar:Display titles as cursor moves|poster_mode|never
+

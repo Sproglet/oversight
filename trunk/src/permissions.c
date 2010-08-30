@@ -46,6 +46,7 @@ void setPermissions()
 
     chdir(appDir());
     permissions(nmt_uid(),nmt_gid(),0775,0,"tmp");
+    permissions(nmt_uid(),nmt_gid(),0775,0,"cache");
     permissions(nmt_uid(),nmt_gid(),0775,0,"logs");
     permissions(nmt_uid(),nmt_gid(),0775,0,".");
     permissions(nmt_uid(),nmt_gid(),0775,0,"index.db");

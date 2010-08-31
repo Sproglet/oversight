@@ -2976,7 +2976,7 @@ TRACE;
             "<center><table class=overview_poster %s>\n%s\n</table></center>\n",
             title_change_script,
             (g_dimension->poster_mode?"":" width=100%"),
-            (result?result:"<tr><td>No results</td><tr>")
+            (result?result:"<tr><td>&nbsp;</td><tr>")
     );
 
     FREE(title_change_script);

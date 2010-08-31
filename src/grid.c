@@ -81,6 +81,7 @@ char *grid_calculate_offsets(GridInfo *gi)
  */
 char *grid_set_offsets(GridInfo *gi)
 {
+    HTML_LOG(0,"grid_set_offsets");
     char *error_text = NULL;
     int i=0;
     int total = 0;
@@ -105,9 +106,13 @@ char *grid_set_offsets(GridInfo *gi)
  */
 char *grid_check_offsets(GridInfo *gi)
 {
+    HTML_LOG(0,"grid_check_offsets");
     char *error_text = NULL;
     int i=0;
     if (gi->segments) {
+
+        HTML_LOG(0,"number of grid segments =  %d",gi->segments->size );
+
         for(i = 0 ; error_text == NULL && i < gi->segments->size ; i++ ) {
            GridSegment *gs = gi->segments->array[i];
            if (gs->offset == -1 ) {
@@ -149,8 +154,9 @@ char *grid_check_one_segment(GridInfo *gi,GridSegment *gsToCheck)
     int last = 0;
     int segno = -1;
 
-    HTML_LOG(0,"check segment[%d %dx%d] - offset=%d",
-            i,gsToCheck->dimensions.rows,gsToCheck->dimensions.cols,gsToCheck->offset);
+    HTML_LOG(0,"check segment[%d:%dx%d]",
+            gsToCheck->offset,gsToCheck->dimensions.rows,gsToCheck->dimensions.cols);
+    
    
     int check_start = gsToCheck->offset;
     int check_end = GRID_SEGMENT_END(gsToCheck);
@@ -161,7 +167,7 @@ char *grid_check_one_segment(GridInfo *gi,GridSegment *gsToCheck)
     last = check_end;
 
     if (gi->segments) {
-        for(i = 0 ; error_text == NULL && i < gi->segments->size ; i++ ) {
+        for(i = 0 ; i < gi->segments->size ; i++ ) {
            GridSegment *gs = gi->segments->array[i];
            if (gs != gsToCheck) {
 
@@ -181,6 +187,8 @@ char *grid_check_one_segment(GridInfo *gi,GridSegment *gsToCheck)
            }
         }
     }
+    assert(segno != -1);
+
     if (check_start  == 0) segment_before++;
     HTML_LOG(0," check_end=%d , last=%d",check_end,last);
     if (check_end == last) segment_after++;

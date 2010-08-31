@@ -1264,15 +1264,8 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
 
         static int grid_no = 0;
 
-        result = grid_calculate_offsets(get_grid_info());
-
-        if (result != NULL) {
-            // An error occured - error message is in result
-            // do - nothing. Error message passed to output.
-        } else {
-            gs = get_grid_info()->segments->array[grid_no++];
-            result = get_grid(get_current_page(),gs,call_info->sorted_rows);
-        }
+        gs = get_grid_info()->segments->array[grid_no++];
+        result = get_grid(get_current_page(),gs,call_info->sorted_rows);
 
     } else {
         assert(0);

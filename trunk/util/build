@@ -34,11 +34,11 @@ prompt "Release label is [$label]"
 cd src
 make ARCH=100 clean
 echo "$label" > verfile
-make ARCH=100 all
+make ARCH=100 TRACE1= all
 
 make ARCH=200 clean 
 echo "$label" > verfile
-make ARCH=200 all 
+make ARCH=200 TRACE1= all 
 
 cd ..
 

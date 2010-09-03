@@ -23,10 +23,12 @@ update() {
     movie-links
     plot
     producers
+    actors
+    actresses
     ratings
     release-dates';
 
-    files='movies';
+    files='movies actors actresses';
 
     mirrors='ftp://ftp.fu-berlin.de/pub/misc/movies/database/
     ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/

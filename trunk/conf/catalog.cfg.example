@@ -65,6 +65,7 @@ catalog_group="nmt"
 catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
 catalog_tv_plugins="THETVDB,TVRAGE"
 
+catalog_imdb_source="desktop"
 # Here the order of search methods can be selected based on the file name.
 # Note that the IMDBFIRST search will always find something and can give false +ve
 # so only use for short titles where other search methods might get confused.

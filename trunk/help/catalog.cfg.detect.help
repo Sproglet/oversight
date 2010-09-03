@@ -3,6 +3,7 @@ catalog_format_tags:Comma delimited list of format tags that are unlikey to be p
 catalog_title_country_list:Comma delimited list of countries prefered for IMDB movie titles. Must be on main IMDB page. Non USA may not work.
 catalog_cert_country_list:Comma delimited list of Countries to use for certification. Non USA may not work.
 catalog_imdb_links_required:Number of imdb links required in web search results|4
+catalog_imdb_source:Scraping mobile site is faster but only gives US certification|desktop|mobile
 catalog_tv_plugins:Comma delimited list List of web site to detect tv shows.
 catalog_cache_film_info:Downloaded Movie information is cached (this speeds up rescans but may cause ratings to be stale) 1mb every 20 movies!|yes|no
 catalog_max_actors:Maximum number of actors to scrape per movie|5

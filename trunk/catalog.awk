@@ -1898,8 +1898,10 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
     }
     if (g_imdb_scraped[idx] != g_imdb[idx] ) {
         
-        # use mobile website
-        sub(/\/\/(www\.|)imdb\./,"//m.imdb.",url);
+        if (g_settings["catalog_imdb_source"] == "mobile" ) {
+            # use mobile website
+            sub(/\/\/(www\.|)imdb\./,"//m.imdb.",url);
+        }
         INF("scraping "url);
 
         f=getUrl(url,"imdb_main",1);

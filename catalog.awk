@@ -6765,7 +6765,7 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             }
 
             #IMDB Genre takes precedence
-            if (g_genre[idx] == "" && index(line,"Genre:")) {
+            if (g_genre[idx] == "" && index(line,">Genre")) {
 
                 g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0));
 

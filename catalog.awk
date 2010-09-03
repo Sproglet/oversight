@@ -178,7 +178,7 @@ BEGIN {
     g_tvrage_web="http://www.tvrage.com";
 
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
-    #g_fetch_images_concurrently="START";
+    g_fetch_images_concurrently="START";
 
     g_tv_check_urls["TVRAGE"]=g_tvrage_web;
     g_tv_check_urls["THETVDB"]=g_thetvdb_web;
@@ -3055,8 +3055,6 @@ cat) {
 
             # Not sure - try a TV search looking for various abbreviations.
             cat = tv_search_complex(idx,bestUrl);
-
-            INF("cat=["cat"] =T ="(cat == "T")" !=T = "(cat != "T"));
 
             if (cat != "T") {
                 # Could not find any hits using tv abbreviations, try heuristis for a movie search.
@@ -5951,7 +5949,7 @@ i,urls,tmpf,qf,r) {
             if (wget2(urls[i],tmpf,referer) == 0) {
 
                 # Long html lines were split to avoid memory issues with bbawk.
-                # With gawk it may be possible to bo back to using cat.
+                # With gawk it may be possible to go back to using cat.
 
                 #Insert line feeds - but try not to split text that has bold or span tags.
 
@@ -6911,7 +6909,9 @@ ret) {
             if (preparePath(file) == 0) {
                 g_portrait[id]=1;
                 #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
-                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\" &");
+
+                #remove ampersand from call
+                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
             }
         }
     }
@@ -6924,8 +6924,10 @@ function extract_imdb_title_category(idx,title\
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
     g_category[idx]="M";
     DEBUG("imdb title=["title"]");
-    if (match(title,"^\".*\"") ) {
+    if (match(title,"^\".*\"") ) {   # www.imdb.com
         title=substr(title,RSTART+1,RLENGTH-2);
+        g_category[idx]="T";
+    } else if (sub(/ ?T[vV] [Ss]eries ?/,"",title)) { # m.imdb.com
         g_category[idx]="T";
     }
 

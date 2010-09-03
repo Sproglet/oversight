@@ -204,7 +204,7 @@ BEGIN {
     g_nonquote_regex = "[^\"']";
 
     #g_imdb_regex="\\<tt[0-9]+\\>";
-    g_imdb_regex="\\<tt[0-9][0-9][0-9][0-9][0-9]+\\>"; #bit better performance
+    g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+"; #bit better performance
 
     g_year_re="(20[01][0-9]|19[0-9][0-9])";
     g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]* \\(?"g_year_re"\\)?";
@@ -1898,10 +1898,6 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
     }
     if (g_imdb_scraped[idx] != g_imdb[idx] ) {
         
-        if (g_settings["catalog_imdb_source"] == "mobile" ) {
-            # use mobile website
-            sub(/\/\/(www\.|)imdb\./,"//m.imdb.",url);
-        }
         INF("scraping "url);
 
         f=getUrl(url,"imdb_main",1);
@@ -3035,6 +3031,14 @@ cat) {
 
         if (scanNfo){
            bestUrl = scanNfoForImdbLink(gNfoDefault[idx]);
+        }
+
+        if (bestUrl == "") {
+            # scan filename for imdb link
+            bestUrl = extractImdbLink(file);
+            if (bestUrl) {
+                INF("extract imdb id from "file);
+            }
         }
 
         cat="";
@@ -5879,7 +5883,7 @@ u) {
 }
 
 function getUrl(url,capture_label,cache,referer,\
-    f,label,url2) {
+    f,label,url_key,cache_suffix) {
     
     label="getUrl:"capture_label": ";
 
@@ -5890,20 +5894,28 @@ function getUrl(url,capture_label,cache,referer,\
         return;
     }
 
-    url2 = g_cache_prefix url;
+    if (g_settings["catalog_imdb_source"] == "mobile" ) {
+        if (url ~ ".imdb.com/title/tt[0-9]+/?$" ) {
+            # use mobile website
+            sub(/\/\/(www\.|)imdb\./,"//m.imdb.",url);
+            cache_suffix="_mb";
+        }
+    }
 
-    if(cache && (url2 in gUrlCache) ) {
+    url_key = g_cache_prefix url;
 
-        DEBUG(label" fetched ["url2"] from cache");
-        f = gUrlCache[url2];
+    if(cache && (url_key in gUrlCache) ) {
+
+        DEBUG(label" fetched ["url_key"] from cache");
+        f = gUrlCache[url_key];
     }
 
     if (g_settings["catalog_cache_film_info"] == "yes") {
         if (url ~ ".imdb.com/title/tt[0-9]+/?$" ) {
-            f = persistent_cache(extractImdbId(url));
+            f = persistent_cache(extractImdbId(url),cache_suffix);
             cache=1;
         } else if (url ~ ".imdb.com/title/tt[0-9]+/movieconnections$" ) {
-            f = persistent_cache(extractImdbId(url),"_mc");
+            f = persistent_cache(extractImdbId(url),cache_suffix "_mc");
             cache=1;
         }
     }
@@ -5915,7 +5927,7 @@ function getUrl(url,capture_label,cache,referer,\
 
         if (wget(url,f,referer) ==0) {
             if (cache) {
-                gUrlCache[url2]=f;
+                gUrlCache[url_key]=f;
                 #DEBUG(label" Fetched & Cached ["url"] to ["f"]");
             } else {
                 #DEBUG(label" Fetched ["url"] into ["f"]"); 

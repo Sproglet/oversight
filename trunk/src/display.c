@@ -3375,22 +3375,22 @@ TRACE;
             <style type=\"text/css\">\
             .resize_arrow { font-size:8pt; }\
             </style>\
-            <table class=\"resize_table\" >"
-            "<tr>"
-                "<td></td><td align=\"center\">%s</td>"
-                "<td></td>"     "<td></td><td align=\"center\">%s</td><td></td>"
-                "<td>%s</td>"
-            "</tr>"
-            "<tr>"
-                "<td>%s</td><td>%s</td><td>%s</td>"
-                "<td>%s</td><td>%s</td><td>%s</td>"
-                "<td>%s</td>"
-            "</tr>"
-            "<tr>"
-                "<td></td><td align=\"center\">%s</td><td></td>"
-                "<td></td><td align=\"center\">%s</td><td></td>"
-                "<td>%s</td>"
-            "</tr>"
+            <table class=\"resize_table\" >\n"
+            "<tr>\n"
+                "<td></td><td align=\"center\">%s</td>\n"
+                "<td></td>"     "<td></td><td align=\"center\">%s</td><td></td>\n"
+                "<td>%s</td>\n"
+            "</tr>\n"
+            "<tr>\n"
+                "<td>%s</td><td>%s</td><td>%s</td>\n"
+                "<td>%s</td><td>%s</td><td>%s</td>\n"
+                "<td>%s</td>\n"
+            "</tr>\n"
+            "<tr>\n"
+                "<td></td><td align=\"center\">%s</td><td></td>\n"
+                "<td></td><td align=\"center\">%s</td><td></td>\n"
+                "<td>%s</td>\n"
+            "</tr>\n"
             "</table>",
                 rdec,hdec,hzero,
                 cdec,grid_centre,cinc,wdec,poster_centre,winc,wzero,

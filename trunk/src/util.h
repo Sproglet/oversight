@@ -138,7 +138,8 @@ int util_rm(char *path);
  * error.
  */
 #define PRE_CHECK_FGETS(b,sz) b[(sz)-2]='\0'
-#define CHECK_FGETS(b,sz) assert(b[(sz)-2]=='\0')
+//#define CHECK_FGETS(b,sz) assert(b[(sz)-2]=='\0')
+#define CHECK_FGETS(b,sz) do { if (b[(sz)-2]) { HTML_LOG(0,"%.*s",sz,b); assert(!sz); } }while(0)
 
 int count_chr(char *str,char c);
 int exists_in_dir(char *dir,char *name);

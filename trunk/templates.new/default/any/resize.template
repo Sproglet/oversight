@@ -21,7 +21,7 @@ body { font-size:20; font-family:"arial"; color:white; }
         <p>Select [:LINK(view=&action=&resizeon=1,{resize mode}):] to resize the grid interactively  then 
         use the following remote key sequences:
         Think of 2,4,6,8 as up,left,right,down.
-        Some skins may ignore boxset resizing.
+        <span class=important>Some skins may ignore these settings and use their own.</span>
         <table>
             <tr>
                 <td>

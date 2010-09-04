@@ -16,6 +16,7 @@ char *delimited_substring(char *buf,char *prefix,char *substr,char *suffix,int m
 struct hashtable *string_string_hashtable(char *name,int size);
 void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy);
 void hashtable_dump(char *label,struct hashtable *h);
+void hashtable_dumpf(FILE *fp,char *label,struct hashtable *h);
 
 char *join_str_fmt_free(char *fmt,char *s1,char *s2);
 char *substring(char *s,int start_pos, int end_pos);

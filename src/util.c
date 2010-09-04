@@ -646,6 +646,10 @@ int nmt_gid() {
 }
 
 void hashtable_dump(char *label,struct hashtable *h) {
+    hashtable_dumpf(stderr,label,h);
+}
+
+void hashtable_dumpf(FILE *fp,char *label,struct hashtable *h) {
 
     if (hashtable_count(h)) {
 
@@ -654,11 +658,11 @@ void hashtable_dump(char *label,struct hashtable *h) {
 
        for(itr = hashtable_loop_init(h); hashtable_loop_more(itr,&k,&v) ; ) {
 
-            fprintf(stderr,"<!-- %s : [ %s ] = [ %s ] -->\n",label,k,v);
+            fprintf(fp,"<!-- %s : [ %s ] = [ %s ] -->\n",label,k,v);
         }
 
     } else {
-        fprintf(stderr,"<!-- %s : EMPTY HASH -->\n",label);
+        fprintf(fp,"<!-- %s : EMPTY HASH -->\n",label);
     }
 }
 

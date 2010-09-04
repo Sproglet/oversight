@@ -263,6 +263,10 @@ body.main_background {
 	background-color:black; 
 }
 
+.important {
+    color:#FF8800;
+}
+
 .overview_poster {
     text-align:center;
 [:IF($@poster_mode):]

@@ -2492,8 +2492,8 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
 
     ovs_asprintf(&result,"\t<td %s%s%s class=grid%d %s >%s%s%s%s</td>\n",
             background_prefix,NVL(cell_background_image),background_suffix,
-            //width_attr,
-            //height_attr,
+            //NVL(width_attr),
+            //NVL(height_attr),
             grid_toggle,
             NVL(mouse_ev),
             
@@ -2882,19 +2882,30 @@ char *render_grid(long page,GridSegment *gs, int numids, DbItem **row_ids,int pa
     char *tmp;
     int select_mode=!EMPTY_STR(query_select_val());
 
+    char *grid_css;
+
     if (numids < rows * cols ) {
         //re-arrange layout to have as many columns as possible.
         rows = (numids + (cols-1)) / cols;
     }
 
     if (g_dimension->poster_mode) {
-        ovs_asprintf(&width_attr," width=%dpx ", g_dimension->current_grid->img_width+cell_margin);
+        ovs_asprintf(&width_attr," width=%dpx ", gs->dimensions.img_width+cell_margin);
 
-        ovs_asprintf(&height_attr," height=%dpx ", g_dimension->current_grid->img_height+cell_margin);
+        ovs_asprintf(&height_attr," height=%dpx ", gs->dimensions.img_height+cell_margin);
     } else {
         ovs_asprintf(&width_attr," width=%d%% ",(int)(100/cols));
         height_attr=STRDUP("");
     }
+
+    ovs_asprintf(&grid_css,"<style type=\"text/css\">\n"
+            "div.grid%d table tr td a font img {\n"
+            "\twidth:%dpx;\n"
+            "\theight:%dpx;\n}\n"
+            "</style>\n",
+            gs->offset,
+            gs->dimensions.img_width,
+            gs->dimensions.img_height);
 
     char *title_change_script = write_titlechanger(gs->offset,rows,cols,numids,row_ids);
 
@@ -2972,12 +2983,16 @@ TRACE;
     array_free(rowArray);
 
     ovs_asprintf(&tmp,
-            "<script type=\"text/javascript\"><!--\n%s\n--></script>\n"
-            "<center><table class=overview_poster %s>\n%s\n</table></center>\n",
+            "<script type=\"text/javascript\"><!--\n%s\n--></script>\n%s\n"
+            "<center><div class=grid%d><table class=overview_poster %s>\n%s\n</table></div></center>\n",
             title_change_script,
+            grid_css,
+            gs->offset,
             (g_dimension->poster_mode?"":" width=100%"),
             (result?result:"<tr><td>&nbsp;</td><tr>")
     );
+
+    FREE(grid_css);
 
     FREE(title_change_script);
 

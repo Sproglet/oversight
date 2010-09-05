@@ -22,16 +22,12 @@ img.nasstatus { width:15; height:15; }
 
             <h2>Have you considered donating?</h2>
 
-            <br>Oversight is the result of many hundreds of hours of work. 
-
-            <br>Oversight started as a personal project, but now supports many features, specifically requested by end-users.
-            <br>If you enjoy using Oversight then please consider making a donation (however small).
-            This really encourages me to keep improving it, especially when the effort required 
-            pushes it beyond 'hobby' demands.
-
+            <br><b>why?</b> If you enjoy using Oversight then please consider making a donation (however small).
+            This really encourages me to keep improving it and adding features specifically
+requested by you the end user.
+            <br><b>who?</b> At present dontations go to me. Lordy. I have spent many hundreds of hours writing oversight. But I plan to allow skinners to add donation pages to their skin config page. As skins play a major part in Oversight. If you particularly wish to donate to a skinner please contact them directly. 
             <br>
-            <br>
-            click the icon to donate now to ProDynamic software [:PAYPAL:]
+            <br><b>how?</b> click the icon to donate now to ProDynamic software [:PAYPAL:]
             <table width=100% >
                 <tr>
 [:IF($@gaya):]
@@ -39,7 +35,7 @@ img.nasstatus { width:15; height:15; }
 [:ELSE:]
                     <td align=center width=33%>[:LINK(view=admin&action=donate_done,i've already donated):]</td>
                     <td align=center width=33%>[:LINK(view=admin&action=donate_remind,remind me later):]</td>
-                    <td align=center width=33%>[:LINK(view=admin&action=donate_no,No thanks):]</td>
+                    <td align=center width=33%>[:LINK(view=admin&action=donate_no,no thanks):]</td>
 [:ENDIF:]
                 </tr>
             </table>

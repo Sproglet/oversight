@@ -1,6 +1,26 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+v2.0testing-rxxxx
+
+  * [gui] Grid Segment fixes
+  * [gui] Viewing 2nd page fixed when default filter in config, but overridden(cleared) in GUI ( Issue 462)
+  * [gui] Simpler GRID and PAGE_MAX macros - two passes of template.
+  * [gui] Changed admin screen layout
+  * [gui/scan] Set permissions in ./cache folder in admin screen
+  * [gui] Changed default skin to oversight
+
+  * [scan] Scan IMDB id in file name (Issue 459)
+  * [scan] Follow soft links option (Issue 430)
+  * [scan] Scrape from m.imdb.com optional - may help when IMDB change main site.
+  * [scan] Parse roman numerals in mini-series notation.
+
+  * [gui/install] Cleaner template installation when upgrading
+
+v2.0testing-r1369
+
+  * Individual skin configuration
+
 v2.0testing-r1298
   * Scan best rated images from http://themoviedb.org
   * Automatic Movie boxsets and boxset icons. (using IMDB follows/followed by)

@@ -340,7 +340,7 @@ add_watch_cron() {
             1d)  d="1-31" ; h=0 ; m=$5 ;;
         esac
         if [ "$d$m$h" != "***" ] ; then
-            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR' && './catalog.sh' $3 >/dev/null 2>&1 &"
+            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR' && './oversight.sh' $3 >/dev/null 2>&1 &"
         fi
     else
         "$NMT" NMT_CRON_DEL root "$appname.$2"
@@ -409,7 +409,6 @@ reboot_fix() {
     ln -sf /tmp/0 "$APPDIR/logs/gui.log"
 
     # Restore cronjobs
-    # "$NMT" NMT_CRON_ADD root "$appname" "* * * * * [ -e $PENDING_FILE ] && cd '$APPDIR' && './$appname.sh' LISTEN >/dev/null 2>&1 &"
 
     freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
     add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
@@ -420,7 +419,7 @@ reboot_fix() {
 
 case "$1" in 
     NEWSCAN)
-        "$APPDIR/catalog.sh" NEWSCAN GET_POSTERS GET_FANART
+        "$APPDIR/catalog.sh" NEWSCAN GET_POSTERS GET_FANART GET_PORTRAITS
 
         if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
             "$APPDIR/bin/torrent.sh" transmission unpak_all

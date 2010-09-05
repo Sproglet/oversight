@@ -215,6 +215,7 @@ a.movie { color:#aaaaff; }
 .right { text-align:right; }
 
 input { background-color:black; color:yellow; font-weight:bold; border=0; }
+input.paypal { background-color:transparent; }
 select { background-color:black; color:yellow; font-weight:bold; border=0; border-color:red; font-size:small; }
 
 .recent { font-size:[:FONT_SIZE:]; }

@@ -32,8 +32,16 @@ TRACE1;
         if (show_donate) {
 TRACE1;
             if (exists(donated_file())) {
+
+                struct stat64 stat;
+                if (util_stat(donated_file(),&stat) == 0) {
+
+                    HTML_LOG(0,"now=%u time = %u",time(NULL),stat.st_mtime);
+                    if (time(NULL) < stat.st_mtime ) {
 TRACE1;
-                show_donate = 0;
+                        show_donate = 0;
+                    }
+                }
             }
         }
 

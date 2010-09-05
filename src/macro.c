@@ -868,9 +868,9 @@ char *macro_fn_paypal(MacroCallInfo *call_info) {
         //"<input type=\"hidden\" name=\"hosted_button_id\" value=\"2496882\">"
         //"<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
         "<input type=\"hidden\" name=\"hosted_button_id\" value=\"9700071\">"
-        "<input width=100px type=\"image\" src=\"https://www.paypal.com/en_US/GB/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"PayPal - The safer, easier way to pay online.\">"
-        "<img alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
-        "</form>";
+        "<input class=paypal type=\"image\" src=\"https://www.paypal.com/en_US/GB/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"PayPal - The safer, easier way to pay online.\">"
+        "<img  alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
+        "</form> ";
         call_info->free_result=0;
     }
 
@@ -1610,14 +1610,23 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info)
         if (exists(d) || exists(d)) {
 
             char *params;
+            char *text2 = text;
+            if (text == NULL || *text != '{' ) {
+                ovs_asprintf(&text2,"{%s}",NVL(text));
+            }
             ovs_asprintf(&params,"%s=%s&action=settings&%s=%s&%s=%s&%s=%s",
                     QUERY_PARAM_VIEW,"admin",
                     QUERY_PARAM_CONFIG_FILE,conf,
                     QUERY_PARAM_CONFIG_HELP,help,
-                    QUERY_PARAM_CONFIG_TITLE,text);
+                    QUERY_PARAM_CONFIG_TITLE, text2
+                    );
 
-            result = drill_down_link(params,attr,text);
+            result = drill_down_link(params,attr,text2);
+
             FREE(params);
+            if (text2 != text) {
+                FREE(text2);
+            }
         } else {
             HTML_LOG(0,"missing conf file [%s] or [%s]",c,d);
         }

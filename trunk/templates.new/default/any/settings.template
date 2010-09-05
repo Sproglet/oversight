@@ -17,13 +17,13 @@ th.optionhelp { width:60%; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Configuration [:$?title:]</h1>
+        <h1 class=admin>[:BACK_BUTTON:] Oversight Configuration [:$?title:]</h1>
 
         [:FORM_START:]
 
-            [:EDIT_CONFIG(conf_file=>$?file,help_suffix=>$?help):]
+            [:EDIT_CONFIG(conf_file=>$?cfgf,help_suffix=>$?cfgh):]
 
-            <input type=hidden name=file value="[:$?file:]">
+            <input type=hidden name=cfgf value="[:$?cfgf:]">
             <!-- <input type=hidden name=view value="[:$?view:]"> -->
             <table width=100%>
                 <tr>

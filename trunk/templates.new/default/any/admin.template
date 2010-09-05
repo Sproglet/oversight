@@ -18,7 +18,7 @@ td.label { color:gray; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:ICON_LINK(view=&idlist=&action=,back):] Oversight Configuration</h1>
+        <h1 class=admin>[:BACK_BUTTON:] Oversight Configuration</h1>
         <h3>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access Enabled!):]</h3>
         <table width=100%>
         <tr>
@@ -28,7 +28,7 @@ td.label { color:gray; }
                 [:ICON(rescan):]
             </td>
             <td align=left >
-                [:LINK(action=confirm_rescan,rescan):]
+                [:LINK(view=admin&action=confirm_rescan,rescan):]
             </td>
 
             <!-- =============== -->
@@ -43,8 +43,8 @@ td.label { color:gray; }
             <td>[:ICON(reinstall):]</td>
             <td align=left >
                 [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>security):]
-                <br>[:LINK(action=template_diagnostics,diagnostics):]
-                <br>[:LINK(action=confirm_resets,resets):]
+                <br>[:LINK(view=admin&action=template_diagnostics,diagnostics):]
+                <br>[:LINK(view=admin&action=confirm_resets,resets):]
             </td>
 
 
@@ -55,7 +55,7 @@ td.label { color:gray; }
             <td width=5%>
             </td>
             <td align=left width=28%>
-                <br>[:LINK(action=confirm_appearance,appearance):]
+                <br>[:LINK(view=admin&action=confirm_appearance,appearance):]
             </td>
             <!-- =============== -->
 

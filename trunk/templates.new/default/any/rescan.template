@@ -14,7 +14,7 @@ a { color:yellow; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Media Scan</h1>
+        <h1 class=admin>[:BACK_BUTTON:] Oversight Media Scan</h1>
 
         [:FORM_START:]
 
@@ -26,7 +26,7 @@ a { color:yellow; }
                         [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>{scan paths},attr=>style="color=red;"):]
                     </td>
                     <td align=center>
-                        [:LINK(action=template_scan_status,{site checker}):]
+                        [:LINK(view=admin&action=template_scan_status,{site checker}):]
                     </td>
                     <td align=center>
                         [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>rescan.help,text=>{image defaults}):]<br>

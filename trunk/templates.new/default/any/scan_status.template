@@ -31,7 +31,7 @@ b {
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
 
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=confirm_rescan,back):] Site Checker</h1>
+        <h1 class=admin>[:BACK_BUTTON:] Site Checker</h1>
 
 <center>
 <table width="100%">
@@ -89,8 +89,8 @@ b {
             </table>
             <p>For best results <b>IMDB</b>, <b>TheMovieDb</b> and <b>TheTvDb</b> and <b>all three search engines</b> should be active. TvRage is used as a backup for TV Episode and Plot information.
             <p>If any of the above search engines are down, check by trying a search on a PC <u>on the same network.</u>
-            <p>If all links are down check NMT can reach the internet, also try [:LINK(action=confirm_clear_cache,clearing the DNS cache):]
-            <br>[:LINK(action=confirm_rescan,{Back To Rescan Panel}):]
+            <p>If all links are down check NMT can reach the internet, also try [:LINK(view=admin&action=confirm_clear_cache,clearing the DNS cache):]
+            <br>[:LINK(view=admin&action=confirm_rescan,{Back To Rescan Panel}):]
 </center>
     </body>
 </html>

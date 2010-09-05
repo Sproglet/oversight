@@ -422,12 +422,13 @@ void do_actions() {
         if (util_starts_with(action,"donate_")) {
 
 TRACE1;
-            if (STRCMP(action,"donate_later") == 0) {
+#define DAY (24*60*60)
+            if (STRCMP(action,"donate_remind") == 0) {
                 // touch file one week in the future
-                util_touch(donated_file(),time(NULL) + 7 * 24 * 60 * 60 );
+                util_touch(donated_file(),time(NULL) + 10 * 60 );
             } else {
-                // touch file now
-                util_touch(donated_file(),time(NULL));
+                // touch file 2 years in future.
+                util_touch(donated_file(),time(NULL)+ 2 * 365 * DAY);
             }
 
         } else if (STRCMP(action,"reinstall") == 0) {

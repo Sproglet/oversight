@@ -40,30 +40,30 @@ TRACE1;
 TRACE1;
         if (show_donate) {
 TRACE1;
-            display_main_template("default","donate",sorted_rows);
+            display_main_template("admin","donate",sorted_rows);
         } else {
 TRACE1;
-            display_main_template("default","admin",sorted_rows);
+            display_main_template("admin","admin",sorted_rows);
         }
 TRACE1;
 
     } else if (util_starts_with(action,"settings")) {
         
-        display_main_template("default","settings",sorted_rows);
+        display_main_template("admin","settings",sorted_rows);
 
 #define CONFIRM_PREFIX "confirm_"
     } else if (util_starts_with(action,CONFIRM_PREFIX)) {
         
-        display_main_template("default",action+strlen(CONFIRM_PREFIX),sorted_rows);
+        display_main_template("admin",action+strlen(CONFIRM_PREFIX),sorted_rows);
 
 #define TEMPLATE_PREFIX "template_"
     } else if (util_starts_with(action,TEMPLATE_PREFIX)) {
         
-        display_main_template("default",action+strlen(TEMPLATE_PREFIX),sorted_rows);
+        display_main_template("admin",action+strlen(TEMPLATE_PREFIX),sorted_rows);
 
     } else {
 
-        display_main_template("default","completed",sorted_rows);
+        display_main_template("admin","completed",sorted_rows);
     }
 
 }

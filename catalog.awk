@@ -6669,7 +6669,7 @@ count,fcount,i,parts,start) {
 
 #Get highest quality imdb image by removing dimension info
 function imdb_img_url(url) {
-    while (sub(/\._S[XY][0-9]+/,"",url)) {
+    while (sub(/\.?_(SX|SY|CR)[0-9,]+/,"",url)) {
         #donothing;
 
     }
@@ -6900,10 +6900,10 @@ dtext,dpos,dnum,i,id,name,dlist,count,img) {
                 INF(name_db"|"id"|"name"|"img);
 
                 # Seems to have a lot of portraits
-                if (img == "") {
-                    img = "http://www.turkcealtyazi.org/film/images/"id".jpg";
-                    # http://ownfilmcollection.com/ERaImage/DCimages/name/nm2652511.jpg
-                }
+           #     if (img == "") {
+           #         img = "http://www.turkcealtyazi.org/film/images/"id".jpg";
+           #         # http://ownfilmcollection.com/ERaImage/DCimages/name/nm2652511.jpg
+           #     }
 
                 get_image(id,img,APPDIR"/db/global/_A/"g_settings["catalog_poster_prefix"] id".jpg");
             }

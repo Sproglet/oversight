@@ -14,14 +14,14 @@ a { color:yellow; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask,back):] Oversight Appearance </h1>
+        <h1 class=admin>[:BACK_BUTTON:] Oversight Appearance </h1>
 
             <center>
 
             <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>menu.help,text=>general):]
             <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>detail.help,text=>tv and movie details):]
             <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>keys):]
-            <p>[:LINK(action=template_resize,interactive resize):]
+            <p>[:LINK(view=admin&action=template_resize,interactive resize):]
             <p>[:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]
 
             </center>

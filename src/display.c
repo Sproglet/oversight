@@ -44,8 +44,11 @@
 // 2. Only those moves with score > 8. 
 // Chances are 1. 
 // So add Rating to DRILLDOWN links.
+
 #define DRILLDOWN_CHAR '@'
-#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON "," QUERY_PARAM_PERSON "," QUERY_PARAM_RATING
+// TODO: All drill down params should start with special character rather than having list below. eg
+// top level has @xxx
+#define DRILL_DOWN_PARAM_NAMES QUERY_PARAM_SELECTED","QUERY_PARAM_PAGE","QUERY_PARAM_IDLIST","QUERY_PARAM_VIEW"," QUERY_PARAM_TITLE_FILTER "," QUERY_PARAM_SEASON "," QUERY_PARAM_PERSON "," QUERY_PARAM_RATING "," QUERY_PARAM_ACTION"," QUERY_PARAM_CONFIG_HELP","QUERY_PARAM_CONFIG_TITLE","QUERY_PARAM_CONFIG_FILE
 
 #define JAVASCRIPT_EPINFO_FUNCTION_PREFIX "tvinf_"
 #define JAVASCRIPT_MENU_FUNCTION_PREFIX "t_"
@@ -742,7 +745,8 @@ char *get_self_link(char *params,char *attr,char *title) {
  * @attr - <a> attributes.
  * @title  <a>title</a>
  */
-char *drill_down_link(char *params,char *attr,char *title) {
+char *drill_down_link(char *params,char *attr,char *title)
+{
     assert(params);
     assert(attr);
     assert(title);

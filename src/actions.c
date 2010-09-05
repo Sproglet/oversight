@@ -71,9 +71,9 @@ static int is_checkbox(char *name,char *val) {
 static void clear_selection() {
 
 
-    query_remove("help"); // settingscfg help file
-    query_remove("file"); // settings cfg file
-    query_remove("title"); // settings title
+    query_remove(QUERY_PARAM_CONFIG_HELP);
+    query_remove(QUERY_PARAM_CONFIG_FILE);
+    query_remove(QUERY_PARAM_CONFIG_TITLE);
     query_remove("form");
     query_remove(QUERY_PARAM_SELECT);
     query_remove(QUERY_PARAM_ACTION);
@@ -527,7 +527,7 @@ void do_actions() {
                         HTML_LOG(1,"new name value [%s]=[%s]=[%s]",option_name,real_name,value);
                         HTML_LOG(1,"old name value [%s]=[%s]",old_name,old_value);
 
-                        char *file = query_val("file");
+                        char *file = query_val(QUERY_PARAM_CONFIG_FILE);
                         char *cmd;
                         ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s/conf/%s\" \"%s\" \"%s\"",
                             appDir(),

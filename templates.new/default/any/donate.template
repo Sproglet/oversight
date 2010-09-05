@@ -16,7 +16,7 @@ img.nasstatus { width:15; height:15; }
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=,back):] Oversight Donations</h1>
+        <h1 class=admin>[:BACK_BUTTON:] Oversight Donations</h1>
 
         <div>
             <td width=5%>[:ICON(catalog):]</td>
@@ -36,8 +36,8 @@ img.nasstatus { width:15; height:15; }
                     <td>Please visit setup link via a web browser to respond. Thank you very much.</td>
 [:ELSE:]
                     <td>[:PAYPAL:]</td>
-                    <td>[:LINK(action=donate_done,I've Already Donated):]</td>
-                    <td>[:LINK(action=donate_no,No thanks):]</td>
+                    <td>[:LINK(view=admin&action=donate_done,I've Already Donated):]</td>
+                    <td>[:LINK(view=admin&action=donate_no,No thanks):]</td>
 [:ENDIF:]
                 </tr>
             </table>

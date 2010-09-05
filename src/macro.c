@@ -1417,11 +1417,11 @@ char *macro_fn_link(MacroCallInfo *call_info) {
 
     if (call_info->args && call_info->args->size == 2) {
 
-        result = get_self_link(call_info->args->array[0],"",call_info->args->array[1]);
+        result = drill_down_link(call_info->args->array[0],"",call_info->args->array[1]);
 
     } else if (call_info->args && call_info->args->size == 3) {
 
-        result= get_self_link(call_info->args->array[0],call_info->args->array[2],call_info->args->array[1]);
+        result= drill_down_link(call_info->args->array[0],call_info->args->array[2],call_info->args->array[1]);
 
     } else {
 
@@ -1614,8 +1614,13 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info)
         if (exists(d) || exists(d)) {
 
             char *params;
-            ovs_asprintf(&params,"action=settings&file=%s&help=%s&title=%s",conf,help,text);
-            result = get_self_link(params,attr,text);
+            ovs_asprintf(&params,"%s=%s&action=settings&%s=%s&%s=%s&%s=%s",
+                    QUERY_PARAM_VIEW,"admin",
+                    QUERY_PARAM_CONFIG_FILE,conf,
+                    QUERY_PARAM_CONFIG_HELP,help,
+                    QUERY_PARAM_CONFIG_TITLE,text);
+
+            result = drill_down_link(params,attr,text);
             FREE(params);
         } else {
             HTML_LOG(0,"missing conf file [%s] or [%s]",c,d);

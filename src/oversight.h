@@ -87,9 +87,14 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_PERSON "P"
 
 #define QUERY_PARAM_ACTION "action"
+#define QUERY_PARAM_SUBVIEW "view2"
 #define QUERY_PARAM_ACTION_VALUE_SET "set"
 
 #define QUERY_PARAM_QUERY "q"
+
+#define QUERY_PARAM_CONFIG_FILE "cfgf"
+#define QUERY_PARAM_CONFIG_HELP "cfgh"
+#define QUERY_PARAM_CONFIG_TITLE "cfgt"
 
 #define QUERY_PARAM_SELECT "select"
 #define FORM_PARAM_SELECT_VALUE_DELETE "Delete"

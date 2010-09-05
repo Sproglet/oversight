@@ -4025,13 +4025,16 @@ bestId,bestFirstAired,ages,count) {
         TODO("Refine selection rules here.");
 
         INF("Getting the most recent first aired for s"g_season[idx]"e"g_episode[idx]);
-        bestFirstAired="";
+        # disabled in the hope another search method is triggered
+        if(1) {
+            bestFirstAired="";
 
-        getRelativeAge(plugin,idx,titles,ages);
+            getRelativeAge(plugin,idx,titles,ages);
 
-        bestScores(ages,ages,1);
+            bestScores(ages,ages,1);
 
-        bestId = firstIndex(ages);
+            bestId = firstIndex(ages);
+        }
         #TODO also try to get first episode of season.
     }
     INF("Selected:"bestId" = "titles[bestId]);

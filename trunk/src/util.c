@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <regex.h>
 #include <assert.h>
+#include <utime.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -1335,6 +1336,33 @@ int index_STRCMP(char *a,char *b)
     //if (strncasecmp(a,"the ",4)==0) a+= 4;
     //if (strncasecmp(b,"the ",4)==0) b+= 4;
     return strcasecmp(a,b);
+}
+char *donated_file()
+{
+    static char *file = NULL;
+    if (file == NULL) {
+        ovs_asprintf(&file,"%s/.donate",appDir());
+    }
+    return file;
+}
+
+int util_touch(char *path,time_t t)
+{
+    int ret = 0;
+    FILE *f = fopen(path,"a");
+    if (f) {
+        fclose(f);
+
+        struct utimbuf ut;
+        ut.actime = ut.modtime = t;
+
+        if (utime(path,&ut) != 0) {
+            ret = errno;
+        }
+    } else {
+        ret = errno;
+    }
+    return ret;
 }
 
 // vi:sw=4:et:ts=4

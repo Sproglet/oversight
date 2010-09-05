@@ -2,6 +2,14 @@
 #
 #
 #change ovs cells to ovs_
+#
+
+donate
+Remote play
+numeric scan
+xmbc nfo read
+xmbc nfo write
+
 
 add new config skin.cfg and skin.help and allow editing.
 

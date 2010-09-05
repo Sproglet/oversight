@@ -8,7 +8,6 @@
 #include "gaya_cgi.h"
 #include "template.h"
 
-
 void display_admin(DbSortedRows *sorted_rows) {
 
     char *action = query_val(QUERY_PARAM_ACTION);
@@ -21,7 +20,32 @@ void display_admin(DbSortedRows *sorted_rows) {
 
     } else if (EMPTY_STR(action) || STRCMP(action,"ask")==0 || STRCMP(action,"Cancel")==0) {
 
-        display_main_template("default","admin",sorted_rows);
+TRACE1;
+        int show_donate = 1;
+
+        if (strstr(NVL(getenv("QUERY_STRING")),"donate")  ) {
+TRACE1;
+            // we've come from the donate page.
+            show_donate = 0;
+        }
+TRACE1;
+        if (show_donate) {
+TRACE1;
+            if (exists(donated_file())) {
+TRACE1;
+                show_donate = 0;
+            }
+        }
+
+TRACE1;
+        if (show_donate) {
+TRACE1;
+            display_main_template("default","donate",sorted_rows);
+        } else {
+TRACE1;
+            display_main_template("default","admin",sorted_rows);
+        }
+TRACE1;
 
     } else if (util_starts_with(action,"settings")) {
         

@@ -862,19 +862,15 @@ char *macro_fn_tv_mode(MacroCallInfo *call_info) {
 char *macro_fn_paypal(MacroCallInfo *call_info) {
     char *p = NULL;
     if (!(g_dimension->local_browser) && *oversight_val("remove_donate_msg") != '1' ) {
-        p = "<td width=25%><font size=2>Any contributions are gratefully received towards"
-        "<font color=red>Oversight</font>,"
-        "<font color=#FFFF00>FeedTime</font>,"
-        "<font color=blue>Zebedee</font> and "
-        "<font color=green>Unpak</font> scripts</font></td>"
-        "<td><form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\">"
+        p =
+        "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\">"
         "<input type=\"hidden\" name=\"cmd\" value=\"_s-xclick\">"
         //"<input type=\"hidden\" name=\"hosted_button_id\" value=\"2496882\">"
         //"<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"\">"
         "<input type=\"hidden\" name=\"hosted_button_id\" value=\"9700071\">"
-        "<input width=50px type=\"image\" src=\"https://www.paypal.com/en_US/GB/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"PayPal - The safer, easier way to pay online.\">"
+        "<input width=100px type=\"image\" src=\"https://www.paypal.com/en_US/GB/i/btn/btn_donateCC_LG.gif\" border=\"0\" name=\"submit\" alt=\"PayPal - The safer, easier way to pay online.\">"
         "<img alt=\"\" border=\"0\" src=\"https://www.paypal.com/en_GB/i/scr/pixel.gif\" width=\"1\" height=\"1\">"
-        "</form></td>";
+        "</form>";
         call_info->free_result=0;
     }
 

@@ -28,23 +28,23 @@ td.label { color:gray; }
                 [:ICON(rescan):]
             </td>
             <td align=left >
-                [:LINK(view=admin&action=confirm_rescan,rescan):]
+                [:LINK(view=admin&action=confirm_rescan,{rescan}):]
             </td>
 
             <!-- =============== -->
 
             <td width=5%>[:ICON(catalog):]</td>
             <td align=left width=28%>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>media sources):]<br>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>detect.help,text=>scraping):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>input.help,text=>{media sources}):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>detect.help,text=>{scraping}):]<br>
             </td>
 
             <!-- =============== -->
             <td>[:ICON(reinstall):]</td>
             <td align=left >
-                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>security):]
-                <br>[:LINK(view=admin&action=template_diagnostics,diagnostics):]
-                <br>[:LINK(view=admin&action=confirm_resets,resets):]
+                [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>{security}):]
+                <br>[:LINK(view=admin&action=template_diagnostics,{diagnostics}):]
+                <br>[:LINK(view=admin&action=confirm_adm_misc,{miscellaneous}):]
             </td>
 
 
@@ -55,14 +55,14 @@ td.label { color:gray; }
             <td width=5%>
             </td>
             <td align=left width=28%>
-                <br>[:LINK(view=admin&action=confirm_appearance,appearance):]
+                <br>[:LINK(view=admin&action=confirm_appearance,{appearance}):]
             </td>
             <!-- =============== -->
 
             <td>[:ICON(unpak):]</td>
             <td align=left>
-                [:CONFIG_LINK(conf_file=>unpak.cfg,help_suffix=>help,text=>nzbget unpacking):]<br>
-                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>output.help,text=>nzbget renaming):]
+                [:CONFIG_LINK(conf_file=>unpak.cfg,help_suffix=>help,text=>{nzbget unpacking}):]<br>
+                [:CONFIG_LINK(conf_file=>catalog.cfg,help_suffix=>output.help,text=>{nzbget renaming}):]
             </td>
             <!-- =============== -->
 

@@ -167,4 +167,6 @@ char *unescape(char *in,char esc);
 char *escape(char *in,char esc,char *meta);
 int append_content(FILE *from_fp,FILE *to_fp);
 int util_system_htmlout(char *cmd);
+char *donated_file();
+int util_touch(char *path,time_t t);
 #endif

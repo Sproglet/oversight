@@ -1,0 +1,9 @@
+#sidebar TableOfContents
+
+= Screen Shots =
+
+http://oversight.googlecode.com/svn/trunk/screenshots/ovs2-page1.jpg
+
+http://oversight.googlecode.com/svn/trunk/screenshots/testing-movie-detail.jpg
+
+http://oversight.googlecode.com/svn/trunk/screenshots/testing-tv-detail.jpg

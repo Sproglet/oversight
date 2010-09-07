@@ -1,5 +1,11 @@
 #sidebar TableOfContents
 
+Also see Oversight on YouTube 
+  * [http://www.youtube.com/watch?v=o2mux77i4jM yt1]
+  * [http://www.youtube.com/watch?v=dfgxd2LLXC0 yt2]
+  * [http://www.youtube.com/watch?v=deIHWf00H0Y yt3 - alpha]
+
+
 = Screen Shots =
 
 http://oversight.googlecode.com/svn/trunk/screenshots/ovs2-page1.jpg

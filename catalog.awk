@@ -1217,7 +1217,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     
                     gDate[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                } else if (match(lc,gExtRegEx1)) {
+                } else if (match(lc,gExtRegAll)) {
 
                     #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
                     #Only add it if previous one is not part of same file.
@@ -1322,13 +1322,12 @@ lastNameSeen,i,lastch,ch) {
 
     lastNameSeen = g_media[count-1];
 
-    #DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
     if (length(lastNameSeen) != length(name)) {
-        #DEBUG("length ["lastNameSeen"] != ["name"]");
         return 0;
     }
     if (lastNameSeen == name) return 0;
 
+    DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
     for(i=1 ; i - length(lastNameSeen) <= 0 ; i++ ) {
         lastch = substr(lastNameSeen,i,1);
         ch = substr(name,i,1);
@@ -1339,7 +1338,7 @@ lastNameSeen,i,lastch,ch) {
 
     # Check following characters...
     if (substr(lastNameSeen,i+1) != substr(name,i+1)) {
-        #DEBUG("no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
+        DEBUG("checkMultiPart: no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
         return 0;
     }
 
@@ -1350,10 +1349,12 @@ lastNameSeen,i,lastch,ch) {
 
     if (lastch == "1" ) {
         if (index("2345",ch) == 0) {
+            DEBUG("checkMultiPart : expected 2345 got "ch);
             return 0;
         }
         # Ignore double digit xxx01 xxx02 these are likely tv series.
         if (substr(lastNameSeen,i-1,2) ~ "[0-9]1" ) {
+            DEBUG("checkMultiPart : ignore double digit multiparts.");
             return 0;
         }
         # Avoid matching tv programs e0n x0n 11n
@@ -1362,6 +1363,7 @@ lastNameSeen,i,lastch,ch) {
         # reject 0e1 0x1 "ep 1" "dvd 1" etc.
         # we could change this to a white list instead. eg part01 cd1 etc.
         if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.edx]|dvd|disc|ep|episode) *1$") {
+            DEBUG("checkMultiPart: rejected ["lastNameSeen"]");
             return 0;
         }
 
@@ -1374,6 +1376,7 @@ lastNameSeen,i,lastch,ch) {
         }
         #continue 
     } else {
+        DEBUG("checkMultiPart: exptected 1 or a");
         return 0;
     }
 

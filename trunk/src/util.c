@@ -22,6 +22,7 @@
 #include "vasprintf.h"
 #include "config.h"
 #include "oversight.h"
+#include "permissions.h"
 
 
 // All folders have . and ..
@@ -1352,6 +1353,7 @@ int util_touch(char *path,time_t t)
     FILE *f = fopen(path,"a");
     if (f) {
         fclose(f);
+        permissions(nmt_uid(),nmt_gid(),0775,0,path);
 
         struct utimbuf ut;
         ut.actime = ut.modtime = t;

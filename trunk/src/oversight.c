@@ -130,7 +130,7 @@ void gaya_auto_load(char *url_encoded_file) {
 
     printf("Content-Type: text/html\n\n");
     printf("<html><body onloadset=playme bgcolor=black text=white link=white >\n");
-    printf("<html><body >\n");
+    //printf("<html><body >\n");
 
     printf("<br><a href=\"/oversight/oversight.cgi\">Oversight</a>\n");
 
@@ -180,16 +180,17 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
     char *q=getenv("QUERY_STRING");
 
-    if (q == NULL || strchr(q,'=') == NULL ) {
+    char *p;
+    if (q && (p = delimited_substring(q,"&",REMOTE_VOD_PREFIX2,"=",1,0)) != NULL) {
+
+        gaya_auto_load(p+strlen(REMOTE_VOD_PREFIX2)+1);
+        exit(0);
+
+    } else if (q == NULL || strchr(q,'=') == NULL ) {
+
         if (argc > 1 ) {
 
-
-            if (util_starts_with(argv[1],REMOTE_VOD_PREFIX2)) {
-
-                gaya_auto_load(argv[1]+strlen(REMOTE_VOD_PREFIX2));
-                exit(0);
-
-            } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
+            if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
                 // Single argument passed.
                 //
                 char *path = url_decode(argv[1]);

@@ -20,17 +20,13 @@ void display_admin(DbSortedRows *sorted_rows) {
 
     } else if (EMPTY_STR(action) || STRCMP(action,"ask")==0 || STRCMP(action,"Cancel")==0) {
 
-TRACE1;
         int show_donate = 1;
 
         if (strstr(NVL(getenv("QUERY_STRING")),"donate")  ) {
-TRACE1;
             // we've come from the donate page.
             show_donate = 0;
         }
-TRACE1;
         if (show_donate) {
-TRACE1;
             if (exists(donated_file())) {
 
                 struct stat64 stat;
@@ -38,22 +34,17 @@ TRACE1;
 
                     HTML_LOG(0,"now=%u time = %u",time(NULL),stat.st_mtime);
                     if (time(NULL) < stat.st_mtime ) {
-TRACE1;
                         show_donate = 0;
                     }
                 }
             }
         }
 
-TRACE1;
         if (show_donate) {
-TRACE1;
             display_main_template("admin","donate",sorted_rows);
         } else {
-TRACE1;
             display_main_template("admin","admin",sorted_rows);
         }
-TRACE1;
 
     } else if (util_starts_with(action,"settings")) {
         

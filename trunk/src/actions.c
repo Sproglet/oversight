@@ -100,19 +100,19 @@ static void clear_selection() {
 
 static void gaya_send_link(char *arg) {
     //send this link to gaya with a single argment.
-//HTML_LOG(1,"dbg remove this arg=[%s]",arg);
+HTML_LOG(0,"dbg remove this arg=[%s]",arg);
     FILE *pip = fopen("/tmp/gaya_bc","w");
     if (!pip) {
         html_error("cant send [%s] to gaya");
     } else {
         char *link;
         char *file=url_encode(arg);
-//HTML_LOG(1,"dbg remove this and this 1 file=[%s]",file);
-        ovs_asprintf(&link,"http://localhost:8883%s?"REMOTE_VOD_PREFIX2"%s",getenv("SCRIPT_NAME"),file);
-//HTML_LOG(1,"dbg remove this and this 2 link=[%s]",link);
+HTML_LOG(0,"dbg remove this and this 1 file=[%s]",file);
+        ovs_asprintf(&link,"http://localhost:8883%s?"REMOTE_VOD_PREFIX2"=%s",getenv("SCRIPT_NAME"),file);
+HTML_LOG(0,"dbg remove this and this 2 link=[%s]",link);
         FREE(file);
-//HTML_LOG(1,"dbg remove this and this 3");
-        HTML_LOG(1,"sending link to gaya [%s]",link);
+HTML_LOG(0,"dbg remove this and this 3");
+        HTML_LOG(0,"sending link to gaya [%s]",link);
         fprintf(pip,"%s\n",link);
         fclose(pip);
         FREE(link);
@@ -404,7 +404,7 @@ void do_actions() {
 
     // If remote play then send to gaya
     char *file=query_val(REMOTE_VOD_PREFIX1);
-    if (file && *file) {
+    if (!EMPTY_STR(file)) {
         gaya_send_link(file); 
         query_remove(REMOTE_VOD_PREFIX1);
     }
@@ -421,7 +421,6 @@ void do_actions() {
 
         if (util_starts_with(action,"donate_")) {
 
-TRACE1;
 #define DAY (24*60*60)
             if (STRCMP(action,"donate_remind") == 0) {
                 // touch file one week in the future

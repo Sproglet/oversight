@@ -1,6 +1,7 @@
 Everyone
 
   * OversightIntro
+  * ScreenShots
   * InstallingOversight
   * RunningOversight
   * SiteChecker

@@ -63,7 +63,7 @@ DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,i
 static inline ViewMode*get_drilldown_view(DbItem *item);
 char *get_final_link_with_font(char *params,char *attr,char *title,char *font_attr);
 static char *get_drilldown_name_static(char *root_name,int num_prefix);
-char *remove_blank_params(char *input);
+void remove_blank_params_inplace(char *input);
 void get_watched_counts(DbItem *item,int *watchedp,int *unwatchedp);
 char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
@@ -253,47 +253,60 @@ char *self_url(char *new_params) {
             FREE(value);
         }
     }
-    tmp += sprintf(tmp,"%c%s",(pcount==0?'?':'&'),new_params);
+    sprintf(tmp,"%c%s",(pcount==0?'?':'&'),new_params);
 
-    tmp = remove_blank_params(new);
-    FREE(new);
-    new = tmp;
+    remove_blank_params_inplace(new);
     HTML_LOG(1,"encoded final[%s]",new);
 
     return new;
 }
 
-char *remove_blank_params(char *input)
-{
-    char *in = input;
-    char *p;
-    char *out = STRDUP(in);
-    p = out;
-    for(;;) {
-        *p = *in;
-        if ( ( p[-1] == '=' ) && ( *p == '\0' || *p == '&' )  ) {
-            //HTML_LOG(0,"removing from [%.*s]",p-out,out);
-            // We have xxx=& rewind to end of previous parameter.
-            p--;
-            while ( p>out &&  *p != '&' && *p != '?' ) {
-                p--;
-            }
-            // now we are at the start or at the previous &
-            if (*p == '&' || *p == '?' ) p++;
-            *p = '\0'; // terminate to be on th safe side.
-            //HTML_LOG(0,"removed from [%.*s]",p-out,out);
-        } else {
-            p++;
-        }
-        if (*in == '\0') break;
-        in++;
-    }
-    if (0 && STRCMP(input,out) != 0) {
-        HTML_LOG(0,"remove_blank_params[%s] vs [%s]",input,out);
-    }
-    return out;
-}
+#define PARAM_SEP(c) (((c) == '\0') || ((c) == '&' ) || ((c) == ';' ))
 
+void remove_blank_params_inplace(char *in)
+{
+    char *read_p=in;
+
+    // read_block points to next pa
+    char *next_parameter = in;
+    char *out_end = NULL;
+
+    while( (read_p = strchr(read_p,'=')) != NULL) {
+
+        read_p++;
+        if (out_end == NULL) out_end = in;
+
+        if (PARAM_SEP(*read_p)) {
+            // empty param - = followed by sep - skip forward.
+            next_parameter = read_p;
+
+        } else {
+            // found a parameter
+            if (  next_parameter == out_end ) {
+                // Advance  both next_parameter and out_end to next parameter.
+                out_end++; // skip past & or first char
+                while (!PARAM_SEP(*out_end)) {
+                    out_end++;
+                }
+                next_parameter = out_end;
+
+            } else {
+                // copy from next_parameter to next PARAM_SEP
+                if (out_end == in ) {
+                    next_parameter++; // skip ampersand if at start
+                } else {
+                    *out_end++ = *next_parameter++;
+                }
+                while (!PARAM_SEP(*next_parameter)) {
+                    *out_end++ = *next_parameter++;
+                }
+            }
+            read_p = next_parameter;
+        }
+    }
+    // Add final null if there were any = in the string 
+    if (out_end) *out_end = '\0';
+}
 
 static char *self_url2(char *q1,char *q2)
 {
@@ -707,7 +720,9 @@ TRACE;
     /*
      * Compute the new url
      */
+
     char *final = self_url2(new_params,new_drilldown_params);
+HTML_LOG(0,"XX [%s] [%s] to [%s]",new_params,new_drilldown_params,final);
     FREE(new_drilldown_params);
 
     return final;
@@ -883,6 +898,38 @@ char *vod_attr(char *file) {
     }
 }
 
+
+/*
+ * Convert 
+ *    href="blah"
+ *
+ *    to
+ *
+ *    href="javascript:if(confirm('prompt')) location.href='blah';"
+ */
+char *add_confirm_link(char *prompt,char *link) 
+{
+#define HREF "href=\""
+    char *result = NULL;
+    if (link) {
+        char *href = strstr(link,HREF);
+        char *href_end;
+        if (href) {
+            href += strlen(HREF);
+            href_end = strchr(href,'"');
+            if (href_end) {
+                ovs_asprintf(&result,"%.*sjavascript:if (confirm('%s')) location.href='%.*s';%s",
+                    href-link,link,
+                    prompt,
+                    href_end-href,href,
+                    href_end);
+            }
+        }
+    }
+    if (result == NULL) result = STRDUP(link);
+    return result;
+}
+
 //T2 just to avoid c string handling in calling functions!
 char *vod_link(DbItem *rowid,char *title ,char *t2,
         char *source,char *file,char *href_name,char *href_attr,char *class){
@@ -922,13 +969,21 @@ char *vod_link(DbItem *rowid,char *title ,char *t2,
             //this sends a url to gaya which points back to this script again but will just contain
             //small text to auto load a file using <a onfocusload> and <body onloadset>
             char *params =NULL;
+            char *attr;
+
             ovs_asprintf(&params,REMOTE_VOD_PREFIX1"=%s",encoded_path);
+            //
             //ovs_asprintf(&params,"idlist=&"QUERY_PARAM_VIEW"=&"REMOTE_VOD_PREFIX1"=%s",encoded_path);
             //
-            char *attr;
             ovs_asprintf(&attr,"%s %s",class,NVL(href_attr));
-            result = get_final_link_with_font(params,attr,title,class);
-            //result = get_self_link_with_font(params,class,title,class); XX
+
+            // result = get_final_link_with_font(params,attr,title,class);
+            result = get_self_link_with_font(params,class,title,class); 
+            
+            char *tmp = add_confirm_link("play?",result);
+            FREE(result);
+            result = tmp;
+
             FREE(attr);
             FREE(params);
 

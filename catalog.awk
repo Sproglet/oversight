@@ -1203,38 +1203,39 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 # Now continue to check the file 
 
-                if (match(lc,gExtRegexIso)) {
-                    #ISO images.
+                if (match(lc,gExtRegExAll)) {
 
-                    # Check image size. Images should be very large or for testing only, very small.
-                    if (length(w5) > 1 && length(w5) - 10 < 0) {
-                        INF("Skipping image ["scan_line"] - too small");
-                    } else {
-                        store=1;
+                    store = 1;
+                    if (match(lc,gExtRegexIso)) {
+                        #ISO images.
+
+                        # Check image size. Images should be very large or for testing only, very small.
+                        if (length(w5) > 1 && length(w5) - 10 < 0) {
+                            INF("Skipping image ["scan_line"] - too small");
+                            store = 0;
+                        }
                     }
+
+                    if (store) {
+                        #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
+                        #Only add it if previous one is not part of same file.
+                        if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
+                          if ( checkMultiPart(scan_line,gMovieFileCount) ) {
+                              #replace xxx.cd1.ext with xxx.nfo (Internet convention)
+                              #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
+                              if ( !setNfo(gMovieFileCount-1,".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
+                                  setNfo(gMovieFileCount-1, extRe,".nfo");
+                              }
+                              store = 0;
+                           }
+                       }
+                   }
+
 
                 } else if (match(scan_line,"unpak.???$")) {
                     
                     gDate[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                } else if (match(lc,gExtRegAll)) {
-
-                    #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
-                    #Only add it if previous one is not part of same file.
-                    if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
-                      if ( checkMultiPart(scan_line,gMovieFileCount) ) {
-                          #replace xxx.cd1.ext with xxx.nfo (Internet convention)
-                          #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
-                          if ( !setNfo(gMovieFileCount-1,".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
-                              setNfo(gMovieFileCount-1, extRe,".nfo");
-                          }
-                      } else {
-                          store=2;
-                      }
-                   } else {
-                       #This is the first/only avi for this film/show
-                       store=2;
-                   }
 
                 } else if (match(lc,"\\.nfo$")) {
 

@@ -268,13 +268,19 @@ void remove_blank_params_inplace(char *in)
     char *read_p=in;
 
     // read_block points to next pa
-    char *next_parameter = in;
+    char *next_parameter = NULL;
     char *out_end = NULL;
 
     while( (read_p = strchr(read_p,'=')) != NULL) {
 
         read_p++;
-        if (out_end == NULL) out_end = in;
+        if (out_end == NULL)  {
+             // Start at first parameter.
+             out_end = strchr(in,'?');
+             assert(out_end);
+             out_end ++;
+             next_parameter = out_end;
+        }
 
         if (PARAM_SEP(*read_p)) {
             // empty param - = followed by sep - skip forward.
@@ -292,7 +298,7 @@ void remove_blank_params_inplace(char *in)
 
             } else {
                 // copy from next_parameter to next PARAM_SEP
-                if (out_end == in ) {
+                if (out_end[-1] == '?' ) {
                     next_parameter++; // skip ampersand if at start
                 } else {
                     *out_end++ = *next_parameter++;

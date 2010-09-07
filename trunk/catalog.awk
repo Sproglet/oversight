@@ -1327,7 +1327,7 @@ lastNameSeen,i,lastch,ch) {
     }
     if (lastNameSeen == name) return 0;
 
-    DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
+    #DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
     for(i=1 ; i - length(lastNameSeen) <= 0 ; i++ ) {
         lastch = substr(lastNameSeen,i,1);
         ch = substr(name,i,1);
@@ -1338,7 +1338,7 @@ lastNameSeen,i,lastch,ch) {
 
     # Check following characters...
     if (substr(lastNameSeen,i+1) != substr(name,i+1)) {
-        DEBUG("checkMultiPart: no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
+        #DEBUG("checkMultiPart: no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
         return 0;
     }
 
@@ -1349,12 +1349,12 @@ lastNameSeen,i,lastch,ch) {
 
     if (lastch == "1" ) {
         if (index("2345",ch) == 0) {
-            DEBUG("checkMultiPart : expected 2345 got "ch);
+            #DEBUG("checkMultiPart : expected 2345 got "ch);
             return 0;
         }
         # Ignore double digit xxx01 xxx02 these are likely tv series.
         if (substr(lastNameSeen,i-1,2) ~ "[0-9]1" ) {
-            DEBUG("checkMultiPart : ignore double digit multiparts.");
+            #DEBUG("checkMultiPart : ignore double digit multiparts.");
             return 0;
         }
         # Avoid matching tv programs e0n x0n 11n
@@ -1363,7 +1363,7 @@ lastNameSeen,i,lastch,ch) {
         # reject 0e1 0x1 "ep 1" "dvd 1" etc.
         # we could change this to a white list instead. eg part01 cd1 etc.
         if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.edx]|dvd|disc|ep|episode) *1$") {
-            DEBUG("checkMultiPart: rejected ["lastNameSeen"]");
+            #DEBUG("checkMultiPart: rejected ["lastNameSeen"]");
             return 0;
         }
 
@@ -1376,7 +1376,7 @@ lastNameSeen,i,lastch,ch) {
         }
         #continue 
     } else {
-        DEBUG("checkMultiPart: exptected 1 or a");
+        #DEBUG("checkMultiPart: exptected 1 or a");
         return 0;
     }
 

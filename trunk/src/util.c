@@ -1341,7 +1341,7 @@ char *donated_file()
 {
     static char *file = NULL;
     if (file == NULL) {
-        ovs_asprintf(&file,"%s/.donate",appDir());
+        ovs_asprintf(&file,"%s/db/.donate",appDir());
     }
     return file;
 }

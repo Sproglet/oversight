@@ -25,7 +25,7 @@ img.nasstatus { width:15; height:15; }
             <p>If you enjoy using Oversight then please consider making a donation (however small).
             This really encourages me to keep improving it and adding features specifically
 requested by you the end user.
-            <p> At present dontations go to me. Lordy / ProDynamic software. I have spent many hundreds of hours writing oversight. But I plan to allow skinners to add donation pages to their skin config page. As skins play a major part in Oversight. If you particularly wish to donate to a skinner please contact them directly. 
+            <p> At present dontations go to me. Lordy / ProDynamic software. I have spent many hundreds of hours writing oversight.
 [:IF($@gaya):]
             <p>Please visit setup-&gt;miscellaneous-&gt;donate link via a web browser to respond or remove this message. Thank you very much.
 [:ELSE:]
@@ -41,6 +41,7 @@ requested by you the end user.
             </table>
 [:ENDIF:]
 
+            <p> Skins are now a major part of Oversight, and I plan to allow skinners to add donation links to their skin config page.  In the mean time if you particularly wish to donate to a skinner please contact them directly. 
         </center>
     </body>
 </html>

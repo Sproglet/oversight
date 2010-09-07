@@ -73,13 +73,11 @@ table.overview_poster {
                 </tr>
             </table>
             <center>
-            [:GRID(rows=>$skin_grid_rows,cols=>$skin_grid_cols):] 
-            <br>
             <span class=menutitle id="menutitle">&nbsp;</span>
             <span class=menutitle id="unwatchedtotal">&nbsp;</span>
             <span class=menutitle id="watchedtotal">&nbsp;</span>
             <br>
-            [:GRID(rows=>$skin_grid_rows2,cols=>$skin_grid_cols2):] 
+            [:GRID:] 
             </center>
             <table class=footer width=100%>
                 <tr valign=top>

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "util.h"
 #include "gaya_cgi.h"
@@ -14,15 +15,24 @@
 
 void permissions(uid_t uid,gid_t gid,int mode,int recursive,char *path)
 {
-    int result = 0;
-    struct stat64 st;
-    util_stat(path,&st);
+    char *full_path = path;
 
-    HTML_LOG(0,"chown %d:%d chmod %o [%s]",uid,gid,mode,path);
-    chown(path,uid,gid);
-    result = chmod(path,mode);
+    if (*full_path != '/' ) {
+        ovs_asprintf(&full_path,"%s/%s",appDir(),path);
+    }
+
+    struct stat64 st;
+    util_stat(full_path,&st);
+
+    //HTML_LOG(0,"chown %d:%d chmod %o [%s]",uid,gid,mode,full_path);
+    if (chown(full_path,uid,gid) != 0) {
+        HTML_LOG(0,"chown [%s] error [%d]",full_path,errno);
+    }
+    if (chmod(full_path,mode) != 0) {
+        HTML_LOG(0,"chmod [%s] error [%d]",full_path,errno);
+    }
     if (recursive && S_ISDIR(st.st_mode)) {
-        DIR *d = opendir(path);
+        DIR *d = opendir(full_path);
         if (d) {
             struct dirent *sub ;
 
@@ -30,7 +40,7 @@ void permissions(uid_t uid,gid_t gid,int mode,int recursive,char *path)
                   if (sub->d_type == DT_REG ||
                         (sub->d_type == DT_DIR && strcmp(sub->d_name,".") && strcmp(sub->d_name,".."))) {
                         char *tmp;
-                        ovs_asprintf(&tmp,"%s/%s",path,sub->d_name);
+                        ovs_asprintf(&tmp,"%s/%s",full_path,sub->d_name);
                         permissions(uid,gid,mode,recursive,tmp);
                         FREE(tmp);
                   }
@@ -38,6 +48,9 @@ void permissions(uid_t uid,gid_t gid,int mode,int recursive,char *path)
             closedir(d);
         }
     } 
+    if (full_path != path) {
+        FREE(full_path);
+    }
 }
 void setPermissions()
 {

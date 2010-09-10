@@ -215,9 +215,9 @@ BEGIN {
     hash_invert(g_roman1,g_roman);
 
     ELAPSED_TIME=systime();
-    GET_POSTERS=0;
-    GET_FANART=0;
-    GET_PORTRAITS=0;
+    GET_POSTERS=1;
+    GET_FANART=1;
+    GET_PORTRAITS=1;
     UPDATE_POSTERS=0;
     UPDATE_FANART=0;
     UPDATE_PORTRAITS=0;
@@ -3453,7 +3453,6 @@ key) {
 # however this is bad when doing the initial scan of a NAS etc.
 function clean_globals() {
     delete g_media;
-    delete g_scraped;
     delete g_imdb_title;
     delete g_motech_title;
     delete gNfoDefault;
@@ -3467,6 +3466,7 @@ function clean_globals() {
     delete gCertRating;
     delete gCertCountry;
     delete g_director;
+    delete g_director1;
     delete g_writers;
     delete g_actors;
     delete g_poster;
@@ -3474,6 +3474,7 @@ function clean_globals() {
     delete g_runtime;
     delete gProdCode;
     delete gTitle;
+    delete gTitle_lang;
     delete gOriginalTitle;
     delete gAdditionalInfo;
     delete g_tvid_plugin;
@@ -3492,6 +3493,7 @@ function clean_globals() {
     delete gEpTitle;
     delete g_epplot;
     delete g_plot;
+    delete g_plot_lang;
     delete g_fanart;
     delete gCertRating;
     delete g_rating;
@@ -6767,6 +6769,7 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
 
             if (g_director[idx] == "" && index(line,">Director")) {
                 g_director[idx] = get_names("actors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
+                g_director1[idx] = g_first_name;
                 g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
                 sec=DIRECTOR;
             }
@@ -6880,6 +6883,10 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
 # maxnames = max number of names to fetch ( -1 = all )
 function get_names(name_db,text,maxnames,\
 dtext,dpos,dnum,i,id,name,dlist,count,img) {
+
+    # This is a hack - we also want the first director name for scraping non-english sites
+    g_first_name = ""; 
+
     # Extract nm0000 text OR anchor text(actor name) OR jpg url
     dnum = get_regex_pos(text,"(/nm[0-9]+|>[^<]+</a>|"g_nonquote_regex"+\\.jpg)",0,dtext,dpos);
     for(i = 1 ; i <= dnum ; i++ ) {
@@ -6905,6 +6912,10 @@ dtext,dpos,dnum,i,id,name,dlist,count,img) {
                 print id"\t"name > g_tmp_dir"/"name_db".db."PID  ;
 
                 INF(name_db"|"id"|"name"|"img);
+
+                if (g_first_name == "") {
+                    g_first_name = name;
+                }
 
                 # Seems to have a lot of portraits
            #     if (img == "") {
@@ -7887,6 +7898,19 @@ function ascii8(s) {
 #ALL# }
 
 function update_plots(pfile,idx,\
+lang,lang_list,info) {
+    update_plots_by_lang(pfile,idx,g_plot[idx]); #default - English
+    split(LANG,lang_list,",");
+    if (g_category[idx] == "M" ) {
+        for (lang in lang_list) {
+            if (scrape_by_lang(idx,lang,info)) {
+                update_plots_by_lang(pfile "." lang,idx,info["plot"]);
+            }
+        }
+    }
+}
+
+function update_plots_by_lang(pfile,idx,plot_text,\
 id,key,cmd,cmd2,ep) {
     id=g_imdb[idx];
 
@@ -7898,10 +7922,10 @@ id,key,cmd,cmd2,ep) {
 
         cmd=g_plot_app" update "qa(pfile)" "key;
 
-        if (g_plot[idx] != "" && !(key in g_updated_plots) ) {
+        if (plot_text != "" && !(key in g_updated_plots) ) {
             cmd2 = cmd" "qa("");
             #INF("updating main plot :"cmd2);
-            exec(cmd2" "qa(g_plot[idx]));
+            exec(cmd2" "qa(plot_text));
             g_updated_plots[key]=1;
         }
 
@@ -8020,27 +8044,28 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "RENAME_FILM" ) {
             RENAME_FILM=1;
             moveDown++;
-        } else if (ARGV[i] == "GET_POSTERS" )  {
-            GET_POSTERS=1;
+
+        } else if (ARGV[i] = "NO_POSTERS" )  {
+            GET_POSTERS = UPDATE_POSTERS = 0;
             moveDown++;
-        } else if (ARGV[i] == "UPDATE_POSTERS" )  {
-            UPDATE_POSTERS=1;
-            GET_POSTERS=1;
+        } else if (ARGV[i] = "UPDATE_POSTERS" )  {
+            GET_POSTERS = UPDATE_POSTERS = 1;
             moveDown++;
-        } else if (ARGV[i] == "GET_FANART" )  {
-            GET_FANART=1;
+
+        } else if (ARGV[i] = "NO_FANART" )  {
+            GET_FANART = UPDATE_FANART = 0;
             moveDown++;
-        } else if (ARGV[i] == "UPDATE_FANART" )  {
-            UPDATE_FANART=1;
-            GET_FANART=1;
+        } else if (ARGV[i] = "UPDATE_FANART" )  {
+            GET_FANART = UPDATE_FANART = 1;
             moveDown++;
-        } else if (ARGV[i] == "GET_PORTRAITS" )  {
-            GET_PORTRAITS=1;
+
+        } else if (ARGV[i] = "NO_PORTRAITS" )  {
+            GET_PORTRAITS = UPDATE_PORTRAITS = 0;
             moveDown++;
-        } else if (ARGV[i] == "UPDATE_PORTRAITS" )  {
-            UPDATE_PORTRAITS=1;
-            GET_PORTRAITS=1;
+        } else if (ARGV[i] = "UPDATE_PORTRAITS" )  {
+            GET_PORTRAITS = UPDATE_PORTRAITS = 1;
             moveDown++;
+
         } else if (ARGV[i] == "NEWSCAN" )  {
             NEWSCAN=1;
             moveDown++;
@@ -8172,36 +8197,56 @@ function lang_test(idx) {
     scrape_it(idx);
 }
 
-function first_result() {
+
+# look for PLOT or PLOT: then skip over all tags until it hits some plain text.
+# if this is more than  more than min_plot_len characters of plain text with especially no div, h1-5, table or span.
+# plot_words = array of words used for the word PLOT in the desired language - eg Plot, Summary , Synopsis
+# query = url encoded keywords to pass to a search engine. eg Matrix Reloaded inurl:2003 Wachowski 
+
+function get_first_plot(query,site,min_plot_len,\
+url) {
+    if (site ~ /^[a-z.]+$/ ) {
+        url=query url_encode(" site:"site);
+    } else {
+        url=query url_encode(" inurl:"site);
+    }
+    id2 = scanPageFirstMatch(url,site,????,0);
     INF("first_result: not impleneted");
 }
-function get_director_name() {
-    INF("get_director_name: not impleneted");
-}
-function scrape_es(idx,details,\
-url) {
-    delete details;
-    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"get_director_name(idx)"+"url_encode("inurl:http://www.filmaffinity.com/en"));
-    if (sub("/en/","/es/",url)) {
-        HTML_LOG(0,"es "url);
+
+# Add intelligent scraper.
+# site url, query , plot word ,
+# info_out["plot"] = the plot
+# info_out["title"] = the title
+function scrape_by_lang(idx,lang,info_out,\
+                plot_words,sites,query,tmp,plot) {
+
+    delete info_out;
+
+    # example inputs
+        #catalog_lang_it_plot=Trama,descrizione
+        #catalog_lang_it_site=filmup.leonardo.it,imdb.it
+        #catalog_lang_es_plot=Trama,SINOPSIS
+        #catalog_lang_es_site=www.filmaffinity.com/es,imdb.es
+        #catalog_lang_fr_plot=Synopsis 
+        #catalog_lang_fr_site=www.allocine.fr
+
+    # array of words used for the word PLOT in the desired language - eg Plot, Summary , Synopsis
+    plot_words = trim(g_settings["catalog_lang_"lang"_plot"]);
+    query = plot_words;
+
+    gsub(/,/," OR +",query);
+
+    query = url_encode("\""gTitle[idx]"\" intitle:"g_year[idx]" \""g_director1[idx]"\" ( +"query" ) ");
+
+    tmp = split(g_settings["catalog_lang_"lang"_site"],sites,",");
+
+    for(i = 1 ; i < tmp + 1 ; i++ ) {
+        plot = get_first_plot(query,sites[i],50);
+        if (plot) {
+            break;
+        }
     }
-}
-function scrape_fr(idx,details,\
-url) {
-    delete details;
-    url=first_result(url_encode("intitle:"gTitle[idx]" ("g_year[idx]")")"+"get_director_name(idx)"+"\
-    url_encode("inurl:http://www.screenrush.co.uk")"+"\
-    url_encode("inurlfichefilm_gen_cfilm"));
-    if (sub("/screenrush.co.uk/","/allocine.fr/",url)) {
-        HTML_LOG(0,"fr "url);
-    }
-}
-function scrape_it(idx,details,\
-url) {
-    delete details;
-    url=first_result(gTitle[idx]" "get_director_name(idx)" "url_encode("intitle:Scheda")"+"\
-    url_encode("site:filmup.leonardo.it"));
-    HTML_LOG(0,"it "url);
 }
 
 function unit() {

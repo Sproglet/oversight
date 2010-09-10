@@ -2,7 +2,7 @@
 #sidebar TableOfContents
 
 
-Oversight is a minimalistic Jukebox that runs on the NMT platform.
+Oversight is a video jukebox that runs on the NMT platform.
 
 It is aimed at users that
  

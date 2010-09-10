@@ -12,6 +12,7 @@ Send these you have problems with adding or updating content.
 
 To send scan logs:
 
+  # *Follow all of the steps indicated, otherwise I may not follow up the problem*
   # (on the TV/NMT go to Setup/NMT Applications) and make sure SMB/Samba service is started.
   # Assuming you have a windows PC go to the Run dialog (Start->Run) and enter  \\192.168.x.y where 192.168.x.y is the IP address of your NMT. ( You can also put this is the address bar of Windows Explorer - it will probably NOT work with 3rd party browsers)
   # Browse to Apps\oversight\
@@ -31,6 +32,7 @@ Send 'gui' logs if you think files have scanned OK but you are getting odd thing
 
 To send GUI logs:
 
+  # *Follow all of the steps indicated, otherwise I may not follow up the problem*
   # Open Oversight in the PC. 
   # Go back to the page that is causing problems. 
   # if using Internet Explorer or Firefox, In the browser menu,  select File->Save As-> Type: Web Page HTML Only
@@ -43,10 +45,11 @@ Send these if odd things happen only via the TV interface - not PC
 
 To get the page that is sent to gaya/tv, you must
 
+  # *Follow all of the steps indicated, otherwise I may not follow up the problem*
   # Then load the problem page again on the TV screen. 
   # On the PC go to OVersight->Setup->Diagnostics->{Last TV GUI Log}
   # Save the page to a file and then email the file to me as an attachment  nmt AT lordy dot org Dot uk.
-  # &If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and add a direct link to the post number in the email*.
+  # *If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and add a direct link to the post number in the email*.
 
 If the issue is with the play button on the remote you will also need to send the playlist also. This is the file /tmp/playlist.htm (you will need telnet to access this) 
 

@@ -1924,11 +1924,30 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
         call_info->free_result=0;
         return "?";
     }
-    if (!g_dimension->local_browser){
-        char *image=get_theme_image_tag("upgrade"," alt=External ");
-        char *person=query_val(QUERY_PARAM_PERSON);
-        char *website="";
 
+    char *image=get_theme_image_tag("upgrade"," alt=External ");
+    char *person=query_val(QUERY_PARAM_PERSON);
+    char *website="";
+
+    if (g_dimension->local_browser){
+#define IMDB_MSP "http://msp.florisvanderploeg.com/imdb/scripts/"
+        if (!EMPTY_STR(person)) {
+            //ovs_asprintf(&result,"<a href=\"" IMDB_MSP "imdb_search.php?SearchType=SearchNames&QueryString=%s\">%s</a>",person,image);
+            ovs_asprintf(&result,"<a href=\"http://m.imdb.com/name/%s%s\">%s</a>",
+                    (util_starts_with(person,"nm")?"":"nm"),
+                    person,image);
+        } else {
+            // Title link
+            char *url=call_info->sorted_rows->rows[0]->url;
+            if (url != NULL) {
+                //ovs_asprintf(&result, "<a href=\"" IMDB_MSP "imdb_getinfo.php?IMDbUrl=%%2Ftitle%%2F%s%%2F\">%s</a>",url,image);
+                if (util_starts_with(url,"tt")) {
+                    website = "http://m.imdb.com/title/";
+                }
+                ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
+            }
+        }
+    } else {
         if (!EMPTY_STR(person)) {
 
             // Person link
@@ -1947,8 +1966,8 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
                 ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
             }
         }
-        FREE(image);
     }
+    FREE(image);
     return result;
 }
 

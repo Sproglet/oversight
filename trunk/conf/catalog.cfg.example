@@ -99,3 +99,15 @@ catalog_genre="Action,a,Adventure,e,Animation,i,Biography,b,Comedy,c,Crime,j,Doc
 catalog_max_actors=8
 
 catalog_follow_symlinks=0
+
+catalog_lang_it_title=Title
+catalog_lang_it_plot=Trama,descrizione
+catalog_lang_it_site=filmup.leonardo.it,imdb.it,it
+
+catalog_lang_es_title=Title
+catalog_lang_es_plot=Trama,SINOPSIS
+catalog_lang_es_site=www.filmaffinity.com/es,imdb.es,es
+
+catalog_lang_fr_title=Title 
+catalog_lang_fr_plot=Synopsis 
+catalog_lang_fr_site=www.allocine.fr,fr

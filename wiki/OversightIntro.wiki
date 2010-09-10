@@ -44,7 +44,8 @@ There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_
   * Plays nice
     * Read-Only - Does not write to media folders so can run along side other Jukeboxes.
     * Does not depend on MyIHome service nor internal apache webserver.
-  * Proper SD support. I have an SD tv! So it's not just an after thought that requires extra setting up. Downside is that HD may not look great. I try to test HD modes on PC Browser but need feedback from others until I buy a TV.
+    * SD support.
+    * PAL support.  The NMT Browser squashes images on PAL displays. Oversight compensates for this.
 
  
 =Oversight Weaknesses=

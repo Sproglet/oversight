@@ -458,20 +458,6 @@ END{
         g_settings_orig[i] = g_settings[i];
     }
 
-    # code was originally written so that get_tv_series_info and get_episode_xml
-    # write into lots of global arrays g_Season, g_episode, gTitle , g_imdb etc etc,
-    # the idex being the item number.
-    # However sometimes we need to call these functions but we dont want to keep the results.
-    # (eg when tying to find which of Late night with Conan O Brien or Tonight Show with Conan Obrien
-    # showed on a particular date.). This will make get_tv_series_info calls to both shows initially.
-    #which then unfortunately writes results into the same global arrays.
-    # Really the code needs a re-write to use a single temporary local array, for a single item
-    # or a string even. This can then be inserted back into the global arrays when needed to be kept. 
-    # 
-    # Until code cleanup, best use a temporary index which is ignored by the main output loops.
-    g_tmp_idx_prefix="tmp_";
-    g_tmp_idx_count=0;
-
     g_db_lock_file=APPDIR"/catalog.lck";
     g_scan_lock_file=APPDIR"/catalog.scan.lck";
     g_status_file=APPDIR"/catalog.status";
@@ -1065,12 +1051,11 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
         if (!match(substr(perms,2,9),"^[-rwxsSt]+$") ) {
             #Just entered a folder
 
-            # If the folder has changed and we have more than n items then process them
-            # this is to save memory. As this removes stored data we only do this if we 
-            # change folder. This ensures we process multipart files together.
-            if (gMovieFileCount > g_batch_size ) {
-                total += identify_and_catalog_scanned_files();
-            }
+           # If the folder has changed and we have more than n items then process them
+           # this is to save memory. As this removes stored data we only do this if we 
+           # change folder. This ensures we process multipart files together.
+           total += identify_and_catalog(minfo);
+           clear_folder_info();
 
 
            currentFolder = scan_line;
@@ -1155,7 +1140,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                        storeMovie(gMovieFileCount,f"/",d,ts,"/$",".nfo");
+                        storeMovie(minfo,f"/",d,ts,"/$",".nfo");
                     }
                 }
 
@@ -1220,11 +1205,11 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
                         #Only add it if previous one is not part of same file.
                         if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
-                          if ( checkMultiPart(scan_line,gMovieFileCount) ) {
+                          if ( checkMultiPart(minfo,scan_line) ) {
                               #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                               #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
-                              if ( !setNfo(gMovieFileCount-1,".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
-                                  setNfo(gMovieFileCount-1, extRe,".nfo");
+                              if ( !setNfo(".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
+                                  setNfo(extRe,".nfo");
                               }
                               store = 0;
                            }
@@ -1234,7 +1219,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 } else if (match(scan_line,"unpak.???$")) {
                     
-                    gDate[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
+                    g_file_date[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
 
                 } else if (match(lc,"\\.nfo$")) {
@@ -1242,12 +1227,12 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     nfo=currentFolder"/"scan_line;
                     g_fldrInfoCount[currentFolder]++;
                     g_fldrInfoName[currentFolder]=nfo;
-                    gDate[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
+                    g_file_date[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
                 }
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
-                    storeMovie(gMovieFileCount,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
+                    storeMovie(minfo,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
                 }
             }
         }
@@ -1256,7 +1241,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     close(tempFile);
 
-    total += identify_and_catalog_scanned_files();
+    total += identify_and_catalog(minfo);
 
     DEBUG("Finished Scanning "root);
     return 0+total;
@@ -1285,8 +1270,10 @@ function csv2re(text) {
     return "("text")";
 }
 
-function storeMovie(idx,file,folder,timeStamp,nfoReplace,nfoExt,\
+function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,\
 path) {
+
+    identify_and_catalog(minfo);
 
     path=clean_path(folder"/"file);
 
@@ -1294,22 +1281,11 @@ path) {
 
     g_fldrMediaCount[folder]++;
 
-    g_fldr[idx]=folder;
-    g_media[idx] = file;
+    minfo["mi_folder"]=folder;
+    minfo["mi_media"] = file;
+    minfo["mi_file_time"] = timeStamp;
 
-
-    #gMovieFilePresent is used when pruning the old index.
-    #
-    # if doing a new scan do not set it if the path is in the database.
-    # ie set if any other type of scan OR
-    # if NEWSCAN and path not in database.
-    if (! (NEWSCAN == 1  &&  in_db(path))) {
-        gMovieFilePresent[path] = idx;
-    }
-
-    g_file_time[idx] = timeStamp;
-
-    setNfo(gMovieFileCount,nfoReplace,nfoExt);
+    setNfo(nfoReplace,nfoExt);
 
     gMovieFileCount++;
 }
@@ -1318,10 +1294,10 @@ path) {
 # lcName         : lower case file name
 # count          : next index in array
 # multiPartRegex : regex that matches the part tag of the file
-function checkMultiPart(name,count,\
+function checkMultiPart(minfo,name,\
 lastNameSeen,i,lastch,ch) {
 
-    lastNameSeen = g_media[count-1];
+    lastNameSeen = minfo["mi_media"];
 
     if (length(lastNameSeen) != length(name)) {
         return 0;
@@ -1382,20 +1358,20 @@ lastNameSeen,i,lastch,ch) {
     }
 
     INF("Found multi part file - linked with "lastNameSeen);
-    gParts[count-1] = (gParts[count-1] =="" ? "" : gParts[count-1]"/" ) name;
-    gMultiPartTagPos[count-1] = i;
+    minfo["mi_parts"] = (minfo["mi_parts"] =="" ? "" : minfo["mi_parts"]"/" ) name;
+    minfo["mi_multipart_tag_pos"] = i;
     return 1;
 }
 
 # set the nfo file by replacing the pattern with the given text.
-function setNfo(idx,pattern,replace,\
+function setNfo(pattern,replace,\
 nfo,lcNfo) {
     #Add a lookup to nfo file
-    nfo=g_media[idx];
+    nfo=minfo["mi_media"];
     lcNfo = tolower(nfo);
     if (match(lcNfo,pattern)) {
         nfo=substr(nfo,1,RSTART-1) replace substr(nfo,RSTART+RLENGTH);
-        gNfoDefault[idx] = getPath(nfo,g_fldr[idx]);
+        minfo["mi_nfo_default"] = getPath(nfo,minfo["mi_folder"]);
         return 1;
     } else {
         return 0;
@@ -1637,43 +1613,43 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
 }
 
 # If no direct urls found. Search using file names.
-function web_search_frequent_imdb_link(idx,\
+function web_search_frequent_imdb_link(minfo,\
 url,txt,linksRequired) {
 
     id1("web_search_frequent_imdb_link");
     linksRequired = 0+g_settings["catalog_imdb_links_required"];
     
-    txt = basename(g_media[idx]);
+    txt = basename(minfo["mi_media"]);
     if (tolower(txt) != "dvd_volume" ) {
         url=searchHeuristicsForImdbLink(txt,linksRequired);
     }
 
-    if (url == "" && match(g_media[idx],gExtRegexIso)) {
-        txt = getIsoTitle(g_fldr[idx]"/"g_media[idx]);
+    if (url == "" && match(minfo["mi_media"],gExtRegexIso)) {
+        txt = getIsoTitle(minfo["mi_folder"]"/"minfo["mi_media"]);
         if (length(txt) - 3 > 0 ) {
             url=searchHeuristicsForImdbLink(txt,linksRequired);
         }
     }
 
-    if (url == "" && folderIsRelevant(g_fldr[idx])) {
-        url=searchHeuristicsForImdbLink(tolower(basename(g_fldr[idx])),linksRequired);
+    if (url == "" && folderIsRelevant(minfo["mi_folder"])) {
+        url=searchHeuristicsForImdbLink(tolower(basename(minfo["mi_folder"])),linksRequired);
     }
 
     id0(url);
     return url;
 }
 
-function remove_part_suffix(idx,\
+function remove_part_suffix(minfo,\
 txt) {
     # Remove first word - which is often a scene tag
     #This could affect the search adversely, esp if the film name is abbreviated.
     # Too much information is lost. eg coa-v-xvid will eventually become just v
     #so we do this last. 
-    txt = tolower(basename(g_media[idx]));
+    txt = tolower(basename(minfo["mi_media"]));
 
     #Remove the cd1 partb bit.
-    if (idx in gMultiPartTagPos) {
-        txt = substr(txt,1,gMultiPartTagPos[idx]);
+    if (minfo["mi_multipart_tag_pos"]) {
+        txt = substr(txt,1,minfo["mi_multipart_tag_pos"]);
         sub("("g_multpart_tags"|)[1a]$","",txt);
         DEBUG("MultiPart Suffix removed = ["txt"]");
     }
@@ -1884,7 +1860,7 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
 }
 
 # return ""=unknown "M"=movie "T"=tv??
-function scrapeIMDBTitlePage(idx,url,\
+function scrapeIMDBTitlePage(minfo,url,\
 f,line,imdbContentPosition,isection,connections,remakes,ret) {
 
     if (url == "" ) return;
@@ -1897,10 +1873,10 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
     id1("scrape imdb ["url"]");
 
 
-    if (g_imdb[idx] == "") {
-        g_imdb[idx] = extractImdbId(url);
+    if (minfo["mi_imdb"] == "") {
+        minfo["mi_imdb"] = extractImdbId(url);
     }
-    if (g_imdb_scraped[idx] != g_imdb[idx] ) {
+    if (minfo["mi_imdb_scraped"] != minfo["mi_imdb"] ) {
         
         INF("scraping "url);
 
@@ -1911,11 +1887,11 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
 
             imdbContentPosition="header";
 
-            DEBUG("START IMDB: title:"gTitle[idx]" poster "g_poster[idx]" genre "g_genre[idx]" cert "gCertRating[idx]" year "g_year[idx]);
+            DEBUG("START IMDB: title:"minfo["mi_title"]" poster "minfo["mi_poster"]" genre "minfo["mi_genre"]" cert "minfo["mi_certrating"]" year "minfo["mi_year"]);
 
             FS="\n";
             while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,idx,f,isection);
+                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,isection);
             }
             enc_close(f);
 
@@ -1925,35 +1901,35 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
             }
 
 
-            if (gCertCountry[idx] != "" && g_settings[g_country_prefix gCertCountry[idx]] != "") {
-                gCertCountry[idx] = g_settings[g_country_prefix gCertCountry[idx]];
+            if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
+                minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
             }
 
         }
 
-        if (g_category[idx] == "M" ) {
-            getNiceMoviePosters(idx,extractImdbId(url));
+        if (minfo["mi_category"] == "M" ) {
+            getNiceMoviePosters(minfo,extractImdbId(url));
             getMovieConnections(extractImdbId(url),connections);
             if (connections["Remake of"] != "") {
                 getMovieConnections(connections["Remake of"],remakes);
             }
-            g_conn_follows[idx]= connections["Follows"];
-            g_conn_followed_by[idx]= connections["Followed by"];
-            g_conn_remakes[idx]=remakes["Remade as"];
-            INF("follows="g_conn_follows[idx]);
-            INF("followed_by="g_conn_followed_by[idx]);
-            INF("remakes="g_conn_remakes[idx]);
+            minfo["mi_conn_follows"]= connections["Follows"];
+            minfo["mi_conn_followed_by"]= connections["Followed by"];
+            minfo["mi_conn_remakes"]=remakes["Remade as"];
+            INF("follows="minfo["mi_conn_follows"]);
+            INF("followed_by="minfo["mi_conn_followed_by"]);
+            INF("remakes="minfo["mi_conn_remakes"]);
         }
 
         # make sure we dont scrape this id for this item again
-        g_imdb_scraped[idx] = g_imdb[idx];
+        minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
     }
-    ret = g_category[idx];
+    ret = minfo["mi_category"];
 # Dont need premier anymore - this was for searching from imdb to tv database
 # we just use the year instead.
-#    if (g_category[idx] == "T" && g_premier[idx] == "" ) {
-#        g_premier[idx] = remove_tags(scanPageFirstMatch(url"/releaseinfo","BusinessThisDay.*",1));
-#        DEBUG("IMDB Premier = "g_premier[idx]);
+#    if (minfo["mi_category"] == "T" && minfo["mi_premier"] == "" ) {
+#        minfo["mi_premier"] = remove_tags(scanPageFirstMatch(url"/releaseinfo","BusinessThisDay.*",1));
+#        DEBUG("IMDB Premier = "minfo["mi_premier"]);
 #    }
     id0(ret);
     return ret;
@@ -2007,6 +1983,8 @@ f,fileRe) {
     }
 }
 
+REWRITE MERGE FUNCTIONS
+
 # Go through old index.db 
 # if any file is in the new scan, add the updated entry to the new file (copying watched flags)
 # otherwise if it is not in the ignore list, add it directly to the new file
@@ -2038,11 +2016,11 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
             idx=gMovieFilePresent[f];
             if (idx != -1 ) {
                 # Update the old entry with the new data
-                dbline2 = createIndexRow(idx,dbfields[ID],dbfields[WATCHED],dbfields[LOCKED],""); #dbfields[INDEXTIME]);
+                dbline2 = createIndexRow(minfo,dbfields[ID],dbfields[WATCHED],dbfields[LOCKED],""); #dbfields[INDEXTIME]);
                 if (length(dbline2) - g_max_db_len < 0) {
                     print dbline2"\t" >> new_db_file;
                     updated_count++;
-                    update_plots(g_plot_file,idx);
+                    update_plots(g_plot_file,minfo);
                 }
                 delete indexToMergeHash[idx];
                 #make sure we dont add it later.
@@ -2075,8 +2053,6 @@ kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
     close(db_file);
 
     close(new_db_file);
-
-    delete gMovieFilePresent;
 
     INF("Existing database: size:"total_lines" untouched "kept_count" updated "updated_count);
     return kept_count+updated_count;
@@ -2375,13 +2351,13 @@ function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 }
 
 # IN plugin THETVDB/TVRAGE
-# IN idx - global arrays for current scrapped show
+# IN minfo - current scrapped show
 # OUT more_info - bit yucky returns additional info
 #    currently more_info[1] indicates if abbrevation searches should be used when scraping later on.
 # RET 0 - no format found
 #     1 - tv format found - needs to be confirmed by scraping 
 #
-function checkTvFilenameFormat(plugin,idx,more_info,\
+function checkTvFilenameFormat(minfo,plugin,more_info,\
 details,line,dirs,d,dirCount,dirLevels,ret) {
 
     delete more_info;
@@ -2389,10 +2365,10 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
 
    id1("checkTvFilenameFormat "plugin);
 
-   line = remove_format_tags(g_media[idx]);
-   DEBUG("CHECK TV ["line"] vs ["g_media[idx]"]");
+   line = remove_format_tags(minfo["mi_media"]);
+   DEBUG("CHECK TV ["line"] vs ["minfo["mi_media"]"]");
 
-   dirCount = split(g_fldr[idx],dirs,"/");
+   dirCount = split(minfo["mi_folder"],dirs,"/");
    dirLevels=2;
 
    # After extracting the title text we look for matching tv programs
@@ -2424,7 +2400,7 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
 #ALL#   # try looking for mini series formats.
 #ALL#   if (ret == 0 ) {
 #ALL#       more_info[1]=1; # enable abbrevation scraping for later
-#ALL#       line = remove_format_tags(g_media[idx]);
+#ALL#       line = remove_format_tags(minfo["mi_media"]);
 #ALL#       for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 #ALL#           INF("xx1 ["line"]");
 #ALL#           if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
@@ -2448,13 +2424,13 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
             # title may be in parent folder. but we will try to search by additional info first.
             searchByEpisodeName(plugin,details);
         }
-        adjustTitle(idx,details[TITLE],"filename");
+        adjustTitle(minfo,details[TITLE],"filename");
 
 
-        g_season[idx]=details[SEASON];
-        g_episode[idx]=details[EPISODE];
+        minfo["mi_season"]=details[SEASON];
+        minfo["mi_episode"]=details[EPISODE];
 
-        INF("Found tv info in file name:"line" title:["gTitle[idx]"] ["g_season[idx]"] x ["g_episode[idx]"]");
+        INF("Found tv info in file name:"line" title:["minfo["mi_title"]"] ["minfo["mi_season"]"] x ["minfo["mi_episode"]"]");
         
         ## Commented Out As Double Episode checked elsewhere to shrink code ##
         ## Left In So We Can Ensure It's Ok ##
@@ -2464,18 +2440,18 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
 
         # local ePos
 
-        #ePos = index(g_episode[idx],",");
-        #if (ePos -1 >= 0 && ( ePos - length(g_episode[idx]) < 0 )) {
-        #    #gsub(/[-e]+/,",",g_episode[idx]);
-        #    #sub(/[-]/,"",g_episode[idx]);
-        #    DEBUG("Double Episode : "g_episode[idx]);
+        #ePos = index(minfo["mi_episode"],",");
+        #if (ePos -1 >= 0 && ( ePos - length(minfo["mi_episode"]) < 0 )) {
+        #    #gsub(/[-e]+/,",",minfo["mi_episode"]);
+        #    #sub(/[-]/,"",minfo["mi_episode"]);
+        #    DEBUG("Double Episode : "minfo["mi_episode"]);
         #}
 
 
-        g_tvid[idx] = details[TVID];
-        g_tvid_plugin[idx] = plugin;
-        g_category[idx] = "T";
-        gAdditionalInfo[idx] = details[ADDITIONAL_INF];
+        minfo["mi_tvid"] = details[TVID];
+        minfo["mi_tvid_plugin"] = plugin;
+        minfo["mi_category"] = "T";
+        minfo["mi_additional_info"] = details[ADDITIONAL_INF];
         # Now check the title.
         #TODO
     }
@@ -2554,9 +2530,7 @@ ret,p,pat,i,parts,sreg,ereg) {
 
 
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-    #TODO blank idx passed. need to tidy up code here?
     # extractEpisodeByDates is also called by other logic. 
-    # we need to be clear why idx is passed.
     pat[++p]="DATE";
     ## just numbers.
     pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@";
@@ -2682,7 +2656,7 @@ y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
 }
 
 function extractEpisodeByDates(plugin,line,details,\
-date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmpIdx) {
+date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
     result=0;
     #id1("extractEpisodeByDates "plugin" "line);
@@ -2705,30 +2679,16 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmpIdx) {
 
             id1("Checking "tvdbid);
 
-            # This is nasty. We have to reuse some of the functions to get series and episode info.
-            # These write deirectly into gloabal arrays. So we have to use a 'made up' item index.
-            #
-            # The real fix is to change the functions to write into a single local multi-dimension array
-            # details["IMDB"] = tt0000
-            # details["SEASON"= = 4 etc
-
-            # and the output of this array is copied into the global arrays only if it is needed later
-            # otherwise it is discarded.
-
-            # However to minimise code changes at present we will use index 'TMP'count. 
-            # and make sure the main program ignores such index - I need a shower...
-
-            tmpIdx = g_tmp_idx_prefix (++g_tmp_idx_count);
             if (get_tv_series_info(plugin,tmpIdx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
                 if (plugin == "THETVDB" ) {
 
                     #TODO We could get all the series info - this would be cached anyway.
-                    result = extractEpisodeByDates_TvDb(tmpIdx,tvdbid,y,m,d,details);
+                    result = extractEpisodeByDates_TvDb(tmp_info,tvdbid,y,m,d,details);
 
                 } else if (plugin == "TVRAGE" ) {
 
-                    result = extractEpisodeByDates_rage(tmpIdx,tvdbid,y,m,d,details);
+                    result = extractEpisodeByDates_rage(tmp_info,tvdbid,y,m,d,details);
 
                 } else {
                     plugin_error(plugin);
@@ -2757,7 +2717,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmpIdx) {
 # If a line looks like show.name.2009-06-16 then look for episode by date. It requires that
 # show.name results in good unique match at thetvdb.com. otherwise the show.name is left 
 # unchanged and the episode number is set to mmdd
-function extractEpisodeByDates_TvDb(idx,tvdbid,y,m,d,details,\
+function extractEpisodeByDates_TvDb(minfo,tvdbid,y,m,d,details,\
 episodeInfo,url) {
 
     
@@ -2771,21 +2731,21 @@ episodeInfo,url) {
     if (tvdbid != "") {
         dump(0,"ep by date",episodeInfo);
 
-        gAirDate[idx]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+        minfo["mi_airdate"]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
         details[SEASON]=episodeInfo["/Data/Episode/SeasonNumber"];
         details[EPISODE]=episodeInfo["/Data/Episode/EpisodeNumber"];
         details[ADDITIONAL_INF]=episodeInfo["/Data/Episode/EpisodeName"];
         #TODO We can cache the above url for later use instead of fetching episode explicitly.
         # Setting this will help short circuit searching later.
         equate_urls(url,g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
-        #g_imdb[idx]=get_tv_series_api_url(tvdbid);
-        #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "g_imdb[idx]);
+        #minfo["mi_imdb"]=get_tv_series_api_url(tvdbid);
+        #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "minfo["mi_imdb"]);
         #dump(0,"epinfo",episodeInfo);
         return 1;
     }
     return 0;
 }
-function extractEpisodeByDates_rage(idx,tvdbid,y,m,d,details,\
+function extractEpisodeByDates_rage(minfo,tvdbid,y,m,d,details,\
 episodeInfo,match_date,result,filter) {
 
     result=0;
@@ -2794,7 +2754,7 @@ episodeInfo,match_date,result,filter) {
 
     filter["/Show/Episodelist/Season/episode/airdate"] = match_date;
     if (fetch_xml_single_child(get_tv_series_api_url("TVRAGE",tvdbid),"bydate","/Show/Episodelist/Season/episode",filter,episodeInfo)) {
-        gAirDate[idx]=formatDate(match_date);
+        minfo["mi_airdate"]=formatDate(match_date);
         details[SEASON] = episodeInfo["/Show/Episodelist/Season#no"] ;
         details[EPISODE] = episodeInfo["/Show/Episodelist/Season/episode/seasonnum"] ;
 
@@ -2951,7 +2911,7 @@ out) {
 }
 
 ############### GET IMDB URL FROM NFO ########################################
-function setImplicitNfo(idx,path,\
+function setImplicitNfo(minfo,path,\
 ret) {
 
     if (isDvdDir(path)) path = substr(path,1,length(path)-1);
@@ -2964,7 +2924,7 @@ ret) {
 
                DEBUG("Using single nfo "g_fldrInfoName[path]);
 
-               gNfoDefault[idx] = g_fldrInfoName[path];
+               minfo["mi_nfo_default"] = g_fldrInfoName[path];
 
                ret = 1;
            }
@@ -2973,214 +2933,208 @@ ret) {
    return ret;
 }
 
-function identify_and_catalog_scanned_files(\
-idx,file,fldr,bestUrl,scanNfo,thisTime,numFiles,eta,\
-ready_to_merge,ready_to_merge_count,total,\
+function identify_and_catalog(minfo,\
+file,fldr,bestUrl,scanNfo,thisTime,eta,\
+ready_to_merge_count,total,\
 cat) {
-
-    numFiles=hash_size(g_media);
-
-    INF("Processing "numFiles" items");
 
     eta="";
    
-    for ( idx = 0 ; idx - numFiles < 0 ; idx++ ) {
-
 #dep#        begin_search("");
 
+    bestUrl="";
 
-        bestUrl="";
+    scanNfo=0;
 
-        scanNfo=0;
+    file=minfo["mi_file"];
+    fldr=minfo["mi_folder"];
 
-        file=g_media[idx];
-        fldr=g_fldr[idx];
+    if (file == "" ) continue;
 
-        if (file == "" ) continue;
-
-        if (NEWSCAN==1 && in_db(fldr"/"file)) {
-            continue;
-        }
-
-        DIV0("Start item "(g_item_count)": ["file"]");
-
-        report_status("item "(++g_item_count));
-
-        DEBUG("folder :["fldr"]");
-
-        if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
-            WARNING("Skipping unknown file ["file"]");
-            continue;
-        }
-
-        thisTime = systime();
-
-
-        if (g_settings["catalog_nfo_read"] != "no") {
-
-            if (is_file(gNfoDefault[idx])) {
-
-               DEBUG("Using default info to find url");
-               scanNfo = 1;
-
-            # Look at other files in the same folder.
-            } else if  (setImplicitNfo(idx,fldr) ) {
-                scanNfo = 1;
-
-            # Look inside movie_structire
-            } else if ( isDvdDir(file) && setImplicitNfo(idx,fldr"/"file) ) {
-                scanNfo = 1;
-           }
-        }
-
-        if (scanNfo){
-           bestUrl = scanNfoForImdbLink(gNfoDefault[idx]);
-        }
-
-        if (bestUrl == "") {
-            # scan filename for imdb link
-            bestUrl = extractImdbLink(file);
-            if (bestUrl) {
-                INF("extract imdb id from "file);
-            }
-        }
-
-        cat="";
-
-        if (bestUrl) {
-            cat = scrapeIMDBTitlePage(idx,bestUrl);
-        }
-
-        if (cat == "M" ) {
-
-            # Its definitely a movie according to IMDB or NFO
-            cat = movie_search(idx,bestUrl);
-
-        } else if (cat == "T" ) {
-
-            # Its definitely a series according to IMDB or NFO
-            cat = tv_search_simple(idx,bestUrl);
-
-        } else {
-
-            # Not sure - try a TV search looking for various abbreviations.
-            cat = tv_search_complex(idx,bestUrl);
-
-            if (cat != "T") {
-                # Could not find any hits using tv abbreviations, try heuristis for a movie search.
-                # This involves searching web for imdb id.
-                cat = movie_search(idx,bestUrl);
-                if (cat == "T") {
-                    # If we get here we found an IMDB id , but it looks like a TV show after all.
-                    # This may happen with mini-series that do not have normal naming conventions etc.
-                    # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                    cat = tv_search_simple(idx,bestUrl);
-                }
-            }
-        }
-
-
-        if (cat != "") {
-
-            #If poster is blank fall back to imdb
-            if (g_poster[idx] == "") {
-                g_poster[idx] = g_imdb_img[idx];
-            }
-            fixTitles(idx);
-
-            #Only get posters if catalog is installed as part of oversight
-            if (index(APPDIR,"/oversight") ) {
-
-                if (g_poster[idx] != "" && GET_POSTERS) {
-                    g_poster[idx] = download_image(POSTER,g_poster[idx],idx);
-                }
-
-                if (g_fanart[idx] != "" && GET_FANART) {
-                    g_fanart[idx] = download_image(FANART,g_fanart[idx],idx);
-                }
-            }
-
-            relocate_files(idx);
-
-
-
-            if (g_opt_dry_run) {
-                print "dryrun: "g_file[idx]" -> "gTitle[idx];
-            }
-            #Batch updates so that user sees some progress
-            ready_to_merge[idx]=1;
-            ready_to_merge_count++
-
-        } else {
-            INF("Skipping item "g_media[idx]);
-        }
-
-        thisTime = systime()-thisTime ;
-        g_process_time += thisTime;
-        g_elapsed_time = systime() - g_start_time;
-        g_total ++;
-        #lang_test(idx);
-
-        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
-
+    if (NEWSCAN==1 && in_db(fldr"/"file)) {
+        continue;
     }
+
+    DIV0("Start item "(g_item_count)": ["file"]");
+
+    report_status("item "(++g_item_count));
+
+    DEBUG("folder :["fldr"]");
+
+    if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
+        WARNING("Skipping unknown file ["file"]");
+        continue;
+    }
+
+    thisTime = systime();
+
+
+    if (g_settings["catalog_nfo_read"] != "no") {
+
+        if (is_file(minfo["mi_default_nfo"])) {
+
+           DEBUG("Using default info to find url");
+           scanNfo = 1;
+
+        # Look at other files in the same folder.
+        } else if  (setImplicitNfo(minfo,fldr) ) { #XX
+            scanNfo = 1;
+
+        # Look inside movie_structure
+        } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
+            scanNfo = 1;
+       }
+    }
+
+    if (scanNfo){
+       bestUrl = scanNfoForImdbLink(minfo["mi_default_nfo"]);
+    }
+
+    if (bestUrl == "") {
+        # scan filename for imdb link
+        bestUrl = extractImdbLink(file);
+        if (bestUrl) {
+            INF("extract imdb id from "file);
+        }
+    }
+
+    cat="";
+
+    if (bestUrl) {
+        cat = scrapeIMDBTitlePage(minfo,bestUrl);
+    }
+
+    if (cat == "M" ) {
+
+        # Its definitely a movie according to IMDB or NFO
+        cat = movie_search(minfo,bestUrl);
+
+    } else if (cat == "T" ) {
+
+        # Its definitely a series according to IMDB or NFO
+        cat = tv_search_simple(minfo,bestUrl);
+
+    } else {
+
+        # Not sure - try a TV search looking for various abbreviations.
+        cat = tv_search_complex(minfo,bestUrl);
+
+        if (cat != "T") {
+            # Could not find any hits using tv abbreviations, try heuristis for a movie search.
+            # This involves searching web for imdb id.
+            cat = movie_search(minfo,bestUrl);
+            if (cat == "T") {
+                # If we get here we found an IMDB id , but it looks like a TV show after all.
+                # This may happen with mini-series that do not have normal naming conventions etc.
+                # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                cat = tv_search_simple(minfo,bestUrl);
+            }
+        }
+    }
+
+
+    if (cat != "") {
+
+        #If poster is blank fall back to imdb
+        if (minfo["mi_poster"] == "") {
+            minfo["mi_poster"] = minfo["mi_imdb_img"];
+        }
+        fixTitles(minfo);
+
+        #Only get posters if catalog is installed as part of oversight
+        if (index(APPDIR,"/oversight") ) {
+
+            if (minfo["mi_poster"] != "" && GET_POSTERS) {
+                minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+            }
+
+            if (minfo["mi_fanart"] != "" && GET_FANART) {
+                minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+            }
+        }
+
+        relocate_files(minfo);
+
+
+
+        if (g_opt_dry_run) {
+            print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+        }
+        ready_to_merge_count++
+
+    } else {
+        INF("Skipping item "minfo["mi_media"]);
+    }
+
+    thisTime = systime()-thisTime ;
+    g_process_time += thisTime;
+    g_elapsed_time = systime() - g_start_time;
+    g_total ++;
+    #lang_test(minfo);
+
+    DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+
+    delete minfo;
+
+    TO BE FIXED
+
     # At the end we always make sure update_db has been called
     # at least once as this loads the database and carries out any file actions
     if (ready_to_merge_count) {
         DIV("merge");
-        update_db(ready_to_merge);
+        update_db();
     }
 
-    clean_globals();
+    clear_folder_info();
     return 0+total;
 }
 
-function tv_search_simple(idx,bestUrl) {
+function tv_search_simple(minfo,bestUrl) {
     id1("tv_search_simple");
-    return tv_check_and_search_all(idx,bestUrl,0);
+    return tv_check_and_search_all(minfo,bestUrl,0);
 }
 
-function tv_search_complex(idx,bestUrl) {
+function tv_search_complex(minfo,bestUrl) {
     id1("tv_search_complex");
-    return tv_check_and_search_all(idx,bestUrl,1);
+    return tv_check_and_search_all(minfo,bestUrl,1);
 }
 
 
 # For each tv plugin - search for a match.
-# idx = index number
+# idx = current show
 # bestUrl = imdb url
 # check_tv_names - if 1 then we do not have any imdb info - check tv formats and check abbreviations.
 #   if 0 then we know it is a tv show from IMDB - just search the TV site directly.
 #
 # returns cat="T" tv show , "M" = movie , "" = unknown.
 
-function tv_check_and_search_all(idx,bestUrl,check_tv_names,\
+function tv_check_and_search_all(minfo,bestUrl,check_tv_names,\
 plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
 
     for (p in g_tv_plugin_list) {
         plugin = g_tv_plugin_list[p];
 
         # demote back to imdb title
-        if (g_imdb_title[idx] != gTitle[idx] && g_imdb_title[idx] != "" ) {
+        if (minfo["mi_imdb_title"] != minfo["mi_title"] && minfo["mi_imdb_title"] != "" ) {
 
-            INF("*** revert title from "gTitle[idx]" to "g_imdb_title[idx]);
-            gTitle[idx] = g_imdb_title[idx];
+            INF("*** revert title from "minfo["mi_title"]" to "minfo["mi_imdb_title"]);
+            minfo["mi_title"] = minfo["mi_imdb_title"];
         }
 
         # checkTvFilenameFormat also uses the plugin to detect daily formats.
         # so if ellen.2009.03.13 is rejected at tvdb it is still passed by tvrage.
-        g_tvid_plugin[idx] = g_tvid[idx]="";
+        minfo["mi_tvid_plugin"] = minfo["mi_tvid"]="";
 
         do_search = 1;
         if (check_tv_names) {
 
-            if (checkTvFilenameFormat(plugin,idx,more_info)) {
+            if (checkTvFilenameFormat(minfo,plugin,more_info)) {
 
                 search_abbreviations = more_info[1];
 
-                #g_imdb[idx] may have been set by a date lookup
-                if (bestUrl == "" && g_imdb[idx] != "" ) {
-                    bestUrl = extractImdbLink(g_imdb[idx]);
+                #minfo["mi_imdb"] may have been set by a date lookup
+                if (bestUrl == "" && minfo["mi_imdb"] != "" ) {
+                    bestUrl = extractImdbLink(minfo["mi_imdb"]);
                 }
             } else {
                 do_search = 0;
@@ -3190,8 +3144,8 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
             search_abbreviations = 0;
         }
         if (do_search) {
-            tv_status = tv_search(plugin,idx,bestUrl,search_abbreviations);
-            if (g_episode[idx] !~ "^[0-9]+$" ) {
+            tv_status = tv_search(plugin,minfo,bestUrl,search_abbreviations);
+            if (minfo["mi_episode"] !~ "^[0-9]+$" ) {
                 #no point in trying other tv plugins
                 break;
             }
@@ -3200,7 +3154,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
         }
     }
     if (tv_status) {
-        cat = g_category[idx];
+        cat = minfo["mi_category"];
     }
     id0(cat);
     return cat;
@@ -3214,34 +3168,34 @@ function DIV(x) {
 }
 
 # 0=nothing found 1=series but no episode 2=series+episode
-function tv_search(plugin,idx,imdbUrl,search_abbreviations,\
+function tv_search(plugin,minfo,imdbUrl,search_abbreviations,\
 tvDbSeriesPage,result,tvid,cat,iid) {
 
     result=0;
 
-    id1("tv_search ("plugin","idx","imdbUrl","search_abbreviations")");
+    id1("tv_search ("plugin","imdbUrl","search_abbreviations")");
 
     #This will succedd if we already have the tvid when doing the checkTvFilenameFormat
     #checkTvFilenameFormat() may fetch the tvid while doing a date check for daily shows.
-    tvDbSeriesPage = get_tv_series_api_url(plugin,g_tvid[idx]);
+    tvDbSeriesPage = get_tv_series_api_url(plugin,minfo["mi_tvid"]);
 
     if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
         # do not know tvid nor imdbid - use the title to search tv indexes.
-        tvDbSeriesPage = search_tv_series_names(plugin,idx,gTitle[idx],search_abbreviations);
+        tvDbSeriesPage = search_tv_series_names(plugin,minfo,minfo["mi_title"],search_abbreviations);
     }
 
     if (tvDbSeriesPage != "" ) { 
         # We know the TV id - use this to get the imdb id
-        result = get_tv_series_info(plugin,idx,tvDbSeriesPage); #this may set imdb url
+        result = get_tv_series_info(plugin,minfo,tvDbSeriesPage); #this may set imdb url
         if (result) {
-            if (g_imdb[idx] != "") {
+            if (minfo["mi_imdb"] != "") {
                 # we also know the imdb id
-                iid=g_imdb[idx];
+                iid=minfo["mi_imdb"];
             } else {
                 # use the tv id to find the imdb id
-                iid=tv2imdb(idx);
+                iid=tv2imdb(minfo);
             }
-            cat = scrapeIMDBTitlePage(idx,iid);
+            cat = scrapeIMDBTitlePage(minfo,iid);
         }
     } else {
         # dont know the tvid
@@ -3249,17 +3203,17 @@ tvDbSeriesPage,result,tvid,cat,iid) {
             # If we get here we dont know the tvid nor imdbid and a lookup by title has also failed
             # At this stage we use the file name to search the web for an imdb url.
             # TODO This should filter out movie results.
-            imdbUrl=web_search_frequent_imdb_link(idx);
+            imdbUrl=web_search_frequent_imdb_link(minfo);
         }
         if (imdbUrl != "") {
             # but do know imdbid - use the imdb id to find the tv id
-            cat = scrapeIMDBTitlePage(idx,imdbUrl);
+            cat = scrapeIMDBTitlePage(minfo,imdbUrl);
             if (cat != "M" ) {
                 # find the tvid - this can miss if the tv plugin api does not have imdb lookup
-                tvid = find_tvid(plugin,idx,extractImdbId(imdbUrl));
+                tvid = find_tvid(plugin,minfo,extractImdbId(imdbUrl));
                 if(tvid != "") {
                     tvDbSeriesPage = get_tv_series_api_url(plugin,tvid);
-                    result = get_tv_series_info(plugin,idx,tvDbSeriesPage);
+                    result = get_tv_series_info(plugin,minfo,tvDbSeriesPage);
                 }
             }
         }
@@ -3278,7 +3232,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
 }
 
 #""=not found "M"=movie "T"=tv??
-function movie_search(idx,bestUrl,\
+function movie_search(minfo,bestUrl,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
@@ -3286,17 +3240,17 @@ imdb_title_q,imdb_id_q) {
 
     id1("movie search");
 
-    g_tvid_plugin[idx] = g_tvid[idx]="";
+    minfo["mi_tvid_plugin"] = minfo["mi_tvid"]="";
     # search online info using film basename looking for imdb link
     # -----------------------------------------------------------------------------
     name_id=0;
 
 
-    if (gParts[idx] != "") {
-        name_list[++name_id]=remove_part_suffix(idx);
+    if (minfo["mi_parts"] != "") {
+        name_list[++name_id]=remove_part_suffix(minfo);
     }
 
-    name=cleanSuffix(idx);
+    name=cleanSuffix(minfo);
 
 
     # Build hash of name->order
@@ -3309,7 +3263,7 @@ imdb_title_q,imdb_id_q) {
 
     name_list[++name_id] = name;
 
-    name_list[++name_id] = remove_format_tags(remove_brackets(basename(g_media[idx])));
+    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
 
 
     dump(0,"name_tries",name_list);
@@ -3342,7 +3296,7 @@ imdb_title_q,imdb_id_q) {
             #TODO Merge the web_search_frequent_imdb_link heuristics into this functions logic.
             INF("DISABLED: Search Phase: "search_order[s]);
             #id1("Search Phase: "search_order[s]);
-            #bestUrl=web_search_frequent_imdb_link(idx);
+            #bestUrl=web_search_frequent_imdb_link(minfo);
             #id0(bestUrl);
 
         } else {
@@ -3419,99 +3373,49 @@ imdb_title_q,imdb_id_q) {
     ret=0;
     if (bestUrl != "") {
 
-        ret = scrapeIMDBTitlePage(idx,bestUrl);
+        ret = scrapeIMDBTitlePage(minfo,bestUrl);
 
     } 
     id0(bestUrl);
     return ret;
 }
 
-function tv2imdb(idx,\
+function tv2imdb(minfo,\
 key) {
 
-    if (g_imdb[idx] == "") {
+    if (minfo["mi_imdb"] == "") {
     
-        key=gTitle[idx]" "g_year[idx];
+        key=minfo["mi_title"]" "minfo["mi_year"];
         DEBUG("tv2imdb key=["key"]");
         if (!(key in g_tv2imdb)) {
 
             # Search for imdb page  - try to filter out Episode pages.
             g_tv2imdb[key] = web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"",key); 
         }
-        g_imdb[idx] = g_tv2imdb[key];
+        minfo["mi_imdb"] = g_tv2imdb[key];
     }
-    DEBUG("tv2imdb end=["g_imdb[idx]"]");
-    return extractImdbLink(g_imdb[idx]);
+    DEBUG("tv2imdb end=["minfo["mi_imdb"]"]");
+    return extractImdbLink(minfo["mi_imdb"]);
 }
 
-# This is a temporary measure. The long term goal is to get
-# scanner to write all info to a new file then merge this file
-# with the main index.db. Then the following arrays should 
-# become scalar.
-# Its messy because the scanner started out as a single file
-# incremental scanner. so everything was loaded into memory for speed
-# however this is bad when doing the initial scan of a NAS etc.
-function clean_globals() {
-    delete g_media;
-    delete g_imdb_title;
-    delete g_motech_title;
-    delete gNfoDefault;
+function clear_folder_info() {
+
+    # Clean when folder changed
     delete g_fldrMediaCount;
     delete g_fldrInfoCount;
     delete g_fldrInfoName;
     delete g_fldrCount;
-    delete g_fldr;
-    delete gParts;
-    delete gMultiPartTagPos;
-    delete gCertRating;
-    delete gCertCountry;
-    delete g_director;
-    delete g_director1;
-    delete g_writers;
-    delete g_actors;
-    delete g_poster;
-    delete g_genre;
-    delete g_runtime;
-    delete gProdCode;
-    delete gTitle;
-    delete gTitle_lang;
-    delete gOriginalTitle;
-    delete gAdditionalInfo;
-    delete g_tvid_plugin;
-    delete g_tvid;
-    delete g_imdb_img;
-    delete g_file;
-    delete g_file_time;
-    delete g_episode;
-    delete g_seasion;
-    delete g_imdb;
-    delete g_imdb_scraped;
-    delete g_year;
-    delete g_premier;
-    delete gAirDate;
-    delete gTvCom;
-    delete gEpTitle;
-    delete g_epplot;
-    delete g_plot;
-    delete g_plot_lang;
-    delete g_fanart;
-    delete gCertRating;
-    delete g_rating;
-    delete g_category;
-    delete gDate;
-    delete g_title_rank;
-    delete g_title_source;
-    delete g_conn_follows;
-    delete g_conn_followed_by;
-    delete g_conn_remakes;
+
+    # unique by file - clean when changing folder.
+    delete g_file_date; 
 
     gMovieFileCount = 0;
     INF("Reset scanned files store");
 }
 
-function cleanSuffix(idx,\
+function cleanSuffix(minfo,\
 name) {
-    name=g_media[idx];
+    name=minfo["mi_media"];
     if(name !~ "/$") {
         # remove extension
         sub(/\.[^.\/]+$/,"",name);
@@ -3519,7 +3423,7 @@ name) {
 
         # no point in removing the CD parts as this makes binsearch more inaccurate
 
-        #    if (gParts[idx] != "" ) {
+        #    if (minfo["mi_parts"] != "" ) {
         #        #remove  part qualifier xxxx1 or xxxxxa
         #        sub(/(|cd|part)[1a]$/,"",name);
         #    }
@@ -3588,7 +3492,7 @@ choice,i,url) {
 # Then extract all of the links to nfo pages in the results and search again 
 # for imdb links , keeping a tally as we go.
 # example
-# searchOnlineNfoLinksForImdb(idx,"http://www.bintube.com","/?q=","/nfo/pid/[0-9a-f]+") 
+# searchOnlineNfoLinksForImdb(minfo,"http://www.bintube.com","/?q=","/nfo/pid/[0-9a-f]+") 
 function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosToScan,inurlFind,inurlReplace,
 nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,count,result) {
 
@@ -3747,22 +3651,22 @@ foundId,line) {
 
 ############### GET IMDB PAGE FROM URL ########################################
 
-function search_tv_series_names(plugin,idx,title,search_abbreviations,\
+function search_tv_series_names(plugin,minfo,title,search_abbreviations,\
 tnum,t,i,url) {
 
     tnum = alternate_titles(title,t);
 
     for(i = 0 ; i-tnum < 0 ; i++ ) {
-        url = search_tv_series_names2(plugin,idx,t[i],search_abbreviations);
+        url = search_tv_series_names2(plugin,minfo,t[i],search_abbreviations);
         if (url != "") break;
     } 
     return url;
 }
 
-function search_tv_series_names2(plugin,idx,title,search_abbreviations,\
+function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
 tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
-    title_key = plugin"/"g_fldr[idx]"/"title;
+    title_key = plugin"/"minfo["mi_folder"]"/"title;
     id1("search_tv_series_names "title_key);
 
     if (title_key in g_tvDbIndex) {
@@ -3770,7 +3674,7 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
         tvDbSeriesPage =  g_tvDbIndex[title_key]; 
     } else {
 
-        tvDbSeriesPage = searchTvDbTitles(plugin,idx,title);
+        tvDbSeriesPage = searchTvDbTitles(plugin,minfo,title);
 
         DEBUG("search_tv_series_names: bytitles="tvDbSeriesPage);
         if (tvDbSeriesPage) {
@@ -3781,7 +3685,7 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
             # Abbreviation search
 
-            cache_key=g_fldr[idx]"@"title;
+            cache_key=minfo["mi_folder"]"@"title;
 
             if(cache_key in g_abbrev_cache) {
 
@@ -3795,10 +3699,10 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
                 filterTitlesByTvDbPresence(plugin,alternateTitles,showIds);
                 if (hash_size(showIds)+0 > 1) {
 
-                    filterUsenetTitles(showIds,cleanSuffix(idx),showIds);
+                    filterUsenetTitles(showIds,cleanSuffix(minfo),showIds);
                 }
 
-                tvdbid = selectBestOfBestTitle(plugin,idx,showIds);
+                tvdbid = selectBestOfBestTitle(plugin,minfo,showIds);
 
                 tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
 
@@ -3908,7 +3812,7 @@ ret) {
 }
 
 # Given a bunch of titles keep the ones where the filename has been posted with that title
-#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(idx)
+#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
 #IN titles hash(showId=>title)
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
 #
@@ -3925,7 +3829,7 @@ result = filterUsenetTitles1(titles,"http://binsearch.info/?max=25&adv_age=&q=\"
 }
 
 # Given a bunch of titles keep the ones where the filename has been posted with that title
-#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(idx)
+#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
 #IN titles - hased by show ID
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
 function filterUsenetTitles1(titles,usenet_query_url,filteredTitles,\
@@ -3985,13 +3889,13 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 # For other databases we may need to get the actual air date.
 # it should return array of strings (not numbers) that can be compared using < >.
 # eg 2009-03-31 ok but 31-03-2009 bad.
-# IN idx - index to global arrays
+# IN minfo - current media item
 # IN titleHash - Indexed by imdb/tvdbid etc
 # OUT ageHash - age indicator  Indexed by imdb/tvdbid etc
-function getRelativeAge(plugin,idx,titleHash,ageHash,\
+function getRelativeAge(plugin,minfo,titleHash,ageHash,\
 id,xml) {
    for(id in titleHash) {
-        if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),g_season[idx],g_episode[idx],xml)) {
+        if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
             if (plugin == "THETVDB") {
                 ageHash[id] = xml["/Data/Episode/FirstAired"];
             } else if (plugin == "TVRAGE" ) {
@@ -4018,7 +3922,7 @@ id,xml) {
 # @param plugin - thetvdb  or tvrage
 # @param idx - the current item being processed
 # @param titles - hash of show titles keyed by show id.
-function selectBestOfBestTitle(plugin,idx,titles,\
+function selectBestOfBestTitle(plugin,minfo,titles,\
 bestId,bestFirstAired,ages,count) {
     dump(0,"closely matched titles",titles);
     count=hash_size(titles);
@@ -4030,12 +3934,12 @@ bestId,bestFirstAired,ages,count) {
     } else {
         TODO("Refine selection rules here.");
 
-        INF("Getting the most recent first aired for s"g_season[idx]"e"g_episode[idx]);
+        INF("Getting the most recent first aired for s"minfo["mi_season"]"e"minfo["mi_episode"]);
         # disabled in the hope another search method is triggered
         if(1) {
             bestFirstAired="";
 
-            getRelativeAge(plugin,idx,titles,ages);
+            getRelativeAge(plugin,minfo,titles,ages);
 
             bestScores(ages,ages,1);
 
@@ -4271,7 +4175,7 @@ function tv_title2regex(title) {
 
 # IN imdb id tt0000000
 # RETURN tvdb id
-function find_tvid(plugin,idx,imdbid,\
+function find_tvid(plugin,minfo,imdbid,\
 url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_regex) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
@@ -4297,14 +4201,14 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_rege
             if (id2 == "" ) {
 
                 # search for series name directly using raw(ish) imdb name
-                extractDate(g_premier[idx],date,nondate);
+                extractDate(minfo["mi_premier"],date,nondate);
                 # We do a fuzzy year search esp for programs that have a pilot in the
                 # year before episode 1
                 #
                 # This may cause a false match if two series with exactly the same name
                 # started within two years of one another.
-                year_range="("(g_year[idx]-1)"|"g_year[idx]"|"(g_year[idx]+1)")";
-                title_regex=tv_title2regex(gTitle[idx]);
+                year_range="("(minfo["mi_year"]-1)"|"minfo["mi_year"]"|"(minfo["mi_year"]+1)")";
+                title_regex=tv_title2regex(minfo["mi_title"]);
 
                 if(plugin == "THETVDB") {
 
@@ -4313,7 +4217,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_rege
                     filter["/Data/Series/SeriesName"] = "~:^"title_regex"$";
                     filter["/Data/Series/FirstAired"] = "~:^"year_range"-";
 
-                    url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",gTitle[idx]);
+                    url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",minfo["mi_title"]);
                     if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo)) {
                         INF("Looking at tvdb "showInfo["/Data/Series/SeriesName"]);
                         id2 = showInfo["/Data/Series/seriesid"];
@@ -4323,7 +4227,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_rege
 #
 #                    if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
 #
-#                    id2 = scan_tv_via_search_engine(regex,gTitle[idx]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,g_year[idx]);
+#                    id2 = scan_tv_via_search_engine(regex,minfo["mi_title"]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,minfo["mi_year"]);
 #                    if (id2 != "" ) {
 #                        id2=substr(id2,5);
 #                    }
@@ -4335,7 +4239,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_rege
                     filter["/Results/show/name"] = "~:^"title_regex"$";
                     filter["/Results/show/started"] = "~:"year_range;
                     
-                    if (fetch_xml_single_child(g_tvrage_web"/feeds/search.php?show="gTitle[idx],"imdb2rage","/Results/show",filter,showInfo)) {
+                    if (fetch_xml_single_child(g_tvrage_web"/feeds/search.php?show="minfo["mi_title"],"imdb2rage","/Results/show",filter,showInfo)) {
                         INF("Looking at tv rage "showInfo["/Results/show/name"]);
                         id2 = showInfo["/Results/show/showid"];
                     }
@@ -4352,17 +4256,17 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_rege
     return id2;
 }
 
-function searchTvDbTitles(plugin,idx,title,\
+function searchTvDbTitles(plugin,minfo,title,\
 tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
 
     id1("searchTvDbTitles");
-    if (g_imdb[idx]) {
-        imdb_id = g_imdb[idx];
-        tvdbid = find_tvid(plugin,idx,imdb_id);
+    if (minfo["mi_imdb"]) {
+        imdb_id = minfo["mi_imdb"];
+        tvdbid = find_tvid(plugin,minfo,imdb_id);
     }
     if (tvdbid == "") {
         possible_tv_titles(plugin,title,closeTitles);
-        tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
+        tvdbid = selectBestOfBestTitle(plugin,minfo,closeTitles);
     }
     if (tvdbid == "") {
         noyr  = remove_tv_year(title);
@@ -4377,7 +4281,7 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
             # http://services.tvrage.com/feeds/search.php?show=carnivale Good
             # vs http://services.tvrage.com/feeds/search.php?show=carnivale%202003 OK
     	    possible_tv_titles(plugin,noyr,closeTitles);
-    	    tvdbid = selectBestOfBestTitle(plugin,idx,closeTitles);
+    	    tvdbid = selectBestOfBestTitle(plugin,minfo,closeTitles);
     	}
     }
     if (tvdbid != "") {
@@ -5167,42 +5071,42 @@ episodeUrl,filter,result) {
 }
 
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info(plugin,idx,tvDbSeriesUrl,\
+function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,\
 result) {
 
-    id1("get_tv_series_info("plugin","idx"," tvDbSeriesUrl")");
+    id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
 
     # mini-series may not have season set
-    if (g_season[idx] == "") {
-        g_season[idx] = 1;
+    if (minfo["mi_season"] == "") {
+        minfo["mi_season"] = 1;
     }
 
     if (plugin == "THETVDB") {
-        result = get_tv_series_info_tvdb(idx,tvDbSeriesUrl);
+        result = get_tv_series_info_tvdb(minfo,tvDbSeriesUrl);
     } else if (plugin == "TVRAGE") {
-        result = get_tv_series_info_rage(idx,tvDbSeriesUrl);
+        result = get_tv_series_info_rage(minfo,tvDbSeriesUrl);
     } else {
         plugin_error(plugin);
     }
 #    ERR("UNCOMMENT THIS CODE");
-    if (g_episode[idx] ~ "^DVD[0-9]+$" ) {
+    if (minfo["mi_episode"] ~ "^DVD[0-9]+$" ) {
         result++;
     }
 #    ERR("UNCOMMENT THIS CODE");
 
-    DEBUG("Title:["gTitle[idx]"] "g_season[idx]"x"g_episode[idx]" date:"gAirDate[idx]);
-    DEBUG("Episode:["gEpTitle[idx]"]");
+    DEBUG("Title:["minfo["mi_title"]"] "minfo["mi_season"]"x"minfo["mi_episode"]" date:"minfo["mi_airdate"]);
+    DEBUG("Episode:["minfo["mi_eptitle"]"]");
 
     id0(result"="(result==2?"Full Episode Info":(result?"Series Only":"Not Found")));
     return 0+ result;
 }
 
-function setFirst(array,field,value) {
-    if (array[field] == "") {
-        array[field] = value;
+function setFirst(minfo,field,value) {
+    if (minfo[field] == "") {
+        minfo[field] = value;
         print "["field"] set to ["value"]";
     } else {
-        print "["field"] already set to ["array[field]"] ignoring ["value"]";
+        print "["field"] already set to ["minfo[field]"] ignoring ["value"]";
     }
 }
 
@@ -5217,17 +5121,17 @@ function remove_tv_year(t) {
     }
     return t;
 }
-function set_plot(idx,plotv,txt) {
-    plotv[idx] = substr(txt,1,g_max_plot_len);
-    if (index(plotv[idx],"Remove Ad")) {
-        sub(/\[[Xx]\] Remove Ad/,"",plotv[idx]);
+function set_plot(minfo,field,txt) {
+    minfo[field] = substr(txt,1,g_max_plot_len);
+    if (index(minfo[field],"Remove Ad")) {
+        sub(/\[[Xx]\] Remove Ad/,"",minfo[field]);
     }
 }
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info_tvdb(idx,tvDbSeriesUrl,\
+function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,\
 seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
     result=0;
@@ -5238,51 +5142,50 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
         dump(0,"tvdb series",seriesInfo);
 
-        setFirst(g_imdb,idx,extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]));
+        setFirst(minfo,"mi_imdb",extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]));
         #Refine the title.
-        adjustTitle(idx,remove_br_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb");
+        adjustTitle(minfo,remove_br_year(seriesInfo["/Data/Series/SeriesName"]),"thetvdb");
 
-        g_year[idx] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
-        setFirst(g_premier,idx,formatDate(seriesInfo["/Data/Series/FirstAired"]));
-        set_plot(idx,g_plot,seriesInfo["/Data/Series/Overview"]);
+        minfo["mi_year"] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
+        setFirst(minfo,"mi_premier",formatDate(seriesInfo["/Data/Series/FirstAired"]));
+        set_plot(minfo,"mi_plot",seriesInfo["/Data/Series/Overview"]);
 
         #Dont use thetvdb genre - its too confusing when mixed with imdb movie genre
-        #setFirst(g_genre,idx,seriesInfo["/Data/Series/Genre"]);
 
-        gCertRating[idx] = seriesInfo["/Data/Series/ContentRating"];
+        minfo["mi_certrating"] = seriesInfo["/Data/Series/ContentRating"];
 
         # Dont use tvdb rating - prefer imdb one.
-        #g_rating[idx] = seriesInfo["/Data/Series/Rating"];
+        #minfo["mi_rating"] = seriesInfo["/Data/Series/Rating"];
 
-        setFirst(g_poster,idx,tvDbImageUrl(seriesInfo["/Data/Series/poster"]));
-        g_tvid_plugin[idx]="THETVDB";
-        g_tvid[idx]=seriesInfo["/Data/Series/id"];
+        setFirst(minfo,"mi_poster",tvDbImageUrl(seriesInfo["/Data/Series/poster"]));
+        minfo["mi_tvid_plugin"]="THETVDB";
+        minfo["mi_tvid"]=seriesInfo["/Data/Series/id"];
         result ++;
 
 
         bannerApiUrl = tvDbSeriesUrl;
         sub(/(all.|)en.xml$/,"banners.xml",bannerApiUrl);
 
-        getTvDbSeasonBanner(idx,bannerApiUrl,"en");
+        getTvDbSeasonBanner(minfo,bannerApiUrl,"en");
 
         # For twin episodes just use the first episode number for lookup by adding 0
 
-        if (g_episode[idx] ~ "^[0-9,]+$" ) {
+        if (minfo["mi_episode"] ~ "^[0-9,]+$" ) {
 
-            if (get_episode_xml("THETVDB",tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
+            if (get_episode_xml("THETVDB",tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"],episodeInfo)) {
 
                 if ("/Data/Episode/id" in episodeInfo) {
-                    setFirst(gAirDate,idx,formatDate(episodeInfo["/Data/Episode/FirstAired"]));
+                    setFirst(minfo,"mi_airdate",formatDate(episodeInfo["/Data/Episode/FirstAired"]));
 
-                    set_eptitle(idx,episodeInfo["/Data/Episode/EpisodeName"]);
+                    set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
 
-                    if (g_epplot[idx] == "") {
-                        set_plot(idx,g_epplot,episodeInfo["/Data/Episode/Overview"]);
+                    if (minfo["mi_epplot"] == "") {
+                        set_plot(minfo,"mi_epplot",episodeInfo["/Data/Episode/Overview"]);
                     }
 
-                    if (gEpTitle[idx] != "" ) {
-                       if ( gEpTitle[idx] ~ /^Episode [0-9]+$/ && g_plot[idx] == "" ) {
-                           INF("Due to Episode title of ["gEpTitle[idx]"] Demoting result to force another TV plugin search");
+                    if (minfo["mi_eptitle"] != "" ) {
+                       if ( minfo["mi_eptitle"] ~ /^Episode [0-9]+$/ && minfo["mi_plot"] == "" ) {
+                           INF("Due to Episode title of ["minfo["mi_eptitle"]"] Demoting result to force another TV plugin search");
                        } else {
                            result ++;
                        }
@@ -5294,10 +5197,10 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
         WARNING("Failed to find ID in XML");
     }
 
-    if (g_imdb[idx] == "" ) {
+    if (minfo["mi_imdb"] == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at "g_thetvdb_web);
     } else {
-        DEBUG("get_tv_series_info returns imdb url ["g_imdb[idx]"]");
+        DEBUG("get_tv_series_info returns imdb url ["minfo["mi_imdb"]"]");
     }
     return 0+ result;
 }
@@ -5312,47 +5215,47 @@ function tvDbImageUrl(path) {
     }
 }
 
-function getTvDbSeasonBanner(idx,bannerApiUrl,language,\
+function getTvDbSeasonBanner(minfo,bannerApiUrl,language,\
 xml,filter,r) {
 
-    if (getting_poster(idx,1) || getting_fanart(idx,1)) {
+    if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
         r="/Banners/Banner";
         delete filter;
         filter[r"/Language"] = language;
         filter[r"/BannerType"] = "season";
-        filter[r"/Season"] = g_season[idx];
+        filter[r"/Season"] = minfo["mi_season"];
         if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-            g_poster[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
-            DEBUG("Season Poster URL = "g_poster[idx]);
+            minfo["mi_poster"] = tvDbImageUrl(xml[r"/BannerPath"]);
+            DEBUG("Season Poster URL = "minfo["mi_poster"]);
         }
 
         delete filter;
         filter[r"/Language"] = language;
         filter[r"/BannerType"] = "fanart";
         if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-            g_fanart[idx] = tvDbImageUrl(xml[r"/BannerPath"]);
-            DEBUG("Fanart URL = "g_fanart[idx]);
+            minfo["mi_fanart"] = tvDbImageUrl(xml[r"/BannerPath"]);
+            DEBUG("Fanart URL = "minfo["mi_fanart"]);
         }
     }
 }
 
-function set_eptitle(idx,title) {
-    if (gEpTitle[idx] == "" ) {
+function set_eptitle(minfo,title) {
+    if (minfo["mi_eptitle"] == "" ) {
 
-        gEpTitle[idx] = title;
+        minfo["mi_eptitle"] = title;
         INF("Setting episode title ["title"]");
 
-    } else if (title != "" && title !~ /^Episode [0-9]+$/ && gEpTitle[idx] ~ /^Episode [0-9]+$/ ) {
+    } else if (title != "" && title !~ /^Episode [0-9]+$/ && minfo["mi_eptitle"] ~ /^Episode [0-9]+$/ ) {
 
-        INF("Overiding episode title ["gEpTitle[idx]"] with ["title"]");
-        gEpTitle[idx] = title;
+        INF("Overiding episode title ["minfo["mi_eptitle"]"] with ["title"]");
+        minfo["mi_eptitle"] = title;
     } else {
-        INF("Keeping episode title ["gEpTitle[idx]"] ignoring ["title"]");
+        INF("Keeping episode title ["minfo["mi_eptitle"]"] ignoring ["title"]");
     }
 }
 
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info_rage(idx,tvDbSeriesUrl,\
+function get_tv_series_info_rage(minfo,tvDbSeriesUrl,\
 seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
     pi="TVRAGE";
@@ -5362,44 +5265,44 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
     ignore="/Show/Episodelist";
     if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
         dump(0,"tvrage series",seriesInfo);
-        adjustTitle(idx,remove_br_year(seriesInfo["/Show/name"]),pi);
-        g_year[idx] = substr(seriesInfo["/Show/started"],8,4);
-        setFirst(g_premier,idx,formatDate(seriesInfo["/Show/started"]));
+        adjustTitle(minfo,remove_br_year(seriesInfo["/Show/name"]),pi);
+        minfo["mi_year"] = substr(seriesInfo["/Show/started"],8,4);
+        setFirst(minfo,"mi_premier",formatDate(seriesInfo["/Show/started"]));
 
 
         url=urladd(seriesInfo["/Show/showlink"],"remove_add336=1&bremove_add=1");
-        set_plot(idx,g_plot,scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
+        set_plot(minfo,"mi_plot",scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
 
-        g_tvid_plugin[idx]="TVRAGE";
-        g_tvid[idx]=seriesInfo["/Show/showid"];
+        minfo["mi_tvid_plugin"]="TVRAGE";
+        minfo["mi_tvid"]=seriesInfo["/Show/showid"];
         result ++;
 
         #get imdb link - via links page and then epguides.
-        if(g_imdb[idx] == "") {
+        if(minfo["mi_imdb"] == "") {
             url = scanPageFirstMatch(url,"/links/",g_nonquote_regex"+/links/",1);
             if (url != "" ) {
                 url = scanPageFirstMatch(g_tvrage_web url,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
                 if (url != "" ) {
-                    g_imdb[idx] = scanPageFirstMatch(url,"tt",g_imdb_regex,1);
+                    minfo["mi_imdb"] = scanPageFirstMatch(url,"tt",g_imdb_regex,1);
                 }
             }
         }
 
         e="/Show/Episodelist/Season/episode";
-        if (g_episode[idx] ~ "^[0-9,]+$" ) {
-            if (get_episode_xml(pi,tvDbSeriesUrl,g_season[idx],g_episode[idx],episodeInfo)) {
+        if (minfo["mi_episode"] ~ "^[0-9,]+$" ) {
+            if (get_episode_xml(pi,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"],episodeInfo)) {
 
-                set_eptitle(idx,episodeInfo[e"/title"]);
+                set_eptitle(minfo,episodeInfo[e"/title"]);
 
-                gAirDate[idx]=formatDate(episodeInfo[e"/airdate"]);
-                url=seriesInfo["/Show/showlink"] "/printable?nocrew=1&season=" g_season[idx];
+                minfo["mi_airdate"]=formatDate(episodeInfo[e"/airdate"]);
+                url=seriesInfo["/Show/showlink"] "/printable?nocrew=1&season=" minfo["mi_season"];
                 #OLDWAY#url=urladd(episodeInfo[e"/link"],"remove_add336=1&bremove_add=1");
 
-                if (g_epplot[idx] == "" ) {
+                if (minfo["mi_epplot"] == "" ) {
                     #p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);
 
 
-                    flag=sprintf(":%02dx%02d",g_season[idx],g_episode[idx]);
+                    flag=sprintf(":%02dx%02d",minfo["mi_season"],minfo["mi_episode"]);
                     p = scrape_one_item("tvrage_epplot", url, flag",<p>", 1, "</div>", 0, 1);
 
 
@@ -5409,8 +5312,8 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
                     sub(/ *There are no foreign summaries.*/,"",p);
                     if (p != "" && index(p,"There is no summary") == 0) {
-                        set_plot(idx,g_epplot,p);
-                        DEBUG("rage epplot :"g_epplot[idx]);
+                        set_plot(minfo,"mi_epplot",p);
+                        DEBUG("rage epplot :"minfo["mi_epplot"]);
                     }
                 }
                 result ++;
@@ -5560,7 +5463,7 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
-function adjustTitle(idx,newTitle,source,\
+function adjustTitle(minfo,newTitle,source,\
 oldSrc,newSrc,newRank) {
 
     if (!("filename" in gTitlePriority)) {
@@ -5578,7 +5481,7 @@ oldSrc,newSrc,newRank) {
     }
     newTitle = clean_title(newTitle);
 
-    oldSrc=g_title_source[idx]":["gTitle[idx]"] ";
+    oldSrc=minfo["mi_title_source"]":["minfo["mi_title"]"] ";
     newSrc=source":["newTitle"] ";
 
     if (!(source in gTitlePriority)) {
@@ -5588,11 +5491,11 @@ oldSrc,newSrc,newRank) {
     } else {
         newRank = gTitlePriority[source];
         #if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
-        if (gTitle[idx] == "" || newRank - g_title_rank[idx] > 0) {
+        if (minfo["mi_title"] == "" || newRank - minfo["mi_title_rank"] > 0) {
             DEBUG(oldSrc" promoted to "newSrc);
-            gTitle[idx] = newTitle;
-            g_title_source[idx] = source;
-            g_title_rank[idx] = newRank;;
+            minfo["mi_title"] = newTitle;
+            minfo["mi_title_source"] = source;
+            minfo["mi_title_rank"] = newRank;;
             return 1;
         } else {
             DEBUG("current title "oldSrc "outranks " newSrc);
@@ -6053,14 +5956,14 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 #
 # ovs: indicates internal database path. 
 # field is a sub folder. All internal posters are stored under "ovs:"POSTER"/"...
-function internal_poster_reference(field_id,idx,\
+function internal_poster_reference(field_id,minfo,\
 poster_ref) {
-    poster_ref = gTitle[idx]"_"g_year[idx];
+    poster_ref = minfo["mi_title"]"_"minfo["mi_year"];
     gsub("[^-_&" g_alnum8 "]+","_",poster_ref);
-    if (g_category[idx] == "T" ) {
-        poster_ref = poster_ref "_" g_season[idx];
+    if (minfo["mi_category"] == "T" ) {
+        poster_ref = poster_ref "_" minfo["mi_season"];
     } else {
-        poster_ref = poster_ref "_" g_imdb[idx];
+        poster_ref = poster_ref "_" minfo["mi_imdb"];
     }
     #"ovs:" means store in local database. This abstract path is used because when using
     #crossview in oversight jukebox, different posters have different locations.
@@ -6068,19 +5971,19 @@ poster_ref) {
     return "ovs:" field_id "/" g_settings["catalog_poster_prefix"] poster_ref ".jpg";
 }
 
-function getting_fanart(idx,lg) {
-    return 0+ getting_image(idx,FANART,GET_FANART,UPDATE_FANART,lg);
+function getting_fanart(minfo,lg) {
+    return 0+ getting_image(minfo,FANART,GET_FANART,UPDATE_FANART,lg);
 }
 
-function getting_poster(idx,lg) {
-    return 0+ getting_image(idx,POSTER,GET_POSTERS,UPDATE_POSTERS,lg);
+function getting_poster(minfo,lg) {
+    return 0+ getting_image(minfo,POSTER,GET_POSTERS,UPDATE_POSTERS,lg);
 }
 
-function getting_image(idx,image_field_id,get_image,update_image,lg,\
+function getting_image(minfo,image_field_id,get_image,update_image,lg,\
 poster_ref,internal_path) {
 
-    poster_ref = internal_poster_reference(image_field_id,idx);
-    internal_path = getPath(poster_ref,g_fldr[idx]);
+    poster_ref = internal_poster_reference(image_field_id,minfo);
+    internal_path = getPath(poster_ref,minfo["mi_folder"]);
 
     if (internal_path in g_image_inspected) {
         if(lg) INF("Already looked at "poster_ref);
@@ -6103,9 +6006,10 @@ poster_ref,internal_path) {
 # Check for locally held poster otherwise fetch one. This may be held locally(with media)
 # or internally in a common folder.
 # Note if poster may be url<tab>referer_url
-function download_image(field_id,url,idx,\
-    poster_ref,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
+function download_image(field_id,minfo,mi_field,\
+    url,poster_ref,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
 
+    url = minfo[mi_field];
     id1("download_image["field_id"]["url"]");
     if (url != "") {
 
@@ -6114,8 +6018,8 @@ function download_image(field_id,url,idx,\
 
         #Note for internal posters the reference contains a sub path.
         # (relative to database folder ovs: )
-        poster_ref = internal_poster_reference(field_id,idx);
-        internal_path = getPath(poster_ref,g_fldr[idx]);
+        poster_ref = internal_poster_reference(field_id,minfo);
+        internal_path = getPath(poster_ref,minfo["mi_folder"]);
 
         #DEBUG("internal_path = ["internal_path"]");
         #DEBUG("poster_ref = ["poster_ref"]");
@@ -6123,9 +6027,9 @@ function download_image(field_id,url,idx,\
 
         get_it = 0;
         if (field_id == POSTER) {
-            get_it = getting_poster(idx,0);
+            get_it = getting_poster(minfo,0);
         } else if (field_id == FANART) {
-            get_it = getting_fanart(idx,0);
+            get_it = getting_fanart(minfo,0);
         }
 
         INF("getting image = "get_it);
@@ -6262,42 +6166,42 @@ start,tries,timeout) {
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
-function getNiceMoviePosters(idx,imdb_id,\
+function getNiceMoviePosters(minfo,imdb_id,\
 poster_url,backdrop_url) {
 
 
-    if (getting_poster(idx,1) || getting_fanart(idx,1)) {
+    if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
 
         DEBUG("Poster check imdb_id = "imdb_id);
 
-        #poster_url = bingimg(gTitle[idx]" "g_year[idx]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
+        #poster_url = bingimg(minfo["mi_title"]" "minfo["mi_year"]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
             # Get posters from TMDB usiong the API. Unfortunately this doesnt expose poster rating.
-        if (poster_url == "" && getting_poster(idx,1) ) {
+        if (poster_url == "" && getting_poster(minfo,1) ) {
             poster_url = get_moviedb_img(imdb_id,"poster","mid");
         }
 
-        if (getting_fanart(idx,1) ) {
+        if (getting_fanart(minfo,1) ) {
             backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
         }
 
         if (poster_url == "") {
-            poster_url = get_motech_img(idx);
+            poster_url = get_motech_img(minfo);
         }
         INF("movie poster ["poster_url"]");
-        g_poster[idx]=poster_url;
+        minfo["mi_poster"]=poster_url;
 
         INF("movie backdrop ["backdrop_url"]");
-        g_fanart[idx]=backdrop_url;
+        minfo["mi_fanart"]=backdrop_url;
     }
 }
 
-function get_motech_img(idx,\
+function get_motech_img(minfo,\
 referer_url,url,url2) {
     #if (1) {
-    referer_url = "http://www.motechposters.com/title/"g_motech_title[idx]"/";
+    referer_url = "http://www.motechposters.com/title/"minfo["mi_motech_title"]"/";
     #} else {
-    #search_url="http://www.google.com/search?q=allintitle%3A+"gTitle[idx]"+("g_year[idx]")+site%3Amotechposters.com";
+    #search_url="http://www.google.com/search?q=allintitle%3A+"minfo["mi_title"]"+("minfo["mi_year"]")+site%3Amotechposters.com";
     #referer_url=scanPageFirstMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
     #}
     DEBUG("Got motech referer "referer_url);
@@ -6686,7 +6590,7 @@ function imdb_img_url(url) {
 }
 
 # isection tracks sections found. This helps alert us to IMDB changes.
-function scrape_imdb_line(line,imdbContentPosition,idx,f,isection,\
+function scrape_imdb_line(line,imdbContentPosition,minfo,f,isection,\
 title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp) {
 
 
@@ -6702,12 +6606,12 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             } else {
                 title=trimAll(scrape_until("ititle",f,"</title>",1));
             }
-            DEBUG("Title found ["title "] current title ["gTitle[idx]"]");
+            DEBUG("Title found ["title "] current title ["minfo["mi_title"]"]");
 
             #extract right most year in title
-            if (g_year[idx] == "" && match(title,".*\\("g_year_re)) {
-                g_year[idx] = substr(title,RSTART+RLENGTH-4,4);
-                DEBUG("IMDB: Got year ["g_year[idx]"]");
+            if (minfo["mi_year"] == "" && match(title,".*\\("g_year_re)) {
+                minfo["mi_year"] = substr(title,RSTART+RLENGTH-4,4);
+                DEBUG("IMDB: Got year ["minfo["mi_year"]"]");
                 delete isection[YEAR];
             }
 
@@ -6718,14 +6622,14 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             #
             # It is not so important when mapping filenames to tv shows. in that
             # case we need to be more flexible ( see expand_url() and similarTitles() )
-            g_motech_title[idx]=tolower(title);
-            gsub(/[^a-z0-9]+/,"-",g_motech_title[idx]);
-            gsub(/-$/,"",g_motech_title[idx]);
+            minfo["mi_motech_title"]=tolower(title);
+            gsub(/[^a-z0-9]+/,"-",minfo["mi_motech_title"]);
+            gsub(/-$/,"",minfo["mi_motech_title"]);
 
-            g_imdb_title[idx]=extract_imdb_title_category(idx,title);
+            minfo["mi_imdb_title"]=extract_imdb_title_category(minfo,title);
 
-            if (adjustTitle(idx,g_imdb_title[idx],"imdb")) {
-                gOriginalTitle[idx] = gTitle[idx];
+            if (adjustTitle(minfo,minfo["mi_imdb_title"],"imdb")) {
+                minfo["mi_orig_title"] = minfo["mi_title"];
             }
             sec=TITLE;
         }
@@ -6749,66 +6653,66 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 if (poster_imdb_url != "") {
 
                     #Save it for later. 
-                    g_imdb_img[idx]=imdb_img_url(poster_imdb_url);
-                    DEBUG("IMDB: Got imdb poster ["g_imdb_img[idx]"]");
+                    minfo["mi_imdb_img"]=imdb_img_url(poster_imdb_url);
+                    DEBUG("IMDB: Got imdb poster ["minfo["mi_imdb_img"]"]");
                 }
                 sec=POSTER;
             }
             # Scrape mobile page
-            if (g_actors[idx] == "" && index(line,">Top Billed Cast")) {
-                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</section>",0),g_max_actors);
-                g_actors[idx] = imdb_list_shrink(g_actors[idx],",",128);
+            if (minfo["mi_actors"] == "" && index(line,">Top Billed Cast")) {
+                minfo["mi_actors"] = get_names("actors",raw_scrape_until("actors",f,"</section>",0),g_max_actors);
+                minfo["mi_actors"] = imdb_list_shrink(minfo["mi_actors"],",",128);
                 sec=ACTORS;
             }
             # Scrape desktop  page
-            if (g_actors[idx] == "" && index(line,">Cast") ) {
-                g_actors[idx] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),g_max_actors);
-                g_actors[idx] = imdb_list_shrink(g_actors[idx],",",128);
+            if (minfo["mi_actors"] == "" && index(line,">Cast") ) {
+                minfo["mi_actors"] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),g_max_actors);
+                minfo["mi_actors"] = imdb_list_shrink(minfo["mi_actors"],",",128);
                 sec=ACTORS;
             }
 
-            if (g_director[idx] == "" && index(line,">Director")) {
-                g_director[idx] = get_names("actors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
-                g_director1[idx] = g_first_name;
-                g_director[idx] = imdb_list_shrink(g_director[idx],",",128);
+            if (minfo["mi_director"] == "" && index(line,">Director")) {
+                minfo["mi_director"] = get_names("actors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
+                minfo["mi_director_name"] = g_first_name;
+                minfo["mi_director"] = imdb_list_shrink(minfo["mi_director"],",",128);
                 sec=DIRECTOR;
             }
-            if (g_writers[idx] == "" && index(line,">Writer")) {
-                g_writers[idx] = get_names("actors",raw_scrape_until("writers",f,"</div>",0),g_max_writers);
-                g_writers[idx] = imdb_list_shrink(g_writers[idx],",",128);
+            if (minfo["mi_writers"] == "" && index(line,">Writer")) {
+                minfo["mi_writers"] = get_names("actors",raw_scrape_until("writers",f,"</div>",0),g_max_writers);
+                minfo["mi_writers"] = imdb_list_shrink(minfo["mi_writers"],",",128);
                 sec=WRITERS;
             }
 
             # "Plot" on normal page - "Plot Summary" on mobile pages.
-            if (g_plot[idx] == "" && ( index(line,">Plot:<") ||index(line,">Plot Summary<")) ) {
-                set_plot(idx,g_plot,scrape_until("iplot",f,"</div>",0));
-                sub(/\|.*/,"",g_plot[idx]);
-                sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",g_plot[idx]);
-                #DEBUG("imdb plot "g_plot[idx]);
+            if (minfo["mi_plot"] == "" && ( index(line,">Plot:<") ||index(line,">Plot Summary<")) ) {
+                set_plot(minfo,"mi_plot",scrape_until("iplot",f,"</div>",0));
+                sub(/\|.*/,"",minfo["mi_plot"]);
+                sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",minfo["mi_plot"]);
+                #DEBUG("imdb plot "minfo["mi_plot"]);
                sec=PLOT;
             }
 
             #IMDB Genre takes precedence
-            if (g_genre[idx] == "" && index(line,">Genre")) {
+            if (minfo["mi_genre"] == "" && index(line,">Genre")) {
 
-                g_genre[idx]=trimAll(scrape_until("igenre",f,"</div>",0));
+                minfo["mi_genre"]=trimAll(scrape_until("igenre",f,"</div>",0));
 
-                gsub(/,/,"|",g_genre[idx]); # mobile site uses commas.
+                gsub(/,/,"|",minfo["mi_genre"]); # mobile site uses commas.
 
-                DEBUG("Genre=["g_genre[idx]"]");
-                sub(/ +[Ss]ee /," ",g_genre[idx]);
-                sub(/ +[Mm]ore */,"",g_genre[idx]);
+                DEBUG("Genre=["minfo["mi_genre"]"]");
+                sub(/ +[Ss]ee /," ",minfo["mi_genre"]);
+                sub(/ +[Mm]ore */,"",minfo["mi_genre"]);
                sec=GENRE;
             }
 
             #desktop
-            if (g_runtime[idx] == "" && (index(line,">Runtime:") || index(line,">Run time"))) {
+            if (minfo["mi_runtime"] == "" && (index(line,">Runtime:") || index(line,">Run time"))) {
                 tmp=trimAll(scrape_until("irtime",f,"</div>",1));
                 if (match(tmp,"[0-9]+ h")) {
-                    g_runtime[idx] = 60 * substr(tmp,RSTART,RLENGTH);
+                    minfo["mi_runtime"] = 60 * substr(tmp,RSTART,RLENGTH);
                 }
                 if (match(tmp,"[0-9]+ m")) {
-                    g_runtime[idx] += substr(tmp,RSTART,RLENGTH);
+                    minfo["mi_runtime"] += substr(tmp,RSTART,RLENGTH);
                 }
                sec=RUNTIME;
             }
@@ -6816,28 +6720,28 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             # Always overwrite tvdb ratings with imdb ones.
             # desktop -  <b>7.1/10</b> 
             if (index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
-                g_rating[idx]=0+substr(line,RSTART,RLENGTH-3);
-               DEBUG("IMDB: Got Rating = ["g_rating[idx]"]");
+                minfo["mi_rating"]=0+substr(line,RSTART,RLENGTH-3);
+               DEBUG("IMDB: Got Rating = ["minfo["mi_rating"]"]");
                sec=RATING;
             }
             #mobile - <strong>7.1</strong>&#47;10 &#40;148,280 votes&#41;
             if (index(line,"&#47;10") && match(line,"[0-9.]+</strong>") ) {
-                g_rating[idx]=0+substr(line,RSTART,RLENGTH-3);
-               DEBUG("IMDB: Got Rating = ["g_rating[idx]"]");
+                minfo["mi_rating"]=0+substr(line,RSTART,RLENGTH-3);
+               DEBUG("IMDB: Got Rating = ["minfo["mi_rating"]"]");
                sec=RATING;
             }
 
             # Desktop - full certificate scrape
             if (index(line,"certificates")) {
 
-                scrapeIMDBCertificate(idx,line);
+                scrapeIMDBCertificate(minfo,line);
                 sec=CERT;
 
             }
             # mobile - just get rated.
             if (index(line,">Rated<")) {
-                gCertRating[idx]=trimAll(scrape_until("irtime",f,"</div>",1));
-                gCertCountry[idx]="USA";
+                minfo["mi_certrating"]=trimAll(scrape_until("irtime",f,"</div>",1));
+                minfo["mi_certcountry"]="USA";
                 sec=CERT;
             }
 
@@ -6846,14 +6750,14 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             # Title is the hardest due to original language titling policy.
             # Good Bad Ugly, Crouching Tiger, Two Brothers, Leon lots of fun!! 
 
-            if (index(line,"Also Known")) DEBUG("AKA "gOriginalTitle[idx]" vs "gTitle[idx]);
+            if (index(line,"Also Known")) DEBUG("AKA "minfo["mi_orig_title"]" vs "minfo["mi_title"]);
 
-            if (gOriginalTitle[idx] == gTitle[idx] && index(line,"Also Known As:")) {
+            if (minfo["mi_orig_title"] == minfo["mi_title"] && index(line,"Also Known As:")) {
                 line = raw_scrape_until("aka",f,"</div>",1);
 
                 DEBUG("AKA:"line);
 
-                aka_title_country = scrapeIMDBAka(idx,line);
+                aka_title_country = scrapeIMDBAka(minfo,line);
                 sec=AKA;
 
             }
@@ -6866,7 +6770,7 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
 
                 if (orig_country_pos > 0 ) {
                     if (aka_title_country == "" ||  orig_country_pos <= aka_country_pos ) {
-                        adjustTitle(idx,gOriginalTitle[idx],"imdb_orig"); 
+                        adjustTitle(minfo,minfo["mi_orig_title"],"imdb_orig"); 
                     }
                 }
             }
@@ -6950,17 +6854,17 @@ ret) {
     return ret;
 }
 
-function extract_imdb_title_category(idx,title\
+function extract_imdb_title_category(minfo,title\
 ) {
     # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
-    g_category[idx]="M";
+    minfo["mi_category"]="M";
     DEBUG("imdb title=["title"]");
     if (match(title,"^\".*\"") ) {   # www.imdb.com
         title=substr(title,RSTART+1,RLENGTH-2);
-        g_category[idx]="T";
+        minfo["mi_category"]="T";
     } else if (sub(/ ?T[vV] [Ss]eries ?/,"",title)) { # m.imdb.com
-        g_category[idx]="T";
+        minfo["mi_category"]="T";
     }
 
     #Remove the year
@@ -6976,10 +6880,10 @@ function extract_imdb_title_category(idx,title\
 # This is because IMDB lists AKA in order of importance. So this helps weed out false matches
 # against alternative titles that are further down the list.
 
-function scrapeIMDBAka(idx,line,\
+function scrapeIMDBAka(minfo,line,\
 akas,a,c,bro,brc,akacount,country) {
 
-    if (gOriginalTitle[idx] != gTitle[idx] ) return ;
+    if (minfo["mi_orig_title"] != minfo["mi_title"] ) return ;
 
     bro="(";
     brc=")";
@@ -7011,7 +6915,7 @@ akas,a,c,bro,brc,akacount,country) {
                     #Use first match from AKA section 
                     if (match(akas[a],"\".*\" -")) {
                         country=gTitleCountries[c];
-                        adjustTitle(idx,clean_title(substr(akas[a],RSTART+1,RLENGTH-4)),"imdb_aka"); 
+                        adjustTitle(minfo,clean_title(substr(akas[a],RSTART+1,RLENGTH-4)),"imdb_aka"); 
                     }
                     return country;
                 }
@@ -7020,7 +6924,7 @@ akas,a,c,bro,brc,akacount,country) {
     }
 }
 
-function scrapeIMDBCertificate(idx,line,\
+function scrapeIMDBCertificate(minfo,line,\
 l,cert_list,certpos,cert,c,total,i,flag) {
 
     flag="certificates=";
@@ -7036,17 +6940,17 @@ l,cert_list,certpos,cert,c,total,i,flag) {
 
         #Now we only want to assign the certificate if it is in our desired list of countries.
         for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
-            if (gCertCountry[idx] == gCertificateCountries[c]) {
+            if (minfo["mi_certcountry"] == gCertificateCountries[c]) {
                 #Keep certificate as this country is early in the list.
                 return;
             }
             if (cert[1] == gCertificateCountries[c]) {
                 #Update certificate
-                gCertCountry[idx] = cert[1];
+                minfo["mi_certcountry"] = cert[1];
 
-                gCertRating[idx] = toupper(cert[2]);
-                gsub(/%20/," ",gCertRating[idx]);
-                DEBUG("IMDB: set certificate ["gCertCountry[idx]"]["gCertRating[idx]"]");
+                minfo["mi_certrating"] = toupper(cert[2]);
+                gsub(/%20/," ",minfo["mi_certrating"]);
+                DEBUG("IMDB: set certificate ["minfo["mi_certcountry"]"]["minfo["mi_certrating"]"]");
                 return;
             }
         }
@@ -7154,7 +7058,7 @@ out,tag_start,tag_end,start_pos,end_pos,tail) {
 
 
 function relocating_files(i) {
-    return (RENAME_TV == 1 && g_category[i] == "T") ||(RENAME_FILM==1 && g_category[i] == "M");
+    return (RENAME_TV == 1 && minfo["mi_category"] == "T") ||(RENAME_FILM==1 && minfo["mi_category"] == "M");
 }
 
 function relocate_files(i,\
@@ -7165,27 +7069,27 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     newName="";
     oldName="";
     fileType="";
-    if (RENAME_TV == 1 && g_category[i] == "T") {
+    if (RENAME_TV == 1 && minfo["mi_category"] == "T") {
 
-        oldName=g_fldr[i]"/"g_media[i];
+        oldName=minfo["mi_folder"]"/"minfo["mi_media"];
         newName=g_settings["catalog_tv_file_fmt"];
-        newName = substitute("SEASON",g_season[i],newName);
-        newName = substitute("EPISODE",g_episode[i],newName);
-        newName = substitute("INF",gAdditionalInfo[i],newName);
+        newName = substitute("SEASON",minfo["mi_season"],newName);
+        newName = substitute("EPISODE",minfo["mi_episode"],newName);
+        newName = substitute("INF",minfo["mi_additional_info"],newName);
 
-        epTitle=gEpTitle[i];
+        epTitle=minfo["mi_eptitle"];
         gsub("[^-" g_alnum8 ",. ]","",epTitle);
         gsub(/[{]EPTITLE[}]/,epTitle,newName);
 
         newName = substitute("EPTITLE",epTitle,newName);
-        newName = substitute("0SEASON",sprintf("%02d",g_season[i]),newName);
-        newName = substitute("0EPISODE",pad_episode(g_episode[i]),newName);
+        newName = substitute("0SEASON",sprintf("%02d",minfo["mi_season"]),newName);
+        newName = substitute("0EPISODE",pad_episode(minfo["mi_episode"]),newName);
 
         fileType="file";
 
-    } else if (RENAME_FILM==1 && g_category[i] == "M") {
+    } else if (RENAME_FILM==1 && minfo["mi_category"] == "M") {
 
-        oldName=g_fldr[i];
+        oldName=minfo["mi_folder"];
         newName=g_settings["catalog_film_folder_fmt"];
         fileType="folder";
 
@@ -7196,25 +7100,25 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     # if name has changed at this point ?
     if (newName != "" && newName != oldName) {
 
-        oldFolder=g_fldr[i];
+        oldFolder=minfo["mi_folder"];
 
         if (fileType == "file") {
-            newName = substitute("NAME",g_media[i],newName);
-            if (match(g_media[i],"[.][^.]+$")) {
-                #DEBUG("BASE EXT="g_media[i] " AT "RSTART);
-                newName = substitute("BASE",substr(g_media[i],1,RSTART-1),newName);
-                newName = substitute("EXT",substr(g_media[i],RSTART),newName);
+            newName = substitute("NAME",minfo["mi_media"],newName);
+            if (match(minfo["mi_media"],"[.][^.]+$")) {
+                #DEBUG("BASE EXT="minfo["mi_media"] " AT "RSTART);
+                newName = substitute("BASE",substr(minfo["mi_media"],1,RSTART-1),newName);
+                newName = substitute("EXT",substr(minfo["mi_media"],RSTART),newName);
             } else {
-                #DEBUG("BASE EXT="g_media[i] "]");
-                newName = substitute("BASE",g_media[i],newName);
+                #DEBUG("BASE EXT="minfo["mi_media"] "]");
+                newName = substitute("BASE",minfo["mi_media"],newName);
                 newName = substitute("EXT","",newName);
             }
         }
-        newName = substitute("DIR",g_fldr[i],newName);
-        newName = substitute("TITLE",gTitle[i],newName);
-        newName = substitute("YEAR",g_year[i],newName);
-        newName = substitute("CERT",gCertRating[i],newName);
-        newName = substitute("GENRE",g_genre[i],newName);
+        newName = substitute("DIR",minfo["mi_folder"],newName);
+        newName = substitute("TITLE",minfo["mi_title"],newName);
+        newName = substitute("YEAR",minfo["mi_year"],newName);
+        newName = substitute("CERT",minfo["mi_certrating"],newName);
+        newName = substitute("GENRE",minfo["mi_genre"],newName);
 
         #Remove characters windows doesnt like
         gsub(/[\\:*\"<>|]/,"_",newName); #"
@@ -7227,11 +7131,8 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    return;
                }
 
-               delete gMovieFilePresent[oldName];
-               gMovieFilePresent[newName]=i;
-
-               g_file[i]="";
-               g_fldr[i]=newName;
+               minfo["mi_file"]="";
+               minfo["mi_folder"]=newName;
            } else {
 
                # Move media file
@@ -7239,24 +7140,21 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    return;
                }
 
-               delete gMovieFilePresent[oldName];
-               gMovieFilePresent[newName]=i;
-
-               g_fldrMediaCount[g_fldr[i]]--;
-               g_file[i]=newName;
+               g_fldrMediaCount[minfo["mi_folder"]]--;
+               minfo["mi_file"]=newName;
 
                newFolder=newName;
                sub(/\/[^\/]+$/,"",newFolder);
 
                #Update new folder location
-               g_fldr[i]=newFolder;
+               minfo["mi_folder"]=newFolder;
 
-               g_media[i]=newName;
-               sub(/.*\//,"",g_media[i]);
+               minfo["mi_media"]=newName;
+               sub(/.*\//,"",minfo["mi_media"]);
 
                # Move nfo file
-               DEBUG("Checking nfo file ["gNfoDefault[i]"]");
-               if(is_file(gNfoDefault[i])) {
+               DEBUG("Checking nfo file ["minfo["mi_nfo_default"]"]");
+               if(is_file(minfo["mi_nfo_default"])) {
 
                    nfoName = newName;
                    sub(/\.[^.]+$/,"",nfoName);
@@ -7266,17 +7164,17 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                        return;
                    }
 
-                   DEBUG("Moving nfo file ["gNfoDefault[i]"] to ["nfoName"]");
-                   if (moveFileIfPresent(gNfoDefault[i],nfoName) != 0) {
+                   DEBUG("Moving nfo file ["minfo["mi_nfo_default"]"] to ["nfoName"]");
+                   if (moveFileIfPresent(minfo["mi_nfo_default"],nfoName) != 0) {
                        return;
                    }
                    if (!g_opt_dry_run) {
 
-                       gDate[nfoName]=gDate[gNfoDefault[i]];
-                       delete gDate[gNfoDefault[i]];
+                       g_file_date[nfoName]=g_file_date[minfo["mi_nfo_default"]];
+                       delete g_file_date[minfo["mi_nfo_default"]];
 
-                       gNfoDefault[i] = nfoName;
-                       DEBUG("Moved nfo file ["gNfoDefault[i]"]");
+                       minfo["mi_nfo_default"] = nfoName;
+                       DEBUG("Moved nfo file ["minfo["mi_nfo_default"]"]");
                    }
                }
 
@@ -7441,7 +7339,7 @@ function moveFolder(i,oldName,newName,\
 
        err="not listed in the arguments";
 
-   } else if ( g_fldrCount[oldName] - 2*(isDvdDir(g_media[i])) > 0 ) {
+   } else if ( g_fldrCount[oldName] - 2*(isDvdDir(minfo["mi_media"])) > 0 ) {
 
        err= g_fldrCount[oldName]" sub folders";
 
@@ -7632,13 +7530,13 @@ function xmlEscape(text) {
 
 # Some times epguides and imdb disagree. We only give a title if both are the same.
 #
-function fixTitles(idx,\
+function fixTitles(minfo,\
 t) {
 
-    t = gTitle[idx];
+    t = minfo["mi_title"];
     # If no title set - just use the filename
     if (t == "") {
-        t = g_media[idx];
+        t = minfo["mi_media"];
         sub(/\/$/,"",t);
         sub(/.*\//,"",t); #remove path
         t = remove_format_tags(t);
@@ -7646,12 +7544,12 @@ t) {
         DEBUG("Setting title to file["t"]");
     }
 
-    gTitle[idx]=clean_title(t);
+    minfo["mi_title"]=clean_title(t);
 }
 
 function file_time(f) {
-    if (f in gDate) {
-        return gDate[f];
+    if (f in g_file_date) {
+        return g_file_date[f];
     } else {
         return "";
     }
@@ -7662,22 +7560,22 @@ function createIndexRow(i,db_index,watched,locked,index_time,\
 row,est,nfo,op,start) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
-    est=file_time(g_fldr[i]"/unpak.log");
+    est=file_time(minfo["mi_folder"]"/unpak.log");
     if (est == "") {
-        est=file_time(g_fldr[i]"/unpak.txt");
+        est=file_time(minfo["mi_folder"]"/unpak.txt");
     }
     if (est == "") {
-        est = g_file_time[i];
+        est = minfo["mi_file_time"];
     }
 
-    if (g_file[i] == "" ) {
-        g_file[i]=getPath(g_media[i],g_fldr[i]);
+    if (minfo["mi_file"] == "" ) {
+        minfo["mi_file"]=getPath(minfo["mi_media"],minfo["mi_folder"]);
     }
-    g_file[i] = clean_path(g_file[i]);
+    minfo["mi_file"] = clean_path(minfo["mi_file"]);
 
-    if ((g_file[i] in g_fldrCount ) && g_fldrCount[g_file[i]]) {
+    if ((minfo["mi_file"] in g_fldrCount ) && g_fldrCount[minfo["mi_file"]]) {
         DEBUG("Adjusting file for video_ts");
-        g_file[i] = g_file[i] "/";
+        minfo["mi_file"] = minfo["mi_file"] "/";
     }
 
     op="update";
@@ -7686,9 +7584,9 @@ row,est,nfo,op,start) {
         op="add";
     }
     row="\t"ID"\t"db_index;
-    INF("dbrow "op" ["db_index":"g_file[i]"]");
+    INF("dbrow "op" ["db_index":"minfo["mi_file"]"]");
 
-    row=row"\t"CATEGORY"\t"g_category[i];
+    row=row"\t"CATEGORY"\t"minfo["mi_category"];
 
     if (index_time == "") {
         if (RESCAN == 1 ) {
@@ -7705,69 +7603,67 @@ row,est,nfo,op,start) {
 
     #Title and Season must be kept next to one another to aid grepping.
     #Put the overview items near the start to speed up scanning
-    row=row"\t"TITLE"\t"gTitle[i];
-    if (gOriginalTitle[i] != "" && gOriginalTitle[i] != gTitle[i] ) {
-        row=row"\t"ORIG_TITLE"\t"gOriginalTitle[i];
+    row=row"\t"TITLE"\t"minfo["mi_title"];
+    if (minfo["mi_orig_title"] != "" && minfo["mi_orig_title"] != minfo["mi_title"] ) {
+        row=row"\t"ORIG_TITLE"\t"minfo["mi_orig_title"];
     }
-    if (g_season[i] != "") row=row"\t"SEASON"\t"g_season[i];
+    if (minfo["mi_season"] != "") row=row"\t"SEASON"\t"minfo["mi_season"];
 
-    row=row"\t"RATING"\t"g_rating[i];
+    row=row"\t"RATING"\t"minfo["mi_rating"];
 
-    if (g_episode[i] != "") row=row"\t"EPISODE"\t"g_episode[i];
+    if (minfo["mi_episode"] != "") row=row"\t"EPISODE"\t"minfo["mi_episode"];
 
-    row=row"\t"GENRE"\t"short_genre(g_genre[i]);
-    row=row"\t"RUNTIME"\t"g_runtime[i];
+    row=row"\t"GENRE"\t"short_genre(minfo["mi_genre"]);
+    row=row"\t"RUNTIME"\t"minfo["mi_runtime"];
 
-    if (gParts[i]) row=row"\t"PARTS"\t"gParts[i];
+    if (minfo["mi_parts"]) row=row"\t"PARTS"\t"minfo["mi_parts"];
 
-    row=row"\t"YEAR"\t"short_year(g_year[i]);
+    row=row"\t"YEAR"\t"short_year(minfo["mi_year"]);
 
     start=1;
-    if (index(g_file[i],g_mount_root) == 1) {
+    if (index(minfo["mi_file"],g_mount_root) == 1) {
         start += length(g_mount_root);
     }
-    row=row"\t"FILE"\t"substr(g_file[i],start);
+    row=row"\t"FILE"\t"substr(minfo["mi_file"],start);
 
-    if (gAdditionalInfo[i]) row=row"\t"ADDITIONAL_INF"\t"gAdditionalInfo[i];
+    if (minfo["mi_additional_info"]) row=row"\t"ADDITIONAL_INF"\t"minfo["mi_additional_info"];
 
 
-    if (g_imdb[i] == "") {
+    if (minfo["mi_imdb"] == "") {
         # Need to have some kind of id for the plot.
-        g_imdb[i]=g_tvid_plugin[i]"_"g_tvid[i];
-        if (g_imdb[i] == "") {
+        minfo["mi_imdb"]=minfo["mi_tvid_plugin"]"_"minfo["mi_tvid"];
+        if (minfo["mi_imdb"] == "") {
             # Need to have some kind of id for the plot.
-            g_imdb[i]="ovs"PID"_"systime();
+            minfo["mi_imdb"]="ovs"PID"_"systime();
         }
     }
-    row=row"\t"URL"\t"g_imdb[i];
+    row=row"\t"URL"\t"minfo["mi_imdb"];
 
-    row=row"\t"CERT"\t"gCertCountry[i]":"gCertRating[i];
-    if (g_director[i]) row=row"\t"DIRECTOR"\t"g_director[i];
-    if (g_actors[i]) row=row"\t"ACTORS"\t"g_actors[i];
-    if (g_writers[i]) row=row"\t"WRITERS"\t"g_writers[i];
+    row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];
+    if (minfo["mi_director"]) row=row"\t"DIRECTOR"\t"minfo["mi_director"];
+    if (minfo["mi_actors"]) row=row"\t"ACTORS"\t"minfo["mi_actors"];
+    if (minfo["mi_writers"]) row=row"\t"WRITERS"\t"minfo["mi_writers"];
 
-    row=row"\t"FILETIME"\t"shorttime(g_file_time[i]);
+    row=row"\t"FILETIME"\t"shorttime(minfo["mi_file_time"]);
     row=row"\t"DOWNLOADTIME"\t"shorttime(est);
     #row=row"\t"SEARCH"\t"g_search[i];
-    #row=row"\t"PROD"\t"gProdCode[i]; #todo remove without affecting load loop in oversight.cgi
 
 
-    if (gAirDate[i]) row=row"\t"AIRDATE"\t"gAirDate[i];
+    if (minfo["mi_airdate"]) row=row"\t"AIRDATE"\t"minfo["mi_airdate"];
 
-    #row=row"\t"TVCOM"\t"gTvCom[i];
-    if (gEpTitle[i]) row=row"\t"EPTITLE"\t"gEpTitle[i];
+    if (minfo["mi_eptitle"]) row=row"\t"EPTITLE"\t"minfo["mi_eptitle"];
     nfo="";
 
-    if (g_settings["catalog_nfo_write"] != "never" || is_file(gNfoDefault[i]) ) {
-        nfo=gNfoDefault[i];
+    if (g_settings["catalog_nfo_write"] != "never" || is_file(minfo["mi_nfo_default"]) ) {
+        nfo=minfo["mi_nfo_default"];
         gsub(/.*\//,"",nfo);
     }
-    if (is_file(g_fldr[i]"/"nfo)) {
+    if (is_file(minfo["mi_folder"]"/"nfo)) {
         row=row"\t"NFO"\t"nfo;
     }
-    if (g_conn_follows[i]) row=row"\t"CONN_FOLLOWS"\t"g_conn_follows[i];
-    if (g_conn_followed_by[i]) row=row"\t"CONN_FOLLOWED"\t"g_conn_followed_by[i];
-    if (g_conn_remakes[i]) row=row"\t"CONN_REMAKES"\t"g_conn_remakes[i];
+    if (minfo["mi_conn_follows"]) row=row"\t"CONN_FOLLOWS"\t"minfo["mi_conn_follows"];
+    if (minfo["mi_conn_followed_by"]) row=row"\t"CONN_FOLLOWED"\t"minfo["mi_conn_followed_by"];
+    if (minfo["mi_conn_remakes"]) row=row"\t"CONN_REMAKES"\t"minfo["mi_conn_remakes"];
     return row;
 }
 function short_year(y) {
@@ -7828,11 +7724,11 @@ i,row,f) {
 
     for(i in indexToMergeHash) {
 
-        f=g_media[i];
+        f=minfo["mi_media"];
 
-        if (g_media[i] == "") continue;
+        if (minfo["mi_media"] == "") continue;
 
-        add_file(g_fldr[i]"/"g_media[i]);
+        add_file(minfo["mi_folder"]"/"minfo["mi_media"]);
 
         row=createIndexRow(i,-1,0,0,"");
         if (length(row) - g_max_db_len < 0) {
@@ -7845,7 +7741,7 @@ i,row,f) {
 
         # If plots need to be written to nfo file then they should 
         # be added to the row at this point.
-        row = row "\t"PLOT"\t"g_plot[i];
+        row = row "\t"PLOT"\t"minfo["mi_plot"];
         generate_nfo_file(g_settings["catalog_nfo_format"],row);
     }
     close(output_file);
@@ -7897,28 +7793,28 @@ function ascii8(s) {
 #ALL#     return s;
 #ALL# }
 
-function update_plots(pfile,idx,\
+function update_plots(pfile,minfo,\
 lang,lang_list,info) {
-    update_plots_by_lang(pfile,idx,g_plot[idx]); #default - English
+    update_plots_by_lang(pfile,minfo,minfo["mi_plot"]); #default - English
     split(LANG,lang_list,",");
-    if (g_category[idx] == "M" ) {
+    if (minfo["mi_category"] == "M" ) {
         for (lang in lang_list) {
-            if (scrape_by_lang(idx,lang,info)) {
-                update_plots_by_lang(pfile "." lang,idx,info["plot"]);
+            if (scrape_by_lang(minfo,lang,info)) {
+                update_plots_by_lang(pfile "." lang,minfo,info["plot"]);
             }
         }
     }
 }
 
-function update_plots_by_lang(pfile,idx,plot_text,\
+function update_plots_by_lang(pfile,minfo,plot_text,\
 id,key,cmd,cmd2,ep) {
-    id=g_imdb[idx];
+    id=minfo["mi_imdb"];
 
     if (id != "") {
-        ep = g_episode[idx];
+        ep = minfo["mi_episode"];
         INF("updating plots for "id"/"ep);
 
-        key=qa(id)" "(g_category[idx]=="T"?qa(g_season[idx]):qa(""));
+        key=qa(id)" "(minfo["mi_category"]=="T"?qa(minfo["mi_season"]):qa(""));
 
         cmd=g_plot_app" update "qa(pfile)" "key;
 
@@ -7930,10 +7826,10 @@ id,key,cmd,cmd2,ep) {
         }
 
         key=key" "qa(ep);
-        if (g_category[idx] == "T" && g_epplot[idx] != "" && !(key in g_updated_plots) ) {
+        if (minfo["mi_category"] == "T" && minfo["mi_epplot"] != "" && !(key in g_updated_plots) ) {
             cmd2 = cmd" "qa(ep);
             #INF("updating episode plot :"cmd2);
-            exec(cmd2" "qa(g_epplot[idx]));
+            exec(cmd2" "qa(minfo["mi_epplot"]));
             g_updated_plots[key]=1;
         }
     }
@@ -8191,10 +8087,10 @@ function load_catalog_settings() {
     split(tolower(g_settings["catalog_search_engines"]),g_link_search_engines,g_cvs_sep);
 }
 
-function lang_test(idx) {
-    scrape_es(idx);
-    scrape_fr(idx);
-    scrape_it(idx);
+function lang_test(minfo) {
+    scrape_es(minfo);
+    scrape_fr(minfo);
+    scrape_it(minfo);
 }
 
 
@@ -8218,7 +8114,7 @@ url) {
 # site url, query , plot word ,
 # info_out["plot"] = the plot
 # info_out["title"] = the title
-function scrape_by_lang(idx,lang,info_out,\
+function scrape_by_lang(minfo,lang,info_out,\
                 plot_words,sites,query,tmp,plot) {
 
     delete info_out;
@@ -8237,7 +8133,7 @@ function scrape_by_lang(idx,lang,info_out,\
 
     gsub(/,/," OR +",query);
 
-    query = url_encode("\""gTitle[idx]"\" intitle:"g_year[idx]" \""g_director1[idx]"\" ( +"query" ) ");
+    query = url_encode("\""minfo["mi_title"]"\" intitle:"minfo["mi_year"]" \""minfo["mi_director_name"]"\" ( +"query" ) ");
 
     tmp = split(g_settings["catalog_lang_"lang"_site"],sites,",");
 

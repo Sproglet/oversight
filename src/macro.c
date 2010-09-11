@@ -371,7 +371,8 @@ char *macro_fn_page_max(MacroCallInfo *call_info)
         case 2:
             {
                 if ( get_grid_info()->page_size  > 0 ) {
-                    int p = 1 + call_info->sorted_rows->num_rows / get_grid_info()->page_size  ;
+
+                    int p = 1 + (call_info->sorted_rows->num_rows -1) / get_grid_info()->page_size  ;
 
                     ovs_asprintf(&result,"%d",p);
                 } else {

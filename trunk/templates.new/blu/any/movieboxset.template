@@ -17,17 +17,34 @@
             <center>
             	<br/>
             	<div id=gridWrapper>
+[:IF($@sd):]
+					[:GRID:]
+[:ELSE:]
             		[:GRID(rows=>1,cols=>6,offset=>0):]
+[:ENDIF:]
             	</div>
             </center>
             [:INCLUDE_TEMPLATE(box_footer):]
 		[:FORM_END:]
+[:IF($@sd):]
 		<div class=titleLayer>
 			[:INCLUDE_TEMPLATE(box_titles):]
 		</div>
-[:IF($@sd):]
 [:ELSE:]
-		<div class=fanartLayer><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></div>
+		<table class=infoTable width=100%>
+			<tr>
+				<td width=100% colspan=2 height=35px>&nbsp;</td>
+			</tr>		
+			<tr>
+				<td width=50% valign=top></td>
+				<td width=50% rowspan=2 align=right><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></td>
+			</tr>
+			<tr>
+				<td width=50% valign=bottom>
+					[:INCLUDE_TEMPLATE(box_titles):]
+				</td>
+			</tr>
+		</table>
 [:ENDIF:]
 		[:INCLUDE_TEMPLATE(box_closing_scripts):]
     </body>

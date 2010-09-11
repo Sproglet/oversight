@@ -3,7 +3,7 @@
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(default.jpg):]">
+    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
 		[:FORM_START:]
             <table class=header width=100% background="[:IMAGE_URL(bluemenu2.png):]" >
                 <tr>
@@ -36,8 +36,8 @@
 				<td width=100% colspan=2 height=35px>&nbsp;</td>
 			</tr>		
 			<tr>
-				<td width=50% valign=top></td>
-				<td width=50% rowspan=2 align=right><img class=fanartImage src="[:FANART_URL(lightwave.jpg):]"/></td>
+				<td width=50% valign=top><span class=menuPageText></span></td>
+				<td width=50% rowspan=2 align=right><img class=fanartImage src="[:FANART_URL($skin_background_image):]"/></td>
 			</tr>
 			<tr>
 				<td width=50% valign=bottom>

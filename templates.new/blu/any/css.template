@@ -135,6 +135,8 @@ table.overview_poster {
 
 .infoTable {
 	text-align:left;
+		padding-left: 40pt;
+		padding-right: 40pt;
 }
 
 .infoTable tr td {
@@ -142,9 +144,11 @@ table.overview_poster {
 		font-size:10pt;
 	[:ELSE:]
 		font-size:13pt;
-		padding-left: 40pt;
-		padding-right: 40pt;
 	[:ENDIF:]
+}
+
+.menuPageText {
+	color:[:$skin_menu_page_text_color:];
 }
 
 /*

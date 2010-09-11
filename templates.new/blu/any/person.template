@@ -20,7 +20,7 @@
 [:IF($@sd):]
 					[:GRID:]
 [:ELSE:]
-            		[:GRID(rows=>1,cols=>6):]
+            		[:GRID(rows=>1):]
 [:ENDIF:]
             	</div>
             </center>

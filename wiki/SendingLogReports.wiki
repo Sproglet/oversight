@@ -10,6 +10,11 @@ As the software matures hopefully this will happen less often.
 
 Send these you have problems with adding or updating content.
 
+"Help me... help you. Help me, help you. " - follow all the steps mentioned.
+
+If all the info requested is present then I am more likely to investigate. 
+If I have to first spend 10 minutes figuring out what the problem is, who its from and where to look in a big log file then I might not be so keen :)
+
 To send scan logs:
 
   # *Follow all of the steps indicated, otherwise I may not follow up the problem*

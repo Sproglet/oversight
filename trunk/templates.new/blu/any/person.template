@@ -37,7 +37,7 @@
 			</tr>		
 			<tr>
 				<td width=50% valign=top></td>
-				<td width=50% rowspan=2 align=right>[:ACTOR_IMAGE(height=247px):]</td>
+				<td width=50% rowspan=2 align=right>[:ACTOR_IMAGE(height=>247px):]</td>
 			</tr>
 			<tr>
 				<td width=50% valign=bottom>

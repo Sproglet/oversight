@@ -16,7 +16,7 @@ ovs_display_rating:Display Ratings|1|0
 ovs_display_certificate:Display Certificates|1|0
 ovs_display_fanart:Display fanart - Fan art must be previously downloaded by catalog.sh and also in skin|0|1
 ovs_title_bar:Display titles as cursor moves|poster_mode|never
-ovs_skin_name:Name of skin (must be in templates folder)|@CMD:ls -d templates/*/any | sed -n "/templates/ { s@templates/@@;s@/any@@;p }" 
+ovs_skin_name:Name of skin|@CMD:ls -d templates/*/any | sed -n "/templates/ { s@templates/@@;s@/any@@;p }" | grep -Ev "^(admin)$"
 ovs_log_level:Amount of logging within html comments|0|1|2|3|4|5
 ovs_use_folders_as_titles:Display the containing folder name in place of the video title|0|1
 ovs_nas_timeout:Max time to detect NAS service in millis|50

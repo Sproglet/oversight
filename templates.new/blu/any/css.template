@@ -134,7 +134,7 @@ table.overview_poster {
 
 
 .infoTable {
-	text-align:justify;
+	text-align:left;
 }
 
 .infoTable tr td {

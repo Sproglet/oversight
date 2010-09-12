@@ -1,3 +1,5 @@
 skin_background_image:The background image for the menu screens|default.jpg|earth.jpg|earthrise.jpg|galaxy.jpg|japanese.jpg|neutron.jpg|raindrops.jpg|splash.jpg
-skin_menu_page_text_color:The color of test to use on the menu pages|aqua|black|blue|gray|maroon|navy|purple|red|silver|teal|white
+skin_plot_text_color:The color of text to use on the menu pages|aqua|black|blue|gray|maroon|navy|purple|red|silver|teal|white
 skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
+skin_menu_header_color:The color of the menu headers|black|blue|gray|white
+skin_menu_header_text_color:The color of text to use on the menu headers|aqua|black|blue|gray|maroon|navy|purple|red|silver|teal|white

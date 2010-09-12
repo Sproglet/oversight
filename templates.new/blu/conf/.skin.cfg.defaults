@@ -1,3 +1,5 @@
 skin_background_image="default.jpg"
-skin_menu_page_text_color="white"
+skin_plot_text_color="white"
 skin_menu_page_text_transparency=0
+skin_menu_header_color="blue"
+skin_menu_header_text_color="white"

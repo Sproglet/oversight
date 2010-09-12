@@ -63,9 +63,14 @@ img.poster_watched {
 [:ENDIF:]
 
 .plot {
-    color:white;
+    color:[:$skin_plot_text_color:];
     font-size:[:$ovs_font_size_plot:]% ;
     font-weight:normal;
+}
+
+.menubarTitle {
+ font-size:120%;
+ color:[:$skin_menu_header_text_color:];	
 }
 
 .title {
@@ -145,10 +150,6 @@ table.overview_poster {
 	[:ELSE:]
 		font-size:13pt;
 	[:ENDIF:]
-}
-
-.menuPageText {
-	color:[:$skin_menu_page_text_color:];
 }
 
 /*

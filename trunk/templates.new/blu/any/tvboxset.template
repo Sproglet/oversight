@@ -5,7 +5,7 @@
     </head>
     <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
 [:FORM_START:]
-            <table class=header width=100% background="[:IMAGE_URL(bluemenu2.png):]" >
+            <table class=header width=100% background="[:IMAGE_URL($skin_menu_header_color.menu.png):]" >
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
@@ -46,7 +46,7 @@
 						<tr height=4px>
 							<td width=1%></td>
 							<td width=98%>
-								<span class=menuPageText>[:PLOT:]</span>								
+								<span class=plot>[:PLOT:]</span>								
 							</td>
 							<td width=1%></td>
 						</tr>

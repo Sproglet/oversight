@@ -50,3 +50,13 @@ A. No one really ask this much, but it might cross their mind when using the sit
 At present, Oversight is not really ready to manage movies that do not have IMDB ids. Oversight needs the ability to edit the database, and read XMBC nfo informantion. Both of which are on the todo list.
 
 In the mean time, If you have a 200 series NMT a new firmware will be out soon that has some jukebox function that may suit your needs.
+
+===Can I improve the fanart quality===
+
+All html pages are 720 on NMT then upscaled as necessary , but you can improve the quality by editing  (with a Unix friendly editor)
+/share/Apps/oversight/bin/jpg_fetch_and_scale line 54
+[code]
+      */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=85 ;;
+[/code]
+
+change q=85 to q=90 or q=95 to see if that's better.

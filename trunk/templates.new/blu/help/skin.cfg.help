@@ -1,10 +1,12 @@
 skin_background_image:The background image for the menu screens|default.jpg|aftermath.jpg|baloon.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|earth.jpg|earthrise.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
-skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word
+skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word - Default value is 'white'
 skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
 skin_menu_header_color:The color of the menu headers|aqua|black|blue|gold|gray|green|lime|mint|navy|orange|pink|purple|red|white|yellow
 skin_menu_header_text_color:The color of text to use on the menu headers|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow
-skin_filter_text_color:The color of the item title text expressed as either a hex value or a word
-skin_filter_background_color:The color of the item title text expressed as either a hex value or a word
-skin_item_title_color:The color of the item title text expressed as either a hex value or a word
-skin_item_genre_color:The color of the item details, such as genre and cast expressed as either a hex value or a word
+skin_filter_text_color:The color of the item title text expressed as either a hex value or a word - Default value is '66CCFF'
+skin_filter_background_color:The color of the item title text expressed as either a hex value or a word - Default value is 'black'
+skin_item_title_color:The color of the item title text expressed as either a hex value or a word - Default value is '66CCFF'
+skin_item_genre_color:The color of the item details, such as genre and cast expressed as either a hex value or a word - Default value is 'FFBB66'
 skin_item_general_info_color:The color of general item details such as year, source and date|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow
+skin_watched_color:The color of items that have been watched expressed as either a hex value or a word - Default value is 'FF7777'
+skin_unwatched_color:The color of items that have not been watched expressed as either a hex value or a word - Default value is '77FF77'

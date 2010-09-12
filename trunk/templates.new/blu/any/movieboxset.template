@@ -3,7 +3,7 @@
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:] Boxset</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
+    <body [onloadset=:START_CELL:] focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
 		[:FORM_START:]
             <table class=header width=100% background="[:IMAGE_URL($skin_menu_header_color.menu.png):]" >
                 <tr>

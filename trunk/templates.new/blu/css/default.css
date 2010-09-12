@@ -41,10 +41,6 @@ td.gc_watched_small { font-size:10pt; }
  margin:15px; border-spacing:15px; padding:15px ; border-width:15px ;
 }
 
-.status {
-    color:#FFBB66;
-}
-
 .fanartImage {
 	width: 440px;
 }
@@ -54,15 +50,6 @@ font.Ignore {color:#777;}
 font.Mark {color:#AAA;}
 font.Unmark {color:#DDF;}
 font.Remove_From_List {color:orange;}
-
-font.watched {
- color:#FF7777 ;
-}
-
-font.unwatched {
- color:#77FF77 ;
-}
-
 
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { ; }
@@ -111,13 +98,6 @@ table.detail   { margin:0; border-spacing:3px; padding:3px ; }
 body { font-family:"arial"; color:white;  }
 
 .label { color:red }
-
-#unwatchedtotal { 
- color:#44FF77;
-}
-#watchedtotal { 
- color:#FF7777;
-}
 
 body.menu_background {
     color:white;

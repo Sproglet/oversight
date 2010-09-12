@@ -12,9 +12,15 @@ img.fresh {
  border-color:[:$skin_item_title_color:];
 }
 
+font.watched {
+ color:[:$skin_watched_color:];
+}
+
+font.unwatched {
+ color:[:$skin_unwatched_color:];
+}
 
 td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:[:$skin_item_general_info_color:]; }
-
 
 [:IF($@poster_mode):]
 img.poster_fresh {
@@ -44,8 +50,8 @@ img.poster_watched {
     }
 
     a.poster { color:white; font-weight:bold; font-style:italic; }
-    a.poster_fresh { color:white; font-weight:bold; font-style:italic; }
-    a.poster_watched { color:#88AA88; font-weight:bold; font-style:italic; }
+    a.poster_fresh { color:[:$skin_item_title_color:]; font-weight:bold; font-style:italic; }
+    a.poster_watched { color:[:$skin_watched_color:]; font-weight:bold; font-style:italic; }
 
     td.poster_unknown { }
     td.poster_fresh_unknown { }
@@ -83,6 +89,10 @@ img.poster_watched {
 	color:[:$skin_item_title_color:];
 }
 
+.status {
+    color:[:$skin_item_genre_color:];
+}
+
 select {
  background-color:[:$skin_filter_background_color:];
  color:[:$skin_filter_text_color:];
@@ -108,6 +118,13 @@ input {
 .menubarTitle {
  font-size:120%;
  color:[:$skin_menu_header_text_color:];	
+}
+
+#unwatchedtotal { 
+ color:[:$skin_unwatched_color:];
+}
+#watchedtotal { 
+ color:[:$skin_watched_color:];
 }
 
 .title {

@@ -1,0 +1,13 @@
+skin_background_image="canal.jpg"
+skin_menu_page_text_transparency="1"
+skin_plot_text_color="white"
+skin_menu_header_color="white"
+skin_show_menu_footer_as_bar=1
+skin_menu_header_text_color="teal"
+skin_item_title_color="00998B"
+skin_item_genre_color="silver"
+skin_item_general_info_color="white"
+skin_filter_text_color="silver"
+skin_filter_background_color="teal"
+skin_watched_color="FF7777"
+skin_unwatched_color="teal"

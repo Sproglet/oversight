@@ -2,6 +2,7 @@ skin_background_image:The background image for the menu screens|default.jpg|afte
 skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word - Default value is 'white'
 skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
 skin_menu_header_color:The color of the menu headers|aqua|black|blue|gold|gray|green|lime|mint|navy|orange|pink|purple|red|white|yellow
+skin_show_menu_footer_as_bar:Show the footer as a coloured bar|0|1
 skin_menu_header_text_color:The color of text to use on the menu headers|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow
 skin_filter_text_color:The color of the item title text expressed as either a hex value or a word - Default value is '66CCFF'
 skin_filter_background_color:The color of the item title text expressed as either a hex value or a word - Default value is 'black'

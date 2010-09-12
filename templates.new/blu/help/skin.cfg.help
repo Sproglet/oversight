@@ -1,5 +1,10 @@
 skin_background_image:The background image for the menu screens|default.jpg|earth.jpg|earthrise.jpg|galaxy.jpg|japanese.jpg|neutron.jpg|raindrops.jpg|splash.jpg
-skin_plot_text_color:The color of text to use on the menu pages|aqua|black|blue|gray|maroon|navy|purple|red|silver|teal|white
+skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word
 skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
-skin_menu_header_color:The color of the menu headers|black|blue|gray|white
-skin_menu_header_text_color:The color of text to use on the menu headers|aqua|black|blue|gray|maroon|navy|purple|red|silver|teal|white
+skin_menu_header_color:The color of the menu headers|aqua|black|blue|gold|gray|green|lime|mint|navy|orange|pink|purple|red|white|yellow
+skin_menu_header_text_color:The color of text to use on the menu headers|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow
+skin_filter_text_color:The color of the item title text expressed as either a hex value or a word
+skin_filter_background_color:The color of the item title text expressed as either a hex value or a word
+skin_item_title_color:The color of the item title text expressed as either a hex value or a word
+skin_item_genre_color:The color of the item details, such as genre and cast expressed as either a hex value or a word
+skin_item_general_info_color:The color of general item details such as year, source and date|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow

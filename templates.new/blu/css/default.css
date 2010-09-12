@@ -55,12 +55,6 @@ font.Mark {color:#AAA;}
 font.Unmark {color:#DDF;}
 font.Remove_From_List {color:orange;}
 
-img.fresh { 
- border-width: 4px;
- color:#FFFFFF;
- border-color:#FFFFFF;
-}
-
 font.watched {
  color:#FF7777 ;
 }
@@ -75,16 +69,6 @@ font.unwatched {
 .delist { ; }
 .cancel { ; }
 .mark { ; }
-
-#genre {
-    color:#FFBB66;
-    font-weight:bold;
-}
-
-#episode {
-    color:#66CCFF;
-    font-weight:bold;
-}
 
 table.header,table.footer {
  margin:0;
@@ -124,29 +108,10 @@ table.detail   { margin:0; border-spacing:3px; padding:3px ; }
 
 .right { text-align:right; }
 
-select {
- background-color:black;
- color:#66CCFF;
- font-weight:bold;
- border:#66CCFF 3px solid;
- font-size:small;
-}
-
-input {
- background-color:black;
- color:#66CCFF;
- font-weight:bold;
- border:#66CCFF 3px solid;
- font-size:small;
-}
-
 body { font-family:"arial"; color:white;  }
 
 .label { color:red }
 
-#menutitle {
- color:#66CCFF;
-}
 #unwatchedtotal { 
  color:#44FF77;
 }
@@ -173,9 +138,6 @@ table.writers   { width:250px; }
 table.actors    td { font-size:100%; text-align:left; }
 table.directors td { font-size:100%; text-align:left; }
 table.writers   td { font-size:100%; text-align:left; }
-table.actors	font {color: #FFBB66;}
-table.directors	font {color: #FFBB66;}
-table.writers	font {color: #FFBB66;}
 
 /*
 vi:ts=4:sw=4:et:syntax=css

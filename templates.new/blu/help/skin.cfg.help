@@ -1,4 +1,4 @@
-skin_background_image:The background image for the menu screens|default.jpg|aftermath.jpg|baloon.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|earth.jpg|earthrise.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
+skin_background_image:The background image for the menu screens|aftermath.jpg|baloon.jpg|blu.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|earth.jpg|earthrise.jpg|europa.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
 skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word - Default value is 'white'
 skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
 skin_menu_header_color:The color of the menu headers|aqua|black|blue|gold|gray|green|lime|mint|navy|orange|pink|purple|red|white|yellow

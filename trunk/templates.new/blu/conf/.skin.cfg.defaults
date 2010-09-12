@@ -3,3 +3,8 @@ skin_plot_text_color="white"
 skin_menu_page_text_transparency=0
 skin_menu_header_color="blue"
 skin_menu_header_text_color="white"
+skin_filter_text_color:"#66CCFF"
+skin_filter_background_color:"black"
+skin_item_title_color="#66CCFF"
+skin_item_genre_color="#FFBB66"
+skin_item_general_info_color="white"

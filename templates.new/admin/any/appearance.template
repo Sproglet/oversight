@@ -22,8 +22,8 @@ a { color:yellow; }
             <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>detail.help,text=>tv and movie details):]
             <p>[:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>keys.help,text=>keys):]
             <p>[:LINK(view=admin&action=template_resize,interactive resize):]
-            <p>[:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>Skin Config):]
-
+            <p>[:CONFIG_LINK(conf_file=>skin.cfg,help_suffix=>help,text=>skin config):]
+			<br/>
             </center>
         <table width="100%">
             <tr>

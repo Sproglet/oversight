@@ -207,7 +207,7 @@ body.menu_background {
 [:ENDIF:]
 }
 
-/* Sort toggle */
+/* Sort toggle */ {a}
 .bluebutton {
  color:[:$skin_filter_background_color:];
  font-weight:normal;

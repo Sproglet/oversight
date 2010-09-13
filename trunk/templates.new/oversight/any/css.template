@@ -132,7 +132,7 @@ table.overview_poster {
 body.main_background { 
 	color:white ; 
 	background-color:black; 
-	background-image:url('[:URL_BASE:]/templates/[:$ovs_skin_name:]/720/abstract_circles.jpg'); 
+	background-image:url('[:BACKGROUND_IMAGE($skin_background_image):]'); 
 }
 
 .overview_poster {

@@ -18,7 +18,7 @@
 					        <table class="main" width="100%" height="100%">
 					            <tr>
 					                <td>
-							            <table height=50px class="header" background="[:IMAGE_URL(trans50.png):]">
+							            <table height=50px class="header" background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
 							                <tr>
 							                	[:INCLUDE_TEMPLATE(tvboxset_buttons):]
 [:IF($@gaya):]	
@@ -42,7 +42,7 @@
 					                            <tr>
 					                                <td >
 					                                    <div id=gridWrapper>[:GRID:]</div>
-														<table class=footer width=100%  background="[:IMAGE_URL(trans50.png):]">
+														<table class=footer width=100%  background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
 															<tr valign=center>
 														        <td width=10%>[:LEFT_BUTTON:]</td>
 																<td align=center><span class="boxtitle">[:TITLE:] Boxset</span></td>

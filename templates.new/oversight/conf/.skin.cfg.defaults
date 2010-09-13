@@ -1,7 +1,7 @@
 skin_background_image="europa.jpg"
 skin_background_color="black"
+skin_menu_bar_transparency="50"
 skin_plot_text_color="white"
-skin_menu_footer_text_color="white"
 skin_filter_text_color="66CCFF"
 skin_filter_background_color="black"
 skin_item_title_color="FFCF2F"

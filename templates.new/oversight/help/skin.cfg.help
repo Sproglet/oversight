@@ -1,7 +1,7 @@
 skin_background_image:The background image for the menu screens. If you want to use your own then select 'custom.jpg' and upload the image to /Apps/oversight/templates/blu/720/custom.jpg. For a solid color, choose 'none'.|none|custom.jpg|admin.jpg|aftermath.jpg|baloon.jpg|black.jpg|blue.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|earth.jpg|earthrise.jpg|electron.jpg|europa.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|lightwave.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
 skin_background_color:The solid background color to use if background image is set to 'none' expressed as either a hex value or a word - Default value is 'black'
+skin_menu_bar_transparency:Transparancy of the toolbar backgrounds %|0|10|20|30|40|50|60|70|80|90|100
 skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word - Default value is 'white'
-skin_menu_footer_text_color:The color of text to use on the menu headers|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow
 skin_filter_text_color:The color of the item title text expressed as either a hex value or a word - Default value is '66CCFF'
 skin_filter_background_color:The color of the item title text expressed as either a hex value or a word - Default value is 'black'
 skin_item_title_color:The color of the item title text expressed as either a hex value or a word - Default value is '66CCFF'

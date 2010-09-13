@@ -4,11 +4,11 @@
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
 [:IF($ovs_display_fanart):]
-    <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:FANART_URL($skin_background_image):]" >
+    <body [onloadset=:START_CELL:] focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] class=menu_background background="[:FANART_URL($skin_background_image):]" >
 	    <table class=main width=100%>
 	    	<tr valign=bottom>
 [:ELSE:]
-	<body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
+	<body [onloadset=:START_CELL:] focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
 	    <table class="main" width="100%">
 	    	<tr valign="middle">
 [:ENDIF:]

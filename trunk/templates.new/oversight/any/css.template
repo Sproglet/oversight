@@ -2,20 +2,29 @@
 /* td.fresh,a.fresh,font.fresh */ a{}
 
 .fresh {
-[:IF($ovs_poster_mode):]
- color:#66CCFF;
-[:ELSE:]
- color:#66CCFF;
-[:ENDIF:]
+ color:[:$skin_item_title_color:];
  font-weight:bold;
 }
 
-td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
+img.fresh { 
+ border-width: 4px;
+ color:[:$skin_item_title_color:];
+ border-color:[:$skin_item_title_color:];
+}
 
+font.watched {
+ color:[:$skin_watched_color:];
+}
+
+font.unwatched {
+ color:[:$skin_unwatched_color:];
+}
+
+td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:[:$skin_item_general_info_color:]; }
 
 [:IF($@poster_mode):]
 img.poster_fresh {
- border-color:#AAAA00;
+ border-color:[:$skin_item_title_color:];
  border-width:2px;
  padding:0px;
  margin:0px;
@@ -41,8 +50,8 @@ img.poster_watched {
     }
 
     a.poster { color:white; font-weight:bold; font-style:italic; }
-    a.poster_fresh { color:white; font-weight:bold; font-style:italic; }
-    a.poster_watched { color:#88AA88; font-weight:bold; font-style:italic; }
+    a.poster_fresh { color:[:$skin_item_title_color:]; font-weight:bold; font-style:italic; }
+    a.poster_watched { color:[:$skin_watched_color:]; font-weight:bold; font-style:italic; }
 
     td.poster_unknown { }
     td.poster_fresh_unknown { }
@@ -66,14 +75,60 @@ img.poster_watched {
 
 [:ENDIF:]
 
+#episode {
+    color:[:$skin_item_title_color:];
+    font-weight:bold;
+}
+
+#genre {
+    color:[:$skin_item_genre_color:];
+    font-weight:bold;
+}
+
+#menutitle {
+	color:[:$skin_item_title_color:];
+}
+
+#unwatchedtotal { 
+ color:[:$skin_unwatched_color:];
+}
+#watchedtotal { 
+ color:[:$skin_watched_color:];
+}
+
+select {
+ background-color:[:$skin_filter_background_color:];
+ color:[:$skin_filter_text_color:];
+ font-weight:bold;
+ border:[:$skin_filter_text_color:] 3px solid;
+ font-size:small;
+}
+
+input {
+ background-color:[:$skin_filter_background_color:];
+ color:[:$skin_filter_text_color:];
+ font-weight:bold;
+ border:[:$skin_filter_text_color:] 3px solid;
+ font-size:small;
+}
+
 .plot {
-    color:white;
+    color:[:$skin_plot_text_color:];
     font-size:[:$ovs_font_size_plot:]% ;
     font-weight:normal;
 }
 
+.menubarTitle {
+ font-size:120%;
+ color:[:$skin_menu_header_text_color:];	
+}
+
+.status {
+    color:[:$skin_item_genre_color:];
+}
+
 .detailHeading {
-    color:white;
+    color:[:$skin_item_title_color:];
     font-size:[:$ovs_font_size_plot:]% ;
     font-weight:bold;
 }
@@ -87,7 +142,7 @@ img.poster_watched {
  text-align:left;
  font-size:[:TITLE_SIZE:];
  font-weight:bold;
- color:#FFCF2F;
+ color:[:$skin_item_title_color:];
 }
 
 .boxtitle {
@@ -105,17 +160,16 @@ img.poster_watched {
  text-align:left;
  font-size:[:TITLE_SIZE:];
  font-weight:bold;
- color:#66CCFF;
+ color:[:$skin_item_title_color:];
 }
 
 .Xyear {
  text-align:right;
  font-size:[:TITLE_SIZE:];
- color:white;
 }
 
 .Xgenre {
- color:#FFBB66;
+ color:[:$skin_item_genre_color:];
  font-weight:bold;
 }
 
@@ -130,9 +184,14 @@ table.overview_poster {
 }
 
 body.main_background { 
-	color:white ; 
-	background-color:black; 
+	color:[:$skin_item_general_info_color:]; 
+	background-color:[:$skin_background_color:]; 
 	background-image:url('[:BACKGROUND_IMAGE($skin_background_image):]'); 
+}
+
+body.menu_background {
+	color:[:$skin_item_general_info_color:]; 
+	background-color:[:$skin_background_color:]; 
 }
 
 .overview_poster {
@@ -147,6 +206,10 @@ body.main_background {
     width:100%;
 [:ENDIF:]
 }
+
+table.actors	font {color: [:$skin_item_genre_color:];}
+table.directors	font {color: [:$skin_item_genre_color:];}
+table.writers	font {color: [:$skin_item_genre_color:];}
 
 /*
 vi:ts=4:sw=4:et:syntax=css

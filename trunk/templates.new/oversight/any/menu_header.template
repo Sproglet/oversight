@@ -1,4 +1,4 @@
-<table class=header width=100% background="[:IMAGE_URL(trans60.png):]">
+<table class=header width=100% background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
     <tr>
 [:IF($?resizeon):]
         <td>[:RESIZE_CONTROLS:]</td>

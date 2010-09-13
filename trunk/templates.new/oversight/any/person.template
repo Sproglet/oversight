@@ -12,7 +12,7 @@
 					        <table class="main" width="100%" height="100%">
 					            <tr valign=bottom>
 					                <td align=center>
-							            <table height=200px class="header" background="[:IMAGE_URL(trans50.png):]">
+							            <table height=200px class="header" background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
 	                                        <tr><td colspan=3 height=5px></td></tr>
 	                                        <tr>
 	                                            <td colspan=3 align=center>
@@ -33,7 +33,7 @@
                                 <tr><td height=20px></td></tr>
 					            <tr valign=bottom>
 					                <td>
-							            <table height=50px class="header" background="[:IMAGE_URL(trans50.png):]">
+							            <table height=50px class="header" background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
 							                <tr>
 							                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
 [:IF($@gaya):]	
@@ -57,7 +57,7 @@
 					                            <tr>
 					                                <td >
 					                                    <div id=gridWrapper>[:GRID(rows=>1):]</div>
-														<table class=footer width=100%  background="[:IMAGE_URL(trans50.png):]">
+														<table class=footer width=100%  background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
 															<tr valign=center>
 														        <td width=10%>[:LEFT_BUTTON:]</td>
 														        <td width=10% align=right>[:RIGHT_BUTTON:]</td>

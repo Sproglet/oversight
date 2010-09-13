@@ -61,14 +61,14 @@ img.poster_watched {
     .grid0 { 
 		height:40px;
 		text-align:left;
-		background-image:'[:URL_BASE:]/templates/default/images/trans50.png';
+		background-image:'[:URL_BASE:]/templates/default/images/trans$skin_menu_bar_transparency.png';
 		border-spacing:10px;
 		padding:10px;
 	}
     .grid1 { 
 		height:40px;
 		text-align:left;
-		background-image:'[:URL_BASE:]/templates/default/images/trans50.png'; 
+		background-image:'[:URL_BASE:]/templates/default/images/trans$skin_menu_bar_transparency.png'; 
 		border-spacing:10px;
 		padding:10px;
 	}

@@ -89,6 +89,13 @@ img.poster_watched {
 	color:[:$skin_item_title_color:];
 }
 
+#unwatchedtotal { 
+ color:[:$skin_unwatched_color:];
+}
+#watchedtotal { 
+ color:[:$skin_watched_color:];
+}
+
 .status {
     color:[:$skin_item_genre_color:];
 }
@@ -118,13 +125,6 @@ input {
 .menubarTitle {
  font-size:120%;
  color:[:$skin_menu_header_text_color:];	
-}
-
-#unwatchedtotal { 
- color:[:$skin_unwatched_color:];
-}
-#watchedtotal { 
- color:[:$skin_watched_color:];
 }
 
 .title {

@@ -41,56 +41,17 @@ td.gc_watched_small { font-size:10pt; }
  margin:15px; border-spacing:15px; padding:15px ; border-width:15px ;
 }
 
-.status {
-    color:#FFBB66;
-}
-
-.menubarTitle {
- font-size:120%;
- color:#FFFFFF;	
-}
-
-.fanartIcon {
-	height: 40px;
- 	border-color:#FFFFFF;
-}
-
 font.Delete {color:#FF9966; font-weight:normal; }
 font.Ignore {color:#777;}
 font.Mark {color:#AAA;}
 font.Unmark {color:#DDF;}
 font.Remove_From_List {color:orange;}
 
-img.fresh { 
- border-width: 4px;
- color:#FFFFFF;
- border-color:#FFFFFF;
-}
-
-font.watched {
- color:#FF7777 ;
-}
-
-font.unwatched {
- color:#77FF77 ;
-}
-
-
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { ; }
 .delist { ; }
 .cancel { ; }
 .mark { ; }
-
-#genre {
-    color:#FFBB66;
-    font-weight:bold;
-}
-
-#episode {
-    color:#66CCFF;
-    font-weight:bold;
-}
 
 table.header,table.footer {
  margin:0;
@@ -130,40 +91,9 @@ table.detail   { margin:0; border-spacing:3px; padding:3px ; }
 
 .right { text-align:right; }
 
-select {
- background-color:black;
- color:#66CCFF;
- font-weight:bold;
- border:#66CCFF 3px solid;
- font-size:small;
-}
-
-input {
- background-color:black;
- color:#66CCFF;
- font-weight:bold;
- border:#66CCFF 3px solid;
- font-size:small;
-}
-
 body { font-family:"arial"; color:white;  }
 
 .label { color:red }
-
-#menutitle {
- color:#FFFFFF;
-}
-#unwatchedtotal { 
- color:#44FF77;
-}
-#watchedtotal { 
- color:#FF7777;
-}
-
-body.menu_background {
-    color:#66CCFF;
-    background-color:black;
-}
 
 td.grid_background {
     text-align:center;
@@ -178,9 +108,6 @@ table.writers   { width:250px; }
 table.actors    td { font-size:100%; text-align:left; }
 table.directors td { font-size:100%; text-align:left; }
 table.writers   td { font-size:100%; text-align:left; }
-table.actors	font {color: #FFBB66;}
-table.directors	font {color: #FFBB66;}
-table.writers	font {color: #FFBB66;}
 
 /*
 vi:ts=4:sw=4:et:syntax=css

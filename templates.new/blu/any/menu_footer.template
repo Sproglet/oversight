@@ -6,6 +6,14 @@
 [:ENDIF:]
 	<tr>
         <td align=left>&nbsp;[:LEFT_BUTTON:]&nbsp;</td>
+[:IF($skin_show_menu_footer_as_bar):]
+        <td align=left valign=middle class=sortLabel>
+            &nbsp;Sort:&nbsp;
+        </td>
+        <td align=left>
+            [:SORT_TYPE_TOGGLE:]
+        </td>
+[:ENDIF:]
         <td width="99%" align=center >
             [:INCLUDE_TEMPLATE(menu_titles):]
         </td>

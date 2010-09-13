@@ -65,17 +65,7 @@ table.header,table.footer {
 border-spacing: 0px;
 border-collapse:collapse;
  }
-
-.bluebutton {
- color:#5555FF;
- background-color:black;
- font-weight:normal;
-  text-decoration:none;
- }
-a.bluebutton {
- color:black ;
-}
-
+ 
 .yellowbutton {
  color:#FFFF55;
  background-color:black;

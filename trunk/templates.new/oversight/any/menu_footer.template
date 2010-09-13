@@ -1,21 +1,24 @@
 <table class=footer width=100% background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
 [:IF($@gaya):]	
 [:ELSE:]
-	<tr><td colspan=5 style="font-size:3pt">&nbsp;</td></tr>
+	<tr><td colspan=6 style="font-size:3pt">&nbsp;</td></tr>
 [:ENDIF:]
     <tr valign=middle>
         <td>[:LEFT_BUTTON:]</td>
         <td align=left><span class="status">&nbsp;&nbsp;
+			[Oversight (:HOSTNAME:)]
         	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
-				[Status - :STATUS:]
+				[ - :STATUS:]				
 			[:ELSE:]
-				[Oversight (:HOSTNAME:)]
 			[:ENDIF:]
 			&nbsp;&nbsp;</span>
 		</td>
 		<td align=center>
         	[:INCLUDE_TEMPLATE(menu_buttons):]
 		</td>
+        <td align=right valign=middle>
+            Sort: [:SORT_TYPE_TOGGLE:]
+        </td>
         <td align=right>
             <span class="status">[:PAGE:]/[:PAGE_MAX:]</span>
         </td>
@@ -23,6 +26,6 @@
     </tr>
 [:IF($@gaya):]	
 [:ELSE:]
-	<tr><td colspan=5 style="font-size:3pt">&nbsp;</td></tr>
+	<tr><td colspan=6 style="font-size:3pt">&nbsp;</td></tr>
 [:ENDIF:]
 </table>

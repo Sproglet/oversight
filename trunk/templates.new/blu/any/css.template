@@ -190,6 +190,19 @@ table.overview_poster {
 	left: 10px;
 }
 
+/* Sort toggle */
+.bluebutton {
+ 	color:[:$skin_filter_background_color:];
+ 	font-weight:normal;
+ 	font-size:[:FONT_SIZE(-2):];
+}
+a.bluebutton {
+ 	color:[:$skin_filter_background_color:];
+}
+.sortLabel {
+ 	font-weight:normal;
+ 	font-size:[:FONT_SIZE(-2):];
+}
 
 .infoTable {
 	text-align:left;

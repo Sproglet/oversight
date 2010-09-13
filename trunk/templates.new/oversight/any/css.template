@@ -207,6 +207,16 @@ body.menu_background {
 [:ENDIF:]
 }
 
+/* Sort toggle */
+.bluebutton {
+ color:[:$skin_filter_background_color:];
+ font-weight:normal;
+ }
+a.bluebutton {
+ color:[:$skin_filter_background_color:];
+}
+
+
 table.actors	font {color: [:$skin_item_genre_color:];}
 table.directors	font {color: [:$skin_item_genre_color:];}
 table.writers	font {color: [:$skin_item_genre_color:];}

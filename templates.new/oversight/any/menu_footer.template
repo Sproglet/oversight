@@ -1,11 +1,12 @@
 <table class=footer width=100% background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
+	<tr><td colspan=5 style="font-size:3pt">&nbsp;</td></tr>
     <tr valign=middle>
         <td>[:LEFT_BUTTON:]</td>
         <td align=left><span class="status">&nbsp;&nbsp;
         	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
 				[Status - :STATUS:]
 			[:ELSE:]
-				Oversight ([:HOSTNAME:])
+				[Oversight (:HOSTNAME:)]
 			[:ENDIF:]
 			&nbsp;&nbsp;</span>
 		</td>
@@ -13,8 +14,9 @@
         	[:INCLUDE_TEMPLATE(menu_buttons):]
 		</td>
         <td align=right>
-            [:PAGE:]/[:PAGE_MAX:]
+            <span class="status">[:PAGE:]/[:PAGE_MAX:]</span>
         </td>
         <td align=right>[:RIGHT_BUTTON:]</td>
     </tr>
+	<tr><td colspan=5 style="font-size:3pt">&nbsp;</td></tr>
 </table>

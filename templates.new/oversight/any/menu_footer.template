@@ -1,5 +1,8 @@
 <table class=footer width=100% background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
+[:IF($@gaya):]	
+[:ELSE:]
 	<tr><td colspan=5 style="font-size:3pt">&nbsp;</td></tr>
+[:ENDIF:]
     <tr valign=middle>
         <td>[:LEFT_BUTTON:]</td>
         <td align=left><span class="status">&nbsp;&nbsp;
@@ -18,5 +21,8 @@
         </td>
         <td align=right>[:RIGHT_BUTTON:]</td>
     </tr>
+[:IF($@gaya):]	
+[:ELSE:]
 	<tr><td colspan=5 style="font-size:3pt">&nbsp;</td></tr>
+[:ENDIF:]
 </table>

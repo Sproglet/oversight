@@ -1,4 +1,4 @@
-<table class=footer width=100% background="[:IMAGE_URL(trans60.png):]">
+<table class=footer width=100% background="[:IMAGE_URL(trans$skin_menu_bar_transparency.png):]">
     <tr valign=middle>
         <td>[:LEFT_BUTTON:]</td>
         <td align=left><span class="status">&nbsp;&nbsp;

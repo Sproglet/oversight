@@ -124,7 +124,7 @@ input {
 }
 
 .status {
-    color:[:$skin_item_genre_color:];
+    color:[:$skin_menu_footer_text_color:];
 }
 
 .detailHeading {

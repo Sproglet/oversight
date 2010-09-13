@@ -58,7 +58,7 @@ table.header,table.footer {
  border-spacing:1px;
  padding:0;
  border-width:0;
-border-spacing: 0px;
+border-spacing: 1px;
 border-collapse:collapse;
  }
 

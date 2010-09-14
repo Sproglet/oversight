@@ -47,15 +47,10 @@
             <input type=hidden name=old_action value="[:$?action:]">
 		</form>
 		<p></p>
+[:IF($@gaya):]
+[:ELSE:]
 		<center>
 			<table id="colorViewer" style="display:none;">
-[:IF($@gaya):]
-				<tr>
-					<td>
-						A color code viewer is shown when viewing this page through a browser to aid you in customising your skin.
-					</td>
-				</tr>
-[:ELSE:]
 				<tr>
 					<td colspan=3>
 						<h3>Color Code viewer</h3>
@@ -75,9 +70,9 @@
 						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 					</td>
 				</tr>
-[:ENDIF:]		
 			</table>
 		</center> 
+[:ENDIF:]		
     </body>
 </html>
 <!--

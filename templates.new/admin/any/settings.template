@@ -15,15 +15,30 @@ th.optionname { width:10%; }
 th.optionval { width:20%; }
 th.optionhelp { width:60%; }
         </style>
+		<script type="text/javascript">
+			
+			function body_onload() {
+				if (document.getElementById('cfgf').value == 'skin.cfg') {
+					document.getElementById('colorViewer').style.display = '';
+				}
+			}
+			
+			function ovs_getHexColor() {
+				document.getElementById('testCell').removeAttribute('bgcolor');
+				var hexCode = document.getElementById('hexCode').value;
+				document.getElementById('testCell').setAttribute('bgcolor', hexCode);
+			}
+			
+		</script>
     </head>
-    <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
+    <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" onload="body_onload();" >
         <h1 class=admin>[:BACK_BUTTON:] Oversight Configuration [:$?title:]</h1>
 
         [:FORM_START:]
 
             [:EDIT_CONFIG(conf_file=>$?cfgf,help_suffix=>$?cfgh):]
 
-            <input type=hidden name=cfgf value="[:$?cfgf:]">
+            <input type=hidden id=cfgf name=cfgf value="[:$?cfgf:]">
             <!-- <input type=hidden name=view value="[:$?view:]"> -->
             <table width=100%>
                 <tr>
@@ -32,8 +47,34 @@ th.optionhelp { width:60%; }
                 </tr>
             </table>
             <input type=hidden name=old_action value="[:$?action:]">
-
-        </form>
+		</form>
+		<p></p>
+[:IF($@gaya):]
+		<p>&nbsp;</p>
+		A color code viewer is shown when viewing this page through a browser to aid you in customising your skin.
+[:ELSE:]
+		<table id="colorViewer" style="display:none;">
+			<tr>
+				<td width=10px></td>
+				<td colspan=3>
+					<h2>Color Code viewer</h2>
+				</td>
+			</tr>
+			<tr>
+				<td width=10px></td>
+				<td>
+					Hex code:&nbsp;
+				</td>
+				<td>
+					<input id="hexCode" type="text"/>
+				</td>
+				<td><input type=button onclick="javascript:ovs_getHexColor();" value="Show Color"/></td>
+				<td id="testCell">
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				</td>
+			</tr>		
+		</table> 
+[:ENDIF:]
     </body>
 </html>
 <!--

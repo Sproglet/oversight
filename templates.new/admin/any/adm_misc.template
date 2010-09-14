@@ -18,8 +18,8 @@
     	</table>
 		<hr>
         <center>
-        	<p>[:LINK(view=admin&action=confirm_resets,{reset}):] - Reset caches or re-install oversight
-        	<p>[:LINK(view=admin&action=confirm_donate,{donate}):] - You can help the oversight project
+        	<p>[:LINK(view=admin&action=confirm_resets,{reset}):]: Reset caches or re-install oversight
+        	<p>[:LINK(view=admin&action=confirm_donate,{donate}):]: You can help the oversight project
         </center>
     </body>
 </html>

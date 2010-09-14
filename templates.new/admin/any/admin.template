@@ -72,11 +72,9 @@
         <table width=100%>
             <tr>
                 <td valign=top width="33%">
-                    <table class="narrow">
-                            <td width=5%>[:ICON(nas):]</td>
-            <td align=left width=28%>
-                [:MOUNT_STATUS:]
-            </td>
+                	<table class="narrow" width=100%"">
+                        <td width=20%>[:ICON(nas):]</td>
+			            <td align=left width=80%>[:MOUNT_STATUS:]</td>
                     </table>
                 </td>
                 <td valign=top width="34%">

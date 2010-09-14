@@ -25,7 +25,7 @@
 	                        <input type=submit name=action value="reset_dns_cache">
 	                    </td>
 						<td width=10px>&nbsp;</td>
-	                    <td>
+	                    <td width=80%>
 	                        PRESS ONCE! Reset DNS cache - try this if all crosses are red on the site checker but internet is working.
 	                        <b>If the next page does not appear press PREV and restest the site checker.</b>
 	                    </td>
@@ -36,7 +36,7 @@
 	                        <input type=submit name=action value="clear_cache">
 	                    </td>
 						<td width=10px>&nbsp;</td>
-	                    <td>
+	                    <td width=80%>
 	                        Clear the image cache - try this if images appear in browser but not on TV
 	                    </td>
 	                </tr>

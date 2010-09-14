@@ -68,7 +68,9 @@ th.optionhelp { width:60%; }
 				<td>
 					<input id="hexCode" type="text"/>
 				</td>
-				<td><input type=button onclick="javascript:ovs_getHexColor();" value="Show Color"/></td>
+				<td>
+					<input type=button onclick="javascript:ovs_getHexColor();" value="Show Color"/>
+				</td>
 				<td id="testCell">
 					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 				</td>

@@ -17,7 +17,7 @@
         	[:INCLUDE_TEMPLATE(menu_buttons):]
 		</td>
         <td align=right valign=middle>
-            Sort: [:SORT_TYPE_TOGGLE:]
+            <span class="status">Sort:&nbsp;</span>[:SORT_TYPE_TOGGLE:]
         </td>
         <td align=right>
             <span class="status">[:PAGE:]/[:PAGE_MAX:]</span>

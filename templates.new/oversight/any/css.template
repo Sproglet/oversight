@@ -149,6 +149,7 @@ input {
  font-size:120%;
  font-family:"arial";
  font-weight:bold;
+ color:[:$skin_item_title_color:];
 }
 .menutitle {
  font-size:120%;

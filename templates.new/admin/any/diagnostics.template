@@ -3,27 +3,27 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight [:HOSTNAME:]: Rescan</title>
+        <title>Oversight [:HOSTNAME:]: Diagnostics</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
-        <style type="text/css">
-img.webstatus { width:15; height:15; }
-td.webstatus { font-size:90% ; }
-a { color:yellow; }
-body { font-size:20; font-family:"arial"; color:white; }
-        </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:BACK_BUTTON:] Oversight Diagnostics</h1>
-
-            <p> Log file diagnostics. Only works from PC at the moment.
-            <ul>
-                <li><a href="/oversight/logs/last.log">{Last scan log}</a></li>
-                <li><a href="/oversight/logs/prev.log">{Previous scan log}</a></li>
-                <li><a href="/oversight/logs/last.unpak.log">{Last unpak log}</a></li>
-                <li><a href="/oversight/logs/gui.log">{Last TV gui log}</a></li>
-            </ul>
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Diagnostics</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr>
+        <p>Log file diagnostics. Only works from PC at the moment.
+        <center>
+            <p><a href="/oversight/logs/last.log">{last scan log}</a>
+            <p><a href="/oversight/logs/prev.log">{previous scan log}</a>
+            <p><a href="/oversight/logs/last.unpak.log">{last unpak log}</a>
+            <p><a href="/oversight/logs/gui.log">{last TV gui log}</a>
+        </center>
     </body>
 </html>
 <!--

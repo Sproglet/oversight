@@ -9,26 +9,31 @@
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:BACK_BUTTON:] Reset To Defaults</h1>
-
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Reset To Defaults</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr>
         [:FORM_START:]
-
             <center>
-            <p>This will reset Oversight settings to thier default values. Existing settings will be lost. 
-
-            <table width=30%>
-                <tr>
-                    <td align=center colspan=2 class=delete>
-                        <input type=submit name=action value="reset_defaults">
-                    </td>
-                    <td align=center colspan=2>
-                        <input type=submit name=action value="Cancel">
-                    </td>
-                </tr>
-            </table>
-
-            <input type=hidden name=old_action value="[:$?action:]">
-            <input type=hidden name=view value="[:$?view:]">
+	            <p>This will reset Oversight settings to their default values. All existing settings will be lost. 	
+	            <table width=30%>
+	                <tr>
+	                    <td align=center colspan=2 class=delete>
+	                        <input type=submit name=action value="reset_defaults">
+	                    </td>
+	                    <td align=center colspan=2>
+	                        <input type=submit name=action value="Cancel">
+	                    </td>
+	                </tr>
+	            </table>
+				<br>	
+	            <input type=hidden name=old_action value="[:$?action:]">
+	            <input type=hidden name=view value="[:$?view:]">
+			</center>
         </form>
     </body>
 </html>

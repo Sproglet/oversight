@@ -3,16 +3,23 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight Settings Menu [:HOSTNAME:]</title>
+        <title>Oversight [:HOSTNAME:]: Admin</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:ICON_LINK(view=admin&idlist=&action=ask&old_action=,back):] Oversight Configuration</h1>
-
-        [:$?old_action:] completed.
-
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:ICON_LINK(view=admin&idlist=&action=ask&old_action=,back):]</td>
+				<td valign=middle align=center><span class=title>Oversight Configuration</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr><br>
+		<center>
+			[:$?old_action:] completed.			
+		</center>       
     </body>
 </html>
 <!--

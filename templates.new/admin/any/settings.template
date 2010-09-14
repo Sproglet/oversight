@@ -3,17 +3,9 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight Settings Menu [:HOSTNAME:]</title>
+        <title>Oversight [:HOSTNAME:]: Settings</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-        </style>
-        <style type="text/css">
-td.optionname { font-size: 90% ; }
-td.optionhelp { font-size: 90% ; }
-table.options { width:100%; border=1; }
-th.optionname { width:10%; }
-th.optionval { width:20%; }
-th.optionhelp { width:60%; }
         </style>
 		<script type="text/javascript">
 			
@@ -32,7 +24,13 @@ th.optionhelp { width:60%; }
 		</script>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" onload="body_onload();" >
-        <h1 class=admin>[:BACK_BUTTON:] Oversight Configuration [:$?title:]</h1>
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Settings [:$?title:]</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
 
         [:FORM_START:]
 
@@ -49,34 +47,37 @@ th.optionhelp { width:60%; }
             <input type=hidden name=old_action value="[:$?action:]">
 		</form>
 		<p></p>
+		<center>
+			<table id="colorViewer" style="display:none;">
 [:IF($@gaya):]
-		<p>&nbsp;</p>
-		A color code viewer is shown when viewing this page through a browser to aid you in customising your skin.
+				<tr>
+					<td>
+						A color code viewer is shown when viewing this page through a browser to aid you in customising your skin.
+					</td>
+				</tr>
 [:ELSE:]
-		<table id="colorViewer" style="display:none;">
-			<tr>
-				<td width=10px></td>
-				<td colspan=3>
-					<h2>Color Code viewer</h2>
-				</td>
-			</tr>
-			<tr>
-				<td width=10px></td>
-				<td>
-					Hex code:&nbsp;
-				</td>
-				<td>
-					<input id="hexCode" type="text"/>
-				</td>
-				<td>
-					<input type=button onclick="javascript:ovs_getHexColor();" value="Show Color"/>
-				</td>
-				<td id="testCell">
-					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-				</td>
-			</tr>		
-		</table> 
-[:ENDIF:]
+				<tr>
+					<td colspan=3>
+						<h3>Color Code viewer</h3>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Hex code:&nbsp;
+					</td>
+					<td>
+						<input id="hexCode" type="text"/>
+					</td>
+					<td>
+						<input type=button onclick="javascript:ovs_getHexColor();" value="Show Color"/>
+					</td>
+					<td id="testCell">
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					</td>
+				</tr>
+[:ENDIF:]		
+			</table>
+		</center> 
     </body>
 </html>
 <!--

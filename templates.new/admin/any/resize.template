@@ -7,17 +7,16 @@
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
-        <style type="text/css">
-img.webstatus { width:15; height:15; }
-td.webstatus { font-size:90% ; }
-a { color:yellow; }
-body { font-size:20; font-family:"arial"; color:white; }
-        </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:BACK_BUTTON:] Oversight Media Scan</h1>
-
-        <p><u>Interactive Resize</u>
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Interactive Resize</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr>
         <p>Select [:LINK(view=&action=&resizeon=1,{resize mode}):] to resize the grid interactively  then 
         use the following remote key sequences:
         Think of 2,4,6,8 as up,left,right,down.

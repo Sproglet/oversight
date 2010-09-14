@@ -3,25 +3,20 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight Admin Menu [:HOSTNAME:]</title>
-        <STYLE type="text/css">
-
-td.mount1 { color:white; }
-td.mount0 { color:white; }
-img.nasstatus { width:15; height:15; }
-
-td.label { color:gray; }
-
+        <title>Oversight [:HOSTNAME:]: Admin</title>
+        <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
-
-
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-<center>
-        <h1 class=admin>[:BACK_BUTTON:] Oversight Configuration</h1>
-        <h3>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access Enabled!):]</h3>
-</center>
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Configuration</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr>
         <table width=100%>
         <tr>
             <!-- =============== -->
@@ -54,10 +49,10 @@ td.label { color:gray; }
         <tr>
             <!-- =============== -->
 
-            <td width=5%>
+            <td width=5%><img src="[:IMAGE_URL(skin.png):]">
             </td>
             <td align=left width=28%>
-                <br>[:LINK(view=admin&action=confirm_appearance,{appearance}):]
+                [:LINK(view=admin&action=confirm_appearance,{appearance}):]<br>
             </td>
             <!-- =============== -->
 
@@ -68,30 +63,33 @@ td.label { color:gray; }
             </td>
             <!-- =============== -->
 
-            <td width=5%>[:ICON(nas):]</td>
+            <td width=5%></td>
             <td align=left width=28%>
-                [:MOUNT_STATUS:]
             </td>
         </tr>
         </table>
         <hr>
         <table width=100%>
             <tr>
-                <td width="20%">
+                <td valign=top width="33%">
                     <table class="narrow">
-                    <tr><td class="label" >version:</td><td>[:VERSION:]</td></tr>
-                    <tr><td class="label" >vmode:</td><td>[:TV_MODE:]</td></tr>
+                            <td width=5%>[:ICON(nas):]</td>
+            <td align=left width=28%>
+                [:MOUNT_STATUS:]
+            </td>
                     </table>
                 </td>
-                <td width="20%">
-                    <table class="narrow">
-                    <tr><td class="label" >movies:</td><td>[:MOVIE_TOTAL:]</td></tr>
-                    <tr><td class="label" >episodes:</td><td>[:EPISODE_TOTAL:]</td></tr>
-                    <tr><td class="label" >other:</td><td>[:OTHER_MEDIA_TOTAL:]</td></tr>
-                    </table>
-                </td>
-                <td width="60%">
+                <td valign=top width="34%">
                     <table class="narrow" width="100%" >
+	                    <tr><td class="label" >version:</td><td>[:VERSION:]</td></tr>
+	                    <tr><td class="label" >movies:</td><td>[:MOVIE_TOTAL:]</td></tr>
+	                    <tr><td class="label" >episodes:</td><td>[:EPISODE_TOTAL:]</td></tr>
+	                    <tr><td class="label" >other:</td><td>[:OTHER_MEDIA_TOTAL:]</td></tr>
+                    </table>
+                </td>
+                <td valign=top width="33%">
+                    <table class="narrow" width="100%" >
+	                    <tr><td class="label" >vmode:</td><td>[:TV_MODE:]</td></tr>
                         <tr><td class="label" >uptime:</td><td>[:SYS_UPTIME:]</td></tr>
                         <tr><td class="label" >load:</td><td>[:SYS_LOAD_AVG:]</td></tr>
                         <tr><td class="label" >/share:</td><td width="80%">[:$@sys_share_free_gb:]Gb [:$@sys_share_free_percent:]% free 
@@ -106,6 +104,9 @@ td.label { color:gray; }
                 </td>
             </tr>
         </table>
+		<center>
+			<h3>[:STATUS:][:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access Enabled!):]</h3>
+		</center>
     </body>
 </html>
 

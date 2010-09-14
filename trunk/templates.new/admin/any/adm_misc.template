@@ -7,21 +7,20 @@
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
-        <style type="text/css">
-img.webstatus { width:15; height:15; }
-td.webstatus { font-size:90% ; }
-a { color:yellow; }
-        </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:BACK_BUTTON:] Oversight Miscellaneous </h1>
-
-            <center>
-
-            <p>[:LINK(view=admin&action=confirm_resets,{resets}):] - reset caches or re-install oversight
-            <p>[:LINK(view=admin&action=confirm_donate,{donate}):] - you can help the oversight project
-
-            </center>
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Miscellaneous</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr>
+        <center>
+        	<p>[:LINK(view=admin&action=confirm_resets,{reset}):] - Reset caches or re-install oversight
+        	<p>[:LINK(view=admin&action=confirm_donate,{donate}):] - You can help the oversight project
+        </center>
     </body>
 </html>
 <!--

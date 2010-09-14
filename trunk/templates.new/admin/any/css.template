@@ -1,0 +1,141 @@
+html,body { height:100%; margin:0; padding:0; border:none; }
+#main { height:99%; width:100%; border:none; margin:0; padding:0; }
+.narrow { height:99%; width:100%; border:none; margin:0; padding:0; }
+
+/*cant set body image via nmt css */ .a {}
+body.admin_background {
+	color:white ;
+	font-family:"arial";
+	font-size:20;
+	background-color:#000044;
+}
+
+/* Admin Settings */ .a {}
+.optionrow { background-color:#666666;}
+.optionrow0 { background-color:#222222;}
+.optionrow1 { background-color:#333333;}
+
+/* Normal view */  .a {}
+.gridTW0_0 { color:white; background-color:#101055; }
+.gridTW0_1 { color:white; background-color:#101066; }
+.gridMW0_0 { color:white; background-color:#105510; }
+.gridMW0_1 { color:white; background-color:#106610; }
+.gridW0_0 { color:white; background-color:#551010; }
+.gridW0_1 { color:white; background-color:#661010; }
+
+/* Admin page */ .a { }
+.match {
+	color:#FF7777; 
+	font-weight:bold; 
+}
+
+a { 
+	color:yellow; 
+	text-decoration:none; 
+}
+
+p {
+	color:white;
+}
+
+input { 
+	background-color:black; 
+	color:yellow; 
+	font-weight:bold; 
+	border=0; 
+}
+input.paypal { 
+	background-color:transparent; 
+}
+
+select { 
+	background-color:black; 
+	color:yellow; 
+	font-weight:bold; 
+	border=0; 
+	border-color:red; 
+	font-size:small; 
+}
+
+table.options { 
+	width:100%; 
+	border=1; 
+}	
+
+table.canvases {
+	width: 90%;
+}
+table.canvases td { text-align:center; }
+
+table.scanSettings th { text-align:left; }
+
+td { 
+	font-size:[:FONT_SIZE:]; 
+	font-family:"arial"; 
+	color:white;  
+}
+td.endtable { background-color:blue; }
+td.mount1 { color:white; }
+td.mount0 { color:white; }
+td.label { color:gray; }
+td.optionname { font-size: 90% ; }
+td.optionhelp { font-size: 90% ; }	
+td.webstatus { font-size:90% ; }
+
+th { 
+	color:yellow; 
+}
+th.optionname { width:10%; }
+th.optionval { width:20%; }
+th.optionhelp { width:60%; }
+
+h1 { 
+	text-align:center; 
+	font-size:[:TITLE_SIZE:]; 
+	font-weight:bold; 
+	color:#FFFF00; 
+}
+
+img.nasstatus { 
+	width:15; 
+	height:15; 
+}
+img.webstatus { 
+	width:15; 
+	height:15; 
+}
+
+.info0 {
+    color:white;
+                filter:alpha(opacity=100);
+                opacity:1;
+}
+.info1 {
+    color:white;
+}
+
+body.main_background { 
+	color:yellow ; 
+	background-color:black; 
+}
+
+.important {
+    color:#FF8800;
+}
+
+.title { 
+	text-align:center; 
+	font-size:[:TITLE_SIZE:]; 
+	font-weight:bold; 
+	color:#FFFF00; 
+}
+
+.resource {
+ color:#55FF55 ;
+ font-weight:bold;
+ }
+
+/*
+vi:ts=4:sw=4:et:syntax=css
+*/a{}
+

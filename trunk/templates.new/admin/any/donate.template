@@ -3,25 +3,22 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Donate [:HOSTNAME:]</title>
+        <title>Oversight [:HOSTNAME:]: Donate</title>
         <style type="text/css">
-
-td.mount1 { color:white; }
-td.mount0 { color:white; }
-img.nasstatus { width:15; height:15; }
-
             [:INCLUDE_TEMPLATE(css):]
-
-
         </style>
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
-        <h1 class=admin>[:BACK_BUTTON:] Oversight Donations</h1>
-
+    	<table width=100%>
+    		<tr>
+    			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
+				<td valign=middle align=center><span class=title>Oversight Donations</span></td>
+    		</tr>
+			<tr><td></td></tr>
+    	</table>
+		<hr>
         <center>
-
             <h2>Have you considered donating?</h2>
-
             <p>If you enjoy using Oversight then please consider making a donation (however small).
             This really encourages me to keep improving it and adding features specifically
 requested by you the end user.

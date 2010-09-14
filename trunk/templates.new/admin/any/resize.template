@@ -17,7 +17,7 @@
 			<tr><td></td></tr>
     	</table>
 		<hr>
-        <p>Select [:LINK(view=&action=&resizeon=1,{resize mode}):] to resize the grid interactively  then 
+        <p>Select [:LINK(view=&action=&resizeon=1,{resize mode}):] to resize the grid interactively then 
         use the following remote key sequences:
         Think of 2,4,6,8 as up,left,right,down.
         <span class=important>Some skins may ignore these settings and use their own.</span>

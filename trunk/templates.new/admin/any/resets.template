@@ -18,9 +18,9 @@
     	</table>
 		<hr>
         <center>
-            <p>[:LINK(view=admin&action=confirm_reset,{restore defaults}):] - Restore default settings
-            <p>[:LINK(view=admin&action=confirm_clear_cache,{clear NMT cache}):] - Clean dns or image cache
-            <p>[:LINK(view=admin&action=confirm_reinstall,{reinstall}):] - Re-install oversight after firmware or nzbget upgrade
+            <p>[:LINK(view=admin&action=confirm_reset,{restore defaults}):]: Restore default settings
+            <p>[:LINK(view=admin&action=confirm_clear_cache,{clear NMT cache}):]: Clean dns or image cache
+            <p>[:LINK(view=admin&action=confirm_reinstall,{reinstall}):]: Re-install oversight after firmware or nzbget upgrade
         </center>
     </body>
 </html>

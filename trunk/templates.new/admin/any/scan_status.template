@@ -70,10 +70,10 @@
                     </td>
                 </tr>
             </table>
-            <p>For best results <span class="resource">IMDB</span>, <span class="resource">TheMovieDb</span> and <span class="resource">TheTvDb</span> and <span class="resource">all three search engines</span> should be active. TvRage is used as a backup for TV Episode and Plot information.
-            <p>If any of the above search engines are down, check by trying a search on a PC <u>on the same network.</u>
-            <p>If all links are down check NMT can reach the internet, also try [:LINK(view=admin&action=confirm_clear_cache,{clearing the DNS cache}):]
 		</center>
+        <p>For best results <span class="resource">IMDB</span>, <span class="resource">TheMovieDb</span> and <span class="resource">TheTvDb</span> and <span class="resource">all three search engines</span> should be active. TvRage is used as a backup for TV Episode and Plot information.
+        <p>If any of the above search engines are down, check by trying a search on a PC <u>on the same network.</u>
+        <p>If all links are down check NMT can reach the internet, also try [:LINK(view=admin&action=confirm_clear_cache,{clearing the DNS cache}):]
     </body>
 </html>
 <!--

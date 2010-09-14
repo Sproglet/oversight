@@ -38,6 +38,7 @@
 
             <input type=hidden id=cfgf name=cfgf value="[:$?cfgf:]">
             <!-- <input type=hidden name=view value="[:$?view:]"> -->
+			<br>
             <table width=100%>
                 <tr>
                     <td align=center><input type=submit name=action value="Save Settings"></td>

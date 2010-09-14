@@ -17,7 +17,7 @@
 			<tr><td></td></tr>
     	</table>
 		<hr>
-        <table width=100%>
+        <table class=mainMenu width=100%>
         <tr>
             <!-- =============== -->
 
@@ -43,9 +43,8 @@
                 [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>{security}):]
                 <br>[:LINK(view=admin&action=confirm_adm_misc,{miscellaneous}):]
             </td>
-
-
         </tr>
+		<tr><td colspan=6></td></tr>
         <tr>
             <!-- =============== -->
 

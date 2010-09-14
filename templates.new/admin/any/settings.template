@@ -3,7 +3,7 @@
     <head>
         [:FAVICON:]
         <meta name="robots" content="nofollow">
-        <title>Oversight [:HOSTNAME:]: Settings</title>
+        <title>Oversight [:HOSTNAME:]: Settings [:$?cfgt:]</title>
         <style type="text/css">
             [:INCLUDE_TEMPLATE(css):]
         </style>
@@ -27,7 +27,7 @@
     	<table width=100%>
     		<tr>
     			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
-				<td valign=middle align=center><span class=title>Oversight Settings [:$?title:]</span></td>
+				<td valign=middle align=center><span class=title>Oversight Settings [:$?cfgt:]</span></span></td>
     		</tr>
 			<tr><td></td></tr>
     	</table>
@@ -37,6 +37,7 @@
             [:EDIT_CONFIG(conf_file=>$?cfgf,help_suffix=>$?cfgh):]
 
             <input type=hidden id=cfgf name=cfgf value="[:$?cfgf:]">
+            <input type=hidden id=cfgh name=cfgh value="[:$?cfgh:]">
             <!-- <input type=hidden name=view value="[:$?view:]"> -->
 			<br>
             <table width=100%>

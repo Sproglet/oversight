@@ -12,4 +12,4 @@ skin_item_general_info_color:The color of general item details such as year, sou
 skin_watched_color:The color of items that have been watched expressed as either a hex value or a word. Default value is '<font color=FF7777>FF7777</font>'
 skin_unwatched_color:The color of items that have not been watched expressed as either a hex value or a word. Default value is '<font color=77FF77>77FF77</font>'
 skin_sort_color:The color of the sort selector. Default value is '<font color=66CCFF>66CCFF</font>'
-skin_show_item_count:Indicates whetherto show the total items next to the page number|0|1
+skin_show_item_count:Indicates whether to show the total items next to the page number|0|1

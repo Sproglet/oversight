@@ -18,7 +18,11 @@
                 [:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
 					[&nbsp;(:STATUS:)]
 				[:ENDIF:]
-			&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
+			&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]
+[:IF($skin_show_item_count):]
+			([:EVAL($@selection_count):])
+[:ENDIF:]
+			</span>
         </td>
 [:ENDIF:]
         <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>

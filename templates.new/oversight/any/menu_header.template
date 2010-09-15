@@ -25,7 +25,11 @@
         <td align=left>
             [:INCLUDE_TEMPLATE(menu_titles):]
         </td>
-		<td align=right><span class="status">[:PAGE:]/[:PAGE_MAX:]</span></td>
+		<td align=right><span class="status">[:PAGE:]/[:PAGE_MAX:]
+[:IF($skin_show_item_count):]
+			([:EVAL($@selection_count):])
+[:ENDIF:]
+		</span></td>
 	</tr>
 [:ENDIF:]
 </table>

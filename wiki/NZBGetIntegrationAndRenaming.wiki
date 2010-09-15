@@ -92,3 +92,27 @@ b) force a par check before attempting to unpack.
 c) hand over to a post-processing script.
 
 As a par-check can take several hours on the NMT platform, it was desirable to try to unpack first, and only do a par-repair if necessary. 
+
+===Failing to run unpak script===
+
+If the unpak script is not running, then check the logs in /share/Apps/oversight/logs.
+
+If there are no recent unpak.*.log files then nzbget is no running the unpak script.
+
+Make sure Oversight has been re-installed after any upgrades to nzbget
+(you can do this via the reinstall option in the OVersight admin pages).
+
+Also , the nzbget gui can restart nzbget as the nobody user. This can cause problems.
+A temporary fix is to edit /share/Apps/NZBget/daemn.sh and change
+
+{{{
+    /share/Apps/NZBget/bin/nzbget -D -c /share/Apps/NZBget/.nzbget/nzbget.conf
+}}}
+
+to 
+
+{{{
+    su - nmt -s /bin/sh -c "/share/Apps/NZBget/bin/nzbget -D -c /share/Apps/NZBget/.nzbget/nzbget.conf"
+}}}
+
+Then stop and start nzbget.

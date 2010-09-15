@@ -97,13 +97,14 @@ As a par-check can take several hours on the NMT platform, it was desirable to t
 
 If the unpak script is not running, then check the logs in /share/Apps/oversight/logs.
 
-If there are no recent unpak.*.log files then nzbget is no running the unpak script.
+If there are no recent unpak.log files then nzbget is no running the unpak script.
 
 Make sure Oversight has been re-installed after any upgrades to nzbget
-(you can do this via the reinstall option in the OVersight admin pages).
+(you can do this via the reinstall option in the Oversight admin pages).
 
-Also , the nzbget gui can restart nzbget as the nobody user. This can cause problems.
-A temporary fix is to edit /share/Apps/NZBget/daemn.sh and change
+Also , the nzbget gui restarts nzbget as the nobody user, which can cause problems. (it seems to ignore the DaemnonUser setting in the nzbget.conf file).
+
+A temporary fix is to edit /share/Apps/NZBget/daemon.sh and change
 
 {{{
     /share/Apps/NZBget/bin/nzbget -D -c /share/Apps/NZBget/.nzbget/nzbget.conf

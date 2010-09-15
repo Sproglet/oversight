@@ -11,3 +11,4 @@ skin_item_genre_color="FFBB66"
 skin_item_general_info_color="white"
 skin_watched_color="FF7777"
 skin_unwatched_color="77FF77"
+skin_show_item_count=0

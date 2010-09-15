@@ -5,6 +5,7 @@
 [:ENDIF:]
     <tr valign=middle>
         <td>[:LEFT_BUTTON:]</td>
+[:IF($skin_bottom_bar):]
         <td align=left><span class="status">&nbsp;&nbsp;
 			[Oversight (:HOSTNAME:)]
         	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
@@ -13,15 +14,18 @@
 			[:ENDIF:]
 			&nbsp;&nbsp;</span>
 		</td>
+[:ENDIF:]
 		<td align=center>
         	[:INCLUDE_TEMPLATE(menu_buttons):]
 		</td>
+[:IF($skin_bottom_bar):]
         <td align=right valign=middle>
             <span class="status">Sort:&nbsp;</span>[:SORT_TYPE_TOGGLE:]
         </td>
         <td align=right>
             <span class="status">[:PAGE:]/[:PAGE_MAX:]</span>
         </td>
+[:ENDIF:]
         <td align=right>[:RIGHT_BUTTON:]</td>
     </tr>
 [:IF($@gaya):]	

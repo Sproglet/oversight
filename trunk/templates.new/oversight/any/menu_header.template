@@ -5,13 +5,27 @@
 [:ELSE:]
         <td width="7%">&nbsp;[:HOME_BUTTON:]</td>
 [:ENDIF:]
-
+[:IF($skin_bottom_bar):]
         <td width="1%" align=right>[:WATCHED_SELECT:][:LOCKED_SELECT:]</td>
         <td width="1%" align=left><nobr>[:MEDIA_SELECT:][:TITLE_SELECT:]</nobr>[:GENRE_SELECT:]</td>
         <td align=right width="75%">
             [:INCLUDE_TEMPLATE(menu_titles):]
             &nbsp;
         </td>
+[:ELSE:]
+        <td width=65% align=left>[:MEDIA_SELECT:][:TITLE_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):][:WATCHED_SELECT:][:LOCKED_SELECT:]</td>
+        <td rowspan=2 width=10% align=left><span class="status">Sort:</span><br>[:SORT_TYPE_TOGGLE:]</td>
+[:ENDIF:]
         <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
     </tr>
+[:IF($skin_bottom_bar):]
+[:ELSE:]
+	<tr>		
+		<td></td>
+        <td align=left>
+            [:INCLUDE_TEMPLATE(menu_titles):]
+        </td>
+		<td align=right><span class="status">[:PAGE:]/[:PAGE_MAX:]</span></td>
+	</tr>
+[:ENDIF:]
 </table>

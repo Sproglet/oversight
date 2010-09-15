@@ -4,15 +4,15 @@
         [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight [:HOSTNAME:]: Miscellaneous</title>
-        <style type="text/css">
-            [:INCLUDE_TEMPLATE(css):]
-        </style>
+		<link rel="stylesheet" type="text/css" href="/oversight/templates/admin/css/default.css" />
     </head>
     <body focuscolor=yellow focustext=black class=admin_background background="[:BACKGROUND_URL(admin.jpg):]" >
     	<table width=100%>
     		<tr>
     			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
 				<td valign=middle align=center><span class=title>Oversight Miscellaneous</span></td>
+				<td valign=middle width=1px>[:SETUP_BUTTON:]</td>
+				<td valign=middle width=1px>[:HOME_BUTTON:]</td>
     		</tr>
 			<tr><td></td></tr>
     	</table>

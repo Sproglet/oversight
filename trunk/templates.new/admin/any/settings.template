@@ -4,9 +4,7 @@
         [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight [:HOSTNAME:]: Settings [:$?cfgt:]</title>
-        <style type="text/css">
-            [:INCLUDE_TEMPLATE(css):]
-        </style>
+		<link rel="stylesheet" type="text/css" href="/oversight/templates/admin/css/default.css" />
 		<script type="text/javascript">
 			
 			function body_onload() {
@@ -28,6 +26,8 @@
     		<tr>
     			<td valign=middle width=1px>[:BACK_BUTTON:]</td>
 				<td valign=middle align=center><span class=title>Oversight Settings [:$?cfgt:]</span></span></td>
+				<td valign=middle width=1px>[:SETUP_BUTTON:]</td>
+				<td valign=middle width=1px>[:HOME_BUTTON:]</td>
     		</tr>
 			<tr><td></td></tr>
     	</table>

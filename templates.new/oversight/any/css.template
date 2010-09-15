@@ -210,11 +210,11 @@ body.menu_background {
 
 /* Sort toggle */ {a}
 .bluebutton {
- color:[:$skin_filter_background_color:];
+ color:[:$skin_sort_color:];
  font-weight:normal;
  }
 a.bluebutton {
- color:[:$skin_filter_background_color:];
+ color:[:$skin_sort_color:];
 }
 
 

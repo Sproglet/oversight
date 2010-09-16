@@ -6,15 +6,58 @@
         <td width="7%">&nbsp;[:HOME_BUTTON:]</td>
 [:ENDIF:]
 [:IF($skin_bottom_bar):]
-        <td width="1%" align=right>[:WATCHED_SELECT:][:LOCKED_SELECT:]</td>
-        <td width="1%" align=left><nobr>[:MEDIA_SELECT:][:TITLE_SELECT:]</nobr>[:GENRE_SELECT:]</td>
+        <td width="1%" align=right>
+	[:IF($skin_show_watched_filter):]
+		[:WATCHED_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_locked_filter):]
+		[:LOCKED_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_ratings_filter):]
+		[:RATING_SELECT(Any Rating/,0-4/0-4.9,5+/5-10,7+/7-10,9+/9-10):]
+	[:ENDIF:]
+		</td>
+        <td width="1%" align=left><nobr>
+	[:IF($skin_show_type_filter):]
+		[:MEDIA_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_title_filter):]
+		[:TITLE_SELECT:]
+	[:ENDIF:]</nobr>
+	[:IF($skin_show_genre_filter):]
+		[:GENRE_SELECT:]
+	[:ENDIF:]
+		</td>
         <td align=right width="75%">
             [:INCLUDE_TEMPLATE(menu_titles):]
             &nbsp;
         </td>
 [:ELSE:]
-        <td width=65% align=left>[:MEDIA_SELECT:][:TITLE_SELECT:][:GENRE_SELECT:][:RATING_SELECT(Any Rating/,0-5/0-5.9,6+/6-10,7+/7-10,8+/8-10):][:WATCHED_SELECT:][:LOCKED_SELECT:]</td>
-        <td rowspan=2 width=10% align=left><span class="status">Sort:</span><br>[:SORT_TYPE_TOGGLE:]</td>
+        <td width=65% align=left>
+	[:IF($skin_show_type_filter):]
+		[:MEDIA_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_title_filter):]
+		[:TITLE_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_genre_filter):]
+		[:GENRE_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_ratings_filter):]
+		[:RATING_SELECT(Any Rating/,0-4/0-4.9,5+/5-10,7+/7-10,9+/9-10):]
+	[:ENDIF:]
+	[:IF($skin_show_watched_filter):]
+		[:WATCHED_SELECT:]
+	[:ENDIF:]
+	[:IF($skin_show_locked_filter):]
+		[:LOCKED_SELECT:]
+	[:ENDIF:]
+		</td>
+        <td rowspan=2 width=10% align=left><span class="status">Sort:</span><br>
+	[:IF($skin_show_sort_filter):]
+		[:SORT_TYPE_TOGGLE:]
+	[:ENDIF:]
+		</td>
 [:ENDIF:]
         <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
     </tr>
@@ -25,10 +68,13 @@
         <td align=left>
             [:INCLUDE_TEMPLATE(menu_titles):]
         </td>
-		<td align=right><span class="status">[:PAGE:]/[:PAGE_MAX:]
-[:IF($skin_show_item_count):]
-			([:EVAL($@selection_count):])
-[:ENDIF:]
+		<td align=right><span class="status">
+	[:IF($skin_show_page_number):]
+		[:PAGE:]/[:PAGE_MAX:]
+	[:ENDIF:]
+	[:IF($skin_show_item_count):]
+		([:EVAL($@selection_count):])
+	[:ENDIF:]
 		</span></td>
 	</tr>
 [:ENDIF:]

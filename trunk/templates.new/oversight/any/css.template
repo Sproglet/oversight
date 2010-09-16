@@ -150,11 +150,20 @@ input {
  font-family:"arial";
  font-weight:bold;
  color:[:$skin_item_title_color:];
+[:IF($skin_show_titles_on_menu):]
+[:ELSE:]
+ display:none;
+[:ENDIF:]
 }
+
 .menutitle {
  font-size:120%;
  font-family:"arial";
  font-weight:bold;
+[:IF($skin_show_titles_on_menu):]
+[:ELSE:]
+ display:none;
+[:ENDIF:]
 }
 
 .Xtitle {

@@ -52,7 +52,7 @@
 [:IF($@gaya):]
 [:ELSE:]
 		<center>
-			<table id="colorViewer" style="display:none;">
+			<table id="colorViewer" style="display:none;" width=60%>
 				<tr>
 					<td colspan=3>
 						<h3>Color Code viewer</h3>
@@ -70,6 +70,11 @@
 					</td>
 					<td id="testCell">
 						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					</td>
+				</tr>
+				<tr>
+					<td colspan=3>
+						In addition, the following colors are valid: aqua, black, blue, fuchsia, gray, green, lime, maroon, navy, olive, purple, red, silver, teal, white, and yellow.
 					</td>
 				</tr>
 			</table>

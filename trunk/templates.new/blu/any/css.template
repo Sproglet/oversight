@@ -138,11 +138,20 @@ input {
  font-size:[:TITLE_SIZE(-7):];
  font-family:"arial";
  font-weight:bold;
+[:IF($skin_show_titles_on_menu):]
+[:ELSE:]
+ display:none;
+[:ENDIF:]
 }
+
 .menutitle {
  font-size:[:TITLE_SIZE(-7):];
  font-family:"arial";
  font-weight:bold;
+[:IF($skin_show_titles_on_menu):]
+[:ELSE:]
+ display:none;
+[:ENDIF:]
 }
 
 .Xtitle {

@@ -1,5 +1,5 @@
 skin_background_image:The background image for the menu screens. If you want to use your own then select 'custom.jpg' and upload the image to /Apps/oversight/templates/blu/720/custom.jpg. For a solid color, choose 'none'.|none|custom.jpg|admin.jpg|alt.jpg|aftermath.jpg|baloon.jpg|black.jpg|blue.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|earth.jpg|earthrise.jpg|electron.jpg|europa.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|lightwave.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
-skin_background_color:The solid background color to use if background image is set to 'none' expressed as either a hex value or a word. Default value is '<font color=black>black</font>'
+skin_background_color:The solid background color to use if background image is set to 'none'. Default value is '<font color=black>black</font>'
 skin_show_titles_on_menu:Indicates whether to show the movie titles on the menu screens|0|1
 skin_show_page_number:Indicates whether to show the page number|0|1
 skin_show_item_count:Indicates whether to show the total items next to the page number|0|1

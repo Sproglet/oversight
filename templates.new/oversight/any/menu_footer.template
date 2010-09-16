@@ -20,13 +20,18 @@
 		</td>
 [:IF($skin_bottom_bar):]
         <td align=right valign=middle>
+	[:IF($skin_show_sort_filter):]
             <span class="status">Sort:&nbsp;</span>[:SORT_TYPE_TOGGLE:]
+	[:ENDIF:]
         </td>
         <td align=right>
-            <span class="status">[:PAGE:]/[:PAGE_MAX:]
-[:IF($skin_show_item_count):]
+            <span class="status">
+	[:IF($skin_show_page_number):]
+            [:PAGE:]/[:PAGE_MAX:]
+	[:ENDIF:]
+	[:IF($skin_show_item_count):]
 			([:EVAL($@selection_count):])
-[:ENDIF:]
+	[:ENDIF:]
 			</span>
         </td>
 [:ENDIF:]

@@ -11,7 +11,9 @@
             &nbsp;Sort:&nbsp;
         </td>
         <td align=left>
+	[:IF($skin_show_sort_filter):]
             [:SORT_TYPE_TOGGLE:]
+	[:ENDIF:]
         </td>
 [:ENDIF:]
         <td width="99%" align=center >

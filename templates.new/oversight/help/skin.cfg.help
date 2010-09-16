@@ -1,15 +1,24 @@
 skin_background_image:The background image for the menu screens. If you want to use your own then select 'custom.jpg' and upload the image to /Apps/oversight/templates/blu/720/custom.jpg. For a solid color, choose 'none'.|none|custom.jpg|admin.jpg|alt.jpg|aftermath.jpg|baloon.jpg|black.jpg|blue.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|earth.jpg|earthrise.jpg|electron.jpg|europa.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|lightwave.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
 skin_background_color:The solid background color to use if background image is set to 'none' expressed as either a hex value or a word. Default value is '<font color=black>black</font>'
+skin_show_titles_on_menu:Indicates whether to show the movie titles on the menu screens|0|1
+skin_show_page_number:Indicates whether to show the page number|0|1
+skin_show_item_count:Indicates whether to show the total items next to the page number|0|1
+skin_show_title_filter:Indicates whether to show the title filter|0|1
+skin_show_genre_filter:Indicates whether to show the genre filter|0|1
+skin_show_type_filter:Indicates whether to show the TV/Movie filter|0|1
+skin_show_locked_filter:Indicates whether to show the locked filter|0|1
+skin_show_watched_filter:Indicates whether to show the watched filter|0|1
+skin_show_ratings_filter:Indicates whether to show the ratings filter|0|1
+skin_show_sort_filter:Indicates whether to show the sort filter|0|1
 skin_menu_bar_transparency:Transparency of the toolbar backgrounds %|0|10|20|30|40|50|60|70|80|90|100
 skin_bottom_bar:Indicates if the location of the second info bar is at the bottom of the screen|0|1
-skin_menu_footer_text_color:The color of the items listed in the footer bar expressed as either a hex value or a word. Default value is '<font color=white>white</font>'
-skin_plot_text_color:The color of text to use on the menu pages expressed as either a hex value or a word. Default value is '<font color=white>white</font>'
-skin_filter_text_color:The color of the item title text expressed as either a hex value or a word. Default value is '<font color=66CCFF>66CCFF</font>'
-skin_filter_background_color:The color of the item title text expressed as either a hex value or a word. Default value is '<font color=black>black</font>'
-skin_item_title_color:The color of the item title text expressed as either a hex value or a word. Default value is '<font color=66CCFF>66CCFF</font>'
-skin_item_genre_color:The color of the item details, such as genre and cast expressed as either a hex value or a word. Default value is '<font color=FFBB66>FFBB66</font>'
-skin_item_general_info_color:The color of general item details such as year, source and date|aqua|black|blue|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow
-skin_watched_color:The color of items that have been watched expressed as either a hex value or a word. Default value is '<font color=FF7777>FF7777</font>'
-skin_unwatched_color:The color of items that have not been watched expressed as either a hex value or a word. Default value is '<font color=77FF77>77FF77</font>'
+skin_menu_footer_text_color:The color of the items listed in the footer bar. Default value is '<font color=white>white</font>'
+skin_plot_text_color:The color of text to use on the menu pages. Default value is '<font color=white>white</font>'
+skin_filter_text_color:The color of the item title text. Default value is '<font color=66CCFF>66CCFF</font>'
+skin_filter_background_color:The color of the item title text. Default value is '<font color=black>black</font>'
 skin_sort_color:The color of the sort selector. Default value is '<font color=66CCFF>66CCFF</font>'
-skin_show_item_count:Indicates whether to show the total items next to the page number|0|1
+skin_watched_color:The color of items that have been watched. Default value is '<font color=FF7777>FF7777</font>'
+skin_unwatched_color:The color of items that have not been watched. Default value is '<font color=77FF77>77FF77</font>'
+skin_item_title_color:The color of the item title text. Default value is '<font color=66CCFF>66CCFF</font>'
+skin_item_genre_color:The color of the item details, such as genre and cast. Default value is '<font color=FFBB66>FFBB66</font>'
+skin_item_general_info_color:The color of general item details such as year, source and date. Default value is '<font color=white>white</font>'

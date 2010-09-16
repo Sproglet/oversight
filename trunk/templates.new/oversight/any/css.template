@@ -231,6 +231,14 @@ table.actors	font {color: [:$skin_item_genre_color:];}
 table.directors	font {color: [:$skin_item_genre_color:];}
 table.writers	font {color: [:$skin_item_genre_color:];}
 
+table.filters {
+	border-spacing:0;
+	border-width:0;
+	padding:0;
+	spacing:0;
+	margin:0;
+}
+
 /*
 vi:ts=4:sw=4:et:syntax=css
 */a{}

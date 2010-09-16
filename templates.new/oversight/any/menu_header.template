@@ -6,27 +6,39 @@
         <td width="7%">&nbsp;[:HOME_BUTTON:]</td>
 [:ENDIF:]
 [:IF($skin_bottom_bar):]
-        <td width="1%" align=right>
-	[:IF($skin_show_watched_filter):]
-		[:WATCHED_SELECT:]
-	[:ENDIF:]
-	[:IF($skin_show_locked_filter):]
-		[:LOCKED_SELECT:]
-	[:ENDIF:]
-	[:IF($skin_show_ratings_filter):]
-		[:RATING_SELECT(Any Rating/,0-4/0-4.9,5+/5-10,7+/7-10,9+/9-10):]
-	[:ENDIF:]
-		</td>
-        <td width="1%" align=left><nobr>
-	[:IF($skin_show_type_filter):]
-		[:MEDIA_SELECT:]
-	[:ENDIF:]
-	[:IF($skin_show_title_filter):]
-		[:TITLE_SELECT:]
-	[:ENDIF:]</nobr>
-	[:IF($skin_show_genre_filter):]
-		[:GENRE_SELECT:]
-	[:ENDIF:]
+		<td width=1% align=right>
+			<table class="filters">				
+				<tr>
+        			<td>
+        				<nobr>
+						[:IF($skin_show_watched_filter):]
+							[:WATCHED_SELECT:]
+						[:ENDIF:]
+						[:IF($skin_show_locked_filter):]
+							[:LOCKED_SELECT:]
+						[:ENDIF:]
+						[:IF($skin_show_ratings_filter):]
+							[:RATING_SELECT(Any Rating/,0-4/0-4.9,5+/5-10,7+/7-10,9+/9-10):]
+						[:ENDIF:]
+						</nobr>
+					</td>
+				</tr>
+				<tr>
+        			<td>
+        				<nobr>
+						[:IF($skin_show_type_filter):]
+							[:MEDIA_SELECT:]
+						[:ENDIF:]
+						[:IF($skin_show_title_filter):]
+							[:TITLE_SELECT:]
+						[:ENDIF:]
+						[:IF($skin_show_genre_filter):]
+							[:GENRE_SELECT:]
+						[:ENDIF:]
+						</nobr>
+					</td>
+				</tr>
+		</table>
 		</td>
         <td align=right width="75%">
             [:INCLUDE_TEMPLATE(menu_titles):]

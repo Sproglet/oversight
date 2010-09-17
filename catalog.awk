@@ -167,6 +167,7 @@ i,links,best_url) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
+    verify_setup();
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
     g_max_db_len=4000;
@@ -482,6 +483,8 @@ END{
 #        exit;
 #    }
 
+    g_max_id_file = INDEX_DB".maxid";
+    INDEX_DB_TMP = INDEX_DB "." JOBID ".tmp";
     INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
     INDEX_DB_OLD = INDEX_DB "." DAY;
 
@@ -634,7 +637,6 @@ END{
         g_api_tmdb = apply(g_api_tmdb);
         g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
-        delete g_occurs;
         delete g_updated_plots;
 
 
@@ -729,34 +731,20 @@ p,plugin) {
 }
 
 
-#IN indexToMergeHash - hash whose indexes are for scanned items ready to be processed.
-function update_db(indexToMergeHash) {
+function merge_queue(qfile) {
 
     if (hash_size(indexToMergeHash) == 0 ) {
+
         INF("Nothing to merge");
 
     } else if (g_opt_dry_run) {
 
         INF("Database update skipped - dry run");
 
-    } else if (lock(g_db_lock_file)) {
+    } else {
 
-        ## clear new file
-        printf "" > INDEX_DB_NEW;
-        close(INDEX_DB_NEW);
-
-        copyUntouchedToNewDatabase(INDEX_DB,INDEX_DB_NEW,indexToMergeHash);
-
-        #new files are added first and removed from file_to_db list.
-        add_new_scanned_files_to_database(indexToMergeHash,INDEX_DB_NEW);
-
-        replace_database_with_new(INDEX_DB_NEW,INDEX_DB,INDEX_DB_OLD);
-
-        unlock(g_db_lock_file);
-
-        delete indexToMergeHash;
+        sort_and_merge_index(INDEX_DB,qfile);
     }
-
 }
 
 function is_locked(lock_file,\
@@ -1054,7 +1042,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
            # If the folder has changed and we have more than n items then process them
            # this is to save memory. As this removes stored data we only do this if we 
            # change folder. This ensures we process multipart files together.
-           total += identify_and_catalog(minfo);
+           total += identify_and_catalog(minfo,0);
            clear_folder_info();
 
 
@@ -1241,7 +1229,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     close(tempFile);
 
-    total += identify_and_catalog(minfo);
+    total += identify_and_catalog(minfo,1);
 
     DEBUG("Finished Scanning "root);
     return 0+total;
@@ -1273,7 +1261,7 @@ function csv2re(text) {
 function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,\
 path) {
 
-    identify_and_catalog(minfo);
+    identify_and_catalog(minfo,0);
 
     path=clean_path(folder"/"file);
 
@@ -1939,18 +1927,22 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
 ##### LOADING INDEX INTO DB_ARR[] ###############################
 
 #Used by generate nfo
-function parseDbRow(row,arr,\
+function parseDbRow(row,arr,add_mount,\
 fields,i,fnum) {
+
+    delete arr;
+
     fnum = split(row,fields,"\t");
     for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
         arr[fields[i]] = fields[i+1];
     }
-    if (index(arr[FILE],"/") != 1 ) {
+    if (add_mount && index(arr[FILE],"/") != 1 ) {
         arr[FILE] = g_mount_root arr[FILE];
     }
     arr[FILE] = clean_path(arr[FILE]);
 }
 
+# remove /xxx/../   or /./ or // from a path
 function clean_path(f) {
     if (index(f,"../")) {
         while (gsub(/\/[^\/]+\/\.\.\//,"/",f) ) {
@@ -1985,78 +1977,169 @@ f,fileRe) {
 
 REWRITE MERGE FUNCTIONS
 
-# Go through old index.db 
-# if any file is in the new scan, add the updated entry to the new file (copying watched flags)
-# otherwise if it is not in the ignore list, add it directly to the new file
-function copyUntouchedToNewDatabase(db_file,new_db_file,indexToMergeHash,\
-kept_count,updated_count,total_lines,f,dbline,dbline2,dbfields,idx) {
+# Sort index by file path
+function sort_index(file,file_out) {
+    return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\2\1\3/' "qa(file_in)" | sort > "qa(file_out)) == 0;
+}
 
-    kept_count=0;
-    updated_count=0;
+function get_dbline(file,\
+line) {
+    while ((getline line < file ) > 0 ) {
+        if (index(line,"\t") == 1) {
+            return line;
+            break;
+    }
+    return "";
+}
 
-    INF("read_database");
+function keep_dbline(row,fields,\
+result) {
 
+    if (length(row) > g_max_db_len ) {
 
-    FS="\n";
-    close(db_file);
-    while((getline dbline < db_file) > 0 ) {
+        INF("Row too long");
 
-        total_lines++;
+    if ( fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
-        if ( index(dbline,"\t") != 1 ) { continue; }
+        INF("Removing Ignored Path ["fields[FILE]"]");
 
-        parseDbRow(dbline,dbfields);
-        get_name_dir_fields(dbfields);
+    } else if ( fields[NAME] ~ g_settings["catalog_ignore_names"] ) {
 
-        f = dbfields[FILE];
+        INF("Removing Ignored Name "fields[FILE]"]");
 
-        
-        if (f in gMovieFilePresent) {
+    } else {
+        result = 1;
+    }
+    return result;
+}
 
-            idx=gMovieFilePresent[f];
-            if (idx != -1 ) {
-                # Update the old entry with the new data
-                dbline2 = createIndexRow(minfo,dbfields[ID],dbfields[WATCHED],dbfields[LOCKED],""); #dbfields[INDEXTIME]);
-                if (length(dbline2) - g_max_db_len < 0) {
-                    print dbline2"\t" >> new_db_file;
-                    updated_count++;
-                    update_plots(g_plot_file,minfo);
-                }
-                delete indexToMergeHash[idx];
-                #make sure we dont add it later.
-                gMovieFilePresent[f] = -1;
+function write_dbline(fields,file,\
+f) {
+    for (f in fields) {
+        printf "\t%s\t%s",f,fields[f] >> file;
+    }
+    printf "\n" >> file;
+}
+
+function merge_index(file1,file2,file_out,\
+row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line) {
+
+    id1("merge_index");
+
+    max_id = 0;
+
+    if (is_file(g_max_id_file)) {
+        getline max_id < g_max_id_file;
+    }
+
+    action == 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
+    do {
+        if (and(action,1)) { 
+            row1 = get_dbline(file1);
+            parseDbRow(row1,fields1,1);
+        }
+        if (and(action,2)) {
+            row2 = get_dbline(file2);
+            parseDbRow(row2,fields2,1);
+        }
+
+        if (row1 == "") {
+            if (row2 == "") {
+                # both finished
+                action = 0;
             } else {
-                INF("Duplicate ["dbfields[FILE]"]");
+                action = 2;
+            }
+        } else {
+            if (row2 == "") {
+                action = 1;
+            } else {
+                # We compare the FILE field 
+
+                if (fields1[FILE] == fields2[FILE]) {
+
+                    action = 3;
+
+                } else if (fields1[FILE] < fields2[FILE]) {
+                    action = 1;
+                } else {
+                    action = 2;
+                }
             }
 
-        } else if ( dbfields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
+            new_or_changed_line = 0;
+            if (action == 1) { # output row1
+                if (keep_dbline(row1,fields1)) {
+                    total_unchanged++;
+                    print row1 >> file_out;
+                } else {
+                    total_removed ++;
+                }
+                row1 = "";
+            } else if (action == 2) { # output row2
+                if (keep_dbline(row2,fields2)) {
+                    fields2[ID] = ++max_id;
+                    total_new++;
+                    write_dbline(fields2,file_out);
+                    new_or_changed_line = 1;
+                }
+                row2 = "";
+            } else if (action == 3) { # merge
+                # Merge the rows.
+                fields1[WATCHED] = fields2[WATCHED];
+                fields1[LOCKED] = fields2[LOCKED];
+                fields1[FILE] = short_path(fields1[FILE]);
 
-            INF("Removing Ignored Path ["dbfields[FILE]"]");
+                if (keep_dbline(row1,fields1)) {
+                    total_changed ++;
+                    write_dbline(fields1,file_out);
+                    new_or_changed_line = 1;
+                } else {
+                    total_removed++;
+                }
+            }
+            if (new_or_changed_line) {
+            }
 
-        } else if ( dbfields[NAME] ~ g_settings["catalog_ignore_names"] ) {
-
-            INF("Removing Ignored Name "dbfields[FILE]"]");
-
-        } else {
-
-            kept_count++;
-            print dbline >> new_db_file;
         }
-        # sanity check
-        if ( dbfields[FILE] == "" ) {
-            ERR("Blank file for ["dbline"]");
-        }
-        if (dbfields[ID] - gMaxDatabaseId > 0) {
-            gMaxDatabaseId = dbfields[ID];
-        }
-    }
-    close(db_file);
+    } while (action > 0);
 
-    close(new_db_file);
+    close(file1);
+    close(file2);
+    close(file_out);
 
-    INF("Existing database: size:"total_lines" untouched "kept_count" updated "updated_count);
-    return kept_count+updated_count;
+    print max_id > g_max_id_file;
+    close(g_max_id_file);
+
+    id0("merge complete database:  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
 }
+
+# Merge two index files together
+function sort_and_merge_index(file1,file2,\
+file1_sorted,file2_sorted,file_merged) {
+
+    if (lock(file1)) {
+        file1_sorted = file1 ".sorted." PID; 
+        file2_sorted = file2 ".sorted." PID; 
+        file_merged = file1 ".merged." PID; 
+
+        if (sort_index(file1,file1_sorted) )  {
+            if (sort_index(file2,file2_sorted) )  {
+
+                if (merge_index(file1_sorted,file2_sorted,file_merged)) {
+
+                    replace_database_with_new(file_merged,INDEX_DB,INDEX_DB_OLD);
+                }
+                
+            }
+        }
+        rm(file1_sorted);
+        rm(file2_sorted);
+        unlock(file1);
+    }
+}
+
+
 
 function next_folder(path,base,\
 path_parts,base_parts,bpcount,pcount) {
@@ -2096,33 +2179,12 @@ function short_path(path) {
     return path;
 }
 
-function in_db(path,verbose\
-) {
-    path = short_path(path);
-    if (index(path,g_occurs_prefix) != 1) {
-        ERR("Cannot check ["path"] occurs agains current prefix ["g_occurs_prefix"]");
-        exit;
-    }
-    if (path in g_occurs) {
-        if (verbose) INF("["path"] already scanned");
-        return 1;
-    } else {
-        INF("["path"] not in db");
-        return 0;
-    }
-}
-
-function add_file(path) {
-    if (NEWSCAN == 1) g_occurs[short_path(path)]++;
-}
-
 # Get all of the files that have already been scanned that start with the 
 # same prefix.
 function get_files(prefix,db,\
 dbline,dbfields,err,count,filter) {
 
     id1("get_files ["prefix"]");
-    delete g_occurs;
     g_occurs_prefix = short_path(prefix);
 
     filter = "\t" FILE "\t" g_occurs_prefix;
@@ -2132,19 +2194,12 @@ dbline,dbfields,err,count,filter) {
 
         if ( index(dbline,filter) ) {
 
-            parseDbRow(dbline,dbfields);
+            parseDbRow(dbline,dbfields,1);
 
-             add_file(dbfields[FILE]);
-#        # Only treat video as scanned if it was previously categorised.
-#        # This allows rescans of bad files.
-#        if (index("MT",dbfields[CATEGORY]) > 0) {
-#            add_file(dbfields[FILE]);
-#        }
             count++;
         }
     }
     if (err == 0 ) close(db);
-    #dump(0,"scanned",g_occurs);
     id0(count" files");
 }
 
@@ -2166,7 +2221,7 @@ function remove_brackets(s) {
 # present - this is to allow for detached devices. (sort of)
 function remove_absent_files_from_new_db(db,\
     tmp_db,dbfields,\
-    list,f,shortf,maxCommandLength,dbline,keep,\
+    list,f,shortf,last_shortf,maxCommandLength,dbline,keep,\
     gp,blacklist_re,blacklist_dir,timer,in_scanned_list) {
     list="";
     maxCommandLength=3999;
@@ -2185,7 +2240,7 @@ function remove_absent_files_from_new_db(db,\
 
             if ( index(dbline,"\t") != 1 ) { continue; }
 
-            parseDbRow(dbline,dbfields);
+            parseDbRow(dbline,dbfields,1);
 
             f = dbfields[FILE];
             shortf = short_path(f);
@@ -2193,15 +2248,8 @@ function remove_absent_files_from_new_db(db,\
 
             keep=1;
 
-            in_scanned_list = (shortf in g_occurs);
-
-            if (in_scanned_list == 1 && NEWSCAN == 1 && g_occurs[shortf] == 0 ) {
-
-                #For duplicate files we want to keep the first one (g_occurs[]=1) as this is the one 
-                #that gets updated during a rescan. So if g_occurs(f) > 1 then
-                # set it to 0 at the end of this loop. Then the next duplicate will 
-                # trigger this code.
-
+            # as db is in file order we can prune duplicates by comparing with last file
+            if (shortf == last_shortf) {
                 keep = 0;
                 WARNING("Skipping "f" - duplicate");
 
@@ -2249,12 +2297,7 @@ function remove_absent_files_from_new_db(db,\
                 g_absent_file_count++;
                 
             }
-            if (in_scanned_list == 1 && NEWSCAN == 1 && g_occurs[shortf] - 1 > 0) {
-                #For duplicate files we want to keep the first one as this is the one 
-                #that gets updated during a rescan. So if g_occurs(f) > 1 then
-                # set it to 0. Then the next duplicate will trigger delete code.
-                g_occurs[shortf] = 0;
-            }
+            last_shortf = shortf;
         }
         close(tmp_db);
         close(db);
@@ -2933,160 +2976,173 @@ ret) {
    return ret;
 }
 
-function identify_and_catalog(minfo,\
+function identify_and_catalog(minfo,force_merge,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 ready_to_merge_count,total,\
-cat) {
+cat,qfile) {
 
-    eta="";
-   
-#dep#        begin_search("");
+    if (verify(minfo)) {
 
-    bestUrl="";
+        eta="";
+       
+    #dep#        begin_search("");
 
-    scanNfo=0;
+        bestUrl="";
 
-    file=minfo["mi_file"];
-    fldr=minfo["mi_folder"];
+        scanNfo=0;
 
-    if (file == "" ) continue;
+        file=minfo["mi_file"];
+        fldr=minfo["mi_folder"];
 
-    if (NEWSCAN==1 && in_db(fldr"/"file)) {
-        continue;
-    }
+        if (file == "" ) continue;
 
-    DIV0("Start item "(g_item_count)": ["file"]");
+        DIV0("Start item "(g_item_count)": ["file"]");
 
-    report_status("item "(++g_item_count));
+        report_status("item "(++g_item_count));
 
-    DEBUG("folder :["fldr"]");
+        DEBUG("folder :["fldr"]");
 
-    if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
-        WARNING("Skipping unknown file ["file"]");
-        continue;
-    }
+        if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
+            WARNING("Skipping unknown file ["file"]");
+            continue;
+        }
 
-    thisTime = systime();
+        thisTime = systime();
 
 
-    if (g_settings["catalog_nfo_read"] != "no") {
+        if (g_settings["catalog_nfo_read"] != "no") {
 
-        if (is_file(minfo["mi_default_nfo"])) {
+            if (is_file(minfo["mi_default_nfo"])) {
 
-           DEBUG("Using default info to find url");
-           scanNfo = 1;
+               DEBUG("Using default info to find url");
+               scanNfo = 1;
 
-        # Look at other files in the same folder.
-        } else if  (setImplicitNfo(minfo,fldr) ) { #XX
-            scanNfo = 1;
+            # Look at other files in the same folder.
+            } else if  (setImplicitNfo(minfo,fldr) ) { #XX
+                scanNfo = 1;
 
-        # Look inside movie_structure
-        } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
-            scanNfo = 1;
-       }
-    }
+            # Look inside movie_structure
+            } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
+                scanNfo = 1;
+           }
+        }
 
-    if (scanNfo){
-       bestUrl = scanNfoForImdbLink(minfo["mi_default_nfo"]);
-    }
+        if (scanNfo){
+           bestUrl = scanNfoForImdbLink(minfo["mi_default_nfo"]);
+        }
 
-    if (bestUrl == "") {
-        # scan filename for imdb link
-        bestUrl = extractImdbLink(file);
+        if (bestUrl == "") {
+            # scan filename for imdb link
+            bestUrl = extractImdbLink(file);
+            if (bestUrl) {
+                INF("extract imdb id from "file);
+            }
+        }
+
+        cat="";
+
         if (bestUrl) {
-            INF("extract imdb id from "file);
+            cat = scrapeIMDBTitlePage(minfo,bestUrl);
         }
-    }
 
-    cat="";
+        if (cat == "M" ) {
 
-    if (bestUrl) {
-        cat = scrapeIMDBTitlePage(minfo,bestUrl);
-    }
-
-    if (cat == "M" ) {
-
-        # Its definitely a movie according to IMDB or NFO
-        cat = movie_search(minfo,bestUrl);
-
-    } else if (cat == "T" ) {
-
-        # Its definitely a series according to IMDB or NFO
-        cat = tv_search_simple(minfo,bestUrl);
-
-    } else {
-
-        # Not sure - try a TV search looking for various abbreviations.
-        cat = tv_search_complex(minfo,bestUrl);
-
-        if (cat != "T") {
-            # Could not find any hits using tv abbreviations, try heuristis for a movie search.
-            # This involves searching web for imdb id.
+            # Its definitely a movie according to IMDB or NFO
             cat = movie_search(minfo,bestUrl);
-            if (cat == "T") {
-                # If we get here we found an IMDB id , but it looks like a TV show after all.
-                # This may happen with mini-series that do not have normal naming conventions etc.
-                # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                cat = tv_search_simple(minfo,bestUrl);
-            }
-        }
-    }
 
+        } else if (cat == "T" ) {
 
-    if (cat != "") {
+            # Its definitely a series according to IMDB or NFO
+            cat = tv_search_simple(minfo,bestUrl);
 
-        #If poster is blank fall back to imdb
-        if (minfo["mi_poster"] == "") {
-            minfo["mi_poster"] = minfo["mi_imdb_img"];
-        }
-        fixTitles(minfo);
+        } else {
 
-        #Only get posters if catalog is installed as part of oversight
-        if (index(APPDIR,"/oversight") ) {
+            # Not sure - try a TV search looking for various abbreviations.
+            cat = tv_search_complex(minfo,bestUrl);
 
-            if (minfo["mi_poster"] != "" && GET_POSTERS) {
-                minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
-            }
-
-            if (minfo["mi_fanart"] != "" && GET_FANART) {
-                minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+            if (cat != "T") {
+                # Could not find any hits using tv abbreviations, try heuristis for a movie search.
+                # This involves searching web for imdb id.
+                cat = movie_search(minfo,bestUrl);
+                if (cat == "T") {
+                    # If we get here we found an IMDB id , but it looks like a TV show after all.
+                    # This may happen with mini-series that do not have normal naming conventions etc.
+                    # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                    cat = tv_search_simple(minfo,bestUrl);
+                }
             }
         }
 
-        relocate_files(minfo);
+
+        if (cat != "") {
+
+            #If poster is blank fall back to imdb
+            if (minfo["mi_poster"] == "") {
+                minfo["mi_poster"] = minfo["mi_imdb_img"];
+            }
+            fixTitles(minfo);
+
+            #Only get posters if catalog is installed as part of oversight
+            if (index(APPDIR,"/oversight") ) {
+
+                if (GET_POSTERS) {
+                    minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+                }
+
+                if (GET_FANART) {
+                    minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+                }
+            }
+
+            relocate_files(minfo);
 
 
 
-        if (g_opt_dry_run) {
-            print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+            if (g_opt_dry_run) {
+                print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+            }
+            ready_to_merge_count++
+
+        } else {
+            INF("Skipping item "minfo["mi_media"]);
         }
-        ready_to_merge_count++
 
-    } else {
-        INF("Skipping item "minfo["mi_media"]);
+        thisTime = systime()-thisTime ;
+        g_process_time += thisTime;
+        g_elapsed_time = systime() - g_start_time;
+        g_total ++;
+        #lang_test(minfo);
+
+        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+
+        queue_minfo(minfo,qfile);
+
+        delete minfo;
+
+        if (force_merge || (g_total % g_batch_size == 0)) {
+
+                merge_queue(qfile);
+        }
+
     }
 
-    thisTime = systime()-thisTime ;
-    g_process_time += thisTime;
-    g_elapsed_time = systime() - g_start_time;
-    g_total ++;
-    #lang_test(minfo);
-
-    DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
-
-    delete minfo;
-
-    TO BE FIXED
-
-    # At the end we always make sure update_db has been called
-    # at least once as this loads the database and carries out any file actions
-    if (ready_to_merge_count) {
-        DIV("merge");
-        update_db();
-    }
-
-    clear_folder_info();
     return 0+total;
+}
+
+function queue_minfo(minfo,qfile,\
+row) {
+
+    row = createIndexRow(minfo,-1,0,0,"");
+    print row >> qfile;
+    # Plots are added to a seperate file.
+    update_plots(g_plot_file,minfo);
+
+    # If plots need to be written to nfo file then they should 
+    # be added to the row at this point.
+    row = row "\t"PLOT"\t"minfo["mi_plot"];
+    generate_nfo_file(g_settings["catalog_nfo_format"],row);
+
+    close(qfile);
 }
 
 function tv_search_simple(minfo,bestUrl) {
@@ -3990,6 +4046,32 @@ function remove_country(t) {
         t=substr(t,1,RSTART-1) substr(t,RSTART+RLENGTH);
     }
     return t;
+}
+
+function verify_setup(\
+tmp,tmp2) {
+    tmp = " mi_actors mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_default_nfo mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year";
+    split(tmp,tmp2," ");
+    hash_invert(tmp2,g_verify);
+}
+
+# Check we havent set any bad fields in movie information array
+function verify(minfo,\
+ret) {
+
+    ret=0;
+    for (f in minfo) {
+        ret ++;
+        if (!f in g_verify) {
+            ERROR("bad field ["f"] = ["minfo[f]"]");
+            ret -= 99;
+        }
+    }
+    ret = (ret > 0) ;
+    if (!ret) {
+        ERROR("Failed verification");
+    }
+    return ret;
 }
 
 #return array of alternate titles in array t.
@@ -7418,7 +7500,7 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
     if (g_settings["catalog_nfo_write"] == "never" ) {
         return;
     }
-    parseDbRow(dbrow,dbOne);
+    parseDbRow(dbrow,dbOne,1);
     get_name_dir_fields(dbOne);
 
     if (dbOne[NFO] == "" ) return;
@@ -7556,7 +7638,7 @@ function file_time(f) {
 }
 
 # changes here should be reflected in db.c:write_row()
-function createIndexRow(i,db_index,watched,locked,index_time,\
+function createIndexRow(minfo,db_index,watched,locked,index_time,\
 row,est,nfo,op,start) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
@@ -7711,41 +7793,6 @@ y,m,d,hr,mn,r) {
     return r;
 }
 
-# IN indexToMergeHash - hash whose indexes are the items we want to add during this iteration.
-# IN output_file = Name of the database
-# IN db_size = Size of the database
-# IN added_to_db - index=file value=idx
-function add_new_scanned_files_to_database(indexToMergeHash,output_file,\
-i,row,f) {
-
-    report_status("New Records: " hash_size(indexToMergeHash));
-
-    gMaxDatabaseId++;
-
-    for(i in indexToMergeHash) {
-
-        f=minfo["mi_media"];
-
-        if (minfo["mi_media"] == "") continue;
-
-        add_file(minfo["mi_folder"]"/"minfo["mi_media"]);
-
-        row=createIndexRow(i,-1,0,0,"");
-        if (length(row) - g_max_db_len < 0) {
-
-            print row"\t" >> output_file;
-
-            # Plots are added to a seperate file.
-            update_plots(g_plot_file,i);
-        }
-
-        # If plots need to be written to nfo file then they should 
-        # be added to the row at this point.
-        row = row "\t"PLOT"\t"minfo["mi_plot"];
-        generate_nfo_file(g_settings["catalog_nfo_format"],row);
-    }
-    close(output_file);
-}
 
 function ascii8(s) {
     return s ~ "["g_8bit"]";

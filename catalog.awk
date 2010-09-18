@@ -733,17 +733,13 @@ p,plugin) {
 
 function merge_queue(qfile) {
 
-    if (hash_size(indexToMergeHash) == 0 ) {
-
-        INF("Nothing to merge");
-
-    } else if (g_opt_dry_run) {
+    if (g_opt_dry_run) {
 
         INF("Database update skipped - dry run");
 
     } else {
 
-        sort_and_merge_index(INDEX_DB,qfile);
+        sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD);
     }
 }
 
@@ -988,7 +984,7 @@ function dir_contains(dir,pattern) {
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total) {
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo) {
 
     DEBUG("Scanning "root);
     if (root == "") return;
@@ -1196,8 +1192,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                           if ( checkMultiPart(minfo,scan_line) ) {
                               #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                               #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
-                              if ( !setNfo(".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
-                                  setNfo(extRe,".nfo");
+                              if ( !setNfo(minfo,".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
+                                  setNfo(minfo,extRe,".nfo");
                               }
                               store = 0;
                            }
@@ -1273,7 +1269,7 @@ path) {
     minfo["mi_media"] = file;
     minfo["mi_file_time"] = timeStamp;
 
-    setNfo(nfoReplace,nfoExt);
+    setNfo(minfo,nfoReplace,nfoExt);
 
     gMovieFileCount++;
 }
@@ -1352,7 +1348,7 @@ lastNameSeen,i,lastch,ch) {
 }
 
 # set the nfo file by replacing the pattern with the given text.
-function setNfo(pattern,replace,\
+function setNfo(minfo,pattern,replace,\
 nfo,lcNfo) {
     #Add a lookup to nfo file
     nfo=minfo["mi_media"];
@@ -1978,7 +1974,7 @@ f,fileRe) {
 REWRITE MERGE FUNCTIONS
 
 # Sort index by file path
-function sort_index(file,file_out) {
+function sort_index(file_in,file_out) {
     return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\2\1\3/' "qa(file_in)" | sort > "qa(file_out)) == 0;
 }
 
@@ -2115,7 +2111,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 }
 
 # Merge two index files together
-function sort_and_merge_index(file1,file2,\
+function sort_and_merge_index(file1,file2,file1_backup,\
 file1_sorted,file2_sorted,file_merged) {
 
     if (lock(file1)) {
@@ -2128,13 +2124,14 @@ file1_sorted,file2_sorted,file_merged) {
 
                 if (merge_index(file1_sorted,file2_sorted,file_merged)) {
 
-                    replace_database_with_new(file_merged,INDEX_DB,INDEX_DB_OLD);
+                    replace_database_with_new(file_merged,file1,file1_backup);
                 }
                 
             }
         }
         rm(file1_sorted);
         rm(file2_sorted);
+        rm(file_merged);
         unlock(file1);
     }
 }
@@ -2222,7 +2219,7 @@ function remove_brackets(s) {
 function remove_absent_files_from_new_db(db,\
     tmp_db,dbfields,\
     list,f,shortf,last_shortf,maxCommandLength,dbline,keep,\
-    gp,blacklist_re,blacklist_dir,timer,in_scanned_list) {
+    gp,blacklist_re,blacklist_dir,timer) {
     list="";
     maxCommandLength=3999;
 
@@ -2722,7 +2719,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
             id1("Checking "tvdbid);
 
-            if (get_tv_series_info(plugin,tmpIdx,get_tv_series_api_url(plugin,tvdbid)) > 0) {
+            if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
                 if (plugin == "THETVDB" ) {
 
@@ -4057,7 +4054,7 @@ tmp,tmp2) {
 
 # Check we havent set any bad fields in movie information array
 function verify(minfo,\
-ret) {
+ret,f) {
 
     ret=0;
     for (f in minfo) {
@@ -7139,11 +7136,12 @@ out,tag_start,tag_end,start_pos,end_pos,tail) {
 }
 
 
-function relocating_files(i) {
+## UNUSED
+function relocating_files(minfo) {
     return (RENAME_TV == 1 && minfo["mi_category"] == "T") ||(RENAME_FILM==1 && minfo["mi_category"] == "M");
 }
 
-function relocate_files(i,\
+function relocate_files(minfo,\
 newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
    DEBUG("relocate_files");
@@ -7209,7 +7207,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
         if (newName != oldName) {
            if (fileType == "folder") {
-               if (moveFolder(i,oldName,newName) != 0) {
+               if (moveFolder(minfo,oldName,newName) != 0) {
                    return;
                }
 
@@ -7264,7 +7262,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                rename_related(oldName,newName);
 
                #Move everything else from old to new.
-               moveFolder(i,oldFolder,newFolder);
+               moveFolder(minfo,oldFolder,newFolder);
            }
         }
 
@@ -7411,7 +7409,7 @@ function isDvdDir(f) {
 }
 
 #Moves folder contents.
-function moveFolder(i,oldName,newName,\
+function moveFolder(minfo,oldName,newName,\
     cmd,new,old,ret,err) {
 
    ret=1;

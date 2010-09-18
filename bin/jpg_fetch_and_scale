@@ -51,17 +51,17 @@ jpg_resize() {
     boxset=
     case "$output" in 
 
-        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=85 ;;
+        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=90 ;;
 
-        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=85 ;;
+        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=90 ;;
 
         */_fa/*.pal.jpg)
             # Pal is created from the SD but we need to maintain the quality
             o="-width=685 -height=542" ; q=90 ;;
 
-        */_J/*.thumb.jpg) o="-width=200" ; q=85 ; boxset=1 ;;
+        */_J/*.thumb.jpg) o="-width=200" ; q=90 ; boxset=1 ;;
 
-        */_J/*.jpg) o="-width=400" ; q=85 ;;
+        */_J/*.jpg) o="-width=400" ; q=90 ;;
 
         */_A/*.jpg)
             #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px

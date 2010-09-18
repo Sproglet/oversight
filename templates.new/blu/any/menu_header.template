@@ -27,7 +27,9 @@
 [:ELSE:]
         <td align=right width="50%">
             <span class=menubarTitle>
-				<b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]                        	
+            [:IF($skin_show_nmt_name):]
+				<b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]   
+			[:ENDIF:]                     	
                 [:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
 					[&nbsp;(:STATUS:)]
 				[:ENDIF:]

@@ -7,10 +7,15 @@
         <td>[:LEFT_BUTTON:]</td>
 [:IF($skin_bottom_bar):]
         <td align=left><span class="status">&nbsp;&nbsp;
-			[Oversight (:HOSTNAME:)]
-        	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
-				[ - :STATUS:]				
+            [:IF($skin_show_nmt_name):]
+				[Oversight (:HOSTNAME:)]
+	        	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
+					[ - :STATUS:]				
+				[:ENDIF:]
 			[:ELSE:]
+	        	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
+					[Status - :STATUS:]	
+				[:ENDIF:]
 			[:ENDIF:]
 			&nbsp;&nbsp;</span>
 		</td>

@@ -9,7 +9,14 @@
                 <tr>
                     [:INCLUDE_TEMPLATE(tvboxset_buttons):]
                     <td width=80% align=right>
-                    	<span class=menubarTitle><b>PROFILE - [:ACTOR_NAME:]</b>&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]</span>
+                    	<span class=menubarTitle><b>PROFILE - [:ACTOR_NAME:]</b>&nbsp;&nbsp;
+					[:IF($skin_show_page_number):]
+						[:PAGE:]/[:PAGE_MAX:]
+					[:ENDIF:]
+					[:IF($skin_show_item_count):]
+						([:EVAL($@selection_count):])
+					[:ENDIF:]
+						</span>
                     </td>
 					[:INCLUDE_TEMPLATE(right_button):]
 				</tr>

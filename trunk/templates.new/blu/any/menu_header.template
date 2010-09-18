@@ -42,6 +42,15 @@
 			</span>
         </td>
 [:ENDIF:]
+[:IF($skin_show_menu_footer_as_bar):]
+[:ELSE:]
+        <td align=right valign=middle class=sortLabel>
+            &nbsp;Sort:&nbsp;
+        </td>
+        <td align=left>
+            [:SORT_TYPE_TOGGLE:]
+        </td>
+[:ENDIF:]
         <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
     </tr>
 </table>

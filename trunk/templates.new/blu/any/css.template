@@ -201,7 +201,7 @@ table.overview_poster {
 
 /* Sort toggle */{a}
 .bluebutton {
- 	color:[:$skin_filter_background_color:];
+ 	color:[:$skin_menu_header_text_color:];
  	font-weight:normal;
  	font-size:[:FONT_SIZE(-2):];
 }

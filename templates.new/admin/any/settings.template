@@ -77,6 +77,22 @@
 						In addition, the following colors are valid: aqua, black, blue, fuchsia, gray, green, lime, maroon, navy, olive, purple, red, silver, teal, white, and yellow.
 					</td>
 				</tr>
+				<tr><td colspan=3 height=40px></td></tr>
+				<!--<tr>
+					<td colspan=3>
+						<h3>Background Image uploader</h3>
+					</td>
+				</tr>
+				<tr>
+					<td colspan=3>
+						<form action="/oversight/bin/upload.cgi method="POST" enctype="multipart/form-data">
+							Choose an image to upload: <input type="file" name="FILE1" />
+							<br>
+							<input type="submit" value="Upload" />
+						</form>
+					</td>					
+				</tr>
+				<tr><td colspan=3 height=40px></td></tr>-->
 			</table>
 		</center> 
 [:ENDIF:]		

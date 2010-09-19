@@ -60,3 +60,9 @@ All html pages are 720 on NMT then upscaled as necessary , but you can improve t
 [/code]
 
 change q=85 to q=90 or q=95 to see if that's better.
+
+===How do I select 1080p mode===
+
+Oversight does not have a 1080p mode, because, for HD,  the NMT file browser interface treats the full screen as 1280 wide x 720 high which corresponds to 720p.
+
+The NMT will play video and pictures at 1080p but the file browser pages are always 720p and scaled as necessary.

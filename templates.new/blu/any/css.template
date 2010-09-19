@@ -135,7 +135,7 @@ input {
 }
 
 .boxtitle {
- font-size:[:TITLE_SIZE(-7):];
+ font-size:[:TITLE_SIZE(-8):];
  font-family:"arial";
  font-weight:bold;
 [:IF($skin_show_titles_on_menu):]
@@ -145,7 +145,7 @@ input {
 }
 
 .menutitle {
- font-size:[:TITLE_SIZE(-7):];
+ font-size:[:TITLE_SIZE(-8):];
  font-family:"arial";
  font-weight:bold;
 [:IF($skin_show_titles_on_menu):]

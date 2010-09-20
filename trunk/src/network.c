@@ -65,16 +65,35 @@ struct addrinfo * get_remote_addr(char *host, char * service, int family, int so
 int routable(struct sockaddr *addr,int addrlen) {
 
     int i;
-    static unsigned long net[3] =  { 0x0A000000 /*10. */ , 0xAC100000 /* 172.16*/ , 0xC0A80000 /* 192.168 */ };
-    static unsigned long mask[3] = { 0xFF000000          , 0xFFF00000             , 0xFFFF0000 };
+#define NUM_NETS 8
+    static unsigned long net[NUM_NETS] =  {
+        0x00000000 /* 0.x.x.x */ ,
+        0x0A000000 /* 10.x.x.x */ ,
+        0x80000000 /* 128.x.x.x */ ,
+        0xAC100000 /* 172.16 */ ,
+        0xBFFF0000 /* 191.255.x.x */ ,
+        0xC0000000 /* 192.0.0.x */,
+        0xC0A80000 /* 192.168 */,
+        0xDFFFFF00 /* 223.255.255.x */
+    };
+    static unsigned long mask[NUM_NETS] = {
+        0xFF000000,
+        0xFF000000,
+        0xFFFF0000,
+        0xFFFF0000,
+        0xFFFF0000,
+        0xFFFFFF00,
+        0xFFFFFF00,
+        0xFFFFFF00 
+    };
 
     struct sockaddr_in *in4 = (void *)addr;
     if (in4->sin_family == AF_INET) {
         struct in_addr *ia = &(in4->sin_addr);
         unsigned long ip = ntohl(ia->s_addr);
-        for ( i = 0 ; i < 3 ; i++ ) {
+        for ( i = 0 ; i < NUM_NETS ; i++ ) {
             if ( ( ip & mask[i] ) == net[i] ) {
-                HTML_LOG(1,"Address %lx matches non routable %lx",ia->s_addr,net[i]);
+                HTML_LOG(1,"Address %lx matches reserved %lx",ia->s_addr,net[i]);
                 return 0;
             }
         }

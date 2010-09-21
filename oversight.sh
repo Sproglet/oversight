@@ -419,7 +419,7 @@ reboot_fix() {
 
 case "$1" in 
     NEWSCAN)
-        "$APPDIR/catalog.sh" NEWSCAN GET_POSTERS GET_FANART GET_PORTRAITS
+        "$APPDIR/catalog.sh" NEWSCAN 
 
         if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
             "$APPDIR/bin/torrent.sh" transmission unpak_all

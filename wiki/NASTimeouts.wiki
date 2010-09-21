@@ -35,12 +35,11 @@ If you have more than one NAS, then at present each one is probed in sequence, s
 
 If you have a software firewall between the NMT and the shared drive, it may block Oversights initial probe for the presence of the drive. In this case modify your firewall rules accordingly.
 
-Sometimes scans will work but Oversight GUI will still not be able to access the drive. This is because the GUI performs an initial 'high speed' port check which the firewall might not like.
+The probes use the same ports as SAMBA or NFS but in the case of NFS they are TCP based.
 
-=== Windows Home Server (WHS) Firewall ===
- 
-Windows Home Server firewall will block oversight's probes on port 445, so if possible you should create a rule that allows any traffic from NMT to port 445 of your server.
-If that doesnt work then if you are not serving files on the internet, you may want to consider disabling the firewall completely.
+== Apple Airport ==
+
+There are reports of some Apple Airport's becoming unresponsive after being probed by Oversight. This is surprising because a probe is just a socket connect/disconnect. Anyway if this is the case, you can disable probes by setting the timeout to 0.
 
 = How It Works =
 

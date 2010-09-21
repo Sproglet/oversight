@@ -741,6 +741,7 @@ function merge_queue(qfile) {
 
         sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD);
     }
+    rm(qfile);
 }
 
 function is_locked(lock_file,\
@@ -1328,14 +1329,11 @@ lastNameSeen,i,lastch,ch) {
             return 0;
         }
 
-        #continue 
-
     } else if (lastch == "a") {
 
         if (index("bcdef",ch) == 0) {
             return 0;
         }
-        #continue 
     } else {
         #DEBUG("checkMultiPart: exptected 1 or a");
         return 0;
@@ -1975,7 +1973,7 @@ REWRITE MERGE FUNCTIONS
 
 # Sort index by file path
 function sort_index(file_in,file_out) {
-    return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\2\1\3/' "qa(file_in)" | sort > "qa(file_out)) == 0;
+    return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\\2\\1\\3/' "qa(file_in)" | sort > "qa(file_out)) == 0;
 }
 
 function get_dbline(file,\
@@ -1984,6 +1982,7 @@ line) {
         if (index(line,"\t") == 1) {
             return line;
             break;
+        }
     }
     return "";
 }
@@ -1995,7 +1994,7 @@ result) {
 
         INF("Row too long");
 
-    if ( fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
+    } else if ( fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
         INF("Removing Ignored Path ["fields[FILE]"]");
 
@@ -2017,16 +2016,41 @@ f) {
     printf "\n" >> file;
 }
 
+function set_maxid(max_id) {
+    print max_id > g_max_id_file;
+    close(g_max_id_file);
+}
+
+function get_maxid(\
+max_id) {
+    id1("get_maxid");
+    if (!is_file(g_max_id_file)) {
+        if (is_file(INDEX_DB)) {
+            while ((line = get_dbline(INDEX_DB) ) != "") {
+                parseDbRow(line,fields,0);
+                if (fields[ID]+0 > max_id+0) {
+                    max_id = fields[ID];
+                }
+            }
+            close(INDEX_DB);
+        }
+        set_maxid(max_id);
+
+    } else {
+        getline max_id < g_max_id_file;
+        close(g_max_id_file);
+    }
+    id0(max_id);
+    return max_id;
+}
+
 function merge_index(file1,file2,file_out,\
 row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line) {
 
     id1("merge_index");
 
-    max_id = 0;
+    max_id = get_maxid();
 
-    if (is_file(g_max_id_file)) {
-        getline max_id < g_max_id_file;
-    }
 
     action == 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     do {
@@ -2114,6 +2138,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 function sort_and_merge_index(file1,file2,file1_backup,\
 file1_sorted,file2_sorted,file_merged) {
 
+    id1("sort_and_merge_index ["file1"]["file2"]["file1_backup"]");
     if (lock(file1)) {
         file1_sorted = file1 ".sorted." PID; 
         file2_sorted = file2 ".sorted." PID; 
@@ -2134,6 +2159,7 @@ file1_sorted,file2_sorted,file_merged) {
         rm(file_merged);
         unlock(file1);
     }
+    id0("");
 }
 
 
@@ -2975,8 +3001,12 @@ ret) {
 
 function identify_and_catalog(minfo,force_merge,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
-ready_to_merge_count,total,\
+total,\
 cat,qfile) {
+
+    id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
+
+    qfile = INDEX_DB ".queue." PID;
 
     if (verify(minfo)) {
 
@@ -2991,139 +3021,142 @@ cat,qfile) {
         file=minfo["mi_file"];
         fldr=minfo["mi_folder"];
 
-        if (file == "" ) continue;
+        if (file) {
 
-        DIV0("Start item "(g_item_count)": ["file"]");
+            DIV0("Start item "(g_item_count)": ["file"]");
 
-        report_status("item "(++g_item_count));
+            report_status("item "(++g_item_count));
 
-        DEBUG("folder :["fldr"]");
+            DEBUG("folder :["fldr"]");
 
-        if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
-            WARNING("Skipping unknown file ["file"]");
-            continue;
-        }
+            if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
 
-        thisTime = systime();
+                WARNING("Skipping unknown file ["file"]");
+
+            } else {
+
+                thisTime = systime();
 
 
-        if (g_settings["catalog_nfo_read"] != "no") {
+                if (g_settings["catalog_nfo_read"] != "no") {
 
-            if (is_file(minfo["mi_default_nfo"])) {
+                    if (is_file(minfo["mi_default_nfo"])) {
 
-               DEBUG("Using default info to find url");
-               scanNfo = 1;
+                       DEBUG("Using default info to find url");
+                       scanNfo = 1;
 
-            # Look at other files in the same folder.
-            } else if  (setImplicitNfo(minfo,fldr) ) { #XX
-                scanNfo = 1;
+                    # Look at other files in the same folder.
+                    } else if  (setImplicitNfo(minfo,fldr) ) { #XX
+                        scanNfo = 1;
 
-            # Look inside movie_structure
-            } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
-                scanNfo = 1;
-           }
-        }
+                    # Look inside movie_structure
+                    } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
+                        scanNfo = 1;
+                   }
+                }
 
-        if (scanNfo){
-           bestUrl = scanNfoForImdbLink(minfo["mi_default_nfo"]);
-        }
+                if (scanNfo){
+                   bestUrl = scanNfoForImdbLink(minfo["mi_default_nfo"]);
+                }
 
-        if (bestUrl == "") {
-            # scan filename for imdb link
-            bestUrl = extractImdbLink(file);
-            if (bestUrl) {
-                INF("extract imdb id from "file);
-            }
-        }
+                if (bestUrl == "") {
+                    # scan filename for imdb link
+                    bestUrl = extractImdbLink(file);
+                    if (bestUrl) {
+                        INF("extract imdb id from "file);
+                    }
+                }
 
-        cat="";
+                cat="";
 
-        if (bestUrl) {
-            cat = scrapeIMDBTitlePage(minfo,bestUrl);
-        }
+                if (bestUrl) {
+                    cat = scrapeIMDBTitlePage(minfo,bestUrl);
+                }
 
-        if (cat == "M" ) {
+                if (cat == "M" ) {
 
-            # Its definitely a movie according to IMDB or NFO
-            cat = movie_search(minfo,bestUrl);
+                    # Its definitely a movie according to IMDB or NFO
+                    cat = movie_search(minfo,bestUrl);
 
-        } else if (cat == "T" ) {
+                } else if (cat == "T" ) {
 
-            # Its definitely a series according to IMDB or NFO
-            cat = tv_search_simple(minfo,bestUrl);
-
-        } else {
-
-            # Not sure - try a TV search looking for various abbreviations.
-            cat = tv_search_complex(minfo,bestUrl);
-
-            if (cat != "T") {
-                # Could not find any hits using tv abbreviations, try heuristis for a movie search.
-                # This involves searching web for imdb id.
-                cat = movie_search(minfo,bestUrl);
-                if (cat == "T") {
-                    # If we get here we found an IMDB id , but it looks like a TV show after all.
-                    # This may happen with mini-series that do not have normal naming conventions etc.
-                    # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                    # Its definitely a series according to IMDB or NFO
                     cat = tv_search_simple(minfo,bestUrl);
+
+                } else {
+
+                    # Not sure - try a TV search looking for various abbreviations.
+                    cat = tv_search_complex(minfo,bestUrl);
+
+                    if (cat != "T") {
+                        # Could not find any hits using tv abbreviations, try heuristis for a movie search.
+                        # This involves searching web for imdb id.
+                        cat = movie_search(minfo,bestUrl);
+                        if (cat == "T") {
+                            # If we get here we found an IMDB id , but it looks like a TV show after all.
+                            # This may happen with mini-series that do not have normal naming conventions etc.
+                            # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                            cat = tv_search_simple(minfo,bestUrl);
+                        }
+                    }
                 }
+
+
+                if (cat != "") {
+
+                    #If poster is blank fall back to imdb
+                    if (minfo["mi_poster"] == "") {
+                        minfo["mi_poster"] = minfo["mi_imdb_img"];
+                    }
+                    fixTitles(minfo);
+
+                    #Only get posters if catalog is installed as part of oversight
+                    if (index(APPDIR,"/oversight") ) {
+
+                        if (GET_POSTERS) {
+                            minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+                        }
+
+                        if (GET_FANART) {
+                            minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+                        }
+                    }
+
+                    relocate_files(minfo);
+
+
+
+                    if (g_opt_dry_run) {
+                        print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+                    }
+                    total++;
+
+                } else {
+                    INF("Skipping item "minfo["mi_media"]);
+                }
+
+                thisTime = systime()-thisTime ;
+                g_process_time += thisTime;
+                g_elapsed_time = systime() - g_start_time;
+                g_total ++;
+                #lang_test(minfo);
+
+                DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+
+                queue_minfo(minfo,qfile);
             }
         }
-
-
-        if (cat != "") {
-
-            #If poster is blank fall back to imdb
-            if (minfo["mi_poster"] == "") {
-                minfo["mi_poster"] = minfo["mi_imdb_img"];
-            }
-            fixTitles(minfo);
-
-            #Only get posters if catalog is installed as part of oversight
-            if (index(APPDIR,"/oversight") ) {
-
-                if (GET_POSTERS) {
-                    minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
-                }
-
-                if (GET_FANART) {
-                    minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
-                }
-            }
-
-            relocate_files(minfo);
-
-
-
-            if (g_opt_dry_run) {
-                print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
-            }
-            ready_to_merge_count++
-
-        } else {
-            INF("Skipping item "minfo["mi_media"]);
-        }
-
-        thisTime = systime()-thisTime ;
-        g_process_time += thisTime;
-        g_elapsed_time = systime() - g_start_time;
-        g_total ++;
-        #lang_test(minfo);
-
-        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
-
-        queue_minfo(minfo,qfile);
 
         delete minfo;
 
-        if (force_merge || (g_total % g_batch_size == 0)) {
+        if (force_merge || ( (g_total % g_batch_size) == g_batch_size - 1)) {
 
                 merge_queue(qfile);
         }
 
     }
 
-    return 0+total;
+    id0(total);
 }
 
 function queue_minfo(minfo,qfile,\
@@ -4054,19 +4087,21 @@ tmp,tmp2) {
 
 # Check we havent set any bad fields in movie information array
 function verify(minfo,\
-ret,f) {
+ret,f,numok,numbad) {
 
-    ret=0;
+    ret=1;
     for (f in minfo) {
-        ret ++;
-        if (!f in g_verify) {
-            ERROR("bad field ["f"] = ["minfo[f]"]");
-            ret -= 99;
+        if (!(f in g_verify)) {
+            ERR("bad field ["f"] = ["minfo[f]"]");
+            numbad++;
+        }  else {
+            INF("ok field ["f"] = ["minfo[f]"]");
+            numok++;
         }
     }
-    ret = (ret > 0) ;
-    if (!ret) {
-        ERROR("Failed verification");
+    if (numbad > 0 || numok == 0) {
+        ERR("Failed verification bad="numbad" ok="numok);
+        ret = 0;
     }
     return ret;
 }
@@ -7841,13 +7876,18 @@ function ascii8(s) {
 function update_plots(pfile,minfo,\
 lang,lang_list,info) {
     update_plots_by_lang(pfile,minfo,minfo["mi_plot"]); #default - English
-    split(LANG,lang_list,",");
-    if (minfo["mi_category"] == "M" ) {
-        for (lang in lang_list) {
-            if (scrape_by_lang(minfo,lang,info)) {
-                update_plots_by_lang(pfile "." lang,minfo,info["plot"]);
+
+    if(0) { #===============================================================================
+
+        split(LANG,lang_list,",");
+        if (minfo["mi_category"] == "M" ) {
+            for (lang in lang_list) {
+                if (scrape_by_lang(minfo,lang,info)) {
+                    update_plots_by_lang(pfile "." lang,minfo,info["plot"]);
+                }
             }
         }
+
     }
 }
 
@@ -7943,7 +7983,7 @@ i,folderCount,moveDown) {
     folderCount=0;
     moveDown=0;
     for(i = 1 ; i - ARGC < 0 ; i++ ) {
-            INF("Arg:["ARGV[i]"]");
+        INF("Arg:["ARGV[i]"]");
         if (ARGV[i] == "IGNORE_NFO" ) {
             g_settings["catalog_nfo_read"] = "no";
             moveDown++;
@@ -7986,24 +8026,28 @@ i,folderCount,moveDown) {
             RENAME_FILM=1;
             moveDown++;
 
-        } else if (ARGV[i] = "NO_POSTERS" )  {
+        } else if (ARGV[i] == "NO_POSTERS" )  {
             GET_POSTERS = UPDATE_POSTERS = 0;
             moveDown++;
-        } else if (ARGV[i] = "UPDATE_POSTERS" )  {
+        } else if (ARGV[i] == "UPDATE_POSTERS" )  {
             GET_POSTERS = UPDATE_POSTERS = 1;
             moveDown++;
 
-        } else if (ARGV[i] = "NO_FANART" )  {
+        } else if (ARGV[i] == "NO_FANART" )  {
             GET_FANART = UPDATE_FANART = 0;
             moveDown++;
-        } else if (ARGV[i] = "UPDATE_FANART" )  {
+        } else if (ARGV[i] == "UPDATE_FANART" )  {
             GET_FANART = UPDATE_FANART = 1;
             moveDown++;
 
-        } else if (ARGV[i] = "NO_PORTRAITS" )  {
+        } else if (ARGV[i] == "GET_FANART"  || ARGV[i] == "GET_POSTERS"  || ARGV[i] == "GET_PORTRAITS" )  {
+            #deperecate
+            moveDown++;
+
+        } else if (ARGV[i] == "NO_PORTRAITS" )  {
             GET_PORTRAITS = UPDATE_PORTRAITS = 0;
             moveDown++;
-        } else if (ARGV[i] = "UPDATE_PORTRAITS" )  {
+        } else if (ARGV[i] == "UPDATE_PORTRAITS" )  {
             GET_PORTRAITS = UPDATE_PORTRAITS = 1;
             moveDown++;
 
@@ -8025,10 +8069,14 @@ i,folderCount,moveDown) {
             moveDown++;
         }
     }
+    INF("============ END ARGS ============"moveDown);
     ARGC -= moveDown;
     # Add dev null as dummy input
     ARGV[ARGC++] = "/dev/null";
     return folderCount;
+    for(i = 1 ; i <= ARGC ; i++ ) {
+        INF("Final arg["i"] = ["ARGV[i]"]");
+    }
 }
 
 #baseN - return a number base n. All output bytes are offset by 128 so the characters will not 
@@ -8146,12 +8194,12 @@ function lang_test(minfo) {
 
 function get_first_plot(query,site,min_plot_len,\
 url) {
-    if (site ~ /^[a-z.]+$/ ) {
-        url=query url_encode(" site:"site);
-    } else {
-        url=query url_encode(" inurl:"site);
-    }
-    id2 = scanPageFirstMatch(url,site,????,0);
+#    if (site ~ /^[a-z.]+$/ ) {
+#        url=query url_encode(" site:"site);
+#    } else {
+#        url=query url_encode(" inurl:"site);
+#    }
+#    id2 = scanPageFirstMatch(url,site,????,0);
     INF("first_result: not impleneted");
 }
 

@@ -639,7 +639,6 @@ END{
 
         delete g_updated_plots;
 
-
         clean_capture_files();
 
         et=systime()-ELAPSED_TIME;
@@ -739,7 +738,10 @@ function merge_queue(qfile) {
 
     } else {
 
-        sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD);
+        if(lock(g_db_lock_file)) {
+            sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD);
+            unlock(g_db_lock_file);
+        }
     }
     rm(qfile);
 }
@@ -806,9 +808,9 @@ names,i) {
 
 function replace_database_with_new(newdb,currentdb,olddb) {
 
-    INF("Replace Database");
+    INF("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
 
-    system("cp -f "qa(currentdb)" "qa(olddb));
+    exec("cp -f "qa(currentdb)" "qa(olddb));
 
     touch_and_move(newdb,currentdb);
 
@@ -843,14 +845,15 @@ i,rtext,rstart,words,wcount) {
 
 function set_db_fields() {
     #DB fields should start with underscore to speed grepping etc.
+    # Fields with @ are not written to the db.
     ID=db_field("_id","ID","",0);
 
     WATCHED=db_field("_w","Watched","watched") ;
     LOCKED=db_field("_l","Locked","locked") ;
     PARTS=db_field("_pt","PARTS","");
     FILE=db_field("_F","FILE","filenameandpath");
-    NAME=db_field("_N","NAME","");
-    DIR=db_field("_D","DIR","");
+    NAME=db_field("_@N","NAME","");
+    DIR=db_field("_@D","DIR","");
     EXT=db_field("_ext","EXT",""); # not a real field
 
 
@@ -991,6 +994,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     if (root == "") return;
 
     if (NEWSCAN) {
+        # TODO: if index is sorted by file we can call get files at each folder change.
         get_files(root,INDEX_DB);
     }
 
@@ -1930,7 +1934,7 @@ fields,i,fnum) {
     for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
         arr[fields[i]] = fields[i+1];
     }
-    if (add_mount && index(arr[FILE],"/") != 1 ) {
+    if (add_mount &&  arr[FILE] != "" && index(arr[FILE],"/") != 1 ) {
         arr[FILE] = g_mount_root arr[FILE];
     }
     arr[FILE] = clean_path(arr[FILE]);
@@ -1984,6 +1988,8 @@ line) {
             break;
         }
     }
+    close(file);
+    INF("eof:"file);
     return "";
 }
 
@@ -2011,9 +2017,11 @@ result) {
 function write_dbline(fields,file,\
 f) {
     for (f in fields) {
-        printf "\t%s\t%s",f,fields[f] >> file;
+        if (f && index(f,"@") == 0) {
+            printf "\t%s\t%s",f,fields[f] >> file;
+        }
     }
-    printf "\n" >> file;
+    printf "\t\n" >> file;
 }
 
 function set_maxid(max_id) {
@@ -2023,6 +2031,7 @@ function set_maxid(max_id) {
 
 function get_maxid(\
 max_id) {
+    max_id = 0;
     id1("get_maxid");
     if (!is_file(g_max_id_file)) {
         if (is_file(INDEX_DB)) {
@@ -2039,28 +2048,33 @@ max_id) {
     } else {
         getline max_id < g_max_id_file;
         close(g_max_id_file);
+        max_id += 0;
     }
     id0(max_id);
     return max_id;
 }
 
 function merge_index(file1,file2,file_out,\
-row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line) {
+row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line,ret) {
 
+    ret = 1;
     id1("merge_index");
 
     max_id = get_maxid();
 
 
-    action == 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
+    action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     do {
+        INF("read action="action);
         if (and(action,1)) { 
             row1 = get_dbline(file1);
             parseDbRow(row1,fields1,1);
+            INF("ORIGINAL:["fields1[FILE]"]");
         }
         if (and(action,2)) {
             row2 = get_dbline(file2);
             parseDbRow(row2,fields2,1);
+            INF("NEW    :["fields2[FILE]"]");
         }
 
         if (row1 == "") {
@@ -2086,52 +2100,52 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
                     action = 2;
                 }
             }
-
-            new_or_changed_line = 0;
-            if (action == 1) { # output row1
-                if (keep_dbline(row1,fields1)) {
-                    total_unchanged++;
-                    print row1 >> file_out;
-                } else {
-                    total_removed ++;
-                }
-                row1 = "";
-            } else if (action == 2) { # output row2
-                if (keep_dbline(row2,fields2)) {
-                    fields2[ID] = ++max_id;
-                    total_new++;
-                    write_dbline(fields2,file_out);
-                    new_or_changed_line = 1;
-                }
-                row2 = "";
-            } else if (action == 3) { # merge
-                # Merge the rows.
-                fields1[WATCHED] = fields2[WATCHED];
-                fields1[LOCKED] = fields2[LOCKED];
-                fields1[FILE] = short_path(fields1[FILE]);
-
-                if (keep_dbline(row1,fields1)) {
-                    total_changed ++;
-                    write_dbline(fields1,file_out);
-                    new_or_changed_line = 1;
-                } else {
-                    total_removed++;
-                }
-            }
-            if (new_or_changed_line) {
-            }
-
         }
+
+        INF("merge action="action);
+        new_or_changed_line = 0;
+        if (action == 1) { # output row1
+            if (keep_dbline(row1,fields1)) {
+                total_unchanged++;
+                print row1 >> file_out;
+            } else {
+                total_removed ++;
+            }
+            row1 = "";
+        } else if (action == 2) { # output row2
+            if (keep_dbline(row2,fields2)) {
+                fields2[ID] = ++max_id;
+                total_new++;
+                write_dbline(fields2,file_out);
+                new_or_changed_line = 1;
+            }
+            row2 = "";
+        } else if (action == 3) { # merge
+            # Merge the rows.
+            fields1[WATCHED] = fields2[WATCHED];
+            fields1[LOCKED] = fields2[LOCKED];
+            fields1[FILE] = short_path(fields1[FILE]);
+
+            if (keep_dbline(row1,fields1)) {
+                total_changed ++;
+                write_dbline(fields1,file_out);
+                new_or_changed_line = 1;
+            } else {
+                total_removed++;
+            }
+        }
+
     } while (action > 0);
 
     close(file1);
     close(file2);
     close(file_out);
 
-    print max_id > g_max_id_file;
-    close(g_max_id_file);
+    set_maxid(max_id);
 
-    id0("merge complete database:  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    id0(ret);
+    return ret;
 }
 
 # Merge two index files together
@@ -2139,29 +2153,25 @@ function sort_and_merge_index(file1,file2,file1_backup,\
 file1_sorted,file2_sorted,file_merged) {
 
     id1("sort_and_merge_index ["file1"]["file2"]["file1_backup"]");
-    if (lock(file1)) {
-        file1_sorted = file1 ".sorted." PID; 
-        file2_sorted = file2 ".sorted." PID; 
-        file_merged = file1 ".merged." PID; 
+    file1_sorted = file1 ".sorted." PID; 
+    file2_sorted = file2 ".sorted." PID; 
+    file_merged = file1 ".merged." PID; 
 
-        if (sort_index(file1,file1_sorted) )  {
-            if (sort_index(file2,file2_sorted) )  {
+    if (sort_index(file1,file1_sorted) )  {
+        if (sort_index(file2,file2_sorted) )  {
 
-                if (merge_index(file1_sorted,file2_sorted,file_merged)) {
+            if (merge_index(file1_sorted,file2_sorted,file_merged)) {
 
-                    replace_database_with_new(file_merged,file1,file1_backup);
-                }
-                
+                replace_database_with_new(file_merged,file1,file1_backup);
             }
+            
         }
-        rm(file1_sorted);
-        rm(file2_sorted);
-        rm(file_merged);
-        unlock(file1);
     }
+    rm(file1_sorted); #ALL
+    rm(file2_sorted); #ALL
+    rm(file_merged);
     id0("");
 }
-
 
 
 function next_folder(path,base,\
@@ -2252,6 +2262,7 @@ function remove_absent_files_from_new_db(db,\
     INF("Pruning...");
     tmp_db = db "." JOBID ".tmp";
 
+    # TODO if index is sorted by file we can do this a folder at a time.
     get_files("",db);
 
     if (lock(g_db_lock_file)) {
@@ -2327,6 +2338,7 @@ function remove_absent_files_from_new_db(db,\
         INF("unchanged:"g_kept_file_count);
         INF("removed:"g_absent_file_count);
         replace_database_with_new(tmp_db,db,INDEX_DB_OLD);
+        unlock(g_db_lock_file);
     }
 }
 
@@ -3018,7 +3030,7 @@ cat,qfile) {
 
         scanNfo=0;
 
-        file=minfo["mi_file"];
+        file=minfo["mi_media"];
         fldr=minfo["mi_folder"];
 
         if (file) {
@@ -3040,7 +3052,7 @@ cat,qfile) {
 
                 if (g_settings["catalog_nfo_read"] != "no") {
 
-                    if (is_file(minfo["mi_default_nfo"])) {
+                    if (is_file(minfo["mi_nfo_default"])) {
 
                        DEBUG("Using default info to find url");
                        scanNfo = 1;
@@ -3056,7 +3068,7 @@ cat,qfile) {
                 }
 
                 if (scanNfo){
-                   bestUrl = scanNfoForImdbLink(minfo["mi_default_nfo"]);
+                   bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
                 }
 
                 if (bestUrl == "") {
@@ -3164,12 +3176,14 @@ row) {
 
     row = createIndexRow(minfo,-1,0,0,"");
     print row >> qfile;
+    INF("queued ["row"]");
+
     # Plots are added to a seperate file.
     update_plots(g_plot_file,minfo);
 
     # If plots need to be written to nfo file then they should 
     # be added to the row at this point.
-    row = row "\t"PLOT"\t"minfo["mi_plot"];
+    row = row PLOT"\t"minfo["mi_plot"]"\t";
     generate_nfo_file(g_settings["catalog_nfo_format"],row);
 
     close(qfile);
@@ -4080,7 +4094,7 @@ function remove_country(t) {
 
 function verify_setup(\
 tmp,tmp2) {
-    tmp = " mi_actors mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_default_nfo mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year";
+    tmp = " mi_actors mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year";
     split(tmp,tmp2," ");
     hash_invert(tmp2,g_verify);
 }
@@ -4089,6 +4103,7 @@ tmp,tmp2) {
 function verify(minfo,\
 ret,f,numok,numbad) {
 
+    id1("verify");
     ret=1;
     for (f in minfo) {
         if (!(f in g_verify)) {
@@ -4103,6 +4118,7 @@ ret,f,numok,numbad) {
         ERR("Failed verification bad="numbad" ok="numok);
         ret = 0;
     }
+    id0(ret);
     return ret;
 }
 
@@ -5584,14 +5600,13 @@ oldSrc,newSrc,newRank) {
         #initialise
         gTitlePriority[""]=-1;
         gTitlePriority["filename"]=0;
-        gTitlePriority["search"]=1;
-        gTitlePriority["imdb"]=2;
-        gTitlePriority["epguides"]=2;
-        gTitlePriority["imdb_aka"]=3;
-        gTitlePriority["imdb_orig"]=4;
-        gTitlePriority["thetvdb"]=5;
-        gTitlePriority["THETVDB"]=5;
-        gTitlePriority["TVRAGE"]=5;
+        gTitlePriority["search"]=10;
+        gTitlePriority["TVRAGE"]=20; # demote TVRAGE due to non-accented Carnivale
+        gTitlePriority["imdb"]=30;
+        gTitlePriority["epguides"]=30;
+        gTitlePriority["imdb_aka"]=40;
+        gTitlePriority["imdb_orig"]=50;
+        gTitlePriority["THETVDB"]=60;
     }
     newTitle = clean_title(newTitle);
 
@@ -7333,9 +7348,9 @@ function removeContent(cmd,x,quiet,quick) {
     }
     cmd=cmd qa(x)" 2>/dev/null ";
     if (quick) {
-        return "(" cmd ") & ";
+        return exec("(" cmd ") & ");
     } else {
-        return "(" cmd " || true ) ";
+        return exec("(" cmd " || true ) ");
     } 
 }
 
@@ -7498,11 +7513,14 @@ function isnmt() {
 }
 function is_file(f,\
 tmp,err) {
-    err = (getline tmp < f );
-    if (err == -1) {
-        #DEBUG("["f"] doesnt exist");
-    } else {
-        close(f);
+    err = -1;
+    if (f) {
+        err = (getline tmp < f );
+        if (err == -1) {
+            #DEBUG("["f"] doesnt exist");
+        } else {
+            close(f);
+        }
     }
     return (err != -1 );
 }
@@ -7779,7 +7797,7 @@ row,est,nfo,op,start) {
     if (minfo["mi_conn_follows"]) row=row"\t"CONN_FOLLOWS"\t"minfo["mi_conn_follows"];
     if (minfo["mi_conn_followed_by"]) row=row"\t"CONN_FOLLOWED"\t"minfo["mi_conn_followed_by"];
     if (minfo["mi_conn_remakes"]) row=row"\t"CONN_REMAKES"\t"minfo["mi_conn_remakes"];
-    return row;
+    return row"\t";
 }
 function short_year(y) {
   return sprintf("%x",y-1900);
@@ -7930,7 +7948,8 @@ function touch_and_move(x,y) {
 #--------------------------------------------------------------------
 function new_capture_file(label,\
     fname) {
-    fname = CAPTURE_PREFIX JOBID  "." CAPTURE_COUNT "__" label;
+    # fname = CAPTURE_PREFIX JOBID  "." CAPTURE_COUNT "__" label; # ALL
+    fname = CAPTURE_PREFIX PID  "." CAPTURE_COUNT "__" label;
     CAPTURE_COUNT++;
     return fname;
 }

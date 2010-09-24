@@ -359,6 +359,9 @@ load_unpak_settings() {
     if [ -n "$cfg" ] ; then
         #If there is no sample cfg - create one
         if [ ! -f "$cfg" ] ; then
+            if [ ! -f "$cfg.example" ] ; then
+                cp ".$cfg.defaults" "$cfg.example"
+            fi
             cp "$cfg.example" "$cfg"
             echo "Create $cfg file from example"
         fi

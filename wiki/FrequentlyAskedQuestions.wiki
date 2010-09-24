@@ -66,3 +66,24 @@ change q=85 to q=90 or q=95 to see if that's better.
 Oversight does not have a 1080p mode, because, for HD,  the NMT file browser interface treats the full screen as 1280 wide x 720 high which corresponds to 720p.
 
 The NMT will play video and pictures at 1080p but the file browser pages are always 720p and scaled as necessary.
+
+===Why does site checker always fail===
+
+First check other internet applications. If nzbget or torrent work but Media Portal stuff fails this is probably a DNS timeout bug. 
+For some combinations of router DNS lookup can take 30 seconds before suceeding.
+In this case I would change router DNS settings so the router does not act as a DNS server.
+
+Some servers NMT doesnt like 64.59.184.13/14
+Try some of the public dns servers in NMT Network Settings.- 
+not all will fix the problem 
+
+opendns - 208.67.220.220/208.67.222.222
+DNS Advantage  156.154.70.1/156.154.71.1
+norton DNS 198.153.192.1/198.153.194.1
+Google dns 8.8.8.8/8.8.4.4
+
+If you know what you are doing you can quicky test each in turn by using the shell, using the following steps:
+   # edit /etc/resolv.conf directly, 
+   # rm /tmp/dns_cache
+   # wget http://google.com, 
+repeat until success, but remember to save permanently via NMT Network Settings)

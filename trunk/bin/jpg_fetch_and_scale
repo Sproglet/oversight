@@ -138,7 +138,7 @@ resize_img() {
             jpg_resize "$2" "$2" "1/1"
             jpg_resize "$2" "$base.thumb.jpg" "1/2"
             ;;
-        actor)
+        portrait)
             if [ `sizekb "$2"` -gt 30 ] ; then
                 jpg_resize "$2" "$2" "1/1"
             fi
@@ -246,7 +246,7 @@ start_thread() {
     while \
         process_queue "$Q.poster" 1 || \
         process_queue "$Q.fanart" 0 || \
-        process_queue "$Q.actor" 0 ; do
+        process_queue "$Q.portrait" 0 ; do
         true
     done
     INFO "Thread $pid stopping ($$)"
@@ -320,10 +320,10 @@ if [ -z "$1" ] ; then
 	usage:
 
         Queue an item
-            $0 [actor|poster|fanart] url file wget options
+            $0 [portrait|poster|fanart] url file wget options
 
         Queue an item and start processing queues
-            $0 START [actor|poster|fanart] url file wget options
+            $0 START [portrait|poster|fanart] url file wget options
         
         Start processing queues
             $0 START

@@ -740,11 +740,15 @@ function merge_queue(qfile) {
 
         if(lock(g_db_lock_file)) {
             sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD);
+            names_update("actors");
+            names_update("writers");
+            names_update("directors");
             unlock(g_db_lock_file);
         }
     }
     rm(qfile);
 }
+
 
 function is_locked(lock_file,\
 pid) {
@@ -987,15 +991,15 @@ function dir_contains(dir,pattern) {
 
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
-tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,\
+tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo) {
 
     DEBUG("Scanning "root);
     if (root == "") return;
 
+    # Get all files already scanned at root level
     if (NEWSCAN) {
-        # TODO: if index is sorted by file we can call get files at each folder change.
-        get_files(root,INDEX_DB);
+        get_files_in_db(root,INDEX_DB,files_in_db);
     }
 
     tempFile=new_capture_file("MOVIEFILES");
@@ -1050,6 +1054,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
            currentFolder = scan_line;
            sub(/\/*:$/,"",currentFolder);
            DEBUG("Folder = "currentFolder);
+           if (NEWSCAN) {
+               get_files_in_db(currentFolder,INDEX_DB,files_in_db);
+           }
            folderNameNext=0;
             if ( currentFolder ~ g_settings["catalog_ignore_paths"] ) {
 
@@ -1129,7 +1136,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                        storeMovie(minfo,f"/",d,ts,"/$",".nfo");
+                        storeMovie(minfo,f"/",d,ts,"/$",".nfo",files_in_db);
                     }
                 }
 
@@ -1221,7 +1228,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
-                    storeMovie(minfo,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo")
+                    storeMovie(minfo,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo",files_in_db)
                 }
             }
         }
@@ -1259,24 +1266,28 @@ function csv2re(text) {
     return "("text")";
 }
 
-function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,\
+function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,files_in_db,\
 path) {
 
     identify_and_catalog(minfo,0);
-
     path=clean_path(folder"/"file);
+    if (!NEWSCAN || in_list(path,files_in_db) ) {
 
-    DEBUG("Storing " path);
 
-    g_fldrMediaCount[folder]++;
+        INF("Storing " path);
+        DEBUG("NEWSCAN = "NEWSCAN" in_list("path") = "in_list(path,files_in_db));
 
-    minfo["mi_folder"]=folder;
-    minfo["mi_media"] = file;
-    minfo["mi_file_time"] = timeStamp;
 
-    setNfo(minfo,nfoReplace,nfoExt);
+        g_fldrMediaCount[folder]++;
 
-    gMovieFileCount++;
+        minfo["mi_folder"]=folder;
+        minfo["mi_media"] = file;
+        minfo["mi_file_time"] = timeStamp;
+
+        setNfo(minfo,nfoReplace,nfoExt);
+
+        gMovieFileCount++;
+    }
 }
 
 #Check if a filename is similar to the previous stored filename.
@@ -1989,7 +2000,7 @@ line) {
         }
     }
     close(file);
-    INF("eof:"file);
+    #DEBUG("eof:"file);
     return "";
 }
 
@@ -2024,33 +2035,56 @@ f) {
     printf "\t\n" >> file;
 }
 
-function set_maxid(max_id) {
-    print max_id > g_max_id_file;
-    close(g_max_id_file);
+function set_maxid(file,max_id,\
+filemax) {
+    filemax = file".maxid";
+    print max_id > filemax;
+    close(filemax);
+    INF("set_maxid["file"]="max_id);
 }
 
-function get_maxid(\
-max_id) {
+
+function get_maxid(file,\
+max_id,line,fields,filemax) {
     max_id = 0;
-    id1("get_maxid");
-    if (!is_file(g_max_id_file)) {
-        if (is_file(INDEX_DB)) {
-            while ((line = get_dbline(INDEX_DB) ) != "") {
-                parseDbRow(line,fields,0);
-                if (fields[ID]+0 > max_id+0) {
-                    max_id = fields[ID];
+    filemax = file".maxid";
+
+    if (!is_file(filemax)) {
+        if (is_file(file)) {
+            if (file == INDEX_DB ) {
+                # get mex id from main database index.db - using field _ID
+                while ((line = get_dbline(file) ) != "") {
+                    parseDbRow(line,fields,0);
+                    if (fields[ID]+0 > max_id+0) {
+                        max_id = fields[ID];
+                    }
+                }
+            } else {
+                # id is the first field
+                while ((getline line < file ) > 0) {
+                    if ((tab = index(line,"\t")) > 0) {
+                        line = substr(line,1,tab-1);
+                        if (index(line,"nm") == 1) {
+                            #remove imdb nm prefix
+                            line = substr(line,3);
+                        }
+                        if (line + 0 > max_id+0) {
+                            max_id = line;
+                        }
+                    }
+                    max_id = fields[1];
                 }
             }
-            close(INDEX_DB);
+            close(file);
         }
-        set_maxid(max_id);
+        set_maxid(file,max_id);
 
     } else {
-        getline max_id < g_max_id_file;
-        close(g_max_id_file);
+        getline max_id < filemax;
+        close(filemax);
         max_id += 0;
+        INF("get_maxid["file"]="max_id);
     }
-    id0(max_id);
     return max_id;
 }
 
@@ -2060,21 +2094,21 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     ret = 1;
     id1("merge_index");
 
-    max_id = get_maxid();
+    max_id = get_maxid(INDEX_DB);
 
 
     action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     do {
-        INF("read action="action);
+        #INF("read action="action);
         if (and(action,1)) { 
             row1 = get_dbline(file1);
             parseDbRow(row1,fields1,1);
-            INF("ORIGINAL:["fields1[FILE]"]");
+            #INF("ORIGINAL:["fields1[FILE]"]");
         }
         if (and(action,2)) {
             row2 = get_dbline(file2);
             parseDbRow(row2,fields2,1);
-            INF("NEW    :["fields2[FILE]"]");
+            #INF("NEW    :["fields2[FILE]"]");
         }
 
         if (row1 == "") {
@@ -2102,7 +2136,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             }
         }
 
-        INF("merge action="action);
+        #INF("merge action="action);
         new_or_changed_line = 0;
         if (action == 1) { # output row1
             if (keep_dbline(row1,fields1)) {
@@ -2141,7 +2175,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     close(file2);
     close(file_out);
 
-    set_maxid(max_id);
+    set_maxid(INDEX_DB,max_id);
 
     INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     id0(ret);
@@ -2212,22 +2246,40 @@ function short_path(path) {
     return path;
 }
 
+function in_list(path,list,\
+result) {
+    path = short_path(path);
+    if ( index(path,list["@PREFIX"]) ) {
+       result = ( path in list);
+   }
+   return result;
+}
+
+function add_file(path,list) {
+    path = short_path(path);
+    INF("already seen "path);
+    list[path] = 1;
+}
+
 # Get all of the files that have already been scanned that start with the 
 # same prefix.
-function get_files(prefix,db,\
+function get_files_in_db(prefix,db,list,\
 dbline,dbfields,err,count,filter) {
 
-    id1("get_files ["prefix"]");
-    g_occurs_prefix = short_path(prefix);
+    id1("get_files_in_db ["prefix"]");
+    delete list;
+    list["@PREFIX"] = prefix =  short_path(prefix);
+    list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]+\t";
 
-    filter = "\t" FILE "\t" g_occurs_prefix;
-    INF("get_files filter = "filter);
+    INF("get_files_in_db filter = "filter);
 
     while((err = (getline dbline < db )) > 0) {
 
-        if ( index(dbline,filter) ) {
+        if ( index(dbline,prefix) && dbline ~ filter ) {
 
             parseDbRow(dbline,dbfields,1);
+
+            add_file(dbfields[FILE],list);
 
             count++;
         }
@@ -2235,6 +2287,8 @@ dbline,dbfields,err,count,filter) {
     if (err == 0 ) close(db);
     id0(count" files");
 }
+
+
 
 function remove_brackets(s) {
 
@@ -2263,7 +2317,7 @@ function remove_absent_files_from_new_db(db,\
     tmp_db = db "." JOBID ".tmp";
 
     # TODO if index is sorted by file we can do this a folder at a time.
-    get_files("",db);
+    get_files_in_db("",db);
 
     if (lock(g_db_lock_file)) {
         g_kept_file_count=0;
@@ -2393,10 +2447,10 @@ i,words,count,s2,ch) {
 }
 
 
-#ALL#function re_escape(s) {
-#ALL#    gsub("[^- _"g_alnum8"]","\\&",s);
-#ALL#    return s;
-#ALL#}
+function re_escape(s) {
+    gsub("[][*.{}()]","\\&",s);
+    return s;
+}
 
 function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
     val,y,m,d,h,min,checkFuture) {
@@ -2815,7 +2869,8 @@ episodeInfo,url) {
         details[ADDITIONAL_INF]=episodeInfo["/Data/Episode/EpisodeName"];
         #TODO We can cache the above url for later use instead of fetching episode explicitly.
         # Setting this will help short circuit searching later.
-        equate_urls(url,g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
+        #equate_urls(url,g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
+        equate_urls(url,g_thetvdb_web"/data/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
         #minfo["mi_imdb"]=get_tv_series_api_url(tvdbid);
         #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "minfo["mi_imdb"]);
         #dump(0,"epinfo",episodeInfo);
@@ -4426,9 +4481,11 @@ function get_tv_series_api_url(plugin,tvdbid) {
     if (tvdbid != "") {
         if (plugin == "THETVDB") {
             if (g_tvdb_user_per_episode_api) {
-                return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/en.xml";
+                #return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/en.xml";
+                return g_thetvdb_web"/data/series/"tvdbid"/en.xml";
             } else {
-                return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/all/en.xml";
+                #return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/all/en.xml";
+                return g_thetvdb_web"/data/series/"tvdbid"/all/en.xml";
             }
         } else if (plugin == "TVRAGE") {
             return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
@@ -5596,17 +5653,19 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 function adjustTitle(minfo,newTitle,source,\
 oldSrc,newSrc,newRank) {
 
+    source = tolower(source);
+
     if (!("filename" in gTitlePriority)) {
         #initialise
         gTitlePriority[""]=-1;
         gTitlePriority["filename"]=0;
         gTitlePriority["search"]=10;
-        gTitlePriority["TVRAGE"]=20; # demote TVRAGE due to non-accented Carnivale
+        gTitlePriority["tvrage"]=20; # demote TVRAGE due to non-accented Carnivale
         gTitlePriority["imdb"]=30;
         gTitlePriority["epguides"]=30;
         gTitlePriority["imdb_aka"]=40;
         gTitlePriority["imdb_orig"]=50;
-        gTitlePriority["THETVDB"]=60;
+        gTitlePriority["thetvdb"]=60;
     }
     newTitle = clean_title(newTitle);
 
@@ -5621,13 +5680,13 @@ oldSrc,newSrc,newRank) {
         newRank = gTitlePriority[source];
         #if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
         if (minfo["mi_title"] == "" || newRank - minfo["mi_title_rank"] > 0) {
-            DEBUG(oldSrc" promoted to "newSrc);
+            INF("adjustTitle: "oldSrc" promoted to "newSrc);
             minfo["mi_title"] = newTitle;
             minfo["mi_title_source"] = source;
             minfo["mi_title_rank"] = newRank;;
             return 1;
         } else {
-            DEBUG("current title "oldSrc "outranks " newSrc);
+            INF("adjustTitle: current title "oldSrc "outranks " newSrc);
             return 0;
         }
     }
@@ -6801,13 +6860,13 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             }
 
             if (minfo["mi_director"] == "" && index(line,">Director")) {
-                minfo["mi_director"] = get_names("actors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
+                minfo["mi_director"] = get_names("directors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
                 minfo["mi_director_name"] = g_first_name;
                 minfo["mi_director"] = imdb_list_shrink(minfo["mi_director"],",",128);
                 sec=DIRECTOR;
             }
             if (minfo["mi_writers"] == "" && index(line,">Writer")) {
-                minfo["mi_writers"] = get_names("actors",raw_scrape_until("writers",f,"</div>",0),g_max_writers);
+                minfo["mi_writers"] = get_names("writers",raw_scrape_until("writers",f,"</div>",0),g_max_writers);
                 minfo["mi_writers"] = imdb_list_shrink(minfo["mi_writers"],",",128);
                 sec=WRITERS;
             }
@@ -6915,7 +6974,9 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
 # text = imdb text to be parsed for nm0000 ids.
 # maxnames = max number of names to fetch ( -1 = all )
 function get_names(name_db,text,maxnames,\
-dtext,dpos,dnum,i,id,name,dlist,count,img) {
+dtext,dpos,dnum,i,id,name,dlist,count,img,img_folder) {
+
+    img_folder = name_db;
 
     # This is a hack - we also want the first director name for scraping non-english sites
     g_first_name = ""; 
@@ -6941,8 +7002,13 @@ dtext,dpos,dnum,i,id,name,dlist,count,img) {
                 }
                 # Extract name from <a> tag
                 name=extractTagText("<a"dtext[i],"a");
+
                 dlist=dlist ","id;
-                print id"\t"name > g_tmp_dir"/"name_db".db."PID  ;
+
+                # output just the name - the is a risk of namesakes occuring with writers or directors.
+                # take that risk for now
+                #print id"\t"name > g_tmp_dir"/"name_db".db."PID  ;
+                print name > names_tmp_file(name_db)  ;
 
                 INF(name_db"|"id"|"name"|"img);
 
@@ -6956,12 +7022,13 @@ dtext,dpos,dnum,i,id,name,dlist,count,img) {
            #         # http://ownfilmcollection.com/ERaImage/DCimages/name/nm2652511.jpg
            #     }
 
-                get_image(id,img,APPDIR"/db/global/_A/"g_settings["catalog_poster_prefix"] id".jpg");
+                get_image(id,img,APPDIR"/db/global/"img_folder"/"g_settings["catalog_poster_prefix"] id".jpg");
             }
             id="";
             img="";
         }
     }
+    close(names_tmp_file(name_db));
     #INF(name_db":"dlist);
     return substr(dlist,2);
 }
@@ -6976,7 +7043,7 @@ ret) {
                 #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
 
                 #remove ampersand from call
-                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" actor "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
+                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
             }
         }
     }

@@ -264,7 +264,7 @@ catalog() {
     # use index before match
     # clear arrays using split("",array,"")
 
-        $AWK -f $APPDIR/catalog.awk \
+        $AWK -f $APPDIR/catalog.awk $APPDIR/catalog.person.awk \
     JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     DAY=`date +%a.%P` \
     "START_DIR=$START_DIR" \
@@ -285,32 +285,8 @@ catalog() {
 
     rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
 
-    #update_imdb_list "directors.db"
-    update_imdb_list "actors.db"
-    #update_imdb_list "writers.db"
 }
 
-# If a new file has been created - merge it with the existing one and sort.
-# We may need to specify the sort key more precisely if the id length varies.
-update_imdb_list() {
-
-    dnew="$g_tmp_dir/$1.$$"
-    dold="$APPDIR/db/$1"
-
-    set -x
-
-    if [ -f "$dnew" ] ; then
-        touch "$dold" || true
-        $SORT -u "$dnew" "$dold" > "$dnew.new" &&\
-        mv "$dnew.new" "$dold" &&\
-        PERMS "$dold" &&\
-        rm -f "$dnew"
-        # convert colons to tabs
-        sed -i 's/\(^nm.......\):/\1\t/' "$dold"
-    fi
-     
-    set +x
-}
 
 tidy() {
     rm -f "$APPDIR/catalog.status"

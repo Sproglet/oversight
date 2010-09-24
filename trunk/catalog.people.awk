@@ -13,6 +13,12 @@
 # 2. get cast names
 # 3. get cast ids using a regex to extract the id. This regex will be different for each domain but will
 #         default to the the last integer in the url. 
+#
+# Extract the last digit.
+#
+#    catalog_url_to_personid_regex_list=[0-9]+[^0-9]*$,[0-9]+
+#    catalog_url_to_personid_regex_list_domain=[0-9]+[^0-9]*$,[0-9]+
+
 # 4. queue images  (now referenced by oversight id not IMDB id)
 
 # minfo["mi_actor_names"]="name1 \t name2 \t ...."

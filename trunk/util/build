@@ -42,6 +42,11 @@ make ARCH=200 TRACE1= all
 
 cd ..
 
+# create example files from default files
+for i in unpak catalog oversight ; do
+    cp conf/.$i.cfg.defaults conf/$i.cfg.example
+done
+
 ../nmt-scripts/build `basename "$PWD"` "$label" \
     *.awk *.sh *.cgi *.html \
     conf/*.example conf/.*defaults conf/use.wget.wrapper conf/country.txt conf/.version \

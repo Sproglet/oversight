@@ -136,6 +136,9 @@ CONF_FILE="$APPDIR/conf/catalog.cfg"
 DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
 
 if [ ! -f "$CONF_FILE" ] ; then
+    if [ ! -f "$CONF_FILE.example" ] ; then
+        cp "$DEFAULTS_FILE" "$CONF_FILE.example"
+    fi
     cp "$CONF_FILE.example" "$CONF_FILE"
 fi
 

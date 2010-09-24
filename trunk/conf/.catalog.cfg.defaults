@@ -100,6 +100,8 @@ catalog_max_actors=8
 
 catalog_follow_symlinks=0
 
+catalog_langs=en
+
 catalog_lang_it_title=Title
 catalog_lang_it_plot=Trama,descrizione
 catalog_lang_it_site=filmup.leonardo.it,imdb.it,it
@@ -115,3 +117,4 @@ catalog_lang_fr_site=www.allocine.fr,fr
 catalog_lang_ru_title=Title 
 catalog_lang_ru_plot=&#1054;&#1087;&#1080;&#1089;&#1072;&#1085;&#1080;&#1077;
 catalog_lang_ru_site=ru
+

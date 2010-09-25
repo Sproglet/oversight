@@ -308,3 +308,249 @@ i,n,out,ids,m) {
     return out;
 }
 
+# input imdb id
+# OUT: list - array of strings of CSV imdb ids.
+# list["Follows"]     = list of imdb ids that follow this movie etc.
+# list["Followed by"] = 
+# list["Remade as"]   =
+# list["Remake of"]   =
+#
+function getMovieConnections(id,list,\
+url,htag,connections,i,count,relationship,ret,txt,sep) {
+    id1("getMovieConnections");
+    delete list;
+    htag = "h5";
+    sep=",";
+    url = extractImdbLink(id)"movieconnections";
+    count=scan_page_for_match_order(url,"","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
+    #dump(0,"movieconnections-"count,connections);
+    for(i = 1 ; i <= count ; i++ ) {
+        txt = connections[i];
+        if (substr(txt,1,2) == "tt" ) {
+            if (relationship != "") {
+                list[relationship] = list[relationship] sep connections[i];
+            }
+        } else if(index(txt,"<") ) {
+            if (match(txt,">[^<]+")) {
+                relationship=substr(txt,RSTART+1,RLENGTH-1);
+            }
+        } else {
+            relationship="";
+        }
+    }
+    # remove leading comma
+    for(i in list) {
+        list[i] = imdb_list_shrink(substr(list[i],length(sep)+1),sep,128);
+    }
+    dump(0,id" movie connections",list);
+    id0(ret);
+    return ret;
+}
+
+# return ""=unknown "M"=movie "T"=tv??
+function scrapeIMDBTitlePage(minfo,url,\
+f,line,imdbContentPosition,isection,connections,remakes,ret) {
+
+    if (url == "" ) return;
+
+    #Remove /combined/episodes from urls given by epguides.
+    url=extractImdbLink(url);
+
+    if (url == "" ) return;
+
+    id1("scrape imdb ["url"]");
+
+
+    if (minfo["mi_imdb"] == "") {
+        minfo["mi_imdb"] = extractImdbId(url);
+    }
+    if (minfo["mi_imdb_scraped"] != minfo["mi_imdb"] ) {
+        
+        INF("scraping "url);
+
+        f=getUrl(url,"imdb_main",1);
+        hash_copy(isection,g_imdb_sections);
+
+        if (f != "" ) {
+
+            imdbContentPosition="header";
+
+            DEBUG("START IMDB: title:"minfo["mi_title"]" poster "minfo["mi_poster"]" genre "minfo["mi_genre"]" cert "minfo["mi_certrating"]" year "minfo["mi_year"]);
+
+            FS="\n";
+            while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
+                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,isection);
+            }
+            enc_close(f);
+
+            if (hash_size(isection) > 0 ) {
+                ERR("Unparsed imdb sections ");
+                dump(0,"missing",isection);
+            }
+
+
+            if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
+                minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
+            }
+
+        }
+
+        if (minfo["mi_category"] == "M" ) {
+            getNiceMoviePosters(minfo,extractImdbId(url));
+            getMovieConnections(extractImdbId(url),connections);
+            if (connections["Remake of"] != "") {
+                getMovieConnections(connections["Remake of"],remakes);
+            }
+            minfo["mi_conn_follows"]= connections["Follows"];
+            minfo["mi_conn_followed_by"]= connections["Followed by"];
+            minfo["mi_conn_remakes"]=remakes["Remade as"];
+            INF("follows="minfo["mi_conn_follows"]);
+            INF("followed_by="minfo["mi_conn_followed_by"]);
+            INF("remakes="minfo["mi_conn_remakes"]);
+        }
+
+        # make sure we dont scrape this id for this item again
+        minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
+    }
+    ret = minfo["mi_category"];
+# Dont need premier anymore - this was for searching from imdb to tv database
+# we just use the year instead.
+#    if (minfo["mi_category"] == "T" && minfo["mi_premier"] == "" ) {
+#        minfo["mi_premier"] = remove_tags(scanPageFirstMatch(url"/releaseinfo","BusinessThisDay.*",1));
+#        DEBUG("IMDB Premier = "minfo["mi_premier"]);
+#    }
+    id0(ret);
+    return ret;
+}
+function extractImdbId(text,quiet,\
+id) {
+    if (match(text,g_imdb_regex)) {
+        id = substr(text,RSTART,RLENGTH);
+        #DEBUG("Extracted IMDB Id ["id"]");
+    } else if (match(text,"Title.[0-9]+\\>")) {
+        id = "tt" substr(text,RSTART+8,RLENGTH-8);
+        #DEBUG("Extracted IMDB Id ["id"]");
+    } else if (!quiet) {
+        WARNING("Failed to extract imdb id from ["text"]");
+    }
+    if (id != "" && length(id) != 9) {
+        id = sprintf("tt%07d",substr(id,3));
+    }
+    return id;
+}
+
+function extractImdbLink(text,quiet,\
+t) {
+    t = extractImdbId(text,quiet);
+    if (t != "") {
+        t = "http://www.imdb.com/title/"t"/"; # Adding the / saves a redirect
+    }
+    return t;
+}
+
+
+function extract_imdb_title_category(minfo,title\
+) {
+    # semicolon,quote,quotePos,title2
+    #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
+    minfo["mi_category"]="M";
+    DEBUG("imdb title=["title"]");
+    if (match(title,"^\".*\"") ) {   # www.imdb.com
+        title=substr(title,RSTART+1,RLENGTH-2);
+        minfo["mi_category"]="T";
+    } else if (sub(/ ?T[vV] [Ss]eries ?/,"",title)) { # m.imdb.com
+        minfo["mi_category"]="T";
+    }
+
+    #Remove the year
+    gsub(/ \((19|20)[0-9][0-9](\/I|)\) *(\([A-Z]+\)|)$/,"",title);
+
+    DEBUG("Imdb title = ["title"]");
+    return title;
+}
+
+# Looks for matching country in AKA section. The first match must simply contain (country)
+# If it contains any qualifications then we stop looking at any more matches and reject the 
+# entire section.
+# This is because IMDB lists AKA in order of importance. So this helps weed out false matches
+# against alternative titles that are further down the list.
+
+function scrapeIMDBAka(minfo,line,\
+akas,a,c,bro,brc,akacount,country) {
+
+    if (minfo["mi_orig_title"] != minfo["mi_title"] ) return ;
+
+    bro="(";
+    brc=")";
+
+    akacount = split(de_emphasise(line),akas,"<br>");
+
+    dump(0,"AKA array",akas);
+
+    for(a = 1 ; a <= akacount ; a++ ) {
+        akas[a] = remove_tags(akas[a]);
+        DEBUG("Checking aka ["akas[a]"]");
+        for(c in gTitleCountries ) {
+            if (index(akas[a], gTitleCountries[c])) {
+                if (match(akas[a], "- .*\\<"gTitleCountries[c]":")) {
+                    #We hit a matching AKA country but it has some kind of qualification
+                    #which suggest that weve already passed a better match - ignore rest of section.
+                    # eg USA (long title)
+                    DEBUG("Ignoring aka section");
+                    return;
+                }
+                if (match(akas[a],"- .*\\<" gTitleCountries[c] "\\>")) {
+                    #We hit a matching AKA country ...
+                    if (match(akas[a],"longer version|season title|poster|working|literal|IMAX|promotional|long title|short title|rerun title|script title|closing credits|informal alternative|Spanish title|video box title")) {
+                        #the qualifications again suggest that weve already passed a better match
+                        # ignore rest of section.
+                        DEBUG("Ignoring aka section");
+                        return;
+                    }
+                    #Use first match from AKA section 
+                    if (match(akas[a],"\".*\" -")) {
+                        country=gTitleCountries[c];
+                        adjustTitle(minfo,clean_title(substr(akas[a],RSTART+1,RLENGTH-4)),"imdb_aka"); 
+                    }
+                    return country;
+                }
+            }
+        }
+    }
+}
+
+function scrapeIMDBCertificate(minfo,line,\
+l,cert_list,certpos,cert,c,total,i,flag) {
+
+    flag="certificates=";
+
+    #Old style  -- <a href="/List?certificates=UK:15&&heading=14;UK:15">
+    total = get_regex_pos(line, flag"[^&\"]+",0,cert_list,certpos);
+
+    for(i = 1 ; i - total <= 0 ; i++ ){
+
+        l = substr(cert_list[i],index(cert_list[i],flag)+length(flag));
+
+        split(l,cert,"[:|]");
+
+        #Now we only want to assign the certificate if it is in our desired list of countries.
+        for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
+            if (minfo["mi_certcountry"] == gCertificateCountries[c]) {
+                #Keep certificate as this country is early in the list.
+                return;
+            }
+            if (cert[1] == gCertificateCountries[c]) {
+                #Update certificate
+                minfo["mi_certcountry"] = cert[1];
+
+                minfo["mi_certrating"] = toupper(cert[2]);
+                gsub(/%20/," ",minfo["mi_certrating"]);
+                DEBUG("IMDB: set certificate ["minfo["mi_certcountry"]"]["minfo["mi_certrating"]"]");
+                return;
+            }
+        }
+    }
+}
+
+
+

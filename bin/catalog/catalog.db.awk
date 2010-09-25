@@ -230,3 +230,330 @@ function db_field(key,name,tag,imdbsrc) {
     }
     return key;
 }
+##### LOADING INDEX INTO DB_ARR[] ###############################
+
+#Used by generate nfo
+function parseDbRow(row,arr,add_mount,\
+fields,i,fnum) {
+
+    delete arr;
+
+    fnum = split(row,fields,"\t");
+    for(i = 2 ; i-fnum <= 0 ; i+=2 ) {
+        arr[fields[i]] = fields[i+1];
+    }
+    if (add_mount &&  arr[FILE] != "" && index(arr[FILE],"/") != 1 ) {
+        arr[FILE] = g_mount_root arr[FILE];
+    }
+    arr[FILE] = clean_path(arr[FILE]);
+}
+
+function get_name_dir_fields(arr,\
+f,fileRe) {
+
+    f =  arr[FILE];
+
+    if (isDvdDir(f)) {
+        fileRe="/[^/]+/$"; # /path/to/name/[VIDEO_TS]
+    } else {
+        fileRe="/[^/]+$";  # /path/to/name.avi
+    }
+
+    if (match(f,fileRe)) {
+        arr[NAME] = substr(f,RSTART+1);
+        arr[DIR] = substr(f,1,RSTART-1);
+    }
+}
+
+# Sort index by file path
+function sort_index(file_in,file_out) {
+    return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\\2\\1\\3/' "qa(file_in)" | sort > "qa(file_out)) == 0;
+}
+
+function get_dbline(file,\
+line) {
+    while ((getline line < file ) > 0 ) {
+        if (index(line,"\t") == 1) {
+            return line;
+            break;
+        }
+    }
+    close(file);
+    #DEBUG("eof:"file);
+    return "";
+}
+
+function keep_dbline(row,fields,\
+result) {
+
+    if (length(row) > g_max_db_len ) {
+
+        INF("Row too long");
+
+    } else if ( fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
+
+        INF("Removing Ignored Path ["fields[FILE]"]");
+
+    } else if ( fields[NAME] ~ g_settings["catalog_ignore_names"] ) {
+
+        INF("Removing Ignored Name "fields[FILE]"]");
+
+    } else {
+        result = 1;
+    }
+    return result;
+}
+
+function write_dbline(fields,file,\
+f) {
+    for (f in fields) {
+        if (f && index(f,"@") == 0) {
+            printf "\t%s\t%s",f,fields[f] >> file;
+        }
+    }
+    printf "\t\n" >> file;
+}
+
+function merge_index(file1,file2,file_out,\
+row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line,ret) {
+
+    ret = 1;
+    id1("merge_index");
+
+    max_id = get_maxid(INDEX_DB);
+
+
+    action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
+    do {
+        #INF("read action="action);
+        if (and(action,1)) { 
+            row1 = get_dbline(file1);
+            parseDbRow(row1,fields1,1);
+            #INF("ORIGINAL:["fields1[FILE]"]");
+        }
+        if (and(action,2)) {
+            row2 = get_dbline(file2);
+            parseDbRow(row2,fields2,1);
+            #INF("NEW    :["fields2[FILE]"]");
+        }
+
+        if (row1 == "") {
+            if (row2 == "") {
+                # both finished
+                action = 0;
+            } else {
+                action = 2;
+            }
+        } else {
+            if (row2 == "") {
+                action = 1;
+            } else {
+                # We compare the FILE field 
+
+                if (fields1[FILE] == fields2[FILE]) {
+
+                    action = 3;
+
+                } else if (fields1[FILE] < fields2[FILE]) {
+                    action = 1;
+                } else {
+                    action = 2;
+                }
+            }
+        }
+
+        #INF("merge action="action);
+        new_or_changed_line = 0;
+        if (action == 1) { # output row1
+            if (keep_dbline(row1,fields1)) {
+                total_unchanged++;
+                print row1 >> file_out;
+            } else {
+                total_removed ++;
+            }
+            row1 = "";
+        } else if (action == 2) { # output row2
+            if (keep_dbline(row2,fields2)) {
+                fields2[ID] = ++max_id;
+                total_new++;
+                write_dbline(fields2,file_out);
+                new_or_changed_line = 1;
+            }
+            row2 = "";
+        } else if (action == 3) { # merge
+            # Merge the rows.
+            fields1[WATCHED] = fields2[WATCHED];
+            fields1[LOCKED] = fields2[LOCKED];
+            fields1[FILE] = short_path(fields1[FILE]);
+
+            if (keep_dbline(row1,fields1)) {
+                total_changed ++;
+                write_dbline(fields1,file_out);
+                new_or_changed_line = 1;
+            } else {
+                total_removed++;
+            }
+        }
+
+    } while (action > 0);
+
+    close(file1);
+    close(file2);
+    close(file_out);
+
+    set_maxid(INDEX_DB,max_id);
+
+    INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    id0(ret);
+    return ret;
+}
+
+# Merge two index files together
+function sort_and_merge_index(file1,file2,file1_backup,\
+file1_sorted,file2_sorted,file_merged) {
+
+    id1("sort_and_merge_index ["file1"]["file2"]["file1_backup"]");
+    file1_sorted = file1 ".sorted." PID; 
+    file2_sorted = file2 ".sorted." PID; 
+    file_merged = file1 ".merged." PID; 
+
+    if (sort_index(file1,file1_sorted) )  {
+        if (sort_index(file2,file2_sorted) )  {
+
+            if (merge_index(file1_sorted,file2_sorted,file_merged)) {
+
+                replace_database_with_new(file_merged,file1,file1_backup);
+            }
+            
+        }
+    }
+    rm(file1_sorted); #ALL
+    rm(file2_sorted); #ALL
+    rm(file_merged);
+    id0("");
+}
+
+# Get all of the files that have already been scanned that start with the 
+# same prefix.
+function get_files_in_db(prefix,db,list,\
+dbline,dbfields,err,count,filter) {
+
+    id1("get_files_in_db ["prefix"]");
+    delete list;
+    list["@PREFIX"] = prefix =  short_path(prefix);
+    list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]+\t";
+
+    INF("get_files_in_db filter = "filter);
+
+    while((err = (getline dbline < db )) > 0) {
+
+        if ( index(dbline,prefix) && dbline ~ filter ) {
+
+            parseDbRow(dbline,dbfields,1);
+
+            add_file(dbfields[FILE],list);
+
+            count++;
+        }
+    }
+    if (err == 0 ) close(db);
+    id0(count" files");
+}
+
+
+
+# Re-instate old pruning test with extra folder check for absent media
+# Because we need to check every file in the database it can take some time
+# also if using awk we want to avoid spawning a process (or two) for each check
+# so ls is used. If a file is absent then it is removed only if its grandparent is 
+# present - this is to allow for detached devices. (sort of)
+function remove_absent_files_from_new_db(db,\
+    tmp_db,dbfields,\
+    list,f,shortf,last_shortf,maxCommandLength,dbline,keep,\
+    gp,blacklist_re,blacklist_dir,timer) {
+    list="";
+    maxCommandLength=3999;
+
+    INF("Pruning...");
+    tmp_db = db "." JOBID ".tmp";
+
+    # TODO if index is sorted by file we can do this a folder at a time.
+    get_files_in_db("",db);
+
+    if (lock(g_db_lock_file)) {
+        g_kept_file_count=0;
+        g_absent_file_count=0;
+
+        close(db);
+        while((getline dbline < db ) > 0) {
+
+            if ( index(dbline,"\t") != 1 ) { continue; }
+
+            parseDbRow(dbline,dbfields,1);
+
+            f = dbfields[FILE];
+            shortf = short_path(f);
+            #INF("Prune ? ["f"]");
+
+            keep=1;
+
+            # as db is in file order we can prune duplicates by comparing with last file
+            if (shortf == last_shortf) {
+                keep = 0;
+                WARNING("Skipping "f" - duplicate");
+
+
+            } else if (blacklist_re != "" && f ~ "NETWORK_SHARE/("blacklist_re")" ) {
+
+                WARNING("Skipping "f" - blacklisted device");
+            } else {
+
+                timer = systime();
+                if (is_file_or_folder(f) == 0 ) {
+                    if (systime()-timer > 10) {
+                        # error accessing nas - blacklist this path.
+                        blacklist_dir = f;
+                        if (match(f,"NETWORK_SHARE/[^/]+/")) {
+                            blacklist_dir = substr(f,RSTART,RLENGTH);
+                            sub(/.*NETWORK_SHARE/,"",blacklist_dir);
+                            ERR("Unresponsive device : Blacklisting access to NETWORK_SHARE"blacklist_dir);
+                            blacklist_re = blacklist_re "|" blacklist_dir;
+                            DEBUG("re = "blacklist_re);
+                        }
+                    } else {
+                        gp = mount_point(f);
+                        if (gp != "/share" ) {
+                            #if gp folder is present then delete
+                            if (is_dir(gp) && !is_empty(gp)) {
+                                keep=0;
+                            } else {
+                                INF("Not mounted?");
+                            }
+                        } else {
+                            # just delete it.
+                            keep=0;
+                        }
+                    }
+                }
+            }
+
+
+            if (keep) {
+                print dbline > tmp_db;
+                g_kept_file_count++;
+            } else {
+                INF("Removing "f);
+                g_absent_file_count++;
+                
+            }
+            last_shortf = shortf;
+        }
+        close(tmp_db);
+        close(db);
+        INF("unchanged:"g_kept_file_count);
+        INF("removed:"g_absent_file_count);
+        replace_database_with_new(tmp_db,db,INDEX_DB_OLD);
+        unlock(g_db_lock_file);
+    }
+}
+

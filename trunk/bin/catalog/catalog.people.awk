@@ -21,17 +21,14 @@
 
 # 4. queue images  (now referenced by oversight id not IMDB id)
 
-# minfo["mi_actor_names"]="name1 \t name2 \t ...."
-# minfo["mi_actor_ids"]="id1 \t id2 \t ...."
-# minfo["mi_actor_domain"]="imdb" or "allocine" or "filmtotaal" etc.
+# minfo["mi_actor_names"]="\t name1 \t name2 \t ...."
+# minfo["mi_actor_ids"]="\t id1 \t id2 \t ...."
 
-# minfo["mi_writer_names"]="name1 \t name2 \t ...."
-# minfo["mi_writer_ids"]="id1 \t id2 \t ...."
-# minfo["mi_writer_domain"]="imdb" or "allocine" or "filmtotaal" etc.
+# minfo["mi_writer_names"]="allocine @ name1 @ name2 @ ...."
+# minfo["mi_writer_ids"]="allocine @ id1 @ id2 @ ...."
 
-# minfo["mi_director_names"]="name1 \t name2 \t ...."
-# minfo["mi_director_ids"]="id1 \t id2 \t ...."
-# minfo["mi_director_domain"]="imdb" or "allocine" or "filmtotaal" etc.
+# minfo["mi_director_names"]="imdb @ name1 @ name2 @ ...."
+# minfo["mi_director_ids"]="imdb @ id1 @ id2 @ ...."
 
 # minfo = scraped information so far
 # domain is site being scanned - eg imdb , moviemeter etc.
@@ -46,24 +43,93 @@
 # return 1=info extracted 0=no info found
 
 function person_scan(minfo,domain,role,text,\
-lctext,name,url) {
+lctext,person_name,url,external_id,ret) {
+
+    id1("person_scan:"text);
     lctext =  tolower(text);
     if (index(lctext,"href=")) {
         if (index(lctext,"<img")) {
             INF("ignoring portrait link for now");
         } else {
-            name = extractTagText(text,"a");
-            url =  
-    } else {
+            person_name = extractTagText(text,"a");
+            url =  extractAttribute(text,"a","href");
+            external_id=person_get_id(url);
+     else {
         # just a name
+        person_name = external_id = trim(text);
     }
+    if(person_name != "" && external_id != "") {
+        ret = 1;
+        if (! ("mi_"role"_names" in minfo) ) {
+            minfo["mi_"role"_names"]  = domain;
+            minfo["mi_"role"_ids"]  = domain;
+        }
+            
+        minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" person_name;
+        minfo["mi_"role"_ids"]  = minfo["mi_"role"_ids"] "@" external_id;
+    }
+    id0(ret);
+    return ret;
+}
+
+function person_get_id(domain,url,\
+external_id,i,num,patterns,plist) {
+
+    id1("person_get_id:"url);
+
+    domain_load_settings("default");
+    domain_load_settings(domain);
+
+
+    plist=g_settings[domain":catalog_url_to_personid_regex_list"];
+    if (plist == "") {
+        plist=g_settings["default:catalog_url_to_personid_regex_list"];
+    }
+
+    num = split(plist,patterns,",");
+    for(i = 1 ; i <= num ; i++ ) {
+        if (match(url,patterns[i])) {
+            url = substr(url,RSTART,RLENGTH);
+        }
+    }
+    id0(url);
+    return url;
+
 }
 
 # Queue phase =======================================
 # Occurs when a scan info is written to temporary file. We do not know ovsids at this point.
 
-# Add ACTORS=domain:extid1,extid2,extid3,WRITERS \t domain:extid6,extid7 \t _DIRECTORS domain:extid8,extid9 to queue file.
-# set person_extid2name[domain:id]=name
+# returns line fragment to add to ascii database queue.
+# eg. ACTORS=domain@extid1@extid2@extid3 \t WRITERS \t domain@extid6@extid7 \t _DIRECTORS domain@extid8@extid9 to queue file.
+# also set  lookup person_extid2name[domain:id]=name
+
+function person_add_db_queue(minfo,person_extid2name,\
+db_text) {
+    db_text = "\t" person_add_db_queue_role(minfo,"mi_actor",ACTOR,person_extid2name);
+    db_text = db_text "\t" person_add_db_queue_role(minfo,"mi_director",DIRECTOR,person_extid2name);
+    db_text = db_text "\t" person_add_db_queue_role(minfo,"mi_writer",WRITER,person_extid2name) "\t" ;
+    gsub(/\t\t+/,"\t",db_text);
+    return db_text;
+}
+
+function person_add_db_queue_role(minfo,role_prefix,dbfield,person_extid2name,\
+text,i,num,domain,ids,names) {
+    text = minfo[role_prefix"_ids"] ;
+    if (text) {
+        text = dbfield "\t" text;
+
+        # update lookup table
+        num = split(minfo[role_prefix"_ids"],ids,"@");
+        split(minfo[role_prefix"_names"],names,"@");
+
+        domain = ids[1];
+        for(i = 2 ; i <= num ; i++ ) {
+            person_extid2name[domain":"ids[i]] = names[i];
+        }
+    }
+    return text;
+}
 
 # Pre-Merge phase ===================================
 # Called just before a batch or 30 or so scans are added to the main index.db

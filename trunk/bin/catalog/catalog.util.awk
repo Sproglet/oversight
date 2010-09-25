@@ -121,6 +121,14 @@ function DEBUG(x) {
     }
 
 }
+
+function DIV0(x) {
+    INF("\n\t===\n\t"x"\n\t===\n");
+}
+function DIV(x) {
+    INF("\t===\t"x"\t===");
+}
+
 function INF(x) {
     timestamp("[INFO]   ",x);
 }
@@ -300,4 +308,278 @@ i,rtext,rstart,words,wcount) {
     }
     return substr(text,2);
 }
+
+function is_locked(lock_file,\
+pid) {
+    if (is_file(lock_file) == 0) return 0;
+
+    pid="";
+    if ((getline pid < lock_file) >= 0) {
+        close(lock_file);
+    }
+    if (pid == "" ) {
+       DEBUG("Not Locked = "pid);
+       return 0;
+    } else if (is_dir("/proc/"pid)) {
+        if (pid == PID ) {
+            DEBUG("Locked by this process "pid);
+            return 0;
+        } else {
+            DEBUG("Locked by another process "pid " not "PID);
+            return 1;
+        }
+    } else {
+        DEBUG("Was locked by dead process "pid " not "PID);
+        return 0;
+    }
+}
+
+function lock(lock_file,fastfail,\
+attempts,sleep,backoff) {
+    attempts=0;
+    sleep=10;
+    split("10,10,20,30,60,120,300,300,300,300,300,600,600,600,600,600,1200",backoff,",");
+    for(attempts=1 ; (attempts in backoff) ; attempts++) {
+        if (is_locked(lock_file) == 0) {
+            print PID > lock_file;
+            close(lock_file);
+            INF("Locked "lock_file);
+            set_permissions(qa(lock_file));
+            return 1;
+        }
+        if (fastfail != 0) break;
+        sleep=backoff[attempts];
+        WARNING("Failed to get exclusive lock. Retry in "sleep" seconds.");
+        system("sleep "sleep);
+    }
+    ERR("Failed to get exclusive lock");
+    return 0;
+}
+
+function unlock(lock_file) {
+    INF("Unlocked "lock_file);
+    system("rm -f -- "qa(lock_file));
+}
+
+function monthHash(nameList,sep,hash,\
+names,i) {
+    split(nameList,names,sep);
+    for(i in names) {
+        hash[tolower(names[i])] = i+0;
+    }
+} 
+
+# Convert a glob pattern to a regular exp.
+# *=anything,?=single char, <=start of word , >=end of word |=OR
+function glob2re(glob) {
+    gsub(/[.]/,"\\.",glob);
+    gsub(/[*]/,".*",glob);
+    gsub(/[?]/,".",glob);
+    gsub(/[<]/,"\\<",glob);
+    gsub(/ *, */,"|",glob);
+    gsub(/[>]/,"\\>",glob);
+
+    #remove empty words
+    gsub("^\\|","",glob);
+    gsub("\\|$","",glob);
+    gsub("\\|\\|","",glob);
+
+    return "("glob")";
+}
+
+function csv2re(text) {
+    gsub(/ *, */,"|",text);
+    return "("text")";
+}
+
+function exec(cmd,\
+err) {
+   #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
+   DEBUG("SYSTEM : [["cmd"]]");
+   if ((err=system(cmd)) != 0) {
+      ERR("Return code "err" executing "cmd) ;
+  }
+  return 0+ err;
+}
+
+# Extract the dir`name from the path. Note if the file ends in / then the parent is used (for VIDEO_TS)
+function dirname(f) {
+
+    #Special case - paths ending in /, the / indicates it is a VIDEO_TS folder and should otherwise be ignored.
+    sub(/\/$/,"",f);
+
+    #Relative paths
+    if (f !~ "^[/$]" ) {
+        f = "./"f;
+    }
+
+    #remove filename
+    sub(/\/[^\/]+$/,"",f);
+    return f;
+}
+
+# remove /xxx/../   or /./ or // from a path
+function clean_path(f) {
+    if (index(f,"../")) {
+        while (gsub(/\/[^\/]+\/\.\.\//,"/",f) ) {
+            continue;
+        }
+    }
+    while (index(f,"/./")) {
+        gsub(/\/\.\//,"/",f);
+    }
+    while (index(f,"//")) {
+        gsub(/\/\/+/,"/",f);
+    }
+    return f;
+}
+
+#Return single quoted file name. Inner quotes are backslash escaped.
+function qa(f) {
+    gsub(/'/,"'\\''",f);
+    return "'"f"'";
+}
+
+function formatDate(line,\
+date,nonDate) {
+    if (extractDate(line,date,nonDate) == 0) {
+        return line;
+    }
+    line=sprintf("%04d-%02d-%02d",date[1],date[2],date[3]);
+    return line;
+}
+
+
+# Input date text
+# Output array[1]=y [2]=m [3]=d 
+#nonDate[1]=bit before date, nonDate[2]=bit after date
+# or empty array
+function extractDate(line,date,nonDate,\
+y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
+
+    line = tolower(line);
+    textMonth = 0;
+    delete date;
+    delete nonDate;
+    #Extract the date.
+    #because awk doesnt capture submatches we have to do this a slightly painful way.
+    y4=g_year_re;
+    m2="(0[1-9]|1[012])";
+    m1=d1="[1-9]";
+    d2="([012][0-9]|3[01])";
+    s="[-_. /]0*";
+    m1or2 = "(" m1 "|" m2 ")";
+    d1or2 = "(" d1 "|" d2 ")";
+    #mword="[A-Za-z]+";
+    mword=tolower("("g_months_short"|"g_months_long")");
+
+    d = m = y = 0;
+    if  (match(line,y4 s m1or2 s d1or2)) {
+
+        y=1 ; m = 2 ; d=3;
+
+    } else if(match(line,m1or2 s d1or2 s y4)) { #us match before plain eu match
+
+        m=1 ; d = 2 ; y=3;
+
+    } else if(match(line,d1or2 s m1or2 s y4)) { #eu
+
+        d=1 ; m = 2 ; y=3;
+
+    } else if(match(line,d1or2 s mword s y4)) { 
+
+        d=1 ; m = 2 ; y=3;
+        textMonth = 1;
+
+    } else if(match(line,mword s d1or2 s y4)) {
+        m=1 ; d = 2 ; y=3;
+        textMonth = 1;
+
+    } else {
+
+        return 0;
+    }
+    datePart = substr(line,RSTART,RLENGTH);
+
+    nonDate[1]=substr(line,1,RSTART-1);
+    nonDate[2]=substr(line,RSTART+RLENGTH);
+
+    split(datePart,date,s);
+    #DEBUG("Date1 ["date[1]"/"date[2]"/"date[3]"] in "line);
+    d = date[d];
+    m = date[m];
+    y = date[y];
+
+    date[1]=y;
+    date[2]=tolower(trim(m));
+    date[3]=d;
+    #DEBUG("Date2 ["date[1]"/"date[2]"/"date[3]"] in "line);
+
+    if ( textMonth == 1 ) {
+        DEBUG("date[2]="date[2]);
+        if (date[2] in gMonthConvert ) {
+            date[2] = gMonthConvert[date[2]];
+            DEBUG(m"="date[2]);
+        } else {
+            return 0;
+        }
+    }
+    #DEBUG("Date3 ["date[1]"/"date[2]"/"date[3]"] in "line);
+    date[1] += 0;
+    date[2] = 0 + date[2];
+    date[3] += 0;
+    DEBUG("Found ["date[1]"/"date[2]"/"date[3]"] in "line);
+    return 1;
+}
+
+#replace last roman characters - eg 'fredii' becoumes 'fred2'
+#input should be lower case.
+function roman_replace(s,\
+out) {
+    if (match(s,"("g_roman_regex")$")) {
+        out = substr(s,1,RSTART-1) g_roman[substr(s,RSTART,RLENGTH)];
+        INF("roman_replace = "s);
+        INF("roman_replace = "out);
+        s = out;
+    }
+    return s;
+}
+
+function indexFrom(str,x,startPos,\
+    j) {
+    if (startPos<1) startPos=1;
+    j=index(substr(str,startPos),x);
+    if (j == 0) return 0;
+    return j+startPos-1;
+}
+
+function rm(x,quiet,quick) {
+    removeContent("rm -f -- ",x,quiet,quick);
+}
+function rmdir(x,quiet,quick) {
+    removeContent("rmdir -- ",x,quiet,quick);
+}
+function removeContent(cmd,x,quiet,quick) {
+
+    if (changeable(x) == 0) return 1;
+
+    if (quiet) {
+        INF("Deleting "x);
+    }
+    cmd=cmd qa(x)" 2>/dev/null ";
+    if (quick) {
+        return exec("(" cmd ") & ");
+    } else {
+        return exec("(" cmd " || true ) ");
+    } 
+}
+
+function isDvdDir(f) {
+    return substr(f,length(f)) == "/";
+}
+
+function touch_and_move(x,y) {
+    system("touch "qa(x)" ; mv "qa(x)" "qa(y));
+}
+
 

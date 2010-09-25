@@ -155,3 +155,24 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 #ALL#    }
     return 0+ result;
 }
+# Check a domain responds quickly.
+function check_domain_ok(url,\
+start,tries,timeout) {
+
+    if (!(url in g_domain_status)) {
+        start=systime();
+        tries=2;
+        timeout=5;
+        if (system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url)"/favicon.ico") ) {
+            g_domain_status[url]=1;
+        } else if (systime() - start  >= tries * timeout ) {
+            WARNING("Error with domain ["url"]");
+            g_domain_status[url]=0;
+        } else {
+            # Error getting page but not a timeout so assume domain is ok
+            g_domain_status[url]=1;
+        }
+    }
+    return g_domain_status[url];
+}
+

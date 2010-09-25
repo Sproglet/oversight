@@ -168,7 +168,7 @@ TRANSMISSION_UNPAK_INSTALL() {
         TRANSMISSION_UNPAK_UNINSTALL
         sed -i '
 2 i\
-exec '"$INSTALL_DIR"'/unpak.sh torrent_seeding "$@"
+exec '"$INSTALL_DIR"'/bin/unpak.sh torrent_seeding "$@"
 ' $TRANSMISSION_UNRAR_FILE
     chown nmt:nmt "$TRANSMISSION_UNRAR_FILE"
     fi
@@ -192,7 +192,7 @@ function debug(x) {
 BEGIN {
 
     #Repair
-    set["postprocess"]="'"$INSTALL_DIR"'/unpak.sh" ;
+    set["postprocess"]="'"$INSTALL_DIR"'/bin/unpak.sh" ;
     set["allowreprocess"]="yes" ;
     set["parcheck"]="no";
     set["renamebroken"]="no";
@@ -281,9 +281,9 @@ BOUNCE_NZBGET() {
     #nmt should set its own Daemon user - but wrapped command with su 
     #because of reports of nzbget running as nobody.
 
-    # "$INSTALL_DIR/unpak.sh nzbget_cmd restart"
+    # "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
 
-    su -s /bin/sh nmt -c "$INSTALL_DIR/unpak.sh nzbget_cmd restart"
+    su -s /bin/sh nmt -c "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
 }
 
 

@@ -33,6 +33,32 @@
 # minfo["mi_director_ids"]="id1 \t id2 \t ...."
 # minfo["mi_director_domain"]="imdb" or "allocine" or "filmtotaal" etc.
 
+# minfo = scraped information so far
+# domain is site being scanned - eg imdb , moviemeter etc.
+# role = actor,writer,director
+# text = html text for a single actor. this may be
+#    1. just a name
+#    2. <a href="actor profile">actor name</a>
+#    3. <a href="actor profile"><img src=portrait></a>
+#
+# For now we will ignore portraits - they are best scraped from bio page.
+#
+# return 1=info extracted 0=no info found
+
+function person_scan(minfo,domain,role,text,\
+lctext,name,url) {
+    lctext =  tolower(text);
+    if (index(lctext,"href=")) {
+        if (index(lctext,"<img")) {
+            INF("ignoring portrait link for now");
+        } else {
+            name = extractTagText(text,"a");
+            url =  
+    } else {
+        # just a name
+    }
+}
+
 # Queue phase =======================================
 # Occurs when a scan info is written to temporary file. We do not know ovsids at this point.
 

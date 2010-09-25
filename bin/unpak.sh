@@ -351,7 +351,7 @@ load_unpak_settings() {
     cfg="$1"
     case "$cfg" in
         /*) true;;
-        *) cfg="$script_folder/$cfg" ;;
+        *) cfg="$root_folder/$cfg" ;;
     esac
 
     INFO "load_unpak_settings [$cfg]"
@@ -1964,12 +1964,12 @@ PERMS() {
 run_catalog() {
     folder="$1"
     shift
-    if [ -f "$script_folder/catalog.sh" ] ; then
+    if [ -f "$root_folder/bin/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
-        JOBID="$log_name" "$script_folder/catalog.sh" "$folder" "$@" || true
-        #create_resume_file "$folder/unpak.resume" "$script_folder/catalog.sh" "$folder" "$@"
+        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
+        #create_resume_file "$folder/unpak.resume" "$root_folder/bin/catalog.sh" "$folder" "$@"
     else
-        INFO "Catalog script not present in $script_folder"
+        INFO "Catalog script not present in $root_folder"
     fi
 }
 
@@ -2046,7 +2046,7 @@ main() {
 
     exit_code=1
     INFO 'unpak version $Id$ '
-    INFO "script_folder [$script_folder]"
+    INFO "root_folder [$root_folder]"
     sed 's/^/\[INFO\]/' /proc/version
     if [ $is_nmt == "Y" ] ; then
         sed -rn '/./ s/^/\[INFO\] nmt version /p' $NMT_APP_DIR/VERSION
@@ -2177,7 +2177,7 @@ main() {
 
 script_name=$(BASENAME "$0" "")
 
-script_folder=$( cd $(DIRNAME "$0") ; pwd )
+root_folder=$( cd $(DIRNAME "$0") ; cd .. ; pwd )
 
 ##################################################################################
 # something sometimes changes /tmp permissions so only root can write
@@ -2186,7 +2186,7 @@ chmod o+w /tmp 2>/dev/null || true
 is_nmt=N
 if [ -n "$NMT_APP_DIR" ] ; then
     is_nmt=Y
-    TMP2=$script_folder/tmp
+    TMP2=$root_folder/tmp
     if mkdir -p "$TMP2" ; then
         TMP="$TMP2"
         chown nmt:nmt "$TMP" 2>/dev/null || true
@@ -2278,7 +2278,7 @@ esac
 
 echo B
 
-log_dir=$script_folder/logs
+log_dir=$root_folder/logs
 
 mkdir -p $log_dir
 
@@ -2298,7 +2298,7 @@ clean_logs "$log_dir"
 
 
 cd "$arg_download_dir"
-create_resume_file unpak.resume "$script_folder/unpak.sh" "$@"
+create_resume_file unpak.resume "$root_folder/bin/unpak.sh" "$@"
 
 INFO "TMP=[$TMP]"
 

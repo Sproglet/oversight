@@ -2,7 +2,7 @@
 VERSION=20090605-1BETA
 
 APPDIR=$( echo $0 | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}" ; pwd )
+APPDIR=$(cd "${APPDIR:-.}" ; cd .. ; pwd )
 
 TMPDIR="$APPDIR/tmp"
 

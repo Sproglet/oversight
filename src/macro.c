@@ -2385,7 +2385,7 @@ char *macro_fn_edit_config(MacroCallInfo *call_info) {
         char *def_path = config_defaults_path(file);
 
         //Note this outputs directly to stdout so always returns null
-        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh TABLE \"%s\" \"%s\" \"%s\" HIDE_VAR_PREFIX=1",
+        ovs_asprintf(&cmd,"cd \"%s\" && ./bin/options.sh TABLE \"%s\" \"%s\" \"%s\" HIDE_VAR_PREFIX=1",
                 appDir(),help_path,def_path,conf_path);
 
         FREE(help_path);

@@ -47,7 +47,7 @@ while [ -L "$EXE" ] ; do
     EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
 done
 APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}" ; pwd )
+APPDIR=$(cd "${APPDIR:-.}/.." ; pwd )
 
 is_nmt() {
     [ -n "$NMT_APP_DIR" ]
@@ -267,7 +267,7 @@ catalog() {
     # use index before match
     # clear arrays using split("",array,"")
 
-        $AWK -f $APPDIR/catalog.awk $APPDIR/catalog.person.awk \
+        $AWK -f $APPDIR/catalog/catalog*awk \
     JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     DAY=`date +%a.%P` \
     "START_DIR=$START_DIR" \

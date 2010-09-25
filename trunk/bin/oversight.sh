@@ -8,7 +8,7 @@ while [ -L "$EXE" ] ; do
     EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
 done
 APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-export APPDIR=$(cd "${APPDIR:-.}" ; pwd )
+export APPDIR=$(cd "${APPDIR:-.}" ; cd .. ; pwd )
 TVMODE=`cat /tmp/tvmode`
 
 CONF=$APPDIR/conf/catalog.cfg
@@ -75,7 +75,7 @@ LISTEN() {
         #oversight.sh will use its own idea of APPDIR (ie /share/Apps/oversight) rather than
         #oversight.cgi home eg /opt/sybhttpd/local.drives/NETWORK_DRIVE/nmt2/Apps/oversight )
         #
-        # So instead of sending commands as $APPDIR/catalog.sh we just send ./catalog.sh
+        # So instead of sending commands as $APPDIR/bin/catalog.sh we just send ./bin/catalog.sh
         # and let the cron job determine what APPDIR is. (ie from the perspective of the remote box)
 
         PATH="$APPDIR:$PATH"
@@ -316,7 +316,7 @@ get_period() {
 
 # $1=frequency
 # $2=cron tag
-# $3=function eg "./catalog.sh function"
+# $3=function eg "./bin/catalog.sh function"
 # $4=hour offset
 # $5=minute offset
 
@@ -419,7 +419,7 @@ reboot_fix() {
 
 case "$1" in 
     NEWSCAN)
-        "$APPDIR/catalog.sh" NEWSCAN 
+        "$APPDIR/bin/catalog.sh" NEWSCAN 
 
         if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
             "$APPDIR/bin/torrent.sh" transmission unpak_all

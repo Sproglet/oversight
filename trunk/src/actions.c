@@ -361,26 +361,6 @@ static void delete_config(char *name) {
     FREE(tmp2);
 }
 
-// #define USE_CRON 1
-#ifdef USE_CRON 
-static void send_command(char *source,char *remote_cmd)
-{
-    char *cmd;
-    int freepath;
-    char *script = get_mounted_path(source,"/share/Apps/oversight/oversight.sh",&freepath);
-    ovs_asprintf(&cmd,"\"%s\" SAY %s",script,remote_cmd);
-
-    HTML_LOG(0,"send command:%s",cmd);
-
-    util_system(cmd);
-
-    if (freepath) {
-        FREE(script);
-    }
-    FREE(cmd);
-}
-#endif
-
 static char *g_start_cell = NULL;
 
 void set_start_cell()
@@ -458,11 +438,7 @@ void do_actions() {
             int parallel_scan = 0;
             char *cmd ;
 
-#ifdef USE_CRON 
-            cmd = STRDUP("catalog.sh NOWRITE_NFO ");
-#else
-            ovs_asprintf(&cmd,"DAEMON_DIR='%s' daemon %s/catalog.sh NOWRITE_NFO ",appDir(),appDir());
-#endif
+            ovs_asprintf(&cmd,"DAEMON_DIR='%s' daemon %s/bin/catalog.sh NOWRITE_NFO ",appDir(),appDir());
 
             char *k;
             char *v;
@@ -498,11 +474,7 @@ void do_actions() {
                     char *tmp;
                     ovs_asprintf(&tmp,"%s \"%s\"",cmd,k+strlen(RESCAN_DIR_PREFIX));
                     if (parallel_scan) {
-#ifdef USE_CRON 
-                        send_command("*",tmp);
-#else
                         util_system(tmp);
-#endif
                         FREE(tmp);
                     } else {
                         FREE(cmd);
@@ -511,11 +483,7 @@ void do_actions() {
                 }
             }
             if (!parallel_scan) {
-#ifdef USE_CRON 
-                send_command("*",cmd);
-#else
                 util_system(cmd);
-#endif
             }
             FREE(cmd);
 
@@ -540,7 +508,7 @@ void do_actions() {
 
                         char *file = query_val(QUERY_PARAM_CONFIG_FILE);
                         char *cmd;
-                        ovs_asprintf(&cmd,"cd \"%s\" && ./options.sh SET \"%s/conf/%s\" \"%s\" \"%s\"",
+                        ovs_asprintf(&cmd,"cd \"%s\" && ./bin/options.sh SET \"%s/conf/%s\" \"%s\" \"%s\"",
                             appDir(),
                             (strcmp(file,"skin.cfg")==0  ? skin_path() : appDir()),
                             file,
@@ -551,7 +519,7 @@ void do_actions() {
 
                         if (STRCMP(real_name,"catalog_watch_frequency") == 0) {
                            char *cmd;
-                           ovs_asprintf(&cmd,"cd \"%s\" && ./oversight.sh WATCH_FOLDERS %s",
+                           ovs_asprintf(&cmd,"cd \"%s\" && ./bin/oversight.sh WATCH_FOLDERS %s",
                                    appDir(),value);
                            util_system(cmd);
                            FREE(cmd);

@@ -801,7 +801,7 @@ id,xml) {
 
 function verify_setup(\
 tmp,tmp2) {
-    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_director_names";
+    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total";
     split(tmp,tmp2," ");
     hash_invert(tmp2,g_verify);
 }
@@ -1241,7 +1241,7 @@ url) {
 # info_out["plot"] = the plot
 # info_out["title"] = the title
 function scrape_by_lang(minfo,lang,info_out,\
-                plot_words,sites,query,tmp,plot) {
+plot_words,sites,query,tmp,plot,i) {
 
     delete info_out;
 

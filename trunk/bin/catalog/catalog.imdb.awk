@@ -198,19 +198,28 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
 # name_db is always "actor"
 # text = imdb text to be parsed for nm0000 ids.
 # maxnames = max number of names to fetch ( -1 = all )
-function imdb_get_names(name_db,text,maxnames,\
-dtext,dpos,dnum,i,img_folder) {
+# OUTPUT number of names added.
+function imdb_get_names(minfo,role,maxnames,\
+dtext,dpos,dnum,i,img_folder,count) {
 
-    img_folder = name_db;
+    count = minfo["mi_"role"_total"];
 
     # Assumes a text does not have any markup inside. just a plain name
     dnum = get_regex_pos(text,"<a[^>]+>[^<>]+</a>",0,dtext,dpos);
     for(i = 1 ; i <= dnum ; i++ ) {
 
-        person_scan(minfo,"imdb",role,dtext[i]);
+        if (person_scan(minfo,"imdb",role,dtext[i])) {
+            count ++;
+            if (count >= maxnames) {
+                break;
+            }
+        }
 
         #TODO get image get_image(id,img,APPDIR"/db/global/"img_folder"/"g_settings["catalog_poster_prefix"] id".jpg");
+        #img_folder = name_db;
     }
+    minfo["mi_"role"_total"] = count;
+    return count;
 }
 function imdb_list_shrink(s,sep,base,\
 i,n,out,ids,m,id) {

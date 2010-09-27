@@ -72,8 +72,19 @@ lctext,person_name,url,external_id,ret) {
     return ret;
 }
 
+# extract person id from a url depending on the domain.
+# default is to exttract last number in the url
+# The extraction uses a list of regex matches which are applied in order to the ord.
+# eg to get first number use.  [0-9]+
+# eg to get last number use.  [0-9]+[^0-9]*$,[0-9]+
+#
+# INPUT: domain - eg imdb, allocine etc.
+# INPUT: url - url pointing to the person
+# OUTPUT: Person if or blank
+# Uses g_settings[domain":catalog_url_to_personid_regex_list"]
+# Uses g_settings["default:catalog_url_to_personid_regex_list"]
 function person_get_id(domain,url,\
-external_id,i,num,patterns,plist) {
+i,num,patterns,plist) {
 
     id1("person_get_id:"url);
 
@@ -96,7 +107,6 @@ external_id,i,num,patterns,plist) {
     }
     id0(url);
     return url;
-
 }
 
 # Queue phase =======================================
@@ -150,18 +160,19 @@ text,i,num,domain,ids,names) {
 # actor.db writer.db director.db [ maps oversight id to actor name ]
 # actor.domain.db [ maps external id to oversight id ] eg actor.imdb.db or writer.allocine.db
 function people_update_dbs(person_extid2name,person_extid2ovsid,\
-extid,domain,role,tmp,roledb,domaindb,sortfiles) {
+extid,ovsid,domain,role,tmp,roledb,domaindb,sortfiles,name,f) {
 
     for (extid in person_extid2name) {
 
+        name = person_extid2name[extid];
         split(extid,tmp,":");
         domain = tmp[1];
         role = tmp[2];
         extid = tmp[3];
         if (domain != "" && extid != "") {
 
-            roledb = DBDIR"/"role"."db;
-            domaindb = DBDIR"/"role"."domain"."db;
+            roledb = DBDIR"/"role".db";
+            domaindb = DBDIR"/"role"."domain".db";
 
             ovsid = people_db_lookup(domaindb,1,extid,2);
             if (ovsid == "") {
@@ -207,8 +218,8 @@ newovsid) {
 }
 
 function people_domain_db_add(domaindb,extid,ovsid) {
-    print extid"\t"ovsid >> dbfile;
-    close(dbfile);
+    print extid"\t"ovsid >> domaindb;
+    close(domaindb);
 }
 
 # 

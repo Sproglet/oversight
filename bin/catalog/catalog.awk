@@ -483,7 +483,7 @@ p,plugin) {
 }
 
 
-function merge_queue(qfile) {
+function merge_queue(qfile,person_extid2name) {
 
     if (g_opt_dry_run) {
 
@@ -492,14 +492,12 @@ function merge_queue(qfile) {
     } else {
 
         if(lock(g_db_lock_file)) {
-            sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD);
-            names_update("actors");
-            names_update("writers");
-            names_update("directors");
+            sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD,person_extid2name);
             unlock(g_db_lock_file);
         }
     }
     rm(qfile);
+    delete person_extid2name;
 }
 
 
@@ -523,7 +521,7 @@ filemax) {
 
 
 function get_maxid(file,\
-max_id,line,fields,filemax) {
+max_id,line,fields,filemax,tab) {
     max_id = 0;
     filemax = file".maxid";
 
@@ -803,7 +801,7 @@ id,xml) {
 
 function verify_setup(\
 tmp,tmp2) {
-    tmp = " mi_actors mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year";
+    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_director_names";
     split(tmp,tmp2," ");
     hash_invert(tmp2,g_verify);
 }
@@ -819,8 +817,15 @@ ret,f,numok,numbad) {
             ERR("bad field ["f"] = ["minfo[f]"]");
             numbad++;
         }  else {
-            INF("ok field ["f"] = ["minfo[f]"]");
-            numok++;
+            if (match(f,"^mi_[a-z]+_(names|ids)$")  && index(minfo[f],"@") == 0) {
+                #format should be domain@id1@id2@.. or domain@name1@name2@..
+                #eg imdb@nm0000123@nm0000456 or allocine@Sean Connery@Roger Moore@
+                ERR("bad format field ["f"] = ["minfo[f]"]");
+                numbad++;
+            } else {
+                INF("ok field ["f"] = ["minfo[f]"]");
+                numok++;
+            }
         }
     }
     if (numbad > 0 || numok == 0) {

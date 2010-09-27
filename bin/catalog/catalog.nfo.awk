@@ -42,7 +42,7 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
     }
     
     if (nfoFormat == "xmbc" ) {
-        movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTOR","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
+        movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
         tvshow=","TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART",";
         episodedetails=","EPTITLE","SEASON","EPISODE","AIRDATE",";
     }

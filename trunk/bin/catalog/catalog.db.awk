@@ -84,7 +84,7 @@ row,est,nfo,op,start) {
     row=row"\t"URL"\t"minfo["mi_imdb"];
 
     row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];
-    if (minfo["mi_director"]) row=row"\t"DIRECTOR"\t"minfo["mi_director"];
+    if (minfo["mi_director"]) row=row"\t"DIRECTORS"\t"minfo["mi_director"];
     if (minfo["mi_actors"]) row=row"\t"ACTORS"\t"minfo["mi_actors"];
     if (minfo["mi_writers"]) row=row"\t"WRITERS"\t"minfo["mi_writers"];
 
@@ -169,7 +169,7 @@ function set_db_fields() {
 
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
     TITLE=db_field("_T","Title","title",1) ;
-    DIRECTOR=db_field("_d","Director","director",1) ;
+    DIRECTORS=db_field("_d","Director","director",1) ;
     ACTORS=db_field("_A","Actors","actors",1) ;
     WRITERS=db_field("_W","Writers","writers",1) ;
     CREATOR=db_field("_c","Creator","creator") ;
@@ -314,14 +314,14 @@ f) {
     printf "\t\n" >> file;
 }
 
-function merge_index(file1,file2,file_out,\
+function merge_index(file1,file2,file_out,person_extid2ovsid,\
 row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line,ret) {
 
     ret = 1;
     id1("merge_index");
 
-    max_id = get_maxid(INDEX_DB);
 
+    max_id = get_maxid(INDEX_DB);
 
     action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     do {
@@ -334,6 +334,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         if (and(action,2)) {
             row2 = get_dbline(file2);
             parseDbRow(row2,fields2,1);
+            # change the external actor ids to oversight ids
+            people_change_extid_to_ovsid(fields2,person_extid2ovsid);
             #INF("NEW    :["fields2[FILE]"]");
         }
 
@@ -409,8 +411,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 }
 
 # Merge two index files together
-function sort_and_merge_index(file1,file2,file1_backup,\
-file1_sorted,file2_sorted,file_merged) {
+function sort_and_merge_index(file1,file2,file1_backup,person_extid2name,\
+file1_sorted,file2_sorted,file_merged,person_extid2ovsid) {
 
     id1("sort_and_merge_index ["file1"]["file2"]["file1_backup"]");
     file1_sorted = file1 ".sorted." PID; 
@@ -420,7 +422,9 @@ file1_sorted,file2_sorted,file_merged) {
     if (sort_index(file1,file1_sorted) )  {
         if (sort_index(file2,file2_sorted) )  {
 
-            if (merge_index(file1_sorted,file2_sorted,file_merged)) {
+            people_update_dbs(person_extid2name,person_extid2ovsid);
+
+            if (merge_index(file1_sorted,file2_sorted,file_merged,person_extid2ovsid)) {
 
                 replace_database_with_new(file_merged,file1,file1_backup);
             }

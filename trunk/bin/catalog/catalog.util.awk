@@ -283,6 +283,14 @@ i,c) {
     }
 }
 
+function sort_file(f,args,\
+tmpf) {
+    tmpf=f"."PID;
+    if (exec("sort  "args" "qa(f)" > "qa(tmpf)" && mv "qa(tmpf)" "qa(f)) == 0) {
+        set_permissions(f);
+    }
+}
+
 function set_permissions(shellArg) {
     if (ENVIRON["USER"] != UID ) {
         return system("chown "OVERSIGHT_ID" "shellArg);

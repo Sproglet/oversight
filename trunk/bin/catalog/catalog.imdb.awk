@@ -14,7 +14,7 @@ function imdb_img_url(url) {
 
 # isection tracks sections found. This helps alert us to IMDB changes.
 function scrape_imdb_line(line,imdbContentPosition,minfo,f,isection,\
-title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp) {
+title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp,role,role_max) {
 
 
     if (imdbContentPosition == "footer" ) {
@@ -81,30 +81,20 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 }
                 sec=POSTER;
             }
-            # Scrape mobile page
-            if (minfo["mi_actors"] == "" && index(line,">Top Billed Cast")) {
-                minfo["mi_actors"] = get_names("actors",raw_scrape_until("actors",f,"</section>",0),g_max_actors);
-                minfo["mi_actors"] = imdb_list_shrink(minfo["mi_actors"],",",128);
-                sec=ACTORS;
+            if (index(line,"Director:") || index(line,"Directors:")) {
+                role="director";
+                role_max = g_max_directors;
+            } else if (index(line,"Writer:") || index(line,"Writers:")) {
+                role="writer";
+                role_max = g_max_writers;
+            } else if (index(line,"Cast")) {
+                role="actor";
+                role_max = g_max_actors;
             }
-            # Scrape desktop  page
-            if (minfo["mi_actors"] == "" && index(line,">Cast") ) {
-                minfo["mi_actors"] = get_names("actors",raw_scrape_until("actors",f,"</table>",0),g_max_actors);
-                minfo["mi_actors"] = imdb_list_shrink(minfo["mi_actors"],",",128);
-                sec=ACTORS;
+            if (index(line,"/nm") ) {
+                imdb_get_names(minfo,role,role_max);
             }
-
-            if (minfo["mi_director"] == "" && index(line,">Director")) {
-                minfo["mi_director"] = get_names("directors",raw_scrape_until("director",f,"</div>",0),g_max_directors);
-                minfo["mi_director_name"] = g_first_name;
-                minfo["mi_director"] = imdb_list_shrink(minfo["mi_director"],",",128);
-                sec=DIRECTOR;
-            }
-            if (minfo["mi_writers"] == "" && index(line,">Writer")) {
-                minfo["mi_writers"] = get_names("writers",raw_scrape_until("writers",f,"</div>",0),g_max_writers);
-                minfo["mi_writers"] = imdb_list_shrink(minfo["mi_writers"],",",128);
-                sec=WRITERS;
-            }
+            #TODO shrink minfo["mi_actor"]
 
             # "Plot" on normal page - "Plot Summary" on mobile pages.
             if (minfo["mi_plot"] == "" && ( index(line,">Plot:<") ||index(line,">Plot Summary<")) ) {
@@ -205,67 +195,22 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
     return imdbContentPosition;
 }
 
-# name_db is always "actors"
+# name_db is always "actor"
 # text = imdb text to be parsed for nm0000 ids.
 # maxnames = max number of names to fetch ( -1 = all )
-function get_names(name_db,text,maxnames,\
-dtext,dpos,dnum,i,id,name,dlist,count,img,img_folder) {
+function imdb_get_names(name_db,text,maxnames,\
+dtext,dpos,dnum,i,img_folder) {
 
     img_folder = name_db;
 
-    # This is a hack - we also want the first director name for scraping non-english sites
-    g_first_name = ""; 
-
-    # Extract nm0000 text OR anchor text(actor name) OR jpg url
-    dnum = get_regex_pos(text,"(/nm[0-9]+|>[^<]+</a>|"g_nonquote_regex"+\\.jpg)",0,dtext,dpos);
+    # Assumes a text does not have any markup inside. just a plain name
+    dnum = get_regex_pos(text,"<a[^>]+>[^<>]+</a>",0,dtext,dpos);
     for(i = 1 ; i <= dnum ; i++ ) {
-        #INF(name_db"["dtext[i]"]");
 
-        if (dtext[i] ~ "jpg$") {
+        person_scan(minfo,"imdb",role,dtext[i]);
 
-            img = imdb_img_url(dtext[i]);
-
-        } else if (substr(dtext[i],1,3) == "/nm" ) {
-
-            id=substr(dtext[i],2);
-
-        } else if (id ) {
-            if (index(dlist,","id) == 0) {
-                count++;
-                if (maxnames+0 >= 0 && count+0 > maxnames+0) {
-                    break;
-                }
-                # Extract name from <a> tag
-                name=extractTagText("<a"dtext[i],"a");
-
-                dlist=dlist ","id;
-
-                # output just the name - the is a risk of namesakes occuring with writers or directors.
-                # take that risk for now
-                #print id"\t"name > g_tmp_dir"/"name_db".db."PID  ;
-                print name > names_tmp_file(name_db)  ;
-
-                INF(name_db"|"id"|"name"|"img);
-
-                if (g_first_name == "") {
-                    g_first_name = name;
-                }
-
-                # Seems to have a lot of portraits
-           #     if (img == "") {
-           #         img = "http://www.turkcealtyazi.org/film/images/"id".jpg";
-           #         # http://ownfilmcollection.com/ERaImage/DCimages/name/nm2652511.jpg
-           #     }
-
-                get_image(id,img,APPDIR"/db/global/"img_folder"/"g_settings["catalog_poster_prefix"] id".jpg");
-            }
-            id="";
-            img="";
-        }
+        #TODO get image get_image(id,img,APPDIR"/db/global/"img_folder"/"g_settings["catalog_poster_prefix"] id".jpg");
     }
-    close(names_tmp_file(name_db));
-    #INF(name_db":"dlist);
-    return substr(dlist,2);
 }
 function imdb_list_shrink(s,sep,base,\
 i,n,out,ids,m,id) {

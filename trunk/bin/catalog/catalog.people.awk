@@ -77,19 +77,21 @@ external_id,i,num,patterns,plist) {
 
     id1("person_get_id:"url);
 
-    domain_load_settings("default");
-    domain_load_settings(domain);
+    if(url) {
+        domain_load_settings("default");
+        domain_load_settings(domain);
 
 
-    plist=g_settings[domain":catalog_url_to_personid_regex_list"];
-    if (plist == "") {
-        plist=g_settings["default:catalog_url_to_personid_regex_list"];
-    }
+        plist=g_settings[domain":catalog_url_to_personid_regex_list"];
+        if (plist == "") {
+            plist=g_settings["default:catalog_url_to_personid_regex_list"];
+        }
 
-    num = split(plist,patterns,",");
-    for(i = 1 ; i <= num ; i++ ) {
-        if (match(url,patterns[i])) {
-            url = substr(url,RSTART,RLENGTH);
+        num = split(plist,patterns,",");
+        for(i = 1 ; i <= num ; i++ ) {
+            if (match(url,patterns[i])) {
+                url = substr(url,RSTART,RLENGTH);
+            }
         }
     }
     id0(url);
@@ -102,30 +104,34 @@ external_id,i,num,patterns,plist) {
 
 # returns line fragment to add to ascii database queue.
 # eg. ACTORS=domain@extid1@extid2@extid3 \t WRITERS \t domain@extid6@extid7 \t _DIRECTORS domain@extid8@extid9 to queue file.
-# also set  lookup person_extid2name[domain:id]=name
 
+# INPUT minfo - scraped information esp [mi_actor_ids]=imdb:nm1111@nm2222 etc
+# OUTPUT returns line fragment to add to queue
+# also set  lookup person_extid2name[domain:id]=name
 function person_add_db_queue(minfo,person_extid2name,\
 db_text) {
-    db_text = "\t" person_add_db_queue_role(minfo,"mi_actor",ACTOR,person_extid2name);
-    db_text = db_text "\t" person_add_db_queue_role(minfo,"mi_director",DIRECTOR,person_extid2name);
-    db_text = db_text "\t" person_add_db_queue_role(minfo,"mi_writer",WRITER,person_extid2name) "\t" ;
+    db_text = "\t" person_add_db_queue_role(minfo,"actor",ACTORS,person_extid2name);
+    db_text = db_text "\t" person_add_db_queue_role(minfo,"director",DIRECTORS,person_extid2name);
+    db_text = db_text "\t" person_add_db_queue_role(minfo,"writer",WRITERS,person_extid2name) "\t" ;
+
+    sub(/^\t+/,"",db_text);
     gsub(/\t\t+/,"\t",db_text);
     return db_text;
 }
 
-function person_add_db_queue_role(minfo,role_prefix,dbfield,person_extid2name,\
+function person_add_db_queue_role(minfo,role,dbfield,person_extid2name,\
 text,i,num,domain,ids,names) {
-    text = minfo[role_prefix"_ids"] ;
+    text = minfo["mi_"role"_ids"] ;
     if (text) {
         text = dbfield "\t" text;
 
         # update lookup table
-        num = split(minfo[role_prefix"_ids"],ids,"@");
-        split(minfo[role_prefix"_names"],names,"@");
+        num = split(minfo["mi_"role"_ids"],ids,"@");
+        split(minfo["mi_"role"_names"],names,"@");
 
         domain = ids[1];
         for(i = 2 ; i <= num ; i++ ) {
-            person_extid2name[domain":"ids[i]] = names[i];
+            person_extid2name[domain":"role":"ids[i]] = names[i];
         }
     }
     return text;
@@ -134,33 +140,111 @@ text,i,num,domain,ids,names) {
 # Pre-Merge phase ===================================
 # Called just before a batch or 30 or so scans are added to the main index.db
 #
-#  update_people_dbs():
-#  for domain:extid in person_extid2name ; do
-#    lookup ovsid in namedb.domain.db using extid.
-#    if no present then
-#       lookup ovsid in namedb.db using name
-#       if not present 
-#          get new ovs id
-#          add [ ovsid \t name ] to namedb.db.tmp
-#       endif
-#       add [ extid \t ovsid ] to namedb.domain.db.tmp
-#       update_people_domain[domain] = 1
-#    endif
-#    person_extid2ovsid[domain:extid]=ovsid
-#  endfor
+# 1. Make sure all actor db files are updated - generating new oversight ids(ovsid) if reuqired.
+# 2. Populate hash person_extid2ovsid with lookups needed for current batch.
 #
-#  for all domains in update_people_domain
-#      sort -u namedb.domain.db namedb.domain.db.tmp into namedb.domain.db
-#      set permissions
-#  endfor
-#
-#  if exist namedb.db.tmp then sort -u namedb.db namedb.db.tmp into namedb.db
-#      set permissions
+
+# input person_extid2name = hash of [domain:role:extid] to actor name eg [imdb:actor:nm0000602]=Robert Redford
+# output person_extid2ovsid hash of [domain:role:extid] to ovsid  eg [123]=nm0000602
+# sideeffect: updates various person db files.
+# actor.db writer.db director.db [ maps oversight id to actor name ]
+# actor.domain.db [ maps external id to oversight id ] eg actor.imdb.db or writer.allocine.db
+function people_update_dbs(person_extid2name,person_extid2ovsid,\
+extid,domain,role,tmp,roledb,domaindb,sortfiles) {
+
+    for (extid in person_extid2name) {
+
+        split(extid,tmp,":");
+        domain = tmp[1];
+        role = tmp[2];
+        extid = tmp[3];
+        if (domain != "" && extid != "") {
+
+            roledb = DBDIR"/"role"."db;
+            domaindb = DBDIR"/"role"."domain"."db;
+
+            ovsid = people_db_lookup(domaindb,1,extid,2);
+            if (ovsid == "") {
+                ovsid = people_db_lookup(roledb,2,name,1);
+                if (ovsid == "") {
+                    ovsid = people_db_add(roledb,name);
+                    sortfiles[roledb] = 1;
+                }
+                people_domain_db_add(domaindb,extid,ovsid);
+                sortfiles[domaindb] = 1;
+            }
+            person_extid2ovsid[domain":"role":"extid] = ovsid;
+        }
+    }
+    for(f in sortfiles) {
+        sort_file(f,"");
+    }
+}
+
+# Do a full scan for a person. If this becomes a performance issue then we can
+# 1. implement bchop or 2. partition the people files.
+function people_db_lookup(file,infield,value,outfield,\
+line,err,fields.ret) {
+
+    while(( err = (getline line < file)) > 0) {
+        split(line,fields);
+        if (fields[infield] == value) {
+            ret = fields[outfield];
+        }
+    }
+    if (err == 0) {
+        close(file);
+    }
+    return ret;
+}
+
+function people_db_add(dbfile,name,\
+newovsid) {
+    newovsid = get_maxid(dbfile)+1;
+    print newovsid"\t"name >> dbfile;
+    close(dbfile);
+    set_maxid(dbfile,newovsid);
+}
+
+function people_domain_db_add(domaindb,extid,ovsid) {
+    print extid"\t"ovsid >> dbfile;
+    close(dbfile);
+}
+
 # 
 # Merge Phase ============================================
 #
-# If adding a new row replace  ACTOR, DIRECTOR and WRITER fields with oversight ids.
+# If adding a new row replace  ACTOR, DIRECTORS and WRITER fields with oversight ids.
 # ie _A=domain:id1,id2,id3 with _A:ovsid1,ovsid2,ovsid3
+#
+function people_change_extid_to_ovsid(fields,person_extid2ovsid) {
+    people_change_extid_to_ovsid_by_role("actor",ACTORS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role("director",DIRECTORS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role("writer",WRITERS,fields,person_extid2ovsid);
+}
+
+function people_change_extid_to_ovsid_by_role(role,db_field,fields,person_extid2ovsid,\
+extids,ovsids,num,domain,i,key) {
+
+    if (db_field in fields) {
+
+        id1("person_extid2ovsid" fields[db_field]);
+
+        num = split(fields[db_field],extids,"@");
+        domain = extids[1];
+        for(i = 2 ; i <= num ; i++ ) {
+
+            key = domain":"role":"extids[i];
+            if (key in person_extid2ovsid) {
+                ovsids = ovsids "," person_extid2ovsid[key];
+            }
+        }
+
+        ovsids = substr(ovsids,2);
+
+        id0(ovsids);
+    }
+}
 #
 # Post Merge Phase =======================================
 #

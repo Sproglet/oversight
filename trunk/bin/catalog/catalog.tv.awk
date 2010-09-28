@@ -753,7 +753,7 @@ ret) {
 # @param idx - the current item being processed
 # @param titles - hash of show titles keyed by show id.
 function selectBestOfBestTitle(plugin,minfo,titles,\
-bestId,bestFirstAired,ages,count) {
+bestId,bestFirstAired,age_scores,eptitle_scores,count) {
     dump(0,"closely matched titles",titles);
     count=hash_size(titles);
 
@@ -769,11 +769,15 @@ bestId,bestFirstAired,ages,count) {
         if(1) {
             bestFirstAired="";
 
-            getRelativeAge(plugin,minfo,titles,ages);
+            getRelativeAgeAndEpTitles(plugin,minfo,titles,ages,eptitle_scores);
 
-            bestScores(ages,ages,1);
+            bestScores(eptitle_scores,eptitle_scores,1);
+            bestId = firstIndex(eptitle_scores);
 
-            bestId = firstIndex(ages);
+            if (bestId == "") {
+                bestScores(age_scores,age_scores,1);
+                bestId = firstIndex(age_scores);
+            }
         }
         #TODO also try to get first episode of season.
     }
@@ -1836,4 +1840,51 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
     return 0+ result;
 }
+
+# This should only be called fairly late in the selection process.
+#
+# It scans all eligible series for the given episode.
+#
+# If the Episode Name matches the additional info then that is noted in eptitleHash
+#
+# otherwise
+#
+# It returns the newest item. It may not be a valid thing to do
+# but if we end up having to chose between two films with no other
+# information should either make a choice OR give up.
+# The relative age is just a metric that can be compared between films
+# eg IMDBID is a rough relative age indicator.
+# For other databases we may need to get the actual air date.
+# it should return array of strings (not numbers) that can be compared using < >.
+# eg 2009-03-31 ok but 31-03-2009 bad.
+# IN minfo - current media item
+# IN titleHash - Indexed by imdb/tvdbid etc
+# OUT ageHash - age indicator  Indexed by imdb/tvdbid etc
+# OUT eptitleHash - set to 1 if episode title = additional info
+function getRelativeAgeAndEpTitles(plugin,minfo,titleHash,ageHash,eptitleHash,\
+id,xml,eptitle) {
+   for(id in titleHash) {
+        if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
+            if (plugin == "THETVDB") {
+
+                ageHash[id] = xml["/Data/Episode/FirstAired"];
+                eptitle = tolower(xml["/Data/Episode/EpisodeName"]);
+
+            } else if (plugin == "TVRAGE" ) {
+
+                ageHash[id] = xml["/Show/Episodelist/Season/episode/airdate"];
+                eptitle = tolower(xml["/Show/Episodelist/Season/episode/title"]);
+
+            } else {
+                plugin_error(plugin);
+            }
+
+            if (tolower(eptitle) == tolower(minfo["mi_additional_info"])) {
+                eptitleHash[id] = 2;
+            }
+        }
+    }
+    dump(1,"episode title ",eptitleHash);
+    dump(1,"Age indicators",ageHash);
+ }
 

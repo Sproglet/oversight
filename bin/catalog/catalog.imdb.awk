@@ -12,9 +12,8 @@ function imdb_img_url(url) {
     return url;
 }
 
-# isection tracks sections found. This helps alert us to IMDB changes.
-function scrape_imdb_line(line,imdbContentPosition,minfo,f,isection,\
-title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp) {
+function scrape_imdb_line(line,imdbContentPosition,minfo,f,\
+title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp) {
 
 
     if (imdbContentPosition == "footer" ) {
@@ -35,7 +34,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             if (minfo["mi_year"] == "" && match(title,".*\\("g_year_re)) {
                 minfo["mi_year"] = substr(title,RSTART+RLENGTH-4,4);
                 DEBUG("IMDB: Got year ["minfo["mi_year"]"]");
-                delete isection[YEAR];
             }
 
             # Get the almost raw Imdb title. This may have ampersand which 
@@ -54,7 +52,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             if (adjustTitle(minfo,minfo["mi_imdb_title"],"imdb")) {
                 minfo["mi_orig_title"] = minfo["mi_title"];
             }
-            sec=TITLE;
         }
         if (index(line,"<h1")) {
             imdbContentPosition="body";
@@ -107,7 +104,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 sub(/\|.*/,"",minfo["mi_plot"]);
                 sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",minfo["mi_plot"]);
                 #DEBUG("imdb plot "minfo["mi_plot"]);
-               sec=PLOT;
             }
 
             #IMDB Genre takes precedence
@@ -120,7 +116,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 DEBUG("Genre=["minfo["mi_genre"]"]");
                 sub(/ +[Ss]ee /," ",minfo["mi_genre"]);
                 sub(/ +[Mm]ore */,"",minfo["mi_genre"]);
-               sec=GENRE;
             }
 
             #desktop
@@ -132,7 +127,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 if (match(tmp,"[0-9]+ m")) {
                     minfo["mi_runtime"] += substr(tmp,RSTART,RLENGTH);
                 }
-               sec=RUNTIME;
             }
 
             # Always overwrite tvdb ratings with imdb ones.
@@ -140,27 +134,23 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
             if (index(line,"/10</b>") && match(line,"[0-9.]+/10") ) {
                 minfo["mi_rating"]=0+substr(line,RSTART,RLENGTH-3);
                DEBUG("IMDB: Got Rating = ["minfo["mi_rating"]"]");
-               sec=RATING;
             }
             #mobile - <strong>7.1</strong>&#47;10 &#40;148,280 votes&#41;
             if (index(line,"&#47;10") && match(line,"[0-9.]+</strong>") ) {
                 minfo["mi_rating"]=0+substr(line,RSTART,RLENGTH-3);
                DEBUG("IMDB: Got Rating = ["minfo["mi_rating"]"]");
-               sec=RATING;
             }
 
             # Desktop - full certificate scrape
             if (index(line,"certificates")) {
 
                 scrapeIMDBCertificate(minfo,line);
-                sec=CERT;
 
             }
             # mobile - just get rated.
             if (index(line,">Rated<")) {
                 minfo["mi_certrating"]=trimAll(scrape_until("irtime",f,"</div>",1));
                 minfo["mi_certcountry"]="USA";
-                sec=CERT;
             }
 
 
@@ -176,7 +166,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
                 DEBUG("AKA:"line);
 
                 aka_title_country = scrapeIMDBAka(minfo,line);
-                sec=AKA;
 
             }
 
@@ -196,7 +185,6 @@ title,poster_imdb_url,i,sec,orig_country_pos,aka_country_pos,orig_title_country,
     } else {
         DEBUG("Unknown imdbContentPosition ["imdbContentPosition"]");
     }
-    if (sec) delete isection[sec];
     return imdbContentPosition;
 }
 
@@ -312,7 +300,7 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function scrapeIMDBTitlePage(minfo,url,\
-f,line,imdbContentPosition,isection,connections,remakes,ret) {
+f,line,imdbContentPosition,connections,remakes,ret) {
 
     if (url == "" ) return;
 
@@ -323,7 +311,6 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
 
     id1("scrape imdb ["url"]");
 
-
     if (minfo["mi_imdb"] == "") {
         minfo["mi_imdb"] = extractImdbId(url);
     }
@@ -332,7 +319,6 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
         INF("scraping "url);
 
         f=getUrl(url,"imdb_main",1);
-        hash_copy(isection,g_imdb_sections);
 
         if (f != "" ) {
 
@@ -344,19 +330,13 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
             minfo["role"] = "";
 
             while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,isection);
+                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f);
             }
 
             delete minfo["role"];
             delete minfo["role_max"];
 
             enc_close(f);
-
-            if (hash_size(isection) > 0 ) {
-                ERR("Unparsed imdb sections ");
-                dump(0,"missing",isection);
-            }
-
 
             if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
                 minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
@@ -365,14 +345,18 @@ f,line,imdbContentPosition,isection,connections,remakes,ret) {
         }
 
         if (minfo["mi_category"] == "M" ) {
+
             getNiceMoviePosters(minfo,extractImdbId(url));
             getMovieConnections(extractImdbId(url),connections);
+
             if (connections["Remake of"] != "") {
                 getMovieConnections(connections["Remake of"],remakes);
             }
+
             minfo["mi_conn_follows"]= connections["Follows"];
             minfo["mi_conn_followed_by"]= connections["Followed by"];
             minfo["mi_conn_remakes"]=remakes["Remade as"];
+
             INF("follows="minfo["mi_conn_follows"]);
             INF("followed_by="minfo["mi_conn_followed_by"]);
             INF("remakes="minfo["mi_conn_remakes"]);

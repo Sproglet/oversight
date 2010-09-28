@@ -275,7 +275,7 @@ extids,ovsids,num,domain,i,key) {
 
     if (db_field in fields) {
 
-        id1("person_extid2ovsid" fields[db_field]);
+        id1("people_change_extid_to_ovsid_by_role" fields[db_field]);
 
         num = split(fields[db_field],extids,"@");
         domain = extids[1];

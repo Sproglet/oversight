@@ -98,6 +98,10 @@ function ascii8(s) {
 #ALL#     return s;
 #ALL# }
 
+function prepare_path(f) {
+    return system("mkdir -p "qa(f)" && rmdir -- "qa(f)) == 0;
+}
+
 #--------------------------------------------------------------------
 # Convinience function. Create a new file to capture some information.
 # At the end capture files are deleted.
@@ -106,6 +110,7 @@ function new_capture_file(label,\
     fname) {
     # fname = CAPTURE_PREFIX JOBID  "." CAPTURE_COUNT "__" label; # ALL
     fname = CAPTURE_PREFIX PID  "." CAPTURE_COUNT "__" label;
+    prepare_path(fname);
     CAPTURE_COUNT++;
     return fname;
 }

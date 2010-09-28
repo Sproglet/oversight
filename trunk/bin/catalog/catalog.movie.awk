@@ -13,6 +13,8 @@ imdb_title_q,imdb_id_q) {
     name_id=0;
 
 
+    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
+
     if (minfo["mi_parts"] != "") {
         name_list[++name_id]=remove_part_suffix(minfo);
     }
@@ -30,7 +32,6 @@ imdb_title_q,imdb_id_q) {
 
     name_list[++name_id] = name;
 
-    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
 
 
     dump(0,"name_tries",name_list);

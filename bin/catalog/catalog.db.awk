@@ -384,13 +384,13 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             row2 = "";
         } else if (action == 3) { # merge
             # Merge the rows.
-            fields1[WATCHED] = fields2[WATCHED];
-            fields1[LOCKED] = fields2[LOCKED];
-            fields1[FILE] = short_path(fields1[FILE]);
+            fields2[WATCHED] = fields1[WATCHED];
+            fields2[LOCKED] = fields1[LOCKED];
+            fields2[FILE] = short_path(fields2[FILE]);
 
-            if (keep_dbline(row1,fields1)) {
+            if (keep_dbline(row2,fields2)) {
                 total_changed ++;
-                write_dbline(fields1,file_out);
+                write_dbline(fields2,file_out);
                 new_or_changed_line = 1;
             } else {
                 total_removed++;
@@ -460,7 +460,7 @@ dbline,dbfields,err,count,filter) {
             count++;
         }
     }
-    if (err == 0 ) close(db);
+    if (err >= 0 ) close(db);
     id0(count" files");
 }
 
@@ -482,7 +482,7 @@ function remove_absent_files_from_new_db(db,\
     tmp_db = db "." JOBID ".tmp";
 
     # TODO if index is sorted by file we can do this a folder at a time.
-    get_files_in_db("",db);
+    # TODO : not needed : get_files_in_db("",db);
 
     if (lock(g_db_lock_file)) {
         g_kept_file_count=0;

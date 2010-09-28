@@ -161,7 +161,10 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
     db->plot_file = replace_str(db->path,"index.db","plot.db");
 
     HTML_LOG(1,"db path[%s]",db->plot_file);
-    db->actors_file = replace_all(db->path,"index.db","db/actors.db",0);
+
+    db->actors_file = replace_all(db->path,"index.db","db/actor.db",0);
+    db->directors_file = replace_all(db->path,"index.db","db/writer.db",0);
+    db->writers_file = replace_all(db->path,"index.db","db/director.db",0);
 
     db->source= STRDUP(source);
 
@@ -606,6 +609,8 @@ void db_free(Db *db)
         FREE(db->path);
         FREE(db->plot_file);
         FREE(db->actors_file);
+        FREE(db->writers_file);
+        FREE(db->directors_file);
         FREE(db->lockfile);
         FREE(db->backup);
         FREE(db);

@@ -325,7 +325,7 @@ function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,files_in_db,\
 path) {
 
     path=clean_path(folder"/"file);
-    if (!NEWSCAN || in_list(path,files_in_db) ) {
+    if (!NEWSCAN || !in_list(path,files_in_db) ) {
 
 
         INF("Storing " path);
@@ -643,7 +643,9 @@ row,people) {
 
     row = createIndexRow(minfo,-1,0,0,"");
 
-    print row people >> qfile;
+    row = row people;
+
+    print row >> qfile;
 
     INF("queued ["row"]");
 

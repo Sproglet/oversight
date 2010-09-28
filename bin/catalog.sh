@@ -263,11 +263,17 @@ catalog() {
 
     Q="'"
 
-
     # use index before match
     # clear arrays using split("",array,"")
 
-        $AWK -f $APPDIR/catalog/catalog*awk \
+    awk_prg="$AWK "
+    for f in $APPDIR/bin/catalog/catalog*awk ; do
+        awk_prg="$awk_prg -f $f"
+    done
+
+    echo "PRG = $awk_prg"
+
+        $awk_prg \
     JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     DAY=`date +%a.%P` \
     "START_DIR=$START_DIR" \

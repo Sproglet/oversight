@@ -2432,7 +2432,6 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
             
             int r,c;
             int i;
-            int prefix_len = strlen(NVL(group->prefix));
 
             for (r = 0 ; r < rows ; r++ ) {
                 array_add(out,STRDUP("\n<tr>"));
@@ -2441,16 +2440,17 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
 
                     i = r * cols + c;
                     if (  i < group->dbgi_size ) {
-                        char id[10];
 
-                        sprintf(id, "%s%07d",NVL(group->prefix),group->dbgi_ids[i]);
+                        char id[20];
+                       
+                        sprintf(id,"%d",group->dbgi_ids[i]);
 
                         Array *name_info=dbnames_fetch(id,name_file);
 
 
                         if (name_info) {
 
-                            char *link = get_person_drilldown_link(VIEW_PERSON,id+prefix_len,"",name_info->array[1],"","");
+                            char *link = get_person_drilldown_link(VIEW_PERSON,id,"",name_info->array[1],"","");
 
                             //At present name is "nm0000000:First Last" but this may 
                             //change.
@@ -2554,7 +2554,7 @@ char *macro_fn_directors(MacroCallInfo *call_info)
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->actors_file,"directors",item->directors,1,2);
+        result = people_table(call_info,item->db->directors_file,"directors",item->directors,1,2);
     }
     return result;
 }
@@ -2563,7 +2563,7 @@ char *macro_fn_writers(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->actors_file,"writers",item->writers,1,2);
+        result = people_table(call_info,item->db->writers_file,"writers",item->writers,1,2);
     }
     return result;
 }

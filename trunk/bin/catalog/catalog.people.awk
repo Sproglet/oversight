@@ -45,7 +45,7 @@
 function person_scan(minfo,domain,role,text,\
 lctext,person_name,url,external_id,ret) {
 
-    id1("person_scan:"text);
+    id1("person_scan:");
     lctext =  tolower(text);
     if (index(lctext,"href=")) {
         if (index(lctext,"<img")) {
@@ -53,20 +53,24 @@ lctext,person_name,url,external_id,ret) {
         } else {
             person_name = extractTagText(text,"a");
             url =  extractAttribute(text,"a","href");
-            external_id=person_get_id(url);
-     else {
+            external_id=person_get_id(domain,url);
+        }
+    } else {
         # just a name
         person_name = external_id = trim(text);
     }
     if(person_name != "" && external_id != "") {
-        ret = 1;
+        INF("found "external_id" = "person_name);
         if (! ("mi_"role"_names" in minfo) ) {
             minfo["mi_"role"_names"]  = domain;
             minfo["mi_"role"_ids"]  = domain;
         }
             
-        minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" person_name;
-        minfo["mi_"role"_ids"]  = minfo["mi_"role"_ids"] "@" external_id;
+        if (index(minfo["mi_"role"_ids"]"@","@"external_id"@") == 0) { 
+            minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" person_name;
+            minfo["mi_"role"_ids"]  = minfo["mi_"role"_ids"] "@" external_id;
+            ret = 1;
+        }
     }
     id0(ret);
     return ret;
@@ -86,17 +90,18 @@ lctext,person_name,url,external_id,ret) {
 function person_get_id(domain,url,\
 i,num,patterns,plist) {
 
-    id1("person_get_id:"url);
+    id1("person_get_id:"domain":"url);
 
     if(url) {
         domain_load_settings("default");
         domain_load_settings(domain);
 
 
-        plist=g_settings[domain":catalog_url_to_personid_regex_list"];
+        plist=g_settings[domain":catalog_domain_url_to_personid_regex_list"];
         if (plist == "") {
-            plist=g_settings["default:catalog_url_to_personid_regex_list"];
+            plist=g_settings["default:catalog_domain_url_to_personid_regex_list"];
         }
+        INF("using "plist);
 
         num = split(plist,patterns,",");
         for(i = 1 ; i <= num ; i++ ) {
@@ -120,30 +125,47 @@ i,num,patterns,plist) {
 # also set  lookup person_extid2name[domain:id]=name
 function person_add_db_queue(minfo,person_extid2name,\
 db_text) {
+    id1("person_add_db_queue");
     db_text = "\t" person_add_db_queue_role(minfo,"actor",ACTORS,person_extid2name);
     db_text = db_text "\t" person_add_db_queue_role(minfo,"director",DIRECTORS,person_extid2name);
     db_text = db_text "\t" person_add_db_queue_role(minfo,"writer",WRITERS,person_extid2name) "\t" ;
 
     sub(/^\t+/,"",db_text);
     gsub(/\t\t+/,"\t",db_text);
+    id0(db_text);
     return db_text;
 }
 
 function person_add_db_queue_role(minfo,role,dbfield,person_extid2name,\
-text,i,num,domain,ids,names) {
-    text = minfo["mi_"role"_ids"] ;
-    if (text) {
+text,i,num,domain,ids,names,key,namekey) {
+
+    id1("person_extid2name:"role);
+
+    key = "mi_"role"_ids" ;
+    namekey = "mi_"role"_names" ;
+
+    if (key in minfo) {
+
+        # set text=domain:extid1@extid2@...
+        text = minfo[key] ;
+
+        # eg set text=_A\tdomain:extid1@extid2@...
         text = dbfield "\t" text;
 
         # update lookup table
-        num = split(minfo["mi_"role"_ids"],ids,"@");
-        split(minfo["mi_"role"_names"],names,"@");
+        num = split(minfo[key],ids,"@");
+        split(minfo[namekey],names,"@");
 
         domain = ids[1];
         for(i = 2 ; i <= num ; i++ ) {
             person_extid2name[domain":"role":"ids[i]] = names[i];
+            INF("person_extid2name["domain":"role":"ids[i]"] => "names[i]);
         }
+    } else {
+        INF("no "role" data");
     }
+    id0(text);
+
     return text;
 }
 
@@ -162,17 +184,21 @@ text,i,num,domain,ids,names) {
 function people_update_dbs(person_extid2name,person_extid2ovsid,\
 extid,ovsid,domain,role,tmp,roledb,domaindb,sortfiles,name,f) {
 
+    id1("people_update_dbs");
+    dump(0,"person_extid2name",person_extid2name);
+
     for (extid in person_extid2name) {
 
         name = person_extid2name[extid];
+        DEBUG(extid":"name);
         split(extid,tmp,":");
         domain = tmp[1];
         role = tmp[2];
         extid = tmp[3];
         if (domain != "" && extid != "") {
 
-            roledb = DBDIR"/"role".db";
-            domaindb = DBDIR"/"role"."domain".db";
+            roledb = APPDIR"/db/"role".db";
+            domaindb = APPDIR"/db/"role"."domain".db";
 
             ovsid = people_db_lookup(domaindb,1,extid,2);
             if (ovsid == "") {
@@ -188,22 +214,27 @@ extid,ovsid,domain,role,tmp,roledb,domaindb,sortfiles,name,f) {
         }
     }
     for(f in sortfiles) {
-        sort_file(f,"");
+        sort_file(f,"-u");
     }
+    id0("");
 }
 
 # Do a full scan for a person. If this becomes a performance issue then we can
 # 1. implement bchop or 2. partition the people files.
 function people_db_lookup(file,infield,value,outfield,\
-line,err,fields.ret) {
+line,err,fields,ret) {
 
     while(( err = (getline line < file)) > 0) {
-        split(line,fields);
-        if (fields[infield] == value) {
-            ret = fields[outfield];
+        if (index(line,value)) {
+            split(line,fields,"\t");
+            if (fields[infield] == value) {
+                ret = fields[outfield];
+                INF("found ["line"] in "file" "value" = "ret);
+                break;
+            }
         }
     }
-    if (err == 0) {
+    if (err >= 0) {
         close(file);
     }
     return ret;
@@ -213,12 +244,15 @@ function people_db_add(dbfile,name,\
 newovsid) {
     newovsid = get_maxid(dbfile)+1;
     print newovsid"\t"name >> dbfile;
+    INF("add new "dbfile": "newovsid"\t"name);
     close(dbfile);
     set_maxid(dbfile,newovsid);
+    return newovsid;
 }
 
 function people_domain_db_add(domaindb,extid,ovsid) {
     print extid"\t"ovsid >> domaindb;
+    INF("add new "domaindb": "extid"\t"ovsid);
     close(domaindb);
 }
 
@@ -234,6 +268,8 @@ function people_change_extid_to_ovsid(fields,person_extid2ovsid) {
     people_change_extid_to_ovsid_by_role("writer",WRITERS,fields,person_extid2ovsid);
 }
 
+# INPUT db field array f[dbfield]="domain@extid1@extid2@...." dbfield=ACTORS,WRITERS,DIRECTORS
+# OUTPUT f[dbfield]="ovsid1,ovsid2,..."
 function people_change_extid_to_ovsid_by_role(role,db_field,fields,person_extid2ovsid,\
 extids,ovsids,num,domain,i,key) {
 
@@ -252,6 +288,8 @@ extids,ovsids,num,domain,i,key) {
         }
 
         ovsids = substr(ovsids,2);
+
+        fields[db_field] = ovsids;
 
         id0(ovsids);
     }

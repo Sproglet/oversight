@@ -21,24 +21,13 @@
 
 #define NAME_SEP "\t"
 #define DB_PERSON_NAME_SIZE 110
-#define PREFIX_LEN 3 // allow a bit more space to read start of next record when required \nnm0
-static char name_record[DB_PERSON_NAME_SIZE+PREFIX_LEN+1];
+static char name_record[DB_PERSON_NAME_SIZE+1];
 // IMDB has some gems such as nm2770034 "11th Naval District United States Coast Guard Band"
 // The longest name at the moment is 83 characters.
 // nm2863306
 // King Friedrich August the Third of Saxony, Johann Ludwig Karl Gustav Gregor Philipp
 
-static inline int full_record(char *name) {
-    return name[0] == 'n' && name[1] == 'm' && isdigit(name[2]);
-}
-
-// nm0001:aaaaaa
-// nm0005:aaaaaa
-// nm0010:aaaaaa
-//
-// nm0001:aaaaaa
-// nm0005:aaaaaaaaa
-// 
+// records have format ovsid\tname
 
 // Seek back from 'start' for the start of the previous record.
 static inline long seek_back(FILE *fp,long start) {
@@ -56,18 +45,28 @@ static inline long seek_back(FILE *fp,long start) {
         HTML_LOG(0,"seek start [%ld] failed. errno = %d",start,errno);
     } else {
         long bytes;
-        // Read previous record (and also a bit more in case 'start' was pointing
-        // at m0001 and we just needed to go back 1 byte.
-        if ((bytes=fread(name_record,1,start-prev+PREFIX_LEN,fp)) >= 0) {
-            //HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name_record);
-            char *p;
-            for( p = name_record+bytes-PREFIX_LEN ; p >= name_record ; p--) {
-                if (full_record(p)) {
-                    fseek(fp,prev+(p-name_record),SEEK_SET);
-                    //HTML_LOG(0,"seeked back to [%ld]",prev+(p-name_record));
-                    result = prev+(p-name_record);
+        HTML_LOG(0,"seek back checking range [%ld-%ld]",prev,start);
+        // Read all bytes from prev to start.
+        if ((bytes=fread(name_record,1,start-prev,fp)) >= 0) {
+            HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name_record);
+
+            // Now scan backwards until we hit cr or linefeed
+            int i;
+TRACE1;
+            for( i = bytes-1 ; i ; i-- ) {
+                if (name_record[i] == '\n' || name_record[i] == '\r' || name_record == '\0' ) {
+                    HTML_LOG(0,"seek back to [%.10s]",name_record+i+1);
+                    prev += i+1;
                     break;
                 }
+            }
+TRACE1;
+            if (fseek(fp,prev,SEEK_SET) != 0) {
+                HTML_LOG(0,"seek start [%ld] failed - step 2 . errno = %d",start,errno);
+            } else {
+                HTML_LOG(0,"seek back to [%ld]",prev);
+
+                result = prev;
             }
         } else {
             HTML_LOG(0,"Failed to read bytes [%ld]. errno = %d",bytes,errno);
@@ -80,50 +79,38 @@ static inline long seek_back(FILE *fp,long start) {
 /**
  * returns record in name file that matches the name id.
  * This has format 
- * nm0000000:John Doe
+ * id tab name 
+ * eg
+ * 1\tJohn Doe
  */
 char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
 {
-    char *state;
+    int count = 0;
     char *result = NULL;
 
     char full_key[20];
    
-    if (util_starts_with(key,"nm")) {
-        strcpy(full_key,key);
-    } else {
-        sprintf(full_key,"nm%s",key);
-    }
+    sprintf(full_key,"%s\t",key);
 
     int keylen = strlen(full_key);
     long mid;
+TRACE1;
+    HTML_LOG(0,"Looking for key [%s]",key);
     while(1) {
+        if (++count > 20) {
+            HTML_LOG(0,"Error in chop??");
+            break;
+        }
         mid = ( start + end ) / 2;
-        //HTML_LOG(0,"chop[%ld][%ld][%ld]",start,mid,end);
+        HTML_LOG(0,"chop[%ld][%ld][%ld]",start,mid,end);
         if (fseek(f,mid,SEEK_SET) == 0) {
-
-            if ((state=fgets(name_record,DB_PERSON_NAME_SIZE,f)) != NULL) {
-                //HTML_LOG(0,"mid[%ld][%s]",mid,name_record);
-                if (!full_record(name_record)) {
-                    // We have jumped into the middle of a record.
-                    mid = seek_back(f,mid);
-                    if (mid < 0) {
-                        // Cant find start of record?
-                        break;
-                    } 
-
-                    state = fgets(name_record,DB_PERSON_NAME_SIZE,f);
-                    //HTML_LOG(0,"new mid[%ld][%s]",mid,name_record);
-
-                    if (state && !full_record(name_record)) {
-                        // Cant find start of record?
-                        // This shouldnt happen because seek back checks this also.
-                        break;
-                    }
-                    //HTML_LOG(0,"back[%ld][%s]",mid,name_record);
-                }
-            }
-            if (state) {
+            // align with start of record.
+            mid = seek_back(f,mid);
+            if (mid < 0) {
+                // Cant find start of record?
+                break;
+            } 
+            if (fgets(name_record,DB_PERSON_NAME_SIZE,f) != NULL) {
                 int cmp = strncmp(full_key,name_record,keylen);
                 if (cmp == 0) {
                     result = name_record;
@@ -140,19 +127,25 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
             }
         }
     }
+TRACE1;
+    HTML_LOG(0,"found [%s] = [%s]",key,result);
     return result;
 }
 
 /**
  * returns record in name file that matches the name id.
  * This has format 
- * nm0000000:John Doe
+ * id tab name 
+ * eg
+ * 1\tJohn Doe
  */
 char *dbnames_fetch_static(char *key,char *file)
 {
     char *result = NULL;
     struct stat64 st;
 
+    TRACE1;
+    HTML_LOG(0,"Looking for key [%s]",key);
     if (util_stat(file,&st) == 0) {
         FILE *f = fopen(file,"rba");
         if (f) {
@@ -177,6 +170,8 @@ char *dbnames_fetch_static(char *key,char *file)
 Array *dbnames_fetch(char *key,char *file) 
 {
     Array *result = NULL;
+TRACE1;
+    HTML_LOG(0,"Looking for key [%s]",key);
     char *record = dbnames_fetch_static(key,file);
     if (record) {
 
@@ -191,5 +186,6 @@ Array *dbnames_fetch(char *key,char *file)
             }
         }
     }
+TRACE1;
     return result;
 }

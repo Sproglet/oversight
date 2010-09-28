@@ -1,4 +1,11 @@
 #! $Id$
+##
+# web_search_first_imdb_link has now been disabled in tv_search(Sep 2010), as well as being
+# previously disabled in movie search. This is to avoid excessive googling for tv shows, 
+# as if a tv show cannot be found , it will switch to looking for movies which also uses 
+# other 'google' search methods. If the resulting program is a tv show according to IMDB,
+# then it will switch back to tv search mode. see catalog.tv.awk tvsearch().
+# ----------------------------------------------------------------------------------------
 #
 # ensure svn keyword expansion is enabled
 #
@@ -193,6 +200,14 @@ function report_status(msg) {
 
 
 END{
+    #path for actor db etc.
+    DBDIR = APPDIR"/db";
+
+    g_max_id_file = INDEX_DB".maxid";
+    INDEX_DB_TMP = INDEX_DB "." JOBID ".tmp";
+    INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
+    INDEX_DB_OLD = INDEX_DB "." DAY;
+
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
 
     # Note keep timout above 30 seconds to allow for the DNS bug where first lookup takes 30 seconds
@@ -204,6 +219,7 @@ END{
     g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
     g_winsfile = APPDIR"/conf/wins.txt";
     g_item_count = 0;
+
 
     g_plot_file=PLOT_DB;
     g_plot_app=qa(APPDIR"/bin/plot.sh");
@@ -235,11 +251,6 @@ END{
 #        ERR("Unknown tv plugin");
 #        exit;
 #    }
-
-    g_max_id_file = INDEX_DB".maxid";
-    INDEX_DB_TMP = INDEX_DB "." JOBID ".tmp";
-    INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
-    INDEX_DB_OLD = INDEX_DB "." DAY;
 
     DEBUG("RENAME_TV="RENAME_TV);
     DEBUG("RENAME_FILM="RENAME_FILM);

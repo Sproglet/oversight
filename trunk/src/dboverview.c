@@ -852,10 +852,19 @@ DbGroupIMDB *parse_imdb_list(
                 p = (unsigned char *)q;
 
             } else if (*p && *p != IMDB_GROUP_SEP) {
-                // Parse number in base n where each character is a digit offset
-                // by 128. (to avoid clash with ascii7 )
-                id = id * IMDB_GROUP_BASE + (*p - 128);
-                p++;
+                if (*p >= 128) {
+                    // Parse number in base n where each character is a digit offset
+                    // by 128. (to avoid clash with ascii7 )
+                    id = id * IMDB_GROUP_BASE + (*p - 128);
+                    p++;
+                } else if (isdigit(*p)) {
+                    // normal number.
+                    id = id * 10 + (*p - '0');
+                    p++;
+                } else {
+                    assert(0);
+                }
+
             } else {
                 if (group == NULL) {
                     group = db_group_imdb_new(0,prefix);

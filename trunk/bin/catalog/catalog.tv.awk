@@ -98,7 +98,13 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
 
         minfo["mi_tvid"] = details[TVID];
         minfo["mi_tvid_plugin"] = plugin;
-        minfo["mi_category"] = "T";
+
+        # This is the weakest form of tv categorisation, as the filename may just look like a TV show
+        # So only set if it is blank
+        if (minfo["mi_category"] == "") {
+            minfo["mi_category"] = "T";
+        }
+
         minfo["mi_additional_info"] = details[ADDITIONAL_INF];
         # Now check the title.
         #TODO
@@ -562,10 +568,15 @@ tvDbSeriesPage,result,tvid,cat,iid) {
             # If we get here we dont know the tvid nor imdbid and a lookup by title has also failed
             # At this stage we use the file name to search the web for an imdb url.
             # TODO This should filter out movie results.
-            imdbUrl=web_search_frequent_imdb_link(minfo);
+
+            # TODO This is disabled for now, as the movie search will also do frequent link searching.
+            # and if the movie search returns a TV page then a tv search will be tried again using 
+            # the new IMDB title.
+            # This may impact searches for badly titled tv shows.
+            # TODO: imdbUrl=web_search_frequent_imdb_link(minfo);
         }
         if (imdbUrl != "") {
-            # but do know imdbid - use the imdb id to find the tv id
+            # use the imdb id to find the tv id
             cat = scrapeIMDBTitlePage(minfo,imdbUrl);
             if (cat != "M" ) {
                 # find the tvid - this can miss if the tv plugin api does not have imdb lookup

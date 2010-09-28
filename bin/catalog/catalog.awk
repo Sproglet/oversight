@@ -782,34 +782,6 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
     return 0+ found;
 }
 
-# This should only be called fairly late in the selection process.
-# It returns the newest item. It may not be a valid thing to do
-# but if we end up having to chose between two films with no other
-# information should either make a choice OR give up.
-# The relative age is just a metric that can be compared between films
-# eg IMDBID is a rough relative age indicator.
-# For other databases we may need to get the actual air date.
-# it should return array of strings (not numbers) that can be compared using < >.
-# eg 2009-03-31 ok but 31-03-2009 bad.
-# IN minfo - current media item
-# IN titleHash - Indexed by imdb/tvdbid etc
-# OUT ageHash - age indicator  Indexed by imdb/tvdbid etc
-function getRelativeAge(plugin,minfo,titleHash,ageHash,\
-id,xml) {
-   for(id in titleHash) {
-        if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
-            if (plugin == "THETVDB") {
-                ageHash[id] = xml["/Data/Episode/FirstAired"];
-            } else if (plugin == "TVRAGE" ) {
-                ageHash[id] = xml["/Show/Episodelist/Season/episode/airdate"];
-            } else {
-                plugin_error(plugin);
-            }
-        }
-    }
-    dump(1,"Age indicators",ageHash);
- }
-
 function verify_setup(\
 tmp,tmp2) {
     tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape";

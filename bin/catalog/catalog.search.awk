@@ -239,7 +239,7 @@ txt) {
 
     #Remove the cd1 partb bit.
     if (minfo["mi_multipart_tag_pos"]) {
-        txt = substr(txt,1,minfo["mi_multipart_tag_pos"]);
+        txt = substr(txt,1,minfo["mi_multipart_tag_pos"]-1);
         sub("("g_multpart_tags"|)[1a]$","",txt);
         DEBUG("MultiPart Suffix removed = ["txt"]");
     }

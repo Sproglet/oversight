@@ -442,12 +442,13 @@ file1_sorted,file2_sorted,file_merged,person_extid2ovsid) {
 function get_files_in_db(prefix,db,list,\
 dbline,dbfields,err,count,filter) {
 
+    count = 0;
     id1("get_files_in_db ["prefix"]");
     delete list;
     list["@PREFIX"] = prefix =  short_path(prefix);
-    list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]+\t";
+    list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]*\t";
 
-    INF("get_files_in_db filter = "filter);
+    INF("filter=["filter"]");
 
     while((err = (getline dbline < db )) > 0) {
 

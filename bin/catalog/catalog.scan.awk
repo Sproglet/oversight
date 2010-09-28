@@ -325,23 +325,25 @@ function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,files_in_db,\
 path) {
 
     path=clean_path(folder"/"file);
+
+
+    INF("Storing " path);
+    DEBUG("NEWSCAN = "NEWSCAN" in_list("path") = "in_list(path,files_in_db));
+
+
+    g_fldrMediaCount[folder]++;
+
+    minfo["mi_folder"]=folder;
+    minfo["mi_media"] = file;
+    minfo["mi_file_time"] = timeStamp;
+
+    setNfo(minfo,nfoReplace,nfoExt);
+
+    gMovieFileCount++;
     if (!NEWSCAN || !in_list(path,files_in_db) ) {
-
-
-        INF("Storing " path);
-        DEBUG("NEWSCAN = "NEWSCAN" in_list("path") = "in_list(path,files_in_db));
-
-
-        g_fldrMediaCount[folder]++;
-
-        minfo["mi_folder"]=folder;
-        minfo["mi_media"] = file;
-        minfo["mi_file_time"] = timeStamp;
-
-        setNfo(minfo,nfoReplace,nfoExt);
-
-        gMovieFileCount++;
+        minfo["mi_do_scrape"]=1;
     }
+        
 }
 
 #Check if a filename is similar to the previous stored filename.
@@ -478,11 +480,12 @@ file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,\
 cat,qfile) {
 
-    id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
 
     qfile = INDEX_DB ".queue." PID;
 
-    if (verify(minfo)) {
+    if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" && verify(minfo)) {
+
+        id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
 
         eta="";
        
@@ -628,9 +631,9 @@ cat,qfile) {
                 merge_queue(qfile,person_extid2name);
         }
 
-    }
 
-    id0(total);
+        id0(total);
+    }
 }
 
 # INPUT minfo - scraped information

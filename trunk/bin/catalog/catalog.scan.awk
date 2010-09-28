@@ -67,8 +67,9 @@ function dir_contains(dir,pattern) {
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
-lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name) {
+lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
+    qfile = new_capture_file("dbqueue");
     DEBUG("Scanning "root);
     if (root == "") return;
 
@@ -122,7 +123,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
            # If the folder has changed and we have more than n items then process them
            # this is to save memory. As this removes stored data we only do this if we 
            # change folder. This ensures we process multipart files together.
-           total += identify_and_catalog(minfo,0,person_extid2name);
+           total += identify_and_catalog(minfo,qfile,0,person_extid2name);
 
            clear_folder_info();
 
@@ -212,7 +213,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                        identify_and_catalog(minfo,0,person_extid2name);
+                        identify_and_catalog(minfo,qfile,0,person_extid2name);
                         storeMovie(minfo,f"/",d,ts,"/$",".nfo",files_in_db);
                     }
                 }
@@ -305,7 +306,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
-                    identify_and_catalog(minfo,0,person_extid2name);
+                    identify_and_catalog(minfo,qfile,0,person_extid2name);
                     storeMovie(minfo,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo",files_in_db)
                 }
             }
@@ -315,7 +316,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     close(tempFile);
 
-    total += identify_and_catalog(minfo,1,person_extid2name);
+    total += identify_and_catalog(minfo,qfile,1,person_extid2name);
 
     DEBUG("Finished Scanning "root);
     return 0+total;
@@ -328,8 +329,6 @@ path) {
 
 
     INF("Storing " path);
-    DEBUG("NEWSCAN = "NEWSCAN" in_list("path") = "in_list(path,files_in_db));
-
 
     g_fldrMediaCount[folder]++;
 
@@ -475,13 +474,12 @@ ret) {
    return ret;
 }
 
-function identify_and_catalog(minfo,force_merge,person_extid2name,\
+function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,\
-cat,qfile) {
+cat) {
 
 
-    qfile = INDEX_DB ".queue." PID;
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" && verify(minfo)) {
 
@@ -616,6 +614,7 @@ cat,qfile) {
                 g_process_time += thisTime;
                 g_elapsed_time = systime() - g_start_time;
                 g_total ++;
+                g_batch_total++;
                 #lang_test(minfo);
 
                 DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
@@ -626,14 +625,16 @@ cat,qfile) {
 
         delete minfo;
 
-        if (force_merge || ( (g_total % g_batch_size) == g_batch_size - 1)) {
-
-                merge_queue(qfile,person_extid2name);
-        }
-
 
         id0(total);
     }
+
+    if ((force_merge && g_batch_total) ||  g_batch_total == g_batch_size ) {
+
+            merge_queue(qfile,person_extid2name);
+            g_batch_total = 0;
+    }
+
 }
 
 # INPUT minfo - scraped information
@@ -650,7 +651,7 @@ row,people) {
 
     print row >> qfile;
 
-    INF("queued ["row"]");
+    INF("queued ["row"] to ["qfile"]");
 
     # Plots are added to a seperate file.
     update_plots(g_plot_file,minfo);

@@ -168,26 +168,26 @@ function set_db_fields() {
 
 
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
-    TITLE=db_field("_T","Title","title",1) ;
-    DIRECTORS=db_field("_d","Director","director",1) ;
-    ACTORS=db_field("_A","Actors","actors",1) ;
-    WRITERS=db_field("_W","Writers","writers",1) ;
+    TITLE=db_field("_T","Title","title") ;
+    DIRECTORS=db_field("_d","Director","director") ;
+    ACTORS=db_field("_A","Actors","actors") ;
+    WRITERS=db_field("_W","Writers","writers") ;
     CREATOR=db_field("_c","Creator","creator") ;
-    AKA=db_field("_K","AKA","",1);
+    AKA=db_field("_K","AKA","");
 
     CATEGORY=db_field("_C","Category","");
     ADDITIONAL_INF=db_field("_ai","Additional Info","");
-    YEAR=db_field("_Y","Year","year",1) ;
+    YEAR=db_field("_Y","Year","year") ;
 
     SEASON=db_field("_s","Season","season") ;
     EPISODE=db_field("_e","Episode","episode");
 
-    GENRE=db_field("_G","Genre","genre",1) ;
-    RUNTIME=db_field("_rt","Runtime","runtime",1) ;
-    RATING=db_field("_r","Rating","rating",1);
+    GENRE=db_field("_G","Genre","genre") ;
+    RUNTIME=db_field("_rt","Runtime","runtime") ;
+    RATING=db_field("_r","Rating","rating");
     CERT=db_field("_R","CERT","mpaa"); #Not standard?
 
-    PLOT=db_field("_P","Plot","plot",1);
+    PLOT=db_field("_P","Plot","plot");
     #EPPLOT=db_field("_ep","Plot","plot");
 
     URL=db_field("_U","URL","url");
@@ -219,15 +219,10 @@ function set_db_fields() {
 # IN key = database key and html parameter
 # IN name = logical name
 # IN tag = xml tag in xmbc nfo files.
-# IN imdbsrc just indicates that this value can appear on imdb page.
-# it is only used to warn if imdb has changed thier page format - again.
-function db_field(key,name,tag,imdbsrc) {
+function db_field(key,name,tag) {
     g_db_field_name[key]=name;
     gDbTag2FieldId[tag]=key;
     gDbFieldId2Tag[key]=tag;
-    if (imdbsrc) {
-        g_imdb_sections[key]=name;
-    }
     return key;
 }
 ##### LOADING INDEX INTO DB_ARR[] ###############################
@@ -318,7 +313,7 @@ function merge_index(file1,file2,file_out,person_extid2ovsid,\
 row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line,ret) {
 
     ret = 1;
-    id1("merge_index");
+    id1("merge_index ["file1"]["file2"]");
 
 
     max_id = get_maxid(INDEX_DB);
@@ -329,14 +324,14 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         if (and(action,1)) { 
             row1 = get_dbline(file1);
             parseDbRow(row1,fields1,1);
-            #INF("ORIGINAL:["fields1[FILE]"]");
+            INF("ORIGINAL:["fields1[FILE]"]");
         }
         if (and(action,2)) {
             row2 = get_dbline(file2);
             parseDbRow(row2,fields2,1);
             # change the external actor ids to oversight ids
             people_change_extid_to_ovsid(fields2,person_extid2ovsid);
-            #INF("NEW    :["fields2[FILE]"]");
+            INF("NEW    :["fields2[FILE]"]");
         }
 
         if (row1 == "") {
@@ -415,9 +410,10 @@ function sort_and_merge_index(file1,file2,file1_backup,person_extid2name,\
 file1_sorted,file2_sorted,file_merged,person_extid2ovsid) {
 
     id1("sort_and_merge_index ["file1"]["file2"]["file1_backup"]");
-    file1_sorted = file1 ".sorted." PID; 
-    file2_sorted = file2 ".sorted." PID; 
-    file_merged = file1 ".merged." PID; 
+
+    file1_sorted = new_capture_file("dbsort1");
+    file2_sorted = new_capture_file("dbsort2");
+    file_merged =  new_capture_file("dbmerge");
 
     if (sort_index(file1,file1_sorted) )  {
         if (sort_index(file2,file2_sorted) )  {
@@ -431,8 +427,8 @@ file1_sorted,file2_sorted,file_merged,person_extid2ovsid) {
             
         }
     }
-    rm(file1_sorted); #ALL
-    rm(file2_sorted); #ALL
+    rm(file1_sorted); 
+    rm(file2_sorted); 
     rm(file_merged);
     id0("");
 }

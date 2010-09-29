@@ -360,6 +360,7 @@ lastNameSeen,i,lastch,ch) {
     if (lastNameSeen == name) return 0;
 
     #DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
+
     for(i=1 ; i - length(lastNameSeen) <= 0 ; i++ ) {
         lastch = substr(lastNameSeen,i,1);
         ch = substr(name,i,1);
@@ -409,7 +410,7 @@ lastNameSeen,i,lastch,ch) {
         return 0;
     }
 
-    INF("Found multi part file - linked with "lastNameSeen);
+    INF("Found multi part file - linked "name" with "lastNameSeen);
     minfo["mi_parts"] = (minfo["mi_parts"] =="" ? "" : minfo["mi_parts"]"/" ) name;
     minfo["mi_multipart_tag_pos"] = i;
     return 1;
@@ -623,9 +624,6 @@ cat) {
             }
         }
 
-        delete minfo;
-
-
         id0(total);
     }
 
@@ -634,6 +632,7 @@ cat) {
             merge_queue(qfile,person_extid2name);
             g_batch_total = 0;
     }
+    delete minfo;
 
 }
 

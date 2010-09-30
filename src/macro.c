@@ -66,13 +66,7 @@ char *get_person_domain_filename(Db *db,char *role,char *domain)
     assert(role);
     assert(domain);
 
-    if (strcmp(role,DB_FLDID_ACTOR_LIST) == 0) {
-        file = db->actors_file;
-    } else if (strcmp(role,DB_FLDID_DIRECTOR_LIST) == 0) {
-        file = db->directors_file;
-    } else if (strcmp(role,DB_FLDID_WRITER_LIST) == 0) {
-        file = db->writers_file;
-    }
+    file = person_file_static(db,role);
     if (file) {
         char *ext = strrchr(file,'.');
         if (ext) {
@@ -310,14 +304,14 @@ char *macro_fn_mount_status(MacroCallInfo *call_info) {
 
 /**
  * Return Actor Image tag. additional tag attributes can be passed as argument.
- * [:ACTOR_IMAGE:]
- * [:ACTOR_IMAGE(attributes):]
+ * [:PERSON_IMAGE:]
+ * [:PERSON_IMAGE(attributes):]
  *
  * Example:
- * [:ACTOR_IMAGE(height="100px"):]
+ * [:PERSON_IMAGE(height="100px"):]
  *
  */
-char *macro_fn_actor_image(MacroCallInfo *call_info)
+char *macro_fn_person_image(MacroCallInfo *call_info)
 {
     char *attr = "";
     char *result = NULL;
@@ -2580,9 +2574,10 @@ char *macro_fn_person_name(MacroCallInfo *call_info)
     call_info->free_result = 0;
 
     char *id=query_val(QUERY_PARAM_PERSON);
+    char *role=query_val(QUERY_PARAM_PERSON_ROLE);
     if (!EMPTY_STR(id)) {
         Db *db = firstdb(call_info);
-        Array *actor_info = dbnames_fetch(id,db->actors_file);
+        Array *actor_info = dbnames_fetch(id,person_file_static(db,role));
         if (actor_info) {
             result = actor_info->array[1];
         } else {
@@ -2640,7 +2635,7 @@ char *macro_fn_person_role(MacroCallInfo *call_info)
     char *result = NULL;
     char *role = query_val(QUERY_PARAM_PERSON_ROLE);
     if (strcmp(role,DB_FLDID_ACTOR_LIST) == 0) {
-        result = "Actor";
+        result = NULL; // Dont display anything for Actor - avoids Actor/Actress issue.
     } else if (strcmp(role,DB_FLDID_WRITER_LIST) == 0) {
         result = "Writer";
     } else if (strcmp(role,DB_FLDID_DIRECTOR_LIST) == 0) {
@@ -2710,7 +2705,6 @@ void macro_init() {
         macros = string_string_hashtable("macro_names",64);
 
         hashtable_insert(macros,"ACTORS",macro_fn_actors);
-        hashtable_insert(macros,"ACTOR_IMAGE",macro_fn_actor_image);
         hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
@@ -2765,6 +2759,7 @@ void macro_init() {
         hashtable_insert(macros,"PAGE",macro_fn_page);
         hashtable_insert(macros,"PAGE_MAX",macro_fn_page_max);
         hashtable_insert(macros,"PERSON_ID",macro_fn_person_id);
+        hashtable_insert(macros,"PERSON_IMAGE",macro_fn_person_image);
         hashtable_insert(macros,"PERSON_NAME",macro_fn_person_name);
         hashtable_insert(macros,"PERSON_ROLE",macro_fn_person_role);
         hashtable_insert(macros,"PLOT",macro_fn_plot);

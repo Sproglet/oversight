@@ -181,6 +181,19 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
     return db;
 }
 
+char *person_file_static(Db *db,char *fieldid)
+{
+    char *result = NULL;
+    if (strcmp(fieldid,DB_FLDID_ACTOR_LIST) == 0) {
+        result = db->actors_file;
+    } else if (strcmp(fieldid,DB_FLDID_WRITER_LIST) == 0) {
+        result = db->writers_file;
+    } else if (strcmp(fieldid,DB_FLDID_DIRECTOR_LIST) == 0) {
+        result = db->directors_file;
+    }
+    return result;
+}
+
 
 
 

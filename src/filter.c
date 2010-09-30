@@ -80,9 +80,12 @@ Exp *build_filter(char *media_types)
 
     //Person
     char *person = query_val(QUERY_PARAM_PERSON);
-    if (person && *person) {
+    char *role = query_val(QUERY_PARAM_PERSON_ROLE);
+
+    if (person && *person && role) {
+        // CONTAINS_OP is used because the field value is a list.
         char *q;
-        ovs_asprintf(&q,"("DB_FLDID_ACTOR_LIST FIELD_OP CONTAINS_OP "%s~o~" DB_FLDID_DIRECTOR_LIST FIELD_OP CONTAINS_OP "%s)",person,person);
+        ovs_asprintf(&q,"%s" FIELD_OP CONTAINS_OP "%s",role,person);
         add_op_clause(&val,1,NULL,q,NULL);
         FREE(q);
     }

@@ -103,4 +103,5 @@ char * db_rowid_get_field(DbItem *rowid,char *name);
 int local_db_size();
 int *extract_ids_by_source(char *query,char *dbsource,int *num_ids);
 int *extract_ids(char *s,int *num_ids);
+char *person_file_static(Db *db,char *fieldid);
 #endif

@@ -48,6 +48,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define STRCASECMP(a,b) strcasecmp(NVL(a),NVL(b))
 
 #define QUERY_PARAM_VIEW "view"
+#define QUERY_PARAM_PERSON_ROLE "role"
 
 // Used in the resize view when QUERY_PARAM_ACTION=QUERY_PARAM_ACTION_VALUE_SET
 #define QUERY_PARAM_SET_NAME "set_name"

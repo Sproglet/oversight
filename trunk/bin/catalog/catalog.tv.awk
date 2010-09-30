@@ -5,7 +5,7 @@
 # RET 0 - no format found
 #     1 - tv format found - needs to be confirmed by scraping 
 #
-function checkTvFilenameFormat(minfo,plugin,more_info,\
+function checkTvFilenameFormat(name,minfo,plugin,more_info,\
 details,line,dirs,d,dirCount,dirLevels,ret) {
 
     delete more_info;
@@ -13,8 +13,8 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
 
    id1("checkTvFilenameFormat "plugin);
 
-   line = remove_format_tags(minfo["mi_media"]);
-   DEBUG("CHECK TV ["line"] vs ["minfo["mi_media"]"]");
+   line = remove_format_tags(name);
+   DEBUG("CHECK TV ["line"] vs ["name"]");
 
    dirCount = split(minfo["mi_folder"],dirs,"/");
    dirLevels=2;
@@ -31,11 +31,6 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
            break;
        }
 
-#ALL#       if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
-#ALL#          dump(0,"details",details);
-#ALL#          ret = 1;
-#ALL#          break;
-#ALL#       }
        if (d == dirLevels) {
            INF("No tv series-episode format in ["line"]");
            break;
@@ -44,26 +39,6 @@ details,line,dirs,d,dirCount,dirLevels,ret) {
        more_info[1]=0; # disable abbrevation scrape
    }
 
-
-#ALL#   # try looking for mini series formats.
-#ALL#   if (ret == 0 ) {
-#ALL#       more_info[1]=1; # enable abbrevation scraping for later
-#ALL#       line = remove_format_tags(minfo["mi_media"]);
-#ALL#       for(d=0 ; d-dirLevels <= 0  ; d++ ) {
-#ALL#           INF("xx1 ["line"]");
-#ALL#           if (episodeExtract(tolower(line),0,"\\<","","[/ .]?(ep?[^a-z0-9]?|episode)[^a-z0-9]*[0-9][0-9]?",details)) { #00x00 
-#ALL#              dump(0,"details",details);
-#ALL#              ret = 1;
-#ALL#              break;
-#ALL#           }
-#ALL#           if (d == dirLevels) {
-#ALL#               INF("No mini-series format in ["line"]");
-#ALL#               break;
-#ALL#           }
-#ALL#           line=dirs[dirCount-d]"/"line;
-#ALL#           more_info[1]=0; # disable abbrevation scrape
-#ALL#        }
-#ALL#    }
 
     if (ret == 1) {
 
@@ -481,7 +456,9 @@ function tv_search_complex(minfo,bestUrl) {
 # returns cat="T" tv show , "M" = movie , "" = unknown.
 
 function tv_check_and_search_all(minfo,bestUrl,check_tv_names,\
-plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
+plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,name) {
+
+    name = minfo["mi_media"];
 
     for (p in g_tv_plugin_list) {
         plugin = g_tv_plugin_list[p];
@@ -498,9 +475,10 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
         minfo["mi_tvid_plugin"] = minfo["mi_tvid"]="";
 
         do_search = 1;
+
         if (check_tv_names) {
 
-            if (checkTvFilenameFormat(minfo,plugin,more_info)) {
+            if (checkTvFilenameFormat(name,minfo,plugin,more_info)) {
 
                 search_abbreviations = more_info[1];
 
@@ -769,7 +747,7 @@ bestId,bestFirstAired,age_scores,eptitle_scores,count) {
         if(1) {
             bestFirstAired="";
 
-            getRelativeAgeAndEpTitles(plugin,minfo,titles,ages,eptitle_scores);
+            getRelativeAgeAndEpTitles(plugin,minfo,titles,age_scores,eptitle_scores);
 
             bestScores(eptitle_scores,eptitle_scores,1);
             bestId = firstIndex(eptitle_scores);
@@ -917,7 +895,7 @@ url) {
 # OUT closeTitles - matching titles hashed by tvdbid. 
 # IN requiredTagNames - array of tags which must be present - to filter out obscure shows noone cares about
 function filter_search_results(url,title,seriesPath,nameTag,idTag,requiredTagNames,allTitles,\
-f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,filter_count) {
+f,line,info,currentId,currentName,add,seriesTag,seriesStart,seriesEnd,count,filter_count) {
 
     f = getUrl(url,"tvdb_search",1);
     count = 0;
@@ -949,15 +927,6 @@ f,line,info,currentId,currentName,add,i,seriesTag,seriesStart,seriesEnd,count,fi
                 count ++;
 
                 add=1;
-#                for( i in requiredTagNames ) {
-#                    if (! ( seriesPath"/"requiredTagNames[i] in info ) ) {
-#                        dump(0,"info",info);
-#                        DEBUG("["currentName"] rejected due to missing "requiredTagNames[i]" tag");
-#                        add=0;
-#                        filter_count++;
-#                        break;
-#                    }
-#                }
 
                 if (add) {
                     allTitles[currentId] = currentName;

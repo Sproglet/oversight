@@ -36,7 +36,7 @@ static inline long seek_back(FILE *fp,long start) {
     long prev;
 
     // goto start - DB_PERSON_NAME_SIZE
-    //HTML_LOG(0,"seek back from [%ld]",start);
+    HTML_LOG(0,"seek back from [%ld]",start);
     prev= start - DB_PERSON_NAME_SIZE;
     if (prev< 0) {
         prev= 0;
@@ -52,15 +52,13 @@ static inline long seek_back(FILE *fp,long start) {
 
             // Now scan backwards until we hit cr or linefeed
             int i;
-TRACE1;
             for( i = bytes-1 ; i ; i-- ) {
-                if (name_record[i] == '\n' || name_record[i] == '\r' || name_record == '\0' ) {
+                if (name_record[i] == '\n' || name_record[i] == '\r' || name_record[i] == '\0' ) {
                     HTML_LOG(0,"seek back to [%.10s]",name_record+i+1);
                     prev += i+1;
                     break;
                 }
             }
-TRACE1;
             if (fseek(fp,prev,SEEK_SET) != 0) {
                 HTML_LOG(0,"seek start [%ld] failed - step 2 . errno = %d",start,errno);
             } else {
@@ -94,7 +92,6 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
 
     int keylen = strlen(full_key);
     long mid;
-TRACE1;
     HTML_LOG(0,"Looking for key [%s]",key);
     while(1) {
         if (++count > 20) {
@@ -127,7 +124,6 @@ TRACE1;
             }
         }
     }
-TRACE1;
     HTML_LOG(0,"found [%s] = [%s]",key,result);
     return result;
 }
@@ -144,7 +140,6 @@ char *dbnames_fetch_static(char *key,char *file)
     char *result = NULL;
     struct stat64 st;
 
-    TRACE1;
     HTML_LOG(0,"Looking for key [%s]",key);
     if (util_stat(file,&st) == 0) {
         FILE *f = fopen(file,"rba");
@@ -170,7 +165,6 @@ char *dbnames_fetch_static(char *key,char *file)
 Array *dbnames_fetch(char *key,char *file) 
 {
     Array *result = NULL;
-TRACE1;
     HTML_LOG(0,"Looking for key [%s]",key);
     char *record = dbnames_fetch_static(key,file);
     if (record) {
@@ -186,6 +180,5 @@ TRACE1;
             }
         }
     }
-TRACE1;
     return result;
 }

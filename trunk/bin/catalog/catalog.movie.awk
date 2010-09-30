@@ -111,10 +111,8 @@ imdb_title_q,imdb_id_q) {
                         #imdb_id_q = url_encode("site:imdb.com");
                         #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
 
-                        bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q,name_try);
-                        if (bestUrl == "" ) {
-
-                            # look for imdb style titles 
+                        if(0) {
+                            # new way - search title first then movie link
                             title = web_search_first_imdb_title(name_try,"");
                             if (title == "" ) {
                                 title = web_search_first_imdb_title(name_try"+movie","");
@@ -123,6 +121,23 @@ imdb_title_q,imdb_id_q) {
                                 bestUrl=web_search_first_imdb_link(title"+"imdb_title_q,title);
                                 if (bestUrl == "") {
                                     bestUrl=web_search_first_imdb_link(title"+"imdb_id_q,title);
+                                }
+                            }
+                        } else {
+                            # Old way - search for imdb link  else title then imdb link
+                            bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q,name_try);
+                            if (bestUrl == "" ) {
+
+                                # look for imdb style titles 
+                                title = web_search_first_imdb_title(name_try,"");
+                                if (title == "" ) {
+                                    title = web_search_first_imdb_title(name_try"+movie","");
+                                }
+                                if (title != "" && title != name_try) {
+                                    bestUrl=web_search_first_imdb_link(title"+"imdb_title_q,title);
+                                    if (bestUrl == "") {
+                                        bestUrl=web_search_first_imdb_link(title"+"imdb_id_q,title);
+                                    }
                                 }
                             }
                         }

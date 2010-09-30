@@ -2663,7 +2663,7 @@ char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *titl
 
     return result;
 }
-char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,char *font_class,char *cell_no_txt)
+char *get_person_drilldown_link(ViewMode *view,char *dbfieldid,char *id,char *attr,char *name,char *font_class,char *cell_no_txt)
 {
     char *result = NULL;
     static char *link_template = NULL;
@@ -2672,11 +2672,14 @@ char *get_person_drilldown_link(ViewMode *view,char *id,char *attr,char *name,ch
         // Note the Selected parameter is added with a preceding @. This ensures that it is present in the 
         // return link. 
         link_template = get_drilldown_link_with_font(
-               QUERY_PARAM_VIEW "=@VIEW@&p=&"QUERY_PARAM_PERSON"=@ID@&@CELLNO_PARAM@=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
+               QUERY_PARAM_VIEW "=@VIEW@"
+               "&"QUERY_PARAM_PERSON_ROLE"=@ROLE@"
+               "&p=&"QUERY_PARAM_PERSON"=@ID@&@CELLNO_PARAM@=@CELLNO@","@ATTR@","@NAME@","@FONT_CLASS@");
     }
 
     result = replace_all_str(link_template,
             "@VIEW@",view->name,
+            "@ROLE@",dbfieldid,
             "@ID@",id,
             "@ATTR@",attr,
             "@NAME@",name,

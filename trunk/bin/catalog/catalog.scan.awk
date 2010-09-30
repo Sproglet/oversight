@@ -127,13 +127,11 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
            clear_folder_info();
 
+           delete files_in_db;
 
            currentFolder = scan_line;
            sub(/\/*:$/,"",currentFolder);
            DEBUG("Folder = "currentFolder);
-           if (NEWSCAN) {
-               get_files_in_db(currentFolder,INDEX_DB,files_in_db);
-           }
            folderNameNext=0;
             if ( currentFolder ~ g_settings["catalog_ignore_paths"] ) {
 
@@ -161,6 +159,9 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                 g_fldrMediaCount[currentFolder]=0;
                 g_fldrInfoCount[currentFolder]=0;
                 g_fldrCount[currentFolder]=0;
+            }
+            if (NEWSCAN && !skipFolder) {
+                get_files_in_db(currentFolder,INDEX_DB,files_in_db);
             }
 
         } else if (!skipFolder) {

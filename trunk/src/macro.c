@@ -38,6 +38,96 @@ char *get_named_arg(struct hashtable *h,char *name);
 struct hashtable *args_to_hash(MacroCallInfo *call,char *required_list,char *optional_list);
 void free_named_args(struct hashtable *h);
 
+Db *firstdb(MacroCallInfo *call_info)
+{
+    Db *result = NULL;
+    DbSortedRows *sorted_rows = call_info->sorted_rows;
+
+    if (sorted_rows && sorted_rows->num_rows) {
+        DbItem *item = sorted_rows->rows[0];
+        result = item->db;
+    }
+    return result;
+}
+
+/*
+ * Return path to a person domain file for a given database.
+ * eg. /blah/blah/actor.imdb.db
+ * eg. /blah/blah/director.allocine.db
+ *
+ * must be freed.
+ */
+char *get_person_domain_filename(Db *db,char *role,char *domain)
+{
+    char *file = NULL;
+    char *domain_file = NULL;
+
+    assert(db);
+    assert(role);
+    assert(domain);
+
+    if (strcmp(role,DB_FLDID_ACTOR_LIST) == 0) {
+        file = db->actors_file;
+    } else if (strcmp(role,DB_FLDID_DIRECTOR_LIST) == 0) {
+        file = db->directors_file;
+    } else if (strcmp(role,DB_FLDID_WRITER_LIST) == 0) {
+        file = db->writers_file;
+    }
+    if (file) {
+        char *ext = strrchr(file,'.');
+        if (ext) {
+            ovs_asprintf(&domain_file,"%.*s.%s%s",ext-file,file,domain,ext);
+        }
+    }
+    return domain_file;
+}
+
+/**
+ * This is where we may start feeling the pain for not using a proper database.
+ * Scan the *entire* file for field2 and then return field1.
+ */
+char *person_reverse_lookup(char *file,char *field2)
+{
+    int field2len;
+    char *result = NULL;
+    FILE *fp = fopen(file,"r");
+    if (fp == NULL) {
+        html_error("Failed to open [%s]",file);
+    } else {
+        field2len = strlen(field2);
+#define PERSON_BUFSIZE 99
+        char buf[PERSON_BUFSIZE+1] = "";
+
+        while(fgets(buf,PERSON_BUFSIZE,fp)) {
+            char *tab = strchr(buf,'\t');
+            if (tab) {
+                if (util_starts_with(tab+1,field2) && strchr("\n\r",tab[1+field2len])) {
+                    ovs_asprintf(&result,"%.*s",tab-buf,buf);
+                    break;
+                }
+            }
+        }
+        fclose(fp);
+    }
+    HTML_LOG(0,"%s:%s=[%s]",file,field2,result);
+    return result;
+}
+
+char *person_id(Db *db,char *ovs_id,char *role,char *domain) {
+    char *domain_file=get_person_domain_filename(db,role,domain);
+    char *result = person_reverse_lookup(domain_file,ovs_id);
+    FREE(domain_file);
+    return result;
+}
+
+/*
+ * User current QUERY_PARAM_PERSON and QUERY_PARAM_PERSON_ROLE parameters to find 
+ * a persons domain specific id.
+ */
+char *current_person_id(Db *db,char *domain) {
+    return person_id(db,query_val(QUERY_PARAM_PERSON),query_val(QUERY_PARAM_PERSON_ROLE),domain);
+}
+
 long get_current_page() {
     long page;
     if (!config_check_long(g_query,"p",&page)) {
@@ -1930,13 +2020,19 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
     char *person=query_val(QUERY_PARAM_PERSON);
     char *website="";
 
+    char *person_id = NULL;
+    
+    if (!EMPTY_STR(person)) {
+        person_id = current_person_id(firstdb(call_info),"imdb");
+    }
+
     if (g_dimension->local_browser){
 #define IMDB_MSP "http://msp.florisvanderploeg.com/imdb/scripts/"
         if (!EMPTY_STR(person)) {
             //ovs_asprintf(&result,"<a href=\"" IMDB_MSP "imdb_search.php?SearchType=SearchNames&QueryString=%s\">%s</a>",person,image);
             ovs_asprintf(&result,"<a href=\"http://m.imdb.com/name/%s%s\">%s</a>",
-                    (util_starts_with(person,"nm")?"":"nm"),
-                    person,image);
+                    (util_starts_with(person_id,"nm")?"":"nm"),
+                    person_id,image);
         } else {
             // Title link
             char *url=call_info->sorted_rows->rows[0]->url;
@@ -1949,12 +2045,12 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
             }
         }
     } else {
-        if (!EMPTY_STR(person)) {
+        if (!EMPTY_STR(person_id)) {
 
             // Person link
             ovs_asprintf(&result,"<a href=\"http://www.imdb.com/name/%s%s\">%s</a>",
-                    (util_starts_with(person,"nm")?"":"nm"),
-                    person,
+                    (util_starts_with(person_id,"nm")?"":"nm"),
+                    person_id,
                     image);
         } else {
 
@@ -1969,6 +2065,7 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
         }
     }
     FREE(image);
+    FREE(person_id);
     return result;
 }
 
@@ -2417,7 +2514,7 @@ char *macro_fn_play_tvid(MacroCallInfo *call_info) {
     return result;
 }
 
-char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,int cols)
+char *name_list_macro(char *name_file,char *dbfieldid,DbGroupIMDB *group,char *class,int rows,int cols)
 {
     char *result = NULL;
     if (group) {
@@ -2450,7 +2547,7 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
 
                         if (name_info) {
 
-                            char *link = get_person_drilldown_link(VIEW_PERSON,id,"",name_info->array[1],"","");
+                            char *link = get_person_drilldown_link(VIEW_PERSON,dbfieldid,id,"",name_info->array[1],"","");
 
                             //At present name is "nm0000000:First Last" but this may 
                             //change.
@@ -2476,19 +2573,7 @@ char *name_list_macro(char *name_file,DbGroupIMDB *group,char *class,int rows,in
     return result;
 }
 
-Db *firstdb(MacroCallInfo *call_info)
-{
-    Db *result = NULL;
-    DbSortedRows *sorted_rows = call_info->sorted_rows;
-
-    if (sorted_rows && sorted_rows->num_rows) {
-        DbItem *item = sorted_rows->rows[0];
-        result = item->db;
-    }
-    return result;
-}
-
-char *macro_fn_actor_name(MacroCallInfo *call_info)
+char *macro_fn_person_name(MacroCallInfo *call_info)
 {
     char *result = NULL;
 
@@ -2506,17 +2591,65 @@ char *macro_fn_actor_name(MacroCallInfo *call_info)
     }
     return result;
 }
+
 /**
+ * =begin wiki
+ * ==PERSON_ID==
  * Return the imdb id of the current actor. This is just the person parameter.(QUERY_PARAM_PERSON)
+ *
+ * The domain should be passed as a parameter - eg "imdb" or "allocine"
+ *
+ * [:PERSON_ID(domain=>imdb):]
+ * =end wiki
  */
-char *macro_fn_actor_id(MacroCallInfo *call_info)
+char *macro_fn_person_id(MacroCallInfo *call_info)
 {
     call_info->free_result = 0;
-    char *result=query_val(QUERY_PARAM_PERSON);
+
+    char *result=NULL;
+    struct hashtable *h = args_to_hash(call_info,"domain",NULL);
+    if (h) {
+        char *domain = get_named_arg(h,"domain");
+        if (!EMPTY_STR(domain)) {
+
+            Db *db = firstdb(call_info);
+            result = current_person_id(db,domain);
+        }
+
+    }
+    free_named_args(h);
+
     return result;
 }
 
-char *people_table(MacroCallInfo *call_info,char *people_file,char *class,DbGroupIMDB *people_field,
+/*
+ * =begin wiki
+ * ==PERSON_ROLE==
+ *
+ * Return the current role of the person Actor, Director or Writer.
+ * The roles are kept seperate to reduce possibility of namesake clashes.
+ * The imdb ids are not used because scraping should not be tied to any
+ * particular site. So the best identifier is name.
+ *
+ *
+ * =end wiki
+ */
+char *macro_fn_person_role(MacroCallInfo *call_info)
+{
+    call_info->free_result = 0;
+    char *result = NULL;
+    char *role = query_val(QUERY_PARAM_PERSON_ROLE);
+    if (strcmp(role,DB_FLDID_ACTOR_LIST) == 0) {
+        result = "Actor";
+    } else if (strcmp(role,DB_FLDID_WRITER_LIST) == 0) {
+        result = "Writer";
+    } else if (strcmp(role,DB_FLDID_DIRECTOR_LIST) == 0) {
+        result = "Director";
+    }
+    return result;
+}
+
+char *people_table(MacroCallInfo *call_info,char *people_file,char *fieldid,char *class,DbGroupIMDB *people_field,
         int default_rows,int default_cols)
 {
 
@@ -2533,7 +2666,7 @@ char *people_table(MacroCallInfo *call_info,char *people_file,char *class,DbGrou
             cols = atoi(tmp);
         }
 
-        result = name_list_macro(people_file,people_field,class,rows,cols);
+        result = name_list_macro(people_file,fieldid,people_field,class,rows,cols);
         free_named_args(h);
     }
     return result;
@@ -2544,7 +2677,7 @@ char *macro_fn_actors(MacroCallInfo *call_info)
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->actors_file,"actors",item->actors,2,6);
+        result = people_table(call_info,item->db->actors_file,DB_FLDID_ACTOR_LIST,"actors",item->actors,2,6);
     }
     return result;
 }
@@ -2554,7 +2687,7 @@ char *macro_fn_directors(MacroCallInfo *call_info)
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->directors_file,"directors",item->directors,1,2);
+        result = people_table(call_info,item->db->directors_file,DB_FLDID_DIRECTOR_LIST,"directors",item->directors,1,2);
     }
     return result;
 }
@@ -2563,7 +2696,7 @@ char *macro_fn_writers(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->writers_file,"writers",item->writers,1,2);
+        result = people_table(call_info,item->db->writers_file,DB_FLDID_WRITER_LIST,"writers",item->writers,1,2);
     }
     return result;
 }
@@ -2577,8 +2710,6 @@ void macro_init() {
         macros = string_string_hashtable("macro_names",64);
 
         hashtable_insert(macros,"ACTORS",macro_fn_actors);
-        hashtable_insert(macros,"ACTOR_NAME",macro_fn_actor_name);
-        hashtable_insert(macros,"ACTOR_ID",macro_fn_actor_id);
         hashtable_insert(macros,"ACTOR_IMAGE",macro_fn_actor_image);
         hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
@@ -2633,6 +2764,9 @@ void macro_init() {
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"PAGE",macro_fn_page);
         hashtable_insert(macros,"PAGE_MAX",macro_fn_page_max);
+        hashtable_insert(macros,"PERSON_ID",macro_fn_person_id);
+        hashtable_insert(macros,"PERSON_NAME",macro_fn_person_name);
+        hashtable_insert(macros,"PERSON_ROLE",macro_fn_person_role);
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
         hashtable_insert(macros,"RATING_SELECT",macro_fn_rating_select);

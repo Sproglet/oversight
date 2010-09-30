@@ -1,0 +1,33 @@
+review createIndexRow WRITERS,ACTORS,DIRECTORs field using mi_writers should use a people function.
+
+
+When searching a Movie by filename, a Title/Year scrape can be more accurate than an IMDB scrape especially if either:
+
+1. The web engine summary of the Torrent sites list ids of other movies next to the files OR
+
+2. The movie wad originally posted with the wrong IMDB id, but this wrong ID has propogated to the web,
+   in this case deleting the nfo and rescanning does not fix (unless we scan for title and not imdb id)
+    Example http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=%22haideaf-cracks%22+imdb
+     detected as Fish Tank due to original bad nfo.
+
+Also prioritising Title/Year search will help with moving away from IMDB over dependance
+
+movie search : Title Normalisation bug - see logs FS Merlin 2008
+
+Test Plan
+
+Movies
+by usenet filename
+by Movie Year
+by ttid
+by nfo/ttid
+
+TV Show:
+By name
+by initials
+by abbrviation
+Selection by aired episode
+by epno - eptitle.avi
+
+
+

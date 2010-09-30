@@ -52,6 +52,7 @@ match1,submatch) {
 function normalise_title_matches(matches,normed,\
 t,t2,y) {
 
+    dump(0,"normalise titles in ",matches);
     delete normed;
     for(t in matches) {
         t2=t;
@@ -115,7 +116,7 @@ t,t2,y) {
             }
         }
     }
-    dump(0,"normalise title matches out",normed);
+    dump(0,"normalise titles out",normed);
 }
 
 # Special case is if searching via IMDB search page - then the imdb_qual is used

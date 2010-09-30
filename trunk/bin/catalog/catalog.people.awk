@@ -275,8 +275,6 @@ extids,ovsids,num,domain,i,key) {
 
     if (db_field in fields) {
 
-        id1("people_change_extid_to_ovsid_by_role" fields[db_field]);
-
         num = split(fields[db_field],extids,"@");
         domain = extids[1];
         for(i = 2 ; i <= num ; i++ ) {
@@ -289,6 +287,7 @@ extids,ovsids,num,domain,i,key) {
 
         ovsids = substr(ovsids,2);
 
+        INF("person_extid2ovsid ["fields[db_field]"] = ["ovsids"]");
         fields[db_field] = ovsids;
 
         id0(ovsids);

@@ -12,7 +12,7 @@ function imdb_img_url(url) {
     return url;
 }
 
-function scrape_imdb_line(line,imdbContentPosition,minfo,f,\
+function scrape_imdb_line(line,imdbContentPosition,minfo,f,namestate,\
 title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp) {
 
 
@@ -76,7 +76,6 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
                     minfo["mi_imdb_img"]=imdb_img_url(poster_imdb_url);
                     DEBUG("IMDB: Got imdb poster ["minfo["mi_imdb_img"]"]");
                 }
-                sec=POSTER;
             }
             if (index(line,"Director") && match(line,"Directors?:?\\>")) {
                 minfo["role"] ="director";
@@ -95,7 +94,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
                 minfo["role_max"] = g_max_actors;
                 INF("set role "minfo["role_max"]":"minfo["role"]);
             }
-            imdb_get_names(line,minfo,minfo["role"],minfo["role_max"]);
+            get_names("imdb",line,minfo,minfo["role"],minfo["role_max"],namestate);
             #TODO shrink minfo["mi_actor"]
 
             # "Plot" on normal page - "Plot Summary" on mobile pages.
@@ -188,36 +187,6 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
     return imdbContentPosition;
 }
 
-# name_db is always "actor"
-# text = imdb text to be parsed for nm0000 ids.
-# maxnames = max number of names to fetch ( -1 = all )
-# OUTPUT number of names added.
-function imdb_get_names(text,minfo,role,maxnames,\
-dtext,dpos,dnum,i,img_folder,count) {
-
-    if (index(text,"/nm") && role ) {
-        id1("imdb_get_names:"role);
-        count = minfo["mi_"role"_total"];
-
-        # Assumes a text does not have any markup inside. just a plain name
-        dnum = get_regex_pos(text,"<a[^>]+>[^<>]+</a>",0,dtext,dpos);
-        for(i = 1 ; i <= dnum ; i++ ) {
-
-            if (person_scan(minfo,"imdb",role,dtext[i])) {
-                count ++;
-                if (count >= maxnames) {
-                    break;
-                }
-            }
-
-            #TODO get image get_image(id,img,APPDIR"/db/global/"img_folder"/"g_settings["catalog_poster_prefix"] id".jpg");
-            #img_folder = name_db;
-        }
-        minfo["mi_"role"_total"] = count;
-        id0(count);
-    }
-    return count;
-}
 function imdb_list_shrink(s,sep,base,\
 i,n,out,ids,m,id) {
     n = split(s,ids,sep);
@@ -300,7 +269,7 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function scrapeIMDBTitlePage(minfo,url,\
-f,line,imdbContentPosition,connections,remakes,ret) {
+f,line,imdbContentPosition,connections,remakes,ret,namestate) {
 
     if (url == "" ) return;
 
@@ -330,7 +299,7 @@ f,line,imdbContentPosition,connections,remakes,ret) {
             minfo["role"] = "";
 
             while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f);
+                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,namestate);
             }
 
             delete minfo["role"];

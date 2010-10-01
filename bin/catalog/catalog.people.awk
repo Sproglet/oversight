@@ -13,106 +13,101 @@
 # 2. get cast names
 # 3. get cast ids using a regex to extract the id. This regex will be different for each domain but will
 #         default to the the last integer in the url. 
-#
-# Extract the last digit.
-#
-#    catalog_url_to_personid_regex_list=[0-9]+[^0-9]*$,[0-9]+
-#    catalog_url_to_personid_regex_list_domain=[0-9]+[^0-9]*$,[0-9]+
-
 # 4. queue images  (now referenced by oversight id not IMDB id)
-
-# minfo["mi_actor_names"]="\t name1 \t name2 \t ...."
-# minfo["mi_actor_ids"]="\t id1 \t id2 \t ...."
-
-# minfo["mi_writer_names"]="allocine @ name1 @ name2 @ ...."
-# minfo["mi_writer_ids"]="allocine @ id1 @ id2 @ ...."
-
-# minfo["mi_director_names"]="imdb @ name1 @ name2 @ ...."
-# minfo["mi_director_ids"]="imdb @ id1 @ id2 @ ...."
-
-# minfo = scraped information so far
-# domain is site being scanned - eg imdb , moviemeter etc.
-# role = actor,writer,director
-# text = html text for a single actor. this may be
-#    1. just a name
-#    2. <a href="actor profile">actor name</a>
-#    3. <a href="actor profile"><img src=portrait></a>
 #
-# For now we will ignore portraits - they are best scraped from bio page.
+# Extract Actor names and portraits from html.
 #
-# return 1=info extracted 0=no info found
+# expect image to be  <a HREF=.. ><img SRC=...></a>
+# expect name to be  <a HREF=.. >NAME</a>
+#
+# INPUT domain  =imdb,allocine etc loads domain config file.
+# INPUT text    = html text to parse.
+# INPUT minfo   = details for current item being scanned/scraped.
+# INPUT role    = actor,writer,director
+# INPUT maxnames = maximum number of names to scrape 
+# IN/OUT namesstate = this tracks the src=,href= tags as it drops through the HTML
+# RETURN number of names parsed.
+# GLOBAL updates minfo[mi_role_names/mi_role_ids] with cast names and external ids.
+# GLOBAL updates g_portrait_queue with url to portrait picture.
+function get_names(domain,text,minfo,role,maxnames,namestate,\
+dtext,dnum,i,count,href_reg,src_reg,name_reg) {
 
-function person_scan(minfo,domain,role,text,\
-lctext,person_name,url,external_id,ret) {
+    if (role ) {
+        count = minfo["mi_"role"_total"];
 
-    id1("person_scan:");
-    lctext =  tolower(text);
-    if (index(lctext,"href=")) {
-        if (index(lctext,"<img")) {
-            INF("ignoring portrait link for now");
-        } else {
-            person_name = extractTagText(text,"a");
-            url =  extractAttribute(text,"a","href");
-            external_id=person_get_id(domain,url);
+        if(count < maxnames) {
+            # Assumes a text does not have any markup inside. just a plain name
+            # <a href=url ><img src=url /></a><a href=url ><img src=url /></a>
+            # split by <a or a>
+
+            if (index(text,"href=") || index(text,"src=") ) {
+
+                href_reg = "href=\"[^\"]+";
+                src_reg = "src=\"[^\"]+";
+                name_reg = ">[^<]+";
+
+                dnum = get_regex_pos(text,"("href_reg"|"src_reg"|"name_reg")",0,dtext);
+
+                for(i = 1 ; i <= dnum && count < maxnames ; i++ ) {
+
+                    if (index(dtext[i],"src=") == 1) {
+
+                    # Convert URL from thumbnail to big
+                        namestate["src"] = person_get_img_url(domain,substr(dtext[i],6));
+                        if (namestate["id"]) {
+                            # Store it for later download once we know the oversight id for this 
+                            # person. After the people.db us updated.
+                            g_portrait_queue[domain":"namestate["id"]] = namestate["src"];
+                        }
+                        delete namestate;
+
+                    } else if (index(dtext[i],">") == 1) {
+
+                        namestate["name"] = trim(substr(dtext[i],2));
+
+                        if (namestate["id"] && namestate["name"]) {
+
+                            INF("get_names:name="namestate["name"]"...");
+
+                            if (! ("mi_"role"_names" in minfo) ) {
+                                minfo["mi_"role"_names"]  = domain;
+                                minfo["mi_"role"_ids"]  = domain;
+                            }
+                                
+                            if (index(minfo["mi_"role"_ids"]"@","@"namestate["id"]"@") == 0) { 
+                                    minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" namestate["name"];
+                                minfo["mi_"role"_ids"]  = minfo["mi_"role"_ids"] "@" namestate["id"];
+                                count++;
+                            }
+                        }
+                        delete namestate;
+
+                    } else if (index(dtext[i],"href=") == 1) {
+
+                        namestate["href"] = substr(dtext[i],7);
+                        namestate["id"] = person_get_id(domain,namestate["href"]);
+                    }
+                }
+
+            }
+            minfo["mi_"role"_total"] = count;
+            INF("get_names:"role"="count);
         }
-    } else {
-        # just a name
-        person_name = external_id = trim(text);
     }
-    if(person_name != "" && external_id != "") {
-        INF("found "external_id" = "person_name);
-        if (! ("mi_"role"_names" in minfo) ) {
-            minfo["mi_"role"_names"]  = domain;
-            minfo["mi_"role"_ids"]  = domain;
-        }
-            
-        if (index(minfo["mi_"role"_ids"]"@","@"external_id"@") == 0) { 
-            minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" person_name;
-            minfo["mi_"role"_ids"]  = minfo["mi_"role"_ids"] "@" external_id;
-            ret = 1;
-        }
-    }
-    id0(ret);
-    return ret;
+    return count;
+}
+
+
+# convert thumbnail url to bigger url depending on domain
+function person_get_img_url(domain,url) {
+    return domain_edits(domain,url,"catalog_domain_portrait_url_regex_list");
 }
 
 # extract person id from a url depending on the domain.
-# default is to exttract last number in the url
-# The extraction uses a list of regex matches which are applied in order to the ord.
-# eg to get first number use.  [0-9]+
-# eg to get last number use.  [0-9]+[^0-9]*$,[0-9]+
-#
-# INPUT: domain - eg imdb, allocine etc.
-# INPUT: url - url pointing to the person
-# OUTPUT: Person if or blank
-# Uses g_settings[domain":catalog_url_to_personid_regex_list"]
-# Uses g_settings["default:catalog_url_to_personid_regex_list"]
-function person_get_id(domain,url,\
-i,num,patterns,plist) {
-
-    id1("person_get_id:"domain":"url);
-
-    if(url) {
-        domain_load_settings("default");
-        domain_load_settings(domain);
-
-
-        plist=g_settings[domain":catalog_domain_url_to_personid_regex_list"];
-        if (plist == "") {
-            plist=g_settings["default:catalog_domain_url_to_personid_regex_list"];
-        }
-        INF("using "plist);
-
-        num = split(plist,patterns,",");
-        for(i = 1 ; i <= num ; i++ ) {
-            if (match(url,patterns[i])) {
-                url = substr(url,RSTART,RLENGTH);
-            }
-        }
-    }
-    id0(url);
-    return url;
+function person_get_id(domain,url) {
+    return domain_edits(domain,url,"catalog_domain_url_to_personid_regex_list");
 }
+
 
 # Queue phase =======================================
 # Occurs when a scan info is written to temporary file. We do not know ovsids at this point.
@@ -139,7 +134,7 @@ db_text) {
 function person_add_db_queue_role(minfo,role,dbfield,person_extid2name,\
 text,i,num,domain,ids,names,key,namekey) {
 
-    id1("person_extid2name:"role);
+    id1("person_extid2name:");
 
     key = "mi_"role"_ids" ;
     namekey = "mi_"role"_names" ;
@@ -158,11 +153,11 @@ text,i,num,domain,ids,names,key,namekey) {
 
         domain = ids[1];
         for(i = 2 ; i <= num ; i++ ) {
-            person_extid2name[domain":"role":"ids[i]] = names[i];
-            INF("person_extid2name["domain":"role":"ids[i]"] => "names[i]);
+            person_extid2name[domain":"ids[i]] = names[i];
+            INF("person_extid2name["domain":"ids[i]"] => "names[i]);
         }
     } else {
-        INF("no "role" data");
+        INF("no people data");
     }
     id0(text);
 
@@ -176,13 +171,13 @@ text,i,num,domain,ids,names,key,namekey) {
 # 2. Populate hash person_extid2ovsid with lookups needed for current batch.
 #
 
-# input person_extid2name = hash of [domain:role:extid] to actor name eg [imdb:actor:nm0000602]=Robert Redford
-# output person_extid2ovsid hash of [domain:role:extid] to ovsid  eg [123]=nm0000602
+# input person_extid2name = hash of [domain:extid] to actor name eg [imdb:nm0000602]=Robert Redford
+# output person_extid2ovsid hash of [domain:extid] to ovsid  eg [123]=nm0000602
 # sideeffect: updates various person db files.
-# actor.db writer.db director.db [ maps oversight id to actor name ]
-# actor.domain.db [ maps external id to oversight id ] eg actor.imdb.db or writer.allocine.db
+# people.db [ maps oversight id to actor name ]
+# people.domain.db [ maps external id to oversight id ] eg people.imdb.db
 function people_update_dbs(person_extid2name,person_extid2ovsid,\
-extid,ovsid,domain,role,tmp,roledb,domaindb,sortfiles,name,f) {
+extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
 
     id1("people_update_dbs");
     dump(0,"person_extid2name",person_extid2name);
@@ -193,30 +188,61 @@ extid,ovsid,domain,role,tmp,roledb,domaindb,sortfiles,name,f) {
         DEBUG(extid":"name);
         split(extid,tmp,":");
         domain = tmp[1];
-        role = tmp[2];
-        extid = tmp[3];
+        extid = tmp[2];
+
         if (domain != "" && extid != "") {
 
-            roledb = APPDIR"/db/"role".db";
-            domaindb = APPDIR"/db/"role"."domain".db";
+            peopledb = APPDIR"/db/people.db";
+            domaindb = APPDIR"/db/people."domain".db";
 
             ovsid = people_db_lookup(domaindb,1,extid,2);
             if (ovsid == "") {
-                ovsid = people_db_lookup(roledb,2,name,1);
+                ovsid = people_db_lookup(peopledb,2,name,1);
                 if (ovsid == "") {
-                    ovsid = people_db_add(roledb,name);
-                    sortfiles[roledb] = 1;
+                    ovsid = people_db_add(peopledb,name);
+                    sortfiles[peopledb] = 1;
                 }
                 people_domain_db_add(domaindb,extid,ovsid);
                 sortfiles[domaindb] = 1;
             }
-            person_extid2ovsid[domain":"role":"extid] = ovsid;
+            person_extid2ovsid[domain":"extid] = ovsid;
+
         }
     }
     for(f in sortfiles) {
         sort_file(f,"-u");
     }
+    get_queued_portraits(person_extid2ovsid);
     id0("");
+}
+#now we have mapping from external id to ovsid so wecan fetch any images.
+function get_queued_portraits(person_extid2ovsid,\
+i,ovsid,file) {
+    id1("get_queued_portraits");
+    for(i in g_portrait_queue) {
+        ovsid = person_extid2ovsid[i];
+        file = APPDIR"/db/global/"ACTORS"/"g_settings["catalog_poster_prefix"] ovsid".jpg";
+        get_portrait(ovsid,g_portrait_queue[i],file);
+    }
+    delete g_portrait_queue;
+    id0();
+}
+
+function get_portrait(id,url,file,\
+ret) {
+    ret = 0;
+    if (url && GET_PORTRAITS && !(id in g_portrait)) {
+        if (UPDATE_PORTRAITS || !hasContent(file) ) {
+            if (preparePath(file) == 0) {
+                g_portrait[id]=1;
+                #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
+
+                #remove ampersand from call
+                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
+            }
+        }
+    }
+    return ret;
 }
 
 # Do a full scan for a person. If this becomes a performance issue then we can
@@ -242,6 +268,7 @@ line,err,fields,ret) {
 
 function people_db_add(dbfile,name,\
 newovsid) {
+
     newovsid = get_maxid(dbfile)+1;
     print newovsid"\t"name >> dbfile;
     INF("add new "dbfile": "newovsid"\t"name);
@@ -263,14 +290,14 @@ function people_domain_db_add(domaindb,extid,ovsid) {
 # ie _A=domain:id1,id2,id3 with _A:ovsid1,ovsid2,ovsid3
 #
 function people_change_extid_to_ovsid(fields,person_extid2ovsid) {
-    people_change_extid_to_ovsid_by_role("actor",ACTORS,fields,person_extid2ovsid);
-    people_change_extid_to_ovsid_by_role("director",DIRECTORS,fields,person_extid2ovsid);
-    people_change_extid_to_ovsid_by_role("writer",WRITERS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role(ACTORS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role(DIRECTORS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role(WRITERS,fields,person_extid2ovsid);
 }
 
 # INPUT db field array f[dbfield]="domain@extid1@extid2@...." dbfield=ACTORS,WRITERS,DIRECTORS
 # OUTPUT f[dbfield]="ovsid1,ovsid2,..."
-function people_change_extid_to_ovsid_by_role(role,db_field,fields,person_extid2ovsid,\
+function people_change_extid_to_ovsid_by_role(db_field,fields,person_extid2ovsid,\
 extids,ovsids,num,domain,i,key) {
 
     if (db_field in fields) {
@@ -279,7 +306,7 @@ extids,ovsids,num,domain,i,key) {
         domain = extids[1];
         for(i = 2 ; i <= num ; i++ ) {
 
-            key = domain":"role":"extids[i];
+            key = domain":"extids[i];
             if (key in person_extid2ovsid) {
                 ovsids = ovsids "," person_extid2ovsid[key];
             }

@@ -397,20 +397,4 @@ count,fcount,i,parts,start) {
 }
 
 
-function get_image(id,url,file,\
-ret) {
-    ret = 0;
-    if (url && GET_PORTRAITS && !(id in g_portrait)) {
-        if (UPDATE_PORTRAITS || !hasContent(file) ) {
-            if (preparePath(file) == 0) {
-                g_portrait[id]=1;
-                #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
-
-                #remove ampersand from call
-                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
-            }
-        }
-    }
-    return ret;
-}
 

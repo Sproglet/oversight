@@ -439,12 +439,11 @@ function get_files_in_db(prefix,db,list,\
 dbline,dbfields,err,count,filter) {
 
     count = 0;
-    id1("get_files_in_db ["prefix"]");
     delete list;
     list["@PREFIX"] = prefix =  short_path(prefix);
     list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]*\t";
 
-    INF("filter=["filter"]");
+    #INF("filter=["filter"]");
 
     while((err = (getline dbline < db )) > 0) {
 
@@ -458,7 +457,7 @@ dbline,dbfields,err,count,filter) {
         }
     }
     if (err >= 0 ) close(db);
-    id0(count" files");
+    DEBUG("get_files_in_db ["prefix"]="count" files");
 }
 
 

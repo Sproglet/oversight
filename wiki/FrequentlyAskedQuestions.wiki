@@ -15,6 +15,23 @@ I would only do this if Oversight is getting all of the film names correct, othe
 
 Delete the file /share/Apps/oversight/index.db. You can do this via the TV file browser or via Windows share etc.
 
+Usually it is just enough to delete index.db.
+
+To completely clear the database also delete
+
+/share/Apps/oversight/index.db
+/share/Apps/oversight/plot.db
+/share/Apps/oversight/db/actors.db
+
+To clear images
+
+delete /share/Apps/oversight/db/global/ (all fanart, covers and portraits are in here)
+
+To clear cached web movie pages:
+
+delete /share/Apps/oversight/cache
+
+
 === Why two types of delete? ===
 
 You can ether :

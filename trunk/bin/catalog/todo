@@ -1,4 +1,4 @@
-review createIndexRow WRITERS,ACTORS,DIRECTORs field using mi_writers should use a people function.
+Add reverse db -> Actort Name to ovsid for the sites that do not have Actor Ids (including tvdb)
 
 
 When searching a Movie by filename, a Title/Year scrape can be more accurate than an IMDB scrape especially if either:

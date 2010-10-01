@@ -625,7 +625,7 @@ result) {
 
 function add_file(path,list) {
     path = short_path(path);
-    INF("already seen "path);
+    DEBUG("already seen "path);
     list[path] = 1;
 }
 

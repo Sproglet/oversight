@@ -328,9 +328,6 @@ path) {
 
     path=clean_path(folder"/"file);
 
-
-    INF("Storing " path);
-
     g_fldrMediaCount[folder]++;
 
     minfo["mi_folder"]=folder;
@@ -342,6 +339,9 @@ path) {
     gMovieFileCount++;
     if (!NEWSCAN || !in_list(path,files_in_db) ) {
         minfo["mi_do_scrape"]=1;
+        INF("Queued " path);
+    } else {
+        DEBUG("Stored " path);
     }
         
 }
@@ -675,6 +675,6 @@ function clear_folder_info() {
     delete g_file_date; 
 
     gMovieFileCount = 0;
-    INF("Reset scanned files store");
+    DEBUG("Reset scanned files store");
 }
 

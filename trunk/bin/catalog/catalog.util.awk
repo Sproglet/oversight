@@ -604,4 +604,60 @@ function get_main_domain(url) {
     return url;
 }
 
+function gsub_hash(reg,val,h,\
+i) {
+    for(i in h) {
+        gsub(reg,val,h[i]);
+    }
+}
+
+# Apply sequence of regex to a string.
+# e/REGEX = extract the regex. - if not blank
+# s/REGEX/VALUE = substitute regex - REGEX must be present if not blank
+
+function apply_edits(text,plist,\
+i,num,patterns,matched,pinfo,ret) {
+
+    ret = text;
+    INF("using "plist);
+
+    gsub(/\\,/,"@comma@",plist)
+    gsub(/\\\//,"@backslash@",plist)
+
+    num = split(plist,patterns,",");
+
+    gsub_hash("@comma@",",",patterns);
+
+    for(i = 1 ; i <= num ; i++ ) {
+
+
+        split(patterns[i],pinfo,"/");
+
+        gsub_hash("@backslash@","/",pinfo);
+
+
+        matched = 0;
+        if (tolower(pinfo[1]) == "s") { # substitute
+
+            if (index(tolower(pinfo[4]),"g")) { # global
+                matched = gsub(pinfo[2],pinfo[3],ret);
+            } else {
+                matched = sub(pinfo[2],pinfo[3],ret);
+            }
+
+        } else if (tolower(pinfo[1]) == "e") { # extract
+
+            if (match(ret,pinfo[2])) {
+                matched = 1;
+                ret = substr(ret,RSTART,RLENGTH);
+            }
+        }
+        if (!matched && pinfo[1] == tolower(pinfo[1])) {
+            ret = "";
+            break;
+        }
+    }
+    INF("apply_edits:["text"]=["ret"]");
+    return ret;
+}
 

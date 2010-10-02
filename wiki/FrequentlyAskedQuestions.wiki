@@ -2,11 +2,25 @@
 #sidebar TableOfContents
 <wiki:toc max_depth="3" />
 
+===How do I make Oversight start automatically===
+
+Try saving the following txt as index.htm in the root folder of your HDD. For SD TV save as index_sd.htm
+
+{{{
+<html>
+<head>
+<meta http-equiv="refresh" content="10;http://localhost:8883/oversight/oversight.cgi?">
+</head>
+</html>
+}}}
+
+The delay is to allow for the NMT processes to settle down after a cold boot.
+
 ===How can I get oversight to rename and move Films that were already on the PCH _before_ I installed oversight?*===
 
 A with telnet you can do
 
-{{{/share/Apps/oversight/catalog.sh RENAME /share/Completed}}}
+{{{/share/Apps/oversight/catalog.sh RENAME GET_POSTERS GET_FANART GET_PORTRAITS /share/Completed}}}
 
 I would only do this if Oversight is getting all of the film names correct, otherwise they will end up in a wrongly named folder.
 (This is one reason Oversight doesnt change the name of the actual movie avi file yet, I will only add that once Oversight becomes more accurate)

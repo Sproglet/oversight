@@ -17,21 +17,26 @@ lint() {
     awk '
 
 BEGIN {
-    ks="if then else while do return match substr index sub gsub in getline ";
-    ks=ks" RSTART RLENGTH print systime open close FS NF exit break for system ";
-    ks=ks" delete return split tolower toupper length continue sprintf int";
-    ks=ks" rand printf and lshift rshift strftime";
+    ks="if( then else while( do return match( substr( index( sub( gsub( in getline ";
+    ks=ks" RSTART RLENGTH print print( systime( open( close( FS NF exit break for( system( ";
+    ks=ks" delete return return( split( tolower( toupper( length( continue sprintf( int";
+    ks=ks" rand( printf and( lshift( rshift( strftime(";
     gsub(/ +/," ",ks);
     gsub(/^ +/,"",ks);
     gsub(/ +$/,"",ks);
     split(ks,k," ");
     for (i in k) {
-        kwd[k[i]]=1;
+        reserved_words[k[i]]=1;
     }
     inawk=1;
 }
 
 END {
+    for(fidx in fnames) {
+        fname_hash[fnames[fidx]] = 1;
+        #print "function "fnames[fidx];
+    }
+
     for(fidx = 1 ; fidx <= fcount ; fidx++ ) {
         analyse(fnames[fidx]);
     }
@@ -43,8 +48,9 @@ END {
 inawk {
     gsub(/\\./,""); #remove escaped characters.
 
-    gsub(/"[^\"]*"/," "); #quoted strings
-    gsub(/\/[^\/]*\//," "); #regex quotes
+    #quoted strings - keep @ there to stop g"text"( becoming g( and looking like a function call
+    gsub(/"[^\"]*"/,"@");
+    gsub(/\/[^\/]*\//,"@"); #regex quotes
     gsub(/#.*/,""); #comments
     gsub(/^[ \t]+/,""); # leading space
     gsub(/[ \t]+$/,""); # trailing space
@@ -97,20 +103,50 @@ part=="local" {
 }
 
 part=="body" {
-    body[fname] = body[fname] " " $0;
-    gsub(/[^_0-9A-Za-z]+/," ",body[fname]);
+
+    l = $0;
+
+    debug = 0;
+
+    #eg a(b (c)) + ( 6 ) 
+
+    #remove all spaces surrounding open brackets 
+    #eg a(b(c))+(6) 
+    gsub(/ *\( */,"(",l); 
+    if (debug) print "X1X ["l"]";
+
+    # insert one space after open brackets
+    #eg a( b( c))+( 6) 
+    gsub(/\(/,"( ",l); 
+    if (debug) print "X2X ["l"]";
+
+    # remove all open brackets that are not preceded by alnum (also removes the non-alnum but we dont care)
+    #eg a( b( c))+ 6) 
+    while(match(l,"[^_0-9A-Za-z]\\(")) {
+        l = substr(l,1,RSTART) substr(l,RSTART+RLENGTH);
+    }
+    if (debug) print "X3X ["l"]";
+
+    # remove all non alphanumerics leave function calls as name(
+    gsub(/[^_0-9A-Za-z(]+/," ",l);
+    if (debug) print "X4X ["l"]";
+
+    body[fname] = body[fname] " " l;
+
     if (br_close && br_count == 0) {
         part="ignore";
     }
 }
 
+# remove all integers and all non-alphanumber strings (keep open brackets for function calls)
 function clean(t) {
     gsub(/\<[0-9]+\>/,"",t);
-    gsub(/[^_0-9A-Za-z]+/," ",t);
+    gsub(/[^_0-9A-Za-z(]+/," ",t);
     return t;
 }
 
-function parse(t,names,tmp) {
+function parse(t,names,\
+tmp) {
     delete names;
     split(clean(t),tmp," ");
     for(i in tmp) {
@@ -128,31 +164,51 @@ function analyse(f,\
     parse(local[f],loc);
     parse(body[f],bdy);
 
-    #msg = msg "\n\tparams:\t"params[f];
-    #msg = msg "\n\tlocal:\t"local[f];
-    for(i in par) {
-        if (!(i in bdy)) {
-            msg = msg "\n"prefix"Unused parameter "i;
+    #debug = (index(body[f],"unit5"));
+    debug = 0;
+
+    for(token in par) {
+        if (!(token in bdy)) {
+            print prefix"Unused parameter "token;
             err=1;
         }
     }
-    for(i in loc) {
-        if (!(i in bdy)) {
-            msg = msg "\n"prefix"Unused local "i;
+    for(token in loc) {
+        if (!(token in bdy)) {
+            print prefix"Unused local "token;
             err=2;
         }
     }
-    for(i in bdy) {
+
+    # check undefined functions
+
+    for(token in bdy) {
         #params keys on all functions names
-        if (!(i in kwd) && !(i in params) && !(i in par) && !(i in loc)) {
-            if (i !~ "^g[_A-Z]" && i !~ "^[_A-Z0-9]" ) {
-                msg = msg "\n"prefix"global?\t"i;
-                err=3;
+
+        if (match(token,"\\($") ) {
+
+            # check function name
+            if (debug) print "CHECKING function ["token"]";
+
+            token = substr(token,1,RSTART-1);
+
+            if (debug) print "is "token" function = "(token in fname_hash);
+            if (debug) print "is "token" keyword = "(token"(" in reserved_words);
+
+            if (!(token in fname_hash) && !(token"(" in reserved_words)) {
+                print prefix"undefined function "token;
+            }
+        } else {
+            # check variable
+            if (debug) print "CHECKING variable ["token"]";
+
+            if (!(token in reserved_words) && !(token in params) && !(token in par) && !(token in loc)) {
+                if (token !~ "^g[_A-Z]" && token !~ "^[_A-Z0-9]" ) {
+                    print prefix"global?\t"token;
+                    err=3;
+                }
             }
         }
-    }
-    if (err)    {
-        print msg;
     }
 }
 

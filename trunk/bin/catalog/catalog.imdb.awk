@@ -120,12 +120,8 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
             #desktop
             if (minfo["mi_runtime"] == "" && (index(line,">Runtime:") || index(line,">Run time"))) {
                 tmp=trimAll(scrape_until("irtime",f,"</div>",1));
-                if (match(tmp,"[0-9]+ h")) {
-                    minfo["mi_runtime"] = 60 * substr(tmp,RSTART,RLENGTH);
-                }
-                if (match(tmp,"[0-9]+ m")) {
-                    minfo["mi_runtime"] += substr(tmp,RSTART,RLENGTH);
-                }
+                minfo["mi_runtime"] = extract_duration(tmp);
+
             }
 
             # Always overwrite tvdb ratings with imdb ones.
@@ -267,83 +263,6 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
     return ret;
 }
 
-# return ""=unknown "M"=movie "T"=tv??
-function scrapeIMDBTitlePage(minfo,url,\
-f,line,imdbContentPosition,connections,remakes,ret,namestate) {
-
-    if (url == "" ) return;
-
-    #Remove /combined/episodes from urls given by epguides.
-    url=extractImdbLink(url);
-
-    if (url == "" ) return;
-
-    id1("scrape imdb ["url"]");
-
-    if (minfo["mi_imdb"] == "") {
-        minfo["mi_imdb"] = extractImdbId(url);
-    }
-    if (minfo["mi_imdb_scraped"] != minfo["mi_imdb"] ) {
-        
-        INF("scraping "url);
-
-        f=getUrl(url,"imdb_main",1);
-
-        if (f != "" ) {
-
-            imdbContentPosition="header";
-
-            DEBUG("START IMDB: title:"minfo["mi_title"]" poster "minfo["mi_poster"]" genre "minfo["mi_genre"]" cert "minfo["mi_certrating"]" year "minfo["mi_year"]);
-
-            FS="\n";
-            minfo["role"] = "";
-
-            while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,namestate);
-            }
-
-            delete minfo["role"];
-            delete minfo["role_max"];
-
-            enc_close(f);
-
-            if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
-                minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
-            }
-
-        }
-
-        if (minfo["mi_category"] == "M" ) {
-
-            getNiceMoviePosters(minfo,extractImdbId(url));
-            getMovieConnections(extractImdbId(url),connections);
-
-            if (connections["Remake of"] != "") {
-                getMovieConnections(connections["Remake of"],remakes);
-            }
-
-            minfo["mi_conn_follows"]= connections["Follows"];
-            minfo["mi_conn_followed_by"]= connections["Followed by"];
-            minfo["mi_conn_remakes"]=remakes["Remade as"];
-
-            INF("follows="minfo["mi_conn_follows"]);
-            INF("followed_by="minfo["mi_conn_followed_by"]);
-            INF("remakes="minfo["mi_conn_remakes"]);
-        }
-
-        # make sure we dont scrape this id for this item again
-        minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
-    }
-    ret = minfo["mi_category"];
-# Dont need premier anymore - this was for searching from imdb to tv database
-# we just use the year instead.
-#    if (minfo["mi_category"] == "T" && minfo["mi_premier"] == "" ) {
-#        minfo["mi_premier"] = remove_tags(scanPageFirstMatch(url"/releaseinfo","BusinessThisDay.*",1));
-#        DEBUG("IMDB Premier = "minfo["mi_premier"]);
-#    }
-    id0(ret);
-    return ret;
-}
 function extractImdbId(text,quiet,\
 id) {
     if (match(text,g_imdb_regex)) {

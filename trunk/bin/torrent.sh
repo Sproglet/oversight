@@ -30,7 +30,7 @@ load_settings() {
 }
 
 CONFDIR=$APPDIR/conf
-unpak=$APPDIR/unpak.sh
+unpak=$APPDIR/bin/unpak.sh
 
 load_settings "$APPDIR/conf/.torrent.cfg.defaults"
 load_settings "$APPDIR/conf/torrent.cfg"

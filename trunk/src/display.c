@@ -1501,10 +1501,9 @@ char *actor_image_path(DbItem *item,char *name_id)
     int free_path;
 
     char *logical_path;
-    ovs_asprintf(&logical_path,"ovs:%s/%s%s%s.jpg",
+    ovs_asprintf(&logical_path,"ovs:%s/%s%s.jpg",
             DB_FLDID_ACTOR_LIST,
             catalog_val("catalog_poster_prefix"),
-            (util_starts_with(name_id,"nm")?"":"nm"),
             name_id);
 
     char *result = get_path(item,logical_path,&free_path);

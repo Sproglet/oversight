@@ -162,9 +162,7 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
 
     HTML_LOG(1,"db path[%s]",db->plot_file);
 
-    db->actors_file = replace_all(db->path,"index.db","db/actor.db",0);
-    db->directors_file = replace_all(db->path,"index.db","db/director.db",0);
-    db->writers_file = replace_all(db->path,"index.db","db/writer.db",0);
+    db->people_file = replace_all(db->path,"index.db","db/people.db",0);
 
     db->source= STRDUP(source);
 
@@ -180,25 +178,6 @@ Db *db_init(char *filename, // path to the file - if NULL compute from source
 
     return db;
 }
-
-char *person_file_static(Db *db,char *fieldid)
-{
-    char *result = NULL;
-    if (strcmp(fieldid,DB_FLDID_ACTOR_LIST) == 0) {
-        result = db->actors_file;
-    } else if (strcmp(fieldid,DB_FLDID_WRITER_LIST) == 0) {
-        result = db->writers_file;
-    } else if (strcmp(fieldid,DB_FLDID_DIRECTOR_LIST) == 0) {
-        result = db->directors_file;
-    }
-    return result;
-}
-
-
-
-
-
-
 
 DbItemSet *db_rowset(Db *db) {
     assert(db);
@@ -621,9 +600,7 @@ void db_free(Db *db)
         FREE(db->source);
         FREE(db->path);
         FREE(db->plot_file);
-        FREE(db->actors_file);
-        FREE(db->writers_file);
-        FREE(db->directors_file);
+        FREE(db->people_file);
         FREE(db->lockfile);
         FREE(db->backup);
         FREE(db);

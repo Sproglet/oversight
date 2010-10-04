@@ -17,7 +17,7 @@ lint() {
     awk '
 
 BEGIN {
-    ks="if( then else while( do return match( substr( index( sub( gsub( in getline ";
+    ks="if( then else while( do return match( substr( index( sub( gsub( gensub( in getline ";
     ks=ks" RSTART RLENGTH print print( systime( open( close( FS NF exit break for( system( ";
     ks=ks" delete return return( split( tolower( toupper( length( continue sprintf( int";
     ks=ks" rand( printf and( lshift( rshift( strftime(";
@@ -48,12 +48,20 @@ END {
 inawk {
     gsub(/\\./,""); #remove escaped characters.
 
+    # comments
+    gsub(/^ *#.*/,"");
+    gsub(/[{;}] *#.*/,"");
+
     #quoted strings - keep @ there to stop g"text"( becoming g( and looking like a function call
     gsub(/"[^\"]*"/,"@");
-    gsub(/\/[^\/]*\//,"@"); #regex quotes
-    gsub(/#.*/,""); #comments
+
+    #quoted regex`
+    gsub(/\/.*[^\/]\//,"@"); 
+
+
     gsub(/^[ \t]+/,""); # leading space
     gsub(/[ \t]+$/,""); # trailing space
+
     br_open=(index($0,"{") != 0);
     br_close=(index($0,"}") != 0);
     br_count += (br_open ) - (br_close) ;

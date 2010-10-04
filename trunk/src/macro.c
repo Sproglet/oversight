@@ -66,7 +66,7 @@ char *get_person_domain_filename(Db *db,char *role,char *domain)
     assert(role);
     assert(domain);
 
-    file = person_file_static(db,role);
+    file = db->people_file;
     if (file) {
         char *ext = strrchr(file,'.');
         if (ext) {
@@ -330,7 +330,7 @@ char *macro_fn_person_image(MacroCallInfo *call_info)
             }
             char *path = actor_image_path(item,name_id);
 
-            Array *name_info = dbnames_fetch(name_id,item->db->actors_file);
+            Array *name_info = dbnames_fetch(name_id,item->db->people_file);
 
             result = get_local_image_link(path,"",attr);
 
@@ -2574,10 +2574,9 @@ char *macro_fn_person_name(MacroCallInfo *call_info)
     call_info->free_result = 0;
 
     char *id=query_val(QUERY_PARAM_PERSON);
-    char *role=query_val(QUERY_PARAM_PERSON_ROLE);
     if (!EMPTY_STR(id)) {
         Db *db = firstdb(call_info);
-        Array *actor_info = dbnames_fetch(id,person_file_static(db,role));
+        Array *actor_info = dbnames_fetch(id,db->people_file);
         if (actor_info) {
             result = actor_info->array[1];
         } else {
@@ -2672,7 +2671,7 @@ char *macro_fn_actors(MacroCallInfo *call_info)
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->actors_file,DB_FLDID_ACTOR_LIST,"actors",item->actors,2,6);
+        result = people_table(call_info,item->db->people_file,DB_FLDID_ACTOR_LIST,"actors",item->actors,2,6);
     }
     return result;
 }
@@ -2682,7 +2681,7 @@ char *macro_fn_directors(MacroCallInfo *call_info)
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->directors_file,DB_FLDID_DIRECTOR_LIST,"directors",item->directors,1,2);
+        result = people_table(call_info,item->db->people_file,DB_FLDID_DIRECTOR_LIST,"directors",item->directors,1,2);
     }
     return result;
 }
@@ -2691,7 +2690,7 @@ char *macro_fn_writers(MacroCallInfo *call_info) {
     char *result = NULL;
     if (call_info->sorted_rows->num_rows) {
         DbItem *item = call_info->sorted_rows->rows[0];
-        result = people_table(call_info,item->db->writers_file,DB_FLDID_WRITER_LIST,"writers",item->writers,1,2);
+        result = people_table(call_info,item->db->people_file,DB_FLDID_WRITER_LIST,"writers",item->writers,1,2);
     }
     return result;
 }

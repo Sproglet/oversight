@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Oversight ([:HOSTNAME:]) - [:ACTOR_NAME:]</title>
+        <title>Oversight ([:HOSTNAME:]) - [:PERSON_NAME:][ (:PERSON_ROLE:)]</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
     </head>
     <body [onloadset=:START_CELL:] focuscolor=#66CCFF focustext=black class=menu_background background="[:BACKGROUND_URL(default.jpg):]">
@@ -15,12 +15,12 @@
 							            <table height=200px class="header">
 	                                        <tr>
 	                                            <td align=center>
-	                                                <span class="boxtitle">[:ACTOR_IMAGE(height=200px):]</span>
+	                                                <span class="boxtitle">[:PERSON_IMAGE(height=200px):]</span>
 	                                            </td>
 	                                        </tr>
 	                                        <tr>
                                                 <td align=center>
-                                                    <span class="boxtitle">PROFILE: [:ACTOR_NAME:]</span>
+                                                    <span class="boxtitle">PROFILE: [:PERSON_NAME:][ (:PERSON_ROLE:)]</span>
                                                 </td>
                                             </tr>
 							            </table>

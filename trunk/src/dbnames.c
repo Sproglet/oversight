@@ -36,7 +36,7 @@ static inline long seek_back(FILE *fp,long start) {
     long prev;
 
     // goto start - DB_PERSON_NAME_SIZE
-    HTML_LOG(0,"seek back from [%ld]",start);
+    // HTML_LOG(0,"seek back from [%ld]",start);
     prev= start - DB_PERSON_NAME_SIZE;
     if (prev< 0) {
         prev= 0;
@@ -45,16 +45,16 @@ static inline long seek_back(FILE *fp,long start) {
         HTML_LOG(0,"seek start [%ld] failed. errno = %d",start,errno);
     } else {
         long bytes;
-        HTML_LOG(0,"seek back checking range [%ld-%ld]",prev,start);
+        // HTML_LOG(1,"seek back checking range [%ld-%ld]",prev,start);
         // Read all bytes from prev to start.
         if ((bytes=fread(name_record,1,start-prev,fp)) >= 0) {
-            HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name_record);
+            //HTML_LOG(0,"bytes[%ld][%.*s]",bytes,bytes,name_record);
 
             // Now scan backwards until we hit cr or linefeed
             int i;
             for( i = bytes-1 ; i ; i-- ) {
                 if (name_record[i] == '\n' || name_record[i] == '\r' || name_record[i] == '\0' ) {
-                    HTML_LOG(0,"seek back to [%.10s]",name_record+i+1);
+                    //HTML_LOG(0,"seek back to [%.10s]",name_record+i+1);
                     prev += i+1;
                     break;
                 }
@@ -62,7 +62,7 @@ static inline long seek_back(FILE *fp,long start) {
             if (fseek(fp,prev,SEEK_SET) != 0) {
                 HTML_LOG(0,"seek start [%ld] failed - step 2 . errno = %d",start,errno);
             } else {
-                HTML_LOG(0,"seek back to [%ld]",prev);
+                //HTML_LOG(0,"seek back to [%ld]",prev);
 
                 result = prev;
             }
@@ -92,14 +92,14 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
 
     int keylen = strlen(full_key);
     long mid;
-    HTML_LOG(0,"Looking for key [%s]",key);
+    HTML_LOG(1,"Looking for key [%s]",key);
     while(1) {
         if (++count > 20) {
             HTML_LOG(0,"Error in chop??");
             break;
         }
         mid = ( start + end ) / 2;
-        HTML_LOG(0,"chop[%ld][%ld][%ld]",start,mid,end);
+        HTML_LOG(1,"chop[%ld][%ld][%ld]",start,mid,end);
         if (fseek(f,mid,SEEK_SET) == 0) {
             // align with start of record.
             mid = seek_back(f,mid);
@@ -124,7 +124,7 @@ char *dbnames_fetch_chop_static(char *key,FILE *f,long start,long end)
             }
         }
     }
-    HTML_LOG(0,"found [%s] = [%s]",key,result);
+    HTML_LOG(1,"found [%s] = [%s]",key,result);
     return result;
 }
 
@@ -140,7 +140,6 @@ char *dbnames_fetch_static(char *key,char *file)
     char *result = NULL;
     struct stat64 st;
 
-    HTML_LOG(0,"Looking for key [%s]",key);
     if (util_stat(file,&st) == 0) {
         FILE *f = fopen(file,"rba");
         if (f) {
@@ -165,7 +164,6 @@ char *dbnames_fetch_static(char *key,char *file)
 Array *dbnames_fetch(char *key,char *file) 
 {
     Array *result = NULL;
-    HTML_LOG(0,"Looking for key [%s]",key);
     char *record = dbnames_fetch_static(key,file);
     if (record) {
 

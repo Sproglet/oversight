@@ -1,3 +1,7 @@
+Use gawk specific match array extensions instead of chop function
+
+use gensub instead of chop - eg in tv pattern recognition
+
 Add reverse db -> Actort Name to ovsid for the sites that do not have Actor Ids (including tvdb)
 
 

@@ -481,151 +481,151 @@ file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,\
 cat) {
 
-
-
-    if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" && verify(minfo)) {
-
-        id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
-
-        eta="";
+    if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
-    #dep#        begin_search("");
+        DIV0("Start item "(g_item_count)": ["minfo["mi_media"]"]");
 
-        bestUrl="";
+        if (verify(minfo)) {
 
-        scanNfo=0;
+            id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
 
-        file=minfo["mi_media"];
-        fldr=minfo["mi_folder"];
+            eta="";
+       
+        #dep#        begin_search("");
 
-        if (file) {
+            bestUrl="";
 
-            DIV0("Start item "(g_item_count)": ["file"]");
+            scanNfo=0;
 
-            report_status("item "(++g_item_count));
+            file=minfo["mi_media"];
+            fldr=minfo["mi_folder"];
 
-            DEBUG("folder :["fldr"]");
-
-            if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
-
-                WARNING("Skipping unknown file ["file"]");
-
-            } else {
-
-                thisTime = systime();
+            if (file) {
 
 
-                if (g_settings["catalog_nfo_read"] != "no") {
+                report_status("item "(++g_item_count));
 
-                    if (is_file(minfo["mi_nfo_default"])) {
+                DEBUG("folder :["fldr"]");
 
-                       DEBUG("Using default info to find url");
-                       scanNfo = 1;
+                if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
 
-                    # Look at other files in the same folder.
-                    } else if  (setImplicitNfo(minfo,fldr) ) { #XX
-                        scanNfo = 1;
+                    WARNING("Skipping unknown file ["file"]");
 
-                    # Look inside movie_structure
-                    } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
-                        scanNfo = 1;
-                   }
-                }
+                } else {
 
-                if (scanNfo){
-                   bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
-                }
+                    thisTime = systime();
 
-                if (bestUrl == "") {
-                    # scan filename for imdb link
-                    bestUrl = extractImdbLink(file);
+
+                    if (g_settings["catalog_nfo_read"] != "no") {
+
+                        if (is_file(minfo["mi_nfo_default"])) {
+
+                           DEBUG("Using default info to find url");
+                           scanNfo = 1;
+
+                        # Look at other files in the same folder.
+                        } else if  (setImplicitNfo(minfo,fldr) ) { #XX
+                            scanNfo = 1;
+
+                        # Look inside movie_structure
+                        } else if ( isDvdDir(file) && setImplicitNfo(minfo,fldr"/"file) ) { #XX
+                            scanNfo = 1;
+                       }
+                    }
+
+                    if (scanNfo){
+                       bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
+                    }
+
+                    if (bestUrl == "") {
+                        # scan filename for imdb link
+                        bestUrl = extractImdbLink(file,1);
+                        if (bestUrl) {
+                            INF("extract imdb id from "file);
+                        }
+                    }
+
+                    cat="";
+
                     if (bestUrl) {
-                        INF("extract imdb id from "file);
+                        cat = scrapeIMDBTitlePage(minfo,bestUrl);
                     }
-                }
 
-                cat="";
+                    if (cat == "M" ) {
 
-                if (bestUrl) {
-                    cat = scrapeIMDBTitlePage(minfo,bestUrl);
-                }
-
-                if (cat == "M" ) {
-
-                    # Its definitely a movie according to IMDB or NFO
-                    cat = movie_search(minfo,bestUrl);
-
-                } else if (cat == "T" ) {
-
-                    # Its definitely a series according to IMDB or NFO
-                    cat = tv_search_simple(minfo,bestUrl);
-
-                } else {
-
-                    # Not sure - try a TV search looking for various abbreviations.
-                    cat = tv_search_complex(minfo,bestUrl);
-
-                    if (cat != "T") {
-                        # Could not find any hits using tv abbreviations, try heuristis for a movie search.
-                        # This involves searching web for imdb id.
+                        # Its definitely a movie according to IMDB or NFO
                         cat = movie_search(minfo,bestUrl);
-                        if (cat == "T") {
-                            # If we get here we found an IMDB id , but it looks like a TV show after all.
-                            # This may happen with mini-series that do not have normal naming conventions etc.
-                            # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                            cat = tv_search_simple(minfo,bestUrl);
+
+                    } else if (cat == "T" ) {
+
+                        # Its definitely a series according to IMDB or NFO
+                        cat = tv_search_simple(minfo,bestUrl);
+
+                    } else {
+
+                        # Not sure - try a TV search looking for various abbreviations.
+                        cat = tv_search_complex(minfo,bestUrl);
+
+                        if (cat != "T") {
+                            # Could not find any hits using tv abbreviations, try heuristis for a movie search.
+                            # This involves searching web for imdb id.
+                            cat = movie_search(minfo,bestUrl);
+                            if (cat == "T") {
+                                # If we get here we found an IMDB id , but it looks like a TV show after all.
+                                # This may happen with mini-series that do not have normal naming conventions etc.
+                                # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                                cat = tv_search_simple(minfo,bestUrl);
+                            }
                         }
                     }
+
+
+                    if (cat != "") {
+
+                        #If poster is blank fall back to imdb
+                        if (minfo["mi_poster"] == "") {
+                            minfo["mi_poster"] = minfo["mi_imdb_img"];
+                        }
+                        fixTitles(minfo);
+
+                        #Only get posters if catalog is installed as part of oversight
+                        if (index(APPDIR,"/oversight") ) {
+
+                            if (GET_POSTERS) {
+                                minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+                            }
+
+                            if (GET_FANART) {
+                                minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+                            }
+                        }
+
+                        relocate_files(minfo);
+
+                        if (g_opt_dry_run) {
+                            print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+                        }
+                        total++;
+
+                        g_total ++;
+                        g_batch_total++;
+                        #lang_test(minfo);
+
+                        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+
+                        queue_minfo(minfo,qfile,person_extid2name);
+                    } else {
+                        INF("Skipping item "minfo["mi_media"]);
+                    }
+                    thisTime = systime()-thisTime ;
+                    g_process_time += thisTime;
+                    g_elapsed_time = systime() - g_start_time;
+
                 }
-
-
-                if (cat != "") {
-
-                    #If poster is blank fall back to imdb
-                    if (minfo["mi_poster"] == "") {
-                        minfo["mi_poster"] = minfo["mi_imdb_img"];
-                    }
-                    fixTitles(minfo);
-
-                    #Only get posters if catalog is installed as part of oversight
-                    if (index(APPDIR,"/oversight") ) {
-
-                        if (GET_POSTERS) {
-                            minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
-                        }
-
-                        if (GET_FANART) {
-                            minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
-                        }
-                    }
-
-                    relocate_files(minfo);
-
-
-
-                    if (g_opt_dry_run) {
-                        print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
-                    }
-                    total++;
-
-                } else {
-                    INF("Skipping item "minfo["mi_media"]);
-                }
-
-                thisTime = systime()-thisTime ;
-                g_process_time += thisTime;
-                g_elapsed_time = systime() - g_start_time;
-                g_total ++;
-                g_batch_total++;
-                #lang_test(minfo);
-
-                DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
-
-                queue_minfo(minfo,qfile,person_extid2name);
             }
-        }
 
-        id0(total);
+            id0(total);
+        }
     }
 
     if ((force_merge && g_batch_total) ||  g_batch_total == g_batch_size ) {

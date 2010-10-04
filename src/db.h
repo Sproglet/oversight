@@ -30,9 +30,7 @@ typedef struct Db_struct {
     char *plot_file; // ..../plot.db (auto computed from source)
     FILE *plot_fp;    // File pointer to plotfile
     int db_size;
-    char *actors_file; // ..../db/actors.db (auto computed from source)
-    char *directors_file; // ..../db/actors.db (auto computed from source)
-    char *writers_file; // ..../db/actors.db (auto computed from source)
+    char *people_file; // ..../db/actors.db (auto computed from source)
 
 #if 0
     char *directors_file; // ..../db/directors.db (auto computed from source)

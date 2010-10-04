@@ -98,7 +98,7 @@ function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,match
 # IN fixed_text, - fixed text to help speed up scan
 # IN regex to scan for
 # IN max = max number to match 0=all
-# OUT matches = array of matches index by the match text value = number of occurences.
+# OUT matches = array of matches index by order of occurrence
 # return number of matches
 function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matches,verbose) {
     return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,1,matches,verbose);

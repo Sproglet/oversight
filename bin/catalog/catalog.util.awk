@@ -128,7 +128,7 @@ function DEBUG(x) {
 }
 
 function DIV0(x) {
-    INF("\n\t===\n\t"x"\n\t===\n");
+    INF("\n\t\t@@@@@@@\t"x"\t@@@@@@@@@@\n");
 }
 function DIV(x) {
     INF("\t===\t"x"\t===");
@@ -594,16 +594,6 @@ function isDvdDir(f) {
 function touch_and_move(x,y) {
     system("touch "qa(x)" ; mv "qa(x)" "qa(y));
 }
-
-# Extract significant part of domain name. eg imdb from imdb.com and imdb.de
-function get_main_domain(url) {
-    sub(/\/.*/,"",url);
-    sub(/\.(com|org|[a-z][a-z])$/,"",url); # remove TLD
-    sub(/\.[a-z][a-z]$/,"",url); # remove co in co.uk etc
-    sub(/.*\./,"",url); #remove front bit
-    return url;
-}
-
 function gsub_hash(reg,val,h,\
 i) {
     for(i in h) {

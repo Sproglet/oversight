@@ -127,6 +127,7 @@ BEGIN {
     verify_setup();
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
+    g_min_plot_len=200;
     g_max_db_len=4000;
     g_country_prefix="country_";
     g_indent="";
@@ -200,6 +201,7 @@ function report_status(msg) {
 
 
 END{
+
     #path for actor db etc.
     DBDIR = APPDIR"/db";
 
@@ -859,6 +861,7 @@ punc) {
     return t;
 }
 
+# remove html markup from a line.
 function remove_tags(line) {
 
     gsub(/<[^>]+>/," ",line);
@@ -1194,15 +1197,6 @@ i,folderCount,moveDown) {
     }
 }
 
-
-
-function lang_test(minfo) {
-    scrape_es(minfo);
-    scrape_fr(minfo);
-    scrape_it(minfo);
-}
-
-
 # look for PLOT or PLOT: then skip over all tags until it hits some plain text.
 # if this is more than  more than min_plot_len characters of plain text with especially no div, h1-5, table or span.
 # plot_words = array of words used for the word PLOT in the desired language - eg Plot, Summary , Synopsis
@@ -1254,8 +1248,13 @@ plot_words,sites,query,tmp,plot,i) {
     }
 }
 
-function unit() {
+function unit(\
+minfo) {
     # print "Roman" (roman_replace("fredii") == "fred2" ? "OK" : "Failed" );
+    DIV0("BEGIN UNIT TEST");
+    find_movie_page("Matrix Reloaded",2003,minfo);
+    dump(0,"moviepage",minfo);
+    DIV0("END UNIT TEST");
 }
 
 #ENDAWK

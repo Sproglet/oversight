@@ -6,6 +6,8 @@ function load_catalog_settings() {
 
     load_settings(g_country_prefix , COUNTRY_FILE,0);
 
+
+
     gsub(/,/,"|",g_settings["catalog_format_tags"]);
     gsub(/,/,"|",g_settings["catalog_ignore_paths"]);
     gsub(/,/,"|",g_settings["catalog_ignore_names"]);
@@ -30,11 +32,11 @@ function load_catalog_settings() {
 
 # Load configuration file
 function load_settings(prefix,file_name,verbose,\
-i,n,v,option) {
+i,n,v,option,ret,err) {
 
-    INF("load "file_name);
+    id1("load_settings "file_name);
     FS="\n";
-    while((getline option < file_name ) > 0 ) {
+    while((err = (getline option < file_name )) > 0 ) {
 
         #remove comment - hash without a preceeding blackslash
         if ((i=match(option,"[^\\\\]#")) > 0) {
@@ -75,5 +77,48 @@ i,n,v,option) {
             }
         }
     }
-    close(file_name);
+    if (err >= 0 ) {
+        close(file_name);
+        ret = 1;
+    } else {
+        ret = 0;
+    }
+    id0(ret);
+    return ret;
 }
+
+# remove settings that match the regex
+function remove_settings(regex,\
+i) {
+    for(i in g_settings) {
+        if (i ~ regex) {
+            delete g_settings[i];
+        }
+    }
+}
+
+
+# load plugin settings
+function load_plugin_settings(type,name,\
+plugin_file,ret) {
+
+    plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
+
+    if (1) {
+        remove_settings("^"type ":");
+        ret = load_settings(type":",plugin_file,1);
+    } else {
+        
+        key=type SUBSEP name;
+
+        remove_settings("^"type ":");
+
+        if (!( key in g_plugin_loaded)) {
+
+            g_plugin_loaded[key] = load_settings(type":",plugin_file,1);
+        } 
+        ret = g_plugin_loaded[key];
+    }
+    return ret;
+}
+

@@ -333,7 +333,7 @@ main() {
 # find exec doesnt work on nmt
 clean_files() {
     find "$1" -name "$2" -mtime "+$3" | while IFS= read f ; do
-        rm -f -- "$f"
+        rm -fr -- "$f"
     done
 }
 

@@ -154,9 +154,25 @@ function trimAll(str) {
     return str;
 }
 
-function trim(str) {
-    sub(/^[- ]+/,"",str);
-    sub(/[- ]+$/,"",str);
+function trim(str,\
+i,j) {
+    sub(/^[	 ]+/,"",str);
+    sub(/
+$/,"",str);
+
+    # trim trailing space 
+    # this was using sub(/ +$/,"",str) 
+    # but if the string has a lot of spaces this can cause a lot of backtracking
+    # eg [one sp sp sp  ... sp sp two sp ]
+    #
+    j = i = length(str);
+    while (i >= 1 && substr(str,i,1) == " ") {
+        i--;
+    }
+
+    if(i != j) {
+        str = substr(str,1,i);
+    }
     return str;
 }
 
@@ -609,7 +625,7 @@ function apply_edits(text,plist,\
 i,num,patterns,matched,pinfo,ret) {
 
     ret = text;
-    INF("using "plist);
+    #DEBUG("using "plist);
 
     gsub(/\\,/,"@comma@",plist)
     gsub(/\\\//,"@backslash@",plist)
@@ -647,7 +663,7 @@ i,num,patterns,matched,pinfo,ret) {
             break;
         }
     }
-    INF("apply_edits:["text"]=["ret"]");
+    #DEBUG("apply_edits:["text"]=["ret"]");
     return ret;
 }
 

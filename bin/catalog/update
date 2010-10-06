@@ -1,0 +1,3 @@
+for f in `find . -maxdepth 1 -newer .x -name \*awk` ; do
+    cp -v "$f" /cygdrive/o/Apps/oversight/bin/catalog
+done && touch .x

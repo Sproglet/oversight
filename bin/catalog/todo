@@ -1,4 +1,22 @@
+
+If a scrape fails due to missing plot then skip entire domain.
+
+in catalog.scrape.awk replace hash_merge with one that only updates empty elements.
+Also clear title and plt before setting it. 
+
+test 2 letter domain search.
+
 Use gawk specific match array extensions instead of chop function
+
+
+Implement
+catalog_domain_portrait_url=http://www.comingsoon.it/imgdb/Persone/{ID}.jpg
+
+Check blank
+catalog_domain_portrait_url_regex_list=
+
+Implement
+catalog_domain_poster_url_regex_list=s/_ico//;s/ico/big/
 
 use gensub instead of chop - eg in tv pattern recognition
 

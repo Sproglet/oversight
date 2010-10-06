@@ -100,24 +100,14 @@ i) {
 
 # load plugin settings
 function load_plugin_settings(type,name,\
-plugin_file,ret) {
+plugin_file,ret,key) {
 
     plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
 
-    if (1) {
+    if (g_last_plugin[type] != name) {
         remove_settings("^"type ":");
         ret = load_settings(type":",plugin_file,1);
-    } else {
-        
-        key=type SUBSEP name;
-
-        remove_settings("^"type ":");
-
-        if (!( key in g_plugin_loaded)) {
-
-            g_plugin_loaded[key] = load_settings(type":",plugin_file,1);
-        } 
-        ret = g_plugin_loaded[key];
+        g_last_plugin[type] = name;
     }
     return ret;
 }

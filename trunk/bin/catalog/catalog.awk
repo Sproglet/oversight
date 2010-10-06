@@ -864,7 +864,9 @@ punc) {
 # remove html markup from a line.
 function remove_tags(line) {
 
-    gsub(/<[^>]+>/," ",line);
+    if (index(line,"<")) {
+        gsub(/<[^>]+>/," ",line);
+    }
 
     if (index(line,"  ")) {
         gsub(/ +/," ",line);
@@ -874,9 +876,11 @@ function remove_tags(line) {
         gsub(/\&amp;/," \\& ",line);
     }
 
-    gsub(/[&][a-z]+;?/,"",line);
+    if (index(line,"&")) {
+        gsub(/[&][a-z]+;?/,"",line);
+    }
 
-    line=de_emphasise(line);
+    #line=de_emphasise(line);
 
     return line;
 }
@@ -1248,12 +1252,19 @@ plot_words,sites,query,tmp,plot,i) {
     }
 }
 
+function unit1(label,value) {
+    print "unit" label ( value ? "OK" : "Failed");
+}
+
 function unit(\
-minfo) {
-    # print "Roman" (roman_replace("fredii") == "fred2" ? "OK" : "Failed" );
+minfo,failed) {
     DIV0("BEGIN UNIT TEST");
-    find_movie_page("Matrix Reloaded",2003,minfo);
-    dump(0,"moviepage",minfo);
+    unit1("Trim",(trim(" a ") == "a"));
+    unit1("Roman",(roman_replace("fredii") == "fred2"));
+    unit1("preserve",(preserve_src_href("<a href=\"1112\">bbb</a>") == "href=\"1112\"<a >bbb</a>"));
+    unit1("preserve",(preserve_src_href("<img src=\"3333\">") == "img=\"3333\"<img >" ));
+    find_movie_page("Matrix Reloaded",2003,138,minfo);
+    #dump(0,"moviepage",minfo);
     DIV0("END UNIT TEST");
 }
 

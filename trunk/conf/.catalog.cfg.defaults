@@ -100,12 +100,13 @@ catalog_max_actors=8
 
 catalog_follow_symlinks=0
 
-catalog_languages=en,it,fr
+catalog_languages=fr
 
 
 catalog_lang_fr_title=Title 
 catalog_lang_fr_plot=Synopsis 
-catalog_lang_fr_site=allocine.fr/film,imdb.fr/title,fr
+#catalog_lang_fr_site=allocine.fr/film,imdb.fr/title,fr
+catalog_lang_fr_site=allocine.fr/film
 
 catalog_lang_ru_title=Title 
 catalog_lang_ru_plot=&#1054;&#1087;&#1080;&#1089;&#1072;&#1085;&#1080;&#1077;

@@ -27,7 +27,7 @@ plist,ret,key) {
             ERR("keyword not found ["key"]");
         }
     }
-    INF("domain_edits:["domain":"text"]=["ret"]");
+    DEBUG("domain_edits:["domain":"text"]=["ret"]");
     return ret;
 }
 

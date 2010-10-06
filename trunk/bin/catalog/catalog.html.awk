@@ -115,7 +115,7 @@ function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_o
 f,line,count,linecount,remain,is_imdb,matches2,i) {
 
     delete matches;
-    id1("scan_page_for_matches["url"]");
+    id1("scan_page_for_matches["url"]["fixed_text"]["regex"]");
     INF("["fixed_text"]["\
         (regex == g_imdb_regex\
             ?"<imdbtag>"\
@@ -219,15 +219,19 @@ function extractTagText(str,startText,\
     return trim(substr(str,i,j-i));
 }
 function de_emphasise(html) {
+
     if (index(html,"<b") || index(html,"</b") ||\
        index(html,"<em") || index(html,"</em") ||\
        index(html,"<strong") || index(html,"</strong") ) {
+
         gsub(/<\/?(b|em|strong)>/,"",html); #remove emphasis tags
     }
+
     if (index(html,"wbr")) {
         # Note yahoo will sometimes break an imdb tag with a space and wbr eg. tt1234 <wbr>567
         gsub(/ *<\/?wbr>/,"",html); #remove emphasis tags
     }
+
     if (index("/>",html)) {
         #gsub(/<[^\/][^<]+\/>/,"",html); #remove single tags eg <wbr />
         gsub(/<[a-z]+ ?\/>/,"",html); #remove single tags eg <wbr />

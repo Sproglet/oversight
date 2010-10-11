@@ -479,7 +479,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,\
-cat) {
+cat,tmp) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
@@ -559,6 +559,13 @@ cat) {
                     } else if (cat == "T" ) {
 
                         # Its definitely a series according to IMDB or NFO
+                        # get the episode info
+                        hash_copy(tmp,minfo);
+                        checkTvFilenameFormat(tmp,"");
+                        minfo["mi_season"] = tmp["mi_season"];
+                        minfo["mi_episode"] = tmp["mi_episode"];
+                        minfo["mi_additional_info"] = tmp["mi_additional_info"];
+
                         cat = tv_search_simple(minfo,bestUrl);
 
                     } else {

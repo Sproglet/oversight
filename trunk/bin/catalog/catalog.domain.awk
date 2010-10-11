@@ -1,15 +1,17 @@
 
 # Extract significant part of domain name. eg imdb from imdb.com and imdb.de
-function get_main_domain(url,\
-i) {
+function get_main_domain(url) {
 
     sub(/^https?:\/\//,"",url);
 
     sub(/\/.*/,"",url); # remove url path
 
-    sub(/\.(com|org|[a-z][a-z])$/,"",url); # remove TLD
-    sub(/\.[a-z][a-z]$/,"",url); # remove co in co.uk etc
-    sub(/.*\./,"",url); #remove front bit
+    sub(/^www\./,"",url); 
+
+    # Special case for imdb. Any more of these and it should be handled by using 
+    # include files for the domain properties. eg imdb.fr includes imdb.com
+    if (index(url,"imdb")==1) url="imdb";
+
     return url;
 }
 

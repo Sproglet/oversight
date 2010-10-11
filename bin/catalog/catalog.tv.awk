@@ -5,11 +5,13 @@
 # RET 0 - no format found
 #     1 - tv format found - needs to be confirmed by scraping 
 #
-function checkTvFilenameFormat(name,minfo,plugin,more_info,\
-details,line,dirs,d,dirCount,dirLevels,ret) {
+function checkTvFilenameFormat(minfo,plugin,more_info,\
+details,line,dirs,d,dirCount,dirLevels,ret,name) {
 
-    delete more_info;
-    #First get season and episode information
+   delete more_info;
+   #First get season and episode information
+
+   name = minfo["mi_media"];
 
    id1("checkTvFilenameFormat "plugin);
 
@@ -456,9 +458,8 @@ function tv_search_complex(minfo,bestUrl) {
 # returns cat="T" tv show , "M" = movie , "" = unknown.
 
 function tv_check_and_search_all(minfo,bestUrl,check_tv_names,\
-plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,name) {
+plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
 
-    name = minfo["mi_media"];
 
     for (p in g_tv_plugin_list) {
         plugin = g_tv_plugin_list[p];
@@ -478,7 +479,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,name) {
 
         if (check_tv_names) {
 
-            if (checkTvFilenameFormat(name,minfo,plugin,more_info)) {
+            if (checkTvFilenameFormat(minfo,plugin,more_info)) {
 
                 search_abbreviations = more_info[1];
 
@@ -1650,6 +1651,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
         getTvDbSeasonBanner(minfo,bannerApiUrl,"en");
 
         # For twin episodes just use the first episode number for lookup by adding 0
+        dump(0,"pre-episode",minfo);
 
         if (minfo["mi_episode"] ~ "^[0-9,]+$" ) {
 
@@ -1768,6 +1770,8 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
                 }
             }
         }
+
+        dump(0,"pre-episode",minfo);
 
         e="/Show/Episodelist/Season/episode";
         if (minfo["mi_episode"] ~ "^[0-9,]+$" ) {

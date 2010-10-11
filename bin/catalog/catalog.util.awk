@@ -164,8 +164,7 @@ i,j) {
     # eg [one sp sp sp  ... sp sp two sp ]
     #
     j = i = length(str);
-    while (i >= 1 && index(" \t\n
-",substr(str,i,1))) {
+    while (i >= 1 && index(" \t\n\r",substr(str,i,1))) {
         i--;
     }
 

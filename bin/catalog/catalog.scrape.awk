@@ -110,7 +110,7 @@ minfo2,err,url,qualifier,keyword,matches,num,search_domain,url_domain,url_text,u
 
         dump(0,"filtered matches",matches);
         for(i = 1 ; i <= num ; i++ ) {
-            url_domain = get_main_domain(matches[i],searchhist);
+            url_domain = get_main_domain(matches[i]);
 
             if (is_visited_domain(url_domain,searchhist)) {
                 INF("ignoring ["matches[i]"] - previous visit to site does not have plot");

@@ -1,3 +1,5 @@
+Fix imdb actor scraping with new code
+
 In cases where the keyword appears twice only take the first occurence.
 (may need to make an exception for Actors )
 

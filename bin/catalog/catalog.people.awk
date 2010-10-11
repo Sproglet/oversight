@@ -23,7 +23,7 @@ function person_get_img_url(domain,url) {
 
 # extract person id from a url depending on the domain.
 function person_get_id(domain,url) {
-    return domain_edits(domain,url,"catalog_domain_url_to_personid_regex_list",1);
+    return domain_edits(domain,url,"catalog_domain_url_to_personid_regex_list",0);
 }
 
 

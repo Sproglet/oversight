@@ -1,3 +1,7 @@
+In cases where the keyword appears twice only take the first occurence.
+(may need to make an exception for Actors )
+
+Also check for run-away keywords or add some termination keywords. (per domain)
 
 If a scrape fails due to missing plot then skip entire domain.
 

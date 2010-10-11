@@ -1257,14 +1257,26 @@ function unit1(label,value) {
 }
 
 function unit(\
-minfo,failed) {
+minfo,failed,i,ulang) {
     DIV0("BEGIN UNIT TEST");
     unit1("Trim",(trim(" a ") == "a"));
     unit1("Roman",(roman_replace("fredii") == "fred2"));
-    unit1("preserve",(preserve_src_href("<a href=\"1112\">bbb</a>") == "href=\"1112\"<a >bbb</a>"));
-    unit1("preserve",(preserve_src_href("<img src=\"3333\">") == "img=\"3333\"<img >" ));
-    find_movie_page("Matrix Reloaded",2003,138,minfo);
+    unit1("preserve1",(preserve_src_href("<a href=\"1112\">bbb</a>") == "href=\"1112\"<a >bbb</a>"));
+    unit1("preserve2",(preserve_src_href("<img src=\"3333\">") == "img=\"3333\"<img >" ));
+    unit1("preserve3",(preserve_src_href("<a href='1112'>bbb</a>") == "href=\"1112\"<a >bbb</a>"));
+    unit1("preserve4",(preserve_src_href("<img src='3333'>") == "img=\"3333\"<img >" ));
+    WARNING(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'"));
+    unit1("preserve5",(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'") == "img=\"http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif\"<img " ));
+
+    split("fr,de,it,nl,ru",ulang,",");
+
+    #find_movie_page("Matrix Reloaded",2003,138,minfo);
     #dump(0,"moviepage",minfo);
+    for(i in ulang) {
+        find_movie_by_lang(ulang[i],"Matrix Reloaded",2003,138,minfo);
+        dump(0,"lang "ulang[i]"=",minfo);
+        delete minfo;
+    }
     DIV0("END UNIT TEST");
 }
 

@@ -18,7 +18,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
 
     if (imdbContentPosition == "footer" ) {
         return imdbContentPosition;
-    } else if (imdbContentPosition == "header" ) {
+    } else if (imdbContentPosition == "head" ) {
 
         #Only look for title at this stage
         #First get the HTML Title

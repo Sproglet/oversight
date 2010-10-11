@@ -6,7 +6,7 @@ INSTALL_DIR=$( cd "$INSTALL_DIR" ; pwd )
 appname="oversight"
 wsname="OverSight"
 cgiName="oversight.cgi"
-shPath="$INSTALL_DIR/$appname.sh"
+shPath="$INSTALL_DIR/bin/$appname.sh"
 start_command="$shPath REBOOTFIX"
 
 httpd="http://127.0.0.1:8883"

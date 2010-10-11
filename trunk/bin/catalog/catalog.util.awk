@@ -157,8 +157,6 @@ function trimAll(str) {
 function trim(str,\
 i,j) {
     sub(/^[	 ]+/,"",str);
-    sub(/
-$/,"",str);
 
     # trim trailing space 
     # this was using sub(/ +$/,"",str) 
@@ -166,7 +164,8 @@ $/,"",str);
     # eg [one sp sp sp  ... sp sp two sp ]
     #
     j = i = length(str);
-    while (i >= 1 && substr(str,i,1) == " ") {
+    while (i >= 1 && index(" \t\n
+",substr(str,i,1))) {
         i--;
     }
 
@@ -621,8 +620,8 @@ i) {
 # e/REGEX = extract the regex. - if not blank
 # s/REGEX/VALUE = substitute regex - REGEX must be present if not blank
 
-function apply_edits(text,plist,\
-i,num,patterns,matched,pinfo,ret) {
+function apply_edits(text,plist,verbose,\
+i,num,patterns,matched,pinfo,ret,prev) {
 
     ret = text;
     #DEBUG("using "plist);
@@ -636,11 +635,16 @@ i,num,patterns,matched,pinfo,ret) {
 
     for(i = 1 ; i <= num ; i++ ) {
 
+        prev =ret;
 
         split(patterns[i],pinfo,"/");
 
         gsub_hash("@backslash@","/",pinfo);
 
+        if (verbose) {
+            DEBUG("apply_edits["text"]");
+            dump(0,"apply_edits",pinfo);
+        }
 
         matched = 0;
         if (tolower(pinfo[1]) == "s") { # substitute
@@ -650,6 +654,7 @@ i,num,patterns,matched,pinfo,ret) {
             } else {
                 matched = sub(pinfo[2],pinfo[3],ret);
             }
+            if (verbose) DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")=["matched"|"ret"]");
 
         } else if (tolower(pinfo[1]) == "e") { # extract
 
@@ -657,7 +662,10 @@ i,num,patterns,matched,pinfo,ret) {
                 matched = 1;
                 ret = substr(ret,RSTART,RLENGTH);
             }
+            if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")=["matched"|"ret"]");
         }
+        # If there was no match, and a lower case operation was used then clear the entire result.
+        #ie if s/ or e/ used then the regex must be present
         if (!matched && pinfo[1] == tolower(pinfo[1])) {
             ret = "";
             break;

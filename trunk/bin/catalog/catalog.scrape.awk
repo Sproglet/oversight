@@ -671,7 +671,7 @@ key,regex,ret,lcfragment) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function scrapeIMDBTitlePage(minfo,url,lang,\
-domain,f,line,imdbContentPosition,connections,remakes,ret,namestate) {
+domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
 
     if (url == "" ) return;
 
@@ -707,7 +707,7 @@ domain,f,line,imdbContentPosition,connections,remakes,ret,namestate) {
             minfo["role"] = "";
 
             while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,namestate);
+                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,pagestate,namestate);
             }
 
             delete minfo["role"];

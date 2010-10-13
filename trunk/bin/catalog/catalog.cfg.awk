@@ -100,7 +100,7 @@ i) {
 
 # load plugin settings
 function load_plugin_settings(type,name,\
-plugin_file,ret,key) {
+plugin_file,ret) {
 
     plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
 

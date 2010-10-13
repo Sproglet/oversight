@@ -11,7 +11,7 @@ cp src/verfile ./conf/.version
 v="`cat src/verfile`"
 echo ======= $v ==========
 
-chmod 775 *cgi *.sh *.awk
+chmod 775 *cgi *.sh # *.awk
 
 label="2.0$@-$v"
 
@@ -48,7 +48,7 @@ for i in unpak catalog oversight ; do
 done
 
 ../nmt-scripts/build `basename "$PWD"` "$label" \
-    *.awk *.sh *.cgi *.html \
+    *.sh *.cgi *.html \
     conf/*.example conf/.*defaults conf/use.wget.wrapper conf/country.txt conf/.version \
     help/*.help \
     templates.new \

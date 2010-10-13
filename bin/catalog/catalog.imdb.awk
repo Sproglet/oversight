@@ -12,7 +12,7 @@ function imdb_img_url(url) {
     return url;
 }
 
-function scrape_imdb_line(line,imdbContentPosition,minfo,f,namestate,\
+function scrape_imdb_line(line,imdbContentPosition,minfo,f,pagestate,namestate,\
 title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_title_country,tmp) {
 
 
@@ -94,7 +94,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
                 minfo["role_max"] = g_max_actors;
                 INF("set role "minfo["role_max"]":"minfo["role"]);
             }
-            get_names("imdb",line,minfo,minfo["role"],minfo["role_max"],namestate);
+            get_names("imdb",line,minfo,minfo["role"],minfo["role_max"],pagestate,namestate);
             #TODO shrink minfo["mi_actor"]
 
             # "Plot" on normal page - "Plot Summary" on mobile pages.

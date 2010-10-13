@@ -120,8 +120,6 @@ terms,results,id,url,parts,showurl) {
     details[TVID]=id;
     return id;
 }
-
-#
 # If Plugin != "" then it will also check episodes by date.
 function extractEpisodeByPatterns(plugin,line,details,\
 ret,p,pat,i,parts,sreg,ereg) {
@@ -137,38 +135,40 @@ ret,p,pat,i,parts,sreg,ereg) {
 
     sreg="([0-5][0-9]|[0-9])";
 
-    ereg="[0-9][0-9]?";
+    ereg="([0-9][0-9]?)";
 
-    # Each pattern has format  prefix match len @ prefix regex @ series regex @ episode regex @ episode prefix
-    # This mess is because awk regex dont have captures.
+    # Each pattern has format  regex @ title suffix capture @ series capture index @ episode capture index @ episode prefix @ 
+    # where capture index is the regex index for the bracketed pair for that item. eg \\1 etc
+    #
+    # title suffix capture is that part of the regex that belongs to the end of the title.
+    # We could have used full matching to extract the title but this would use .* which is slow.
     p=0
     # s00e00e01
-    pat[++p]="0@@s"sreg"@[/ .]?[e/][0-9]+[-,e0-9]+@";
+    pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
     # long forms season 1 ep  3
-    pat[++p]="0@\\<@(series|season|saison|s)[^a-z0-9]*"sreg"@[/ .]?(e|ep.?|episode|/)[^a-z0-9]*"ereg"@";
+    pat[++p]="\\<()(series|season|saison|s)[^a-z0-9]*"sreg"[/ .]?(e|ep.?|episode|/)[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
 
     # TV DVDs
-    pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"@[/ .]?(disc|dvd|d)[^a-z0-9]*"ereg"@DVD";
+    pat[++p]="\\<()(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"[/ .]?(disc|dvd|d)[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@dvd";
 
     #s00e00 (allow d00a for BigBrother)
-    pat[++p]="0@@s?"sreg"@[-/ .]?[e/][0-9]+[a-e]?@";
+    pat[++p]="s()?"sreg"[-/ .]?[e/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
 
     # season but no episode
-    pat[++p]="0@\\<@(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"@@FILE";
+    pat[++p]="\\<()(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"()@\\1\t\\3\t\\4@FILE";
 
     #00x00
-    pat[++p]="1@[^a-z0-9]@"sreg"@[/ .]?x"ereg"@";
+    pat[++p]="([^a-z0-9])"sreg"[/ .]?x"ereg"@\\1\t\\2\t\\3@";
 
 
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
     # extractEpisodeByDates is also called by other logic. 
     pat[++p]="DATE";
     ## just numbers.
-    pat[++p]="1@[^-0-9]@([1-9]|2[1-9]|1[0-8]|[03-9][0-9])@/?[0-9][0-9]@";
+    pat[++p]="([^-0-9])([1-9]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
 
     # Part n - no season
-    pat[++p]="0@\\<@@\\<(part|pt)[^a-z0-9]?("ereg"|"g_roman_regex")@";
-    pat[++p]="0@\\<@@\\<(episode|ep)[^a-z0-9]?("ereg"|"g_roman_regex")@";
+    pat[++p]="\\<()()(part|pt|episode|ep)[^a-z0-9]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
@@ -176,10 +176,10 @@ ret,p,pat,i,parts,sreg,ereg) {
         } else {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
-            ret = episodeExtract(line,parts[1]+0,parts[2],parts[3],parts[4],details);
+            ret = episodeExtract(line,parts[1],parts[2],details);
             if (ret+0) {
                 # For DVDs add DVD prefix to Episode
-                details[EPISODE] = parts[5] details[EPISODE];
+                details[EPISODE] = parts[3] details[EPISODE];
             }
         }
     }
@@ -193,7 +193,126 @@ ret,p,pat,i,parts,sreg,ereg) {
    #Note 4 digit season/episode matcing [12]\d\d\d will fail because of confusion with years.
     return 0+ret;
 }
+function episodeExtract(line,regex,capture_list,details,\
+rtext,rstart,count,i,ret) {
 
+    #To detect word boundaries remove _ - this may affect Lukio_. Only TV show with an underscore in IMDB
+    if (index(line,"_")) gsub(/_/," ",line);
+
+    #id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
+    #DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
+    count = 0+get_regex_pos(line,regex "\\>",0,rtext,rstart);
+    #dump(0,"rtext",rtext);
+    #dump(0,"rstart",rstart);
+    #INF("count="count);
+    for(i = 1 ; i+0 <= count ; i++ ) {
+        if ((ret = extractEpisodeByPatternSingle(line,regex,capture_list,rstart[i],rtext[i],details)) != 0) {
+            break;
+        }
+    }
+    #id0(ret);
+    return 0+ret;
+}
+
+#This would be easier using sed submatches.
+#More complex approach will fail on backtracking
+function extractEpisodeByPatternSingle(line,regex,capture_list,reg_pos,reg_match,details,\
+tmpTitle,ret,ep,season,title,inf,matches) {
+
+    ret = 0;
+    id1("extractEpisodeByPatternSingle:"reg_match);
+
+    delete details;
+
+    if (reg_match ~ "([XxHh.]?264|1080)$" ) {
+
+        DEBUG("ignoring ["reg_match"]");
+
+    } else if (split(gensub("^"regex"$",capture_list,1,reg_match),matches,"\t") != 3) {
+
+        WARNING("Expected 3 parts");
+
+    } else {
+
+        # split the line up
+        title = substr(line,1,reg_pos-1) matches[1];
+        ep = matches[2];
+
+        season = matches[4];
+
+        inf=substr(line,reg_pos+length(reg_match));
+
+        # clean up episode ----------------------------
+
+        if (ep == "") ep="0";
+        ep = roman_replace(ep);
+
+        # clean up season ----------------------------
+
+        if(season == "") season = 1; # mini series
+
+        # clean up info ----------------------------
+
+        if (match(inf,gExtRegExAll) ) {
+            details[EXT]=inf;
+            gsub(/\.[^.]*$/,"",inf);
+            details[EXT]=substr(details[EXT],length(inf)+2);
+        }
+
+        inf=clean_title(inf,2);
+            
+        # clean up title ----------------------------
+
+        if (match(title,": *")) {
+            title = substr(title,RSTART+RLENGTH);
+        }
+        #DEBUG("ExtractEpisode:2 Title= ["title"]");
+        #Remove release group info
+        if (match(title,"^[a-z][a-z0-9]+[-]")) {
+           tmpTitle=substr(title,RSTART+RLENGTH);
+           if (tmpTitle != "" ) {
+               INF("Removed group was ["title"] now ["tmpTitle"]");
+               title=tmpTitle;
+           }
+        }
+
+        #DEBUG("ExtractEpisode: Title= ["title"]");
+        title = clean_title(title,2);
+        
+        DEBUG("ExtractEpisode: Title= ["title"]");
+
+        #============----------------------------------
+
+        if (season - 50 > 0 ) {
+
+            DEBUG("Reject season > 50");
+
+        } else if (ep - 52 > 0 ) {
+
+            DEBUG("Reject episode > 52 : expect date format ");
+
+        } else {
+
+            #BigBrother episodes with trailing character.
+            gsub(/[^0-9]+/,",",ep); #
+            DEBUG("Episode : "ep);
+            gsub(/\<0+/,"",ep);
+            gsub(/,,+/,",",ep);
+            sub(/^,+/,"",ep);
+
+            details[EPISODE] = ep;
+            details[SEASON] = n(season);
+            details[TITLE] = title;
+            details[ADDITIONAL_INF]=inf;
+            ret=1;
+        }
+    }
+
+    #Return results
+    if (ret != 1 ) delete details;
+    id0(ret);
+    return ret;
+}
 
 function extractEpisodeByDates(plugin,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
@@ -310,132 +429,6 @@ episodeInfo,match_date,result,filter) {
 function remove_season(t) {
     sub(/(S|Series *|Season *)[0-9]+.*/,"",t);
     return clean_title(t);
-}
-
-function episodeExtract(line,prefixReLen,prefixRe,seasonRe,episodeRe,details,\
-rtext,rstart,count,i,ret) {
-
-    #To detect work boundaries remove _ - this may affect Lukio_. Only TV show with an underscore in IMDB
-    if (index(line,"_")) gsub(/_/," ",line);
-
-    #id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
-    #DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
-    count = 0+get_regex_pos(line,prefixRe seasonRe episodeRe "\\>",0,rtext,rstart);
-    #dump(0,"rtext",rtext);
-    #dump(0,"rstart",rstart);
-    #INF("count="count);
-    for(i = 1 ; i+0 <= count ; i++ ) {
-        if ((ret = extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,rstart[i],rtext[i],details)) != 0) {
-            INF("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
-            break;
-        }
-    }
-    #id0(ret);
-    return 0+ret;
-}
-
-#This would be easier using sed submatches.
-#More complex approach will fail on backtracking
-function extractEpisodeByPatternSingle(line,prefixReLen,seasonRe,episodeRe,reg_pos,reg_match,details,\
-tmpTitle,ret,reg_len,ep,season,title,inf) {
-
-    ret = 0;
-    id1("extractEpisodeByPatternSingle:"reg_match);
-
-    delete details;
-
-    if (reg_match ~ "([XxHh.]?264|1080)$" ) {
-
-        DEBUG("ignoring ["reg_match"]");
-
-    } else {
-
-
-        reg_pos += prefixReLen;
-        reg_len = length(reg_match)-prefixReLen;
-
-        DEBUG("ExtractEpisode: Title= ["line"]");
-        title = substr(line,1,reg_pos-1);
-        #DEBUG("ExtractEpisode:1 Title= ["title"]");
-
-        inf=substr(line,reg_pos+reg_len);
-
-        if (match(inf,gExtRegExAll) ) {
-            details[EXT]=inf;
-            gsub(/\.[^.]*$/,"",inf);
-            details[EXT]=substr(details[EXT],length(inf)+2);
-        }
-
-        inf=clean_title(inf,2);
-
-        line=substr(reg_match,prefixReLen+1); # season episode
-
-        if (match(title,": *")) {
-            title = substr(title,RSTART+RLENGTH);
-        }
-        #DEBUG("ExtractEpisode:2 Title= ["title"]");
-        #Remove release group info
-        if (match(title,"^[a-z][a-z0-9]+[-]")) {
-           tmpTitle=substr(title,RSTART+RLENGTH);
-           if (tmpTitle != "" ) {
-               INF("Removed group was ["title"] now ["tmpTitle"]");
-               title=tmpTitle;
-           }
-        }
-
-        #DEBUG("ExtractEpisode: Title= ["title"]");
-        title = clean_title(title,2);
-        
-        DEBUG("ExtractEpisode: Title= ["title"]");
-
-
-        #Reject this could be 64(x264) or 80(hd1080)
-
-        if (episodeRe == "") {
-            ep="0";
-            season = line;
-        } else {
-            #Match the episode first to handle 3453 and 456
-            match(line,episodeRe "$" );
-            ep = substr(line,RSTART,RLENGTH); 
-            if (seasonRe == "") {
-                season = 1; #mini-series without season qualifier
-            } else {
-                season = substr(line,1,RSTART-1);
-            }
-            ep = roman_replace(ep);
-        }
-
-
-        if (season - 50 > 0 ) {
-
-            DEBUG("Reject season > 50");
-
-        } else if (ep - 52 > 0 ) {
-
-            DEBUG("Reject episode > 52 : expect date format ");
-
-        } else {
-
-            #BigBrother episodes with trailing character.
-            gsub(/[^0-9]+/,",",ep); #
-            DEBUG("Episode : "ep);
-            gsub(/\<0+/,"",ep);
-            gsub(/,,+/,",",ep);
-            sub(/^,+/,"",ep);
-
-            details[EPISODE] = ep;
-            details[SEASON] = n(season);
-            details[TITLE] = title;
-            details[ADDITIONAL_INF]=inf;
-            ret=1;
-        }
-    }
-
-    #Return results
-    if (ret != 1 ) delete details;
-    id0(ret);
-    return ret;
 }
 
 function tv_search_simple(minfo,bestUrl) {

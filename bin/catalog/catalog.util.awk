@@ -190,7 +190,7 @@ out) {
         out = g_chr[(i%n)+128] out;
         i = int(i/n);
     }
-    if (out == "") out=g_chr(128);
+    if (out == "") out=g_chr[128];
     return out;
 }
 #base10 - convert a base n number back to base 10. All input bytes are offset by 128
@@ -482,81 +482,71 @@ date,nonDate) {
 #nonDate[1]=bit before date, nonDate[2]=bit after date
 # or empty array
 function extractDate(line,date,nonDate,\
-y4,d1,d2,d1or2,m1,m2,m1or2,d,m,y,datePart,textMonth,s,mword) {
+y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture) {
 
     line = tolower(line);
     textMonth = 0;
     delete date;
     delete nonDate;
     #Extract the date.
+
     #because awk doesnt capture submatches we have to do this a slightly painful way.
     y4=g_year_re;
-    m2="(0[1-9]|1[012])";
-    m1=d1="[1-9]";
-    d2="([012][0-9]|3[01])";
+    ss = SUBSEP;
     s="[-_. /]0*";
-    m1or2 = "(" m1 "|" m2 ")";
-    d1or2 = "(" d1 "|" d2 ")";
+    m1or2 = "([1-9]|0[1-9]|1[012])";
+    d1or2 = "([1-9]|[012][0-9]|3[01])";
+
+    capture=ss"\\1"ss"\\2"ss"\\3"ss; # capture regex subexpressions
+
     #mword="[A-Za-z]+";
     mword=tolower("("g_months_short"|"g_months_long")");
 
-    d = m = y = 0;
-    if  (match(line,y4 s m1or2 s d1or2)) {
-
-        y=1 ; m = 2 ; d=3;
-
-    } else if(match(line,m1or2 s d1or2 s y4)) { #us match before plain eu match
-
-        m=1 ; d = 2 ; y=3;
-
-    } else if(match(line,d1or2 s m1or2 s y4)) { #eu
-
-        d=1 ; m = 2 ; y=3;
-
-    } else if(match(line,d1or2 s mword s y4)) { 
-
-        d=1 ; m = 2 ; y=3;
-        textMonth = 1;
-
-    } else if(match(line,mword s d1or2 s y4)) {
-        m=1 ; d = 2 ; y=3;
-        textMonth = 1;
-
-    } else {
-
-        return 0;
+    if (split(gensub(g_year_re s m1or2 s d1or2,capture,1,line),matches,ss) == 5) {
+        y = matches[2];
+        m = matches[3];
+        d = matches[4];
+    } else if (split(gensub(m1or2 s d1or2 s g_year_re,capture,1,line),matches,ss) == 5) {
+        m = matches[2];
+        d = matches[3];
+        y = matches[4];
+    } else if (split(gensub(d1or2 s m1or2 s g_year_re,capture,1,line),matches,ss) == 5) {
+        d = matches[2];
+        m = matches[3];
+        y = matches[4];
+    } else if (split(gensub(d1or2 s mword s g_year_re,capture,1,line),matches,ss) == 5) {
+        d = matches[2];
+        m = matches[3];
+        y = matches[4];
+        textMonth=1;
+    } else if (split(gensub(mword s d1or2 s g_year_re,capture,1,line),matches,ss) == 5) {
+        m = matches[2];
+        d = matches[3];
+        y = matches[4];
+        textMonth=1;
     }
-    datePart = substr(line,RSTART,RLENGTH);
+    if (d && m && y ) {
+        nonDate[1] = matches[1];
+        nonDate[2] = matches[5];
+        date[1]=y+0;
+        date[2]=tolower(trim(m));
+        date[3]=d+0;
 
-    nonDate[1]=substr(line,1,RSTART-1);
-    nonDate[2]=substr(line,RSTART+RLENGTH);
-
-    split(datePart,date,s);
-    #DEBUG("Date1 ["date[1]"/"date[2]"/"date[3]"] in "line);
-    d = date[d];
-    m = date[m];
-    y = date[y];
-
-    date[1]=y;
-    date[2]=tolower(trim(m));
-    date[3]=d;
-    #DEBUG("Date2 ["date[1]"/"date[2]"/"date[3]"] in "line);
-
-    if ( textMonth == 1 ) {
-        DEBUG("date[2]="date[2]);
-        if (date[2] in gMonthConvert ) {
-            date[2] = gMonthConvert[date[2]];
-            DEBUG(m"="date[2]);
+        if ( textMonth == 1 ) {
+            DEBUG("date[2]="date[2]);
+            if (date[2] in gMonthConvert ) {
+                date[2] = 0+gMonthConvert[date[2]];
+                DEBUG(m"="date[2]);
+                ret = 1;
+            }
         } else {
-            return 0;
+            ret = 1;
         }
     }
-    #DEBUG("Date3 ["date[1]"/"date[2]"/"date[3]"] in "line);
-    date[1] += 0;
-    date[2] = 0 + date[2];
-    date[3] += 0;
-    DEBUG("Found ["date[1]"/"date[2]"/"date[3]"] in "line);
-    return 1;
+    if (ret) {
+        DEBUG("Found date ["date[1]"/"date[2]"/"date[3]"] in "line);
+    }
+    return ret;
 }
 
 #replace last roman characters - eg 'fredii' becoumes 'fred2'

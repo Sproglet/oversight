@@ -243,6 +243,7 @@ f,minfo2,err,line,pagestate,namestate) {
         f=getUrl(url,lang":"domain":"title":"year,1);
         if (f) {
 
+            minfo["mi_category"] = "M";
             pagestate["mode"] = "head";
             while(enc_getline(f,line) > 0  ) {
                 err = scrape_movie_line(title,year,runtime,lang,domain,line[1],minfo2,pagestate,namestate);
@@ -487,7 +488,7 @@ i,num,sections,err) {
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
 function scrape_movie_fragment(title,year,runtime,lang,domain,fragment,minfo,pagestate,namestate,\
-mode,rest_fragment,max_people,field,value,tmp,err) {
+mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
     #DEBUG("scrape_movie_fragment:("lang","domain","fragment")");
@@ -511,8 +512,19 @@ mode,rest_fragment,max_people,field,value,tmp,err) {
             if ( index(fragment,"@title-end") ) {
                 pagestate["intitle"]=0;
                 field="mi_title";
-                value=pagestate["title"];
+
+                #remove markers.
                 gsub(/@title-(start|end)@/,"",value);
+
+
+                value=trim(pagestate["title"]);
+
+                # extract the year if present AND in brackets
+                if (split(gensub("(\\(.*)("g_year_re")(.*\\))","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
+                    minfo["year"] = matches[3];
+                    value=matches[1]matches[5];
+                }
+
             }
         }
 
@@ -531,11 +543,10 @@ mode,rest_fragment,max_people,field,value,tmp,err) {
 
         field="mi_year";
         if (minfo[field] == "") {
-            value = gensub(".*("g_year_re").*","\\1",1,fragment);
-#        if (match(fragment,".*"g_year_re)) {
-#            # Add .* to get the last year mentioned.
-#            value = substr(fragment,RSTART,RLENGTH);
-#        }
+            # Need to get the last year. To avoid backtracking (.*) add tabs and split.
+            if (split(gensub("("g_year_re")","\t\\1\t",1,fragment),matches,"\t") == 3) {
+                value = matches[2];
+            }
         }
 
     } else if ( mode == "country" ) {
@@ -563,6 +574,13 @@ mode,rest_fragment,max_people,field,value,tmp,err) {
             DEBUG("genre set to ["minfo[field]"]");
         }
 
+    } else if ( mode == "released" ) {
+
+        if (extractDate(fragment,matches)) {
+            field="mi_year";
+            value=matches[1];
+        }
+
     } else if ( mode == "plot" ) {
 
         if (is_prose(fragment)) {
@@ -579,6 +597,12 @@ mode,rest_fragment,max_people,field,value,tmp,err) {
         field = "mi_title";
         value = fragment;
     }
+
+    # category - special case for imdb only
+    if (domain == "imdb" && index(fragment,"/episodes#")) {
+        minfo["mi_category"] = "T";
+    }
+
     err = 0;
     if (field && value ) {
         if (minfo[field]) {
@@ -671,6 +695,33 @@ key,regex,ret,lcfragment) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function scrapeIMDBTitlePage(minfo,url,lang,\
+connections,remakes,ret) {
+    if (scrape_movie_page("","","",url,lang,"imdb",minfo)) {
+        if (minfo["mi_category"] == "M") {
+
+            getNiceMoviePosters(minfo,extractImdbId(url));
+            getMovieConnections(extractImdbId(url),connections);
+
+            if (connections["Remake of"] != "") {
+                getMovieConnections(connections["Remake of"],remakes);
+            }
+
+            minfo["mi_conn_follows"]= connections["Follows"];
+            minfo["mi_conn_followed_by"]= connections["Followed by"];
+            minfo["mi_conn_remakes"]=remakes["Remade as"];
+
+            INF("follows="minfo["mi_conn_follows"]);
+            INF("followed_by="minfo["mi_conn_followed_by"]);
+            INF("remakes="minfo["mi_conn_remakes"]);
+        }
+        ret = minfo["mi_category"];
+    }
+    return ret;
+}
+
+
+# return ""=unknown "M"=movie "T"=tv??
+function scrapeIMDBTitlePageOld(minfo,url,lang,\
 domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
 
     if (url == "" ) return;
@@ -743,12 +794,6 @@ domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
         minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
     }
     ret = minfo["mi_category"];
-# Dont need premier anymore - this was for searching from imdb to tv database
-# we just use the year instead.
-#    if (minfo["mi_category"] == "T" && minfo["mi_premier"] == "" ) {
-#        minfo["mi_premier"] = remove_tags(scanPageFirstMatch(url"/releaseinfo","BusinessThisDay.*",1));
-#        DEBUG("IMDB Premier = "minfo["mi_premier"]);
-#    }
     id0(ret);
     return ret;
 }

@@ -234,11 +234,17 @@ tmpTitle,ret,ep,season,title,inf,matches) {
 
     } else {
 
+
+        INF("regex=["regex"]");
+        INF("capture_list=["capture_list"]");
+        INF("reg_match=["reg_match"]");
+        dump(0,"extractEpisodeByPatternSingle",matches);
+
         # split the line up
         title = substr(line,1,reg_pos-1) matches[1];
-        ep = matches[2];
 
-        season = matches[4];
+        season = matches[2];
+        ep = matches[3];
 
         inf=substr(line,reg_pos+length(reg_match));
 

@@ -590,21 +590,22 @@ oldSrc,newSrc,newRank) {
 
     if (!(source in gTitlePriority)) {
 
-        ERR("Bad value ["source"] passed to adjustTitle");
+        ERR("Unknown [title source "source"] passed to adjustTitle");
+        newRank = gTitlePriority["imdb"];
 
     } else {
         newRank = gTitlePriority[source];
-        #if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
-        if (minfo["mi_title"] == "" || newRank - minfo["mi_title_rank"] > 0) {
-            INF("adjustTitle: "oldSrc" promoted to "newSrc);
-            minfo["mi_title"] = newTitle;
-            minfo["mi_title_source"] = source;
-            minfo["mi_title_rank"] = newRank;;
-            return 1;
-        } else {
-            INF("adjustTitle: current title "oldSrc "outranks " newSrc);
-            return 0;
-        }
+    }
+    #if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
+    if (minfo["mi_title"] == "" || newRank - minfo["mi_title_rank"] > 0) {
+        INF("adjustTitle: "oldSrc" promoted to "newSrc);
+        minfo["mi_title"] = newTitle;
+        minfo["mi_title_source"] = source;
+        minfo["mi_title_rank"] = newRank;;
+        return 1;
+    } else {
+        INF("adjustTitle: current title "oldSrc "outranks " newSrc);
+        return 0;
     }
 }
 

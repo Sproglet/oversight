@@ -49,7 +49,10 @@ done
 
 ../nmt-scripts/build `basename "$PWD"` "$label" \
     *.sh *.cgi *.html \
-    conf/*.example conf/.*defaults conf/use.wget.wrapper conf/country.txt conf/.version \
+    conf/lang \
+    conf/domain \
+    conf/*.example conf/.*defaults \
+    conf/use.wget.wrapper conf/country.txt conf/.version \
     help/*.help \
     templates.new \
     db \

@@ -127,7 +127,7 @@ BEGIN {
     verify_setup();
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
-    g_min_plot_len=200;
+    g_min_plot_len=100;
     g_max_db_len=4000;
     g_country_prefix="country_";
     g_indent="";
@@ -401,7 +401,7 @@ END{
 
         g_api_tvdb = apply(g_api_tvdb);
         g_api_tmdb = apply(g_api_tmdb);
-        g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
+        g_grand_total = scan_folder_for_new_media("en",FOLDER_ARR,scan_options);
 
         delete g_updated_plots;
 

@@ -17,10 +17,10 @@ lint() {
     awk '
 
 BEGIN {
-    ks="if( then else while( do return match( substr( index( sub( gsub( gensub( in getline ";
-    ks=ks" RSTART RLENGTH print print( systime( open( close( FS NF exit break for( system( ";
-    ks=ks" delete return return( split( tolower( toupper( length( continue sprintf( int";
-    ks=ks" rand( printf and( lshift( rshift( strftime(";
+    ks="if if( then else while while( do return match( substr( index( sub( gsub( gensub( in getline ";
+    ks=ks" RSTART RLENGTH print print( systime( open( close( FS NF exit break for for( system( ";
+    ks=ks" delete return return( split( tolower( toupper( length( continue sprintf( int(";
+    ks=ks" rand( printf and( lshift( rshift( strftime( ENVIRON ARGV SUBSEP";
     gsub(/ +/," ",ks);
     gsub(/^ +/,"",ks);
     gsub(/ +$/,"",ks);
@@ -39,6 +39,13 @@ END {
 
     for(fidx = 1 ; fidx <= fcount ; fidx++ ) {
         analyse(fnames[fidx]);
+    }
+    if (0) {
+        for(fname in globals) {
+            if (globals[fname] == 1) {
+                print prefix globals[fname]" reference to name ["fname"]" ;
+            }
+        }
     }
 }
 
@@ -68,15 +75,23 @@ inawk {
     cont_line=(substr($0,length($0)) == "\\");
 }
 
+function fstart(fname,param_list) {
+
+   fnames[++fcount]=fname;
+   params[fname]=param_list;
+   lineno[fname]=FNR;
+   file[fname]=FILENAME;
+   gsub(/[^_0-9A-Za-z]+/," ",params[fname]);
+
+}
+
 /^function/ && inawk {
    gsub(/[^_0-9A-Za-z]+/," ",$0);
    fname=$2
    $1 = $2 = "";
-   fnames[++fcount]=fname;
-   params[fname]=$0;
-   lineno[fname]=FNR;
-   file[fname]=FILENAME;
-   gsub(/[^_0-9A-Za-z]+/," ",params[fname]);
+
+   fstart(fname,$0);
+
    #print "params "params[fname];
    if (br_open) {
        part="body";
@@ -97,6 +112,19 @@ part=="params" {
           part="local";
       }
       next;
+}
+/^BEGIN\>/ && inawk {
+   fname="BEGIN";
+   fstart(fname,$0);
+   part="body";
+   print "BEGIN";
+}
+
+/^END\>/ && inawk {
+   fname="END";
+   fstart(fname,$0);
+   part="body";
+   print "END";
 }
 
 part=="local" {
@@ -120,7 +148,7 @@ part=="body" {
 
     #remove all spaces surrounding open brackets 
     #eg a(b(c))+(6) 
-    gsub(/ *\( */,"(",l); 
+    gsub(/ +\( */," (",l); 
     if (debug) print "X1X ["l"]";
 
     # insert one space after open brackets
@@ -158,13 +186,17 @@ tmp) {
     delete names;
     split(clean(t),tmp," ");
     for(i in tmp) {
-        names[tmp[i]] = 1;
+        names[tmp[i]] ++;
     }
+}
+
+function is_global(n) {
+    return n ~ "^[g_]" || n ~ "^[A-Z][_A-Z0-9]*$";
 }
 
 
 function analyse(f,\
- msg,prefix) {
+ msg,prefix,par,loc,bdy) {
 
     err=0;
     prefix = file[f]":"lineno[f]": error: "f"():";
@@ -211,9 +243,20 @@ function analyse(f,\
             if (debug) print "CHECKING variable ["token"]";
 
             if (!(token in reserved_words) && !(token in params) && !(token in par) && !(token in loc)) {
-                if (token !~ "^g[_A-Z]" && token !~ "^[_A-Z0-9]" ) {
+                if (is_global(token)) {
+                    globals[token]++;
+                } else if (f != "BEGIN" && f != "END" ) {
                     print prefix"global?\t"token;
                     err=3;
+                }
+            }
+
+            if (0) {
+                # print local variables that are only referenced once
+                if (!(token in reserved_words)) {
+                    if (bdy[token] == 1 && !is_global(token)) {
+                        print prefix"only one reference to ?\t"token;
+                    }
                 }
             }
         }

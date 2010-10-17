@@ -263,7 +263,7 @@ function hash_copy(a1,a2) {
 # result in a1
 function hash_merge(a1,a2,\
 i) {
-    for(i in a2) a1[i] = a2[i];
+    for(i in a2) if (a2[i] != "") a1[i] = a2[i];
 }
 # result in a1
 function hash_add(a1,a2,\
@@ -422,7 +422,7 @@ function csv2re(text) {
 function exec(cmd,\
 err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   DEBUG("SYSTEM : [["cmd"]]");
+   #DEBUG("SYSTEM : [["cmd"]]");
    if ((err=system(cmd)) != 0) {
       ERR("Return code "err" executing "cmd) ;
   }
@@ -664,3 +664,18 @@ i,num,patterns,matched,pinfo,ret,prev) {
     return ret;
 }
 
+# Get first matching sub exression of a regular expression
+# Bug. if the sub expression is empty then this looks the same as no matches.
+# IN text - text to match against
+# IN regex - regular expression
+# IN n = the number of the sub expreassion (default 1)
+# Using split rather then gensub(/.*(..).*/ avoids regex backtracking which is very slow.
+function subexp(text,regex,n,\
+matches,ret) {
+
+    if (!n) n =1;
+    if (split(gensub(regex,SUBSEP"\\"n SUBSEP,1,text),matches,SUBSEP) == 3) {
+        ret = matches[2];
+    }
+    return ret;
+}

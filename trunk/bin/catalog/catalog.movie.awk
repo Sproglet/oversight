@@ -1,5 +1,5 @@
 #""=not found "M"=movie "T"=tv??
-function movie_search(minfo,bestUrl,\
+function movie_search(minfo,bestUrl,lang,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
@@ -156,7 +156,7 @@ imdb_title_q,imdb_id_q) {
     ret=0;
     if (bestUrl != "") {
 
-        ret = scrapeIMDBTitlePage(minfo,bestUrl);
+        ret = scrapeIMDBTitlePage(minfo,bestUrl,lang);
 
     } 
     id0(bestUrl);

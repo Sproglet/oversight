@@ -13,7 +13,7 @@ langs,num,i,err,minfo2) {
     for ( i = 1 ; i <= num ; i++ ) {
         err=find_movie_by_lang(langs[i],title,year,runtime,minfo2);
         if (!err) {
-            hash_merge(minfo,minfo2);
+            minfo_merge(minfo,minfo2);
             break;
         }
     }
@@ -39,7 +39,7 @@ i,num,sites,minfo2,err,searchhist) {
         for ( i = 1 ; i <= num ; i++ ) {
             err=find_movie_by_site_lang(sites[i],lang,title,year,runtime,minfo2,searchhist);
             if (!err) {
-                hash_merge(minfo,minfo2);
+                minfo_merge(minfo,minfo2);
                 break;
             }
         }
@@ -119,7 +119,7 @@ minfo2,err,url,qualifier,keyword,matches,num,search_domain,url_domain,url_text,u
                 set_visited_url(matches[i],searchhist);
                 err = scrape_movie_page(title,year,runtime,matches[i],lang,search_domain,minfo2);
                 if (!err) {
-                    hash_merge(minfo,minfo2);
+                    minfo_merge(minfo,minfo2);
                     break;
                 } else if (err == 2) {
                     # scrape ok but no plot - ignore entire domain
@@ -226,24 +226,24 @@ i,j,keep) {
 # Scrape a movie page - results into minfo
 # IN title - movie title
 # IN year 
+# IN runtime of movie in minutes (used for validation)
 # IN url - page to scrape
 # IN lang - 2 letter language code
 # IN domain  - main domain of site eg imdb, allocine etc.
 # OUT minfo - Movie info - cleared before use.
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(title,year,runtime,url,lang,domain,minfo,
+function scrape_movie_page(title,year,runtime,url,lang,domain,minfo,\
 f,minfo2,err,line,pagestate,namestate) {
 
-    delete minfo;
     err = 0;
     id1("scrape_movie_page("url","lang","domain","title","year")");
 
-    if (url && lang && title )  {
+    if (url && lang )  {
 
         f=getUrl(url,lang":"domain":"title":"year,1);
         if (f) {
 
-            minfo["mi_category"] = "M";
+            minfo2["mi_category"] = "M";
             pagestate["mode"] = "head";
             while(enc_getline(f,line) > 0  ) {
                 err = scrape_movie_line(title,year,runtime,lang,domain,line[1],minfo2,pagestate,namestate);
@@ -255,29 +255,38 @@ f,minfo2,err,line,pagestate,namestate) {
             close(f);
         }
             
+    } else {
+        ERR("paramters missing");
     }
 
-    if (!err) {
-        err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_runtime(runtime,minfo2);
-    }
+    if (minfo2["mi_category"] == "M") {
+        if (!err) {
+            err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_runtime(runtime,minfo2);
+        }
 
-    if (!err  &&  !is_prose(minfo2["mi_plot"]) ) {
-        #We got the movie but there is no plot;
-        #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
-        #a significant failure. Most other scraped info is language neutral.
-        INF("missing plot");
-        err = 2;
+        if (!err  &&  !is_prose(minfo2["mi_plot"]) ) {
+            #We got the movie but there is no plot;
+            #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
+            #a significant failure. Most other scraped info is language neutral.
+            INF("missing plot");
+            err = 2;
+        }
     }
 
     if (err) {
         dump(0,"bad page info",minfo2);
     } else {
-        hash_merge(minfo,minfo2);
+        minfo_merge(minfo,minfo2);
         dump(0,title"-"year"-"domain"-"lang,minfo);
     }
 
     id0(err);
     return err;
+}
+
+function minfo_merge(current,new) {
+    adjustTitle(new,current["mi_title"],current["mi_title_source"]);
+    hash_merge(current,new);
 }
 
 function check_year(year,minfo,\
@@ -303,7 +312,7 @@ ret) {
         if (ret) {
             DEBUG("title scraped ok");
         } else {
-            INF("page rejected title ["minfo["mi_title"]"] or ["minfo["mi_title"]"] != ["title"]");
+            INF("page rejected title ["minfo["mi_title"]"] or ["minfo["mi_orig_title"]"] != ["title"]");
         }
     }
     return ret;
@@ -513,16 +522,22 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
                 pagestate["intitle"]=0;
                 field="mi_title";
 
-                #remove markers.
+                value=pagestate["title"];
+
                 gsub(/@title-(start|end)@/,"",value);
 
-
-                value=trim(pagestate["title"]);
+                value=trim(value);
 
                 # extract the year if present AND in brackets
-                if (split(gensub("(\\(.*)("g_year_re")(.*\\))","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
-                    minfo["year"] = matches[3];
-                    value=matches[1]matches[5];
+                if (index(value,"(")) {
+                    if (split(gensub("(\\(.*)("g_year_re")(.*\\))","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
+                        minfo["mi_year"] = matches[3];
+                        INF("Year="minfo["mi_year"]);
+                        value=trim(matches[1]);
+                    }
+                }
+                if(value) {
+                    minfo["title_source"] = domain;
                 }
 
             }
@@ -543,10 +558,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
         field="mi_year";
         if (minfo[field] == "") {
-            # Need to get the last year. To avoid backtracking (.*) add tabs and split.
-            if (split(gensub("("g_year_re")","\t\\1\t",1,fragment),matches,"\t") == 3) {
-                value = matches[2];
-            }
+            value = subexp(fragment,"("g_year_re")");
         }
 
     } else if ( mode == "country" ) {
@@ -599,9 +611,11 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
     }
 
     # category - special case for imdb only
-    if (domain == "imdb" && index(fragment,"/episodes#")) {
+    if (domain == "imdb" && index(fragment,"/episodes\"")) {
         minfo["mi_category"] = "T";
     }
+
+    extract_rating(fragment,minfo);
 
     err = 0;
     if (field && value ) {
@@ -610,25 +624,38 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
         } else {
             INF("scrape_movie_fragment:"field"=["value"]");
             minfo[field]=value;
-            if (field == "mi_year" && !check_year(year,minfo)) {
-                err = 1;
-            } else if (field=="mi_runtime" && !check_runtime(runtime,minfo)) {
-                err = 1;
-            } else if (field=="mi_title" && !check_title(title,minfo)) {
-                err = 1;
-            }
         }
     }
     return err;
 }
 
+function extract_rating(text,minfo,\
+matches,ret) {
+    if (minfo["mi_rating"] == "") {
+        if (index(text,"/") ) {
+            ret = subexp(text,"([0-9][,.][0-9]+) ?\\/? ?10");
+        }
+        if (ret == "" && index(text,"(")) {
+            ret = subexp(text,"\\(([0-9][,.][0-9]+)\\)");
+        }
+        if (ret) {
+            minfo["mi_rating"] = ret;
+            INF("Rating set ["ret"]");
+        }
+    }
+}
+
 function is_prose(text,\
-tmp,num) {
-    if (length(text) > g_min_plot_len) {
-        num = split(text,tmp," ")+0;
+words,num) {
+    if (length(text) > g_min_plot_len && index(text,"Mozilla") == 0) {
+        num = split(text,words," ")+0;
         #DEBUG("words = "num" required "(length(text)/10));
         if (num >= length(text)/10 ) {
-            return 1;
+##            # Check number if digits and low asci characters is less that 1 per 5 words.
+##            tmp = gensub(/[-~]+/,"","g",text);
+##            if (length(tmp) < num/3) {
+                return 1;
+##            }
         }
     }
     return 0;
@@ -696,7 +723,8 @@ key,regex,ret,lcfragment) {
 # return ""=unknown "M"=movie "T"=tv??
 function scrapeIMDBTitlePage(minfo,url,lang,\
 connections,remakes,ret) {
-    if (scrape_movie_page("","","",url,lang,"imdb",minfo)) {
+
+    if (scrape_movie_page("","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
         if (minfo["mi_category"] == "M") {
 
             getNiceMoviePosters(minfo,extractImdbId(url));

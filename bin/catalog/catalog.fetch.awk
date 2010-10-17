@@ -118,7 +118,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
     args=args" --header=\"Accept-Encoding: gzip\" "
     downloadedFile=qa(file".gz");
     #some devices have gzip not gunzip and vice versa
-    unzip_cmd=" && ( gunzip -c "downloadedFile" || gzip -c -d "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
+    unzip_cmd="( gunzip -c "downloadedFile" || gzip -c -d "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
 
     gsub(/ /,"+",url);
 
@@ -139,7 +139,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 #ALL#
 #ALL#    } else {
 
-        cmd = "wget -O "downloadedFile" "args" "url" "unzip_cmd  ;
+        cmd = "wget -O "downloadedFile" "args" "url;
         #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
         # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
 
@@ -147,6 +147,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 
         DEBUG("WGET ["url"]");
         result = exec(cmd);
+        if (result == 0 ) {
+            result = exec(unzip_cmd);
+        }
         if (result != 0) {
 #ALL#            g_url_blacklist[url] = 1;
 #ALL#            WARNING("Blacklisting url ["url"]");

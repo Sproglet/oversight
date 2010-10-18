@@ -685,18 +685,28 @@ key,regex,ret,lcfragment) {
 
         lcfragment = tolower(fragment);
 
+        if (index(fragment,"Release")) {
+            dump(0,"pagestate-pre-release",pagestate);
+        }
         # Get language regexs
         if (!pagestate["lang_regex"]) {
-            pagestate["lang_regex"] = 1;
-            for (key in g_settings) {
-                if (index(key,"lang:catalog_lang_keyword_") == 1) {
-                    if (g_settings[key]) {
-                        if (!(key in pagestate)) {
-                            pagestate[key] = "^ *"keyword_list_to_regex(tolower(g_settings[key]))"( *:? *| )";
+            INF("loading lang_regex");
+            if (load_plugin_settings("lang",lang)) {
+                pagestate["lang_regex"] = 1;
+                for (key in g_settings) {
+                    if (index(key,"lang:catalog_lang_keyword_") == 1) {
+                        if (g_settings[key]) {
+                            if (!(key in pagestate)) {
+                                pagestate[key] = "^ *"keyword_list_to_regex(tolower(g_settings[key]))"( *:? *| )";
+                            }
                         }
                     }
                 }
             }
+            dump(0,"pagestate-load",pagestate);
+        }
+        if (index(fragment,"Release")) {
+            dump(0,"pagestate-release",pagestate);
         }
         for (key in pagestate) {
             if (index(key,"lang:catalog_lang_keyword_") == 1) {

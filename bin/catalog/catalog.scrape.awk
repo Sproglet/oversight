@@ -673,9 +673,11 @@ function keyword_list_to_regex(list) {
 # RETURN keyword eg plot, cast, genre
 # OUT rest[1] = remaining fragment if keyword present.
 function get_movie_fieldname(lang,fragment,rest,pagestate,\
-key,regex,ret,lcfragment) {
+key,regex,ret,lcfragment,dbg) {
 
     rest[1] = fragment;
+
+    dbg = index(fragment,"Billed Cast");
 
     if (!("badplot" in pagestate) && is_prose(fragment)) {
 
@@ -685,7 +687,7 @@ key,regex,ret,lcfragment) {
 
         lcfragment = tolower(fragment);
 
-        if (index(fragment,"Release")) {
+        if (dbg) {
             dump(0,"pagestate-pre-release",pagestate);
         }
         # Get language regexs
@@ -697,7 +699,7 @@ key,regex,ret,lcfragment) {
                     if (index(key,"lang:catalog_lang_keyword_") == 1) {
                         if (g_settings[key]) {
                             if (!(key in pagestate)) {
-                                pagestate[key] = "^ *"keyword_list_to_regex(tolower(g_settings[key]))"( *:? *| )";
+                                pagestate[key] = "^ *"keyword_list_to_regex(tolower(g_settings[key]))" *(: *|$)";
                             }
                         }
                     }
@@ -705,13 +707,13 @@ key,regex,ret,lcfragment) {
             }
             dump(0,"pagestate-load",pagestate);
         }
-        if (index(fragment,"Release")) {
+        if (dbg) {
             dump(0,"pagestate-release",pagestate);
         }
         for (key in pagestate) {
             if (index(key,"lang:catalog_lang_keyword_") == 1) {
                 regex = pagestate[key];
-                if (pagestate["debug"]) {
+                if (pagestate["debug"] || dbg) {
                     DEBUG("checking fragment["fragment"] against ["key"]="regex);
                 }
                 if (match(lcfragment,regex)) {
@@ -735,6 +737,7 @@ function scrapeIMDBTitlePage(minfo,url,lang,\
 connections,remakes,ret) {
 
     if (scrape_movie_page("","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
+        minfo["mi_imdb"] = extractImdbId(url);
         if (minfo["mi_category"] == "M") {
 
             getNiceMoviePosters(minfo,extractImdbId(url));

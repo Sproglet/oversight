@@ -31,6 +31,7 @@ function load_catalog_settings() {
 }
 
 # Load configuration file
+# Return 1=success 0 = failed
 function load_settings(prefix,file_name,verbose,\
 i,n,v,option,ret,err) {
 
@@ -99,15 +100,19 @@ i) {
 
 
 # load plugin settings
+# Return 1= success 0 = failed.
 function load_plugin_settings(type,name,\
 plugin_file,ret) {
 
+    ret = 0;
     plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
 
     if (g_last_plugin[type] != name) {
         remove_settings("^"type ":");
         ret = load_settings(type":",plugin_file,1);
         g_last_plugin[type] = name;
+    } else {
+        ret = 1; # already loaded
     }
     return ret;
 }

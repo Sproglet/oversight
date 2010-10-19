@@ -77,7 +77,7 @@
                             				<td width=100px valign=top rowspan=2><span class="detailHeading">Cast:</span></td>
 											<td width=250px valign=top rowspan=2>
 				                                [:IF($@hd):]
-				                                    [:ACTORS(rows=>4,cols=>1):]
+				                                    [:ACTORS(rows=>4,cols=>2):]
 				                                [:ELSE:]
 				                                    [:ACTORS(rows=>2,cols=>1):]
 				                                [:ENDIF:]

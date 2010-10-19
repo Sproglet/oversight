@@ -1214,7 +1214,7 @@ url) {
 #        url=query url_encode(" inurl:"site);
 #    }
 #    id2 = scanPageFirstMatch(url,site,????,0);
-    INF("first_result: not impleneted");
+    INF("first_result: not implemented");
 }
 
 # Add intelligent scraper.

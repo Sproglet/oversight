@@ -199,18 +199,17 @@ rtext,rstart,count,i,ret) {
     #To detect word boundaries remove _ - this may affect Lukio_. Only TV show with an underscore in IMDB
     if (index(line,"_")) gsub(/_/," ",line);
 
-    #id1("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
-    #DEBUG("episodeExtract:["prefixRe "] [" seasonRe "] [" episodeRe"]");
     count = 0+get_regex_pos(line,regex "\\>",0,rtext,rstart);
-    #dump(0,"rtext",rtext);
-    #dump(0,"rstart",rstart);
-    #INF("count="count);
-    for(i = 1 ; i+0 <= count ; i++ ) {
-        if ((ret = extractEpisodeByPatternSingle(line,regex,capture_list,rstart[i],rtext[i],details)) != 0) {
-            break;
+    if (count) {
+        id1("episodeExtract:["line "] [" regex "]");
+
+        for(i = 1 ; i+0 <= count ; i++ ) {
+            if ((ret = extractEpisodeByPatternSingle(line,regex,capture_list,rstart[i],rtext[i],details)) != 0) {
+                break;
+            }
         }
+        id0(ret);
     }
-    #id0(ret);
     return 0+ret;
 }
 
@@ -220,7 +219,6 @@ function extractEpisodeByPatternSingle(line,regex,capture_list,reg_pos,reg_match
 tmpTitle,ret,ep,season,title,inf,matches) {
 
     ret = 0;
-    id1("extractEpisodeByPatternSingle:"reg_match);
 
     delete details;
 
@@ -233,6 +231,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
         WARNING("Expected 3 parts");
 
     } else {
+        id1("extractEpisodeByPatternSingle:"reg_match);
 
 
         INF("regex=["regex"]");
@@ -312,11 +311,11 @@ tmpTitle,ret,ep,season,title,inf,matches) {
             details[ADDITIONAL_INF]=inf;
             ret=1;
         }
+        id0(ret);
     }
 
     #Return results
     if (ret != 1 ) delete details;
-    id0(ret);
     return ret;
 }
 

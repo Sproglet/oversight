@@ -137,6 +137,7 @@ extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
 function get_queued_portraits(person_extid2ovsid,\
 i,ovsid,file) {
     id1("get_queued_portraits");
+    dump(0,"get_queued_portraits",g_portrait_queue);
     for(i in g_portrait_queue) {
         ovsid = person_extid2ovsid[i];
         file = APPDIR"/db/global/"ACTORS"/"g_settings["catalog_poster_prefix"] ovsid".jpg";

@@ -362,8 +362,8 @@ line2,do_href,do_img) {
     while(do_img) {
         # <img attr1 src=xxx attr2 />
         # to
-        # img=xxx <img attr1 attr2 />
-        line2 = gensub(/(<[iI][mM][gG][^>]+)src=[\"']([^\"']+)[\"']([^>]*)/,"img=\"\\2\"\\1\\3","g",line);
+        # src=xxx <img attr1 attr2 />
+        line2 = gensub(/(<[iI][mM][gG][^>]+)src=[\"']([^\"']+)[\"']([^>]*)/,"src=\"\\2\"\\1\\3","g",line);
         if (line2 == line) break;
         line = line2;
     }
@@ -677,7 +677,7 @@ key,regex,ret,lcfragment,dbg) {
 
     rest[1] = fragment;
 
-    dbg = index(fragment,"Billed Cast");
+    #dbg = index(fragment,"Billed Cast");
 
     if (!("badplot" in pagestate) && is_prose(fragment)) {
 
@@ -851,7 +851,7 @@ domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
 # INPUT minfo   = details for current item being scanned/scraped.
 # INPUT role    = actor,writer,director
 # INPUT maxnames = maximum number of names to scrape 
-# IN/OUT namesstate = this tracks the src=,img= tags as it drops through the HTML
+# IN/OUT namesstate = this tracks the src= tags as it drops through the HTML
 # RETURN number of names parsed.
 # GLOBAL updates minfo[mi_role_names/mi_role_ids] with cast names and external ids.
 # GLOBAL updates g_portrait_queue with url to portrait picture.
@@ -863,7 +863,7 @@ function get_names(domain,text,minfo,role,maxnames,pagestate,namestate,\
 csv,total,i,num){
     # split by commas - this will fail if there is a comma in the URL
     if (index(text,",")) {
-        num = split(text,csv,",");
+        num = split(text,csv,", +");
     } else {
         num = 1;
         csv[1] = text;
@@ -879,7 +879,7 @@ csv,total,i,num){
 # INPUT minfo   = details for current item being scanned/scraped.
 # INPUT role    = actor,writer,director
 # INPUT maxnames = maximum number of names to scrape 
-# IN/OUT namesstate = this tracks the src=,img= tags as it drops through the HTML
+# IN/OUT namesstate = this tracks the src= tags as it drops through the HTML
 # RETURN number of names parsed.
 # GLOBAL updates minfo[mi_role_names/mi_role_ids] with cast names and external ids.
 # GLOBAL updates g_portrait_queue with url to portrait picture.
@@ -887,7 +887,7 @@ csv,total,i,num){
 # The input should have been cleaned using reduce_markup this will remove homst html markup
 # but convert <a href="some_url" >text</a> to href="some_url"@label@some label@label@
 function get_names_by_comma(domain,text,minfo,role,maxnames,pagestate,namestate,\
-dtext,dnum,i,count,href_reg,src_reg,name_reg) {
+dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
     if (role ) {
         count = minfo["mi_"role"_total"];
@@ -897,27 +897,30 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg) {
             # <a href=url ><img src=url /></a><a href=url ><img src=url /></a>
             # split by <a or a>
 
-            if (index(text,"href=") || index(text,"img=") ) {
+            if (index(text,"href=") || index(text,"src=") ) {
 
                 href_reg = "href=\"[^\"]+";
-                src_reg = "img=\"[^\"]+";
+                src_reg = "src=\"[^\"]+";
                 name_reg = ">[^<]+";
                 name_reg = "@label@[^@]+@label@";
+
+                DEBUG("XX1 text=["text"]");
 
                 dnum = get_regex_pos(text,"("href_reg"|"src_reg"|"name_reg")",0,dtext);
 
                 for(i = 1 ; i <= dnum && count < maxnames ; i++ ) {
 
-                    if (index(dtext[i],"img=") == 1) {
+                    check_img = 0; 
+
+                    if (index(dtext[i],"src=") == 1) {
+
+                        DEBUG("XX1 got image ["dtext[i]"]");
+                        dump(0,"xx namestate",namestate);
 
                     # Convert URL from thumbnail to big
                         namestate["src"] = person_get_img_url(domain,substr(dtext[i],6));
-                        if (namestate["id"]) {
-                            # Store it for later download once we know the oversight id for this 
-                            # person. After the people.db us updated.
-                            g_portrait_queue[domain":"namestate["id"]] = namestate["src"];
-                            INF("Image for ["namestate["id"]"] = ["namestate["src"]"]");
-                        }
+                        DEBUG("XX1 got full size image ["namestate["src"]"]");
+                        check_img = 1;
 
                     } else if (index(dtext[i],"@label@") ) {
 
@@ -944,6 +947,20 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg) {
 
                         namestate["href"] = substr(dtext[i],7);
                         namestate["id"] = person_get_id(domain,namestate["href"]);
+                        check_img = 3;
+                    }
+
+                    if  (check_img) {
+                        # if an image has recently occured then link it to the current name.
+                        # and then clear the namestate.
+                        dump(0,"check_img",namestate);
+                        if (namestate["id"] && namestate["src"]) {
+                            # Store it for later download once we know the oversight id for this 
+                            # person. After the people.db us updated.
+                            g_portrait_queue[domain":"namestate["id"]] = namestate["src"];
+                            INF("Image for ["namestate["id"]"] = ["namestate["src"]"]");
+                            delete namestate["src"];
+                        }
                     }
                 }
 
@@ -959,11 +976,15 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg) {
 
 # return number of minutes.
 function extract_duration(text,\
-num,n,p) {
+num,n,p,ret) {
     num = get_regex_pos(text,"[0-9]+",0,n,p);
-    if (num == 1) {
-        return n[1]+0;
-    } else if (num >= 2) {
-        return n[1]*60 + n[2];
+
+    if (num == 1 && n[1] > 3 ) {
+        # If there is one number then it is minutes if > 3 else assume hours.
+        ret = n[1]+0;
+    } else {
+        # First number is hours if there are two number OR if 1st number = 1,2,3
+        ret = n[1]*60 + n[2];
     }
+    return ret;
 }

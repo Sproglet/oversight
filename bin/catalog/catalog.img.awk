@@ -306,11 +306,8 @@ search_url,txt,xml,f,url,url2) {
 function chop(s_in,regex,parts,\
 flag,i,s) {
     #first find split text that doesnt occur in the string.
-    flag="=#z@~";
-#    while (index(s,flag) ) {
-#        WARNING("Regex flag clash "flag); #log this so I will know when to use a better seed flag.
-#        flag = flag "£" flag; #dodgy line but should work!
-#    }
+    #flag="=#z@~";
+    flag=SUBSEP;
 
     # insert the split text around the regex boundaries
 

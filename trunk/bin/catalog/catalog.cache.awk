@@ -15,7 +15,7 @@ dir) {
     
     if (g_cache_ok == 1) { # good
         INF("Using persistent cache");
-        return dir "/" fname suffix;
+        return dir "/" fname suffix ;
     } else if (g_cache_ok == 2) { # bad
         return "";
     }

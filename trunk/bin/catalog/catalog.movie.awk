@@ -3,14 +3,17 @@ function movie_search(minfo,bestUrl,lang,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
-imdb_title_q,imdb_id_q) {
+imdb_title_q,imdb_id_q,year,scrape_imdb) {
 
     id1("movie search");
+    ret=0;
 
     minfo["mi_tvid_plugin"] = minfo["mi_tvid"]="";
     # search online info using film basename looking for imdb link
     # -----------------------------------------------------------------------------
     name_id=0;
+
+    scrape_imdb = 1;
 
 
     name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
@@ -111,32 +114,27 @@ imdb_title_q,imdb_id_q) {
                         #imdb_id_q = url_encode("site:imdb.com");
                         #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
 
-                        if(0) {
-                            # new way - search title first then movie link
+                        title="";
+
+                        bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"),name_try);
+                        if (bestUrl == "" ) {
+
+                            # look for imdb style titles 
                             title = web_search_first_imdb_title(name_try,"");
                             if (title == "" ) {
                                 title = web_search_first_imdb_title(name_try"+movie","");
                             }
-                            if (title != "" && title != name_try) {
-                                bestUrl=web_search_first_imdb_link(title"+"imdb_title_q,title);
-                                if (bestUrl == "") {
-                                    bestUrl=web_search_first_imdb_link(title"+"imdb_id_q,title);
-                                }
-                            }
-                        } else {
-                            # Old way - search for imdb link  else title then imdb link
-                            bestUrl=web_search_first_imdb_link(name_try"+"imdb_id_q,name_try);
-                            if (bestUrl == "" ) {
 
-                                # look for imdb style titles 
-                                title = web_search_first_imdb_title(name_try,"");
-                                if (title == "" ) {
-                                    title = web_search_first_imdb_title(name_try"+movie","");
-                                }
-                                if (title != "" && title != name_try) {
-                                    bestUrl=web_search_first_imdb_link(title"+"imdb_title_q,title);
-                                    if (bestUrl == "") {
-                                        bestUrl=web_search_first_imdb_link(title"+"imdb_id_q,title);
+                            if (title != "" && title != name_try) {
+
+
+                                if (match(title,g_year_re"$")) {
+                                    year = substr(title,RSTART,RLENGTH);
+                                    title = trim(substr(title,1,RSTART-1));
+                                    if (find_movie_page(title,year,"","",minfo) == 0) {
+                                        ret = 1;
+                                        bestUrl = minfo["mi_url"];
+                                        scrape_imdb = 0; # already scraped.
                                     }
                                 }
                             }
@@ -153,8 +151,7 @@ imdb_title_q,imdb_id_q) {
     }
 
     # Finished Search. Scrape IMDB
-    ret=0;
-    if (bestUrl != "") {
+    if (bestUrl && scrape_imdb) {
 
         ret = scrapeIMDBTitlePage(minfo,bestUrl,lang);
 

@@ -1,5 +1,4 @@
 #! $Id$
-##
 # web_search_first_imdb_link has now been disabled in tv_search(Sep 2010), as well as being
 # previously disabled in movie search. This is to avoid excessive googling for tv shows, 
 # as if a tv show cannot be found , it will switch to looking for movies which also uses 
@@ -786,7 +785,7 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 
 function verify_setup(\
 tmp,tmp2) {
-    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape";
+    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb mi_imdb_img mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title_source mi_tvid mi_tvid_plugin mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url";
     split(tmp,tmp2," ");
     hash_invert(tmp2,g_verify);
 }
@@ -1052,22 +1051,8 @@ function n(x) \
 }
 
 
-function update_plots(pfile,minfo,\
-lang,lang_list,info) {
+function update_plots(pfile,minfo) {
     update_plots_by_lang(pfile,minfo,minfo["mi_plot"]); #default - English
-
-    if(0) { #===============================================================================
-
-        split(LANG,lang_list,",");
-        if (minfo["mi_category"] == "M" ) {
-            for (lang in lang_list) {
-                if (scrape_by_lang(minfo,lang,info)) {
-                    update_plots_by_lang(pfile "." lang,minfo,info["plot"]);
-                }
-            }
-        }
-
-    }
 }
 
 function update_plots_by_lang(pfile,minfo,plot_text,\
@@ -1201,63 +1186,12 @@ i,folderCount,moveDown) {
     }
 }
 
-# look for PLOT or PLOT: then skip over all tags until it hits some plain text.
-# if this is more than  more than min_plot_len characters of plain text with especially no div, h1-5, table or span.
-# plot_words = array of words used for the word PLOT in the desired language - eg Plot, Summary , Synopsis
-# query = url encoded keywords to pass to a search engine. eg Matrix Reloaded inurl:2003 Wachowski 
-
-function get_first_plot(query,site,min_plot_len,\
-url) {
-#    if (site ~ /^[a-z.]+$/ ) {
-#        url=query url_encode(" site:"site);
-#    } else {
-#        url=query url_encode(" inurl:"site);
-#    }
-#    id2 = scanPageFirstMatch(url,site,????,0);
-    INF("first_result: not implemented");
-}
-
-# Add intelligent scraper.
-# site url, query , plot word ,
-# info_out["plot"] = the plot
-# info_out["title"] = the title
-function scrape_by_lang(minfo,lang,info_out,\
-plot_words,sites,query,tmp,plot,i) {
-
-    delete info_out;
-
-    # example inputs
-        #catalog_lang_it_plot=Trama,descrizione
-        #catalog_lang_it_site=filmup.leonardo.it,imdb.it
-        #catalog_lang_es_plot=Trama,SINOPSIS
-        #catalog_lang_es_site=www.filmaffinity.com/es,imdb.es
-        #catalog_lang_fr_plot=Synopsis 
-        #catalog_lang_fr_site=www.allocine.fr
-
-    # array of words used for the word PLOT in the desired language - eg Plot, Summary , Synopsis
-    plot_words = trim(g_settings["catalog_lang_"lang"_plot"]);
-    query = plot_words;
-
-    gsub(/,/," OR +",query);
-
-    query = url_encode("\""minfo["mi_title"]"\" intitle:"minfo["mi_year"]" \""minfo["mi_director_name"]"\" ( +"query" ) ");
-
-    tmp = split(g_settings["catalog_lang_"lang"_site"],sites,",");
-
-    for(i = 1 ; i < tmp + 1 ; i++ ) {
-        plot = get_first_plot(query,sites[i],50);
-        if (plot) {
-            break;
-        }
-    }
-}
-
 function unit1(label,value) {
     print "unit" label ( value ? "OK" : "Failed");
 }
 
 function unit(doit,\
-minfo,failed,i,ulang) {
+minfo,i,ulang) {
     if (doit) {
         DIV0("BEGIN UNIT TEST");
         unit1("Trim",(trim(" a ") == "a"));
@@ -1269,9 +1203,9 @@ minfo,failed,i,ulang) {
         WARNING(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'"));
         unit1("preserve5",(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'") == "img=\"http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif\"<img " ));
 
-        split("fr,de,it,nl,ru",ulang,",");
+        split("en",ulang,",");
 
-        #find_movie_page("Matrix Reloaded",2003,138,minfo);
+        #find_movie_page("Matrix Reloaded",2003,138,"Wachowski",minfo);
         #dump(0,"moviepage",minfo);
         for(i in ulang) {
             find_movie_by_lang(ulang[i],"Matrix Reloaded",2003,138,minfo);

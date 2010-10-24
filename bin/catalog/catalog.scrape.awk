@@ -1,9 +1,11 @@
 # Given a movie title and year try to find a site in the required language and scrape
-# INPUT title
-# INPUT year
+# INPUT title - movie title - used for validation can be blank
+# INPUT year  - used for validation can be blank
+# INPUT runtime  - used for validation can be blank
+# INPUT director  - used for validation can be blank
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
-function find_movie_page(title,year,runtime,minfo,\
+function find_movie_page(title,year,runtime,director,minfo,\
 langs,num,i,err,minfo2) {
 
     err = 1;
@@ -11,7 +13,7 @@ langs,num,i,err,minfo2) {
 
     num = split(g_settings["catalog_languages"],langs,",");
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_lang(langs[i],title,year,runtime,minfo2);
+        err=find_movie_by_lang(langs[i],title,year,runtime,director,minfo2);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -23,11 +25,15 @@ langs,num,i,err,minfo2) {
 
 # Given a movie title and year try to find a site in the required language and scrape
 # INPUT lang - 2 letter language code 
-# INPUT title - movie title
-# INPUT year 
+
+# INPUT title - movie title - used for validation can be blank
+# INPUT year  - used for validation can be blank
+# INPUT runtime  - used for validation can be blank
+# INPUT director  - used for validation can be blank
+
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
-function find_movie_by_lang(lang,title,year,runtime,minfo,\
+function find_movie_by_lang(lang,title,year,runtime,director,minfo,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
@@ -37,7 +43,7 @@ i,num,sites,minfo2,err,searchhist) {
 
         num=split(g_settings["lang:catalog_lang_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_lang(sites[i],lang,title,year,runtime,minfo2,searchhist);
+            err=find_movie_by_site_lang(sites[i],lang,title,year,runtime,director,minfo2,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -48,6 +54,70 @@ i,num,sites,minfo2,err,searchhist) {
     return err;
 }
 
+# Search for a movie by title year using multiple search engines. 
+# filter urls that score highly (bing is bad for these types of searches. may need to use ask/google)
+#
+# IN search_engine_prefix eg http://google.com/q=
+# IN title - movie title
+# IN year - year of release
+# IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
+# OUT matches - array of matching urls.
+function find_links_all_engines(title,year,site,matches) {
+
+    return find_links_1engine(g_search_google,title,year,site,matches);
+
+}
+
+
+# Search for a movie by title year and a site: or inurl: and return all matching links.
+# The links are filtered according to the regex in conf/domain/catalog.domain.xxx.cfg
+#
+# IN search_engine_prefix eg http://google.com/q=
+# IN title - movie title
+# IN year - year of release
+# IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
+# OUT matches - array of matching urls.
+
+function find_links_1engine(search_engine_prefix,title,year,site,matches,\
+keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
+
+    id1("find_links_1engine:"search_engine_prefix);
+
+    # set search qualifier and build search url
+    if (index(site,"/")) {
+        keyword="inurl:";
+    } else {
+        keyword="site:";
+    }
+    qualifier = url_encode("\""title"\" "year" "keyword site);
+    url = search_engine_prefix qualifier;
+
+    # load config file for this domain (load defaults if a top level domain)
+    search_domain = get_main_domain(site);
+    url_regex = "href=.http://[^\"'\\/]*"re_escape(site)"[^\"']+";
+    url_text = search_domain;
+    if (!load_plugin_settings("domain",search_domain)) {
+        load_plugin_settings("domain","default");
+    }
+
+    # get the links from page one of the search
+    num = scan_page_for_matches(url,url_text,url_regex,0,0,"",1,matches);
+
+    for(i in matches) {
+        sub(/href=./,"",matches[i]);
+    }
+
+    # filter links according to domain definitions
+    dumpord(0,"matches",matches);
+    num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
+    dumpord(0,"matches--non movie",matches);
+    num = remove_suburls(matches);
+
+    dumpord(0,"matches-just short urls",matches);
+    id0(num);
+    return num;
+}
+
 # Search Engine query to hopefully find movie url 
 # IN site  - from cf file, used in search. It may be just domain (site:xxx) or include part of the url (inurl:)
 # IN lang - 2 letter language code
@@ -56,79 +126,47 @@ i,num,sites,minfo2,err,searchhist) {
 # OUT minfo - Movie info - cleared before use.
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_lang(site,lang,title,year,runtime,minfo,searchhist,\
-minfo2,err,url,qualifier,keyword,matches,num,search_domain,url_domain,url_text,url_regex,i,max_allowed_results) {
+function find_movie_by_site_lang(site,lang,title,year,runtime,director,minfo,searchhist,\
+minfo2,err,matches,num,url_domain,i,max_allowed_results) {
 
     err = 1;
     id1("find_movie_by_site_lang("site","lang")");
 
-    if (index(site,"/")) {
-        keyword="inurl:";
+
+
+    num = find_links_all_engines(title,year,site,matches);
+    num = remove_visited_urls(num,matches,searchhist);
+
+    # Set maximum allowed results
+    if (site ~ "^\\.[a-z]+$") {
+        max_allowed_results = 5;
     } else {
-        keyword="site:";
+        max_allowed_results = 2;
+    }
+    if (num > max_allowed_results) {
+        num = max_allowed_results;
     }
 
-    qualifier = url_encode("\""title"\" "year" "keyword site);
+    dump(0,"filtered matches",matches);
+    for(i = 1 ; i <= num ; i++ ) {
+        url_domain = get_main_domain(matches[i]);
 
-    url = g_search_google qualifier;
-
-    search_domain = get_main_domain(site);
-    if(search_domain) {
-        if (load_plugin_settings("domain",search_domain)) {
-            max_allowed_results = 2;
-            # match any url where the site is part of the URL and also
-            url_regex = "href=.http://[^\"\\/]*"re_escape(site)"[^\"]+";
-            url_text = search_domain;
+        if (is_visited_domain(url_domain,searchhist)) {
+            INF("ignoring ["matches[i]"] - previous visit to site does not have plot");
         } else {
-            max_allowed_results = 0;
-        }
-    } else {
-        if (load_plugin_settings("domain","default")) {
-            # scraping TLD eg .fr .it etc.
-            max_allowed_results = 5;
-            url_text = site;
-        }
-    }
 
-    if (max_allowed_results) {
-        num = scan_page_for_matches(url,url_text,url_regex,0,0,"",1,matches);
-
-        for(i in matches) {
-            sub(/href=./,"",matches[i]);
-        }
-
-        dump(0,"matches",matches);
-        if(search_domain) {
-            num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
-        }
-        num = remove_suburls(matches);
-        num = remove_visited_urls(num,matches,searchhist);
-
-        if (num < max_allowed_results) {
-            num = max_allowed_results;
-        }
-
-        dump(0,"filtered matches",matches);
-        for(i = 1 ; i <= num ; i++ ) {
-            url_domain = get_main_domain(matches[i]);
-
-            if (is_visited_domain(url_domain,searchhist)) {
-                INF("ignoring ["matches[i]"] - previous visit to site does not have plot");
-            } else {
-
-                set_visited_url(matches[i],searchhist);
-                err = scrape_movie_page(title,year,runtime,matches[i],lang,search_domain,minfo2);
-                if (!err) {
-                    minfo_merge(minfo,minfo2);
-                    break;
-                } else if (err == 2) {
-                    # scrape ok but no plot - ignore entire domain
-                    INF("ignoring further searches at "url_domain);
-                    set_visited_domain(url_domain,searchhist);
-                }
+            set_visited_url(matches[i],searchhist);
+            err = scrape_movie_page(title,year,runtime,director,matches[i],lang,url_domain,minfo2);
+            if (!err) {
+                minfo_merge(minfo,minfo2);
+                break;
+            } else if (err == 2) {
+                # scrape ok but no plot - ignore entire domain
+                INF("ignoring further searches at "url_domain);
+                set_visited_domain(url_domain,searchhist);
             }
-
         }
+
     }
 
     id0(err);
@@ -226,13 +264,14 @@ i,j,keep) {
 # Scrape a movie page - results into minfo
 # IN title - movie title
 # IN year 
-# IN runtime of movie in minutes (used for validation)
+# IN runtime of movie in minutes (used for validation - mostly ignore for the time being - movies like Leon have varied runtimes)
+# IN director - Director surname - may have problems matching  other alphabets. Russian / Greek
 # IN url - page to scrape
 # IN lang - 2 letter language code
 # IN domain  - main domain of site eg imdb, allocine etc.
 # OUT minfo - Movie info - cleared before use.
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(title,year,runtime,url,lang,domain,minfo,\
+function scrape_movie_page(title,year,runtime,director,url,lang,domain,minfo,\
 f,minfo2,err,line,pagestate,namestate) {
 
     err = 0;
@@ -246,7 +285,7 @@ f,minfo2,err,line,pagestate,namestate) {
             minfo2["mi_category"] = "M";
             pagestate["mode"] = "head";
             while(enc_getline(f,line) > 0  ) {
-                err = scrape_movie_line(title,year,runtime,lang,domain,line[1],minfo2,pagestate,namestate);
+                err = scrape_movie_line(lang,domain,line[1],minfo2,pagestate,namestate);
                 if (err) {
                     INF("abort page");
                     break;
@@ -261,7 +300,7 @@ f,minfo2,err,line,pagestate,namestate) {
 
     if (minfo2["mi_category"] == "M") {
         if (!err) {
-            err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_runtime(runtime,minfo2);
+            err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
         }
 
         if (!err  &&  !is_prose(minfo2["mi_plot"]) ) {
@@ -276,6 +315,10 @@ f,minfo2,err,line,pagestate,namestate) {
     if (err) {
         dump(0,"bad page info",minfo2);
     } else {
+        if(index(domain,"imdb")) {
+            imdb_extra_info(minfo2,url);
+        }
+        minfo2["mi_url"] = url;
         minfo_merge(minfo,minfo2);
         dump(0,title"-"year"-"domain"-"lang,minfo);
     }
@@ -321,16 +364,38 @@ function check_runtime(runtime,minfo,\
 ret) {
     ret = 1;
 
-    if (runtime && minfo["mi_runtime"]) {
+    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
+    DEBUG("check_runtime disabled");
+#    if (runtime && minfo["mi_runtime"]) {
+#
+#        ret = (runtime == minfo["mi_runtime"]);
+#
+#        if (ret) {
+#            DEBUG("runtime scraped ok");
+#        } else {
+#            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
+#        }
+#    }
 
-        ret = (runtime == minfo["mi_runtime"]);
+    return ret;
+}
 
-        if (ret) {
-            DEBUG("runtime scraped ok");
-        } else {
-            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
-        }
-    }
+function check_director(runtime,minfo,\
+ret) {
+    ret = 1;
+
+    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
+    DEBUG("check_director disabled");
+#    if (runtime && minfo["mi_runtime"]) {
+#
+#        ret = (runtime == minfo["mi_runtime"]);
+#
+#        if (ret) {
+#            DEBUG("runtime scraped ok");
+#        } else {
+#            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
+#        }
+#    }
 
     return ret;
 }
@@ -378,7 +443,7 @@ line2,do_href,do_img) {
 
 
 function reduce_markup(line,sections,pagestate,\
-sep,ret,lcline) {
+sep,ret,lcline,arr) {
 
     delete sections;
 
@@ -404,6 +469,16 @@ sep,ret,lcline) {
 
         if (index(lcline,"<a") ) {
             line = gensub(/(<[Aa][^>]*>)([^<]+)(<\/[aA]>)/,"\\1@label@\\2@label@\\3","g",line);
+        }
+
+        if (index(lcline,"script")) {
+            pagestate["script"] += split(lcline,arr,"<script")-split(lcline,arr,"</script>");
+            INF("pagestate[script]="pagestate["script"]":due to ["lcline"]");
+        }
+
+        if (index(lcline,"style")) {
+            pagestate["style"] += split(lcline,arr,"<style")-split(lcline,arr,"</style>");
+            INF("pagestate[style]="pagestate["style"]":due to ["lcline"]");
         }
 
         if (pagestate["mode"] != "body") {
@@ -458,7 +533,7 @@ sep,ret,lcline) {
 # IN/OUT pagestate - info about which tag we are parsing
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
-function scrape_movie_line(title,year,runtime,lang,domain,line,minfo,pagestate,namestate,\
+function scrape_movie_line(lang,domain,line,minfo,pagestate,namestate,\
 i,num,sections,err) {
 
     err = 0;
@@ -468,7 +543,9 @@ i,num,sections,err) {
 
     num = reduce_markup(line,sections,pagestate);
     if (num) {
-        if (pagestate["mode"] != "head" ) {
+        if (pagestate["script"]  || pagestate["style"] ) {
+            INF("skip script or style");
+        } else if (pagestate["mode"] != "head" ) {
 
             if (pagestate["debug"]) {
                 dump(0,"fragments",sections);
@@ -476,7 +553,7 @@ i,num,sections,err) {
 
             for(i = 1 ; i <= num ; i++ ) {
                 if (sections[i]) {
-                    err = scrape_movie_fragment(title,year,runtime,lang,domain,sections[i],minfo,pagestate,namestate);
+                    err = scrape_movie_fragment(lang,domain,sections[i],minfo,pagestate,namestate);
                     if (err) {
                         INF("abort line");
                         break;
@@ -496,7 +573,7 @@ i,num,sections,err) {
 # IN/OUT pagestate - info about which tag we are parsing
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
-function scrape_movie_fragment(title,year,runtime,lang,domain,fragment,minfo,pagestate,namestate,\
+function scrape_movie_fragment(lang,domain,fragment,minfo,pagestate,namestate,\
 mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
@@ -529,12 +606,13 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
                 value=trim(value);
 
                 # extract the year if present AND in brackets
-                if (index(value,"(")) {
-                    if (split(gensub("(\\(.*)("g_year_re")(.*\\))","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
+                if (index(value,"(") || index(value,"[")) {
+                    if (split(gensub("([[(].*)("g_year_re")(.*[])])","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
                         minfo["mi_year"] = matches[3];
                         INF("Year="minfo["mi_year"]);
                         value=trim(matches[1]);
                     }
+                    #dumpord(0,"findyear",matches);
                 }
                 if(value) {
                     minfo["title_source"] = domain;
@@ -622,7 +700,12 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
         if (minfo[field]) {
             DEBUG("scrape_movie_fragment:"field"=["value"] but already have ["minfo[field]"]");
         } else {
+
             INF("scrape_movie_fragment:"field"=["value"]");
+
+            if (field == "mi_title") {
+                value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",1);
+            }
             minfo[field]=value;
         }
     }
@@ -630,7 +713,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 }
 
 function extract_rating(text,minfo,\
-matches,ret) {
+ret) {
     if (minfo["mi_rating"] == "") {
         if (index(text,"/") ) {
             ret = subexp(text,"([0-9][,.][0-9]+) ?\\/? ?10");
@@ -646,16 +729,15 @@ matches,ret) {
 }
 
 function is_prose(text,\
-words,num) {
+words,num,i) {
     if (length(text) > g_min_plot_len && index(text,"Mozilla") == 0) {
         num = split(text,words," ")+0;
         #DEBUG("words = "num" required "(length(text)/10));
-        if (num >= length(text)/10 ) {
-##            # Check number if digits and low asci characters is less that 1 per 5 words.
-##            tmp = gensub(/[-~]+/,"","g",text);
-##            if (length(tmp) < num/3) {
+        if (num >= length(text)/8 ) { #av word length less than 10 chars
+            if (num <= length(text)/5 ) { # av word length > 4 chars (minus space)
+                for(i in words) if (length(words[i]) > 30) return 0;
                 return 1;
-##            }
+            }
         }
     }
     return 0;
@@ -736,109 +818,116 @@ key,regex,ret,lcfragment,dbg) {
 function scrapeIMDBTitlePage(minfo,url,lang,\
 connections,remakes,ret) {
 
-    if (scrape_movie_page("","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
-        minfo["mi_imdb"] = extractImdbId(url);
-        if (minfo["mi_category"] == "M") {
-
-            getNiceMoviePosters(minfo,extractImdbId(url));
-            getMovieConnections(extractImdbId(url),connections);
-
-            if (connections["Remake of"] != "") {
-                getMovieConnections(connections["Remake of"],remakes);
-            }
-
-            minfo["mi_conn_follows"]= connections["Follows"];
-            minfo["mi_conn_followed_by"]= connections["Followed by"];
-            minfo["mi_conn_remakes"]=remakes["Remade as"];
-
-            INF("follows="minfo["mi_conn_follows"]);
-            INF("followed_by="minfo["mi_conn_followed_by"]);
-            INF("remakes="minfo["mi_conn_remakes"]);
-        }
+    if (scrape_movie_page("","","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
         ret = minfo["mi_category"];
     }
     return ret;
 }
 
+# Get extra imdb info
+function imdb_extra_info(minfo,url,\
+ret) {
+    minfo["mi_imdb"] = extractImdbId(url);
+    if (minfo["mi_category"] == "M") {
 
-# return ""=unknown "M"=movie "T"=tv??
-function scrapeIMDBTitlePageOld(minfo,url,lang,\
-domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
+        getNiceMoviePosters(minfo,extractImdbId(url));
+        getMovieConnections(extractImdbId(url),connections);
 
-    if (url == "" ) return;
-
-#ALL TODO    domain=get_main_domain(url);
-
-#ALL TODO    if (!load_plugin_settings("domain",domain)) {
-#ALL TODO        return;
-#ALL TODO    }
-
-    #Remove /combined/episodes from urls given by epguides.
-    url=extractImdbLink(url); # TODO Generic ID extraction
-
-    if (url == "" ) return;
-
-    id1("scrape lang="lang" domain="domain" ["url"]");
-
-    if (minfo["mi_imdb"] == "") {
-        minfo["mi_imdb"] = extractImdbId(url);
-    }
-    if (minfo["mi_imdb_scraped"] != minfo["mi_imdb"] ) {
-        
-        INF("scraping "url);
-
-        f=getUrl(url,"imdb_main",1);
-
-        if (f != "" ) {
-
-            imdbContentPosition="head";
-
-            DEBUG("START IMDB: title:"minfo["mi_title"]" poster "minfo["mi_poster"]" genre "minfo["mi_genre"]" cert "minfo["mi_certrating"]" year "minfo["mi_year"]);
-
-            FS="\n";
-            minfo["role"] = "";
-
-            while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-                imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,pagestate,namestate);
-            }
-
-            delete minfo["role"];
-            delete minfo["role_max"];
-
-            enc_close(f);
-
-            if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
-                minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
-            }
-
+        if (connections["Remake of"] != "") {
+            getMovieConnections(connections["Remake of"],remakes);
         }
 
-        if (minfo["mi_category"] == "M" ) {
+        minfo["mi_conn_follows"]= connections["Follows"];
+        minfo["mi_conn_followed_by"]= connections["Followed by"];
+        minfo["mi_conn_remakes"]=remakes["Remade as"];
 
-            getNiceMoviePosters(minfo,extractImdbId(url));
-            getMovieConnections(extractImdbId(url),connections);
-
-            if (connections["Remake of"] != "") {
-                getMovieConnections(connections["Remake of"],remakes);
-            }
-
-            minfo["mi_conn_follows"]= connections["Follows"];
-            minfo["mi_conn_followed_by"]= connections["Followed by"];
-            minfo["mi_conn_remakes"]=remakes["Remade as"];
-
-            INF("follows="minfo["mi_conn_follows"]);
-            INF("followed_by="minfo["mi_conn_followed_by"]);
-            INF("remakes="minfo["mi_conn_remakes"]);
-        }
-
-        # make sure we dont scrape this id for this item again
-        minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
+        INF("follows="minfo["mi_conn_follows"]);
+        INF("followed_by="minfo["mi_conn_followed_by"]);
+        INF("remakes="minfo["mi_conn_remakes"]);
     }
     ret = minfo["mi_category"];
-    id0(ret);
     return ret;
 }
 
+
+#DEL# # return ""=unknown "M"=movie "T"=tv??
+#DEL# function scrapeIMDBTitlePageOld(minfo,url,lang,\
+#DEL# domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
+#DEL# 
+#DEL#     if (url == "" ) return;
+#DEL# 
+#DEL# #ALL TODO    domain=get_main_domain(url);
+#DEL# 
+#DEL# #ALL TODO    if (!load_plugin_settings("domain",domain)) {
+#DEL# #ALL TODO        return;
+#DEL# #ALL TODO    }
+#DEL# 
+#DEL#     #Remove /combined/episodes from urls given by epguides.
+#DEL#     url=extractImdbLink(url); # TODO Generic ID extraction
+#DEL# 
+#DEL#     if (url == "" ) return;
+#DEL# 
+#DEL#     id1("scrape lang="lang" domain="domain" ["url"]");
+#DEL# 
+#DEL#     if (minfo["mi_imdb"] == "") {
+#DEL#         minfo["mi_imdb"] = extractImdbId(url);
+#DEL#     }
+#DEL#     if (minfo["mi_imdb_scraped"] != minfo["mi_imdb"] ) {
+#DEL#         
+#DEL#         INF("scraping "url);
+#DEL# 
+#DEL#         f=getUrl(url,"imdb_main",1);
+#DEL# 
+#DEL#         if (f != "" ) {
+#DEL# 
+#DEL#             imdbContentPosition="head";
+#DEL# 
+#DEL#             DEBUG("START IMDB: title:"minfo["mi_title"]" poster "minfo["mi_poster"]" genre "minfo["mi_genre"]" cert "minfo["mi_certrating"]" year "minfo["mi_year"]);
+#DEL# 
+#DEL#             FS="\n";
+#DEL#             minfo["role"] = "";
+#DEL# 
+#DEL#             while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
+#DEL#                 imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,pagestate,namestate);
+#DEL#             }
+#DEL# 
+#DEL#             delete minfo["role"];
+#DEL#             delete minfo["role_max"];
+#DEL# 
+#DEL#             enc_close(f);
+#DEL# 
+#DEL#             if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
+#DEL#                 minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
+#DEL#             }
+#DEL# 
+#DEL#         }
+#DEL# 
+#DEL#         if (minfo["mi_category"] == "M" ) {
+#DEL# 
+#DEL#             getNiceMoviePosters(minfo,extractImdbId(url));
+#DEL#             getMovieConnections(extractImdbId(url),connections);
+#DEL# 
+#DEL#             if (connections["Remake of"] != "") {
+#DEL#                 getMovieConnections(connections["Remake of"],remakes);
+#DEL#             }
+#DEL# 
+#DEL#             minfo["mi_conn_follows"]= connections["Follows"];
+#DEL#             minfo["mi_conn_followed_by"]= connections["Followed by"];
+#DEL#             minfo["mi_conn_remakes"]=remakes["Remade as"];
+#DEL# 
+#DEL#             INF("follows="minfo["mi_conn_follows"]);
+#DEL#             INF("followed_by="minfo["mi_conn_followed_by"]);
+#DEL#             INF("remakes="minfo["mi_conn_remakes"]);
+#DEL#         }
+#DEL# 
+#DEL#         # make sure we dont scrape this id for this item again
+#DEL#         minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
+#DEL#     }
+#DEL#     ret = minfo["mi_category"];
+#DEL#     id0(ret);
+#DEL#     return ret;
+#DEL# }
+#DEL# 
 
 #
 # Extract Actor names and portraits from html.

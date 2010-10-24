@@ -301,6 +301,18 @@ i,c) {
         }
     }
 }
+function dumpord(lvl,label,array,\
+i,c) {
+    if (DBG-lvl >= 0)   {
+        for(i = 1 ; (i in array) ; i++ ) {
+            DEBUG(" "label":"i"=["array[i]"]");
+            c++;
+        }
+        if (c == 0 ) {
+            DEBUG("  "label":<empty>");
+        }
+    }
+}
 
 function sort_file(f,args,\
 tmpf) {
@@ -632,7 +644,7 @@ i,num,patterns,matched,pinfo,ret,prev) {
 
         if (verbose) {
             DEBUG("apply_edits["text"]");
-            dump(0,"apply_edits",pinfo);
+            dumpord(0,"apply_edits",pinfo);
         }
 
         matched = 0;

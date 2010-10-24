@@ -237,7 +237,7 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
     delete list;
     htag = "h5";
     sep=",";
-    url = extractImdbLink(id)"movieconnections";
+    url = "http://uk.imdb.com/title/"extractImdbId(id)"/movieconnections";
     count=scan_page_for_match_order(url,"","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
     #dump(0,"movieconnections-"count,connections);
     for(i = 1 ; i <= count ; i++ ) {

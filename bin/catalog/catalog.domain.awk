@@ -8,9 +8,10 @@ function get_main_domain(url) {
 
     sub(/^www\./,"",url); 
 
-    # Special case for imdb. Any more of these and it should be handled by using 
+    # Special case for big international sites with local presense. Any more of these and it should be handled by using 
     # include files for the domain properties. eg imdb.fr includes imdb.com
     if (index(url,"imdb")==1) url="imdb";
+    if (index(url,"amazon")==1) url="amazon";
 
     return url;
 }
@@ -31,7 +32,7 @@ plist,ret,key) {
         if (plist) {
             ret=apply_edits(ret,plist,verbose);
         } else {
-            ERR("keyword not found ["key"]");
+            INF("keyword ["key"] not present for domain ["domain"]");
         }
     }
     DEBUG("domain_edits:["domain":"text"]=["ret"]");

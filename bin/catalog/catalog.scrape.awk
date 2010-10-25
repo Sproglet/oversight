@@ -432,7 +432,7 @@ line2,do_href,do_img) {
         if (line2 == line) break;
         line = line2;
     }
-    if (line2) DEBUG("srchref=["line"]");
+    #if (line2) DEBUG("srchref=["line"]");
     return line;
 }
 
@@ -443,7 +443,7 @@ line2,do_href,do_img) {
 
 
 function reduce_markup(line,sections,pagestate,\
-sep,ret,lcline,arr) {
+sep,ret,lcline,arr,styleOrScript) {
 
     delete sections;
 
@@ -471,14 +471,12 @@ sep,ret,lcline,arr) {
             line = gensub(/(<[Aa][^>]*>)([^<]+)(<\/[aA]>)/,"\\1@label@\\2@label@\\3","g",line);
         }
 
-        if (index(lcline,"script")) {
-            pagestate["script"] += split(lcline,arr,"<script")-split(lcline,arr,"</script>");
-            INF("pagestate[script]="pagestate["script"]":due to ["lcline"]");
-        }
-
-        if (index(lcline,"style")) {
-            pagestate["style"] += split(lcline,arr,"<style")-split(lcline,arr,"</style>");
-            INF("pagestate[style]="pagestate["style"]":due to ["lcline"]");
+        if (index(lcline,"script") || index(lcline,"style")) {
+            if (index(lcline,"<script") || index(lcline,"<style") ||  index(lcline,"/script>") || index(lcline,"/style>")) {
+                styleOrScript = split(lcline,arr,"<(script|style)")-split(lcline,arr,"</(script|style)>");
+                pagestate["script"] +=  styleOrScript;
+                #INF("pagestate[script]="pagestate["script"]":due to ["lcline"]");
+            }
         }
 
         if (pagestate["mode"] != "body") {
@@ -543,8 +541,8 @@ i,num,sections,err) {
 
     num = reduce_markup(line,sections,pagestate);
     if (num) {
-        if (pagestate["script"]  || pagestate["style"] ) {
-            INF("skip script or style");
+        if (pagestate["script"] ) {
+            # INF("skip script or style");
         } else if (pagestate["mode"] != "head" ) {
 
             if (pagestate["debug"]) {
@@ -694,6 +692,13 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
     }
 
     extract_rating(fragment,minfo);
+
+    if (field == "" && minfo["mi_poster"] == "" && index(fragment,"src=")) {
+
+        value = domain_edits(domain,fragment,"catalog_domain_poster_url_regex_list",1);
+        field = "mi_poster";
+        DEBUG(field"?["value"]");
+    }
 
     err = 0;
     if (field && value ) {

@@ -20,34 +20,34 @@ poster_ref) {
     return "ovs:" field_id "/" g_settings["catalog_poster_prefix"] poster_ref ".jpg";
 }
 
-function getting_fanart(minfo,lg) {
-    return 0+ getting_image(minfo,FANART,GET_FANART,UPDATE_FANART,lg);
+function getting_fanart(minfo,verbose) {
+    return 0+ getting_image(minfo,FANART,GET_FANART,UPDATE_FANART,verbose);
 }
 
-function getting_poster(minfo,lg) {
-    return 0+ getting_image(minfo,POSTER,GET_POSTERS,UPDATE_POSTERS,lg);
+function getting_poster(minfo,verbose) {
+    return 0+ getting_image(minfo,POSTER,GET_POSTERS,UPDATE_POSTERS,verbose);
 }
 
-function getting_image(minfo,image_field_id,get_image,update_image,lg,\
+function getting_image(minfo,image_field_id,get_image,update_image,verbose,\
 poster_ref,internal_path) {
 
     poster_ref = internal_poster_reference(image_field_id,minfo);
     internal_path = getPath(poster_ref,minfo["mi_folder"]);
 
     if (internal_path in g_image_inspected) {
-        if(lg) INF("Already looked at "poster_ref);
+        if(verbose) INF("Already looked at "poster_ref);
         return 0;
     } else if (update_image) {
-        if(lg) INF("Force Update of "poster_ref);
+        if(verbose) INF("Force Update of "poster_ref);
         return 1;
     } else if (!get_image) {
-        if(lg) INF("Skipping "poster_ref);
+        if(verbose) INF("Skipping "poster_ref);
         return 0;
     } else if (hasContent(internal_path)) {
-        if(lg) INF("Already have "poster_ref" ["internal_path"]");
+        if(verbose) INF("Already have "poster_ref" ["internal_path"]");
         return 0;
     } else {
-        if(lg) INF("Getting "poster_ref);
+        if(verbose) INF("Getting "poster_ref);
         return 1;
     }
 }
@@ -76,7 +76,7 @@ function download_image(field_id,minfo,mi_field,\
 
         get_it = 0;
         if (field_id == POSTER) {
-            get_it = getting_poster(minfo,0);
+            get_it = getting_poster(minfo,1);
         } else if (field_id == FANART) {
             get_it = getting_fanart(minfo,0);
         }

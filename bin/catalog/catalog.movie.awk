@@ -117,30 +117,34 @@ imdb_title_q,imdb_id_q,year,scrape_imdb) {
                         title="";
 
                         bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"),name_try);
-                        if (bestUrl == "" ) {
 
-                            # look for imdb style titles 
-                            title = web_search_first_imdb_title(name_try,"");
-                            if (title == "" ) {
-                                title = web_search_first_imdb_title(name_try"+movie","");
+                    } else if (search_order[s] == "TITLEYEAR") {
+
+                        # look for imdb style titles 
+                        title = web_search_first_imdb_title(name_try,"");
+                        if (title == "" ) {
+                            title = web_search_first_imdb_title(name_try"+movie","");
+                        }
+
+                        if (title != "" && title != name_try) {
+
+
+                            if (match(title,g_year_re"$")) {
+                                year = substr(title,RSTART,RLENGTH);
+                                title = trim(substr(title,1,RSTART-1));
+                            } else {
+                                year = "";
                             }
 
-                            if (title != "" && title != name_try) {
-
-
-                                if (match(title,g_year_re"$")) {
-                                    year = substr(title,RSTART,RLENGTH);
-                                    title = trim(substr(title,1,RSTART-1));
-                                    if (find_movie_page(title,year,"","",minfo) == 0) {
-                                        ret = 1;
-                                        bestUrl = minfo["mi_url"];
-                                        scrape_imdb = 0; # already scraped.
-                                    }
-                                }
+                            if (find_movie_page(title,year,"","",minfo) == 0) {
+                                ret = 1;
+                                bestUrl = minfo["mi_url"];
+                                scrape_imdb = 0; # already scraped.
                             }
                         }
 
                     } else {
+
                         ERR("Unknown search method "search_order[s]);
                     }
 

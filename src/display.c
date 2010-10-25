@@ -1550,6 +1550,9 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
     if (item->category == 'T' ) {
         p+= sprintf(p,"_%d_%d.jpg",item->year,item->season);
     } else {
+
+        p += sprintf(p,"_%d_",item->year);
+
         char *imdbid=NULL;
         if (!EMPTY_STR(item->url ) ) {
            if ( util_starts_with(item->url,"tt")) {
@@ -1559,16 +1562,10 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
                if (imdbid && isdigit(imdbid[3])) imdbid ++;
            }
         }
-        HTML_LOG(1,"imdbid=[%s]",imdbid);
         if (imdbid) {
-           p += sprintf(p,"_%d_%.9s.jpg",item->year,imdbid);
-            HTML_LOG(1,"path=[%s]",path);
-        } else {
-            // Blank it all out
-            *path = '\0';
-            HTML_LOG(2,"internal_image_path_static [%s] = NULL",item->title);
-            return NULL;
+           p += sprintf(p,"%.9s",imdbid);
         }
+        p += sprintf(p,".jpg");
     }
     HTML_LOG(2,"internal_image_path_static [%s] = [%s]",item->title,path);
     assert(path[INTERNAL_IMAGE_PATH_LEN] == '\0');

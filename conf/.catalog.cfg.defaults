@@ -72,20 +72,20 @@ catalog_imdb_source="desktop"
 # Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods
 # 
 
-#scene names
+#scene names - online_nfo is often best?
 catalog_movie_search_regex1="^[-a-z0-9.]+$"
-catalog_movie_search_order1="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+catalog_movie_search_order1="IMDBFIRST,ONLINE_NFO,TITLEYEAR,IMDBLINKS"
 #something with the year in it.
 catalog_movie_search_regex2=" .(20|19)[0-9][0-9]"
-catalog_movie_search_order2="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+catalog_movie_search_order2="IMDBFIRST,TITLEYEAR,ONLINE_NFO,IMDBLINKS"
 
 # 10 characters or more - search for most frequently occuring imdb reference first
 catalog_movie_search_regex3=".........."
-catalog_movie_search_order3="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+catalog_movie_search_order3="IMDBFIRST,TITLEYEAR,ONLINE_NFO,IMDBLINKS"
 
 # Short titles - best try a simple search first.
 catalog_movie_search_regex4="."
-catalog_movie_search_order4="IMDBFIRST,ONLINE_NFO,IMDBLINKS"
+catalog_movie_search_order4="IMDBFIRST,TITLEYEAR,ONLINE_NFO,IMDBLINKS"
 
 #scene tags - dont use ones that are normal words.
 catalog_config_version=1
@@ -100,4 +100,4 @@ catalog_max_actors=8
 
 catalog_follow_symlinks=0
 
-catalog_languages=fr,it,de,nl
+catalog_languages=en

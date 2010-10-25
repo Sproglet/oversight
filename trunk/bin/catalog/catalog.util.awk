@@ -664,6 +664,11 @@ i,num,patterns,matched,pinfo,ret,prev) {
                 ret = substr(ret,RSTART,RLENGTH);
             }
             if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")=["matched"|"ret"]");
+
+        } else if (pinfo[1] == "") { # matches /dddd/
+            if (match(ret,pinfo[2])) {
+                matched = 1;
+            }
         }
         # If there was no match, and a lower case operation was used then clear the entire result.
         #ie if s/ or e/ used then the regex must be present

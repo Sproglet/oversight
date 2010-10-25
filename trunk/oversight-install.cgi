@@ -140,6 +140,7 @@ INSTALL() {
 
         chmod -R 775 "$INSTALL_DIR"
         chown -R nmt:nmt "$INSTALL_DIR"
+        "$NMT" NMT_UNINSTALL "$appname"
         "$NMT" NMT_INSTALL "$appname" "$start_command"
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
         eval "$start_command"

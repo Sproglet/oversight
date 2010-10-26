@@ -3,7 +3,7 @@ function movie_search(minfo,bestUrl,lang,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
-imdb_title_q,imdb_id_q,year,scrape_imdb) {
+year,scrape_imdb,text) {
 
     id1("movie search");
     ret=0;
@@ -58,7 +58,7 @@ imdb_title_q,imdb_id_q,year,scrape_imdb) {
         delete search_order;
     }
 
-    dump(0,"search order",search_order);
+    dumpord(0,"search order",search_order);
 
     for( s = 1 ; bestUrl=="" && s-search_order_size <= 0 ; s++ ) { # Must do them in strict sequence
 
@@ -72,14 +72,13 @@ imdb_title_q,imdb_id_q,year,scrape_imdb) {
 
         } else {
 
-            delete name_seen;
             for(n = 1 ; bestUrl=="" && n-name_id <= 0 ; n++) {
 
                 name_try = name_list[n];
 
-                if (!(name_try in name_seen) && name_try != "") {
+                if (!name_seen[name_try,s]  && name_try != "") {
 
-                    name_seen[name_try]=n;
+                    name_seen[name_try,s]=1;
 
                     id1("Search Phase: "search_order[s]"["name_try"]");
 
@@ -108,12 +107,6 @@ imdb_title_q,imdb_id_q,year,scrape_imdb) {
                             name_try = trim(name_try);
                         }
 
-
-                        imdb_title_q=url_encode("imdb");
-                        imdb_id_q = url_encode("imdb");
-                        #imdb_id_q = url_encode("site:imdb.com");
-                        #imdb_id_q = url_encode("+imdb")"+"url_encode("+title");
-
                         title="";
 
                         bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"),name_try);
@@ -129,18 +122,24 @@ imdb_title_q,imdb_id_q,year,scrape_imdb) {
                         if (title != "" && title != name_try) {
 
 
+                            text = "";
                             if (match(title,g_year_re"$")) {
                                 year = substr(title,RSTART,RLENGTH);
                                 title = trim(substr(title,1,RSTART-1));
                             } else {
                                 year = "";
                             }
+                        } else {
+                            text = name_try;
+                            title = "";
+                            year = "";
+                        }
 
-                            if (find_movie_page(title,year,"","",minfo) == 0) {
-                                ret = 1;
-                                bestUrl = minfo["mi_url"];
-                                scrape_imdb = 0; # already scraped.
-                            }
+                        if (find_movie_page(text,title,year,"","",minfo) == 0) {
+                            ret = 1;
+                            bestUrl = minfo["mi_url"];
+                            scrape_imdb = 0; # already scraped.
+                            INF("Found at "bestUrl);
                         }
 
                     } else {
@@ -153,6 +152,7 @@ imdb_title_q,imdb_id_q,year,scrape_imdb) {
             }
         }
     }
+    DEBUG("movie_search bestUrl=["bestUrl"]");
 
     # Finished Search. Scrape IMDB
     if (bestUrl && scrape_imdb) {

@@ -1551,7 +1551,13 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
         p+= sprintf(p,"_%d_%d.jpg",item->year,item->season);
     } else {
 
-        p += sprintf(p,"_%d_",item->year);
+        *p++ = '_';
+
+        if (item->year) {
+            p += sprintf(p,"%d",item->year);
+        }
+
+        *p++ = '_';
 
         char *imdbid=NULL;
         if (!EMPTY_STR(item->url ) ) {

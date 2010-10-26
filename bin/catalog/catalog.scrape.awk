@@ -1,19 +1,20 @@
 # Given a movie title and year try to find a site in the required language and scrape
+# IN text - text so search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
 # INPUT year  - used for validation can be blank
 # INPUT runtime  - used for validation can be blank
 # INPUT director  - used for validation can be blank
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
-function find_movie_page(title,year,runtime,director,minfo,\
+function find_movie_page(text,title,year,runtime,director,minfo,\
 langs,num,i,err,minfo2) {
 
     err = 1;
-    id1("find_movie_page "title" ("year")");
+    id1("find_movie_page text ["text"] title ["title"] year("year")");
 
     num = split(g_settings["catalog_languages"],langs,",");
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_lang(langs[i],title,year,runtime,director,minfo2);
+        err=find_movie_by_lang(langs[i],text,title,year,runtime,director,minfo2);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -26,6 +27,7 @@ langs,num,i,err,minfo2) {
 # Given a movie title and year try to find a site in the required language and scrape
 # INPUT lang - 2 letter language code 
 
+# IN text - text so search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
 # INPUT year  - used for validation can be blank
 # INPUT runtime  - used for validation can be blank
@@ -33,17 +35,17 @@ langs,num,i,err,minfo2) {
 
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
-function find_movie_by_lang(lang,title,year,runtime,director,minfo,\
+function find_movie_by_lang(lang,text,title,year,runtime,director,minfo,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
-    id1("find_movie_by_lang:"lang);
+    id1("find_movie_by_lang:"lang" text ["text"] title ["title"] year("year")");
     if (load_plugin_settings("lang",lang)) {
 
 
         num=split(g_settings["lang:catalog_lang_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_lang(sites[i],lang,title,year,runtime,director,minfo2,searchhist);
+            err=find_movie_by_site_lang(sites[i],lang,text,title,year,runtime,director,minfo2,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -58,13 +60,14 @@ i,num,sites,minfo2,err,searchhist) {
 # filter urls that score highly (bing is bad for these types of searches. may need to use ask/google)
 #
 # IN search_engine_prefix eg http://google.com/q=
+# IN text - text to find - eg filename may be blank if title set
 # IN title - movie title
 # IN year - year of release
 # IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
 # OUT matches - array of matching urls.
-function find_links_all_engines(title,year,site,matches) {
+function find_links_all_engines(text,title,year,site,matches) {
 
-    return find_links_1engine(g_search_google,title,year,site,matches);
+    return find_links_1engine(g_search_google,text,title,year,site,matches);
 
 }
 
@@ -73,12 +76,13 @@ function find_links_all_engines(title,year,site,matches) {
 # The links are filtered according to the regex in conf/domain/catalog.domain.xxx.cfg
 #
 # IN search_engine_prefix eg http://google.com/q=
+# IN text - text to find - eg filename may be blank if title set
 # IN title - movie title
 # IN year - year of release
 # IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
 # OUT matches - array of matching urls.
 
-function find_links_1engine(search_engine_prefix,title,year,site,matches,\
+function find_links_1engine(search_engine_prefix,text,title,year,site,matches,\
 keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
     id1("find_links_1engine:"search_engine_prefix);
@@ -89,7 +93,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     } else {
         keyword="site:";
     }
-    qualifier = url_encode("\""title"\" "year" "keyword site);
+    qualifier = url_encode(text" "title" "year" "keyword site);
     url = search_engine_prefix qualifier;
 
     # load config file for this domain (load defaults if a top level domain)
@@ -109,11 +113,10 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
     # filter links according to domain definitions
     dumpord(0,"matches",matches);
+
     num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
-    dumpord(0,"matches--non movie",matches);
     num = remove_suburls(matches);
 
-    dumpord(0,"matches-just short urls",matches);
     id0(num);
     return num;
 }
@@ -121,12 +124,13 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 # Search Engine query to hopefully find movie url 
 # IN site  - from cf file, used in search. It may be just domain (site:xxx) or include part of the url (inurl:)
 # IN lang - 2 letter language code
+# IN text - text so search for. May not necessarily be exact title eg from filename.
 # IN title - movie title - passed to query
 # IN year  - passed to query
 # OUT minfo - Movie info - cleared before use.
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_lang(site,lang,title,year,runtime,director,minfo,searchhist,\
+function find_movie_by_site_lang(site,lang,text,title,year,runtime,director,minfo,searchhist,\
 minfo2,err,matches,num,url_domain,i,max_allowed_results) {
 
     err = 1;
@@ -134,7 +138,7 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
 
 
 
-    num = find_links_all_engines(title,year,site,matches);
+    num = find_links_all_engines(text,title,year,site,matches);
     num = remove_visited_urls(num,matches,searchhist);
 
     # Set maximum allowed results
@@ -156,7 +160,7 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
         } else {
 
             set_visited_url(matches[i],searchhist);
-            err = scrape_movie_page(title,year,runtime,director,matches[i],lang,url_domain,minfo2);
+            err = scrape_movie_page(text,title,year,runtime,director,matches[i],lang,url_domain,minfo2);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -226,6 +230,9 @@ i,j,keep,keep_num) {
         hash_copy(matches,keep);
         keep_num = j;
     }
+    if (keep_num != num) {
+        dumpord(0,"matches--removed non movie",matches);
+    }
     return keep_num;
 }
 
@@ -262,6 +269,7 @@ i,j,keep) {
 }
 
 # Scrape a movie page - results into minfo
+# IN text - text so search for. May not necessarily be exact title eg from filename.
 # IN title - movie title
 # IN year 
 # IN runtime of movie in minutes (used for validation - mostly ignore for the time being - movies like Leon have varied runtimes)
@@ -271,17 +279,18 @@ i,j,keep) {
 # IN domain  - main domain of site eg imdb, allocine etc.
 # OUT minfo - Movie info - cleared before use.
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(title,year,runtime,director,url,lang,domain,minfo,\
+function scrape_movie_page(text,title,year,runtime,director,url,lang,domain,minfo,\
 f,minfo2,err,line,pagestate,namestate) {
 
     err = 0;
-    id1("scrape_movie_page("url","lang","domain","title","year")");
+    id1("scrape_movie_page("url","lang","domain","text","title","year")");
 
     if (url && lang )  {
 
         f=getUrl(url,lang":"domain":"title":"year,1);
         if (f) {
 
+            minfo2["mi_url"] = url;
             minfo2["mi_category"] = "M";
             pagestate["mode"] = "head";
             while(enc_getline(f,line) > 0  ) {
@@ -299,6 +308,7 @@ f,minfo2,err,line,pagestate,namestate) {
     }
 
     if (minfo2["mi_category"] == "M") {
+
         if (!err) {
             err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
         }
@@ -308,7 +318,7 @@ f,minfo2,err,line,pagestate,namestate) {
             #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
             #a significant failure. Most other scraped info is language neutral.
             INF("missing plot");
-            err = 2;
+            #err = 2;
         }
     }
 
@@ -318,7 +328,6 @@ f,minfo2,err,line,pagestate,namestate) {
         if(index(domain,"imdb")) {
             imdb_extra_info(minfo2,url);
         }
-        minfo2["mi_url"] = url;
         minfo_merge(minfo,minfo2);
         dump(0,title"-"year"-"domain"-"lang,minfo);
     }
@@ -328,8 +337,10 @@ f,minfo2,err,line,pagestate,namestate) {
 }
 
 function minfo_merge(current,new) {
+    INF("minfo_merge begin mi_url current=["current["mi_url"]"] new=["new["mi_url"]"]");
     adjustTitle(new,current["mi_title"],current["mi_title_source"]);
     hash_merge(current,new);
+    INF("minfo_merge end mi_url current=["current["mi_url"]"] new=["new["mi_url"]"]");
 }
 
 function check_year(year,minfo,\
@@ -502,6 +513,7 @@ sep,ret,lcline,arr,styleOrScript) {
             # check for end of HEAD start of BODY
             if (index(lcline,"</html>") || index(lcline,"<body") ) {
                 pagestate["mode"]="body";
+                pagestate["inbody"]=1;
             }
         }
 
@@ -766,7 +778,7 @@ key,regex,ret,lcfragment,dbg) {
 
     #dbg = index(fragment,"Billed Cast");
 
-    if (!("badplot" in pagestate) && is_prose(fragment)) {
+    if (!("badplot" in pagestate) && pagestate["inbody"] && is_prose(fragment)) {
 
        ret = "plot";
 
@@ -823,7 +835,7 @@ key,regex,ret,lcfragment,dbg) {
 function scrapeIMDBTitlePage(minfo,url,lang,\
 connections,remakes,ret) {
 
-    if (scrape_movie_page("","","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
+    if (scrape_movie_page("","","","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
         ret = minfo["mi_category"];
     }
     return ret;

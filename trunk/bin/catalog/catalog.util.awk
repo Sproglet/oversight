@@ -617,30 +617,40 @@ i) {
     }
 }
 
+# split array at unescaped char
+function split_list(list,char,out,\
+split_suffix) {
+    # Check escape characters - if present add SUBSEP to all dividers
+    if (index(list,"\\"char)) {
+        # convert normal , to ,SUBSEP and split on ,SUBSEP
+        gsub("[^\\]"char,"&"SUBSEP,list);
+        split_suffix = SUBSEP;
+    }
+    return split(list,out,char split_suffix);
+}
+
 # Apply sequence of regex to a string.
 # e/REGEX = extract the regex. - if not blank
 # s/REGEX/VALUE = substitute regex - REGEX must be present if not blank
 
+# there is a bug splitting values. The code tries to preserve for escaped characters eg \, but not bracket sequence [,]
+
 function apply_edits(text,plist,verbose,\
-i,num,patterns,matched,pinfo,ret,prev) {
+i,num,patterns,matched,pinfo,ret,prev,split_suffix) {
 
     ret = text;
     #DEBUG("using "plist);
 
-    gsub(/\\,/,"@comma@",plist)
-    gsub(/\\\//,"@backslash@",plist)
-
-    num = split(plist,patterns,",");
-
-    gsub_hash("@comma@",",",patterns);
+    # Split at unescaped forward slashes
+    num = split_list(plist,",",patterns);
+    #INF("plist = ["plist"] parts [,"split_suffix"] = "num);
 
     for(i = 1 ; i <= num ; i++ ) {
 
         prev =ret;
 
-        split(patterns[i],pinfo,"/");
-
-        gsub_hash("@backslash@","/",pinfo);
+        # Split at unescaped forward slashes
+        split_list(patterns[i],"/",pinfo);
 
         if (verbose) {
             DEBUG("apply_edits["text"]");
@@ -652,21 +662,36 @@ i,num,patterns,matched,pinfo,ret,prev) {
 
             if (index(tolower(pinfo[4]),"g")) { # global
                 matched = gsub(pinfo[2],pinfo[3],ret);
-            } else {
+            } else if (pinfo[4] == "" ) {
                 matched = sub(pinfo[2],pinfo[3],ret);
+            } else {
+                ERR("apply_edits: Bad value ["patterns[i]"]");
             }
-            if (verbose) DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")=["matched"|"ret"]");
+            if (verbose) DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")\n=["matched"|"ret"]");
 
         } else if (tolower(pinfo[1]) == "e") { # extract
 
-            if (match(ret,pinfo[2])) {
+            if (pinfo[3] != "" ) {
+                ERR("apply_edits: Bad value ["patterns[i]"]");
+            } else if (match(ret,pinfo[2])) {
                 matched = 1;
                 ret = substr(ret,RSTART,RLENGTH);
             }
-            if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")=["matched"|"ret"]");
+            if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")\n=["matched"|"ret"]");
+
+        } else if (pinfo[1] == "t") { # following text must occur - faster than regex - matches t/dddd/
+
+            if (pinfo[3] != "" ) {
+                ERR("apply_edits: Bad value ["patterns[i]"]");
+            } else if (index(ret,pinfo[2])) {
+                matched = 1;
+            }
 
         } else if (pinfo[1] == "") { # matches /dddd/
-            if (match(ret,pinfo[2])) {
+
+            if (pinfo[3] != "" ) {
+                ERR("apply_edits: Bad value ["patterns[i]"]");
+            } else if (match(ret,pinfo[2])) {
                 matched = 1;
             }
         }

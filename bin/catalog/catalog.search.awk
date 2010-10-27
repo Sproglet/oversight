@@ -566,47 +566,73 @@ amzurl,amazon_urls,imdb_per_page,imdb_id) {
 }
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
-function adjustTitle(minfo,newTitle,source,\
-oldSrc,newSrc,newRank) {
+function adjustTitle(minfo,newTitle,source) {
+    best_source(minfo,"mi_title",clean_title(newTitle),source);
+}
+
+function field_priority(field,source,\
+score) {
+
+    if (!("default" in gPriority)) {
+        #initialise
+        gPriority["default"]=-1;
+        gPriority["mi_title","filename"]=1;
+        gPriority["mi_title","search"]=10;
+        gPriority["mi_title","tvrage"]=20; # demote TVRAGE due to non-accented Carnivale
+        gPriority["mi_title","imdb"]=30;
+        gPriority["mi_title","epguides"]=30;
+        gPriority["mi_title","imdb_aka"]=40;
+        gPriority["mi_title","imdb_orig"]=50;
+        gPriority["mi_title","imdb"]=50;
+        gPriority["mi_title","thetvdb"]=60;
+
+        gPriority["mi_poster","thetvdb"]=60;
+        gPriority["mi_poster","themoviedb"]=60;
+
+        gPriority["mi_plot","themoviedb"]=60;
+        gPriority["mi_plot","thetvdb"]=60;
+    }
+    if (gPriority[field,source]) {
+
+        ERR("field_priority: Unknown "field" source ["source"]");
+        score = gPriority["default"];
+
+    } else {
+        score = gPriority[field,source];
+        DEBUG("field_priority("field","source")="score);
+    }
+    return score;
+}
+
+function best_source(minfo,field,value,source,\
+oldSrc,newSrc,ret) {
 
     source = tolower(source);
 
-    if (!("filename" in gTitlePriority)) {
-        #initialise
-        gTitlePriority[""]=-1;
-        gTitlePriority["filename"]=0;
-        gTitlePriority["search"]=10;
-        gTitlePriority["tvrage"]=20; # demote TVRAGE due to non-accented Carnivale
-        gTitlePriority["imdb"]=30;
-        gTitlePriority["epguides"]=30;
-        gTitlePriority["imdb_aka"]=40;
-        gTitlePriority["imdb_orig"]=50;
-        gTitlePriority["thetvdb"]=60;
-    }
-    newTitle = clean_title(newTitle);
 
-    oldSrc=minfo["mi_title_source"]":["minfo["mi_title"]"] ";
-    newSrc=source":["newTitle"] ";
+    oldSrc=minfo[field"_source"]":["minfo[field]"] ";
+    newSrc=source":["value"] ";
 
-    if (!(source in gTitlePriority)) {
+    if (minfo[field] == "" ) {
 
-        ERR("Unknown [title source "source"] passed to adjustTitle");
-        newRank = gTitlePriority["imdb"];
+        INF("best_source "field": set to "newSrc);
+        ret = 1;
+
+    } else if (field_priority(field,source)+0 > field_priority(field,minfo[field"_source"])+0) {
+
+        INF("best_source "field": "oldSrc" promoted to "newSrc);
+        ret = 1;
 
     } else {
-        newRank = gTitlePriority[source];
+
+        INF("best_source "field": "oldSrc" outranks "newSrc);
+        ret = 0;
     }
-    #if  (ascii8(newTitle)) newRank += 10; # Give priority to accented names
-    if (minfo["mi_title"] == "" || newRank - minfo["mi_title_rank"] > 0) {
-        INF("adjustTitle: "oldSrc" promoted to "newSrc);
-        minfo["mi_title"] = newTitle;
-        minfo["mi_title_source"] = source;
-        minfo["mi_title_rank"] = newRank;;
-        return 1;
-    } else {
-        INF("adjustTitle: current title "oldSrc "outranks " newSrc);
-        return 0;
+    if (ret) {
+        minfo[field] = value;
+        minfo[field"_source"] = source;
     }
+    return ret;
 }
 
 #Searching is more intensive now and it is easy to get google rejecting searches based on traffic.

@@ -336,9 +336,21 @@ f,minfo2,err,line,pagestate,namestate) {
     return err;
 }
 
-function minfo_merge(current,new) {
+function minfo_merge(current,new,\
+flds,i,f) {
+
+    # Keep best title
     INF("minfo_merge begin mi_url current=["current["mi_url"]"] new=["new["mi_url"]"]");
-    adjustTitle(new,current["mi_title"],current["mi_title_source"]);
+    new["mi_title"] = clean_title(new["mi_title"]);
+
+
+    # copy highest ranking fields into "new" before merging back down into current.
+    split("mi_plot,mi_title,mi_poster",flds,",");
+    for(i in flds) {
+        f = flds[i];
+        best_source(new,f,current[f],current[f"_source"]);
+    }
+
     hash_merge(current,new);
     INF("minfo_merge end mi_url current=["current["mi_url"]"] new=["new["mi_url"]"]");
 }
@@ -416,34 +428,30 @@ ret) {
 # it is called before calling remove_tags so that the urls are 
 # still available for further processing.
 # This is requred because the urls often contain actor ids.
+#
+# It also checks <link rel=image_src href=some_image > as IMDB uses this for IE UA
+#
 function preserve_src_href(line,\
-line2,do_href,do_img) {
+line2) {
     
     # Before removing tags we want to preserve (img)src= or href= 
     # as these are used by the get_names function, to process people.
+    line2 = tolower(line);
 
-    do_href = (index(line,"<a") || index(line,"<A"));
-    do_img = (index(line,"<img") || index(line,"<IMG"));
-
-    while(do_href) {
+    if(index(line2,"href=")) {
 
         # <a attr1 href=xxx attr2 >Label</a>
         # to
         # href=xxx <a attr1 attr2 >Label</a>
-        line2 = gensub(/(<[Aa][^>]+)[hH][rR][eE][fF]=[\"']([^\"']+)[\"']([^>]*)/,"href=\"\\2\"\\1\\3","g",line);
-        if (line2 == line) break;
-        line = line2;
+        line = gensub(/(<([Aa]|[Ll][Ii][Nn][Kk]) [^>]+)[hH][rR][eE][fF]=["']([^"']+)["']([^>]*)/," href=\"\\3\"\\1\\4","g",line);
     }
 
-    while(do_img) {
+    if(index(line2,"src=")) {
         # <img attr1 src=xxx attr2 />
         # to
         # src=xxx <img attr1 attr2 />
-        line2 = gensub(/(<[iI][mM][gG][^>]+)src=[\"']([^\"']+)[\"']([^>]*)/,"src=\"\\2\"\\1\\3","g",line);
-        if (line2 == line) break;
-        line = line2;
+        line = gensub(/(<[iI][mM][gG][^>]+)[Ss][Rr][Cc]=["']([^"']+)["']([^>]*)/," src=\"\\2\"\\1\\3","g",line);
     }
-    #if (line2) DEBUG("srchref=["line"]");
     return line;
 }
 
@@ -478,9 +486,12 @@ sep,ret,lcline,arr,styleOrScript) {
 
         line = preserve_src_href(line);
 
+        #Flag link text.
         if (index(lcline,"<a") ) {
             line = gensub(/(<[Aa][^>]*>)([^<]+)(<\/[aA]>)/,"\\1@label@\\2@label@\\3","g",line);
         }
+
+        #Set pagestate to ignore embedded stylesheets and scripts
 
         if (index(lcline,"script") || index(lcline,"style")) {
             if (index(lcline,"<script") || index(lcline,"<style") ||  index(lcline,"/script>") || index(lcline,"/style>")) {
@@ -489,6 +500,8 @@ sep,ret,lcline,arr,styleOrScript) {
                 #INF("pagestate[script]="pagestate["script"]":due to ["lcline"]");
             }
         }
+
+        # Extract title from <title> tag - can be spread across multiple lines.
 
         if (pagestate["mode"] != "body") {
 
@@ -553,9 +566,9 @@ i,num,sections,err) {
 
     num = reduce_markup(line,sections,pagestate);
     if (num) {
-        if (pagestate["script"] ) {
+        if (!pagestate["script"] ) {
             # INF("skip script or style");
-        } else if (pagestate["mode"] != "head" ) {
+        #} else if (pagestate["mode"] != "head" ) {
 
             if (pagestate["debug"]) {
                 dump(0,"fragments",sections);
@@ -586,7 +599,7 @@ i,num,sections,err) {
 function scrape_movie_fragment(lang,domain,fragment,minfo,pagestate,namestate,\
 mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
-    DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
+    #DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
     #DEBUG("scrape_movie_fragment:("lang","domain","fragment")");
     # Check if fragment is a fieldname eg Plot: Cast: etc.
     mode = get_movie_fieldname(lang,fragment,rest_fragment,pagestate);
@@ -681,7 +694,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
             value=matches[1];
         }
 
-    } else if ( mode == "plot" ) {
+    } else if ( mode == "plot" && pagestate["mode"] != "head" ) {
 
         if (is_prose(fragment)) {
             field = "mi_plot";
@@ -705,17 +718,20 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     extract_rating(fragment,minfo);
 
-    if (field == "" && minfo["mi_poster"] == "" && index(fragment,"src=")) {
+    # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
+    if (field == "" && minfo["mi_poster"] == "" && (index(fragment,"src=") || index(fragment,"href="))) {
 
         value = domain_edits(domain,fragment,"catalog_domain_poster_url_regex_list",1);
-        field = "mi_poster";
-        DEBUG(field"?["value"]");
+        if (value) {
+            field = "mi_poster";
+            DEBUG(field"?["value"]");
+        }
     }
 
     err = 0;
     if (field && value ) {
         if (minfo[field]) {
-            DEBUG("scrape_movie_fragment:"field"=["value"] but already have ["minfo[field]"]");
+            #DEBUG("scrape_movie_fragment:"field" ignoring ["value"]");
         } else {
 
             INF("scrape_movie_fragment:"field"=["value"]");
@@ -724,6 +740,10 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
                 value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",1);
             }
             minfo[field]=value;
+
+            if (field == "mi_poster" || field == "mi_title" || field == "mi_plot" ) {
+                minfo[field"_source"] = domain;
+            }
         }
     }
     return err;
@@ -746,14 +766,17 @@ ret) {
 }
 
 function is_prose(text,\
-words,num,i) {
-    if (length(text) > g_min_plot_len && index(text,"Mozilla") == 0) {
+words,num,i,len) {
+    len = length(text);
+    if (len > g_min_plot_len ) {
         num = split(text,words," ")+0;
         #DEBUG("words = "num" required "(length(text)/10));
-        if (num >= length(text)/8 ) { #av word length less than 10 chars
-            if (num <= length(text)/5 ) { # av word length > 4 chars (minus space)
-                for(i in words) if (length(words[i]) > 30) return 0;
-                return 1;
+        if (num >= len/8 ) { #av word length less than 10 chars
+            if (num <= len/5 ) { # av word length > 4 chars (minus space)
+                if ( index(text,"Mozilla") == 0) {
+                    for(i in words) if (length(words[i]) > 30) return 0;
+                    return 1;
+                }
             }
         }
     }
@@ -772,12 +795,13 @@ function keyword_list_to_regex(list) {
 # RETURN keyword eg plot, cast, genre
 # OUT rest[1] = remaining fragment if keyword present.
 function get_movie_fieldname(lang,fragment,rest,pagestate,\
-key,regex,ret,lcfragment,dbg) {
+key,regex,ret,lcfragment,dbg,all_keys) {
 
     rest[1] = fragment;
 
     #dbg = index(fragment,"Billed Cast");
 
+    # if there is a bit of prose without a keyword - assume it is the plot
     if (!("badplot" in pagestate) && pagestate["inbody"] && is_prose(fragment)) {
 
        ret = "plot";
@@ -798,29 +822,34 @@ key,regex,ret,lcfragment,dbg) {
                     if (index(key,"lang:catalog_lang_keyword_") == 1) {
                         if (g_settings[key]) {
                             if (!(key in pagestate)) {
-                                pagestate[key] = "^ *"keyword_list_to_regex(tolower(g_settings[key]))" *(: *|$)";
+                                regex = keyword_list_to_regex(tolower(g_settings[key]));
+                                pagestate[key] = "^ *"regex" *(: *|$)";
+                                all_keys = all_keys "|" regex; 
                             }
                         }
                     }
                 }
+                pagestate["lang_all_keys"] = "^ *("substr(all_keys,2)") *(: *|$)";
             }
             dump(0,"pagestate-load",pagestate);
         }
         if (dbg) {
             dump(0,"pagestate-release",pagestate);
         }
-        for (key in pagestate) {
-            if (index(key,"lang:catalog_lang_keyword_") == 1) {
-                regex = pagestate[key];
-                if (pagestate["debug"] || dbg) {
-                    DEBUG("checking fragment["fragment"] against ["key"]="regex);
-                }
-                if (match(lcfragment,regex)) {
-                    rest[1] = substr(fragment,RSTART+RLENGTH);
+        if (match(lcfragment,pagestate["lang_all_keys"])) {
+            for (key in pagestate) {
+                if (index(key,"lang:catalog_lang_keyword_") == 1) {
+                    regex = pagestate[key];
+                    if (pagestate["debug"] || dbg) {
+                        DEBUG("checking fragment["fragment"] against ["key"]="regex);
+                    }
+                    if (match(lcfragment,regex)) {
+                        rest[1] = substr(fragment,RSTART+RLENGTH);
 
-                    ret = gensub(/lang:catalog_lang_keyword_/,"",1,key);
-                    DEBUG("matching regex = ["regex"]");
-                    break;
+                        ret = gensub(/lang:catalog_lang_keyword_/,"",1,key);
+                        DEBUG("matching regex = ["regex"]");
+                        break;
+                    }
                 }
             }
         }

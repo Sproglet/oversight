@@ -1581,13 +1581,18 @@ result) {
     return 0+ result;
 }
 
-function setFirst(minfo,field,value) {
+# return 1 if setting the value
+function setFirst(minfo,field,value,\
+ret) {
+    ret = 0;
     if (minfo[field] == "") {
         minfo[field] = value;
         print "["field"] set to ["value"]";
+        ret = 1;
     } else {
         print "["field"] already set to ["minfo[field]"] ignoring ["value"]";
     }
+    return ret;
 }
 
 function remove_br_year(t) {
@@ -1601,18 +1606,19 @@ function remove_tv_year(t) {
     }
     return t;
 }
-function set_plot(minfo,field,txt) {
-    minfo[field] = substr(txt,1,g_max_plot_len);
-    if (index(minfo[field],"Remove Ad")) {
-        sub(/\[[Xx]\] Remove Ad/,"",minfo[field]);
+function clean_plot(txt) {
+    text = substr(txt,1,g_max_plot_len);
+    if (index(text,"Remove Ad")) {
+        sub(/\[[Xx]\] Remove Ad/,"",text);
     }
+    return text;
 }
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(lang,minfo,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
+seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter,plot) {
 
     result=0;
     
@@ -1628,7 +1634,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
         minfo["mi_year"] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         setFirst(minfo,"mi_premier",formatDate(seriesInfo["/Data/Series/FirstAired"]));
-        set_plot(minfo,"mi_plot",seriesInfo["/Data/Series/Overview"]);
+        best_source(minfo,"mi_plot",clean_plot(seriesInfo["/Data/Series/Overview"]),"thetvdb");
 
         #Dont use thetvdb genre - its too confusing when mixed with imdb movie genre
 
@@ -1637,7 +1643,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
         # Dont use tvdb rating - prefer imdb one.
         #minfo["mi_rating"] = seriesInfo["/Data/Series/Rating"];
 
-        setFirst(minfo,"mi_poster",tvDbImageUrl(seriesInfo["/Data/Series/poster"]));
+        best_source(minfo,"mi_poster",tvDbImageUrl(seriesInfo["/Data/Series/poster"]),"thetvdb");
         minfo["mi_tvid_plugin"]="THETVDB";
         minfo["mi_tvid"]=seriesInfo["/Data/Series/id"];
         result ++;
@@ -1661,7 +1667,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
                     set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
 
                     if (minfo["mi_epplot"] == "") {
-                        set_plot(minfo,"mi_epplot",episodeInfo["/Data/Episode/Overview"]);
+                        minfo["mi_epplot"] = clean_plot(episodeInfo["/Data/Episode/Overview"]);
                     }
 
                     if (minfo["mi_eptitle"] != "" ) {
@@ -1706,16 +1712,14 @@ xml,filter,r) {
         filter[r"/BannerType"] = "season";
         filter[r"/Season"] = minfo["mi_season"];
         if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-            minfo["mi_poster"] = tvDbImageUrl(xml[r"/BannerPath"]);
-            DEBUG("Season Poster URL = "minfo["mi_poster"]);
+            best_source(minfo,"mi_poster",tvDbImageUrl(xml[r"/BannerPath"]),"thetvdb");
         }
 
         delete filter;
         filter[r"/Language"] = language;
         filter[r"/BannerType"] = "fanart";
         if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-            minfo["mi_fanart"] = tvDbImageUrl(xml[r"/BannerPath"]);
-            DEBUG("Fanart URL = "minfo["mi_fanart"]);
+            best_source(minfo,"mi_fanart",tvDbImageUrl(xml[r"/BannerPath"]),"thetvdb");
         }
     }
 }
@@ -1737,7 +1741,7 @@ function set_eptitle(minfo,title) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_rage(lang,minfo,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
+seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag,plot) {
 
     pi="TVRAGE";
     result = 0;
@@ -1752,7 +1756,8 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
 
         url=urladd(seriesInfo["/Show/showlink"],"remove_add336=1&bremove_add=1");
-        set_plot(minfo,"mi_plot",scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
+        plot = clean_plot(scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
+        best_source(minfo,"mi_plot",plot,"tvrage");
 
         minfo["mi_tvid_plugin"]="TVRAGE";
         minfo["mi_tvid"]=seriesInfo["/Show/showid"];
@@ -1795,7 +1800,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag) {
 
                     sub(/ *There are no foreign summaries.*/,"",p);
                     if (p != "" && index(p,"There is no summary") == 0) {
-                        set_plot(minfo,"mi_epplot",p);
+                        minfo["mi_epplot"] = clean_plot(p);
                         DEBUG("rage epplot :"minfo["mi_epplot"]);
                     }
                 }

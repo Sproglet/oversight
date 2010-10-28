@@ -591,15 +591,19 @@ score) {
 
         gPriority["mi_plot","themoviedb"]=60;
         gPriority["mi_plot","thetvdb"]=60;
-    }
-    if (gPriority[field,source]) {
 
-        ERR("field_priority: Unknown "field" source ["source"]");
-        score = gPriority["default"];
+        gPriority["mi_rating","themoviedb"]=20;
+        gPriority["mi_rating","thetvdb"]=20;
+        gPriority["mi_rating","imdb"]=60;
+    }
+    score = gPriority[field,source];
+    if (score) {
+
+        DEBUG("field_priority("field","source")="score);
 
     } else {
-        score = gPriority[field,source];
-        DEBUG("field_priority("field","source")="score);
+        ERR("field_priority: Unknown "field" source ["source"]");
+        score = gPriority["default"];
     }
     return score;
 }

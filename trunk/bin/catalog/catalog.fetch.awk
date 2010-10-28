@@ -101,7 +101,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 
     args=" -U \""g_user_agent"\" "g_wget_opts;
     default_referer = get_referer(url);
-    if (check_domain_ok(default_referer) == 0) {
+    if (check_domain_speed(default_referer) == 0) {
         return 1;
     }
     if (referer == "") {
@@ -158,23 +158,33 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
 #ALL#    }
     return 0+ result;
 }
-# Check a domain responds quickly.
-function check_domain_ok(url,\
-start,tries,timeout) {
+
+#TODO We have to watch out for dns servers that return false hits on bad domains.
+#for time being this should mainly be called to check a url on a known web server so DNS issues should not matter.
+# 0=ok 1=error 2=timeout
+function url_state(url,\
+ret,start,tries,timeout) {
+    tries=2;
+    timeout=5;
+    start=systime();
+    ret = system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url));
+
+    #if wget ok - check timeout
+    if (systime() - start >= tries * timeout ) { 
+        WARNING("timeout with domain ["url"]");
+        ret = 2;
+    } else if (ret) { # some other error occured
+        ret = 1;
+    }
+    return ret;
+}
+
+# Check a domain responds quickly. 1=ok
+function check_domain_speed(url) {
 
     if (!(url in g_domain_status)) {
-        start=systime();
-        tries=2;
-        timeout=5;
-        if (system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url)"/favicon.ico") ) {
-            g_domain_status[url]=1;
-        } else if (systime() - start  >= tries * timeout ) {
-            WARNING("Error with domain ["url"]");
-            g_domain_status[url]=0;
-        } else {
-            # Error getting page but not a timeout so assume domain is ok
-            g_domain_status[url]=1;
-        }
+        # As long as domain resonds we only care about timeouts
+        g_domain_status[url] = (url_state(url"/favicon.ico") != 2 );
     }
     return g_domain_status[url];
 }

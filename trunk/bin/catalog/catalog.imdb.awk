@@ -280,11 +280,19 @@ id) {
     return id;
 }
 
-function extractImdbLink(text,quiet,\
+function extractImdbLink(text,quiet,lang,\
 t) {
     t = extractImdbId(text,quiet);
     if (t != "") {
         t = "http://www.imdb.com/title/"t"/"; # Adding the / saves a redirect
+        if (lang && lang != "en" ) {
+            if(lang ~ /^(de|dk|ee|es|fm|fr|ge|it|pt)$/ ) {
+                sub("com",lang,t);
+            } else {
+                INF("No localized imdb for "lang);
+                t = "";
+            }
+        }
     }
     return t;
 }

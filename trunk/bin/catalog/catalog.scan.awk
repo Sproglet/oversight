@@ -1,13 +1,13 @@
 # Folder and file scanning functions
 
-function scan_folder_for_new_media(lang,folderArray,scan_options,\
+function scan_folder_for_new_media(folderArray,scan_options,\
 f,fcount,total,done) {
 
     for(f in folderArray ) {
 
         if (folderArray[f] && !(f in done)) {
             report_status("folder "++fcount);
-            total += scan_contents(lang,folderArray[f],scan_options);
+            total += scan_contents(folderArray[f],scan_options);
             done[f]=1;
         }
     }
@@ -65,13 +65,12 @@ function dir_contains(dir,pattern) {
 }
 
 # Input is ls -lR or ls -l
-function scan_contents(lang,root,scan_options,\
+function scan_contents(root,scan_options,\
 tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
-    INF("scan_contents lang="lang);
+    INF("scan_contents" root);
     qfile = new_capture_file("dbqueue");
-    DEBUG("Scanning "root);
     if (root == "") return;
 
     # Get all files already scanned at root level
@@ -124,7 +123,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
            # If the folder has changed and we have more than n items then process them
            # this is to save memory. As this removes stored data we only do this if we 
            # change folder. This ensures we process multipart files together.
-           total += identify_and_catalog(minfo,lang,qfile,0,person_extid2name);
+           total += identify_and_catalog(minfo,qfile,0,person_extid2name);
 
            clear_folder_info();
 
@@ -215,7 +214,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                        identify_and_catalog(minfo,lang,qfile,0,person_extid2name);
+                        identify_and_catalog(minfo,qfile,0,person_extid2name);
                         storeMovie(minfo,f"/",d,ts,"/$",".nfo",files_in_db);
                     }
                 }
@@ -308,7 +307,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
-                    identify_and_catalog(minfo,lang,qfile,0,person_extid2name);
+                    identify_and_catalog(minfo,qfile,0,person_extid2name);
                     storeMovie(minfo,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo",files_in_db)
                 }
             }
@@ -318,7 +317,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     close(tempFile);
 
-    total += identify_and_catalog(minfo,lang,qfile,1,person_extid2name);
+    total += identify_and_catalog(minfo,qfile,1,person_extid2name);
 
     DEBUG("Finished Scanning "root);
     return 0+total;
@@ -477,7 +476,7 @@ ret) {
    return ret;
 }
 
-function identify_and_catalog(minfo,lang,qfile,force_merge,person_extid2name,\
+function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,\
 cat,minfo2) {
@@ -549,40 +548,40 @@ cat,minfo2) {
                     cat="";
 
                     if (bestUrl) {
-                        cat = scrapeIMDBTitlePage(minfo,bestUrl,lang);
+                        cat = scrapeIMDBTitlePage(minfo,bestUrl);
                     }
 
                     if (cat == "M" ) {
 
                         # Its definitely a movie according to IMDB or NFO
-                        cat = movie_search(minfo,bestUrl,lang);
+                        cat = movie_search(minfo,bestUrl);
 
                     } else if (cat == "T" ) {
 
                         # Its definitely a series according to IMDB or NFO
                         # get the episode info
                         hash_copy(minfo2,minfo);
-                        checkTvFilenameFormat(lang,minfo2,"");
+                        checkTvFilenameFormat(minfo2,"");
                         minfo["mi_season"] = minfo2["mi_season"];
                         minfo["mi_episode"] = minfo2["mi_episode"];
                         minfo["mi_additional_info"] = minfo2["mi_additional_info"];
 
-                        cat = tv_search_simple(minfo,bestUrl,lang);
+                        cat = tv_search_simple(minfo,bestUrl);
 
                     } else {
 
                         # Not sure - try a TV search looking for various abbreviations.
-                        cat = tv_search_complex(minfo,bestUrl,lang);
+                        cat = tv_search_complex(minfo,bestUrl);
 
                         if (cat != "T") {
                             # Could not find any hits using tv abbreviations, try heuristis for a movie search.
                             # This involves searching web for imdb id.
-                            cat = movie_search(minfo,bestUrl,lang);
+                            cat = movie_search(minfo,bestUrl);
                             if (cat == "T") {
                                 # If we get here we found an IMDB id , but it looks like a TV show after all.
                                 # This may happen with mini-series that do not have normal naming conventions etc.
                                 # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                                cat = tv_search_simple(minfo,bestUrl,lang);
+                                cat = tv_search_simple(minfo,bestUrl);
                             }
                         }
                     }

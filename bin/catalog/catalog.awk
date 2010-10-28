@@ -400,7 +400,7 @@ END{
 
         g_api_tvdb = apply(g_api_tvdb);
         g_api_tmdb = apply(g_api_tmdb);
-        g_grand_total = scan_folder_for_new_media("en",FOLDER_ARR,scan_options);
+        g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
         delete g_updated_plots;
 

@@ -283,7 +283,7 @@ search_url,txt,xml,f,url,url2) {
                 parseXML(txt,xml);
                 if (xml["/image#type"] == type && xml["/image#size"] == size ) {
                     url2=url_encode(html_decode(xml["/image#url"]));
-                    if (exec("wget "g_wget_opts" --spider "url2) == 0 ) {
+                    if (url_state(url2) == 0) {
                         url = url2;
                         break;
                     }

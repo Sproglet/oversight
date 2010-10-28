@@ -5,7 +5,7 @@
 # RET 0 - no format found
 #     1 - tv format found - needs to be confirmed by scraping 
 #
-function checkTvFilenameFormat(lang,minfo,plugin,more_info,\
+function checkTvFilenameFormat(minfo,plugin,more_info,\
 details,line,dirs,d,dirCount,dirLevels,ret,name) {
 
    delete more_info;
@@ -28,7 +28,7 @@ details,line,dirs,d,dirCount,dirLevels,ret,name) {
 
    for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 
-       if (extractEpisodeByPatterns(lang,plugin,line,details)==1) {
+       if (extractEpisodeByPatterns(plugin,line,details)==1) {
            ret = 1;
            break;
        }
@@ -121,7 +121,7 @@ terms,results,id,url,parts,showurl) {
     return id;
 }
 # If Plugin != "" then it will also check episodes by date.
-function extractEpisodeByPatterns(lang,plugin,line,details,\
+function extractEpisodeByPatterns(plugin,line,details,\
 ret,p,pat,i,parts,sreg,ereg) {
 
     #Note if looking at entire path name folders are seperated by /
@@ -172,7 +172,7 @@ ret,p,pat,i,parts,sreg,ereg) {
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
-            ret = extractEpisodeByDates(lang,plugin,line,details);
+            ret = extractEpisodeByDates(plugin,line,details);
         } else {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
@@ -319,7 +319,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
     return ret;
 }
 
-function extractEpisodeByDates(lang,plugin,line,details,\
+function extractEpisodeByDates(plugin,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
     result=0;
@@ -343,7 +343,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
             id1("Checking "tvdbid);
 
-            if (get_tv_series_info(lang,plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
+            if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
                 if (plugin == "THETVDB" ) {
 
@@ -401,8 +401,9 @@ episodeInfo,url) {
         details[ADDITIONAL_INF]=episodeInfo["/Data/Episode/EpisodeName"];
         #TODO We can cache the above url for later use instead of fetching episode explicitly.
         # Setting this will help short circuit searching later.
-        #equate_urls(url,g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
+
         equate_urls(url,g_thetvdb_web"/data/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
+
         #minfo["mi_imdb"]=get_tv_series_api_url(tvdbid);
         #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "minfo["mi_imdb"]);
         #dump(0,"epinfo",episodeInfo);
@@ -436,14 +437,14 @@ function remove_season(t) {
     return clean_title(t);
 }
 
-function tv_search_simple(minfo,bestUrl,lang) {
-    id1("tv_search_simple lang="lang);
-    return tv_check_and_search_all(minfo,bestUrl,lang,0);
+function tv_search_simple(minfo,bestUrl) {
+    id1("tv_search_simple");
+    return tv_check_and_search_all(minfo,bestUrl,0);
 }
 
-function tv_search_complex(minfo,bestUrl,lang) {
-    id1("tv_search_complex lang="lang);
-    return tv_check_and_search_all(minfo,bestUrl,lang,1);
+function tv_search_complex(minfo,bestUrl) {
+    id1("tv_search_complex ");
+    return tv_check_and_search_all(minfo,bestUrl,1);
 }
 
 
@@ -455,7 +456,7 @@ function tv_search_complex(minfo,bestUrl,lang) {
 #
 # returns cat="T" tv show , "M" = movie , "" = unknown.
 
-function tv_check_and_search_all(minfo,bestUrl,lang,check_tv_names,\
+function tv_check_and_search_all(minfo,bestUrl,check_tv_names,\
 plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
 
 
@@ -477,7 +478,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
 
         if (check_tv_names) {
 
-            if (checkTvFilenameFormat(lang,minfo,plugin,more_info)) {
+            if (checkTvFilenameFormat(minfo,plugin,more_info)) {
 
                 search_abbreviations = more_info[1];
 
@@ -493,7 +494,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
             search_abbreviations = 0;
         }
         if (do_search) {
-            tv_status = tv_search(plugin,minfo,bestUrl,lang,search_abbreviations);
+            tv_status = tv_search(plugin,minfo,bestUrl,search_abbreviations);
             if (minfo["mi_episode"] !~ "^[0-9]+$" ) {
                 #no point in trying other tv plugins
                 break;
@@ -510,12 +511,12 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info) {
 }
 
 # 0=nothing found 1=series but no episode 2=series+episode
-function tv_search(plugin,minfo,imdbUrl,lang,search_abbreviations,\
+function tv_search(plugin,minfo,imdbUrl,search_abbreviations,\
 tvDbSeriesPage,result,tvid,cat,iid) {
 
     result=0;
 
-    id1("tv_search ("plugin","imdbUrl","lang","search_abbreviations")");
+    id1("tv_search ("plugin","imdbUrl","search_abbreviations")");
 
     #This will succedd if we already have the tvid when doing the checkTvFilenameFormat
     #checkTvFilenameFormat() may fetch the tvid while doing a date check for daily shows.
@@ -528,7 +529,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
 
     if (tvDbSeriesPage != "" ) { 
         # We know the TV id - use this to get the imdb id
-        result = get_tv_series_info(lang,plugin,minfo,tvDbSeriesPage); #this may set imdb url
+        result = get_tv_series_info(plugin,minfo,tvDbSeriesPage); #this may set imdb url
         if (result) {
             if (minfo["mi_imdb"] != "") {
                 # we also know the imdb id
@@ -537,7 +538,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
                 # use the tv id to find the imdb id
                 iid=tv2imdb(minfo);
             }
-            cat = scrapeIMDBTitlePage(minfo,iid,lang);
+            cat = scrapeIMDBTitlePage(minfo,iid);
         }
     } else {
         # dont know the tvid
@@ -554,13 +555,13 @@ tvDbSeriesPage,result,tvid,cat,iid) {
         }
         if (imdbUrl != "") {
             # use the imdb id to find the tv id
-            cat = scrapeIMDBTitlePage(minfo,imdbUrl,lang);
+            cat = scrapeIMDBTitlePage(minfo,imdbUrl);
             if (cat != "M" ) {
                 # find the tvid - this can miss if the tv plugin api does not have imdb lookup
                 tvid = find_tvid(plugin,minfo,extractImdbId(imdbUrl));
                 if(tvid != "") {
                     tvDbSeriesPage = get_tv_series_api_url(plugin,tvid);
-                    result = get_tv_series_info(lang,plugin,minfo,tvDbSeriesPage);
+                    result = get_tv_series_info(plugin,minfo,tvDbSeriesPage);
                 }
             }
         }
@@ -1081,21 +1082,26 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
     return tvDbSeriesUrl;
 }
 
-function get_tv_series_api_url(plugin,tvdbid) {
+function get_tv_series_api_url(plugin,tvdbid,\
+url,i,num,langs) {
     if (tvdbid != "") {
         if (plugin == "THETVDB") {
-            if (g_tvdb_user_per_episode_api) {
-                #return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/en.xml";
-                return g_thetvdb_web"/data/series/"tvdbid"/en.xml";
-            } else {
-                #return g_thetvdb_web"/api/"g_api_tvdb"/series/"tvdbid"/all/en.xml";
-                return g_thetvdb_web"/data/series/"tvdbid"/all/en.xml";
+
+
+            num = get_langs(langs);
+            for(i = 1 ; i <= num ; i++ ) {
+                if (g_tvdb_user_per_episode_api) {
+                    url = g_thetvdb_web"/data/series/"tvdbid"/"langs[i]".xml";
+                } else {
+                    url = g_thetvdb_web"/data/series/"tvdbid"/all/"langs[i]".xml";
+                }
+                if (url_state(url) == 0) break;
             }
         } else if (plugin == "TVRAGE") {
-            return "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
+            url = "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
         }
     }
-    return "";
+    return url;
 }
 
 
@@ -1499,7 +1505,7 @@ episodeUrl ) {
     if (plugin == "THETVDB") {
         if (g_tvdb_user_per_episode_api) {
             #Note episode may be 23,24 so convert to number.
-            if (sub(/en.xml$/,"default/"season"/"(episode+0)"/en.xml",episodeUrl)) {
+            if (sub(/[a-z][a-z].xml$/,"default/"season"/"(episode+0)"/&",episodeUrl)) {
                 return episodeUrl;
             }
         } else {
@@ -1551,10 +1557,10 @@ episodeUrl,filter,result) {
 }
 
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info(lang,plugin,minfo,tvDbSeriesUrl,\
+function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,\
 result) {
 
-    id1("get_tv_series_info("lang","plugin"," tvDbSeriesUrl")");
+    id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
 
     # mini-series may not have season set
     if (minfo["mi_season"] == "") {
@@ -1562,9 +1568,9 @@ result) {
     }
 
     if (plugin == "THETVDB") {
-        result = get_tv_series_info_tvdb(lang,minfo,tvDbSeriesUrl);
+        result = get_tv_series_info_tvdb(minfo,tvDbSeriesUrl);
     } else if (plugin == "TVRAGE") {
-        result = get_tv_series_info_rage(lang,minfo,tvDbSeriesUrl);
+        result = get_tv_series_info_rage(minfo,tvDbSeriesUrl);
     } else {
         plugin_error(plugin);
     }
@@ -1617,10 +1623,11 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info_tvdb(lang,minfo,tvDbSeriesUrl,\
+function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,\
 seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter,plot) {
 
     result=0;
+
     
     #fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
     fetch_xml_single_child(tvDbSeriesUrl,"thetvdb-series","/Data/Series",empty_filter,seriesInfo);
@@ -1650,7 +1657,7 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter,plot) {
 
 
         bannerApiUrl = tvDbSeriesUrl;
-        sub(/(all.|)en.xml$/,"banners.xml",bannerApiUrl);
+        sub(/(all.|)[a-z][a-z].xml$/,"banners.xml",bannerApiUrl);
 
         getTvDbSeasonBanner(minfo,bannerApiUrl,"en");
 
@@ -1740,7 +1747,7 @@ function set_eptitle(minfo,title) {
 }
 
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info_rage(lang,minfo,tvDbSeriesUrl,\
+function get_tv_series_info_rage(minfo,tvDbSeriesUrl,\
 seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag,plot) {
 
     pi="TVRAGE";

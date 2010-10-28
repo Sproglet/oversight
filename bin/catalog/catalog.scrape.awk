@@ -7,12 +7,12 @@
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
 function find_movie_page(text,title,year,runtime,director,minfo,\
-langs,num,i,err,minfo2) {
+lang,i,err,minfo2,num,langs) {
 
     err = 1;
     id1("find_movie_page text ["text"] title ["title"] year("year")");
 
-    num = split(g_settings["catalog_languages"],langs,",");
+    num = get_langs(langs);
     for ( i = 1 ; i <= num ; i++ ) {
         err=find_movie_by_lang(langs[i],text,title,year,runtime,director,minfo2);
         if (!err) {
@@ -345,7 +345,7 @@ flds,i,f) {
 
 
     # copy highest ranking fields into "new" before merging back down into current.
-    split("mi_plot,mi_title,mi_poster",flds,",");
+    split("mi_plot,mi_title,mi_poster,mi_rating",flds,",");
     for(i in flds) {
         f = flds[i];
         best_source(new,f,current[f],current[f"_source"]);
@@ -716,7 +716,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
         minfo["mi_category"] = "T";
     }
 
-    extract_rating(fragment,minfo);
+    extract_rating(fragment,minfo,domain);
 
     # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
     if (field == "" && minfo["mi_poster"] == "" && (index(fragment,"src=") || index(fragment,"href="))) {
@@ -749,7 +749,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
     return err;
 }
 
-function extract_rating(text,minfo,\
+function extract_rating(text,minfo,domain,\
 ret) {
     if (minfo["mi_rating"] == "") {
         if (index(text,"/") ) {
@@ -759,7 +759,7 @@ ret) {
             ret = subexp(text,"\\(([0-9][,.][0-9]+)\\)");
         }
         if (ret) {
-            minfo["mi_rating"] = ret;
+            best_source(minfo,"mi_rating",ret,domain);
             INF("Rating set ["ret"]");
         }
     }
@@ -768,6 +768,12 @@ ret) {
 function is_prose(text,\
 words,num,i,len) {
     len = length(text);
+
+    #remove hyperlinked text
+    if (index(text,"@label@")) {
+        gsub(/@label@[^@]+/,"",text);
+    }
+
     if (len > g_min_plot_len ) {
         num = split(text,words," ")+0;
         #DEBUG("words = "num" required "(length(text)/10));
@@ -860,12 +866,34 @@ key,regex,ret,lcfragment,dbg,all_keys) {
     return ret;
 }
 
-# return ""=unknown "M"=movie "T"=tv??
-function scrapeIMDBTitlePage(minfo,url,lang,\
-connections,remakes,ret) {
+function get_langs(langs,\
+i) {
+    for(i = 1; g_settings["catalog_lang"i] ~ /[a-z]+/ ; i++) {
+        langs[i] = g_settings["catalog_lang"i];
+    }
+    return i-1;
+}
 
-    if (scrape_movie_page("","","","","",extractImdbLink(url),lang,"imdb",minfo) == 0) {
-        ret = minfo["mi_category"];
+
+# return ""=unknown "M"=movie "T"=tv??
+function scrapeIMDBTitlePage(minfo,url,\
+connections,remakes,ret,i,num,langs,minfo2) {
+
+    if (get_themoviedb_info(extractImdbId(url),minfo2)) {
+        minfo_merge(minfo,minfo2);
+        # although we have moviedb info still need to get imdb info for collection info and rating.
+        # this wll be changed when collection nfo available via api.
+    }
+
+    num = get_langs(langs);
+    for(i = 1 ; i <= num ; i++) {
+
+        delete minfo2;
+        if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
+            ret = minfo2["mi_category"];
+            minfo_merge(minfo,minfo2);
+            break;
+        }
     }
     return ret;
 }
@@ -895,87 +923,6 @@ ret) {
     return ret;
 }
 
-
-#DEL# # return ""=unknown "M"=movie "T"=tv??
-#DEL# function scrapeIMDBTitlePageOld(minfo,url,lang,\
-#DEL# domain,f,line,imdbContentPosition,connections,remakes,ret,pagestate,namestate) {
-#DEL# 
-#DEL#     if (url == "" ) return;
-#DEL# 
-#DEL# #ALL TODO    domain=get_main_domain(url);
-#DEL# 
-#DEL# #ALL TODO    if (!load_plugin_settings("domain",domain)) {
-#DEL# #ALL TODO        return;
-#DEL# #ALL TODO    }
-#DEL# 
-#DEL#     #Remove /combined/episodes from urls given by epguides.
-#DEL#     url=extractImdbLink(url); # TODO Generic ID extraction
-#DEL# 
-#DEL#     if (url == "" ) return;
-#DEL# 
-#DEL#     id1("scrape lang="lang" domain="domain" ["url"]");
-#DEL# 
-#DEL#     if (minfo["mi_imdb"] == "") {
-#DEL#         minfo["mi_imdb"] = extractImdbId(url);
-#DEL#     }
-#DEL#     if (minfo["mi_imdb_scraped"] != minfo["mi_imdb"] ) {
-#DEL#         
-#DEL#         INF("scraping "url);
-#DEL# 
-#DEL#         f=getUrl(url,"imdb_main",1);
-#DEL# 
-#DEL#         if (f != "" ) {
-#DEL# 
-#DEL#             imdbContentPosition="head";
-#DEL# 
-#DEL#             DEBUG("START IMDB: title:"minfo["mi_title"]" poster "minfo["mi_poster"]" genre "minfo["mi_genre"]" cert "minfo["mi_certrating"]" year "minfo["mi_year"]);
-#DEL# 
-#DEL#             FS="\n";
-#DEL#             minfo["role"] = "";
-#DEL# 
-#DEL#             while(imdbContentPosition != "footer" && enc_getline(f,line) > 0  ) {
-#DEL#                 imdbContentPosition=scrape_imdb_line(line[1],imdbContentPosition,minfo,f,pagestate,namestate);
-#DEL#             }
-#DEL# 
-#DEL#             delete minfo["role"];
-#DEL#             delete minfo["role_max"];
-#DEL# 
-#DEL#             enc_close(f);
-#DEL# 
-#DEL#             if (minfo["mi_certcountry"] != "" && g_settings[g_country_prefix minfo["mi_certcountry"]] != "") {
-#DEL#                 minfo["mi_certcountry"] = g_settings[g_country_prefix minfo["mi_certcountry"]];
-#DEL#             }
-#DEL# 
-#DEL#         }
-#DEL# 
-#DEL#         if (minfo["mi_category"] == "M" ) {
-#DEL# 
-#DEL#             getNiceMoviePosters(minfo,extractImdbId(url));
-#DEL#             getMovieConnections(extractImdbId(url),connections);
-#DEL# 
-#DEL#             if (connections["Remake of"] != "") {
-#DEL#                 getMovieConnections(connections["Remake of"],remakes);
-#DEL#             }
-#DEL# 
-#DEL#             minfo["mi_conn_follows"]= connections["Follows"];
-#DEL#             minfo["mi_conn_followed_by"]= connections["Followed by"];
-#DEL#             minfo["mi_conn_remakes"]=remakes["Remade as"];
-#DEL# 
-#DEL#             INF("follows="minfo["mi_conn_follows"]);
-#DEL#             INF("followed_by="minfo["mi_conn_followed_by"]);
-#DEL#             INF("remakes="minfo["mi_conn_remakes"]);
-#DEL#         }
-#DEL# 
-#DEL#         # make sure we dont scrape this id for this item again
-#DEL#         minfo["mi_imdb_scraped"] = minfo["mi_imdb"];
-#DEL#     }
-#DEL#     ret = minfo["mi_category"];
-#DEL#     id0(ret);
-#DEL#     return ret;
-#DEL# }
-#DEL# 
-
-#
 # Extract Actor names and portraits from html.
 #
 # expect image to be  <a HREF=.. ><img SRC=...></a>

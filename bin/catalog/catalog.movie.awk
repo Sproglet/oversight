@@ -157,7 +157,9 @@ year,scrape_imdb,text) {
     # Finished Search. Scrape IMDB
     if (bestUrl && scrape_imdb) {
 
-        ret = scrapeIMDBTitlePage(minfo,bestUrl,lang);
+        get_themoviedb_info(extractImdbId(bestUrl),minfo);
+
+        ret = scrapeIMDBTitlePage(minfo,bestUrl);
 
     } 
     id0(bestUrl);

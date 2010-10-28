@@ -53,18 +53,44 @@ END {
 /^#ENDAWK/ { inawk=1; }
 
 inawk {
-    gsub(/\\./,""); #remove escaped characters.
+    #dbg = (index($0,"fm"));
+
+    if (dbg) print "in["$0"]";
+
+    #remove escaped characters.
+    if (gsub(/\\./,"") ) {
+        if (dbg) print "remove esc["$0"]";
+    }
 
     # comments
-    gsub(/^ *#.*/,"");
-    gsub(/[{;}] *#.*/,"");
+    if (gsub(/^ *#.*/,"")) {
+        if (dbg) print "comment1["$0"]";
+    }
+    if (gsub(/[{;}] *#.*/,"")) {
+        if (dbg) print "comment2["$0"]";
+    }
+
+    #quoted regex
+    if (index($0,"/")) {
+        while((i=index($0,"sub(/")) > 0) {
+            j=index($0,"/,");
+            if (j <= i) break;
+            $0 = substr($0,1,i+3)substr($0,j+1);
+        }
+        if (dbg) print "regex["$0"]";
+
+        while((i=index($0,"~ /")) > 0) {
+            j=i+2+index(substr($0,i+3),"/");
+            if (j <= i) break;
+            $0 = substr($0,1,i+1)substr($0,j+1);
+        }
+        if (dbg) print "regex["$0"]";
+    }
 
     #quoted strings - keep @ there to stop g"text"( becoming g( and looking like a function call
-    gsub(/"[^\"]*"/,"@");
-
-    #quoted regex`
-    gsub(/\/.*[^\/]\//,"@"); 
-
+    if (gsub(/"[^"]*"/,"\"@\"")) {
+        if (dbg) print "quotes["$0"]";
+    }
 
     gsub(/^[ \t]+/,""); # leading space
     gsub(/[ \t]+$/,""); # trailing space

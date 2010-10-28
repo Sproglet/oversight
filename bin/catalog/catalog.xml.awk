@@ -21,12 +21,12 @@ f,line,result) {
 #sep is used if merging repeated element values together
 function parseXML(line,info,ignorePaths,\
 sep,\
-currentTag,i,j,tag,text,lines,parts,sp,slash,tag_data_count,\
-attr,a_name,a_val,eq,attr_pairs,single_tag) {
+currentTag,oldTag,i,j,tag,text,parts,sp,slash,tag_data_count,\
+attr,attrnum,attrname,attr_parts,single_tag,taglen) {
 
     if (index(line,"<?")) return;
 
-    if (sep == "") sep = "<";
+    sep = "<";
 
     if (ignorePaths != "") {
         gsub(/,/,"|",ignorePaths);
@@ -38,8 +38,6 @@ attr,a_name,a_val,eq,attr_pairs,single_tag) {
         gsub(g_sigma,"e",line);
         INF("Sigma:"line);
     }
-
-
 
     #break at each tag/endtag
     # <tag1>text1</tag1>midtext<tag2>text2</tag2> becomes
@@ -54,27 +52,37 @@ attr,a_name,a_val,eq,attr_pairs,single_tag) {
     # tag2 />
     # /tag1> 
 
-    tag_data_count = split(line,lines,"<");
+
+    tag_data_count = split(line,parts,"[<>]");
 
     currentTag = info["@CURRENT"];
 
-    if (tag_data_count  && currentTag ) {
-        #If the line starts with text then add it to the current tag.
-        info[currentTag] = info[currentTag] lines[1];
-        #first item is blank
-    }
+    for(i = 1 ; i <= tag_data_count ; i++ ) {
 
+        if (i == tag_data_count) {
+            if (index(parts[i],"\r") || index(parts[i],"\n")) {
+                sub(/[\r\n]+$/,"",parts[i]);
+            }
+        }
 
-    for(i = 2 ; i <= tag_data_count ; i++ ) {
+        # process the text node ---------------
 
+        text = parts[i];
+        if (currentTag ) {
+            if (ignorePaths == "" || currentTag !~ ignorePaths) {
+                #If merging element values add a sepearator
+                if (currentTag in info) {
+                    text = sep text;
+                }
+                info[currentTag] = info[currentTag] text;
+            }
+        }
 
-        # lines[i] = tag>text
-        # lines[i] = tag attr >text
-        # lines[i] = tag attr />
-        # lines[i] = /tag>
+        # Move on to process the tag ---------------
 
-        #split <tag>text  [ or </tag>parenttext ]
-        split(lines[i],parts,">");
+        i++;
+        tag = parts[i];
+        taglen = length(tag);
 
         # part[1] = tag 
         # part[1] = tag attr1
@@ -83,26 +91,15 @@ attr,a_name,a_val,eq,attr_pairs,single_tag) {
         # part[2] = text
 
 
-        tag = parts[1];
-        text = parts[2];
         single_tag = 0;
-
-        if (i == tag_data_count) {
-            # Carriage returns mess up parsing
-            j = index(text,"\r");
-            if (j) text = substr(text,1,j-1);
-
-            j = index(text,"\n");
-            if (j) text = substr(text,1,j-1);
-        }
 
         slash = index(tag,"/");
         if (slash == 1 )  {
 
-            # end tag
-            # part[1] = /tag
+            # /tag
 
-            currentTag = substr(currentTag,1,length(currentTag)-length(tag));
+            #currentTag = substr(currentTag,1,length(currentTag)-taglen);
+            sub("/[^/]+$","",currentTag);
 
         } else {
 
@@ -110,54 +107,44 @@ attr,a_name,a_val,eq,attr_pairs,single_tag) {
             # part[1] = tag attr1
             # part[1] = tag attr1 /
 
-            if ( slash == length(tag) ||  (slash != 0 && substr(tag,length(tag)) == "/")) {
-                # part[1] = tag attr1 /
+            # check for empty tag.
+            if ( slash == taglen || substr(tag,taglen) == "/") {
+                #tag has no data element.
                 # Check appears more complex in case attribute contains slash.
                 single_tag = 1;
-            }
 
+            }
 
             if ((sp=index(tag," ")) != 0) {
                 #Remove attributes Possible bug if space before element name
                 tag=substr(tag,1,sp-1);
             }
 
+            oldTag = currentTag;
             currentTag = currentTag "/" tag;
-
-
-             #If merging element values add a sepearator
             if (currentTag in info) {
-                text = sep text;
-            }
-
-        }
-
-        if (text) {
-            if (ignorePaths == "" || currentTag !~ ignorePaths) {
-                info[currentTag] = info[currentTag] text;
+                for(j=2; ( (currentTag"@"j) in info ) ; j++ ) ;
+                currentTag = currentTag "@" j;
             }
         }
 
         #parse attributes.
         
-        if (index(parts[1],"=")) {
-            get_regex_counts(parts[1],"[:A-Za-z_][-_A-Za-z0-9.]+=((\"[^\"]*\")|([^\"][^ \"'>=]*))",0,attr_pairs);
-            for(attr in attr_pairs) {
-                eq=index(attr,"=");
-                a_name=substr(attr,1,eq-1);
-                a_val=substr(attr,eq+1);
-                if (index(a_val,"\"")) {
-                    sub(/^"/,"",a_val);
-                    sub(/"$/,"",a_val);
+        if (index(parts[i],"=")) {
+            attr=gensub(/([:A-Za-z_][-_:A-Za-z0-9.]+)=("([^"]*)"|([^"][^ "'>=]*))/,SUBSEP"\\1"SUBSEP"\\3\\4"SUBSEP,"g",parts[i]);
+            attrnum = split(attr,attr_parts,SUBSEP);
+            for(attr = 2 ; attr <= attrnum ; attr += 3 ) {
+                attrname=currentTag"#"attr_parts[attr];
+                if (attrname in info) {
+                    info[attrname]=info[attrname] sep attr_parts[attr+1];
+                } else {
+                    info[attrname]=attr_parts[attr+1];
                 }
-                info[currentTag"#"a_name]=a_val;
             }
-
         }
         if (single_tag) {
-            currentTag = substr(currentTag,1,length(currentTag)-length(tag));
+            currentTag = oldTag;
         }
-
     }
 
     info["@CURRENT"] = currentTag;

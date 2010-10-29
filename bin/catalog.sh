@@ -267,7 +267,7 @@ catalog() {
     # clear arrays using split("",array,"")
 
     awk_prg="$AWK "
-    for f in $APPDIR/bin/catalog/catalog*awk ; do
+    for f in $APPDIR/bin/catalog/*.awk ; do
         awk_prg="$awk_prg -f $f"
     done
 

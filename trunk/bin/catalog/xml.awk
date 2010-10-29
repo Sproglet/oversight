@@ -237,30 +237,39 @@ f,found) {
 }
 
 # split the filter list into numbers , strings and regexs
+# return number of filters
 function reset_filters(tagfilters,numbers,strings,regexs,\
-t) {
+t,ret) {
+    ret = 0;
    for(t in tagfilters) {
        DEBUG("filter ["t"]=["tagfilters[t]"]");
 
        if (tagfilters[t] ~ "^[0-9]+$" ) {
            numbers[t] = tagfilters[t];
+           ret++;
 
        } else if (substr(tagfilters[t],1,2) == "~:") {
 
            regexs[t] = tolower(substr(tagfilters[t],3));
+           ret++;
 
        } else {
 
            strings[t] = tagfilters[t];
+           ret++;
 
        }
    }
+   dump(0,"numbers",numbers);
+   dump(0,"strings",strings);
+   dump(0,"regexs",regexs);
+   return ret;
 }
 
 # certain paths can be ignored to reduce memory footprint.
 function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths,\
 numbers,strings,regexs,found,\
-line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
+line,start_tag,end_tag,last_tag,number_type,regex_type,string_type,do_filter) {
 
    delete xmlout;
    found=0;
@@ -275,11 +284,7 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
    start_tag="<"last_tag">";
    end_tag="</"last_tag">";
 
-   reset_filters(tagfilters,numbers,strings,regexs);
-
-   dump(0,"numbers",numbers);
-   dump(0,"strings",strings);
-   dump(0,"regexs",regexs);
+   do_filter = reset_filters(tagfilters,numbers,strings,regexs);
 
 
     if (f != "") {
@@ -287,13 +292,11 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
 
         while(enc_getline(f,line) > 0 ) {
 
-
             if (index(line[1],start_tag) > 0) {
                 # start of new child we are interested in. Clear all existing
                 # child info. But keep parent info.
                 clean_xml_path(xmlpath,xmlout);
             }
-
 
             if (!parseXML(line[1],xmlout,ignorePaths)) {
                 break;
@@ -301,8 +304,8 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
 
             if (index(line[1],end_tag) > 0) {
 
-                found = check_filtered_element(xmlout,"",numbers,strings,regexs);
-                if (found) {
+                if (do_filter == 0 || check_filtered_element(xmlout,"",numbers,strings,regexs)) {
+                    found = 1;
                     DEBUG("Filter matched.");
                     break;
                 }
@@ -361,12 +364,12 @@ found,t,tag) {
 #OUT array of items. - index=order value=tag path
 #RETURN number of matches.
 function find_elements(xml,root,filters,maxtags,tagsout,\
-root_re,numbers,strings,regexs,found,num,tag,child,numtags) {
+root_re,numbers,strings,regexs,found,num,tag,child,numtags,do_filter) {
 
     delete tagsout;
     num=0;
     found = 0;
-    reset_filters(filters,numbers,strings,regexs);
+    do_filter = reset_filters(filters,numbers,strings,regexs);
 
     #Create re to match on array elements.
     # Convert /parent/child to /parent(>[0-9]+|)/child(>[0-9]+|)
@@ -380,14 +383,14 @@ root_re,numbers,strings,regexs,found,num,tag,child,numtags) {
         if ( match(xml[tag],root_re)) {
             child = substr(xml[tag],RSTART,RLENGTH);
             #DEBUG("XX possible ["child"] from tag ["xml[tag]"]");
-            found = check_filtered_element(xml,child,numbers,strings,regexs);
-            if (found) {
+
+            if (do_filter == 0 || check_filtered_element(xml,child,numbers,strings,regexs)) {
+
                 DEBUG("Filter matched ["child"]");
                 tagsout[++num] = child;
                 if (maxtags && num >= maxtags) {
                     break;
                 }
-                break;
             }
         }
     }

@@ -12,7 +12,6 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2) {
     for(i = 1 ; i<= num ; i++ ) {
         url="http://api.themoviedb.org/2.1/Movie.imdbLookup/"langs[i]"/xml/"g_api_tmdb"/"imdb_id;
 
-        #xmlret = fetch_xml_single_child(url,"themoviedb",root,empty_filter,xml);
         xmlret = fetchXML(url,"themoviedb",xml);
 
         #dump(0,"themoviedb",xml);

@@ -180,7 +180,7 @@ f,line,count,linecount,remain,is_imdb,matches2,i) {
                 }
             }
         }
-        close(f);
+        enc_close(f);
     }
     dump(2,count" matches",matches);
     id0(count);

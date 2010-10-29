@@ -53,7 +53,8 @@ END {
 /^#ENDAWK/ { inawk=1; }
 
 inawk {
-    #dbg = (index($0,"fm"));
+    # For debugging uncomment and change the matched text as required.
+    # dbg = (index($0,"fname"));
 
     if (dbg) print "in["$0"]";
 
@@ -111,6 +112,11 @@ function fstart(fname,param_list) {
 
 }
 
+function set_part(x)  {
+    if (dbg) print "part="x;
+    part=x;
+}
+
 /^function/ && inawk {
    gsub(/[^_0-9A-Za-z]+/," ",$0);
    fname=$2
@@ -120,11 +126,11 @@ function fstart(fname,param_list) {
 
    #print "params "params[fname];
    if (br_open) {
-       part="body";
+       set_part("body");
    } else if (cont_line) {
-       part="local";
+       set_part("local");
    } else {
-       part="params";
+       set_part("params");
    }
    next;
 }
@@ -133,23 +139,23 @@ part=="params" {
       params[fname] = params[fname] " " $0;
       gsub(/[^_0-9A-Za-z]+/," ",params[fname]);
       if (br_open) {
-          part="body";
+          set_part("body");
       } else if (cont_line) {
-          part="local";
+          set_part("local");
       }
       next;
 }
 /^BEGIN\>/ && inawk {
    fname="BEGIN";
    fstart(fname,$0);
-   part="body";
+   set_part("body");
    print "BEGIN";
 }
 
 /^END\>/ && inawk {
    fname="END";
    fstart(fname,$0);
-   part="body";
+   set_part("body");
    print "END";
 }
 
@@ -157,9 +163,9 @@ part=="local" {
       local[fname] = local[fname] " " $0;
       gsub(/[^_0-9A-Za-z]+/," ",local[fname]);
       if (br_open) {
-          part="body";
+          set_part("body");
       } else if (cont_line) {
-          part="local";
+          set_part("local");
       }
       next;
 }
@@ -168,36 +174,34 @@ part=="body" {
 
     l = $0;
 
-    debug = 0;
-
     #eg a(b (c)) + ( 6 ) 
 
     #remove all spaces surrounding open brackets 
     #eg a(b(c))+(6) 
     gsub(/ +\( */," (",l); 
-    if (debug) print "X1X ["l"]";
+    if (dbg) print "X1X ["l"]";
 
     # insert one space after open brackets
     #eg a( b( c))+( 6) 
     gsub(/\(/,"( ",l); 
-    if (debug) print "X2X ["l"]";
+    if (dbg) print "X2X ["l"]";
 
     # remove all open brackets that are not preceded by alnum (also removes the non-alnum but we dont care)
     #eg a( b( c))+ 6) 
     while(match(l,"[^_0-9A-Za-z]\\(")) {
         l = substr(l,1,RSTART) substr(l,RSTART+RLENGTH);
     }
-    if (debug) print "X3X ["l"]";
+    if (dbg) print "X3X ["l"]";
 
     # remove all non alphanumerics leave function calls as name(
     gsub(/[^_0-9A-Za-z(]+/," ",l);
-    if (debug) print "X4X ["l"]";
+    if (dbg) print "X4X ["l"]";
 
     body[fname] = body[fname] " " l;
 
-    if (br_close && br_count == 0) {
-        part="ignore";
-    }
+#    if (br_close && br_count == 0) {
+#        set_part("ignore");
+#    }
 }
 
 # remove all integers and all non-alphanumber strings (keep open brackets for function calls)
@@ -212,7 +216,9 @@ tmp) {
     delete names;
     split(clean(t),tmp," ");
     for(i in tmp) {
-        names[tmp[i]] ++;
+        if (tmp[i] ~ "^[_A-Za-z]" ) {
+            names[tmp[i]] ++;
+        }
     }
 }
 
@@ -290,7 +296,7 @@ function analyse(f,\
 }
 
 /^#ENDAWK/ {
-    part="";
+    set_part("");
 }
 
     ' "$@"

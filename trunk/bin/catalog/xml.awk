@@ -2,29 +2,40 @@
 #Load an xml file into array - note duplicate elements are clobbered.
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
 function fetchXML(url,label,xml,ignorePaths,\
-f,line,result) {
-    result = 0;
+f) {
     f=getUrl(url,label,1);
+    return readXML(f,xml,ignorePaths);
+}
+
+# ok=1 failed=0
+function readXML(f,xml,ignorePaths,\
+line,ret) {
+    ret = 0;
     if (f != "" ) {
         FS="\n";
-        while((getline line < f) > 0 ) {
-            parseXML(line,xml,ignorePaths);
+        while(enc_getline(f,line) > 0 ) {
+            ret = 1;
+            if (!parseXML(line[1],xml,ignorePaths)) {
+                ret = 0;
+                break;
+            }
         }
-        close(f);
-        result = 1;
+        enc_close(f);
     }
-    return 0+ result;
+    return ret;
 }
 
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 # @ignorePaths = csv of paths to ignore
 #sep is used if merging repeated element values together
+# ret 1=parsed ok 0=error
 function parseXML(line,xml,ignorePaths,\
 sep,\
 currentTag,oldTag,i,tag,text,parts,sp,slash,tag_data_count,\
-attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags) {
+attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
 
-    if (index(line,"<?")) return;
+    if (index(line,"<?")) return 1;
+    ret = 1;
 
     sep = "<";
 
@@ -80,7 +91,15 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags) {
                 }
                 xml[currentTag] = xml[currentTag] text;
             }
+        } else {
+            # No tag yet - check only white space
+            if (text !~ "^[ \t]*$" ) {
+                ERR("encountered text outside of xml ["text"]");
+                ret = 0;
+                break;
+            }
         }
+
 
         # Move on to process the tag ---------------
 
@@ -184,6 +203,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags) {
 
     xml["@CURRENT"] = currentTag;
     xml["@count"] = numtags;
+    return ret;
 }
 function clean_xml_path(xmlpath,xml,\
 t,xmlpathSlash,xmlpathHash) {
@@ -265,19 +285,21 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
     if (f != "") {
         FS="\n";
 
-        while((getline line < f) > 0 ) {
+        while(enc_getline(f,line) > 0 ) {
 
 
-            if (index(line,start_tag) > 0) {
+            if (index(line[1],start_tag) > 0) {
                 # start of new child we are interested in. Clear all existing
                 # child info. But keep parent info.
                 clean_xml_path(xmlpath,xmlout);
             }
 
 
-            parseXML(line,xmlout,ignorePaths);
+            if (!parseXML(line[1],xmlout,ignorePaths)) {
+                break;
+            }
 
-            if (index(line,end_tag) > 0) {
+            if (index(line[1],end_tag) > 0) {
 
                 found = check_filtered_element(xmlout,"",numbers,strings,regexs);
                 if (found) {
@@ -288,7 +310,7 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
             }
 
         }
-        close(f);
+        enc_close(f);
     }
     if (!found) {
         clean_xml_path(xmlpath,xmlout);

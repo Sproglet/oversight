@@ -609,18 +609,14 @@ score) {
         DEBUG("field_priority("field","source")="score);
 
     } else {
-        ERR("field_priority: Unknown "field" source ["source"]");
 
         # Generally give priority to tmdb and thetvdb first, then imdb (which we are phasing out) , finally anything else.
-        if (source == "imdb" ) {
-            score = 50 # default imdb score
-        } else if (source == "themoviedb" ) {
-            score = 60 # default tmdb score
-        } else if (source == "thetvdb" ) {
-            score = 60 # default thetvdb score
+        if (source == "@nfo" ) {
+            score = 99; # default nfo score - highest
         } else {
             score = gPriority["default"];
         }
+        DEBUG("field_priority: "field" source ["source"] defaults to "score);
     }
     return score;
 }
@@ -630,34 +626,34 @@ oldSrc,ret) {
 
     source = tolower(source);
 
-    oldSrc=minfo[field"_source"]":["minfo[field]"] ";
+    oldSrc="[fld="field":src="minfo[field"_source"]":val="minfo[field]"]";
 
     if (minfo[field] == "" ) {
 
-        INF("is_better_source "field" is blank.");
+        INF("is_better_source: "field" is currently blank. source ["source"] is better.");
         ret = 1;
 
     } else if (field_priority(field,source)+0 > field_priority(field,minfo[field"_source"])+0) {
 
-        INF("is_better_source "field": "oldSrc" beaten by "source);
+        INF("is_better_source "oldSrc" beaten by "source);
         ret = 1;
 
     } else {
 
-        INF("is_better_source "field": "oldSrc" outranks "source);
+        INF("is_better_source "oldSrc" outranks "source);
         ret = 0;
     }
     return ret;
 }
 function best_source(minfo,field,value,source,\
-oldSrc,newSrc,ret) {
+ret) {
 
     ret = 0;
     if (value) {
         if (is_better_source(minfo,field,source)) {
             minfo[field] = value;
             minfo[field"_source"] = source;
-            INF("best_source: "field" = ["value"]");
+            INF("best_source: "field" = "source":["value"]");
             ret = 1;
         }
     }
@@ -710,7 +706,7 @@ f,line,out,found,tokens,token_count,token_i) {
             }
             if (token_i - token_count > 0 ) {
                 # Now parse the item we want
-                out = scrape_until(label,f,end_text,end_include);
+                out = scrape_until(f,end_text,end_include);
                 if (start_include) {
                     #DEBUG("scrape_one_item line = "line[1]);
                     out = remove_tags(line[1]) out;
@@ -734,11 +730,11 @@ function isreg(t) {
     gsub(/\\./,"",t);
     return match(t,"[][().|$^+*]");
 }
-function scrape_until(label,f,end_text,inclusive) {
+function scrape_until(f,end_text,inclusive) {
     
-    return trim(remove_tags(raw_scrape_until(label,f,end_text,inclusive)));
+    return trim(remove_tags(raw_scrape_until(f,end_text,inclusive)));
 }
-function raw_scrape_until(label,f,end_text,inclusive,\
+function raw_scrape_until(f,end_text,inclusive,\
 line,out,ending,isre) {
     ending = 0;
     isre = isreg(end_text);
@@ -758,7 +754,6 @@ line,out,ending,isre) {
     gsub(/ +/," ",out);
     out =remove_html_section(out,"script");
     out =remove_html_section(out,"style");
-    #INF("raw_scrape_until "label"/"end_text":=["out"]");
     return out;
 }
 

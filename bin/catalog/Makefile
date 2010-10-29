@@ -1,4 +1,4 @@
 all:
-	./alint.sh catalog*awk
-	ctags catalog*awk
+	./alint.sh *.awk
+	ctags *.awk
 	./update

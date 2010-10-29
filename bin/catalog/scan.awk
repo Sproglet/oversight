@@ -534,7 +534,11 @@ cat,minfo2) {
                     }
 
                     if (scanNfo){
-                       bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
+                        if (read_xbmc_nfo(minfo,minfo["mi_nfo_default"])) {
+                            bestUrl = minfo["mi_url"];
+                        } else {
+                           bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
+                       }
                     }
 
                     if (bestUrl == "") {
@@ -548,13 +552,14 @@ cat,minfo2) {
                     cat="";
 
                     if (bestUrl) {
-                        cat = scrapeIMDBTitlePage(minfo,bestUrl);
+                        cat = get_imdb_info(bestUrl,minfo);
                     }
 
                     if (cat == "M" ) {
 
                         # Its definitely a movie according to IMDB or NFO
-                        cat = movie_search(minfo,bestUrl);
+                        get_themoviedb_info(extractImdbId(bestUrl),minfo);
+                        getNiceMoviePosters(minfo);
 
                     } else if (cat == "T" ) {
 
@@ -589,10 +594,6 @@ cat,minfo2) {
 
                     if (cat != "") {
 
-                        #If poster is blank fall back to imdb
-                        if (minfo["mi_poster"] == "") {
-                            minfo["mi_poster"] = minfo["mi_imdb_img"];
-                        }
                         fixTitles(minfo);
 
                         #Only get posters if catalog is installed as part of oversight
@@ -618,13 +619,13 @@ cat,minfo2) {
                         g_batch_total++;
                         #lang_test(minfo);
 
-                        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
 
                         queue_minfo(minfo,qfile,person_extid2name);
                     } else {
                         INF("Skipping item "minfo["mi_media"]);
                     }
                     thisTime = systime()-thisTime ;
+                    DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
                     g_process_time += thisTime;
                     g_elapsed_time = systime() - g_start_time;
 

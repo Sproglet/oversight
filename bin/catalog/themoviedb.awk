@@ -1,9 +1,8 @@
 # 1=found movie in required language
 # 0=not found
 function get_themoviedb_info(imdb_id,minfo,\
-url,empty_filter,xml,i,num,langs,root,ret,xmlret,source) {
+url,xml,i,num,langs,root,ret,xmlret,minfo2) {
 
-    source = "themoviedb";
     id1("get_themoviedb_info "imdb_id);
     num = get_langs(langs);
 
@@ -13,13 +12,14 @@ url,empty_filter,xml,i,num,langs,root,ret,xmlret,source) {
     for(i = 1 ; i<= num ; i++ ) {
         url="http://api.themoviedb.org/2.1/Movie.imdbLookup/"langs[i]"/xml/"g_api_tmdb"/"imdb_id;
 
-        xmlret = fetch_xml_single_child(url,"themoviedb",root,empty_filter,xml);
+        #xmlret = fetch_xml_single_child(url,"themoviedb",root,empty_filter,xml);
+        xmlret = fetchXML(url,"themoviedb",xml);
 
         #dump(0,"themoviedb",xml);
 
         if (xmlret == 0) {
 
-            INF("error parsing reslts");
+            INF("error parsing results");
             break;
 
         } else if (xml[root"/translated"] == "" ) {
@@ -29,22 +29,23 @@ url,empty_filter,xml,i,num,langs,root,ret,xmlret,source) {
 
         } else if (xml[root"/translated"] == "true") {
 
-            best_source(minfo,"mi_plot",xml[root"/overview"],source);
+            minfo2["mi_plot"]=xml[root"/overview"];
 
-            minfo["mi_certrating"]=xml[root"/certification"];
+            minfo2["mi_certrating"]=xml[root"/certification"];
 
-            best_source(minfo,"mi_runtime",xml[root"/runtime"],source);
+            minfo2["mi_runtime"]=xml[root"/runtime"];
 
-            adjustTitle(minfo,xml[root"/name"],source);
+            minfo2["mi_title"]=xml[root"/name"];
 
-            best_source(minfo,"mi_orig_title",clean_title(xml[root"/original_name"]),source);
+            minfo2["mi_orig_title"]=clean_title(xml[root"/original_name"]);
 
-            best_source(minfo,"mi_url",xml[root"/url"],source);
+            minfo2["mi_url"]=xml[root"/url"];
 
-            DEBUG("XXX pre get_moviedb_img root=["root"]");
-            best_source(minfo,"mi_poster",get_moviedb_img(xml,root,"poster","mid"),source);
+            minfo2["mi_poster"]=get_moviedb_img(xml,root,"poster","mid");
 
-            best_source(minfo,"mi_fanart",get_moviedb_img(xml,root,"backdrop","original"),source);
+            minfo2["mi_fanart"]=get_moviedb_img(xml,root,"backdrop","original");
+
+            minfo_merge(minfo,minfo2,"themoviedb");
             ret = 1;
             break;
 

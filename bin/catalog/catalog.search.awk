@@ -570,6 +570,7 @@ function adjustTitle(minfo,newTitle,source) {
     best_source(minfo,"mi_title",clean_title(newTitle),source);
 }
 
+# TODO plot must be weighted be language match
 function field_priority(field,source,\
 score) {
 
@@ -586,15 +587,21 @@ score) {
         gPriority["mi_title","imdb"]=50;
         gPriority["mi_title","thetvdb"]=60;
 
+        gPriority["mi_poster","imdb"]=40;
+        gPriority["mi_poster","motech"]=50;
         gPriority["mi_poster","thetvdb"]=60;
         gPriority["mi_poster","themoviedb"]=60;
 
+        gPriority["mi_plot","imdb"]=40;
         gPriority["mi_plot","themoviedb"]=60;
         gPriority["mi_plot","thetvdb"]=60;
 
         gPriority["mi_rating","themoviedb"]=20;
         gPriority["mi_rating","thetvdb"]=20;
         gPriority["mi_rating","imdb"]=60;
+
+        gPriority["mi_runtime","themoviedb"]=50;
+        gPriority["mi_runtime","imdb"]=60;
     }
     score = gPriority[field,source];
     if (score) {
@@ -603,38 +610,56 @@ score) {
 
     } else {
         ERR("field_priority: Unknown "field" source ["source"]");
-        score = gPriority["default"];
+
+        # Generally give priority to tmdb and thetvdb first, then imdb (which we are phasing out) , finally anything else.
+        if (source == "imdb" ) {
+            score = 50 # default imdb score
+        } else if (source == "themoviedb" ) {
+            score = 60 # default tmdb score
+        } else if (source == "thetvdb" ) {
+            score = 60 # default thetvdb score
+        } else {
+            score = gPriority["default"];
+        }
     }
     return score;
 }
 
-function best_source(minfo,field,value,source,\
-oldSrc,newSrc,ret) {
+function is_better_source(minfo,field,source,\
+oldSrc,ret) {
 
     source = tolower(source);
 
-
     oldSrc=minfo[field"_source"]":["minfo[field]"] ";
-    newSrc=source":["value"] ";
 
     if (minfo[field] == "" ) {
 
-        INF("best_source "field": set to "newSrc);
+        INF("is_better_source "field" is blank.");
         ret = 1;
 
     } else if (field_priority(field,source)+0 > field_priority(field,minfo[field"_source"])+0) {
 
-        INF("best_source "field": "oldSrc" promoted to "newSrc);
+        INF("is_better_source "field": "oldSrc" beaten by "source);
         ret = 1;
 
     } else {
 
-        INF("best_source "field": "oldSrc" outranks "newSrc);
+        INF("is_better_source "field": "oldSrc" outranks "source);
         ret = 0;
     }
-    if (ret) {
-        minfo[field] = value;
-        minfo[field"_source"] = source;
+    return ret;
+}
+function best_source(minfo,field,value,source,\
+oldSrc,newSrc,ret) {
+
+    ret = 0;
+    if (value) {
+        if (is_better_source(minfo,field,source)) {
+            minfo[field] = value;
+            minfo[field"_source"] = source;
+            INF("best_source: "field" = ["value"]");
+            ret = 1;
+        }
     }
     return ret;
 }

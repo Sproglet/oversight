@@ -1,3 +1,6 @@
+# Does TMDB API give cast?
+# TODO plot must be weighted be language match
+Fix indexing of plots without ttid
 Fix display of brackets in names
 Failover to tvrage did not work for waterloo road 6c8
 

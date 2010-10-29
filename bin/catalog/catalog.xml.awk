@@ -19,10 +19,10 @@ f,line,result) {
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 # @ignorePaths = csv of paths to ignore
 #sep is used if merging repeated element values together
-function parseXML(line,info,ignorePaths,\
+function parseXML(line,xml,ignorePaths,\
 sep,\
-currentTag,oldTag,i,j,tag,text,parts,sp,slash,tag_data_count,\
-attr,attrnum,attrname,attr_parts,single_tag,taglen) {
+currentTag,oldTag,i,tag,text,parts,sp,slash,tag_data_count,\
+attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags) {
 
     if (index(line,"<?")) return;
 
@@ -55,9 +55,13 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen) {
 
     tag_data_count = split(line,parts,"[<>]");
 
-    currentTag = info["@CURRENT"];
+    currentTag = xml["@CURRENT"];
+    numtags = xml["@count"];
 
-    for(i = 1 ; i <= tag_data_count ; i++ ) {
+    i = 0 ;
+    while ( i <= tag_data_count ) {
+
+        if (++i >= tag_data_count) break;
 
         if (i == tag_data_count) {
             if (index(parts[i],"\r") || index(parts[i],"\n")) {
@@ -71,16 +75,17 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen) {
         if (currentTag ) {
             if (ignorePaths == "" || currentTag !~ ignorePaths) {
                 #If merging element values add a sepearator
-                if (currentTag in info) {
+                if (currentTag in xml) {
                     text = sep text;
                 }
-                info[currentTag] = info[currentTag] text;
+                xml[currentTag] = xml[currentTag] text;
             }
         }
 
         # Move on to process the tag ---------------
 
-        i++;
+        if (++i >= tag_data_count) break;
+
         tag = parts[i];
         taglen = length(tag);
 
@@ -97,8 +102,6 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen) {
         if (slash == 1 )  {
 
             # /tag
-
-            #currentTag = substr(currentTag,1,length(currentTag)-taglen);
             sub("/[^/]+$","",currentTag);
 
         } else {
@@ -122,10 +125,39 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen) {
 
             oldTag = currentTag;
             currentTag = currentTag "/" tag;
-            if (currentTag in info) {
-                for(j=2; ( (currentTag"@"j) in info ) ; j++ ) ;
-                currentTag = currentTag "@" j;
+
+
+            # If a tag occurs more than once for the smae parent we need to keep all values.
+            # eg
+            # <parent><child>a</child><child b="c"/><parent>
+            # should become
+            #
+            # [parent/child]=ArrayFlag
+            # [parent/child>1]a
+            # [parent/child>2#b]c
+            #
+            # Also consider
+            # <parent><child><name>n1</name></child><child b="c"/><name>n2</name><parent>
+            # in this case <name> should not be an array even though the path /parent/child/name appears twice.
+            #
+            # [parent/child]=ArrayFlag
+            # [parent/child>1/name]n1
+            # [parent/child>2#b]c
+            # [parent/child>2/name]n2
+            #
+            countTag = "@count:"currentTag;
+            if (countTag in xml) {
+               xml[countTag] ++;
+               currentTag = currentTag ">" xml[countTag];
+                #INF("changed currentTag ["currentTag"] tag=["tag"]");
+                if (tag == "") {
+                    INF("line["line"] part "i" of "tag_data_count);
+                    dumpord(0,"parts",parts);
+                }
+            } else {
+                xml[countTag] = 1;
             }
+            xml[++numtags] = currentTag;
         }
 
         #parse attributes.
@@ -135,19 +167,23 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen) {
             attrnum = split(attr,attr_parts,SUBSEP);
             for(attr = 2 ; attr <= attrnum ; attr += 3 ) {
                 attrname=currentTag"#"attr_parts[attr];
-                if (attrname in info) {
-                    info[attrname]=info[attrname] sep attr_parts[attr+1];
+                if (attrname in xml) {
+                    xml[attrname]=xml[attrname] sep attr_parts[attr+1];
                 } else {
-                    info[attrname]=attr_parts[attr+1];
+                    xml[attrname]=attr_parts[attr+1];
                 }
             }
         }
+
         if (single_tag) {
+            # Add tag entry
+            xml[currentTag]="";
             currentTag = oldTag;
         }
     }
 
-    info["@CURRENT"] = currentTag;
+    xml["@CURRENT"] = currentTag;
+    xml["@count"] = numtags;
 }
 function clean_xml_path(xmlpath,xml,\
 t,xmlpathSlash,xmlpathHash) {
@@ -203,8 +239,8 @@ t) {
 
 # certain paths can be ignored to reduce memory footprint.
 function scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths,\
-numbers,strings,regexs,\
-line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
+numbers,strings,regexs,found,\
+line,start_tag,end_tag,last_tag,number_type,regex_type,string_type) {
 
    delete xmlout;
    found=0;
@@ -243,24 +279,7 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
 
             if (index(line,end_tag) > 0) {
 
-                found=1;
-
-                for(t in numbers) {
-                    if (!(t in xmlout) || (xmlout[t] - numbers[t] != 0) ) {
-                        found =0 ; break;
-                    }
-                }
-                for(t in strings) {
-                    if (!(t in xmlout) || (xmlout[t]"" != strings[t] ) ) {
-                        found =0 ; break;
-                    }
-                }
-                for(t in regexs) {
-                    if (!(t in xmlout) || (tolower(xmlout[t]) !~ regexs[t] ) ) {
-                        found =0 ; break;
-                    }
-                }
-
+                found = check_filtered_element(xmlout,"",numbers,strings,regexs);
                 if (found) {
                     DEBUG("Filter matched.");
                     break;
@@ -275,4 +294,81 @@ line,start_tag,end_tag,found,t,last_tag,number_type,regex_type,string_type) {
         clean_xml_path(xmlpath,xmlout);
     }
     return 0+ found;
+}
+
+# Check if an xml element matches a set of filters.
+function check_filtered_element(xml,root,numbers,strings,regexs,\
+found,t,tag) {
+    found=1;
+
+    for(t in numbers) {
+        tag = root t;
+        if (!(tag in xml) || (xml[tag] - numbers[t] != 0) ) {
+            found =0 ; break;
+        }
+    }
+    for(t in strings) {
+        tag = root t;
+        if (!(tag in xml) || (xml[tag]"" != strings[t] ) ) {
+            found =0 ; break;
+        }
+    }
+    for(t in regexs) {
+        tag = root t;
+        if (!(tag in xml) || (tolower(xml[tag]) !~ regexs[t] ) ) {
+            found =0 ; break;
+        }
+    }
+    return found;
+}
+
+# Get array element. eg if xml =
+# xml[/parent/child#name]=John
+# xml[/parent/child>2#name]=Sue
+#
+# filters=
+# /name=Sue
+#
+# Filter names are currently just attributes #name but this can be extended to support paths eg /name if needed.
+# returns modified root element eg /parent/child>2
+
+#IN xml array
+#IN root  - element we are looking for
+#IN fliters array of filters, numeric, text or ~:regex
+#IN number of items to match 0=all
+#OUT array of items. - index=order value=tag path
+#RETURN number of matches.
+function find_elements(xml,root,filters,maxtags,tagsout,\
+root_re,numbers,strings,regexs,found,num,tag,child,numtags) {
+
+    delete tagsout;
+    num=0;
+    found = 0;
+    reset_filters(filters,numbers,strings,regexs);
+
+    #Create re to match on array elements.
+    # Convert /parent/child to /parent(>[0-9]+|)/child(>[0-9]+|)
+    root_re="^"gensub("(.)(/|$)","\\1(>[0-9]+|)\\2","g",root)"$";
+    id1("find_elements["root"]");
+    #DEBUG("XX regex["root_re"]");
+
+    numtags = xml["@count"];
+    for(tag = 1 ; tag <= numtags ; tag++) {
+        # Need to make sure tag  always appears even if epty text element
+        if ( match(xml[tag],root_re)) {
+            child = substr(xml[tag],RSTART,RLENGTH);
+            #DEBUG("XX possible ["child"] from tag ["xml[tag]"]");
+            found = check_filtered_element(xml,child,numbers,strings,regexs);
+            if (found) {
+                DEBUG("Filter matched ["child"]");
+                tagsout[++num] = child;
+                if (maxtags && num >= maxtags) {
+                    break;
+                }
+                break;
+            }
+        }
+    }
+    id0(num);
+    return num;
 }

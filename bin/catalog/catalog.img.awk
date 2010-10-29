@@ -194,40 +194,29 @@ function download_image(field_id,minfo,mi_field,\
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
-function getNiceMoviePosters(minfo,imdb_id,\
+function getNiceMoviePosters(minfo,\
 poster_url,backdrop_url) {
 
 
     if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
 
-        DEBUG("Poster check imdb_id = "imdb_id);
-
         #poster_url = bingimg(minfo["mi_title"]" "minfo["mi_year"]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
-            # Get posters from TMDB usiong the API. Unfortunately this doesnt expose poster rating.
-        if (poster_url == "" && getting_poster(minfo,1) ) {
-            poster_url = get_moviedb_img(imdb_id,"poster","mid");
+        if (is_better_source(minfo,"mi_poster","motech")) {
+            best_source(minfo,"mi_poster",get_motech_img(minfo),"motech");
         }
-
-        if (getting_fanart(minfo,1) ) {
-            backdrop_url = get_moviedb_img(imdb_id,"backdrop","original");
-        }
-
-        if (poster_url == "") {
-            poster_url = get_motech_img(minfo);
-        }
-        INF("movie poster ["poster_url"]");
-        minfo["mi_poster"]=poster_url;
-
-        INF("movie backdrop ["backdrop_url"]");
-        minfo["mi_fanart"]=backdrop_url;
     }
 }
 
 function get_motech_img(minfo,\
-referer_url,url,url2) {
+referer_url,url,url2,motech_title) {
     #if (1) {
-    referer_url = "http://www.motechposters.com/title/"minfo["mi_motech_title"]"/";
+
+    motech_title = minfo["mi_title"]-minfo["mi_year"];
+    gsub(/[^a-z0-9]+/,"-",motech_title);
+    sub(/-$/,"",motech_title);
+
+    referer_url = "http://www.motechposters.com/title/"motech_title"/";
     #} else {
     #search_url="http://www.google.com/search?q=allintitle%3A+"minfo["mi_title"]"+("minfo["mi_year"]")+site%3Amotechposters.com";
     #referer_url=scanPageFirstMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
@@ -243,154 +232,6 @@ referer_url,url,url2) {
         } 
     }
     return url;
-}
-
-# search :
-#
-#<OpenSearchDescription xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
-#  <opensearch:Query searchTerms="tt0418279"/>
-#    <opensearch:totalResults>1</opensearch:totalResults>
-#      <movies>
-#        <movie>
-#          <name>Transformers</name>
-#            <images>
-#              <poster id="30030">
-#                <image url="http://images....org/posters/30030/Transformers_v3.jpg" size="original"/>
-#                <image url="http://images....org/posters/30030/Transformers_v3_thumb.jpg" size="thumb"/>
-#                <image url="http://images....org/posters/30030/Transformers_v3_mid.jpg" size="mid"/>
-#                <image url="http://images....org/posters/30030/Transformers_v3_cover.jpg" size="cover"/>
-#              </poster>
-#
-function get_moviedb_img(imdb_id,type,size,\
-search_url,txt,xml,f,url,url2) {
-
-    search_url="http://api.themoviedb.org/2.1/Movie.imdbLookup/en/xml/"g_api_tmdb"/"imdb_id;
-
-# the first one is the one with the highest ratings. At present rating order is NOT returned using 
-# getImages so using imdbLookup instead.
-
-    id1("get_moviedb_img "imdb_id" "type" "size);
-    f=getUrl(search_url,"moviedb",0);
-
-    #scan_xml_single_child(f,"/OpenSearchDescription/movies/movie/images",tagfilters,xmlout,\
-    if (f != "") {
-        FS="\n";
-        while((getline txt < f) > 0 ) {
-
-            if (index(txt,"<image")) {
-
-                delete xml;
-                parseXML(txt,xml);
-                if (xml["/image#type"] == type && xml["/image#size"] == size ) {
-                    url2=url_encode(html_decode(xml["/image#url"]));
-                    if (url_state(url2) == 0) {
-                        url = url2;
-                        break;
-                    }
-                }
-            }
-
-        }
-        close(f);
-    }
-    id0(url);
-    return url;
-}
-
-# Split a line at regex boundaries.
-# used by get_regex_counts
-# IN s - line to split
-# IN regex - regular expression
-# OUT parts - index 1,2,3.. values text,match1,text,match2,...
-# RET number of parts.
-function chop(s_in,regex,parts,\
-flag,i,s) {
-    #first find split text that doesnt occur in the string.
-    #flag="=#z@~";
-    flag=SUBSEP;
-
-    # insert the split text around the regex boundaries
-
-    s = s_in;
-
-    if (gsub(regex,flag "&" flag , s )) {
-        # now split at boundaries.
-        i = split(s,parts,flag);
-        if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
-    } else {
-        i = 1;
-        delete parts;
-        parts[1] = s_in;
-    }
-    return i+0;
-}
-
-
-
-
-# Find all occurences of a regular expression within a string, and return in an array.
-# IN Line to match against.
-# IN regex to match with.
-# IN max = max occurences (0 = all)
-# OUT matches is updated with (text=>num occurrences)
-# RET total number of occurences.
-function get_regex_counts(line,regex,max,matches) {
-    return 0+get_regex_count_or_pos("c",line,regex,max,matches);
-}
-# Find all occurences of a regular expression within a string, and return in an array.
-# IN mode : c=count matches  p=return match positions.
-# IN Line to match against.
-# IN regex to match with.
-# IN max = max occurences (0 = all)
-# OUT rtext is updated with (order=>match text)
-# OUT rstart  is updated with (order -> start pos)
-# RET total number of occurences.
-function get_regex_pos(line,regex,max,rtext,rstart) {
-    return 0+get_regex_count_or_pos("p",line,regex,max,rtext,rstart);
-}
-
-
-# Find all occurences of a regular expression within a string, and return in an array.
-# IN mode : c=count matches  p=return match positions.
-# IN Line to match against.
-# IN regex to match with.
-# IN max = max occurences (0 = all)
-# mode=c:
-# OUT rtext is updated with (mode=c:text=>num occurrences mode=p:order=>match text)
-# mode=p:
-# OUT rtext is updated with (order=>match text)
-# OUT rstart  is updated with (order -> start pos)
-# OUT total number of occurences.
-function get_regex_count_or_pos(mode,line,regex,max,rtext,rstart,\
-count,fcount,i,parts,start) {
-    count =0 ;
-
-    delete rtext;
-    delete rstart;
-
-    fcount = chop(line,regex,parts);
-    start=1;
-    for(i=2 ; i-fcount <= 0 ; i += 2 ) {
-        count++;
-        if (mode == "c") {
-            rtext[parts[i]]++;
-        } else {
-            rtext[count] = parts[i];
-
-            start += length(parts[i-1]);
-            rstart[count] = start;
-            start += length(parts[i]);
-        }
-        if (max+0 > 0 ) {
-            if (count - max >= 0) {
-                break;
-            }
-        }
-    }
-
-    dump(3,"get_regex_count_or_pos:"mode,rtext);
-
-    return 0+count;
 }
 
 

@@ -85,7 +85,6 @@ function download_image(field_id,minfo,mi_field,\
 
         if (get_it ) {
 
-
             #create the folder.
             preparePath(internal_path);
 
@@ -115,7 +114,6 @@ function download_image(field_id,minfo,mi_field,\
             } else {
                 script_arg="fanart";
             }
-
 
             rm(internal_path,1);
             exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
@@ -194,9 +192,7 @@ function download_image(field_id,minfo,mi_field,\
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
-function getNiceMoviePosters(minfo,\
-poster_url,backdrop_url) {
-
+function getNiceMoviePosters(minfo) {
 
     if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
 
@@ -212,7 +208,8 @@ function get_motech_img(minfo,\
 referer_url,url,url2,motech_title) {
     #if (1) {
 
-    motech_title = minfo["mi_title"]-minfo["mi_year"];
+    dump(0,"pre motech",minfo);
+    motech_title = tolower(minfo["mi_title"]"-"minfo["mi_year"]);
     gsub(/[^a-z0-9]+/,"-",motech_title);
     sub(/-$/,"",motech_title);
 
@@ -221,15 +218,16 @@ referer_url,url,url2,motech_title) {
     #search_url="http://www.google.com/search?q=allintitle%3A+"minfo["mi_title"]"+("minfo["mi_year"]")+site%3Amotechposters.com";
     #referer_url=scanPageFirstMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
     #}
-    DEBUG("Got motech referer "referer_url);
     if (referer_url != "" ) {
         url2=scanPageFirstMatch(referer_url,"/posters","/posters/[^\"]+jpg",0);
         if (url2 != ""  && index(url2,"thumb.jpg") == 0 ) {
             url="http://www.motechposters.com" url2;
 
             url=url"\t"referer_url;
-            DEBUG("Got motech poster "url);
-        } 
+            INF("Got motech poster "url);
+        } else {
+            INF("No motech poster for "motech_title);
+        }
     }
     return url;
 }

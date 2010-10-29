@@ -1,3 +1,54 @@
+function read_xbmc_nfo(minfo,file,\
+xml,empty_filter,minfo2,\
+num,tags,i,tmp,ret) {
+
+    ret = 0;
+    if (readXML(file,xml,""))  {
+        dump(0,"nfoxml",xml);
+        if ("/movie" in xml) {
+            if ("/movie/id" in xml ) {
+                minfo2["mi_id"] = xml["/movie/id"];
+                if (minfo["mi_id"] == 0) minfo["mi_id"] = -1;
+                if (minfo2["mi_id"] ~ "^tt" ) {
+                    if (!("mi_url") in xml) {
+                        minfo2["mi_url"] = extractImdbLink(minfo2["mi_id"]);
+                    }
+                }
+            }
+            minfo2["mi_title"] = xml["/movie/title"];
+            minfo2["mi_original_title"] = xml["/movie/originaltitle"];
+            minfo2["mi_rating"] = xml["/movie/rating"];
+            minfo2["mi_year"] = xml["/movie/year"];
+            minfo2["mi_plot"] = xml["/movie/plot"];
+            minfo2["mi_runtime"] = xml["/movie/runtime"];
+            minfo2["mi_poster"] = xml["/movie/thumb"];
+            minfo2["mi_fanart"] = xml["/movie/fanart"];
+            num = find_elements(xml,"/movie/genre",empty_filter,0,tags);
+            if (num) {
+                for(i = 1 ; i <= num ; i++ ) {
+                    tmp = tmp "|"tags[i];
+                }
+                minfo2["mi_genre"] = substr(tmp,2);
+            }
+
+            #TODO add writer , director and actor parsing.
+            #TODO add codec parsing
+
+            minfo_merge(minfo,minfo2,"@nfo");
+            ret = 1;
+        } else if ( "/xml/tvshow" in xml ) {
+            INF("tvshow xbmc not supported yet...");
+        } else if ( "/tvshow" in xml ) {
+            INF("tvshow xbmc not supported yet...");
+        }
+
+        # next load into minfo2 then minfo_merge with source = @nfo then set best_score to prioritise nfo and short circuit searching.
+
+    } else {
+        INF("Non XML nfo - "file);
+    }
+    return ret;
+}
 
 #returns imdb url
 function scanNfoForImdbLink(nfoFile,\

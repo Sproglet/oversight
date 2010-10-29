@@ -26,7 +26,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
             if (index(line,"</title>")) {
                 title = extractTagText(line,"title");
             } else {
-                title=trimAll(scrape_until("ititle",f,"</title>",1));
+                title=trimAll(scrape_until(f,"</title>",1));
             }
             DEBUG("Title found ["title "] current title ["minfo["mi_title"]"]");
 
@@ -99,7 +99,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
 
             # "Plot" on normal page - "Plot Summary" on mobile pages.
             if (minfo["mi_plot"] == "" && ( index(line,">Plot:<") ||index(line,">Plot Summary<")) ) {
-                set_plot(minfo,"mi_plot",scrape_until("iplot",f,"</div>",0));
+                set_plot(minfo,"mi_plot",scrape_until(f,"</div>",0));
                 sub(/\|.*/,"",minfo["mi_plot"]);
                 sub(/[Ff]ull ([Ss]ummary|[Ss]ynopsis).*/,"",minfo["mi_plot"]);
                 #DEBUG("imdb plot "minfo["mi_plot"]);
@@ -108,7 +108,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
             #IMDB Genre takes precedence
             if (minfo["mi_genre"] == "" && index(line,">Genre")) {
 
-                minfo["mi_genre"]=trimAll(scrape_until("igenre",f,"</div>",0));
+                minfo["mi_genre"]=trimAll(scrape_until(f,"</div>",0));
 
                 gsub(/,/,"|",minfo["mi_genre"]); # mobile site uses commas.
 
@@ -119,7 +119,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
 
             #desktop
             if (minfo["mi_runtime"] == "" && (index(line,">Runtime:") || index(line,">Run time"))) {
-                tmp=trimAll(scrape_until("irtime",f,"</div>",1));
+                tmp=trimAll(scrape_until(f,"</div>",1));
                 minfo["mi_runtime"] = extract_duration(tmp);
 
             }
@@ -144,7 +144,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
             }
             # mobile - just get rated.
             if (index(line,">Rated<")) {
-                minfo["mi_certrating"]=trimAll(scrape_until("irtime",f,"</div>",1));
+                minfo["mi_certrating"]=trimAll(scrape_until(f,"</div>",1));
                 minfo["mi_certcountry"]="USA";
             }
 
@@ -156,7 +156,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
             if (index(line,"Also Known")) DEBUG("AKA "minfo["mi_orig_title"]" vs "minfo["mi_title"]);
 
             if (minfo["mi_orig_title"] == minfo["mi_title"] && index(line,"Also Known As:")) {
-                line = raw_scrape_until("aka",f,"</div>",1);
+                line = raw_scrape_until(f,"</div>",1);
 
                 DEBUG("AKA:"line);
 
@@ -166,7 +166,7 @@ title,poster_imdb_url,i,orig_country_pos,aka_country_pos,orig_title_country,aka_
 
             if (index(line,"Country:")) {
                 # There may be multiple countries. Only scrape the first one.
-                orig_title_country = scrape_until("title",f,"</a>",1);
+                orig_title_country = scrape_until(f,"</a>",1);
                 orig_country_pos = index(g_settings["catalog_title_country_list"],orig_title_country);
                 aka_country_pos = index(g_settings["catalog_title_country_list"],aka_title_country);
 

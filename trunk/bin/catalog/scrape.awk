@@ -7,7 +7,7 @@
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
 function find_movie_page(text,title,year,runtime,director,minfo,\
-lang,i,err,minfo2,num,langs) {
+i,err,minfo2,num,langs) {
 
     err = 1;
     id1("find_movie_page text ["text"] title ["title"] year("year")");
@@ -162,7 +162,7 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
             set_visited_url(matches[i],searchhist);
             err = scrape_movie_page(text,title,year,runtime,director,matches[i],lang,url_domain,minfo2);
             if (!err) {
-                minfo_merge(minfo,minfo2);
+                minfo_merge(minfo,minfo2,url_domain);
                 break;
             } else if (err == 2) {
                 # scrape ok but no plot - ignore entire domain
@@ -285,7 +285,11 @@ f,minfo2,err,line,pagestate,namestate) {
     err = 0;
     id1("scrape_movie_page("url","lang","domain","text","title","year")");
 
-    if (url && lang )  {
+    if (have_visited(minfo,domain":"lang)) {
+
+        INF("Already visited");
+
+    } else if (url && lang )  {
 
         f=getUrl(url,lang":"domain":"title":"year,1);
         if (f) {
@@ -302,6 +306,10 @@ f,minfo2,err,line,pagestate,namestate) {
             }
             close(f);
         }
+
+        #This will get merged in if page is succesful.
+        #if page fails then the normal logical flow of the program should prevent re-visits. not the visited flag.
+        set_visited(minfo2,domain":"lang);
             
     } else {
         ERR("paramters missing");
@@ -328,7 +336,7 @@ f,minfo2,err,line,pagestate,namestate) {
         if(index(domain,"imdb")) {
             imdb_extra_info(minfo2,url);
         }
-        minfo_merge(minfo,minfo2);
+        minfo_merge(minfo,minfo2,domain);
         dump(0,title"-"year"-"domain"-"lang,minfo);
     }
 
@@ -336,23 +344,26 @@ f,minfo2,err,line,pagestate,namestate) {
     return err;
 }
 
-function minfo_merge(current,new,\
-flds,i,f) {
+function minfo_merge(current,new,default_source,\
+flds,i,f,source) {
 
+    id1("minfo_merge["default_source"]");
     # Keep best title
-    INF("minfo_merge begin mi_url current=["current["mi_url"]"] new=["new["mi_url"]"]");
     new["mi_title"] = clean_title(new["mi_title"]);
+    new["mi_visited"] = current["mi_visited"] new["mi_visited"];
 
-
-    # copy highest ranking fields into "new" before merging back down into current.
-    split("mi_plot,mi_title,mi_poster,mi_rating",flds,",");
-    for(i in flds) {
-        f = flds[i];
-        best_source(new,f,current[f],current[f"_source"]);
+    for(f in new) {
+        if (f !~ "_source$" && f != "mi_visited" ) {
+            if (f"_source" in new) {
+                source = new[f"_source"];
+            }
+            if (source == "") {
+                source = default_source;
+            }
+            best_source(current,f,new[f],source);
+        }
     }
-
-    hash_merge(current,new);
-    INF("minfo_merge end mi_url current=["current["mi_url"]"] new=["new["mi_url"]"]");
+    id0("");
 }
 
 function check_year(year,minfo,\
@@ -740,6 +751,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
                 value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",1);
             }
             minfo[field]=value;
+            minfo[field"_source"]=domain;
 
             if (field == "mi_poster" || field == "mi_title" || field == "mi_plot" ) {
                 minfo[field"_source"] = domain;
@@ -772,6 +784,11 @@ words,num,i,len) {
     #remove hyperlinked text
     if (index(text,"@label@")) {
         gsub(/@label@[^@]+/,"",text);
+    }
+
+    #remove Attributes eg alt="blah blah blah"
+    if (index(text,"=\"") || index(text,"='")) {
+        gsub(/=["'][^'"]+/,"",text);
     }
 
     if (len > g_min_plot_len ) {
@@ -874,16 +891,17 @@ i) {
     return i-1;
 }
 
+# Note where we have already visisted. Usually domain:lang
+function set_visited(minfo,key) {
+    minfo["mi_visited"] = minfo["mi_visited"] " " key ;
+}
+function have_visited(minfo,key) {
+    return ( minfo["mi_visited"] ~ "\\<"key"\\>" );
+}
 
 # return ""=unknown "M"=movie "T"=tv??
-function scrapeIMDBTitlePage(minfo,url,\
-connections,remakes,ret,i,num,langs,minfo2) {
-
-    if (get_themoviedb_info(extractImdbId(url),minfo2)) {
-        minfo_merge(minfo,minfo2);
-        # although we have moviedb info still need to get imdb info for collection info and rating.
-        # this wll be changed when collection nfo available via api.
-    }
+function get_imdb_info(url,minfo,\
+ret,i,num,langs,minfo2) {
 
     num = get_langs(langs);
     for(i = 1 ; i <= num ; i++) {
@@ -891,7 +909,7 @@ connections,remakes,ret,i,num,langs,minfo2) {
         delete minfo2;
         if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
             ret = minfo2["mi_category"];
-            minfo_merge(minfo,minfo2);
+            minfo_merge(minfo,minfo2,"imdb");
             break;
         }
     }
@@ -900,11 +918,10 @@ connections,remakes,ret,i,num,langs,minfo2) {
 
 # Get extra imdb info
 function imdb_extra_info(minfo,url,\
-ret) {
+ret,remakes,connections) {
     minfo["mi_imdb"] = extractImdbId(url);
     if (minfo["mi_category"] == "M") {
 
-        getNiceMoviePosters(minfo);
         getMovieConnections(extractImdbId(url),connections);
 
         if (connections["Remake of"] != "") {

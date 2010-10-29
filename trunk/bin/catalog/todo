@@ -1,5 +1,10 @@
+#  change IMDBFIRST to only look at first n results - matches further down the page tend to be false.
+#
+#  #imdb poster filter on SX(80|214|95) - mobile/labs/old
+#
 #  office us fails due to missng brackets?
 #  fetch_xml_single_child is broken - needs to understand new xml format
+#
 # Scraping imdb twice -> rewrite initial nfo->imdb->search logic -> add concept of "end_scrape" which is satisfied when
 # . plot in desired language
 # . poster fetched.
@@ -16,8 +21,12 @@
 # when setting mi_plot also set mi_plot_lang
 # Does TMDB API give cast?
 # TODO plot must be weighted be language match
-Fix indexing of plots without ttid
+
+Fix indexing of plots without ttid - use domain:id where possible. but as info is gathered from multiple sources we may need to
+use oversight id except for series summaries use - title-year-season or title-season
+
 Fix display of brackets in names
+
 Failover to tvrage did not work for waterloo road 6c8
 
 

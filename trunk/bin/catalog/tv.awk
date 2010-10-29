@@ -531,14 +531,16 @@ tvDbSeriesPage,result,tvid,cat,iid) {
         # We know the TV id - use this to get the imdb id
         result = get_tv_series_info(plugin,minfo,tvDbSeriesPage); #this may set imdb url
         if (result) {
-            if (minfo["mi_imdb"] != "") {
+            if (imdbUrl) {
+                iid=extractImdbId(imdbUrl);
+            } else if (minfo["mi_imdb"]) {
                 # we also know the imdb id
                 iid=minfo["mi_imdb"];
             } else {
                 # use the tv id to find the imdb id
                 iid=tv2imdb(minfo);
             }
-            cat = scrapeIMDBTitlePage(minfo,iid);
+            cat = get_imdb_info(iid,minfo);
         }
     } else {
         # dont know the tvid
@@ -555,7 +557,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
         }
         if (imdbUrl != "") {
             # use the imdb id to find the tv id
-            cat = scrapeIMDBTitlePage(minfo,imdbUrl);
+            cat = get_imdb_info(imdbUrl,minfo);
             if (cat != "M" ) {
                 # find the tvid - this can miss if the tv plugin api does not have imdb lookup
                 tvid = find_tvid(plugin,minfo,extractImdbId(imdbUrl));
@@ -569,8 +571,8 @@ tvDbSeriesPage,result,tvid,cat,iid) {
     
     if (cat == "M" ) {
         WARNING("Error getting IMDB ID from tv - looks like a movie??");
-        if (plugin == "TVRAGE") {
-            WARNING("Please update the IMDB ID for this series at the TVRAGE website for improved scanning");
+        if (plugin == "THETVDB") {
+            WARNING("Please update the IMDB ID for this series at the THETVDB website for improved scanning");
         }
 
         result = 0;
@@ -579,6 +581,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
     return 0+ result;
 }
 
+# use the title and year to find the imdb id
 function tv2imdb(minfo,\
 key) {
 
@@ -589,7 +592,7 @@ key) {
         if (!(key in g_tv2imdb)) {
 
             # Search for imdb page  - try to filter out Episode pages.
-            g_tv2imdb[key] = web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" Overview -\"Episode Cast\"",key); 
+            g_tv2imdb[key] = web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" -\"Episode Cast\"",key); 
         }
         minfo["mi_imdb"] = g_tv2imdb[key];
     }
@@ -700,11 +703,11 @@ ret) {
 
     if (plugin == "THETVDB" ) {
 
-        ret = searchTv(plugin,title,"FirstAired",closeTitles);
+        ret = searchTv(plugin,title,closeTitles);
 
     } else if (plugin == "TVRAGE" ) {
 
-        ret = searchTv(plugin,title,"started",closeTitles);
+        ret = searchTv(plugin,title,closeTitles);
 
     } else {
 
@@ -841,25 +844,23 @@ tnum,tried,tmp) {
 # Series are only considered if they have the tags listed in requiredTags
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
-# IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
 # This wrapper function will search with or without the country code.
-function searchTv(plugin,title,requiredTagList,closeTitles,\
-requiredTagNames,allTitles,url,ret) {
+function searchTv(plugin,title,closeTitles,\
+allTitles,url,ret) {
 
     id1("searchTv Checking ["plugin"/"title"]" );
-    split(requiredTagList,requiredTagNames,",");
     delete closeTitles;
 
     if (plugin == "THETVDB") {
 
         url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",title);
-        filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",requiredTagNames,allTitles);
+        filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
 
     } else if (plugin == "TVRAGE") {
 
         url=g_tvrage_web"/feeds/search.php?show="title;
-        filter_search_results(url,title,"/Results/show","name","showid",requiredTagNames,allTitles);
+        filter_search_results(url,title,"/Results/show","name","showid",allTitles);
 
     } else {
         plugin_error(plugin);
@@ -894,52 +895,24 @@ url) {
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
 # IN requiredTagNames - array of tags which must be present - to filter out obscure shows noone cares about
-function filter_search_results(url,title,seriesPath,nameTag,idTag,requiredTagNames,allTitles,\
-f,line,info,currentId,currentName,add,seriesTag,seriesStart,seriesEnd,count,filter_count) {
+function filter_search_results(url,title,seriesPath,nameTag,idTag,allTitles,\
+info,currentId,currentName,i,num,series,empty_filter) {
 
-    f = getUrl(url,"tvdb_search",1);
-    count = 0;
-    filter_count = 0;
+    if (fetchXML(url,"tvsearch",info,"")) {
 
-    if (f != "") {
-        seriesTag = seriesPath;
-        sub(/.*\//,"",seriesTag);
-        seriesStart="<"seriesTag">";
-        seriesEnd="</"seriesTag">";
-        FS="\n";
-        while(enc_getline(f,line) > 0 ) {
+        num = find_elements(info,seriesPath,empty_filter,0,series);
+        for(i = 1 ; i <= num ; i++ ) {
 
-            #DEBUG("IN:"line[1]);
+            currentName = clean_title(info[series[i]"/"nameTag]);
 
-            if (index(line[1],seriesStart) > 0) {
-                clean_xml_path(seriesPath,info);
-            }
+            currentId = info[series[i]"/"idTag];
 
-            parseXML(line[1],info);
-
-            if (index(line[1],seriesEnd) > 0) {
-
-#dump(0,"@@filter_search_results@@",info);
-
-                currentName = clean_title(info[seriesPath"/"nameTag]);
-
-                currentId = info[seriesPath"/"idTag];
-                count ++;
-
-                add=1;
-
-                if (add) {
-                    allTitles[currentId] = currentName;
-                }
-                clean_xml_path(seriesPath,info);
-
-            }
+            allTitles[currentId] = currentName;
         }
-        enc_close(f);
     }
-    dump(0,"search["title"]",allTitles);
+
+    dump(0,"search results["title"]",allTitles);
     #filterSimilarTitles is called by the calling function
-    INF("Search results : Found "count" removed "filter_count);
 }
 
 #ALL# function scan_tv_via_search_engine(regex,keywords,premier_mdy,year,\
@@ -966,7 +939,7 @@ function tv_title2regex(title) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,minfo,imdbid,\
-url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_regex) {
+url,id2,date,nondate,regex,key,filter,showInfo,year_range,title_regex) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -1014,7 +987,7 @@ url,id2,premier_mdy,date,nondate,regex,key,filter,showInfo,year_range,title_rege
                     }
 
 #                    regex="[&?;]id=[0-9]+";
-#
+#                    local ,premier_mdy
 #                    if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
 #
 #                    id2 = scan_tv_via_search_engine(regex,minfo["mi_title"]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,minfo["mi_year"]);
@@ -1613,18 +1586,18 @@ function remove_tv_year(t) {
     return t;
 }
 function clean_plot(txt) {
-    text = substr(txt,1,g_max_plot_len);
-    if (index(text,"Remove Ad")) {
-        sub(/\[[Xx]\] Remove Ad/,"",text);
+    txt = substr(txt,1,g_max_plot_len);
+    if (index(txt,"Remove Ad")) {
+        sub(/\[[Xx]\] Remove Ad/,"",txt);
     }
-    return text;
+    return txt;
 }
 # Scrape theTvDb series page, populate arrays and return imdb link
 # http://thetvdb.com/api/key/series/73141/default/1/2/en.xml
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter,plot) {
+seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
 
     result=0;
 

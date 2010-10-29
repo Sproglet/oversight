@@ -1,3 +1,19 @@
+#  office us fails due to missng brackets?
+#  fetch_xml_single_child is broken - needs to understand new xml format
+# Scraping imdb twice -> rewrite initial nfo->imdb->search logic -> add concept of "end_scrape" which is satisfied when
+# . plot in desired language
+# . poster fetched.
+# . fanart fetched.
+# . Movie connections 
+# . cast
+# . title.
+#
+# Also add domain source , or mi_visisted= list of domain":"lang or  just domain for lang neutral eg motech
+#
+# check logic for mis-identified tv shows
+#
+# in desired language
+# when setting mi_plot also set mi_plot_lang
 # Does TMDB API give cast?
 # TODO plot must be weighted be language match
 Fix indexing of plots without ttid

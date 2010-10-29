@@ -904,7 +904,7 @@ ret) {
     minfo["mi_imdb"] = extractImdbId(url);
     if (minfo["mi_category"] == "M") {
 
-        getNiceMoviePosters(minfo,extractImdbId(url));
+        getNiceMoviePosters(minfo);
         getMovieConnections(extractImdbId(url),connections);
 
         if (connections["Remake of"] != "") {

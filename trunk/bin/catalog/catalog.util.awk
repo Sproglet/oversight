@@ -636,14 +636,13 @@ split_suffix) {
 # there is a bug splitting values. The code tries to preserve for escaped characters eg \, but not bracket sequence [,]
 
 function apply_edits(text,plist,verbose,\
-i,num,patterns,matched,pinfo,ret,prev,split_suffix) {
+i,num,patterns,matched,pinfo,ret,prev) {
 
     ret = text;
     #DEBUG("using "plist);
 
     # Split at unescaped forward slashes
     num = split_list(plist,",",patterns);
-    #INF("plist = ["plist"] parts [,"split_suffix"] = "num);
 
     for(i = 1 ; i <= num ; i++ ) {
 
@@ -721,3 +720,101 @@ matches,ret) {
     }
     return ret;
 }
+
+# Split a line at regex boundaries.
+# used by get_regex_counts
+# IN s - line to split
+# IN regex - regular expression
+# OUT parts - index 1,2,3.. values text,match1,text,match2,...
+# RET number of parts.
+function chop(s_in,regex,parts,\
+flag,i,s) {
+    #first find split text that doesnt occur in the string.
+    #flag="=#z@~";
+    flag=SUBSEP;
+
+    # insert the split text around the regex boundaries
+
+    s = s_in;
+
+    if (gsub(regex,flag "&" flag , s )) {
+        # now split at boundaries.
+        i = split(s,parts,flag);
+        if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
+    } else {
+        i = 1;
+        delete parts;
+        parts[1] = s_in;
+    }
+    return i+0;
+}
+
+
+
+
+# Find all occurences of a regular expression within a string, and return in an array.
+# IN Line to match against.
+# IN regex to match with.
+# IN max = max occurences (0 = all)
+# OUT matches is updated with (text=>num occurrences)
+# RET total number of occurences.
+function get_regex_counts(line,regex,max,matches) {
+    return 0+get_regex_count_or_pos("c",line,regex,max,matches);
+}
+# Find all occurences of a regular expression within a string, and return in an array.
+# IN mode : c=count matches  p=return match positions.
+# IN Line to match against.
+# IN regex to match with.
+# IN max = max occurences (0 = all)
+# OUT rtext is updated with (order=>match text)
+# OUT rstart  is updated with (order -> start pos)
+# RET total number of occurences.
+function get_regex_pos(line,regex,max,rtext,rstart) {
+    return 0+get_regex_count_or_pos("p",line,regex,max,rtext,rstart);
+}
+
+
+# Find all occurences of a regular expression within a string, and return in an array.
+# IN mode : c=count matches  p=return match positions.
+# IN Line to match against.
+# IN regex to match with.
+# IN max = max occurences (0 = all)
+# mode=c:
+# OUT rtext is updated with (mode=c:text=>num occurrences mode=p:order=>match text)
+# mode=p:
+# OUT rtext is updated with (order=>match text)
+# OUT rstart  is updated with (order -> start pos)
+# OUT total number of occurences.
+function get_regex_count_or_pos(mode,line,regex,max,rtext,rstart,\
+count,fcount,i,parts,start) {
+    count =0 ;
+
+    delete rtext;
+    delete rstart;
+
+    fcount = chop(line,regex,parts);
+    start=1;
+    for(i=2 ; i-fcount <= 0 ; i += 2 ) {
+        count++;
+        if (mode == "c") {
+            rtext[parts[i]]++;
+        } else {
+            rtext[count] = parts[i];
+
+            start += length(parts[i-1]);
+            rstart[count] = start;
+            start += length(parts[i]);
+        }
+        if (max+0 > 0 ) {
+            if (count - max >= 0) {
+                break;
+            }
+        }
+    }
+
+    dump(3,"get_regex_count_or_pos:"mode,rtext);
+
+    return 0+count;
+}
+
+

@@ -351,9 +351,10 @@ f,source) {
     # Keep best title
     new["mi_title"] = clean_title(new["mi_title"]);
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
+    new["mi_idlist"] = current["mi_idlist"] " " new["mi_idlist"];
 
     for(f in new) {
-        if (f !~ "_source$" && f != "mi_visited" ) {
+        if (f !~ "_source$" && f != "mi_visited" && f != "mi_idlist" ) {
             if (f"_source" in new) {
                 source = new[f"_source"];
             }
@@ -909,6 +910,7 @@ ret,i,num,langs,minfo2) {
         delete minfo2;
         if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
             ret = minfo2["mi_category"];
+            minfo2["mi_idlist"] = "imdb:"extractImdbId(url);
             minfo_merge(minfo,minfo2,"imdb");
             break;
         }

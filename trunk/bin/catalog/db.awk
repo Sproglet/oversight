@@ -72,15 +72,6 @@ row,est,nfo,op,start) {
 
     if (minfo["mi_additional_info"]) row=row"\t"ADDITIONAL_INF"\t"minfo["mi_additional_info"];
 
-
-    if (minfo["mi_imdb"] == "") {
-        # Need to have some kind of id for the plot.
-        minfo["mi_imdb"]=minfo["mi_tvid_plugin"]"_"minfo["mi_tvid"];
-        if (minfo["mi_imdb"] == "") {
-            # Need to have some kind of id for the plot.
-            minfo["mi_imdb"]="ovs"PID"_"systime();
-        }
-    }
     row=row"\t"URL"\t"minfo["mi_imdb"];
 
     row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];

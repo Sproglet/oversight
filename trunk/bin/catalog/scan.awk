@@ -566,7 +566,7 @@ cat,minfo2) {
                         # Its definitely a series according to IMDB or NFO
                         # get the episode info
                         hash_copy(minfo2,minfo);
-                        checkTvFilenameFormat(minfo2,"");
+                        checkTvFilenameFormat(minfo2,"",0);
                         minfo["mi_season"] = minfo2["mi_season"];
                         minfo["mi_episode"] = minfo2["mi_episode"];
                         minfo["mi_additional_info"] = minfo2["mi_additional_info"];

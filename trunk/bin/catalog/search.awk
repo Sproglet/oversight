@@ -648,6 +648,8 @@ oldSrc,ret) {
 function best_source(minfo,field,value,source,\
 ret) {
 
+    source = tolower(source);
+
     ret = 0;
     if (value) {
         if (is_better_source(minfo,field,source)) {

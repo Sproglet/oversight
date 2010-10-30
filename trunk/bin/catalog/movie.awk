@@ -8,7 +8,7 @@ year,scrape_imdb,text) {
     id1("movie search");
     ret=0;
 
-    minfo["mi_tvid_plugin"] = minfo["mi_tvid"]="";
+    minfo["mi_tvid"]="";
     # search online info using film basename looking for imdb link
     # -----------------------------------------------------------------------------
     name_id=0;

@@ -40,6 +40,11 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2) {
 
             minfo2["mi_url"]=xml[root"/url"];
 
+            minfo2["mi_idlist"]="themoviedb:"xml[root"/id"];
+            if ( root"/imdb_id" in xml) {
+                minfo2["mi_idlist"] = minfo2["mi_idlist"]" imdb:"xml[root"/imdb_id"];
+            }
+
             minfo2["mi_poster"]=get_moviedb_img(xml,root,"poster","mid");
 
             minfo2["mi_fanart"]=get_moviedb_img(xml,root,"backdrop","original");

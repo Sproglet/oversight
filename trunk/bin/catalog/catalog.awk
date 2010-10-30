@@ -74,6 +74,7 @@ function timestamp(label,x) {
 
     if (index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
     if (index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
+    if (index(x,g_api_rage) ) gsub(g_api_rage,".",x);
 
     if (index(x,"d=") ) {
         sub("password.?=([^,]+)","password=***",x);
@@ -142,7 +143,6 @@ BEGIN {
     g_tv_check_urls["THETVDB"]=g_thetvdb_web;
 
     g_batch_size=30;
-    g_tvdb_user_per_episode_api=1;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;
     yes="yes";
@@ -180,8 +180,9 @@ BEGIN {
     UPDATE_FANART=0;
     UPDATE_PORTRAITS=0;
 
-    g_api_tvdb="AQ1W1R0GAY5H7K1L8MFN9P1T2YDUAJF";
-    g_api_tmdb="2qdr5t1vexeyep0k5l7m9nchdjfs4zz10xbv3s3w7qsehndjmckldplagscql1wnarkepv14";
+    g_api_tvdb="A110A5718F912D21070A77194F";
+    g_api_tmdb="2d51eee0579c36499df410b337edc79658dac1ae14";
+    g_api_rage="fP8i46657c9qe22678pt4M08315u554A68263Hh7";
 
     INF("$Id$");
     get_folders_from_args(FOLDER_ARR);
@@ -400,6 +401,8 @@ END{
 
         g_api_tvdb = apply(g_api_tvdb);
         g_api_tmdb = apply(g_api_tmdb);
+        g_api_rage = apply(g_api_rage);
+
         g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
         delete g_updated_plots;

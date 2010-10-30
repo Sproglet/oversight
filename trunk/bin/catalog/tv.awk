@@ -28,7 +28,7 @@ details,line,dirs,d,dirCount,dirLevels,ret,name) {
 
    for(d=0 ; d-dirLevels <= 0  ; d++ ) {
 
-       if (extractEpisodeByPatterns(plugin,line,details)==1) {
+       if (extractEpisodeByPatterns(minfo,plugin,line,details)==1) {
            ret = 1;
            break;
        }
@@ -121,7 +121,7 @@ terms,results,id,url,parts,showurl) {
     return id;
 }
 # If Plugin != "" then it will also check episodes by date.
-function extractEpisodeByPatterns(plugin,line,details,\
+function extractEpisodeByPatterns(minfo,plugin,line,details,\
 ret,p,pat,i,parts,sreg,ereg) {
 
     #Note if looking at entire path name folders are seperated by /
@@ -172,7 +172,7 @@ ret,p,pat,i,parts,sreg,ereg) {
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
-            ret = extractEpisodeByDates(plugin,line,details);
+            ret = extractEpisodeByDates(minfo,plugin,line,details);
         } else {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
@@ -319,7 +319,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
     return ret;
 }
 
-function extractEpisodeByDates(plugin,line,details,\
+function extractEpisodeByDates(minfo,plugin,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
     result=0;
@@ -343,26 +343,25 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
             id1("Checking "tvdbid);
 
-            if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
+            #if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
-                if (plugin == "THETVDB" ) {
+            if (plugin == "THETVDB" ) {
 
-                    #TODO We could get all the series info - this would be cached anyway.
-                    result = extractEpisodeByDates_TvDb(tmp_info,tvdbid,y,m,d,details);
+                #TODO We could get all the series info - this would be cached anyway.
+                result = extractEpisodeByDates_TvDb(tmp_info,tvdbid,y,m,d,details);
 
-                } else if (plugin == "TVRAGE" ) {
+            } else if (plugin == "TVRAGE" ) {
 
-                    result = extractEpisodeByDates_rage(tmp_info,tvdbid,y,m,d,details);
+                result = extractEpisodeByDates_rage(tmp_info,tvdbid,y,m,d,details);
 
-                } else {
-                    plugin_error(plugin);
-                }
-                if (result) {
-                    INF(":) Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d);
-                    details[TVID]=tvdbid;
-                    id0(result);
-                    break;
-                }
+            } else {
+                plugin_error(plugin);
+            }
+            if (result) {
+                INF("Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d);
+                details[TVID]=tvdbid;
+                id0(result);
+                break;
             }
             id0(result);
         }
@@ -389,7 +388,7 @@ episodeInfo,url) {
     fetchXML(url,"epbydate",episodeInfo);
 
     if ( "/Data/Error" in episodeInfo ) {
-        ERR(episodeInfo["/Data/Error"]);
+        ERR("Error message from server : "episodeInfo["/Data/Error"]);
         tvdbid="";
     }
     if (tvdbid != "") {
@@ -411,22 +410,81 @@ episodeInfo,url) {
     }
     return 0;
 }
+
+# 0=match -1=ep before date 1=episode after date 2=no such episode
+function cmp_rage_ep(tvdbid,season,ep,date_string,xml,\
+url_root,key,ret) {
+    id1("XX cmp_rage_ep "season"x"ep" vs "date_string);
+    key = "/show/episode/airdate";
+    url_root = "http://services.tvrage.com/feeds/episodeinfo.php?sid="tvdbid"&ep=";
+    ret = 2;
+    if(fetchXML(url_root season"x"ep,"rage",xml)) {
+        if (key in xml) {
+            if (xml[key] == date_string) {
+                ret = 0;
+            } else if (xml[key] < date_string ) {
+                ret = -1;
+            } else {
+                ret = 1;
+            }
+        }
+    }
+    id0("xml"xml[key]"="ret);
+    return ret;
+}
+
+# at time of writing there is no direct search-by-date api function for tvrage.
+# this code  steps through seasons and uses a binary chop.
+# as shows that are datestamped tend to be the daily ones with 150+ episodes per season.
+# the alternative is to parse all XML but this is very CPU intensive in awk on NMT
 function extractEpisodeByDates_rage(minfo,tvdbid,y,m,d,details,\
-episodeInfo,match_date,result,filter) {
+xml,match_date,result,cmp,season,ep,low,high) {
 
     result=0;
     match_date=sprintf("%4d-%02d-%02d",y,m,d);
 
+    # First step through seasons jumping 3 at a time
+    
+    season = 1;
+    ep = 1;
+    while((cmp = cmp_rage_ep(tvdbid,season,ep,match_date,xml)) == -1) {
+        season += 3;
+    }
+    if (cmp != 0 ) {
+        season -= 3;
+        # search forward one at a time
+        while((cmp = cmp_rage_ep(tvdbid,season,ep,match_date,xml)) == -1) {
+            season ++;
+        }
+    }
+    DEBUG("extractEpisodeByDates_rage season = "(season-1));
 
-    filter["/Show/Episodelist/Season/episode/airdate"] = match_date;
-    if (fetch_xml_single_child(get_tv_series_api_url("TVRAGE",tvdbid),"bydate","/Show/Episodelist/Season/episode",filter,episodeInfo)) {
+    # now do binary chop on episode.
+    if (cmp != 0 ) {
+        season --;
+        if (season > 0 ) {
+            low = 1;
+            high = 512;
+            while (low < high) {
+                ep = int((low+high)/2);
+                cmp = cmp_rage_ep(tvdbid,season,ep,match_date,xml);
+                if (cmp == 0 ) {
+                    break;
+                }
+                if (cmp == -1 ) {
+                    low = ep+1;
+                } else {
+                    high = ep ;
+                }
+            }
+        }
+    }
+    if (cmp == 0) {
+
         minfo["mi_airdate"]=formatDate(match_date);
-        details[SEASON] = episodeInfo["/Show/Episodelist/Season#no"] ;
-        details[EPISODE] = episodeInfo["/Show/Episodelist/Season/episode/seasonnum"] ;
-
-        #details[SEASON]=episodeInfo["/Show/Episodelist/Season/episode/seasonnum"];
-        #details[EPISODE]=episodeInfo["/Show/Episodelist/Season/episode/epnum"];
-        details[ADDITIONAL_INF]=episodeInfo["/Show/Episodelist/Season/episode/title"];
+        details[SEASON] = season;
+        details[EPISODE] = ep;
+        details[ADDITIONAL_INF]=xml["/show/episode/title"];
         result=1;
     }
     return 0+ result;
@@ -952,6 +1010,10 @@ url,id2,date,nondate,regex,key,filter,showInfo,year_range,title_regex) {
 
             # First try API search or direct imdb search 
             if(plugin == "THETVDB") {
+
+                #TODO use tmdb 
+                #http://thetvdb.com/api/GetSeriesByRemoteID.php?imdbid=tt0411008
+
                 regex="[&?;]id=[0-9]+";
                 #first try api search
                 url = g_thetvdb_web"/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
@@ -1063,15 +1125,11 @@ url,i,num,langs) {
 
             num = get_langs(langs);
             for(i = 1 ; i <= num ; i++ ) {
-                if (g_tvdb_user_per_episode_api) {
-                    url = g_thetvdb_web"/data/series/"tvdbid"/"langs[i]".xml";
-                } else {
-                    url = g_thetvdb_web"/data/series/"tvdbid"/all/"langs[i]".xml";
-                }
+                url = g_thetvdb_web"/data/series/"tvdbid"/"langs[i]".xml";
                 if (url_state(url) == 0) break;
             }
         } else if (plugin == "TVRAGE") {
-            url = "http://services.tvrage.com/feeds/full_show_info.php?sid="tvdbid;
+            url = "http://services.tvrage.com/myfeeds/showinfo.php?key="g_api_rage"&sid="tvdbid;
         }
     }
     return url;
@@ -1106,7 +1164,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
     matchLevel = 0;
     yearOrCountry="";
 
-    #DEBUG("Checking ["titleIn"] against ["possible_title"]");
+    DEBUG("XX Checking ["titleIn"] against ["possible_title"]");
 
     # Conan O Brien is a really tricky show to match on!
     # Its a daily,
@@ -1120,6 +1178,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         titleIn=clean_title(titleIn);
     }
 
+    # Extract any bracketed qualifiers - eg (year) or (US)
     if (match(possible_title," \\([^)]+")) {
         yearOrCountry=tolower(clean_title(substr(possible_title,RSTART+2,RLENGTH-2),1));
         DEBUG("Qualifier ["yearOrCountry"]");
@@ -1129,6 +1188,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
     #sub(/\<2[0-9][0-9][0-9]$/," (&)",titleIn);
     sub(/\<2[0-9][0-9][0-9]$/,"(&)",titleIn); # Removed space for now. Will fix with proper regex.
 
+    # store anything before comma as shortName
     if ((cPos=index(possible_title,",")) > 0) {
         shortName=clean_title(substr(possible_title,1,cPos-1),1);
     }
@@ -1145,11 +1205,16 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         DEBUG("Qualified title ["possible_title"]");
     }
 
-#    INF("titleIn["titleIn"]");
-#    INF("possible_title["possible_title"]");
+    DEBUG("XX titleIn["titleIn"]");
+    DEBUG("XX possible_title["possible_title"]");
 #    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
 
     if (index(possible_title,titleIn) == 1) {
+        #eg "jay leno show","jay leno"
+        #eg "tonight show with jay leno","jay leno"
+
+
+
         #TODO Note we could keep the 1 match levels here and below, but if so
         #we should still go on to search abbreviations. For now easier to comment out.
         #The zero score will trigger the abbreviation code.
@@ -1183,7 +1248,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
             # than the old , however new series is qualified (2003) at thetvdb
             matchLevel = 5;
 
-        } else if ( index(possible_title,titleIn" Show")) {
+        } else if ( index(possible_title,titleIn" show")) {
 
             # eg "(The) Jay Leno Show" vs "Jay Leno"
             matchLevel = 4;
@@ -1205,12 +1270,12 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
             matchLevel = 5;
             INF("match for ["titleIn"] containing ["possible_title"]");
         }
-    } else if ( index(possible_title,"Late Night With "titleIn)) {
+    } else if ( index(possible_title,"late night with "titleIn)) {
         # Late Night With Some Person might just be known as "Some Person"
         # eg The Tonight Show With Jay Leno
         matchLevel = 4;
 
-    } else if ( index(possible_title,"Show With "titleIn)) {
+    } else if ( index(possible_title,"show with "titleIn)) {
 
         # The blah blah Show With Some Person might just be known as "Some Person"
         # eg The Tonight Show With Jay Leno
@@ -1476,18 +1541,14 @@ function get_episode_url(plugin,seriesUrl,season,episode,\
 episodeUrl ) {
     episodeUrl = seriesUrl;
     if (plugin == "THETVDB") {
-        if (g_tvdb_user_per_episode_api) {
-            #Note episode may be 23,24 so convert to number.
-            if (sub(/[a-z][a-z].xml$/,"default/"season"/"(episode+0)"/&",episodeUrl)) {
-                return episodeUrl;
-            }
-        } else {
-            #same url
+        #Note episode may be 23,24 so convert to number.
+        if (sub(/[a-z][a-z].xml$/,"default/"season"/"(episode+0)"/&",episodeUrl)) {
             return episodeUrl;
         }
     } else if (plugin == "TVRAGE") {
-        #same url
-        return episodeUrl;
+
+        sub(/showinfo/,"episodeinfo",episodeUrl);
+        return episodeUrl"&ep="season"x"(episode+0);
     }
     return "";
 }
@@ -1495,7 +1556,7 @@ episodeUrl ) {
 #Get episode info by changing base url - this should really use the id
 #but no time to refactor calling code at the moment.
 function get_episode_xml(plugin,seriesUrl,season,episode,episodeInfo,\
-episodeUrl,filter,result) {
+episodeUrl,result) {
     delete episodeInfo;
 
     id1("get_episode_xml");
@@ -1506,18 +1567,10 @@ episodeUrl,filter,result) {
     if (episodeUrl != "") {
         if (plugin == "THETVDB") {
 
-            if (g_tvdb_user_per_episode_api) {
-                result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
-            } else {
-                filter["/Data/Episode/SeasonNumber"] = season;
-                filter["/Data/Episode/EpisodeNumber"] = episode;
-                result = fetch_xml_single_child(episodeUrl,plugin"-episode","/Data/Episode",filter,episodeInfo);
-            }
+            result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
 
         } else if (plugin == "TVRAGE" ) {
-            filter["/Show/Episodelist/Season#no"] = season;
-            filter["/Show/Episodelist/Season/episode/seasonnum"] = episode;
-            result = fetch_xml_single_child(episodeUrl,plugin"-episode","/Show/Episodelist/Season/episode",filter,episodeInfo);
+            result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
         } else {
             plugin_error(plugin);
         }
@@ -1721,26 +1774,24 @@ function set_eptitle(minfo,title) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_rage(minfo,tvDbSeriesUrl,\
-seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag,plot) {
+seriesInfo,episodeInfo,filter,url,e,result,pi) {
 
     pi="TVRAGE";
     result = 0;
     delete filter;
 
-    ignore="/Show/Episodelist";
-    if (fetch_xml_single_child(tvDbSeriesUrl,"tvinfo-show","/Show",filter,seriesInfo,ignore)) {
+    if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"")) {
         dump(0,"tvrage series",seriesInfo);
-        adjustTitle(minfo,remove_br_year(seriesInfo["/Show/name"]),pi);
-        minfo["mi_year"] = substr(seriesInfo["/Show/started"],8,4);
-        setFirst(minfo,"mi_premier",formatDate(seriesInfo["/Show/started"]));
+        adjustTitle(minfo,remove_br_year(seriesInfo["/Showinfo/showname"]),pi);
+        minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);
+        setFirst(minfo,"mi_premier",formatDate(seriesInfo["/Showinfo/started"]));
 
 
-        url=urladd(seriesInfo["/Show/showlink"],"remove_add336=1&bremove_add=1");
-        plot = clean_plot(scrape_one_item("tvrage_plot",url,"id=.iconn1",0,"iconn2|<center>|^<br>$",0,1));
-        best_source(minfo,"mi_plot",plot,"tvrage");
+        url=urladd(seriesInfo["/Showinfo/showlink"],"remove_add336=1&bremove_add=1");
+        best_source(minfo,"mi_plot",clean_plot(seriesInfo["/Showinfo/summary"]),"tvrage");
 
         minfo["mi_tvid_plugin"]="TVRAGE";
-        minfo["mi_tvid"]=seriesInfo["/Show/showid"];
+        minfo["mi_tvid"]=seriesInfo["/Showinfo/showid"];
         result ++;
 
         #get imdb link - via links page and then epguides.
@@ -1756,7 +1807,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag,plot) {
 
         dump(0,"pre-episode",minfo);
 
-        e="/Show/Episodelist/Season/episode";
+        e="/show/episode";
         if (minfo["mi_episode"] ~ "^[0-9,]+$" ) {
             if (get_episode_xml(pi,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"],episodeInfo)) {
 
@@ -1764,25 +1815,9 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,p,ignore,flag,plot) {
 
                 minfo["mi_airdate"]=formatDate(episodeInfo[e"/airdate"]);
                 url=seriesInfo["/Show/showlink"] "/printable?nocrew=1&season=" minfo["mi_season"];
-                #OLDWAY#url=urladd(episodeInfo[e"/link"],"remove_add336=1&bremove_add=1");
 
-                if (minfo["mi_epplot"] == "" ) {
-                    #p = scrape_one_item("tvrage_epplot",url,"id=.ieconn2",0,"</tr>|^<br>$|<a ",1);
-
-
-                    flag=sprintf(":%02dx%02d",minfo["mi_season"],minfo["mi_episode"]);
-                    p = scrape_one_item("tvrage_epplot", url, flag",<p>", 1, "</div>", 0, 1);
-
-
-                    #OLDWAY#p = scrape_one_item("tvrage_epplot",url,">Episode Summary</h",0,"^<br>$|<a href",1,0);
-
-
-
-                    sub(/ *There are no foreign summaries.*/,"",p);
-                    if (p != "" && index(p,"There is no summary") == 0) {
-                        minfo["mi_epplot"] = clean_plot(p);
-                        DEBUG("rage epplot :"minfo["mi_epplot"]);
-                    }
+                if (minfo["mi_epplot"] == "") {
+                    minfo["mi_epplot"] = clean_plot(episodeInfo[e"/summary"]);
                 }
                 result ++;
             } else {
@@ -1828,8 +1863,8 @@ id,xml,eptitle) {
 
             } else if (plugin == "TVRAGE" ) {
 
-                ageHash[id] = xml["/Show/Episodelist/Season/episode/airdate"];
-                eptitle = tolower(xml["/Show/Episodelist/Season/episode/title"]);
+                ageHash[id] = xml["/show/episode/airdate"];
+                eptitle = tolower(xml["/show/episode/title"]);
 
             } else {
                 plugin_error(plugin);

@@ -1,3 +1,7 @@
+#  Source getting set to "TVRAGE" somewhere. make sure comparisons are lower case.
+#  
+#  replace epguides code with http://services.tvrage.com/feeds/show_list_letter.php?letter=j
+#
 #  change IMDBFIRST to only look at first n results - matches further down the page tend to be false.
 #
 #  #imdb poster filter on SX(80|214|95) - mobile/labs/old
@@ -86,6 +90,9 @@ by initials
 by abbrviation
 Selection by aired episode
 by epno - eptitle.avi
+daily show  - Jey Leno etc.
+Show with year seasons - BBC Horizon
+
 
 
 

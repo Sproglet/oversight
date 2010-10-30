@@ -345,7 +345,7 @@ f,minfo2,err,line,pagestate,namestate) {
 }
 
 function minfo_merge(current,new,default_source,\
-flds,i,f,source) {
+f,source) {
 
     id1("minfo_merge["default_source"]");
     # Keep best title

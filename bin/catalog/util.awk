@@ -175,7 +175,7 @@ i,j) {
 }
 
 function apply(text) {
-    gsub(/[^A-Fa-f0-9]/,"",text);
+    gsub(/[0-9][0-9][0-9][0-9][0-9]/,"",text);
     return text;
 }
 #baseN - return a number base n. All output bytes are offset by 128 so the characters will not 

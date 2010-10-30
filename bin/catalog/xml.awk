@@ -11,6 +11,7 @@ f) {
 function readXML(f,xml,ignorePaths,\
 line,ret) {
     ret = 0;
+    delete xml;
     if (f != "" ) {
         FS="\n";
         while(enc_getline(f,line) > 0 ) {

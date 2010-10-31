@@ -8,10 +8,11 @@ ret,i,j,dirCount,dirs) {
        if (n > dirCount ) {
            ret = ""; # no more n
        } else {
-       for (i = 1 ; i <= n -1 ; i++ ) {
-           j = dirCount + 1 - i;
-           if (j >= 1) {
-               ret = dirs[j] "/" ret;
+           for (i = 1 ; i <= n -1 ; i++ ) {
+               j = dirCount + 1 - i;
+               if (j >= 1) {
+                   ret = dirs[j] "/" ret;
+               }
            }
        }
    }
@@ -126,7 +127,7 @@ terms,results,id,url,parts,showurl) {
         }
     } else if (plugin == "TVRAGE") {
         terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
-        url = scanPageFirstMatch(g_search_google terms,"tvrage","http://[a-z0-9.]+.tvrage."g_nonquote_regex"+",0);
+        url = scan_page_for_first_link(g_search_google terms,"tvrage",0);
         if (url != "") {
             scan_page_for_match_counts(url,"/shows/","/shows/[0-9]+",0,0,"",results);
             showurl=getMax(results,1,1);
@@ -1025,7 +1026,7 @@ function tv_title2regex(title) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,minfo,imdbid,\
-url,id2,date,nondate,regex,key,filter,showInfo,year_range,title_regex) {
+url,id2,date,nondate,key,filter,showInfo,year_range,title_regex) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -1039,16 +1040,7 @@ url,id2,date,nondate,regex,key,filter,showInfo,year_range,title_regex) {
             # First try API search or direct imdb search 
             if(plugin == "THETVDB") {
 
-                #TODO use tmdb 
-                #http://thetvdb.com/api/GetSeriesByRemoteID.php?imdbid=tt0411008
-
-                regex="[&?;]id=[0-9]+";
-                #first try api search
-                url = g_thetvdb_web"/index.php?imdb_id="imdbid"&order=translation&searching=Search&tab=advancedsearch";
-                id2 = scanPageFirstMatch(url,"",regex,0);
-                if (id2 != "" ) {
-                    id2=substr(id2,5);
-                }
+                id2 = imdb2thetvdb(imdbid);
             }
 
             if (id2 == "" ) {
@@ -1610,9 +1602,78 @@ episodeUrl,result) {
     return 0+ result;
 }
 
+# get thetvdbid from imdbid
+function imdb2thetvdb(imdbid,\
+ret,xml) {
+    id1("XX NEW CHECK imdb2thetvdb "imdbid);
+    if (!(imdbid in g_imdb2thetvdb)) {
+        fetchXML(g_thetvdb_web"/api/GetSeriesByRemoteID?imdbid="imdbid,"imdb2tv",xml);
+        # always set value regardless of fetchXML error status - to prevent re-query
+        g_imdb2thetvdb[imdbid] = xml["/Data/Series/seriesid"];
+    }
+    ret = g_imdb2thetvdb[imdbid];
+    id0(ret);
+    return ret;
+}
+
+# Follow linked websites from tvrage to tvdb
+# Note tvrage and thetvdb have recently become partners so this may become a direct link 
+function rage2thetvdb(rageid,\
+showurl,sharetv,epguide,thetvdb,imdb,ret) {
+
+    id1("XX NEW CHECK rage2tvdb "rageid);
+
+    if (!(rageid in g_rage2tvdb)) {
+
+        showurl = g_tvrage_web"/shows/id-"rageid;
+
+        # Possible routes to thetvdb are: 
+
+        # tvrage -> sharetv -> tvdb
+        # tvrage -> epguide -> sharetv -> tvdb
+
+        # tvrage -> sharetv -> imdb -> tvdb
+        # tvrage -> epguide -> imdb -> tvdb
+        # tvrage -> epguide -> sharetv->imdb -> tvdb
+        # Using imdb link will only work if IMDB is set on thetvdb.
+
+        # ideally the following line will work one day if tvrage add partner links to thetvdb
+        thetvdb  = scan_page_for_first_link(showurl,"thetvdb",1);
+
+        if (thetvdb == "") {
+            sharetv=scan_page_for_first_link(showurl,"sharetv",1);
+            if (sharetv == "") {
+                epguide = scan_page_for_first_link(showurl,"epguides",1);
+                if (epguide) {
+                    sharetv=scan_page_for_first_link(epguide,"sharetv",1);
+                }
+            }
+            if (sharetv) {
+                thetvdb = scan_page_for_first_link(sharetv,"thetvdb",1);
+                if (!thetvdb) {
+                    imdb = scan_page_for_first_link(sharetv,"imdb",1);
+                }
+            } else if (epguide) {
+                imdb = scan_page_for_first_link(epguide,"imdb",1);
+            }
+            if (thetvdb) {
+                if (match(thetvdb,"[?&]id=[0-9]+")) {
+                    ret = substr(thetvdb,RSTART+4,RLENGTH-4);
+                }
+            } else if (imdb) {
+                ret = imdb2thetvdb(extractImdbId(imdb));
+            }
+        }
+        g_rage2tvdb[rageid] = ret;
+    }
+    ret = g_rage2tvdb[rageid];
+    id0(ret);
+    return ret;
+}
+
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,\
-result,minfo2) {
+result,minfo2,thetvdbid) {
 
     id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
 
@@ -1625,11 +1686,27 @@ result,minfo2) {
 
     if (plugin == "THETVDB") {
         result = get_tv_series_info_tvdb(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
+        thetvdbid = minfo2["mi_tvid"];
+
     } else if (plugin == "TVRAGE") {
+
         result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
+        if (result) {
+            #get posters from thetvdb
+            thetvdbid = rage2thetvdb(minfo2["mi_tvid"]);
+        }
+
     } else {
         plugin_error(plugin);
     }
+
+    if (result && thetvdbid) {
+        getTvDbSeasonBanner(minfo2,thetvdbid,"en");
+        if (!index(minfo2["mi_idlist"],"thetvdb")) {
+            minfo2["mi_idlist"] = minfo2["mi_idlist"] " thetvdb:"thetvdbid;
+        }
+    }
+
 #    ERR("UNCOMMENT THIS CODE");
     if (minfo["mi_episode"] ~ "^DVD[0-9]+$" ) {
         result++;
@@ -1684,7 +1761,7 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
+seriesInfo,episodeInfo,result,empty_filter) {
 
     result=0;
 
@@ -1709,12 +1786,6 @@ seriesInfo,episodeInfo,bannerApiUrl,result,empty_filter) {
         minfo["mi_tvid"]=seriesInfo["/Data/Series/id"];
         minfo["mi_idlist"]="thetvdb:"seriesInfo["/Data/Series/id"];
         result ++;
-
-
-        bannerApiUrl = tvDbSeriesUrl;
-        sub(/(all.|)[a-z][a-z].xml$/,"banners.xml",bannerApiUrl);
-
-        getTvDbSeasonBanner(minfo,bannerApiUrl,"en");
 
         # For twin episodes just use the first episode number for lookup by adding 0
         dump(0,"pre-episode",minfo);
@@ -1764,9 +1835,10 @@ function tvDbImageUrl(path) {
     }
 }
 
-function getTvDbSeasonBanner(minfo,bannerApiUrl,language,\
-xml,filter,r) {
+function getTvDbSeasonBanner(minfo,tvdbid,language,\
+xml,filter,r,bannerApiUrl) {
 
+    bannerApiUrl = g_thetvdb_web"/data/series/"tvdbid"/banners.xml";
     if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
         r="/Banners/Banner";
         delete filter;
@@ -1827,7 +1899,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi) {
         if(minfo["mi_imdb"] == "") {
             url = scanPageFirstMatch(url,"/links/",g_nonquote_regex"+/links/",1);
             if (url != "" ) {
-                url = scanPageFirstMatch(g_tvrage_web url,"epguides", "http"g_nonquote_regex "+.epguides." g_nonquote_regex"+",1);
+                url = scan_page_for_first_link(g_tvrage_web url,"epguides", 1 );
                 if (url != "" ) {
                     minfo["mi_imdb"] = scanPageFirstMatch(url,"tt",g_imdb_regex,1);
                 }

@@ -1,3 +1,8 @@
+#Scan a page for first link to a given domain
+function scan_page_for_first_link(url,domain,cache) {
+    return scanPageFirstMatch(url,domain,"http://(|[^\"'/]+\\.)"domain "\\." g_nonquote_regex"+",cache);
+}
+
 # Scan a page for matches to regular expression
 # IN fixed_text, - fixed text to help speed up scan
 # matches = array of matches index 1,2,...

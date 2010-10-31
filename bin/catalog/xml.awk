@@ -1,13 +1,14 @@
 
 #Load an xml file into array - note duplicate elements are clobbered.
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
+# RETURN ok=1 failed=0
 function fetchXML(url,label,xml,ignorePaths,\
 f) {
     f=getUrl(url,label,1);
     return readXML(f,xml,ignorePaths);
 }
 
-# ok=1 failed=0
+# RETURN ok=1 failed=0
 function readXML(f,xml,ignorePaths,\
 line,ret) {
     ret = 0;

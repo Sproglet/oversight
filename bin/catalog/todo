@@ -1,3 +1,5 @@
+#  convert rating to a number in index.db and oversight display.
+#  add mi_by_date=1 if fetched by date. Somehow pass this flag to oversight. 
 #  Source getting set to "TVRAGE" somewhere. make sure comparisons are lower case.
 #  
 #  replace epguides code with http://services.tvrage.com/feeds/show_list_letter.php?letter=j

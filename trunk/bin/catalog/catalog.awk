@@ -136,6 +136,7 @@ BEGIN {
     g_start_time = systime();
     g_thetvdb_web="http://www.thetvdb.com";
     g_tvrage_web="http://www.tvrage.com";
+    g_tvrage_api="http://services.tvrage.com";
 
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
     g_fetch_images_concurrently="START";

@@ -436,7 +436,7 @@ function cmp_rage_ep(tvdbid,season,ep,date_string,xml,\
 url_root,key,ret) {
     id1("XX cmp_rage_ep "season"x"ep" vs "date_string);
     key = "/show/episode/airdate";
-    url_root = "http://services.tvrage.com/feeds/episodeinfo.php?sid="tvdbid"&ep=";
+    url_root = g_tvrage_api"/feeds/episodeinfo.php?sid="tvdbid"&ep=";
     ret = 2;
     if(fetchXML(url_root season"x"ep,"rage",xml)) {
         if (key in xml) {
@@ -765,24 +765,43 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 # IN abbrev - abbreviated name eg ttscc
 # OUT alternateTitles - hash of matching names eg {Terminator The Sarah Conor Chronicles,...} indexed by title.
 function searchAbbreviationAgainstTitles(abbrev,alternateTitles,\
-initial) {
+initial,names) {
 
     delete alternateTitles;
 
     INF("Search Phase: epguid abbreviations");
 
-    initial = epguideInitial(abbrev);
-    searchAbbreviation(initial,abbrev,alternateTitles);
+    if (0) {
+        initial = epguideInitial(abbrev);
+        get_epguide_names_by_letter(initial,names);
+        clean_titles_for_abbrev(names);
+        searchAbbreviation(initial,names,abbrev,alternateTitles);
 
-    #if the abbreviation begins with t it may stand for "the" so we need to 
-    #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
-    if (initial == "t" ) {
-        initial = epguideInitial(substr(abbrev,2));
-        if (initial != "t" ) {
-            searchAbbreviation(initial,abbrev,alternateTitles);
+        #if the abbreviation begins with t it may stand for "the" so we need to 
+        #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
+        if (initial == "t" ) {
+            initial = epguideInitial(substr(abbrev,2));
+            if (initial != "t" ) {
+                get_epguide_names_by_letter(initial,names);
+                clean_titles_for_abbrev(names);
+                searchAbbreviation(initial,names,abbrev,alternateTitles);
+            }
         }
+    } else {
+        # New method for abbreviations - use tvrage index
+        initial = substr(abbrev,1,1);
+        get_tvrage_names_by_letter(initial,names);
+        clean_titles_for_abbrev(names);
+        searchAbbreviation(initial,names,abbrev,alternateTitles);
     }
     dump(0,"abbrev["abbrev"]",alternateTitles);
+}
+
+function clean_titles_for_abbrev(names,\
+i) {
+    for(i in names) {
+        names[i] = tolower(clean_title(names[i]));
+    }
 }
 
 function possible_tv_titles(plugin,title,closeTitles,\
@@ -941,12 +960,12 @@ allTitles,url,ret) {
 
     if (plugin == "THETVDB") {
 
-        url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",title);
+        url=expand_url(g_thetvdb_web"/api/GetSeries.php?seriesname=",title);
         filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
 
     } else if (plugin == "TVRAGE") {
 
-        url=g_tvrage_web"/feeds/search.php?show="title;
+        url=g_tvrage_api"/feeds/search.php?show="title;
         filter_search_results(url,title,"/Results/show","name","showid",allTitles);
 
     } else {
@@ -1084,7 +1103,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex) {
                     filter["/Results/show/name"] = "~:^"title_regex"$";
                     filter["/Results/show/started"] = "~:"year_range;
                     
-                    if (fetch_xml_single_child(g_tvrage_web"/feeds/search.php?show="minfo["mi_title"],"imdb2rage","/Results/show",filter,showInfo)) {
+                    if (fetch_xml_single_child(g_tvrage_api"/feeds/search.php?show="minfo["mi_title"],"imdb2rage","/Results/show",filter,showInfo)) {
                         INF("Looking at tv rage "showInfo["/Results/show/name"]);
                         id2 = showInfo["/Results/show/showid"];
                     }
@@ -1349,9 +1368,33 @@ i,score,bestScore,tmpTitles) {
     return 0+ bestScore;
 }
 
+function get_tvrage_names_by_letter(letter,names,\
+url,count,i,names2,regex,parts) {
+
+    delete names;
+    id1("get_tvrage_names_by_letter abbeviations for "letter);
+    regex="<id>([^<]+)</id><name>([^<]*)</name>";
+    url = g_tvrage_api"/feeds/show_list_letter.php?letter="letter;
+    scan_page_for_match_order(url,"<name>",regex,0,1,"",names2);
+    for(i in names2) {
+        gsub(/\&amp;/,"And",names2[i]);
+        split(gensub(regex,SUBSEP"\\1"SUBSEP"\\2"SUBSEP,"g",names2[i]),parts,SUBSEP);
+        names[parts[2]] = parts[3];
+        count++;
+    }
+    id0(count);
+    return count;
+}
+
+    
+    
+
+
+
 # Return the list of names in the epguide menu indexed by link
-function getEpguideNames(letter,names,\
+function get_epguide_names_by_letter(letter,names,\
 url,title,link,links,i,count2) {
+    id1("get_epguide_names_by_letter abbeviations for "letter);
     url = "http://epguides.com/menu"letter;
 
     scan_page_for_match_counts(url,"<li>","<li>(|<b>)<a.*</li>",0,1,"",links);
@@ -1385,43 +1428,52 @@ url,title,link,links,i,count2) {
             }
         }
     }
-    DEBUG("Loaded "count2" names");
+    id0(count2);
     return 0+ count2;
 }
 
 # Search epGuide menu page for all titles that match the possible abbreviation.
 # IN letter - menu page to search. Usually first letter of abbreviation except if abbreviation begins
 #             with t then search both t page and subsequent letter - to account for "The xxx" on page x
+# IN list of names that start with letter.
 # IN titleIn - The thing we are looking for - eg ttscc
 # IN/OUT alternateTitles - hash of titles - index is the title, value is 1
-function searchAbbreviation(letter,titleIn,alternateTitles,\
-possible_title,names,i,ltitle) {
+function searchAbbreviation(letter,names,titleIn,alternateTitles,\
+possible_title,i,ltitle) {
 
     ltitle = tolower(titleIn);
 
     id1("Checking "titleIn" for abbeviations on menu page - "letter);
+    #dump(0,"searchAbbreviation:",names);
 
     if (ltitle == "" ) return ;
 
-    getEpguideNames(letter,names);
 
     for(i in names) {
 
+
         possible_title = names[i];
 
-        sub(/\(.*/,"",possible_title);
+        #DEBUG("searchAbbreviation ["ltitle"] vs ["possible_title"]");
 
-        possible_title = clean_title(possible_title);
+        sub(/\(.*/,"",possible_title);
+        gsub(/'/,"",possible_title);
 
         if (abbrevMatch(ltitle,possible_title)) {
+
             alternateTitles[possible_title]="abbreviation-initials";
+
         } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
+
             alternateTitles[possible_title]="abbreviation-double";
+
         } else if (abbrevContraction(ltitle,possible_title)) {
+
             alternateTitles[possible_title]="abbreviation-contraction";
         }
 
     }
+    dump(0,"abbrevs",alternateTitles);
     id0();
 }
 

@@ -1753,7 +1753,7 @@ result,minfo2,thetvdbid) {
     }
 
     if (result && thetvdbid) {
-        getTvDbSeasonBanner(minfo2,thetvdbid,"en");
+        getTvDbSeasonBanner(minfo2,thetvdbid);
         if (!index(minfo2["mi_idlist"],"thetvdb")) {
             minfo2["mi_idlist"] = minfo2["mi_idlist"] " thetvdb:"thetvdbid;
         }
@@ -1818,8 +1818,7 @@ seriesInfo,episodeInfo,result,empty_filter) {
     result=0;
 
     
-    #fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
-    fetch_xml_single_child(tvDbSeriesUrl,"thetvdb-series","/Data/Series",empty_filter,seriesInfo);
+    fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
     if ("/Data/Series/id" in seriesInfo) {
 
         dump(0,"tvdb series",seriesInfo);
@@ -1837,6 +1836,8 @@ seriesInfo,episodeInfo,result,empty_filter) {
         minfo["mi_poster"]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
         minfo["mi_tvid"]=seriesInfo["/Data/Series/id"];
         minfo["mi_idlist"]="thetvdb:"seriesInfo["/Data/Series/id"];
+        minfo["mi_season"]=season;
+        minfo["mi_episode"]=episode;
         result ++;
 
         # For twin episodes just use the first episode number for lookup by adding 0
@@ -1879,33 +1880,51 @@ seriesInfo,episodeInfo,result,empty_filter) {
 
 function tvDbImageUrl(path) {
     if(path != "") {
-
-        #return "http://images.thetvdb.com/banners/_cache/" path;
         return "http://thetvdb.com/banners/" url_encode(html_decode(path));
     } else {
         return "";
     }
 }
 
-function getTvDbSeasonBanner(minfo,tvdbid,language,\
-xml,filter,r,bannerApiUrl) {
+function getTvDbSeasonBanner(minfo,tvdbid,\
+xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
+
+    lnum = get_langs(langs);
 
     bannerApiUrl = g_thetvdb_web"/data/series/"tvdbid"/banners.xml";
-    if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
-        r="/Banners/Banner";
+    r="/Banners/Banner";
+    get_poster = getting_poster(minfo,1);
+    get_fanart = getting_fanart(minfo,1);
+
+    if (get_poster || get_fanart) {
+        fetched = fetchXML(bannerApiUrl,"banners",xml,"");
+    }
+
+    if (get_poster && fetched) {
         delete filter;
-        filter[r"/Language"] = language;
-        filter[r"/BannerType"] = "season";
-        filter[r"/Season"] = minfo["mi_season"];
-        if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-            minfo["mi_poster"]=tvDbImageUrl(xml[r"/BannerPath"]);
+        filter["/BannerType"] = "season";
+        filter["/Season"] = minfo["mi_season"];
+        for(i = 1 ; i <= lnum ; i++ ) {
+            filter["/Language"] = langs[i];
+            if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
+                minfo["mi_poster"]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                DEBUG("XX Season Poster = "minfo["mi_poster"]);
+                break;
+            }
         }
+    }
+
+    if (get_fanart && fetched) {
 
         delete filter;
-        filter[r"/Language"] = language;
-        filter[r"/BannerType"] = "fanart";
-        if (fetch_xml_single_child(bannerApiUrl,"banners","/Banners/Banner",filter,xml) ) {
-            minfo["mi_fanart"]=tvDbImageUrl(xml[r"/BannerPath"]);
+        filter["/BannerType"] = "fanart";
+        for(i = 1 ; i <= lnum ; i++ ) {
+            filter["/Language"] = langs[i];
+            if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
+                minfo["mi_fanart"]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                DEBUG("XX Fanart = "minfo["mi_fanart"]);
+                break;
+            }
         }
     }
 }

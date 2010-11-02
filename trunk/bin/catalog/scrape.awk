@@ -733,7 +733,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
     # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
     if (field == "" && minfo["mi_poster"] == "" && (index(fragment,"src=") || index(fragment,"href="))) {
 
-        value = domain_edits(domain,fragment,"catalog_domain_poster_url_regex_list",1);
+        value = domain_edits(domain,fragment,"catalog_domain_poster_url_regex_list",0);
         if (value) {
             field = "mi_poster";
             DEBUG(field"?["value"]");
@@ -749,7 +749,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
             INF("scrape_movie_fragment:"field"=["value"]");
 
             if (field == "mi_title") {
-                value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",1);
+                value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",0);
             }
             minfo[field]=value;
             minfo[field"_source"]=domain;

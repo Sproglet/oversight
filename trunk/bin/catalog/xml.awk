@@ -324,6 +324,11 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type,do_filter) {
 }
 
 # Check if an xml element matches a set of filters.
+# IN xml - xml data
+# IN root - first part of tag path
+# IN numbers - hash of tag_suffix => numbers to match. eg #id = 1234 or /id=1234
+# IN strings - hash of tag_suffix => strings to match. eg #name = Fred (for attribute) /name = Fred (for text)
+# IN strings - hash of tag_suffix => regex to match. 
 function check_filtered_element(xml,root,numbers,strings,regexs,\
 found,t,tag) {
     found=1;

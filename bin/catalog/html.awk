@@ -41,27 +41,24 @@ normedt,ret) {
 # TODO only check xml encoding for first line.
 # returns getline code and line contents in line[1]
 function enc_getline(f,line,\
-code,t) {
+code,t,dbg) {
 
     code = ( getline t < f );
 
+
     if (code > 0) {
-        #TODO - remove this debug code
 
         if (g_f_utf8[f] == "" ) {
 
             # check encoding
-
             g_f_utf8[f] = check_utf8(t);
+        }
 
 
-        } else {
+        t = html_decode(t);
 
-            t = html_decode(t);
-
-            if (g_f_utf8[f] != 1) {
-                t = utf8_encode(t);
-            }
+        if (g_f_utf8[f] != 1) {
+            t = utf8_encode(t);
         }
         line[1] = t;
     }

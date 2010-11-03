@@ -1547,32 +1547,15 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
             t++;
         }
     }
-    if (item->category == 'T' ) {
-        p+= sprintf(p,"_%d_%d.jpg",item->year,item->season);
-    } else {
-
-        *p++ = '_';
-
-        if (item->year) {
-            p += sprintf(p,"%d",item->year);
-        }
-
-        *p++ = '_';
-
-        char *imdbid=NULL;
-        if (!EMPTY_STR(item->url ) ) {
-           if ( util_starts_with(item->url,"tt")) {
-               imdbid = item->url;
-           } else {
-               imdbid = strstr(item->url,"/tt");
-               if (imdbid && isdigit(imdbid[3])) imdbid ++;
-           }
-        }
-        if (imdbid) {
-           p += sprintf(p,"%.9s",imdbid);
-        }
-        p += sprintf(p,".jpg");
+    *p++ = '_';
+    if (item->year) {
+        p += sprintf(p,"%d",item->year);
     }
+    if (item->category == 'T' ) {
+        p+= sprintf(p,"_%d",item->season);
+    } 
+    p += sprintf(p,".jpg");
+
     HTML_LOG(2,"internal_image_path_static [%s] = [%s]",item->title,path);
     assert(path[INTERNAL_IMAGE_PATH_LEN] == '\0');
     return path;

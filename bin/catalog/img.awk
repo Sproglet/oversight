@@ -11,8 +11,6 @@ poster_ref) {
     gsub("[^-_&" g_alnum8 "]+","_",poster_ref);
     if (minfo["mi_category"] == "T" ) {
         poster_ref = poster_ref "_" minfo["mi_season"];
-    } else {
-        poster_ref = poster_ref "_" minfo["mi_imdb"];
     }
     #"ovs:" means store in local database. This abstract path is used because when using
     #crossview in oversight jukebox, different posters have different locations.

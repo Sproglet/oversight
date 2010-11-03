@@ -91,7 +91,7 @@ details,line,ret,name,i,start,end) {
                 #}
 
 
-                minfo["mi_tvid"] = details[TVID];
+                minfo_set_id(plugin,details[TVID],minfo);
 
                 # This is the weakest form of tv categorisation, as the filename may just look like a TV show
                 # So only set if it is blank
@@ -423,9 +423,6 @@ episodeInfo,url) {
 
         equate_urls(url,g_thetvdb_web"/data/series/"tvdbid"/default/"details[SEASON]"/"details[EPISODE]"/en.xml");
 
-        #minfo["mi_imdb"]=get_tv_series_api_url(tvdbid);
-        #DEBUG("Season "details[SEASON]" episode "details[EPISODE]" external source "minfo["mi_imdb"]);
-        #dump(0,"epinfo",episodeInfo);
         return 1;
     }
     return 0;
@@ -547,6 +544,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
             if (tv_status) break;
 
+
             plugin = g_tv_plugin_list[p];
 
             # demote back to imdb title
@@ -558,7 +556,6 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
             # checkTvFilenameFormat also uses the plugin to detect daily formats.
             # so if ellen.2009.03.13 is rejected at tvdb it is still passed by tvrage.
-            minfo["mi_tvid"]="";
 
             do_search = 1;
 
@@ -569,8 +566,8 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
                     search_abbreviations = more_info[1];
 
                     #minfo["mi_imdb"] may have been set by a date lookup
-                    if (bestUrl == "" && minfo["mi_imdb"] != "" ) {
-                        bestUrl = extractImdbLink(minfo["mi_imdb"]);
+                    if (bestUrl == "") {
+                        bestUrl = extractImdbLink(imdb(minfo));
                     }
                 } else {
                     do_search = 0;
@@ -607,7 +604,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
 
     #This will succedd if we already have the tvid when doing the checkTvFilenameFormat
     #checkTvFilenameFormat() may fetch the tvid while doing a date check for daily shows.
-    tvDbSeriesPage = get_tv_series_api_url(plugin,minfo["mi_tvid"]);
+    tvDbSeriesPage = get_tv_series_api_url(plugin,minfo_get_id(minfo,plugin));
 
     if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
         # do not know tvid nor imdbid - use the title to search tv indexes.
@@ -620,14 +617,15 @@ tvDbSeriesPage,result,tvid,cat,iid) {
         if (result) {
             if (imdbUrl) {
                 iid=extractImdbId(imdbUrl);
-            } else if (minfo["mi_imdb"]) {
-                # we also know the imdb id
-                iid=minfo["mi_imdb"];
             } else {
-                # use the tv id to find the imdb id
-                iid=tv2imdb(minfo);
+                # we also know the imdb id
+                iid=imdb(minfo);
+                if(iid == "") {
+                    # use the tv id to find the imdb id
+                    iid=tv2imdb(minfo);
+                }
             }
-            cat = get_imdb_info(iid,minfo);
+            cat = get_imdb_info(extractImdbLink(iid),minfo);
         }
     } else {
         # dont know the tvid
@@ -670,21 +668,21 @@ tvDbSeriesPage,result,tvid,cat,iid) {
 
 # use the title and year to find the imdb id
 function tv2imdb(minfo,\
-key) {
+key,iid) {
 
-    if (minfo["mi_imdb"] == "") {
+    iid = imdb(minfo);
+    if (iid == "") {
     
         key=minfo["mi_title"]" "minfo["mi_year"];
         DEBUG("tv2imdb key=["key"]");
         if (!(key in g_tv2imdb)) {
 
             # Search for imdb page  - try to filter out Episode pages.
-            g_tv2imdb[key] = web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" -\"Episode Cast\"",key); 
+            iid = g_tv2imdb[key] = extractImdbId(web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" -\"Episode Cast\"",key)); 
         }
-        minfo["mi_imdb"] = g_tv2imdb[key];
+        minfo_set_id("imdb",iid,minfo);
     }
-    DEBUG("tv2imdb end=["minfo["mi_imdb"]"]");
-    return extractImdbLink(minfo["mi_imdb"]);
+    return iid;
 }
 
 function search_tv_series_names(plugin,minfo,title,search_abbreviations,\
@@ -1045,7 +1043,7 @@ function tv_title2regex(title) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,minfo,imdbid,\
-url,id2,date,nondate,key,filter,showInfo,year_range,title_regex) {
+url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -1062,7 +1060,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex) {
                 id2 = imdb2thetvdb(imdbid);
             }
 
-            if (id2 == "" ) {
+            if (id2 == "" || 1 ) {
 
                 # search for series name directly using raw(ish) imdb name
                 extractDate(minfo["mi_premier"],date,nondate);
@@ -1076,36 +1074,29 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex) {
 
                 if(plugin == "THETVDB") {
 
-                    #allow for titles "The Office (US)" or "The Office" and 
-                    # hope the start year is enough to differentiate.
-                    filter["/Data/Series/SeriesName"] = "~:^"title_regex"$";
-                    filter["/Data/Series/FirstAired"] = "~:^"year_range"-";
-
                     url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",minfo["mi_title"]);
-                    if (fetch_xml_single_child(url,"imdb2tvdb","/Data/Series",filter,showInfo)) {
-                        INF("Looking at tvdb "showInfo["/Data/Series/SeriesName"]);
-                        id2 = showInfo["/Data/Series/seriesid"];
+                    if (fetchXML(url,"imdb2tvdb",showInfo,"")) {
+                        #allow for titles "The Office (US)" or "The Office" and 
+                        # hope the start year is enough to differentiate.
+                        filter["/SeriesName"] = "~:^"title_regex"$";
+                        filter["/FirstAired"] = "~:^"year_range"-";
+                        if (find_elements(showInfo,"/Data/Series",filter,1,tags)) {
+                            INF("Looking at tvdb "showInfo[tags[1]"/SeriesName"]);
+                            id2 = showInfo[tags[1]"/seriesid"];
+                        }
                     }
-
-#                    regex="[&?;]id=[0-9]+";
-#                    local ,premier_mdy
-#                    if (1 in date) premier_mdy=sprintf("\"%s %d, %d\"",g_month_en[0+date[2]],date[3],date[1]);
-#
-#                    id2 = scan_tv_via_search_engine(regex,minfo["mi_title"]" site:thetvdb.com intitle:\"Series Info\" ",premier_mdy,minfo["mi_year"]);
-#                    if (id2 != "" ) {
-#                        id2=substr(id2,5);
-#                    }
 
                 } else if(plugin == "TVRAGE") {
 
-                    #allow for titles "The Office (US)" or "The Office" and 
-                    # hope the start year is enough to differentiate.
-                    filter["/Results/show/name"] = "~:^"title_regex"$";
-                    filter["/Results/show/started"] = "~:"year_range;
-                    
-                    if (fetch_xml_single_child(g_tvrage_api"/feeds/search.php?show="minfo["mi_title"],"imdb2rage","/Results/show",filter,showInfo)) {
-                        INF("Looking at tv rage "showInfo["/Results/show/name"]);
-                        id2 = showInfo["/Results/show/showid"];
+                    if (fetchXML(g_tvrage_api"/feeds/search.php?show="minfo["mi_title"],"imdb2tvdb",showInfo,"")) {
+                        #allow for titles "The Office (US)" or "The Office" and 
+                        # hope the start year is enough to differentiate.
+                        filter["/name"] = "~:^"title_regex"$";
+                        filter["/started"] = "~:"year_range;
+                        if (find_elements(showInfo,"/Results/show",filter,1,tags)) {
+                            INF("Looking at tv rage "showInfo[tags[1]"/name"]);
+                            id2 = showInfo[tags[1]"/showid"];
+                        }
                     }
 
                 } else {
@@ -1124,8 +1115,8 @@ function searchTvDbTitles(plugin,minfo,title,\
 tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
 
     id1("searchTvDbTitles");
-    if (minfo["mi_imdb"]) {
-        imdb_id = minfo["mi_imdb"];
+    imdb_id = imdb(minfo);
+    if (imdb_id) {
         tvdbid = find_tvid(plugin,minfo,imdb_id);
     }
     if (tvdbid == "") {
@@ -1547,6 +1538,31 @@ function embedded_lc_regex(s) {
     return tolower(substr(s,3,length(s)-4));
 }
 
+#function is_contraction(string,short,end_on_word,\
+#i,short_len,offset) {
+#
+#    short_len = length(short);
+#    if (end_on_word) {
+#        short_len --;
+#    }
+#
+#    offset = 1;
+#    for(i = 1 ; i <= short_len ; i++ ) {
+#        # look for letter in rest of string
+#        if (j = index(substr(string,offset),substr(short,i,i))) {
+#            offset = offset-1 + j;
+#        } else {
+#            return 0;
+#        }
+#    }
+#    # Last letter
+#    if  (end_on_word) {
+#        return match(substr(string,offset),substr(short,i,i)"\\>");
+#    } else {
+#        return 1;
+#    }
+#}
+
 # match tblt to tablet , grk greek etc.
 # The contraction is allowed to match from the beginning of the title to the
 # end of any whole word. eg greys = greys anatomy 
@@ -1556,6 +1572,8 @@ found,regex,part) {
 
     # Use regular expressions to do the heavy lifting.
     # First if abbreviation is grk convert to ^g.*r.*k\>
+    #
+    # TODO Performance can be improved by just calling index for each letter in a loop. see is_contraction
     #
     regex= embedded_lc_regex(abbrev);
 
@@ -1670,12 +1688,14 @@ ret,xml) {
 
 # Follow linked websites from tvrage to tvdb
 # Note tvrage and thetvdb have recently become partners so this may become a direct link 
-function rage2thetvdb(rageid,\
-showurl,sharetv,epguide,thetvdb,imdb,ret) {
+function rage_get_other_ids(minfo,\
+rageid,showurl,thetvdb,imdb,ret,partners,p,partner,idlist) {
+
+    rageid = minfo_get_id(minfo,"tvrage");
 
     id1("XX NEW CHECK rage2tvdb "rageid);
 
-    if (!(rageid in g_rage2tvdb)) {
+    if (rageid && !(rageid in g_rage2tvdb)) {
 
         showurl = g_tvrage_web"/shows/id-"rageid;
 
@@ -1690,35 +1710,43 @@ showurl,sharetv,epguide,thetvdb,imdb,ret) {
         # Using imdb link will only work if IMDB is set on thetvdb.
 
         # ideally the following line will work one day if tvrage add partner links to thetvdb
-        thetvdb  = scan_page_for_first_link(showurl,"thetvdb",1);
+        imdb = minfo_get_id(minfo,"imdb");
+        thetvdb = minfo_get_id(minfo,"thetvdb");
 
-        if (thetvdb == "") {
-            sharetv=scan_page_for_first_link(showurl,"sharetv",1);
-            if (sharetv == "") {
-                epguide = scan_page_for_first_link(showurl,"epguides",1);
-                if (epguide) {
-                    sharetv=scan_page_for_first_link(epguide,"sharetv",1);
+        partners[1] = "sharetv";
+        partners[2] = "epguides";
+        for(p = 1; p <= 2 ; p++ ) {
+            if (imdb && thetvdb) break;
+
+            # scan for partner link
+            partner  = scan_page_for_first_link(showurl,partners[p],1);
+            if (partner) {
+                if (!imdb) {
+                    imdb = extractImdbId(scan_page_for_first_link(partner,"imdb",1));
                 }
-            }
-            if (sharetv) {
-                thetvdb = scan_page_for_first_link(sharetv,"thetvdb",1);
                 if (!thetvdb) {
-                    imdb = scan_page_for_first_link(sharetv,"imdb",1);
+                    thetvdb = scan_page_for_first_link(partner,"thetvdb",1);
+                    if (match(thetvdb,"[?&]id=[0-9]+")) {
+                        thetvdb = substr(thetvdb,RSTART+4,RLENGTH-4);
+                    }
                 }
-            } else if (epguide) {
-                imdb = scan_page_for_first_link(epguide,"imdb",1);
-            }
-            if (thetvdb) {
-                if (match(thetvdb,"[?&]id=[0-9]+")) {
-                    ret = substr(thetvdb,RSTART+4,RLENGTH-4);
-                }
-            } else if (imdb) {
-                ret = imdb2thetvdb(extractImdbId(imdb));
             }
         }
-        g_rage2tvdb[rageid] = ret;
+
+
+        if (imdb) {
+            idlist = idlist " imdb:"imdb;
+        }
+        if (thetvdb) {
+            idlist = idlist " thetvdb:"thetvdb;
+        }
+        g_rage2tvdb[rageid] = idlist;
     }
-    ret = g_rage2tvdb[rageid];
+
+    if (g_rage2tvdb[rageid]) {
+        minfo_merge_ids(minfo,g_rage2tvdb[rageid]);
+        ret = 1;
+    }
     id0(ret);
     return ret;
 }
@@ -1738,25 +1766,23 @@ result,minfo2,thetvdbid) {
 
     if (plugin == "THETVDB") {
         result = get_tv_series_info_tvdb(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
-        thetvdbid = minfo2["mi_tvid"];
 
     } else if (plugin == "TVRAGE") {
 
         result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
         if (result) {
             #get posters from thetvdb
-            thetvdbid = rage2thetvdb(minfo2["mi_tvid"]);
+            rage_get_other_ids(minfo2);
         }
 
     } else {
         plugin_error(plugin);
     }
 
+    thetvdbid = minfo_get_id(minfo2,"thetvdb");
+
     if (result && thetvdbid) {
         getTvDbSeasonBanner(minfo2,thetvdbid);
-        if (!index(minfo2["mi_idlist"],"thetvdb")) {
-            minfo2["mi_idlist"] = minfo2["mi_idlist"] " thetvdb:"thetvdbid;
-        }
     }
 
 #    ERR("UNCOMMENT THIS CODE");
@@ -1813,7 +1839,7 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,result,empty_filter) {
+seriesInfo,episodeInfo,result,iid) {
 
     result=0;
 
@@ -1823,7 +1849,8 @@ seriesInfo,episodeInfo,result,empty_filter) {
 
         dump(0,"tvdb series",seriesInfo);
 
-        minfo["mi_imdb"]=extractImdbId(seriesInfo["/Data/Series/IMDB_ID"]);
+        minfo["mi_season"]=season;
+        minfo["mi_episode"]=episode;
         #Refine the title.
         minfo["mi_title"] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
 
@@ -1834,10 +1861,12 @@ seriesInfo,episodeInfo,result,empty_filter) {
         minfo["mi_certrating"] = seriesInfo["/Data/Series/ContentRating"];
         minfo["mi_rating"] = seriesInfo["/Data/Series/Rating"];
         minfo["mi_poster"]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
-        minfo["mi_tvid"]=seriesInfo["/Data/Series/id"];
-        minfo["mi_idlist"]="thetvdb:"seriesInfo["/Data/Series/id"];
-        minfo["mi_season"]=season;
-        minfo["mi_episode"]=episode;
+
+        minfo_set_id("thetvdb",seriesInfo["/Data/Series/id"],minfo);
+
+        iid = seriesInfo["/Data/Series/IMDB_ID"];
+        minfo_set_id("imdb",iid,minfo);
+
         result ++;
 
         # For twin episodes just use the first episode number for lookup by adding 0
@@ -1870,10 +1899,10 @@ seriesInfo,episodeInfo,result,empty_filter) {
         WARNING("Failed to find ID in XML");
     }
 
-    if (minfo["mi_imdb"] == "" ) {
+    if (iid == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at "g_thetvdb_web);
     } else {
-        DEBUG("get_tv_series_info returns imdb url ["minfo["mi_imdb"]"]");
+        DEBUG("get_tv_series_info returns imdb url ["iid"]");
     }
     return 0+ result;
 }
@@ -1953,7 +1982,10 @@ seriesInfo,episodeInfo,filter,url,e,result,pi) {
     delete filter;
 
     if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"")) {
+
         dump(0,"tvrage series",seriesInfo);
+        minfo["mi_season"]=season;
+        minfo["mi_episode"]=episode;
         minfo["mi_title"]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
         minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);
         minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
@@ -1962,20 +1994,10 @@ seriesInfo,episodeInfo,filter,url,e,result,pi) {
         url=urladd(seriesInfo["/Showinfo/showlink"],"remove_add336=1&bremove_add=1");
         minfo["mi_plot"]=clean_plot(seriesInfo["/Showinfo/summary"]);
 
-        minfo["mi_tvid"]=seriesInfo["/Showinfo/showid"];
-        minfo["mi_idlist"]="tvrage:"seriesInfo["/Showinfo/showid"];
+        minfo_set_id("tvrage",seriesInfo["/Showinfo/showid"],minfo);
         result ++;
 
-        #get imdb link - via links page and then epguides.
-        if(minfo["mi_imdb"] == "") {
-            url = scanPageFirstMatch(url,"/links/",g_nonquote_regex"+/links/",1);
-            if (url != "" ) {
-                url = scan_page_for_first_link(g_tvrage_web url,"epguides", 1 );
-                if (url != "" ) {
-                    minfo["mi_imdb"] = scanPageFirstMatch(url,"tt",g_imdb_regex,1);
-                }
-            }
-        }
+        rage_get_other_ids(minfo);
 
         dump(0,"pre-episode",minfo);
 
@@ -2049,4 +2071,5 @@ id,xml,eptitle) {
     dump(1,"episode title ",eptitleHash);
     dump(1,"Age indicators",ageHash);
  }
+
 

@@ -625,7 +625,9 @@ cat,minfo2) {
                         INF("Skipping item "minfo["mi_media"]);
                     }
                     thisTime = systime()-thisTime ;
-                    DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+                    if (g_total) {
+                        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+                    }
                     g_process_time += thisTime;
                     g_elapsed_time = systime() - g_start_time;
 
@@ -685,4 +687,5 @@ function clear_folder_info() {
     gMovieFileCount = 0;
     DEBUG("Reset scanned files store");
 }
+
 

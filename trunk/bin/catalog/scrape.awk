@@ -351,7 +351,7 @@ f,source) {
     # Keep best title
     new["mi_title"] = clean_title(new["mi_title"]);
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
-    new["mi_idlist"] = current["mi_idlist"] " " new["mi_idlist"];
+    minfo_merge_ids(current,new["mi_idlist"]);
 
     for(f in new) {
         if (f !~ "_source$" && f != "mi_visited" && f != "mi_idlist" ) {
@@ -365,6 +365,41 @@ f,source) {
         }
     }
     id0("");
+}
+
+#add a website id to the id list - internal format is {<space><domain>:value} 
+# eg "imdb:tt1234567 thetvdb:77304"
+function minfo_set_id(domain,id,minfo) {
+    domain = tolower(domain);
+    if (id &&  index(minfo["mi_idlist"]," "domain":") == 0) {
+        minfo["mi_idlist"] =  minfo["mi_idlist"]" "domain":"id;
+        INF("idlist = "minfo["mi_idlist"]);
+    }
+}
+
+# return a website id from the idlist
+function minfo_get_id(minfo,domain,\
+id) {
+    id = subexp(minfo["mi_idlist"]," "domain":([^ ]+)");
+    if (!id) {
+        WARNING("blank id for "domain" current list = ["minfo["mi_idlist"]"]");
+    }
+    return id;
+}
+# Marge a space separated list of ids into the media info
+# eg "imdb:tt1234567 thetvdb:77304"
+function minfo_merge_ids(minfo,idlist,\
+num,i,ids,parts) {
+    num = split(idlist,ids," ");
+    for(i in ids) {
+        if (split(ids[i],parts,":") == 2) {
+            minfo_set_id(parts[1],parts[2],minfo);
+        }
+    }
+}
+    
+function imdb(minfo) {
+    return minfo_get_id(minfo,"imdb");
 }
 
 function check_year(year,minfo,\
@@ -921,7 +956,7 @@ ret,i,num,langs,minfo2) {
 # Get extra imdb info
 function imdb_extra_info(minfo,url,\
 ret,remakes,connections) {
-    minfo["mi_imdb"] = extractImdbId(url);
+    minfo_set_id("imdb",extractImdbId(url),minfo);
     if (minfo["mi_category"] == "M") {
 
         getMovieConnections(extractImdbId(url),connections);

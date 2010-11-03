@@ -1,6 +1,3 @@
-#replace fetch_single_child with find_elements
-#
-#  Abbreviation checking using new tvrage api is broken - check using greysa101.avi
 #  cast scraping for tv shows when lang != en ?
 #  convert rating to a number in index.db and oversight display.
 #  add mi_by_date=1 if fetched by date. Somehow pass this flag to oversight. 

@@ -72,7 +72,7 @@ row,est,nfo,op,start) {
 
     if (minfo["mi_additional_info"]) row=row"\t"ADDITIONAL_INF"\t"minfo["mi_additional_info"];
 
-    row=row"\t"URL"\t"minfo["mi_imdb"];
+    row=row"\t"URL"\t"minfo["mi_idlist"];
 
     row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];
     if (minfo["mi_director"]) row=row"\t"DIRECTORS"\t"minfo["mi_director"];

@@ -19,7 +19,7 @@ ret,i,j,dirCount,dirs) {
    return ret;
 }
         
-# IN plugin THETVDB/TVRAGE
+# IN plugin thetvdb/tvrage
 # IN path_parts = number of trailing parts of the path to use. 0=Try all parts.
 # IN minfo - current scrapped show
 # OUT more_info - bit yucky returns additional info
@@ -116,7 +116,7 @@ terms,results,id,url,parts,showurl) {
     # ony bing or google - yahoo is not good here
     id1("searchByEpisodeName "plugin);
     dump(0,"searchByEpisodeName",details);
-    if (plugin == "THETVDB") {
+    if (plugin == "thetvdb") {
         terms="\"season "details[SEASON]"\" \""details[EPISODE]" : "clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com";
         # Bing seems a bit better than google for this. For "The office" anyway.
         # But google finds 1x5 Jersey Devil = X Files.
@@ -125,7 +125,7 @@ terms,results,id,url,parts,showurl) {
         if (split(results,parts,"=") == 2) {
             id = parts[2];
         }
-    } else if (plugin == "TVRAGE") {
+    } else if (plugin == "tvrage") {
         terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
         url = scan_page_for_first_link(g_search_google terms,"tvrage",0);
         if (url != "") {
@@ -365,12 +365,12 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
             #if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
-            if (plugin == "THETVDB" ) {
+            if (plugin == "thetvdb" ) {
 
                 #TODO We could get all the series info - this would be cached anyway.
                 result = extractEpisodeByDates_TvDb(tmp_info,tvdbid,y,m,d,details);
 
-            } else if (plugin == "TVRAGE" ) {
+            } else if (plugin == "tvrage" ) {
 
                 result = extractEpisodeByDates_rage(tmp_info,tvdbid,y,m,d,details);
 
@@ -656,8 +656,8 @@ tvDbSeriesPage,result,tvid,cat,iid) {
     
     if (cat == "M" ) {
         WARNING("Error getting IMDB ID from tv - looks like a movie??");
-        if (plugin == "THETVDB") {
-            WARNING("Please update the IMDB ID for this series at the THETVDB website for improved scanning");
+        if (plugin == "thetvdb") {
+            WARNING("Please update the IMDB ID for this series at the thetvdb website for improved scanning");
         }
 
         result = 0;
@@ -805,11 +805,11 @@ i) {
 function possible_tv_titles(plugin,title,closeTitles,\
 ret) {
 
-    if (plugin == "THETVDB" ) {
+    if (plugin == "thetvdb" ) {
 
         ret = searchTv(plugin,title,closeTitles);
 
-    } else if (plugin == "TVRAGE" ) {
+    } else if (plugin == "tvrage" ) {
 
         ret = searchTv(plugin,title,closeTitles);
 
@@ -956,12 +956,12 @@ allTitles,url,ret) {
     id1("searchTv Checking ["plugin"/"title"]" );
     delete closeTitles;
 
-    if (plugin == "THETVDB") {
+    if (plugin == "thetvdb") {
 
         url=expand_url(g_thetvdb_web"/api/GetSeries.php?seriesname=",title);
         filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
 
-    } else if (plugin == "TVRAGE") {
+    } else if (plugin == "tvrage") {
 
         url=g_tvrage_api"/feeds/search.php?show="title;
         filter_search_results(url,title,"/Results/show","name","showid",allTitles);
@@ -1055,7 +1055,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
         } else {
 
             # First try API search or direct imdb search 
-            if(plugin == "THETVDB") {
+            if(plugin == "thetvdb") {
 
                 id2 = imdb2thetvdb(imdbid);
             }
@@ -1072,7 +1072,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
                 year_range="("(minfo["mi_year"]-1)"|"minfo["mi_year"]"|"(minfo["mi_year"]+1)")";
                 title_regex=tv_title2regex(minfo["mi_title"]);
 
-                if(plugin == "THETVDB") {
+                if(plugin == "thetvdb") {
 
                     url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",minfo["mi_title"]);
                     if (fetchXML(url,"imdb2tvdb",showInfo,"")) {
@@ -1086,7 +1086,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
                         }
                     }
 
-                } else if(plugin == "TVRAGE") {
+                } else if(plugin == "tvrage") {
 
                     if (fetchXML(g_tvrage_api"/feeds/search.php?show="minfo["mi_title"],"imdb2tvdb",showInfo,"")) {
                         #allow for titles "The Office (US)" or "The Office" and 
@@ -1150,7 +1150,7 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
 function get_tv_series_api_url(plugin,tvdbid,\
 url,i,num,langs) {
     if (tvdbid != "") {
-        if (plugin == "THETVDB") {
+        if (plugin == "thetvdb") {
 
 
             num = get_langs(langs);
@@ -1158,7 +1158,7 @@ url,i,num,langs) {
                 url = g_thetvdb_web"/data/series/"tvdbid"/"langs[i]".xml";
                 if (url_state(url) == 0) break;
             }
-        } else if (plugin == "TVRAGE") {
+        } else if (plugin == "tvrage") {
             url = "http://services.tvrage.com/myfeeds/showinfo.php?key="g_api_rage"&sid="tvdbid;
         }
     }
@@ -1630,12 +1630,12 @@ letter) {
 function get_episode_url(plugin,seriesUrl,season,episode,\
 episodeUrl ) {
     episodeUrl = seriesUrl;
-    if (plugin == "THETVDB") {
+    if (plugin == "thetvdb") {
         #Note episode may be 23,24 so convert to number.
         if (sub(/[a-z][a-z].xml$/,"default/"season"/"(episode+0)"/&",episodeUrl)) {
             return episodeUrl;
         }
-    } else if (plugin == "TVRAGE") {
+    } else if (plugin == "tvrage") {
 
         sub(/showinfo/,"episodeinfo",episodeUrl);
         return episodeUrl"&ep="season"x"(episode+0);
@@ -1655,11 +1655,11 @@ episodeUrl,result) {
 
     episodeUrl = get_episode_url(plugin,seriesUrl,season,episode);
     if (episodeUrl != "") {
-        if (plugin == "THETVDB") {
+        if (plugin == "thetvdb") {
 
             result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
 
-        } else if (plugin == "TVRAGE" ) {
+        } else if (plugin == "tvrage" ) {
             result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
         } else {
             plugin_error(plugin);
@@ -1764,10 +1764,10 @@ result,minfo2,thetvdbid) {
         minfo["mi_season"] = 1;
     }
 
-    if (plugin == "THETVDB") {
+    if (plugin == "thetvdb") {
         result = get_tv_series_info_tvdb(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
 
-    } else if (plugin == "TVRAGE") {
+    } else if (plugin == "tvrage") {
 
         result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
         if (result) {
@@ -1874,7 +1874,7 @@ seriesInfo,episodeInfo,result,iid) {
 
         if (episode ~ "^[0-9,]+$" ) {
 
-            if (get_episode_xml("THETVDB",tvDbSeriesUrl,season,episode,episodeInfo)) {
+            if (get_episode_xml("thetvdb",tvDbSeriesUrl,season,episode,episodeInfo)) {
 
                 if ("/Data/Episode/id" in episodeInfo) {
                     minfo["mi_airdate"]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
@@ -1977,7 +1977,7 @@ function set_eptitle(minfo,title) {
 function get_tv_series_info_rage(minfo,tvDbSeriesUrl,season,episode,\
 seriesInfo,episodeInfo,filter,url,e,result,pi) {
 
-    pi="TVRAGE";
+    pi="tvrage";
     result = 0;
     delete filter;
 
@@ -2049,12 +2049,12 @@ function getRelativeAgeAndEpTitles(plugin,minfo,titleHash,ageHash,eptitleHash,\
 id,xml,eptitle) {
    for(id in titleHash) {
         if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
-            if (plugin == "THETVDB") {
+            if (plugin == "thetvdb") {
 
                 ageHash[id] = xml["/Data/Episode/FirstAired"];
                 eptitle = tolower(xml["/Data/Episode/EpisodeName"]);
 
-            } else if (plugin == "TVRAGE" ) {
+            } else if (plugin == "tvrage" ) {
 
                 ageHash[id] = xml["/show/episode/airdate"];
                 eptitle = tolower(xml["/show/episode/title"]);

@@ -141,8 +141,8 @@ BEGIN {
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
     g_fetch_images_concurrently="START";
 
-    g_tv_check_urls["TVRAGE"]=g_tvrage_web;
-    g_tv_check_urls["THETVDB"]=g_thetvdb_web;
+    g_tv_check_urls["tvrage"]=g_tvrage_web;
+    g_tv_check_urls["thetvdb"]=g_thetvdb_web;
 
     g_batch_size=30;
     g_cvs_sep=" *, *";
@@ -247,14 +247,7 @@ END{
     g_max_directors = 3;
     g_max_writers = 3;
 
-    split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep);
-
-#    split(g_settings["catalog_tv_plugins"],g_tv_plugin_list,g_cvs_sep);
-#    g_tv_plugin_list = g_tv_plugin_list[1];
-#    if (g_tv_plugin_list !~ "^(THETVDB|TVRAGE)$" ) {
-#        ERR("Unknown tv plugin");
-#        exit;
-#    }
+    split(tolower(g_settings["catalog_tv_plugins"]),g_tv_plugin_list,g_cvs_sep);
 
     DEBUG("RENAME_TV="RENAME_TV);
     DEBUG("RENAME_FILM="RENAME_FILM);

@@ -920,9 +920,13 @@ key,regex,ret,lcfragment,dbg,all_keys) {
 }
 
 function get_langs(langs,\
-i) {
+i,add_english) {
     for(i = 1; g_settings["catalog_lang"i] ~ /[a-z]+/ ; i++) {
         langs[i] = g_settings["catalog_lang"i];
+        if (langs[i] == "en") add_english = 1;
+    }
+    if (add_english) {
+        langs[i++] = "en";
     }
     return i-1;
 }
@@ -937,20 +941,23 @@ function have_visited(minfo,key) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function get_imdb_info(url,minfo,\
-ret,i,num,langs,minfo2) {
+i,num,langs,minfo2) {
 
-    num = get_langs(langs);
-    for(i = 1 ; i <= num ; i++) {
+    if (minfo_get_id(minfo,"imdb")) {
+        INF("already scraped imdb");
+    } else {
+        num = get_langs(langs);
+        for(i = 1 ; i <= num ; i++) {
 
-        delete minfo2;
-        if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
-            ret = minfo2["mi_category"];
-            minfo2["mi_idlist"] = "imdb:"extractImdbId(url);
-            minfo_merge(minfo,minfo2,"imdb");
-            break;
+            delete minfo2;
+            if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
+                minfo_set_id(minfo2,"imdb",extractImdbId(url));
+                minfo_merge(minfo,minfo2,"imdb");
+                break;
+            }
         }
     }
-    return ret;
+    return minfo["mi_category"];
 }
 
 # Get extra imdb info

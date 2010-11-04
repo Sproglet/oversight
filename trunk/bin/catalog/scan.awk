@@ -555,13 +555,7 @@ cat,minfo2) {
                         cat = get_imdb_info(bestUrl,minfo);
                     }
 
-                    if (cat == "M" ) {
-
-                        # Its definitely a movie according to IMDB or NFO
-                        get_themoviedb_info(extractImdbId(bestUrl),minfo);
-                        getNiceMoviePosters(minfo);
-
-                    } else if (cat == "T" ) {
+                    if (cat == "T" ) {
 
                         # Its definitely a series according to IMDB or NFO
                         # get the episode info
@@ -573,7 +567,7 @@ cat,minfo2) {
 
                         cat = tv_search_simple(minfo,bestUrl);
 
-                    } else {
+                    } else if (cat != "M" ) {
 
                         # Not sure - try a TV search looking for various abbreviations.
                         cat = tv_search_complex(minfo,bestUrl);
@@ -581,16 +575,24 @@ cat,minfo2) {
                         if (cat != "T") {
                             # Could not find any hits using tv abbreviations, try heuristis for a movie search.
                             # This involves searching web for imdb id.
-                            cat = movie_search(minfo,bestUrl);
-                            if (cat == "T") {
-                                # If we get here we found an IMDB id , but it looks like a TV show after all.
-                                # This may happen with mini-series that do not have normal naming conventions etc.
-                                # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                                cat = tv_search_simple(minfo,bestUrl);
+                            bestUrl = movie_search(minfo,bestUrl);
+                            if (bestUrl) {
+                                cat = get_imdb_info(bestUrl,minfo);
+
+                                if (cat == "T") {
+                                    # If we get here we found an IMDB id , but it looks like a TV show after all.
+                                    # This may happen with mini-series that do not have normal naming conventions etc.
+                                    # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                                    cat = tv_search_simple(minfo,bestUrl);
+                                }
                             }
                         }
                     }
 
+                    if (cat != "T") {
+                        get_themoviedb_info(extractImdbId(bestUrl),minfo);
+                        getNiceMoviePosters(minfo);
+                    }
 
                     if (cat != "") {
 
@@ -619,8 +621,8 @@ cat,minfo2) {
                         g_batch_total++;
                         #lang_test(minfo);
 
-
                         queue_minfo(minfo,qfile,person_extid2name);
+
                     } else {
                         INF("Skipping item "minfo["mi_media"]);
                     }

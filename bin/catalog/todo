@@ -1,13 +1,8 @@
 #  cast scraping for tv shows when lang != en ?
 #  convert rating to a number in index.db and oversight display.
 #  add mi_by_date=1 if fetched by date. Somehow pass this flag to oversight. 
-#  Source getting set to "TVRAGE" somewhere. make sure comparisons are lower case.
 #  
-#  replace epguides code with http://services.tvrage.com/feeds/show_list_letter.php?letter=j
-#
 #  change IMDBFIRST to only look at first n results - matches further down the page tend to be false.
-#
-#  #imdb poster filter on SX(80|214|95) - mobile/labs/old
 #
 #  office us fails due to missng brackets?
 #  fetch_xml_single_child is broken - needs to understand new xml format

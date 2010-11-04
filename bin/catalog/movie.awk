@@ -1,19 +1,16 @@
 #""=not found "M"=movie "T"=tv??
-function movie_search(minfo,bestUrl,\
+function movie_search(minfo,\
+bestUrl,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
-search_regex_key,search_order_key,search_order,s,search_order_size,ret,title,\
+search_regex_key,search_order_key,search_order,s,search_order_size,title,\
 year,scrape_imdb,text) {
 
     id1("movie search");
-    ret=0;
 
     # search online info using film basename looking for imdb link
     # -----------------------------------------------------------------------------
     name_id=0;
-
-    scrape_imdb = 1;
-
 
     name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
 
@@ -34,10 +31,7 @@ year,scrape_imdb,text) {
 
     name_list[++name_id] = name;
 
-
-
     dump(0,"name_tries",name_list);
-
 
     #Read search order definitions from config file.
     for(i = 1 ; i < 5 ; i++ ) {
@@ -135,9 +129,7 @@ year,scrape_imdb,text) {
                         }
 
                         if (find_movie_page(text,title,year,"","",minfo) == 0) {
-                            ret = 1;
                             bestUrl = minfo["mi_url"];
-                            scrape_imdb = 0; # already scraped.
                             INF("Found at "bestUrl);
                         }
 
@@ -158,7 +150,6 @@ year,scrape_imdb,text) {
 
         get_themoviedb_info(extractImdbId(bestUrl),minfo);
 
-        ret = get_imdb_info(bestUrl,minfo);
 
     } 
     id0(bestUrl);

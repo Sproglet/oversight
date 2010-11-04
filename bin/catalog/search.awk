@@ -579,7 +579,7 @@ score) {
         gPriority["default"]=-1;
         gPriority["mi_title","filename"]=1;
         gPriority["mi_title","search"]=10;
-        gPriority["mi_title","tvrage"]=20; # demote TVRAGE due to non-accented Carnivale
+        gPriority["mi_title","tvrage"]=20; # demote tvrage due to non-accented Carnivale
         gPriority["mi_title","imdb"]=30;
         gPriority["mi_title","epguides"]=30;
         gPriority["mi_title","imdb_aka"]=40;

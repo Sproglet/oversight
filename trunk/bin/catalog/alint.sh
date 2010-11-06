@@ -278,7 +278,7 @@ function analyse(f,\
                 if (is_global(token)) {
                     globals[token]++;
                 } else if (f != "BEGIN" && f != "END" ) {
-                    print prefix"global?\t"token;
+                    print prefix" @@@ global?\t"token " @@@@";
                     err=3;
                 }
             }

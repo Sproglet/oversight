@@ -490,15 +490,21 @@ line2) {
         # <a attr1 href=xxx attr2 >Label</a>
         # to
         # href=xxx <a attr1 attr2 >Label</a>
-        line = gensub(/(<([Aa]|[Ll][Ii][Nn][Kk]) [^>]+)[hH][rR][eE][fF]=["']([^"']+)["']([^>]*)/," href=\"\\3\"\\1\\4","g",line);
+        line = gensub(/(<([Aa]|[Ll][Ii][Nn][Kk])[^>]* )[hH][rR][eE][fF]=("([^"]+)"|'([^']+)'|([^ ]+))([^>]*)/," href=\"\\4\\5\\6\" \\1\\7","g",line);
     }
 
     if(index(line2,"src=")) {
         # <img attr1 src=xxx attr2 />
         # to
         # src=xxx <img attr1 attr2 />
-        line = gensub(/(<[iI][mM][gG][^>]+)[Ss][Rr][Cc]=["']([^"']+)["']([^>]*)/," src=\"\\2\"\\1\\3","g",line);
+        line = gensub(/(<[iI][mM][gG][^>]* )[Ss][Rr][Cc]=("([^"]+)"|'([^']+)'|([^ ]+))([^>]*)/," src=\"\\3\\4\\5\" \\1\\6","g",line);
     }
+    #if (line != line2) {
+    #    if (index(line2,"name/nm")) {
+    #        DEBUG("XX preserve_src_href ["line"]");
+    #        DEBUG("XX preserve_src_href ["line2"]");
+    #    }
+    #}
     return line;
 }
 
@@ -935,23 +941,26 @@ i,add_english) {
 function set_visited(minfo,key) {
     minfo["mi_visited"] = minfo["mi_visited"] " " key ;
 }
-function have_visited(minfo,key) {
-    return ( minfo["mi_visited"] ~ "\\<"key"\\>" );
+function have_visited(minfo,key,\
+ret) {
+    ret = ( minfo["mi_visited"] ~ "\\<"key"\\>" );
+    if (ret) {
+        INF("already visited "key);
+    }
+    return ret;
 }
 
 # return ""=unknown "M"=movie "T"=tv??
 function get_imdb_info(url,minfo,\
 i,num,langs,minfo2) {
 
-    if (minfo_get_id(minfo,"imdb")) {
-        INF("already scraped imdb");
-    } else {
+    if (!have_visited(minfo,"imdb")) {
         num = get_langs(langs);
         for(i = 1 ; i <= num ; i++) {
 
             delete minfo2;
             if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
-                minfo_set_id(minfo2,"imdb",extractImdbId(url));
+                minfo_set_id("imdb",extractImdbId(url),minfo2);
                 minfo_merge(minfo,minfo2,"imdb");
                 break;
             }

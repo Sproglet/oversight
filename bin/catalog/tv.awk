@@ -1147,17 +1147,42 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
     return tvDbSeriesUrl;
 }
 
+function tvdb_series_url(id,lang) {
+
+    return g_thetvdb_web"/data/series/"id"/"lang".xml";
+
+}
+
 function get_tv_series_api_url(plugin,tvdbid,\
-url,i,num,langs) {
+url,i,num,langs,word,key) {
     if (tvdbid != "") {
+
+        key=plugin":"tvdbid;
         if (plugin == "thetvdb") {
 
+            if (!(key  in g_tvurl)) {
+                #thetvdb returns English if the required language does not exist.
+                #but there is no indication that this has happen. So we have to checl non-english request for English words.
+                # or simply compare against the English version.
+                num = get_langs(langs);
+                for(i = 1 ; i <= num ; i++ ) {
 
-            num = get_langs(langs);
-            for(i = 1 ; i <= num ; i++ ) {
-                url = g_thetvdb_web"/data/series/"tvdbid"/"langs[i]".xml";
-                if (url_state(url) == 0) break;
+                    url = tvdb_series_url(tvdbid,langs[i]);
+
+                    if (url_state(url) == 0) {
+                        if (langs[i] == "en" ) {
+                            break;
+                        } else if (langs[i+1] != "en" && (word=scanPageFirstMatch(url,"","\\<([Ss]he|[Hh]e|[Tt]he|and|[Tt]hey|their)\\>",1)) != "") {
+                            INF("expected lang="langs[i]" but found "word" in text");
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                g_tvurl[key] = url;
             }
+            url = g_tvurl[key];
+
         } else if (plugin == "tvrage") {
             url = "http://services.tvrage.com/myfeeds/showinfo.php?key="g_api_rage"&sid="tvdbid;
         }
@@ -1194,7 +1219,7 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
     matchLevel = 0;
     yearOrCountry="";
 
-    DEBUG("XX Checking ["titleIn"] against ["possible_title"]");
+    #DEBUG("XX Checking ["titleIn"] against ["possible_title"]");
 
     # Conan O Brien is a really tricky show to match on!
     # Its a daily,
@@ -1235,8 +1260,8 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         DEBUG("Qualified title ["possible_title"]");
     }
 
-    DEBUG("XX titleIn["titleIn"]");
-    DEBUG("XX possible_title["possible_title"]");
+    #DEBUG("XX titleIn["titleIn"]");
+    #DEBUG("XX possible_title["possible_title"]");
 #    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
 
     if (index(possible_title,titleIn) == 1) {
@@ -1675,7 +1700,7 @@ episodeUrl,result) {
 # get thetvdbid from imdbid
 function imdb2thetvdb(imdbid,\
 ret,xml) {
-    id1("XX NEW CHECK imdb2thetvdb "imdbid);
+    #id1("XX NEW CHECK imdb2thetvdb "imdbid);
     if (!(imdbid in g_imdb2thetvdb)) {
         fetchXML(g_thetvdb_web"/api/GetSeriesByRemoteID?imdbid="imdbid,"imdb2tv",xml);
         # always set value regardless of fetchXML error status - to prevent re-query
@@ -1693,10 +1718,10 @@ rageid,showurl,thetvdb,imdb,ret,partners,p,partner,idlist) {
 
     rageid = minfo_get_id(minfo,"tvrage");
 
-    id1("XX NEW CHECK rage2tvdb "rageid);
 
     if (rageid && !(rageid in g_rage2tvdb)) {
 
+        id1("rage_get_other_ids "rageid);
         showurl = g_tvrage_web"/shows/id-"rageid;
 
         # Possible routes to thetvdb are: 
@@ -1741,6 +1766,7 @@ rageid,showurl,thetvdb,imdb,ret,partners,p,partner,idlist) {
             idlist = idlist " thetvdb:"thetvdb;
         }
         g_rage2tvdb[rageid] = idlist;
+        id0(idlist);
     }
 
     if (g_rage2tvdb[rageid]) {
@@ -1937,7 +1963,7 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
             filter["/Language"] = langs[i];
             if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
                 minfo["mi_poster"]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                DEBUG("XX Season Poster = "minfo["mi_poster"]);
+                DEBUG("Season Poster = "minfo["mi_poster"]);
                 break;
             }
         }
@@ -1951,7 +1977,7 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
             filter["/Language"] = langs[i];
             if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
                 minfo["mi_fanart"]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                DEBUG("XX Fanart = "minfo["mi_fanart"]);
+                DEBUG("Fanart = "minfo["mi_fanart"]);
                 break;
             }
         }

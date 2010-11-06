@@ -1,3 +1,11 @@
+#  make sure plot file is indexed by
+#  - oversight id for movies.
+#  - SeriesName/start year/season for tv season
+#  - SeriesName/start year/season/ep for episodes.
+#
+#  add config setting to extract id from url - then add minfo_set_id(domain,extract_id(url),"minfo) to scrape function.
+#  add config setting to extract title from title tag
+#
 #  cast scraping for tv shows when lang != en ?
 #  convert rating to a number in index.db and oversight display.
 #  add mi_by_date=1 if fetched by date. Somehow pass this flag to oversight. 

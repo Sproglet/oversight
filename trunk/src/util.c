@@ -133,52 +133,56 @@ char *translate_inplace(
  */
 char *replace_str_num(char *s_in,char *match,char *replace,int num)
 {
-    char *out,*p;
+    char *out=NULL,*p;
     char *m,*s,*s1;
    
-    int matchlen = strlen(NVL(match));
-    int replen = strlen(replace);
+    if (s_in && match && replace) {
+        int matchlen = strlen(NVL(match));
+        int replen = strlen(replace);
 
-    assert(matchlen);
+        assert(matchlen);
 
-    int old_size = strlen(s_in);
+        int old_size = strlen(s_in);
 
-    int new_size; 
-    // Estimate max length of new string
-    if (replen < matchlen ) {
-        new_size = old_size + 1;
-    } else {
-        new_size = replen * ( old_size / matchlen ) + old_size % matchlen + 1;
-    }
-
-    // Now look for 'match' in 's_in'
-    s = s_in;
-    p = out = MALLOC(new_size);
-    while (*s) {
-        s1 = s;
-        m = match;
-        // Try to match against current s1 position
-        while(*s1 && *m && *s1 == *m ) {
-            s1++;
-            m++;
-        }
-        if (*m || num == 0) {
-            // NO MATCH - copy all matching (from s to s1) AND the additional character that broke the match
-            // Hence s <= s1 rather than s<s1
-            while(s <= s1) {
-                *p++ = *s++;
-            }
+        int new_size; 
+        // Estimate max length of new string
+        if (replen < matchlen ) {
+            new_size = old_size + 1;
         } else {
-            // MATCH
-            strcpy(p,replace);
-            p += replen;
-            s = s1;
-            if (num > 0 ) {
-                num--;
+            new_size = replen * ( old_size / matchlen ) + old_size % matchlen + 1;
+        }
+
+        // Now look for 'match' in 's_in'
+        s = s_in;
+        p = out = MALLOC(new_size);
+        while (*s) {
+            s1 = s;
+            m = match;
+            // Try to match against current s1 position
+            while(*s1 && *m && *s1 == *m ) {
+                s1++;
+                m++;
+            }
+            if (*m || num == 0) {
+                // NO MATCH - copy all matching (from s to s1) AND the additional character that broke the match
+                // Hence s <= s1 rather than s<s1
+                while(s <= s1) {
+                    *p++ = *s++;
+                }
+            } else {
+                // MATCH
+                strcpy(p,replace);
+                p += replen;
+                s = s1;
+                if (num > 0 ) {
+                    num--;
+                }
             }
         }
+        *p = '\0';
+    } else {
+        html_error("empty args");
     }
-    *p = '\0';
     return out;
 }
 char *replace_str(char *s_in,char *match,char *replace)
@@ -653,6 +657,8 @@ void hashtable_dump(char *label,struct hashtable *h) {
 
 void hashtable_dumpf(FILE *fp,char *label,struct hashtable *h) {
 
+    FILE *out = html_get_output();
+
     if (hashtable_count(h)) {
 
        char *k,*v;
@@ -660,11 +666,11 @@ void hashtable_dumpf(FILE *fp,char *label,struct hashtable *h) {
 
        for(itr = hashtable_loop_init(h); hashtable_loop_more(itr,&k,&v) ; ) {
 
-            fprintf(fp,"<!-- %s : [ %s ] = [ %s ] -->\n",label,k,v);
+            fprintf(out,"<!-- %s : [ %s ] = [ %s ] -->\n",label,k,v);
         }
 
     } else {
-        fprintf(fp,"<!-- %s : EMPTY HASH -->\n",label);
+        fprintf(out,"<!-- %s : EMPTY HASH -->\n",label);
     }
 }
 

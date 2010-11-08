@@ -495,6 +495,7 @@ void html_log(int level,char *format,...) {
         va_start(ap,format);
         html_vacomment(format,ap);
         va_end(ap);
+        fflush(html_out);
     }
 }
 void html_error(char *format,...) {

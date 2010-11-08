@@ -231,6 +231,16 @@ struct hashtable *config_load_wth_defaults(char *d,char *defaults_file,char *mai
 
 }
 
+// load domain config file
+struct hashtable *config_load_domain(char *domain)
+{
+    char *file;
+    ovs_asprintf(&file,"%s/conf/domain/catalog.domain.%s.cfg",appDir(),domain);
+    struct hashtable *result = config_load(file,1);
+    FREE(file);
+    return result;
+}
+
 // include_unquoted_space option is for /tmp/setting.txt other config files always quote space.
 struct hashtable *config_load(char *filename,int include_unquoted_space) {
 
@@ -272,6 +282,8 @@ int parse_key_val(char *line,
         ret = 0;
 
     } else {
+
+        //HTML_LOG(0,"XX1[%s]",line);
 
         // key = value where value = X....X or just X (where X= ^space )
         // \x5b = [ \x5d = ]
@@ -321,6 +333,7 @@ int parse_key_val(char *line,
                 while(*p >= ' ' || isspace(*p)) p++;
             }
 
+            //HTML_LOG(0,"XX1 valend=[%s] *p=%d",val_end,*p);
             if (val_end && strchr("\n\r",*p)) {
 
                 if (key && val && key_end > key ) {

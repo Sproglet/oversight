@@ -1996,14 +1996,14 @@ char *macro_fn_select_unlock_submit(MacroCallInfo *call_info)
 
 /*
  * =begin wiki
- * ==EXTERNAL_URL==
+ * ==PERSON_URL==
  *
- * Display a link to IMDB, if person=id is present then a person link otherwise a title link.
+ * Display a link to required domain - default is IMDB
  *
- * [:EXTERNAL_URL:]
+ * [:PERSON_URL:]
  * =end wiki
  */
-char *macro_fn_external_url(MacroCallInfo *call_info) {
+char *macro_fn_person_url(MacroCallInfo *call_info) {
     char *result=NULL;
     if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
         call_info->free_result=0;
@@ -2012,54 +2012,109 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
 
     char *image=get_theme_image_tag("upgrade"," alt=External ");
     char *person=query_val(QUERY_PARAM_PERSON);
-    char *website="";
 
     char *person_id = NULL;
     
     if (!EMPTY_STR(person)) {
         person_id = current_person_id(firstdb(call_info),"imdb");
-    }
 
-    if (g_dimension->local_browser){
-#define IMDB_MSP "http://msp.florisvanderploeg.com/imdb/scripts/"
-        if (!EMPTY_STR(person)) {
-            //ovs_asprintf(&result,"<a href=\"" IMDB_MSP "imdb_search.php?SearchType=SearchNames&QueryString=%s\">%s</a>",person,image);
-            ovs_asprintf(&result,"<a href=\"http://m.imdb.com/name/%s%s\">%s</a>",
-                    (util_starts_with(person_id,"nm")?"":"nm"),
-                    person_id,image);
-        } else {
-            // Title link
-            char *url=call_info->sorted_rows->rows[0]->url;
-            if (url != NULL) {
-                //ovs_asprintf(&result, "<a href=\"" IMDB_MSP "imdb_getinfo.php?IMDbUrl=%%2Ftitle%%2F%s%%2F\">%s</a>",url,image);
-                if (util_starts_with(url,"tt")) {
-                    website = "http://m.imdb.com/title/";
-                }
-                ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
-            }
-        }
-    } else {
-        if (!EMPTY_STR(person_id)) {
-
-            // Person link
-            ovs_asprintf(&result,"<a href=\"http://www.imdb.com/name/%s%s\">%s</a>",
-                    (util_starts_with(person_id,"nm")?"":"nm"),
-                    person_id,
-                    image);
-        } else {
-
-            // Title link
-            char *url=call_info->sorted_rows->rows[0]->url;
-            if (url != NULL) {
-                if (util_starts_with(url,"tt")) {
-                    website = "http://www.imdb.com/title/";
-                }
-                ovs_asprintf(&result,"<a href=\"%s%s\">%s</a>",website,url,image);
-            }
-        }
+        ovs_asprintf(&result,"<a href=\"http://%s.imdb.com/name/%s%s\">%s</a>",
+            (g_dimension->local_browser?"m":"www"),
+            (util_starts_with(person_id,"nm")?"":"nm"),
+            person_id,image);
     }
     FREE(image);
     FREE(person_id);
+    return result;
+}
+
+//
+// Extract id from idlist where idlist format = domain:id eg.
+// imdb:tt12345 thetvdb:12234
+// result must be freed.
+//
+char *get_id_from_idlist(char *idlist,char *domain) {
+
+    char *id = delimited_substring(idlist," ",domain,":",1,0);
+    char *idend;
+    char *result = NULL;
+
+    if (id) {
+        id += strlen(domain)+1; // skip over domain:
+        idend = strchr(id,' ');
+
+        if (idend == NULL) idend = id + strlen(id);
+
+        ovs_asprintf(&result,"%.*s",idend-id,id);
+    }
+    return result;
+}
+/*
+ * =begin wiki
+ * ==EXTERNAL_URL==
+ *
+ * Display a link to movie or tv website (default website IMDB)
+ *
+ * [:EXTERNAL_URL:]
+ * [:EXTERNAL_URL:(domain=>domain_name):] 
+ *
+ * Example:
+ * [:EXTERNAL_URL:(domain=>imdb):] 
+ * [:EXTERNAL_URL:(domain=>themoviedb):] 
+ *
+ * =end wiki
+ */
+char *macro_fn_external_url(MacroCallInfo *call_info) {
+
+    char *result=NULL;
+
+    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+        call_info->free_result=0;
+        return "?";
+    }
+
+    char *domain;
+    struct hashtable *h = args_to_hash(call_info,NULL,"domain");
+    if ((domain = get_named_arg(h,"domain")) == NULL) {
+        domain = "imdb";
+    }
+
+    struct hashtable *domain_hash = config_load_domain(domain);
+    //HTML_LOG(0,"domain....");
+    hashtable_dump("domain",domain_hash);
+
+    char *idlist=call_info->sorted_rows->rows[0]->url;
+
+    if (idlist != NULL) {
+
+        //HTML_LOG(0,"idlist=[%s]",idlist);
+
+        char *website=NULL;
+        char *website_template=NULL;
+
+        char *id = get_id_from_idlist(idlist,domain);
+        //HTML_LOG(0,"id=[%s]",id);
+    
+        if (id) {
+            if (config_check_str(domain_hash,"catalog_domain_movie_url",&website_template)) {
+                //HTML_LOG(0,"website_template=[%s]",website_template);
+                website = replace_str(website_template,"{ID}",id);
+                if (website) {
+                    //HTML_LOG(0,"website=[%s]",website);
+
+                    char *image=get_theme_image_tag("upgrade"," alt=External ");
+                    ovs_asprintf(&result,"<a href=\"%s\">%s</a>",website, image);
+
+                    FREE(image);
+                    FREE(website);
+                }
+            }
+            FREE(id);
+        }
+    }
+
+    hashtable_destroy(domain_hash,1,1);
+    free_named_args(h);
     return result;
 }
 
@@ -2761,6 +2816,7 @@ void macro_init() {
         hashtable_insert(macros,"PERSON_IMAGE",macro_fn_person_image);
         hashtable_insert(macros,"PERSON_NAME",macro_fn_person_name);
         hashtable_insert(macros,"PERSON_ROLE",macro_fn_person_role);
+        hashtable_insert(macros,"PERSON_URL",macro_fn_person_url);
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
         hashtable_insert(macros,"RATING_SELECT",macro_fn_rating_select);

@@ -21,6 +21,7 @@ void dbf_ids_init()
     dbf_macro_to_id = string_string_hashtable("field_macro_to_id",32);
 
     add_label(DB_FLDID_ID,"ID");
+    add_label(DB_FLDID_SEASONID,"SID");
     add_label(DB_FLDID_WATCHED,"WATCHED");
     add_label(DB_FLDID_LOCKED,"LOCKED");
     add_label(DB_FLDID_PARTS,"PARTS");

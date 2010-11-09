@@ -665,8 +665,6 @@ row,people) {
 
     INF("queued ["row"] to ["qfile"]");
 
-    # Plots are added to a seperate file.
-    update_plots(g_plot_file,minfo);
 
     # If plots need to be written to nfo file then they should 
     # be added to the row at this point.

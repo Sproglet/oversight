@@ -1049,13 +1049,10 @@ function n(x) \
 }
 
 
-function update_plots(pfile,minfo) {
-    update_plots_by_lang(pfile,minfo,minfo["mi_plot"]); #default - English
-}
-
-function update_plots_by_lang(pfile,minfo,plot_text,\
+function update_plots(pfile,fields,\
 id,key,cmd,cmd2,ep) {
-    id=imdb(minfo);
+
+    id=fields[ID];
 
     if (id != "") {
         ep = minfo["mi_episode"];
@@ -1063,21 +1060,26 @@ id,key,cmd,cmd2,ep) {
 
         key=qa(id)" "(minfo["mi_category"]=="T"?qa(minfo["mi_season"]):qa(""));
 
-        cmd=g_plot_app" update "qa(pfile)" "key;
+        cmd=g_plot_app" update "qa(pfile)" ";
 
-        if (plot_text != "" && !(key in g_updated_plots) ) {
-            cmd2 = cmd" "qa("");
-            #INF("updating main plot :"cmd2);
-            exec(cmd2" "qa(plot_text));
-            g_updated_plots[key]=1;
-        }
+        if (fields[CATEGORY] != "T" ) }
+       
+            if (fields[EPPLOT]) {
+                cmd2 = cmd" "fields[ID];
+                exec(cmd2" "qa(fields[EPPLOT]));
+            }
 
-        key=key" "qa(ep);
-        if (minfo["mi_category"] == "T" && minfo["mi_epplot"] != "" && !(key in g_updated_plots) ) {
-            cmd2 = cmd" "qa(ep);
-            #INF("updating episode plot :"cmd2);
-            exec(cmd2" "qa(minfo["mi_epplot"]));
-            g_updated_plots[key]=1;
+            if (fields[PLOT] && !(fields[SEASONID] in g_updated_plots) ) {
+                cmd2 = cmd" S"fields[ID];
+                exec(cmd2" "qa(fields[PLOT]));
+                g_updated_plots[fields[SEASONID]] = 1;
+            }
+
+        } else {
+            if (fields[PLOT]) {
+                cmd2 = cmd" "fields[ID];
+                exec(cmd2" "qa(fields[PLOT]));
+            }
         }
     }
 }

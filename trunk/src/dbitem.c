@@ -271,6 +271,7 @@ void db_rowid_dump(DbItem *item)
     
     time_t t;
     HTML_LOG(1,"ROWID: id = %d",item->id);
+    HTML_LOG(1,"ROWID: sid = %d",item->season_id);
     HTML_LOG(1,"ROWID: watched = %d",item->watched);
     HTML_LOG(1,"ROWID: title(%s)",item->title);
     HTML_LOG(1,"ROWID: file(%s)",item->file);
@@ -734,6 +735,10 @@ static inline int db_rowid_get_field_offset_type_inline(
             case 's':
                 if (*p == '\0') {
                     *offset=&(rowid->season);
+                    *type = FIELD_TYPE_INT;
+                    *overview = 1;
+                } else if (*p == 'i') {
+                    *offset=&(rowid->season_id);
                     *type = FIELD_TYPE_INT;
                     *overview = 1;
                 }

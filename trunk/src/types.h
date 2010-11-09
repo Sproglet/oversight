@@ -72,6 +72,7 @@ typedef enum MovieBoxsetMode_enum {
 typedef struct Dbrowid_struct {
 
     long id;
+    long season_id;
     struct Db_struct *db;
     long offset;
     OVS_TIME date;

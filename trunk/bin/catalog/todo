@@ -1,15 +1,26 @@
 #
-#acurrently broken
-#1. Spec out SEASONID _sid function = lookups how. Where is data stored (in index.db or season.db ?) 
-#how do we map thetvdb or tvrage (or others) to seasonid.
-# why is there no EPPLOT field anymore, possibly because it was derived from imdbid/season/episode ? revisit all this code
-
+# pull plot.sh into catalog/plot.awk
 #
+# when merging  index.db with the queue.
+#
+# if a row is kept store a)rowid b)tvname/year/season
+#
+# if a row is modified write
+#    a) rowid,movieplot to plot queue OR 
+#    b) rowid,episodeplot to plot queue OR 
+#    c) tvname/year/season to plot queue.
+#
+#
+# then sort and merge plot.db and plot queue.
+#
+# When merging , only keep items whose index was stored earlier.
+#
+# Then change oversight gui to read new format of plot file.
 #
 #  make sure plot file is indexed by
 #  - oversight id for movies.
 #  - SeriesName/start year/season for tv season
-#  - SeriesName/start year/season/ep for episodes.
+#  - oversight id for episodes.
 #
 #  add config setting to extract id from url - then add minfo_set_id(domain,extract_id(url),"minfo) to scrape function.
 #  add config setting to extract title from title tag

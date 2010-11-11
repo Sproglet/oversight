@@ -148,7 +148,6 @@ function set_db_fields() {
     #DB fields should start with underscore to speed grepping etc.
     # Fields with @ are not written to the db.
     ID=db_field("_id","ID","",0);
-    SEASONID=db_field("_si","SID","",0);
 
     WATCHED=db_field("_w","Watched","watched") ;
     LOCKED=db_field("_l","Locked","locked") ;
@@ -362,12 +361,15 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             }
             row1 = "";
         } else if (action == 2) { # output row2
+
             if (keep_dbline(row2,fields2)) {
+
                 fields2[ID] = ++max_id;
                 total_new++;
                 write_dbline(fields2,file_out);
                 new_or_changed_line = 1;
                 update_plots(g_plot_file,fields2);
+
             }
             row2 = "";
         } else if (action == 3) { # merge

@@ -1050,38 +1050,41 @@ function n(x) \
 
 
 function update_plots(pfile,fields,\
-id,key,cmd,cmd2,ep) {
+id,key,cmd,cmd2) {
 
     id=fields[ID];
+    id1("update_plots "id" "fields[FILE]);
 
     if (id != "") {
-        ep = minfo["mi_episode"];
-        INF("updating plots for "id"/"ep);
-
-        key=qa(id)" "(minfo["mi_category"]=="T"?qa(minfo["mi_season"]):qa(""));
 
         cmd=g_plot_app" update "qa(pfile)" ";
 
-        if (fields[CATEGORY] != "T" ) }
+        if (fields[CATEGORY] == "T" ) {
        
             if (fields[EPPLOT]) {
-                cmd2 = cmd" "fields[ID];
+                key=fields[ID];
+                cmd2 = cmd" "key;
                 exec(cmd2" "qa(fields[EPPLOT]));
             }
 
-            if (fields[PLOT] && !(fields[SEASONID] in g_updated_plots) ) {
-                cmd2 = cmd" S"fields[ID];
-                exec(cmd2" "qa(fields[PLOT]));
-                g_updated_plots[fields[SEASONID]] = 1;
+            if (fields[PLOT]) {
+                key=fields[TITLE]"|"fields[YEAR]"|"fields[SEASON];
+                if (!(key in g_updated_plots) ) {
+                    cmd2 = cmd" S"fields[ID];
+                    exec(cmd2" "qa(fields[PLOT]));
+                    g_updated_plots[key] = 1;
+                }
             }
 
         } else {
             if (fields[PLOT]) {
-                cmd2 = cmd" "fields[ID];
+                key=fields[ID];
+                cmd2 = cmd" "key;
                 exec(cmd2" "qa(fields[PLOT]));
             }
         }
     }
+    id0();
 }
 
 #Move folder names from argument list

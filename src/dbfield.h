@@ -2,7 +2,6 @@
 #define __DB_FIELD_ALORD__
 
 #define DB_FLDID_ID "_id"
-#define DB_FLDID_SEASONID "_si"
 
 #define DB_FLDID_WATCHED "_w"
 #define DB_FLDID_LOCKED "_l"

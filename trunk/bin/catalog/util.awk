@@ -181,28 +181,28 @@ function apply(text) {
 #baseN - return a number base n. All output bytes are offset by 128 so the characters will not 
 #clash with seperators and other ascii characters.
 
-function basen(i,n,\
+function basen(i,n,offset,\
 out) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
     while(i+0 > 0) {
-        out = g_chr[(i%n)+128] out;
+        out = g_chr[(i%n)+offset] out;
         i = int(i/n);
     }
-    if (out == "") out=g_chr[128];
+    if (out == "") out=g_chr[offset];
     return out;
 }
-#base10 - convert a base n number back to base 10. All input bytes are offset by 128
+#base10 - convert a base n number back to base 10. All input bytes are offset by 'offset'
 #so the characters will not clash with seperators and other ascii characters.
-function base10(input,n,\
+function base10(input,n,offset,\
 out,digits,ln,i) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
     ln = split(input,digits,"");
     for(i = 1 ; i <= ln ; i++ ) {
-        out = out *n + (g_ascii[digits[i]]-128);
+        out = out *n + (g_ascii[digits[i]]-offset);
     }
     if (out == "") out=0;
     return out+0;
@@ -211,6 +211,19 @@ out,digits,ln,i) {
 function firstIndex(inHash,\
 i) {
     for (i in inHash) return i;
+}
+
+function hex2dec(s,\
+n,i,c) {
+    n = 0;
+    s = tolower(s);
+    i = 1;
+    # added X to guard against empty index match
+    while((c=index("X0123456789abcdef",substr(s,i,1))) > 1 ) {
+        n = n * 16 + (c-2) ;
+        i++;
+    }
+    return n;
 }
 
 function firstDatum(inHash,\

@@ -664,6 +664,7 @@ row,people) {
     print row >> qfile;
 
     INF("queued ["row"] to ["qfile"]");
+    queue_plots(minfo,g_plot_file_queue);
 
 
     # If plots need to be written to nfo file then they should 

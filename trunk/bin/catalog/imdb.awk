@@ -193,7 +193,7 @@ i,n,out,ids,m,id) {
 
             id = substr(ids[i],3);
 
-            m = basen(id,base);
+            m = basen(id,base,128);
 
             out = out sep m ;
         } else {
@@ -213,7 +213,7 @@ i,n,out,ids,m) {
 
         if (index(ids[i],"tt") == 0) {
 
-            m = base10(ids[i],base);
+            m = base10(ids[i],base,128);
             out = out sep "tt" sprintf("%07d",m) ;
         } else {
             out = out sep ids[i] ;

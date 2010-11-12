@@ -226,6 +226,7 @@ END{
 
 
     g_plot_file=PLOT_DB;
+    g_plot_file_queue=PLOT_DB".queue";
     g_plot_app=qa(APPDIR"/bin/plot.sh");
 
     for(i in g_settings) {
@@ -1046,45 +1047,6 @@ function n(x) \
 #        INF("n("x") = "0);
 #    }
     return 0+x;
-}
-
-
-function update_plots(pfile,fields,\
-id,key,cmd,cmd2) {
-
-    id=fields[ID];
-    id1("update_plots "id" "fields[FILE]);
-
-    if (id != "") {
-
-        cmd=g_plot_app" update "qa(pfile)" ";
-
-        if (fields[CATEGORY] == "T" ) {
-       
-            if (fields[EPPLOT]) {
-                key=fields[ID];
-                cmd2 = cmd" "key;
-                exec(cmd2" "qa(fields[EPPLOT]));
-            }
-
-            if (fields[PLOT]) {
-                key=fields[TITLE]"|"fields[YEAR]"|"fields[SEASON];
-                if (!(key in g_updated_plots) ) {
-                    cmd2 = cmd" S"fields[ID];
-                    exec(cmd2" "qa(fields[PLOT]));
-                    g_updated_plots[key] = 1;
-                }
-            }
-
-        } else {
-            if (fields[PLOT]) {
-                key=fields[ID];
-                cmd2 = cmd" "key;
-                exec(cmd2" "qa(fields[PLOT]));
-            }
-        }
-    }
-    id0();
 }
 
 #Move folder names from argument list

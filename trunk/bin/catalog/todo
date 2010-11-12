@@ -1,20 +1,4 @@
 #
-# pull plot.sh into catalog/plot.awk
-#
-# when merging  index.db with the queue.
-#
-# if a row is kept store a)rowid b)tvname/year/season
-#
-# if a row is modified write
-#    a) rowid,movieplot to plot queue OR 
-#    b) rowid,episodeplot to plot queue OR 
-#    c) tvname/year/season to plot queue.
-#
-#
-# then sort and merge plot.db and plot queue.
-#
-# When merging , only keep items whose index was stored earlier.
-#
 # Then change oversight gui to read new format of plot file.
 #
 #  make sure plot file is indexed by

@@ -104,6 +104,11 @@ row,est,nfo,op,start) {
 function short_year(y) {
   return sprintf("%x",y-1900);
 }
+
+function long_year(y) {
+    return hex2dec(y)+1900;
+}
+
 function short_genre(g,\
 i,gnames,gcount) {
     gcount = split(g_settings["catalog_genre"],gnames,",");
@@ -301,7 +306,7 @@ f) {
 }
 
 function merge_index(file1,file2,file_out,person_extid2ovsid,\
-row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,new_or_changed_line,ret) {
+row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids) {
 
     ret = 1;
     id1("merge_index ["file1"]["file2"]");
@@ -351,11 +356,11 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         }
 
         #INF("merge action="action);
-        new_or_changed_line = 0;
         if (action == 1) { # output row1
             if (keep_dbline(row1,fields1)) {
                 total_unchanged++;
                 print row1 >> file_out;
+                keep_plots(fields1,plot_ids);
             } else {
                 total_removed ++;
             }
@@ -367,8 +372,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
                 fields2[ID] = ++max_id;
                 total_new++;
                 write_dbline(fields2,file_out);
-                new_or_changed_line = 1;
-                update_plots(g_plot_file,fields2);
+                keep_plots(fields2,plot_ids);
+                queue_plots(fields2,g_plot_file_queue);
 
             }
             row2 = "";
@@ -382,8 +387,9 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
                 fields2[ID] = fields1[ID];
                 total_changed ++;
                 write_dbline(fields2,file_out);
-                new_or_changed_line = 1;
-                update_plots(g_plot_file,fields2);
+                keep_plots(fields2,plot_ids);
+                queue_plots(fields2,g_plot_file_queue);
+
             } else {
                 total_removed++;
             }
@@ -394,13 +400,17 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     close(file1);
     close(file2);
     close(file_out);
+    close(g_plot_file_queue);
 
     set_maxid(INDEX_DB,max_id);
+
+    update_plots(g_plot_file,g_plot_file_queue,plot_ids);
 
     INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     id0(ret);
     return ret;
 }
+
 
 # Merge two index files together
 function sort_and_merge_index(file1,file2,file1_backup,person_extid2name,\

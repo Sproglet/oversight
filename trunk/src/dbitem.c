@@ -974,3 +974,28 @@ int is_on_remote_oversight(DbItem *item)
     return (*(item->db->source) != '*' );
 }
 
+//
+// Extract id from idlist where idlist format = domain:id eg.
+// imdb:tt12345 thetvdb:12234
+// result must be freed.
+//
+char *get_id_from_idlist(char *idlist,char *domain,int add_domain)
+{
+
+    char *id = delimited_substring(idlist," ",domain,":",1,0);
+    char *idend;
+    char *result = NULL;
+
+    if (id) {
+        if (!add_domain) {
+            id += strlen(domain)+1; // skip over domain:
+        }
+        idend = strchr(id,' ');
+
+        if (idend == NULL) idend = id + strlen(id);
+
+        ovs_asprintf(&result,"%.*s",idend-id,id);
+    }
+    HTML_LOG(1,"get_id_from_idlist(%s,%s)=[%s]",idlist,domain,result);
+    return result;
+}

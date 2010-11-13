@@ -1,3 +1,14 @@
+# Add better title matching heuristic for scrape movie page to avoid the following:
+# page rejected title
+# [Frankie Boyle Live 2: If I Could Reach Out Through Your TV and Strangle You I Would DVD 2010:] or [] !=
+# [Frankie Boyle If I Could Reach Out Through Your Tv And Strangle You I Would]
+#
+# Add parsing of 'Stars:' on IMDB page.
+#
+# ie if long title containss short title then OK ?
+# and  short title must be 70% of long title?
+# and shrt title in long title must not be followed by a number unless year (to avoid sequels)
+#
 #
 # Then change oversight gui to read new format of plot file.
 #

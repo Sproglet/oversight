@@ -1,34 +1,51 @@
 # store id of plots to be kept.
 function keep_plots(fields,plot_ids,\
-key) {
+id) {
 
-    key = fields_to_plot_id(fields);
-    plot_ids[key] = 1;
+    id = fields_to_plot_id(fields);
+    plot_ids[id] = 1;
     if (fields[CATEGORY] == "T") {
-        key = fields_to_season_id(fields);
-        plot_ids[key] = 1;
+        id = plot_to_season_id(id);
+        plot_ids[id] = 1;
     }
 }
 
-function queue_plots(minfo,queue_file) {
+function queue_plots(minfo,queue_file,\
+id) {
+
+    id = minfo_to_plot_id(minfo);
 
     if (minfo["mi_category"] == "T" ) {
         if (minfo["mi_plot"]) {
-            print minfo_to_season_id(minfo)"\t"minfo["mi_plot"] >> queue_file;
+            print plot_to_season_id(id)"\t"minfo["mi_plot"] >> queue_file;
         }
         if (minfo["mi_epplot"]) {
-            print minfo_to_plot_id(minfo)"\t"minfo["mi_epplot"] >> queue_file;
+            print id"\t"minfo["mi_epplot"] >> queue_file;
         }
     } else {
         if (minfo["mi_plot"]) {
-            print minfo_to_plot_id(minfo)"\t"minfo["mi_plot"] >> queue_file;
+            print id"\t"minfo["mi_plot"] >> queue_file;
         }
     }
     close(queue_file);
 }
 
+function get_plotline(f,parts,\
+i,line) {
+
+    delete parts;
+
+    if ( ( getline line < f ) > 0) {
+        if ((i = index(line,"\t")) != 0) {
+            parts[1] = substr(line,1,i-1);
+            parts[2] = substr(line,i+1);
+        }
+    }
+}
+        
+
 function update_plots(plot_file,queue_file,plot_ids,\
-action,row1,row2,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_out) {
+action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_out) {
 
     id1("update_plots");
     #dump(0,"plotids",plot_ids);
@@ -40,25 +57,23 @@ action,row1,row2,tabs1,tabs2,total_unchanged,total_removed,total_new,total_chang
     action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     do {
         if (and(action,1)) {
-            getline row1 < plot_file;
-            split(row1,tabs1,"\t");
+            get_plotline(plot_file,tabs1);
             INF("read plot id 1["tabs1[1]"]");
         }
         if (and(action,2)) {
-            getline row2 < queue_file;
-            split(row2,tabs2,"\t");
+            get_plotline(queue_file,tabs2);
             INF("read plot id 2["tabs2[1]"]");
         }
 
-        if (row1 == "") {
-            if (row2 == "") {
+        if (tabs1[1] == "") {
+            if (tabs2[1] == "") {
                 # both finished
                 action = 0;
             } else {
                 action = 2;
             }
         } else {
-            if (row2 == "") {
+            if (tabs2[1] == "") {
                 action = 1;
             } else {
                 # We compare the id
@@ -73,34 +88,29 @@ action,row1,row2,tabs1,tabs2,total_unchanged,total_removed,total_new,total_chang
                 }
             }
         }
-        if (action == 1) { # output row1
+        if (action == 1) { # output tabs1[1]
+
             if (tabs1[1] in plot_ids) {
                 if (plot_ids[tabs1[1]]++ == 1) {
                     total_unchanged++;
-                    print row1 >> file_out;
+                    print tabs1[1]"\t"tabs1[2] >> file_out;
                 }
             } else {
                 total_removed ++;
             }
-            row1 = "";
-        } else if (action == 2) { # output row2
+
+        } else if (action == 2 || action == 3 ) { # output tabs2[1]
 
             if (tabs2[1] in plot_ids) { # should always be true
                 if (plot_ids[tabs2[1]]++ == 1) {
-                    total_new++;
-                    print row2 >> file_out;
-                }
-            }
-            row2 = "";
-        } else if (action == 3) { # update
+                    print tabs2[1]"\t"tabs2[2] >> file_out;
 
-            if (tabs2[1] in plot_ids) { # should always be true
-                if (plot_ids[tabs2[1]]++ == 1) {
-                    total_changed ++;
-                    print row2 >> file_out;
+                    if (action == 2) {
+                        total_new ++;
+                    } else {
+                        total_changed ++;
+                    }
                 }
-            } else {
-                total_removed++;
             }
         }
 
@@ -112,31 +122,42 @@ action,row1,row2,tabs1,tabs2,total_unchanged,total_removed,total_new,total_chang
     set_permissions(qa(plot_file));
     rm(queue_file);
 
-
     INF("update_plots  database:["plot_file"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     id0();
 }
 
-function minfo_to_plot_id(minfo) {
-    if (minfo["mi_category"] == "T" ) {
-        return minfo_to_season_id(minfo)"@"minfo["mi_episode"];
-    } else {
-        return minfo["mi_title"]"@"minfo["mi_year"];
-    }
-}
-
 function fields_to_plot_id(fields) {
-    if (fields[CATEGORY] == "T" ) {
-        return fields_to_season_id(fields)"@"fields[EPISODE];
-    } else {
-        return fields[TITLE]"@"long_year(fields[YEAR]);
-    }
+    return plot_id(fields[URL],fields[TITLE],long_year(fields[YEAR]),fields[CATEGORY],fields[SEASON],fields[EPISODE]);
 }
 
-function minfo_to_season_id(minfo) {
-    return minfo["mi_title"]"@"minfo["mi_year"]"@"minfo["mi_season"];
+function minfo_to_plot_id(minfo) {
+    return plot_id(minfo["mi_idlist"],minfo["mi_title"],minfo["mi_year"],minfo["mi_category"],minfo["mi_season"],minfo["mi_episode"]);
 }
-function fields_to_season_id(fields) {
-    DEBUG("XXX TODO decode year");
-    return fields[TITLE]"@"long_year(fields[YEAR])"@"fields[SEASON];
+
+function plot_id(idlist,title,year,cat,season,episode,\
+id) {
+    id1("plot_id ["idlist"]");
+    id = get_id(idlist,"imdb",1);
+    if (id == "" ) {
+       if ( cat == "T" ) {
+           id = get_id(idlist,"thetvdb",1);
+       } else {
+           id = get_id(idlist,"themoviedb",1);
+       }
+   }
+   if (id == "" ) {
+       id = get_id(idlist,"",1); # get first expression
+   }
+   if (id == "" ) {
+       id = title"@"year;
+   }
+   if (cat == "T" ) {
+        id = id"@"season"@"episode;
+    }
+    id0(id);
+    return id;
+}
+
+function plot_to_season_id(id) {
+    return gensub(/@[^@]*$/,"",1,id); #remove episode id
 }

@@ -376,11 +376,19 @@ function minfo_set_id(domain,id,minfo) {
         INF("idlist = "minfo["mi_idlist"]);
     }
 }
+function get_id(text,domain,adddomain,\
+ret) {
+    ret = subexp(text,"( |^)("domain":[^ ]+)",2);
+    if (!adddomain) {
+        sub(/^[^:]+:/,"",ret); # remove domain
+    }
+    return ret;
+}
 
 # return a website id from the idlist
 function minfo_get_id(minfo,domain,\
 id) {
-    id = subexp(minfo["mi_idlist"]," "domain":([^ ]+)");
+    id = get_id(minfo["mi_idlist"],domain);
     if (!id) {
         WARNING("blank id for "domain" current list = ["minfo["mi_idlist"]"]");
     }

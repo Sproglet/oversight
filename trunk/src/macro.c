@@ -2028,27 +2028,6 @@ char *macro_fn_person_url(MacroCallInfo *call_info) {
     return result;
 }
 
-//
-// Extract id from idlist where idlist format = domain:id eg.
-// imdb:tt12345 thetvdb:12234
-// result must be freed.
-//
-char *get_id_from_idlist(char *idlist,char *domain) {
-
-    char *id = delimited_substring(idlist," ",domain,":",1,0);
-    char *idend;
-    char *result = NULL;
-
-    if (id) {
-        id += strlen(domain)+1; // skip over domain:
-        idend = strchr(id,' ');
-
-        if (idend == NULL) idend = id + strlen(id);
-
-        ovs_asprintf(&result,"%.*s",idend-id,id);
-    }
-    return result;
-}
 /*
  * =begin wiki
  * ==EXTERNAL_URL==
@@ -2092,7 +2071,7 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
         char *website=NULL;
         char *website_template=NULL;
 
-        char *id = get_id_from_idlist(idlist,domain);
+        char *id = get_id_from_idlist(idlist,domain,0);
         //HTML_LOG(0,"id=[%s]",id);
     
         if (id) {

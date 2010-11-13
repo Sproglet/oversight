@@ -25,6 +25,7 @@ char *truncate_plot(char *plot,int *free_result);
 #define MAX_PLOT_LENGTH 10000
 static char* plot_buf = NULL;
 
+
 FILE *plot_open(Db*db)
 {
     char *path = db->plot_file;
@@ -52,44 +53,51 @@ FILE *plot_open(Db*db)
  * value in creating a plot lookup table.
  */
 
-#define PLOT_KEY_PREFIX "_@"
 #define LOG_LVL 1
 
 #define MAX_PLOT_KEY_IDLEN 20
 void set_plot_keys(DbItem *item) {
 
-    char id[MAX_PLOT_KEY_IDLEN+1];
+    char *id = NULL;
 
-    id[0]='\0';
+    char *idlist = item->url;
 
-    if(!EMPTY_STR(item->url)) {
-        char *tmp = item->url;
-        if (util_starts_with(item->url,"http:")) {
-            char  *tmp2 = strstr(item->url,"/tt" );
-            if (tmp2) tmp = tmp2+1;
-        }
-        if (util_starts_with(tmp,"tt")) {
-            //  If its imdb just copy the identifier
-            sprintf(id,"%.9s",tmp);
+
+    id = get_id_from_idlist(idlist,"imdb",1);
+    if(!id) {
+        if ( item->category == 'T' )  {
+            id = get_id_from_idlist(idlist,"thetvdb",1);
         } else {
-            // it is some value set by catalog.sh - use it
-            sprintf(id,"%.*s",MAX_PLOT_KEY_IDLEN,tmp);
+            id = get_id_from_idlist(idlist,"themoviedb",1);
         }
-    }
-    if (id[0]) {
+        if(!id) {
+            // get first id
+            char *start=idlist;
+            char *space;
 
-        if (item->category == 'T' ) {
-
-            ovs_asprintf(&(item->plotkey[PLOT_MAIN]),"_@%s@%d@@_",id,item->season);
-
-            if(!EMPTY_STR(item->episode)) {
-                ovs_asprintf(&(item->plotkey[PLOT_EPISODE]),"_@%s@%d@%s@_",id,item->season,NVL(item->episode));
+            if (start) {
+                if (*start == ' ') start++;
+                space = strchr(start,' ');
+                if (!space) space = start+strlen(start);
+                ovs_asprintf(&id,"%.*s",space-start,start);
             }
+        }
 
-        } else {
-            ovs_asprintf(&(item->plotkey[PLOT_MAIN]),"_@%s@@@_",id);
+        if(!id) {
+            ovs_asprintf(&id,"%s@%d",item->title,item->year);
         }
     }
+
+    if(id) {
+        if (item->category == 'T' ) {
+            ovs_asprintf(&(item->plotkey[PLOT_MAIN]),"%s@%d\t",id,item->season);
+            ovs_asprintf(&(item->plotkey[PLOT_EPISODE]),"%s@%d@%s\t",id,item->season,NVL(item->episode));
+        } else {
+            ovs_asprintf(&(item->plotkey[PLOT_MAIN]),"%s\t",id);
+        }
+        FREE(id);
+    }
+
     HTML_LOG(1,"plot for %d/%s/%s/%d/%s=[%s][%s]",item->id,item->url,item->title,item->season,item->episode,
             item->plotkey[PLOT_MAIN],item->plotkey[PLOT_EPISODE]);
 }
@@ -107,12 +115,7 @@ static char *get_plot_by_key_static(DbItem *item,PlotType ptype)
         return NULL;
     }
 
-    if (!util_starts_with(key,PLOT_KEY_PREFIX)) {
-        // If the plot does not start with the PLOT_KEY_PREFIX then assume
-        // it is the old format where the plot was embedded in the main index.db file
-        HTML_LOG(LOG_LVL,"Using legacy format plot-key = plot for %s=[%s]",item->file,key);
-        return key;
-    }
+    int keylen = strlen(key);
 
     HTML_LOG(LOG_LVL,"Getting %s plot [%s] for [%s]",type,key[ptype],key,item->file);
     char *result = NULL;
@@ -138,8 +141,8 @@ static char *get_plot_by_key_static(DbItem *item,PlotType ptype)
                         chomp(plot_buf);
 
                         if (util_starts_with(plot_buf,key)) {
-                            item->plotoffset[ptype] = fpos + strlen(key);
-                            result = plot_buf+strlen(key);
+                            item->plotoffset[ptype] = fpos + keylen ;
+                            result = plot_buf+keylen ;
                             break;
                         }
                         fpos = ftell(fp);
@@ -224,11 +227,13 @@ void get_plot_offsets_and_text(int num_rows,DbItem **rows,int copy_plot_text)
     if (rows != NULL &&  num_rows > 0 ) {
            
 TRACE;
+        /* Set all of the plot keys */
         for(i = 0 ; i < num_rows ; i ++ ) {
             DbItem *item = rows[i];
             set_plot_keys(item);
         }
 TRACE;
+        /* Get all offsets */
         for(i = 0 ; i < num_rows ; i ++ ) {
 
             DbItem *item = rows[i];
@@ -293,11 +298,6 @@ static void set_plot_positions_by_db(Db *db,int num_rows,DbItem **rows,int start
 
             CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
             chomp(plot_buf);
-
-            if (!util_starts_with(plot_buf,PLOT_KEY_PREFIX)) {
-                html_error("Plot too long? %.20s",plot_buf);
-                continue;
-            }
 
             for(i = start_row ; i < num_rows ; i ++ ) {
 

@@ -1760,7 +1760,7 @@ exec_file_list() {
     case "$1" in *$sep*) sep="$sep2" ;; esac
 
     # Save list and replace shell expansion meta chars.
-    sed -r "s/([][\(\|\);' *?"'"'"])/\\\&/g" > "$gTmpFile.exec"
+    sed -r "s/([][&\(\|\);' *?"'"'"])/\\\&/g" > "$gTmpFile.exec"
 
     #Now apply the substitution in $1
     sed -rn "s$sep^($dir$nameExt)\$$sep$1${sep}p" "$gTmpFile.exec" > "$gTmpFile.sh"

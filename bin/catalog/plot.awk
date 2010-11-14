@@ -58,11 +58,11 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     do {
         if (and(action,1)) {
             get_plotline(plot_file,tabs1);
-            INF("read plot id 1["tabs1[1]"]");
+            #INF("read plot id 1["tabs1[1]"]");
         }
         if (and(action,2)) {
             get_plotline(queue_file,tabs2);
-            INF("read plot id 2["tabs2[1]"]");
+            #INF("read plot id 2["tabs2[1]"]");
         }
 
         if (tabs1[1] == "") {
@@ -136,7 +136,6 @@ function minfo_to_plot_id(minfo) {
 
 function plot_id(idlist,title,year,cat,season,episode,\
 id) {
-    id1("plot_id ["idlist"]");
     id = get_id(idlist,"imdb",1);
     if (id == "" ) {
        if ( cat == "T" ) {
@@ -154,7 +153,7 @@ id) {
    if (cat == "T" ) {
         id = id"@"season"@"episode;
     }
-    id0(id);
+    #INF("plot_id ["idlist"]="id);
     return id;
 }
 

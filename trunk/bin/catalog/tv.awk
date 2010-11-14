@@ -1556,12 +1556,50 @@ initials) {
     return initials;
 }
 
-# Return a regex that will find any embedded occurence of the given string. lowercase only
-# ie aBc => a.*b.*c
-function embedded_lc_regex(s) {
-    gsub(//,".*",s);
-    return tolower(substr(s,3,length(s)-4));
+# return part of  s1 that contains abbrev s2
+# eg s1=hello there s2=ho   then result is hello
+function abbreviated_substring(s1,start_regex_anchor,s2,end_regex_anchor,\
+ret,i,j,s1lc,s2lc,first,last,ch) {
+    ret = 1;
+    j = 0;
+    s1lc = tolower(s1);
+    s2lc = tolower(s2);
+
+
+    for(i = 1 ; i <= length(s2lc) ; i++ ) {
+        j = 0;
+        ch = substr(s2lc,i,1);
+        if (i == 1 ) {
+            # Try to locate the start anchor and first character
+            if (match(s1lc,start_regex_anchor ch)) {
+                j = RSTART;
+            }
+        } else if ( i == length(s2lc) ) {
+            # Try to locate the last character and the last anchor
+            if (match(s1lc,ch end_regex_anchor)) {
+                j = RSTART;
+            }
+        } else {
+            j = index(s1lc,ch);
+        }
+        if (j == 0) {
+            first = 1;
+            last = 0;
+            #INF("not found");
+            break;
+        }
+
+        if (first == 0) first = j;
+
+        last = last + j;
+        s1lc = substr(s1lc,j+1);
+    }
+    ret = substr(s1,first,last+1-first);
+    INF("abbreviated_substring ["s1"] ["s2"] = ["ret"]");
+    return ret;
 }
+
+
 
 #function is_contraction(string,short,end_on_word,\
 #i,short_len,offset) {
@@ -1592,7 +1630,7 @@ function embedded_lc_regex(s) {
 # The contraction is allowed to match from the beginning of the title to the
 # end of any whole word. eg greys = greys anatomy 
 function abbrevContraction(abbrev,possible_title,\
-found,regex,part) {
+found,regex,part,sw,ini) {
 
 
     # Use regular expressions to do the heavy lifting.
@@ -1600,19 +1638,20 @@ found,regex,part) {
     #
     # TODO Performance can be improved by just calling index for each letter in a loop. see is_contraction
     #
-    regex= embedded_lc_regex(abbrev);
-
     possible_title = norm_title(possible_title,1);
-    found = match(possible_title,"^"regex"\\>");
+    part = abbreviated_substring(possible_title,"^",regex,"\\>");
 
 
     #DEBUG("abbrev:["abbrev"] ["regex"] ["possible_title"] = "found);
 
-    if (found) {
-        #  contraction will usually contain the initials of the part of the pattern that it matched.
-        part=substr(possible_title,RSTART,RLENGTH);
+    if (part != "") {
+        #  check contraction will usually contain the initials of the part of the pattern that it matched.
         # 
-        if (abbrev !~ embedded_lc_regex(get_initials(significant_words(part))) ) {
+        sw = significant_words(part);
+        ini = get_initials(sw);
+        INF("possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
+
+        if (abbreviated_substring(abbrev,"",ini,"") != "") {
             INF("["possible_title "] rejected. Abbrev ["abbrev"]. doesnt contain initials of ["part"].");
             found = 0;
         }

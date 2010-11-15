@@ -142,7 +142,8 @@ terms,results,id,url,parts,showurl) {
 }
 # If Plugin != "" then it will also check episodes by date.
 function extractEpisodeByPatterns(minfo,plugin,line,details,\
-ret,p,pat,i,parts,sreg,ereg) {
+ret,p,pat,i,parts,sreg,ereg,\
+season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
     #Note if looking at entire path name folders are seperated by /
 
@@ -164,18 +165,25 @@ ret,p,pat,i,parts,sreg,ereg) {
     # We could have used full matching to extract the title but this would use .* which is slow.
     p=0
     # s00e00e01
+
+    season_prefix="(SERIES|SEASON|SAISON|[Ss]eries|[Ss]eason|[Ss]aison|[Ss])";
+    ep_prefix="(EPISODE|EP.?|[Ee]pisode|[Ee]p.?|[Ee]|/)";
+    dvd_prefix="(DISC|DVD|[Dd]isc|[Dd]vd|[Dd])";
+    part_prefix="(PART|PT|EPISODE|EP|[Pp]art|[Pp]t|[Ee]pisode|[Ee]p)";
+
+
     pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
     # long forms season 1 ep  3
-    pat[++p]="\\<()(series|season|saison|s)[^a-z0-9]*"sreg"[/ .]?(e|ep.?|episode|/)[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
+    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"[/ .]?"ep_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
 
     # TV DVDs
-    pat[++p]="\\<()(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"[/ .]?(disc|dvd|d)[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@dvd";
+    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"[/ .]?"dvd_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@dvd";
 
     #s00e00 (allow d00a for BigBrother)
-    pat[++p]="s()?"sreg"[-/ .]?[e/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
+    pat[++p]="s()?"sreg"[-/ .]?[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
 
     # season but no episode
-    pat[++p]="\\<()(series|season|saison|seizoen|s)[^a-z0-9]*"sreg"()@\\1\t\\3\t\\4@FILE";
+    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"()@\\1\t\\3\t\\4@FILE";
 
     #00x00
     pat[++p]="([^a-z0-9])"sreg"[/ .]?x"ereg"@\\1\t\\2\t\\3@";
@@ -188,7 +196,7 @@ ret,p,pat,i,parts,sreg,ereg) {
     pat[++p]="([^-0-9])([1-9]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
 
     # Part n - no season
-    pat[++p]="\\<()()(part|pt|episode|ep)[^a-z0-9]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
+    pat[++p]="\\<()()"part_prefix"[^a-z0-9]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
 
     for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
@@ -1570,7 +1578,7 @@ ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
 
     ok = 0;
 
-
+    ch = substr(abbrevlc,1,1);
 
     if (match(s1lc,start_regex_anchor ch)) {
         j = RSTART;

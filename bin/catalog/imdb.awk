@@ -267,10 +267,11 @@ function extractImdbId(text,quiet,\
 id) {
     if (match(text,g_imdb_regex)) {
         id = substr(text,RSTART,RLENGTH);
-        #DEBUG("Extracted IMDB Id ["id"]");
-    } else if (match(text,"Title.[0-9]+\\>")) {
-        id = "tt" substr(text,RSTART+8,RLENGTH-8);
-        #DEBUG("Extracted IMDB Id ["id"]");
+
+    } else if ((id = subexp(text,"Title.([0-9]+)\\>") ) != "") {
+
+        id = "tt"id;
+
     } else if (!quiet) {
         WARNING("Failed to extract imdb id from ["text"]");
     }

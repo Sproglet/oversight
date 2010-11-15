@@ -1,3 +1,7 @@
+# launch imdb scrape from tvdb OR do cast parsing.
+#
+# Make sure all items in current library are scanned.
+#
 # Add parsing of 'Stars:' on IMDB page.
 #
 # Allow users to bypass donate in gui 

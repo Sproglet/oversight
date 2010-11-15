@@ -828,6 +828,8 @@ punc) {
     #ALL# gsub(/[&]/," and ",t);
     gsub(/[&]amp;/,"\\&",t);
 
+    sub(/[-_ .]+$/,"",t);
+
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
     #this has to be done in two stages otherwise the collapsing prevents the next match.

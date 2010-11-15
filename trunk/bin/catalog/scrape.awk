@@ -498,14 +498,16 @@ line2) {
         # <a attr1 href=xxx attr2 >Label</a>
         # to
         # href=xxx <a attr1 attr2 >Label</a>
-        line = gensub(/(<([Aa]|[Ll][Ii][Nn][Kk])[^>]* )[hH][rR][eE][fF]=("([^"]+)"|'([^']+)'|([^ ]+))([^>]*)/," href=\"\\4\\5\\6\" \\1\\7","g",line);
+        #
+        # three ways of extracting attributes "x" or 'x' or x
+        line = gensub(/(<([Aa]|[Ll][Ii][Nn][Kk])[^>]* )[hH][rR][eE][fF]=("([^"]+)"|'([^']+)'|([^ >]+))([^>]*)/," href=\"\\4\\5\\6\" \\1\\7","g",line);
     }
 
     if(index(line2,"src=")) {
         # <img attr1 src=xxx attr2 />
         # to
         # src=xxx <img attr1 attr2 />
-        line = gensub(/(<[iI][mM][gG][^>]* )[Ss][Rr][Cc]=("([^"]+)"|'([^']+)'|([^ ]+))([^>]*)/," src=\"\\3\\4\\5\" \\1\\6","g",line);
+        line = gensub(/(<[iI][mM][gG][^>]* )[Ss][Rr][Cc]=("([^"]+)"|'([^']+)'|([^ >]+))([^>]*)/," src=\"\\3\\4\\5\" \\1\\6","g",line);
     }
     #if (line != line2) {
     #    if (index(line2,"name/nm")) {

@@ -1162,6 +1162,15 @@ minfo,i,ulang) {
     if (doit) {
         DIV0("BEGIN UNIT TEST");
 
+        INF("1." subexp("Title?012345","Title.([0-9]+)\\>"));
+        INF("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
+        INF("3." subexp("Title?012345","Title.([0-9]+)"));
+        INF("4." subexp("Title?012345 ","Title.([0-9]+)"));
+
+        unit1("subexp",(subexp("Title?012345","Title.([0-9]+)\\>")  == "012345"));
+        unit1("imdb1",(extractImdbId("http://us.imdb.com/Title?0318247  ") == "tt0318247"));
+        unit1("imdb2",(extractImdbId("http://us.imdb.com/title/tt0318247  ") == "tt0318247"));
+
         unit1("abbr1",(abbreviated_substring("one two three","^","ott","\\>") == ""));
         unit1("abbr2",(abbreviated_substring("one two three","^","ote","\\>") == "one two three"));
         unit1("abbr3",(abbreviated_substring("one two three","^","nte","\\>") == ""));
@@ -1173,19 +1182,18 @@ minfo,i,ulang) {
         unit1("preserve1",(preserve_src_href("<a href=\"1112\">bbb</a>") == " href=\"1112\" <a >bbb</a>"));
         unit1("preserve2",(preserve_src_href("<img src=\"3333\">") == " img=\"3333\" <img >" ));
         unit1("preserve3",(preserve_src_href("<a href='1112'>bbb</a>") == " href=\"1112\" <a >bbb</a>"));
-        unit1("preserve4",(preserve_src_href("<img src='3333'>") == " img=\"3333\" <img >" ));
-        WARNING(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'"));
+        unit1("preserve4",(preserve_src_href("<img src='3333'>") == " src=\"3333\" <img >" ));
+
         unit1("preserve5",(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'") == " img=\"http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif\" <img " ));
 
-        split("en",ulang,",");
-
+#        split("en",ulang,",");
         #find_movie_page("Matrix Reloaded",2003,138,"Wachowski",minfo);
         #dump(0,"moviepage",minfo);
-        for(i in ulang) {
-            find_movie_by_lang(ulang[i],"Matrix Reloaded",2003,138,minfo);
-            dump(0,"lang "ulang[i]"=",minfo);
-            delete minfo;
-        }
+#        for(i in ulang) {
+#            find_movie_by_lang(ulang[i],"Matrix Reloaded",2003,138,minfo);
+#            dump(0,"lang "ulang[i]"=",minfo);
+#            delete minfo;
+#        }
         DIV0("END UNIT TEST");
     }
 }

@@ -906,7 +906,7 @@ bestScore,potentialTitle,potentialMatches,origTitles,score) {
 
 function remove_country(t) {
     if (match(tolower(t)," (au|uk|us)( |$)")) {
-        t=substr(t,1,RSTART-1) substr(t,RSTART+RLENGTH);
+        t=substr(t,1,RSTART-1) " " substr(t,RSTART+RLENGTH);
     }
     return t;
 }
@@ -1457,7 +1457,7 @@ url,title,link,links,i,count2) {
 function searchAbbreviation(letter,names,titleIn,alternateTitles,\
 possible_title,i,ltitle) {
 
-    ltitle = tolower(titleIn);
+    ltitle = norm_title(titleIn);
 
     id1("Checking "titleIn" for abbeviations on menu page - "letter);
     #dump(0,"searchAbbreviation:",names);
@@ -1558,44 +1558,65 @@ initials) {
 
 # return part of  s1 that contains abbrev s2
 # eg s1=hello there s2=ho   then result is hello
-function abbreviated_substring(s1,start_regex_anchor,s2,end_regex_anchor,\
-ret,i,j,s1lc,s2lc,first,last,ch) {
-    ret = 1;
+#
+# TODO there is a slight bug with the implementation if the abbreviation is one character long.
+function abbreviated_substring(s1,start_regex_anchor,abbrev,end_regex_anchor,\
+ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
     j = 0;
     s1lc = tolower(s1);
-    s2lc = tolower(s2);
+    abbrevlc = tolower(abbrev);
+    len2 = length(abbrevlc);
+    len1 = length(s1lc);
+
+    ok = 0;
 
 
-    for(i = 1 ; i <= length(s2lc) ; i++ ) {
-        j = 0;
-        ch = substr(s2lc,i,1);
-        if (i == 1 ) {
-            # Try to locate the start anchor and first character
-            if (match(s1lc,start_regex_anchor ch)) {
-                j = RSTART;
+
+    if (match(s1lc,start_regex_anchor ch)) {
+        j = RSTART;
+        first = last = j;
+        s1lc = substr(s1lc,j+1);
+        len1 -= j;
+        ok = 1;
+        remaining = len2 ;
+
+        # check characters 2 to len2-1
+        for(i = 2 ; i < len2 ; i++ ) {
+
+            # check if remaining abbreviation is longer than string to match
+            if (--remaining > len1 ) {
+                ok = 0;
+                break;
             }
-        } else if ( i == length(s2lc) ) {
-            # Try to locate the last character and the last anchor
+
+            ch = substr(abbrevlc,i,1);
+            j = index(s1lc,ch);
+            if (j == 0) {
+                ok = 0;
+                break;
+            }
+
+            last += j;
+            s1lc = substr(s1lc,j+1);
+            len1 -= j;
+        }
+        if (ok) {
+            ch = substr(abbrevlc,len2);
+            # check last character and the last anchor
             if (match(s1lc,ch end_regex_anchor)) {
                 j = RSTART;
+                last += j;
+            } else {
+                ok = 0;
             }
-        } else {
-            j = index(s1lc,ch);
         }
-        if (j == 0) {
-            first = 1;
-            last = 0;
-            #INF("not found");
-            break;
-        }
-
-        if (first == 0) first = j;
-
-        last = last + j;
-        s1lc = substr(s1lc,j+1);
     }
-    ret = substr(s1,first,last+1-first);
-    INF("abbreviated_substring ["s1"] ["s2"] = ["ret"]");
+    if (ok) {
+        ret = substr(s1,first,last+1-first);
+        INF("abbreviated_substring ["s1"] ["start_regex_anchor abbrev end_regex_anchor"] = ["ret"]" first "-" last);
+    } else {
+        ret = "";
+    }
     return ret;
 }
 
@@ -1630,7 +1651,7 @@ ret,i,j,s1lc,s2lc,first,last,ch) {
 # The contraction is allowed to match from the beginning of the title to the
 # end of any whole word. eg greys = greys anatomy 
 function abbrevContraction(abbrev,possible_title,\
-found,regex,part,sw,ini) {
+found,part,sw,ini) {
 
 
     # Use regular expressions to do the heavy lifting.
@@ -1639,10 +1660,13 @@ found,regex,part,sw,ini) {
     # TODO Performance can be improved by just calling index for each letter in a loop. see is_contraction
     #
     possible_title = norm_title(possible_title,1);
-    part = abbreviated_substring(possible_title,"^",regex,"\\>");
+
+    #gsub(/\<(and|or|of|in)\>/,"",possible_title);
+
+    part = abbreviated_substring(possible_title,"\\<",abbrev,"\\>");
 
 
-    #DEBUG("abbrev:["abbrev"] ["regex"] ["possible_title"] = "found);
+    DEBUG("abbrev:["abbrev"] ["possible_title"] = "found);
 
     if (part != "") {
         #  check contraction will usually contain the initials of the part of the pattern that it matched.
@@ -1651,7 +1675,7 @@ found,regex,part,sw,ini) {
         ini = get_initials(sw);
         INF("possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
 
-        if (abbreviated_substring(abbrev,"",ini,"") != "") {
+        if (abbreviated_substring(abbrev,"",ini,"") == "") {
             INF("["possible_title "] rejected. Abbrev ["abbrev"]. doesnt contain initials of ["part"].");
             found = 0;
         }

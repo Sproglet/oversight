@@ -777,30 +777,11 @@ initial,names) {
 
     INF("Search Phase: epguid abbreviations");
 
-    if (0) {
-        initial = epguideInitial(abbrev);
-        get_epguide_names_by_letter(initial,names);
-        clean_titles_for_abbrev(names);
-        searchAbbreviation(initial,names,abbrev,alternateTitles);
-
-        #if the abbreviation begins with t it may stand for "the" so we need to 
-        #check the index against the next letter. eg The Ultimate Fighter - tuf on the u page!
-        if (initial == "t" ) {
-            initial = epguideInitial(substr(abbrev,2));
-            if (initial != "t" ) {
-                get_epguide_names_by_letter(initial,names);
-                clean_titles_for_abbrev(names);
-                searchAbbreviation(initial,names,abbrev,alternateTitles);
-            }
-        }
-    } else {
-        # New method for abbreviations - use tvrage index
-        initial = substr(abbrev,1,1);
-        get_tvrage_names_by_letter(initial,names);
-        clean_titles_for_abbrev(names);
-        searchAbbreviation(initial,names,abbrev,alternateTitles);
-    }
-    dump(0,"abbrev["abbrev"]",alternateTitles);
+    # New method for abbreviations - use tvrage index
+    initial = substr(abbrev,1,1);
+    get_tvrage_names_by_letter(initial,names);
+    clean_titles_for_abbrev(names);
+    searchAbbreviation(initial,names,abbrev,alternateTitles);
 }
 
 function clean_titles_for_abbrev(names,\
@@ -1485,15 +1466,15 @@ possible_title,i,ltitle) {
 
         if (abbrevMatch(ltitle,possible_title)) {
 
-            alternateTitles[possible_title]="abbreviation-initials";
+            alternateTitles[possible_title]=i;
 
         } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
 
-            alternateTitles[possible_title]="abbreviation-double";
+            alternateTitles[possible_title]=i;
 
         } else if (abbrevContraction(ltitle,possible_title)) {
 
-            alternateTitles[possible_title]="abbreviation-contraction";
+            alternateTitles[possible_title]=i;
         }
 
     }

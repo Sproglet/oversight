@@ -706,7 +706,7 @@ tnum,t,i,url) {
 }
 
 function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
-tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
+tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,ids) {
 
     title_key = plugin"/"minfo["mi_folder"]"/"title;
     id1("search_tv_series_names "title_key);
@@ -736,9 +736,31 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
             } else {
 
-                searchAbbreviationAgainstTitles(title,alternateTitles);
+                searchAbbreviationAgainstTitles(title,alternateTitles_tvrage);
 
-                filterTitlesByTvDbPresence(plugin,alternateTitles,showIds);
+                # Convert hash of title=>tvrageid to pluginid=>title
+                # for tvrage just invert.
+                # for tvdb do a reverse lookup from tvrage.
+                if (plugin == "tvrage" ) {
+
+                    hash_copy(alternateTitles_tvrage,showIds);
+
+                } else if (plugin == "thetvdb" ) {
+
+                    # convert title->tvrageid to thetvdbid->title (this retains the tvrage title but field priorities should fix later.)
+                    for(rageid in alternateTitles_tvrage) {
+                       delete ids;
+                       delete showIds;
+                       if (rage_get_other_ids(rageid,ids)) {
+                          showIds[ids["thetvdb"]] = alternateTitles_tvrage[rageid];
+                       } 
+                   }
+                } else {
+                    ERR("@@@ Bad plugin ["plugin"]");
+                }
+
+
+                # OBSOLETED filterTitlesByTvDbPresence(plugin,alternateTitles_tvrage,showIds);
                 if (hash_size(showIds)+0 > 1) {
 
                     filterUsenetTitles(showIds,cleanSuffix(minfo),showIds);
@@ -769,13 +791,11 @@ tvDbSeriesPage,alternateTitles,title_key,cache_key,showIds,tvdbid) {
 
 # Search the epguides menus for names that could be represented by the abbreviation 
 # IN abbrev - abbreviated name eg ttscc
-# OUT alternateTitles - hash of matching names eg {Terminator The Sarah Conor Chronicles,...} indexed by title.
+# OUT alternateTitles - hash of titles - index is rageid , value is normalized title.
 function searchAbbreviationAgainstTitles(abbrev,alternateTitles,\
 initial,names) {
 
     delete alternateTitles;
-
-    INF("Search Phase: epguid abbreviations");
 
     # New method for abbreviations - use tvrage index
     initial = substr(abbrev,1,1);
@@ -859,39 +879,39 @@ bestId,bestFirstAired,age_scores,eptitle_scores,count) {
     return bestId;
 }
 
-# Search tvDb for different titles and return the ones that have the highest similarity scores.
-# This multiple search is used when an abbbrevation gives 2 or more possible titles.
-# eg trh = The Real Hustle or The Road Home 
-# We then hope we can weed out sime titles through various means starting with lack of requiredTags eg. Overview and FirstAired 
-# IN titleInHash - the title we are looking for. hashed by title => any thing
-# IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
-# OUT showIdHash - hash of matching titles. hashed by showid => title
-# RETURNS number of matches
-function filterTitlesByTvDbPresence(plugin,titleInHash,showIdHash,\
-bestScore,potentialTitle,potentialMatches,origTitles,score) {
-    bestScore=-1;
-
-    dump(0,"pre tvdb check",titleInHash);
-
-    #Make a safe copy in case titleInHash is the same as showIdHash
-    hash_copy(origTitles,titleInHash);
-
-    delete showIdHash;
-
-    for(potentialTitle in origTitles) {
-        id1("Checking potential title "potentialTitle);
-        score = possible_tv_titles(plugin,potentialTitle,potentialMatches);
-        if (score - bestScore >= 0 ) {
-            if (score - bestScore > 0 ) delete showIdHash;
-            hash_merge(showIdHash,potentialMatches);
-            bestScore = score;
-        }
-        id0(score);
-    }
-
-    #copy to output
-    dump(0,"post filterTitle",showIdHash);
-}
+#DELETE# # Search tvDb for different titles and return the ones that have the highest similarity scores.
+#DELETE# # This multiple search is used when an abbbrevation gives 2 or more possible titles.
+#DELETE# # eg trh = The Real Hustle or The Road Home 
+#DELETE# # We then hope we can weed out sime titles through various means starting with lack of requiredTags eg. Overview and FirstAired 
+#DELETE# # IN titleInHash - the title we are looking for. hashed by title => any thing
+#DELETE# # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
+#DELETE# # OUT showIdHash - hash of matching titles. hashed by showid => title
+#DELETE# # RETURNS number of matches
+#DELETE# function filterTitlesByTvDbPresence(plugin,titleInHash,showIdHash,\
+#DELETE# bestScore,potentialTitle,potentialMatches,origTitles,score) {
+#DELETE#     bestScore=-1;
+#DELETE# 
+#DELETE#     dump(0,"pre tvdb check",titleInHash);
+#DELETE# 
+#DELETE#     #Make a safe copy in case titleInHash is the same as showIdHash
+#DELETE#     hash_copy(origTitles,titleInHash);
+#DELETE# 
+#DELETE#     delete showIdHash;
+#DELETE# 
+#DELETE#     for(potentialTitle in origTitles) {
+#DELETE#         id1("Checking potential title "potentialTitle);
+#DELETE#         score = possible_tv_titles(plugin,potentialTitle,potentialMatches);
+#DELETE#         if (score - bestScore >= 0 ) {
+#DELETE#             if (score - bestScore > 0 ) delete showIdHash;
+#DELETE#             hash_merge(showIdHash,potentialMatches);
+#DELETE#             bestScore = score;
+#DELETE#         }
+#DELETE#         id0(score);
+#DELETE#     }
+#DELETE# 
+#DELETE#     #copy to output
+#DELETE#     dump(0,"post filterTitle",showIdHash);
+#DELETE# }
 
 function remove_country(t) {
     if (match(tolower(t)," (au|uk|us)( |$)")) {
@@ -1442,7 +1462,7 @@ url,title,link,links,i,count2) {
 #             with t then search both t page and subsequent letter - to account for "The xxx" on page x
 # IN list of names that start with letter.
 # IN titleIn - The thing we are looking for - eg ttscc
-# IN/OUT alternateTitles - hash of titles - index is the title, value is 1
+# IN/OUT alternateTitles - hash of titles - index is rageid , value is normalized title.
 function searchAbbreviation(letter,names,titleIn,alternateTitles,\
 possible_title,i,ltitle) {
 
@@ -1466,15 +1486,15 @@ possible_title,i,ltitle) {
 
         if (abbrevMatch(ltitle,possible_title)) {
 
-            alternateTitles[possible_title]=i;
+            alternateTitles[i]=possible_title;
 
         } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
 
-            alternateTitles[possible_title]=i;
+            alternateTitles[i]=possible_title;
 
         } else if (abbrevContraction(ltitle,possible_title)) {
 
-            alternateTitles[possible_title]=i;
+            alternateTitles[i]=possible_title;
         }
 
     }
@@ -1784,67 +1804,99 @@ ret,xml) {
 
 # Follow linked websites from tvrage to tvdb
 # Note tvrage and thetvdb have recently become partners so this may become a direct link 
-function rage_get_other_ids(minfo,\
-rageid,showurl,thetvdb,imdb,ret,partners,p,partner,idlist) {
+function rage_get_other_ids_in_minfo(minfo,\
+rageid,ret,idlist,ids) {
 
     rageid = minfo_get_id(minfo,"tvrage");
 
 
-    if (rageid && !(rageid in g_rage2tvdb)) {
+    id1("rage_get_other_ids_in_minfo "rageid);
 
-        id1("rage_get_other_ids "rageid);
-        showurl = g_tvrage_web"/shows/id-"rageid;
+    # Possible routes to thetvdb are: 
 
-        # Possible routes to thetvdb are: 
+    # tvrage -> sharetv -> tvdb
+    # tvrage -> epguide -> sharetv -> tvdb
 
-        # tvrage -> sharetv -> tvdb
-        # tvrage -> epguide -> sharetv -> tvdb
+    # tvrage -> sharetv -> imdb -> tvdb
+    # tvrage -> epguide -> imdb -> tvdb
+    # tvrage -> epguide -> sharetv->imdb -> tvdb
+    # Using imdb link will only work if IMDB is set on thetvdb.
 
-        # tvrage -> sharetv -> imdb -> tvdb
-        # tvrage -> epguide -> imdb -> tvdb
-        # tvrage -> epguide -> sharetv->imdb -> tvdb
-        # Using imdb link will only work if IMDB is set on thetvdb.
+    # ideally the following line will work one day if tvrage add partner links to thetvdb in the api
+    ids["imdb"] = minfo_get_id(minfo,"imdb");
+    ids["thetvdb"] = minfo_get_id(minfo,"thetvdb");
 
-        # ideally the following line will work one day if tvrage add partner links to thetvdb
-        imdb = minfo_get_id(minfo,"imdb");
-        thetvdb = minfo_get_id(minfo,"thetvdb");
+    rage_get_other_ids(rageid,ids);
 
-        partners[1] = "sharetv";
-        partners[2] = "epguides";
-        for(p = 1; p <= 2 ; p++ ) {
-            if (imdb && thetvdb) break;
+    if (ids["imdb"]) {
+        idlist = idlist " imdb:"ids["imdb"];
+    }
+    if (ids["thetvdb"]) {
+        idlist = idlist " thetvdb:"ids["thetvdb"];
+    }
 
-            # scan for partner link
-            partner  = scan_page_for_first_link(showurl,partners[p],1);
-            if (partner) {
-                if (!imdb) {
-                    imdb = extractImdbId(scan_page_for_first_link(partner,"imdb",1));
-                }
-                if (!thetvdb) {
-                    thetvdb = scan_page_for_first_link(partner,"thetvdb",1);
-                    if (match(thetvdb,"[?&]id=[0-9]+")) {
-                        thetvdb = substr(thetvdb,RSTART+4,RLENGTH-4);
-                    }
+    if (idlist) {
+        minfo_merge_ids(minfo,idlist);
+        ret = 1;
+    }
+    id0(idlist);
+    return ret;
+}
+
+function rage_get_other_ids(rageid,ids,\
+partners,p,partner,showurl,link,ret) {
+
+    showurl = g_tvrage_web"/shows/id-"rageid;
+    partners[1] = "sharetv";
+    partners[2] = "epguides";
+    partners[3] = "imdb";
+
+    if (!ids["imdb"] && (rageid in g_tvrage_to_imdb ) ) {
+        ids["imdb"] = g_tvrage_to_imdb[rageid];
+    }
+
+    if (!ids["thetvdb"] && (rageid in g_tvrage_to_imdb ) ) {
+        ids["thetvdb"] = g_tvrage_to_thetvdb[rageid];
+    }
+
+    for(p = 1; ( p in partners) ; p++ ) {
+        if (ids["imdb"] && ids["thetvdb"]) break;
+
+        # scan for partner link
+        partner  = scan_page_for_first_link(showurl,partners[p],1);
+        if (partner) {
+
+            if (!ids["imdb"]) {
+                ids["imdb"] = extractImdbId(partner);
+            }
+
+            if (!ids["imdb"]) {
+                ids["imdb"] = extractImdbId(scan_page_for_first_link(partner,"imdb",1));
+            }
+
+            if (!ids["thetvdb"]) {
+                link = scan_page_for_first_link(partner,"thetvdb",1);
+                if (match(link,"[?&]id=[0-9]+")) {
+                    ids["thetvdb"] = substr(link,RSTART+4,RLENGTH-4);
                 }
             }
         }
-
-
-        if (imdb) {
-            idlist = idlist " imdb:"imdb;
-        }
-        if (thetvdb) {
-            idlist = idlist " thetvdb:"thetvdb;
-        }
-        g_rage2tvdb[rageid] = idlist;
-        id0(idlist);
     }
 
-    if (g_rage2tvdb[rageid]) {
-        minfo_merge_ids(minfo,g_rage2tvdb[rageid]);
-        ret = 1;
+    if (ids["imdb"] && ! ids["thetvdb"] ) {
+        ids["thetvdb"] = imdb2thetvdb(ids["imdb"]);
     }
-    id0(ret);
+
+    if (ids["thetvdb"] ) {
+        g_tvrage_to_thetvdb[rageid] = ids["thetvdb"];
+        ret++;
+    }
+    if (ids["imdb"] ) {
+        g_tvrage_to_imdb[rageid] = ids["imdb"];
+        ret++;
+    }
+
+    dump(0,"rage "rageid,ids);
     return ret;
 }
 
@@ -1869,7 +1921,7 @@ result,minfo2,thetvdbid) {
         result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
         if (result) {
             #get posters from thetvdb
-            rage_get_other_ids(minfo2);
+            rage_get_other_ids_in_minfo(minfo2);
         }
 
     } else {
@@ -2094,7 +2146,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi) {
         minfo_set_id("tvrage",seriesInfo["/Showinfo/showid"],minfo);
         result ++;
 
-        rage_get_other_ids(minfo);
+        rage_get_other_ids_in_minfo(minfo);
 
         dump(0,"pre-episode",minfo);
 

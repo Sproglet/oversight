@@ -18,7 +18,7 @@ function web_search_first_imdb_title(qualifier,imdb_qual) {
 # also src contains all urls that matched each pattern.
 # results are merged into existing array values.
 function scrapeMatches(url,freqOrFirst,helptxt,regex,matches,src,\
-match1,submatch) {
+match1,submatch,dots) {
 
     delete submatch;
     if (freqOrFirst == 1) {
@@ -34,6 +34,11 @@ match1,submatch) {
     # for each match we increment its score by one.
 
     for(match1 in submatch) {
+        #Remove elipses often used between different parts of context in SERPS.
+        if ((dots = index(match1,"...")) != 0) {
+            match1 = trim(substr(match1,dots+3));
+        }
+
         matches[match1] ++; 
         if (index(src[match1],":" url ":") == 0) {
             src[match1]=src[match1] ":" url ":";

@@ -1568,7 +1568,7 @@ initials) {
 # eg s1=hello there s2=ho   then result is hello
 #
 # TODO there is a slight bug with the implementation if the abbreviation is one character long.
-function abbreviated_substring(s1,start_regex_anchor,abbrev,end_regex_anchor,\
+function abbreviated_substring(s1,start_regex_anchor,abbrev,end_on_word,\
 ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
     j = 0;
     s1lc = tolower(s1);
@@ -1580,48 +1580,64 @@ ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
 
     ch = substr(abbrevlc,1,1);
 
-    if (match(s1lc,start_regex_anchor ch)) {
-        j = RSTART;
-        first = last = j;
-        s1lc = substr(s1lc,j+1);
-        len1 -= j;
+    if (len2 == 1 ) {
         ok = 1;
-        remaining = len2 ;
-
-        # check characters 2 to len2-1
-        for(i = 2 ; i < len2 ; i++ ) {
-
-            # check if remaining abbreviation is longer than string to match
-            if (--remaining > len1 ) {
-                ok = 0;
-                break;
-            }
-
-            ch = substr(abbrevlc,i,1);
-            j = index(s1lc,ch);
-            if (j == 0) {
-                ok = 0;
-                break;
-            }
-
-            last += j;
+    } else {
+        # check first character
+        if (match(s1lc,start_regex_anchor ch)) {
+            j = RSTART;
+            first = last = j;
             s1lc = substr(s1lc,j+1);
             len1 -= j;
-        }
-        if (ok) {
-            ch = substr(abbrevlc,len2);
-            # check last character and the last anchor
-            if (match(s1lc,ch end_regex_anchor)) {
-                j = RSTART;
+            ok = 1;
+            remaining = len2 ;
+
+            # check characters 2 to len2-1
+            for(i = 2 ; i < len2 ; i++ ) {
+
+                # check if remaining abbreviation is longer than string to match
+                if (--remaining > len1 ) {
+                    ok = 0;
+                    break;
+                }
+
+                ch = substr(abbrevlc,i,1);
+                j = index(s1lc,ch);
+                if (j == 0) {
+                    ok = 0;
+                    break;
+                }
+
                 last += j;
-            } else {
-                ok = 0;
+                s1lc = substr(s1lc,j+1);
+                len1 -= j;
             }
         }
     }
+
+    if (ok) {
+        ch = substr(abbrevlc,len2);
+        j = 0;
+        # check last character and the last anchor
+        if (end_on_word) {
+            # make sure last letter begins or ends a word
+            if (match(s1lc,"(\\<"ch"|"ch"\\>)")  ) {
+                j = RSTART;
+            }
+        } else {
+            j = index(s1lc,ch);
+        }
+        if (j) {
+            last += j;
+            if (first == 0) first = last;
+        } else {
+            ok = 0;
+        }
+    }
+
     if (ok) {
         ret = substr(s1,first,last+1-first);
-        INF("abbreviated_substring ["s1"] ["start_regex_anchor abbrev end_regex_anchor"] = ["ret"]" first "-" last);
+        INF("abbreviated_substring ["s1"] ["start_regex_anchor abbrev end_on_word"] = ["ret"]" first "-" last);
     } else {
         ret = "";
     }
@@ -1661,6 +1677,7 @@ ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
 function abbrevContraction(abbrev,possible_title,\
 found,part,sw,ini) {
 
+    found=0;
 
     # Use regular expressions to do the heavy lifting.
     # First if abbreviation is grk convert to ^g.*r.*k\>
@@ -1671,10 +1688,10 @@ found,part,sw,ini) {
 
     #gsub(/\<(and|or|of|in)\>/,"",possible_title);
 
-    part = abbreviated_substring(possible_title,"\\<",abbrev,"\\>");
+    part = abbreviated_substring(possible_title,"\\<",abbrev,1);
 
 
-    DEBUG("abbrev:["abbrev"] ["possible_title"] = "found);
+    DEBUG("abbrev:["abbrev"] ["possible_title"] = "part);
 
     if (part != "") {
         #  check contraction will usually contain the initials of the part of the pattern that it matched.
@@ -1682,14 +1699,16 @@ found,part,sw,ini) {
         sw = significant_words(part);
         ini = get_initials(sw);
         INF("possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
+        #possible_title=[law and order los angeles] part=[law and order los a] sig=[order] init=[o]
 
-        if (abbreviated_substring(abbrev,"",ini,"") == "") {
+        if (abbreviated_substring(abbrev,"",ini,0) == "") {
             INF("["possible_title "] rejected. Abbrev ["abbrev"]. doesnt contain initials of ["part"].");
-            found = 0;
+        } else {
+            found = 1;
         }
     }
 
-    return 0+ found;
+    return found;
 }
 
 function epguideInitial(title,\

@@ -1171,11 +1171,15 @@ minfo,i,ulang) {
         unit1("imdb1",(extractImdbId("http://us.imdb.com/Title?0318247  ") == "tt0318247"));
         unit1("imdb2",(extractImdbId("http://us.imdb.com/title/tt0318247  ") == "tt0318247"));
 
-        unit1("abbr1",(abbreviated_substring("one two three","^","ott","\\>") == ""));
-        unit1("abbr2",(abbreviated_substring("one two three","^","ote","\\>") == "one two three"));
-        unit1("abbr3",(abbreviated_substring("one two three","^","nte","\\>") == ""));
-        unit1("abbr4",(abbreviated_substring("one two three","","nte","\\>") == "ne two three"));
-        unit1("abbr5",(abbreviated_substring("one two three","","nte","") == "ne two thre"));
+        unit1("abbr1",(abbreviated_substring("law and order los angeles","^","law and order la",1) == "law and order los a"));
+        unit1("abbr2",(abbreviated_substring("law and order los angeles","^","law and order la",0) == "law and order los a"));
+        unit1("abbr3",(abbreviated_substring("law and order los angeles","^","law and order lg",1) == ""));
+        unit1("abbr4",(abbreviated_substring("law and order los angeles","^","law and order lg",0) == "law and order los ang"));
+        unit1("abbr5",(abbreviated_substring("one two three","^","ott",1) == "one two t"));
+        unit1("abbr6",(abbreviated_substring("one two three","^","ote",1) == "one two three"));
+        unit1("abbr7",(abbreviated_substring("one two three","^","nte",1) == ""));
+        unit1("abbr8",(abbreviated_substring("one two three","","nte",1) == "ne two three"));
+        unit1("abbr9",(abbreviated_substring("one two three","","nte",0) == "ne two thre"));
 
         unit1("Trim",(trim(" a ") == "a"));
         unit1("Roman",(roman_replace("fredii") == "fred2"));

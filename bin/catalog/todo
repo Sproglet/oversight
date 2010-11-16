@@ -1,8 +1,4 @@
-#  : http://us.imdb.com/Title?0318247 extracted from nfo as 18247 why? 
-#
 #  DnD ep 22 ends up in Season 2 - why?
-#
-#  test appreviations - add to test harness
 #
 #  fix logic for Apprentice UK Youre fired.
 #  1. it does look up on Apprentice UK Youre Fired against all T titles and fails - As expected
@@ -11,6 +7,9 @@
 #
 #  Either 1. Avoid doing the requery and go direct to the tv show (needs plugin id) OR
 #  2. Implement a similar title comparison and pick the show with the closest title. / shortest edit distance.
+#
+#
+# still doing multiple IMDB scrapes if a movie is later recognised as a TV show.
 #
 # launch imdb scrape from tvdb OR do cast parsing.
 #

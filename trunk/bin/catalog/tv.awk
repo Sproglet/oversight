@@ -743,25 +743,32 @@ tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,
                 # for tvdb do a reverse lookup from tvrage.
                 if (plugin == "tvrage" ) {
 
-                    hash_copy(alternateTitles_tvrage,showIds);
+                    hash_copy(showIds,alternateTitles_tvrage);
 
                 } else if (plugin == "thetvdb" ) {
 
                     # convert title->tvrageid to thetvdbid->title (this retains the tvrage title but field priorities should fix later.)
+                   delete showIds;
                     for(rageid in alternateTitles_tvrage) {
                        delete ids;
-                       delete showIds;
-                       if (rage_get_other_ids(rageid,ids)) {
+                       if (rage_get_other_ids(rageid,ids) && ids["thetvdb"]) {
                           showIds[ids["thetvdb"]] = alternateTitles_tvrage[rageid];
-                       } 
+                       } else {
+                          DEBUG("No match for rage id "rageid);
+                       }
                    }
+
                 } else {
                     ERR("@@@ Bad plugin ["plugin"]");
                 }
 
+                dump(0,"abbreviated shows",showIds);
 
                 # OBSOLETED filterTitlesByTvDbPresence(plugin,alternateTitles_tvrage,showIds);
-                if (hash_size(showIds)+0 > 1) {
+
+                #  TODO  We can also just do a web search and return the biggest page. 
+                # this may be more robust than relying on a particular nzb site.
+                if (hash_size(showIds) > 1) {
 
                     filterUsenetTitles(showIds,cleanSuffix(minfo),showIds);
                 }
@@ -1547,7 +1554,8 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
 
 # remove all words of 3 or less characters
 function significant_words(t) {
-    gsub(/\<[^ ]{1,3}\>/,"",t);
+    gsub(/\<(and|the|on|or|of|in|vs|de|en)\>/,"",t);
+    #gsub(/\<[^ ]{1,3}\>/,"",t);
     gsub(/  +/," ",t);
     return trim(t);
 }
@@ -1687,7 +1695,6 @@ found,part,sw,ini) {
     #
     possible_title = norm_title(possible_title,1);
 
-    #gsub(/\<(and|or|of|in)\>/,"",possible_title);
 
     part = abbreviated_substring(possible_title,"\\<",abbrev,1);
 
@@ -1695,9 +1702,9 @@ found,part,sw,ini) {
     DEBUG("abbrev:["abbrev"] ["possible_title"] = "part);
 
     if (part != "") {
-        #  check contraction will usually contain the initials of the part of the pattern that it matched.
+        #  check contraction will usually contain the initials of the entire title it matched against
         # 
-        sw = significant_words(part);
+        sw = significant_words(possible_title);
         ini = get_initials(sw);
         INF("possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
         #possible_title=[law and order los angeles] part=[law and order los a] sig=[order] init=[o]
@@ -1791,14 +1798,13 @@ episodeUrl,result) {
 # get thetvdbid from imdbid
 function imdb2thetvdb(imdbid,\
 ret,xml) {
-    #id1("XX NEW CHECK imdb2thetvdb "imdbid);
     if (!(imdbid in g_imdb2thetvdb)) {
         fetchXML(g_thetvdb_web"/api/GetSeriesByRemoteID?imdbid="imdbid,"imdb2tv",xml);
         # always set value regardless of fetchXML error status - to prevent re-query
         g_imdb2thetvdb[imdbid] = xml["/Data/Series/seriesid"];
     }
     ret = g_imdb2thetvdb[imdbid];
-    id0(ret);
+    INF("imdb2thetvdb "imdbid" = "ret);
     return ret;
 }
 
@@ -1902,11 +1908,9 @@ partners,p,partner,showurl,link,ret) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,\
-result,minfo2,thetvdbid) {
+result,minfo2) {
 
     id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
-
-
 
     # mini-series may not have season set
     if (minfo["mi_season"] == "") {
@@ -1914,25 +1918,17 @@ result,minfo2,thetvdbid) {
     }
 
     if (plugin == "thetvdb") {
+
         result = get_tv_series_info_tvdb(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
 
     } else if (plugin == "tvrage") {
 
         result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
-        if (result) {
-            #get posters from thetvdb
-            rage_get_other_ids_in_minfo(minfo2);
-        }
 
     } else {
         plugin_error(plugin);
     }
 
-    thetvdbid = minfo_get_id(minfo2,"thetvdb");
-
-    if (result && thetvdbid) {
-        getTvDbSeasonBanner(minfo2,thetvdbid);
-    }
 
 #    ERR("UNCOMMENT THIS CODE");
     if (minfo["mi_episode"] ~ "^DVD[0-9]+$" ) {
@@ -1988,18 +1984,19 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,result,iid) {
+seriesInfo,episodeInfo,result,iid,thetvdbid) {
 
     result=0;
 
-    
-    fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo);
-    if ("/Data/Series/id" in seriesInfo) {
+    if (scrape_cache_get(tvDbSeriesUrl,minfo)) {
+
+        result = 1;
+
+    } else if (fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo) && ("/Data/Series/id" in seriesInfo)) {
 
         dump(0,"tvdb series",seriesInfo);
 
         minfo["mi_season"]=season;
-        minfo["mi_episode"]=episode;
         #Refine the title.
         minfo["mi_title"] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
 
@@ -2011,12 +2008,21 @@ seriesInfo,episodeInfo,result,iid) {
         minfo["mi_rating"] = seriesInfo["/Data/Series/Rating"];
         minfo["mi_poster"]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
 
-        minfo_set_id("thetvdb",seriesInfo["/Data/Series/id"],minfo);
+        thetvdbid = seriesInfo["/Data/Series/id"];
+        minfo_set_id("thetvdb",thetvdbid,minfo);
 
         iid = seriesInfo["/Data/Series/IMDB_ID"];
         minfo_set_id("imdb",iid,minfo);
 
+        getTvDbSeasonBanner(minfo,thetvdbid);
+
+        scrape_cache_add(tvDbSeriesUrl,minfo);
         result ++;
+    }
+
+    if (result) {
+
+        minfo["mi_episode"]=episode;
 
         # For twin episodes just use the first episode number for lookup by adding 0
         dump(0,"pre-episode",minfo);
@@ -2070,6 +2076,7 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
     lnum = get_langs(langs);
 
     bannerApiUrl = g_thetvdb_web"/data/series/"tvdbid"/banners.xml";
+
     r="/Banners/Banner";
     get_poster = getting_poster(minfo,1);
     get_fanart = getting_fanart(minfo,1);
@@ -2124,17 +2131,20 @@ function set_eptitle(minfo,title) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_rage(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,filter,url,e,result,pi) {
+seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 
     pi="tvrage";
     result = 0;
     delete filter;
 
-    if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"")) {
+    if (scrape_cache_get(tvDbSeriesUrl,minfo)) {
+
+        result = 1;
+
+    } else if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"") && ( "/Showinfo/showid" in seriesInfo ) ) {
 
         dump(0,"tvrage series",seriesInfo);
         minfo["mi_season"]=season;
-        minfo["mi_episode"]=episode;
         minfo["mi_title"]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
         minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);
         minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
@@ -2144,9 +2154,20 @@ seriesInfo,episodeInfo,filter,url,e,result,pi) {
         minfo["mi_plot"]=clean_plot(seriesInfo["/Showinfo/summary"]);
 
         minfo_set_id("tvrage",seriesInfo["/Showinfo/showid"],minfo);
-        result ++;
 
         rage_get_other_ids_in_minfo(minfo);
+
+        thetvdbid = minfo_get_id(minfo,"thetvdb");
+        if (thetvdbid) {
+            getTvDbSeasonBanner(minfo,thetvdbid);
+        }
+        scrape_cache_add(tvDbSeriesUrl,minfo);
+        result ++;
+    }
+
+    if (result) {
+
+        minfo["mi_episode"]=episode;
 
         dump(0,"pre-episode",minfo);
 

@@ -1,21 +1,22 @@
+#  With thetvdb disabled when scraping Jersey Shore shows are ending up with different titles. Might be an issue with the scrape caching
+#  or with tvrage plugin titles.
+#
 #  DnD ep 22 ends up in Season 2 - why?
 #
-#  fix logic for Apprentice UK Youre fired.
-#  1. it does look up on Apprentice UK Youre Fired against all T titles and fails - As expected
-#  2. it does look up on Apprentice Youre Fired against all T titles and succeeds - As expected
-#  3. BUT then it requeryes the tv plugin using "Apprentice You're fired!" looking for "Apprentice UK Youre fired" but fails.
+#  Cache IMDB scrapes (mino) whilst in same folder.
 #
-#  Either 1. Avoid doing the requery and go direct to the tv show (needs plugin id) OR
-#  2. Implement a similar title comparison and pick the show with the closest title. / shortest edit distance.
+#  Add Google image scrape
 #
+#  remove epguide_Initial
+#
+#  find good way to determine LveThyNeighbour from http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=LTN+S01E02+-+Limbo+Dancing
+#  this will be just a TITLE search (as opposed to TITLEYEAR )
 #
 # still doing multiple IMDB scrapes if a movie is later recognised as a TV show.
 #
 # launch imdb scrape from tvdb OR do cast parsing.
 #
 # Make sure all items in current library are scanned.
-#
-# Add parsing of 'Stars:' on IMDB page.
 #
 # Allow users to bypass donate in gui 
 #

@@ -682,6 +682,8 @@ function clear_folder_info() {
     delete g_fldrInfoName;
     delete g_fldrCount;
 
+    scrape_cache_clear();
+
     # unique by file - clean when changing folder.
     delete g_file_date; 
 

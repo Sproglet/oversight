@@ -66,9 +66,9 @@ filters,ret,tags) {
     filters["#type"] = type;
     filters["#size"] = size;
 
-    DEBUG("XX get_moviedb_img["root"]");
     if (find_elements(xml,root"/images/image",filters,1,tags)) {
         ret = xml[tags[1]"#url"];
+        if (index(ret,"/") == 1) ret = "http://hwcdn.themoviedb.org"ret;
     }
     return ret;
 }

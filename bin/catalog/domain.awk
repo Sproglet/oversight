@@ -35,7 +35,7 @@ plist,ret,key) {
             INF("keyword ["key"] not present for domain ["domain"]");
         }
     }
-    DEBUG("domain_edits:["domain":"text"]=["ret"]");
+    if (ret) DEBUG("domain_edits:["domain":"text"]=["ret"]");
     return ret;
 }
 

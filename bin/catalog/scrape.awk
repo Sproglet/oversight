@@ -280,7 +280,7 @@ i,j,keep) {
 # OUT minfo - Movie info - cleared before use.
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
 function scrape_movie_page(text,title,year,runtime,director,url,lang,domain,minfo,\
-f,minfo2,err,line,pagestate,namestate) {
+f,minfo2,err,line,pagestate,namestate,store) {
 
     err = 0;
     id1("scrape_movie_page("url","lang","domain","text","title","year")");
@@ -291,21 +291,26 @@ f,minfo2,err,line,pagestate,namestate) {
 
     } else if (url && lang )  {
 
-        f=getUrl(url,lang":"domain":"title":"year,1);
-        if (f) {
+        if (!scrape_cache_get(url,minfo2)) {
 
-            minfo2["mi_url"] = url;
-            minfo2["mi_category"] = "M";
-            pagestate["mode"] = "head";
-            while(enc_getline(f,line) > 0  ) {
-                err = scrape_movie_line(lang,domain,line[1],minfo2,pagestate,namestate);
-                if (err) {
-                    INF("abort page");
-                    break;
+            store = 1;
+
+            f=getUrl(url,lang":"domain":"title":"year,1);
+            if (f) {
+
+                minfo2["mi_url"] = url;
+                minfo2["mi_category"] = "M";
+                pagestate["mode"] = "head";
+                while(enc_getline(f,line) > 0  ) {
+                    err = scrape_movie_line(lang,domain,line[1],minfo2,pagestate,namestate);
+                    if (err) {
+                        INF("abort page");
+                        break;
+                    }
                 }
+                close(f);
             }
-            close(f);
-        }
+        } 
 
         #This will get merged in if page is succesful.
         #if page fails then the normal logical flow of the program should prevent re-visits. not the visited flag.
@@ -335,6 +340,9 @@ f,minfo2,err,line,pagestate,namestate) {
     } else {
         if(index(domain,"imdb")) {
             imdb_extra_info(minfo2,url);
+        }
+        if (store) {
+            scrape_cache_add(url,minfo2);
         }
         minfo_merge(minfo,minfo2,domain);
         dump(0,title"-"year"-"domain"-"lang,minfo);
@@ -1066,7 +1074,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                 name_reg = ">[^<]+";
                 name_reg = "@label@[^@]+@label@";
 
-                DEBUG("XX1 text=["text"]");
+                #DEBUG("XX1 text=["text"]");
 
                 dnum = get_regex_pos(text,"("href_reg"|"src_reg"|"name_reg")",0,dtext);
 
@@ -1076,12 +1084,12 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
                     if (index(dtext[i],"src=") == 1) {
 
-                        DEBUG("XX1 got image ["dtext[i]"]");
+                        #DEBUG("XX1 got image ["dtext[i]"]");
                         dump(0,"xx namestate",namestate);
 
                     # Convert URL from thumbnail to big
                         namestate["src"] = person_get_img_url(domain,substr(dtext[i],6));
-                        DEBUG("XX1 got full size image ["namestate["src"]"]");
+                        #DEBUG("XX1 got full size image ["namestate["src"]"]");
                         check_img = 1;
 
                     } else if (index(dtext[i],"@label@") ) {
@@ -1098,7 +1106,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                             }
                                 
                             if (index(minfo["mi_"role"_ids"]"@","@"namestate["id"]"@") == 0) { 
-                                    minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" namestate["name"];
+                                minfo["mi_"role"_names"]  = minfo["mi_"role"_names"] "@" namestate["name"];
                                 minfo["mi_"role"_ids"]  = minfo["mi_"role"_ids"] "@" namestate["id"];
                                 count++;
                             }
@@ -1127,7 +1135,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                 }
 
             }
-            if (count) {
+            if (count > minfo["mi_"role"_total"] ) {
                 minfo["mi_"role"_total"] = count;
                 INF("get_names:"role"="count);
             }

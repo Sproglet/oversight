@@ -27,7 +27,7 @@ ret,i,j,dirCount,dirs) {
 # RET 0 - no format found
 #     1 - tv format found - needs to be confirmed by scraping 
 #
-function checkTvFilenameFormat(minfo,plugin,path_parts,more_info,\
+function checkTvFilenameFormat(minfo,plugin,path_parts,more_info,allow_720,\
 details,line,ret,name,i,start,end) {
 
     ret = 0;
@@ -59,7 +59,7 @@ details,line,ret,name,i,start,end) {
            # The assumption is the people abbreviate file names but not folder names.
            more_info[1]=(path_parts == 1); # enable abbrevation scraping later only at filename level
 
-            if (extractEpisodeByPatterns(minfo,plugin,line,details)==1) {
+            if (extractEpisodeByPatterns(minfo,plugin,line,details,allow_720)==1) {
                    ret = 1;
 
                 if (details[TITLE] == "" ) {
@@ -141,7 +141,7 @@ terms,results,id,url,parts,showurl) {
     return id;
 }
 # If Plugin != "" then it will also check episodes by date.
-function extractEpisodeByPatterns(minfo,plugin,line,details,\
+function extractEpisodeByPatterns(minfo,plugin,line,details,allow_720,\
 ret,p,pat,i,parts,sreg,ereg,\
 season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
@@ -193,12 +193,18 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     # extractEpisodeByDates is also called by other logic. 
     pat[++p]="DATE";
     ## just numbers.
-    pat[++p]="([^-0-9])([1-9]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
+    if (allow_720) {
+        pat[++p]="([^-0-9])([1-9]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
+    } else {
+        pat[++p]="([^-0-9])([1-689]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
+        pat[++p]="([^-0-9])(7)([013-9][0-9]|2[1-9])@\\1\t\\2\t\\3@";
+        pat[++p]="([^-0-9])(7)/([0-9][0-9])@\\1\t\\2\t\\3@";
+    }
 
     # Part n - no season
     pat[++p]="\\<()()"part_prefix"[^a-z0-9]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
 
-    for(i = 1 ; ret+0 == 0 && p-i >= 0 ; i++ ) {
+    for(i = 1 ; p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
             ret = extractEpisodeByDates(minfo,plugin,line,details);
         } else {
@@ -210,6 +216,7 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
                 details[EPISODE] = parts[3] details[EPISODE];
             }
         }
+        if (ret) break;
     }
 
     if (ret+0 != 0) {
@@ -516,12 +523,12 @@ function remove_season(t) {
     return clean_title(t);
 }
 
-function tv_search_simple(minfo,bestUrl) {
-    return tv_check_and_search_all(minfo,bestUrl,0);
+function tv_search_simple(minfo,bestUrl,allow_720) {
+    return tv_check_and_search_all(minfo,bestUrl,0,allow_720);
 }
 
-function tv_search_complex(minfo,bestUrl) {
-    return tv_check_and_search_all(minfo,bestUrl,1);
+function tv_search_complex(minfo,bestUrl,allow_720) {
+    return tv_check_and_search_all(minfo,bestUrl,1,allow_720);
 }
 
 
@@ -533,7 +540,7 @@ function tv_search_complex(minfo,bestUrl) {
 #
 # returns cat="T" tv show , "M" = movie , "" = unknown.
 
-function tv_check_and_search_all(minfo,bestUrl,check_tv_names,\
+function tv_check_and_search_all(minfo,bestUrl,check_tv_names,allow_720,\
 plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
 
@@ -564,7 +571,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
             if (check_tv_names) {
 
-                if (checkTvFilenameFormat(minfo,plugin,path_num,more_info)) {
+                if (checkTvFilenameFormat(minfo,plugin,path_num,more_info,allow_720)) {
 
                     search_abbreviations = more_info[1];
 
@@ -687,7 +694,7 @@ key,iid) {
         if (!(key in g_tv2imdb)) {
 
             # Search for imdb page  - try to filter out Episode pages.
-            iid = g_tv2imdb[key] = extractImdbId(web_search_first_imdb_link(key" +site:imdb.com \"TV Series\" -\"Episode Cast\"",key)); 
+            iid = g_tv2imdb[key] = extractImdbId(web_search_first_imdb_link(key" +site:imdb.com \"TV\"",key)); 
         }
         minfo_set_id("imdb",iid,minfo);
     }

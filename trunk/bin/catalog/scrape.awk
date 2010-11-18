@@ -323,6 +323,7 @@ f,minfo2,err,line,pagestate,namestate,store) {
     if (minfo2["mi_category"] == "M") {
 
         if (!err) {
+            # at the moment - check title will just shour circuit if similar score < 0.3
             err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
         }
 
@@ -434,15 +435,32 @@ ret) {
 }
 
 function check_title(title,minfo,\
-ret) {
+ret,similar_threshold) {
+
+    similar_threshold = 0.3 ; # edit distance / string length.
     ret = 1;
+    title = remove_brackets(title);
     if (title && minfo["mi_title"]) {
-        ret = (index(tolower(minfo["mi_title"]),tolower(title)) || index(tolower(minfo["mi_orig_title"]),tolower(title)));
-        if (ret) {
-            DEBUG("title scraped ok");
-        } else {
-            INF("page rejected title ["minfo["mi_title"]"] or ["minfo["mi_orig_title"]"] != ["title"]");
-        }
+
+
+       ret = 0 ;
+
+       # At present search short circuits as soom as a similar title is found. 
+       #For better results we should scrape all pages and pick the one with the most similar title but
+       # a. this is time consuming.
+       # b. the order of URLS come from a SERP so its expected that the earlier ones should be more relevant.
+       if (index(tolower(minfo["mi_title"]),tolower(title)) || index(tolower(minfo["mi_orig_title"]),tolower(title)))  {
+           
+           ret = 1
+           DEBUG("check_title - titles are substrings");
+           
+       } else if (similar(minfo["mi_title"],title) < similar_threshold || similar(minfo["mi_orig_title"],title) < similar_threshold ) {
+
+           ret = 1;
+           DEBUG("check_title - titles are similar");
+       } else {
+           INF("page rejected title ["minfo["mi_title"]"] or ["minfo["mi_orig_title"]"] != ["title"]");
+       }
     }
     return ret;
 }

@@ -607,6 +607,8 @@ score) {
 
         gPriority["mi_runtime","themoviedb"]=50;
         gPriority["mi_runtime","imdb"]=60;
+
+        gPriority["mi_category","imdb"]=60;
     }
     score = gPriority[field,source];
     if (score) {
@@ -635,12 +637,12 @@ oldSrc,ret) {
 
     if (minfo[field] == "" ) {
 
-        INF("is_better_source: "field" is currently blank. source ["source"] is better.");
+        #INF("is_better_source: "field" is currently blank. source ["source"] is better.");
         ret = 1;
 
-    } else if (field_priority(field,source)+0 > field_priority(field,minfo[field"_source"])+0) {
+    } else if (field_priority(field,source)+0 >= field_priority(field,minfo[field"_source"])+0) {
 
-        INF("is_better_source "oldSrc" beaten by "source);
+        INF("is_better_source "oldSrc" beaten or matched by "source);
         ret = 1;
 
     } else {

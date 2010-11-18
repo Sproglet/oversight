@@ -1167,6 +1167,12 @@ minfo,i,ulang) {
         INF("3." subexp("Title?012345","Title.([0-9]+)"));
         INF("4." subexp("Title?012345 ","Title.([0-9]+)"));
 
+        unit1("edit_dist1",(edit_dist("abc","abc") == 0));
+        unit1("edit_dist2",(edit_dist("abc","abjc") == 1));
+        unit1("edit_dist3",(edit_dist("abc","ac") == 1));
+        unit1("edit_dist4",(edit_dist("abc","a") == 2));
+        unit1("edit_dist5",(edit_dist("kitten","sitting") == 3));
+
         unit1("subexp",(subexp("Title?012345","Title.([0-9]+)\\>")  == "012345"));
         unit1("imdb1",(extractImdbId("http://us.imdb.com/Title?0318247  ") == "tt0318247"));
         unit1("imdb2",(extractImdbId("http://us.imdb.com/title/tt0318247  ") == "tt0318247"));

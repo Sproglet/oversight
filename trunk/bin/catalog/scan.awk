@@ -565,12 +565,12 @@ cat,minfo2) {
                         minfo["mi_episode"] = minfo2["mi_episode"];
                         minfo["mi_additional_info"] = minfo2["mi_additional_info"];
 
-                        cat = tv_search_simple(minfo,bestUrl);
+                        cat = tv_search_simple(minfo,bestUrl,1);
 
                     } else if (cat != "M" ) {
 
                         # Not sure - try a TV search looking for various abbreviations.
-                        cat = tv_search_complex(minfo,bestUrl);
+                        cat = tv_search_complex(minfo,bestUrl,0);
 
                         if (cat != "T") {
                             # Could not find any hits using tv abbreviations, try heuristis for a movie search.
@@ -583,7 +583,7 @@ cat,minfo2) {
                                     # If we get here we found an IMDB id , but it looks like a TV show after all.
                                     # This may happen with mini-series that do not have normal naming conventions etc.
                                     # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                                    cat = tv_search_simple(minfo,bestUrl);
+                                    cat = tv_search_simple(minfo,bestUrl,1);
                                 }
                             }
                         }

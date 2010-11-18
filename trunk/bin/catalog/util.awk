@@ -831,3 +831,96 @@ count,fcount,i,parts,start) {
 }
 
 
+# Levenshtein or Edit distance - metric of how similar two strings are.
+# http://www.merriampark.com/ld.htm
+# http://www.merriampark.com/ldcpp.htm
+function edit_dist(source,target,\
+m,n,i,j,matrix,cell,left,above,diag,cost,s_i,t_j) {
+
+  n = length(source);
+  m = length(target);
+  if (n == 0) {
+    return m;
+  }
+  if (m == 0) {
+    return n;
+  }
+
+  for (i = 0; i <= n; i++) {
+    matrix[i,0]=i;
+  }
+
+  for (j = 0; j <= m; j++) {
+    matrix[0,j]=j;
+  }
+
+  for (i = 1; i <= n; i++) {
+
+    s_i = substr(source,i,1);
+
+    for (j = 1; j <= m; j++) {
+
+      t_j = substr(target,j,1);
+
+      if (s_i == t_j) {
+        cost = 0;
+      }
+      else {
+        cost = 1;
+      }
+
+      above = matrix[i-1,j] + 1;
+      left = matrix[i,j-1] + 1;
+      diag = matrix[i-1,j-1] + cost;
+      if (above < left ) {
+        if (above < diag ) {
+            cell = above ; 
+        } else {
+            cell = diag;
+        }
+      } else {
+        if (left < diag ) {
+            cell = left;
+        } else {
+            cell = diag;
+        }
+      }
+
+      # Not really interested in transpositions for this application but c source is 
+      # // Step 6A: Cover transposition, in addition to deletion,
+      # // insertion and substitution. This step is taken from:
+      # // Berghel, Hal ; Roach, David : "An Extension of Ukkonen's 
+      # // Enhanced Dynamic Programming ASM Algorithm"
+      # // (http://www.acm.org/~hlb/publications/asm/asm.html)
+
+      # if (i>2 && j>2) {
+      #   int trans=matrix[i-2][j-2]+1;
+      #   if (source[i-2]!=t_j) trans++;
+      #   if (s_i!=target[j-2]) trans++;
+      #   if (cell>trans) cell=trans;
+      # }
+
+      matrix[i,j]=cell;
+    }
+  }
+
+  return matrix[n,m];
+}
+
+# return edit distance / length of string 
+# 0 = same 1=very different >1 = one string was blank - very very different
+# e=4 s1=4 s2=5 = 1 
+# e=4 s1=40 s2=40 = 0.1 
+# e=99 s1=99 s2=99  1
+function similar(s1,s2,\
+    n,m,e,min) {
+    m = length(s1);
+    n = length(s2);
+    if (n < m ) min  = n; else min = m;
+
+    if (min == 0 ) min = 1;
+
+    e = edit_dist(tolower(s1),tolower(s2));
+    return e / min ;
+}
+

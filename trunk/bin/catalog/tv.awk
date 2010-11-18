@@ -351,7 +351,7 @@ function extractEpisodeByDates(minfo,plugin,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
 
     result=0;
-    #id1("extractEpisodeByDates "plugin" "line);
+    id1("extractEpisodeByDates "plugin" "line);
     if (extractDate(line,date,nonDate)) {
         rest=nonDate[2];
 
@@ -368,8 +368,6 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
         dump(0,"date check",closeTitles);
 
         for (tvdbid in closeTitles) {
-
-            id1("Checking "tvdbid);
 
             #if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
@@ -388,10 +386,8 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
             if (result) {
                 INF("Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d);
                 details[TVID]=tvdbid;
-                id0(result);
                 break;
             }
-            id0(result);
         }
         if (result == 0) {
             INF(":( Couldnt find episode "y"/"m"/"d" - using file information");
@@ -401,7 +397,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
             details[ADDITIONAL_INF]=clean_title(rest);
         }
     }
-    #id0(result);
+    id0(result);
     return 0+ result;
 }
 
@@ -521,12 +517,10 @@ function remove_season(t) {
 }
 
 function tv_search_simple(minfo,bestUrl) {
-    id1("tv_search_simple");
     return tv_check_and_search_all(minfo,bestUrl,0);
 }
 
 function tv_search_complex(minfo,bestUrl) {
-    id1("tv_search_complex ");
     return tv_check_and_search_all(minfo,bestUrl,1);
 }
 
@@ -543,6 +537,7 @@ function tv_check_and_search_all(minfo,bestUrl,check_tv_names,\
 plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
 
+    id1("tv_search check_tv_names="check_tv_names);
     ret = "";
 
     # loop through path levels
@@ -617,6 +612,12 @@ tvDbSeriesPage,result,tvid,cat,iid) {
     if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
         # do not know tvid nor imdbid - use the title to search tv indexes.
         tvDbSeriesPage = search_tv_series_names(plugin,minfo,minfo["mi_title"],search_abbreviations);
+        if (tvDbSeriesPage == "" ) {
+
+            if (minfo["mi_title"] ~ /^[Bb][Bb][Cc] / ) {
+                tvDbSeriesPage = search_tv_series_names(plugin,minfo,substr(minfo["mi_title"],4),search_abbreviations);
+            }
+        }
     }
 
     if (tvDbSeriesPage != "" ) { 
@@ -709,7 +710,7 @@ function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
 tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,ids) {
 
     title_key = plugin"/"minfo["mi_folder"]"/"title;
-    id1("search_tv_series_names "title_key);
+    id1("search_tv_series_names2 "title_key);
 
     if (title_key in g_tvDbIndex) {
         DEBUG(plugin" use previous mapping "title_key" -> ["g_tvDbIndex[title_key]"]");
@@ -788,8 +789,8 @@ tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,
             WARNING("search_tv_series_names could not find series page");
         } else {
             DEBUG("search_tv_series_names Search looking at "tvDbSeriesPage);
-            g_tvDbIndex[title_key] = tvDbSeriesPage;
         }
+        g_tvDbIndex[title_key] = tvDbSeriesPage;
     }
     id0(tvDbSeriesPage);
 
@@ -872,7 +873,7 @@ bestId,bestFirstAired,age_scores,eptitle_scores,count) {
 
             getRelativeAgeAndEpTitles(plugin,minfo,titles,age_scores,eptitle_scores);
 
-            bestScores(eptitle_scores,eptitle_scores,1);
+            bestScores(eptitle_scores,eptitle_scores,0);
             bestId = firstIndex(eptitle_scores);
 
             if (bestId == "") {
@@ -2233,8 +2234,8 @@ id,xml,eptitle) {
                 plugin_error(plugin);
             }
 
-            if (tolower(eptitle) == tolower(minfo["mi_additional_info"])) {
-                eptitleHash[id] = 2;
+            if (minfo["mi_additional_info"]) {
+                eptitleHash[id] = -similar(eptitle,minfo["mi_additional_info"]); # bigger number closer the string.
             }
         }
     }

@@ -5,7 +5,7 @@ function scrape_cache_clear() {
 }
 
 function scrape_cache_add(url,minfo,\
-i,x) {
+i) {
     for ( i in minfo ) { 
         g_scrape_cache[url SUBSEP i] = minfo[i];
         DEBUG("scrape_cache_add ["url SUBSEP i"] = ["minfo[i]"]");

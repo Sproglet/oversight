@@ -7,6 +7,9 @@
 #
 #  Add Google image scrape
 #
+#  Bad scan   Far.And.Away%5bEng%5dDvdrip.Dino.avi == "Red Cliff" ?
+#
+#
 #  remove epguide_Initial
 #
 #  find good way to determine LveThyNeighbour from http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=LTN+S01E02+-+Limbo+Dancing
@@ -25,6 +28,7 @@
 # [Frankie Boyle Live 2: If I Could Reach Out Through Your TV and Strangle You I Would DVD 2010:] or [] !=
 # [Frankie Boyle If I Could Reach Out Through Your Tv And Strangle You I Would]
 #
+# Also use edit distance to select best episode rather than date.
 #
 # ie if long title containss short title then OK ?
 # and  short title must be 70% of long title?

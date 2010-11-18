@@ -4,7 +4,7 @@ bestUrl,\
 name,i,\
 n,name_seen,name_list,name_id,name_try,\
 search_regex_key,search_order_key,search_order,s,search_order_size,title,\
-year,scrape_imdb,text) {
+year,text) {
 
     id1("movie search");
 
@@ -146,7 +146,7 @@ year,scrape_imdb,text) {
     DEBUG("movie_search bestUrl=["bestUrl"]");
 
     # Finished Search. Scrape IMDB
-    if (bestUrl && scrape_imdb) {
+    if (bestUrl) {
 
         get_themoviedb_info(extractImdbId(bestUrl),minfo);
 

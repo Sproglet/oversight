@@ -624,8 +624,11 @@ cat,minfo2) {
                         queue_minfo(minfo,qfile,person_extid2name);
 
                     } else {
-                        INF("Skipping item "minfo["mi_media"]);
+
+                        WARNING("Unknown item "minfo["mi_media"]);
+                        queue_minfo(minfo,qfile,person_extid2name);
                     }
+
                     thisTime = systime()-thisTime ;
                     if (g_total) {
                         DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));

@@ -1162,6 +1162,8 @@ minfo,i,ulang) {
     if (doit) {
         DIV0("BEGIN UNIT TEST");
 
+        json_parse("{\"first\":\"andrew\" , \"age\" : 31 }");
+
         INF("1." subexp("Title?012345","Title.([0-9]+)\\>"));
         INF("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
         INF("3." subexp("Title?012345","Title.([0-9]+)"));

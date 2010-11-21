@@ -1,4 +1,18 @@
-# Parse a json structure into awk array
+# real json content from url into array.
+function fetch_json(url,label,out,\
+f,line,ret,json) {
+    f=getUrl(url,label,1);
+    if (f) { 
+        FS="\n";
+        while(enc_getline(f,line) > 0) {
+            ret = 1;
+            json = json " " line[1];
+        }
+        enc_close(f);
+        json_parse(json,out);
+    }
+}
+
 #
 # {"name1":value , 
 #   "name2":{ "first":"joe" , "last":"blogs"},
@@ -15,105 +29,116 @@
 # a["nums:3"] = 4;
 # a["images:1:height"] = 400; etc.
 
-# IN json string.
+# IN json string. no line breaks
 # OUT array.
-function json_parse(in,out,\
+
+function json_parse(input,out,\
 context) {
     delete out;
-    context["tag"] = "";
-    json_parse_object(in,context,out);
-    dump(0,"json",out);
+    context["dbg"] = 0;
+    json_parse_object(input,context,out);
 }
 
-function json_err(in,context,msg) {
+function json_err(input,context,msg) {
     context["err"] = context["err"] msg;
-    ERR("json: "msg" parsing ["in"]");
+    ERR("json:"msg" parsing ["input"]");
 }
 
-function json_next_token(in,ch) {
-    return match(in,"[ \t]*"ch);
+function json_next_token(input,ch) {
+    return match(input,"[ \t]*"ch);
 }
 
-function ltrim(in) {
-    sub(/^[ \t]+/,"",in);
-    return in;
+function ltrim(input) {
+    if (index(" \t",substr(input,1,1))) {
+        sub(/^[ \t]+/,"",input);
+    }
+    return input;
 }
 
-function json_parse_string(in,context,\
+function json_parse_string(input,context,\
 i) {
 
     context["string"] = "";
 
-    in = ltrim(in);
+    input = ltrim(input);
 
-    if (substr(in,1,1) != "\"" ) {
-        json_err(in,context,"Expected \"");
+    if (substr(input,1,1) != "\"" ) {
+        json_err(input,context,"Expected \"");
     } else {
-        for(i = 2 ; i <= length(in) ; i++ ) {
+        for(i = 2 ; i <= length(input) ; i++ ) {
 
 
-            if (substr(in,i,1) == "\\") {
+            if (substr(input,i,1) == "\\") {
 
                 # if escaped then skip next
                 i++;
 
-            } else if (substr(in,i,1) == "\"") {
+            } else if (substr(input,i,1) == "\"") {
 
                 # if quote then end
                 context["type"] = "string";
-                context[context["type"]] = substr(in,2,i-2);
-                in = substr(in,i+1);
+                context[context["type"]] = substr(input,2,i-2);
+                input = substr(input,i+1);
                 break;
             }
 
         }
     }
 
-    return in;
+    return input;
 }
 
-function json_push_tag(tag,context) {
-    context["tag"]= context["tag"]":"tag;
+function json_push_tag(prefix,tag,context) {
+    if (context["tag"]) {
+        context["tag"]= context["tag"] prefix tag;
+    } else {
+        context["tag"]= tag;
+    }
 }
 
 function json_pop_tag(context) {
-    sub(":[^:]+$","",context["tag"]);
+    sub("(^|[:#])[^:#]+$","",context["tag"]);
 }
 
 # IN json string.
 # IN/OUT array.
 # Return remaining string
 
-function json_parse_object(in,context,out,\
+function json_parse_object(input,context,out,\
 label) {
 
-    if (context["err"] ) return in;
+    if (context["err"] ) return input;
 
-    if (!json_next_token(in,"{")) {
-       json_err(in,context,"{ expected");
+    input = ltrim(input);
+
+    if (substr(input,1,1) != "{") {
+       json_err(input,context,"{ expected");
     } else {
-        in = substr(in,RSTART+RLENGTH);
+        input = substr(input,2);
 
         while(1) {
 
-            in = ltrim(in);
+            input = ltrim(input);
 
-            if (substr(in,1,1) != "\"") break;
+            if (substr(input,1,1) != "\"") break;
             
-            in = json_parse_string(in,context);
+            input = json_parse_string(input,context);
             if (context["err"]) break;
 
             label = context["string"];
+            json_dbg(context,"name="label" rest="input);
 
-            in = ltrim(in);
+            input = ltrim(input);
 
-            if (substr(in,1,1) == ":")) {
+            if (substr(input,1,1) == ":") {
 
-                in = ltrim(substr(in,2));
+                input = substr(input,2);
 
-                json_push_tag(label,context);
+                json_push_tag(":",label,context);
 
-                in = json_parse_value(in,context,out);
+                json_dbg(context,"begin parse value ["input"]");
+                input = json_parse_value(input,context,out);
+                json_dbg(context,"end parse value ["input"]");
                 json_assign_value_to_tag(context,out);
                 
                 if (context["err"]) break;
@@ -121,112 +146,124 @@ label) {
                 # Remove last tag
                 json_pop_tag(context);
 
-                in = ltrim(in);
+                input = ltrim(input);
 
                 # check for comma
-                if (substr(in,1,1) != ",") {
+                if (substr(input,1,1) != ",") {
                     break;
                 }
-                in = substr(in,RSTART+RLENGTH);
+                input = substr(input,2);
 
             } else {
-                json_err(in,context,": expected");
+                json_err(input,context,": expected");
                 break;
             }
         }
-        if (substr(in,1,1) != "}" ) {
-            json_err(in,context,"} or string expected");
-            break;
+        if (substr(input,1,1) != "}" ) {
+            json_err(input,context,"} or string expected");
         } else {
             context["type"] = "object";
+            input = substr(input,2);
         }
 
     }
-    return in;
+    return input;
 }
 
-function json_parse_value(in,context,out) {
+function json_parse_value(input,context,out) {
 
-    in = ltrim(in);
+    input = ltrim(input);
 
     delete context["type"];
     delete context["value"];
 
-    if (substr(in,1,1) == "[" ) {
+    if (substr(input,1,1) == "[" ) {
 
-        in = json_parse_array(in,context,out);
+        input = json_parse_array(input,context,out);
 
-    } else if (substr(in,1,1) == "{" ) {
+    } else if (substr(input,1,1) == "{" ) {
 
-        in = json_parse_object(in,context,out);
+        input = json_parse_object(input,context,out);
 
-    } else if (substr(in,1,1) == "\"" ) {
+    } else if (substr(input,1,1) == "\"" ) {
 
         # string
 
-        in = json_parse_string(in,context,out);
+        input = json_parse_string(input,context);
         if (context["err"]) break;
         context["value"] = context[context["type"]];
 
-    } else if (match(in,"^[0-9.eE]+") ) {
+    } else if (match(input,"^[0-9.eE]+") ) {
 
         # number
         context["type"] = "number";
-        context["value"] = context[context["type"]]  = 0+substr(in,RSTART,RLENGTH);
-        in = substr(in,RSTART+RLENGTH);
+        context["value"] = context[context["type"]]  = 0+substr(input,RSTART,RLENGTH);
+        input = substr(input,RSTART+RLENGTH);
 
-
-    } else if (in ~ /^(true|false)\>/ ) {
+    } else if (substr(input,1,4) == "true") {
 
         context["type"] = "boolean";
-        context["value"] = context[context["type"]]  = (index(in,"true") == 1);
-        in = substr(in,RSTART+RLENGTH);
+        context["value"] = context[context["type"]]  = 1;
+        input = substr(input,5);
+
+    } else if (substr(input,1,5) == "false") {
+
+        context["type"] = "boolean";
+        context["value"] = context[context["type"]]  = 0;
+        input = substr(input,6);
 
     } else {
-        json_err(in,context,"Error parsing "context["tag"]);
-        break;
+        json_err(input,context,"Error parsing "context["tag"]);
     }
-    return in;
+    if (context["type"] ~ "string|number|boolean" ) {
+        json_dbg(context,"scalar "context["type"]" = "context["value"]" : rest = "input);
+    }
+    return input;
 }
 
 function json_assign_value_to_tag(context,out) {
     if (context["err"] == "") {
         if (context["type"] != "array" && context["type"] != "object") {
+            json_dbg(context,"assign "context["tag"]"="context["type"]":"context["value"]"="context[context["type"]]);
             out[context["tag"]] = context[context["type"]];
         }
     }
 }
 
-function json_parse_array(in,context,out,\
+function json_parse_array(input,context,out,\
 idx) {
     delete context["type"];
     delete context["value"];
 
-    if (context["err"] ) return in;
-    in = ltrim(in);
+    if (context["err"] ) return input;
+    input = ltrim(input);
     idx = 1;
 
-    if (substr(in,1,1) != "[" ) {
-        json_err(in,context,"Expected \"");
+    if (substr(input,1,1) != "[" ) {
+        json_err(input,context,"Expected \"");
     } else {
         do {
-            in = ltrim(substr(in,2));
+            input = ltrim(substr(input,2));
 
-            json_push_tag(idx++,context);
-            in = json_parse_value(in,context,out);
+            json_push_tag("#",idx++,context);
+            input = json_parse_value(input,context,out);
             if (context["err"] ) break;
 
             json_assign_value_to_tag(context,out);
 
             json_pop_tag(context);
-            in = ltrim(in);
+            input = ltrim(input);
 
-        } while(substr(in,1,1) == ",");
-        if (substr(in,1,1) != "]" ) {
-            json_err(in,context,", or ] expected");
+        } while(substr(input,1,1) == ",");
+        if (substr(input,1,1) != "]" ) {
+            json_err(input,context,", or ] expected");
         } else {
             context["type"] = "array";
+        input = substr(input,2);
         }
     }
-    return in;
+    return input;
+}
+function json_dbg(context,x) {
+    if (context["dbg"])  print "INF:" x ;
 }

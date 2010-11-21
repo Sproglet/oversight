@@ -70,25 +70,6 @@ function pad_episode(e) {
     }
 }
 
-function timestamp(label,x) {
-
-    if (index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
-    if (index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
-    if (index(x,g_api_rage) ) gsub(g_api_rage,".",x);
-
-    if (index(x,"d=") ) {
-        sub("password.?=([^,]+)","password=***",x);
-        sub("pwd=([^,]+)","pwd=xxx",x);
-        sub("passwd=([^,]+)","passwd=***",x);
-    }
-
-    if (systime() != g_last_ts) {
-        g_last_ts=systime();
-        g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
-    }
-    print label" "LOG_TAG" "g_last_ts_str g_indent x;
-}
-
 function TODO(x) {
     DEBUG("TODO:"x);
 }

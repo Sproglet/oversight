@@ -19,6 +19,7 @@ function scrape_cache_present(url) {
 
 function scrape_cache_get(url,minfo,\
 i,ret,offset) {
+    ret = 0;
     if (url in g_scrape_cache) {
         ret = 1;
         url = url SUBSEP;

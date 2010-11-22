@@ -97,9 +97,14 @@ i,urls,tmpf,qf,r) {
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget2(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer) {
+args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua) {
 
-    args=" -U \""g_user_agent"\" "g_wget_opts;
+    if (index(url,"/app.")) {
+        ua = g_iphone_user_agent;
+    } else {
+        ua = g_user_agent;
+    }
+    args=" -U \""ua"\" "g_wget_opts;
     default_referer = get_referer(url);
     if (check_domain_speed(default_referer) == 0) {
         return 1;

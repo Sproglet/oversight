@@ -991,14 +991,27 @@ function get_imdb_info(url,minfo,\
 i,num,langs,minfo2) {
 
     if (!have_visited(minfo,"imdb")) {
-        num = get_langs(langs);
-        for(i = 1 ; i <= num ; i++) {
 
+        if (fetch_ijson_details(extractImdbId(url),minfo2)) {
+
+            imdb_extra_info(minfo2,url);
+            minfo_merge(minfo,minfo2,"imdb");
+
+        } else {
+
+            #dump(0,"ijson",minfo2);
             delete minfo2;
-            if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
-                minfo_set_id("imdb",extractImdbId(url),minfo2);
-                minfo_merge(minfo,minfo2,"imdb");
-                break;
+
+            num = get_langs(langs);
+            for(i = 1 ; i <= num ; i++) {
+
+                delete minfo2;
+                if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
+                    minfo_set_id("imdb",extractImdbId(url),minfo2);
+                    #dump(0,"scrape",minfo2);
+                    minfo_merge(minfo,minfo2,"imdb");
+                    break;
+                }
             }
         }
     }

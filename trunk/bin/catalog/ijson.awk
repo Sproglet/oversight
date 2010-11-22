@@ -58,7 +58,7 @@ json,cast,ret,i,tag) {
                     minfo["mi_plot"] = json["data:plot:outline"];
 
                     if (json["data:type"] == "tv_series" ) {
-                        minfo["mi_category"] = "C";
+                        minfo["mi_category"] = "T";
                     } else if (json["data:type"] == "feature" ) {
                         minfo["mi_category"] = "M";
                     }

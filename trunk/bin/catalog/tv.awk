@@ -544,7 +544,7 @@ function tv_check_and_search_all(minfo,bestUrl,check_tv_names,allow_720,\
 plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
 
-    id1("tv_search check_tv_names="check_tv_names);
+    id1("tv_check_and_search_all check_tv_names="check_tv_names);
     ret = "";
 
     # loop through path levels
@@ -610,7 +610,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
 
     result=0;
 
-    id1("tv_search ("plugin","imdbUrl","search_abbreviations")");
+    id1("tv_search ("plugin",imdb="imdbUrl",abbr="search_abbreviations")");
 
     #This will succedd if we already have the tvid when doing the checkTvFilenameFormat
     #checkTvFilenameFormat() may fetch the tvid while doing a date check for daily shows.

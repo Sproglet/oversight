@@ -1,14 +1,17 @@
+#  # fix movie deletions.
+#
+#  # fix movie connections.
+#
+#  # Check i18n in titles (Leon , Aeon Flux)
+#
+#  # Check i18n in plots - from json and from web.
+#
 #  With thetvdb disabled when scraping Jersey Shore shows are ending up with different titles. Might be an issue with the scrape caching
 #  or with tvrage plugin titles.
 #
 #  DnD ep 22 ends up in Season 2 - why?
 #
-#  Cache IMDB scrapes (mino) whilst in same folder.
-#
 #  Add Google image scrape
-#
-#  Bad scan   Far.And.Away%5bEng%5dDvdrip.Dino.avi == "Red Cliff" ?
-#
 #
 #  remove epguide_Initial
 #
@@ -22,18 +25,6 @@
 # Make sure all items in current library are scanned.
 #
 # Allow users to bypass donate in gui 
-#
-# Add better title matching heuristic for scrape movie page to avoid the following:
-# page rejected title
-# [Frankie Boyle Live 2: If I Could Reach Out Through Your TV and Strangle You I Would DVD 2010:] or [] !=
-# [Frankie Boyle If I Could Reach Out Through Your Tv And Strangle You I Would]
-#
-# Also use edit distance to select best episode rather than date.
-#
-# ie if long title containss short title then OK ?
-# and  short title must be 70% of long title?
-# and shrt title in long title must not be followed by a number unless year (to avoid sequels)
-#
 #
 # Then change oversight gui to read new format of plot file.
 #

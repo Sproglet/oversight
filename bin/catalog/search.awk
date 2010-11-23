@@ -372,13 +372,13 @@ function remove_format_tags(text,\
     # Remove format tags at the beginning
     while (match(tolower(text),"^"tags)) {
         # Remove the first word (the format tag may only be a partial word match)
-        DEBUG("format tag prefix ["text"]");
+        DEBUG("found start format tag ["substr(text,RSTART,RLENGTH)"]");
         sub(/^[a-zA-Z0-9]+[^a-zA-Z0-9]*/,"",text);
-        DEBUG("format tag prefix ["text"]");
     }
 
     # Remove all trailing tags and any other text.
     if (match(tolower(text),tags)) {
+        DEBUG("found format tag ["substr(text,RSTART,RLENGTH)"]");
         text = substr(text,1,RSTART-1);
     }
 

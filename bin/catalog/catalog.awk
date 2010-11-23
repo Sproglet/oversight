@@ -247,9 +247,8 @@ END{
 
     tmp = tolower(g_settings["catalog_format_tags"]);
 
-    gsub(/\\>/,"(\\>|_)",tmp); # allow underscore to match end of word.
-
-    g_settings["catalog_format_tags"]="(\\<|_)("tmp")";
+    # allow tag to be at beginning or end of a word.
+    g_settings["catalog_format_tags"]="(((\\<|_)("tmp"))|(("tmp")(_|\\>)))";
 
     DEBUG("catalog_format_tags="g_settings["catalog_format_tags"]);
 

@@ -9,7 +9,6 @@ function scan_page_for_first_link(url,domain,cache) {
 # max = max number to match
 # returns match or empty.
 # if freqOrFirst=1 return first match else
-# =0 return most common matches in best(index by match id, value = count)
 function scanPageFirstMatch(url,fixed_text,regex,cache,referer,\
 matches,ret) {
     id1("scanPageFirstMatch");

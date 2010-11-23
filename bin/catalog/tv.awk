@@ -682,20 +682,28 @@ tvDbSeriesPage,result,tvid,cat,iid) {
     return 0+ result;
 }
 
+function tv_title_year_to_imdb(title,year,\
+key,iid) {
+    key=title" "year;
+    if (!(key in g_tv2imdb)) {
+
+        # Search for imdb page  - try to filter out Episode pages.
+        g_tv2imdb[key] = extractImdbId(web_search_first_imdb_link(key" +site:imdb.com \"TV\"",key)); 
+    }
+    iid = g_tv2imdb[key];
+    DEBUG("tv_title_year_to_imdb key=["key"]="iid);
+    return iid;
+}
+
 # use the title and year to find the imdb id
 function tv2imdb(minfo,\
-key,iid) {
+iid) {
 
     iid = imdb(minfo);
     if (iid == "") {
-    
-        key=minfo["mi_title"]" "minfo["mi_year"];
-        DEBUG("tv2imdb key=["key"]");
-        if (!(key in g_tv2imdb)) {
 
-            # Search for imdb page  - try to filter out Episode pages.
-            iid = g_tv2imdb[key] = extractImdbId(web_search_first_imdb_link(key" +site:imdb.com \"TV\"",key)); 
-        }
+        iid = tv_title_year_to_imdb(minfo["mi_title"],minfo["mi_year"]);
+    
         minfo_set_id("imdb",iid,minfo);
     }
     return iid;
@@ -1426,6 +1434,25 @@ url,count,i,names2,regex,parts) {
     return count;
 }
 
+function get_tvdb_names_by_letter(letter,names,\
+url,count,i,names2,regex,parts) {
+
+    delete names;
+    id1("get_tvdb_names_by_letter abbeviations for "letter);
+    regex="<id>([^<]+)</id><name>([^<]*)</name>";
+    regex="id=([0-9]+)[^>]+>([^<]*)";
+    url = g_thetvdb_web"?tab=listseries&function=Search&string="letter;
+    scan_page_for_match_order(url,"<name>",regex,0,1,"",names2);
+    for(i in names2) {
+        gsub(/\&amp;/,"And",names2[i]);
+        split(gensub(regex,SUBSEP"\\1"SUBSEP"\\2"SUBSEP,"g",names2[i]),parts,SUBSEP);
+        names[parts[2]] = parts[3];
+        count++;
+    }
+    id0(count);
+    return count;
+}
+
     
     
 
@@ -1828,14 +1855,6 @@ rageid,ret,idlist,ids) {
 
     # Possible routes to thetvdb are: 
 
-    # tvrage -> sharetv -> tvdb
-    # tvrage -> epguide -> sharetv -> tvdb
-
-    # tvrage -> sharetv -> imdb -> tvdb
-    # tvrage -> epguide -> imdb -> tvdb
-    # tvrage -> epguide -> sharetv->imdb -> tvdb
-    # Using imdb link will only work if IMDB is set on thetvdb.
-
     # ideally the following line will work one day if tvrage add partner links to thetvdb in the api
     ids["imdb"] = minfo_get_id(minfo,"imdb");
     ids["thetvdb"] = minfo_get_id(minfo,"thetvdb");
@@ -1856,6 +1875,14 @@ rageid,ret,idlist,ids) {
     id0(idlist);
     return ret;
 }
+
+    # tvrage -> sharetv -> tvdb
+    # tvrage -> epguide -> sharetv -> tvdb
+
+    # tvrage -> sharetv -> imdb -> tvdb
+    # tvrage -> epguide -> imdb -> tvdb
+    # tvrage -> epguide -> sharetv->imdb -> tvdb
+    # Using imdb link will only work if IMDB is set on thetvdb.
 
 function rage_get_other_ids(rageid,ids,\
 partners,p,partner,showurl,link,ret) {
@@ -1885,7 +1912,11 @@ partners,p,partner,showurl,link,ret) {
             }
 
             if (!ids["imdb"]) {
-                ids["imdb"] = extractImdbId(scan_page_for_first_link(partner,"imdb",1));
+                link = scan_page_for_first_link(partner,"imdb",1);
+                ids["imdb"] = extractImdbId(link);
+                if (!ids["imdb"]) {
+                    ids["imdb"]=scanPageFirstMatch(link,"title",g_imdb_regex,0);
+                }
             }
 
             if (!ids["thetvdb"]) {

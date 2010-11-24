@@ -724,7 +724,7 @@ tnum,t,i,url) {
 }
 
 function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
-tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total) {
+tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
 
     title_key = plugin"/"minfo["mi_folder"]"/"title;
     id1("search_tv_series_names2 "title_key);
@@ -754,29 +754,44 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total) {
 
             } else {
 
-                total=searchAbbreviationAgainstTitles(plugin,title,showIds);
+                # List of letters to check - in order.
+                # First try to match abbreviation against all shows beggining with the same letter.
+                # Then try all shows beggning with t (for the)
+                # Then try all shows beggning with a (for a / an)
+                # Finally try all shows beggning with i (for it / in)
+                # Finally try all shows beggning with of (for of )
 
-                # OBSOLETED filterTitlesByTvDbPresence(plugin,alternateTitles_tvrage,showIds);
+                # create list of letters to check
+                first_letter = tolower(substr(title,1,1));
+                letters = "taio";
+                sub(first_letter,"",letters);
+                letters = first_letter letters;
+                
+                for(lpos = 1 ; lpos <= length(letters) ; lpos++ ) {
 
-                dump_ids_and_titles("possible matches",total,showIds);
-                #  TODO  We can also just do a web search and return the biggest page. 
-                # this may be more robust than relying on a particular nzb site.
-                if (hash_size(showIds) > 1) {
+                    # Check athe letter if it is the first letter of the abbreviation 
+                    total=searchAbbreviationAgainstTitles(plugin,substr(letters,lpos,1),title,showIds);
 
-                    total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                    #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
-                    dump_ids_and_titles("filtered matches",total,showIds);
+                    dump_ids_and_titles("possible matches",total,showIds);
+                    if (total > 1) {
+
+                        #  just do a web search and return the biggest page. 
+                        total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                        #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+                        dump_ids_and_titles("filtered matches",total,showIds);
+                    }
+
+
+                    # TODO the selectBestOfBestTitle calls the relativeAge function which also
+                    # picks the episide title with the shortest edit distance. Because this does
+                    # a query by SnnEnn this is more concrete information than the check for link counts
+                    # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
+                    # split into:
+                    # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
+                    # 2. A filter that picks episode title with lowest edit distance.
+                    tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
+                    if (tvdbid) break;
                 }
-
-
-                # TODO the selectBestOfBestTitle calls the relativeAge function which also
-                # picks the episide title with the shortest edit distance. Because this does
-                # a query by SnnEnn this is more concrete information than the check for link counts
-                # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
-                # split into:
-                # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
-                # 2. A filter that picks episode title with lowest edit distance.
-                tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
 
                 tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
 
@@ -803,15 +818,14 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total) {
 # IN abbrev - abbreviated name eg ttscc
 # OUT alternateTitles - hash of titles [n,1]=id [n,2]=title (as shows may have titles in other languages)
 # return number of matches
-function searchAbbreviationAgainstTitles(plugin,abbrev,alternateTitles,\
-initial,names,count) {
+function searchAbbreviationAgainstTitles(plugin,initial,abbrev,alternateTitles,\
+names,count) {
 
-    id1("searchAbbreviationAgainstTitles plugin="plugin" abbrev="abbrev);
+    id1("searchAbbreviationAgainstTitles plugin="plugin" initial="initial" abbrev="abbrev);
 
     delete alternateTitles;
 
     # New method for abbreviations - use tvrage index
-    initial = substr(abbrev,1,1);
     if (plugin == "thetvdb" ) {
         count = get_tvdb_names_by_letter(initial,names);
     } else if (plugin == "tvrage" ) {
@@ -1505,7 +1519,7 @@ wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
 
 # remove all words of 3 or less characters
 function significant_words(t) {
-    gsub(/\<(and|the|on|or|of|in|vs|de|en)\>/,"",t);
+    gsub(/\<(and|the|on|or|of|in|vs|de|en|its?)\>/,"",t);
     #gsub(/\<[^ ]{1,3}\>/,"",t);
     gsub(/  +/," ",t);
     return trim(t);
@@ -1656,14 +1670,13 @@ found,part,sw,ini) {
     part = abbreviated_substring(possible_title,"\\<",abbrev,1);
 
 
-    DEBUG("abbrev:["abbrev"] ["possible_title"] = "part);
 
     if (part != "") {
         #  check contraction will usually contain the initials of the entire title it matched against
         # 
         sw = significant_words(possible_title);
         ini = get_initials(sw);
-        INF("possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
+        INF("abbrev["abbrev"] possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
         #possible_title=[law and order los angeles] part=[law and order los a] sig=[order] init=[o]
 
         if (abbreviated_substring(abbrev,"",ini,0) == "") {

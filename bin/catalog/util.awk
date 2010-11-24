@@ -291,18 +291,32 @@ i) {
 
 # result in a1
 function hash_copy(a1,a2) {
-    delete a1 ; hash_merge(a1,a2) ;
+    delete a1 ; 
+    return hash_merge(a1,a2) ;
 }
 # result in a1
 function hash_merge(a1,a2,\
-i) {
-    for(i in a2) if (a2[i] != "") a1[i] = a2[i];
+i,total) {
+    total=0;
+    for(i in a2) {
+        if (a2[i] != "")    {
+            a1[i] = a2[i];
+            total++;
+        }
+    }
+    return total;
 }
 # result in a1
 function hash_add(a1,a2,\
-i) {
-    for(i in a2) a1[i] += a2[i];
+i,total) {
+    total = 0;
+    for(i in a2) {
+        a1[i] += a2[i];
+        total++;
+    }
+    return total;
 }
+
 function hash_size(h,\
 s,i){
     s = 0 ; 
@@ -373,9 +387,12 @@ i,rtext,rstart,words,wcount) {
     }
 
     ## Uppercase roman
-    if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
-        for(i in rtext) {
-            text = substr(text,1,rstart[i]-1) toupper(rtext[i]) substr(text,rstart[i]+length(rtext[i]));
+    # string is alread capitalised at this point so check uppercase for efficiency
+    if (index(text,"I") || index(text,"V") || index(text,"X") ) {
+        if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
+            for(i in rtext) {
+                text = substr(text,1,rstart[i]-1) toupper(rtext[i]) substr(text,rstart[i]+length(rtext[i]));
+            }
         }
     }
     return substr(text,2);
@@ -958,3 +975,25 @@ function similar(s1,s2,\
     return ret;
 }
 
+function get_page_size(url,\
+f) {
+    f = getUrl(url,"tmp",0);
+    return get_file_size(f);
+}
+
+function get_file_size(f,\
+line,code,total) {
+    total = 0;
+
+    if (f) {
+        while ((code = (getline line < f )) > 0 ) {
+            total += length(line);
+        }
+        if (code == 0) {
+            close(f);
+        }
+    }
+    DEBUG("size["f"] = "total" bytes");
+    return total;
+}
+    

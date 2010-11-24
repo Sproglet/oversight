@@ -99,7 +99,7 @@ details,line,ret,name,i,start,end) {
                     minfo["mi_category"] = "T";
                 }
 
-                minfo["mi_additional_info"] = details[ADDITIONAL_INF];
+                minfo["mi_additional_info"] = clean_title(details[ADDITIONAL_INF]);
                 # Now check the title.
                 #TODO
                 break;
@@ -722,7 +722,7 @@ tnum,t,i,url) {
 }
 
 function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
-tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,ids) {
+tvDbSeriesPage,title_key,cache_key,showIds,tvdbid) {
 
     title_key = plugin"/"minfo["mi_folder"]"/"title;
     id1("search_tv_series_names2 "title_key);
@@ -752,32 +752,7 @@ tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,
 
             } else {
 
-                searchAbbreviationAgainstTitles(title,alternateTitles_tvrage);
-
-                # Convert hash of title=>tvrageid to pluginid=>title
-                # for tvrage just invert.
-                # for tvdb do a reverse lookup from tvrage.
-                if (plugin == "tvrage" ) {
-
-                    hash_copy(showIds,alternateTitles_tvrage);
-
-                } else if (plugin == "thetvdb" ) {
-
-                    # convert title->tvrageid to thetvdbid->title (this retains the tvrage title but field priorities should fix later.)
-                   delete showIds;
-                    for(rageid in alternateTitles_tvrage) {
-                       delete ids;
-                       if (rage_get_other_ids(rageid,ids) && ids["thetvdb"]) {
-                          showIds[ids["thetvdb"]] = alternateTitles_tvrage[rageid];
-                       } else {
-                          DEBUG("No match for rage id "rageid);
-                       }
-                   }
-
-                } else {
-                    ERR("@@@ Bad plugin ["plugin"]");
-                }
-
+                searchAbbreviationAgainstTitles(plugin,title,showIds);
                 dump(0,"abbreviated shows",showIds);
 
                 # OBSOLETED filterTitlesByTvDbPresence(plugin,alternateTitles_tvrage,showIds);
@@ -789,6 +764,14 @@ tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,
                     filterUsenetTitles(showIds,cleanSuffix(minfo),showIds);
                 }
 
+
+                # TODO the selectBestOfBestTitle calls the relativeAge function which also
+                # picks the episide title with the shortest edit distance. Because this does
+                # a query by SnnEnn this is more concrete information than the check for link counts
+                # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
+                # split into:
+                # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
+                # 2. A filter that picks episode title with lowest edit distance.
                 tvdbid = selectBestOfBestTitle(plugin,minfo,showIds);
 
                 tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
@@ -815,14 +798,21 @@ tvDbSeriesPage,alternateTitles_tvrage,title_key,cache_key,showIds,tvdbid,rageid,
 # Search the epguides menus for names that could be represented by the abbreviation 
 # IN abbrev - abbreviated name eg ttscc
 # OUT alternateTitles - hash of titles - index is rageid , value is normalized title.
-function searchAbbreviationAgainstTitles(abbrev,alternateTitles,\
+function searchAbbreviationAgainstTitles(plugin,abbrev,alternateTitles,\
 initial,names) {
 
     delete alternateTitles;
 
     # New method for abbreviations - use tvrage index
     initial = substr(abbrev,1,1);
-    get_tvrage_names_by_letter(initial,names);
+    if (plugin == "thetvdb" ) {
+        get_tvdb_names_by_letter(initial,names);
+    } else if (plugin == "tvrage" ) {
+        get_tvrage_names_by_letter(initial,names);
+    } else {
+        ERR("@@@ Bad plugin ["plugin"]");
+    }
+    dump(0,"initial:"initial,names);
     clean_titles_for_abbrev(names);
     searchAbbreviation(initial,names,abbrev,alternateTitles);
 }
@@ -1034,6 +1024,7 @@ url) {
 function filter_search_results(url,title,seriesPath,nameTag,idTag,allTitles,\
 info,currentId,currentName,i,num,series,empty_filter) {
 
+    id1("filter_search_results");
     if (fetchXML(url,"tvsearch",info,"")) {
 
         num = find_elements(info,seriesPath,empty_filter,0,series);
@@ -1048,6 +1039,7 @@ info,currentId,currentName,i,num,series,empty_filter) {
     }
 
     dump(0,"search results["title"]",allTitles);
+    id0("");
     #filterSimilarTitles is called by the calling function
 }
 
@@ -1113,6 +1105,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
                         filter["/SeriesName"] = "~:^"title_regex"$";
                         filter["/FirstAired"] = "~:^"year_range"-";
                         if (find_elements(showInfo,"/Data/Series",filter,1,tags)) {
+                            DEBUG("XX @@ find_elements OK ");
                             INF("Looking at tvdb "showInfo[tags[1]"/SeriesName"]);
                             id2 = showInfo[tags[1]"/seriesid"];
                         }
@@ -1416,11 +1409,14 @@ i,score,bestScore,tmpTitles) {
     return 0+ bestScore;
 }
 
+# IN start letter
+# OUT names -> hash of tvrageid to titles.
+# return number of items
 function get_tvrage_names_by_letter(letter,names,\
 url,count,i,names2,regex,parts) {
 
     delete names;
-    id1("get_tvrage_names_by_letter abbeviations for "letter);
+    id1("get_tvrage_names_by_letter abbreviations for "letter);
     regex="<id>([^<]+)</id><name>([^<]*)</name>";
     url = g_tvrage_api"/feeds/show_list_letter.php?letter="letter;
     scan_page_for_match_order(url,"<name>",regex,0,1,"",names2);
@@ -1434,69 +1430,26 @@ url,count,i,names2,regex,parts) {
     return count;
 }
 
+# IN start letter
+# OUT names -> hash of tvrageid to titles.
+# return number of items
 function get_tvdb_names_by_letter(letter,names,\
-url,count,i,names2,regex,parts) {
+f,count,line) {
 
     delete names;
-    id1("get_tvdb_names_by_letter abbeviations for "letter);
-    regex="<id>([^<]+)</id><name>([^<]*)</name>";
-    regex="id=([0-9]+)[^>]+>([^<]*)";
-    url = g_thetvdb_web"?tab=listseries&function=Search&string="letter;
-    scan_page_for_match_order(url,"<name>",regex,0,1,"",names2);
-    for(i in names2) {
-        gsub(/\&amp;/,"And",names2[i]);
-        split(gensub(regex,SUBSEP"\\1"SUBSEP"\\2"SUBSEP,"g",names2[i]),parts,SUBSEP);
-        names[parts[2]] = parts[3];
-        count++;
-    }
-    id0(count);
-    return count;
-}
+    id1("get_tvdb_names_by_letter abbreviations for "letter);
+    f=APPDIR"/bin/catalog/tvdb/tvdb-"toupper(letter)".list";
 
-    
-    
-
-
-
-# Return the list of names in the epguide menu indexed by link
-function get_epguide_names_by_letter(letter,names,\
-url,title,link,links,i,count2) {
-    id1("get_epguide_names_by_letter abbeviations for "letter);
-    url = "http://epguides.com/menu"letter;
-
-    scan_page_for_match_counts(url,"<li>","<li>(|<b>)<a.*</li>",0,1,"",links);
-    count2 = 0;
-
-    for(i in links) {
-
-        if (index(i,"[radio]") == 0) {
-
-            title = extractTagText(i,"a");
-
-            #DEBUG(i " -- " links[i] " -- " title);
-
-            if (title != "") {
-                link = extractAttribute(i,"a","href");
-                sub(/\.\./,"http://epguides.com",link);
-                gsub(/\&amp;/,"And",title);
-
-                # First hardcoded title. :(
-                #epguide has the name listed differently to every other site in the world.
-                #epguide is only used because, compared to the other sites, it is easy to
-                #extract a list of all programs beginning with the same letter.
-                #So I feel a little justified in hacking this list to be inline with everyone else.
-                if (title == "C.S.I.") {
-                    title = "C.S.I Crime Scene Investigation";
-                }
-                names[link] = title;
-                count2++;
-
-                #DEBUG("name list "title);
-            }
+    while(( getline line < f ) > 0 ) {
+        colon = index(line,":");
+        if (colon) {
+            names[substr(line,1,colon-1)] = substr(line,colon+1);
+            count ++;
         }
     }
-    id0(count2);
-    return 0+ count2;
+    close(f);
+    id0(count);
+    return count;
 }
 
 # Search epGuide menu page for all titles that match the possible abbreviation.
@@ -2273,7 +2226,7 @@ id,xml,eptitle) {
             }
 
             if (minfo["mi_additional_info"]) {
-                eptitleHash[id] = -similar(eptitle,minfo["mi_additional_info"]); # bigger number closer the string.
+                eptitleHash[id] = -edit_dist(eptitle,minfo["mi_additional_info"]); # bigger number closer the string.
             }
         }
     }

@@ -99,7 +99,7 @@ i,urls,tmpf,qf,r) {
 function wget2(url,file,referer,\
 args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua) {
 
-    if (index(url,"/app.")) {
+    if (index(url,"/app.")) { 
         ua = g_iphone_user_agent;
     } else {
         ua = g_user_agent;

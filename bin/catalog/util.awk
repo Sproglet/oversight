@@ -164,6 +164,7 @@ function timestamp(label,x) {
         g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
     }
     print label" "LOG_TAG" "g_last_ts_str g_indent x;
+    fflush();
 }
 
 # Remove spaces and non alphanum

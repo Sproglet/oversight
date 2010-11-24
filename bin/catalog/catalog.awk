@@ -703,16 +703,33 @@ new_total,i) {
 
 # Find title that returns largest page size.
 function filter_web_titles(count,titles,filterText,filteredTitles,\
-out,new,newtotal) {
+keep,new,newtotal,baseline,size,url) {
 
     id1("filter_web_titles in="count);
+
+    url = g_search_yahoo url_encode("\""filterText"\"");
+
+    #Establish baseline for no matches.
+    if (!g_filter_web_titles_baseline) {
+        g_filter_web_titles_baseline = get_page_size(url url_encode(" "rand()systime()));
+        g_filter_web_titles_baseline = int (g_filter_web_titles_baseline/5000);
+    }
+
     newtotal=0;
     for(i = 1 ; i<= count ; i++ ) {
-        out[i] = get_page_size(g_search_yahoo url_encode("\""filterText"\" \""titles[i,2]"\""));
+        size = get_page_size(url url_encode(" \""titles[i,2]"\""));
+        size = int(size / 5000 );
+        if (size > g_filter_web_titles_baseline) {
+            keep[i] = 1;
+        } else {
+            DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+        }
     }
-    bestScores(out,out);
 
-    newtotal = copy_ids_and_titles(out,titles,new);
+    bestScores(keep,keep);
+
+    newtotal = copy_ids_and_titles(keep,titles,new);
+
     delete filteredTitles;
 
     hash_copy(filteredTitles,new);

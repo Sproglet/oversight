@@ -1,3 +1,9 @@
+#
+#  Error recognising The.Office.US.S07E04.720p.HDTV.X264-DIMENSION.mkv
+#  1. Failed to match tv query - why?
+#  2. Abbreviation check stripped 'The ' so would always fail.
+#
+#
 #  # fix movie deletions.
 #
 #  # fix movie connections.

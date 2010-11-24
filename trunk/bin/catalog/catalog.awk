@@ -690,7 +690,36 @@ name) {
     return name;
 }
 
+function copy_ids_and_titles(ids,input,out,\
+new_total,i) {
+    for (i in ids) {
+        new_total++;
+        out[new_total,1] = input[i,1];
+        out[new_total,2] = input[i,2];
+    }
+    return new_total;
+}
 
+
+# Find title that returns largest page size.
+function filter_web_titles(count,titles,filterText,filteredTitles,\
+out,new,newtotal) {
+
+    id1("filter_web_titles in="count);
+    newtotal=0;
+    for(i = 1 ; i<= count ; i++ ) {
+        out[i] = get_page_size(g_search_yahoo url_encode("\""filterText"\" \""titles[i,2]"\""));
+    }
+    bestScores(out,out);
+
+    newtotal = copy_ids_and_titles(out,titles,new);
+    delete filteredTitles;
+
+    hash_copy(filteredTitles,new);
+
+    id0(newtotal);
+    return newtotal;
+}
 
 
 
@@ -702,9 +731,9 @@ name) {
 # Two engines are used bintube and binsearch in case
 # a) one is unavailable.
 # b) binsearch has slightly better search of files within collections. eg if a series posted under one title.
-function filterUsenetTitles(titles,filterText,filteredTitles,\
+function filterUsenetTitles(count,titles,filterText,filteredTitles,\
 result) {
-result = filterUsenetTitles1(titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles);
+result = filterUsenetTitles1(count,titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles);
 #   if (result == 0 ) {
 #       result = filterUsenetTitles1(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles);
 #   }
@@ -715,11 +744,11 @@ result = filterUsenetTitles1(titles,"http://binsearch.info/?max=25&adv_age=&q=\"
 #IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
 #IN titles - hased by show ID
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
-function filterUsenetTitles1(titles,usenet_query_url,filteredTitles,\
-t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
+function filterUsenetTitles1(count,titles,usenet_query_url,filteredTitles,\
+t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 
     found = 0;
-    dump(2,"pre-usenet",titles);
+    id1("filterUsenetTitles1 in="count);
 
     # save for later as titles and filteredTitles may be the same hash
     hash_copy(origTitles,titles);
@@ -732,14 +761,14 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
 
     DEBUG("number of links for no match "baseline);
 
-    for(t in titles) {
+    for(t = 1 ; t<= count ; t++ ) {
         #Just count the number of table links
         query = usenet_query_url;
-        sub(/QUERY/,norm_title(clean_title(titles[t])),query);
-        link_count = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
-        DEBUG("number of links "link_count);
-        if (link_count-baseline > 0) {
-            count[t] = link_count;
+        sub(/QUERY/,norm_title(clean_title(origTitles[t,2])),query);
+        tmp_count = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
+        DEBUG("number of links "tmp_count);
+        if (tmp_count-baseline > 0) {
+            link_count[t] = tmp_count;
             found=1;
         }
         if (link_count == 0 ) {
@@ -747,20 +776,19 @@ t,count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
         }
     }
 
+    new_count = 0;
     if (found) {
         # Now keep the ones with most matches
-        bestScores(count,count,0);
+        bestScores(link_count,link_count,0);
 
         delete filteredTitles;
-        for(t in count) {
-            filteredTitles[t] = origTitles[t];
-        }
-        INF("best titles on usenet using "usenet_query_url);
+        new_count = copy_ids_and_titles(link_count,origTitles,filteredTitles);
         dump(0,"post-usenet",filteredTitles);
     } else {
         INF("No results found using "usenet_query_url);
     }
-    return 0+ found;
+    id0(new_count);
+    return new_count;
 }
 
 function verify_setup(\
@@ -807,18 +835,20 @@ function clean_title(t,deep,\
 punc) {
 
     #ALL# gsub(/[&]/," and ",t);
-    gsub(/[&]amp;/,"\\&",t);
+    if (index(t,"amp")) gsub(/[&]amp;/,"\\&",t);
 
     sub(/[-_ .]+$/,"",t);
 
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
     #this has to be done in two stages otherwise the collapsing prevents the next match.
-    while (match(t,"\\<[A-Za-z]\\>[.]\\<[A-Za-z]\\>")) {
-        t = substr(t,1,RSTART) "@@" substr(t,RSTART+2);
-    }
+    if (index(t,".")) {
+        while (match(t,"\\<[A-Za-z]\\>[.]\\<[A-Za-z]\\>")) {
+            t = substr(t,1,RSTART) "@@" substr(t,RSTART+2);
+        }
 
-    gsub(/@@/,"",t);
+        gsub(/@@/,"",t);
+    }
 
     punc = g_punc[deep+0];
     if (index(t," ") ) {
@@ -835,7 +865,7 @@ punc) {
     }
     gsub(punc," ",t);
 
-    gsub(/ +/," ",t);
+    if (index(t,"  ")) gsub(/ +/," ",t);
 
     t=trim(capitalise(tolower(t)));
 

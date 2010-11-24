@@ -355,7 +355,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
 }
 
 function extractEpisodeByDates(minfo,plugin,line,details,\
-date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
+date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info,total,i) {
 
     result=0;
     id1("extractEpisodeByDates "plugin" "line);
@@ -369,12 +369,14 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
         d = date[3];
 
         #search for matching shownames and pick the one that has an episode for the given date.
-        possible_tv_titles(plugin,title,closeTitles);
+        total = searchTv(plugin,title,closeTitles);
 
         DEBUG("Checking the following series for "title" "y"/"m"/"d);
         dump(0,"date check",closeTitles);
 
-        for (tvdbid in closeTitles) {
+        for(i = 1 ; i<= total ; t++ ) {
+
+            tvdbid = closeTitles[i,1];
 
             #if (get_tv_series_info(plugin,tmp_info,get_tv_series_api_url(plugin,tvdbid)) > 0) {
 
@@ -391,7 +393,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info) {
                 plugin_error(plugin);
             }
             if (result) {
-                INF("Found episode of "closeTitles[tvdbid]" on "y"-"m"-"d);
+                INF("Found episode of "tvdbid":"closeTitles[i,2]" on "y"-"m"-"d);
                 details[TVID]=tvdbid;
                 break;
             }
@@ -722,7 +724,7 @@ tnum,t,i,url) {
 }
 
 function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
-tvDbSeriesPage,title_key,cache_key,showIds,tvdbid) {
+tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total) {
 
     title_key = plugin"/"minfo["mi_folder"]"/"title;
     id1("search_tv_series_names2 "title_key);
@@ -752,16 +754,18 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid) {
 
             } else {
 
-                searchAbbreviationAgainstTitles(plugin,title,showIds);
-                dump(0,"abbreviated shows",showIds);
+                total=searchAbbreviationAgainstTitles(plugin,title,showIds);
 
                 # OBSOLETED filterTitlesByTvDbPresence(plugin,alternateTitles_tvrage,showIds);
 
+                dump_ids_and_titles("possible matches",total,showIds);
                 #  TODO  We can also just do a web search and return the biggest page. 
                 # this may be more robust than relying on a particular nzb site.
                 if (hash_size(showIds) > 1) {
 
-                    filterUsenetTitles(showIds,cleanSuffix(minfo),showIds);
+                    total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                    #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+                    dump_ids_and_titles("filtered matches",total,showIds);
                 }
 
 
@@ -772,7 +776,7 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid) {
                 # split into:
                 # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
                 # 2. A filter that picks episode title with lowest edit distance.
-                tvdbid = selectBestOfBestTitle(plugin,minfo,showIds);
+                tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
 
                 tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
 
@@ -797,54 +801,49 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid) {
 
 # Search the epguides menus for names that could be represented by the abbreviation 
 # IN abbrev - abbreviated name eg ttscc
-# OUT alternateTitles - hash of titles - index is rageid , value is normalized title.
+# OUT alternateTitles - hash of titles [n,1]=id [n,2]=title (as shows may have titles in other languages)
+# return number of matches
 function searchAbbreviationAgainstTitles(plugin,abbrev,alternateTitles,\
-initial,names) {
+initial,names,count) {
+
+    id1("searchAbbreviationAgainstTitles plugin="plugin" abbrev="abbrev);
 
     delete alternateTitles;
 
     # New method for abbreviations - use tvrage index
     initial = substr(abbrev,1,1);
     if (plugin == "thetvdb" ) {
-        get_tvdb_names_by_letter(initial,names);
+        count = get_tvdb_names_by_letter(initial,names);
     } else if (plugin == "tvrage" ) {
-        get_tvrage_names_by_letter(initial,names);
+        count = get_tvrage_names_by_letter(initial,names);
     } else {
         ERR("@@@ Bad plugin ["plugin"]");
     }
-    dump(0,"initial:"initial,names);
-    clean_titles_for_abbrev(names);
-    searchAbbreviation(initial,names,abbrev,alternateTitles);
+    clean_titles_for_abbrev(count,names);
+    dump_ids_and_titles("initial",count,names);
+    count = searchAbbreviation(initial,count,names,abbrev,alternateTitles);
+    id0(count);
+    return count;
 }
 
-function clean_titles_for_abbrev(names,\
+function clean_titles_for_abbrev(count,names,\
 i) {
-    for(i in names) {
-        names[i] = tolower(clean_title(names[i]));
+    for(i = 1 ; i <= count ; i++ ) {
+        names[i,2] = tolower(clean_title(names[i,2]));
     }
 }
 
-function possible_tv_titles(plugin,title,closeTitles,\
-ret) {
-
-    if (plugin == "thetvdb" ) {
-
-        ret = searchTv(plugin,title,closeTitles);
-
-    } else if (plugin == "tvrage" ) {
-
-        ret = searchTv(plugin,title,closeTitles);
-
-    } else {
-
-        plugin_error(plugin);
-
-    } 
-    g_indent=substr(g_indent,2);
-    dump(0,"searchTv out",closeTitles);
-    return ret;
-
+function dump_ids_and_titles(label,total,ids,\
+i) {
+    id1(label);
+    if (total >= 1) {
+        for(i = 1 ; i <= total ; i++ ) {
+            INF(label":"i"/"total":"ids[i,1]":"ids[i,2]);
+        }
+    }
+    id0(total);
 }
+    
 # TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO 
 # This is the function which will eventually discern between two very closely matched titles.
 # Eg given conan.obrien.2009.06.24 how do we select between The Late Show with Conan OBrien or the tonight show with Conan OBrien
@@ -859,15 +858,14 @@ ret) {
 # @param plugin - thetvdb  or tvrage
 # @param idx - the current item being processed
 # @param titles - hash of show titles keyed by show id.
-function selectBestOfBestTitle(plugin,minfo,titles,\
-bestId,bestFirstAired,age_scores,eptitle_scores,count) {
+function selectBestOfBestTitle(plugin,minfo,total,titles,\
+bestId,bestFirstAired,age_scores,eptitle_scores) {
     dump(0,"closely matched titles",titles);
-    count=hash_size(titles);
 
-    if (count == 0) {
+    if (total == 0) {
         bestId = "";
-    } else if (count == 1) {
-        bestId = firstIndex(titles);
+    } else if (total == 1) {
+        bestId = titles[1,1];
     } else {
         TODO("Refine selection rules here.");
 
@@ -876,7 +874,7 @@ bestId,bestFirstAired,age_scores,eptitle_scores,count) {
         if(1) {
             bestFirstAired="";
 
-            getRelativeAgeAndEpTitles(plugin,minfo,titles,age_scores,eptitle_scores);
+            getRelativeAgeAndEpTitles(plugin,minfo,total,titles,age_scores,eptitle_scores);
 
             bestScores(eptitle_scores,eptitle_scores,0);
             bestId = firstIndex(eptitle_scores);
@@ -888,43 +886,9 @@ bestId,bestFirstAired,age_scores,eptitle_scores,count) {
         }
         #TODO also try to get first episode of season.
     }
-    INF("Selected:"bestId" = "titles[bestId]);
+    INF("Selected:"bestId);
     return bestId;
 }
-
-#DELETE# # Search tvDb for different titles and return the ones that have the highest similarity scores.
-#DELETE# # This multiple search is used when an abbbrevation gives 2 or more possible titles.
-#DELETE# # eg trh = The Real Hustle or The Road Home 
-#DELETE# # We then hope we can weed out sime titles through various means starting with lack of requiredTags eg. Overview and FirstAired 
-#DELETE# # IN titleInHash - the title we are looking for. hashed by title => any thing
-#DELETE# # IN requiredTagList - list of tags which must be present - to filter out obscure shows noone cares about
-#DELETE# # OUT showIdHash - hash of matching titles. hashed by showid => title
-#DELETE# # RETURNS number of matches
-#DELETE# function filterTitlesByTvDbPresence(plugin,titleInHash,showIdHash,\
-#DELETE# bestScore,potentialTitle,potentialMatches,origTitles,score) {
-#DELETE#     bestScore=-1;
-#DELETE# 
-#DELETE#     dump(0,"pre tvdb check",titleInHash);
-#DELETE# 
-#DELETE#     #Make a safe copy in case titleInHash is the same as showIdHash
-#DELETE#     hash_copy(origTitles,titleInHash);
-#DELETE# 
-#DELETE#     delete showIdHash;
-#DELETE# 
-#DELETE#     for(potentialTitle in origTitles) {
-#DELETE#         id1("Checking potential title "potentialTitle);
-#DELETE#         score = possible_tv_titles(plugin,potentialTitle,potentialMatches);
-#DELETE#         if (score - bestScore >= 0 ) {
-#DELETE#             if (score - bestScore > 0 ) delete showIdHash;
-#DELETE#             hash_merge(showIdHash,potentialMatches);
-#DELETE#             bestScore = score;
-#DELETE#         }
-#DELETE#         id0(score);
-#DELETE#     }
-#DELETE# 
-#DELETE#     #copy to output
-#DELETE#     dump(0,"post filterTitle",showIdHash);
-#DELETE# }
 
 function remove_country(t) {
     if (match(tolower(t)," (au|uk|us)( |$)")) {
@@ -973,7 +937,7 @@ tnum,tried,tmp) {
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
 # This wrapper function will search with or without the country code.
 function searchTv(plugin,title,closeTitles,\
-allTitles,url,ret) {
+allTitles,url,ret,total) {
 
     id1("searchTv Checking ["plugin"/"title"]" );
     delete closeTitles;
@@ -981,18 +945,18 @@ allTitles,url,ret) {
     if (plugin == "thetvdb") {
 
         url=expand_url(g_thetvdb_web"/api/GetSeries.php?seriesname=",title);
-        filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
+        total = filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
 
     } else if (plugin == "tvrage") {
 
         url=g_tvrage_api"/feeds/search.php?show="title;
-        filter_search_results(url,title,"/Results/show","name","showid",allTitles);
+        total = filter_search_results(url,title,"/Results/show","name","showid",allTitles);
 
     } else {
         plugin_error(plugin);
     }
 
-    ret = filterSimilarTitles(title,allTitles,closeTitles);
+    ret = filterSimilarTitles(title,total,allTitles,closeTitles);
     id0(ret);
     return 0+ret;
 }
@@ -1024,6 +988,7 @@ url) {
 function filter_search_results(url,title,seriesPath,nameTag,idTag,allTitles,\
 info,currentId,currentName,i,num,series,empty_filter) {
 
+    num = 0;
     id1("filter_search_results");
     if (fetchXML(url,"tvsearch",info,"")) {
 
@@ -1034,13 +999,14 @@ info,currentId,currentName,i,num,series,empty_filter) {
 
             currentId = info[series[i]"/"idTag];
 
-            allTitles[currentId] = currentName;
+            allTitles[i,1] = currentId;
+            allTitles[i,2] = currentName;
         }
     }
 
     dump(0,"search results["title"]",allTitles);
-    id0("");
-    #filterSimilarTitles is called by the calling function
+    id0(num);
+    return num;
 }
 
 #ALL# function scan_tv_via_search_engine(regex,keywords,premier_mdy,year,\
@@ -1137,7 +1103,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
 }
 
 function searchTvDbTitles(plugin,minfo,title,\
-tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
+tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr,total) {
 
     id1("searchTvDbTitles");
     imdb_id = imdb(minfo);
@@ -1145,8 +1111,8 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
         tvdbid = find_tvid(plugin,minfo,imdb_id);
     }
     if (tvdbid == "") {
-        possible_tv_titles(plugin,title,closeTitles);
-        tvdbid = selectBestOfBestTitle(plugin,minfo,closeTitles);
+        total = searchTv(plugin,title,closeTitles);
+        tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
     }
     if (tvdbid == "") {
         noyr  = remove_tv_year(title);
@@ -1160,8 +1126,8 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr) {
             # tv rage should work with the year. compare .e.g
             # http://services.tvrage.com/feeds/search.php?show=carnivale Good
             # vs http://services.tvrage.com/feeds/search.php?show=carnivale%202003 OK
-    	    possible_tv_titles(plugin,noyr,closeTitles);
-    	    tvdbid = selectBestOfBestTitle(plugin,minfo,closeTitles);
+    	    total = searchTv(plugin,noyr,closeTitles);
+    	    tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
     	}
     }
     if (tvdbid != "") {
@@ -1371,46 +1337,41 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
 # IN titleHashIn - best titles so far hashed by tvdb id
 # OUT titleHashOut - titles with highest similarilty scores hashed by tvdbid
 # RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
-function filterSimilarTitles(title,titleHashIn,titleHashOut,\
-i,score,bestScore,tmpTitles) {
+function filterSimilarTitles(title,intotal,titleHashIn,titleHashOut,\
+i,score,bestScore,tmpTitles,total) {
 
     id1("Find similar "title);
     #Save a copy in case titleHashIn = titleHashOut
     hash_copy(tmpTitles,titleHashIn);
 
     #Build score hash
-    for(i in titleHashIn) {
-        score[i] = similarTitles(title,titleHashIn[i]);
-        DEBUG("["title"] vs ["i":"titleHashIn[i]"] = "score[i]);
+    for(i = 1 ; i<= intotal ; i++ ) {
+        score[i] = similarTitles(title,titleHashIn[i,2]);
+        DEBUG("["title"] vs ["i":"titleHashIn[i,2]"] = "score[i]);
     }
 
     #get items with best scores into titleHashOut
-    bestScores(score,titleHashOut,0);
+    bestScore = bestScores(score,score,0);
 
-    #Replace scores with original ids
-    for(i in titleHashOut) {
-        titleHashOut[clean_title(i)] = tmpTitles[i];
-    }
-
-    dump(0,"matches",titleHashOut);
-    bestScore = score[firstIndex(titleHashOut)];
-    if (bestScore == "" ) bestScore = -1;
-
-    INF("Filtered titles with score = "bestScore);
-    dump(0,"filtered = ["title"]=",titleHashOut);
-
+    total = 0;
+    delete titleHashOut;
     if (bestScore == 0 ) {
-        DEBUG("all zero score - discard them all to trigger another match method");
-        delete titleHashOut;
+        INF("all zero score - discard them all to trigger another match method");
+    } else {
+        for(i in score) {
+            total++;
+            titleHashOut[i,1] = tmpTitles[i,1];
+            titleHashOut[i,2] = tmpTitles[i,2];
+            INF("similar:"titleHashOut[i,1]":"titleHashOut[i,2]);
+        }
     }
 
-    id0(bestScore);
-
-    return 0+ bestScore;
+    id0(total);
+    return total;
 }
 
 # IN start letter
-# OUT names -> hash of tvrageid to titles.
+# OUT names -> hash of values = [n,1]=id [n,2]=title # to allow for multiple language titles.
 # return number of items
 function get_tvrage_names_by_letter(letter,names,\
 url,count,i,names2,regex,parts) {
@@ -1423,18 +1384,19 @@ url,count,i,names2,regex,parts) {
     for(i in names2) {
         gsub(/\&amp;/,"And",names2[i]);
         split(gensub(regex,SUBSEP"\\1"SUBSEP"\\2"SUBSEP,"g",names2[i]),parts,SUBSEP);
-        names[parts[2]] = parts[3];
         count++;
+        names[count,1] = parts[2];
+        names[count,2] = parts[3];
     }
     id0(count);
     return count;
 }
 
 # IN start letter
-# OUT names -> hash of tvrageid to titles.
+# OUT names -> hash of values = [n,1]=id [n,2]=title # to allow for multiple language titles.
 # return number of items
 function get_tvdb_names_by_letter(letter,names,\
-f,count,line) {
+f,count,line,colon) {
 
     delete names;
     id1("get_tvdb_names_by_letter abbreviations for "letter);
@@ -1443,8 +1405,9 @@ f,count,line) {
     while(( getline line < f ) > 0 ) {
         colon = index(line,":");
         if (colon) {
-            names[substr(line,1,colon-1)] = substr(line,colon+1);
-            count ++;
+            count++;
+            names[count,1] = substr(line,1,colon-1);
+            names[count,2] = substr(line,colon+1);
         }
     }
     close(f);
@@ -1458,9 +1421,10 @@ f,count,line) {
 # IN list of names that start with letter.
 # IN titleIn - The thing we are looking for - eg ttscc
 # IN/OUT alternateTitles - hash of titles - index is rageid , value is normalized title.
-function searchAbbreviation(letter,names,titleIn,alternateTitles,\
-possible_title,i,ltitle) {
+function searchAbbreviation(letter,count,names,titleIn,alternateTitles,\
+possible_title,i,ltitle,add,total) {
 
+    total = 0;
     ltitle = norm_title(titleIn);
 
     id1("Checking "titleIn" for abbeviations on menu page - "letter);
@@ -1469,10 +1433,9 @@ possible_title,i,ltitle) {
     if (ltitle == "" ) return ;
 
 
-    for(i in names) {
+    for(i = 1 ; i<= count ; i++ ) {
 
-
-        possible_title = names[i];
+        possible_title = names[i,2];
 
         #DEBUG("searchAbbreviation ["ltitle"] vs ["possible_title"]");
 
@@ -1481,20 +1444,20 @@ possible_title,i,ltitle) {
 
         if (abbrevMatch(ltitle,possible_title)) {
 
-            alternateTitles[i]=possible_title;
+            add[i] = 1;
 
         } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
 
-            alternateTitles[i]=possible_title;
+            add[i] = 1;
 
         } else if (abbrevContraction(ltitle,possible_title)) {
 
-            alternateTitles[i]=possible_title;
+            add[i] = 1;
         }
-
     }
-    dump(0,"abbrevs",alternateTitles);
-    id0();
+    total = copy_ids_and_titles(add,names,alternateTitles);
+    id0(total);
+    return total;
 }
 
 #split title into words then see how many words or initials we can match.
@@ -1618,6 +1581,12 @@ ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
         # check last character and the last anchor
         if (end_on_word) {
             # make sure last letter begins or ends a word
+            # because we may have matched and removed letters we make sure the first character of 
+            # s1lc is prefixed with "_" to avoid accidental word match 
+            if (s1lc != tolower(s1)) {
+                s1lc = "_"s1lc;
+            }
+
             if (match(s1lc,"(\\<"ch"|"ch"\\>)")  ) {
                 j = RSTART;
             }
@@ -2204,12 +2173,13 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 # it should return array of strings (not numbers) that can be compared using < >.
 # eg 2009-03-31 ok but 31-03-2009 bad.
 # IN minfo - current media item
-# IN titleHash - Indexed by imdb/tvdbid etc
+# IN titleHash - [n,1]=tvid [n,2]=title # allows multilingual titles.
 # OUT ageHash - age indicator  Indexed by imdb/tvdbid etc
 # OUT eptitleHash - set to 1 if episode title = additional info
-function getRelativeAgeAndEpTitles(plugin,minfo,titleHash,ageHash,eptitleHash,\
-id,xml,eptitle) {
-   for(id in titleHash) {
+function getRelativeAgeAndEpTitles(plugin,minfo,total,titleHash,ageHash,eptitleHash,\
+id,xml,eptitle,i) {
+    for(i = 1 ; i <= total ; i++) {
+        id = titleHash[i,1];
         if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
             if (plugin == "thetvdb") {
 

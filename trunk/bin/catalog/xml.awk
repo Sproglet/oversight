@@ -3,20 +3,24 @@
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
 # RETURN ok=1 failed=0
 function fetchXML(url,label,xml,ignorePaths,\
-f) {
+f,ret) {
     f=getUrl(url,label,1);
-    return readXML(f,xml,ignorePaths);
+    ret = readXML(f,xml,ignorePaths);
+    DEBUG("fetchXML["url"] = "ret);
+    return ret;
 }
 
 # RETURN ok=1 failed=0
 function readXML(f,xml,ignorePaths,\
-line,ret) {
+line,ret,code) {
+    id1("readXML");
     ret = 0;
     delete xml;
     if (f != "" ) {
+
         FS="\n";
-        while(enc_getline(f,line) > 0 ) {
-            ret = 1;
+        while((code = enc_getline(f,line)) > 0 )  {
+            ret++;
             if (!parseXML(line[1],xml,ignorePaths)) {
                 ret = 0;
                 break;
@@ -24,6 +28,7 @@ line,ret) {
         }
         enc_close(f);
     }
+    id0(ret);
     return ret;
 }
 
@@ -85,9 +90,10 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
         # process the text node ---------------
 
         text = parts[i];
+        #DEBUG("@@XMLtext "i"["text"]");
         if (currentTag ) {
             if (ignorePaths == "" || currentTag !~ ignorePaths) {
-                #If merging element values add a sepearator
+                #If merging element values add a seperator
                 if (currentTag in xml) {
                     text = sep text;
                 }
@@ -108,6 +114,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
         if (++i >= tag_data_count) break;
 
         tag = parts[i];
+        #DEBUG("@@XMLtag "i"["tag"]");
         taglen = length(tag);
 
         # part[1] = tag 
@@ -373,6 +380,7 @@ found,t,tag) {
 function find_elements(xml,root,filters,maxtags,tagsout,\
 root_re,numbers,strings,regexs,found,num,tag,child,numtags,do_filter) {
 
+    id1("find_elements["root"]");
     delete tagsout;
     num=0;
     found = 0;
@@ -381,7 +389,6 @@ root_re,numbers,strings,regexs,found,num,tag,child,numtags,do_filter) {
     #Create re to match on array elements.
     # Convert /parent/child to /parent(>[0-9]+|)/child(>[0-9]+|)
     root_re="^"gensub("(.)(/|$)","\\1(>[0-9]+|)\\2","g",root)"$";
-    id1("find_elements["root"]");
     #DEBUG("XX regex["root_re"]");
 
     numtags = xml["@count"];

@@ -20,7 +20,7 @@ BEGIN {
     ks="if if( then else while while( do return match( substr( index( sub( gsub( gensub( in getline ";
     ks=ks" RSTART RLENGTH print print( systime( open( close( FS NF exit break for for( system( ";
     ks=ks" delete return return( split( tolower( toupper( length( continue sprintf( int(";
-    ks=ks" rand( printf and( lshift( rshift( strftime( ENVIRON ARGV SUBSEP";
+    ks=ks" rand( printf and( lshift( rshift( strftime( ENVIRON ARGV SUBSEP fflush(";
     gsub(/ +/," ",ks);
     gsub(/^ +/,"",ks);
     gsub(/ +$/,"",ks);

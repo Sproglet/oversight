@@ -799,7 +799,7 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total) {
     return tvDbSeriesPage;
 }
 
-# Search the epguides menus for names that could be represented by the abbreviation 
+# Search the tv menus for names that could be represented by the abbreviation 
 # IN abbrev - abbreviated name eg ttscc
 # OUT alternateTitles - hash of titles [n,1]=id [n,2]=title (as shows may have titles in other languages)
 # return number of matches
@@ -1674,37 +1674,6 @@ found,part,sw,ini) {
     }
 
     return found;
-}
-
-function epguideInitial(title,\
-letter) {
-
-    sub(/^[Tt]he /,"",title);
-    letter=tolower(substr(title,1,1));
-
-    #Thank you epguides for silly numeric-alpha index eg 24 on page t, 90210 page n but 1990 page n too!
-    if (match(title,"^10") ) {
-        letter = "t";
-    } else if (match(title,"^11") ) {
-        letter = "e";
-    } else if (match(title,"^1[2-9]") ) {
-        letter = substr(title,2,1);
-    }
-
-    if ( letter == "1" ) {
-        letter = "o";
-    }else if (match(letter,"^[23]")  ) {
-        letter = "t";
-    }else if (match(letter,"^[45]") ) {
-        letter = "f";
-    }else if (match(letter,"^[67]") ) {
-        letter = "s";
-    }else if ( letter == "8" ) {
-        letter = "e";
-    }else if ( letter == "9" ) {
-        letter = "n";
-    }
-    return letter;
 }
 
 function get_episode_url(plugin,seriesUrl,season,episode,\

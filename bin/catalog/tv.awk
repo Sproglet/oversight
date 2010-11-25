@@ -773,13 +773,16 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total,first_letter,letters,lpo
                     total=searchAbbreviationAgainstTitles(plugin,substr(letters,lpos,1),title,showIds);
 
                     dump_ids_and_titles("possible matches",total,showIds);
-                    if (total > 1) {
 
-                        #  just do a web search and return the biggest page. 
-                        total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                        #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
-                        dump_ids_and_titles("filtered matches",total,showIds);
-                    }
+                    #If a show is abbreviated then always do a web search to confirm
+                    # This will be an issue if the user has their own abbreviated file names.
+
+                    # The alternative is to only do a web search if more than one show is present.
+
+                    #  just do a web search and return the biggest page. 
+                    total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                    #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+                    dump_ids_and_titles("filtered matches",total,showIds);
 
 
                     # TODO the selectBestOfBestTitle calls the relativeAge function which also
@@ -834,7 +837,7 @@ names,count) {
         ERR("@@@ Bad plugin ["plugin"]");
     }
     clean_titles_for_abbrev(count,names);
-    dump_ids_and_titles("initial",count,names);
+    #dump_ids_and_titles("initial",count,names);
     count = searchAbbreviation(initial,count,names,abbrev,alternateTitles);
     id0(count);
     return count;
@@ -1676,11 +1679,10 @@ found,part,sw,ini) {
         # 
         sw = significant_words(possible_title);
         ini = get_initials(sw);
-        INF("abbrev["abbrev"] possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
-        #possible_title=[law and order los angeles] part=[law and order los a] sig=[order] init=[o]
+        #INF("abbrev["abbrev"] possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
 
         if (abbreviated_substring(abbrev,"",ini,0) == "") {
-            INF("["possible_title "] rejected. Abbrev ["abbrev"]. doesnt contain initials of ["part"].");
+            INF("["possible_title "] rejected. ["ini"] not in abbrev ["abbrev"]");
         } else {
             found = 1;
         }

@@ -489,6 +489,11 @@ cat,minfo2) {
 
             id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
 
+            if (!minfo["mi_title"]) {
+                minfo["mi_title"] = clean_title(remove_format_tags(minfo["mi_media"]));
+                minfo["mi_title_source"] = "filename";
+            }
+
             eta="";
        
         #dep#        begin_search("");

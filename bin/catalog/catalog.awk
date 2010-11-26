@@ -703,7 +703,7 @@ new_total,i) {
 
 # Find title that returns largest page size.
 function filter_web_titles(count,titles,filterText,filteredTitles,\
-keep,new,newtotal,baseline,size,url) {
+keep,new,newtotal,size,url,i) {
 
     id1("filter_web_titles in="count);
 
@@ -712,7 +712,7 @@ keep,new,newtotal,baseline,size,url) {
     #Establish baseline for no matches.
     if (!g_filter_web_titles_baseline) {
         g_filter_web_titles_baseline = get_page_size(url url_encode(" "rand()systime()));
-        g_filter_web_titles_baseline = int (g_filter_web_titles_baseline/5000);
+        g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/5000);
     }
 
     newtotal=0;
@@ -762,7 +762,7 @@ result = filterUsenetTitles1(count,titles,"http://binsearch.info/?max=25&adv_age
 #IN titles - hased by show ID
 #OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
 function filterUsenetTitles1(count,titles,usenet_query_url,filteredTitles,\
-t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count) {
+t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count,new_count) {
 
     found = 0;
     id1("filterUsenetTitles1 in="count);

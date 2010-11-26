@@ -78,7 +78,7 @@ function advance(context,ch,optional) {
 }
 
 function json_parse_string(context,\
-q,b,part) {
+q,b,part,ch) {
 
     context["string"] = "";
 

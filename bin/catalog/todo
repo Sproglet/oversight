@@ -5,6 +5,8 @@
 #  1. Failed to match tv query - why?
 #  2. Abbreviation check stripped 'The ' so would always fail.
 #
+#  # check double episodes -again!
+#
 #
 #  # fix movie deletions.
 #

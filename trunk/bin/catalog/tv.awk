@@ -374,7 +374,7 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info,total,i) {
         DEBUG("Checking the following series for "title" "y"/"m"/"d);
         dump(0,"date check",closeTitles);
 
-        for(i = 1 ; i<= total ; t++ ) {
+        for(i = 1 ; i<= total ; i++ ) {
 
             tvdbid = closeTitles[i,1];
 
@@ -1217,12 +1217,11 @@ keep_the) {
     return tolower(t);
 }
 
-# Return 3 if a possible Title is a very good match for titleIn
-# Return 2 if it is a likely match
-# Return 1 if it is an initial or abbreviated type of match.
-# else return 0
+# This function is now just too messy and needs a careful re-write
+# return 0=no match , 5=excellent match, and values in between.
 function similarTitles(titleIn,possible_title,\
-cPos,yearOrCountry,matchLevel,diff,shortName) {
+cPos,yearOrCountry,matchLevel,shortName,unqualified_title,\
+possible_in_title,title_in_possible,unqualified_in_title) {
 
     matchLevel = 0;
     yearOrCountry="";
@@ -1241,8 +1240,10 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
         titleIn=clean_title(titleIn);
     }
 
+    unqualified_title=SUBSEP;
     # Extract any bracketed qualifiers - eg (year) or (US)
     if (match(possible_title," \\([^)]+")) {
+        unqualified_title = norm_title(substr(possible_title,1,RSTART-1));
         yearOrCountry=tolower(clean_title(substr(possible_title,RSTART+2,RLENGTH-2),1));
         DEBUG("Qualifier ["yearOrCountry"]");
     }
@@ -1272,78 +1273,77 @@ cPos,yearOrCountry,matchLevel,diff,shortName) {
     #DEBUG("XX possible_title["possible_title"]");
 #    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
 
-    if (index(possible_title,titleIn) == 1) {
-        #eg "jay leno show","jay leno"
-        #eg "tonight show with jay leno","jay leno"
+    #This will match exact name OR if BOTH contain original year or country
+    
+    if (possible_title == titleIn) {
 
+        matchLevel=5;
 
+        #If its a qualified match increase score further
+        #eg xxx UK matches xxx UK
+        #or xxx 2000 matches xxx 2000
+        if (yearOrCountry != "") {
+            matchLevel=10;
+        }
 
-        #TODO Note we could keep the 1 match levels here and below, but if so
-        #we should still go on to search abbreviations. For now easier to comment out.
-        #The zero score will trigger the abbreviation code.
-        #
-        # Enabling this would allow "curb" to match "curb your enthusiasm"
-        # but may false match abbreviations?
-        #matchLevel = 1;
+    } else {
 
-        #This will match exact name OR if BOTH contain original year or country
-        if (possible_title == titleIn) {
+        title_in_possible = index(possible_title,titleIn);
+        possible_in_title = index(titleIn,possible_title);
+        unqualified_in_title = index(titleIn,unqualified_title);
 
-            matchLevel=5;
+        if (unqualified_in_title==1 && yearOrCountry && substr(titleIn,length(unqualified_title)+1) ~ " \\(?"yearOrCountry"\\)?") {
 
-            #If its a qualified match increase score further
-            #eg xxx UK matches xxx UK
-            #or xxx 2000 matches xxx 2000
-            if (yearOrCountry != "") {
-                matchLevel=10;
-            }
-
-        } else  if (titleIn == shortName) {
-            #Check for comma. eg maych House to House,M D
-            matchLevel=5;
-
-        #This will match if difference is year or country. In this case just pick the 
-        # last one and user can fix up
-        } else if ( possible_title == titleIn " (" yearOrCountry ")" ) {
-            INF("match for ["titleIn"+"yearOrCountry"] against ["possible_title"]");
-            #unqualified match xxxx vs xxxx YYYY
-            #We have to allow for example BSG to match the new series rather 
-            # than the old , however new series is qualified (2003) at thetvdb
+            INF("titleIn["titleIn"] matches unqualified_title["unqualified_title"] + qualification["yearOrCountry"]");
+            # eg the titleIn had qualification without brackets. eg "The Office US"
+            # The possible_title had qualification with brackets "The Office (US)"
+            # These essentially match but there is a slim to non-existant chance it may
+            # false match on a show where 'Us' is the last word of the show title.
+            # Very unlikely though as there are usually no shows that match the title sans 'us'
+            # to false +ve against. 
             matchLevel = 5;
 
-        } else if ( index(possible_title,titleIn" show")) {
+        } else if (unqualified_in_title==1 && yearOrCountry && ( unqualified_title  == titleIn )) {
 
+            INF("titleIn["titleIn"] matches unqualified_title["unqualified_title"]  but not qualification["yearOrCountry"]");
+            matchLevel = 3;
+
+        } else if (title_in_possible == 1 && titleIn == shortName) {
+                #Check for comma. eg maych House to House,M D
+            INF("titleIn["titleIn"] matches shortName["shortName"]");
+            matchLevel=5;
+
+        } else if (title_in_possible == 1 && index(possible_title,titleIn" show")) {
+            #eg "jay leno show","jay leno"
             # eg "(The) Jay Leno Show" vs "Jay Leno"
+            INF("titleIn["titleIn"]+show matches shortName["possible_title"]");
             matchLevel = 4;
 
-        } else {
-            DEBUG("No match for ["titleIn"+"yearOrCountry"] against ["possible_title"]");
-        }
-    } else if (index(titleIn,possible_title) == 1) {
-        #Check our title just has a country added
 
-        #TODO Note we could keep the 1 match levels here and above, but if so
-        #we should still go on to search abbreviations. For now easier to comment out.
-        #The zero score will trigger the abbreviation code.
+        } else if (title_in_possible == 1 && (substr(possible_title,length(titleIn)+1) ~ " \\(?("g_year_re"|uk|us|au|nz|de|fr)\\)?" )) {
 
-        #matchLevel = 1;
-        diff=substr(titleIn,length(possible_title)+1);
-        if ( diff ~ " "g_year_re"$" || diff ~ " (uk|us|au|nz|de|fr)" ) {
-            #unqualified match xxxx 2000 vs xxxx
+            INF("titleIn +["titleIn"]+some qualifier matches possible_title["possible_title"]");
             matchLevel = 5;
-            INF("match for ["titleIn"] containing ["possible_title"]");
+
+        } else if (possible_in_title == 1 && (substr(titleIn,length(possible_title)+1) ~ " \\(?("g_year_re"|uk|us|au|nz|de|fr)\\)?" )) {
+
+            INF("titleIn +["titleIn"] matches possible_title["possible_title"] + some qualifier");
+            matchLevel = 5;
+
+        } else if (title_in_possible &&  index(possible_title,"late night with "titleIn)) {
+            # Late Night With Some Person might just be known as "Some Person"
+            # eg The Tonight Show With Jay Leno
+            INF("titleIn late night with+["titleIn"]+show matches shortName["possible_title"]");
+            matchLevel = 4;
+
+        } else if (title_in_possible && index(possible_title,"show with "titleIn)) {
+
+            # The blah blah Show With Some Person might just be known as "Some Person"
+            # eg The Tonight Show With Jay Leno
+            INF("titleIn show with+["titleIn"]+show matches shortName["possible_title"]");
+            matchLevel = 4;
+
         }
-    } else if ( index(possible_title,"late night with "titleIn)) {
-        # Late Night With Some Person might just be known as "Some Person"
-        # eg The Tonight Show With Jay Leno
-        matchLevel = 4;
-
-    } else if ( index(possible_title,"show with "titleIn)) {
-
-        # The blah blah Show With Some Person might just be known as "Some Person"
-        # eg The Tonight Show With Jay Leno
-        matchLevel = 4;
-
     }
     return 0+ matchLevel;
 }
@@ -1358,6 +1358,8 @@ function filterSimilarTitles(title,intotal,titleHashIn,titleHashOut,\
 i,score,bestScore,tmpTitles,total) {
 
     id1("Find similar "title);
+    dump_ids_and_titles("filterSimilarTitles in ",intotal,titleHashIn);
+
     #Save a copy in case titleHashIn = titleHashOut
     hash_copy(tmpTitles,titleHashIn);
 
@@ -1377,12 +1379,13 @@ i,score,bestScore,tmpTitles,total) {
     } else {
         for(i in score) {
             total++;
-            titleHashOut[i,1] = tmpTitles[i,1];
-            titleHashOut[i,2] = tmpTitles[i,2];
+            titleHashOut[total,1] = tmpTitles[i,1];
+            titleHashOut[total,2] = tmpTitles[i,2];
             INF("similar:"titleHashOut[i,1]":"titleHashOut[i,2]);
         }
     }
 
+    dump_ids_and_titles("filterSimilarTitles out ",total,titleHashOut);
     id0(total);
     return total;
 }
@@ -2164,23 +2167,25 @@ function getRelativeAgeAndEpTitles(plugin,minfo,total,titleHash,ageHash,eptitleH
 id,xml,eptitle,i) {
     for(i = 1 ; i <= total ; i++) {
         id = titleHash[i,1];
-        if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
-            if (plugin == "thetvdb") {
+        if (id) {
+            if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
+                if (plugin == "thetvdb") {
 
-                ageHash[id] = xml["/Data/Episode/FirstAired"];
-                eptitle = tolower(xml["/Data/Episode/EpisodeName"]);
+                    ageHash[id] = xml["/Data/Episode/FirstAired"];
+                    eptitle = tolower(xml["/Data/Episode/EpisodeName"]);
 
-            } else if (plugin == "tvrage" ) {
+                } else if (plugin == "tvrage" ) {
 
-                ageHash[id] = xml["/show/episode/airdate"];
-                eptitle = tolower(xml["/show/episode/title"]);
+                    ageHash[id] = xml["/show/episode/airdate"];
+                    eptitle = tolower(xml["/show/episode/title"]);
 
-            } else {
-                plugin_error(plugin);
-            }
+                } else {
+                    plugin_error(plugin);
+                }
 
-            if (minfo["mi_additional_info"]) {
-                eptitleHash[id] = -edit_dist(eptitle,minfo["mi_additional_info"]); # bigger number closer the string.
+                if (minfo["mi_additional_info"]) {
+                    eptitleHash[id] = -edit_dist(eptitle,minfo["mi_additional_info"]); # bigger number closer the string.
+                }
             }
         }
     }

@@ -63,8 +63,9 @@ ch,i) {
     context["pos"] = i; 
 }
 
-function currch(context) {
-    return substr(context["in"],context["pos"],1);
+function currch(context,len) {
+    if (!len) len=1;
+    return substr(context["in"],context["pos"],len);
 }
 
 function advance(context,ch,optional) {
@@ -144,6 +145,9 @@ label) {
             ltrim(context);
 
             if (context["err"]) break;
+
+            if (currch(context) != "\"" ) break;
+
             json_parse_string(context);
             if (context["err"]) break;
 
@@ -171,6 +175,8 @@ label) {
         }
         if (advance(context,"}")) {
             context["type"] = "object";
+        } else {
+            json_err(context,"expected \" or } ");
         }
     ;
 
@@ -240,15 +246,21 @@ function json_assign_value_to_tag(context,out) {
     }
 }
 
+
+# []
+# [1]
+# [1,2]
 function json_parse_array(context,out,\
-idx) {
+idx,ch) {
     delete context["type"];
     delete context["value"];
 
     if (context["err"] ) return;
     idx = 1;
 
-    if (advance(context,"[") ) {
+    advance(context,"[");
+    ltrim(context);
+    if (currch(context) != "]" ){
         do {
 
             json_push_tag("#",idx++,context);
@@ -261,11 +273,12 @@ idx) {
             json_pop_tag(context);
             ltrim(context);
 
-        } while (advance(context,",",1)) ;
-
-        if (advance(context,"]")) {
-            context["type"] = "array";
-        }
+        } while (advance(context,",",1));
+    }
+    if (advance(context,"]")) {
+        context["type"] = "array";
+    } else {
+        json_err(context,"list (,) or (])  expected ");
     }
 }
 function json_dbg(context,x) {

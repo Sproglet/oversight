@@ -63,11 +63,8 @@
 #BEGINAWK
 #!catalog
 function pad_episode(e) {
-    if (match(e,"^[0-9][0-9]")) {
-        return e;
-    } else {
-        return "0"e;
-    }
+    gsub(/<[0-9][a-d]?>/,"0&",e);
+    return e;
 }
 
 function TODO(x) {

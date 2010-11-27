@@ -273,7 +273,9 @@ catalog() {
 
     echo "PRG = $awk_prg"
 
-        $awk_prg \
+    cd /tmp
+
+    $awk_prg \
     JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     DAY=`date +%a.%P` \
     "START_DIR=$START_DIR" \

@@ -961,17 +961,47 @@ key,regex,ret,lcfragment,dbg,all_keys) {
     return ret;
 }
 
-function get_langs(langs,\
+function get_locales(locales,\
 i,add_english) {
-    for(i = 1; g_settings["catalog_lang"i] ~ /[a-z]+/ ; i++) {
-        langs[i] = g_settings["catalog_lang"i];
-        if (langs[i] == "en") add_english = 1;
+    for(i = 1; g_settings["catalog_locale"i] ~ /[a-z]+/ ; i++) {
+        locales[i] = g_settings["catalog_locale"i];
+        if (locales[i] == "en") add_english = 1;
     }
     if (add_english) {
-        langs[i++] = "en";
+        locales[i++] = "en";
     }
     return i-1;
 }
+
+# get unique languages from locales
+function get_langs(langs,\
+i,locales,tmp,ret,l) {
+    ret = get_locales(locales);
+    for(i in locales ) { 
+        l = substr(locales[i],1,2);
+        tmp[l] = 1;
+    }
+    for ( i in tmp ) {
+        langs[++ret] = i;
+    }
+    return ret;
+}
+# get unique countries from locales
+function get_countries(countries,\
+i,locales,tmp,ret,c) {
+    ret = get_locales(locales);
+    for(i in locales ) { 
+        if (match(locales[i],"_")) {
+            c = substr(locales[i],RSTART+1);
+            tmp[c] = 1;
+        }
+    }
+    for ( i in tmp ) {
+        countries[++ret] = i;
+    }
+    return ret;
+}
+
 
 # Note where we have already visisted. Usually domain:lang
 function set_visited(minfo,key) {

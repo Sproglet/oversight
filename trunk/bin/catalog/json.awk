@@ -247,11 +247,8 @@ function json_assign_value_to_tag(context,out) {
 }
 
 
-# []
-# [1]
-# [1,2]
 function json_parse_array(context,out,\
-idx,ch) {
+idx) {
     delete context["type"];
     delete context["value"];
 

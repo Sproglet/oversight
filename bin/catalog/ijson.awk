@@ -13,6 +13,7 @@ url,num,locales,i,ret) {
         url = "http://a-pp.imdb.com/"fn"?api=v1&app-id=i-phone1&locale="locales[i]"&"args;
         gsub(/-/,"",url);
         if (fetch_json(url,"imdb",out)) {
+            out["@locale@"] = locales[i];
             ret = 1;
             break;
         }
@@ -43,7 +44,8 @@ json,cast,ret,i,tag,minfo2) {
                 if ( "data:year" in json) {
                     ret = 1;
                     minfo2["mi_year"] = json["data:year"];
-                    minfo2["mi_cert"] = json["data:certificate:certificate"];
+                    minfo2["mi_certrating"] = json["data:certificate:certificate"];
+                    minfo2["mi_certcountry"] = substr(json["@locale@"],4);
                     minfo2["mi_poster"] = json["data:image:url"];
                     minfo2["mi_rating"] = json["data:rating"];
                     minfo2["mi_runtime"] = json["data:runtime:time"]/60;

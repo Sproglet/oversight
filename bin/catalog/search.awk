@@ -609,6 +609,8 @@ score) {
         gPriority["mi_runtime","imdb"]=60;
 
         gPriority["mi_category","imdb"]=60;
+        gPriority["mi_certrating","imdb"]=60;
+        gPriority["mi_certcountry","imdb"]=60;
     }
     score = gPriority[field,source];
     if (score) {

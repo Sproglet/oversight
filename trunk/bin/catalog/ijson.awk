@@ -3,20 +3,14 @@ BEGIN {
 }
 
 function fetch_ijson(fn,args,out,\
-url,num,langs,i,ret,locale) {
+url,num,locales,i,ret) {
 
     ret = 0;
     id1("fetch_ijson "fn);
 
-    num = get_langs(langs);
+    num = get_locales(locales);
     for(i = 1 ; i<= num ; i++ ) {
-        # locale needs fixing - should allow it in the configuration - or use /tmp/setting.txt
-        if (langs[i]=="en") {
-            locale="en_US" ;
-        } else {
-            locale=tolower(langs[i])"_"toupper(langs[i]);
-        }
-        url = "http://a-pp.imdb.com/"fn"?api=v1&app-id=i-phone1&locale="locale"&"args;
+        url = "http://a-pp.imdb.com/"fn"?api=v1&app-id=i-phone1&locale="locales[i]"&"args;
         gsub(/-/,"",url);
         if (fetch_json(url,"imdb",out)) {
             ret = 1;

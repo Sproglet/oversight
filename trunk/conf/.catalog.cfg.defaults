@@ -102,6 +102,6 @@ catalog_max_actors=8
 
 catalog_follow_symlinks=0
 
-catalog_lang1=en
-catalog_lang2=-
-catalog_lang3=-
+catalog_locale1=en_GB
+catalog_locale2=-
+catalog_locale3=-

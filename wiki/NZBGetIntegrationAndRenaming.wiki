@@ -84,6 +84,37 @@ This is because a false match would make it very hard to later correctly identif
 
 Tv file names are a bit more consistent so Oversight will rename Tv files, but not movie files.
 
+Each bit of information has its own brackets. Anything outside the brackets is kept as fixed text, anything inside the brackets is replaced with the keyword.
+
+So the format is:
+
+{{{
+{:keyword1:} fixed text {:keyword2:} more fixed text   etc.
+}}}
+
+A keyword always has a colon immediately before and after.
+
+But sometimes keywords can be blank - eg if there is no episode title then
+
+{{{
+{:EPISODE:} - {:EPTITLE:}.{:EXT:}
+}}}
+
+will end up looking like
+
+{{{
+2 - .avi
+}}}
+
+In this case it would be better without the ' - ',so you can include some 'optional text' around the keyword, that is only added if the keyword is not blank... This is done by moving the fixed text inside of the brackets. so
+
+{{{
+{:EPISODE:}{ - :EPTITLE:}.{:EXT:}
+}}}
+
+Note the dash is now only added if EPTITLE is not blank.
+
+
 === Par-repair on demand ===
 
 Note that newer versions of nzbget have the capability to do on-demand par repair, however the version that comes with the NMT firmware cannot attempt to unpack before doing a par-repair on demand, it can only be configured to 

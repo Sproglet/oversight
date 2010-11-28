@@ -1050,6 +1050,9 @@ i,num,locales,minfo2) {
 
                 delete minfo2;
                 if (scrape_movie_page("","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
+                    if (minfo2["mi_certrating"]) {
+                        minfo2["mi_certcountry"] = substr(locales[i],4);
+                    }
                     minfo_set_id("imdb",extractImdbId(url),minfo2);
                     #dump(0,"scrape",minfo2);
                     minfo_merge(minfo,minfo2,"imdb");

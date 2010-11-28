@@ -7,14 +7,14 @@
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
 function find_movie_page(text,title,year,runtime,director,minfo,\
-i,err,minfo2,num,langs) {
+i,err,minfo2,num,locales) {
 
     err = 1;
     id1("find_movie_page text ["text"] title ["title"] year("year")");
 
-    num = get_langs(langs);
+    num = get_locales(locales);
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_lang(langs[i],text,title,year,runtime,director,minfo2);
+        err=find_movie_by_locale(locales[i],text,title,year,runtime,director,minfo2);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -24,9 +24,21 @@ i,err,minfo2,num,langs) {
     return err;
 }
 
-# Given a movie title and year try to find a site in the required language and scrape
-# INPUT lang - 2 letter language code 
+function load_locale_settings(locale,\
+ret) {
+    ret = load_plugin_settings("locale",locale);
+    if (!ret) {
+        if (length(locale) > 2 ) {
+            # just try the language 
+            ret = load_plugin_settings("locale",substr(locale,1,2));
+        }
+    }
+    return ret;
+}
 
+
+# Given a movie title and year try to find a site in the required language and scrape
+# INPUT locale - eg en_US
 # IN text - text so search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
 # INPUT year  - used for validation can be blank
@@ -35,17 +47,17 @@ i,err,minfo2,num,langs) {
 
 # IN/OUT minfo - Movie info
 # RETURN 0 = no errors
-function find_movie_by_lang(lang,text,title,year,runtime,director,minfo,\
+function find_movie_by_locale(locale,text,title,year,runtime,director,minfo,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
-    id1("find_movie_by_lang:"lang" text ["text"] title ["title"] year("year")");
-    if (load_plugin_settings("lang",lang)) {
+    id1("find_movie_by_locale:"locale" text ["text"] title ["title"] year("year")");
+    if (load_locale_settings(locale)) {
 
 
-        num=split(g_settings["lang:catalog_lang_movie_site_search"],sites,",");
+        num=split(g_settings["locale:catalog_locale_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_lang(sites[i],lang,text,title,year,runtime,director,minfo2,searchhist);
+            err=find_movie_by_site_locale(sites[i],locale,text,title,year,runtime,director,minfo2,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -123,18 +135,18 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
 # Search Engine query to hopefully find movie url 
 # IN site  - from cf file, used in search. It may be just domain (site:xxx) or include part of the url (inurl:)
-# IN lang - 2 letter language code
+# IN locale - eg en_US
 # IN text - text so search for. May not necessarily be exact title eg from filename.
 # IN title - movie title - passed to query
 # IN year  - passed to query
 # OUT minfo - Movie info - cleared before use.
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_lang(site,lang,text,title,year,runtime,director,minfo,searchhist,\
+function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,minfo,searchhist,\
 minfo2,err,matches,num,url_domain,i,max_allowed_results) {
 
     err = 1;
-    id1("find_movie_by_site_lang("site","lang")");
+    id1("find_movie_by_site_locale("site","locale")");
 
 
 
@@ -160,7 +172,7 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
         } else {
 
             set_visited_url(matches[i],searchhist);
-            err = scrape_movie_page(text,title,year,runtime,director,matches[i],lang,url_domain,minfo2);
+            err = scrape_movie_page(text,title,year,runtime,director,matches[i],locale,url_domain,minfo2);
             if (!err) {
                 minfo_merge(minfo,minfo2,url_domain);
                 break;
@@ -275,34 +287,34 @@ i,j,keep) {
 # IN runtime of movie in minutes (used for validation - mostly ignore for the time being - movies like Leon have varied runtimes)
 # IN director - Director surname - may have problems matching  other alphabets. Russian / Greek
 # IN url - page to scrape
-# IN lang - 2 letter language code
+# IN locale - eg en_US, fr_FR
 # IN domain  - main domain of site eg imdb, allocine etc.
 # OUT minfo - Movie info - cleared before use.
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(text,title,year,runtime,director,url,lang,domain,minfo,\
+function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,\
 f,minfo2,err,line,pagestate,namestate,store) {
 
     err = 0;
-    id1("scrape_movie_page("url","lang","domain","text","title","year")");
+    id1("scrape_movie_page("url","locale","domain","text","title","year")");
 
-    if (have_visited(minfo,domain":"lang)) {
+    if (have_visited(minfo,domain":"locale)) {
 
         INF("Already visited");
 
-    } else if (url && lang )  {
+    } else if (url && locale )  {
 
         if (!scrape_cache_get(url,minfo2)) {
 
             store = 1;
 
-            f=getUrl(url,lang":"domain":"title":"year,1);
+            f=getUrl(url,locale":"domain":"title":"year,1);
             if (f) {
 
                 minfo2["mi_url"] = url;
                 minfo2["mi_category"] = "M";
                 pagestate["mode"] = "head";
                 while(enc_getline(f,line) > 0  ) {
-                    err = scrape_movie_line(lang,domain,line[1],minfo2,pagestate,namestate);
+                    err = scrape_movie_line(locale,domain,line[1],minfo2,pagestate,namestate);
                     if (err) {
                         INF("abort page");
                         break;
@@ -314,7 +326,7 @@ f,minfo2,err,line,pagestate,namestate,store) {
 
         #This will get merged in if page is succesful.
         #if page fails then the normal logical flow of the program should prevent re-visits. not the visited flag.
-        set_visited(minfo2,domain":"lang);
+        set_visited(minfo2,domain":"locale);
             
     } else {
         ERR("paramters missing");
@@ -346,7 +358,7 @@ f,minfo2,err,line,pagestate,namestate,store) {
             scrape_cache_add(url,minfo2);
         }
         minfo_merge(minfo,minfo2,domain);
-        dump(0,title"-"year"-"domain"-"lang,minfo);
+        dump(0,title"-"year"-"domain"-"locale,minfo);
     }
 
     id0(err);
@@ -638,14 +650,14 @@ sep,ret,lcline,arr,styleOrScript) {
 }
 
 # Scrape a movie page - results into minfo
-# IN lang - 2 letter language code
+# IN locale - eg en_US
 # IN domain  - main domain of site eg imdb, allocine etc.
 # IN line - a line of text 
 # IN/OUT minfo - Movie info
 # IN/OUT pagestate - info about which tag we are parsing
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
-function scrape_movie_line(lang,domain,line,minfo,pagestate,namestate,\
+function scrape_movie_line(locale,domain,line,minfo,pagestate,namestate,\
 i,num,sections,err) {
 
     err = 0;
@@ -665,7 +677,7 @@ i,num,sections,err) {
 
             for(i = 1 ; i <= num ; i++ ) {
                 if (sections[i]) {
-                    err = scrape_movie_fragment(lang,domain,sections[i],minfo,pagestate,namestate);
+                    err = scrape_movie_fragment(locale,domain,sections[i],minfo,pagestate,namestate);
                     if (err) {
                         INF("abort line");
                         break;
@@ -678,20 +690,21 @@ i,num,sections,err) {
 }
 
 # Scrape a movie page - results into minfo
-# IN lang - 2 letter language code
+# IN domain  - main domain of site eg imdb, allocine etc.
+# IN locale - eg en_US
 # IN domain  - main domain of site eg imdb, allocine etc.
 # IN fragment - page text - cleaned of most markup by reduce_markup
 # IN/OUT minfo - Movie info
 # IN/OUT pagestate - info about which tag we are parsing
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
-function scrape_movie_fragment(lang,domain,fragment,minfo,pagestate,namestate,\
+function scrape_movie_fragment(locale,domain,fragment,minfo,pagestate,namestate,\
 mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     #DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
-    #DEBUG("scrape_movie_fragment:("lang","domain","fragment")");
+    #DEBUG("scrape_movie_fragment:("locale","domain","fragment")");
     # Check if fragment is a fieldname eg Plot: Cast: etc.
-    mode = get_movie_fieldname(lang,fragment,rest_fragment,pagestate);
+    mode = get_movie_fieldname(locale,fragment,rest_fragment,pagestate);
     if(mode) {
         pagestate["mode"] = mode;
         fragment = rest_fragment[1];
@@ -891,11 +904,11 @@ function keyword_list_to_regex(list) {
 }
 
 # Check if a page fragment begins with a keyword.
-# IN lang 2 letter language code
+# IN locale eg en_US
 # IN fragment
 # RETURN keyword eg plot, cast, genre
 # OUT rest[1] = remaining fragment if keyword present.
-function get_movie_fieldname(lang,fragment,rest,pagestate,\
+function get_movie_fieldname(locale,fragment,rest,pagestate,\
 key,regex,ret,lcfragment,dbg,all_keys) {
 
     rest[1] = fragment;
@@ -915,12 +928,12 @@ key,regex,ret,lcfragment,dbg,all_keys) {
             dump(0,"pagestate-pre-release",pagestate);
         }
         # Get language regexs
-        if (!pagestate["lang_regex"]) {
-            INF("loading lang_regex");
-            if (load_plugin_settings("lang",lang)) {
-                pagestate["lang_regex"] = 1;
+        if (!pagestate["locale_regex"]) {
+            INF("loading locale_regex");
+            if (load_locale_settings(locale)) {
+                pagestate["locale_regex"] = 1;
                 for (key in g_settings) {
-                    if (index(key,"lang:catalog_lang_keyword_") == 1) {
+                    if (index(key,"locale:catalog_locale_keyword_") == 1) {
                         if (g_settings[key]) {
                             if (!(key in pagestate)) {
                                 regex = keyword_list_to_regex(tolower(g_settings[key]));
@@ -930,16 +943,16 @@ key,regex,ret,lcfragment,dbg,all_keys) {
                         }
                     }
                 }
-                pagestate["lang_all_keys"] = "^ *("substr(all_keys,2)") *(: *|$)";
+                pagestate["locale_all_keys"] = "^ *("substr(all_keys,2)") *(: *|$)";
             }
             dump(0,"pagestate-load",pagestate);
         }
         if (dbg) {
             dump(0,"pagestate-release",pagestate);
         }
-        if (match(lcfragment,pagestate["lang_all_keys"])) {
+        if (match(lcfragment,pagestate["locale_all_keys"])) {
             for (key in pagestate) {
-                if (index(key,"lang:catalog_lang_keyword_") == 1) {
+                if (index(key,"locale:catalog_locale_keyword_") == 1) {
                     regex = pagestate[key];
                     if (pagestate["debug"] || dbg) {
                         DEBUG("checking fragment["fragment"] against ["key"]="regex);
@@ -947,7 +960,7 @@ key,regex,ret,lcfragment,dbg,all_keys) {
                     if (match(lcfragment,regex)) {
                         rest[1] = substr(fragment,RSTART+RLENGTH);
 
-                        ret = gensub(/lang:catalog_lang_keyword_/,"",1,key);
+                        ret = gensub(/locale:catalog_locale_keyword_/,"",1,key);
                         DEBUG("matching regex = ["regex"]");
                         break;
                     }
@@ -1003,7 +1016,7 @@ i,locales,tmp,ret,c) {
 }
 
 
-# Note where we have already visisted. Usually domain:lang
+# Note where we have already visisted. Usually domain:locale
 function set_visited(minfo,key) {
     minfo["mi_visited"] = minfo["mi_visited"] " " key ;
 }
@@ -1018,7 +1031,7 @@ ret) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function get_imdb_info(url,minfo,\
-i,num,langs,minfo2) {
+i,num,locales,minfo2) {
 
     if (!have_visited(minfo,"imdb")) {
 
@@ -1032,11 +1045,11 @@ i,num,langs,minfo2) {
             #dump(0,"ijson",minfo2);
             delete minfo2;
 
-            num = get_langs(langs);
+            num = get_locales(locales);
             for(i = 1 ; i <= num ; i++) {
 
                 delete minfo2;
-                if (scrape_movie_page("","","","","",extractImdbLink(url,"",langs[i]),langs[i],"imdb",minfo2) == 0) {
+                if (scrape_movie_page("","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
                     minfo_set_id("imdb",extractImdbId(url),minfo2);
                     #dump(0,"scrape",minfo2);
                     minfo_merge(minfo,minfo2,"imdb");

@@ -36,7 +36,7 @@ function fetch_ijson_details(id,minfo,\
 json,cast,ret,i,tag,minfo2) {
     
     id1("fetch_ijson_details "id);
-    if (id &&  (1||g_has_ijson)) { #TODO fix disable of ijson
+    if (id && g_has_ijson) { #TODO fix disable of ijson
 
         if (!scrape_cache_get("imdb:"id,minfo2)) {
             if (fetch_ijson("title/main-details","t-const="id,json)) {

@@ -264,8 +264,6 @@ END{
     gExtRegExAll="\\.("gExtList1"|"gExtList2")$";
     #INF(gExtRegExAll);
 
-    split(g_settings["catalog_title_country_list"],gTitleCountries,g_cvs_sep);
-
     g_months_short="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
     monthHash(g_months_short,"|",gMonthConvert);
 

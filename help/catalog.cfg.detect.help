@@ -3,8 +3,6 @@ catalog_format_tags:Comma delimited list of format tags that are unlikey to be p
 catalog_locale1:Preferred locale for plots. For titles see Oversight Appearance settings.|en_GB|en_US|es_ES|de_DE|da_DK|fr_FR|it_IT|gk_GK|nl_NL|ru_RU|-
 catalog_locale2:language to use if lang1 not found|en_GB|en_US|es_ES|de_DE|da_DK|fr_FR|it_IT|gk_GK|nl_NL|ru_RU|-
 catalog_locale3:language to use if lang2 not found|en_GB|en_US|es_ES|de_DE|da_DK|fr_FR|it_IT|gk_GK|nl_NL|ru_RU|-
-catalog_title_country_list:Comma delimited list of countries prefered for IMDB movie titles. Must be on main IMDB page. Non USA may not work.
-catalog_cert_country_list:Comma delimited list of Countries to use for certification. Non USA may not work.
 catalog_imdb_links_required:Number of imdb links required in web search results|4
 catalog_imdb_source:Scraping mobile site is faster but only gives US certification|desktop|mobile
 catalog_tv_plugins:Comma delimited list List of web site to detect tv shows.

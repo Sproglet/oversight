@@ -1,12 +1,8 @@
 # bad year  queued [    _id 2   _C      _IT 6ebc85a _w  0   _l  0   _T  Digimon Movie 4 - Diablomon Strikes Back (fansubbed).avi    _r      _G      _rt     _Y  fffffffffffff894    _F  /share/Movies/Digimon The Movie (2000)/Digimon Movie 4 - Diablomon Strikes Back (Fansubbed).avi _U      _R  :   _FT 6eb69a8 _DT 6eb69a8 ] to [/share/Apps/oversight/tmp/25811/catalog.25811.22__dbqueue]
 #
+# back arrow navigation not working ?? from season->tv detail screen
 #
-#  Error recognising The.Office.US.S07E04.720p.HDTV.X264-DIMENSION.mkv
-#  1. Failed to match tv query - why?
-#  2. Abbreviation check stripped 'The ' so would always fail.
-#
-#  # check double episodes -again!
-#
+#  # Certificate scraping from uk,us imdb how?
 #
 #  # fix movie deletions.
 #

@@ -1,3 +1,10 @@
+# called from main scan function at the start of each new scan folder.
+function clear_tv_folder_info() {
+    delete g_default_tv_title_for_folder;
+    delete g_tvDbIndex;
+    DEBUG("Reset tv folder details");
+}
+
 # return last n parts of path. If no more then return empty string.
 function last_path_parts(minfo,n,\
 ret,i,j,dirCount,dirs) {
@@ -60,49 +67,53 @@ details,line,ret,name,i,start,end) {
            more_info[1]=(path_parts == 1); # enable abbrevation scraping later only at filename level
 
             if (extractEpisodeByPatterns(minfo,plugin,line,details,allow_720)==1) {
-                   ret = 1;
+
 
                 if (details[TITLE] == "" ) {
                     # format = 202 some text...
                     # title may be in parent folder. but we will try to search by additional info first.
                     searchByEpisodeName(plugin,details);
                 }
-                adjustTitle(minfo,details[TITLE],"filename");
+                if (details[TITLE] ) {
+
+                    adjustTitle(minfo,details[TITLE],"filename");
+
+                    ret = 1;
+
+                    minfo["mi_season"]=details[SEASON];
+                    minfo["mi_episode"]=details[EPISODE];
+
+                    INF("Found tv info in file name:"line" title:["minfo["mi_title"]"] ["minfo["mi_season"]"] x ["minfo["mi_episode"]"]");
+
+                    ## Commented Out As Double Episode checked elsewhere to shrink code ##
+                    ## Left In So We Can Ensure It's Ok ##
+                    ## If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
+                    ## Then prior to any DB lookups we just use the first integer (episode+0)
+                    ## To avoid changing the e in the BigBrother d000e format first check its not at the end 
+
+                    # local ePos
+
+                    #ePos = index(minfo["mi_episode"],",");
+                    #if (ePos -1 >= 0 && ( ePos - length(minfo["mi_episode"]) < 0 )) {
+                    #    #gsub(/[-e]+/,",",minfo["mi_episode"]);
+                    #    #sub(/[-]/,"",minfo["mi_episode"]);
+                    #    DEBUG("Double Episode : "minfo["mi_episode"]);
+                    #}
 
 
-                minfo["mi_season"]=details[SEASON];
-                minfo["mi_episode"]=details[EPISODE];
+                    minfo_set_id(plugin,details[TVID],minfo);
 
-                INF("Found tv info in file name:"line" title:["minfo["mi_title"]"] ["minfo["mi_season"]"] x ["minfo["mi_episode"]"]");
+                    # This is the weakest form of tv categorisation, as the filename may just look like a TV show
+                    # So only set if it is blank
+                    if (minfo["mi_category"] == "") {
+                        minfo["mi_category"] = "T";
+                    }
 
-                ## Commented Out As Double Episode checked elsewhere to shrink code ##
-                ## Left In So We Can Ensure It's Ok ##
-                ## If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
-                ## Then prior to any DB lookups we just use the first integer (episode+0)
-                ## To avoid changing the e in the BigBrother d000e format first check its not at the end 
-
-                # local ePos
-
-                #ePos = index(minfo["mi_episode"],",");
-                #if (ePos -1 >= 0 && ( ePos - length(minfo["mi_episode"]) < 0 )) {
-                #    #gsub(/[-e]+/,",",minfo["mi_episode"]);
-                #    #sub(/[-]/,"",minfo["mi_episode"]);
-                #    DEBUG("Double Episode : "minfo["mi_episode"]);
-                #}
-
-
-                minfo_set_id(plugin,details[TVID],minfo);
-
-                # This is the weakest form of tv categorisation, as the filename may just look like a TV show
-                # So only set if it is blank
-                if (minfo["mi_category"] == "") {
-                    minfo["mi_category"] = "T";
+                    minfo["mi_additional_info"] = clean_title(details[ADDITIONAL_INF]);
+                    # Now check the title.
+                    #TODO
+                    break;
                 }
-
-                minfo["mi_additional_info"] = clean_title(details[ADDITIONAL_INF]);
-                # Now check the title.
-                #TODO
-                break;
             }
         }
     }
@@ -111,38 +122,82 @@ details,line,ret,name,i,start,end) {
 }
 
 function searchByEpisodeName(plugin,details,\
-terms,results,id,url,parts,showurl) {
+terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
+    bing_url,google_url,\
+    bing_id,google_id) {
     # search the tv sites using season , episode no and episode name.
     # ony bing or google - yahoo is not good here
     id1("searchByEpisodeName "plugin);
     dump(0,"searchByEpisodeName",details);
-    if (plugin == "thetvdb") {
-        terms="\"season "details[SEASON]"\" \""details[EPISODE]" : "clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com";
-        # Bing seems a bit better than google for this. For "The office" anyway.
-        # But google finds 1x5 Jersey Devil = X Files.
-        results = scanPageFirstMatch(g_search_bing terms,"seriesid","seriesid=[0-9]+",0);
-        #results = scanPageFirstMatch(g_search_google terms,"seriesid","seriesid=[0-9]+",0);
-        if (split(results,parts,"=") == 2) {
-            id = parts[2];
-        }
-    } else if (plugin == "tvrage") {
-        terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
-        url = scan_page_for_first_link(g_search_google terms,"tvrage",0);
-        if (url != "") {
-            scan_page_for_match_counts(url,"/shows/","/shows/[0-9]+",0,0,"",results);
-            showurl=getMax(results,1,1);
-            if (split(showurl,parts,"/") == 2) {
-                id = parts[2];
+
+    if (!(plugin in g_default_tv_title_for_folder)) {
+
+        if (plugin == "thetvdb") {
+            terms="\"season "details[SEASON]"\" \""details[EPISODE]" : "clean_title(details[ADDITIONAL_INF])"\" site:thetvdb.com";
+            domain="thetvdb";
+            filter_text="seriesid=";
+            filter_regex="seriesid=[0-9]+";
+
+        } else if (plugin == "tvrage") {
+            terms="\"season "details[SEASON]"\" "details[SEASON]"x"sprintf("%02d",details[EPISODE])" \""clean_title(details[ADDITIONAL_INF])"\" site:tvrage.com";
+            domain="tvrage";
+            filter_text="/shows/";
+            filter_regex="/shows/[0-9]+";
+        } 
+
+        if (domain) {
+
+            bing_url = scan_page_for_first_link(g_search_bing terms,domain,0);
+
+            if (bing_url != "") {
+                scan_page_for_match_counts(bing_url,filter_text,filter_regex,0,0,"",results);
+                bing_id = subexp(getMax(results,1,1),"[0-9]+");
+                INF("bing_id="bing_id);
+
+                google_url = scan_page_for_first_link(g_search_google terms,domain,0);
+
+                if (google_url != "") {
+                    scan_page_for_match_counts(google_url,filter_text,filter_regex,0,0,"",results);
+                    google_id = subexp(getMax(results,1,1),"[0-9]+");
+                    INF("google_id="google_id);
+                }
+
+                if (bing_id == google_id) {
+
+                    url = get_tv_series_api_url(plugin,bing_id);
+                    if (get_tv_series_info(plugin,minfo2,url,details[SEASON],details[EPISODE])) {
+                        if (similar(minfo2["mi_eptitle"],details[ADDITIONAL_INF]) < 0.5 ) {
+
+                            #This maps all blank titles to a given title for the current folder.
+                            g_default_tv_title_for_folder[plugin,TITLE] = minfo2["mi_title"];
+                            g_default_tv_title_for_folder[plugin] = bing_id;
+
+                            #Now also add the maapinf from the title to the specifc show id.
+                            plugin_title_set_url(plugin,g_default_tv_title_for_folder[plugin,TITLE],get_tv_series_api_url(plugin,bing_id));
+                        }
+                    }
+                } else {
+                    INF("different ids bing:"bing_id" != google:"google_id" - ignoring");
+                }
             }
+        } else {
+            WARNING("unknown plugin ["plugin"]");
         }
-    } 
-    id0(id);
-    details[TVID]=id;
-    return id;
+    }
+
+    if (plugin in g_default_tv_title_for_folder) {
+
+        details[TITLE] = g_default_tv_title_for_folder[plugin,TITLE];
+        ret = details[TVID] = g_default_tv_title_for_folder[plugin];
+        DEBUG("Using "ret":"details[TITLE]);
+    }
+
+    id0(ret);
+    return ret;
 }
 # If Plugin != "" then it will also check episodes by date.
 function extractEpisodeByPatterns(minfo,plugin,line,details,allow_720,\
-ret,p,pat,i,parts,sreg,ereg,\
+ret,p,pat,i,parts,sreg,ereg,sep,\
 season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
     #Note if looking at entire path name folders are seperated by /
@@ -170,23 +225,27 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     ep_prefix="(EPISODE|EP.?|[Ee]pisode|[Ee]p.?|[Ee]|/)";
     dvd_prefix="(DISC|DVD|[Dd]isc|[Dd]vd|[Dd])";
     part_prefix="(PART|PT|EPISODE|EP|[Pp]art|[Pp]t|[Ee]pisode|[Ee]p)";
+    sep="[-_./ ]*";
 
 
-    pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
+    #pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
+
+    #multi episode
+    pat[++p]="s()"sreg sep "[e/]([0-9][0-9]?([-,e]+[0-9]0-9]?){1,})@\\1\t\\2\t\\3@";
     # long forms season 1 ep  3
-    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"[/ .]?"ep_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
+    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg sep ep_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
 
     # TV DVDs
-    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"[/ .]?"dvd_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@dvd";
+    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg sep dvd_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@dvd";
 
     #s00e00 (allow d00a for BigBrother)
-    pat[++p]="s()?"sreg"[-/ .]?[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
+    pat[++p]="s()?"sreg sep "[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
 
     # season but no episode
     pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"()@\\1\t\\3\t\\4@FILE";
 
     #00x00
-    pat[++p]="([^a-z0-9])"sreg"[/ .]?x"ereg"@\\1\t\\2\t\\3@";
+    pat[++p]="([^a-z0-9])"sreg sep "x" sep ereg"@\\1\t\\2\t\\3@";
 
 
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
@@ -194,11 +253,11 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     pat[++p]="DATE";
     ## just numbers.
     if (allow_720) {
-        pat[++p]="([^-0-9])([1-9]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
+        pat[++p]="([^-0-9]|\\<)([1-9]|2[1-9]|1[0-8]|[03-9][0-9])"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
     } else {
-        pat[++p]="([^-0-9])([1-689]|2[1-9]|1[0-8]|[03-9][0-9])/?([0-9][0-9])@\\1\t\\2\t\\3@";
-        pat[++p]="([^-0-9])(7)([013-9][0-9]|2[1-9])@\\1\t\\2\t\\3@";
-        pat[++p]="([^-0-9])(7)/([0-9][0-9])@\\1\t\\2\t\\3@";
+        pat[++p]="([^-0-9]|\\<)([1-689]|2[1-9]|1[0-8]|[03-9][0-9])"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
+        pat[++p]="([^-0-9]|\\<)(7)"sep"([013-9][0-9]|2[1-9])@\\1\t\\2\t\\3@";
+        pat[++p]="([^-0-9]|\\<)(7)"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
     }
 
     # Part n - no season
@@ -237,6 +296,7 @@ rtext,rstart,count,i,ret) {
     count = 0+get_regex_pos(line,regex "\\>",0,rtext,rstart);
     if (count) {
         id1("episodeExtract:["line "] [" regex "]");
+        dumpord(0,"matches",rtext);
 
         for(i = 1 ; i+0 <= count ; i++ ) {
             if ((ret = extractEpisodeByPatternSingle(line,regex,capture_list,rstart[i],rtext[i],details)) != 0) {
@@ -723,16 +783,31 @@ tnum,t,i,url) {
     return url;
 }
 
-function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
-tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
-
-    title_key = plugin"/"minfo["mi_folder"]"/"title;
-    id1("search_tv_series_names2 "title_key);
-
-    if (title_key in g_tvDbIndex) {
-        DEBUG(plugin" use previous mapping "title_key" -> ["g_tvDbIndex[title_key]"]");
-        tvDbSeriesPage =  g_tvDbIndex[title_key]; 
+function plugin_title_get_url(plugin,title,\
+ret,key) {
+    key=plugin"/"title;
+    if ((key in g_tvDbIndex)) {
+        ret = g_tvDbIndex[key];
+        INF("previous tv mapping ["key"] -> ["ret"]");
     } else {
+        INF("no tv mapping ["key"]");
+    }
+    return ret;
+}
+
+function plugin_title_set_url(plugin,title,url,\
+ret,key) {
+    key=plugin"/"title;
+    INF("set tv mapping ["key"] = ["url"]");
+    g_tvDbIndex[key] = url;
+}
+
+function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
+tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
+
+    id1("search_tv_series_names2 "plugin":"title);
+
+    if ((tvDbSeriesPage = plugin_title_get_url(plugin,title)) == "") {
 
         tvDbSeriesPage = searchTvDbTitles(plugin,minfo,title);
 
@@ -810,7 +885,7 @@ tvDbSeriesPage,title_key,cache_key,showIds,tvdbid,total,first_letter,letters,lpo
         } else {
             DEBUG("search_tv_series_names Search looking at "tvDbSeriesPage);
         }
-        g_tvDbIndex[title_key] = tvDbSeriesPage;
+        plugin_title_set_url(plugin,title,tvDbSeriesPage);
     }
     id0(tvDbSeriesPage);
 
@@ -1855,10 +1930,17 @@ partners,p,partner,showurl,link,ret) {
 }
 
 # 0=nothing 1=series 2=series+episode
-function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,\
+function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,season,episode,\
 result,minfo2) {
 
     id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
+
+    if (season != "") {
+        minfo["mi_season"] = season;
+    }
+    if (episode != "") {
+        minfo["mi_episode"] = episode;
+    }
 
     # mini-series may not have season set
     if (minfo["mi_season"] == "") {

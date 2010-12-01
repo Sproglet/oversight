@@ -692,6 +692,8 @@ function clear_folder_info() {
 
     scrape_cache_clear();
 
+    clear_tv_folder_info();
+
     # unique by file - clean when changing folder.
     delete g_file_date; 
 

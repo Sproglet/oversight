@@ -2,7 +2,11 @@
 #
 # back arrow navigation not working ?? from season->tv detail screen
 #
+#  BBC Life -> Life Support ?/
+#
 #  # Certificate scraping from uk,us imdb how?
+#
+#  http://www.thetvdb.com/api/GetSeries.php?seriesname=Life returns 100 results but not BBC life.
 #
 #  # fix movie deletions.
 #

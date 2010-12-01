@@ -168,12 +168,15 @@ terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
                     if (get_tv_series_info(plugin,minfo2,url,details[SEASON],details[EPISODE])) {
                         if (similar(minfo2["mi_eptitle"],details[ADDITIONAL_INF]) < 0.5 ) {
 
-                            #This maps all blank titles to a given title for the current folder.
-                            g_default_tv_title_for_folder[plugin,TITLE] = minfo2["mi_title"];
-                            g_default_tv_title_for_folder[plugin] = bing_id;
+                            if (minfo2["mi_eptitle"] != "Pilot" || details[SEASON]details[EPISODE] != 11 ) {
 
-                            #Now also add the maapinf from the title to the specifc show id.
-                            plugin_title_set_url(plugin,g_default_tv_title_for_folder[plugin,TITLE],get_tv_series_api_url(plugin,bing_id));
+                                #This maps all blank titles to a given title for the current folder.
+                                g_default_tv_title_for_folder[plugin,TITLE] = minfo2["mi_title"];
+                                g_default_tv_title_for_folder[plugin] = bing_id;
+
+                                #Now also add the maapinf from the title to the specifc show id.
+                                plugin_title_set_url(plugin,g_default_tv_title_for_folder[plugin,TITLE],get_tv_series_api_url(plugin,bing_id));
+                            }
                         }
                     }
                 } else {
@@ -1085,14 +1088,21 @@ info,currentId,currentName,i,num,series,empty_filter) {
     if (fetchXML(url,"tvsearch",info,"")) {
 
         num = find_elements(info,seriesPath,empty_filter,0,series);
-        for(i = 1 ; i <= num ; i++ ) {
+        if (num == 100 && seriesPath == "/Data/Series" ) {
+            # at present thetvdb truncates search results to 100 entries. This causes ,
+            # http://www.thetvdb.com/api/GetSeries.php?seriesname=Life to fail to find BBC Life.
+            # So we abort the search and hope tvrage plugin does the job.
+            INF("100 results returned - aborting search because thetvdb may have truncated results");
+        } else {
+            for(i = 1 ; i <= num ; i++ ) {
 
-            currentName = clean_title(info[series[i]"/"nameTag]);
+                currentName = clean_title(info[series[i]"/"nameTag]);
 
-            currentId = info[series[i]"/"idTag];
+                currentId = info[series[i]"/"idTag];
 
-            allTitles[i,1] = currentId;
-            allTitles[i,2] = currentName;
+                allTitles[i,1] = currentId;
+                allTitles[i,2] = currentName;
+            }
         }
     }
 

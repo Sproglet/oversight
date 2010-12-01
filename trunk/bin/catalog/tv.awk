@@ -799,7 +799,7 @@ ret,key) {
 }
 
 function plugin_title_set_url(plugin,title,url,\
-ret,key) {
+key) {
     key=plugin"/"title;
     INF("set tv mapping ["key"] = ["url"]");
     g_tvDbIndex[key] = url;
@@ -1085,6 +1085,7 @@ info,currentId,currentName,i,num,series,empty_filter) {
 
     num = 0;
     id1("filter_search_results");
+    delete allTitles;
     if (fetchXML(url,"tvsearch",info,"")) {
 
         num = find_elements(info,seriesPath,empty_filter,0,series);
@@ -1093,6 +1094,7 @@ info,currentId,currentName,i,num,series,empty_filter) {
             # http://www.thetvdb.com/api/GetSeries.php?seriesname=Life to fail to find BBC Life.
             # So we abort the search and hope tvrage plugin does the job.
             INF("100 results returned - aborting search because thetvdb may have truncated results");
+            num=0;
         } else {
             for(i = 1 ; i <= num ; i++ ) {
 
@@ -1262,11 +1264,17 @@ url,i,num,langs,word,key) {
 
                     url = tvdb_series_url(tvdbid,langs[i]);
 
+                    DEBUG("XXX trying lang "langs[i]" = "url);
+
                     if (url_state(url) == 0) {
                         if (langs[i] == "en" ) {
                             break;
-                        } else if (langs[i+1] != "en" && (word=scanPageFirstMatch(url,"","\\<([Ss]he|[Hh]e|[Tt]he|and|[Tt]hey|their)\\>",1)) != "") {
-                            INF("expected lang="langs[i]" but found "word" in text");
+                        } else if (langs[i+1] != "en" ) {
+                            if ((word=scanPageFirstMatch(url,"","\\<([Ss]he|[Hh]e|[Tt]he|and|[Tt]hey|their)\\>",1)) != "") {
+                                INF("expected lang="langs[i]" but found "word" in text");
+                            } else {
+                                break;
+                            }
                         } else {
                             break;
                         }

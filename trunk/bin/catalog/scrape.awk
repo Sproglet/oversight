@@ -975,27 +975,30 @@ key,regex,ret,lcfragment,dbg,all_keys) {
 }
 
 function get_locales(locales,\
-i,add_english) {
+i,has_english) {
+    delete locales;
     for(i = 1; g_settings["catalog_locale"i] ~ /[a-z]+/ ; i++) {
         locales[i] = g_settings["catalog_locale"i];
-        if (locales[i] == "en") add_english = 1;
+        if (index(locales[i],"en") == 1)  has_english = 1;
     }
-    if (add_english) {
-        locales[i++] = "en";
+    if (!has_english) {
+        locales[++i] = "en_US";
     }
-    return i-1;
+    return i;
 }
 
 # get unique languages from locales
 function get_langs(langs,\
-i,locales,tmp,ret,l) {
-    ret = get_locales(locales);
-    for(i in locales ) { 
-        l = substr(locales[i],1,2);
-        tmp[l] = 1;
-    }
-    for ( i in tmp ) {
-        langs[++ret] = i;
+i,locales,tmp,ret,lng,num) {
+    delete langs;
+    ret = 0;
+    num = get_locales(locales);
+    for( i = 1 ; i <= num ; i++ ) {
+        lng = substr(locales[i],1,2);
+        if (!(lng in tmp)) {
+            tmp[lng] = 1;
+            langs[++ret] = lng;
+        }
     }
     return ret;
 }

@@ -764,7 +764,15 @@ i,num,patterns,matched,pinfo,ret,prev) {
 function subexp(text,regex,n,\
 matches,ret) {
 
-    if (!n) n =1;
+    if (length(n) == 0 ) {
+        # default if ( matchon first else match on all regex (n=0)
+        if (index(regex,"(")) {
+            n = 1;
+        } else {
+            n = 0;
+        }
+    }
+
     if (split(gensub(regex,SUBSEP"\\"n SUBSEP,1,text),matches,SUBSEP) == 3) {
         ret = matches[2];
     }

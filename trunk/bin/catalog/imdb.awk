@@ -203,38 +203,3 @@ akas,a,c,bro,brc,akacount,country) {
     }
 }
 
-function scrapeIMDBCertificate(minfo,line,\
-l,cert_list,certpos,cert,c,total,i,flag) {
-
-    flag="certificates=";
-
-    #Old style  -- <a href="/List?certificates=UK:15&&heading=14;UK:15">
-    total = get_regex_pos(line, flag"[^&\"]+",0,cert_list,certpos);
-
-    for(i = 1 ; i - total <= 0 ; i++ ){
-
-        l = substr(cert_list[i],index(cert_list[i],flag)+length(flag));
-
-        split(l,cert,"[:|]");
-
-        #Now we only want to assign the certificate if it is in our desired list of countries.
-        for(c = 1 ; (c in gCertificateCountries ) ; c++ ) {
-            if (minfo["mi_certcountry"] == gCertificateCountries[c]) {
-                #Keep certificate as this country is early in the list.
-                return;
-            }
-            if (cert[1] == gCertificateCountries[c]) {
-                #Update certificate
-                minfo["mi_certcountry"] = cert[1];
-
-                minfo["mi_certrating"] = toupper(cert[2]);
-                gsub(/%20/," ",minfo["mi_certrating"]);
-                DEBUG("IMDB: set certificate ["minfo["mi_certcountry"]"]["minfo["mi_certrating"]"]");
-                return;
-            }
-        }
-    }
-}
-
-
-

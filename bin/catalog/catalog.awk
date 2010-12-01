@@ -249,14 +249,6 @@ END{
 
     DEBUG("catalog_format_tags="g_settings["catalog_format_tags"]);
 
-    gsub(/ /,"%20",g_settings["catalog_cert_country_list"]);
-
-    gsub(/\<UK\>/,"UK,gb",g_settings["catalog_cert_country_list"]);
-    gsub(/\<USA\>/,"USA,us",g_settings["catalog_cert_country_list"]);
-    gsub(/\<Ireland\>/,"Ireland,ie",g_settings["catalog_cert_country_list"]);
-
-    split(g_settings["catalog_cert_country_list"],gCertificateCountries,",");
-
     gExtList1="avi|divx|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
     gExtList2="img|iso";
 
@@ -1186,6 +1178,10 @@ function unit(doit,\
 minfo,i,ulang) {
     if (doit) {
         DIV0("BEGIN UNIT TEST");
+        get_locales(g_tmp);
+        dumpord(0,"locales",g_tmp);
+        get_langs(g_tmp);
+        dumpord(0,"langs",g_tmp);
 
         json_parse("{\"first\":\"andrew\" , \"age\" : 31 }");
 

@@ -2,11 +2,9 @@
 #
 # back arrow navigation not working ?? from season->tv detail screen
 #
-#  BBC Life -> Life Support ?/
-#
 #  # Certificate scraping from uk,us imdb how?
 #
-#  http://www.thetvdb.com/api/GetSeries.php?seriesname=Life returns 100 results but not BBC life.
+#  to slow scanning cbgb-sorcerersapprentice720.mkv due to thinking its a tv show too early - fix
 #
 #  # fix movie deletions.
 #
@@ -16,14 +14,7 @@
 #
 #  # Check i18n in plots - from json and from web.
 #
-#  With thetvdb disabled when scraping Jersey Shore shows are ending up with different titles. Might be an issue with the scrape caching
-#  or with tvrage plugin titles.
-#
-#  DnD ep 22 ends up in Season 2 - why?
-#
 #  Add Google image scrape
-#
-#  remove epguide_Initial
 #
 #  find good way to determine LveThyNeighbour from http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=LTN+S01E02+-+Limbo+Dancing
 #  this will be just a TITLE search (as opposed to TITLEYEAR )

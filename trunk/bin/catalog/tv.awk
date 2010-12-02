@@ -507,7 +507,7 @@ episodeInfo,url) {
 # 0=match -1=ep before date 1=episode after date 2=no such episode
 function cmp_rage_ep(tvdbid,season,ep,date_string,xml,\
 url_root,key,ret) {
-    id1("XX cmp_rage_ep "season"x"ep" vs "date_string);
+    id1("cmp_rage_ep "season"x"ep" vs "date_string);
     key = "/show/episode/airdate";
     url_root = g_tvrage_api"/feeds/episodeinfo.php?sid="tvdbid"&ep=";
     ret = 2;
@@ -1175,7 +1175,6 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
                         filter["/SeriesName"] = "~:^"title_regex"$";
                         filter["/FirstAired"] = "~:^"year_range"-";
                         if (find_elements(showInfo,"/Data/Series",filter,1,tags)) {
-                            DEBUG("XX @@ find_elements OK ");
                             INF("Looking at tvdb "showInfo[tags[1]"/SeriesName"]);
                             id2 = showInfo[tags[1]"/seriesid"];
                         }
@@ -1263,8 +1262,6 @@ url,i,num,langs,word,key) {
                 for(i = 1 ; i <= num ; i++ ) {
 
                     url = tvdb_series_url(tvdbid,langs[i]);
-
-                    DEBUG("XXX trying lang "langs[i]" = "url);
 
                     if (url_state(url) == 0) {
                         if (langs[i] == "en" ) {
@@ -1824,7 +1821,7 @@ episodeUrl,result) {
         } else {
             plugin_error(plugin);
         }
-        dump(0,"episode-xml",episodeInfo);
+        dumpxml("episode-xml",episodeInfo);
     } else {
         INF("cant determine episode url from "seriesUrl);
     }
@@ -2191,7 +2188,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 
     } else if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"") && ( "/Showinfo/showid" in seriesInfo ) ) {
 
-        dump(0,"tvrage series",seriesInfo);
+        dumpxml("tvrage series",seriesInfo);
         minfo["mi_season"]=season;
         minfo["mi_title"]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
         minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);

@@ -82,11 +82,11 @@ json,cast,ret,i,tag,minfo2) {
     #                    }
     #                }
                     minfo_set_id("imdb",id,minfo2);
-                    minfo_merge(minfo,minfo2,"imdb");
                 }
             }
             scrape_cache_add("imdb:"id,minfo2);
         }
+        minfo_merge(minfo,minfo2,"imdb");
     }
     ret= (minfo2["mi_year"] != "");
     id0(ret);

@@ -365,6 +365,7 @@ f,minfo2,err,line,pagestate,namestate,store) {
     return err;
 }
 
+# merge new data into current data.
 function minfo_merge(current,new,default_source,\
 f,source) {
 

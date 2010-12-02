@@ -1092,9 +1092,6 @@ i,folderCount,moveDown) {
             moveDown++;
         } else if (ARGV[i] ~ "^DEBUG[0-9]$" ) {
             DBG=substr(ARGV[i],length(ARGV[i])) + 0;
-            print("DBG = "DBG);
-            DBG=1;
-            print("DBG = "DBG);
             moveDown++;
         } else if (ARGV[i] == "STDOUT" ) {
             STDOUT=1;

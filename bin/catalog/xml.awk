@@ -32,6 +32,17 @@ line,ret,code) {
     return ret;
 }
 
+function dumpxml(label,xml,\
+i,n) {
+    n = xml["@count"];
+    DEBUG(label":xml");
+    for(i = 1 ; i <= n ; i++ ) {
+        INF(xml[i]" = "xml[xml[i]]);
+    }
+    DEBUG("end:"label":xml");
+}
+
+
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 # @ignorePaths = csv of paths to ignore
 #sep is used if merging repeated element values together

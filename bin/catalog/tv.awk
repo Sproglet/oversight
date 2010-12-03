@@ -2109,7 +2109,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid) {
 
 function tvDbImageUrl(path) {
     if(path != "") {
-        return "http://thetvdb.com/banners/" url_encode(html_decode(path));
+        return "http://thetvdb.com/banners/" url_encode(html_decode(path,0));
     } else {
         return "";
     }

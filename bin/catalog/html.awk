@@ -50,10 +50,9 @@ code,t) {
         if (g_f_utf8[f] == "" ) {
 
             # check encoding
-            g_f_utf8[f] = check_utf8(t);
+            g_f_utf8[f] = check_utf8(t,f);
         }
-
-        t = html_decode(t);
+        t = html_decode(t,g_f_utf8[f]);
 
         if (g_f_utf8[f] != 1) {
             t = utf8_encode(t);
@@ -69,12 +68,15 @@ function enc_close(f) {
 }
 
 # TODO only check xml encoding for first line.
-function check_utf8(line,\
+function check_utf8(line,f,\
 utf8) {
     line=tolower(line);
     if (index(line,"<?xml") || index(line,"charset")) {
 
         utf8 = index(line,"utf-8")?1:-1;
+
+    } else if (index(f,".json")) {
+        utf8 = 1 ;
 
     } else if (index(line,"</head>")) {
         utf8 = -1;
@@ -337,7 +339,7 @@ i,c,h,b1,b2) {
     g_chr["nbsp"] = " ";
 }
 
-function html_decode(text,\
+function html_decode(text,to_utf8,\
 parts,part,count,code,newcode,text2) {
     if (g_chr[32] == "" ) {
         decode_init();
@@ -361,10 +363,17 @@ parts,part,count,code,newcode,text2) {
                     if (index(code,"x") == 1) {
                         # xff;
                         newcode=g_chr[code];
+                        if (to_utf8 && (code > "x7f")) {
+                            newcode = g_utf8[newcode];
+                        }
                     } else {
                         # &#255;
                         newcode=g_chr[0+code];
+                        if (to_utf8 && (0+code > 127)) {
+                            newcode = g_utf8[newcode];
+                        }
                     }
+                    
                 } else {
                     # "&nbsp;" => "nbsp"
                     newcode=g_chr[substr(code,2,length(code)-2)];

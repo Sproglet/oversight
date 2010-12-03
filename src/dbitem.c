@@ -869,8 +869,10 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
                     fix_file_path(rowid);
                 }
                 else if (offset == &(rowid->url)) {
-                    if (val && *val == 't') {
-                        rowid->external_id = atol(val+2);
+                    char *imdb_id = get_item_id(rowid,"imdb",0);
+                    if (imdb_id) {
+                        rowid->external_id = atol(imdb_id+2);
+                        FREE(imdb_id);
                     }
                 }
                 break;
@@ -974,6 +976,11 @@ int is_on_remote_oversight(DbItem *item)
     return (*(item->db->source) != '*' );
 }
 
+char *get_item_id(DbItem *item,char *domain,int add_domain)
+{
+    return get_id_from_idlist(item->url,domain,add_domain);
+}
+
 //
 // Extract id from idlist where idlist format = domain:id eg.
 // imdb:tt12345 thetvdb:12234
@@ -982,19 +989,21 @@ int is_on_remote_oversight(DbItem *item)
 char *get_id_from_idlist(char *idlist,char *domain,int add_domain)
 {
 
-    char *id = delimited_substring(idlist," ",domain,":",1,0);
     char *idend;
     char *result = NULL;
 
-    if (id) {
-        if (!add_domain) {
-            id += strlen(domain)+1; // skip over domain:
+    if (idlist) {
+        char *id = delimited_substring(idlist," ",domain,":",1,0);
+        if (id) {
+            if (!add_domain) {
+                id += strlen(domain)+1; // skip over domain:
+            }
+            idend = strchr(id,' ');
+
+            if (idend == NULL) idend = id + strlen(id);
+
+            ovs_asprintf(&result,"%.*s",idend-id,id);
         }
-        idend = strchr(id,' ');
-
-        if (idend == NULL) idend = id + strlen(id);
-
-        ovs_asprintf(&result,"%.*s",idend-id,id);
     }
     HTML_LOG(1,"get_id_from_idlist(%s,%s)=[%s]",idlist,domain,result);
     return result;

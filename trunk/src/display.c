@@ -1876,6 +1876,7 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
  * source(id1|id2|id3)source2(id4|id5|id6)
  * In the menu view all rows with the same season are linked.
  * in the tv view , rows with the same file are linked.
+ * Dont free result - this will be freed when rows are freed.
  */
 char *build_id_list(DbItem *row_id) {
 
@@ -1981,7 +1982,6 @@ char *select_checkbox(DbItem *item,char *text) {
                     disabled_image,
                     select,text);
         }
-        FREE(id_list);
     } else {
         ovs_asprintf(&result,"<font class=Ignore>%s</font>",text);
     }
@@ -2016,13 +2016,11 @@ char *movie_listing(DbItem *rowid)
 
     db_rowid_dump(rowid);
 
-    char *tmp = build_id_list(rowid);
     char *js_title = clean_js_string(rowid->title);
 
     printf("<script type=\"text/javascript\"><!--\ng_title='%s';\ng_idlist='%s';\n--></script>\n",
-            js_title,tmp);
+            js_title,build_id_list(rowid));
 
-    FREE(tmp);
     if (js_title != rowid->title) FREE(js_title);
 
 

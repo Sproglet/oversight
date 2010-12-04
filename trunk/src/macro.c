@@ -896,9 +896,20 @@ char *macro_fn_cert_img(MacroCallInfo *call_info) {
         ovs_asprintf(&attr," height=%d ",g_dimension->certificate_size);
 
         tmp = template_image_link("/cert",cert,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
-        FREE(cert);
-        FREE(attr);
-        cert=tmp;
+        if (tmp == NULL) {
+            // Try to find the image without country prefix
+            char *no_country = strchr(cert,'/');
+            if (no_country) {
+                no_country++;
+                tmp = template_image_link("/cert",no_country,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
+            }
+        }
+        if (tmp) {
+            // relace text with image.
+            FREE(cert);
+            FREE(attr);
+            cert=tmp;
+        }
     }
 
     HTML_LOG(0,"xx cert[%s]",cert);

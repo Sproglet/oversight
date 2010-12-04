@@ -1298,47 +1298,48 @@ char *file_to_url(char *path) {
     char *new = NULL;
     char *prefix="";
 
-    assert(path);
-    if (g_dimension->local_browser) {
-        //If using gaya just go directly to the file system
-        prefix="file://";
+    if (path) {
+        if (g_dimension->local_browser) {
+            //If using gaya just go directly to the file system
+            prefix="file://";
 
-    } else if (util_starts_with(path,"/share/Apps/oversight")) {
-        // if /share/Apps/oversight/file/path 
-        // then use /oversight/file/path thanks to symlink 
-        //  /opt/sybhttpd/default/oversight -> /share/Apps/oversight/
-        path += 11;
+        } else if (util_starts_with(path,"/share/Apps/oversight")) {
+            // if /share/Apps/oversight/file/path 
+            // then use /oversight/file/path thanks to symlink 
+            //  /opt/sybhttpd/default/oversight -> /share/Apps/oversight/
+            path += 11;
 
-    } else if (util_starts_with(path,"/opt/sybhttpd/default")) {
-        // if in /opt/sybhttpd/default/file/path
-        // then use /file/path
-        path +=21;
+        } else if (util_starts_with(path,"/opt/sybhttpd/default")) {
+            // if in /opt/sybhttpd/default/file/path
+            // then use /file/path
+            path +=21;
 
-    } else if (use_file_to_url_symlink && util_starts_with(path,NETWORK_SHARE)) {
+        } else if (use_file_to_url_symlink && util_starts_with(path,NETWORK_SHARE)) {
 
-        prefix="/.network/";
-        path += strlen(NETWORK_SHARE);
+            prefix="/.network/";
+            path += strlen(NETWORK_SHARE);
 
-    } else {
-        // otherwise pass as a paramter to this script. It will cat jpg etc it to stdout
-        prefix="?";
+        } else {
+            // otherwise pass as a paramter to this script. It will cat jpg etc it to stdout
+            prefix="?";
+        }
+
+        char *non_empty = path;
+        // Gaya doesnt like empty paths
+        if (strstr(path,"//")) {
+            non_empty = replace_str(path,"//","/");
+        }
+
+        int free_path2;
+        char *encoded_path = url_encode_static(non_empty,&free_path2);
+
+
+
+        ovs_asprintf(&new,"%s%s",prefix,encoded_path);
+
+        if (non_empty != path) FREE(non_empty);
+        if (free_path2) FREE(encoded_path);
     }
-
-    char *non_empty = path;
-    // Gaya doesnt like empty paths
-    if (strstr(path,"//")) {
-        non_empty = replace_str(path,"//","/");
-    }
-
-    int free_path2;
-    char *encoded_path = url_encode_static(non_empty,&free_path2);
-
-
-
-    ovs_asprintf(&new,"%s%s",prefix,encoded_path);
-
-    if (non_empty != path) FREE(non_empty);
-    if (free_path2) FREE(encoded_path);
 
     return new;
 
@@ -1349,14 +1350,16 @@ char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,c
 {
     char *url = image_source(subfolder,name,ext);
 
-    char *link;
+    char *link=NULL;
 
-    ovs_asprintf(&link,"<img src=%s alt=\"%s\" %s \\>",
-            url,
-            (alt_text?alt_text:name),
-            NVL(attr));
+    if (url) {
+        ovs_asprintf(&link,"<img src=%s alt=\"%s\" %s \\>",
+                url,
+                (alt_text?alt_text:name),
+                NVL(attr));
 
-    FREE(url);
+        FREE(url);
+    }
     return link;
 }
 

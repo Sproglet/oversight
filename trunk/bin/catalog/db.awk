@@ -74,7 +74,7 @@ row,est,nfo,op,start) {
 
     row=row"\t"URL"\t"minfo["mi_idlist"];
 
-    row=row"\t"CERT"\t"minfo["mi_certrating"];
+    row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];
     if (minfo["mi_director"]) row=row"\t"DIRECTORS"\t"minfo["mi_director"];
     if (minfo["mi_actors"]) row=row"\t"ACTORS"\t"minfo["mi_actors"];
     if (minfo["mi_writers"]) row=row"\t"WRITERS"\t"minfo["mi_writers"];

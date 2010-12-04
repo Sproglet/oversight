@@ -532,6 +532,10 @@ char *file_source(char *subfolder,char *image_name,char *ext)
                 image_name,
                 (EMPTY_STR(ext)?"":"."),
                 ext);
+        if (!exists(path)) {
+            FREE(path);
+            path = NULL;
+        }
     }
 
     char *result = file_to_url(path);

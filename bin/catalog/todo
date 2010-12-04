@@ -8,12 +8,6 @@
 #
 #  # fix movie deletions.
 #
-#  # fix movie connections.
-#
-#  # Check i18n in titles (Leon , Aeon Flux)
-#
-#  # Check i18n in plots - from json and from web.
-#
 #  Add Google image scrape
 #
 #  find good way to determine LveThyNeighbour from http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=LTN+S01E02+-+Limbo+Dancing

@@ -2070,7 +2070,6 @@ seriesInfo,episodeInfo,result,iid,thetvdbid) {
         minfo["mi_episode"]=episode;
 
         # For twin episodes just use the first episode number for lookup by adding 0
-        dump(0,"pre-episode",minfo);
 
         if (episode ~ "^[0-9,]+$" ) {
 
@@ -2213,8 +2212,6 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
     if (result) {
 
         minfo["mi_episode"]=episode;
-
-        dump(0,"pre-episode",minfo);
 
         e="/show/episode";
         if (episode ~ "^[0-9,]+$" ) {

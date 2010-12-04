@@ -50,7 +50,7 @@ i,n) {
 function parseXML(line,xml,ignorePaths,\
 sep,\
 currentTag,oldTag,i,tag,text,parts,sp,slash,tag_data_count,\
-attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
+attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
 
     if (index(line,"<?")) return 1;
     ret = 1;
@@ -87,12 +87,16 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
     currentTag = xml["@CURRENT"];
     numtags = xml["@count"];
 
+    if (dbg) DEBUG("xml: start currentTag=["currentTag"] numtags=["numtags"]");
+    if (dbg) DEBUG("xml: start tag_data_count=["tag_data_count"] line=["line"]");
+
     i = 0 ;
     while ( i <= tag_data_count ) {
 
-        if (++i >= tag_data_count) break;
+        if (++i > tag_data_count) break;
 
         if (i == tag_data_count) {
+            # chomp - remove cr/lf
             if (index(parts[i],"\r") || index(parts[i],"\n")) {
                 sub(/[\r\n]+$/,"",parts[i]);
             }
@@ -101,12 +105,19 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
         # process the text node ---------------
 
         text = parts[i];
-        #DEBUG("@@XMLtext "i"["text"]");
+
+        if (dbg) DEBUG("xml: XMLtext "i"["text"]");
+
+        if (i == tag_data_count && ( text == "" || (index(text," ") == 1 && trim(text) == "")) ) {
+            # ignore trailing blank space
+            break;
+        }
+
         if (currentTag ) {
             if (ignorePaths == "" || currentTag !~ ignorePaths) {
                 #If merging element values add a seperator
                 if (currentTag in xml) {
-                    text = sep text;
+                    text = " " text;
                 }
                 xml[currentTag] = xml[currentTag] text;
             }
@@ -125,7 +136,9 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
         if (++i >= tag_data_count) break;
 
         tag = parts[i];
-        #DEBUG("@@XMLtag "i"["tag"]");
+
+        if (dbg) DEBUG("xml: XMLtag "i"["tag"]");
+
         taglen = length(tag);
 
         # part[1] = tag 
@@ -166,7 +179,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
             currentTag = currentTag "/" tag;
 
 
-            # If a tag occurs more than once for the smae parent we need to keep all values.
+            # If a tag occurs more than once for the same parent we need to keep all values.
             # eg
             # <parent><child>a</child><child b="c"/><parent>
             # should become
@@ -188,11 +201,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
             if (countTag in xml) {
                xml[countTag] ++;
                currentTag = currentTag ">" xml[countTag];
-                #INF("changed currentTag ["currentTag"] tag=["tag"]");
-                if (tag == "") {
-                    INF("line["line"] part "i" of "tag_data_count);
-                    dumpord(0,"parts",parts);
-                }
+                if (dbg) INF("xml: changed currentTag ["currentTag"] tag=["tag"]");
             } else {
                 xml[countTag] = 1;
             }
@@ -202,6 +211,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
         #parse attributes.
         
         if (index(parts[i],"=")) {
+            #first split a=b c=d into name value array
             attr=gensub(/([:A-Za-z_][-_:A-Za-z0-9.]+)=("([^"]*)"|([^"][^ "'>=]*))/,SUBSEP"\\1"SUBSEP"\\3\\4"SUBSEP,"g",parts[i]);
             attrnum = split(attr,attr_parts,SUBSEP);
             for(attr = 2 ; attr <= attrnum ; attr += 3 ) {
@@ -223,8 +233,12 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret) {
 
     xml["@CURRENT"] = currentTag;
     xml["@count"] = numtags;
+
+    if (dbg) DEBUG("xml: end currentTag=["currentTag"] numtags=["numtags"]");
+
     return ret;
 }
+
 function clean_xml_path(xmlpath,xml,\
 t,xmlpathSlash,xmlpathHash) {
 

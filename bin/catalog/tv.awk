@@ -2039,7 +2039,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid) {
 
     } else if (fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo) && ("/Data/Series/id" in seriesInfo)) {
 
-        dump(0,"tvdb series",seriesInfo);
+        dumpxml("tvdb series",seriesInfo);
 
         minfo["mi_season"]=season;
         #Refine the title.

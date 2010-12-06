@@ -95,16 +95,15 @@ text,i,num,domain,ids,names,key,namekey) {
 # people.db [ maps oversight id to actor name ]
 # people.domain.db [ maps external id to oversight id ] eg people.imdb.db
 function people_update_dbs(person_extid2name,person_extid2ovsid,\
-extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
+key,extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
 
     id1("people_update_dbs");
-    dump(0,"person_extid2name",person_extid2name);
 
-    for (extid in person_extid2name) {
+    for (key in person_extid2name) {
 
-        name = person_extid2name[extid];
-        DEBUG(extid":"name);
-        split(extid,tmp,":");
+        name = person_extid2name[key];
+        DEBUG(key"="name);
+        split(key,tmp,":");
         domain = tmp[1];
         extid = tmp[2];
 
@@ -123,7 +122,7 @@ extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
                 people_domain_db_add(domaindb,extid,ovsid);
                 sortfiles[domaindb] = 1;
             }
-            person_extid2ovsid[domain":"extid] = ovsid;
+            person_extid2ovsid[key] = ovsid;
 
         }
     }
@@ -137,7 +136,7 @@ extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
 function get_queued_portraits(person_extid2ovsid,\
 i,ovsid,file) {
     id1("get_queued_portraits");
-    dump(0,"get_queued_portraits",g_portrait_queue);
+    dump(0,"g_portrait_queue",g_portrait_queue);
     for(i in g_portrait_queue) {
         ovsid = person_extid2ovsid[i];
         file = APPDIR"/db/global/"ACTORS"/"g_settings["catalog_poster_prefix"] ovsid".jpg";

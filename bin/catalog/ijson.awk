@@ -42,6 +42,7 @@ json,cast,ret,i,tag,minfo2) {
             if (fetch_ijson("title/main-details","t-const="id,json)) {
 
                 if ( "data:year" in json) {
+                    dump(0,"ijson",json);
                     ret = 1;
                     minfo2["mi_year"] = json["data:year"];
                     minfo2["mi_certrating"] = json["data:certificate:certificate"];
@@ -94,11 +95,15 @@ json,cast,ret,i,tag,minfo2) {
 }
 
 function set_ijson_people(json,json_tag,minfo,role,\
-i,tag,img,url,id,total,max) {
+i,tag,img,id,total,max,mi_total,mi_names,mi_ids) {
     max = g_settings["catalog_max_"role"s"];
     if (!max) max=3;
 
-    total=minfo["mi_"role"_total"];
+    mi_total = "mi_"role"_total";
+    mi_names = "mi_"role"_names";
+    mi_ids = "mi_"role"_ids";
+
+    total=minfo[mi_total];
 
     for(i = 1 ;  ; i++ ) {
         tag = json_tag "#"i ":name";
@@ -109,23 +114,23 @@ i,tag,img,url,id,total,max) {
         id = json[tag":nconst"];
         sub(/^nm/,"",id);
 
-        if (index(minfo["mi_"role"_ids"]"@","@"id"@") == 0) {
+        if (index(minfo[mi_ids]"@","@"id"@") == 0) {
 
             total++;
             if (total == 1) {
-                minfo["mi_"role"_names"] = "imdb";
-                minfo["mi_"role"_ids"] = "imdb";
+                minfo[mi_names] = "imdb";
+                minfo[mi_ids] = "imdb";
             }
-            minfo["mi_"role"_names"] = minfo["mi_"role"_names"]"@"json[tag":name"];
-            minfo["mi_"role"_ids"] = minfo["mi_"role"_ids"]"@"id;
+            minfo[mi_names] = minfo[mi_names]"@"json[tag":name"];
+            minfo[mi_ids] = minfo[mi_ids]"@"id;
 
             if (role == "actor") {
-                img = tag":name:image:url";
+                img = tag":image:url";
                 if (img in json) {
-                    g_portrait_queue["imdb:"json[tag":nconst"]] = json[url];
+                    g_portrait_queue["imdb:"id] = json[img];
                 }
             }
         }
     }
-    minfo["mi_"role"_total"] = total;
+    minfo[mi_total] = total;
 }

@@ -405,9 +405,12 @@ void do_actions() {
             if (STRCMP(action,"donate_remind") == 0) {
                 // touch file one week in the future
                 util_touch(donated_file(),time(NULL) + 7 * DAY );
-            } else {
+            } else if ((STRCMP(action,"donate_no") == 0) || (STRCMP(action,"donate_done") == 0)) {
                 // touch file 2 years in future.
                 util_touch(donated_file(),time(NULL)+ 2 * 365 * DAY);
+            } else  {
+                // disable for one day
+                util_touch(donated_file(),time(NULL) + 1 * DAY );
             }
 
         } else if (STRCMP(action,"reinstall") == 0) {

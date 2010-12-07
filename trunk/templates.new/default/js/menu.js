@@ -78,6 +78,13 @@ function ovs_menu(menu)
        } else if (menu["view"] == "movie" ) {
 
            title = ovsString_movie(title, menu["year"], menu["cert"]);
+           /*
+           if (menu["runtime"]) {
+               title = ovsString_movie(title, menu["year"], menu["cert"]+" "+menu["runtime"]+"mins" );
+           } else {
+               title = ovsString_movie(title, menu["year"], menu["cert"]);
+           }
+           */
 
        }
 

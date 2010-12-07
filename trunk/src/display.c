@@ -2865,11 +2865,20 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                 } else {
                     int freeshare=0;
                     char *share = share_name(item,&freeshare);
+                    // char *cert_country = NULL;
+                    char *cert_rating = strchr(NVL(item->certificate),':');
+
+                    if (cert_rating) {
+                        // cert_country = COPY_STRING(cert_rating - item->certificate,item->certificate);
+                        cert_rating++;
+                    }
+
                     // Dont show watched/unwatched for movies
                     js_fn_call = menu_js_fn(i+1+offset,
                             JS_ARG_STRING,"title",item->title,
-                            JS_ARG_STRING,"cert",item->certificate,
+                            JS_ARG_STRING,"cert",cert_rating,
                             JS_ARG_STRING,"idlist",build_id_list(item),
+                            JS_ARG_INT,"runtime",item->runtime,
                             JS_ARG_INT,"year",item->year,
                             JS_ARG_STRING,"view",view_mode->name,
                             JS_ARG_INT,"unwatched",unwatched,
@@ -2879,6 +2888,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                             JS_ARG_INT,"count",item->link_count+1,
                             JS_ARG_END);
                     if (freeshare) FREE(share);
+                    // if (cert_country) FREE(cert_country);
                 }
                 if (js_fn_call) {
                     array_add(script,js_fn_call);

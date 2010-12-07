@@ -722,6 +722,7 @@ static inline int db_rowid_get_field_offset_type_inline(
                 } else if (*p == 't') {
                     *offset=&(rowid->runtime);
                     *type = FIELD_TYPE_INT;
+                    *overview = 1;
                 }
                 break;
             case 'R':

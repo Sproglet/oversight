@@ -2,9 +2,7 @@
 #
 # back arrow navigation not working ?? from season->tv detail screen
 #
-#  Actor Profiles stopped working
-#
-#  to slow scanning cbgb-sorcerersapprentice720.mkv due to thinking its a tv show too early - fix
+# deleting unclassified item from detail page causes random detail page to display.
 #
 #  Add Google image scrape
 #

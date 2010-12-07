@@ -42,7 +42,6 @@ json,cast,ret,i,tag,minfo2) {
             if (fetch_ijson("title/main-details","t-const="id,json)) {
 
                 if ( "data:year" in json) {
-                    dump(0,"ijson",json);
                     ret = 1;
                     minfo2["mi_year"] = json["data:year"];
                     minfo2["mi_certrating"] = json["data:certificate:certificate"];

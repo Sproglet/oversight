@@ -101,12 +101,17 @@ row,est,nfo,op,start) {
     if (minfo["mi_conn_remakes"]) row=row"\t"CONN_REMAKES"\t"minfo["mi_conn_remakes"];
     return row"\t";
 }
-function short_year(y) {
-  return sprintf("%x",y-1900);
+function short_year(y,\
+ret) {
+    if (y != "" ) ret = sprintf("%x",y-1900);
+    return ret;
 }
 
-function long_year(y) {
-    return hex2dec(y)+1900;
+function long_year(y,\
+ret) {
+
+    if (y != "" ) ret = hex2dec(y)+1900;
+    return ret;
 }
 
 function short_genre(g,\
@@ -320,7 +325,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         if (and(action,1)) { 
             row1 = get_dbline(file1);
             parseDbRow(row1,fields1,1);
-            #INF("ORIGINAL:["fields1[FILE]"]");
+            DEBUG("ORIGINAL:["fields1[FILE]"]");
         }
         if (and(action,2)) {
             row2 = get_dbline(file2);
@@ -355,7 +360,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             }
         }
 
-        #INF("merge action="action);
+        DEBUG("merge action="action);
         if (action == 1) { # output row1
             if (keep_dbline(row1,fields1)) {
                 total_unchanged++;

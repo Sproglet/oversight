@@ -90,7 +90,7 @@ if [ -d "$APPDIR/bin" ] ; then
 
     export PATH="$PATH:$BINDIR:$APPDIR/bin"
 
-    AWK="$BINDIR/gawk --re-interval "
+    AWK="$BINDIR/gawk --re-interval --non-decimal-data "
 
 fi
 

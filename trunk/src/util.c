@@ -898,6 +898,37 @@ int util_stat(char *path,struct stat64 *st)
     return result;
 }
 
+char *expand_paths(Array *paths)
+{
+    char *result=NULL;
+    if (paths) {
+        int i;
+        for(i = 0 ; i < paths->size ; i++ ) {
+            char *tmp;
+            char *f = replace_str(paths->array[i],"'","'\\''");
+
+            ovs_asprintf(&tmp,"%s '%s'",NVL(result),f);
+            FREE(f);
+            FREE(result);
+            result = tmp;
+        }
+    }
+    return result;
+}
+
+void util_file_list_command(char *command_and_args,Array *paths)
+{
+    char *cmd;
+    if (paths) {
+        char *p = expand_paths(paths);
+        ovs_asprintf(&cmd,"%s %s",command_and_args,p);
+        FREE(p);
+        util_system(cmd);
+        FREE(cmd);
+    }
+}
+
+
 // Delete a file using seperate process
 void util_file_command(char *command_and_args,char *path)
 {

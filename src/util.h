@@ -162,6 +162,8 @@ void set_free(struct hashtable *h);
 int bchop(int id,int size,int *ids);
 int index_STRCMP(char *a,char *b);
 int util_stat(char *path,struct stat64 *st);
+char *expand_paths(Array *paths);
+void util_file_list_command(char *command_and_args,Array *paths);
 void util_file_command(char *command_and_args,char *path);
 char *unescape(char *in,char esc);
 char *escape(char *in,char esc,char *meta);

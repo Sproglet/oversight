@@ -120,24 +120,12 @@ HTML_LOG(0,"dbg remove this and this 3");
 }
 
 
-static void delete_file(char *dir,char *name) {
-    char *path;
-    ovs_asprintf(&path,"%s/%s",dir,name);
-    HTML_LOG(0,"delete [%s]",path);
-    if (unlink(path) ) {
-        html_error("failed to delete [%s] from [%s]",name,dir);
-    }
-    FREE(path);
-}
-
-
 void delete_media(DbItem *item,int delete_related) {
 
 
     Array *names_to_delete=NULL;
     char *dir = util_dirname(item->file);
 
-    HTML_LOG(1,"%s %d begin delete_media",__FILE__,__LINE__);
     if(is_dvd_folder(item->file)) {
         // VIDEO_TS
         if (!exists_in_dir(item->file,"video_ts") &&  !exists_in_dir(item->file,"VIDEO_TS") && 
@@ -145,14 +133,16 @@ void delete_media(DbItem *item,int delete_related) {
             HTML_LOG(0,"folder [%s] doesnt look like dvd folder");
             return;
         }
-        util_file_command("daemon rm -fr ",item->file);
-        names_to_delete = array_new(free);
+        delete_queue_add(item,1,item->file);
     } else {
 
-        HTML_LOG(1,"delete main file [%s]",item->file);
-        util_file_command("daemon rm --",item->file);
+        int i;
 
+        delete_queue_add(item,1,item->file);
         names_to_delete = split(item->parts,"/",0);
+        for(i = 0 ; i < names_to_delete->size ; i++ ) {
+            delete_queue_add(item,1,names_to_delete->array[i]);
+        }
 
         if (delete_related) {
 
@@ -162,11 +152,11 @@ void delete_media(DbItem *item,int delete_related) {
                 while((dp = readdir(d)) != NULL) {
                     if (util_starts_with(dp->d_name,"unpak.")) {
 
-                        array_add(names_to_delete,STRDUP(dp->d_name));
+                        delete_queue_add(item,1,dp->d_name);
 
                     } else if ( util_strreg(dp->d_name,"[^A-Za-z0-9](sample|samp)[^A-Za-z0-9]",REG_ICASE) != NULL ) {
 
-                        array_add(names_to_delete,STRDUP(dp->d_name));
+                        delete_queue_add(item,1,dp->d_name);
 
                     } 
                 }
@@ -188,7 +178,7 @@ void delete_media(DbItem *item,int delete_related) {
 
                 // regex also allows for language tags before the extension
                 if ( util_strreg(dp->d_name+strlen(prefix),"^\\.(|[a-z]+\\.)(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
-                    array_add(names_to_delete,STRDUP(dp->d_name));
+                    delete_queue_add(item,1,dp->d_name);
 
                 }
             }
@@ -196,15 +186,6 @@ void delete_media(DbItem *item,int delete_related) {
         closedir(d);
     }
     FREE(prefix);
-
-
-    if(names_to_delete && names_to_delete->size) {
-       int i=0;
-       for(i= 0 ; i<names_to_delete->size ; i++) {
-           delete_file(dir,names_to_delete->array[i]);
-
-       }
-    }
 
     // Delete the folder only if it's empty.
     delete_queue_add(item,0,dir);
@@ -278,7 +259,7 @@ void delete_queue_add(DbItem *item,int force,char *path) {
 
         if (util_stat(real_path,&st) == 0) {
 
-            if (!force && strcmp(item->db->source,"*") == 0 && st.st_uid != nmt_uid()) {
+            if (strcmp(item->db->source,"*") == 0 && st.st_uid != nmt_uid()) {
 
                 HTML_LOG(0,"Error: no permission to delete [%s]",item->file);
 
@@ -296,7 +277,7 @@ void delete_queue_add(DbItem *item,int force,char *path) {
                     if(!freepath) {
                         real_path = STRDUP(real_path);
                     }
-                    hashtable_insert(g_delete_queue,real_path,"1");
+                    hashtable_insert(g_delete_queue,real_path,(force?"1":"0"));
                 }
             }
         }
@@ -319,29 +300,52 @@ void delete_queue_unqueue(DbItem *item,char *path) {
 //physically delete files that have been queued for deletetion
 void delete_queue_delete() {
     struct hashtable_itr *itr;
-    char *k;
+    char *k,*v;
 
     HTML_LOG(0,"delete queue %x",g_delete_queue);
 
+    char *cmd=NULL;
+
+    Array *files = array_new(NULL);
+    Array *empty_folders = array_new(NULL);
+    Array *nonempty_folders = array_new(NULL);
+
     if (g_delete_queue != NULL ) {
         
-        for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,NULL) ; ) {
+        // delete all files first
+        for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,&v) ; ) {
            if (is_file(k)) {
                HTML_LOG(0,"delete_queue_delete: file [%s]",k);
-               unlink(k);
-           }
-        }
-        for(itr=hashtable_loop_init(g_delete_queue) ; hashtable_loop_more(itr,&k,NULL) ; ) {
-           if (is_dir(k)) {
+               array_add(files,k);
+           } else if (is_dir(k)) {
                if (count_chr(k,'/') > 2) {
                    HTML_LOG(0,"delete_queue_delete: folder [%s]",k);
 
-                   rmdir(k); // silently fail if folder is not empty. - Dont use recursive fn util_rm()
+                   if (v && *v == '1' ) {
+                       array_add(nonempty_folders,k);
+                   } else {
+                       array_add(empty_folders,k);
+                   }
                } else {
                    HTML_LOG(0,"delete_queue_delete: skipping folder [%s]",k);
                }
            }
         }
+
+        char *f=expand_paths(files);
+        char *d1=expand_paths(nonempty_folders);
+        char *d2=expand_paths(empty_folders);
+        ovs_asprintf(&cmd,"daemon %s/bin/delete.sh --rm %s --rmfr %s --rmdir %s",appDir(),NVL(f),NVL(d1),NVL(d2));
+        util_system(cmd);
+        FREE(cmd);
+        FREE(f);
+        FREE(d1);
+        FREE(d2);
+
+        array_free(files);
+        array_free(empty_folders);
+        array_free(nonempty_folders);
+
         hashtable_destroy(g_delete_queue,1,0);
         g_delete_queue=NULL;
     }

@@ -233,17 +233,9 @@ i) {
     for (i in inHash) return i;
 }
 
-function hex2dec(s,\
-n,i,c) {
-    n = 0;
-    s = tolower(s);
-    i = 1;
-    # added X to guard against empty index match
-    while((c=index("X0123456789abcdef",substr(s,i,1))) > 1 ) {
-        n = n * 16 + (c-2) ;
-        i++;
-    }
-    return n;
+# requires --non-decimal-data gawk switch
+function hex2dec(s) {
+    return ( "0x"s ) + 0;
 }
 
 function firstDatum(inHash,\

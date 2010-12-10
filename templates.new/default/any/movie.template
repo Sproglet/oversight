@@ -27,8 +27,12 @@
 		                    <tr><td colspan=4 height=10%>&nbsp;</td><tr>	
 		                    <tr>
 		                    	<td width=1%></td>
-		                        <td width=79% class=Xtitle>[:TITLE:]</td>
-		                        <td align=right class=Xyear>[ (:$%YEAR:)]</td>
+		                        <td width=79% class=title>[:TITLE:]</td>
+		                        <td align=right class=year>
+                                    [:IF($%YEAR):]
+                                    [(:$%YEAR:)]
+                                    [:ENDIF:]
+                                </td>
                     			<td width=1%></td>
 		                    </tr>
 		                    <tr><td colspan=4 height=2%>&nbsp;</td><tr>	

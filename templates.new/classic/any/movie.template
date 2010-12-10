@@ -59,7 +59,11 @@ body { color:yellow ; background-color:black; }
                         <table width="100%" background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
 [:ENDIF:]
                             <tr>
-                                <td colspan=2 class="title">[:$%TITLE:][ (:$%YEAR:)]</td>
+                                <td colspan=2 class="title">[:$%TITLE:]
+                                    [:IF($%YEAR):]
+                                    [(:$%YEAR:)]
+                                    [:ENDIF:]
+                                </td>
                             </tr>
                             <tr>
                                 <td align="left" ><font id="genre">[:GENRE:]</font></td>

@@ -9,7 +9,10 @@ num,tags,i,tmp,ret) {
             if ("/movie/id" in xml ) {
                 minfo2["mi_id"] = xml["/movie/id"];
                 if (minfo["mi_id"] == 0) minfo["mi_id"] = -1;
-                if (minfo2["mi_id"] ~ "^tt" ) {
+                if (minfo2["mi_id"] ~ "^tt[0-9]+" ) {
+
+                    minfo_set_id("imdb",minfo2["mi_id"],minfo2);
+                    
                     if (!("mi_url") in xml) {
                         minfo2["mi_url"] = extractImdbLink(minfo2["mi_id"]);
                     }
@@ -23,6 +26,7 @@ num,tags,i,tmp,ret) {
             minfo2["mi_runtime"] = xml["/movie/runtime"];
             minfo2["mi_poster"] = xml["/movie/thumb"];
             minfo2["mi_fanart"] = xml["/movie/fanart"];
+            minfo2["mi_category"] = "M";
             num = find_elements(xml,"/movie/genre",empty_filter,0,tags);
             if (num) {
                 for(i = 1 ; i <= num ; i++ ) {
@@ -38,8 +42,10 @@ num,tags,i,tmp,ret) {
             ret = 1;
         } else if ( "/xml/tvshow" in xml ) {
             INF("tvshow xbmc not supported yet...");
+            minfo2["mi_category"] = "T";
         } else if ( "/tvshow" in xml ) {
             INF("tvshow xbmc not supported yet...");
+            minfo2["mi_category"] = "T";
         }
 
         # next load into minfo2 then minfo_merge with source = @nfo then set best_score to prioritise nfo and short circuit searching.

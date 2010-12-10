@@ -169,7 +169,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             lc=tolower(scan_line);
 
             if ( lc ~ g_settings["catalog_ignore_names"] ) {
-                DEBUG("Ignore name "scan_line);
+                INF("Ignore name "scan_line);
                 continue;
             }
 
@@ -546,93 +546,99 @@ cat,minfo2) {
                        }
                     }
 
-                    if (bestUrl == "") {
-                        # scan filename for imdb link
-                        bestUrl = extractImdbLink(file,1);
-                        if (bestUrl) {
-                            INF("extract imdb id from "file);
-                        }
-                    }
-
-                    cat="";
-
-                    if (bestUrl) {
-                        cat = get_imdb_info(bestUrl,minfo);
-                    }
-
-                    if (cat == "T" ) {
-
-                        # Its definitely a series according to IMDB or NFO
-                        # get the episode info
-                        hash_copy(minfo2,minfo);
-                        checkTvFilenameFormat(minfo2,"",0);
-                        minfo["mi_season"] = minfo2["mi_season"];
-                        minfo["mi_episode"] = minfo2["mi_episode"];
-                        minfo["mi_additional_info"] = minfo2["mi_additional_info"];
-
-                        cat = tv_search_simple(minfo,bestUrl,1);
-
-                    } else if (cat != "M" ) {
-
-                        # Not sure - try a TV search looking for various abbreviations.
-                        cat = tv_search_complex(minfo,bestUrl,0);
-
-                        if (cat != "T") {
-                            # Could not find any hits using tv abbreviations, try heuristis for a movie search.
-                            # This involves searching web for imdb id.
-                            bestUrl = movie_search(minfo,bestUrl);
-                            if (bestUrl) {
-                                cat = get_imdb_info(bestUrl,minfo);
-
-                                if (cat == "T") {
-                                    # If we get here we found an IMDB id , but it looks like a TV show after all.
-                                    # This may happen with mini-series that do not have normal naming conventions etc.
-                                    # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                                    cat = tv_search_simple(minfo,bestUrl,1);
-                                }
-                            }
-                        }
-                    }
-
-                    if (cat != "T") {
-                        get_themoviedb_info(extractImdbId(bestUrl),minfo);
-                        getNiceMoviePosters(minfo);
-                    }
-
-                    if (cat != "") {
-
-                        fixTitles(minfo);
-
-                        #Only get posters if catalog is installed as part of oversight
-                        if (index(APPDIR,"/oversight") ) {
-
-                            if (GET_POSTERS) {
-                                minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
-                            }
-
-                            if (GET_FANART) {
-                                minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
-                            }
-                        }
-
-                        relocate_files(minfo);
-
-                        if (g_opt_dry_run) {
-                            print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
-                        }
-                        total++;
-
-                        g_total ++;
-                        g_batch_total++;
-                        #lang_test(minfo);
-
-                        queue_minfo(minfo,qfile,person_extid2name);
+                    if (minfo["mi_id"] == -1 ) {
+                        # dont scrape
+                        INF("using xbmc nfo only for "minfo["mi_media"]);
 
                     } else {
 
-                        WARNING("Unknown item "minfo["mi_media"]);
-                        queue_minfo(minfo,qfile,person_extid2name);
+                        # scrape
+
+                        if (bestUrl == "") {
+                            # scan filename for imdb link
+                            bestUrl = extractImdbLink(file,1);
+                            if (bestUrl) {
+                                INF("extract imdb id from "file);
+                            }
+                        }
+
+                        cat="";
+
+                        if (bestUrl) {
+                            cat = get_imdb_info(bestUrl,minfo);
+                        }
+
+                        if (cat == "T" ) {
+
+                            # Its definitely a series according to IMDB or NFO
+                            # get the episode info
+                            hash_copy(minfo2,minfo);
+                            checkTvFilenameFormat(minfo2,"",0);
+                            minfo["mi_season"] = minfo2["mi_season"];
+                            minfo["mi_episode"] = minfo2["mi_episode"];
+                            minfo["mi_additional_info"] = minfo2["mi_additional_info"];
+
+                            cat = tv_search_simple(minfo,bestUrl,1);
+
+                        } else if (cat != "M" ) {
+
+                            # Not sure - try a TV search looking for various abbreviations.
+                            cat = tv_search_complex(minfo,bestUrl,0);
+
+                            if (cat != "T") {
+                                # Could not find any hits using tv abbreviations, try heuristis for a movie search.
+                                # This involves searching web for imdb id.
+                                bestUrl = movie_search(minfo,bestUrl);
+                                if (bestUrl) {
+                                    cat = get_imdb_info(bestUrl,minfo);
+
+                                    if (cat == "T") {
+                                        # If we get here we found an IMDB id , but it looks like a TV show after all.
+                                        # This may happen with mini-series that do not have normal naming conventions etc.
+                                        # At this point we should have scraped a better title from IMDB so try a simple TV search again.
+                                        cat = tv_search_simple(minfo,bestUrl,1);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (cat != "T") {
+                            get_themoviedb_info(extractImdbId(bestUrl),minfo);
+                            getNiceMoviePosters(minfo);
+                        }
+
+                        if (cat == "") {
+
+                            WARNING("Unknown item "minfo["mi_media"]);
+
+                        } else {
+
+                            fixTitles(minfo);
+
+                            #Only get posters if catalog is installed as part of oversight
+                            if (index(APPDIR,"/oversight") ) {
+
+                                if (GET_POSTERS) {
+                                    minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+                                }
+
+                                if (GET_FANART) {
+                                    minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+                                }
+                            }
+
+                            relocate_files(minfo);
+
+                            if (g_opt_dry_run) {
+                                print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+                            }
+                            #lang_test(minfo);
+                        }
                     }
+                    total++;
+                    g_total ++;
+                    g_batch_total++;
+                    queue_minfo(minfo,qfile,person_extid2name);
 
                     thisTime = systime()-thisTime ;
                     if (g_total) {
@@ -698,7 +704,7 @@ function clear_folder_info() {
     delete g_file_date; 
 
     gMovieFileCount = 0;
-    DEBUG("Reset scanned files store");
+    #DEBUG("Reset scanned files store");
 }
 
 

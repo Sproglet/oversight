@@ -593,7 +593,7 @@ result) {
 
 function add_file(path,list) {
     path = short_path(path);
-    DEBUG("already seen "path);
+    #DEBUG("already seen "path);
     list[path] = 1;
 }
 
@@ -1185,6 +1185,7 @@ minfo,i,ulang) {
         INF("3." subexp("Title?012345","Title.([0-9]+)"));
         INF("4." subexp("Title?012345 ","Title.([0-9]+)"));
 
+        unit1("hex2dec",(hex2dec("ff") == 255 ));
         unit1("edit_dist1",(edit_dist("abc","abc") == 0));
         unit1("edit_dist2",(edit_dist("abc","abjc") == 1));
         unit1("edit_dist3",(edit_dist("abc","ac") == 1));

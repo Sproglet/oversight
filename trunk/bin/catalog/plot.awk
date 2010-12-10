@@ -3,6 +3,7 @@ function keep_plots(fields,plot_ids,\
 id) {
 
     id = fields_to_plot_id(fields);
+    DEBUG("xx keep_plots["id"]");
     plot_ids[id] = 1;
     if (fields[CATEGORY] == "T") {
         id = plot_to_season_id(id);
@@ -11,21 +12,27 @@ id) {
 }
 
 function queue_plots(minfo,queue_file,\
-id) {
+id,out) {
 
     id = minfo_to_plot_id(minfo);
 
     if (minfo["mi_category"] == "T" ) {
         if (minfo["mi_plot"]) {
-            print plot_to_season_id(id)"\t"minfo["mi_plot"] >> queue_file;
+            out = plot_to_season_id(id)"\t"minfo["mi_plot"] ;
+            DEBUG("xx1:"out);
         }
         if (minfo["mi_epplot"]) {
-            print id"\t"minfo["mi_epplot"] >> queue_file;
+            out = id"\t"minfo["mi_epplot"] ;
+            DEBUG("xx2:"out);
         }
     } else {
         if (minfo["mi_plot"]) {
-            print id"\t"minfo["mi_plot"] >> queue_file;
+            out = id"\t"minfo["mi_plot"] ;
+            DEBUG("xx3:"out);
         }
+    }
+    if (out) {
+        print out >> queue_file;
     }
     close(queue_file);
 }
@@ -58,11 +65,11 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     do {
         if (and(action,1)) {
             get_plotline(plot_file,tabs1);
-            #INF("read plot id 1["tabs1[1]"]");
+            DEBUG("read plot id 1["tabs1[1]"]");
         }
         if (and(action,2)) {
             get_plotline(queue_file,tabs2);
-            #INF("read plot id 2["tabs2[1]"]");
+            DEBUG("read plot id 2["tabs2[1]"]");
         }
 
         if (tabs1[1] == "") {
@@ -111,6 +118,8 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
                         total_changed ++;
                     }
                 }
+            } else {
+                WARNING("new plot id not present ["tabs2[1]"]");
             }
         }
 
@@ -153,7 +162,7 @@ id) {
    if (cat == "T" ) {
         id = id"@"season"@"episode;
     }
-    #INF("plot_id ["idlist"]="id);
+    INF("plot_id ["idlist"]="id);
     return id;
 }
 

@@ -15,15 +15,6 @@
 #
 # Make sure all items in current library are scanned.
 #
-# Allow users to bypass donate in gui 
-#
-# Then change oversight gui to read new format of plot file.
-#
-#  make sure plot file is indexed by
-#  - oversight id for movies.
-#  - SeriesName/start year/season for tv season
-#  - oversight id for episodes.
-#
 #  add config setting to extract id from url - then add minfo_set_id(domain,extract_id(url),"minfo) to scrape function.
 #  add config setting to extract title from title tag
 #
@@ -34,7 +25,6 @@
 #  change IMDBFIRST to only look at first n results - matches further down the page tend to be false.
 #
 #  office us fails due to missng brackets?
-#  fetch_xml_single_child is broken - needs to understand new xml format
 #
 # Scraping imdb twice -> rewrite initial nfo->imdb->search logic -> add concept of "end_scrape" which is satisfied when
 # . plot in desired language
@@ -43,10 +33,6 @@
 # . Movie connections 
 # . cast
 # . title.
-#
-# Also add domain source , or mi_visisted= list of domain":"lang or  just domain for lang neutral eg motech
-#
-# check logic for mis-identified tv shows
 #
 # in desired language
 # when setting mi_plot also set mi_plot_lang

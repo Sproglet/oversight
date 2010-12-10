@@ -2,7 +2,7 @@
 function clear_tv_folder_info() {
     delete g_default_tv_title_for_folder;
     delete g_tvDbIndex;
-    DEBUG("Reset tv folder details");
+    #DEBUG("Reset tv folder details");
 }
 
 # return last n parts of path. If no more then return empty string.

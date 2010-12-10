@@ -1,6 +1,6 @@
 
 function scrape_cache_clear() {
-    INF("scrape_cache_clear");
+    #DEBUG("scrape_cache_clear");
     delete g_scrape_cache;
 }
 

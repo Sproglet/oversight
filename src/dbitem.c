@@ -884,7 +884,9 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
                 if (strlen(val) > 3) {
                     *(int *)offset=strtol(val,&tmps,10) ;
                 } else {
-                    *(int *)offset=strtol(val,&tmps,16)+HEX_YEAR_OFFSET ;
+                    int y = strtol(val,&tmps,16);
+                    if (y) y += HEX_YEAR_OFFSET;
+                    *(int *)offset = y;
                     //HTML_LOG(0,"year %s = %d",val,*(int *)offset);
                 }
                 break;

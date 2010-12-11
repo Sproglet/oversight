@@ -79,12 +79,18 @@ void set_plot_keys(DbItem *item) {
                 if (*start == ' ') start++;
                 space = strchr(start,' ');
                 if (!space) space = start+strlen(start);
-                ovs_asprintf(&id,"%.*s",space-start,start);
+                if(space>start) {
+                    ovs_asprintf(&id,"%.*s",space-start,start);
+                }
             }
         }
 
         if(!id) {
-            ovs_asprintf(&id,"%s@%d",item->title,item->year);
+            if(item->year) {
+                ovs_asprintf(&id,"%s@%d",item->title,item->year);
+            } else {
+                ovs_asprintf(&id,"%s@",item->title);
+            }
         }
     }
 

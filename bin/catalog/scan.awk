@@ -549,6 +549,7 @@ cat,minfo2) {
                     if (minfo["mi_id"] == -1 ) {
                         # dont scrape
                         INF("using xbmc nfo only for "minfo["mi_media"]);
+                        get_images(minfo);
 
                     } else {
 
@@ -615,17 +616,7 @@ cat,minfo2) {
 
                             fixTitles(minfo);
 
-                            #Only get posters if catalog is installed as part of oversight
-                            if (index(APPDIR,"/oversight") ) {
-
-                                if (GET_POSTERS) {
-                                    minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
-                                }
-
-                                if (GET_FANART) {
-                                    minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
-                                }
-                            }
+                            get_images(minfo);
 
                             relocate_files(minfo);
 
@@ -661,6 +652,19 @@ cat,minfo2) {
     }
     delete minfo;
 
+}
+function get_images(minfo) {
+    #Only get posters if catalog is installed as part of oversight
+    if (index(APPDIR,"/oversight") ) {
+
+        if (GET_POSTERS) {
+            minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+        }
+
+        if (GET_FANART) {
+            minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+        }
+    }
 }
 
 # INPUT minfo - scraped information

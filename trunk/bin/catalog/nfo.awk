@@ -4,7 +4,7 @@ num,tags,i,tmp,ret) {
 
     ret = 0;
     if (readXML(file,xml,""))  {
-        dump(0,"nfoxml",xml);
+        dumpxml("nfoxml",xml);
         if ("/movie" in xml) {
             if ("/movie/id" in xml ) {
                 minfo2["mi_id"] = xml["/movie/id"];

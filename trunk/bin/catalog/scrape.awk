@@ -1,5 +1,5 @@
 # Given a movie title and year try to find a site in the required language and scrape
-# IN text - text so search for. May not necessarily be exact title eg from filename.
+# IN text - text to search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
 # INPUT year  - used for validation can be blank
 # INPUT runtime  - used for validation can be blank
@@ -702,6 +702,7 @@ i,num,sections,err) {
 function scrape_movie_fragment(locale,domain,fragment,minfo,pagestate,namestate,\
 mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
+    
     #DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
     #DEBUG("scrape_movie_fragment:("locale","domain","fragment")");
     # Check if fragment is a fieldname eg Plot: Cast: etc.
@@ -800,8 +801,10 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
     } else if ( mode == "plot" && pagestate["mode"] != "head" ) {
 
         if (is_prose(fragment)) {
+
             field = "mi_plot";
-            value = fragment;
+            value = add_lang_to_plot(locale,clean_plot(fragment));
+
         } else if (length(fragment > 20) ) {
             if (!("badplot" in pagestate)){ 
                 DEBUG("Missing plot ???");
@@ -871,7 +874,6 @@ ret) {
 
 function is_prose(text,\
 words,num,i,len) {
-    len = length(text);
 
     #remove hyperlinked text
     if (index(text,"@label@")) {
@@ -882,15 +884,21 @@ words,num,i,len) {
     if (index(text,"=\"") || index(text,"='")) {
         gsub(/=["'][^'"]+/,"",text);
     }
+    len = length(text);
 
     if (len > g_min_plot_len ) {
-        num = split(text,words," ")+0;
-        #DEBUG("words = "num" required "(length(text)/10));
-        if (num >= len/8 ) { #av word length less than 10 chars
-            if (num <= len/5 ) { # av word length > 4 chars (minus space)
-                if ( index(text,"Mozilla") == 0) {
-                    for(i in words) if (length(words[i]) > 30) return 0;
-                    return 1;
+
+        len = utf8len(text);
+
+        if (len > g_min_plot_len ) {
+            num = split(text,words," ")+0;
+            #DEBUG("words = "num" required "(length(text)/10));
+            if (num >= len/8 ) { #av word length less than 10 chars
+                if (num <= len/5 ) { # av word length > 4 chars (minus space)
+                    if ( index(text,"Mozilla") == 0) {
+                        for(i in words) if (utf8len(words[i]) > 30) return 0;
+                        return 1;
+                    }
                 }
             }
         }
@@ -986,6 +994,21 @@ i,has_english) {
         locales[++i] = "en_US";
     }
     return i;
+}
+
+function add_lang_to_plot(lang_or_locale,plot,\
+ret,lng) {
+    lng = lang(lang_or_locale); 
+    if (lng != "en" && plot ~ g_english_re ) {
+        INF("expected "lang_or_locale" but plot appears English? :"plot);
+        lng="en";
+    }
+    ret = lng":"plot;
+    return ret;
+}
+
+function lang(locale) {
+    return substr(locale,1,2);
 }
 
 # get unique languages from locales

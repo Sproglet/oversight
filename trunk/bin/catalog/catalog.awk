@@ -119,6 +119,9 @@ BEGIN {
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
     g_fetch_images_concurrently="START";
 
+    #Matches most english prose for plots / summary - cant use words that appear in other languages. of , it?
+    g_english_re="\\<([Mm]an|[Ww]oman|[Gg]irl|[Bb]oy|[Ff]amily|[Ss]he|[Hh]e|[Tt]he|and|[Tt]hey|their)\\>"
+
     g_tv_check_urls["tvrage"]=g_tvrage_web;
     g_tv_check_urls["thetvdb"]=g_thetvdb_web;
 
@@ -1167,6 +1170,7 @@ i,folderCount,moveDown) {
 
 function unit1(label,value) {
     print "unit" label ( value ? "OK" : "Failed");
+    fflush();
 }
 
 function unit(doit,\
@@ -1184,6 +1188,24 @@ minfo,i,ulang) {
         INF("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
         INF("3." subexp("Title?012345","Title.([0-9]+)"));
         INF("4." subexp("Title?012345 ","Title.([0-9]+)"));
+
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos("&nbsp;3",2) == 7));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos("&#123;3",2) == 7));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos("&#xab;3",2) == 7));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos(g_chr[192]g_chr[128]"a",2) == 3));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos(g_chr[224]g_chr[128]g_chr[128]"a",2) == 4));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos(g_chr[240]g_chr[128]g_chr[128]g_chr[128]"a",2) == 5));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos(g_chr[248]g_chr[128]g_chr[128]g_chr[128]g_chr[128]"a",2) == 6));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos(g_chr[252]g_chr[128]g_chr[128]g_chr[128]g_chr[128]g_chr[128]"a",2) == 7));
+        unit1("utf8_to_byte_pos",(utf8_to_byte_pos(g_chr[252]g_chr[128]g_chr[128]g_chr[128]g_chr[128]g_chr[128]"&nbsp;&#1001;a",4) == 20));
+        unit1("html_to_utf8",(html_to_utf8("z&#1001;a") == "z"g_chr[0xcf]g_chr[0xA9]"a"));
+        unit1("utf8len",(utf8len("z&#1001;a") == 3));
+        unit1("utf8len",(utf8len(g_chr[192]g_chr[128]"a") == 2));
+        unit1("utf8len",(utf8len(g_chr[224]g_chr[128]g_chr[128]"a") == 2));
+        unit1("utf8len",(utf8len(g_chr[240]g_chr[128]g_chr[128]g_chr[128]"a") == 2));
+        unit1("utf8len",(utf8len(g_chr[248]g_chr[128]g_chr[128]g_chr[128]g_chr[128]"a") == 2));
+        unit1("utf8len",(utf8len(g_chr[252]g_chr[128]g_chr[128]g_chr[128]g_chr[128]g_chr[128]"a") == 2));
+        unit1("utf8len",(utf8len(g_chr[252]g_chr[128]g_chr[128]g_chr[128]g_chr[128]g_chr[128]"&nbsp;&#1001;a") == 4));
 
         unit1("hex2dec",(hex2dec("ff") == 255 ));
         unit1("edit_dist1",(edit_dist("abc","abc") == 0));

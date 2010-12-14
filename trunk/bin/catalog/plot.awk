@@ -19,16 +19,13 @@ id,out) {
     if (minfo["mi_category"] == "T" ) {
         if (minfo["mi_plot"]) {
             out = plot_to_season_id(id)"\t"minfo["mi_plot"] ;
-            DEBUG("xx1:"out);
         }
         if (minfo["mi_epplot"]) {
             out = id"\t"minfo["mi_epplot"] ;
-            DEBUG("xx2:"out);
         }
     } else {
         if (minfo["mi_plot"]) {
             out = id"\t"minfo["mi_plot"] ;
-            DEBUG("xx3:"out);
         }
     }
     if (out) {

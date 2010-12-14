@@ -1266,7 +1266,7 @@ url,i,num,langs,word,key) {
                         if (langs[i] == "en" ) {
                             break;
                         } else if (langs[i+1] != "en" ) {
-                            if ((word=scanPageFirstMatch(url,"","\\<([Ss]he|[Hh]e|[Tt]he|and|[Tt]hey|their)\\>",1)) != "") {
+                            if ((word=scanPageFirstMatch(url,"",g_english_re,1)) != "") {
                                 INF("expected lang="langs[i]" but found "word" in text");
                             } else {
                                 break;
@@ -2016,11 +2016,16 @@ function remove_tv_year(t) {
     }
     return t;
 }
+
 function clean_plot(txt) {
+    # We need to check to utf8 and html characters here.
+    txt = html_to_utf8(txt);
     txt = substr(txt,1,g_max_plot_len);
+    # This should be obsoleted now using tvrage api
     if (index(txt,"Remove Ad")) {
         sub(/\[[Xx]\] Remove Ad/,"",txt);
     }
+    INF("clean_plot["txt"]");
     return txt;
 }
 # Scrape theTvDb series page, populate arrays and return imdb link

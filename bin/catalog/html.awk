@@ -308,35 +308,37 @@ i,text2,ll,c) {
 
 function decode_init(\
 i,c,h,b1,b2) {
-    DEBUG("create decode matrix");
-    for(i=0 ; i - 256 < 0 ; i++ ) {
-        c=sprintf("%c",i);
-        h=sprintf("%02x",i);
-        g_chr[i] = c;
-        g_chr["x"h] = c;
-        g_ascii[c] = i;
-        g_hex[i]=h;
+    if (g_chr[32] == "" ) {
+        DEBUG("create decode matrix");
+        for(i=0 ; i - 256 < 0 ; i++ ) {
+            c=sprintf("%c",i);
+            h=sprintf("%02x",i);
+            g_chr[i] = c;
+            g_chr["x"h] = c;
+            g_ascii[c] = i;
+            g_hex[i]=h;
 
+        }
+        for(i=0 ; i - 128 < 0 ; i++ ) {
+            c = g_chr[i];
+            g_utf8[c]=c;
+        }
+        for(i=128 ; i - 256 < 0 ; i++ ) {
+            c = g_chr[i];
+            b1=192+rshift(i,6);
+            b2=128+and(i,63);
+            g_utf8[c]=g_chr[b1+0] g_chr[b2+0];
+        }
+        #special html - all sites return utf8 except for IMDB and epguides.
+        # IMDB doesnt use symbolic names - mostly hexcodes. So we can probably 
+        # not bother with anything except for amp. see what happens.
+        #s="amp|38|gt|62|lt|60|divide|247|deg|176|copy|169|pound|163|quot|34|nbsp|32|cent|162|";
+        g_chr["amp"] = "&";
+        g_chr["quot"] = "\"";
+        g_chr["lt"] = "<";
+        g_chr["gt"] = ">";
+        g_chr["nbsp"] = " ";
     }
-    for(i=0 ; i - 128 < 0 ; i++ ) {
-        c = g_chr[i];
-        g_utf8[c]=c;
-    }
-    for(i=128 ; i - 256 < 0 ; i++ ) {
-        c = g_chr[i];
-        b1=192+rshift(i,6);
-        b2=128+and(i,63);
-        g_utf8[c]=g_chr[b1+0] g_chr[b2+0];
-    }
-    #special html - all sites return utf8 except for IMDB and epguides.
-    # IMDB doesnt use symbolic names - mostly hexcodes. So we can probably 
-    # not bother with anything except for amp. see what happens.
-    #s="amp|38|gt|62|lt|60|divide|247|deg|176|copy|169|pound|163|quot|34|nbsp|32|cent|162|";
-    g_chr["amp"] = "&";
-    g_chr["quot"] = "\"";
-    g_chr["lt"] = "<";
-    g_chr["gt"] = ">";
-    g_chr["nbsp"] = " ";
 }
 
 function html_decode(text,to_utf8,\
@@ -393,3 +395,103 @@ parts,part,count,code,newcode,text2) {
     return text;
 }
 
+function html_to_utf8(text,\
+ret,num,i,j,parts,new,bytes,code,b) {
+    decode_init();
+    num = chop(text,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",parts);
+    for(i = 1 ; i <= num ; i++) {
+        if (i%2 == 1) {
+            ret = ret parts[i];
+        } else {
+            if (tolower(substr(parts[i],1,3)) == "&#x" ) {
+                code = 0+hex2dec(substr(parts[i],4,length(parts[i])-4));
+            } else {
+                code = 0+substr(parts[i],3,length(parts[i])-3);
+            }
+            if (code > 0x3FFFFFF ) {
+                bytes=6;
+            } else if (code > 0x1FFFFF ) {
+                bytes=5;
+            } else if (code > 0xFFFF ) {
+                bytes=4;
+            } else if (code > 0x7FF ) {
+                bytes=3;
+            } else if (code > 0x7F ) {
+                bytes=2;
+            } else {
+                bytes=1;
+            }
+            new = "";
+            if (bytes == 1 ) {
+                new = g_chr[code];
+            } else {
+                for(j = 1 ; j < bytes ; j++ ) {
+                    b = or(0x80,and(code,0x3F));
+                    new = g_chr[b] new;
+                    code = rshift(code,6);
+                }
+                # first byte
+                b=or(and(lshift(0xFC,6-bytes),0xFF),code);
+                printf "b1=%c(%x)\n",b,b; fflush();
+                new  = g_chr[b] new;
+            }
+            ret = ret new;
+        }
+
+    }
+    return ret;
+}
+
+# return the number of logical characters in a string (utf-8 chars count as 1 char as does &nbsp; etc ) 
+function utf8len(text) {
+    utf8_to_byte_pos_main(text,-1,inf);
+    return inf["chars"];
+
+}
+# Return the corresponding byte position of a  utf-8 or html string
+function utf8_to_byte_pos(text,p,\
+inf){
+    utf8_to_byte_pos_main(text,p,inf);
+    return inf["byte"];
+}
+
+
+# IN text utf8/html string
+# IN p utf8 position or -1 (end)
+# OUT inf["byte"] = byte corresponsing to char p OR
+# OUT inf["chars"] = number of characters in string (utf-8 chars count as 1 char as does &nbsp; etc )
+function utf8_to_byte_pos_main(text,p,inf,\
+byte,i,len,a,ch) {
+
+    if (g_chr[32] == "" ) {
+        decode_init();
+    }
+    byte = 0;
+    len = length(text);
+    for(i = 1 ; p == -1 || i <= p ; i++ ) {
+        byte++;
+        if (byte > len) break;
+        ch=substr(text,byte,1);
+        if (ch == "&" && match(substr(text,byte+1),"^(#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4}|[a-z]{1,6});")) {
+            # eg   &#123; #xA1; &nbsp;
+            byte += RLENGTH;
+
+        } else if ( ch > "~" ) {
+            # 8bit - hopefully utf8
+            a = g_ascii[ch];
+            if (a >= 252 ) byte += 5; 
+            else if (a >= 248 ) byte += 4; 
+            else if (a >= 240 ) byte += 3; 
+            else if (a >= 224 ) byte += 2; 
+            else if (a >= 192 ) byte += 1; 
+            else {
+                WARNING("Encoding error "ch" = "a);
+            }
+        }
+    }
+    inf["byte"] = byte;
+    inf["chars"] = i; # Only really useful if p = -1 or p > number of actual chars else  i = p+1
+    INF("utf8_to_byte_pos_main["text","p"="byte" bytes "i" chars");
+
+    return byte;
+}

@@ -581,7 +581,14 @@ cat,minfo2) {
 
                             cat = tv_search_simple(minfo,bestUrl,1);
 
-                        } else if (cat != "M" ) {
+                        } else if (cat == "M" ) {
+
+                            if (!plot_in_main_lang(minfo)) {
+                                # We know it is a movie but still do not have good localised info
+                                find_movie_page(minfo["mi_title"],"",minfo["mi_year"],"","",minfo);
+                            }
+
+                        } else  {
 
                             # Not sure - try a TV search looking for various abbreviations.
                             cat = tv_search_complex(minfo,bestUrl,0);
@@ -652,6 +659,11 @@ cat,minfo2) {
     }
     delete minfo;
 
+}
+function plot_in_main_lang(minfo,\
+langs) {
+    get_langs(langs);
+    return lang(minfo["mi_plot"]) == langs[1];
 }
 function get_images(minfo) {
     #Only get posters if catalog is installed as part of oversight

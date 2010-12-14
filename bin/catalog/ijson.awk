@@ -2,18 +2,30 @@ BEGIN {
     g_has_ijson=1; # change to 1 to enable advanced mode
 }
 
+function fetch_ijson_by_locale(fn,args,locale,out,\
+url,ret) {
+    ret = 0;
+    id1("fetch_ijson_by_locale "fn","args","locale);
+    url = "http://a-pp.imdb.com/"fn"?api=v1&app-id=i-phone1&locale="locale"&"args;
+    gsub(/-/,"",url);
+    if (fetch_json(url,"imdb",out)) {
+        out["@locale@"] = locale;
+        dump(0,locale,out);
+        ret = 1;
+    }
+    id0(ret);
+    return ret;
+}
+
 function fetch_ijson(fn,args,out,\
-url,num,locales,i,ret) {
+num,locales,i,ret) {
 
     ret = 0;
     id1("fetch_ijson "fn);
 
     num = get_locales(locales);
     for(i = 1 ; i<= num ; i++ ) {
-        url = "http://a-pp.imdb.com/"fn"?api=v1&app-id=i-phone1&locale="locales[i]"&"args;
-        gsub(/-/,"",url);
-        if (fetch_json(url,"imdb",out)) {
-            out["@locale@"] = locales[i];
+        if (fetch_ijson_by_locale(fn,args,locales[i],out) ) {
             ret = 1;
             break;
         }
@@ -33,16 +45,34 @@ json,ret) {
 }
 
 function fetch_ijson_details(id,minfo,\
+num,locales,i,ret) {
+
+    ret = 0;
+    id1("fetch_ijson_details "id);
+
+    num = get_locales(locales);
+    for(i = 1 ; i<= num ; i++ ) {
+        if (fetch_ijson_details_by_locale(id,locales[i],minfo) ) {
+            ret = 1;
+            break;
+        }
+    }
+
+    id0(ret);
+    return ret;
+}
+function fetch_ijson_details_by_locale(id,locale,minfo,\
 json,cast,ret,i,tag,minfo2) {
     
-    id1("fetch_ijson_details "id);
+    id1("fetch_ijson_details_by_locale "id","locale);
     if (id && g_has_ijson) { #TODO fix disable of ijson
 
         if (!scrape_cache_get("imdb:"id,minfo2)) {
-            if (fetch_ijson("title/main-details","t-const="id,json)) {
+            if (fetch_ijson_by_locale("title/main-details","t-const="id,locale,json)) {
 
                 if ( "data:year" in json) {
                     ret = 1;
+                    minfo2["mi_plot"] = add_lang_to_plot(locale,clean_plot(json["data:plot:outline"]));
                     minfo2["mi_year"] = json["data:year"];
                     minfo2["mi_certrating"] = json["data:certificate:certificate"];
                     minfo2["mi_certcountry"] = substr(json["@locale@"],4);
@@ -50,7 +80,6 @@ json,cast,ret,i,tag,minfo2) {
                     minfo2["mi_rating"] = json["data:rating"];
                     minfo2["mi_runtime"] = json["data:runtime:time"]/60;
                     minfo2["mi_title"] = json["data:title"];
-                    minfo2["mi_plot"] = json["data:plot:outline"];
 
                     if (json["data:type"] == "tv_series" ) {
                         minfo2["mi_category"] = "T";

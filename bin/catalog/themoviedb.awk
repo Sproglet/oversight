@@ -28,7 +28,7 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2) {
 
         } else if (xml[root"/translated"] == "true") {
 
-            minfo2["mi_plot"]=xml[root"/overview"];
+            minfo2["mi_plot"]=add_lang_to_plot(langs[i],clean_plot(xml[root"/overview"]));
 
             minfo2["mi_certrating"]=xml[root"/certification"];
 

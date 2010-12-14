@@ -34,9 +34,9 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2) {
 
             minfo2["mi_runtime"]=xml[root"/runtime"];
 
-            minfo2["mi_title"]=xml[root"/name"];
+            minfo2["mi_title"]=html_to_utf8(xml[root"/name"]);
 
-            minfo2["mi_orig_title"]=clean_title(xml[root"/original_name"]);
+            minfo2["mi_orig_title"]=html_to_utf8(xml[root"/original_name"]);
 
             minfo2["mi_url"]=xml[root"/url"];
 

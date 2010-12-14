@@ -591,6 +591,7 @@ score) {
         gPriority["mi_title","imdb_orig"]=50;
         gPriority["mi_title","imdb"]=50;
         gPriority["mi_title","thetvdb"]=60;
+        gPriority["mi_title","themoviedb"]=60;
 
         gPriority["mi_poster","imdb"]=40;
         gPriority["mi_poster","motech"]=50;

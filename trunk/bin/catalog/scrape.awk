@@ -843,6 +843,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
             INF("scrape_movie_fragment:"field"=["value"]");
 
             if (field == "mi_title") {
+                value = html_to_utf8(value);
                 value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",0);
             }
             minfo[field]=value;

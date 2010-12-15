@@ -2025,7 +2025,6 @@ function clean_plot(txt) {
     if (index(txt,"Remove Ad")) {
         sub(/\[[Xx]\] Remove Ad/,"",txt);
     }
-    INF("clean_plot["txt"]");
     return txt;
 }
 # Scrape theTvDb series page, populate arrays and return imdb link

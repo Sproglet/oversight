@@ -377,8 +377,15 @@ f,source) {
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
     minfo_merge_ids(current,new["mi_idlist"]);
 
+    set_plot_score(current);
+    set_plot_score(new);
+    if (new["mi_plot_score"] > current["mi_plot_score"] ) {
+        current["mi_plot"] = new["mi_plot"];
+        current["mi_plot_score"] = new["mi_plot_score"];
+    }
+
     for(f in new) {
-        if (f !~ "_source$" && f != "mi_visited" && f != "mi_idlist" ) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" && f != "mi_plot" ) {
             if (f"_source" in new) {
                 source = new[f"_source"];
             }
@@ -389,6 +396,26 @@ f,source) {
         }
     }
     id0("");
+}
+
+function set_plot_score(minfo,\
+score,langs,plot_lang,plot,i,num) {
+    score = 0;
+    plot =minfo["mi_plot"];
+    if (plot) {
+        score = 10;
+        if (substr(plot,3,1) == ":") {
+            plot_lang = lang(plot);
+            num = get_langs(langs);
+            for(i = 1 ; i<= num ; i++ ) {
+                if (plot_lang == langs[i]) {
+                    score = 1000-10*i;
+                    break;
+                }
+            }
+        }
+        minfo["mi_plot_score"] = score;
+    }
 }
 
 #add a website id to the id list - internal format is {<space><domain>:value} 
@@ -863,10 +890,15 @@ function extract_rating(text,minfo,domain,\
 ret) {
     if (minfo["mi_rating"] == "") {
         if (index(text,"/") ) {
-            ret = subexp(text,"([0-9][,.][0-9]+) ?\\/? ?10");
+            ret = subexp(text,"([0-9][,.][0-9]+) ?\\/ ?10");
         }
-        if (ret == "" && index(text,"(")) {
-            ret = subexp(text,"\\(([0-9][,.][0-9]+)\\)");
+        if (ret == "" && (index(text,".") || index(text,","))) { 
+            if (ret == "" && index(text,"(")) {
+                ret = subexp(text,"\\(([0-9][,.][0-9]+)\\)");
+            }
+            if (ret == "") {
+                ret = subexp(text,">([0-9][,.][0-9]+)<");
+            }
         }
         if (ret) {
             best_source(minfo,"mi_rating",ret,domain);

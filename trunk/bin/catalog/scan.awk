@@ -479,7 +479,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,\
-cat,minfo2) {
+cat,minfo2,locales) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
@@ -581,14 +581,7 @@ cat,minfo2) {
 
                             cat = tv_search_simple(minfo,bestUrl,1);
 
-                        } else if (cat == "M" ) {
-
-                            if (!plot_in_main_lang(minfo)) {
-                                # We know it is a movie but still do not have good localised info
-                                find_movie_page(minfo["mi_title"],"",minfo["mi_year"],"","",minfo);
-                            }
-
-                        } else  {
+                        } else if (cat != "M" ) {
 
                             # Not sure - try a TV search looking for various abbreviations.
                             cat = tv_search_complex(minfo,bestUrl,0);
@@ -610,10 +603,17 @@ cat,minfo2) {
                             }
                         }
 
-                        if (cat != "T") {
+                        if (cat == "M") {
                             get_themoviedb_info(extractImdbId(bestUrl),minfo);
                             getNiceMoviePosters(minfo);
+
+                            if (!plot_in_main_lang(minfo)) {
+                                # We know it is a movie but still do not have good localised info
+                                get_locales(locales);
+                                find_movie_by_locale(locales[1],minfo["mi_title"],"",minfo["mi_year"],"","",minfo);
+                            }
                         }
+
 
                         if (cat == "") {
 

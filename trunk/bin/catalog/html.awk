@@ -34,6 +34,19 @@ normedt,ret) {
     id0(ret);
     return ret;
 }
+
+function codepages() {
+
+    if (!(1 in g_cp1251)) {
+        map_codepage_to_utf8(g_cp1251,"80,0402,81,0403,82,201A,83,0453,84,201E,85,2026,86,2020,87,2021,88,20AC,89,2030,8A,0409,8B,2039,8C,040A,8D,040C,8E,040B,8F,040F,90,0452,91,2018,92,2019,93,201C,94,201D,95,2022,96,2013,97,2014,99,2122,9A,0459,9B,203A,9C,045A,9D,045C,9E,045B,9F,045F,A0,00A0,A1,040E,A2,045E,A3,0408,A4,00A4,A5,0490,A6,00A6,A7,00A7,A8,0401,A9,00A9,AA,0404,AB,00AB,AC,00AC,AD,00AD,AE,00AE,AF,0407,B0,00B0,B1,00B1,B2,0406,B3,0456,B4,0491,B5,00B5,B6,00B6,B7,00B7,B8,0451,B9,2116,BA,0454,BB,00BB,BC,0458,BD,0405,BE,0455,BF,0457,C0,0410,C1,0411,C2,0412,C3,0413,C4,0414,C5,0415,C6,0416,C7,0417,C8,0418,C9,0419,CA,041A,CB,041B,CC,041C,CD,041D,CE,041E,CF,041F,D0,0420,D1,0421,D2,0422,D3,0423,D4,0424,D5,0425,D6,0426,D7,0427,D8,0428,D9,0429,DA,042A,DB,042B,DC,042C,DD,042D,DE,042E,DF,042F,E0,0430,E1,0431,E2,0432,E3,0433,E4,0434,E5,0435,E6,0436,E7,0437,E8,0438,E9,0439,EA,043A,EB,043B,EC,043C,ED,043D,EE,043E,EF,043F,F0,0440,F1,0441,F2,0442,F3,0443,F4,0444,F5,0445,F6,0446,F7,0447,F8,0448,F9,0449,FA,044A,FB,044B,FC,044C,FD,044D,FE,044E,FF,044F");
+    }
+
+    if (!(1 in g_8859_7)) {
+        map_codepage_to_utf8(g_8859_7,"A0,00A0,A1,2018,A2,2019,A3,00A3,A4,20AC,A5,20AF,A6,00A6,A7,00A7,A8,00A8,A9,00A9,AA,037A,AB,00AB,AC,00AC,AD,00AD,AF,2015,B0,00B0,B1,00B1,B2,00B2,B3,00B3,B4,0384,B5,0385,B6,0386,B7,00B7,B8,0388,B9,0389,BA,038A,BB,00BB,BC,038C,BD,00BD,BE,038E,BF,038F,C0,0390,C1,0391,C2,0392,C3,0393,C4,0394,C5,0395,C6,0396,C7,0397,C8,0398,C9,0399,CA,039A,CB,039B,CC,039C,CD,039D,CE,039E,CF,039F,D0,03A0,D1,03A1,D3,03A3,D4,03A4,D5,03A5,D6,03A6,D7,03A7,D8,03A8,D9,03A9,DA,03AA,DB,03AB,DC,03AC,DD,03AD,DE,03AE,DF,03AF,E0,03B0,E1,03B1,E2,03B2,E3,03B3,E4,03B4,E5,03B5,E6,03B6,E7,03B7,E8,03B8,E9,03B9,EA,03BA,EB,03BB,EC,03BC,ED,03BD,EE,03BE,EF,03BF,F0,03C0,F1,03C1,F2,03C2,F3,03C3,F4,03C4,F5,03C5,F6,03C6,F7,03C7,F8,03C8,F9,03C9,FA,03CA,FB,03CB,FC,03CC,FD,03CD,FE,03CE");
+
+    }
+
+}
 #getline_encode
 # read a line from html or xml and apply html_decoding and utf8_encoding
 # based on encoding flags at the start of the content.
@@ -42,20 +55,29 @@ normedt,ret) {
 function enc_getline(f,line,\
 code,t) {
 
+    if (g_chr[32] == "" ) {
+        decode_init();
+        codepages();
+    }
+
     code = ( getline t < f );
 
 
     if (code > 0) {
 
-        if (g_f_utf8[f] == "" ) {
+        if (g_encoding[f] == "" ) {
 
             # check encoding
-            g_f_utf8[f] = check_utf8(t,f);
+            g_encoding[f] = check_encoding(t,f);
         }
-        t = html_decode(t,g_f_utf8[f]);
+        t = html_decode(t);
 
-        if (g_f_utf8[f] != 1) {
-            t = utf8_encode(t);
+        if (g_encoding[f] == "windows-1251") {
+            t = utf8_encode(t,g_cp1251);
+        if (g_encoding[f] == "iso-8859-7") {
+            t = utf8_encode(t,g_8859_7);
+        } else if (g_encoding[f] != "utf-8") { # anything else assume latin1 for now
+            t = utf8_encode(t,g_utf8);
         }
         line[1] = t;
     }
@@ -63,26 +85,47 @@ code,t) {
 }
 
 function enc_close(f) {
-    delete g_f_utf8[f];
+    delete g_encoding[f];
     close(f);
 }
 
 # TODO only check xml encoding for first line.
-function check_utf8(line,f,\
-utf8) {
+function check_encoding(line,f,\
+enc) {
     line=tolower(line);
     if (index(line,"<?xml") || index(line,"charset")) {
 
-        utf8 = index(line,"utf-8")?1:-1;
+        if (index(line,"utf-8")) {
+            enc = "utf-8";
+        } else if (index(line,"=windows-1251")) { # cyrillic
+            enc = "windows-1251";
+        } else if (index(line,"=iso-8859-1")) { # latin
+            enc = "iso-8859-1";
+        } else if (index(line,"=iso-8859-7")) { # greek
+            enc = "iso-8859-7";
+        }
 
     } else if (index(f,".json")) {
-        utf8 = 1 ;
+        enc = "utf-8";
 
     } else if (index(line,"</head>")) {
-        utf8 = -1;
+        enc = "iso-8859-1";
     }
-    if (utf8) INF("UTF-8 Encoding:" utf8);
-    return utf8;
+    if (enc) INF("Encoding:" enc);
+    return enc;
+}
+
+
+#map bytes x80 to xFF to UTF8
+function map_codepage_to_utf8(out,utf8_list,\
+i,codes,num) {
+    num=split(utf8_list,codes,",");
+    for(i = 1 ; i<= 127 ; i++ ) {
+        out[i] = g_chr[i];
+    }
+    for(i = 1 ; i < num ; i+=2 ) {
+        out[hex2dec(codes[i])] = html_to_utf8("&#x"codes[i+1]";");
+    }
 }
 
 # Scan a page for matches to regular expression
@@ -246,17 +289,13 @@ function urladd(a,b) {
 }
 
 # encode a string to utf8
-function utf8_encode(text,\
+function utf8_encode(text,codepage,\
 text2,part,parts,count) {
-    if (g_chr[32] == "" ) {
-        decode_init();
-    }
-
 
     if (ascii8(text)) {
         count = chop(text,"["g_8bit"]+",parts);
         for(part=2 ; part-count <= 0 ; part += 2 ) {
-            text2=text2 parts[part-1] utf8_encode2(parts[part]);
+            text2=text2 parts[part-1] utf8_encode2(parts[part],codepage);
             #INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]");
         }
         text2 = text2 parts[count];
@@ -268,16 +307,13 @@ text2,part,parts,count) {
 }
 # encode a string to utf8 that alread consists entirely of chr(128-255)
 # called by utf8_encode
-function utf8_encode2(text,\
+function utf8_encode2(text,codepage,\
 i,text2,ll) {
 
     ll=length(text);
-    for(i = 1 ; i - ll <= 0 ; i++ ) {
-        text2 = text2 g_utf8[substr(text,i,1)];
+    for(i = 1 ; i <= ll ; i++ ) {
+        text2 = text2 codepage[substr(text,i,1)];
     }
-#    if (text != text2 ) {
-#        DEBUG("utf8_encode2 ["text"]=["text2"]");
-#    }
     return text2;
 }
 
@@ -341,14 +377,18 @@ i,c,h,b1,b2) {
     }
 }
 
-function html_decode(text,to_utf8,\
+function html_decode(text,\
 parts,part,count,code,newcode,text2) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
-    if (index(text,"&")) {
 
-        count = chop(text,"[&][#0-9a-zA-Z]+;",parts);
+    # Change all numeric items
+    text = html_to_utf8(text);
+
+    if (index(text,"&") && index(text,";")) {
+
+        count = chop(text,"[&][a-zA-Z]+;",parts);
 
         for(part=2 ; part-count < 0 ; part += 2 ) {
 
@@ -359,33 +399,13 @@ parts,part,count,code,newcode,text2) {
 
                 code=tolower(code); # "&#xff;" "&#255;" "&nbsp;"
 
-                if (index(code,"&#") == 1) {
-                    # &#xff; => xff   &#255; => 255
-                    code = substr(code,3,length(code)-3);
-                    if (index(code,"x") == 1) {
-                        # xff;
-                        newcode=g_chr[code];
-                        if (to_utf8 && (code > "x7f")) {
-                            newcode = g_utf8[newcode];
-                        }
-                    } else {
-                        # &#255;
-                        newcode=g_chr[0+code];
-                        if (to_utf8 && (0+code > 127)) {
-                            newcode = g_utf8[newcode];
-                        }
-                    }
-                    
-                } else {
-                    # "&nbsp;" => "nbsp"
-                    newcode=g_chr[substr(code,2,length(code)-2)];
-                }
+                # "&nbsp;" => "nbsp"
+                newcode=g_chr[substr(code,2,length(code)-2)];
             }
             if (newcode == "") {
                 newcode=parts[part]; #unchanged
             }
             text2=text2 parts[part-1] newcode;
-            #INF("utf8 [["substr(parts[part-1],length(parts[part-1])-20)"]]...[["substr(parts[part+1],1,20)"]]");
         }
         text2 = text2 parts[count];
         if (text != text2 ) {
@@ -397,12 +417,10 @@ parts,part,count,code,newcode,text2) {
 
 function html_to_utf8(text,\
 ret,num,i,j,parts,new,bytes,code,b) {
-    decode_init();
-    num = chop(text,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",parts);
-    for(i = 1 ; i <= num ; i++) {
-        if (i%2 == 1) {
-            ret = ret parts[i];
-        } else {
+    if (index(text,"&#")) {
+        decode_init();
+        num = chop(text,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",parts);
+        for(i = 2 ; i < num ; i+=2) {
             if (tolower(substr(parts[i],1,3)) == "&#x" ) {
                 code = 0+hex2dec(substr(parts[i],4,length(parts[i])-4));
             } else {
@@ -432,18 +450,19 @@ ret,num,i,j,parts,new,bytes,code,b) {
                 }
                 # first byte
                 b=or(and(lshift(0xFC,6-bytes),0xFF),code);
-                printf "b1=%c(%x)\n",b,b; fflush();
                 new  = g_chr[b] new;
             }
-            ret = ret new;
+            ret = ret parts[i-1] new;
         }
-
+        ret = ret parts[num];
+        text = ret;
     }
-    return ret;
+    return text;
 }
 
 # return the number of logical characters in a string (utf-8 chars count as 1 char as does &nbsp; etc ) 
-function utf8len(text) {
+function utf8len(text,\
+inf) {
     utf8_to_byte_pos_main(text,-1,inf);
     return inf["chars"];
 
@@ -490,8 +509,11 @@ byte,i,len,a,ch) {
         }
     }
     inf["byte"] = byte;
-    inf["chars"] = i; # Only really useful if p = -1 or p > number of actual chars else  i = p+1
-    INF("utf8_to_byte_pos_main["text","p"="byte" bytes "i" chars");
+
+    # Only really useful if p = -1 or p > number of actual chars else  i = p+1
+    if (p == -1 ) i--;
+    inf["chars"] = i;
+    #INF("utf8_to_byte_pos_main["text","p"="byte" bytes "i" chars");
 
     return byte;
 }

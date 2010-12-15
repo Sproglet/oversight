@@ -614,7 +614,12 @@ score) {
         gPriority["mi_certrating","imdb"]=60;
         gPriority["mi_certcountry","imdb"]=60;
     }
-    score = gPriority[field,source];
+    if (source ~ "^[0-9]+$") {
+        # if source is numeric then it IS the score.
+        score = source;
+    } else {
+        score = gPriority[field,source];
+    }
     if (score) {
 
         DEBUG("field_priority("field","source")="score);

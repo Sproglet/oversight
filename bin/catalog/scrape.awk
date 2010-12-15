@@ -231,6 +231,7 @@ i,j,keep,keep_num) {
     keep_num = num;
 
     if (regex && regex != "." ) {
+        INF("filter urls by regex ["regex"]");
         j = 0;
         for(i = 1 ; i<= num ; i++ ) {
             if (matches[i] ~ regex ) {
@@ -314,6 +315,7 @@ f,minfo2,err,line,pagestate,namestate,store) {
                 minfo2["mi_category"] = "M";
                 pagestate["mode"] = "head";
                 while(enc_getline(f,line) > 0  ) {
+                    if (index(line[1],"<title") ) DEBUG("xx read title ["line[1]"]");
                     err = scrape_movie_line(locale,domain,line[1],minfo2,pagestate,namestate);
                     if (err) {
                         INF("abort page");
@@ -339,7 +341,7 @@ f,minfo2,err,line,pagestate,namestate,store) {
             err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
         }
 
-        if (!err  &&  !is_prose(minfo2["mi_plot"]) ) {
+        if (!err  &&  !is_prose(locale,minfo2["mi_plot"]) ) {
             #We got the movie but there is no plot;
             #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
             #a significant failure. Most other scraped info is language neutral.
@@ -722,6 +724,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
         }
         if (pagestate["intitle"]) {
             pagestate["title"] = pagestate["title"]fragment;
+            DEBUG("title so far["pagestate["title"]"]");
             if ( index(fragment,"@title-end") ) {
                 pagestate["intitle"]=0;
                 field="mi_title";
@@ -800,12 +803,12 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     } else if ( mode == "plot" && pagestate["mode"] != "head" ) {
 
-        if (is_prose(fragment)) {
+        if (is_prose(locale,fragment)) {
 
             field = "mi_plot";
             value = add_lang_to_plot(locale,clean_plot(fragment));
 
-        } else if (length(fragment > 20) ) {
+        } else if (length(fragment) > 20 ) {
             if (!("badplot" in pagestate)){ 
                 DEBUG("Missing plot ???");
                 pagestate["badplot"] = 1;
@@ -843,7 +846,6 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
             INF("scrape_movie_fragment:"field"=["value"]");
 
             if (field == "mi_title") {
-                value = html_to_utf8(value);
                 value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",0);
             }
             minfo[field]=value;
@@ -873,8 +875,8 @@ ret) {
     }
 }
 
-function is_prose(text,\
-words,num,i,len) {
+function is_prose(locale,text,\
+words,num,i,len,is_english,lng) {
 
     #remove hyperlinked text
     if (index(text,"@label@")) {
@@ -891,14 +893,20 @@ words,num,i,len) {
 
         len = utf8len(text);
 
+
         if (len > g_min_plot_len ) {
-            num = split(text,words," ")+0;
-            #DEBUG("words = "num" required "(length(text)/10));
-            if (num >= len/8 ) { #av word length less than 10 chars
-                if (num <= len/5 ) { # av word length > 4 chars (minus space)
-                    if ( index(text,"Mozilla") == 0) {
-                        for(i in words) if (utf8len(words[i]) > 30) return 0;
-                        return 1;
+            lng = lang(locale);
+            is_english = (text ~ g_english_re);
+            DEBUG("utf8len = "len" length="length(text)" g_min_plot_len="g_min_plot_len" lang="lng" english="is_english);
+            if ( (lng == "en") == is_english  ) {
+                num = split(text,words," ")+0;
+                #DEBUG("words = "num" required "(length(text)/10));
+                if (num >= len/8 ) { #av word length less than 10 chars
+                    if (num <= len/5 ) { # av word length > 4 chars (minus space)
+                        if ( index(text,"Mozilla") == 0) {
+                            for(i in words) if (utf8len(words[i]) > 30) return 0;
+                            return 1;
+                        }
                     }
                 }
             }
@@ -926,7 +934,7 @@ key,regex,ret,lcfragment,dbg,all_keys) {
     #dbg = index(fragment,"Billed Cast");
 
     # if there is a bit of prose without a keyword - assume it is the plot
-    if (!("badplot" in pagestate) && pagestate["inbody"] && is_prose(fragment)) {
+    if (!("badplot" in pagestate) && pagestate["inbody"] && is_prose(locale,fragment)) {
 
        ret = "plot";
 

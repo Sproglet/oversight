@@ -325,7 +325,6 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         if (and(action,1)) { 
             row1 = get_dbline(file1);
             parseDbRow(row1,fields1,1);
-            DEBUG("ORIGINAL:["fields1[FILE]"]");
         }
         if (and(action,2)) {
             row2 = get_dbline(file2);
@@ -360,7 +359,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             }
         }
 
-        DEBUG("merge action="action);
+        #DEBUG("merge action="action);
         if (action == 1) { # output row1
             if (keep_dbline(row1,fields1)) {
                 total_unchanged++;
@@ -469,7 +468,7 @@ dbline,dbfields,err,count,filter) {
         }
     }
     if (err >= 0 ) close(db);
-    DEBUG("get_files_in_db ["prefix"]="count" files");
+    #DEBUG("get_files_in_db ["prefix"]="count" files");
 }
 
 

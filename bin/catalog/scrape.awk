@@ -5,8 +5,9 @@
 # INPUT runtime  - used for validation can be blank
 # INPUT director  - used for validation can be blank
 # IN/OUT minfo - Movie info
+# IN imdbid - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_page(text,title,year,runtime,director,minfo,\
+function find_movie_page(text,title,year,runtime,director,minfo,imdbid,\
 i,err,minfo2,num,locales) {
 
     err = 1;
@@ -14,7 +15,7 @@ i,err,minfo2,num,locales) {
 
     num = get_locales(locales);
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_locale(locales[i],text,title,year,runtime,director,minfo2);
+        err=find_movie_by_locale(locales[i],text,title,year,runtime,director,minfo2,imdbid);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -46,8 +47,9 @@ ret) {
 # INPUT director  - used for validation can be blank
 
 # IN/OUT minfo - Movie info
+# IN imdbid - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_by_locale(locale,text,title,year,runtime,director,minfo,\
+function find_movie_by_locale(locale,text,title,year,runtime,director,minfo,imdbid,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
@@ -57,7 +59,7 @@ i,num,sites,minfo2,err,searchhist) {
 
         num=split(g_settings["locale:catalog_locale_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_locale(sites[i],locale,text,title,year,runtime,director,minfo2,searchhist);
+            err=find_movie_by_site_locale(sites[i],locale,text,title,year,runtime,director,minfo2,imdbid,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -140,9 +142,10 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 # IN title - movie title - passed to query
 # IN year  - passed to query
 # OUT minfo - Movie info - cleared before use.
+# IN imdbid - if not blank used to validate page
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,minfo,searchhist,\
+function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,minfo,imdbid,searchhist,\
 minfo2,err,matches,num,url_domain,i,max_allowed_results) {
 
     err = 1;
@@ -163,7 +166,7 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
         num = max_allowed_results;
     }
 
-    dump(0,"filtered matches",matches);
+    dumpord(0,"filtered matches",matches);
     for(i = 1 ; i <= num ; i++ ) {
         url_domain = get_main_domain(matches[i]);
 
@@ -172,7 +175,7 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
         } else {
 
             set_visited_url(matches[i],searchhist);
-            err = scrape_movie_page(text,title,year,runtime,director,matches[i],locale,url_domain,minfo2);
+            err = scrape_movie_page(text,title,year,runtime,director,matches[i],locale,url_domain,minfo2,imdbid);
             if (!err) {
                 minfo_merge(minfo,minfo2,url_domain);
                 break;
@@ -291,9 +294,10 @@ i,j,keep) {
 # IN locale - eg en_US, fr_FR
 # IN domain  - main domain of site eg imdb, allocine etc.
 # OUT minfo - Movie info - cleared before use.
+# IN imdbid - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,\
-f,minfo2,err,line,pagestate,namestate,store) {
+function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,imdbid,\
+f,minfo2,err,line,pagestate,namestate,store,found_id) {
 
     err = 0;
     id1("scrape_movie_page("url","locale","domain","text","title","year")");
@@ -315,6 +319,19 @@ f,minfo2,err,line,pagestate,namestate,store) {
                 minfo2["mi_category"] = "M";
                 pagestate["mode"] = "head";
                 while(enc_getline(f,line) > 0  ) {
+
+                    # check imdbid
+                    if (imdbid && found_id == "" && index(line[1],"tt") && match(line[1],g_imdb_regex)) {
+                        found_id = substr(line[1],RSTART,RLENGTH);
+                        if  (found_id != imdbid ) {
+                            INF("Rejecting page - found imdbid "found_id" expected "imdbid);
+                            err = 1;
+                            break;
+                        } else {
+                            INF("Confirmed imdb link on page");
+                        }
+                    }
+
                     if (index(line[1],"<title") ) DEBUG("xx read title ["line[1]"]");
                     err = scrape_movie_line(locale,domain,line[1],minfo2,pagestate,namestate);
                     if (err) {
@@ -578,9 +595,8 @@ line2) {
         line = gensub(/(<[iI][mM][gG][^>]* )[Ss][Rr][Cc]=("([^"]+)"|'([^']+)'|([^ >]+))([^>]*)/," src=\"\\3\\4\\5\" \\1\\6","g",line);
     }
     #if (line != line2) {
-    #    if (index(line2,"name/nm")) {
-    #        DEBUG("XX preserve_src_href ["line"]");
-    #        DEBUG("XX preserve_src_href ["line2"]");
+    #    if (index(line2,"Thumbnail")) {
+    #        DEBUG("xx3 preserve_src_href ["line"]");
     #    }
     #}
     return line;
@@ -693,7 +709,7 @@ i,num,sections,err) {
     err = 0;
     sub(/^ */,"",line);
 
-    pagestate["debug"] = index(line,"Avec");
+    #pagestate["debug"] = index(line,"Thumbnail");
 
     num = reduce_markup(line,sections,pagestate);
     if (num) {
@@ -729,7 +745,7 @@ i,num,sections,err) {
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
 function scrape_movie_fragment(locale,domain,fragment,minfo,pagestate,namestate,\
-mode,rest_fragment,max_people,field,value,tmp,err,matches) {
+mode,rest_fragment,max_people,field,value,tmp,matches) {
 
     
     #DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
@@ -754,7 +770,6 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
             DEBUG("title so far["pagestate["title"]"]");
             if ( index(fragment,"@title-end") ) {
                 pagestate["intitle"]=0;
-                field="mi_title";
 
                 value=pagestate["title"];
 
@@ -765,16 +780,12 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
                 # extract the year if present AND in brackets
                 if (index(value,"(") || index(value,"[")) {
                     if (split(gensub("([[(].*)("g_year_re")(.*[])])","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
-                        minfo["mi_year"] = matches[3];
-                        INF("Year="minfo["mi_year"]);
+                        update_minfo(minfo,"mi_year",matches[3],domain);
                         value=trim(matches[1]);
                     }
                     #dumpord(0,"findyear",matches);
                 }
-                if(value) {
-                    minfo["title_source"] = domain;
-                }
-
+                update_minfo(minfo,"mi_title",value,domain);
             }
         }
 
@@ -786,30 +797,25 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     } else if ( mode == "title" ) {
 
-        field="mi_title";
-        value = trim(fragment);
+        update_minfo(minfo,"mi_title", trim(fragment),domain);
 
     } else if ( mode == "year" ) {
 
-        field="mi_year";
-        if (minfo[field] == "") {
-            value = subexp(fragment,"("g_year_re")");
+        if (minfo["mi_year"] == "") {
+            update_minfo(minfo,"mi_year",subexp(fragment,"("g_year_re")") ,domain);
         }
 
     } else if ( mode == "country" ) {
 
-        field="mi_country";
-        value = trim(fragment);
+        update_minfo(minfo,"mi_country", trim(fragment),domain);
 
     } else if ( mode == "original_title" ) {
 
-        field = "mi_orig_title";
-        value = trim(fragment);
+        update_minfo(minfo,"mi_orig_title", trim(fragment),domain);
 
     } else if ( mode == "duration" ) {
 
-        field = "mi_runtime";
-        value = extract_duration(fragment);
+        update_minfo(minfo, "mi_runtime",extract_duration(fragment) ,domain);
 
     } else if ( mode == "genre" ) {
 
@@ -824,16 +830,14 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
     } else if ( mode == "released" ) {
 
         if (extractDate(fragment,matches)) {
-            field="mi_year";
-            value=matches[1];
+            update_minfo(minfo, "mi_year", matches[1],domain);
         }
 
     } else if ( mode == "plot" && pagestate["mode"] != "head" ) {
 
         if (is_prose(locale,fragment)) {
 
-            field = "mi_plot";
-            value = add_lang_to_plot(locale,clean_plot(fragment));
+            update_minfo(minfo, "mi_plot", add_lang_to_plot(locale,clean_plot(fragment)),domain);
 
         } else if (length(fragment) > 20 ) {
             if (!("badplot" in pagestate)){ 
@@ -843,8 +847,7 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
         }
 
     } else if ( mode == "title" ) {
-        field = "mi_title";
-        value = fragment;
+        update_minfo(minfo,"mi_title",fragment,domain);
     }
 
     # category - special case for imdb only
@@ -854,36 +857,52 @@ mode,rest_fragment,max_people,field,value,tmp,err,matches) {
 
     extract_rating(fragment,minfo,domain);
 
-    # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
-    if (field == "" && minfo["mi_poster"] == "" && (index(fragment,"src=") || index(fragment,"href="))) {
+    scrape_poster(fragment,minfo,domain);
 
-        value = domain_edits(domain,fragment,"catalog_domain_poster_url_regex_list",0);
-        if (value) {
-            field = "mi_poster";
-            DEBUG(field"?["value"]");
+    return 0;
+}
+
+function scrape_poster(text,minfo,domain,\
+dnum,dtext,i,value) {
+    # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
+    if (minfo["mi_poster"] == "" && (index(text,"src=") || index(text,"href="))) {
+
+        dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
+        for(i = 1 ; i <= dnum ; i++ ) {
+            dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
+            value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
+            if (value) {
+                update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain);
+                break;
+            }
         }
     }
+}
 
-    err = 0;
+
+function add_domain_to_url(domain,url) {
+    if (url && index(url,"http:") != 1) {
+        url = "http://"domain"/"url;
+    }
+    return url;
+}
+
+function update_minfo(minfo,field,value,domain) {
+
     if (field && value ) {
         if (minfo[field]) {
             #DEBUG("scrape_movie_fragment:"field" ignoring ["value"]");
         } else {
 
-            INF("scrape_movie_fragment:"field"=["value"]");
+            INF("scrape_movie_fragment: set "field"=["value"]");
 
             if (field == "mi_title") {
                 value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",0);
             }
             minfo[field]=value;
             minfo[field"_source"]=domain;
-
-            if (field == "mi_poster" || field == "mi_title" || field == "mi_plot" ) {
-                minfo[field"_source"] = domain;
-            }
         }
     }
-    return err;
 }
 
 function extract_rating(text,minfo,domain,\
@@ -930,6 +949,9 @@ words,num,i,len,is_english,lng) {
             lng = lang(locale);
             is_english = (text ~ g_english_re);
             DEBUG("utf8len = "len" length="length(text)" g_min_plot_len="g_min_plot_len" lang="lng" english="is_english);
+            if (length(text) > len * 1.1 && is_english) {
+                WARNING("found english in ["text"]??");
+            }
             if ( (lng == "en") == is_english  ) {
                 num = split(text,words," ")+0;
                 #DEBUG("words = "num" required "(length(text)/10));
@@ -1233,7 +1255,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                         dump(0,"xx namestate",namestate);
 
                     # Convert URL from thumbnail to big
-                        namestate["src"] = person_get_img_url(domain,substr(dtext[i],6));
+                        namestate["src"] = person_get_img_url(domain,add_domain_to_url(domain,substr(dtext[i],6)));
                         #DEBUG("XX1 got full size image ["namestate["src"]"]");
                         check_img = 1;
 

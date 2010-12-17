@@ -599,10 +599,6 @@ score) {
         gPriority["mi_poster","thetvdb"]=60;
         gPriority["mi_poster","themoviedb"]=60;
 
-        gPriority["mi_plot","imdb"]=40;
-        gPriority["mi_plot","themoviedb"]=60;
-        gPriority["mi_plot","thetvdb"]=60;
-
         gPriority["mi_rating","themoviedb"]=20;
         gPriority["mi_rating","thetvdb"]=20;
         gPriority["mi_rating","imdb"]=60;
@@ -613,6 +609,10 @@ score) {
         gPriority["mi_category","imdb"]=60;
         gPriority["mi_certrating","imdb"]=60;
         gPriority["mi_certcountry","imdb"]=60;
+
+        gPriority["mi_genre","themoviedb"]=40;
+        gPriority["mi_genre","thetvdb"]=40;
+        gPriority["mi_genre","imdb"]=50;
     }
     if (source ~ "^[0-9]+$") {
         # if source is numeric then it IS the score.
@@ -629,6 +629,8 @@ score) {
         # Generally give priority to tmdb and thetvdb first, then imdb (which we are phasing out) , finally anything else.
         if (source == "@nfo" ) {
             score = 99; # default nfo score - highest
+        } else if (source == "@imdb" ) {
+            score = 1; # default imdb score 
         } else {
             score = gPriority["default"];
         }

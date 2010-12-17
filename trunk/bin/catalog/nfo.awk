@@ -19,7 +19,7 @@ num,tags,i,tmp,ret) {
                 }
             }
             minfo2["mi_title"] = xml["/movie/title"];
-            minfo2["mi_original_title"] = xml["/movie/originaltitle"];
+            minfo2["mi_orig_title"] = xml["/movie/originaltitle"];
             minfo2["mi_rating"] = xml["/movie/rating"];
             minfo2["mi_year"] = xml["/movie/year"];
             minfo2["mi_plot"] = xml["/movie/plot"];

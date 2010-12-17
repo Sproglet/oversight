@@ -2871,7 +2871,7 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
 
         if (result == NULL) {
 
-            printf("?%s?",call);
+            printf("??%s?",call);
 
         }
 
@@ -2921,7 +2921,7 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
 
             //HTML_LOG(1,"end macro [%s]",call);
         } else {
-            printf("?%s?",call);
+            printf("?%s??",call);
         }
         array_free(args);
     }

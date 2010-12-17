@@ -3,7 +3,6 @@ function keep_plots(fields,plot_ids,\
 id) {
 
     id = fields_to_plot_id(fields);
-    DEBUG("xx keep_plots["id"]");
     plot_ids[id] = 1;
     if (fields[CATEGORY] == "T") {
         id = plot_to_season_id(id);
@@ -62,7 +61,7 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     do {
         if (and(action,1)) {
             get_plotline(plot_file,tabs1);
-            DEBUG("read plot id 1["tabs1[1]"]");
+            #DEBUG("read plot id 1["tabs1[1]"]");
         }
         if (and(action,2)) {
             get_plotline(queue_file,tabs2);
@@ -159,7 +158,7 @@ id) {
    if (cat == "T" ) {
         id = id"@"season"@"episode;
     }
-    INF("plot_id ["idlist"]="id);
+    #DEBUG("plot_id ["idlist"]="id);
     return id;
 }
 

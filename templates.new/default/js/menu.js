@@ -63,6 +63,9 @@ function ovs_menu(menu)
 
    if (menu["title"]) {
        title = menu["title"];
+       if (menu["orig_title"]) {
+           title = title+" ("+menu["orig_title"]+")";
+       }
        if (menu["view"] == "tvboxset" ) {
 
            title = ovsString_tvBoxset(title, menu["num_seasons"], menu["year"]);

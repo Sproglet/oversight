@@ -48,7 +48,7 @@ row,est,nfo,op,start) {
     #Title and Season must be kept next to one another to aid grepping.
     #Put the overview items near the start to speed up scanning
     row=row"\t"TITLE"\t"minfo["mi_title"];
-    if (minfo["mi_orig_title"] != "" && minfo["mi_orig_title"] != minfo["mi_title"] ) {
+    if (minfo["mi_orig_title"] != "" && norm_title(minfo["mi_orig_title"]) != norm_title(minfo["mi_title"]) ) {
         row=row"\t"ORIG_TITLE"\t"minfo["mi_orig_title"];
     }
     if (minfo["mi_season"] != "") row=row"\t"SEASON"\t"minfo["mi_season"];

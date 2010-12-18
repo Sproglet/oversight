@@ -747,6 +747,29 @@ char *macro_fn_genre(MacroCallInfo *call_info) {
     return genre;
 }
 
+/**
+ * =begin wiki
+ * ==ORIG_TITLE==
+ * Can Also use $field_ORIG_TITLE
+ * =end wiki
+ **/
+char *macro_fn_orig_title(MacroCallInfo *call_info) {
+
+    char *result = "?";
+    call_info->free_result=0;
+
+    if (call_info->sorted_rows &&  call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->orig_title ) {
+        result = call_info->sorted_rows->rows[0]->orig_title;
+    } 
+    return result;
+}
+
+/**
+ * =begin wiki
+ * ==TITLE==
+ * Can Also use $field_TITLE
+ * =end wiki
+ **/
 char *macro_fn_title(MacroCallInfo *call_info) {
 
     char *result = "?";
@@ -2798,6 +2821,8 @@ void macro_init() {
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
         hashtable_insert(macros,"OTHER_MEDIA_TOTAL",macro_fn_other_media_total);
+        hashtable_insert(macros,"ORIGINAL_TITLE",macro_fn_orig_title);
+        hashtable_insert(macros,"ORIG_TITLE",macro_fn_orig_title);
         hashtable_insert(macros,"PAYPAL",macro_fn_paypal);
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"PAGE",macro_fn_page);

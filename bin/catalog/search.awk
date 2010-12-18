@@ -592,7 +592,6 @@ score) {
         gPriority["mi_title","imdb"]=50;
         gPriority["mi_title","thetvdb"]=60;
         gPriority["mi_title","themoviedb"]=60;
-        gPriority["mi_title","kinopoisk.ru"]=70;
 
         gPriority["mi_poster","imdb"]=40;
         gPriority["mi_poster","motech"]=50;
@@ -614,9 +613,9 @@ score) {
         gPriority["mi_genre","thetvdb"]=40;
         gPriority["mi_genre","imdb"]=50;
     }
-    if (source ~ "^[0-9]+$") {
+    if (source ~ "^[0-9]+") {
         # if source is numeric then it IS the score.
-        score = source;
+        score = 0+source;
     } else {
         score = gPriority[field,source];
     }
@@ -673,7 +672,7 @@ ret) {
         if (is_better_source(minfo,field,source)) {
             minfo[field] = value;
             minfo[field"_source"] = source;
-            INF("best_source: "field" = "source":["value"]");
+            DEBUG("best_source: "field" = "source":["value"]");
             ret = 1;
         }
     }

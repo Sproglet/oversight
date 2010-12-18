@@ -1,7 +1,7 @@
 # 1=found movie in required language
 # 0=not found
 function get_themoviedb_info(imdb_id,minfo,\
-url,xml,i,num,langs,root,ret,xmlret,minfo2) {
+url,xml,i,num,langs,root,ret,xmlret,minfo2,ln) {
 
     id1("get_themoviedb_info "imdb_id);
     num = get_langs(langs);
@@ -13,6 +13,7 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2) {
         url="http://api.themoviedb.org/2.1/Movie.imdbLookup/"langs[i]"/xml/"g_api_tmdb"/"imdb_id;
 
         xmlret = fetchXML(url,"themoviedb",xml);
+        ln = "";
 
         #dump(0,"themoviedb",xml);
 
@@ -27,6 +28,19 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2) {
             break;
 
         } else if (xml[root"/translated"] == "true") {
+
+            ln = langs[i];
+
+        } else if (xml[root"/translated"] == "false" && length(xml[root"/overview"]) > 20 && i<num && langs[i+1] == "en" ) {
+            # next page was English - might as well use this one.
+            INF("page not translated but using as English");
+            ln = "en";
+            i++;
+        }
+
+        if (ln) {
+
+            dumpxml("themoviedb",xml);
 
             minfo2["mi_plot"]=add_lang_to_plot(langs[i],clean_plot(xml[root"/overview"]));
 

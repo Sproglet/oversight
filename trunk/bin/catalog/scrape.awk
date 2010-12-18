@@ -147,13 +147,16 @@ ret,i,url,id) {
         if (id) {
             matches[++ret] = g_settings["domain:catalog_domain_movie_url"];
             sub(/\{ID\}/,id,matches[ret]);
-            DEBUG("["url"] -> ["matches[ret]"]");
+            #DEBUG("["url"] -> ["matches[ret]"]");
         }
     }
     for(i = ret + 1 ; i <= num ; i++ ) {
         delete matches[i];
     }
 
+    if (ret != num) {
+        dumpord(0,"matches after clean links",matches);
+    }
     return ret;
 
 }
@@ -272,7 +275,7 @@ i,j,keep,keep_num) {
         keep_num = j;
     }
     if (keep_num != num) {
-        dumpord(0,"matches--removed non movie",matches);
+        dumpord(0,"matches after removed non movie",matches);
     }
     return keep_num;
 }
@@ -299,9 +302,7 @@ i,j,keep) {
 
     j = 0;
     for ( i = 1 ; (i in matches) ; i++ ) {
-        if (matches[i] == 0) {
-            DEBUG("removing ["matches[i]"] ");
-        } else {
+        if (matches[i] ) {
             keep[++j] = matches[i];
         }
     }
@@ -911,16 +912,19 @@ err,value){
 
 function scrape_poster(text,minfo,domain,\
 dnum,dtext,i,value) {
-    # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
-    if (minfo["mi_poster"] == "" && (index(text,"src=") || index(text,"href="))) {
+    if (g_settings["domain:catalog_domain_poster_url_regex_list"]) {
+        # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
+        if (minfo["mi_poster"] == "" && (index(text,"src=") || index(text,"href="))) {
 
-        dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
-        for(i = 1 ; i <= dnum ; i++ ) {
-            dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
-            value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
-            if (value) {
-                update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain);
-                break;
+            dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
+            for(i = 1 ; i <= dnum ; i++ ) {
+                dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
+                value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
+                if (value) {
+                    update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain);
+                    minfo["mi_poster_source"] = "80:"domain;
+                    break;
+                }
             }
         }
     }

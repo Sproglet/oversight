@@ -58,6 +58,13 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
             }
         }
         newName = substitute("DIR",minfo["mi_folder"],newName);
+
+
+        if (minfo["mi_orig_title"]) {
+            newName = substitute("ORIG_TITLE",minfo["mi_orig_title"],newName);
+        } else {
+            newName = substitute("ORIG_TITLE",minfo["mi_title"],newName);
+        }
         newName = substitute("TITLE",minfo["mi_title"],newName);
         newName = substitute("YEAR",minfo["mi_year"],newName);
         newName = substitute("CERT",minfo["mi_certrating"],newName);

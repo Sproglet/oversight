@@ -290,7 +290,7 @@ END{
     # Another option is to search sites directly but thier search algorithms are usually too strict
     # with scoring each keyword.
     g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8;eo=UTF-8;p=");
-    g_search_ask = get_local_search_engine("http://ask.com","/web","?q=");
+    #g_search_ask = get_local_search_engine("http://ask.com","/web","?q=");
     g_search_bing = "http://www.bing.com/search?q=";
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=
@@ -875,6 +875,7 @@ punc) {
     if (index(t,"  ")) gsub(/ +/," ",t);
 
     t=trim(capitalise(tolower(t)));
+
 
     return t;
 }

@@ -375,7 +375,11 @@ i,rtext,rstart,words,wcount) {
     text = "";
 
     for(i = 1 ; i<= wcount ; i++) {
-        text = text " " toupper(substr(words[i],1,1)) substr(words[i],2);
+        if (i== 1 || i==wcount || length(words[i]) > 3 || words[i] !~ "^(in|of|and|it|or|not|a)$") {
+            text = text " " toupper(substr(words[i],1,1)) substr(words[i],2);
+        } else {
+            text = text " " words[i];
+        }
     }
 
     ## Uppercase roman

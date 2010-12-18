@@ -41,6 +41,10 @@ function codepages() {
         DEBUG("cp g_cp1251");
         map_codepage_to_utf8(g_cp1251,"80,0402,81,0403,82,201A,83,0453,84,201E,85,2026,86,2020,87,2021,88,20AC,89,2030,8A,0409,8B,2039,8C,040A,8D,040C,8E,040B,8F,040F,90,0452,91,2018,92,2019,93,201C,94,201D,95,2022,96,2013,97,2014,99,2122,9A,0459,9B,203A,9C,045A,9D,045C,9E,045B,9F,045F,A0,00A0,A1,040E,A2,045E,A3,0408,A4,00A4,A5,0490,A6,00A6,A7,00A7,A8,0401,A9,00A9,AA,0404,AB,00AB,AC,00AC,AD,00AD,AE,00AE,AF,0407,B0,00B0,B1,00B1,B2,0406,B3,0456,B4,0491,B5,00B5,B6,00B6,B7,00B7,B8,0451,B9,2116,BA,0454,BB,00BB,BC,0458,BD,0405,BE,0455,BF,0457,C0,0410,C1,0411,C2,0412,C3,0413,C4,0414,C5,0415,C6,0416,C7,0417,C8,0418,C9,0419,CA,041A,CB,041B,CC,041C,CD,041D,CE,041E,CF,041F,D0,0420,D1,0421,D2,0422,D3,0423,D4,0424,D5,0425,D6,0426,D7,0427,D8,0428,D9,0429,DA,042A,DB,042B,DC,042C,DD,042D,DE,042E,DF,042F,E0,0430,E1,0431,E2,0432,E3,0433,E4,0434,E5,0435,E6,0436,E7,0437,E8,0438,E9,0439,EA,043A,EB,043B,EC,043C,ED,043D,EE,043E,EF,043F,F0,0440,F1,0441,F2,0442,F3,0443,F4,0444,F5,0445,F6,0446,F7,0447,F8,0448,F9,0449,FA,044A,FB,044B,FC,044C,FD,044D,FE,044E,FF,044F");
     }
+    if (!(1 in g_cp1252)) {
+        DEBUG("cp g_cp1252");
+        map_codepage_to_utf8(g_cp1252,"80,20AC,82,201A,83,0192,84,201E,85,2026,86,2020,87,2021,88,02C6,89,2030,8A,0160,8B,2039,8C,0152,8E,017D,91,2018,92,2019,93,201C,94,201D,95,2022,96,2013,97,2014,98,02DC,99,2122,9A,0161,9B,203A,9C,0153,9E,017E,9F,0178,A0,00A0,A1,00A1,A2,00A2,A3,00A3,A4,00A4,A5,00A5,A6,00A6,A7,00A7,A8,00A8,A9,00A9,AA,00AA,AB,00AB,AC,00AC,AD,00AD,AE,00AE,AF,00AF,B0,00B0,B1,00B1,B2,00B2,B3,00B3,B4,00B4,B5,00B5,B6,00B6,B7,00B7,B8,00B8,B9,00B9,BA,00BA,BB,00BB,BC,00BC,BD,00BD,BE,00BE,BF,00BF,C0,00C0,C1,00C1,C2,00C2,C3,00C3,C4,00C4,C5,00C5,C6,00C6,C7,00C7,C8,00C8,C9,00C9,CA,00CA,CB,00CB,CC,00CC,CD,00CD,CE,00CE,CF,00CF,D0,00D0,D1,00D1,D2,00D2,D3,00D3,D4,00D4,D5,00D5,D6,00D6,D7,00D7,D8,00D8,D9,00D9,DA,00DA,DB,00DB,DC,00DC,DD,00DD,DE,00DE,DF,00DF,E0,00E0,E1,00E1,E2,00E2,E3,00E3,E4,00E4,E5,00E5,E6,00E6,E7,00E7,E8,00E8,E9,00E9,EA,00EA,EB,00EB,EC,00EC,ED,00ED,EE,00EE,EF,00EF,F0,00F0,F1,00F1,F2,00F2,F3,00F3,F4,00F4,F5,00F5,F6,00F6,F7,00F7,F8,00F8,F9,00F9,FA,00FA,FB,00FB,FC,00FC,FD,00FD,FE,00FE,FF,00FF");
+    }
     if (!(1 in g_cp1253)) {
         DEBUG("cp g_cp1253");
         map_codepage_to_utf8(g_cp1253,"80,20AC,82,201A,83,0192,84,201E,85,2026,86,2020,87,2021,89,2030,8B,2039,91,2018,92,2019,93,201C,94,201D,95,2022,96,2013,97,2014,99,2122,9B,203A,A0,00A0,A1,0385,A2,0386,A3,00A3,A4,00A4,A5,00A5,A6,00A6,A7,00A7,A8,00A8,A9,00A9,AB,00AB,AC,00AC,AD,00AD,AE,00AE,AF,2015,B0,00B0,B1,00B1,B2,00B2,B3,00B3,B4,0384,B5,00B5,B6,00B6,B7,00B7,B8,0388,B9,0389,BA,038A,BB,00BB,BC,038C,BD,00BD,BE,038E,BF,038F,C0,0390,C1,0391,C2,0392,C3,0393,C4,0394,C5,0395,C6,0396,C7,0397,C8,0398,C9,0399,CA,039A,CB,039B,CC,039C,CD,039D,CE,039E,CF,039F,D0,03A0,D1,03A1,D3,03A3,D4,03A4,D5,03A5,D6,03A6,D7,03A7,D8,03A8,D9,03A9,DA,03AA,DB,03AB,DC,03AC,DD,03AD,DE,03AE,DF,03AF,E0,03B0,E1,03B1,E2,03B2,E3,03B3,E4,03B4,E5,03B5,E6,03B6,E7,03B7,E8,03B8,E9,03B9,EA,03BA,EB,03BB,EC,03BC,ED,03BD,EE,03BE,EF,03BF,F0,03C0,F1,03C1,F2,03C2,F3,03C3,F4,03C4,F5,03C5,F6,03C6,F7,03C7,F8,03C8,F9,03C9,FA,03CA,FB,03CB,FC,03CC,FD,03CD,FE,03CE");
@@ -81,9 +85,12 @@ code,t) {
             t = utf8_encode(t,g_cp1251);
         } else if (g_encoding[f] == "windows-1253") {
             t = utf8_encode(t,g_cp1253);
+        } else if (g_encoding[f] == "windows-1252" || g_encoding[f] == "iso-8859-1") {
+            t = utf8_encode(t,g_cp1252);
         } else if (g_encoding[f] == "iso-8859-7") {
             t = utf8_encode(t,g_8859_7);
-        } else if (g_encoding[f] != "utf-8") { # anything else assume latin1 for now
+        } else if (g_encoding[f] != "utf-8") {
+            WARNING("unknown encoding ["g_encoding[f]"]");
             t = utf8_encode(t,g_utf8);
         }
         line[1] = t;
@@ -107,17 +114,12 @@ enc,line,code) {
     } else {
         while ( enc == "" &&  (code = ( getline line < f )) > 0) {
             line=tolower(line);
-            if (index(line,"<?xml") || index(line,"charset")) {
 
-                if (index(line,"utf-8")) {
-                    enc = "utf-8";
-                } else if (index(line,"=windows-1251")) { # cyrillic
-                    enc = "windows-1251";
-                } else if (index(line,"=iso-8859-1")) { # latin
-                    enc = "iso-8859-1";
-                } else if (index(line,"=iso-8859-7")) { # greek
-                    enc = "iso-8859-7";
-                }
+            if (index(line,"encoding") || index(line,"charset")) {
+
+                enc=subexp(line,"(encoding|charset)=\"?([^\"> ]+)",2);
+
+                if (index(line,"<?xml")) break;
 
 
             } else if (index(line,"</head>") || index(line,"<body>")) break;

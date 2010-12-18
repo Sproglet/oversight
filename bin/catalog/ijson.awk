@@ -81,9 +81,10 @@ json,cast,ret,i,tag,minfo2) {
                     minfo2["mi_runtime"] = json["data:runtime:time"]/60;
                     minfo2["mi_title"] = json["data:title"];
 
+                    # other values are "feature" and "documentary" - for now treat all non-tv_series as feature and use genre to differentiate.
                     if (json["data:type"] == "tv_series" ) {
                         minfo2["mi_category"] = "T";
-                    } else if (json["data:type"] == "feature" ) {
+                    } else {
                         minfo2["mi_category"] = "M";
                     }
 

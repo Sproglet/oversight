@@ -323,7 +323,7 @@ i,j,keep) {
 # IN imdbid - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
 function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,imdbid,\
-f,minfo2,err,line,pagestate,namestate,store,found_id) {
+f,minfo2,err,line,pagestate,namestate,store,found_id,fullline) {
 
     err = 0;
     id1("scrape_movie_page("url","locale","domain","text","title","year")");
@@ -346,7 +346,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id) {
                 minfo2["mi_url"] = url;
                 minfo2["mi_category"] = "M";
                 pagestate["mode"] = "head";
-                while(enc_getline(f,line) > 0  ) {
+                while(!err && enc_getline(f,line) > 0  ) {
 
                     # check imdbid
                     if (imdbid && found_id == "" && index(line[1],"tt") && match(line[1],g_imdb_regex)) {
@@ -354,20 +354,34 @@ f,minfo2,err,line,pagestate,namestate,store,found_id) {
                         if  (found_id != imdbid ) {
                             INF("Rejecting page - found imdbid "found_id" expected "imdbid);
                             err = 1;
-                            break;
                         } else {
                             INF("Confirmed imdb link on page");
                         }
                     }
 
-                    if (index(line[1],"<title") ) DEBUG("xx read title ["line[1]"]");
-                    err = scrape_movie_line(locale,domain,line[1],minfo2,pagestate,namestate);
-                    if (err) {
-                        INF("abort page");
-                        break;
+                    if (!err) {
+                        # Join current line to previous line if it has no markup. This is for sites that split the 
+                        # plot paragraph across several physical lines.
+                        # There is a bug joining the last line if it ends with "text<br>"
+                        if (index(line[1],"{") == 0 && index(line[1],"<") == 0) {
+                            fullline = trim(fullline) " " trim(line[1]);
+                        } else if (fullline) {
+                            err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
+                            if (err) {
+                                break;
+                            }
+                            fullline = line[1];
+                        }
                     }
                 }
                 close(f);
+                # last line
+                if (fullline && !err) {
+                    err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
+                }
+                if (err) {
+                    INF("abort page");
+                }
             }
         } 
 
@@ -737,6 +751,7 @@ i,num,sections,err) {
     sub(/^ */,"",line);
 
     #pagestate["debug"] = index(line,"Thumbnail");
+    #DEBUG("xx line["line"]");
 
     num = reduce_markup(line,sections,pagestate);
     if (num) {
@@ -749,6 +764,9 @@ i,num,sections,err) {
             }
 
             for(i = 1 ; i <= num ; i++ ) {
+
+                #DEBUG("xx section["sections[i]"]");
+
                 if (sections[i]) {
                     err = scrape_movie_fragment(locale,domain,sections[i],minfo,pagestate,namestate);
                     if (err) {
@@ -976,6 +994,8 @@ ret) {
 
 function is_prose(locale,text,\
 words,num,i,len,is_english,lng) {
+
+    if (!index(text,".")) return 0;
 
     #remove hyperlinked text
     if (index(text,"@label@")) {
@@ -1302,7 +1322,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                     if (index(dtext[i],"src=") == 1) {
 
                         #DEBUG("XX1 got image ["dtext[i]"]");
-                        dump(0,"xx namestate",namestate);
+                        #dump(0,"xx namestate",namestate);
 
                     # Convert URL from thumbnail to big
                         namestate["src"] = person_get_img_url(domain,add_domain_to_url(domain,substr(dtext[i],6)));

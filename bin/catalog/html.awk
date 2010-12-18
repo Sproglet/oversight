@@ -386,15 +386,8 @@ i,c,h,b1,b2) {
             g_hex[i]=h;
 
         }
-        for(i=0 ; i - 128 < 0 ; i++ ) {
-            c = g_chr[i];
-            g_utf8[c]=c;
-        }
-        for(i=128 ; i - 256 < 0 ; i++ ) {
-            c = g_chr[i];
-            b1=192+rshift(i,6);
-            b2=128+and(i,63);
-            g_utf8[c]=g_chr[b1+0] g_chr[b2+0];
+        for(i=0 ; i < 256 ; i++ ) {
+            g_utf8[c]=code_to_utf8(i);
         }
         #special html - all sites return utf8 except for IMDB and epguides.
         # IMDB doesnt use symbolic names - mostly hexcodes. So we can probably 
@@ -447,48 +440,55 @@ parts,part,count,code,newcode,text2) {
 }
 
 function html_to_utf8(text,\
-ret,num,i,j,parts,new,bytes,code,b) {
+ret,num,i,j,parts,code) {
+
     if (index(text,"&#")) {
         decode_init();
         num = chop(text,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",parts);
         for(i = 2 ; i < num ; i+=2) {
             if (tolower(substr(parts[i],1,3)) == "&#x" ) {
-                code = 0+hex2dec(substr(parts[i],4,length(parts[i])-4));
+                code = hex2dec(substr(parts[i],4,length(parts[i])-4));
             } else {
-                code = 0+substr(parts[i],3,length(parts[i])-3);
+                code = substr(parts[i],3,length(parts[i])-3);
             }
-            if (code > 0x3FFFFFF ) {
-                bytes=6;
-            } else if (code > 0x1FFFFF ) {
-                bytes=5;
-            } else if (code > 0xFFFF ) {
-                bytes=4;
-            } else if (code > 0x7FF ) {
-                bytes=3;
-            } else if (code > 0x7F ) {
-                bytes=2;
-            } else {
-                bytes=1;
-            }
-            new = "";
-            if (bytes == 1 ) {
-                new = g_chr[code];
-            } else {
-                for(j = 1 ; j < bytes ; j++ ) {
-                    b = or(0x80,and(code,0x3F));
-                    new = g_chr[b] new;
-                    code = rshift(code,6);
-                }
-                # first byte
-                b=or(and(lshift(0xFC,6-bytes),0xFF),code);
-                new  = g_chr[b] new;
-            }
-            ret = ret parts[i-1] new;
+            ret = ret parts[i-1] code_to_utf8(code+0);
         }
         ret = ret parts[num];
         text = ret;
     }
     return text;
+}
+
+function code_to_utf8(code,\
+new,b,bytes) {
+
+    if (code > 0x3FFFFFF ) {
+        bytes=6;
+    } else if (code > 0x1FFFFF ) {
+        bytes=5;
+    } else if (code > 0xFFFF ) {
+        bytes=4;
+    } else if (code > 0x7FF ) {
+        bytes=3;
+    } else if (code > 0x7F ) {
+        bytes=2;
+    } else {
+        bytes=1;
+    }
+    new = "";
+    if (bytes == 1 ) {
+        new = g_chr[code];
+    } else {
+        for(j = 1 ; j < bytes ; j++ ) {
+            b = or(0x80,and(code,0x3F));
+            new = g_chr[b] new;
+            code = rshift(code,6);
+        }
+        # first byte
+        b=or(and(lshift(0xFC,6-bytes),0xFF),code);
+        new  = g_chr[b] new;
+    }
+    return new;
 }
 
 # return the number of logical characters in a string (utf-8 chars count as 1 char as does &nbsp; etc ) 

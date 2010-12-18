@@ -3,8 +3,8 @@
 #
 ##----------------------------------------------------------------------------------------
 # Rename format.
-catalog_film_folder_fmt="/share/Movies/{:TITLE:}{ (:YEAR:)}{ - :CERT:}"
-catalog_tv_file_fmt="/share/Tv/{:TITLE:}{ - Season :SEASON:}/{:NAME:}"
+catalog_film_folder_fmt="/share/Movies/{:ORIG_TITLE:}{ (:YEAR:)}{ - :CERT:}"
+catalog_tv_file_fmt="/share/Tv/{:ORIG_TITLE:}{ - Season :SEASON:}/{:NAME:}"
 #
 # available fields are:
 #    {:TITLE}

@@ -1,7 +1,7 @@
 #
 # guided google scrape: # # eg russian posters from # http://www.kinoafisha.msk.ru/
 #
-# add imdb verification to scape code if imdb id is already known - ie if scraping for alternate plot and encounter first imdbid check it is expected
+# test imdb verification in scrape code if imdb id is already known - ie if scraping for alternate plot and encounter first imdbid check it is expected
 # else reject page
 #
 # back arrow navigation not working ?? from season->tv detail screen

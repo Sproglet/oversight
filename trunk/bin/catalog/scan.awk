@@ -610,7 +610,9 @@ cat,minfo2,locales) {
                             if (!plot_in_main_lang(minfo)) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],minfo["mi_title"],"",minfo["mi_year"],"","",minfo,extractImdbId(bestUrl));
+                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,extractImdbId(bestUrl));
+                            } else {
+                                INF("plot begins:"substr(minfo["mi_plot"],1,20));
                             }
                         }
 

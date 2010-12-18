@@ -2839,6 +2839,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                     if (view_mode == VIEW_TVBOXSET) {
                         js_fn_call = menu_js_fn(i+1+offset,
                                 JS_ARG_STRING,"title",item->title,
+                                JS_ARG_STRING,"orig_title",item->orig_title,
                                 JS_ARG_STRING,"cert",item->certificate,
                                 JS_ARG_STRING,"idlist",build_id_list(item),
                                 JS_ARG_INT,"year",item->year,
@@ -2851,6 +2852,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                     } else {
                         js_fn_call = menu_js_fn(i+1+offset,
                                 JS_ARG_STRING,"title",item->title,
+                                JS_ARG_STRING,"orig_title",item->orig_title,
                                 JS_ARG_STRING,"cert",item->certificate,
                                 JS_ARG_STRING,"idlist",build_id_list(item),
                                 JS_ARG_INT,"year",item->year,
@@ -2876,6 +2878,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                     // Dont show watched/unwatched for movies
                     js_fn_call = menu_js_fn(i+1+offset,
                             JS_ARG_STRING,"title",item->title,
+                            JS_ARG_STRING,"orig_title",item->orig_title,
                             JS_ARG_STRING,"cert",cert_rating,
                             JS_ARG_STRING,"idlist",build_id_list(item),
                             JS_ARG_INT,"runtime",item->runtime,

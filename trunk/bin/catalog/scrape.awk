@@ -129,10 +129,33 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     dumpord(0,"matches",matches);
 
     num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
+    num = clean_links(num,matches,search_domain);
     num = remove_suburls(matches);
 
     id0(num);
     return num;
+}
+
+# Convert all links to  a standard form http:/domain/somepath..ID
+function clean_links(num,matches,domain,\
+ret,i,url,id) {
+
+    ret = 0;
+    for(i = 1 ; i <= num ; i++ ) {
+        url = matches[i];
+        id = domain_edits(domain,url,"catalog_domain_movie_id_regex_list",0);
+        if (id) {
+            matches[++ret] = g_settings["domain:catalog_domain_movie_url"];
+            sub(/\{ID\}/,id,matches[ret]);
+            DEBUG("["url"] -> ["matches[ret]"]");
+        }
+    }
+    for(i = ret + 1 ; i <= num ; i++ ) {
+        delete matches[i];
+    }
+
+    return ret;
+
 }
 
 # Search Engine query to hopefully find movie url 
@@ -146,7 +169,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
 function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,minfo,imdbid,searchhist,\
-minfo2,err,matches,num,url_domain,i,max_allowed_results) {
+minfo2,err,matches,num,url,url_domain,i,max_allowed_results) {
 
     err = 1;
     id1("find_movie_by_site_locale("site","locale")");
@@ -174,8 +197,10 @@ minfo2,err,matches,num,url_domain,i,max_allowed_results) {
             INF("ignoring ["matches[i]"] - previous visit to site does not have plot");
         } else {
 
-            set_visited_url(matches[i],searchhist);
-            err = scrape_movie_page(text,title,year,runtime,director,matches[i],locale,url_domain,minfo2,imdbid);
+            url = matches[i];
+
+            set_visited_url(url,searchhist);
+            err = scrape_movie_page(text,title,year,runtime,director,url,locale,url_domain,minfo2,imdbid);
             if (!err) {
                 minfo_merge(minfo,minfo2,url_domain);
                 break;
@@ -313,7 +338,9 @@ f,minfo2,err,line,pagestate,namestate,store,found_id) {
             store = 1;
 
             f=getUrl(url,locale":"domain":"title":"year,1);
-            if (f) {
+            if (f == "") {
+                err=1;
+            } else {
 
                 minfo2["mi_url"] = url;
                 minfo2["mi_category"] = "M";
@@ -351,25 +378,24 @@ f,minfo2,err,line,pagestate,namestate,store,found_id) {
         ERR("paramters missing");
     }
 
-    if (minfo2["mi_category"] == "M") {
+    if (!err && minfo2["mi_category"] == "M") {
 
-        if (!err) {
-            # at the moment - check title will just shour circuit if similar score < 0.3
-            err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
-        }
+        # at the moment - check title will just short circuit if similar score < 0.3
+        err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
 
         if (!err  &&  !is_prose(locale,minfo2["mi_plot"]) ) {
             #We got the movie but there is no plot;
             #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
             #a significant failure. Most other scraped info is language neutral.
             INF("missing plot");
-            #err = 2;
+            #err = 2; # we may want posters too!
+        }
+        if (err) {
+            dump(0,"bad page info",minfo2);
         }
     }
 
-    if (err) {
-        dump(0,"bad page info",minfo2);
-    } else {
+    if (!err) {
         if(index(domain,"imdb")) {
             imdb_extra_info(minfo2,url);
         }
@@ -745,9 +771,10 @@ i,num,sections,err) {
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
 function scrape_movie_fragment(locale,domain,fragment,minfo,pagestate,namestate,\
-mode,rest_fragment,max_people,field,value,tmp,matches) {
+mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
     
+    err=0;
     #DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
     #DEBUG("scrape_movie_fragment:("locale","domain","fragment")");
     # Check if fragment is a fieldname eg Plot: Cast: etc.
@@ -781,11 +808,12 @@ mode,rest_fragment,max_people,field,value,tmp,matches) {
                 if (index(value,"(") || index(value,"[")) {
                     if (split(gensub("([[(].*)("g_year_re")(.*[])])","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
                         update_minfo(minfo,"mi_year",matches[3],domain);
-                        value=trim(matches[1]);
                     }
-                    #dumpord(0,"findyear",matches);
                 }
-                update_minfo(minfo,"mi_title",value,domain);
+                err = title_update(minfo,domain,value,"mi_title","catalog_domain_filter_title_regex_list");
+                if (!err) {
+                    err = title_update(minfo,domain,value,"mi_orig_title","catalog_domain_filter_orig_title_regex_list");
+                }
             }
         }
 
@@ -850,16 +878,35 @@ mode,rest_fragment,max_people,field,value,tmp,matches) {
         update_minfo(minfo,"mi_title",fragment,domain);
     }
 
-    # category - special case for imdb only
-    if (domain == "imdb" && index(fragment,"/episodes\"")) {
-        minfo["mi_category"] = "T";
+    if (!err) {
+        # category - special case for imdb only
+        if (domain == "imdb" && index(fragment,"/episodes\"")) {
+            minfo["mi_category"] = "T";
+        }
+
+        extract_rating(fragment,minfo,domain);
+
+        scrape_poster(fragment,minfo,domain);
     }
 
-    extract_rating(fragment,minfo,domain);
+    return err;
+}
 
-    scrape_poster(fragment,minfo,domain);
-
-    return 0;
+function title_update(minfo,domain,text,field,regex_list_name,\
+err,value){
+    err = 0;
+    if (g_settings["domain:"regex_list_name]) {
+        value=domain_edits(domain,text,regex_list_name,1);
+        if (value == "") {
+            INF("Rejected title ["text"]");
+            err=1;
+        } else {
+            INF("Scraped "field" = ["value"] from ["text"]");
+            update_minfo(minfo,field,value,domain);
+            minfo[field"_source"] = "80:"domain;
+        }
+    }
+    return err;
 }
 
 function scrape_poster(text,minfo,domain,\
@@ -896,9 +943,6 @@ function update_minfo(minfo,field,value,domain) {
 
             INF("scrape_movie_fragment: set "field"=["value"]");
 
-            if (field == "mi_title") {
-                value=domain_edits(domain,value,"catalog_domain_clean_title_regex_list",0);
-            }
             minfo[field]=value;
             minfo[field"_source"]=domain;
         }
@@ -1061,12 +1105,14 @@ i,has_english) {
 
 function add_lang_to_plot(lang_or_locale,plot,\
 ret,lng) {
-    lng = lang(lang_or_locale); 
-    if (lng != "en" && plot ~ g_english_re ) {
-        INF("expected "lang_or_locale" but plot appears English? :"plot);
-        lng="en";
+    if (plot) {
+        lng = lang(lang_or_locale); 
+        if (lng != "en" && plot ~ g_english_re ) {
+            INF("expected "lang_or_locale" but plot appears English? :"plot);
+            lng="en";
+        }
+        ret = lng":"plot;
     }
-    ret = lng":"plot;
     return ret;
 }
 

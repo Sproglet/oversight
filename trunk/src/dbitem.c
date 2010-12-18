@@ -700,6 +700,7 @@ static inline int db_rowid_get_field_offset_type_inline(
                 if (*p == 't') {
                     *offset=&(rowid->orig_title);
                     *type = FIELD_TYPE_STR;
+                    *overview = 1;
                 }
                 break;
             case 'p':

@@ -99,6 +99,8 @@ function find_links_all_engines(text,title,year,site,matches) {
 function find_links_1engine(search_engine_prefix,text,title,year,site,matches,\
 keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
+    num = 0;
+
     id1("find_links_1engine:"search_engine_prefix);
 
     # set search qualifier and build search url
@@ -118,19 +120,25 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
         load_plugin_settings("domain","default");
     }
 
-    # get the links from page one of the search
-    num = scan_page_for_matches(url,url_text,url_regex,0,0,"",1,matches);
+    # Scrape domain if poster extraction regex is set OR if local posters are not required
+    if(g_settings["catalog_get_local_posters"] && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
+        INF("Skipping "search_domain" as local posters are required");
+    } else {
 
-    for(i in matches) {
-        sub(/href=./,"",matches[i]);
+        # get the links from page one of the search
+        num = scan_page_for_matches(url,url_text,url_regex,0,0,"",1,matches);
+
+        for(i in matches) {
+            sub(/href=./,"",matches[i]);
+        }
+
+        # filter links according to domain definitions
+        dumpord(0,"matches",matches);
+
+        num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
+        num = clean_links(num,matches,search_domain);
+        num = remove_suburls(matches);
     }
-
-    # filter links according to domain definitions
-    dumpord(0,"matches",matches);
-
-    num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
-    num = clean_links(num,matches,search_domain);
-    num = remove_suburls(matches);
 
     id0(num);
     return num;

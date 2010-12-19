@@ -374,7 +374,7 @@ i,text2,ll,c) {
 }
 
 function decode_init(\
-i,c,h,b1,b2) {
+i,c,h) {
     if (g_chr[32] == "" ) {
         DEBUG("create decode matrix");
         for(i=0 ; i - 256 < 0 ; i++ ) {
@@ -440,7 +440,7 @@ parts,part,count,code,newcode,text2) {
 }
 
 function html_to_utf8(text,\
-ret,num,i,j,parts,code) {
+ret,num,i,parts,code) {
 
     if (index(text,"&#")) {
         decode_init();
@@ -460,7 +460,7 @@ ret,num,i,j,parts,code) {
 }
 
 function code_to_utf8(code,\
-new,b,bytes) {
+new,b,i,bytes) {
 
     if (code > 0x3FFFFFF ) {
         bytes=6;
@@ -479,7 +479,7 @@ new,b,bytes) {
     if (bytes == 1 ) {
         new = g_chr[code];
     } else {
-        for(j = 1 ; j < bytes ; j++ ) {
+        for(i = 1 ; i < bytes ; i++ ) {
             b = or(0x80,and(code,0x3F));
             new = g_chr[b] new;
             code = rshift(code,6);

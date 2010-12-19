@@ -607,7 +607,7 @@ cat,minfo2,locales) {
                             get_themoviedb_info(extractImdbId(bestUrl),minfo);
                             getNiceMoviePosters(minfo);
 
-                            if (!plot_in_main_lang(minfo)) {
+                            if (!plot_in_main_lang(minfo) || g_settings["catalog_get_local_posters"] ) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
                                 find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,extractImdbId(bestUrl));

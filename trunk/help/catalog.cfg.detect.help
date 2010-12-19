@@ -3,6 +3,7 @@ catalog_format_tags:Comma delimited list of format tags that are unlikey to be p
 catalog_locale1:Preferred locale for plots. For titles see Oversight Appearance settings.|@CMD:cat conf/locale/names
 catalog_locale2:language to use if lang1 not found|@CMD:cat conf/locales
 catalog_locale3:language to use if lang2 not found|@CMD:cat conf/locales
+catalog_get_local_posters:Try to download from sites that carry localised posters - may increase scan time|0|1
 catalog_imdb_links_required:Number of imdb links required in web search results|4
 catalog_imdb_source:Scraping mobile site is faster but only gives US certification|desktop|mobile
 catalog_tv_plugins:Comma delimited list List of web site to detect tv shows.

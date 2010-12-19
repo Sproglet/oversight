@@ -497,6 +497,7 @@ char *macro_fn_plot(MacroCallInfo *call_info)
         }
     }
     if (result) {
+        if (result[2] == ':') result += 3; // skip language qualifier
         result = STRDUP(result);
     }
 

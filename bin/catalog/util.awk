@@ -669,7 +669,7 @@ split_suffix) {
     # Check escape characters - if present add SUBSEP to all dividers
     if (index(list,"\\"char)) {
         # convert normal , to ,SUBSEP and split on ,SUBSEP
-        gsub("[^\\]"char,"&"SUBSEP,list);
+        gsub("[^\\]["char"]","&"SUBSEP,list);
         split_suffix = SUBSEP;
     }
     return split(list,out,char split_suffix);

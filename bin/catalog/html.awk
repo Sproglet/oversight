@@ -96,8 +96,9 @@ code,t) {
         } else if (g_encoding[f] == "iso-8859-7") {
             t = utf8_encode(t,g_8859_7);
         } else if (g_encoding[f] != "utf-8") {
-            WARNING("unknown encoding ["g_encoding[f]"]");
+            WARNING("unknown encoding ["g_encoding[f]"] changing to utf-8");
             t = utf8_encode(t,g_utf8);
+            g_encoding[f] = "utf-8";
         }
         line[1] = t;
     }
@@ -123,7 +124,7 @@ enc,line,code) {
 
             if (index(line,"encoding") || index(line,"charset")) {
 
-                enc=subexp(line,"(encoding|charset)=\"?([^\"> ]+)",2);
+                enc=subexp(line,"(encoding|charset)=\"?([-_a-z0-9]+)[\"> ]",2);
 
                 if (index(line,"<?xml")) break;
 

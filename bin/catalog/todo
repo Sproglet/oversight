@@ -4,6 +4,14 @@
 # test imdb verification in scrape code if imdb id is already known - ie if scraping for alternate plot and encounter first imdbid check it is expected
 # else reject page
 #
+# ;ook at comingsoon.it scanning of Salton Sea. issue around decting original titles and page rejection?
+#
+# test Original Title page verification.
+#
+# test mymovies.it
+#
+# check scanning 300 xml info , xml movie data is read from nfo but then tv scan occurs. see 300.log
+#
 # back arrow navigation not working ?? from season->tv detail screen
 #
 # deleting unclassified item from detail page causes random detail page to display.

@@ -682,7 +682,7 @@ split_suffix) {
 # there is a bug splitting values. The code tries to preserve for escaped characters eg \, but not bracket sequence [,]
 
 function apply_edits(text,plist,verbose,\
-i,num,patterns,matched,pinfo,ret,prev) {
+i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
 
     ret = text;
     #DEBUG("using "plist);
@@ -694,16 +694,21 @@ i,num,patterns,matched,pinfo,ret,prev) {
 
         prev =ret;
 
-        # Split at unescaped forward slashes
-        split_list(patterns[i],"/",pinfo);
+        # Split at second character.
+        sep = "/";
+        if (index(patterns[i],sep) != 1) {
+            sep = substr(patterns[i],2,1);
+        }
+        split_list(patterns[i],sep,pinfo);
 
         if (verbose) {
-            DEBUG("apply_edits["text"]");
+            DEBUG("apply_edits["text"] split="sep);
             dumpord(0,"apply_edits",pinfo);
         }
 
         matched = 0;
-        if (tolower(pinfo[1]) == "s") { # substitute
+        lcop = tolower(pinfo[1]);
+        if (lcop == "s") { # substitute
 
             if (index(tolower(pinfo[4]),"g")) { # global
                 matched = gsub(pinfo[2],pinfo[3],ret);
@@ -712,9 +717,9 @@ i,num,patterns,matched,pinfo,ret,prev) {
             } else {
                 ERR("apply_edits: Bad value ["patterns[i]"]");
             }
-            if (verbose) DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")\n=["matched"|"ret"]");
+            if (verbose) DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")=["matched"|"ret"]");
 
-        } else if (tolower(pinfo[1]) == "e") { # extract
+        } else if (lcop == "e") { # extract
 
             if (pinfo[3] != "" ) {
                 ERR("apply_edits: Bad value ["patterns[i]"]");
@@ -722,15 +727,16 @@ i,num,patterns,matched,pinfo,ret,prev) {
                 matched = 1;
                 ret = substr(ret,RSTART,RLENGTH);
             }
-            if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")\n=["matched"|"ret"]");
+            if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")=["matched"|"ret"]");
 
-        } else if (pinfo[1] == "t") { # following text must occur - faster than regex - matches t/dddd/
+        } else if (lcop == "t") { # following text must occur - faster than regex - matches t/dddd/
 
             if (pinfo[3] != "" ) {
                 ERR("apply_edits: Bad value ["patterns[i]"]");
             } else if (index(ret,pinfo[2])) {
                 matched = 1;
             }
+            if (verbose) DEBUG("text "pinfo[2]" = "matched);
 
         } else if (pinfo[1] == "") { # matches /dddd/
 
@@ -739,10 +745,11 @@ i,num,patterns,matched,pinfo,ret,prev) {
             } else if (match(ret,pinfo[2])) {
                 matched = 1;
             }
+            if (verbose) DEBUG("match "pinfo[2]" = "matched);
         }
         # If there was no match, and a lower case operation was used then clear the entire result.
         #ie if s/ or e/ used then the regex must be present
-        if (!matched && pinfo[1] == tolower(pinfo[1])) {
+        if (!matched && pinfo[1] == lcop) {
             ret = "";
             break;
         }

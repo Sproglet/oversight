@@ -297,7 +297,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     g_file_date[currentFolder"/"scan_line] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
 
-                } else if (match(lc,"\\.nfo$")) {
+                } else if (match(lc,"\\.i?nfo$")) {
 
                     nfo=currentFolder"/"scan_line;
                     g_fldrInfoCount[currentFolder]++;
@@ -420,7 +420,6 @@ lastNameSeen,i,lastch,ch) {
 # set the nfo file by replacing the pattern with the given text.
 function setNfo(minfo,pattern,replace,\
 nfo,lcNfo) {
-    #Add a lookup to nfo file
     nfo=minfo["mi_media"];
     lcNfo = tolower(nfo);
     if (match(lcNfo,pattern)) {
@@ -478,7 +477,7 @@ ret) {
 
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
-total,\
+total,local_search,\
 cat,minfo2,locales) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
@@ -607,12 +606,20 @@ cat,minfo2,locales) {
                             get_themoviedb_info(extractImdbId(bestUrl),minfo);
                             getNiceMoviePosters(minfo);
 
-                            if (!plot_in_main_lang(minfo) || g_settings["catalog_get_local_posters"] ) {
+                           local_search=0;
+                           if (!plot_in_main_lang(minfo)) {
+                               INF("Plot not in main language - forcing local web search");
+                               local_search = 1;
+                           } else if (g_settings["catalog_get_local_posters"] && minfo["mi_orig_title"] && minfo["mi_title"] != minfo["mi_orig_title"] ) {
+                               INF("catalog_get_local_posters=1 and "minfo["mi_orig_title"]" != "minfo["mi_title"]" forcing local web search");
+                               local_search = 1;
+                           } else {
+                               INF("plot begins:"substr(minfo["mi_plot"],1,20));
+                           }
+                           if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
                                 find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,extractImdbId(bestUrl));
-                            } else {
-                                INF("plot begins:"substr(minfo["mi_plot"],1,20));
                             }
                         }
 

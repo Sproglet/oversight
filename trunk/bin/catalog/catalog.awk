@@ -105,7 +105,7 @@ BEGIN {
     verify_setup();
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
-    g_min_plot_len=70;
+    g_min_plot_len=100; # this is th eminimum length when scraping - not via api
     g_max_db_len=4000;
     g_path_depth=3;
     g_country_prefix="country_";
@@ -625,7 +625,7 @@ function getPath(name,localPath) {
 }
 
 function re_escape(s) {
-    gsub("[][*.{}()]","\\\\&",s);
+    gsub("[][*.{}()+]","\\\\&",s);
     return s;
 }
 

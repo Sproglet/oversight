@@ -816,7 +816,8 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
     
     # if the title occurs in the main text, then allow plot to be parsed.
-    if (!pagestate["titleinpage"] && index(fragment,minfo["mi_title"])) {
+    if (!pagestate["titleinpage"] && minfo["mi_title"] && index(fragment,minfo["mi_title"])) {
+        #DEBUG("xx setting titleinpage 1");
         pagestate["titleinpage"] = 1;
     }
 
@@ -872,6 +873,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
     } else if ( mode == "title" ) {
 
         if (update_minfo(minfo,"mi_title", trim(fragment),domain)) {
+            DEBUG("xx setting titleinpage 2");
             pagestate["titleinpage"] = 1;
         }
 
@@ -1089,6 +1091,7 @@ key,regex,ret,lcfragment,dbg,all_keys) {
     if (!("badplot" in pagestate) && pagestate["inbody"] && pagestate["titleinpage"]  && is_prose(locale,fragment)) {
 
        ret = "plot";
+       #DEBUG("xx pagestate[titleinpage]="pagestate["titleinpage"]);
 
     }  else {
 

@@ -1,7 +1,7 @@
 # 1=found movie in required language
 # 0=not found
 function get_themoviedb_info(imdb_id,minfo,\
-url,xml,i,num,langs,root,ret,xmlret,minfo2,ln) {
+url,xml,i,num,langs,root,ret,xmlret,minfo2,ln,name,id) {
 
     id1("get_themoviedb_info "imdb_id);
     num = get_langs(langs);
@@ -41,6 +41,24 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2,ln) {
         if (ln) {
 
             dumpxml("themoviedb",xml);
+            
+            name = html_to_utf8(xml[root"/name"]);
+
+            if (sub(/^Duplicate: /,"",name)) {
+                INF("Duplicate: "name);
+                # Duplicate movie - go to original
+                id = subexp(name,"([0-9]+).$");
+                if (id) {
+                    url="http://api.themoviedb.org/2.1/Movie.getInfo/"ln"/xml/"g_api_tmdb"/"id;
+                    xmlret = fetchXML(url,"themoviedb",xml);
+                    dumpxml("themoviedb-orig",xml);
+                    if (xmlret == 0) {
+                        ln = "";
+                    }
+                }
+            }
+        }
+        if (ln) {
 
             minfo2["mi_plot"]=add_lang_to_plot(langs[i],clean_plot(xml[root"/overview"]));
 

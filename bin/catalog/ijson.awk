@@ -94,6 +94,7 @@ json,cast,ret,i,tag,minfo2) {
                         if (!(tag in json)) break;
                         minfo2["mi_genre"] = minfo2["mi_genre"] "|" json[tag];
                     }
+                    sub(/^[|]/,"",minfo2["mi_genre"]);
 
                     set_ijson_people(json,"data:writers_summary",minfo2,"writer");
                     set_ijson_people(json,"data:directors_summary",minfo2,"director");

@@ -476,7 +476,6 @@ char *macro_fn_page_max(MacroCallInfo *call_info)
 
 char *macro_fn_plot(MacroCallInfo *call_info)
 {
-
     call_info->free_result=1;
     char *result = NULL;
 
@@ -493,7 +492,7 @@ char *macro_fn_plot(MacroCallInfo *call_info)
         if (season == -1 || item->season != season ) {
             season = item->season;
             result = get_plot(item,PLOT_MAIN);
-            HTML_LOG(0,"plot for %s %d %s = [%s]",item->title,item->season,item->episode,result);
+            HTML_LOG(1,"plot for %s %d %s = %s",item->title,item->season,item->episode,result);
         }
     }
     if (result) {

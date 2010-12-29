@@ -912,7 +912,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
             update_minfo(minfo, "mi_year", matches[1],domain);
         }
 
-    } else if ( mode == "plot" && pagestate["mode"] != "head" ) {
+    } else if ( mode == "plot" && pagestate["mode"] != "head" && minfo["mi_plot"] == "" ) {
 
         if (is_prose(locale,fragment)) {
 
@@ -994,7 +994,7 @@ ret) {
             #DEBUG("scrape_movie_fragment:"field" ignoring ["value"]");
         } else {
 
-            INF("scrape_movie_fragment: set "field"=["value"]");
+            INF("update_minfo: set "field"=["value"]");
 
             minfo[field]=value;
             minfo[field"_source"]=domain;
@@ -1087,6 +1087,10 @@ key,regex,ret,lcfragment,dbg,all_keys) {
     rest[1] = fragment;
 
     #dbg = index(fragment,"Billed Cast");
+    if (index(fragment,"20 ")) {
+        dump(0,"pagestat-",pagestate);
+        INF("xx DELETE ME is_prose["fragment"] = "is_prose(locale,fragment));
+    }
 
     # if there is a bit of prose without a keyword - assume it is the plot
     if (!("badplot" in pagestate) && pagestate["inbody"] && pagestate["titleinpage"]  && is_prose(locale,fragment)) {

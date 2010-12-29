@@ -478,7 +478,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,local_search,\
-cat,minfo2,locales) {
+cat,minfo2,locales,plot_not_local) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
@@ -607,15 +607,20 @@ cat,minfo2,locales) {
                             getNiceMoviePosters(minfo);
 
                            local_search=0;
-                           if (!plot_in_main_lang(minfo)) {
-                               INF("Plot not in main language - forcing local web search");
-                               local_search = 1;
-                           } else if (g_settings["catalog_get_local_posters"] && minfo["mi_orig_title"] && minfo["mi_title"] != minfo["mi_orig_title"] ) {
+                           plot_not_local = !plot_in_main_lang(minfo);
+                           if (plot_not_local) {
+                               INF("Plot not in main language");
+                               if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
+                                   INF("Forcing local search for plot");
+                                   local_search = 1;
+                               }
+                           }
+
+                           if (g_settings["catalog_get_local_posters"] == 1 && minfo["mi_orig_title"] && minfo["mi_title"] != minfo["mi_orig_title"] ) {
                                INF("catalog_get_local_posters=1 and "minfo["mi_orig_title"]" != "minfo["mi_title"]" forcing local web search");
                                local_search = 1;
-                           } else {
-                               INF("plot begins:"substr(minfo["mi_plot"],1,20));
                            }
+
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);

@@ -197,9 +197,10 @@ char *truncate_plot(char *plot,int *free_result)
 {
     char *short_plot = plot;
     *free_result = 0;
-    int max = g_dimension->max_plot_length;
+    int max;
 
-    if (!EMPTY_STR(plot) || strlen(plot) > max) {
+    max = utf8pos(plot,g_dimension->max_plot_length)-plot;
+    if (!EMPTY_STR(plot) && max) {
 
         char *p = plot + max;
         // search back to a full stop.

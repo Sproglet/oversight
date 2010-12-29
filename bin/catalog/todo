@@ -1,14 +1,17 @@
+# add dutch pages
+#
+# russion posters? my-hit.ru? (watermarked)
+# dreamfilms.ru
+# obnovi.com
+# http://kinopoiski.ru
+#
+#
+#
+#
 #
 # guided google scrape: # # eg russian posters from # http://www.kinoafisha.msk.ru/
 #
-# test imdb verification in scrape code if imdb id is already known - ie if scraping for alternate plot and encounter first imdbid check it is expected
-# else reject page
-#
-# ;ook at comingsoon.it scanning of Salton Sea. issue around decting original titles and page rejection?
-#
 # test Original Title page verification.
-#
-# test mymovies.it
 #
 # check scanning 300 xml info , xml movie data is read from nfo but then tv scan occurs. see 300.log
 #

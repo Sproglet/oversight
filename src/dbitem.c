@@ -544,7 +544,7 @@ static inline int db_rowid_get_field_offset_type_inline(
     *type = FIELD_TYPE_NONE;
     *overview = 0;
 
-    char *imdb_prefix=NULL;
+    char *imdb_prefix="";
 
 
 
@@ -681,6 +681,7 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *offset=&(rowid->remakes);
                     *type = FIELD_TYPE_IMDB_LIST;
                     *overview = 1;
+                    imdb_prefix = "tt";
                 }
                 break;
             case 'l':

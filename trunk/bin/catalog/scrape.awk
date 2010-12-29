@@ -465,6 +465,7 @@ f,source) {
     }
 
     for(f in new) {
+        source="";
         if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" && f != "mi_plot" ) {
             if (f"_source" in new) {
                 source = new[f"_source"];

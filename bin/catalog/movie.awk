@@ -145,13 +145,6 @@ year,text) {
     }
     DEBUG("movie_search bestUrl=["bestUrl"]");
 
-    # Finished Search. Scrape IMDB
-    if (bestUrl) {
-
-        get_themoviedb_info(extractImdbId(bestUrl),minfo);
-
-
-    } 
     id0(bestUrl);
     return bestUrl;
 }

@@ -368,11 +368,12 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                             err = 1;
                         } else {
                             INF("Confirmed imdb link on page:" line[1]);
+                            pagestate["confirmed"] = 1;
                         }
                     }
 
                     #Check original title present
-                    if (orig_title && !found_orig ) {
+                    if (!pagestate["confirmed"] && orig_title && !found_orig ) {
                         found_orig = index(line[1],orig_title);
                     }
                     if (!err) {
@@ -381,7 +382,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                         # There is a bug joining the last line if it ends with "text<br>"
                         if (index(line[1],"{") == 0 && index(line[1],"<") == 0) {
                             fullline = trim(fullline) " " trim(line[1]);
-                            DEBUG("xx full line now = ["fullline"]");
+                            #DEBUG("xx full line now = ["fullline"]");
                         } else {
                             if (fullline) {
                                 err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
@@ -399,7 +400,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                     err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
                 }
 
-                if (orig_title && !found_orig) {
+                if (!pagestate["confirmed"] && orig_title && !found_orig) {
                     INF("Did not find original title ["orig_title"] on page - rejecting");
                     err = 1;
                 }
@@ -420,8 +421,10 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
 
     if (!err && minfo2["mi_category"] == "M") {
 
-        # at the moment - check title will just short circuit if similar score < 0.3
-        err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
+        if (!pagestate["confirmed"]) {
+            # at the moment - check title will just short circuit if similar score < 0.3
+            err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
+        }
 
         if (!err  &&  !is_prose(locale,minfo2["mi_plot"]) ) {
             #We got the movie but there is no plot;
@@ -919,6 +922,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         if (is_prose(locale,fragment)) {
 
+            pagestate["gotplot"] = 1;
             update_minfo(minfo, "mi_plot", add_lang_to_plot(locale,clean_plot(fragment)),domain);
 
         } else if (length(fragment) > 20 ) {
@@ -1090,13 +1094,9 @@ key,regex,ret,lcfragment,dbg,all_keys) {
     rest[1] = fragment;
 
     #dbg = index(fragment,"Billed Cast");
-    if (index(fragment,"20 ")) {
-        dump(0,"pagestat-",pagestate);
-        INF("xx DELETE ME is_prose["fragment"] = "is_prose(locale,fragment));
-    }
 
     # if there is a bit of prose without a keyword - assume it is the plot
-    if (!("badplot" in pagestate) && pagestate["inbody"] && pagestate["titleinpage"]  && is_prose(locale,fragment)) {
+    if (!("badplot" in pagestate) && pagestate["inbody"] && pagestate["titleinpage"]  && !pagestate["gotplot"] &&  is_prose(locale,fragment)) {
 
        ret = "plot";
        #DEBUG("xx pagestate[titleinpage]="pagestate["titleinpage"]);

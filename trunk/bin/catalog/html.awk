@@ -113,13 +113,15 @@ function enc_close(f) {
 
 # TODO only check xml encoding for first line.
 function get_encoding(f,\
-enc,line,code) {
+enc,line,code,n) {
 
 
     if (index(f,".json")) {
         enc = "utf-8";
     } else {
-        while ( enc == "" &&  (code = ( getline line < f )) > 0) {
+        while ( enc == "" && n < 20 &&  (code = ( getline line < f )) > 0) {
+
+            DEBUG("encoding scan["line"]");
             line=tolower(line);
 
             if (index(line,"encoding") || index(line,"charset")) {
@@ -130,8 +132,16 @@ enc,line,code) {
 
 
             } else if (index(line,"</head>") || index(line,"<body>")) break;
+
+            # Track lack of markup
+            if (index(line,"<") == 0) n++; else n = 0;
         }
-        if (code >= 0) close(f); 
+        if (n >= 20) WARNING("Lack of markup");
+        if (code >= 0) {
+            if ((code = close(f)) != 0) {
+               INF("Failed to close "f" code = "code) ; 
+            }
+        }
     }
     if (enc == "") {
         #enc = "iso-8859-1";

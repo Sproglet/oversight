@@ -137,8 +137,12 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
         dumpord(0,"matches",matches);
 
         num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
+
+        dumpord(0,"remove_non_movie_urls",matches);
         num = clean_links(num,matches,search_domain);
-        num = remove_suburls(matches);
+        dumpord(0,"clean_links",matches);
+        num = remove_suburls(num,matches);
+        dumpord(0,"remove_suburls",matches);
     }
 
     id0(num);
@@ -164,9 +168,6 @@ ret,i,url,id,dbg) {
         delete matches[i];
     }
 
-    if (ret != num) {
-        dumpord(0,"matches after clean links",matches);
-    }
     return ret;
 
 }
@@ -285,22 +286,19 @@ i,j,keep,keep_num) {
         hash_copy(matches,keep);
         keep_num = j;
     }
-    if (keep_num != num) {
-        dumpord(0,"matches after removed non movie",matches);
-    }
     return keep_num;
 }
 
 # Remove any urls that are subsets of others.
 # IN/OUT matches hash of urls => order in web page.
-function remove_suburls(matches,\
+function remove_suburls(num,matches,\
 i,j,keep) {
 
     # Set value of all longer urls to 0
-    for ( i in matches ) {
+    for(i = 1 ; i <= num ; i++ ) {
         if (matches[i]) {
-            for ( j in matches ) {
-                if (j != i && matches[j]) {
+            for(j = i+1 ; j <= num ; j++ ) {
+                if (matches[j]) {
                     if (index(matches[j],matches[i]) == 1 ) {
                         matches[j] = 0;
                     }
@@ -312,7 +310,7 @@ i,j,keep) {
     # copy all urls with non-zero value
 
     j = 0;
-    for ( i = 1 ; (i in matches) ; i++ ) {
+    for ( i = 1 ; i <= num ; i++ ) {
         if (matches[i] ) {
             keep[++j] = matches[i];
         }
@@ -360,6 +358,8 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                 pagestate["mode"] = "head";
                 while(!err && enc_getline(f,line) > 0  ) {
 
+                    #DEBUG("xx read["line[1]"]");
+
                     # check imdbid
                     if (imdbid && found_id == "" && index(line[1],"tt") && match(line[1],g_imdb_regex)) {
                         found_id = substr(line[1],RSTART,RLENGTH);
@@ -367,7 +367,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                             INF("Rejecting page - found imdbid "found_id" expected "imdbid);
                             err = 1;
                         } else {
-                            INF("Confirmed imdb link on page");
+                            INF("Confirmed imdb link on page:" line[1]);
                         }
                     }
 
@@ -381,10 +381,13 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                         # There is a bug joining the last line if it ends with "text<br>"
                         if (index(line[1],"{") == 0 && index(line[1],"<") == 0) {
                             fullline = trim(fullline) " " trim(line[1]);
-                        } else if (fullline) {
-                            err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
-                            if (err) {
-                                break;
+                            DEBUG("xx full line now = ["fullline"]");
+                        } else {
+                            if (fullline) {
+                                err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
+                                if (err) {
+                                    break;
+                                }
                             }
                             fullline = line[1];
                         }

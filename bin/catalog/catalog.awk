@@ -120,7 +120,8 @@ BEGIN {
     g_fetch_images_concurrently="START";
 
     #Matches most english prose for plots / summary - cant use words that appear in other languages. of , it?
-    g_english_re="\\<([Mm]an|[Ww]oman|[Gg]irl|[Bb]oy|[Ff]amily|[Ss]he|[Hh]e|[Tt]he|and|for|[Aa]n|[Tt]hey|their)\\>"
+    # 'The' only counts if followed by lowecase. This allows its use in titles eg Edward the Longshanks?
+    g_english_re="\\<([Tt]he +[a-z]|([Mm]an|[Ww]oman|[Gg]irl|[Bb]oy|[Ff]amily|[Ss]he|[Hh]e|and|for|[Aa]n|[Tt]hey|their)\\>)"
 
     g_tv_check_urls["tvrage"]=g_tvrage_web;
     g_tv_check_urls["thetvdb"]=g_thetvdb_web;

@@ -121,7 +121,6 @@ enc,line,code,n) {
     } else {
         while ( enc == "" && n < 20 &&  (code = ( getline line < f )) > 0) {
 
-            DEBUG("encoding scan["line"]");
             line=tolower(line);
 
             if (index(line,"encoding") || index(line,"charset")) {

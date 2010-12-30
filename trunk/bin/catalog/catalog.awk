@@ -121,7 +121,8 @@ BEGIN {
 
     #Matches most english prose for plots / summary - cant use words that appear in other languages. of , it?
     # 'The' only counts if followed by lowecase. This allows its use in titles eg Edward the Longshanks?
-    g_english_re="\\<([Tt]he +[a-z]|([Mm]an|[Ww]oman|[Gg]irl|[Bb]oy|[Ff]amily|[Ss]he|[Hh]e|and|for|[Aa]n|[Tt]hey|their)\\>)"
+    # Cant use 'man' as it is in Dutch an Swedish
+    g_english_re="\\<([Tt]he +[a-z]|([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|and|for|are|[Aa]n|[Tt]hey|their)\\>)"
 
     g_tv_check_urls["tvrage"]=g_tvrage_web;
     g_tv_check_urls["thetvdb"]=g_thetvdb_web;

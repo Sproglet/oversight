@@ -122,7 +122,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     }
 
     # Scrape domain if poster extraction regex is set OR if local posters are not required
-    if(g_settings["catalog_get_local_posters"] && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
+    if(g_settings["catalog_get_local_posters"]==1 && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
         INF("Skipping "search_domain" as local posters are required");
     } else {
 
@@ -966,7 +966,12 @@ err,value){
 }
 
 function scrape_poster(text,minfo,domain,\
-dnum,dtext,i,value) {
+dnum,dtext,i,value,pri) {
+    if (g_settings["catalog_get_local_posters"] == 1) {
+        pri = 80;
+    } else {
+        pri = 5;
+    }
     if (g_settings["domain:catalog_domain_poster_url_regex_list"]) {
         # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
         if (minfo["mi_poster"] == "" && (index(text,"src=") || index(text,"href="))) {
@@ -977,7 +982,7 @@ dnum,dtext,i,value) {
                 value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
                 if (value) {
                     update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain);
-                    minfo["mi_poster_source"] = "80:"domain;
+                    minfo["mi_poster_source"] = pri":"domain;
                     break;
                 }
             }

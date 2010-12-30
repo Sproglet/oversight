@@ -969,8 +969,7 @@ char *macro_fn_tv_mode(MacroCallInfo *call_info) {
     static char *result = NULL;
 
     if (g_dimension->tv_mode == 0) {
-        ovs_asprintf(&result,"<font class=error>%d Please change Video Output from AUTO in main av settings.</font>",
-                g_dimension->tv_mode);
+        ovs_asprintf(&result,"<font class=error>Image size may be wrong in AUTO mode. Please change Video Output to best TV resolution.</font>");
     } else {
         ovs_asprintf(&result,"%d",g_dimension->tv_mode);
     }

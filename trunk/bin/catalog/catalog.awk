@@ -122,7 +122,8 @@ BEGIN {
     #Matches most english prose for plots / summary - cant use words that appear in other languages. of , it?
     # 'The' only counts if followed by lowecase. This allows its use in titles eg Edward the Longshanks?
     # Cant use 'man' as it is in Dutch an Swedish
-    g_english_re="\\<([Tt]he +[a-z]|([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|and|for|are|[Aa]n|[Tt]hey|their)\\>)"
+    # Using word boundaries \<,\> does not seem to work reliably with binary(utf-8) strings, so punctualtion and spaces explicitly added.
+    g_english_re="(^|[.?! ])([Tt]he +[a-z]|([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|and|for|are|[Aa]n|[Tt]hey|their|them)([ .!?]|$))"
 
     g_tv_check_urls["tvrage"]=g_tvrage_web;
     g_tv_check_urls["thetvdb"]=g_thetvdb_web;

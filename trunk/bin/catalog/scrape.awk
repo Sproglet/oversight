@@ -1178,8 +1178,8 @@ function add_lang_to_plot(lang_or_locale,plot,\
 ret,lng) {
     if (plot) {
         lng = lang(lang_or_locale); 
-        if (lng != "en" && plot ~ g_english_re ) {
-            INF("expected "lang_or_locale" but plot appears English? :"plot);
+        if (lng != "en" && match(plot,g_english_re) ) {
+            INF("expected "lang_or_locale" but plot appears English? found ["substr(plot,RSTART,RLENGTH)"] at pos "RSTART" in :"plot);
             lng="en";
         }
         ret = lng":"plot;

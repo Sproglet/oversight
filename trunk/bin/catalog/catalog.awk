@@ -123,7 +123,13 @@ BEGIN {
     # 'The' only counts if followed by lowecase. This allows its use in titles eg Edward the Longshanks?
     # Cant use 'man' as it is in Dutch an Swedish
     # Using word boundaries \<,\> does not seem to work reliably with binary(utf-8) strings, so punctualtion and spaces explicitly added.
-    g_english_re="(^|[.?! ])([Tt]he +[a-z]|([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|and|for|are|[Aa]n|[Tt]hey|their|them)([ .!?]|$))"
+    g_english_start_re="(^|[.?! ])";
+    g_english_end_re="([ .!?]|$)";
+    # there is some overlap between words and phrases - eg 'and' - this will be refined over time. Esp with Germanic languages some
+    # short words may not be enough to distinguish
+    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|when|with|his|who|and|for|are|[Aa]n|[Tt]hey|their|them)"g_english_end_re;
+    g_english_phrase_re="((in|to|by|for|is|on|as|of|and) (a|an|the|his|her|their|they)"g_english_end_re"|[Tt]he +[a-z])";
+    g_english_re=g_english_start_re"("g_english_words_re"|"g_english_phrase_re")";
 
     g_tv_check_urls["tvrage"]=g_tvrage_web;
     g_tv_check_urls["thetvdb"]=g_thetvdb_web;

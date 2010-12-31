@@ -33,11 +33,18 @@ line,ret,code) {
 }
 
 function dumpxml(label,xml,\
-i,n) {
+i,n,tag,ids,t) {
+    ids["name"] = ids["id"] = 1;
     n = xml["@count"];
     DEBUG(label":xml");
     for(i = 1 ; i <= n ; i++ ) {
-        INF(xml[i]" = "xml[xml[i]]);
+        tag = xml[i];
+
+        if (xml[tag]) INF(tag" = "xml[tag]);
+
+        for (t in ids) {
+            if (tag"#"t in xml) INF(tag"#"t" = "xml[tag"#"t]);
+        }
     }
     DEBUG("end:"label":xml");
 }

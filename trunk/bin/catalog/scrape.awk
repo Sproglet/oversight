@@ -279,8 +279,6 @@ i,j,keep,keep_num) {
         for(i = 1 ; i<= num ; i++ ) {
             if (matches[i] ~ regex ) {
                 keep[++j] = matches[i];
-            } else {
-                INF("ignore ["matches[i]"] - not a movie url");
             }
         }
         hash_copy(matches,keep);
@@ -367,7 +365,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                             INF("Rejecting page - found imdbid "found_id" expected "imdbid);
                             err = 1;
                         } else {
-                            INF("Confirmed imdb link on page:" line[1]);
+                            INF("Confirmed imdb link in page");
                             pagestate["confirmed"] = 1;
                         }
                     }

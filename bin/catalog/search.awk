@@ -638,32 +638,41 @@ score) {
     return score;
 }
 
-function is_better_source(minfo,field,source,\
-oldSrc,ret) {
+function is_better_source(minfo,field,source,value,\
+old_inf,new_inf,ret,old_num,new_num,old_src) {
 
     source = tolower(source);
+    old_src = minfo[field"_source"];
 
-    oldSrc="[fld="field":src="minfo[field"_source"]":val="minfo[field]"]";
+    old_inf="["old_src":"minfo[field]"]";
+    new_inf="["source":"value"]";
 
     if (minfo[field] == "" ) {
 
         #INF("is_better_source: "field" is currently blank. source ["source"] is better.");
         ret = 1;
-    } else if (source == minfo[field"_source"]) {
+    } else if (source == old_src) {
 
         # source is the same but incoming info may be from a better search
         ret = 1;
 
-    } else if (field_priority(field,source)+0 >= field_priority(field,minfo[field"_source"])+0) {
-
-        INF("is_better_source "oldSrc" beaten or matched by "source);
-        ret = 1;
-
     } else {
+        old_num = field_priority(field,old_src)+0;
+        new_num = field_priority(field,source)+0; 
 
-        INF("is_better_source "oldSrc" outranks "source);
-        ret = 0;
+        old_inf = old_inf"("old_num")";
+        new_inf = new_inf"("new_num")";
+
+        if (new_num >= old_num ) {
+
+            ret = 1;
+
+        } else {
+
+            ret = 0;
+        }
     }
+    INF("is_better_source "field": old:"old_inf" "(ret?"<=":" >")" new:"new_inf);
     return ret;
 }
 function best_source(minfo,field,value,source,\
@@ -673,7 +682,7 @@ ret) {
 
     ret = 0;
     if (value) {
-        if (is_better_source(minfo,field,source)) {
+        if (is_better_source(minfo,field,source,value)) {
             minfo[field] = value;
             minfo[field"_source"] = source;
             DEBUG("best_source: "field" = "source":["value"]");

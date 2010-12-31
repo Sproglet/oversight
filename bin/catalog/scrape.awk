@@ -955,6 +955,9 @@ err,value){
             INF("Rejected title ["text"]");
             err=1;
         } else {
+            if (index(value,"Experience")) {
+                sub(/:? ?(An|The) I[Mm][Aa][Xx] (3[Dd] |)Experience/,"",value);
+            }
             INF("Scraped "field" = ["value"] from ["text"]");
             update_minfo(minfo,field,value,domain);
             minfo[field"_source"] = "80:"domain;

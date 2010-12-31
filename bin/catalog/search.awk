@@ -685,7 +685,6 @@ ret) {
         if (is_better_source(minfo,field,source,value)) {
             minfo[field] = value;
             minfo[field"_source"] = source;
-            DEBUG("best_source: "field" = "source":["value"]");
             ret = 1;
         }
     }

@@ -9,13 +9,9 @@
         <td align=left><span class="status">&nbsp;&nbsp;
             [:IF($skin_show_nmt_name):]
 				[Oversight (:HOSTNAME:)]
-	        	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
-					[ - :STATUS:]				
-				[:ENDIF:]
-			[:ELSE:]
-	        	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
-					[Status - :STATUS:]	
-				[:ENDIF:]
+			[:ENDIF:]
+        	[:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
+				[&nbsp;&nbsp;:STATUS:]				
 			[:ENDIF:]
 			&nbsp;&nbsp;</span>
 		</td>

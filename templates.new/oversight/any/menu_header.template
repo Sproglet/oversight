@@ -80,12 +80,15 @@
         <td align=left>
             [:INCLUDE_TEMPLATE(menu_titles):]
         </td>
-		<td align=right><span class="status">
+		<td align=right><span class="status">  
 	[:IF($skin_show_page_number):]
 		[:PAGE:]/[:PAGE_MAX:]
 	[:ENDIF:]
 	[:IF($skin_show_item_count):]
 		([:EVAL($@selection_count):])
+	[:ENDIF:]                   	
+    [:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
+		[&nbsp;(:STATUS:)&nbsp;]
 	[:ENDIF:]
 		</span></td>
 	</tr>

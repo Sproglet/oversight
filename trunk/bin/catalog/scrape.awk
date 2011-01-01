@@ -463,6 +463,10 @@ f,source) {
 
     set_plot_score(current);
     set_plot_score(new);
+
+    INF(sprintf("current plot score [%d:%.30s...] new plot score [%d:%.30s...]",\
+           current["mi_plot_score"], current["mi_plot"], new["mi_plot_score"], new["mi_plot"]));
+
     if (new["mi_plot_score"] > current["mi_plot_score"] ) {
         current["mi_plot"] = new["mi_plot"];
         current["mi_plot_score"] = new["mi_plot_score"];

@@ -152,6 +152,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua)
 
         INF("WGET ["url"]");
         result = exec(cmd);
+        INF("WGETEND ["url"]");
         if (result == 0 ) {
             result = exec(unzip_cmd);
         }

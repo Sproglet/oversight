@@ -3978,38 +3978,43 @@ char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols)
     return result;
 }
 
-char *get_status()
+// do not free
+char *get_status_static()
 {
-    char *result=NULL;
+    static char *result=NULL;
 #define MSG_SIZE 50
-    static char msg[MSG_SIZE+1];
-    char *filename;
-    ovs_asprintf(&filename,"%s/catalog.status",appDir());
+    static char first=1;
 
-    msg[0] = '\0';
-    PRE_CHECK_FGETS(msg,MSG_SIZE);
+    if (first) {
+        first = 0;
+        static char msg[MSG_SIZE+1];
+        char *filename;
+        ovs_asprintf(&filename,"%s/catalog.status",appDir());
 
-    FILE *fp = fopen(filename,"r");
-    if (fp) {
-        fgets(msg,MSG_SIZE,fp);
-        CHECK_FGETS(msg,MSG_SIZE);
-        chomp(msg);
+        msg[0] = '\0';
+        PRE_CHECK_FGETS(msg,MSG_SIZE);
 
-        result = STRDUP(msg);
+        FILE *fp = fopen(filename,"r");
+        if (fp) {
+            fgets(msg,MSG_SIZE,fp);
+            CHECK_FGETS(msg,MSG_SIZE);
+            chomp(msg);
 
-        fclose(fp);
-    } else {
-        HTML_LOG(1,"Error %d opening [%s]",errno,filename);
-    }
-    FREE(filename);
+            result = msg;
 
-    if (result == NULL) {
-
-        if (exists_in_dir(tmpDir(),"cmd.pending")) {
-            result = STRDUP("Scanning...");
-        } else if (local_db_size() == 0) {
-            result = STRDUP("Database empty. Goto [Setup]&gt;media sources and rescan.");
+            fclose(fp);
+        } else {
+            HTML_LOG(1,"Error %d opening [%s]",errno,filename);
         }
+        FREE(filename);
+
+        if (result == NULL) {
+
+            if (exists_in_dir(tmpDir(),"cmd.pending")) {
+                result = "Scanning...";
+            }
+        }
+
     }
 
     return result;

@@ -70,7 +70,7 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
     if(id) {
         htag = "h5";
         sep=",";
-        url = "http://imdb.com/title/"id"/movieconnections";
+        url = "http://www.imdb.com/title/"id"/movieconnections";
         count=scan_page_for_match_order(url,"","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
         #dump(0,"movieconnections-"count,connections);
         for(i = 1 ; i <= count ; i++ ) {

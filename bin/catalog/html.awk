@@ -191,14 +191,14 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matche
 }
 # Scan a page for matches to regular expression
 # IN url to scan
-# IN fixed_text, - fixed text to help speed up scan
+# IN fixed_text, - fixed text to help speed up scan - use SUBSEP seperator for multiple items
 # IN regex to scan for
 # IN max = max number to match 0=all
 # IN count_or_order = 0=count 1=order
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
-f,line,count,linecount,remain,is_imdb,matches2,i) {
+f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 
     delete matches;
     id1("scan_page_for_matches["url"]["fixed_text"]["regex"]");
@@ -216,6 +216,9 @@ f,line,count,linecount,remain,is_imdb,matches2,i) {
     } else {
         f=getUrl(url,"scan4match",cache,referer);
     }
+
+    text_num = 0;
+    if (fixed_text != "") text_num = split(fixed_text,text_arr,SUBSEP);
 
     count=0;
 
@@ -237,10 +240,19 @@ f,line,count,linecount,remain,is_imdb,matches2,i) {
                 gsub(/\/Title\?/,"/tt",line[1]);
             }
 
-            if (verbose) DEBUG("scanindex = "index(line[1],fixed_text));
-            if (verbose) DEBUG(line[1]);
 
-            if (fixed_text == "" || index(line[1],fixed_text)) {
+            scan = 1;
+            if (text_num) {
+                scan = 0;
+                for(i = 1 ; i<= text_num ; i++ ) {
+                    if ((scan = index(line[1],text_arr[i])) != 0) {
+                        break;
+                    }
+                }
+            }
+            if (verbose) DEBUG("scanindex = "scan":"line[1]);
+
+            if (scan) {
 
                 if (count_or_order) {
                     # Get all ordered matches. 1=>test1, 2=>text2 , etc.

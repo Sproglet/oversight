@@ -654,7 +654,8 @@ cat,minfo2,locales,plot_not_local) {
 
                     thisTime = systime()-thisTime ;
                     if (g_total) {
-                        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f" ,(g_process_time/g_total),(g_elapsed_time/g_total)));
+                        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f [%s]",\
+                                 (g_process_time/g_total),(g_elapsed_time/g_total),minfo["mi_media"]));
                     }
                     g_process_time += thisTime;
                     g_elapsed_time = systime() - g_start_time;

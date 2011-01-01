@@ -8,7 +8,7 @@ function scrape_cache_add(url,minfo,\
 i) {
     for ( i in minfo ) { 
         g_scrape_cache[url SUBSEP i] = minfo[i];
-        DEBUG("scrape_cache_add ["url SUBSEP i"] = ["minfo[i]"]");
+        #DEBUG("scrape_cache_add ["url SUBSEP i"] = ["minfo[i]"]");
     }
     g_scrape_cache[url] = 1;
     INF("scrape_cache_added ["url"]");

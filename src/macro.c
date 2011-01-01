@@ -1766,7 +1766,13 @@ char *macro_fn_admin_config_link(MacroCallInfo *call_info)
 **/  
 char *macro_fn_status(MacroCallInfo *call_info)
 {
-    return get_status();
+    call_info->free_result = 0;
+    char *result = get_status_static();
+    if (result == NULL  && local_db_size() == 0) {
+        result = "Database empty. Goto [Setup]&gt;media sources and rescan.";
+    }
+
+    return result;
 }
 
 
@@ -1908,7 +1914,11 @@ char *macro_fn_home_button(MacroCallInfo *call_info) {
     char *result=NULL;
 
     if(!*query_select_val()) {
-        char *tag=get_theme_image_tag("home",NULL);
+        char *icon = "home";
+        if (get_status_static() ) {
+            icon = "gear";
+        }
+        char *tag=get_theme_image_tag(icon,NULL);
         ovs_asprintf(&result,"<a href=\"%s?\" name=home TVID=HOME >%s</a>",cgi_url(0),tag);
         FREE(tag);
     }

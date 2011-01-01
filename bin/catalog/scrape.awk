@@ -72,7 +72,8 @@ i,num,sites,minfo2,err,searchhist) {
 }
 
 # Search for a movie by title year using multiple search engines. 
-# filter urls that score highly (bing is bad for these types of searches. may need to use ask/google)
+# filter urls that score highly. Bing cannot do inurl: searches very well. so use yahoo and fall back to google.
+# Google is best but may ban ip. Need to get Google API or use other google powered site.
 #
 # IN search_engine_prefix eg http://google.com/q=
 # IN text - text to find - eg filename may be blank if title set
@@ -80,10 +81,14 @@ i,num,sites,minfo2,err,searchhist) {
 # IN year - year of release
 # IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
 # OUT matches - array of matching urls.
-function find_links_all_engines(text,title,year,site,matches) {
+function find_links_all_engines(text,title,year,site,matches,\
+n) {
 
-    return find_links_1engine(g_search_google,text,title,year,site,matches);
-
+    n = find_links_1engine(g_search_yahoo,text,title,year,site,matches);
+    if (!n) {
+        n = find_links_1engine(g_search_google,text,title,year,site,matches);
+    }
+    return n;
 }
 
 
@@ -100,6 +105,7 @@ function find_links_all_engines(text,title,year,site,matches) {
 function find_links_1engine(search_engine_prefix,text,title,year,site,matches,\
 keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
+    delete matches;
     num = 0;
 
     id1("find_links_1engine:"search_engine_prefix);

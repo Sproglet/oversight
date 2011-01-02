@@ -361,7 +361,9 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                 minfo2["mi_category"] = "M";
 
                 pagestate["mode"] = "head";
-                pagestate["checkposters"] = scrape_poster_check(minfo);
+
+                # A bit messy - orig title is  used for two things. 1) Confirm we are on the right page 2)Decide if we need the poster =if_title_changed
+                pagestate["checkposters"] = scrape_poster_check(minfo,orig_title);
 
                 while(!err && enc_getline(f,line) > 0  ) {
 
@@ -381,7 +383,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
 
                     #Check original title present
                     if (!pagestate["confirmed"] && orig_title && !found_orig ) {
-                        found_orig = index(line[1],orig_title);
+                        found_orig = index(tolower(line[1]),tolower(orig_title));
                     }
                     if (!err) {
                         # Join current line to previous line if it has no markup. This is for sites that split the 
@@ -992,8 +994,10 @@ err,value){
     return err;
 }
 
-function scrape_poster_check(minfo,\
+function scrape_poster_check(minfo,orig_title,\
 opt,ret) {
+
+    if (orig_title == "") orig_title = minfo["mi_orig_title"];
 
     opt = g_settings["catalog_get_local_posters"]; 
 
@@ -1002,11 +1006,11 @@ opt,ret) {
        INF("Force local poster fetching");
        ret = 1;
     } else if (opt == "if_title_changed" ) {
-       if (minfo["mi_orig_title"] && minfo["mi_orig_title"] != minfo["mi_title"] ) {
+       if (orig_title && orig_title != minfo["mi_title"] ) {
            INF("local poster fetching - title changed");
            ret = 2;
        } else {
-           INF("ignore local poster fetching - title unchanged");
+           INF("ignore local poster fetching - title["minfo["mi_title"]"] orig title ["minfo["mi_orig_title"]"] ");
        }
     } else {
        INF("skip local poster fetching");

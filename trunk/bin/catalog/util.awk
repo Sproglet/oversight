@@ -847,13 +847,20 @@ function get_regex_pos(line,regex,max,rtext,rstart) {
 # OUT rstart  is updated with (order -> start pos)
 # OUT total number of occurences.
 function get_regex_count_or_pos(mode,line,regex,max,rtext,rstart,\
-count,fcount,i,parts,start) {
+count,fcount,i,parts,start,dbg) {
     count =0 ;
 
     delete rtext;
     delete rstart;
 
+
+    #dbg = index(line,"spielfilm"); # edit as applicable when debugging
     fcount = chop(line,regex,parts);
+    if (dbg) {
+        DEBUG("xx DELETE line["line"]");
+        dumpord(0,"spielfilm-"mode,parts);
+    }
+
     start=1;
     for(i=2 ; i-fcount <= 0 ; i += 2 ) {
         count++;

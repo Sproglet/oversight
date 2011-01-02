@@ -623,7 +623,7 @@ cat,minfo2,locales,plot_not_local) {
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,extractImdbId(bestUrl));
+                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,extractImdbId(bestUrl),minfo["mi_orig_title"]);
                             }
                         }
 

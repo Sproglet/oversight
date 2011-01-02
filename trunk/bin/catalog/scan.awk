@@ -616,8 +616,7 @@ cat,minfo2,locales,plot_not_local) {
                                }
                            }
 
-                           if (g_settings["catalog_get_local_posters"] == 1 && minfo["mi_orig_title"] && minfo["mi_title"] != minfo["mi_orig_title"] ) {
-                               INF("catalog_get_local_posters=1 and "minfo["mi_orig_title"]" != "minfo["mi_title"]" forcing local web search");
+                           if (scrape_poster_check(minfo)) {
                                local_search = 1;
                            }
 

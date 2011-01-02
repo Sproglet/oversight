@@ -128,7 +128,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     }
 
     # Scrape domain if poster extraction regex is set OR if local posters are not required
-    if(g_settings["catalog_get_local_posters"]==1 && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
+    if(g_settings["catalog_get_local_posters"]=="always" && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
         INF("Skipping "search_domain" as local posters are required");
     } else {
 
@@ -359,7 +359,10 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
 
                 minfo2["mi_url"] = url;
                 minfo2["mi_category"] = "M";
+
                 pagestate["mode"] = "head";
+                pagestate["checkposters"] = scrape_poster_check(minfo);
+
                 while(!err && enc_getline(f,line) > 0  ) {
 
                     #DEBUG("xx read["line[1]"]");
@@ -459,7 +462,10 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
 
 # merge new data into current data.
 function minfo_merge(current,new,default_source,\
-f,source) {
+f,source,plot_fields,p) {
+
+    plot_fields["mi_plot"] = 1;
+    plot_fields["mi_epplot"] = 1;
 
     id1("minfo_merge["default_source"]");
     # Keep best title
@@ -467,20 +473,24 @@ f,source) {
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
     minfo_merge_ids(current,new["mi_idlist"]);
 
-    set_plot_score(current);
-    set_plot_score(new);
+    for(p in plot_fields) {
 
-    INF(sprintf("current plot score [%d:%.30s...] new plot score [%d:%.30s...]",\
-           current["mi_plot_score"], current["mi_plot"], new["mi_plot_score"], new["mi_plot"]));
+        set_plot_score(current,p);
+        set_plot_score(new,p);
 
-    if (new["mi_plot_score"] > current["mi_plot_score"] ) {
-        current["mi_plot"] = new["mi_plot"];
-        current["mi_plot_score"] = new["mi_plot_score"];
+        INF(sprintf("plot "p" current score [%d:%.30s...] new score [%d:%.30s...]",current[p"_score"], current[p], new[p"_score"], new[p]));
+
+        if (new[p]) {
+            if (new[p"_score"] > current[p"_score"] ) {
+                current[p] = new[p];
+                current[p"_score"] = new[p"_score"];
+            }
+        }
     }
 
     for(f in new) {
         source="";
-        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" && f != "mi_plot" ) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" && !(f in plot_fields)) {
             if (f"_source" in new) {
                 source = new[f"_source"];
             }
@@ -493,24 +503,28 @@ f,source) {
     id0("");
 }
 
-function set_plot_score(minfo,\
+function set_plot_score(minfo,field,\
 score,langs,plot_lang,plot,i,num) {
     score = 0;
-    plot =minfo["mi_plot"];
-    if (plot) {
-        score = 10;
-        if (substr(plot,3,1) == ":") {
-            plot_lang = lang(plot);
-            num = get_langs(langs);
-            for(i = 1 ; i<= num ; i++ ) {
-                if (plot_lang == langs[i]) {
-                    score = 1000-10*i;
-                    break;
+    if (field in minfo) {
+        plot =minfo[field];
+        if (plot) {
+            score = 10;
+            if (substr(plot,3,1) == ":") {
+                plot_lang = lang(plot);
+                num = get_langs(langs);
+                for(i = 1 ; i<= num ; i++ ) {
+                    if (plot_lang == langs[i]) {
+                        score = 1000-10*i;
+                        score = score * 10000 + utf8len(plot);
+                        break;
+                    }
                 }
             }
+            minfo[field"_score"] = score;
         }
-        minfo["mi_plot_score"] = score;
     }
+    return score;
 }
 
 #add a website id to the id list - internal format is {<space><domain>:value} 
@@ -832,8 +846,8 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
     
     # if the title occurs in the main text, then allow plot to be parsed.
     if (!pagestate["titleinpage"] && minfo["mi_title"] && index(fragment,minfo["mi_title"])) {
-        #DEBUG("xx setting titleinpage 1");
         pagestate["titleinpage"] = 1;
+        DEBUG("setting titleinpage 1");
     }
 
     err=0;
@@ -888,8 +902,8 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
     } else if ( mode == "title" ) {
 
         if (update_minfo(minfo,"mi_title", trim(fragment),domain)) {
-            DEBUG("xx setting titleinpage 2");
-            pagestate["titleinpage"] = 1;
+            pagestate["titleinpage"] = 2;
+            DEBUG("setting titleinpage 2");
         }
 
     } else if ( mode == "year" ) {
@@ -950,7 +964,9 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         extract_rating(fragment,minfo,domain);
 
-        scrape_poster(fragment,minfo,domain);
+        if (pagestate["checkposters"]) {
+            scrape_poster(fragment,minfo,domain,pagestate);
+        }
     }
 
     return err;
@@ -976,12 +992,34 @@ err,value){
     return err;
 }
 
-function scrape_poster(text,minfo,domain,\
-dnum,dtext,i,value,pri) {
-    if (g_settings["catalog_get_local_posters"] == 1) {
-        pri = 80;
+function scrape_poster_check(minfo,\
+opt,ret) {
+
+    opt = g_settings["catalog_get_local_posters"]; 
+
+    ret = 0;
+    if (opt == "always" ) {
+       INF("Force local poster fetching");
+       ret = 1;
+    } else if (opt == "if_title_changed" ) {
+       if (minfo["mi_orig_title"] && minfo["mi_orig_title"] != minfo["mi_title"] ) {
+           INF("local poster fetching - title changed");
+           ret = 2;
+       } else {
+           INF("ignore local poster fetching - title unchanged");
+       }
     } else {
-        pri = 5;
+       INF("skip local poster fetching");
+    }
+    return ret;
+}
+
+function scrape_poster(text,minfo,domain,pagestate,\
+dnum,dtext,i,value,pri) {
+
+    pri = 5;
+    if (pagestate["checkposters"]) {
+        pri = 80;
     }
     if (g_settings["domain:catalog_domain_poster_url_regex_list"]) {
         # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent

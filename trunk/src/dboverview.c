@@ -242,12 +242,14 @@ unsigned int db_overview_name_hashf(void *item) {
 int db_overview_tv_eqf(void *item1,void *item2) {
 
     int ret = 0;
-    if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
-       assert(0);
-    } else if (((DbItem*)item1)->category == 'T' ) {
+    if (((DbItem*)item1)->category == 'T' && ((DbItem*)item1)->category == ((DbItem*)item2)->category ) {
        ret = EQ_FILE(item1,item2);
     } else {
-       assert(0);
+        html_error("%s:%d non-tv in tv view %s[%c] %s[%c]",
+                __FILE__,__LINE__,
+                ((DbItem*)item1)->file,((DbItem*)item1)->category,
+                ((DbItem*)item2)->file,((DbItem*)item2)->category);
+        //assert(0);
     }
     return ret;
 }

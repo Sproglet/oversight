@@ -101,6 +101,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua)
 
     if (index(url,"/app.")) { 
         ua = g_iphone_user_agent;
+    } else if (index(url,g_search_yahoo)) { 
+        #Yahoo returns wierd bloated results with any known browser
+        ua = "Mozilla";
     } else {
         ua = g_user_agent;
     }
@@ -150,9 +153,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua)
 
         # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-        INF("WGET ["url"]");
+        INF("WGET ["url"] cmd="cmd);
         result = exec(cmd);
-        INF("WGETEND ["url"]");
+        INF("WGET done");
         if (result == 0 ) {
             result = exec(unzip_cmd);
         }

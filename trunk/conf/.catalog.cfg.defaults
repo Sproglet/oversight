@@ -103,5 +103,6 @@ catalog_follow_symlinks=0
 catalog_locale1=en_GB
 catalog_locale2=-
 catalog_locale3=-
-catalog_get_local_posters=0
+# Get local posters =always =never =if_title_changed
+catalog_get_local_posters="if_title_changed"
 catalog_extended_local_plot_search=1

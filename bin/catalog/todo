@@ -1,6 +1,29 @@
+# Error
+# http://192.168.88.7:8883/oversight/oversight.cgi?view=tv&i=3&@Aview=admin&@Bview=admin&@Cview=admin&@Aaction=template_resize&@Baction=confirm_appearance&@Caction=ask
+#
+# dboverview.c:249 non-tv in tv view /share/Movies/0DVD_ISOS/rep-httyd.iso[M] /share/Movies/0DVD_ISOS/AMORES_PERROS.ISO[M]dboverview.c:249 non-tv in tv view /share/Movies/Ondine (2009) - PG_13/n-ondine.720p.mkv[M] /share/Movies/Blood And Bone (2009) - R/lchd-bab.mkv[M]dboverview.c:249 non-tv in tv view /share/Movies/The Town (2010) - R/cbgb-thetown720.mkv[M] /share/Movies/300 (2006) - 15/300.2006.1080p.BluRay.x264-hV.mkv[M]dboverview.c:249 non-tv in tv view /share/Tv/Dexter - Season 5/dexter.s05e07.hdtv.xvid-fever.avi[T] /share/Movies/Un Prophè
+#
+# disable person scraping for now [INFO]     06:47:44 :                 get_names:name=Alan Rickman...
+# [INFO]     06:47:44 :                 get_names:actor=4
+# [DEBUG]    06:47:44 :                  check_img:href=[/film/casting_gen_cfilm=22214.html]
+# [DEBUG]    06:47:44 :                  check_img:id=[]
+# [DEBUG]    06:47:44 :                  check_img:href=[/film/casting_gen_cfilm=22214.html]
+# [DEBUG]    06:47:44 :                  check_img:src=[]
+# [DEBUG]    06:47:44 :                  check_img:id=[]
+# [DEBUG]    06:47:45 :                  check_img:href=[/film/casting_gen_cfilm=22214.html]
+# [DEBUG]    06:47:45 :                  check_img:src=[]
+# [DEBUG]    06:47:45 :                  check_img:id=[]
+# [DEBUG]    06:47:45 :                  check_img:href=[/article/dossiers/cinema/dossier-18442802/]
+# [DEBUG]    06:47:45 :                  check_img:src=[]
+# [DEBUG]    06:47:45 :                  check_img:id=[]
+# [DEBUG]    0
 # Do something about Allocine Year search - the square 2008 vs 2009 ?
 # - Search using Yahoo - if not results try Google - this might be enough..
 # Note can use Bing but not inurl search.
+#
+# Test German sites one-by-one
+#
+# Add configurable menu title
 #
 # Error searching  Alfred Hitchcock'\''s North By Northwest 1959 site:filmtotaal.nl via Google -> gives 'Did You Mean' page. 0 results.
 #

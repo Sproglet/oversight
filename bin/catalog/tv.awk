@@ -2032,7 +2032,7 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,result,iid,thetvdbid) {
+seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
     result=0;
 
@@ -2050,7 +2050,11 @@ seriesInfo,episodeInfo,result,iid,thetvdbid) {
 
         minfo["mi_year"] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         minfo["mi_premier"] = formatDate(seriesInfo["/Data/Series/FirstAired"]);
-        minfo["mi_plot"]= clean_plot(seriesInfo["/Data/Series/Overview"]);
+
+        lang=seriesInfo["/Data/Series/Language"];
+        plot=clean_plot(seriesInfo["/Data/Series/Overview"]);
+        minfo["mi_plot"]=add_lang_to_plot(lang,plot);
+
         minfo["mi_genre"]= seriesInfo["/Data/Series/Genre"];
         minfo["mi_certrating"] = seriesInfo["/Data/Series/ContentRating"];
         minfo["mi_rating"] = seriesInfo["/Data/Series/Rating"];
@@ -2084,7 +2088,9 @@ seriesInfo,episodeInfo,result,iid,thetvdbid) {
                     set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
 
                     if (minfo["mi_epplot"] == "") {
-                        minfo["mi_epplot"] = clean_plot(episodeInfo["/Data/Episode/Overview"]);
+                        lang=seriesInfo["/Data/Episode/Language"];
+                        plot=clean_plot(seriesInfo["/Data/Episode/Overview"]);
+                        minfo["mi_epplot"] = add_lang_to_plot(lang,plot);
                     }
 
                     if (minfo["mi_eptitle"] != "" ) {

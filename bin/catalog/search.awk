@@ -621,7 +621,7 @@ score) {
     }
     if (score) {
 
-        DEBUG("field_priority("field","source")="score);
+        #DEBUG("field_priority("field","source")="score);
 
     } else {
 
@@ -633,7 +633,7 @@ score) {
         } else {
             score = gPriority["default"];
         }
-        DEBUG("field_priority: "field" source ["source"] defaults to "score);
+        #DEBUG("field_priority: "field" source ["source"] defaults to "score);
     }
     return score;
 }

@@ -200,6 +200,7 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matche
 function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
 f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 
+    #if (index(url,"spielfilm")) verbose=1; # Debug line edit as required
     delete matches;
     id1("scan_page_for_matches["url"]["fixed_text"]["regex"]");
     INF("["fixed_text"]["\
@@ -233,6 +234,8 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 
             line[1] = de_emphasise(line[1]);
 
+            if (verbose) DEBUG("["line[1]"]");
+
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
             # itself is more work - for example the results will come back as two different 
             # counts. 
@@ -250,6 +253,7 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
                     }
                 }
             }
+
             if (verbose) DEBUG("scanindex = "scan":"line[1]);
 
             if (scan) {
@@ -257,14 +261,23 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
                 if (count_or_order) {
                     # Get all ordered matches. 1=>test1, 2=>text2 , etc.
                     linecount = get_regex_pos(line[1],regex,remain,matches2);
+                    if (verbose) {
+                        DEBUG("linecount = "linecount" remain="remain);
+                        dumpord(0,"matches2",matches2);
+                    }
                     # 
                     # Append the matches2 array of ordered regex matches. Index by order.
                     for(i = 1 ; i+0 <= linecount+0 ; i++) {
                         matches[count+i] = matches2[i];
+                        if (verbose) DEBUG("xx match ["matches[count+i]"]");
                     }
                 } else {
                     # Get all occurence counts text1=m , text2=n etc.
                     linecount = get_regex_counts(line[1],regex,remain,matches2);
+                    if (verbose) {
+                        DEBUG("linecount2 = "linecount" remain="remain);
+                        dump(0,"matches2",matches2);
+                    }
                     # Add to the total occurences so far , index by pattern.
                     hash_add(matches,matches2);
                 }

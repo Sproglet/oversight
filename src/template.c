@@ -53,7 +53,7 @@ int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char 
             dummy_css = ".a {}\n";
         }
 
-#define HTML_BUF_SIZE 1999
+#define HTML_BUF_SIZE 2999
         ret = 0;
 
         char buffer[HTML_BUF_SIZE];

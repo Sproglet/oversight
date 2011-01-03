@@ -1110,8 +1110,8 @@ words,num,i,len,is_english,lng) {
 
         len = utf8len(text);
 
-
         if (len > g_min_plot_len ) {
+
             lng = lang(locale);
             is_english = (text ~ g_english_re);
             DEBUG("utf8len = "len" length="length(text)" g_min_plot_len="g_min_plot_len" lang="lng" english="is_english);
@@ -1121,7 +1121,7 @@ words,num,i,len,is_english,lng) {
             if ( (lng == "en") == is_english  ) {
                 num = split(text,words," ")+0;
                 #DEBUG("words = "num" required "(length(text)/10));
-                if (num >= len/8 ) { #av word length less than 10 chars
+                if (num >= len/10 ) { #av word length less than 11 chars - Increased for Russian
                     if (num <= len/5 ) { # av word length > 4 chars (minus space)
                         if ( index(text,"Mozilla") == 0) {
                             for(i in words) if (utf8len(words[i]) > 30) return 0;

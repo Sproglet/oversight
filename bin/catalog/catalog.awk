@@ -105,7 +105,7 @@ BEGIN {
     verify_setup();
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
-    g_min_plot_len=100; # this is th eminimum length when scraping - not via api
+    g_min_plot_len=90; # this is th eminimum length when scraping - not via api
     g_max_db_len=4000;
     g_path_depth=3;
     g_country_prefix="country_";

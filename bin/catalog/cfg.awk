@@ -1,27 +1,29 @@
 
-function load_catalog_settings() {
+function load_catalog_settings(\
+ign_path) {
 
     load_settings("",DEFAULTS_FILE,1);
     load_settings("",CONF_FILE,1);
 
     load_settings(g_country_prefix , COUNTRY_FILE,0);
 
+    ign_path = "catalog_ignore_paths";
 
 
     gsub(/,/,"|",g_settings["catalog_format_tags"]);
-    gsub(/,/,"|",g_settings["catalog_ignore_paths"]);
     gsub(/,/,"|",g_settings["catalog_ignore_names"]);
+    gsub(/,/,"|",g_settings[ign_path]);
 
     g_settings["catalog_ignore_names"]="^"glob2re(g_settings["catalog_ignore_names"])"$";
 
-    g_settings["catalog_ignore_paths"]="^"glob2re(g_settings["catalog_ignore_paths"]);
+    g_settings[ign_path]="^"glob2re(g_settings[ign_path]);
 
-    INF("ignore path = ["g_settings["catalog_ignore_paths"]"]");
+    INF("ignore path = ["g_settings[ign_path]"]");
 
     # Check for empty ignore path
-    if ( "x" ~ "^"g_settings["catalog_ignore_paths"]"x$" ) {
-        g_settings["catalog_ignore_paths"] = "^$"; #regex will only match empty path
-        INF("ignore path = ["g_settings["catalog_ignore_paths"]"]");
+    if ( trim(g_settings[ign_path]) == "" ) {
+        g_settings[ign_path] = "^$"; #regex will only match empty path
+        INF("ignore path = ["g_settings[ign_path]"]");
     }
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));

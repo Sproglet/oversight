@@ -1404,26 +1404,28 @@ int util_touch(char *path,time_t t)
     return ret;
 }
 // Return offset to n'th utf8 character. 
-// If not present return NULL
+// If not present return pointer to end
 // utf8pos("ab",0) = "ab"
 // utf8pos("ab",2) = ""
 char *utf8pos(char *p,int n)
 {
 
-    while (n>0) {
+    if (p) {
+        while (n>0) {
 
-        if (*p > 0 ) {
-            p++;
-        } else if ( (*p  & 0x40 ) ) {
-            // 0x80 is set here because p[i] < 0, so just need to check 0x40 is set for utf8 lead char.
-            p++;
-            while (( *p & 0x80 ) == 0x80 ) {
+            if (*p > 0 ) {
                 p++;
+            } else if ( (*p  & 0x40 ) ) {
+                // 0x80 is set here because p[i] < 0, so just need to check 0x40 is set for utf8 lead char.
+                p++;
+                while (( *p & 0xC0 ) == 0x80 ) {
+                    p++;
+                }
+            } else if (*p == 0) {
+                break;
             }
-        } else if (*p == 0) {
-            break;
+            n--;
         }
-        n--;
     }
     return p;
 }

@@ -66,12 +66,14 @@ function dir_contains(dir,pattern) {
 
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
-tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
+ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
     INF("scan_contents" root);
     qfile = new_capture_file("dbqueue");
     if (root == "") return;
+
+    ign_path = g_settings["catalog_ignore_paths"];
 
     # Get all files already scanned at root level
     if (NEWSCAN) {
@@ -133,7 +135,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
            sub(/\/*:$/,"",currentFolder);
            DEBUG("Folder = "currentFolder);
            folderNameNext=0;
-            if ( currentFolder ~ g_settings["catalog_ignore_paths"] ) {
+            if ( ign_path != "" && currentFolder ~ ign_path ) {
 
                 skipFolder=1;
                 INF("Ignore path "currentFolder);

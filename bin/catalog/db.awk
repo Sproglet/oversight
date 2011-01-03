@@ -286,7 +286,7 @@ result) {
 
         INF("Row too long");
 
-    } else if ( fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
+    } else if ( g_settings["catalog_ignore_paths"] != "" && fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
         INF("Removing Ignored Path ["fields[FILE]"]");
 

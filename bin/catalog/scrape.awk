@@ -703,9 +703,11 @@ line2) {
 
 
 function reduce_markup(line,sections,pagestate,\
-sep,ret,lcline,arr,styleOrScript) {
+sep,ret,lcline,arr,styleOrScript,dbg) {
 
     delete sections;
+    
+    #dbg = index(line,".3.jpg"); #edit as required
 
     if (pagestate["debug"]) DEBUG("reduce_markup0:["line"]");
 
@@ -715,9 +717,9 @@ sep,ret,lcline,arr,styleOrScript) {
         lcline = tolower(line);
 
         sep="#";
-        #DEBUG("reduce_markup0:["line"]");
+        if (dbg) DEBUG("reduce_markup0:["line"]");
         gsub(/<\/?(table|TABLE|tr|TR|td|TD|div|DIV|br|BR|hr|HR|[Hh][1-5])[^>]*>/,sep,line);
-        #DEBUG("reduce_markup1:["line"]");
+        if (dbg) DEBUG("reduce_markup1:["line"]");
 
         # remove option list text, otherwise after removing html tags a long list(imdb) can look too
         # much like prose, and be mistaken for the plot.
@@ -726,6 +728,7 @@ sep,ret,lcline,arr,styleOrScript) {
         }
 
         line = preserve_src_href(line);
+        if (dbg) DEBUG("reduce_markup3:["line"]");
 
         #Flag link text.
         if (index(lcline,"<a") ) {
@@ -798,27 +801,27 @@ sep,ret,lcline,arr,styleOrScript) {
 # IN/OUT namestate - info about which person we are parsing
 # RETURN 0 if no issues, 1 if title or field mismatch.
 function scrape_movie_line(locale,domain,line,minfo,pagestate,namestate,\
-i,num,sections,err) {
+i,num,sections,err,dbg) {
 
     err = 0;
     sub(/^ */,"",line);
 
-    #pagestate["debug"] = index(line,"Thumbnail");
-    #DEBUG("xx line["line"]");
+    if (0 && index(line,".3.jpg")) { dbg = 1; }
 
     num = reduce_markup(line,sections,pagestate);
+    if (dbg) DEBUG("xx line["line"]"num);
     if (num) {
         if (!pagestate["script"] ) {
             # INF("skip script or style");
         #} else if (pagestate["mode"] != "head" ) {
 
-            if (pagestate["debug"]) {
+            if (dbg) {
                 dump(0,"fragments",sections);
             }
 
             for(i = 1 ; i <= num ; i++ ) {
 
-                #DEBUG("xx section["sections[i]"]");
+                if (dbg) DEBUG("xx section["sections[i]"]");
 
                 if (sections[i]) {
                     err = scrape_movie_fragment(locale,domain,sections[i],minfo,pagestate,namestate);

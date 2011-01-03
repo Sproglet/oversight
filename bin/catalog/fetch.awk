@@ -85,7 +85,7 @@ i,urls,tmpf,qf,r) {
                 #Insert line feeds - but try not to split text that has bold or span tags.
 
                 #exec("cat "qf" >> "qa(file));
-                exec(AWK " '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P)[ >]/,\"\\n&\") ; print ; }' "qf" >> "qa(file));
+                exec(AWK " '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P|LI|li|script|SCRIPT|style|STYLE)[ >]/,\"\\n&\") ; print ; }' "qf" >> "qa(file));
                 r=0;
             }
         }

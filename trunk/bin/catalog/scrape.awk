@@ -337,10 +337,14 @@ i,j,keep) {
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
 function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,imdbid,orig_title,\
-f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
+f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alternate_orig) {
 
     err = 0;
     id1("scrape_movie_page("url","locale","domain",text="text",title="title",y="year",orig="orig_title")");
+
+    if (substr(orig_title,1,4) == "The ") {
+        alternate_orig = tolower(substr(orig_title,5)", The");
+    }
 
     if (have_visited(minfo,domain":"locale)) {
 
@@ -384,6 +388,9 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline) {
                     #Check original title present
                     if (!pagestate["confirmed"] && orig_title && !found_orig ) {
                         found_orig = index(tolower(line[1]),tolower(orig_title));
+                        if (!found_orig && alternate_orig ) {
+                            found_orig = index(tolower(line[1]),tolower(alternate_orig));
+                        }
                     }
                     if (!err) {
                         # Join current line to previous line if it has no markup. This is for sites that split the 
@@ -1162,7 +1169,10 @@ key,regex,ret,lcfragment,dbg,all_keys) {
        ret = "plot";
        #DEBUG("xx pagestate[titleinpage]="pagestate["titleinpage"]);
 
-    }  else {
+    }  else if (0) {
+
+        #################### DISABLED ADVANCED FIELD SCRAPING FOR NOW. ENOUGH INFO IS GATHERED FROM IMDB AND TMDB ##########################
+        #################### Only need Plot, Poster and Title (from <title> tag) ############################
 
         lcfragment = tolower(fragment);
 

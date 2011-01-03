@@ -16,15 +16,14 @@ ign_path) {
 
     g_settings["catalog_ignore_names"]="^"glob2re(g_settings["catalog_ignore_names"])"$";
 
-    g_settings[ign_path]="^"glob2re(g_settings[ign_path]);
-
-    INF("ignore path = ["g_settings[ign_path]"]");
-
     # Check for empty ignore path
-    if ( trim(g_settings[ign_path]) == "" ) {
-        g_settings[ign_path] = "^$"; #regex will only match empty path
-        INF("ignore path = ["g_settings[ign_path]"]");
+    g_settings[ign_path]=trim(g_settings[ign_path]);
+    if ( g_settings[ign_path] == "" ) {
+        g_settings[ign_path] = ""; #regex will only match empty path
+    } else {
+        g_settings[ign_path]="^"glob2re(g_settings[ign_path]);
     }
+    INF("ignore path = ["g_settings[ign_path]"]");
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));
 

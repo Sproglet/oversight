@@ -581,7 +581,7 @@ score) {
 
     if (!("default" in gPriority)) {
         #initialise
-        gPriority["default"]=-1;
+        gPriority["default"]=0;
         gPriority["mi_title","filename"]=1;
         gPriority["mi_title","search"]=10;
         gPriority["mi_title","tvrage"]=20; # demote tvrage due to non-accented Carnivale
@@ -617,34 +617,34 @@ score) {
     score = 0;
 
     if (value != "") {
-        if (source ~ "^[0-9]+") {
-            # if source is numeric then it IS the score.
-            score = 0+source;
-        } else if (field == "mi_plot" || field == "mi_epplot") {
-            if (source == "@nfo" ) {
-                score = plot_score("@nfo");
+            if (source ~ "^[0-9]+") {
+                # if source is numeric then it IS the score.
+                score = 0+source;
+            } else if (field == "mi_plot" || field == "mi_epplot") {
+                if (source == "@nfo" ) {
+                    score = plot_score("@nfo");
+                } else {
+                    score = plot_score(value);
+                }
             } else {
-                score = plot_score(value);
+                score = gPriority[field,source];
             }
+        if (score) {
+
+            #DEBUG("field_priority("field","source")="score);
+
         } else {
-            score = gPriority[field,source];
+
+            # Generally give priority to tmdb and thetvdb first, then imdb (which we are phasing out) , finally anything else.
+            if (source == "@nfo" ) {
+                score = 99; # default nfo score - highest
+            } else if (source == "@imdb" ) {
+                score = 1; # default imdb score 
+            } else {
+                score = gPriority["default"];
+            }
+            #DEBUG("field_priority: "field" source ["source"] defaults to "score);
         }
-    }
-    if (score) {
-
-        #DEBUG("field_priority("field","source")="score);
-
-    } else {
-
-        # Generally give priority to tmdb and thetvdb first, then imdb (which we are phasing out) , finally anything else.
-        if (source == "@nfo" ) {
-            score = 99; # default nfo score - highest
-        } else if (source == "@imdb" ) {
-            score = 1; # default imdb score 
-        } else {
-            score = gPriority["default"];
-        }
-        #DEBUG("field_priority: "field" source ["source"] defaults to "score);
     }
     return score;
 }
@@ -686,32 +686,25 @@ old_inf,new_inf,ret,old_num,new_num,old_src) {
     old_inf="["old_src":"minfo[field]"]";
     new_inf="["source":"value"]";
 
-    if (minfo[field] == "" ) {
+    old_num = field_priority(field,old_src,minfo[field])+0;
+    new_num = field_priority(field,source,value)+0; 
 
-        #INF("is_better_source: "field" is currently blank. source ["source"] is better.");
-        ret = 1;
-    } else if (source == old_src) {
+    old_inf = old_inf"("old_num")";
+    new_inf = new_inf"("new_num")";
 
-        # source is the same but incoming info may be from a better search
+    if (new_num >= old_num ) {
+
         ret = 1;
 
     } else {
-        old_num = field_priority(field,old_src,minfo[field])+0;
-        new_num = field_priority(field,source,value)+0; 
 
-        old_inf = old_inf"("old_num")";
-        new_inf = new_inf"("new_num")";
-
-        if (new_num >= old_num ) {
-
-            ret = 1;
-
-        } else {
-
-            ret = 0;
-        }
+        ret = 0;
     }
-    INF("is_better_source "field": old:"old_inf" "(ret?"<=":" >")" new:"new_inf);
+    if (old_src) {
+        INF("set_source "field": old:"old_inf" "(ret?"<=":" >")" new:"new_inf);
+    } else {
+        INF("set_source "field": new:"new_inf);
+    }
     return ret;
 }
 function best_source(minfo,field,value,source,\

@@ -491,6 +491,17 @@ f,source) {
             best_source(current,f,new[f],source);
         }
     }
+    for(f in current) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" ) {
+            if ( f !~ !(f  in new )) {
+                source="";
+                if (f"_source" in new) {
+                    source = new[f"_source"];
+                }
+                INF("minfo_merge: keeping "source":"f" = ["current[f]"]");
+            }
+        }
+    }
     id0("");
 }
 

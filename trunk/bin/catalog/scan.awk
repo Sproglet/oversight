@@ -286,7 +286,6 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                             if ( checkMultiPart(minfo,scan_line) ) {
                                 store = 0;
                                 if (!is_file(minfo["mi_nfo_default"])) {
-                                    DEBUG("xx no file for nfo ["minfo["mi_nfo_default"]"]");
                                     #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                                     #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
                                     setNfo(minfo,".(|"g_multpart_tags")[1-9]" extRe,".nfo");
@@ -433,10 +432,8 @@ nfo,lcNfo) {
     if (match(lcNfo,pattern)) {
         nfo=substr(nfo,1,RSTART-1) replace substr(nfo,RSTART+RLENGTH);
         minfo["mi_nfo_default"] = getPath(nfo,minfo["mi_folder"]);
-        DEBUG("xx set nfo ["minfo["mi_nfo_default"]"]");
         return 1;
     } else {
-        DEBUG("xx no nfo for ["nfo"]");
         return 0;
     }
 }

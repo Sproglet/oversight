@@ -77,14 +77,14 @@ int routable(struct sockaddr *addr,int addrlen) {
         0xDFFFFF00 /* 223.255.255.x */
     };
     static unsigned long mask[NUM_NETS] = {
-        0xFF000000,
-        0xFF000000,
-        0xFFFF0000,
-        0xFFFF0000,
-        0xFFFF0000,
-        0xFFFFFF00,
-        0xFFFFFF00,
-        0xFFFFFF00 
+        0xFF000000 /* 0.x.x.x */ ,
+        0xFF000000 /* 10.x.x.x */ ,
+        0xFF000000 /* 128.x.x.x */ ,
+        0xFFF00000 /* 172.16 */ ,
+        0xFFFF0000 /* 191.255.x.x */ ,
+        0xFFFFFF00 /* 192.0.0.x */,
+        0xFFFF0000 /* 192.168 */,
+        0xFFFFFF00 /* 223.255.255.x */  
     };
 
     struct sockaddr_in *in4 = (void *)addr;
@@ -93,14 +93,14 @@ int routable(struct sockaddr *addr,int addrlen) {
         unsigned long ip = ntohl(ia->s_addr);
         for ( i = 0 ; i < NUM_NETS ; i++ ) {
             if ( ( ip & mask[i] ) == net[i] ) {
-                HTML_LOG(1,"Address %lx matches reserved %lx",ia->s_addr,net[i]);
+                HTML_LOG(0,"Address %lx matches reserved %lx",ia->s_addr,net[i]);
                 return 0;
             }
         }
         HTML_LOG(0,"Address %lx did not match any - assume routable",ia->s_addr);
         return 1;
     } else {
-        HTML_LOG(1,"Not ip4 assume non routable for now");
+        HTML_LOG(0,"Not ip4 assume non routable for now");
         return 0;
     }
 

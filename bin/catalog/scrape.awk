@@ -471,10 +471,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alterna
 
 # merge new data into current data.
 function minfo_merge(current,new,default_source,\
-f,source,plot_fields,p) {
-
-    plot_fields["mi_plot"] = 1;
-    plot_fields["mi_epplot"] = 1;
+f,source) {
 
     id1("minfo_merge["default_source"]");
     # Keep best title
@@ -482,24 +479,9 @@ f,source,plot_fields,p) {
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
     minfo_merge_ids(current,new["mi_idlist"]);
 
-    for(p in plot_fields) {
-
-        set_plot_score(current,p);
-        set_plot_score(new,p);
-
-        INF(sprintf("plot "p" current score [%d:%.30s...] new score [%d:%.30s...]",current[p"_score"], current[p], new[p"_score"], new[p]));
-
-        if (new[p]) {
-            if (new[p"_score"] > current[p"_score"] ) {
-                current[p] = new[p];
-                current[p"_score"] = new[p"_score"];
-            }
-        }
-    }
-
     for(f in new) {
         source="";
-        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" && !(f in plot_fields)) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" ) {
             if (f"_source" in new) {
                 source = new[f"_source"];
             }
@@ -510,30 +492,6 @@ f,source,plot_fields,p) {
         }
     }
     id0("");
-}
-
-function set_plot_score(minfo,field,\
-score,langs,plot_lang,plot,i,num) {
-    score = 0;
-    if (field in minfo) {
-        plot =minfo[field];
-        if (plot) {
-            score = 10;
-            if (substr(plot,3,1) == ":") {
-                plot_lang = lang(plot);
-                num = get_langs(langs);
-                for(i = 1 ; i<= num ; i++ ) {
-                    if (plot_lang == langs[i]) {
-                        score = 1000-10*i;
-                        score = score * 10000 + utf8len(plot);
-                        break;
-                    }
-                }
-            }
-            minfo[field"_score"] = score;
-        }
-    }
-    return score;
 }
 
 #add a website id to the id list - internal format is {<space><domain>:value} 
@@ -1016,7 +974,7 @@ opt,ret) {
        INF("Force local poster fetching");
        ret = 1;
     } else if (opt == "if_title_changed" ) {
-       if (orig_title && orig_title != minfo["mi_title"] ) {
+       if (orig_title && norm_title(orig_title) != norm_title(minfo["mi_title"]) ) {
            INF("local poster fetching - title changed");
            ret = 2;
        } else {

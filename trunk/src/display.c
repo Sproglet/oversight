@@ -3697,10 +3697,13 @@ HTML_LOG(0,"num rows = %d",num_rows);
         int freeshare=0;
         char *share = share_name(item,&freeshare);
 
+        char *plot = item->plottext[PLOT_EPISODE];
+        if (plot && plot[2] == ':') plot += 3;
+
         tmp = ep_js_fn(i+1,
                 JS_ARG_STRING,"idlist",build_id_list(item),
                 JS_ARG_STRING,"episode",NVL(item->episode),
-                JS_ARG_STRING,"plot",NVL(item->plottext[PLOT_EPISODE]),
+                JS_ARG_STRING,"plot",NVL(plot),
                 JS_ARG_STRING,"info",item->file,
                 JS_ARG_STRING,"title",title,
                 JS_ARG_STRING,"date",get_date_static(item),

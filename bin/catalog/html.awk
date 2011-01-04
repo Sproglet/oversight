@@ -446,6 +446,8 @@ i,c,h) {
         g_chr["lt"] = "<";
         g_chr["gt"] = ">";
         g_chr["nbsp"] = " ";
+        g_chr["szlig"] = code_to_utf8(0xdf); #g_chr[0xC3] g_chr[0x9F]; http://www.fileformat.info/format/w3c/htmlentity.htm
+
     }
 }
 

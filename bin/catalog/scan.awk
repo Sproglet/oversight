@@ -217,7 +217,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
                         identify_and_catalog(minfo,qfile,0,person_extid2name);
-                        storeMovie(minfo,f"/",d,ts,"/$",".nfo",files_in_db);
+                        storeMovie(minfo,f"/",d,ts,files_in_db);
+                        setNfo(minfo,"/$",".nfo");
                     }
                 }
 
@@ -282,14 +283,15 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
                         #Only add it if previous one is not part of same file.
                         if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
-                          if ( checkMultiPart(minfo,scan_line) ) {
-                              #replace xxx.cd1.ext with xxx.nfo (Internet convention)
-                              #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
-                              if ( !setNfo(minfo,".(|"g_multpart_tags")[1-9]" extRe,".nfo") ) {
-                                  setNfo(minfo,extRe,".nfo");
-                              }
-                              store = 0;
-                           }
+                            if ( checkMultiPart(minfo,scan_line) ) {
+                                store = 0;
+                                if (!is_file(minfo["mi_nfo_default"])) {
+                                    DEBUG("xx no file for nfo ["minfo["mi_nfo_default"]"]");
+                                    #replace xxx.cd1.ext with xxx.nfo (Internet convention)
+                                    #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
+                                    setNfo(minfo,".(|"g_multpart_tags")[1-9]" extRe,".nfo");
+                                }
+                            }
                        }
                    }
 
@@ -309,8 +311,13 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
+                    #Process previous details
                     identify_and_catalog(minfo,qfile,0,person_extid2name);
-                    storeMovie(minfo,scan_line,currentFolder,ts,"\\.[^.]+$",".nfo",files_in_db)
+
+                    #start storing current details - may be updated by multipart info
+                    storeMovie(minfo,scan_line,currentFolder,ts,files_in_db)
+                    # set nfo according to first part.
+                    setNfo(minfo,extRe,".nfo");
                 }
             }
         }
@@ -325,7 +332,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     return 0+total;
 }
 
-function storeMovie(minfo,file,folder,timeStamp,nfoReplace,nfoExt,files_in_db,\
+function storeMovie(minfo,file,folder,timeStamp,files_in_db,\
 path) {
 
     path=clean_path(folder"/"file);
@@ -335,8 +342,6 @@ path) {
     minfo["mi_folder"]=folder;
     minfo["mi_media"] = file;
     minfo["mi_file_time"] = timeStamp;
-
-    setNfo(minfo,nfoReplace,nfoExt);
 
     gMovieFileCount++;
     if (!NEWSCAN || !in_list(path,files_in_db) ) {
@@ -422,13 +427,16 @@ lastNameSeen,i,lastch,ch) {
 # set the nfo file by replacing the pattern with the given text.
 function setNfo(minfo,pattern,replace,\
 nfo,lcNfo) {
-    nfo=minfo["mi_media"];
+    nfo = minfo["mi_media"];
     lcNfo = tolower(nfo);
+
     if (match(lcNfo,pattern)) {
         nfo=substr(nfo,1,RSTART-1) replace substr(nfo,RSTART+RLENGTH);
         minfo["mi_nfo_default"] = getPath(nfo,minfo["mi_folder"]);
+        DEBUG("xx set nfo ["minfo["mi_nfo_default"]"]");
         return 1;
     } else {
+        DEBUG("xx no nfo for ["nfo"]");
         return 0;
     }
 }

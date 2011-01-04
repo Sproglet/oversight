@@ -17,18 +17,18 @@ id,out) {
 
     if (minfo["mi_category"] == "T" ) {
         if (minfo["mi_plot"]) {
-            out = out plot_to_season_id(id)"\t"minfo["mi_plot"] ;
+            out = out plot_to_season_id(id)"\t"minfo["mi_plot"] "\n" ;
         }
         if (minfo["mi_epplot"]) {
-            out = out id"\t"minfo["mi_epplot"] ;
+            out = out id"\t"minfo["mi_epplot"] "\n" ;
         }
     } else {
         if (minfo["mi_plot"]) {
-            out = id"\t"minfo["mi_plot"] ;
+            out = id"\t"minfo["mi_plot"] "\n" ;
         }
     }
     if (out) {
-        print out >> queue_file;
+        printf "%s",out >> queue_file;
     }
     close(queue_file);
 }

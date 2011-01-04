@@ -701,9 +701,9 @@ old_inf,new_inf,ret,old_num,new_num,old_src) {
         ret = 0;
     }
     if (old_src) {
-        INF("set_source "field": old:"old_inf" "(ret?"<=":" >")" new:"new_inf);
+        INF(ret"set_source "field": old:"old_inf" "(ret?"<=":" >")" new:"new_inf);
     } else {
-        INF("set_source "field": new:"new_inf);
+        INF(ret"set_source "field": new:"new_inf);
     }
     return ret;
 }
@@ -715,6 +715,7 @@ ret) {
     ret = 0;
     if (value) {
         if (is_better_source(minfo,field,source,value)) {
+            DEBUG("xx updating ["source":"value"]");
             minfo[field] = value;
             minfo[field"_source"] = source;
             ret = 1;

@@ -474,6 +474,9 @@ function minfo_merge(current,new,default_source,\
 f,source) {
 
     id1("minfo_merge["default_source"]");
+    #dump(0,"current",current);
+    #dump(0,"new",new);
+
     # Keep best title
     new["mi_title"] = clean_title(new["mi_title"]);
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
@@ -493,15 +496,15 @@ f,source) {
     }
     for(f in current) {
         if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" ) {
-            if ( f !~ !(f  in new )) {
-                source="";
-                if (f"_source" in new) {
-                    source = new[f"_source"];
+            if (!(f  in new )) {
+                if ( !(f"_source" in current)) {
+                    current[f"_source"] = default_source;
                 }
-                INF("minfo_merge: keeping "source":"f" = ["current[f]"]");
+                INF("minfo_merge: keeping "current[f"_source"]":"f" = ["current[f]"]");
             }
         }
     }
+    #dump(0,"result",current);
     id0("");
 }
 
@@ -1200,6 +1203,8 @@ i,has_english) {
     delete locales;
     for(i = 1; g_settings["catalog_locale"i] ~ /[a-z]+/ ; i++) {
         locales[i] = g_settings["catalog_locale"i];
+        sub(/[^=]+=>/,"",locales[i]); # remove help text ie English=>en_GB
+        DEBUG("locale["locales[i]"]");
         if (index(locales[i],"en") == 1)  has_english = 1;
     }
     if (!has_english) {

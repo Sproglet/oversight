@@ -17,10 +17,10 @@ id,out) {
 
     if (minfo["mi_category"] == "T" ) {
         if (minfo["mi_plot"]) {
-            out = plot_to_season_id(id)"\t"minfo["mi_plot"] ;
+            out = out plot_to_season_id(id)"\t"minfo["mi_plot"] ;
         }
         if (minfo["mi_epplot"]) {
-            out = id"\t"minfo["mi_epplot"] ;
+            out = out id"\t"minfo["mi_epplot"] ;
         }
     } else {
         if (minfo["mi_plot"]) {

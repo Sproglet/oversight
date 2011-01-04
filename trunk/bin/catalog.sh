@@ -280,6 +280,7 @@ catalog() {
     DAY=`date +%a.%P` \
     "START_DIR=$START_DIR" \
     "LS=$LS" \
+    "SORT=$SORT" \
     "APPDIR=$APPDIR" \
     "CONF_FILE=$CONF_FILE" \
     "COUNTRY_FILE=$COUNTRY_FILE" \

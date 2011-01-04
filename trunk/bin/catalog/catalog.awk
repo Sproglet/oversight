@@ -127,7 +127,7 @@ BEGIN {
     g_english_end_re="([ .!?]|$)";
     # there is some overlap between words and phrases - eg 'and' - this will be refined over time. Esp with Germanic languages some
     # short words may not be enough to distinguish
-    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|when|with|his|who|and|for|are|[Aa]n|[Tt]hey|their|them)"g_english_end_re;
+    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|when|with|his|who|and|for|are|[Tt]hey|their|them)"g_english_end_re;
     g_english_phrase_re="((in|to|by|for|is|on|as|of|and) (a|an|the|his|her|their|they)"g_english_end_re"|[Tt]he +[a-z])";
     g_english_re=g_english_start_re"("g_english_words_re"|"g_english_phrase_re")";
 

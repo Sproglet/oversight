@@ -651,7 +651,7 @@ score) {
 
 # Value is plot in form "lang:plot text" (see add_lang_to_plot() ) OR just "@nfo"
 function plot_score(plot,\
-score,langs,plot_lang,i,num,lang_score,maxlang_score,maxlen_score) {
+score,langs,plot_lang,i,num,lang_score,len_score,maxlang_score,maxlen_score) {
     score = 0;
     if (plot) {
         if (plot == "@nfo" ) {

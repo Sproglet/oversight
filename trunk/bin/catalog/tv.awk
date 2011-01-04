@@ -2088,13 +2088,13 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
                     set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
 
                     if (minfo["mi_epplot"] == "") {
-                        lang=seriesInfo["/Data/Episode/Language"];
-                        plot=clean_plot(seriesInfo["/Data/Episode/Overview"]);
+                        lang=episodeInfo["/Data/Episode/Language"];
+                        plot=clean_plot(episodeInfo["/Data/Episode/Overview"]);
                         minfo["mi_epplot"] = add_lang_to_plot(lang,plot);
                     }
 
                     if (minfo["mi_eptitle"] != "" ) {
-                       if ( minfo["mi_eptitle"] ~ /^Episode [0-9]+$/ && minfo["mi_plot"] == "" ) {
+                       if ( minfo["mi_eptitle"] ~ /^Episode [0-9]+$/ && minfo["mi_epplot"] == "" ) {
                            INF("Due to Episode title of ["minfo["mi_eptitle"]"] Demoting result to force another TV plugin search");
                        } else {
                            result ++;

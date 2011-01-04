@@ -1580,6 +1580,10 @@ char *macro_fn_background_url(MacroCallInfo *call_info) {
     char *result=NULL;
     if (call_info->args && call_info->args->size == 1) {
         char *tmp = image_path_by_resolution(call_info->skin_name,call_info->args->array[0]);
+        if (!exists(tmp)) {
+            FREE(tmp);
+            tmp = image_path_by_resolution("default",call_info->args->array[0]);
+        }
         result = file_to_url(tmp);
         FREE(tmp);
     } else {

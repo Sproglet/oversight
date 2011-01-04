@@ -340,7 +340,7 @@ add_watch_cron() {
             1d)  d="1-31" ; h=0 ; m=$5 ;;
         esac
         if [ "$d$m$h" != "***" ] ; then
-            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR' && './oversight.sh' $3 >/dev/null 2>&1 &"
+            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR/bin' && './oversight.sh' $3 >/dev/null 2>&1 &"
         fi
     else
         "$NMT" NMT_CRON_DEL root "$appname.$2"

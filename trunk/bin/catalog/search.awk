@@ -576,7 +576,7 @@ function adjustTitle(minfo,newTitle,source) {
 }
 
 # TODO plot must be weighted be language match
-function field_priority(field,source,\
+function field_priority(field,source,value,\
 score) {
 
     if (!("default" in gPriority)) {
@@ -613,11 +613,22 @@ score) {
         gPriority["mi_genre","thetvdb"]=40;
         gPriority["mi_genre","imdb"]=50;
     }
-    if (source ~ "^[0-9]+") {
-        # if source is numeric then it IS the score.
-        score = 0+source;
-    } else {
-        score = gPriority[field,source];
+
+    score = 0;
+
+    if (value != "") {
+        if (source ~ "^[0-9]+") {
+            # if source is numeric then it IS the score.
+            score = 0+source;
+        } else if (field == "mi_plot" || field == "mi_epplot") {
+            if (source == "@nfo" ) {
+                score = plot_score("@nfo");
+            } else {
+                score = plot_score(value);
+            }
+        } else {
+            score = gPriority[field,source];
+        }
     }
     if (score) {
 
@@ -634,6 +645,34 @@ score) {
             score = gPriority["default"];
         }
         #DEBUG("field_priority: "field" source ["source"] defaults to "score);
+    }
+    return score;
+}
+
+# Value is plot in form "lang:plot text" (see add_lang_to_plot() ) OR just "@nfo"
+function plot_score(plot,\
+score,langs,plot_lang,i,num,lang_score,maxlang_score,maxlen_score) {
+    score = 0;
+    if (plot) {
+        if (plot == "@nfo" ) {
+            lang_score = 1000;
+            len_score = 9999;
+        } else {
+            len_score = utf8len(plot);
+            if (substr(plot,3,1) == ":") {
+                plot_lang = lang(plot);
+                num = get_langs(langs);
+                for(i = 1 ; i<= num ; i++ ) {
+                    if (plot_lang == langs[i]) {
+                        lang_score = 1000-10*i;
+                        break;
+                    }
+                }
+            }
+        }
+        if (lang_score || len_score) {
+            score = lang_score * 10000 + len_score;
+        }
     }
     return score;
 }
@@ -657,8 +696,8 @@ old_inf,new_inf,ret,old_num,new_num,old_src) {
         ret = 1;
 
     } else {
-        old_num = field_priority(field,old_src)+0;
-        new_num = field_priority(field,source)+0; 
+        old_num = field_priority(field,old_src,minfo[field])+0;
+        new_num = field_priority(field,source,value)+0; 
 
         old_inf = old_inf"("old_num")";
         new_inf = new_inf"("new_num")";

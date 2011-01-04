@@ -8,7 +8,7 @@ num,tags,i,tmp,ret) {
         if ("/movie" in xml) {
             if ("/movie/id" in xml ) {
                 minfo2["mi_id"] = xml["/movie/id"];
-                if ("X"minfo["mi_id"] == "X0" ) minfo["mi_id"] = -1;
+                if ("X"minfo2["mi_id"] == "X0" ) minfo2["mi_id"] = -1;
 
                 if (minfo2["mi_id"] ~ "^tt[0-9]+" ) {
 

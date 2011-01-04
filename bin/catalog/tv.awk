@@ -234,7 +234,7 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     #pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
 
     #multi episode
-    pat[++p]="s()"sreg sep "[e/]([0-9][0-9]?([-,e]+[0-9]0-9]?){1,})@\\1\t\\2\t\\3@";
+    pat[++p]="s()"sreg sep "[eE/]([0-9][0-9]?([-,eE]+[0-9][0-9]?){1,})@\\1\t\\2\t\\3@";
     # long forms season 1 ep  3
     pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg sep ep_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
 

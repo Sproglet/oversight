@@ -2141,6 +2141,7 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
     if (get_poster && fetched) {
         delete filter;
         filter["/BannerType"] = "season";
+        filter["/BannerType2"] = "season";
         filter["/Season"] = minfo["mi_season"];
         for(i = 1 ; i <= lnum ; i++ ) {
             filter["/Language"] = langs[i];

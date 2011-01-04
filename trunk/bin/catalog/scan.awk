@@ -541,8 +541,9 @@ cat,minfo2,locales,plot_not_local) {
 
                     if (scanNfo){
                         if (read_xbmc_nfo(minfo,minfo["mi_nfo_default"])) {
-                            bestUrl = minfo["mi_url"];
-                        } else {
+                            bestUrl = extractImdbLink(minfo["mi_id"]);
+                        }
+                        if (!bestUrl) {
                            bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
                        }
                     }

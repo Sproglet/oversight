@@ -8,14 +8,11 @@ num,tags,i,tmp,ret) {
         if ("/movie" in xml) {
             if ("/movie/id" in xml ) {
                 minfo2["mi_id"] = xml["/movie/id"];
-                if (minfo["mi_id"] == 0) minfo["mi_id"] = -1;
+                if ("X"minfo["mi_id"] == "X0" ) minfo["mi_id"] = -1;
+
                 if (minfo2["mi_id"] ~ "^tt[0-9]+" ) {
 
                     minfo_set_id("imdb",minfo2["mi_id"],minfo2);
-                    
-                    if (!("mi_url") in xml) {
-                        minfo2["mi_url"] = extractImdbLink(minfo2["mi_id"]);
-                    }
                 }
             }
             minfo2["mi_title"] = xml["/movie/title"];

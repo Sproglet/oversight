@@ -111,11 +111,11 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     id1("find_links_1engine:"search_engine_prefix);
 
     # set search qualifier and build search url
-    if (index(site,"/")) {
-        keyword="inurl:";
-    } else {
-        keyword="site:";
-    }
+
+    # Note : changed to always use site: even if url components present. 
+    # this gives usable results from yahoo and bing
+    keyword="site:";
+
     qualifier = url_encode(text" "title" "year" "keyword site);
     url = search_engine_prefix qualifier;
 
@@ -322,6 +322,44 @@ i,j,keep) {
     hash_copy(matches,keep);
     return j;
 }
+function update_confidence(text,orig_title,alternate_orig,imdbid,director,pagestate,\
+tmp,tmpa,lctext,confidence) {
+    #Check original title present
+    confidence = pagestate["confidence"];
+    if (confidence < 1000 ) {
+        lctext = tolower(text);
+        # check imdbid
+        if (imdbid && index(text,"tt") && match(text,g_imdb_regex)) {
+            tmp = substr(text,RSTART,RLENGTH);
+            if  (tmp != imdbid ) {
+                INF("Rejecting page - found imdbid "tmp" expected "imdbid);
+                confidence = -1000;
+            } else {
+                INF("Confirmed imdb link in page");
+                confidence += 1000;
+            }
+        }
+        if (orig_title ) {
+            if (index(lctext,tolower(orig_title))) {
+                confidence += 10 * split(orig_title,tmpa," "); 
+            } else if (alternate_orig ) {
+                if (index(lctext,tolower(alternate_orig))) {
+                    confidence += 10 * split(alternate_orig,tmpa," "); 
+                }
+            }
+        }
+        if (director) {
+            if (index(lctext,director)) {
+                confidence += 20;
+            }
+        }
+        if (confidence != pagestate["confidence"]) {
+            INF("confidence:"confidence"by line ["text"]");
+            pagestate["confidence"] = confidence ;
+        }
+    }
+    return confidence;
+}
 
 # Scrape a movie page - results into minfo
 # IN text - text so search for. May not necessarily be exact title eg from filename.
@@ -337,7 +375,7 @@ i,j,keep) {
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
 function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,imdbid,orig_title,\
-f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alternate_orig) {
+f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,required_confidence) {
 
     err = 0;
     id1("scrape_movie_page("url","locale","domain",text="text",title="title",y="year",orig="orig_title")");
@@ -345,6 +383,7 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alterna
     if (substr(orig_title,1,4) == "The ") {
         alternate_orig = tolower(substr(orig_title,5)", The");
     }
+    director = tolower(director);
 
     if (have_visited(minfo,domain":"locale)) {
 
@@ -372,26 +411,11 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alterna
                 while(!err && enc_getline(f,line) > 0  ) {
 
                     #DEBUG("xx read["line[1]"]");
-
-                    # check imdbid
-                    if (imdbid && found_id == "" && index(line[1],"tt") && match(line[1],g_imdb_regex)) {
-                        found_id = substr(line[1],RSTART,RLENGTH);
-                        if  (found_id != imdbid ) {
-                            INF("Rejecting page - found imdbid "found_id" expected "imdbid);
-                            err = 1;
-                        } else {
-                            INF("Confirmed imdb link in page");
-                            pagestate["confirmed"] = 1;
-                        }
+                    if (update_confidence(line[1],orig_title,alternate_orig,imdbid,director,pagestate) < 0 ) {
+                        err = 1;
+                        break;
                     }
 
-                    #Check original title present
-                    if (!pagestate["confirmed"] && orig_title && !found_orig ) {
-                        found_orig = index(tolower(line[1]),tolower(orig_title));
-                        if (!found_orig && alternate_orig ) {
-                            found_orig = index(tolower(line[1]),tolower(alternate_orig));
-                        }
-                    }
                     if (!err) {
                         # Join current line to previous line if it has no markup. This is for sites that split the 
                         # plot paragraph across several physical lines.
@@ -416,11 +440,6 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alterna
                     err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
                 }
 
-                if (!pagestate["confirmed"] && orig_title && !found_orig) {
-                    INF("Did not find original title ["orig_title"] on page - rejecting");
-                    err = 1;
-                }
-
                 if (err) {
                     INF("abort page");
                 }
@@ -437,11 +456,6 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alterna
 
     if (!err && minfo2["mi_category"] == "M") {
 
-        if (!pagestate["confirmed"]) {
-            # at the moment - check title will just short circuit if similar score < 0.3
-            err = !check_title(title,minfo2) || !check_year(year,minfo2) || !check_director(director,minfo2);
-        }
-
         if (!err  &&  !is_prose(locale,minfo2["mi_plot"]) ) {
             #We got the movie but there is no plot;
             #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
@@ -449,6 +463,21 @@ f,minfo2,err,line,pagestate,namestate,store,found_id,found_orig,fullline,alterna
             INF("missing plot");
             #err = 2; # we may want posters too!
         }
+        if (pagestate["confidence"] < 1000) {
+            pagestate["confidence"] += check_year(year,minfo2);
+        }
+        if (year || imdbid || orig_title || director ) {
+            required_confidence = 40;
+            #if (!director) required_confidence -= 20;
+            #if (!orig_title) required_confidence -= 20;
+            #if (!imdbid) required_confidence -= 20;
+            #if (!year) required_confidence -= 20;
+            INF("Confidence:"pagestate["confidence"]"/"required_confidence);
+            if (pagestate["confidence"] < required_confidence) {
+                err = 1;
+            }
+        }
+
         if (err) {
             dump(0,"bad page info",minfo2);
         }
@@ -474,8 +503,8 @@ function minfo_merge(current,new,default_source,\
 f,source) {
 
     id1("minfo_merge["default_source"]");
-    #dump(0,"current",current);
-    #dump(0,"new",new);
+    dump(0,"current",current);
+    dump(0,"new",new);
 
     # Keep best title
     new["mi_title"] = clean_title(new["mi_title"]);
@@ -504,7 +533,7 @@ f,source) {
             }
         }
     }
-    #dump(0,"result",current);
+    dump(0,"result",current);
     id0("");
 }
 
@@ -553,16 +582,17 @@ function imdb(minfo) {
 
 function check_year(year,minfo,\
 ret) {
-    ret = 1;
+    ret = 0;
     if (year && minfo["mi_year"]) {
         ret = year-minfo["mi_year"];
-        ret = ((ret*ret) <= 1);
-        if (ret) {
-            DEBUG("year scraped ok");
-        } else {
-            INF("page rejected by year ["minfo["mi_year"]"] != ["year"]");
-        }
+        ret = (ret*ret);
+        if (ret == 0 ) {
+           ret = 20;
+        } else if (ret == 1 || ret == -1 ) {
+           ret = 5;
+        } 
     }
+    INF("check year "year" vs "minfo["mi_year"]" score:"ret);
     return ret;
 }
 
@@ -939,6 +969,13 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
         }
 
     }
+    if (pagestate["titleinpage"] && !minfo["mi_year"] && !minfo["mi_plot"] ) {
+        # Not re starts with [ (>] instead of word boundary to help avoid 4 digit ids id=1234 etc.
+        minfo["mi_year"] = subexp(fragment,"(^|[ (>;])("g_year_re")($|[ )<&])",2);
+        if (minfo["mi_year"]) {
+            INF("Capture first year expression "minfo["mi_year"]);
+        }
+    }
 
     if (!err) {
         # category - special case for imdb only
@@ -955,6 +992,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
     return err;
 }
+
 
 function title_update(minfo,domain,text,field,regex_list_name,\
 err,value){
@@ -1204,7 +1242,6 @@ i,has_english) {
     for(i = 1; g_settings["catalog_locale"i] ~ /[a-z]+/ ; i++) {
         locales[i] = g_settings["catalog_locale"i];
         sub(/[^=]+=>/,"",locales[i]); # remove help text ie English=>en_GB
-        DEBUG("locale["locales[i]"]");
         if (index(locales[i],"en") == 1)  has_english = 1;
     }
     if (!has_english) {

@@ -593,6 +593,8 @@ score) {
         gPriority["mi_title","thetvdb"]=60;
         gPriority["mi_title","themoviedb"]=60; # demoted below IMDB some entries not good eg tt0892769 it:Dragons instead of it:Dragon Trainer
 
+        gPriority["mi_orig_title","themoviedb"]=60; 
+
         gPriority["mi_poster","imdb"]=40;
         gPriority["mi_poster","motech"]=50;
         gPriority["mi_poster","thetvdb"]=60;
@@ -715,7 +717,7 @@ ret) {
     ret = 0;
     if (value) {
         if (is_better_source(minfo,field,source,value)) {
-            DEBUG("xx updating ["source":"value"]");
+            #DEBUG("xx updating ["source":"value"]");
             minfo[field] = value;
             minfo[field"_source"] = source;
             ret = 1;

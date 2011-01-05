@@ -485,7 +485,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,local_search,\
-cat,minfo2,locales,plot_not_local) {
+cat,minfo2,locales,plot_not_local,id) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
@@ -611,7 +611,8 @@ cat,minfo2,locales,plot_not_local) {
                         }
 
                         if (cat == "M") {
-                            get_themoviedb_info(extractImdbId(bestUrl),minfo);
+                            id = extractImdbId(bestUrl);
+                            get_themoviedb_info(id,minfo);
                             getNiceMoviePosters(minfo);
 
                            local_search=0;
@@ -631,7 +632,7 @@ cat,minfo2,locales,plot_not_local) {
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,extractImdbId(bestUrl),minfo["mi_orig_title"]);
+                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,id,minfo["mi_orig_title"]);
                             }
                         }
 

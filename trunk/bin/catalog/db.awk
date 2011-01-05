@@ -122,7 +122,9 @@ i,gnames,gcount) {
            g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
        }
     }
-    gsub(/[^-A-Za-z]+/,"|",g);
+    gsub(/[- /,|]+/,"|",g);
+    gsub(/^[|]/,"",g);
+    gsub(/[|]$/,"",g);
     return g;
 }
 

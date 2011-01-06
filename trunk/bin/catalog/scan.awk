@@ -485,7 +485,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,local_search,\
-cat,minfo2,locales,plot_not_local,id) {
+cat,minfo2,locales,id) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
@@ -616,8 +616,7 @@ cat,minfo2,locales,plot_not_local,id) {
                             getNiceMoviePosters(minfo);
 
                            local_search=0;
-                           plot_not_local = !plot_in_main_lang(minfo);
-                           if (plot_not_local) {
+                           if ( lang(minfo["mi_plot"]) != main_lang()) {
                                INF("Plot not in main language");
                                if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
                                    INF("Forcing local search for plot");
@@ -625,7 +624,7 @@ cat,minfo2,locales,plot_not_local,id) {
                                }
                            }
 
-                           if (scrape_poster_check(minfo)) {
+                           if (main_lang() != "en" && scrape_poster_check(minfo)) {
                                local_search = 1;
                            }
 
@@ -683,10 +682,8 @@ cat,minfo2,locales,plot_not_local,id) {
     delete minfo;
 
 }
-function plot_in_main_lang(minfo,\
-langs) {
-    get_langs(langs);
-    return lang(minfo["mi_plot"]) == langs[1];
+function plot_in_main_lang(minfo) {
+    return lang(minfo["mi_plot"]) == main_lang();
 }
 function get_images(minfo) {
     #Only get posters if catalog is installed as part of oversight

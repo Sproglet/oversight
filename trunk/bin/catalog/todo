@@ -1,3 +1,5 @@
+# write small plugin checker to loop through all plugins searcxhing for two popular movies , one old , one new.
+#
 # Error
 # http://192.168.88.7:8883/oversight/oversight.cgi?view=tv&i=3&@Aview=admin&@Bview=admin&@Cview=admin&@Aaction=template_resize&@Baction=confirm_appearance&@Caction=ask
 #

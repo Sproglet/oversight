@@ -801,14 +801,20 @@ sep,ret,lcline,arr,styleOrScript,dbg) {
         line = trim(remove_tags(line));
 
         # remove spaces around sep
-        gsub(" +"sep,sep,line);
-        gsub(sep" +",sep,line);
+        if (index(line,sep)) {
+            gsub(" +"sep,sep,line);
+            gsub(sep" +",sep,line);
 
-        # remove multiple sep
-        gsub(sep"+",sep,line);
+            # remove multiple sep
+            gsub(sep"+",sep,line);
 
-        if (line != sep) {
-            ret = split(line,sections,sep);
+            if (line != sep) {
+                ret = split(line,sections,sep);
+            }
+        } else {
+            delete sections;
+            ret = 1;
+            sections[ret] = line;
         }
     }
     if (pagestate["debug"]) DEBUG("reduce_markup9:["line"]");
@@ -1157,16 +1163,13 @@ words,num,i,len,is_english,lng) {
                     lng = lang(locale);
                     is_english = (text ~ g_english_re);
                     DEBUG("utf8len = "len" length="length(text)" g_min_plot_len="g_min_plot_len" lang="lng" english="is_english);
-                    if (length(text) > len * 1.1 && is_english) {
-                        WARNING("found english in ["text"]??");
-                    }
                     if ( (lng == "en") == is_english  ) {
                         num = split(text,words," ")+0;
                         #DEBUG("words = "num" required "(length(text)/10));
                         if (num >= len/10 ) { #av word length less than 11 chars - Increased for Russian
                             if (num <= len/5 ) { # av word length > 4 chars (minus space)
                                 if ( index(text,"Mozilla") == 0) {
-                                    for(i in words) if (utf8len(words[i]) > 30) return 0;
+                                    for(i in words) if (length(words[i])  > 30 && utf8len(words[i]) > 30) return 0;
                                     return 1;
                                 }
                             }

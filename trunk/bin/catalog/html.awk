@@ -543,9 +543,18 @@ new,b,i,bytes) {
 
 # return the number of logical characters in a string (utf-8 chars count as 1 char as does &nbsp; etc ) 
 function utf8len(text,\
-inf) {
-    utf8_to_byte_pos_main(text,-1,inf);
-    return inf["chars"];
+inf,len) {
+    if (1) {
+        if (g_chr[32] == "" ) {
+            decode_init();
+        }
+        if (index(text,"&")) gsub("[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4}|[a-z]{1,6});","@",text);
+        gsub("["g_chr[0x80]"-"g_chr[0xBF]"]+","",text); # utf8 trailing chars
+        return length(text);
+    } else {
+        utf8_to_byte_pos_main(text,-1,inf);
+        return inf["chars"];
+    }
 
 }
 # Return the corresponding byte position of a  utf-8 or html string

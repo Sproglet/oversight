@@ -276,7 +276,7 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
                     linecount = get_regex_pos(line[1],regex,remain,matches2);
                     if (verbose) {
                         DEBUG("linecount = "linecount" remain="remain);
-                        dumpord(0,"matches2",matches2);
+                        dump(0,"matches2",matches2);
                     }
                     # 
                     # Append the matches2 array of ordered regex matches. Index by order.

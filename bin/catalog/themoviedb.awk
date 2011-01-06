@@ -40,7 +40,7 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2,ln,name,id) {
 
         if (ln) {
 
-            dumpxml("themoviedb",xml);
+            #dumpxml("themoviedb",xml);
             
             name = html_to_utf8(xml[root"/name"]);
 
@@ -51,7 +51,7 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2,ln,name,id) {
                 if (id) {
                     url="http://api.themoviedb.org/2.1/Movie.getInfo/"ln"/xml/"g_api_tmdb"/"id;
                     xmlret = fetchXML(url,"themoviedb",xml);
-                    dumpxml("themoviedb-orig",xml);
+                    #dumpxml("themoviedb-orig",xml);
                     if (xmlret == 0) {
                         ln = "";
                     }

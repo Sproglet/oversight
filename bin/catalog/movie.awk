@@ -51,7 +51,7 @@ year,text) {
         delete search_order;
     }
 
-    dumpord(0,"search order",search_order);
+    dump(0,"search order",search_order);
 
     for( s = 1 ; bestUrl=="" && s-search_order_size <= 0 ; s++ ) { # Must do them in strict sequence
 

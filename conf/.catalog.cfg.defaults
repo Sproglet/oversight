@@ -36,7 +36,7 @@ catalog_poster_prefix="ovs_"
 
 # text that could possibly also appear in a title should be further restricted by adding word boundary
 # regex. eg. \<pal\>
-catalog_format_tags="bd,dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdrip,bdrip,avchd,blu720p,blu1080p,bluray,brrip,dsrip,img,hdtv,\<pal\>,ntsc,pdtv,r5,repost,repack,screener,workprint,\<ws\>,x264,xvid,yenc,par2,remaster,download,subtitle,720x,1280x,1920x"
+catalog_format_tags="bd,dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdrip,bdrip,avchd,blu720p,blu1080p,bluray,brrip,dsrip,img,hdtv,\<pal\>,ntsc,pdtv,r5,repost,repack,screener,workprint,\<ws\>,x264,xvid,yenc,par2,remaster,download,subtitle,720x,1280x,1920x,subs\>"
 
 
 catalog_scan_paths="/share/Video,/share/Movies,/share/Tv,/share/Complete"

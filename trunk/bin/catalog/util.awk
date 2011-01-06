@@ -329,25 +329,16 @@ function id0(x) {
 }
 
 function dump(lvl,label,array,\
-i,c) {
+i,key,n) {
     if (DBG-lvl >= 0)   {
         for(i in array) {
-            DEBUG(" "label":"i"=["array[i]"]");
-            c++;
+            key[++n] = i;
         }
-        if (c == 0 ) {
-            DEBUG("  "label":<empty>");
+        asort(key);
+        for(i = 1 ; i<= n ; i++ ) {
+            DEBUG(" "label":"key[i]"=["array[key[i]]"]");
         }
-    }
-}
-function dumpord(lvl,label,array,\
-i,c) {
-    if (DBG-lvl >= 0)   {
-        for(i = 1 ; (i in array) ; i++ ) {
-            DEBUG(" "label":"i"=["array[i]"]");
-            c++;
-        }
-        if (c == 0 ) {
+        if (n == 0 ) {
             DEBUG("  "label":<empty>");
         }
     }
@@ -703,7 +694,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
 
         if (verbose) {
             DEBUG("apply_edits["text"] split="sep);
-            dumpord(0,"apply_edits",pinfo);
+            dump(0,"apply_edits",pinfo);
         }
 
         matched = 0;
@@ -858,7 +849,7 @@ count,fcount,i,parts,start,dbg) {
     fcount = chop(line,regex,parts);
     if (dbg) {
         DEBUG("xx DELETE line["line"]");
-        dumpord(0,"spielfilm-"mode,parts);
+        dump(0,"spielfilm-"mode,parts);
     }
 
     start=1;

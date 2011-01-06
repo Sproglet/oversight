@@ -544,66 +544,10 @@ new,b,i,bytes) {
 # return the number of logical characters in a string (utf-8 chars count as 1 char as does &nbsp; etc ) 
 function utf8len(text,\
 inf,len) {
-    if (1) {
-        if (g_chr[32] == "" ) {
-            decode_init();
-        }
-        if (index(text,"&")) gsub("[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4}|[a-z]{1,6});","@",text);
-        gsub("["g_chr[0x80]"-"g_chr[0xBF]"]+","",text); # utf8 trailing chars
-        return length(text);
-    } else {
-        utf8_to_byte_pos_main(text,-1,inf);
-        return inf["chars"];
-    }
-
-}
-# Return the corresponding byte position of a  utf-8 or html string
-function utf8_to_byte_pos(text,p,\
-inf){
-    utf8_to_byte_pos_main(text,p,inf);
-    return inf["byte"];
-}
-
-
-# IN text utf8/html string
-# IN p utf8 position or -1 (end)
-# OUT inf["byte"] = byte corresponsing to char p OR
-# OUT inf["chars"] = number of characters in string (utf-8 chars count as 1 char as does &nbsp; etc )
-function utf8_to_byte_pos_main(text,p,inf,\
-byte,i,len,a,ch) {
-
     if (g_chr[32] == "" ) {
         decode_init();
     }
-    byte = 0;
-    len = length(text);
-    for(i = 1 ; p == -1 || i <= p ; i++ ) {
-        byte++;
-        if (byte > len) break;
-        ch=substr(text,byte,1);
-        if (ch == "&" && match(substr(text,byte+1),"^(#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4}|[a-z]{1,6});")) {
-            # eg   &#123; #xA1; &nbsp;
-            byte += RLENGTH;
-
-        } else if ( ch > "~" ) {
-            # 8bit - hopefully utf8
-            a = g_ascii[ch];
-            if (a >= 252 ) byte += 5; 
-            else if (a >= 248 ) byte += 4; 
-            else if (a >= 240 ) byte += 3; 
-            else if (a >= 224 ) byte += 2; 
-            else if (a >= 192 ) byte += 1; 
-            else {
-                WARNING("Encoding error "ch" = "a);
-            }
-        }
-    }
-    inf["byte"] = byte;
-
-    # Only really useful if p = -1 or p > number of actual chars else  i = p+1
-    if (p == -1 ) i--;
-    inf["chars"] = i;
-    #INF("utf8_to_byte_pos_main["text","p"="byte" bytes "i" chars");
-
-    return byte;
+    if (index(text,"&")) gsub("[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4}|[a-z]{1,6});","@",text);
+    gsub("["g_chr[0x80]"-"g_chr[0xBF]"]+","",text); # utf8 trailing chars
+    return length(text);
 }

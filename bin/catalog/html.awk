@@ -448,6 +448,9 @@ i,c,h) {
         g_chr["nbsp"] = " ";
         g_chr["szlig"] = code_to_utf8(0xdf); #g_chr[0xC3] g_chr[0x9F]; http://www.fileformat.info/format/w3c/htmlentity.htm
 
+        # Regex to find utf8 trailing chars
+        g_utf8_trail_re = "["g_chr[0x80]"-"g_chr[0xBF]"]+";
+
     }
 }
 
@@ -542,12 +545,11 @@ new,b,i,bytes) {
 }
 
 # return the number of logical characters in a string (utf-8 chars count as 1 char as does &nbsp; etc ) 
-function utf8len(text,\
-inf,len) {
+function utf8len(text) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
     if (index(text,"&")) gsub("[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4}|[a-z]{1,6});","@",text);
-    gsub("["g_chr[0x80]"-"g_chr[0xBF]"]+","",text); # utf8 trailing chars
+    gsub(g_utf8_trail_re,"",text); # utf8 trailing chars
     return length(text);
 }

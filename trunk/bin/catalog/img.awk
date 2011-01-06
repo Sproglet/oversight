@@ -202,11 +202,11 @@ function getNiceMoviePosters(minfo) {
     }
 }
 
+# TODO this may have to use original title if title is localized
 function get_motech_img(minfo,\
 referer_url,url,url2,motech_title) {
     #if (1) {
 
-    dump(0,"pre motech",minfo);
     motech_title = tolower(minfo["mi_title"]"-"minfo["mi_year"]);
     gsub(/[^a-z0-9]+/,"-",motech_title);
     sub(/-$/,"",motech_title);

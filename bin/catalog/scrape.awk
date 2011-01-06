@@ -1,3 +1,6 @@
+BEGIN {
+    getting_local_fields=0;
+}
 # Given a movie title and year try to find a site in the required language and scrape
 # IN text - text to search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
@@ -72,25 +75,7 @@ i,num,sites,minfo2,err,searchhist) {
 }
 
 # Search for a movie by title year using multiple search engines. 
-# filter urls that score highly. Bing cannot do inurl: searches very well. so use yahoo and fall back to google.
-# Google is best but may ban ip. Need to get Google API or use other google powered site.
 #
-# IN search_engine_prefix eg http://google.com/q=
-# IN text - text to find - eg filename may be blank if title set
-# IN title - movie title
-# IN year - year of release
-# IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
-# OUT matches - array of matching urls.
-function find_links_all_engines(text,title,year,site,matches,\
-n) {
-
-    n = find_links_1engine(g_search_yahoo,text,title,year,site,matches);
-    if (!n) {
-        n = find_links_1engine(g_search_google,text,title,year,site,matches);
-    }
-    return n;
-}
-
 
 # Search for a movie by title year and a site: or inurl: and return all matching links.
 # The links are filtered according to the regex in conf/domain/catalog.domain.xxx.cfg
@@ -140,15 +125,15 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
         }
 
         # filter links according to domain definitions
-        dumpord(0,"matches",matches);
+        dump(0,"matches",matches);
 
         num = remove_non_movie_urls(num,matches,g_settings["domain:catalog_domain_movie_url_regex"]);
 
-        dumpord(0,"remove_non_movie_urls",matches);
+        dump(0,"remove_non_movie_urls",matches);
         num = clean_links(num,matches,search_domain);
-        dumpord(0,"clean_links",matches);
+        dump(0,"clean_links",matches);
         num = remove_suburls(num,matches);
-        dumpord(0,"remove_suburls",matches);
+        dump(0,"remove_suburls",matches);
     }
 
     id0(num);
@@ -190,45 +175,51 @@ ret,i,url,id,dbg) {
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
 function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,minfo,imdbid,orig_title,searchhist,\
-minfo2,err,matches,num,url,url_domain,i,max_allowed_results) {
+minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) {
 
     err = 1;
     id1("find_movie_by_site_locale("site","locale")");
 
-
-
-    num = find_links_all_engines(text,title,year,site,matches);
-    num = remove_visited_urls(num,matches,searchhist);
+    # Bing cannot do inurl: searches very well. so use yahoo and fall back to google.
+    engines[++engnum] = g_search_yahoo;
+    engines[++engnum] = g_search_google;
 
     # Set maximum allowed results
     if (site ~ "^\\.[a-z]+$") {
         max_allowed_results = 5;
     } else {
-        max_allowed_results = 2;
-    }
-    if (num > max_allowed_results) {
-        num = max_allowed_results;
+        max_allowed_results = 3;
     }
 
-    dumpord(0,"filtered matches",matches);
-    for(i = 1 ; i <= num ; i++ ) {
-        url_domain = get_main_domain(matches[i]);
+    for(eng = 1 ; err && eng <= engnum ; eng++ ) {
 
-        if (is_visited_domain(url_domain,searchhist)) {
-            INF("ignoring ["matches[i]"] - previous visit to site does not have plot");
-        } else {
+        num = find_links_1engine(engines[eng],text,title,year,site,matches);
+        num = remove_visited_urls(num,matches,searchhist);
 
-            url = matches[i];
+        if (num > max_allowed_results) {
+            num = max_allowed_results;
+        }
 
-            set_visited_url(url,searchhist);
-            err = scrape_movie_page(text,title,year,runtime,director,url,locale,url_domain,minfo2,imdbid,orig_title);
-            if (!err) {
-                minfo_merge(minfo,minfo2,url_domain);
-                break;
-            } else if (err == 2) {
-                # scrape ok but no plot - ignore entire domain
-                INF("ignoring further searches at "url_domain);
-                set_visited_domain(url_domain,searchhist);
+        dump(0,"filtered matches",matches);
+        for(i = 1 ; i <= num ; i++ ) {
+            url_domain = get_main_domain(matches[i]);
+
+            if (is_visited_domain(url_domain,searchhist)) {
+                INF("ignoring ["matches[i]"] - previous visit to site does not have plot");
+            } else {
+
+                url = matches[i];
+
+                set_visited_url(url,searchhist);
+                err = scrape_movie_page(text,title,year,runtime,director,url,locale,url_domain,minfo2,imdbid,orig_title);
+                if (!err) {
+                    minfo_merge(minfo,minfo2,url_domain);
+                    break;
+                } else if (err == 2) {
+                    # scrape ok but no plot - ignore entire domain
+                    INF("ignoring further searches at "url_domain);
+                    set_visited_domain(url_domain,searchhist);
+                }
             }
         }
 
@@ -354,7 +345,7 @@ tmp,tmpa,lctext,confidence) {
             }
         }
         if (confidence != pagestate["confidence"]) {
-            INF("confidence:"confidence"by line ["text"]");
+            INF("confidence:"confidence" by line ["text"]");
             pagestate["confidence"] = confidence ;
         }
     }
@@ -433,6 +424,13 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,required_con
                             fullline = line[1];
                         }
                     }
+
+                    if (!getting_local_fields) {
+                        if (minfo2["mi_plot"] && minfo2["mi_poster"] && minfo2["mi_year"] && minfo2["mi_title"]) {
+                            DEBUG("Got info - leaving page");
+                            break;
+                        }
+                    }
                 }
                 close(f);
                 # last line
@@ -465,9 +463,12 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,required_con
         }
         if (pagestate["confidence"] < 1000) {
             pagestate["confidence"] += check_year(year,minfo2);
+            if (pagestate["titleinpage"]) {
+                pagestate["confidence"] += 10;
+            }
         }
         if (year || imdbid || orig_title || director ) {
-            required_confidence = 40;
+            required_confidence = 20;
             #if (!director) required_confidence -= 20;
             #if (!orig_title) required_confidence -= 20;
             #if (!imdbid) required_confidence -= 20;
@@ -590,7 +591,9 @@ ret) {
            ret = 20;
         } else if (ret == 1 || ret == -1 ) {
            ret = 5;
-        } 
+        } else {
+           ret = 0;
+        }
     }
     INF("check year "year" vs "minfo["mi_year"]" score:"ret);
     return ret;
@@ -727,7 +730,18 @@ sep,ret,lcline,arr,styleOrScript,dbg) {
 
         sep="#";
         if (dbg) DEBUG("reduce_markup0:["line"]");
-        gsub(/<\/?(table|TABLE|tr|TR|td|TD|div|DIV|br|BR|hr|HR|[Hh][1-5])[^>]*>/,sep,line);
+
+        if (1) {
+            if (index(lcline,"tr")) gsub(/<\/?(tr|TR)[^>]*>/,sep,line);
+            if (index(lcline,"table")) gsub(/<\/?(table|TABLE)[^>]*>/,sep,line);
+            if (index(lcline,"td")) gsub(/<\/?(td|TD)[^>]*>/,sep,line);
+            if (index(lcline,"div")) gsub(/<\/?(div|DIV)[^>]*>/,sep,line);
+            if (index(lcline,"br")) gsub(/<\/?(br|BR)[^>]*>/,sep,line);
+            if (index(lcline,"hr")) gsub(/<\/?(hr|HR)[^>]*>/,sep,line);
+            if (index(lcline,"<h")) gsub(/<\/?[hH][1-5][^>]*>/,sep,line);
+        } else {
+            gsub(/<\/?(table|TABLE|tr|TR|td|TD|div|DIV|br|BR|hr|HR|[Hh][1-5])[^>]*>/,sep,line);
+        }
         if (dbg) DEBUG("reduce_markup1:["line"]");
 
         # remove option list text, otherwise after removing html tags a long list(imdb) can look too
@@ -755,28 +769,29 @@ sep,ret,lcline,arr,styleOrScript,dbg) {
         }
 
         # Extract title from <title> tag - can be spread across multiple lines.
+        # Some pages have <title> outside of <head>  http://www.movie-infos.net/filmdatenbank_detail.php?id=1746
 
-        if (pagestate["mode"] != "body") {
-
-            if (pagestate["titletag"] <= 2 ) {
-                # check for TITLE tags.
-                if (index(lcline,"title") ) {
-                    if (sub(/<(title|TITLE)[^>]*>/,"@title-start@",line)) {
-                        pagestate["titletag"]++;
-                        pagestate["mode"] = "titletag";
-                    }
-                    if (sub(/<\/(title|TITLE)>/,"@title-end@",line)) {
-                        pagestate["titletag"]++;
-                        pagestate["mode"] = "titletag";
-                    }
-
-                } else if (pagestate["mode"] == "titletag" && pagestate["titletag"] == 2) {
-
-                    pagestate["mode"] = "head";
+        if (pagestate["titletag"] <= 2 ) {
+            # check for TITLE tags.
+            if (index(lcline,"title") ) {
+                if (sub(/<([Tt]itle|TITLE)[^>]*>/,"@title-start@",line)) {
+                    pagestate["titletag"]++;
+                    pagestate["oldmode"] = pagestate["mode"];
+                    pagestate["mode"] = "titletag";
                 }
-            }
+                if (sub(/<\/([Tt]itle|TITLE)>/,"@title-end@",line)) {
+                    pagestate["titletag"]++;
+                    pagestate["mode"] = "titletag";
+                }
 
-            # check for end of HEAD start of BODY
+            } else if (pagestate["mode"] == "titletag" && pagestate["titletag"] == 2) {
+
+                pagestate["mode"] = pagestate["oldmode"];
+            }
+        }
+
+        # check for end of HEAD start of BODY
+        if (pagestate["mode"] == "head" ) {
             if (index(lcline,"</html>") || index(lcline,"<body") ) {
                 pagestate["mode"]="body";
                 pagestate["inbody"]=1;
@@ -813,9 +828,14 @@ function scrape_movie_line(locale,domain,line,minfo,pagestate,namestate,\
 i,num,sections,err,dbg) {
 
     err = 0;
-    sub(/^ */,"",line);
 
     if (0 && index(line,".3.jpg")) { dbg = 1; }
+
+    # if the title occurs in the main text, then allow plot to be parsed.
+    if (!pagestate["titleinpage"] && minfo["mi_title"] && index(tolower(line),tolower(minfo["mi_title"]))) {
+        pagestate["titleinpage"] = 1;
+        DEBUG("setting titleinpage 1");
+    }
 
     num = reduce_markup(line,sections,pagestate);
     if (dbg) DEBUG("xx line["line"]"num);
@@ -858,14 +878,9 @@ function scrape_movie_fragment(locale,domain,fragment,minfo,pagestate,namestate,
 mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
     
-    # if the title occurs in the main text, then allow plot to be parsed.
-    if (!pagestate["titleinpage"] && minfo["mi_title"] && index(fragment,minfo["mi_title"])) {
-        pagestate["titleinpage"] = 1;
-        DEBUG("setting titleinpage 1");
-    }
+    #DEBUG("scrape_movie_fragment:["minfo["mi_title"]":"pagestate["mode"]":"fragment"]");
 
     err=0;
-    #DEBUG("scrape_movie_fragment:["pagestate["mode"]":"fragment"]");
     #DEBUG("scrape_movie_fragment:("locale","domain","fragment")");
     # Check if fragment is a fieldname eg Plot: Cast: etc.
     mode = get_movie_fieldname(locale,fragment,rest_fragment,pagestate);
@@ -907,56 +922,59 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
             }
         }
 
-    } else if(mode == "director" || mode == "actor" || mode == "writer") {
+    } else if (getting_local_fields) {
+        if(mode == "director" || mode == "actor" || mode == "writer") {
 
-        max_people = g_settings["catalog_max_"mode"s"];
-        if (!max_people) max_people = 3;
-        get_names(domain,fragment,minfo,mode,max_people,pagestate,namestate);
+            max_people = g_settings["catalog_max_"mode"s"];
+            if (!max_people) max_people = 3;
+            get_names(domain,fragment,minfo,mode,max_people,pagestate,namestate);
 
-    } else if ( mode == "title" ) {
+        } else if ( mode == "title" ) {
 
-        if (update_minfo(minfo,"mi_title", trim(fragment),domain)) {
-            pagestate["titleinpage"] = 2;
-            DEBUG("setting titleinpage 2");
+            if (update_minfo(minfo,"mi_title", trim(fragment),domain)) {
+                pagestate["titleinpage"] = 2;
+                DEBUG("setting titleinpage 2");
+            }
+
+        } else if ( mode == "year" ) {
+
+            if (minfo["mi_year"] == "") {
+                update_minfo(minfo,"mi_year",subexp(fragment,"("g_year_re")") ,domain);
+            }
+
+        } else if ( mode == "country" ) {
+
+            update_minfo(minfo,"mi_country", trim(fragment),domain);
+
+        } else if ( mode == "original_title" ) {
+
+            update_minfo(minfo,"mi_orig_title", trim(fragment),domain);
+
+        } else if ( mode == "duration" ) {
+
+            update_minfo(minfo, "mi_runtime",extract_duration(fragment) ,domain);
+
+        } else if ( mode == "genre" ) {
+
+            if (index(fragment,"@label@")) {
+                field = "mi_genre";
+                split(fragment,tmp,"@label@");
+
+                minfo[field] = minfo[field]"|"tmp[2];
+                DEBUG("genre set to ["minfo[field]"]");
+            }
+
+        } else if ( mode == "released" ) {
+
+            if (extractDate(fragment,matches)) {
+                update_minfo(minfo, "mi_year", matches[1],domain);
+            }
+
         }
-
-    } else if ( mode == "year" ) {
-
-        if (minfo["mi_year"] == "") {
-            update_minfo(minfo,"mi_year",subexp(fragment,"("g_year_re")") ,domain);
-        }
-
-    } else if ( mode == "country" ) {
-
-        update_minfo(minfo,"mi_country", trim(fragment),domain);
-
-    } else if ( mode == "original_title" ) {
-
-        update_minfo(minfo,"mi_orig_title", trim(fragment),domain);
-
-    } else if ( mode == "duration" ) {
-
-        update_minfo(minfo, "mi_runtime",extract_duration(fragment) ,domain);
-
-    } else if ( mode == "genre" ) {
-
-        if (index(fragment,"@label@")) {
-            field = "mi_genre";
-            split(fragment,tmp,"@label@");
-
-            minfo[field] = minfo[field]"|"tmp[2];
-            DEBUG("genre set to ["minfo[field]"]");
-        }
-
-    } else if ( mode == "released" ) {
-
-        if (extractDate(fragment,matches)) {
-            update_minfo(minfo, "mi_year", matches[1],domain);
-        }
-
     } else if ( mode == "plot" && pagestate["mode"] != "head" && minfo["mi_plot"] == "" ) {
 
-        if (is_prose(locale,fragment)) {
+        # If plot is set  then if !getting_local_fields then it means that is_prose is true so no need to retest.
+        if (!getting_local_fields || is_prose(locale,fragment)) {
 
             pagestate["gotplot"] = 1;
             update_minfo(minfo, "mi_plot", add_lang_to_plot(locale,clean_plot(fragment)),domain);
@@ -971,7 +989,8 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
     }
     if (pagestate["titleinpage"] && !minfo["mi_year"] && !minfo["mi_plot"] ) {
         # Not re starts with [ (>] instead of word boundary to help avoid 4 digit ids id=1234 etc.
-        minfo["mi_year"] = subexp(fragment,"(^|[ (>;])("g_year_re")($|[ )<&])",2);
+        # Also allow "@" as its used  for label markers
+        minfo["mi_year"] = subexp(fragment,"(^|[ (>;@])("g_year_re")($|[ )<&@])",2);
         if (minfo["mi_year"]) {
             INF("Capture first year expression "minfo["mi_year"]);
         }
@@ -1113,39 +1132,44 @@ ret) {
 function is_prose(locale,text,\
 words,num,i,len,is_english,lng) {
 
-    if (!index(text,".")) return 0;
-
-    #remove hyperlinked text
-    if (index(text,"@label@")) {
-        gsub(/@label@[^@]+/,"",text);
-    }
-
-    #remove Attributes eg alt="blah blah blah"
-    if (index(text,"=\"") || index(text,"='")) {
-        gsub(/=["'][^'"]+/,"",text);
-    }
     len = length(text);
-
     if (len > g_min_plot_len ) {
 
-        len = utf8len(text);
+        if (index(text,".")) {
 
-        if (len > g_min_plot_len ) {
-
-            lng = lang(locale);
-            is_english = (text ~ g_english_re);
-            DEBUG("utf8len = "len" length="length(text)" g_min_plot_len="g_min_plot_len" lang="lng" english="is_english);
-            if (length(text) > len * 1.1 && is_english) {
-                WARNING("found english in ["text"]??");
+            #remove hyperlinked text
+            if (index(text,"@label@")) {
+                gsub(/@label@[^@]+/,"",text);
             }
-            if ( (lng == "en") == is_english  ) {
-                num = split(text,words," ")+0;
-                #DEBUG("words = "num" required "(length(text)/10));
-                if (num >= len/10 ) { #av word length less than 11 chars - Increased for Russian
-                    if (num <= len/5 ) { # av word length > 4 chars (minus space)
-                        if ( index(text,"Mozilla") == 0) {
-                            for(i in words) if (utf8len(words[i]) > 30) return 0;
-                            return 1;
+
+            #remove Attributes eg alt="blah blah blah"
+            if (index(text,"=\"") || index(text,"='")) {
+                gsub(/=["'][^'"]+/,"",text);
+            }
+
+            len = length(text);
+            if (len > g_min_plot_len ) {
+
+                len = utf8len(text);
+
+                if (len > g_min_plot_len ) {
+
+                    lng = lang(locale);
+                    is_english = (text ~ g_english_re);
+                    DEBUG("utf8len = "len" length="length(text)" g_min_plot_len="g_min_plot_len" lang="lng" english="is_english);
+                    if (length(text) > len * 1.1 && is_english) {
+                        WARNING("found english in ["text"]??");
+                    }
+                    if ( (lng == "en") == is_english  ) {
+                        num = split(text,words," ")+0;
+                        #DEBUG("words = "num" required "(length(text)/10));
+                        if (num >= len/10 ) { #av word length less than 11 chars - Increased for Russian
+                            if (num <= len/5 ) { # av word length > 4 chars (minus space)
+                                if ( index(text,"Mozilla") == 0) {
+                                    for(i in words) if (utf8len(words[i]) > 30) return 0;
+                                    return 1;
+                                }
+                            }
                         }
                     }
                 }
@@ -1179,7 +1203,7 @@ key,regex,ret,lcfragment,dbg,all_keys) {
        ret = "plot";
        #DEBUG("xx pagestate[titleinpage]="pagestate["titleinpage"]);
 
-    }  else if (0) {
+    }  else if (getting_local_fields) {
 
         #################### DISABLED ADVANCED FIELD SCRAPING FOR NOW. ENOUGH INFO IS GATHERED FROM IMDB AND TMDB ##########################
         #################### Only need Plot, Poster and Title (from <title> tag) ############################
@@ -1265,6 +1289,12 @@ ret,lng) {
 
 function lang(locale) {
     return substr(locale,1,2);
+}
+
+function main_lang(\
+langs) {
+    get_langs(langs);
+    return langs[1];
 }
 
 # get unique languages from locales

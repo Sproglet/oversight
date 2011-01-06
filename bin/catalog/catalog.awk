@@ -717,7 +717,7 @@ keep,new,newtotal,size,url,i) {
     newtotal=0;
     for(i = 1 ; i<= count ; i++ ) {
         size = get_page_size(url url_encode(" \""titles[i,2]"\""));
-        size = int(size / 5000 );
+        size = int(size / 2000 );
         if (size > g_filter_web_titles_baseline) {
             keep[i] = 1;
         } else {
@@ -1188,9 +1188,9 @@ minfo,i,ulang) {
     if (doit) {
         DIV0("BEGIN UNIT TEST");
         get_locales(g_tmp);
-        dumpord(0,"locales",g_tmp);
+        dump(0,"locales",g_tmp);
         get_langs(g_tmp);
-        dumpord(0,"langs",g_tmp);
+        dump(0,"langs",g_tmp);
 
         json_parse("{\"first\":\"andrew\" , \"age\" : 31 }");
 

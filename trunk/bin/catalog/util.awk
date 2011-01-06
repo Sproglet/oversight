@@ -332,7 +332,11 @@ function dump(lvl,label,array,\
 i,key,n) {
     if (DBG-lvl >= 0)   {
         for(i in array) {
-            key[++n] = i;
+            if (i ~ "^[0-9]+$") {
+                key[++n] = i+0;
+            } else {
+                key[++n] = i;
+            }
         }
         asort(key);
         for(i = 1 ; i<= n ; i++ ) {

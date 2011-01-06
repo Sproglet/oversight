@@ -37,7 +37,7 @@ void clear_playlist() {
 
 int ls(char *path) {
     int result = 0;
-    printf("Content-Type: text/html\n\n<html><head><title>%s</title></head><body>%s<br>",path,path);
+    printf("Content-Type: text/html; charset=utf-8\n\n<html><head><title>%s</title></head><body>%s<br>",path,path);
     DIR *d = opendir(path);
     if (d) {
         Array *dirs = array_new(free);
@@ -211,7 +211,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
                 } else if (is_file(path) && browsing_from_lan() ) {
 
-                    result = cat("text/plain",path);
+                    result = cat("text/html ;charset=utf-8",path);
 
                 } else if (is_dir(path) && browsing_from_lan()) {
 
@@ -227,7 +227,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
 
     if (send_content_type_header) {
-        printf("Content-Type: text/html\n\n");
+        printf("Content-Type: text/html; charset=utf-8\n\n");
 
         start_page("CGI");
     } else {

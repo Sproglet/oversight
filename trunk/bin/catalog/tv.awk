@@ -298,7 +298,7 @@ rtext,rstart,count,i,ret) {
     count = 0+get_regex_pos(line,regex "\\>",0,rtext,rstart);
     if (count) {
         id1("episodeExtract:["line "] [" regex "]");
-        dumpord(0,"matches",rtext);
+        dump(0,"matches",rtext);
 
         for(i = 1 ; i+0 <= count ; i++ ) {
             if ((ret = extractEpisodeByPatternSingle(line,regex,capture_list,rstart[i],rtext[i],details)) != 0) {

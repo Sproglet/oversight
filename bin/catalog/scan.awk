@@ -620,18 +620,18 @@ cat,minfo2,locales,id) {
                                INF("Plot not in main language");
                                if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
                                    INF("Forcing local search for plot");
-                                   local_search = 1;
+                                   local_search = (main_lang() != "en");
                                }
                            }
-
-                           if (main_lang() != "en" && scrape_poster_check(minfo)) {
+                           if (g_settings["catalog_get_local_posters"] != "never" ) {
+                               INF("Checking local posters");
                                local_search = 1;
                            }
 
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo,id,minfo["mi_orig_title"]);
+                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"","",minfo["mi_poster"],minfo,id,minfo["mi_orig_title"]);
                             }
                         }
 

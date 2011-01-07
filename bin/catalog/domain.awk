@@ -30,6 +30,11 @@ plist,ret,key) {
         key = "domain:"keyword;
         plist=g_settings[key];
         if (plist) {
+            if (index(plist,"{ID}") && g_settings["domain_edit_id"] ) {
+                if (gsub(/\{ID\}/,g_settings["domain_edit_id"],plist)) {
+                    INF("regex id modified to "plist);
+                }
+            }
             ret=apply_edits(ret,plist,verbose);
         } else {
             INF("keyword ["key"] not present for domain ["domain"]");

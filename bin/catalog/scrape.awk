@@ -10,7 +10,7 @@ BEGIN {
 # IN/OUT minfo - Movie info
 # IN imdbid - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_page(text,title,year,runtime,director,minfo,imdbid,\
+function find_movie_page(text,title,year,runtime,director,poster,minfo,imdbid,\
 i,err,minfo2,num,locales) {
 
     err = 1;
@@ -18,7 +18,7 @@ i,err,minfo2,num,locales) {
 
     num = get_locales(locales);
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_locale(locales[i],text,title,year,runtime,director,minfo2,imdbid);
+        err=find_movie_by_locale(locales[i],text,title,year,runtime,director,poster,minfo2,imdbid);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -53,7 +53,7 @@ ret) {
 # IN imdbid - if not blank used to validate page
 # IN orig_title - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_by_locale(locale,text,title,year,runtime,director,minfo,imdbid,orig_title,\
+function find_movie_by_locale(locale,text,title,year,runtime,director,poster,minfo,imdbid,orig_title,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
@@ -63,7 +63,7 @@ i,num,sites,minfo2,err,searchhist) {
 
         num=split(g_settings["locale:catalog_locale_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_locale(sites[i],locale,text,title,year,runtime,director,minfo2,imdbid,orig_title,searchhist);
+            err=find_movie_by_site_locale(sites[i],locale,text,title,year,runtime,director,poster,minfo2,imdbid,orig_title,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -140,6 +140,10 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     return num;
 }
 
+function get_id_from_url(domain,url) {
+    return domain_edits(domain,url,"catalog_domain_movie_id_regex_list");
+}
+
 # Convert all links to  a standard form http:/domain/somepath..ID
 function clean_links(num,matches,domain,\
 ret,i,url,id,dbg,tmp) {
@@ -148,7 +152,7 @@ ret,i,url,id,dbg,tmp) {
     #dbg = (index(url,"easya") != 0); # "xx"
     for(i = 1 ; i <= num ; i++ ) {
         url = matches[i];
-        id = domain_edits(domain,url,"catalog_domain_movie_id_regex_list",dbg);
+        id = get_id_from_url(domain,url);
         if (id) {
             tmp = matches[++ret] = g_settings["domain:catalog_domain_movie_url"];
             sub(/\{ID\}/,id,matches[ret]);
@@ -177,7 +181,7 @@ ret,i,url,id,dbg,tmp) {
 # IN orig_title - if not blank used to validate page
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,minfo,imdbid,orig_title,searchhist,\
+function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,poster,minfo,imdbid,orig_title,searchhist,\
 minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) {
 
     err = 1;
@@ -214,7 +218,7 @@ minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) 
                 url = matches[i];
 
                 set_visited_url(url,searchhist);
-                err = scrape_movie_page(text,title,year,runtime,director,url,locale,url_domain,minfo2,imdbid,orig_title);
+                err = scrape_movie_page(text,title,year,runtime,director,poster,url,locale,url_domain,minfo2,imdbid,orig_title);
                 if (!err) {
                     minfo_merge(minfo,minfo2,url_domain);
                     break;
@@ -384,7 +388,7 @@ c) {
 # IN imdbid - if not blank used to validate page
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(text,title,year,runtime,director,url,locale,domain,minfo,imdbid,orig_title,\
+function scrape_movie_page(text,title,year,runtime,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
 f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng) {
 
     err = 0;
@@ -417,16 +421,24 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 minfo2["mi_category"] = "M";
 
                 pagestate["mode"] = "head";
+                g_settings["domain_edit_id"] = get_id_from_url(domain,url); # used so domain_edit() inserts {ID} in regex
 
                 # A bit messy - orig title is  used for two things. 1) Confirm we are on the right page 2)Decide if we need the poster =if_title_changed
-                pagestate["checkposters"] = scrape_poster_check(minfo,orig_title);
                 pagestate["expectyear"] = year;
                 set_title_score(pagestate,"expecttitle_lc",title,10);
                 set_title_score(pagestate,"expecttitle_alt",alternate_title,20);
-                set_title_score(pagestate,"expectorigtitle_lc",orig_title,15);
-                set_title_score(pagestate,"expectorigtitle_alt",alternate_orig,20);
+                if (title != orig_title ) {
+                    set_title_score(pagestate,"expectorigtitle_lc",orig_title,15);
+                    set_title_score(pagestate,"expectorigtitle_alt",alternate_orig,20);
+                }
                 pagestate["expectimdbid"] = imdbid;
                 pagestate["expectdirector"] = tolower(director);
+                if (!poster) {
+                    pagestate["checkposters"] = 1;
+                    INF("Force local poster fetching - no poster yet");
+                } else {
+                    scrape_poster_check(pagestate,"");
+                }
 
                 load_local_words(pagestate,locale);
 
@@ -465,6 +477,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                         }
                     }
                 }
+                delete g_settings["domain_edit_id"];
                 close(f);
                 # last line
                 if (fullline && !err) {
@@ -1063,9 +1076,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         extract_rating(fragment,minfo,domain);
 
-        if (pagestate["checkposters"]) {
-            scrape_poster(fragment,minfo,domain,pagestate);
-        }
+        scrape_poster(fragment,minfo,domain,pagestate);
     }
 
     return err;
@@ -1092,28 +1103,33 @@ err,value){
     return err;
 }
 
-function scrape_poster_check(minfo,orig_title,\
+function scrape_poster_check(pagestate,title_so_far,\
 opt,ret) {
-
-    if (orig_title == "") orig_title = minfo["mi_orig_title"];
 
     opt = g_settings["catalog_get_local_posters"]; 
 
     ret = 0;
-    if (opt == "always" || !minfo["mi_poster"] ) {
+    if (opt == "always" ) {
        INF("Force local poster fetching");
        ret = 1;
     } else if (opt == "if_title_changed" ) {
-       if (orig_title && norm_title(orig_title) != norm_title(minfo["mi_title"]) ) {
-           INF("local poster fetching - title changed");
+       if (!title_so_far) {
+           INF("local poster fetching not determined");
+       } else if (norm_title(title_so_far) != norm_title(pagestate["expecttitle_lc"]) ) {
+           INF("local poster fetching - title changed ["title_so_far"] != ["pagestate["expecttitle_lc"]"]");
            ret = 2;
        } else {
-           INF("ignore local poster fetching - title["minfo["mi_title"]"] orig title ["minfo["mi_orig_title"]"] ");
+           INF("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
        }
     } else {
        INF("skip local poster fetching");
     }
+    pagestate["checkposters"] = ret;
     return ret;
+}
+
+function image_url(text) {
+    return index(text,".jpg") || index(text,".png");
 }
 
 function scrape_poster(text,minfo,domain,pagestate,\
@@ -1122,19 +1138,24 @@ dnum,dtext,i,value,pri) {
     pri = 5;
     if (pagestate["checkposters"]) {
         pri = 80;
-    }
-    if (g_settings["domain:catalog_domain_poster_url_regex_list"]) {
-        # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
-        if (minfo["mi_poster"] == "" && (index(text,"src=") || index(text,"href="))) {
+        if (g_settings["domain:catalog_domain_poster_url_regex_list"]) {
+            # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
+            if (minfo["mi_poster"] == "" && \
+                (index(text,"src=") || index(text,"href=")) && image_url(text) ) {
 
-            dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
-            for(i = 1 ; i <= dnum ; i++ ) {
-                dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
-                value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
-                if (value) {
-                    update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain,pagestate);
-                    minfo["mi_poster_source"] = pri":"domain;
-                    break;
+                dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
+                for(i = 1 ; i <= dnum ; i++ ) {
+                    if (image_url(dtext[i])) {
+                        dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
+                        value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
+                        if (value) {
+                            if (update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain,pagestate)) {
+                                minfo["mi_poster_source"] = pri":"domain;
+                                delete pagestate["checkposters"];
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1170,6 +1191,7 @@ ret) {
             }
             if (field == "mi_title" ) {
                 update_confidence(value,minfo,pagestate);
+                scrape_poster_check(pagestate,value);
             }
             if (ret) {
                 INF("update_minfo: set "field"=["value"]");
@@ -1409,7 +1431,7 @@ i,num,locales,minfo2) {
             for(i = 1 ; i <= num ; i++) {
 
                 delete minfo2;
-                if (scrape_movie_page("","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
+                if (scrape_movie_page("","","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
                     if (minfo2["mi_certrating"]) {
                         minfo2["mi_certcountry"] = substr(locales[i],4);
                     }

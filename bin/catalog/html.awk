@@ -186,6 +186,7 @@ i,codes,num,u,ch) {
         ch = g_chr[hex2dec(codes[i])];
         u = html_to_utf8("&#x"codes[i+1]";");
         out[ch] = u;
+        if (codes[i] == "00F6" ) DEBUG("00F6 maps to char["ch"] = utf8 ["u"]");
     }
 }
 

@@ -341,9 +341,7 @@ function check_title_score(pagestate,key,text) {
 function update_confidence(text,minfo,pagestate,\
 tmp,lctext) {
     #Check original title present
-    if (pagestate["confidence"] < 1000 && minfo["mi_plot"] == "" ) {
-        #dont check anything after the main plot. Could be reviews, or forums etc.
-        lctext = tolower(text);
+    if (pagestate["confidence"] < 1000 ) {
         # check imdbid
         if (pagestate["expectimdbid"] && index(text,"tt") && match(text,g_imdb_regex)) {
             tmp = substr(text,RSTART,RLENGTH);
@@ -353,14 +351,18 @@ tmp,lctext) {
                 adjust_confidence(pagestate,1000,"imdb id in page",text);
             }
         }
-        check_title_score(pagestate,"expecttitle_lc",lctext);
-        check_title_score(pagestate,"expecttitle_alt",lctext);
-        check_title_score(pagestate,"expectorigtitle_lc",lctext);
-        check_title_score(pagestate,"expectorigtitle_alt",lctext);
+        if (minfo["mi_plot"] == "" ) {
+            #dont check anything after the main plot. Could be reviews, or forums etc.
+            lctext = tolower(text);
+            check_title_score(pagestate,"expecttitle_lc",lctext);
+            check_title_score(pagestate,"expecttitle_alt",lctext);
+            check_title_score(pagestate,"expectorigtitle_lc",lctext);
+            check_title_score(pagestate,"expectorigtitle_alt",lctext);
 
-        if (pagestate["expectdirector"]) {
-            if (index(lctext,pagestate["expectdirector"])) {
-                adjust_confidence(pagestate,20,"director in page",text);
+            if (pagestate["expectdirector"]) {
+                if (index(lctext,pagestate["expectdirector"])) {
+                    adjust_confidence(pagestate,20,"director in page",text);
+                }
             }
         }
     }
@@ -391,7 +393,7 @@ c) {
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
 function scrape_movie_page(text,title,year,runtime,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
-f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng) {
+f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng,tmp) {
 
     err = 0;
     id1("scrape_movie_page("url","locale","domain",text="text",title="title",y="year",orig="orig_title")");
@@ -450,7 +452,11 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
                     # If set apply this filter to all lines
                     if (g_settings["domain:catalog_domain_filter_all"] ) {
-                        line[1] = domain_edits(domain,line[1],"catalog_domain_filter_all");
+                        tmp = domain_edits(domain,line[1],"catalog_domain_filter_all");
+                        if (tmp != line[1]) {
+                            DEBUG("line changed from \n"line[1]"\n to \n"tmp);
+                            line[1] = tmp;
+                        }
                     }
 
                     #DEBUG("xx read["line[1]"]");
@@ -492,7 +498,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 }
 
                 if (err) {
-                    INF("abort page");
+                    INF("!ABORT PAGE!\n");
                 }
             }
         } 

@@ -106,11 +106,11 @@ function load_plugin_settings(type,name,\
 plugin_file,ret) {
 
     ret = 0;
-    plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
 
-    DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"] file=["plugin_file"]");
+    #DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"] file=["plugin_file"]");
 
     if (g_last_plugin[type] != name) {
+        plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
         INF("loading...");
         remove_settings("^"type ":");
         ret = load_settings(type":",plugin_file,1);

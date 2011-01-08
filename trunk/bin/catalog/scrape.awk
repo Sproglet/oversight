@@ -108,13 +108,13 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     search_domain = get_main_domain(site);
     url_regex = "href=.http://[^\"'\\/]*"re_escape(site)"[^\"']+";
     url_text = search_domain;
-    if (!load_plugin_settings("domain",search_domain)) {
+    if (!load_plugin_settings("domain",get_main_domain(search_domain))) {
         load_plugin_settings("domain","default");
     }
 
     # Scrape domain if poster extraction regex is set OR if local posters are not required
     if(g_settings["catalog_get_local_posters"]=="always" && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
-        INF("Skipping "search_domain" as local posters are required");
+        INF("Skipping "get_main_domain(search_domain)" as catalog_get_local_posters=always");
     } else {
 
         # get the links from page one of the search
@@ -325,9 +325,11 @@ i,j,keep) {
 }
 function set_title_score(pagestate,key,value,weight,\
 tmpa) {
-    pagestate[key] = tolower(value);
-    pagestate[key"_score"] = weight*split(value,tmpa," ");
-    INF(key" = "pagestate[key]" weight="pagestate[key"_score"]);
+    if (value) {
+        pagestate[key] = tolower(value);
+        pagestate[key"_score"] = weight*split(value,tmpa," ");
+        INF(key" = "pagestate[key]" weight="pagestate[key"_score"]);
+    }
 }
 function check_title_score(pagestate,key,text) {
     if (pagestate[key]) {
@@ -445,6 +447,11 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 lng = lang(locale);
 
                 while(!err && enc_getline(f,line) > 0  ) {
+
+                    # If set apply this filter to all lines
+                    if (g_settings["domain:catalog_domain_filter_all"] ) {
+                        line[1] = domain_edits(domain,line[1],"catalog_domain_filter_all");
+                    }
 
                     #DEBUG("xx read["line[1]"]");
                     if (update_confidence(line[1],minfo2,pagestate) < 0 ) {
@@ -1104,7 +1111,9 @@ err,value){
 }
 
 function scrape_poster_check(pagestate,title_so_far,\
-opt,ret) {
+opt,ret,t) {
+
+    title_so_far = norm_title(title_so_far);
 
     opt = g_settings["catalog_get_local_posters"]; 
 
@@ -1115,11 +1124,17 @@ opt,ret) {
     } else if (opt == "if_title_changed" ) {
        if (!title_so_far) {
            INF("local poster fetching not determined");
-       } else if (norm_title(title_so_far) != norm_title(pagestate["expecttitle_lc"]) ) {
-           INF("local poster fetching - title changed ["title_so_far"] != ["pagestate["expecttitle_lc"]"]");
-           ret = 2;
        } else {
-           INF("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
+           t = pagestate["expectorigtitle_lc"];
+           if (t == "") t = pagestate["expecttitle_lc"];
+           t = norm_title(t);
+              
+           if ( t != "" &&  title_so_far != t ) {
+               INF("local poster fetching - title changed ["title_so_far"] != orig["t"]");
+               ret = 2;
+           } else {
+               INF("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
+           }
        }
     } else {
        INF("skip local poster fetching");
@@ -1128,8 +1143,10 @@ opt,ret) {
     return ret;
 }
 
-function image_url(text) {
-    return index(text,".jpg") || index(text,".png");
+function image_url(text,\
+lc) {
+    lc = tolower(text);
+    return index(lc,".jpg") || index(lc,".png");
 }
 
 function scrape_poster(text,minfo,domain,pagestate,\
@@ -1245,9 +1262,11 @@ words,num,i,len,is_english) {
 
             if (length(text) > g_min_plot_len ) {
 
+                gsub(/[|0-9]+/,"",text); # remove numbers and most punctuation.
                 len = utf8len(text);
 
                 if (len > g_min_plot_len ) {
+
 
                     num = split(text,words," ")+0;
                     #DEBUG("words = "num" required "(length(text)/10));
@@ -1259,6 +1278,7 @@ words,num,i,len,is_english) {
 
                                 is_english = (text ~ g_english_re);
                                 if ( (lng == "en") == is_english  ) {
+
                                     return 1;
                                 }
                             }

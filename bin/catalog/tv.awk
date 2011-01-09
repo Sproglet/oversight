@@ -1310,7 +1310,7 @@ keep_the) {
 # return 0=no match , 5=excellent match, and values in between.
 function similarTitles(titleIn,possible_title,\
 cPos,yearOrCountry,matchLevel,shortName,unqualified_title,\
-possible_in_title,title_in_possible,unqualified_in_title) {
+possible_in_title,title_in_possible,unqualified_in_title,qualifier_re) {
 
     matchLevel = 0;
     yearOrCountry="";
@@ -1381,6 +1381,8 @@ possible_in_title,title_in_possible,unqualified_in_title) {
         possible_in_title = index(titleIn,possible_title);
         unqualified_in_title = index(titleIn,unqualified_title);
 
+        qualifier_re = "^ \\(?("g_year_re"|uk|us|au|nz|de|fr)\\>\\)?";
+
         if (unqualified_in_title==1 && yearOrCountry && substr(titleIn,length(unqualified_title)+1) ~ " \\(?"yearOrCountry"\\)?") {
 
             INF("titleIn["titleIn"] matches unqualified_title["unqualified_title"] + qualification["yearOrCountry"]");
@@ -1408,13 +1410,12 @@ possible_in_title,title_in_possible,unqualified_in_title) {
             INF("titleIn["titleIn"]+show matches shortName["possible_title"]");
             matchLevel = 4;
 
-
-        } else if (title_in_possible == 1 && (substr(possible_title,length(titleIn)+1) ~ " \\(?("g_year_re"|uk|us|au|nz|de|fr)\\)?" )) {
+        } else if (title_in_possible == 1 && (substr(possible_title,length(titleIn)+1) ~ qualifier_re )) {
 
             INF("titleIn +["titleIn"]+some qualifier matches possible_title["possible_title"]");
             matchLevel = 5;
 
-        } else if (possible_in_title == 1 && (substr(titleIn,length(possible_title)+1) ~ " \\(?("g_year_re"|uk|us|au|nz|de|fr)\\)?" )) {
+        } else if (possible_in_title == 1 && (substr(titleIn,length(possible_title)+1) ~ qualifier_re )) {
 
             INF("titleIn +["titleIn"] matches possible_title["possible_title"] + some qualifier");
             matchLevel = 5;

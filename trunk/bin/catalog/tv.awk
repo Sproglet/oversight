@@ -1078,7 +1078,6 @@ url) {
 # Series are only considered if they have the tags listed in requiredTags
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
-# IN requiredTagNames - array of tags which must be present - to filter out obscure shows noone cares about
 function filter_search_results(url,title,seriesPath,nameTag,idTag,allTitles,\
 info,currentId,currentName,i,num,series,empty_filter) {
 
@@ -1092,8 +1091,8 @@ info,currentId,currentName,i,num,series,empty_filter) {
             # at present thetvdb truncates search results to 100 entries. This causes ,
             # http://www.thetvdb.com/api/GetSeries.php?seriesname=Life to fail to find BBC Life.
             # So we abort the search and hope tvrage plugin does the job.
-            INF("100 results returned - aborting search because thetvdb may have truncated results");
-            num=0;
+            INF("100 results returned - using internal tvdb data because thetvdb may have truncated results");
+            num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
         } else {
             for(i = 1 ; i <= num ; i++ ) {
 
@@ -1637,90 +1636,41 @@ initials) {
 # return part of  s1 that contains abbrev s2
 # eg s1=hello there s2=ho   then result is hello
 #
-# TODO there is a slight bug with the implementation if the abbreviation is one character long.
+#because backtracking is involed best to use regex. eg g.*r.*k to match greek.
+# but .* can be very inefficient so we screen the string first t make sure it contains rg,r and k in order.
 function abbreviated_substring(s1,start_regex_anchor,abbrev,end_on_word,\
-ret,i,j,s1lc,abbrevlc,first,last,ch,len1,len2,ok,remaining) {
+ret,i,j,s1lc,abbrevlc,len1,len2,regex,ch) {
     j = 0;
     s1lc = tolower(s1);
     abbrevlc = tolower(abbrev);
-    len2 = length(abbrevlc);
     len1 = length(s1lc);
-
-    ok = 0;
-
-    ch = substr(abbrevlc,1,1);
-
-    if (len2 == 1 ) {
-        ok = 1;
-    } else {
-        # check first character
-        if (match(s1lc,start_regex_anchor ch)) {
-            j = RSTART;
-            first = last = j;
-            s1lc = substr(s1lc,j+1);
-            len1 -= j;
-            ok = 1;
-            remaining = len2 ;
-
-            # check characters 2 to len2-1
-            for(i = 2 ; i < len2 ; i++ ) {
-
-                # check if remaining abbreviation is longer than string to match
-                if (--remaining > len1 ) {
-                    ok = 0;
-                    break;
-                }
-
-                ch = substr(abbrevlc,i,1);
-                j = index(s1lc,ch);
-                if (j == 0) {
-                    ok = 0;
-                    break;
-                }
-
-                last += j;
-                s1lc = substr(s1lc,j+1);
-                len1 -= j;
-            }
+    len2 = length(abbrevlc);
+    
+    ret = 1;
+    for(i = 1 ; i <= len2 ; i++ ) {
+        ch = substr(abbrevlc,i,1);
+        j = index(s1lc,ch);
+        s1lc = substr(s1lc,j+1);
+        if (j == 0) {
+            ret = "";
+            break;
         }
     }
-
-    if (ok) {
-        ch = substr(abbrevlc,len2);
-        j = 0;
-        # check last character and the last anchor
-        if (end_on_word) {
-            # make sure last letter begins or ends a word
-            # because we may have matched and removed letters we make sure the first character of 
-            # s1lc is prefixed with "_" to avoid accidental word match 
-            if (s1lc != tolower(s1)) {
-                s1lc = "_"s1lc;
+    if (ret == 1) {
+        regex = gensub(/./,".*&","g",abbrevlc);
+        regex = start_regex_anchor substr(regex,3);
+        if (end_on_word) sub(/.$/,"(\\<&|&\\>)",regex);
+        ret =  "" ;
+        if (match(tolower(s1),regex)) {
+            ret = substr(s1,RSTART,RLENGTH);
+            if (index(substr(s1,RSTART+RLENGTH)," ")) {
+                INF("abbreviation ["ret"] ignored due to trailng words/space");
+                ret = "";
             }
-
-            if (match(s1lc,"(\\<"ch"|"ch"\\>)")  ) {
-                j = RSTART;
-            }
-        } else {
-            j = index(s1lc,ch);
-        }
-        if (j) {
-            last += j;
-            if (first == 0) first = last;
-        } else {
-            ok = 0;
-        }
-    }
-
-    if (ok) {
-        ret = substr(s1,first,last+1-first);
-        INF("abbreviated_substring ["s1"] ["start_regex_anchor abbrev end_on_word"] = ["ret"]" first "-" last);
-    } else {
-        ret = "";
+        } 
     }
     return ret;
 }
-
-
 
 #function is_contraction(string,short,end_on_word,\
 #i,short_len,offset) {

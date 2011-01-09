@@ -706,32 +706,37 @@ keep,new,newtotal,size,url,i) {
 
     id1("filter_web_titles in="count);
 
-    url = g_search_yahoo url_encode("\""filterText"\"");
-
-    #Establish baseline for no matches.
-    if (!g_filter_web_titles_baseline) {
-        g_filter_web_titles_baseline = get_page_size(url url_encode(" "rand()systime()));
-        g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/5000);
-    }
-
     newtotal=0;
-    for(i = 1 ; i<= count ; i++ ) {
-        size = get_page_size(url url_encode(" \""titles[i,2]"\""));
-        size = int(size / 2000 );
-        if (size > g_filter_web_titles_baseline) {
-            keep[i] = 1;
-        } else {
-            DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+    if (count > 20 ) {
+        WARNING("Too many titles to filter. Aborting");
+    } else {
+
+        url = g_search_yahoo url_encode("\""filterText"\"");
+
+        #Establish baseline for no matches.
+        if (!g_filter_web_titles_baseline) {
+            g_filter_web_titles_baseline = get_page_size(url url_encode(" "rand()systime()));
+            g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/5000);
         }
+
+        for(i = 1 ; i<= count ; i++ ) {
+            size = get_page_size(url url_encode(" \""titles[i,2]"\""));
+            size = int(size / 2000 );
+            if (size > g_filter_web_titles_baseline) {
+                keep[i] = 1;
+            } else {
+                DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+            }
+        }
+
+        bestScores(keep,keep);
+
+        newtotal = copy_ids_and_titles(keep,titles,new);
+
+        delete filteredTitles;
+
+        hash_copy(filteredTitles,new);
     }
-
-    bestScores(keep,keep);
-
-    newtotal = copy_ids_and_titles(keep,titles,new);
-
-    delete filteredTitles;
-
-    hash_copy(filteredTitles,new);
 
     id0(newtotal);
     return newtotal;
@@ -1227,7 +1232,7 @@ minfo,i,ulang) {
         unit1("abbr6",(abbreviated_substring("one two three","^","ote",1) == "one two three"));
         unit1("abbr7",(abbreviated_substring("one two three","^","nte",1) == ""));
         unit1("abbr8",(abbreviated_substring("one two three","","nte",1) == "ne two three"));
-        unit1("abbr9",(abbreviated_substring("one two three","","nte",0) == "ne two thre"));
+        unit1("abbr9",(abbreviated_substring("one two three","","nte",0) == "ne two three"));
 
         unit1("Trim",(trim(" a ") == "a"));
         unit1("Roman",(roman_replace("fredii") == "fred2"));

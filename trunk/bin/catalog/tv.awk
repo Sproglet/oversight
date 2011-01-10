@@ -1752,6 +1752,12 @@ episodeUrl ) {
 
 #Get episode info by changing base url - this should really use the id
 #but no time to refactor calling code at the moment.
+# IN plugin id thetvdb/tvrage
+# IN seriesUrl
+# IN season number
+# IN episode number
+# OUT episodeInfo
+# RETURN result=0 fail !=0 success
 function get_episode_xml(plugin,seriesUrl,season,episode,episodeInfo,\
 episodeUrl,result) {
     delete episodeInfo;
@@ -1762,12 +1768,10 @@ episodeUrl,result) {
 
     episodeUrl = get_episode_url(plugin,seriesUrl,season,episode);
     if (episodeUrl != "") {
-        if (plugin == "thetvdb") {
+        if (plugin == "thetvdb" || plugin == "tvrage" ) {
 
             result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
 
-        } else if (plugin == "tvrage" ) {
-            result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
         } else {
             plugin_error(plugin);
         }
@@ -1995,7 +1999,6 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
         dumpxml("tvdb series",seriesInfo);
 
-        minfo["mi_season"]=season;
         #Refine the title.
         minfo["mi_title"] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
 
@@ -2022,6 +2025,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
         scrape_cache_add(tvDbSeriesUrl,minfo);
         result ++;
     }
+    minfo["mi_season"]=season;
 
     if (result) {
 
@@ -2057,6 +2061,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
     } else {
         WARNING("Failed to find ID in XML");
     }
+DEBUG("xx 3 season = "minfo["mi_season"]);
 
     if (iid == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at "g_thetvdb_web);
@@ -2149,7 +2154,6 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
     } else if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"") && ( "/Showinfo/showid" in seriesInfo ) ) {
 
         dumpxml("tvrage series",seriesInfo);
-        minfo["mi_season"]=season;
         minfo["mi_title"]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
         minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);
         minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
@@ -2169,6 +2173,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
         scrape_cache_add(tvDbSeriesUrl,minfo);
         result ++;
     }
+    minfo["mi_season"]=season;
 
     if (result) {
 

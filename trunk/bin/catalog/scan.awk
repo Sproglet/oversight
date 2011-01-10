@@ -616,16 +616,19 @@ cat,minfo2,locales,id) {
                             getNiceMoviePosters(minfo);
 
                            local_search=0;
-                           if ( lang(minfo["mi_plot"]) != main_lang()) {
-                               INF("Plot not in main language");
-                               if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
-                                   INF("Forcing local search for plot");
-                                   local_search = (main_lang() != "en");
+
+                           if (main_lang() != "en") {
+                               if ( lang(minfo["mi_plot"]) != main_lang()) {
+                                   INF("Plot not in main language");
+                                   if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
+                                       INF("Forcing local search for plot");
+                                       local_search = 1;
+                                   }
                                }
-                           }
-                           if (g_settings["catalog_get_local_posters"] != "never" ) {
-                               INF("Checking local posters");
-                               local_search = 1;
+                               if (g_settings["catalog_get_local_posters"] != "never" ) {
+                                   INF("Checking local posters");
+                                   local_search = 1;
+                               }
                            }
 
                            if (local_search) {

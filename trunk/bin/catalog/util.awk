@@ -733,7 +733,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
             }
             if (verbose) DEBUG("text "pinfo[2]" = "matched);
 
-        } else if (pinfo[1] == "") { # matches /dddd/
+        } else if (pinfo[1] == "" || pinfo[1] == "r" ) { # matches /dddd/
 
             if (pinfo[3] != "" ) {
                 ERR("apply_edits: Bad value ["patterns[i]"]");

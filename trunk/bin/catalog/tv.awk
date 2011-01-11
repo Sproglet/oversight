@@ -1991,7 +1991,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
     result=0;
 
-    if (scrape_cache_get(tvDbSeriesUrl,minfo)) {
+    if (scrape_cache_get(season":"tvDbSeriesUrl,minfo)) {
 
         result = 1;
 
@@ -1999,6 +1999,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
         dumpxml("tvdb series",seriesInfo);
 
+        minfo["mi_season"]=season;
         #Refine the title.
         minfo["mi_title"] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
 
@@ -2022,10 +2023,9 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
         getTvDbSeasonBanner(minfo,thetvdbid);
 
-        scrape_cache_add(tvDbSeriesUrl,minfo);
+        scrape_cache_add(season":"tvDbSeriesUrl,minfo);
         result ++;
     }
-    minfo["mi_season"]=season;
 
     if (result) {
 
@@ -2147,13 +2147,14 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
     result = 0;
     delete filter;
 
-    if (scrape_cache_get(tvDbSeriesUrl,minfo)) {
+    if (scrape_cache_get(season":"tvDbSeriesUrl,minfo)) {
 
         result = 1;
 
     } else if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"") && ( "/Showinfo/showid" in seriesInfo ) ) {
 
         dumpxml("tvrage series",seriesInfo);
+        minfo["mi_season"]=season;
         minfo["mi_title"]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
         minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);
         minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
@@ -2170,10 +2171,9 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
         if (thetvdbid) {
             getTvDbSeasonBanner(minfo,thetvdbid);
         }
-        scrape_cache_add(tvDbSeriesUrl,minfo);
+        scrape_cache_add(season":"tvDbSeriesUrl,minfo);
         result ++;
     }
-    minfo["mi_season"]=season;
 
     if (result) {
 

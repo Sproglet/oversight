@@ -508,8 +508,10 @@ ret,num,i,parts,code) {
         num = chop(text,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",parts);
         for(i = 2 ; i < num ; i+=2) {
             if (tolower(substr(parts[i],1,3)) == "&#x" ) {
+                # &#x123;
                 code = hex2dec(substr(parts[i],4,length(parts[i])-4));
             } else {
+                # &#123;
                 code = substr(parts[i],3,length(parts[i])-3);
             }
             ret = ret parts[i-1] code_to_utf8(code+0);

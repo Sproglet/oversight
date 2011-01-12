@@ -16,15 +16,18 @@ There are four ways to install Oversight on your [http://www.networkedmediatank.
 
 All methods assume your NMT is connected to your home network.
 
+
 == Install Using the Community Software Installer (CSI) ==
 
   * Install the [http://www.nmtinstaller.com/ CSI] Program on your PC. Then select the Oversight Package.
   * Configure It with the IP Address of your NMT
+  * If using usenet/newsgoups install NZBGET package first.
   * Select the Oversight Package 
   * Install
 
 == Install Using the Mini Installer == 
 
+  * If you plan to use usenet/newsgroups install NZBGet via CSI first.
   * Download and unzip the [http://code.google.com/p/nmt-mini-installer/ mini-installer scripts] on your PC. 
   * (windows only) Run the windows/GET_OVERSIGHT Batch file
   * (Linux/Mac) Run the linux_mac/get_oversight.sh Shell script.

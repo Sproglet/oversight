@@ -2,13 +2,12 @@
 
 =Incremental Scans=
 
-Oversight automatically launches incremental scans in three instances:
+Oversight automatically launches incremental scans :
 
   # On completion of a usenet download.
   # When new content is added to 'watch folder'
-  # When a NMT Transmission Torrent is completed (this needs more testing)
-
-In the mean time you can also rescan a particular item as follows: (v20091123-3 or better)
+ 
+You can also rescan a particular item as follows:
 
   # In the Oversight GUI, _delist_ the item to be rescanned (don't _delete_ it!!)
   # Go to the Admin Screen, and select only the paths that contain your changed items, and select 'new items only'

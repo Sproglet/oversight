@@ -350,7 +350,7 @@ int parse_key_val(char *line,
 }
 
 
-#define CFG_BUFSIZ 700
+#define CFG_BUFSIZ 999
 // include_unquoted_space option is for /tmp/setting.txt other config files always quote space.
 struct hashtable *config_load_fp(char *filename,FILE *fp,int include_unquoted_space)
 {

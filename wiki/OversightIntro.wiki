@@ -30,6 +30,7 @@ There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_
     * Miminal File Renaming
     * Wide variety of file naming formats detected. 
     * Scene names detected. No need to rename those downloads.
+    * Localized movie name recognition - E.g. will scan movies with Russian file names.
 
   * Consolidated view
     * Auto-mounting built in - playback from multiple NAS( including ISOs)

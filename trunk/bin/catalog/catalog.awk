@@ -197,6 +197,9 @@ END{
     #path for actor db etc.
     DBDIR = APPDIR"/db";
 
+    print PROCINFO["pid"] > PIDFILE;
+    close(PIDFILE);
+
     g_max_id_file = INDEX_DB".maxid";
     INDEX_DB_TMP = INDEX_DB "." JOBID ".tmp";
     INDEX_DB_NEW = INDEX_DB "." JOBID ".new";
@@ -417,6 +420,7 @@ END{
     if (g_fetch_images_concurrently == "") {
         exec(APPDIR"/bin/jpg_fetch_and_scale START &");
     }
+    rm(PIDFILE);
 }
 
 function replace_share_names(folders,\

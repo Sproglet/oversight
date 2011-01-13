@@ -275,9 +275,14 @@ catalog() {
 
     cd /tmp
 
+    pid_dir="$APPDIR/tmp/pid"
+    mkdir -p "$pid_dir"
+    PIDFILE="$pid_dir/$$.pid"
+
     $awk_prg \
     JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     DAY=`date +%a.%P` \
+    "PIDFILE=$PIDFILE" \
     "START_DIR=$START_DIR" \
     "LS=$LS" \
     "SORT=$SORT" \
@@ -295,13 +300,13 @@ catalog() {
     g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 
-    rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status"
+    rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status" "$PIDFILE"
 
 }
 
 
 tidy() {
-    rm -f "$APPDIR/catalog.status"
+    rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status" "$PIDFILE"
     clean_all_files
 }
 

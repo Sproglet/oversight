@@ -417,6 +417,12 @@ void do_actions() {
                 util_touch(donated_file(),time(NULL) + 1 * DAY );
             }
 
+        } else if (STRCMP(action,"kill_scans") == 0) {
+
+            char *cmd;
+            ovs_asprintf(&cmd,"daemon %s/bin/killscans.sh",appDir());
+            util_system(cmd);
+
         } else if (STRCMP(action,"reinstall") == 0) {
 
             char *cmd;

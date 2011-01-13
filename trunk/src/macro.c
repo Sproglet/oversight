@@ -603,7 +603,7 @@ char *macro_fn_watched_select(MacroCallInfo *call_info) {
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_ANY,"---");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched");
-        result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,"",watched);
+        result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,QUERY_PARAM_WATCHED_VALUE_ANY,watched);
         hashtable_destroy(watched,0,0);
     }
     call_info->free_result = 0;
@@ -625,7 +625,7 @@ char *macro_fn_locked_select(MacroCallInfo *call_info) {
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_ANY,"---");
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_YES,"Locked");
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_NO,"Unlocked");
-        result =  auto_option_list(QUERY_PARAM_LOCKED_FILTER,"",locked);
+        result =  auto_option_list(QUERY_PARAM_LOCKED_FILTER,QUERY_PARAM_LOCKED_VALUE_ANY,locked);
         hashtable_destroy(locked,0,0);
     }
     call_info->free_result = 0;

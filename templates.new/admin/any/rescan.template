@@ -68,6 +68,7 @@
 	                    	<br>
 	                        <input type=submit name=action value="rescan_request">&nbsp;&nbsp;
 	                        <input type=submit name=action value="Cancel">
+	                        <input type=submit name=action value="kill_scans">
 	                    </td>
 	                </tr>
 	            </table>

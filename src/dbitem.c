@@ -11,6 +11,7 @@
 #include "util.h"
 #include "gaya_cgi.h"
 #include "actions.h"
+#include "initials.h"
 
 #define HEX_YEAR_OFFSET 1900
 #define EOL(c)  ((c) == '\n'  ||  (c) == '\r' || (c) == '\0' )
@@ -702,6 +703,7 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *offset=&(rowid->orig_title);
                     *type = FIELD_TYPE_STR;
                     *overview = 1;
+                    store_initial_char(rowid->orig_title);
                 }
                 break;
             case 'p':
@@ -749,6 +751,7 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *offset=&(rowid->title);
                     *type = FIELD_TYPE_STR;
                     *overview = 1;
+                    store_initial_char(rowid->title);
                 }
                 break;
             case 'U':

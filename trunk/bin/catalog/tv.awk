@@ -642,6 +642,11 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
                     #minfo["mi_imdb"] may have been set by a date lookup
                     if (bestUrl == "") {
                         bestUrl = extractImdbLink(imdb(minfo));
+                        if (bestUrl) {
+                            if (get_imdb_info(bestUrl,minfo) != "T") {
+                                do_search = 0;
+                            }
+                        }
                     }
                 } else {
                     do_search = 0;
@@ -669,6 +674,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 }
 
 # 0=nothing found 1=series but no episode 2=series+episode
+# If imdbUrl is set the details have already been fetched and it looks like a tv show on IMDB
 function tv_search(plugin,minfo,imdbUrl,search_abbreviations,\
 tvDbSeriesPage,result,tvid,cat,iid) {
 
@@ -695,17 +701,23 @@ tvDbSeriesPage,result,tvid,cat,iid) {
         # We know the TV id - use this to get the imdb id
         result = get_tv_series_info(plugin,minfo,tvDbSeriesPage); #this may set imdb url
         if (result) {
-            if (imdbUrl) {
-                iid=extractImdbId(imdbUrl);
-            } else {
-                # we also know the imdb id
+            if (!imdbUrl) {
+                # we didn't know the imdb id before - but do now.
                 iid=imdb(minfo);
                 if(iid == "") {
                     # use the tv id to find the imdb id
                     iid=tv2imdb(minfo);
+                    cat = get_imdb_info(extractImdbLink(iid),minfo);
+                    if (cat == "M" ) {
+                        WARNING("Error getting IMDB ID from tv - looks like a movie??");
+                        if (plugin == "thetvdb") {
+                            WARNING("Please update the IMDB ID for this series at the thetvdb website for improved scanning");
+                        }
+
+                        result = 0;
+                    }
                 }
             }
-            cat = get_imdb_info(extractImdbLink(iid),minfo);
         }
     } else {
         # dont know the tvid
@@ -721,27 +733,16 @@ tvDbSeriesPage,result,tvid,cat,iid) {
             # TODO: imdbUrl=web_search_frequent_imdb_link(minfo);
         }
         if (imdbUrl != "") {
-            # use the imdb id to find the tv id
-            cat = get_imdb_info(imdbUrl,minfo);
-            if (cat != "M" ) {
-                # find the tvid - this can miss if the tv plugin api does not have imdb lookup
-                tvid = find_tvid(plugin,minfo,extractImdbId(imdbUrl));
-                if(tvid != "") {
-                    tvDbSeriesPage = get_tv_series_api_url(plugin,tvid);
-                    result = get_tv_series_info(plugin,minfo,tvDbSeriesPage);
-                }
+            # use the imdb id to find the tv id - if imdbUrl is set and we get here then IMDB thinks it's a tv show.
+            # find the tvid - this can miss if the tv plugin api does not have imdb lookup
+            tvid = find_tvid(plugin,minfo,extractImdbId(imdbUrl));
+            if(tvid != "") {
+                tvDbSeriesPage = get_tv_series_api_url(plugin,tvid);
+                result = get_tv_series_info(plugin,minfo,tvDbSeriesPage);
             }
         }
     }
     
-    if (cat == "M" ) {
-        WARNING("Error getting IMDB ID from tv - looks like a movie??");
-        if (plugin == "thetvdb") {
-            WARNING("Please update the IMDB ID for this series at the thetvdb website for improved scanning");
-        }
-
-        result = 0;
-    }
     id0(result);
     return 0+ result;
 }

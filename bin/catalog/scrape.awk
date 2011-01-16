@@ -459,7 +459,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                         }
                     }
 
-                    #DEBUG("xx read["line[1]"]");
+                    #DEBUG("xx read["line[1]"] script="pagestate["script"]);
                     if (update_confidence(line[1],minfo2,pagestate) < 0 ) {
                         err = 1;
                         break;
@@ -583,12 +583,11 @@ all_keys,key,regex) {
 
 # merge new data into current data.
 function minfo_merge(current,new,default_source,\
-f,source,size) {
+f,source,ret) {
 
     id1("minfo_merge["default_source"]");
     #dump(0,"current",current);
-    dump(0,"new",new);
-    size = hash_size(current);
+    # dump(0,"new",new);
 
     # Keep best title
     new["mi_title"] = clean_title(new["mi_title"]);
@@ -604,7 +603,7 @@ f,source,size) {
             if (source == "") {
                 source = default_source;
             }
-            best_source(current,f,new[f],source);
+            ret += best_source(current,f,new[f],source);
         }
     }
     for(f in current) {
@@ -617,10 +616,7 @@ f,source,size) {
             }
         }
     }
-    if (size) {
-        dump(0,"result",current);
-    }
-    id0("");
+    id0(ret);
 }
 
 #add a website id to the id list - internal format is {<space><domain>:value} 

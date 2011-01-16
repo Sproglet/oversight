@@ -153,6 +153,9 @@ function timestamp(label,x) {
     if (index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
     if (index(x,g_api_rage) ) gsub(g_api_rage,".",x);
 
+    if (index(x,"app.i") ) {
+        sub("app.i[a-z0-9/?=&]+","",x);
+    }
     if (index(x,"d=") ) {
         sub("password.?=([^,]+)","password=***",x);
         sub("pwd=([^,]+)","pwd=xxx",x);

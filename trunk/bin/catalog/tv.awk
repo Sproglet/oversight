@@ -1039,7 +1039,7 @@ allTitles,url,ret,total) {
 
     if (plugin == "thetvdb") {
 
-        url=expand_url(g_thetvdb_web"/api/GetSeries.php?seriesname=",title);
+        url=tvdb_get_series(title);
         total = filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
 
     } else if (plugin == "tvrage") {
@@ -1056,11 +1056,22 @@ allTitles,url,ret,total) {
     return 0+ret;
 }
 
+function tvdb_get_series(title,\
+url) {
+    url = g_thetvdb_web"/api/GetSeries.php?";
+    if (index(url,"thetvdb") && length(title) > utf8len(title)) {
+        # Non-latin characters - search in users locale or all languages.
+        url = url "language=all&";
+    }
+    url = url "seriesname=";
+    return expand_url(url,title);
+}
+
 #If the search engine differentiates between &/and or obrien o brien then we need multiple searches.
 # 
 function expand_url(baseurl,title,\
 url) {
-    url = baseurl title;
+    url = baseurl title ;
     if (match(title," [Aa]nd ")) {
         #try "a and b\ta & b"
         url=url"\t"url;
@@ -1167,7 +1178,8 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
 
                 if(plugin == "thetvdb") {
 
-                    url=expand_url(g_thetvdb_web"//api/GetSeries.php?seriesname=",minfo["mi_title"]);
+                    url=tvdb_get_series(minfo["mi_title"]);
+
                     if (fetchXML(url,"imdb2tvdb",showInfo,"")) {
                         #allow for titles "The Office (US)" or "The Office" and 
                         # hope the start year is enough to differentiate.

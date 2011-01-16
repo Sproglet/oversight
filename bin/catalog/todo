@@ -1,3 +1,5 @@
+# fixed scraping russian tv show but year still wrong.
+#
 # Also plots of ofdb are corrupt
 #
 # If there are 100 + matches in the search, then before the abbreviation search there needs to be a simpler scan of the tvdb text files using 'similar titles'

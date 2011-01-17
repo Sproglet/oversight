@@ -11,6 +11,8 @@ for i in "$appdir/tmp/pid/"*.pid ; do
         p=`cat $i`
         if [ -d "/proc/$p" ] ; then
             kill "$p" && rm -f "$p"
+        else
+            rm -f "$p"
         fi
     fi
 done

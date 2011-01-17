@@ -369,13 +369,18 @@ tmpTitle,ret,ep,season,title,inf,matches) {
             title = substr(title,RSTART+RLENGTH);
         }
         #DEBUG("ExtractEpisode:2 Title= ["title"]");
-        #Remove release group info
-        if (match(title,"^[a-z][a-z0-9]+[-]")) {
-           tmpTitle=substr(title,RSTART+RLENGTH);
-           if (tmpTitle != "" ) {
-               INF("Removed group was ["title"] now ["tmpTitle"]");
-               title=tmpTitle;
-           }
+        #Remove release group info only if there is no space in the title.
+        #scene releases are often group-title.s01e01.avi with no spaces and all lower case.
+        if (index(title,"-")) {
+            if (!index(line," ") &&  match(title,"^[a-z][a-z0-9]+[-][a-z0-9]+$")) {
+               tmpTitle=substr(title,RSTART+RLENGTH);
+               if (tmpTitle != "" ) {
+                   INF("Removed group was ["title"] now ["tmpTitle"]");
+                   title=tmpTitle;
+               }
+            } else {
+               INF("Using full hyphenated title "title);
+            }
         }
 
         #DEBUG("ExtractEpisode: Title= ["title"]");
@@ -1313,6 +1318,10 @@ keep_the) {
     # Clean title only removes . and _ if it has no spaces.
     # For similar title matching to work we remove all punctuation
     gsub(g_punc[0]," ",t);
+
+    # Fix for Spider-man vs spiderman
+    if (index(t,"-")) gsub(/-/,"",t);
+
     gsub(/  +/," ",t);
 
     return tolower(t);

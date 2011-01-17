@@ -644,7 +644,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
                     search_abbreviations = more_info[1];
 
-                    #minfo["mi_imdb"] may have been set by a date lookup
+                    #minfo["mi_imdb"] may have been set by a date lookup in checkTvFilenameFormat or by tvdb info in tv_search
                     if (bestUrl == "") {
                         bestUrl = extractImdbLink(imdb(minfo));
                         if (bestUrl) {
@@ -673,6 +673,15 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
     }
     if (tv_status) {
         cat = minfo["mi_category"];
+    }
+    #minfo["mi_imdb"] may have been set by tvdb info in tv_search
+    if (bestUrl == "") {
+        bestUrl = extractImdbLink(imdb(minfo));
+        if (bestUrl) {
+            if (get_imdb_info(bestUrl,minfo) != "T") {
+                do_search = 0;
+            }
+        }
     }
     id0(cat);
     return cat;
@@ -712,6 +721,8 @@ tvDbSeriesPage,result,tvid,cat,iid) {
                 if(iid == "") {
                     # use the tv id to find the imdb id
                     iid=tv2imdb(minfo);
+                }
+                if(iid) {
                     cat = get_imdb_info(extractImdbLink(iid),minfo);
                     if (cat == "M" ) {
                         WARNING("Error getting IMDB ID from tv - looks like a movie??");
@@ -746,6 +757,10 @@ tvDbSeriesPage,result,tvid,cat,iid) {
                 result = get_tv_series_info(plugin,minfo,tvDbSeriesPage);
             }
         }
+    }
+    # check if imdb info has just been obtained from tv website
+    if (result && !imdbUrl && imdb(minfo)) {
+        get_imdb_info(extractImdbLink(iid),minfo);
     }
     
     id0(result);

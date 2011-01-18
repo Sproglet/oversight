@@ -565,7 +565,7 @@ TRACE;
                         action(&rowid,action_data);
                     }
                     db_rowset_add(rowset,&rowid);
-                    //HTML_LOG(0,"xx keep [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
+                    //HTML_LOG(0,"xx keep [%d][%s][%d]",rowid.id,rowid.title,rowid.year);
                 } else {
                     db_rowid_free(&rowid,0);
                 }

@@ -880,18 +880,18 @@ char *macro_fn_year(MacroCallInfo *call_info) {
             struct tm *t = internal_time2tm(item->airdate,NULL);
             year_num = t->tm_year+1900;
 
-        } else if (item->category == 'M' ) {
+        } else if (item->category != 'M' ) {
 
-            year_num = item->year;
-
-        } else {
             struct tm *t = internal_time2tm(item->date,NULL);
             year_num = t->tm_year+1900;
         }
+        if (item->category == 'M' || year_num == 1900) {
+            year_num = item->year;
+        }
     }
-
-
-    ovs_asprintf(&year,"%d",year_num);
+    if (year_num && year_num != 1900) {
+        ovs_asprintf(&year,"%d",year_num);
+    }
     return year;
 }
 

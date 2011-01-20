@@ -15,14 +15,6 @@ body.admin_background {
 .optionrow0 { background-color:#222222;}
 .optionrow1 { background-color:#333333;}
 
-/* Normal view */  .a {}
-.gridTW0_0 { color:white; background-color:#101055; }
-.gridTW0_1 { color:white; background-color:#101066; }
-.gridMW0_0 { color:white; background-color:#105510; }
-.gridMW0_1 { color:white; background-color:#106610; }
-.gridW0_0 { color:white; background-color:#551010; }
-.gridW0_1 { color:white; background-color:#661010; }
-
 /* Admin page */ .a { }
 .match {
 	color:#FF7777; 

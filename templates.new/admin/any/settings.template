@@ -4,7 +4,7 @@
         [:FAVICON:]
         <meta name="robots" content="nofollow">
         <title>Oversight [:HOSTNAME:]: Settings [:$?cfgt:]</title>
-		<link rel="stylesheet" type="text/css" href="/oversight/templates/admin/css/default.css" />
+		<link rel="stylesheet" type="text/css" href="[:TEMPLATE_URL(css/admin.css):]" />
 		<script type="text/javascript">
 			
 			function body_onload() {

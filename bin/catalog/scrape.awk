@@ -1243,10 +1243,28 @@ ret) {
     }
 }
 
+# IN text
+# IN characters (not bytes) - if 0 then compute
+function is_english(text,ln) {
+
+    if (!ln) ln = utf8len(text);
+
+    return english_score(text) > ln/80;
+}
+
+function show_english(text) {
+    gsub(g_english_re,SUBSEP "&" SUBSEP , text);
+    return gensub(SUBSEP"[^"SUBSEP"]*"SUBSEP,"/","g",SUBSEP text SUBSEP);
+}
+
+function english_score(text) {
+    return gsub(g_english_re,"&",text);
+}
+
 # IN lng - 2 letter language code
 # IN text - check if prose
-function is_prose(lng,text,\
-words,num,i,len,is_english) {
+function is_prose(lng,text,threshhold,\
+words,num,i,len) {
 
     if (length(text) > g_min_plot_len ) {
 
@@ -1278,8 +1296,7 @@ words,num,i,len,is_english) {
 
                                 for(i in words) if (length(words[i])  > 30 && utf8len(words[i]) > 30) return 0;
 
-                                is_english = (text ~ g_english_re);
-                                if ( (lng == "en") == is_english  ) {
+                                if ( (lng == "en") == is_english(text,len)  ) {
 
                                     return 1;
                                 }
@@ -1369,8 +1386,8 @@ function add_lang_to_plot(lang_or_locale,plot,\
 ret,lng) {
     if (plot) {
         lng = lang(lang_or_locale); 
-        if (lng != "en" && match(plot,g_english_re) ) {
-            INF("expected "lang_or_locale" but plot appears English? found ["substr(plot,RSTART,RLENGTH)"] at pos "RSTART" in :"plot);
+        if (lng != "en" && is_english(plot) ) {
+            INF("expected "lang_or_locale" but plot appears English? found "show_english(plot));
             lng="en";
         }
         ret = lng":"plot;

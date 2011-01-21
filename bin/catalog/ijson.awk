@@ -10,7 +10,7 @@ url,ret) {
     gsub(/-/,"",url);
     if (fetch_json(url,"imdb",out)) {
         out["@locale@"] = locale;
-        dump(0,locale,out);
+        #dump(0,locale,out);
         ret = 1;
     }
     id0(ret);

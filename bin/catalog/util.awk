@@ -1013,3 +1013,25 @@ line,code,total) {
     return total;
 }
     
+# this corrupts a title but makes it easier to match on other similar titles.
+function norm_title(t,\
+keep_the) {
+    if (!keep_the) {
+        sub("^"g_lang_articles" ","",t);
+        sub(" "g_lang_articles"$","",t);
+    }
+    gsub(/[&]/,"and",t);
+    gsub(/'/,"",t);
+
+    # Clean title only removes . and _ if it has no spaces.
+    # For similar title matching to work we remove all punctuation
+    gsub(g_punc[0]," ",t);
+
+    # Fix for Spider-man vs spiderman
+    if (index(t,"-")) gsub(/-/,"",t);
+
+    gsub(/  +/," ",t);
+
+    return tolower(trim(t));
+}
+

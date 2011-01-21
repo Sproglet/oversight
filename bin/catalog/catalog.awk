@@ -103,6 +103,13 @@ i,links,best_url) {
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
     verify_setup();
+    g_articles["en"]="\\<([Tt]he)\\>";
+    g_articles["de"]="\\<(([Dd](er|ie|as|es|em|en))|([Ee]in(|e[rmn]?)))\\>";
+    g_articles["nl"]="\\<([Dd]e|[Hh]et|[Ee]en)\\>";
+    g_articles["es"]="\\<(Ee]l|[Ll]a|[Ll][oa]s|[Uu]n(|as?|os))\\>";
+    g_articles["pt"]="\\<([OoAa]s?|[Uu]m(|as?)|[Uu]ns)\\>";
+    g_articles["fr"]="\\<([Ll](|a|e?)|[Uu]ne?|[Dd]es|[Dd]u|[De] la?)\\>";
+    g_articles["it"]="\\<([Ii]l?|[Ll][oae]?|[Gg]li|[Uu]n[oa]?|[Dd]el(|l[oae]?)|[Dd]ei|[Dd]egli)\\>";
     g_multpart_tags = "cd|disk|disc|part";
     g_max_plot_len=3000;
     g_min_plot_len=90; # this is th eminimum length when scraping - not via api
@@ -127,7 +134,7 @@ BEGIN {
     g_english_end_re="([ .!?]|$)";
     # there is some overlap between words and phrases - eg 'and' - this will be refined over time. Esp with Germanic languages some
     # short words may not be enough to distinguish
-    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|when|with|his|who|and|for|are|[Tt]hey|their|them)"g_english_end_re;
+    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|from|who|what|where|when|how|with|his|and|for|are|[Tt]hey|their|them|attempt(|s|ed)|decides?|learns?|forced|offers|goes|plans?|wants?|tries|try|until|became|becomes?|lives?|life|have|after|before|must|plays?|years?|come|has|out|stops?|helps?|will|finds?|reali[sz]es?)"g_english_end_re;
     g_english_phrase_re="((in|to|by|for|is|on|as|of|and) (a|an|the|his|her|their|they)"g_english_end_re"|[Tt]he +[a-z])";
     g_english_re=g_english_start_re"("g_english_words_re"|"g_english_phrase_re")";
 
@@ -235,6 +242,9 @@ END{
     g_tagstartchar=g_ABC g_abc":_";
 
     report_status("scanning");
+
+    g_lang_articles = g_articles[main_lang()];
+    INF("Articles="g_lang_articles);
 
     load_catalog_settings();
 

@@ -1278,8 +1278,13 @@ function tvdb_series_url(id,lang) {
 
 }
 
-function get_tv_series_api_url(plugin,tvdbid,\
-url,i,num,langs,word,key) {
+# IN plugin tvrage|thetvdb
+# IN tvdbid show id
+# OUT xml for tv show - this is only popluated as a side effect of checking if the plot for tvdb is English. Unfortunately
+# there is no simple flag in the response to indicate if a page is translated or not. (at time of writing)
+# For now this xml is ignored but a later re-write should use it to avoid double parse of the page.
+function get_tv_series_api_url(plugin,tvdbid,xml,\
+url,i,num,langs,key,plot) {
     if (tvdbid != "") {
 
         key=plugin":"tvdbid;
@@ -1298,10 +1303,14 @@ url,i,num,langs,word,key) {
                         if (langs[i] == "en" ) {
                             break;
                         } else if (langs[i+1] != "en" ) {
-                            if ((word=scanPageFirstMatch(url,"",g_english_re,1)) != "") {
-                                INF("expected lang="langs[i]" but found "word" in text");
-                            } else {
-                                break;
+                            #if the *next* language is also NOT English then check the overview has been translated.
+                            if (fetchXML(url,"tvxml",xml,"")) {
+                                plot = xml["/Data/Series/Overview"];
+                                if (is_english(plot)) {
+                                    INF("expected lang="langs[i]" but found "show_english(plot));
+                                } else {
+                                    break;
+                                }
                             }
                         } else {
                             break;
@@ -1319,28 +1328,6 @@ url,i,num,langs,word,key) {
     return url;
 }
 
-
-# this corrupts a title but makes it easier to match on other similar titles.
-function norm_title(t,\
-keep_the) {
-    if (!keep_the) {
-        sub(/^[Tt]he /,"",t);
-        sub(/ [Tt]he$/,"",t);
-    }
-    gsub(/[&]/,"and",t);
-    gsub(/'/,"",t);
-
-    # Clean title only removes . and _ if it has no spaces.
-    # For similar title matching to work we remove all punctuation
-    gsub(g_punc[0]," ",t);
-
-    # Fix for Spider-man vs spiderman
-    if (index(t,"-")) gsub(/-/,"",t);
-
-    gsub(/  +/," ",t);
-
-    return tolower(t);
-}
 
 # This function is now just too messy and needs a careful re-write
 # return 0=no match , 5=excellent match, and values in between.

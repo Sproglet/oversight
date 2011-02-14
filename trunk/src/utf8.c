@@ -4,17 +4,14 @@
 int utf8len(char *str)
 {
     int len = 0;
-    char *p = str;
-    while(1) {
-        if (*p > 0) {
+    unsigned char *p = (unsigned char *)str;
+    while(*p) {
+        if (*p < 128) {
             len++;
-        } else if (*p) {
-            if (*p & 0x40 ) {
+        } else if (*p & 0x40 ) {
                 len ++;
-            }
-        } else {
-            break;
         }
+        html_comment("[%c] [%d] [%x] len=%d",*p,(int)(*p),(int)(*p),len);
         p++;
     }
     return len;
@@ -26,13 +23,16 @@ int utf8len(char *str)
 int utf8cmp_char(char *str1,char *str2)
 {
     int diff;
-    if (IS_UTF8START(*str1 & *str2)) {
-        diff = *str1++ - *str2++;
-        while(!diff && IS_UTF8CONT(*str1 & *str2)) {
-            diff = *str1++ - *str2++;
+    unsigned char *s1 = (unsigned char *)str1;
+    unsigned char *s2 = (unsigned char *)str2;
+
+    if (IS_UTF8START(*s1 & *s2)) {
+        diff = *s1++ - *s2++;
+        while(!diff && IS_UTF8CONT(*s1 & *s2)) {
+            diff = *s1++ - *s2++;
         }
     } else {
-        diff = *str1 - *str2;
+        diff = *s1 - *s2;
     }
     return diff;
 }

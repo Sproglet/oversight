@@ -10,6 +10,7 @@
 #endif
 
 #include <time.h>
+#include <string.h>
 #include "config.h"
 #include "hashtable.h"
 #include "array.h"

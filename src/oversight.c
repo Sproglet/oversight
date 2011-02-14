@@ -26,6 +26,8 @@
 #include "subtitles.h"
 #include "template.h"
 #include "exp.h"
+#include "utf8.h"
+#include "abet.h"
 
 
 //void exec_old_cgi(int argc,char **argv);
@@ -271,6 +273,28 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     html_hashtable_dump(0,"query final",g_query);
 
 
+#if 0
+    html_comment("utf8len expect 2 = %d",utf8len("Àa"));
+    html_comment("utf8len expect 2 = %d",utf8len("àa"));
+    html_comment("utf8len expect 2 = %d",utf8len("üa"));
+    html_comment("utf8cmp_char 0 = %d",utf8cmp_char("üa","üb"));
+    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("üa","üa"));
+    html_comment("utf8cmp_char 0 = %d",utf8cmp_char("a","a"));
+    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("a","b"));
+    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("üa","Ã¼a"));
+    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("a","üa"));
+    Abet *a = abet_create("abcdefghijklmnopqrstuvwxyz");
+    html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
+    html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
+    html_comment("inc z %d",abet_letter_inc_or_add(a,"z",1));
+    html_comment("inc 4 %d",abet_letter_inc_or_add(a,"4",1));
+    html_comment("inc 5 %d",abet_letter_inc_or_add(a,"5",1));
+    html_comment("inc 5 %d",abet_letter_inc_or_add(a,"5",1));
+    html_comment("inc 6* %d",abet_letter_inc_or_add(a,"6",0));
+    html_comment("inc 7* %d",abet_letter_inc_or_add(a,"7",0));
+    html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
+    abet_free(a);
+#endif
 
 
     config_read_dimensions();

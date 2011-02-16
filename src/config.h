@@ -12,6 +12,7 @@
 #define GRID_MOVIEBOXSET 2
 
 
+#define CONFIG_LABEL_TEXT "=>"
 
 
 MovieBoxsetMode movie_boxset_mode();
@@ -40,7 +41,7 @@ typedef struct dimension_str {
     GridDirection grid_direction;
 } Dimensions ;
 
-struct hashtable *config_load(char *filename,int include_unquoted_space);
+struct hashtable *config_load(char *filename,int include_unquoted_space,int verbose);
 struct hashtable *config_load_domain(char *domain);
 void config_write(struct hashtable *cfg,char *filename);
 void config_write_fp(struct hashtable *cfg,FILE *fp);
@@ -73,6 +74,7 @@ int ovs_config_dimension_increment(char *keyword_prefix,char* delta_str,int min,
 int ovs_config_dimension_inherit(char *keyword_prefix);
 char *query_val(char *name);
 char *catalog_val(char *name);
+char *locale_val(char *name);
 char *setting_val(char *name);
 char *oversight_val(char *name);
 char *skin_val(char *name);

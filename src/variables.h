@@ -8,6 +8,7 @@
 #define MACRO_DBROW_PREFIX '%'
 
 #define VAR_PREFIX_SETTING_OVERSIGHT "ovs_"
+#define VAR_PREFIX_SETTING_LOCALE "catalog_locale_"
 #define VAR_PREFIX_SETTING_CATALOG "catalog_"
 #define VAR_PREFIX_SETTING_SKIN "skin_"
 #define VAR_PREFIX_SETTING_UNPAK "unpak_"

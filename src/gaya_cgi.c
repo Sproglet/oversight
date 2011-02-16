@@ -15,6 +15,7 @@
 #include "hashtable_loop.h"
 #include "hashtable_utility.h"
 #include "vasprintf.h"
+#include "config.h"
 
 /*
  * Add the default query parameters from the oversight settings.
@@ -22,7 +23,6 @@
  * eg. if a setting is Yes=>&_et=1 then
  * - key(_et)=value(1) is added to the hash.
  */
-#define OPTION_HTML_GET_FLAG "=>"
 void add_default_html_parameters(struct hashtable *query_hash) 
 {
     char *k;
@@ -31,10 +31,14 @@ void add_default_html_parameters(struct hashtable *query_hash)
     for(itr = hashtable_loop_init(g_oversight_config); hashtable_loop_more(itr,&k,&v) ; ) {
        if (!EMPTY_STR(v)) {
             
-           char *p = strstr(v,OPTION_HTML_GET_FLAG);
+           // secect values of the form Label=>htmlname=value
+           char *p = strstr(v,CONFIG_LABEL_TEXT);
            if (p) {
-               p += strlen(OPTION_HTML_GET_FLAG);
-               parse_query_string(p,query_hash);
+               p += strlen(CONFIG_LABEL_TEXT);
+
+               if (strchr(p,'=')) {
+                   parse_query_string(p,query_hash);
+               }
            }
        }
    }

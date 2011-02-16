@@ -15,18 +15,24 @@
 #include "hashtable.h"
 #include "array.h"
 #include "types.h"
+#include "abet.h"
 
 #define NMT_PLAYLIST "/tmp/playlist.htm"
 OVS_EXTERN(struct hashtable *g_query,NULL);
 OVS_EXTERN(struct hashtable *g_oversight_config,NULL);
 OVS_EXTERN(struct hashtable *g_unpack_config,NULL);
 OVS_EXTERN(struct hashtable *g_catalog_config,NULL);
+OVS_EXTERN(struct hashtable *g_locale_config,NULL);
+OVS_EXTERN(char *g_locale,NULL);
 OVS_EXTERN(struct hashtable *g_skin_config,NULL);
 OVS_EXTERN(struct hashtable *g_nmt_settings,NULL);
 OVS_EXTERN(struct hashtable *g_genre_hash,NULL);
 OVS_EXTERN(struct hashtable *g_first_two_letters,NULL);
 OVS_EXTERN(struct hashtable *g_delete_queue,NULL);
 OVS_EXTERN(int g_item_count,0);
+
+// The alphabet index.
+OVS_EXTERN(Abet *g_abet,NULL);
 
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 #define IN_POSTER_MODE (g_dimension->poster_mode != 0) 

@@ -1,4 +1,5 @@
 #include "utf8.h"
+#include "gaya_cgi.h"
 // Simple utf functions. If oversight requres more complete utf8 support look at a proper utf8 library eg utf8proc
 
 int utf8len(char *str)

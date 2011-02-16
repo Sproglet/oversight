@@ -88,6 +88,37 @@ void load_ovs_configs()
 
     g_skin_config = config_load_wth_defaults(skin_path(),"conf/.skin.cfg.defaults","conf/skin.cfg");
 
+    g_locale = catalog_val("catalog_locale1");
+    if (!EMPTY_STR(g_locale)) {
+        // load the locale file  eg. conf/catalog.locale.en_US.cfg
+        char *f;
+        ovs_asprintf(&f,"%s/conf/locale/catalog.locale.%s.cfg",appDir(),g_locale);
+        g_locale_config=config_load(f,0,0);
+        FREE(f);
+        if (!g_locale_config && strlen(g_locale) > 2) {
+            // just load the language part eg. conf/catalog.locale.en.cfg
+            ovs_asprintf(&f,"%s/conf/locale/catalog.locale.%.2s.cfg",appDir(),g_locale);
+            g_locale_config=config_load(f,0,0);
+            FREE(f);
+        }
+        if (g_locale_config) {
+
+            if (g_abet) {
+                abet_free(g_abet);
+                g_abet = NULL;
+            }
+
+            // load the alphabet index.
+            char *letters = locale_val("catalog_locale_alphabet_upper");
+            if (EMPTY_STR(letters)) {
+                HTML_LOG(0,"Using default English Index");
+                letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            }
+            HTML_LOG(0,"index=[%s]",letters);
+            g_abet = abet_create(letters);
+        }
+    }
+
 
     get_boxset_modes();
 
@@ -97,7 +128,7 @@ void load_configs()
 {
     load_ovs_configs();
 
-    g_nmt_settings = config_load("/tmp/setting.txt",1);
+    g_nmt_settings = config_load("/tmp/setting.txt",1,1);
 
 }
 
@@ -209,7 +240,7 @@ struct hashtable *config_load_one(char *d,char *file)
     ovs_asprintf(&f,"%s/%s",d,file);
 
     if (is_file(f)) {
-        result = config_load(f,0);
+        result = config_load(f,0,0);
     } else {
         result = string_string_hashtable(f,16);
     }
@@ -236,13 +267,13 @@ struct hashtable *config_load_domain(char *domain)
 {
     char *file;
     ovs_asprintf(&file,"%s/conf/domain/catalog.domain.%s.cfg",appDir(),domain);
-    struct hashtable *result = config_load(file,1);
+    struct hashtable *result = config_load(file,1,1);
     FREE(file);
     return result;
 }
 
 // include_unquoted_space option is for /tmp/setting.txt other config files always quote space.
-struct hashtable *config_load(char *filename,int include_unquoted_space) {
+struct hashtable *config_load(char *filename,int include_unquoted_space,int verbose) {
 
     assert(filename);
     struct hashtable *result=NULL;
@@ -251,7 +282,7 @@ struct hashtable *config_load(char *filename,int include_unquoted_space) {
     FILE *f = fopen(filename,"r");
 
     if (f == NULL) {
-        fprintf(stderr,"Unable to open config file [%s]\n",filename);
+        if (verbose) fprintf(stderr,"Unable to open config file [%s]\n",filename);
     } else {
         result = config_load_fp(filename,f,include_unquoted_space);
         fclose(f);
@@ -520,9 +551,9 @@ int rename_cfg(char *old,char *new)
 }
 
 void config_unittest() {
-    struct hashtable *cfg = config_load("test.cfg",0);
+    struct hashtable *cfg = config_load("test.cfg",0,1);
     config_write(cfg,"delete.cfg");
-    struct hashtable *cfg2 = config_load("delete.cfg",0);
+    struct hashtable *cfg2 = config_load("delete.cfg",0,1);
 
     char *k,*v;
     struct hashtable_itr *itr = hashtable_loop_init(cfg) ;
@@ -911,11 +942,26 @@ char *query_val(char *name)
         return "";
     }
 }
+
+
 char *catalog_val(char *name)
 {
-    char *val;
+    char *val,*tmp;
     check_prefix(name,VAR_PREFIX_SETTING_CATALOG);
     if (config_check_str(g_catalog_config,name,&val)) {
+        if (val && (tmp=strstr(val,CONFIG_LABEL_TEXT)) != NULL) {
+            val = tmp + strlen(CONFIG_LABEL_TEXT);
+        }
+        return val;
+    } else {
+        return "";
+    }
+}
+char *locale_val(char *name)
+{
+    char *val;
+    check_prefix(name,VAR_PREFIX_SETTING_LOCALE);
+    if (config_check_str(g_locale_config,name,&val)) {
         return val;
     } else {
         return "";

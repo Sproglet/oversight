@@ -40,19 +40,18 @@ Exp *build_filter(char *media_types)
     }
 
     // Title Filter
+#define STRING_FN_CONTAINS 'c'
+#define STRING_FN_STARTS 's'
+#define STRING_FN_EQUALS 'e'
+#define STRING_TYPE_STRING 's'
+#define STRING_TYPE_REGEX 'r'
+#define STRING_FUNCTION(s) \
+        (((*s) == STRING_FN_CONTAINS || (*s) == STRING_FN_STARTS || (*s) == STRING_FN_EQUALS) && \
+         (s[1] == STRING_TYPE_STRING || s[1] == STRING_TYPE_REGEX))
+
     char *title_pat = query_val(QUERY_PARAM_TITLE_FILTER);
     if (title_pat && *title_pat) {
-        if (title_pat[1] == 0) {
-            if (title_pat[0] == '1') {
-                add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~"QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~" , "[^a-zA-Z]" );
-            } else {
-                // Single letter - starts with.
-                add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~"QPARAM_FILTER_STARTS_WITH"~" , title_pat );
-            }
-        } else {
-
-            // First letter is [c]ontains [s]tarts with or [e]quals
-            // Second letter is [s]tring or [r]egex
+        if (STRING_FUNCTION(title_pat)) {
 
             char op_text[10];
 
@@ -75,6 +74,8 @@ Exp *build_filter(char *media_types)
             add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, op_text , tmp );
             FREE(tmp);
 
+        } else {
+            add_op_clause(&val,0,DB_FLDID_TITLE FIELD_OP, "~"QPARAM_FILTER_STARTS_WITH"~" , title_pat );
         }
     }
 

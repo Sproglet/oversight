@@ -4023,7 +4023,8 @@ char *get_status_static()
     return result;
 }
 
-char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
+char *auto_option_list(char *name,char *firstItem,struct hashtable *vals)
+{
 
     static char *attr = NULL;
     if (attr == NULL ) {
@@ -4041,7 +4042,8 @@ char *auto_option_list(char *name,char *firstItem,struct hashtable *vals) {
 
 
 #define PLACEHOLDER "@x@x@"
-char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals) {
+char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals)
+{
     char *result=NULL;
     char *selected=query_val(name);
     char *params;

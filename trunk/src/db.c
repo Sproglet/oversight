@@ -26,6 +26,7 @@
 #include "hashtable_loop.h"
 #include "network.h"
 #include "mount.h"
+#include "abet.h"
 
 #define DB_ROW_BUF_SIZE 6000
 
@@ -540,6 +541,9 @@ TRACE;
                         }
                     }
 
+                    abet_letter_inc_or_add(g_abet_title,rowid.title,1);
+                    abet_letter_inc_or_add(g_abet_orig_title,rowid.orig_title,1);
+
                     //if (keeprow) HTML_LOG(0,"xx genre ok");
 
                     if (keeprow) {
@@ -573,6 +577,8 @@ TRACE;
         }
         dbreader_close(fp);
     }
+    abet_dump(g_abet_title);
+    abet_dump(g_abet_orig_title);
     if (path != db->path) FREE(path);
     HTML_LOG(0,"db[%s] filtered %d of %d rows",db->source,(rowset?rowset->size:0),db->db_size);
     if (!EMPTY_STR(compressed_genre_filter)) FREE(compressed_genre_filter);

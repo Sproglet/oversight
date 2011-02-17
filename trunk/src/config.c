@@ -103,11 +103,6 @@ void load_ovs_configs()
         }
         if (g_locale_config) {
 
-            if (g_abet) {
-                abet_free(g_abet);
-                g_abet = NULL;
-            }
-
             // load the alphabet index.
             char *letters = locale_val("catalog_locale_alphabet_upper");
             if (EMPTY_STR(letters)) {
@@ -115,7 +110,16 @@ void load_ovs_configs()
                 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             }
             HTML_LOG(0,"index=[%s]",letters);
-            g_abet = abet_create(letters);
+
+            if (g_abet_title) {
+                abet_free(g_abet_title);
+            }
+            g_abet_title = abet_create(letters);
+
+            if (g_abet_orig_title) {
+                abet_free(g_abet_orig_title);
+            }
+            g_abet_orig_title = abet_create(letters);
         }
     }
 

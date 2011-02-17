@@ -21,5 +21,6 @@ Abet *abet_create(char *list);
 void abet_free(Abet *abet);
 int abet_letter_inc(Abet *abet,char *letter);
 int abet_letter_inc_or_add(Abet *abet,char *letter,int add_if_missing);
+void abet_dump(Abet *abet);
 
 #endif

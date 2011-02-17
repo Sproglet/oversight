@@ -32,7 +32,8 @@ OVS_EXTERN(struct hashtable *g_delete_queue,NULL);
 OVS_EXTERN(int g_item_count,0);
 
 // The alphabet index.
-OVS_EXTERN(Abet *g_abet,NULL);
+OVS_EXTERN(Abet *g_abet_title,NULL);
+OVS_EXTERN(Abet *g_abet_orig_title,NULL);
 
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 #define IN_POSTER_MODE (g_dimension->poster_mode != 0) 

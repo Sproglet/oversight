@@ -669,7 +669,8 @@ char *macro_fn_episode_total(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_movie_total(MacroCallInfo *call_info) {
+char *macro_fn_movie_total(MacroCallInfo *call_info)
+{
     static char result[10]="";
     call_info->free_result=0;
     if (!*result) {
@@ -677,7 +678,8 @@ char *macro_fn_movie_total(MacroCallInfo *call_info) {
     }
     return result;
 }
-char *macro_fn_other_media_total(MacroCallInfo *call_info) {
+char *macro_fn_other_media_total(MacroCallInfo *call_info)
+{
     static char result[10]="";
     call_info->free_result=0;
     if (!*result) {
@@ -686,29 +688,43 @@ char *macro_fn_other_media_total(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_title_select(MacroCallInfo *call_info) {
+
+/*
+ * Return index selection list with item selected.
+ */
+char *title_index(Abet *abet,char *query_param_name)
+{
+    char *result = NULL;
+
+    if (abet) {
+        struct hashtable *title = string_string_hashtable("index",30);
+        int i;
+        for(i=0 ; i< abet->len ; i++) {
+            if (abet->letters[i]->count) {
+                char *l = abet->letters[i]->letter;
+                hashtable_insert(title,l,l);
+            }
+        }
+        result = auto_option_list(query_param_name,"",title);
+        hashtable_destroy(title,0,0);
+    }
+    return result;
+}
+
+char *macro_fn_title_select(MacroCallInfo *call_info)
+{
     static char *result=NULL;
     if (!result) {
 
         HTML_LOG(1,"macro_fn_title_select");
-        struct hashtable *title = string_string_hashtable("title-menu",30);
-
-        char *letters[]= 
-          { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1",NULL};
-
-        int i;
-        for (i = 0 ; letters[i] ; i++ ) {
-            hashtable_insert(title,letters[i],letters[i]);
-        }
-        hashtable_insert(title,"","*");
-        result =  auto_option_list(QUERY_PARAM_TITLE_FILTER,"",title);
-        hashtable_destroy(title,0,0);
+        result = title_index(g_abet_title,QUERY_PARAM_TITLE_FILTER);
     }
     call_info->free_result = 0;
     return result;
 }
 
-char *macro_fn_genre_select(MacroCallInfo *call_info) {
+char *macro_fn_genre_select(MacroCallInfo *call_info)
+{
     static char *result = NULL;
     if (g_genre_hash != NULL) {
 
@@ -734,7 +750,8 @@ char *macro_fn_genre_select(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_genre(MacroCallInfo *call_info) {
+char *macro_fn_genre(MacroCallInfo *call_info)
+{
 
     char *genre = "";
     call_info->free_result=0;

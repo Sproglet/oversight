@@ -111,24 +111,39 @@ int abet_letter_inc(Abet *abet,char *letter)
 int abet_letter_inc_or_add(Abet *abet,char *letter,int add_if_missing)
 {
     int ret=-1;
-    Abet_Letter *letter_node;
-    if ((ret = abet_letter_inc(abet,letter)) == 0) {
-        if (add_if_missing) {
-            letter_node = abet_addletter(abet,&letter);
-            if (letter_node) {
-                ret = ++(letter_node->count);
-            }
-        } else {
-TRACE1;
-            char *other_letters = "*";
-            if ((ret = abet_letter_inc(abet,other_letters)) == 0) {
-TRACE1;
-                letter_node = abet_addletter(abet,&other_letters);
+    if (abet && letter) {
+        Abet_Letter *letter_node;
+        if ((ret = abet_letter_inc(abet,letter)) == 0) {
+            if (add_if_missing) {
+                letter_node = abet_addletter(abet,&letter);
                 if (letter_node) {
                     ret = ++(letter_node->count);
+                }
+            } else {
+    TRACE1;
+                char *other_letters = "*";
+                if ((ret = abet_letter_inc(abet,other_letters)) == 0) {
+    TRACE1;
+                    letter_node = abet_addletter(abet,&other_letters);
+                    if (letter_node) {
+                        ret = ++(letter_node->count);
+                    }
                 }
             }
         }
     }
     return ret;
+}
+
+void abet_dump(Abet *abet)
+{
+    if (abet) {
+        int i;
+        for(i = 0 ; i < abet->len ; i++ ) {
+            if (i == abet->orig_len ) {
+                HTML_LOG(0,"abet - added letters");
+            }
+            HTML_LOG(0,"abet [%s]=%d",abet->letters[i]->letter,abet->letters[i]->count);
+        }
+    }
 }

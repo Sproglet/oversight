@@ -89,14 +89,39 @@ $(ARCH):
 	touch $(ARCH)
 
 
-$(TARGET):  tags $(OBJS)
-	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
+$(TARGET):  libutf8proc.a tags $(OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS) libutf8proc.a
 	$(STRIP) $(TARGET)
 	cp $(TARGET) $(EXE)
 	sleep 1
 
 tags: $(SRC) $(HEADERS)
 	ctags *.[ch]
+
+# BEGIN Rules adapted from original utf8proc makefile ====================
+#
+
+utf8proc.o: utf8proc.c
+
+libutf8proc.a: utf8proc.o
+	rm -f libutf8proc.a
+	ar rs libutf8proc.a utf8proc.o
+
+
+#utf8proc.o: utf8proc.h utf8proc.c utf8proc_data.c
+#	echo DOIT
+	
+
+#	$(cc) -c -o utf8proc.o utf8proc.c
+
+
+#cc -O2 -std=c99 -pedantic -Wall -fpic  -c -o utf8proc.o utf8proc.c
+#utf8proc.c:1: warning: -fpic ignored for target (all code is position independent)
+#ar: creating libutf8proc.a
+#cc -O2 -std=c99 -pedantic -Wall -fpic  -shared -o libutf8proc.so utf8proc.o
+#chmod a-x libutf8proc.so
+
+# END Rules adapted from original utf8proc makefile ====================
 
 daemon.o: daemon.c
 

@@ -1,3 +1,6 @@
+Create new function to sort according to locale?
+Similar to strcmp but takes alphabet parameter. (g_locale  or g_locale_title )
+
 Cant drill down on Dragon's Den - Bad Expression - quouted strings.
 
 Add view=dir&dir=/share/Movies etc. Or create cgi script to do it.

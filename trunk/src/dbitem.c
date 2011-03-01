@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "dbfield.h"
+#include "utf8.h"
 #include "dbitem.h"
 #include "dboverview.h"
 #include "dbplot.h"
@@ -701,9 +702,8 @@ static inline int db_rowid_get_field_offset_type_inline(
             case 'o':
                 if (*p == 't') {
                     *offset=&(rowid->orig_title);
-                    *type = FIELD_TYPE_STR;
+                    *type = FIELD_TYPE_UTF8_STR;
                     *overview = 1;
-                    store_initial_char(rowid->orig_title);
                 }
                 break;
             case 'p':
@@ -749,9 +749,8 @@ static inline int db_rowid_get_field_offset_type_inline(
             case 'T':
                 if (*p == '\0') {
                     *offset=&(rowid->title);
-                    *type = FIELD_TYPE_STR;
+                    *type = FIELD_TYPE_UTF8_STR;
                     *overview = 1;
-                    store_initial_char(rowid->title);
                 }
                 break;
             case 'U':
@@ -818,6 +817,7 @@ char * db_rowid_get_field(DbItem *rowid,char *name)
     //HTML_LOG(0,"db_rowid_get_field of [%s] %d=%d?",rowid->title,I//);
 
     switch(type) {
+        case FIELD_TYPE_UTF8_STR:
         case FIELD_TYPE_STR:
             ovs_asprintf(&result,"%s",NVL(*(char **)offset));
             break;
@@ -862,11 +862,16 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
     //Dont get the field if this is the menu view and it is not an overview field 
     if (tv_or_movie_view || overview) {
 
-        // Used to checl for trailing chars.
+        // Used to check for trailing chars.
         char *tmps=NULL;
 
 
         switch(type) {
+            case FIELD_TYPE_UTF8_STR:
+
+                offset = utf8norm(val,val_len);
+                break;
+
             case FIELD_TYPE_STR:
 
                 *(char **)offset = COPY_STRING(val_len,val);

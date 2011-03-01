@@ -13,5 +13,6 @@
 
 int utf8len(char *str);
 int utf8cmp_char(char *str1,char *str2);
+char *utf8norm(char *s,int len);
 
 #endif

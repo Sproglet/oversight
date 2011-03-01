@@ -147,3 +147,30 @@ void abet_dump(Abet *abet)
         }
     }
 }
+
+/*
+ * Sort all letters that were added after the initial list of letters.
+ * eg if abet is UK English then it is already expected that the first 26 characters are in order,
+ * but if some unicode characters are added afterwards then these will be added using simple ordering based on the byte values.
+ * For most alphabets this will be OK with one or two characters out of place, but as this is not the users main locale
+ * we can allow this for now.
+ */
+static int letter_cmp(const void *letter1,const void *letter2)
+{
+    Abet_Letter *l1 = *(Abet_Letter **)letter1;
+    Abet_Letter *l2 = *(Abet_Letter **)letter2;
+    return strcmp(l1->letter,l2->letter);
+}
+void abet_sort(Abet *abet) 
+{
+    if (abet) {
+        Abet_Letter **added;
+        int len;
+
+        added = abet->letters + abet->orig_len;
+        len = abet->len - abet->orig_len;
+        if (len) {
+            qsort(added,sizeof(Abet_Letter *),len,letter_cmp);
+        }
+    }
+}

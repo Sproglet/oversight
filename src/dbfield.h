@@ -56,6 +56,7 @@
 
 #define FIELD_TYPE_NONE '-'
 #define FIELD_TYPE_STR 's'
+#define FIELD_TYPE_UTF8_STR 'u'
 #define FIELD_TYPE_DOUBLE 'f'
 #define FIELD_TYPE_CHAR 'c'
 #define FIELD_TYPE_LONG 'l'

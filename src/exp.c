@@ -365,6 +365,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                     */
                     switch(e->fld_type){
 
+                        case FIELD_TYPE_UTF8_STR:
                         case FIELD_TYPE_STR:
                             e->val.type = VAL_TYPE_STR;
                             e->val.free_str = 0;

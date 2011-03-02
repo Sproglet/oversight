@@ -15,6 +15,12 @@ typedef struct Abet_str {
     int len;
     int orig_len;
     Abet_Letter **letters;
+
+    // These members are just to speed up indexing - the last letter indexed is stored along with its node position
+    // If this is problematic replace letter list with a binary tree
+    // (could use straight array for latin A-Z but other alphabets make this awkward)
+    Abet_Letter *last_letter_node;
+    char *last_letter;
 } Abet;
 
 Abet *abet_create(char *list);

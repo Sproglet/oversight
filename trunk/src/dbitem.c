@@ -869,7 +869,7 @@ static inline void db_rowid_set_field(DbItem *rowid,char *name,char *val,int val
         switch(type) {
             case FIELD_TYPE_UTF8_STR:
 
-                offset = utf8norm(val,val_len);
+                *(char **)offset = utf8norm(val,val_len);
                 break;
 
             case FIELD_TYPE_STR:

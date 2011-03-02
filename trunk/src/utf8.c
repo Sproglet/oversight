@@ -30,13 +30,12 @@ int utf8cmp_char(char *str1,char *str2)
     unsigned char *s1 = (unsigned char *)str1;
     unsigned char *s2 = (unsigned char *)str2;
 
-    if (IS_UTF8START(*s1 & *s2)) {
+    diff = *s1 - *s2;
+    if (!diff && IS_UTF8START(*s1 & *s2)) {
         diff = *s1++ - *s2++;
         while(!diff && IS_UTF8CONT(*s1 & *s2)) {
             diff = *s1++ - *s2++;
         }
-    } else {
-        diff = *s1 - *s2;
     }
     return diff;
 }
@@ -44,25 +43,28 @@ int utf8cmp_char(char *str1,char *str2)
 /*
  * Check if a byte sequence contains non-ascii characters.
  */
-char is_utf8(char *s,int len)
+char is_ascii(char *s,int len)
 {
     char *p = s;
     char *q = s+len;
-    while(p < q && *p) {
+    while( (p < q) && *p) {
         if (!isascii(*p++)) return 0;
     }
     return 1;
 }
 char *utf8norm(char *s,int len)
 {
-    char *out;
-    if (is_utf8(s,len)) {
+    char *out=NULL;
+    if (is_ascii(s,len)) {
+        out = COPY_STRING(len,s);
+        //HTML_LOG(0,"ascii[%s]",NVL(out));
+    } else {
         int uerr = utf8proc_map((uint8_t *)s,len,(uint8_t**)&out,UTF8PROC_DECOMPOSE|UTF8PROC_COMPAT|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
         if (uerr < 0) {
             HTML_LOG(0,"Error [%.*s] [%s]",len,s,utf8proc_errmsg(uerr));
+        } else {
+            //HTML_LOG(0,"utf8[%s]",NVL(out));
         }
-    } else {
-        out = COPY_STRING(len,s);
     }
     return out;
 }

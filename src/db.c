@@ -541,8 +541,8 @@ TRACE;
                         }
                     }
 
-                    //abet_letter_inc_or_add(g_abet_title,rowid.title,1);
-                    //abet_letter_inc_or_add(g_abet_orig_title,rowid.orig_title,1);
+                    abet_letter_inc_or_add(g_abet_title,rowid.title,1);
+                    abet_letter_inc_or_add(g_abet_orig_title,rowid.orig_title,1);
 
                     //if (keeprow) HTML_LOG(0,"xx genre ok");
 

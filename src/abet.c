@@ -94,16 +94,33 @@ void abet_free(Abet *abet)
 // The letter string may not be null terminated so dont use strcmp
 int abet_letter_inc(Abet *abet,char *letter)
 {
-    int found=0;
-    int i;
-    for(i=0 ; i< abet->len ; i++) {
-        if (utf8cmp_char(letter,abet->letters[i]->letter) == 0) {
-            found = ++(abet->letters[i]->count);
-            HTML_LOG(0,"INC letter[%d]=[%s] to %d",i,letter,found);
-            break;
+    static int hit=0;
+    static int miss=0;
+
+    int ret = 0;
+    Abet_Letter *letter_node = NULL;
+    // quick hack to speed things up - look at last letter incremented - replace with tree structure if more speed needed.
+    if (abet->last_letter && utf8cmp_char(abet->last_letter,letter) == 0) {
+        letter_node = abet->last_letter_node;
+        hit++;
+    } else {
+
+        int i;
+        for(i=0 ; i< abet->len ; i++) {
+            if (utf8cmp_char(letter,abet->letters[i]->letter) == 0) {
+                letter_node = abet->letters[i];
+                break;
+            }
         }
+        miss++;
     }
-    return found;
+    if (letter_node) {
+        ret = ++(letter_node->count);
+        //HTML_LOG(0,"INC letter[%s] to %d (%d/%d)",letter,ret,hit,miss);
+        abet->last_letter_node = letter_node;
+        abet->last_letter = letter;
+    }
+    return ret;
 }
 
 // Increment a letter, if it doesnt occur then either add it under '*' or append it.
@@ -111,25 +128,26 @@ int abet_letter_inc(Abet *abet,char *letter)
 int abet_letter_inc_or_add(Abet *abet,char *letter,int add_if_missing)
 {
     int ret=-1;
+    Abet_Letter *letter_node = NULL;
+
     if (abet && letter) {
-        Abet_Letter *letter_node;
+
+        // do a full search for the letter.
+
         if ((ret = abet_letter_inc(abet,letter)) == 0) {
             if (add_if_missing) {
                 letter_node = abet_addletter(abet,&letter);
-                if (letter_node) {
-                    ret = ++(letter_node->count);
-                }
             } else {
-    TRACE1;
                 char *other_letters = "*";
                 if ((ret = abet_letter_inc(abet,other_letters)) == 0) {
-    TRACE1;
                     letter_node = abet_addletter(abet,&other_letters);
-                    if (letter_node) {
-                        ret = ++(letter_node->count);
-                    }
                 }
             }
+        }
+        if (letter_node) {
+            ret = ++(letter_node->count);
+            abet->last_letter_node = letter_node;
+            abet->last_letter = letter;
         }
     }
     return ret;

@@ -84,6 +84,10 @@ json,cast,ret,i,tag,minfo2) {
                     # other values are "feature" and "documentary" - for now treat all non-tv_series as feature and use genre to differentiate.
                     if (json["data:type"] == "tv_series" ) {
                         minfo2["mi_category"] = "T";
+                    } else if (json["data:type"] == "tv_episode" ) {
+                        INF("This is episode data - go to series data");
+                        id = json["data:series:tconst"]; 
+                        return fetch_ijson_details_by_locale(id,locale,minfo);
                     } else {
                         minfo2["mi_category"] = "M";
                     }

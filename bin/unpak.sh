@@ -874,29 +874,32 @@ check_top_level_unrar_state() {
     return 0
 }
 
+# $1 = rarfile 
 rar_sanity_check() {
+    related_rar_files "$rarfile" > "$gTmpFile.related"
+    cat "$gTmpFile.related" | log_stream INFO "related"
     if [ $mode = nzbget ] ; then 
-        rar_sanity_check_nzb "$@"
+        rar_sanity_check_nzb "$1" "$gTmpFile.related"
     else
-        rar_sanity_check_torrent "$@"
+        rar_sanity_check_torrent "$1" "$gTmpFile.related"
     fi
+    rar_sanity_check_out=$?
+    rm -f -- "$gTmpFile.related"
+    return $rar_sanity_check_out
 }
 
-# $1 = rarfile
+# $1 = rarfile $2=related rar list
 rar_sanity_check_torrent() {
     rarfile="$1"
     INFO "Checking : $rarfile"
     wrong_size_count=0
-
-    related_rar_files "$rarfile" > "$gTmpFile.ls"
 
     while IFS=read part ; do
         if ! fgrep "^$part\$" "$torrent_completed_list" ; then
             INFO Part "$part incomplete or missing."
             return 1;
         fi
-    done < "$gTmpFile.ls"
-    rm -f -- "$gTmpFile.ls"
+    done < "$2"
     return 0;
 }
 
@@ -914,6 +917,7 @@ rar_sanity_check_torrent() {
 #downloading. it calls the unpak script, which will unpak a little bit more each time.
 #this is called every minute if a new file has completed, and all the files 'related' to it
 #are completed too. ? Not 100% sure this is in the right place for torrents. Sleep on it.
+# $1 = rarfile $2=related rar list
 rar_sanity_check_nzb() {
 
     rarfile="$1"
@@ -922,11 +926,7 @@ rar_sanity_check_nzb() {
     INFO "Checking : $rarfile"
     wrong_size_count=0
 
-    related_rar_files "$rarfile" | log_stream INFO "related"
-
-    related_rar_files "$rarfile" > "$gTmpFile.ls"
-
-    num_actual_parts=$(cat "$gTmpFile.ls" | line_count)
+    num_actual_parts=$(cat "$2" | line_count)
 
     DEBUG "rar_sanity_check $rarfile"
 
@@ -956,8 +956,8 @@ rar_sanity_check_nzb() {
             num="[0-9]+"
             postnum=""
             #Remove the .rar volume
-            grep -v 'rar$' "$gTmpFile.ls" > "$gTmpFile.ls2" 
-            mv "$gTmpFile.ls2" "$gTmpFile.ls"
+            grep -v 'rar$' "$2" > "$2.new" 
+            mv "$2.new" "$2"
             ;;
         *)
             WARNING unknown file $rarfile
@@ -971,18 +971,18 @@ rar_sanity_check_nzb() {
         num_expected_parts=1
         wrong_size_count=0
     else
-        last_part=$(awk 'END { print }' "$gTmpFile.ls" )
+        last_part=$(awk 'END { print }' "$2" )
         DEBUG " last $last_part pre $prenum num $num post $postnum"
         num_expected_parts=$(echo "$last_part" | sed -r "s/.*${prenum}0*($num)$postnum\$/\1/" )
         num_expected_parts=$(( $num_expected_parts + $offset ))
         if [ $mode = nzbget ] ; then
             if [ "$NZBOP_DIRECTWRITE" != "yes" ] ; then
-                wrong_size_count=$(cat "$gTmpFile.ls" | wrong_size_count $size )
+                wrong_size_count=$(cat "$2" | wrong_size_count $size )
             fi
         fi
 
         DEBUG "PRE rar_sanity_check CHECK PARTS"
-        cat "$gTmpFile.ls" | check_parts || result=$?
+        cat "$2" | check_parts || result=$?
         DEBUG "POST rar_sanity_check CHECK PARTS $result"
         case $result in
             1) return $result ;; #Error
@@ -990,8 +990,6 @@ rar_sanity_check_nzb() {
             3) result=0;         #Possibly a split file
         esac
     fi
-
-    rm -f -- "$gTmpFile.ls"
 
     DEBUG RAR CHECK END $(date)
     DEBUG RAR CHECK num_actual_parts $num_actual_parts num_expected_parts $num_expected_parts wrong_size_count $wrong_size_count
@@ -1177,7 +1175,6 @@ unrar_one() {
                     ls -l "$dirname/$unrar_tmp_dir" | log_stream DEBUG "rarcontents"
                     #Extract all lines with filenames from unrar log and add to delete queue
                     if [ $unpak_delete_rar_files -eq 1 -o $is_inner_rar -eq 1 ] ; then
-                        related_rar_files "$rarname" 
                         related_rar_files "$rarname" >> "$delete_queue"
                     fi
 
@@ -1299,7 +1296,7 @@ pause_nzbget() { nzbget_cmd -P; }
 unpause_nzbget() { nzbget_cmd -U; }
 
 #For now we can only do .01 .001 etc. Unfortunately par repair also uses .1 suffix for backups.
-rar_re='[._](part[0-9]+\.rar|rar|[rstu][0-9]{2}|[0-9]{2,})$'
+rar_re='[._](part[0-9]+\.rar|rar|[rstu][0-9][0-9]|[0-9][0-9][0-9]*)$'
 
 #Same as rarname but remove quotes.
 flagid() {

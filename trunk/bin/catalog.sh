@@ -13,6 +13,8 @@
 # nfo file generation.
 
 
+# Requires wget (not busybox)
+
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 VERSION=20100228-1BETA
@@ -53,6 +55,10 @@ is_nmt() {
     [ -n "$NMT_APP_DIR" ]
 }
 
+is_dns323() {
+	[ -d /ffp/tmp ] 
+}
+
 NMT=0
 if is_nmt ; then
     uid=nmt
@@ -62,13 +68,13 @@ if is_nmt ; then
     fi
 else
     uid=root
-    gid=None
+    gid=root
 fi
 
 # also used by plot.db
 export OVERSIGHT_ID="$uid:$gid"
 
-AWK=awk
+AWK=gawk
 #AWK="$BINDIR/gawk --posix "
 
 #Get newer gzip and wget
@@ -78,20 +84,22 @@ AWK=awk
 
 SORT=sort
 LS=ls
-if [ -d "$APPDIR/bin" ] ; then
+if is_nmt ; then
+    if [ -d "$APPDIR/bin" ] ; then
 
-    if grep -q "MIPS 74K" /proc/cpuinfo ; then
-        BINDIR="$APPDIR/bin/nmt200"
-    else
-        BINDIR="$APPDIR/bin/nmt100"
+        if grep -q "MIPS 74K" /proc/cpuinfo ; then
+            BINDIR="$APPDIR/bin/nmt200"
+        else
+            BINDIR="$APPDIR/bin/nmt100"
+        fi
+        SORT="$BINDIR/busybox sort"
+        LS="$BINDIR/busybox ls"
+
+        export PATH="$PATH:$BINDIR:$APPDIR/bin"
+
+        AWK="$BINDIR/gawk --re-interval --non-decimal-data "
+
     fi
-    SORT="$BINDIR/busybox sort"
-    LS="$BINDIR/busybox ls"
-
-    export PATH="$PATH:$BINDIR:$APPDIR/bin"
-
-    AWK="$BINDIR/gawk --re-interval --non-decimal-data "
-
 fi
 
 
@@ -106,6 +114,9 @@ tmp_root=/tmp/oversight
 if is_nmt ; then
     # on nmt something sometimes changes /tmp permissions so only root can write
     tmp_root="$APPDIR/tmp"
+fi
+if is_dns323 ; then
+    tmp_root="/ffp/tmp"
 fi
 
 #unpak.sh may pass the JOBID to catalog.sh via JOBID env. This allows

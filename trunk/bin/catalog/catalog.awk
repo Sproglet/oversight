@@ -179,6 +179,8 @@ BEGIN {
     UPDATE_FANART=0;
     UPDATE_PORTRAITS=0;
 
+    g_db = 1; # true if db is updated - yes for oversight no for anything else.
+
     g_api_tvdb="A110A5718F912D21070A77194F";
     g_api_tmdb="2d51eee0579c36499df410b337edc79658dac1ae14";
     g_api_rage="fP8i46657c9qe22678pt4M08315u554A68263Hh7";
@@ -201,6 +203,12 @@ function report_status(msg) {
 
 END{
 
+    if (!g_db) {
+        # Running without oversight jukebox - switch off all poster fetching etc.
+        GET_POSTERS = UPDATE_POSTERS = 0;
+        GET_FANART = UPDATE_FANART = 0;
+        GET_PORTRAITS = UPDATE_PORTRAITS = 0;
+    }
     #path for actor db etc.
     DBDIR = APPDIR"/db";
 
@@ -419,7 +427,7 @@ END{
         close(g_timestamp_file);
         unlock(g_scan_lock_file);
     }
-    if (g_grand_total) {
+    if (g_db && g_grand_total) {
         if (lock(g_db_lock_file,1)) {
             #if we cant get the lock assume other task will prune anyway.
             remove_absent_files_from_new_db(INDEX_DB);
@@ -1142,6 +1150,10 @@ i,folderCount,moveDown) {
             moveDown++;
         } else if (ARGV[i] == "RENAME_FILM" ) {
             RENAME_FILM=1;
+            moveDown++;
+
+        } else if (ARGV[i] == "NO_DB" )  {
+            g_db = 0;
             moveDown++;
 
         } else if (ARGV[i] == "NO_POSTERS" )  {

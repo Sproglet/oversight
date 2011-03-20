@@ -76,7 +76,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     ign_path = g_settings["catalog_ignore_paths"];
 
     # Get all files already scanned at root level
-    if (NEWSCAN) {
+    if (NEWSCAN && g_db) {
         get_files_in_db(root,INDEX_DB,files_in_db);
     }
 
@@ -162,7 +162,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                 g_fldrInfoCount[currentFolder]=0;
                 g_fldrCount[currentFolder]=0;
             }
-            if (NEWSCAN && !skipFolder) {
+            if (g_db && NEWSCAN && !skipFolder) {
                 get_files_in_db(currentFolder,INDEX_DB,files_in_db);
             }
 
@@ -679,7 +679,9 @@ cat,minfo2,locales,id) {
 
     if ((force_merge && g_batch_total) ||  g_batch_total == g_batch_size ) {
 
-            merge_queue(qfile,person_extid2name);
+            if (g_db) {
+                merge_queue(qfile,person_extid2name);
+            }
             g_batch_total = 0;
     }
     delete minfo;

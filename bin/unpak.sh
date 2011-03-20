@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # $Id$ 
 
 nzb_launch_dir="$OLDPWD"
@@ -1963,7 +1963,11 @@ run_catalog() {
     shift
     if [ -f "$root_folder/bin/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
-        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
+        if is_nmt ; then
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
+	else
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
+	fi
         #create_resume_file "$folder/unpak.resume" "$root_folder/bin/catalog.sh" "$folder" "$@"
     else
         INFO "Catalog script not present in $root_folder"

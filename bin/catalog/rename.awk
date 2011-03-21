@@ -4,10 +4,7 @@ function relocating_files(minfo) {
     return (RENAME_TV == 1 && minfo["mi_category"] == "T") ||(RENAME_FILM==1 && minfo["mi_category"] == "M");
 }
 
-function pad_episode(e) {
-    gsub(/<[0-9][a-d]?>/,"0&",e);
-    return e;
-}
+
 function relocate_files(minfo,\
 newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
@@ -30,7 +27,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
         newName = substitute("EPTITLE",epTitle,newName);
         newName = substitute("0SEASON",sprintf("%02d",minfo["mi_season"]),newName);
-        newName = substitute("0EPISODE",pad_episode(minfo["mi_episode"]),newName);
+        newName = substitute("0EPISODE",sprintf("%02d",minfo["mi_episode"]),newName);
 
         fileType="file";
 

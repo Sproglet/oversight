@@ -4,16 +4,8 @@ function relocating_files(minfo) {
     return (RENAME_TV == 1 && minfo["mi_category"] == "T") ||(RENAME_FILM==1 && minfo["mi_category"] == "M");
 }
 
-function pad_episode(e) {
-
-    gsub(/<[0-9][a-d]?>/,"0&",e);
-    return e;
-}
-
-
-
 # Pad episode required for multiple episodes.
-# re-instated.
+# re-instated. Escape was required to resolve.
 
 function pad_episode(e) {
     gsub(/\<[0-9][a-d]?\>/,"0&",e);

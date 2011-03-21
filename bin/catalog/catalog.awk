@@ -72,30 +72,6 @@ function plugin_error(p) {
     ERR("Unknown plugin "p);
 }
 
-# IN domain = original domain yahoo.com etc
-# IN context = /search
-# IN param = ?p= or ?q=
-function get_local_search_engine(domain,context,param,\
-i,links,best_url) {
-
-    #param must not use & separater as this gets mangled when using gsub() 
-    # eg url=http:/.../ie=utf8&q=SEARCH then gsub(/SEARCH/,"real query",url)
-    # replace & with ;
-
-
-
-    best_url = domain context param;
-    scan_page_for_match_counts(best_url "test",context,"http://[-_.a-z0-9/]+"context "\\>",0,0,"",links);
-    bestScores(links,links,0);
-    for(i in links) {
-        best_url = i param; #http.../search ?q=
-        break;
-    }
-    gsub(/\&/,";",best_url);
-    INF("remapping "domain context param "=>" best_url);
-    return best_url;
-}
-
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
     verify_setup();
@@ -315,8 +291,7 @@ END{
     # ask is powered by google.
     # Another option is to search sites directly but thier search algorithms are usually too strict
     # with scoring each keyword.
-    g_search_yahoo = get_local_search_engine("http://search.yahoo.com","/search","?ei=UTF-8;eo=UTF-8;p=");
-    #g_search_ask = get_local_search_engine("http://ask.com","/web","?q=");
+    g_search_yahoo = "http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=";
     g_search_bing = "http://www.bing.com/search?q=";
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=

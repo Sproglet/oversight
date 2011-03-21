@@ -62,10 +62,6 @@
 #Pad episode but dont assume its a number .eg 03a for Big Brother
 #BEGINAWK
 #!catalog
-function pad_episode(e) {
-    gsub(/<[0-9][a-d]?>/,"0&",e);
-    return e;
-}
 
 function TODO(x) {
     DEBUG("TODO:"x);

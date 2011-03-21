@@ -4,6 +4,10 @@ function relocating_files(minfo) {
     return (RENAME_TV == 1 && minfo["mi_category"] == "T") ||(RENAME_FILM==1 && minfo["mi_category"] == "M");
 }
 
+function pad_episode(e) {
+    gsub(/<[0-9][a-d]?>/,"0&",e);
+    return e;
+}
 function relocate_files(minfo,\
 newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 

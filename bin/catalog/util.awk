@@ -209,6 +209,7 @@ out) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
+
     while(i+0 > 0) {
         out = g_chr[(i%n)+offset] out;
         i = int(i/n);
@@ -236,9 +237,8 @@ i) {
     for (i in inHash) return i;
 }
 
-# requires --non-decimal-data gawk switch
 function hex2dec(s) {
-    return ( "0x"s ) + 0;
+    return strtonum( "0x"s ) ;
 }
 
 function firstDatum(inHash,\

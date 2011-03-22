@@ -97,7 +97,7 @@ if is_nmt ; then
 
         export PATH="$PATH:$BINDIR:$APPDIR/bin"
 
-        AWK="$BINDIR/gawk --re-interval --non-decimal-data "
+        AWK="$BINDIR/gawk --re-interval "
 
     fi
 fi

@@ -892,7 +892,7 @@ DbGroupIMDB *parse_imdb_list(
     if (group) {
         int i;
         for(i = 0 ; i < group->dbgi_size ; i++ ) {
-            HTML_LOG(0,"tt%d",group->dbgi_ids[i]);
+            HTML_LOG(0,"tt%07d",group->dbgi_ids[i]);
         }
         HTML_LOG(0,"compressed[%s]",db_group_imdb_compressed_string_static(group));
     }

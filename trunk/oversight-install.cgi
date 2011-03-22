@@ -127,6 +127,7 @@ SKIN_INSTALL() {
 INSTALL() {
         "$shPath" UNINSTALL
         NZBGET_UNPAK_INSTALL 
+        #FIX_NZBGET_DAEMON
         TRANSMISSION_UNPAK_INSTALL
 
         ( cd "$INSTALL_DIR/cache" && rm -f tt[0-9]*[0-9] ) # clear cache
@@ -182,6 +183,12 @@ TRANSMISSION_UNPAK_UNINSTALL() {
     fi
 }
 
+FIX_NZBGET_DAEMON() {
+    # If nzbget is restarted via nzbget_web it is started as root rather than nmt user
+    # even though DaemonUserName is set. 
+    f="/share/Apps/NZBget/daemon.sh"
+
+}
 
 NZBGET_UNPAK_INSTALL() {
     NZBGET_UNPAK_UNINSTALL
@@ -247,6 +254,7 @@ END {
         }
     }
 }' "$unpak_nzbget_conf.pre_oversight" > "$unpak_nzbget_conf.new" && mv "$unpak_nzbget_conf.new" "$unpak_nzbget_conf" 
+
 }
 
 NZBGET_UNPAK_UNINSTALL() {

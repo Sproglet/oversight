@@ -181,6 +181,7 @@ END{
         GET_FANART = UPDATE_FANART = 0;
         GET_PORTRAITS = UPDATE_PORTRAITS = 0;
     }
+    INF("g_db = "g_db);
     #path for actor db etc.
     DBDIR = APPDIR"/db";
 

@@ -1963,7 +1963,7 @@ run_catalog() {
     shift
     if [ -f "$root_folder/bin/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
-        if is_nmt ; then
+        if [ "$is_nmt" = "Y" ] ; then
 	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
 	else
 	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true

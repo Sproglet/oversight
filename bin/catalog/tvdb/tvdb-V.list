@@ -5,6 +5,7 @@
 106001:Verrückt nach Clara
 107631:Von Mythen, Sagen und Legenden
 108101:Vladimir og Kennedy
+108611:Ve službách FBI
 110011:Vertical City
 112721:Virgin Cooks
 113171:Valientes
@@ -23,10 +24,9 @@
 124351:Valley of The Sex Dolls
 124441:Venni Páer
 125161:Valérian et Laureline
-125401:Van Veeteren
 125611:Van Moskou tot Magadan
 127241:Versailles Stories
-128201:Victorian Farm Christmas
+128201:Victorian Farm Christmas **DUPLICATE**
 128491:Verbotene Liebe
 129211:Vu du Ciel
 130371:Virgin Road
@@ -87,27 +87,88 @@
 183891:Vicky il vichingo
 185231:Vom Pionier zum Millionär
 185381:Valemont
+186491:Vrach
 187681:Vilse i pannkakan
 190341:Van jonge leu en oale groond
 190401:Vinterbyøster
 190481:Van Duin op z'n Best
 190491:Video Killed The Radio Star
 191001:Vision On
+191011:V poiskakh kapitana Granta
 191861:Välkommen Åter
-194091:Vipo, a repülő kutya kalandjai
-194091:Vipo, Aventuras del perro volador
 194091:VIPO, Flying Dog Adventures
+194091:Vipo, Aventuras del perro volador
+194091:Vipo, a repülő kutya kalandjai
 195121:Vatican: The Hidden World
 198671:Vi på saltkråkan
 198711:V lesakh i na gorakh
 198991:Veckans Brott
 199101:Våra vänners liv
-202081:Venom Hunter with Donald Schultz
+200161:Veterinarian Dolittle
+202261:Vtoraya mirovaya. Den za dnem
 204491:Veckans kanin
 205491:Varan TV
 206511:Voces Contra la Globalización
 206541:Vetkoek Paleis
 207051:Villdyrlegen
+208071:Vennebyen
+211041:Visions of War
+211851:Vedetään Hatusta
+211931:Vertshuset den gyldne hale
+213381:Val Falvey TD
+213801:Veckans Nyheter
+214361:Voices & Visions
+216761:Vinterspelen Åre
+217161:Vrakletarna
+217761:Voetbal International
+217861:Vruć vetar
+218071:Village on a Diet
+218431:Vet School
+218631:Vägen Till OS
+218741:Vintiöt
+218901:Vilse I Min Egen Trädgård
+218911:Vilse I Min Egen Trädgård
+218921:Vilse I Min Egen Trädgård
+219711:Vanishing Glacier
+221941:Von den Pharaonen bis zum Mittelalter
+221951:Van Son Entertainment
+222061:Vanguard
+223211:Vancouver 2010 Olympic Winter Games
+224231:Vindhætterne
+225111:Visst nappar det
+225201:Victoria Wood's Sketch Show Story
+225891:Villmannen
+227271:Von Null Uhr Eins bis Mitternacht
+227851:Vas-y Julie
+228981:Viides nainen
+229241:Vertige de l'amour
+229441:Vem
+229641:Viides nainen
+229781:Vad blir det för mat
+229791:Vad blir det för mat
+230181:Världens Konflikter
+231761:Verborgen Verleden
+232141:Vital Ingredients
+232411:Virittäjät
+232491:Victoria Woods' Acorn Antiques Omnibus Edition
+233711:Vollständige Fernseh-Edition
+235061:Vete a la Versh
+235291:Vkus zhizni
+236781:Vid Vintergatans slut
+236791:Vid Vintergatans slut
+237031:Varning för barn
+237831:Veep
+240071:Vigilante Force
+240191:Världens bästa hotell
+240901:Vuk Karadžić
+240981:VBS News
+241561:VS嵐
+242001:Vores virkelig store familie
+242041:Verdens strengeste forældre
+242971:Vida loca
+243001:Vet Adventures
+243461:Versailles - The Dream of a King
+244001:Viajero del tiempo
 70365:Veritas
 70365:Veritas: The Quest
 70521:Valley of the Dinosaurs
@@ -137,8 +198,8 @@
 73143:Victor and Hugo, Bunglers in Crime
 73153:Všichni starostovi muži
 73187:VH1 Goes Inside
-73193:Viva la Bam
 73193:Viva La Bam
+73193:Viva la Bam
 73217:Vinnie
 73274:VH1 ILL-ustrated
 73333:Visionaries: Knights of the Magical Light
@@ -175,6 +236,7 @@
 76321:Voll daneben, voll im Leben
 76354:V - Die ausserirdischen Besucher
 76354:V-Visitors
+76385:Vore værste år
 76581:Virtual Murder
 76842:Villains
 76846:Vraždy v Midsomeru
@@ -186,6 +248,7 @@
 77036:Viettelysten saari
 77248:Vision of Escaflowne
 77256:Valiant Lady
+77301:Viaje al fondo del mar
 77301:Voyage to the Bottom of the Sea
 77795:Valentine's Day
 77889:Viva Variety
@@ -198,16 +261,17 @@
 78539:Vengeance Unlimited
 78543:Voltron: The Third Dimension
 78557:Village Hall
-78646:Voltron: Defender of the Universe
-78646:Voltron, Defensores del Universio
-78646:Voltron, difensore dell'universo
 78646:Voltron - Obrońca Wszechświata
 78646:Voltron - Verteidiger des Universums
+78646:Voltron, Defensores del Universio
+78646:Voltron, difensore dell'universo
+78646:Voltron: Defender of the Universe
 78648:VR Troopers
 78879:Video Encyclopedia of World War Two
 79042:Vampire Hunter D
-79168:Vänner
+79168:Venner
 79168:Venner for livet
+79168:Vänner
 79185:Verborgene Welten - Das geheime Leben der Insekten
 79185:Vida en Miniatura
 79257:Vores Planet
@@ -230,29 +294,31 @@
 80661:Varan-TV
 80685:Vergangene Welten
 80694:Viva Laughlin
-80917:Värsta språket
 80917:Värsta Språket
+80917:Värsta språket
 81142:Visions of the Future
 81177:Viidakon Ykä
 81210:Vids
 81319:Vier Panzersoldaten und ein Hund
 81377:Virtues Of Harmony II
+81383:Viimeinen vihollinen
 81409:Victoria's Empire
-81415:Venus versus Virus
 81415:Venus Versus Virus
+81415:Venus versus Virus
 81514:Vad blir det för mat
 81612:Vanity Lair
-81643:Vickie el vikingo
 81643:Vic Le Viking
+81643:Vickie el vikingo
 81680:Very Russian Geniuses
 81706:Valerio Duikt Onder
 81714:Verschleppt Kein Weg zurück
+81729:Vermisst
 81729:Vermist
 81771:Verrückt nach Insekten
 81816:Vampire Knight
 81838:Verbotene Liebe
 81904:Vincent - The Full Story
-82115:Vampire Princess Miyu OVA
+82115:Vampire Princess Miyu OVA **DUPLICATE**
 82128:Var fan är mitt band
 82157:Viaje por el Universo
 82206:Virtua Fighter
@@ -282,6 +348,7 @@
 84130:Victory at Sea
 84217:Vietnam War with Walter Cronkite
 84226:Victoria Wood As Seen On TV
+84236:Vad Dél-Amerika
 84280:Venus und Apoll
 84339:Verano Azul
 84381:Van Vlees en Bloed
@@ -311,6 +378,7 @@
 91471:Vanishings
 94711:Version
 94971:V (2009)
+94971:V - Die Besucher
 95491:Vampire Diaries
 95491:Vámpírnaplók
 98051:Virtuality

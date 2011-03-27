@@ -133,6 +133,7 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
     char *pass1_file = "/tmp/ovs1";
     FILE *pass1_fp = fopen(pass1_file,"w");
     if (pass1_fp) {
+        HTML_LOG(0,"output to %s",pass1_file);
         html_set_output(pass1_fp);
         HTML_LOG(0,"begin pass1");
         ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
@@ -153,6 +154,7 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
             pass1_fp = fopen(pass1_file,"r");
             FILE *pass2_fp = stdout;
             if (pass1_fp) {
+                HTML_LOG(0,"output to stdout");
                 html_set_output(pass2_fp);
                 HTML_LOG(0,"begin pass2");
                 ret = display_template(++pass,pass1_fp,skin_name,file_name,sorted_rows,pass2_fp);

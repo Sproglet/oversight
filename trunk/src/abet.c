@@ -1,194 +1,185 @@
+#include <assert.h>
+
 #include "abet.h"
-#include "oversight.h"
 #include "util.h"
 #include "gaya_cgi.h"
 #include "utf8.h"
+#include "hashtable_loop.h"
 
 // Functions to track usage of Alphabet (for indexes)
-
-Abet_Letter *abet_letter_create(
-        char *bytes,
-        int byte_len
-        )
-{
-    Abet_Letter *letter = calloc(1,sizeof(Abet_Letter *));
-    letter->letter = COPY_STRING(byte_len,bytes);
-    letter->count = 0;
-    HTML_LOG(0,"Created letter [%s]",letter->letter);
-    return letter;
-}
-
-void abet_letter_free(Abet_Letter *letter)
-{
-    if (letter) {
-        FREE(letter->letter);
-        FREE(letter);
-    }
-}
-
-/*
- * Add a letter to the alphabet
- */
-Abet_Letter *abet_addletter(
-        Abet *abet,        
-        char **letter_ptr // address of ptr to letter - will be advanced to next letter
-        )
-{
-   unsigned char *p,*endp;
-   p = endp = (unsigned char *) (*letter_ptr);
-   Abet_Letter *letter;
-
-   if (IS_UTF8START(*endp)) {
-       endp++;
-       while(IS_UTF8CONT(*endp)) {
-           endp++;
-       }
-   } else {
-       endp++;
-   }
-
-   abet->len++;
-   letter = abet_letter_create((char *)p,endp-p);
-   abet->letters = realloc(abet->letters,abet->len * sizeof(Abet_Letter *));
-
-   abet->letters[abet->len-1] = letter;
-
-
-   // Advance to next letter
-   *letter_ptr = (char *)endp;
-
-   // Return pointer to letter
-   return letter;
-
-}
 
 Abet *abet_create(char *list) 
 {
 
    Abet *abet = (Abet *)calloc(1,sizeof(Abet));
-   char *p=list;
-   if (p) {
-       while(*p) {
-
-           abet_addletter(abet,&p);
-
-       }
-       abet->orig_len = abet->len;
-   }
+   abet->list = STRDUP(list);
    return abet;
 }
 
 void abet_free(Abet *abet)
 {
     if (abet) {
-        int i;
-        for (i = 0 ; i < abet->len ; i++ ) {
-            abet_letter_free(abet->letters[i]);
-        }
-        FREE(abet->letters);
+        FREE(abet->list);
         FREE(abet);
     }
 }
 
-// Increment the occurence of a letter within an alphabet
-// The letter string may not be null terminated so dont use strcmp
-int abet_letter_inc(Abet *abet,char *letter)
+// Create an index using an alphabet.
+AbetIndex *abet_index_create(char *list)
 {
-    static int hit=0;
-    static int miss=0;
+    Abet *abet = abet_create(list);
+    
+   AbetIndex *ai = NEW(AbetIndex);
+   ai->abet = abet;
+   ai->index = string_string_hashtable("index",40);
+   return ai;
+}
 
-    int ret = 0;
-    Abet_Letter *letter_node = NULL;
-    // quick hack to speed things up - look at last letter incremented - replace with tree structure if more speed needed.
-    if (abet->last_letter && utf8cmp_char(abet->last_letter,letter) == 0) {
-        letter_node = abet->last_letter_node;
-        hit++;
-    } else {
-
-        int i;
-        for(i=0 ; i< abet->len ; i++) {
-            if (utf8cmp_char(letter,abet->letters[i]->letter) == 0) {
-                letter_node = abet->letters[i];
-                break;
-            }
-        }
-        miss++;
+void abet_index_free(AbetIndex *ai)
+{
+    if (ai) {
+        hashtable_destroy(ai->index,1,1);
+        abet_free(ai->abet);
+        FREE(ai);
     }
-    if (letter_node) {
-        ret = ++(letter_node->count);
-        //HTML_LOG(0,"INC letter[%s] to %d (%d/%d)",letter,ret,hit,miss);
-        abet->last_letter_node = letter_node;
-        abet->last_letter = letter;
-    }
-    return ret;
 }
 
 // Increment a letter, if it doesnt occur then either add it under '*' or append it.
 // Returns number of  occurences so far
-int abet_letter_inc_or_add(Abet *abet,char *letter,int add_if_missing)
+#define MAX_UTF_LEN 10
+int abet_letter_inc_or_add(AbetIndex *ai,char *letter_ptr,int add_if_missing)
 {
-    int ret=-1;
-    Abet_Letter *letter_node = NULL;
+    int ret = 0;
+    assert(ai);
+    if (letter_ptr) {
+        AbetLetterCount *val;
 
-    if (abet && letter) {
+        char letter[MAX_UTF_LEN];
 
-        // do a full search for the letter.
-
-        if ((ret = abet_letter_inc(abet,letter)) == 0) {
-            if (add_if_missing) {
-                letter_node = abet_addletter(abet,&letter);
-            } else {
-                char *other_letters = "*";
-                if ((ret = abet_letter_inc(abet,other_letters)) == 0) {
-                    letter_node = abet_addletter(abet,&other_letters);
-                }
-            }
+        if (utf8_initial(letter_ptr,letter) > MAX_UTF_LEN) {
+            assert(0);
         }
-        if (letter_node) {
-            ret = ++(letter_node->count);
-            abet->last_letter_node = letter_node;
-            abet->last_letter = letter;
+
+        if ((val = hashtable_search(ai->index,letter)) == NULL) {
+
+            val = NEW(AbetLetterCount);
+            hashtable_insert(ai->index,STRDUP(letter),val);
+
         }
+        ret = ++(val->count);
     }
     return ret;
 }
 
-void abet_dump(Abet *abet)
+
+void abet_index_dump(AbetIndex *ai,char *label)
 {
-    if (abet) {
-        int i;
-        for(i = 0 ; i < abet->len ; i++ ) {
-            if (i == abet->orig_len ) {
-                HTML_LOG(0,"abet - added letters");
+    if (ai) {
+
+        if (ai->index && hashtable_count(ai->index)) {
+
+           char *k;
+           AbetLetterCount *v;
+           struct hashtable_itr *itr ;
+
+           for(itr = hashtable_loop_init(ai->index); hashtable_loop_more(itr,&k,&v) ; ) {
+
+                HTML_LOG(0,"%s : [ %s ] = [ %d %d ]",label,k,v->count,v->visited);
             }
-            HTML_LOG(0,"abet [%s]=%d",abet->letters[i]->letter,abet->letters[i]->count);
+
+        } else {
+            HTML_LOG(0,"%s : EMPTY INDEX",label);
         }
     }
+}
+
+
+// find position of unterminated character in abet.
+// Result = position in alpabet eg 1,2,3 etc. OR
+// 1000+utf16 value.
+int abet_pos(char *unterminated_char,Abet *a) 
+{
+    assert(a);
+    char *p = unterminated_char;
+    char *list = a->list;
+    char *pos;
+    int ret = -1;
+
+    if(unterminated_char) {
+        //HTML_LOG(0,"abet_pos[%s]in[%s]",unterminated_char,list);
+        //HTML_LOG(0,"char pos[%s]",strchr(list,*unterminated_char));
+
+        while(list) {
+            char *q;
+            pos = q = strchr(list,*p);
+
+            if (pos == NULL) {
+                break;
+            }
+
+            if (!IS_UTF8STARTP(p)) {
+                // Simple character.
+                ret = pos - list;
+                break;
+            }
+            // Check rest of utf8 characters
+            do {
+                p++;
+                q++;
+            } while(IS_UTF8CONTP(p) && *p == *q);
+            if (!IS_UTF8CONTP(p)) {
+                // success input character found. Spilled into next character.
+                ret = pos - list;
+                break;
+            }
+            // Failed - still in utf8 character. Advance list and search again.
+            list = q;
+        }
+        if (ret == -1 ) {
+            return 1000+utf16(unterminated_char);
+        }
+    } else {
+        HTML_LOG(0,"null value");
+    }
+    return ret;
 }
 
 /*
- * Sort all letters that were added after the initial list of letters.
- * eg if abet is UK English then it is already expected that the first 26 characters are in order,
- * but if some unicode characters are added afterwards then these will be added using simple ordering based on the byte values.
- * For most alphabets this will be OK with one or two characters out of place, but as this is not the users main locale
- * we can allow this for now.
+ * Compare two strings using Abet collating sequence.
  */
-static int letter_cmp(const void *letter1,const void *letter2)
+int abet_strcmp(char *s1,char *s2,Abet *a)
 {
-    Abet_Letter *l1 = *(Abet_Letter **)letter1;
-    Abet_Letter *l2 = *(Abet_Letter **)letter2;
-    return strcmp(l1->letter,l2->letter);
-}
-void abet_sort(Abet *abet) 
-{
-    if (abet) {
-        Abet_Letter **added;
-        int len;
+    assert(a);
+    assert(s1);
+    assert(s2);
 
-        added = abet->letters + abet->orig_len;
-        len = abet->len - abet->orig_len;
-        if (len) {
-            qsort(added,sizeof(Abet_Letter *),len,letter_cmp);
+    int i,j,ret;
+    char *p =  s1;
+    char *q =  s2;
+    //HTML_LOG(0,"abet_strcmp[%s][%s]",s1,s2);
+    while (*p && *q ) {
+        i = abet_pos(p,a);
+        j = abet_pos(q,a);
+        ret = i -j;
+        if  (ret) break;
+        if (*p) {
+            p++;
+            while(IS_UTF8CONTP(p)) p++;
+        }
+        if (*q) {
+            q++;
+            while(IS_UTF8CONTP(q)) q++;
         }
     }
+    if (ret == 0) {
+        if (*p) ret = 1;
+        else if (*q) ret = -1;
+    }
+    return ret;
+}
+
+// passed to array_sort for locale specific sorting
+int array_abetcmp(const void *a,const void *b)
+{
+    return abet_strcmp(*(char **)a,*(char **)b,g_abet_title->abet);
 }

@@ -68,3 +68,56 @@ char *utf8norm(char *s,int len)
     }
     return out;
 }
+
+int utf16(char *unterminated_char) 
+{
+    int out=0;
+
+    unsigned char *p = (unsigned char *)unterminated_char;
+    if (*p <= 0x7f ) {
+        out += *p;
+
+    } else if (*p < 0xE0 ) {
+        out += (*p & 0x1f);
+
+    } else if (*p < 0xF0 ) {
+        out += (*p & 0x0f);
+
+    } else if (*p < 0xF0 ) {
+        out += (*p & 0x0f);
+
+    } else if (*p < 0xF8 ) {
+        out += (*p & 0x07);
+
+    } else if (*p < 0xFC ) {
+        out += (*p & 0x03);
+    } else {
+        out += (*p & 0x01);
+    }
+    if (*p > 0x7f ) {
+        p++;
+        while(IS_UTF8CONTP(p)) {
+            out += (*p & 0x3f);
+            p++;
+        }
+    }
+    return out;
+}
+
+// Copy initial utf8 letter - return number of bytes copied. Null terminates the string.
+int utf8_initial(char *in,char *out)
+{
+    char *p = out;
+
+    if (IS_UTF8P(in)) {
+        *p++ = *in++;
+        while(IS_UTF8CONTP(in)) {
+            *p++ = *in++;
+        }
+    } else if (*in) {
+        // normal letter
+        *p++ = *in++;
+    }
+    *p = '\0';
+    return p-out;
+}

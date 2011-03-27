@@ -1,8 +1,7 @@
-#include "tree.h"
-#include "oversight.h"
 #include "util.h"
 #include "gaya_cgi.h"
 #include "utf8.h"
+#include "tree.h"
 
 Tree *tree_new()
 {

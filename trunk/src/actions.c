@@ -92,9 +92,12 @@ static void clear_selection() {
     }
 
     int i;
+TRACE1;
     for(i=0 ; i<a->size ; i++) {
+TRACE1;
         query_remove(a->array[i]);
     }
+TRACE1;
     array_free(a);
 }
 

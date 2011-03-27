@@ -692,19 +692,23 @@ char *macro_fn_other_media_total(MacroCallInfo *call_info)
 /*
  * Return index selection list with item selected.
  */
-char *title_index(Abet *abet,char *query_param_name)
+char *title_index(AbetIndex *ai,char *query_param_name)
 {
     char *result = NULL;
 
-    if (abet) {
+    if (ai) {
         struct hashtable *title = string_string_hashtable("index",30);
-        int i;
-        for(i=0 ; i< abet->len ; i++) {
-            if (abet->letters[i]->count) {
-                char *l = abet->letters[i]->letter;
-                hashtable_insert(title,l,l);
+
+        char *k;
+        AbetLetterCount *v;
+        struct hashtable_itr *itr ;
+        hashtable_insert(title,"","-");
+        for(itr = hashtable_loop_init(ai->index); hashtable_loop_more(itr,&k,&v) ; ) {
+            if (v->count) {
+                hashtable_insert(title,k,k);
             }
         }
+
         result = auto_option_list(query_param_name,"",title);
         hashtable_destroy(title,0,0);
     }

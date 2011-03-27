@@ -32,8 +32,8 @@ OVS_EXTERN(struct hashtable *g_delete_queue,NULL);
 OVS_EXTERN(int g_item_count,0);
 
 // The alphabet index.
-OVS_EXTERN(Abet *g_abet_title,NULL);
-OVS_EXTERN(Abet *g_abet_orig_title,NULL);
+OVS_EXTERN(AbetIndex *g_abet_title,NULL);
+OVS_EXTERN(AbetIndex *g_abet_orig_title,NULL);
 
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 #define IN_POSTER_MODE (g_dimension->poster_mode != 0) 
@@ -144,6 +144,9 @@ char *get_mounted_path(char *source,char *path,int *freeit);
 #define QUERY_RESIZE_DIM_SET_GRID "grid"
 #define QUERY_RESIZE_DIM_SET_IMAGE "image"
 #define QUERY_START_CELL "start_cell"
+
+#define NEW(type) ((type *)CALLOC(1,sizeof(type)))
+
 //
 // Value to represent an inherited dimension. ie for tvboxsets use the main menu dimensions,
 #define INHERIT_DIMENSION -1

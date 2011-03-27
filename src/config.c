@@ -104,22 +104,22 @@ void load_ovs_configs()
         if (g_locale_config) {
 
             // load the alphabet index.
-            char *letters = locale_val("catalog_locale_alphabet_upper");
+            char *letters = locale_val("catalog_locale_alphabet");
             if (EMPTY_STR(letters)) {
                 HTML_LOG(0,"Using default English Index");
-                letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                letters = "0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
             }
             HTML_LOG(0,"index=[%s]",letters);
 
             if (g_abet_title) {
-                abet_free(g_abet_title);
+                abet_index_free(g_abet_title);
             }
-            g_abet_title = abet_create(letters);
+            g_abet_title = abet_index_create(letters);
 
             if (g_abet_orig_title) {
-                abet_free(g_abet_orig_title);
+                abet_index_free(g_abet_orig_title);
             }
-            g_abet_orig_title = abet_create(letters);
+            g_abet_orig_title = abet_index_create(letters);
         }
     }
 

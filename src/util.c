@@ -23,6 +23,7 @@
 #include "config.h"
 #include "oversight.h"
 #include "permissions.h"
+#include "abet.h"
 
 
 // All folders have . and ..
@@ -1373,7 +1374,8 @@ int index_STRCMP(char *a,char *b)
     if (STARTS_WITH_THE(b)) b+= 4;
     //if (strncasecmp(a,"the ",4)==0) a+= 4;
     //if (strncasecmp(b,"the ",4)==0) b+= 4;
-    return strcasecmp(a,b);
+    //return strcasecmp(a,b);
+    return abet_strcmp(a,b,g_abet_title->abet);
 }
 char *donated_file()
 {

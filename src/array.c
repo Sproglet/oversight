@@ -90,12 +90,15 @@ void array_set(Array *a,int idx,void *ptr) {
 }
 
 // strcmp function for qsort.
-int array_strcasecmp(const void *a,const void *b) {
+int array_strcasecmp(const void *a,const void *b)
+{
     return strcasecmp(*(char **)a,*(char **)b);
 }
 
+
 // Sort an array. If 2nd arg is null then use default sort array_strcasecmp
-void array_sort(Array *a,int (*fn)(const void *,const void *)) {
+void array_sort(Array *a,int (*fn)(const void *,const void *))
+{
     if (a && a->size) {
         if (fn == NULL) {
             fn = array_strcasecmp;

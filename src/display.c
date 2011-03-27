@@ -26,6 +26,7 @@
 #include "template.h"
 //#include "exp.h"
 #include "filter.h"
+#include "abet.h"
     
 // When user drills down to a new view, there are some navigation html parameters p (page) and idlist and view.
 // The old values are prefixed with @ before adding new ones.
@@ -605,7 +606,9 @@ void query_pop()
 
                         query_update(STRDUP(new_name),STRDUP(val));
                     }
+TRACE1;
                     query_remove(name);
+TRACE1;
                     HTML_LOG(0,"query_pop:done=[%s]",name);
                 }
             }
@@ -4050,7 +4053,14 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals)
 
     // Do not take ownership of the keys - thay belong to the hashtable.
     Array *keys = util_hashtable_keys(vals,0);
-    array_sort(keys,array_strcasecmp);
+TRACE1;
+HTML_LOG(0,"option_list[%s]",name);
+
+char *s = "fred";
+HTML_LOG(0,"pos[%s]=%d",s,abet_pos(s,g_abet_title->abet));
+
+    //array_sort(keys,array_strcasecmp);
+    array_sort(keys,array_abetcmp);
 
     ovs_asprintf(&params,QUERY_PARAM_PAGE"=&"QUERY_PARAM_IDLIST"=&%s=" PLACEHOLDER,name);
     char *link=self_url(params);

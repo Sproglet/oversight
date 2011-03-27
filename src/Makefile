@@ -41,8 +41,8 @@ CFLAGS=-O3 -Wall -DOUT=$(OUT) -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFI
 #-DNOLOG=$(NOLOG)
 
 # Most stable last to speed compile-fail cycle
-OBJS=tree.o initials.o \
-	 abet.o utf8.o filter.o exp.o dbnames.o types.o dbitem.o list.o gaya.o \
+OBJS=initials.o utf8.o tree.o \
+	 abet.o filter.o exp.o dbnames.o types.o dbitem.o list.o gaya.o \
 	 macro.o template.o template_condition.o  variables.o \
 	grid.o display.o oversight.o util.o \
 	config.o \

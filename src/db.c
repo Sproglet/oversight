@@ -577,8 +577,8 @@ TRACE;
         }
         dbreader_close(fp);
     }
-    abet_dump(g_abet_title);
-    abet_dump(g_abet_orig_title);
+    abet_index_dump(g_abet_title,"title");
+    abet_index_dump(g_abet_orig_title,"origtitle");
     if (path != db->path) FREE(path);
     HTML_LOG(0,"db[%s] filtered %d of %d rows",db->source,(rowset?rowset->size:0),db->db_size);
     if (!EMPTY_STR(compressed_genre_filter)) FREE(compressed_genre_filter);

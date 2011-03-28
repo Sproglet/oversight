@@ -39,6 +39,12 @@ Exp *build_filter(char *media_types)
         add_op_clause(&val,0,DB_FLDID_LOCKED FIELD_OP,EQ_OP,query_val(QUERY_PARAM_LOCKED_FILTER));
     }
 
+    // Add first media type.
+    ViewMode *v = get_view_mode(0);
+    if (v == VIEW_TVBOXSET || v == VIEW_MOVIEBOXSET) {
+        add_op_clause(&val,0,v->media_types,CONTAINS_OP,DB_FLDID_CATEGORY FIELD_OP);
+    }
+
     // Title Filter
 #define STRING_FN_CONTAINS 'c'
 #define STRING_FN_STARTS 's'

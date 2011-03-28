@@ -320,15 +320,25 @@ s,i){
 }
 
 function id1(x) {
+
+    #Track stack calls
+    g_idstack2[g_idtos] = length(g_indent);
+
     g_idstack[g_idtos++] = x;
     INF(">Begin " x);
     g_indent="\t"g_indent;
+    
 }
 
 function id0(x) {
     g_indent=substr(g_indent,2);
     
     INF("<End "g_idstack[--g_idtos]"=[" ( (x!="") ? "=["x"]" : "") "]");
+
+    #check stack
+    if (g_idtos > 1 && g_idstack2[g_idtos] != length(g_indent)) {
+        ERR("**MISSING STACK CALL dropping from  "g_idstack[g_idtos+1]" to "g_idstack[g_idtos]);
+    }
 }
 
 function dump(lvl,label,array,\

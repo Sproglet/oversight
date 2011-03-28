@@ -865,34 +865,38 @@ tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
                 sub(first_letter,"",letters);
                 letters = first_letter letters;
                 
+                delete showIds;
                 for(lpos = 1 ; lpos <= length(letters) ; lpos++ ) {
-
                     # Check athe letter if it is the first letter of the abbreviation 
                     total=searchAbbreviationAgainstTitles(plugin,substr(letters,lpos,1),title,showIds);
-
-                    dump_ids_and_titles("possible matches",total,showIds);
-
-                    #If a show is abbreviated then always do a web search to confirm
-                    # This will be an issue if the user has their own abbreviated file names.
-
-                    # The alternative is to only do a web search if more than one show is present.
-
-                    #  just do a web search and return the biggest page. 
-                    total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                    #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
-                    dump_ids_and_titles("filtered matches",total,showIds);
-
-
-                    # TODO the selectBestOfBestTitle calls the relativeAge function which also
-                    # picks the episide title with the shortest edit distance. Because this does
-                    # a query by SnnEnn this is more concrete information than the check for link counts
-                    # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
-                    # split into:
-                    # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
-                    # 2. A filter that picks episode title with lowest edit distance.
-                    tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
-                    if (tvdbid) break;
+                    if (total == -1) {
+                        INF("too many matches - clearing");
+                        delete showIds;
+                        total = 0;
+                        break;
+                    }
                 }
+                dump_ids_and_titles("possible matches",total,showIds);
+
+                #If a show is abbreviated then always do a web search to confirm
+                # This will be an issue if the user has their own abbreviated file names.
+
+                # The alternative is to only do a web search if more than one show is present.
+
+                #  just do a web search and return the biggest page. 
+                total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+                dump_ids_and_titles("filtered matches",total,showIds);
+
+
+                # TODO the selectBestOfBestTitle calls the relativeAge function which also
+                # picks the episide title with the shortest edit distance. Because this does
+                # a query by SnnEnn this is more concrete information than the check for link counts
+                # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
+                # split into:
+                # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
+                # 2. A filter that picks episode title with lowest edit distance.
+                tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
 
                 tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
 
@@ -917,14 +921,14 @@ tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
 
 # Search the tv menus for names that could be represented by the abbreviation 
 # IN abbrev - abbreviated name eg ttscc
-# OUT alternateTitles - hash of titles [n,1]=id [n,2]=title (as shows may have titles in other languages)
+# IN/OUT alternateTitles - hash of titles [n,1]=id [n,2]=title (as shows may have titles in other languages)
+
 # return number of matches
 function searchAbbreviationAgainstTitles(plugin,initial,abbrev,alternateTitles,\
 names,count) {
 
     id1("searchAbbreviationAgainstTitles plugin="plugin" initial="initial" abbrev="abbrev);
 
-    delete alternateTitles;
 
     # New method for abbreviations - use tvrage index
     if (plugin == "thetvdb" ) {
@@ -1553,9 +1557,10 @@ f,count,line,colon) {
 #             with t then search both t page and subsequent letter - to account for "The xxx" on page x
 # IN list of names that start with letter.
 # IN titleIn - The thing we are looking for - eg ttscc
-# IN/OUT alternateTitles - hash of titles - index is rageid , value is normalized title.
+# IN/OUT alternateTitles - hash of titles [n,1]=id [n,2]=title (as shows may have titles in other languages)
+# Return number of titles -1 = error
 function searchAbbreviation(letter,count,names,titleIn,alternateTitles,\
-possible_title,i,ltitle,add,total) {
+possible_title,i,ltitle,add,total,a) {
 
     total = 0;
     ltitle = norm_title(titleIn);
@@ -1569,26 +1574,27 @@ possible_title,i,ltitle,add,total) {
     for(i = 1 ; i<= count ; i++ ) {
 
         possible_title = names[i,2];
+        a = 0;
 
         #DEBUG("searchAbbreviation ["ltitle"] vs ["possible_title"]");
 
         sub(/\(.*/,"",possible_title);
         gsub(/'/,"",possible_title);
 
-        if (abbrevMatch(ltitle,possible_title)) {
+        # note double abbreviation is checked for "CSI: Crime Scene Investigation" vs csicsi"
+        if (abbrevMatch(ltitle,possible_title) || (length(ltitle) >= 3 && abbrevMatch(ltitle ltitle,possible_title)) || abbrevContraction(ltitle,possible_title)) {
 
             add[i] = 1;
+            if ( ++total > 20) {
+                INF("too many matches" );
+                delete add;
+                return -1;
+                break;
+            }
 
-        } else if (abbrevMatch(ltitle ltitle,possible_title)) { # eg "CSI: Crime Scene Investigation" vs csicsi"
-
-            add[i] = 1;
-
-        } else if (abbrevContraction(ltitle,possible_title)) {
-
-            add[i] = 1;
         }
     }
-    total = copy_ids_and_titles(add,names,alternateTitles);
+    total = merge_ids_and_titles(add,names,alternateTitles);
     id0(total);
     return total;
 }
@@ -1688,7 +1694,7 @@ ret,i,j,s1lc,abbrevlc,len1,len2,regex,ch) {
         if (match(tolower(s1),regex)) {
             ret = substr(s1,RSTART,RLENGTH);
             if (index(substr(s1,RSTART+RLENGTH)," ")) {
-                INF("abbreviation ["ret"] ignored due to trailng words/space");
+                #INF("abbreviation ["s1"] ignored due to trailng words/space after ["ret"]");
                 ret = "";
             }
         } 
@@ -1749,7 +1755,7 @@ found,part,sw,ini) {
         #INF("abbrev["abbrev"] possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
 
         if (abbreviated_substring(abbrev,"",ini,0) == "") {
-            INF("["possible_title "] rejected. ["ini"] not in abbrev ["abbrev"]");
+            #INF("["possible_title "] rejected. ["ini"] not in abbrev ["abbrev"]");
         } else {
             found = 1;
         }

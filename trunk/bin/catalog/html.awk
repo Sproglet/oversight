@@ -74,51 +74,76 @@ function codepages() {
     }
 
 }
+
+function iconvf(f) {
+    return f".iconv";
+}
+
 #getline_encode
 # read a line from html or xml and apply html_decoding and utf8_encoding
 # based on encoding flags at the start of the content.
 # TODO only check xml encoding for first line.
 # returns getline code and line contents in line[1]
 function enc_getline(f,line,\
-code,t) {
-
-    decode_init();
-    codepages();
+code,t,enc) {
 
     if (g_encoding[f] == "" ) {
 
+        # The code pages are only used if iconv is not available.
+        # codepages can be removed at later date.
+        decode_init();
+        codepages();
+
         # check encoding
-        g_encoding[f] = get_encoding(f);
+        enc = g_encoding[f] = get_encoding(f);
+
+        if (enc != "iconv" && enc != "utf-8") {
+            if (!g_skipiconv[enc] && exec("iconv -f "enc" -t utf-8 "qa(f)" > "qa(iconvf(f))) == 0) {
+                g_encoding[f] = "iconv";
+            } else {
+                ERR("iconv "enc" to utf-8 failed - decode using awk - slower");
+                g_skipiconv[enc] = 1;
+            }
+        }
     }
 
-    code = ( getline t < f );
+    enc = g_encoding[f];
 
+    if (enc == "iconv") {
+        #INF("iconv begin");
+        code = ( getline t < iconvf(f) );
+        #INF("iconv :"t);
+    } else {
+        code = ( getline t < f );
+    }
 
     if (code > 0) {
 
         t = html_decode(t);
 
-        if (g_encoding[f] == "windows-1251") {
-            t = utf8_encode(t,g_cp1251);
-        } else if (g_encoding[f] == "windows-1250") {
-            t = utf8_encode(t,g_cp1250);
-        } else if (g_encoding[f] == "windows-1252" || g_encoding[f] == "iso-8859-1") {
-            t = utf8_encode(t,g_cp1252);
-        } else if (g_encoding[f] == "windows-1253") {
-            t = utf8_encode(t,g_cp1253);
-        } else if (g_encoding[f] == "windows-1254" ) {
-            t = utf8_encode(t,g_cp1254);
-        } else if (g_encoding[f] == "iso-8859-9") {
-            INF("using windows-1254 for iso-8859-9");
-            t = utf8_encode(t,g_cp1254);
-        } else if (g_encoding[f] == "iso-8859-2") {
-            t = utf8_encode(t,g_8859_2);
-        } else if (g_encoding[f] == "iso-8859-7") {
-            t = utf8_encode(t,g_8859_7);
-        } else if (g_encoding[f] != "utf-8") {
-            WARNING("unknown encoding ["g_encoding[f]"] changing to utf-8");
-            t = utf8_encode(t,g_utf8);
-            g_encoding[f] = "utf-8";
+        if (enc != "utf-8" && enc != "iconv" ) {
+            if (enc == "windows-1251") {
+                t = utf8_encode(t,g_cp1251);
+            } else if (enc == "windows-1250") {
+                t = utf8_encode(t,g_cp1250);
+            } else if (enc == "windows-1252" || enc == "iso-8859-1") {
+                t = utf8_encode(t,g_cp1252);
+            } else if (enc == "windows-1253") {
+                t = utf8_encode(t,g_cp1253);
+            } else if (enc == "windows-1254" ) {
+                t = utf8_encode(t,g_cp1254);
+            } else if (enc == "iso-8859-9") {
+                INF("using windows-1254 for iso-8859-9");
+                t = utf8_encode(t,g_cp1254);
+            } else if (enc == "iso-8859-2") {
+                t = utf8_encode(t,g_8859_2);
+            } else if (enc == "iso-8859-7") {
+                t = utf8_encode(t,g_8859_7);
+            } else if (enc != "utf-8") {
+                WARNING("unknown encoding ["enc"] changing to utf-8");
+                t = utf8_encode(t,g_utf8);
+                g_encoding[f] = "utf-8";
+            }
         }
         line[1] = t;
     }
@@ -127,6 +152,12 @@ code,t) {
 
 
 function enc_close(f) {
+    if (g_encoding[f] == "iconv") {
+        if (is_file(iconvf(f))) {
+            close(iconvf(f));
+            rm(iconvf(f));
+        }
+    }
     delete g_encoding[f];
     close(f);
 }
@@ -136,7 +167,9 @@ function get_encoding(f,\
 enc,line,code,n) {
 
 
-    if (index(f,".json")) {
+    if (is_file(iconvf(f))) {
+        enc = "iconv";
+    } else if (index(f,".json")) {
         enc = "utf-8";
     } else {
         while ( enc == "" && n < 20 &&  (code = ( getline line < f )) > 0) {

@@ -265,6 +265,7 @@ int db_overview_tvboxset_eqf(void *item1,void *item2) {
 
     int ret = 0;
     if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
+        HTML_LOG(0,"Category differs [%s/%c] vs [%s/%c]",((DbItem*)item1)->title,((DbItem*)item1)->category,((DbItem*)item2)->title,((DbItem*)item2)->category);
        assert(0);
     } else if (((DbItem*)item1)->category == 'T' ) {
        ret = EQ_SEASON(item1,item2);

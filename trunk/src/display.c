@@ -1525,8 +1525,13 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
 {
     // No pictures on filesystem - look in db
     // first build the name 
-    // TV shows = ovs:fieldid/prefix title _ year _ season.jpg
-    // films  = ovs:fieldid/prefix title _ year _  imdbid.jpg
+    // TV shows =
+    // ovs:fieldid/prefix tt0000000 _ season.jpg
+    // ovs:fieldid/prefix title _ year _ season.jpg
+    //
+    // films  =
+    // ovs:fieldid/prefix tt0000000.jpg
+    // ovs:fieldid/prefix title _ year.jpg
     //
 #define INTERNAL_IMAGE_PATH_LEN 250
     static char path[INTERNAL_IMAGE_PATH_LEN+1];
@@ -1537,25 +1542,35 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
             (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
             catalog_val("catalog_poster_prefix"));
 
-    char *t=item->title;
+    char *id=get_item_id(item,"imdb",0);
+    if (id) {
+        p += sprintf(p,"imdb_%s",id);
+        FREE(id);
+    } else {
+            // Title - year
+            // TODO Cope with UTF-8 Normalised/Expanded titles.
 
-    if (t) {
-        // Add title replacing all runs of non-alnum with single _
-        int first_nonalnum = 1;
-        while(*t) {
-            if (isalnum(*t) || strchr("-_&",*t) || *t < 0 /* utf-8 high bit */ ) {
-                *p++ = *t;
-                first_nonalnum=1;
-            } else if (first_nonalnum) {
-                *p++ = '_';
-                first_nonalnum=0;
+
+        char *t=item->title;
+
+        if (t) {
+            // Add title replacing all runs of non-alnum with single _
+            int first_nonalnum = 1;
+            while(*t) {
+                if (isalnum(*t) || strchr("-_&",*t) || *t < 0 /* utf-8 high bit */ ) {
+                    *p++ = *t;
+                    first_nonalnum=1;
+                } else if (first_nonalnum) {
+                    *p++ = '_';
+                    first_nonalnum=0;
+                }
+                t++;
             }
-            t++;
         }
-    }
-    *p++ = '_';
-    if (item->year) {
-        p += sprintf(p,"%d",item->year);
+        *p++ = '_';
+        if (item->year) {
+            p += sprintf(p,"%d",item->year);
+        }
     }
     if (item->category == 'T' ) {
         p+= sprintf(p,"_%d",item->season);

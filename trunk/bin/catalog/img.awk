@@ -6,8 +6,17 @@
 # ovs: indicates internal database path. 
 # field is a sub folder. All internal posters are stored under "ovs:"POSTER"/"...
 function internal_poster_reference(field_id,minfo,\
-poster_ref) {
-    poster_ref = minfo["mi_title"]"_"minfo["mi_year"];
+poster_ref,id) {
+
+    id = imdb(minfo);
+
+    if (id) {
+        id = "imdb_"id;
+    } else {
+        id = minfo["mi_title"]"_"minfo["mi_year"];
+    }
+    poster_ref = id;
+
     gsub("[^-_&" g_alnum8 "]+","_",poster_ref);
     if (minfo["mi_category"] == "T" ) {
         poster_ref = poster_ref "_" minfo["mi_season"];

@@ -683,13 +683,20 @@ name) {
     return name;
 }
 
-function copy_ids_and_titles(ids,input,out,\
+function copy_ids_and_titles(ids,input,out) {
+    delete out;
+    merge_ids_and_titles(ids,input,out);
+}
+
+function merge_ids_and_titles(ids,input,out,\
 new_total,i) {
+    new_total = out["total"];
     for (i in ids) {
         new_total++;
         out[new_total,1] = input[i,1];
         out[new_total,2] = input[i,2];
     }
+    out["total"] = new_total;
     return new_total;
 }
 

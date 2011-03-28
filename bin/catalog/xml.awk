@@ -131,9 +131,13 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
         } else {
             # No tag yet - check only white space
             if (text !~ "^[ \t]*$" ) {
-                ERR("encountered text outside of xml ["text"]");
-                ret = 0;
-                break;
+                if (text == "﻿" ) { #XML UTF8 BOM
+                    text="";
+                } else {
+                    ERR("encountered text outside of xml ["text"]");
+                    ret = 0;
+                    break;
+                }
             }
         }
 

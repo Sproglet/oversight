@@ -229,6 +229,12 @@ ch) {
         context["value"] = context[context["type"]]  = 0;
         context["pos"] += 5;
 
+    } else if (ch == "n" && substr(context["in"],context["pos"],4) == "null") {
+
+        context["type"] = "string";
+        context["value"] = context[context["type"]]  = "";
+        context["pos"] += 4;
+
     } else {
         json_err(context,"Error parsing "context["tag"]);
     }

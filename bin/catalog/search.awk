@@ -169,7 +169,7 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
 
         } else {
 
-            if(0 && !ret && mode == "imdbtitle" && p2p_filename(qualifier) ) {
+            if(1 && !ret && mode == "imdbtitle" && p2p_filename(qualifier) ) {
                 # Looks like a file name - try nzb sites.
                 scrapeMatches(g_search_binsearch qualifier,freqOrFirst,helptxt,regex,matches,src);
                 if (bestScores(matches,matches,0) == 2 ) {

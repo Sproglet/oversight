@@ -61,6 +61,7 @@ t,t2,y) {
     delete normed;
     for(t in matches) {
         t2=t;
+        gsub(/'[Ss]\>/,"s",t2);
         gsub("[^"g_alnum8"]"," ",t2);
         gsub(/  +/," ",t2);
         t2 = capitalise(trim(t2));

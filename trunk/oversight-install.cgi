@@ -186,7 +186,17 @@ TRANSMISSION_UNPAK_UNINSTALL() {
 FIX_NZBGET_DAEMON() {
     # If nzbget is restarted via nzbget_web it is started as root rather than nmt user
     # even though DaemonUserName is set. 
+
     f="/share/Apps/NZBget/daemon.sh"
+
+    # Set up nmt user prowerly to allow su to work
+    cp "$f" "$f.old"
+
+    sed '/[  ]\/share\/Apps\/NZBget\/bin\/nzbget -D/ {
+s;\(/.*conf\);su - nmt -c "\1";
+i\
+set -e ; sed -i "/^nmt/ s/true/sh/" /etc/passwd  ; mkdir -p /home/nmt && chown nmt:nmt /home/nmt ; set +e
+}' "$f.old" > "$f"
 
 }
 

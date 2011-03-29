@@ -685,12 +685,12 @@ name) {
 
 function copy_ids_and_titles(ids,input,out) {
     delete out;
-    merge_ids_and_titles(ids,input,out);
+    return merge_ids_and_titles(ids,input,out);
 }
 
 function merge_ids_and_titles(ids,input,out,\
 new_total,i) {
-    new_total = out["total"];
+    new_total = out["total"]+0;
     for (i in ids) {
         new_total++;
         out[new_total,1] = input[i,1];
@@ -703,28 +703,30 @@ new_total,i) {
 
 # Find title that returns largest page size.
 function filter_web_titles(count,titles,filterText,filteredTitles,\
-keep,new,newtotal,size,url,i) {
+keep,new,newtotal,size,url,i,blocksz) {
 
     id1("filter_web_titles in="count);
 
     newtotal=0;
-    if (count > 20 ) {
+    blocksz = 2000;
+
+    if (count > 36 ) {
         WARNING("Too many titles to filter. Aborting");
     } else {
 
-        url = g_search_yahoo url_encode("\""filterText"\"");
+        url = g_search_yahoo url_encode("+\""filterText"\"");
 
         #Establish baseline for no matches.
         if (!g_filter_web_titles_baseline) {
-            g_filter_web_titles_baseline = get_page_size(url url_encode(" "rand()systime()));
-            g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/5000);
+            g_filter_web_titles_baseline = get_page_size(url url_encode(" +"rand()systime()));
+            g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/blocksz);
         }
 
         for(i = 1 ; i<= count ; i++ ) {
-            size = get_page_size(url url_encode(" \""titles[i,2]"\""));
-            size = int(size / 2000 );
+            size = get_page_size(url url_encode(" +\""titles[i,2]"\""));
+            size = int(size / blocksz );
             if (size > g_filter_web_titles_baseline) {
-                keep[i] = 1;
+                keep[i] = size;
             } else {
                 DEBUG("Discarding "titles[i,1]":"titles[i,2]);
             }
@@ -732,11 +734,17 @@ keep,new,newtotal,size,url,i) {
 
         bestScores(keep,keep);
 
+        #dump(0,"keep",keep);
         newtotal = copy_ids_and_titles(keep,titles,new);
+        #dump(0,"new",new);
+
+        #INF("new total = "newtotal);
 
         delete filteredTitles;
 
         hash_copy(filteredTitles,new);
+
+        #dump(0,"filteredTitles",filteredTitles);
     }
 
     id0(newtotal);

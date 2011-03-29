@@ -136,7 +136,7 @@ BEGIN {
     g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+"; #bit better performance
 
     g_year_re="(20[01][0-9]|19[0-9][0-9])";
-    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]* ?[(.]?"g_year_re"[).]?";
+    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]*[ (.]"g_year_re"[).]?";
 
     g_roman_regex="i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv";
 
@@ -301,7 +301,8 @@ END{
     # Google must have &q= not ;q=
     g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q=";
     g_search_binsearch = "http://binsearch.info/?max=25&adv_age=&q=";
-    g_search_nzbindex = "http://www.nzbindex.nl/search/?q=";
+    g_search_nzbindex = "http://www.nzbindex.nl/rss/?q=";
+    g_search_nzbclub = "http://www.nzbclub.com/nzbfeed.aspx?q=";
 
     #g_search_engine[0]=g_search_bing2;
     g_search_engine[0]=g_search_yahoo;

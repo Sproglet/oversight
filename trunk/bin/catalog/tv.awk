@@ -859,6 +859,11 @@ tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
                 # Finally try all shows beggning with i (for it / in)
                 # Finally try all shows beggning with of (for of )
 
+                if (index(title,"-")) {
+                    sub(/[^-]+-/,"",title);
+                    INF("removed prefix ["title"]");
+                }
+
                 # create list of letters to check
                 first_letter = tolower(substr(title,1,1));
                 letters = "taio";
@@ -1585,7 +1590,7 @@ possible_title,i,ltitle,add,total,a) {
         if (abbrevMatch(ltitle,possible_title) || (length(ltitle) >= 3 && abbrevMatch(ltitle ltitle,possible_title)) || abbrevContraction(ltitle,possible_title)) {
 
             add[i] = 1;
-            if ( ++total > 20) {
+            if ( ++total > 36) {
                 INF("too many matches" );
                 delete add;
                 return -1;

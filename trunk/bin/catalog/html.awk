@@ -223,6 +223,19 @@ i,codes,num,u,ch) {
     }
 }
 
+# Check engine 0=bad 1 or more = good
+function engine_check(url,\
+ret) {
+    ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","[\"']http://[^/]+imdb[/.a-z]+tt0076752/?[\"']",1);
+    if (ret) {
+        INF("search engine ready ["url"]\n");
+    } else {
+        ERR("!!!search engine error!!! ["url"]\n");
+    }
+    return ret;
+}
+
+
 # Scan a page for matches to regular expression
 # IN url to scan
 # IN fixed_text, - fixed text to help speed up scan
@@ -254,7 +267,12 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matche
 function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
 f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 
-    #if (index(url,"spielfilm")) verbose=1; # Debug line edit as required
+#    if (index(url,"yahoo") && index(url,"2010") && index(url,"site:imdb.com")) {
+#        verbose=1; # Debug line edit as required
+#    } else {
+#        DEBUG("disable me !!!!!!!!!!");
+#    }
+
     delete matches;
     id1("scan_page_for_matches["url"]["fixed_text"]["regex"]");
     INF("["fixed_text"]["\

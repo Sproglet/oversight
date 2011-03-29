@@ -194,6 +194,9 @@ END{
     INDEX_DB_OLD = INDEX_DB "." DAY;
 
     g_user_agent="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7) Gecko/20040613 Firefox/0.8.0+";
+    #g_user_agent="Opera/9.80 (Windows NT 6.0; U; en) Presto/2.8.99 Version/11.10";
+    g_yahoo_user_agent="PHP/5.2.9"; # Stop yahoo doing weird stuff to links 
+
     g_iphone_user_agent="Mozilla/5.0 (iPhone; U; CPU iPhone OS 3_0 like Mac OS X; en-us) AppleWebKit/420.1 (KHTML, like Gecko) Version/3.0 Mobile/1A542a Safari/419.3";
 
     # Note keep timout above 30 seconds to allow for the DNS bug where first lookup takes 30 seconds
@@ -304,6 +307,10 @@ END{
     #g_search_engine[2]=g_search_ask; results too similar to google giving false +ves.
     g_search_engine_count=2;
     g_search_engine_current=0;
+
+    engine_check(g_search_google);
+    engine_check(g_search_bing);
+    engine_check(g_search_yahoo);
 
     THIS_YEAR=substr(NOW,1,4);
 

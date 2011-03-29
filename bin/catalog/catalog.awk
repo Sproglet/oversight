@@ -300,6 +300,8 @@ END{
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=
     g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q=";
+    g_search_binsearch = "http://binsearch.info/?max=25&adv_age=&q=";
+    g_search_nzbindex = "http://www.nzbindex.nl/search/?q=";
 
     #g_search_engine[0]=g_search_bing2;
     g_search_engine[0]=g_search_yahoo;
@@ -770,10 +772,10 @@ keep,new,newtotal,size,url,i,blocksz) {
 # b) binsearch has slightly better search of files within collections. eg if a series posted under one title.
 function filterUsenetTitles(count,titles,filterText,filteredTitles,\
 result) {
-result = filterUsenetTitles1(count,titles,"http://binsearch.info/?max=25&adv_age=&q=\""filterText"\" QUERY",filteredTitles);
-#   if (result == 0 ) {
-#       result = filterUsenetTitles1(titles,"http://bintube.com/?q=\""filterText"\" QUERY",filteredTitles);
-#   }
+result = filterUsenetTitles1(count,titles,g_search_binsearch "\""filterText"\" QUERY",filteredTitles);
+   if (result == 0 ) {
+       result = filterUsenetTitles1(count,titles,g_search_nzbindex "\""filterText"\" QUERY",filteredTitles);
+   }
    return 0+ result;
 }
 

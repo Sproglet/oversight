@@ -102,8 +102,8 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua)
     if (index(url,"/app.")) { 
         ua = g_iphone_user_agent;
     } else if (index(url,g_search_yahoo)) { 
-        #Yahoo returns wierd bloated results with any known browser
-        ua = "Mozilla";
+        #Yahoo returns weird bloated results with most end-user browsers.
+        ua = g_yahoo_user_agent;
     } else {
         ua = g_user_agent;
     }

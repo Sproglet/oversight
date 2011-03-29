@@ -277,6 +277,10 @@ i,bestScore,count,tmp,isHigher) {
     return bestScore;
 }
 
+function p2p_filename(f) {
+    return f ~ /^[a-z0-9]+-[a-z0-9-]*$/ ;
+}
+
 #result in a2
 function hash_invert(a1,a2,\
 i) {

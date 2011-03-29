@@ -169,7 +169,21 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
 
         } else {
 
-            if (imdb_qual != "" ) {
+            if(0 && !ret && mode == "imdbtitle" && p2p_filename(qualifier) ) {
+                # Looks like a file name - try nzb sites.
+                scrapeMatches(g_search_binsearch qualifier,freqOrFirst,helptxt,regex,matches,src);
+                if (bestScores(matches,matches,0) == 2 ) {
+                    ret = firstIndex(matches);
+                }
+                if (!ret) {
+                    scrapeMatches(g_search_nzbindex qualifier,freqOrFirst,helptxt,regex,matches,src);
+                    if (bestScores(matches,matches,0) == 2 ) {
+                        ret = firstIndex(matches);
+                    }
+                }
+            }
+
+            if (!ret && imdb_qual != "" ) {
                 # TODO Try direct imdb search
                 scrapeMatches(u[4],freqOrFirst,helptxt,regex,matches,src);
                 

@@ -402,7 +402,7 @@ lastNameSeen,i,lastch,ch) {
         # That is done during the scrape stage by "checkTvFilenameFormat". This is just a quick way.
         # reject 0e1 0x1 "ep 1" "dvd 1" etc.
         # we could change this to a white list instead. eg part01 cd1 etc.
-        if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.edx]|dvd|disc|ep|episode) *1$") {
+        if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.edx]|dvd|disc|ep|episode|vol(\.?|ume)) *1$") {
             #DEBUG("checkMultiPart: rejected ["lastNameSeen"]");
             return 0;
         }

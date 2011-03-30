@@ -55,7 +55,7 @@ match1,submatch,dots) {
 # Input "matches" hash of raw titles and counts
 # Output "normed" hash of normalised titles and counts
 function normalise_title_matches(matches,normed,\
-t,t2,y) {
+t,t2,y,quoted) {
 
     dump(0,"normalise titles in ",matches);
     delete normed;
@@ -123,6 +123,23 @@ t,t2,y) {
         }
     }
     dump(0,"normalise titles out",normed);
+
+    # Finally quote title - might not work for 3d type titles?
+    if(0) {
+        # disabled for now - behaviour has not been fully tested.
+        for(t in normed) {
+            if (index(t,"\"") == 0) {
+                t2=t;
+                sub(" "g_year_re"$","\" &",t2);
+                quoted["\""t2] = normed[t];
+            } else {
+                quoted[t] = normed[t];
+            }
+        }
+
+        dump(0,"quoted normalised titles out",quoted);
+        hash_copy(normed,quoted);
+    }
 }
 
 # Special case is if searching via IMDB search page - then the imdb_qual is used

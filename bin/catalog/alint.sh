@@ -21,6 +21,7 @@ BEGIN {
     ks=ks" RSTART RLENGTH print print( systime( open( close( FS NF exit break for for( system( ";
     ks=ks" delete return return( split( tolower( toupper( length( continue sprintf( int(";
     ks=ks" rand( printf and( or( lshift( rshift( strftime( ENVIRON ARGV SUBSEP fflush( asort(";
+    ks=ks" strtonum(";
     gsub(/ +/," ",ks);
     gsub(/^ +/,"",ks);
     gsub(/ +$/,"",ks);

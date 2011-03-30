@@ -650,7 +650,7 @@ function removeContent(cmd,x,quiet,quick) {
 
     if (changeable(x) == 0) return 1;
 
-    if (quiet) {
+    if (!quiet) {
         INF("Deleting "x);
     }
     cmd=cmd qa(x)" 2>/dev/null ";

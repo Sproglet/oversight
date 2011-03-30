@@ -153,9 +153,8 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua)
 
         # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-        INF("WGET ["url"] cmd="cmd);
+        INF("WGET ["url"]");
         result = exec(cmd);
-        INF("WGET done");
         if (result == 0 ) {
             result = exec(unzip_cmd);
         }

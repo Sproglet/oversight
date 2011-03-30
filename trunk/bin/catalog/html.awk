@@ -200,7 +200,7 @@ enc,line,code,n) {
         enc = "utf-8"; # google pages assumed to be utf-8 ?
     }
 
-    if (enc) INF(code"Encoding:" enc);
+    if (enc != "utf-8" ) DEBUG("Encoding:" enc);
     return enc;
 }
 

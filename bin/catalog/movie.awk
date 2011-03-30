@@ -128,9 +128,21 @@ year,text) {
                             year = "";
                         }
 
-                        if (find_movie_page(text,title,year,"","","",minfo,"") == 0) {
-                            bestUrl = minfo["mi_url"];
-                            INF("Found at "bestUrl);
+                        # Now we have a title (year) format. 
+
+                        if (title) {
+
+                            # First look for imdb id associated with this name.
+                            bestUrl=web_search_first_imdb_link(url_encode("+\""title"\" "year" imdb"),name_try);
+
+                            if (!bestUrl) {
+                                # Still not found - try searching local sites sirectly.
+
+                                if (find_movie_page(text,title,year,"","","",minfo,"") == 0) {
+                                    bestUrl = minfo["mi_url"];
+                                    INF("Found at "bestUrl);
+                                }
+                            }
                         }
 
                     } else {

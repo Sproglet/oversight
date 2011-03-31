@@ -1193,7 +1193,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
                 id2 = imdb2thetvdb(imdbid);
             }
 
-            if (id2 == "" || 1 ) {
+            if (id2 == "" ) {
 
                 # search for series name directly using raw(ish) imdb name
                 extractDate(minfo["mi_premier"],date,nondate);

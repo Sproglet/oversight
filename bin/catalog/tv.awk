@@ -227,7 +227,7 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     season_prefix="(SERIES|SEASON|SAISON|[Ss]eries|[Ss]eason|[Ss]aison|[Ss])";
     ep_prefix="(EPISODE|EP.?|[Ee]pisode|[Ee]p.?|[Ee]|/)";
     dvd_prefix="(DISC|DVD|[Dd]isc|[Dd]vd|[Dd])";
-    part_prefix="(PART|PT|EPISODE|EP|[Pp]art|[Pp]t|[Ee]pisode|[Ee]p)";
+    part_prefix="\\<(PART|PT|EPISODE|[Pp]art|[Pp]t|[Ee]pisode|[Ee][Pp]?)";
     sep="[-_./ ]*";
 
 
@@ -296,6 +296,7 @@ rtext,rstart,count,i,ret) {
     if (index(line,"_")) gsub(/_/," ",line);
 
     count = 0+get_regex_pos(line,regex "\\>",0,rtext,rstart);
+    
     if (count) {
         id1("episodeExtract:["line "] [" regex "]");
         dump(0,"matches",rtext);
@@ -331,9 +332,9 @@ tmpTitle,ret,ep,season,title,inf,matches) {
         id1("extractEpisodeByPatternSingle:"reg_match);
 
 
-        INF("regex=["regex"]");
-        INF("capture_list=["capture_list"]");
-        INF("reg_match=["reg_match"]");
+        #INF("regex=["regex"]");
+        #INF("capture_list=["capture_list"]");
+        #INF("reg_match=["reg_match"]");
         dump(0,"extractEpisodeByPatternSingle",matches);
 
         # split the line up

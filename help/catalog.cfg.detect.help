@@ -1,6 +1,6 @@
 catalog_nfo_read:Read details from existing nfo|yes|no
 catalog_format_tags:Comma delimited list of format tags that are unlikey to be part of program name|dd5,dts,cd1,cd2,720p,1080p,1080i,ac3,dvd,dvdscr,blu720p,blu1080p,bluray,dvdrip,brrip,dsrip,hdtv,ntsc,pdtv,r5,screener,workprint,ws,x264,xvid,yenc,alt,par2
-catalog_locale1:Preferred locale for plots/titles/certificates. Also see Oversight Appearance settings.|@CMD:cat conf/locale/names
+catalog_locale1:Preferred locale for plots/titles/certificates. (to change current items, delist or force rescan) |@CMD:cat conf/locale/names
 catalog_locale2:language to use if lang1 not found|@CMD:cat conf/locale/names
 catalog_locale3:language to use if lang2 not found|@CMD:cat conf/locale/names
 catalog_get_local_posters:Try to download from sites that carry localised posters - increases scan time|if_title_changed|always|never

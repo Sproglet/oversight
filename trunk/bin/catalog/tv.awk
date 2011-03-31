@@ -1246,7 +1246,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
 }
 
 function searchTvDbTitles(plugin,minfo,title,\
-tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr,total) {
+tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
 
     id1("searchTvDbTitles");
     imdb_id = imdb(minfo);
@@ -1258,9 +1258,19 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr,total) {
         tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
     }
     if (tvdbid == "") {
-        noyr  = remove_tv_year(title);
-    	if(title != noyr) {
-    	    INF("Try Again Without A Year If Nothing Found Thus Far");
+
+        alt = gensub("([^ 0-9])("g_year_re")","\\1 \\2","g",title);
+        if (alt != title) {
+            INF("Try to insert a space before year - eg v2009 -> v 2009");
+            total = searchTv(plugin,alt,closeTitles);
+            tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
+        }
+    }
+
+    if (tvdbid == "") {
+        alt  = remove_tv_year(title);
+    	if(title != alt) {
+    	    INF("Try without a year");
             # the tvdb api can return better hits without the year.
             # compare e.g.
             # http://www.thetvdb.com/api/GetSeries.php?seriesname=Carnivale%202003 Bad
@@ -1269,9 +1279,10 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,noyr,total) {
             # tv rage should work with the year. compare .e.g
             # http://services.tvrage.com/feeds/search.php?show=carnivale Good
             # vs http://services.tvrage.com/feeds/search.php?show=carnivale%202003 OK
-    	    total = searchTv(plugin,noyr,closeTitles);
+    	    total = searchTv(plugin,alt,closeTitles);
     	    tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
     	}
+        
     }
     if (tvdbid != "") {
         tvDbSeriesUrl=get_tv_series_api_url(plugin,tvdbid);

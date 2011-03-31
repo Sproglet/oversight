@@ -118,3 +118,12 @@ If you know what you are doing you can quicky test each in turn by using the she
    # rm /tmp/dns_cache
    # wget http://google.com, 
 repeat until success, but remember to save permanently via NMT Network Settings)
+
+===I selected my language but plot is still in English. Why?===
+
+After changing locale you must force Oversight to rescan your items. To do this either:
+   # delist individual items.
+   # Select 'All media' and 'Overwrite Posters' when rescanning.
+
+TV Shows will only show localised plots if they are present at http://thetvdb.com
+ t you must first delist an item before rescanning it.

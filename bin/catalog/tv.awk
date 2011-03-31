@@ -1974,6 +1974,9 @@ result,minfo2) {
     } else {
         plugin_error(plugin);
     }
+    if (result) {
+        minfo["mi_category"] = "T";
+    }
 
 
 #    ERR("UNCOMMENT THIS CODE");

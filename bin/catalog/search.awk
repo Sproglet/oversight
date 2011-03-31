@@ -639,7 +639,12 @@ score) {
         gPriority["mi_runtime","themoviedb"]=50;
         gPriority["mi_runtime","imdb"]=60;
 
+        # If info obtained from TV websites then ignore imdb category
+        # Sometimes wrong for mini-series etc wg Thorne tt1610518
+        gPriority["mi_category","thetvdb"]=70;
+        gPriority["mi_category","tvrage"]=70;
         gPriority["mi_category","imdb"]=60;
+
         gPriority["mi_certrating","imdb"]=60;
         gPriority["mi_certcountry","imdb"]=60;
 

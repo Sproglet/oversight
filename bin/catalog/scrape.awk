@@ -450,6 +450,8 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
                 while(!err && enc_getline(f,line) > 0  ) {
 
+                    #DEBUG("scrape["line[1]"]");
+
                     # If set apply this filter to all lines
                     if (g_settings["domain:catalog_domain_filter_all"] ) {
                         tmp = domain_edits(domain,line[1],"catalog_domain_filter_all");
@@ -461,6 +463,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
                     #DEBUG("xx read["line[1]"] script="pagestate["script"]);
                     if (update_confidence(line[1],minfo2,pagestate) < 0 ) {
+                        DEBUG("update_confidence - leaving page");
                         err = 1;
                         break;
                     }
@@ -476,6 +479,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                             if (fullline) {
                                 err = scrape_movie_line(lng,domain,fullline,minfo2,pagestate,namestate);
                                 if (err) {
+                                    DEBUG("scrape_movie_line - leaving page");
                                     break;
                                 }
                             }
@@ -909,7 +913,7 @@ i,num,sections,err,dbg,lcline) {
 
     err = 0;
 
-    if (0 && index(line,".3.jpg")) { dbg = 1; }
+    #if (index(line,"2010")) { dbg = 1; }
 
     lcline = tolower(line);
 
@@ -1069,7 +1073,9 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
         }
 
     }
-    if (pagestate["titleinpage"] && !minfo["mi_year"] && !minfo["mi_plot"] ) {
+
+    # Allow year to be parsed if plot not found yet.
+    if (pagestate["titleinpage"] && !minfo["mi_year"] ) {
         # Not re starts with [ (>] instead of word boundary to help avoid 4 digit ids id=1234 etc.
         # Also allow "@" as its used  for label markers
         if (update_minfo(minfo, "mi_year",subexp(fragment,"(^|[ (>;@])("g_year_re")($|[ )<&@])",2) ,domain,pagestate)) {

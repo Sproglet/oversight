@@ -11,7 +11,6 @@ function get_main_domain(url) {
     # Special case for big international sites with local presense. Any more of these and it should be handled by using 
     # include files for the domain properties. eg imdb.fr includes imdb.com
     if (index(url,"imdb")==1) url="imdb";
-    if (index(url,"amazon")==1) url="amazon";
 
     return url;
 }

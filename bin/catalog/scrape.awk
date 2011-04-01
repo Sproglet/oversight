@@ -354,6 +354,10 @@ tmp,lctext) {
         if (minfo["mi_plot"] == "" ) {
             #dont check anything after the main plot. Could be reviews, or forums etc.
             lctext = tolower(text);
+
+            # Adjust some punctuation - Mainly for Carlitos Way : Rise To Power at Allocine
+            if (index(lctext," : ")) gsub(/ : /,": ",lctext);
+
             check_title_score(pagestate,"expecttitle_lc",lctext);
             check_title_score(pagestate,"expecttitle_alt",lctext);
             check_title_score(pagestate,"expectorigtitle_lc",lctext);

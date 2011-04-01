@@ -1375,17 +1375,18 @@ key,regex,ret,lcfragment,dbg) {
 }
 
 function get_locales(locales,\
-i,has_english) {
+i,has_english,j) {
     delete locales;
+
+    j=0;
     for(i = 1; g_settings["catalog_locale"i] ~ /[a-z]+/ ; i++) {
-        locales[i] = g_settings["catalog_locale"i];
-        sub(/[^=]+=>/,"",locales[i]); # remove help text ie English=>en_GB
-        if (index(locales[i],"en") == 1)  has_english = 1;
+        locales[++j] = gensub(/[^=]+=>/,"",1,g_settings["catalog_locale"i]); # remove help text ie English=>en_GB
+        if (index(locales[j],"en") == 1)  has_english = 1;
     }
     if (!has_english) {
-        locales[++i] = "en_US";
+        locales[++j] = "en_US";
     }
-    return i;
+    return j;
 }
 
 function add_lang_to_plot(lang_or_locale,plot,\

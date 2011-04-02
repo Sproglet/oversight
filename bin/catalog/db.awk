@@ -150,7 +150,7 @@ function replace_database_with_new(newdb,currentdb,olddb) {
 
     INF("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
 
-    exec("cp -f "qa(currentdb)" "qa(olddb));
+    file_copy(currentdb,olddb);
 
     touch_and_move(newdb,currentdb);
 

@@ -48,6 +48,10 @@ r) {
     return r;
 }
 
+function file_copy(old,new) {
+    return exec("cp -f "qa(old)" "qa(new));
+}
+
 function test(t,f) {
     return system("test "t" "qa(f)) == 0;
 }

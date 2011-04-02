@@ -99,21 +99,30 @@ i) {
     }
 }
 
+function cookie_file(url,\
+f) {
+    f= plugin_file("domain",get_main_domain(url));
+    return gensub(/cfg$/,"cki",1,f);
+}
+
+function plugin_file(type,name) {
+    return APPDIR"/conf/"type"/catalog."type"."name".cfg";
+}
+
 
 # load plugin settings
 # Return 1= success 0 = failed.
 function load_plugin_settings(type,name,\
-plugin_file,ret) {
+ret) {
 
     ret = 0;
 
-    #DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"] file=["plugin_file"]");
+    #DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"]");
 
     if (g_last_plugin[type] != name) {
-        plugin_file = APPDIR"/conf/"type"/catalog."type"."name".cfg";
         INF("loading...");
         remove_settings("^"type ":");
-        ret = load_settings(type":",plugin_file,1);
+        ret = load_settings(type":",plugin_file(type,name),1);
         g_last_plugin[type] = name;
     } else {
         ret = 1; # already loaded

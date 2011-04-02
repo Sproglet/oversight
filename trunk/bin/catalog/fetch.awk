@@ -97,7 +97,7 @@ i,urls,tmpf,qf,r) {
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
 function wget2(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua) {
+args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,old_cf,new_cf,arg_cf) {
 
     if (index(url,"/app.")) { 
         ua = g_iphone_user_agent;
@@ -119,6 +119,20 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua)
     if (referer != "") {
         args=args" --referer=\""referer"\" ";
     }
+
+    # Some domains need cookie tracking to bypass advertising.
+    old_cf = cookie_file(url);
+    new_cf = old_cf".new";
+
+    if (is_file(old_cf)) {
+        if (!is_file(new_cf)){
+            INF("setting default cookies");
+            file_copy(old_cf,new_cf);
+        }
+    }
+    arg_cf=" --keep-session-cookies --load-cookies="qa(new_cf)" --save-cookies="qa(new_cf)" --keep-session-cookies";
+    args=args arg_cf;
+    INF(arg_cf);
 
     targetFile=qa(file);
     htmlFile=targetFile;

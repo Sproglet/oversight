@@ -73,6 +73,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     qfile = new_capture_file("dbqueue");
     if (root == "") return;
 
+    delete g_fldrCount;
     ign_path = g_settings["catalog_ignore_paths"];
 
     # Get all files already scanned at root level
@@ -201,9 +202,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                 if (substr(perms,1,1) == "d") { #Directory
 
-                    if (currentFolder in g_fldrCount) {
-                        g_fldrCount[currentFolder]++;
-                    }
+                    g_fldrCount[currentFolder]++;
 
                     DEBUG("Folder ["scan_line"]");
 
@@ -446,6 +445,7 @@ function folderIsRelevant(dir) {
     DEBUG("Check parent folder relation to media ["dir"]");
         if ( !(dir in g_fldrCount) || g_fldrCount[dir] == "") { 
             DEBUG("unknown folder ["dir"]" );
+            dump(0,"folder count",g_fldrCount);
             return 0;
         }
     #Ensure the folder was scanned and also it has 2 or fewer sub folders (VIDEO_TS,AUDIO_TS)
@@ -735,7 +735,6 @@ function clear_folder_info() {
     delete g_fldrMediaCount;
     delete g_fldrInfoCount;
     delete g_fldrInfoName;
-    delete g_fldrCount;
 
     scrape_cache_clear();
 
@@ -745,7 +744,7 @@ function clear_folder_info() {
     delete g_file_date; 
 
     gMovieFileCount = 0;
-    #DEBUG("Reset scanned files store");
+    DEBUG("Reset scanned files store");
 }
 
 

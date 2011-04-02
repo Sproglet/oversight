@@ -273,7 +273,7 @@ function moveFolder(minfo,oldName,newName,\
 
        err="not listed in the arguments";
 
-   } else if ( g_fldrCount[oldName] - 2*(isDvdDir(minfo["mi_media"])) > 0 ) {
+   } else if ((!isDvdDir(minfo["mi_media"]) &&  g_fldrCount[oldName] > 1) || g_fldrCount[oldName] > 2 ) {
 
        err= g_fldrCount[oldName]" sub folders";
 

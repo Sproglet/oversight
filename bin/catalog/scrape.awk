@@ -414,149 +414,170 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
         INF("Already visited");
 
-    } else if (url && locale )  {
+    } else if (url=="" || locale=="" )  {
+        ERR("paramters missing");
+        err=1;
 
-        if (!scrape_cache_get(url,minfo2)) {
-
-            store = 1;
-
-            f=getUrl(url,locale":"domain":"title":"year,1);
-            if (f == "") {
-                err=1;
+    } else if (scrape_cache_get(url,minfo2)) {
+        if (imdbid) {
+            if (imdbid == imdb(minfo2)) {
+                adjust_confidence(pagestate,1000,"imdbid");
             } else {
-
-                minfo2["mi_url"] = url;
-                minfo2["mi_category"] = "M";
-
-                pagestate["mode"] = "head";
-                g_settings["domain_edit_id"] = get_id_from_url(domain,url); # used so domain_edit() inserts {ID} in regex
-
-                # A bit messy - orig title is  used for two things. 1) Confirm we are on the right page 2)Decide if we need the poster =if_title_changed
-                pagestate["expectyear"] = year;
-                set_title_score(pagestate,"expecttitle_lc",title,10);
-                set_title_score(pagestate,"expecttitle_alt",alternate_title,20);
-                if (title != orig_title ) {
-                    set_title_score(pagestate,"expectorigtitle_lc",orig_title,15);
-                    set_title_score(pagestate,"expectorigtitle_alt",alternate_orig,20);
-                }
-                pagestate["expectimdbid"] = imdbid;
-                pagestate["expectdirector"] = tolower(director);
-                if (!poster) {
-                    pagestate["checkposters"] = 1;
-                    INF("Force local poster fetching - no poster yet");
-                } else {
-                    scrape_poster_check(pagestate,"");
-                }
-
-                load_local_words(pagestate,locale);
-
-                lng = lang(locale);
-
-                while(!err && enc_getline(f,line) > 0  ) {
-
-                    #DEBUG("scrape["line[1]"]");
-
-                    # If set apply this filter to all lines
-                    if (g_settings["domain:catalog_domain_filter_all"] ) {
-                        tmp = domain_edits(domain,line[1],"catalog_domain_filter_all");
-                        if (tmp != line[1]) {
-                            DEBUG("line changed from \n"line[1]"\n to \n"tmp);
-                            line[1] = tmp;
-                        }
-                    }
-
-                    #DEBUG("xx read["line[1]"] script="pagestate["script"]);
-                    if (update_confidence(line[1],minfo2,pagestate) < 0 ) {
-                        DEBUG("update_confidence - leaving page");
-                        err = 1;
-                        break;
-                    }
-
-                    if (!err) {
-                        # Join current line to previous line if it has no markup. This is for sites that split the 
-                        # plot paragraph across several physical lines.
-                        # There is a bug joining the last line if it ends with "text<br>"
-                        if (index(line[1],"{") == 0 && index(line[1],"<") == 0) {
-                            fullline = trim(fullline) " " trim(line[1]);
-                            #DEBUG("xx full line now = ["fullline"]");
-                        } else {
-                            if (fullline) {
-                                err = scrape_movie_line(lng,domain,fullline,minfo2,pagestate,namestate);
-                                if (err) {
-                                    DEBUG("scrape_movie_line - leaving page");
-                                    break;
-                                }
-                            }
-                            fullline = line[1];
-                        }
-                    }
-
-                    if (!getting_local_fields) {
-                        if (minfo2["mi_plot"] && minfo2["mi_poster"] && minfo2["mi_year"] && minfo2["mi_title"]) {
-                            DEBUG("Got info - leaving page");
-                            break;
-                        }
-                    }
-                }
-                delete g_settings["domain_edit_id"];
-                close(f);
-                # last line
-                if (fullline && !err) {
-                    err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
-                }
-
-                if (err) {
-                    INF("!ABORT PAGE!\n");
-                }
+                INF("wrong movie");
+                err = 1;
             }
         } 
+    } else {
+
+
+        store = 1;
+
+        # caching disabled to allow for websites that have advertising cookies that block initial access.
+        f=getUrl(url,locale":"domain":"title":"year,0);
+        if (f == "") {
+            err=1;
+        } else {
+
+            minfo2["mi_url"] = url;
+            minfo2["mi_category"] = "M";
+
+            pagestate["mode"] = "head";
+            g_settings["domain_edit_id"] = get_id_from_url(domain,url); # used so domain_edit() inserts {ID} in regex
+
+            # A bit messy - orig title is  used for two things. 1) Confirm we are on the right page 2)Decide if we need the poster =if_title_changed
+            pagestate["expectyear"] = year;
+            set_title_score(pagestate,"expecttitle_lc",title,10);
+            set_title_score(pagestate,"expecttitle_alt",alternate_title,20);
+            if (title != orig_title ) {
+                set_title_score(pagestate,"expectorigtitle_lc",orig_title,15);
+                set_title_score(pagestate,"expectorigtitle_alt",alternate_orig,20);
+            }
+            pagestate["expectimdbid"] = imdbid;
+            pagestate["expectdirector"] = tolower(director);
+            if (!poster) {
+                pagestate["checkposters"] = 1;
+                INF("Force local poster fetching - no poster yet");
+            } else {
+                scrape_poster_check(pagestate,"");
+            }
+
+            load_local_words(pagestate,locale);
+
+            lng = lang(locale);
+
+            while(!err && enc_getline(f,line) > 0  ) {
+
+                #DEBUG("scrape["line[1]"]");
+
+                # If set apply this filter to all lines
+                if (g_settings["domain:catalog_domain_filter_all"] ) {
+                    tmp = domain_edits(domain,line[1],"catalog_domain_filter_all");
+                    if (tmp != line[1]) {
+                        DEBUG("line changed from \n"line[1]"\n to \n"tmp);
+                        line[1] = tmp;
+                    }
+                }
+
+                #DEBUG("xx read["line[1]"] script="pagestate["script"]);
+                if (update_confidence(line[1],minfo2,pagestate) < 0 ) {
+                    DEBUG("update_confidence - leaving page");
+                    err = 1;
+                    break;
+                }
+
+                if (!err) {
+                    # Join current line to previous line if it has no markup. This is for sites that split the 
+                    # plot paragraph across several physical lines.
+                    # There is a bug joining the last line if it ends with "text<br>"
+                    if (index(line[1],"{") == 0 && index(line[1],"<") == 0) {
+                        fullline = trim(fullline) " " trim(line[1]);
+                        #DEBUG("xx full line now = ["fullline"]");
+                    } else {
+                        if (fullline) {
+                            err = scrape_movie_line(lng,domain,fullline,minfo2,pagestate,namestate);
+                            if (err) {
+                                DEBUG("scrape_movie_line - leaving page");
+                                break;
+                            }
+                        }
+                        fullline = line[1];
+                    }
+                }
+
+                if (!getting_local_fields) {
+                    if (minfo2["mi_plot"] && minfo2["mi_poster"] && minfo2["mi_year"] && minfo2["mi_title"]) {
+                        DEBUG("Got info - leaving page");
+                        break;
+                    }
+                }
+            }
+            delete g_settings["domain_edit_id"];
+            close(f);
+            # last line
+            if (fullline && !err) {
+                err = scrape_movie_line(locale,domain,fullline,minfo2,pagestate,namestate);
+            }
+
+            if (err) {
+                INF("!ABORT PAGE!\n");
+            }
+        }
 
         #This will get merged in if page is succesful.
         #if page fails then the normal logical flow of the program should prevent re-visits. not the visited flag.
         set_visited(minfo2,domain":"locale);
-            
-    } else {
-        ERR("paramters missing");
-    }
 
-    if (!err && minfo2["mi_category"] == "M") {
+        if (!err && minfo2["mi_category"] == "M") {
 
-        if (!err  &&  !is_prose(lng,minfo2["mi_plot"]) ) {
-            #We got the movie but there is no plot;
-            #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
-            #a significant failure. Most other scraped info is language neutral.
-            INF("missing plot");
-            #err = 2; # we may want posters too!
-        }
-        if (pagestate["confidence"] < 1000) {
-            if (pagestate["titleinpage"]) {
-                adjust_confidence(pagestate,0,"title in page");
+            if (!err  &&  !is_prose(lng,minfo2["mi_plot"]) ) {
+                #We got the movie but there is no plot;
+                #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
+                #a significant failure. Most other scraped info is language neutral.
+                INF("missing plot");
+                #err = 2; # we may want posters too!
+            }
+            if (pagestate["confidence"] < 1000) {
+                if (pagestate["titleinpage"]) {
+                    adjust_confidence(pagestate,0,"title in page");
+                }
+            }
+            if (year || imdbid || orig_title || director ) {
+                required_confidence = 25;
+                #if (!director) required_confidence -= 20;
+                #if (!orig_title) required_confidence -= 20;
+                #if (!imdbid) required_confidence -= 20;
+                #if (!year) required_confidence -= 20;
+                INF("Confidence:"pagestate["confidence"]"/"required_confidence);
+                if (pagestate["confidence"] < required_confidence) {
+                    err = 1;
+                }
+            }
+
+            if (err) {
+                dump(0,"bad page info",minfo2);
             }
         }
-        if (year || imdbid || orig_title || director ) {
-            required_confidence = 25;
-            #if (!director) required_confidence -= 20;
-            #if (!orig_title) required_confidence -= 20;
-            #if (!imdbid) required_confidence -= 20;
-            #if (!year) required_confidence -= 20;
-            INF("Confidence:"pagestate["confidence"]"/"required_confidence);
-            if (pagestate["confidence"] < required_confidence) {
-                err = 1;
+
+        if (!err) {
+            if(index(domain,"imdb")) {
+                imdb_extra_info(minfo2,url);
+            }
+            if (store) {
+                if (imdbid) {
+                    minfo_set_id("imdb",imdbid,minfo2);
+
+                    #Only store to cache if the imdb id is set. 
+                    #This ensures that only known pages are cached. Otherwise they must be re-scrapped which will
+                    #force full "confidence" checking. 
+                    #If pages were cached without imdb then it means the full confidence checks will not be performed, and this 
+                    #is different for each input title.
+                    scrape_cache_add(url,minfo2);
+                }
             }
         }
-
-        if (err) {
-            dump(0,"bad page info",minfo2);
-        }
-    }
+    } 
 
     if (!err) {
-        if(index(domain,"imdb")) {
-            imdb_extra_info(minfo2,url);
-        }
-        if (store) {
-            scrape_cache_add(url,minfo2);
-        }
         minfo_merge(minfo,minfo2,domain);
         dump(0,title"-"year"-"domain"-"locale,minfo);
     }

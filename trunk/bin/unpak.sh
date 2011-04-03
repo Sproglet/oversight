@@ -1621,6 +1621,8 @@ move_rar_contents() {
 
         if [ "$unpak_touch_files" -eq 1 ] ; then
             touch "$unrar_tmp_dir"/* || true
+            touch "$unrar_tmp_dir"/*/* || true
+            touch "$unrar_tmp_dir"/*/*/* || true
         fi
 
         ( cd "$unrar_tmp_dir"; move_rar_contents "../$1" )

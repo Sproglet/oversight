@@ -127,3 +127,20 @@ After changing locale you must force Oversight to rescan your items. To do this 
 
 TV Shows will only show localised plots if they are present at http://thetvdb.com
  t you must first delist an item before rescanning it.
+
+===How do I copy the Oversight, Feedtime and NZBget configuration to a new drive===
+if your drive is going to be an exact replacement and all medai paths will remain the same:
+
+- backup oversight conf: /share/Apps/oversight/conf/*.cfg files. (unpak.cfg, catalog.cfg oversight.cfg)
+- [optional]backup oversight db : Db files are index.db plot.db and entire db/global folder.
+- FEEDTIME (backup folder /share/Apps/feedtime/data)
+- Nzbget (backup config file /share/Apps/NZBGet/.nzbget/nzbget.conf)
+
+- Copy media on to new drive first.
+
+- Install CSI, nzbget, oversight , feedtime on new drive
+
+- restore saved nzbget.conf to /share/Apps/NZBGet/.nzbget/nzbget.conf)
+- restore saved oversight .cfg files into /share/Apps/oversight/conf
+- Restore oversight db files IF NOT rescan
+- restore saved feedtime folder /share/Apps/feedtime/data 

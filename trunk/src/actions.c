@@ -262,7 +262,7 @@ void delete_queue_add(DbItem *item,int force,char *path) {
 
         if (util_stat(real_path,&st) == 0) {
 
-            if (strcmp(item->db->source,"*") == 0 && st.st_uid != nmt_uid()) {
+            if (0 && strcmp(item->db->source,"*") == 0 && st.st_uid != nmt_uid()) {
 
                 HTML_LOG(0,"Error: no permission to delete [%s]",item->file);
 

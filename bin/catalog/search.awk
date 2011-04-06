@@ -621,9 +621,15 @@ score) {
         gPriority["mi_title","epguides"]=30;
         gPriority["mi_title","imdb_aka"]=40;
         gPriority["mi_title","imdb_orig"]=50;
-        gPriority["mi_title","imdb"]=50;
-        gPriority["mi_title","thetvdb"]=60;
-        gPriority["mi_title","themoviedb"]=60; # demoted below IMDB some entries not good eg tt0892769 it:Dragons instead of it:Dragon Trainer
+
+        # themoviedb is demoted below IMDB as some entries not good eg tt0892769 it:Dragons instead of it:Dragon Trainer
+        # Also in themoviedb people link DVD shorts to the main ttid causing imdb lookup to fail eg Desplicable Me -> Minion Madness
+
+        #however themoviedb title is prefered for localisation.
+        gPriority["mi_title","imdb"]=60;
+        gPriority["mi_title","themoviedb"]=65;
+
+        gPriority["mi_title","thetvdb"]=70;
 
         gPriority["mi_orig_title","themoviedb"]=60; 
 

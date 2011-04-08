@@ -55,8 +55,7 @@ if [ ! -f "$input.pnm" ] ; then
 fi
 
 # merge(composite)
-echo "[DHB]  Starting"
-#pnmcomp -align=right -valign=top -alpha "$icon_base.mask.pnm" "$icon_base.pnm" "$input.pnm" \
+pnmcomp -align=right -valign=top -alpha "$icon_base.mask.pnm" "$icon_base.pnm" "$input.pnm" \
  | cjpeg > "$output" && perms "$output"
 
 if [ -n "$remove_pnm" ] ; then

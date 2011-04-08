@@ -1327,6 +1327,14 @@ words,num,i,len) {
 
                                 for(i in words) if (length(words[i])  > 30 && utf8len(words[i]) > 30) return 0;
 
+                                # remove lists (of names)
+                                if (match(text,"(,[^.]+){5,}")) {
+                                    if (RLENGTH * 2 > length(text)) {
+                                        DEBUG("ignore list ["text"]");
+                                        return 0;
+                                    }
+                                }
+
                                 if ( (lng == "en") == is_english(text,len)  ) {
 
                                     return 1;

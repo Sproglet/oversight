@@ -106,8 +106,8 @@ BEGIN {
     g_english_end_re="([ .!?]|$)";
     # there is some overlap between words and phrases - eg 'and' - this will be refined over time. Esp with Germanic languages some
     # short words may not be enough to distinguish
-    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|from|who|what|where|when|how|with|his|and|for|are|[Tt]hey|their|them|attempt(|s|ed)|decides?|learns?|forced|offers|goes|plans?|wants?|tries|try|until|became|becomes?|lives?|life|have|after|before|must|plays?|years?|come|has|out|stops?|helps?|will|finds?|reali[sz]es?)"g_english_end_re;
-    g_english_phrase_re="((in|to|by|for|is|on|as|of|and) (a|an|the|his|her|their|they)"g_english_end_re"|[Tt]he +[a-z])";
+    g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|from|who|what|where|when|how|with|his|and|for|are|[Tt]hey|their|them|attempt(|s|ed)|decides?|learns?|forced|offers|goes|plans?|wants?|tries|try|until|became|becomes?|lives?|life|have|after|before|must|plays?|years?|come|has|out|stops?|helps?|will|finds?|reali[sz]es?|that|into|falls|retrieve)"g_english_end_re;
+    g_english_phrase_re="((in|to|by|for|is|on|as|of|and) (a|an|the|his|her|their|they|order)"g_english_end_re"|[Tt]he +[a-z])";
     g_english_re=g_english_start_re"("g_english_words_re"|"g_english_phrase_re")";
 
     g_tv_check_urls["tvrage"]=g_tvrage_web;

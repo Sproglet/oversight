@@ -145,6 +145,6 @@ if your drive is going to be an exact replacement and all medai paths will remai
 - Restore oversight db files IF NOT rescan
 - restore saved feedtime folder /share/Apps/feedtime/data 
 
-== If I add a location in watch_paths do I also need to add it to scan_paths ==
+=== If I add a location in watch_paths do I also need to add it to scan_paths ===
 
 No :)

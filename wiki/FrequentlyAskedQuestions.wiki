@@ -148,3 +148,14 @@ if your drive is going to be an exact replacement and all medai paths will remai
 === If I add a location in watch_paths do I also need to add it to scan_paths ===
 
 No :)
+
+=== Is there a quick way to re-install oversight if it stops working ===
+
+Try this:
+
+In the standard NMT file browser,
+   # go to the "Apps" folder,
+   # go to the "oversight" folder
+   # Press the blue button on the remote to see non-media files (esp If using an older nmt (eg 100 series, hdx 1000 etc)
+   # Select oversight-install.cgi
+   # Follow instructions to re-install.

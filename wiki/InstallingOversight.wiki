@@ -21,7 +21,7 @@ All methods assume your NMT is connected to your home network.
 
   * Install the [http://www.nmtinstaller.com/ CSI] Program on your PC. Then select the Oversight Package.
   * Configure It with the IP Address of your NMT
-  * If using usenet/newsgoups install NZBGET package first.
+  * If using usenet/newsgoups install NZBGET package first if you havent already (Dont re-install it if you already have it as it will wipe your newsgroup settings).
   * Select the Oversight Package 
   * Install
 

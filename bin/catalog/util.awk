@@ -22,30 +22,25 @@ tmp,err) {
 function isnmt() {
     return 0+ is_file(NMT_APP_DIR"/MIN_FIRMWARE_VER");
 }
-function is_file(f,\
-tmp,err) {
-    err = -1;
-    if (f) {
-        err = (getline tmp < f );
-        if (err == -1) {
-            #DEBUG("["f"] doesnt exist");
-        } else {
-            close(f);
-        }
-    }
-    return (err != -1 );
+
+# changed from getline error check because gawk 3.1.6 has uncatchable error if input is a directory
+# echo /etc/..  | gawk '{ e = (getline tmp < $0 ) ; print "error ",$0,e }'
+# gawk: (FILENAME=- FNR=1) fatal: file `/etc/..' is a directory
+
+function is_file(f) {
+    return test("-f",f);
 }
+
 function is_empty(d) {
     return system("ls -1A "qa(d)" | grep -q .") != 0;
 }
+
 function is_dir(f) {
-    return 0+ test("-d",f"/.");
+    return test("-d",f"/.");
 }
-function is_file_or_folder(f,\
-r) {
-    r = (is_file(f) || is_dir(f));
-    if (r == 0) WARNING(f" is neither file or folder");
-    return r;
+
+function is_file_or_folder(f) {
+    return test("-e",f);
 }
 
 function file_copy(old,new) {

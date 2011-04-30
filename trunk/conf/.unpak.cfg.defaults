@@ -21,10 +21,10 @@
 #manually at the command line.
 #unpak_nzbget_conf="/share/Apps/NZBget/.nzbget/nzbget.conf"
 
-#If not using NMT platform, uncomment set the follow 
+#Set if unrar is not on the default path
 #unpak_unrar_bin="/path/to/unrar"
 
-#If not using NMT platform, uncomment set the follow 
+#Set if par2 is not on the default path
 #unpak_par2_bin="/path/to/par2"
 
 

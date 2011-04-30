@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 # $Id$ 
 
 nzb_launch_dir="$OLDPWD"
@@ -22,10 +22,13 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
 NMT_APP_DIR=
+NMT_APP_BIN=
+OWNER=nobody:501
 for d in /mnt/syb8634 /nmt/apps ; do
     if [ -f $d/MIN_FIRMWARE_VER ] ; then
         NMT_APP_DIR="$d"
         NMT_APP_BIN="$d/bin"
+        OWNER=nmt:nmt
     fi
 done
 
@@ -224,6 +227,10 @@ load_nzbget_settings_pre_v7() {
 
 WHICH() {
     # search path 
+    b=
+    if [ -n "$NMT_APP_BIN" ] ; then
+     b="$NMT_APP_BIN"
+     fi
     for d in "$NMT_APP_BIN" `echo "$unpak_nzbget_bin" | sed 's/\/nzbget$//' ` `echo $PATH | sed 's/:/ /g'` ; do
         if [ -f "$d/$1" ] ; then
             INFO "Using $d/$1"
@@ -862,7 +869,7 @@ unrar_all() {
 check_top_level_unrar_state() {
     if [ -f "$rar_state_list" ] ; then
         if egrep '^[^/]+(FAILED|UNKNOWN)' "$rar_state_list" > "$gTmpFile.state"  ;  then
-            if [ "$1" == 1 ] ; then
+            if [ "$1" = 1 ] ; then
                 log_stream ERROR "finalstate"  < "$gTmpFile.state"
             fi
             rm -f -- "$gTmpFile.state"
@@ -1947,7 +1954,7 @@ create_resume_file() {
         arg_list "$@" > "$file"
     fi
     if [ "$is_nmt" = "Y" ] ; then
-        echo "chown -R nmt:nmt ." >> "$file"
+        echo "chown -R $OWNER ." >> "$file"
     fi
     chmod ugo+x "$file"
     cat "$file" | log_stream INFO
@@ -1955,7 +1962,7 @@ create_resume_file() {
 
 PERMS() {
     if [ "$is_nmt" = "Y" ] ; then
-        chown -R nmt:nmt "$@"
+        chown -R $OWNER "$@"
     fi
 }
 
@@ -2051,7 +2058,7 @@ main() {
     INFO 'unpak version $Id$ '
     INFO "root_folder [$root_folder]"
     sed 's/^/\[INFO\]/' /proc/version
-    if [ $is_nmt == "Y" ] ; then
+    if [ $is_nmt = "Y" ] ; then
         sed -rn '/./ s/^/\[INFO\] nmt version /p' $NMT_APP_DIR/VERSION
     fi
 
@@ -2192,7 +2199,7 @@ if [ -n "$NMT_APP_DIR" ] ; then
     TMP2=$root_folder/tmp
     if mkdir -p "$TMP2" ; then
         TMP="$TMP2"
-        chown nmt:nmt "$TMP" 2>/dev/null || true
+        chown $OWNER "$TMP" 2>/dev/null || true
     fi
 fi
 

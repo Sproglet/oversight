@@ -67,8 +67,13 @@ if is_nmt ; then
         PATH="/share/bin:$PATH" && export PATH
     fi
 else
-    uid=root
-    gid=root
+    if is_dns323 ; then
+        uid=nobody
+        gid=501
+    else
+        uid=root
+        gid=root
+    fi
 fi
 
 # also used by plot.db
@@ -110,13 +115,13 @@ PERMS() {
     chown -R $OVERSIGHT_ID "$@" || true
 }
 
-tmp_root=/tmp/oversight
-if is_nmt ; then
+
+# If /tmp is on a hard drive use it
+if df /tmp | grep -q '/[sh]d[a-f]' ; then
+    tmp_root=/tmp/oversight
+else
     # on nmt something sometimes changes /tmp permissions so only root can write
     tmp_root="$APPDIR/tmp"
-fi
-if is_dns323 ; then
-    tmp_root="/ffp/tmp"
 fi
 
 #unpak.sh may pass the JOBID to catalog.sh via JOBID env. This allows

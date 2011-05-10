@@ -28,6 +28,7 @@ for d in /mnt/syb8634 /nmt/apps ; do
         nmt_version=`cat $NMT_APP_DIR/VERSION`
     fi
 done
+echo NMT_APP_DIR=$NMT_APP_DIR
 
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA
@@ -51,33 +52,14 @@ done
 APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
 APPDIR=$(cd "${APPDIR:-.}/.." ; pwd )
 
-is_nmt() {
-    [ -n "$NMT_APP_DIR" ]
-}
-
-is_dns323() {
-	[ -d /ffp/tmp ] 
-}
+. $APPDIR/bin/ovsenv
 
 NMT=0
 if is_nmt ; then
-    uid=nmt
-    gid=nmt
     if [ -d /share/bin ] ; then
         PATH="/share/bin:$PATH" && export PATH
     fi
-else
-    if is_dns323 ; then
-        uid=nobody
-        gid=501
-    else
-        uid=root
-        gid=root
-    fi
 fi
-
-# also used by plot.db
-export OVERSIGHT_ID="$uid:$gid"
 
 AWK=gawk
 #AWK="$BINDIR/gawk --posix "

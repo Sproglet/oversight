@@ -192,8 +192,13 @@ set_p2p_exit_codes() {
         POSTPROCESS_SUCCESS=0
 }
 
+# General comparison using awk. Some devices has bourne or ash (not bash)
+cmp() {
+    echo | awk "{ s= ( \"$1\" $2 \"$3\" ); } END { exit(1-s); }"
+}
+
 set_nzbget_exit_codes() {
-    if [ "${NZBOP_VERSION:-}" \> "0.7.0-testing-r341" ] ; then
+    if cmp "${NZBOP_VERSION:-}" ">" "0.7.0-testing-r341" ; then
         POSTPROCESS_PARCHECK_CURRENT=91
         POSTPROCESS_PARCHECK_ALL=92
         POSTPROCESS_SUCCESS=93

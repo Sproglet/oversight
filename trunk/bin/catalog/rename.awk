@@ -264,10 +264,10 @@ function moveFile(oldName,newName,\
 
 #Moves folder contents.
 function moveFolder(minfo,oldName,newName,\
-    cmd,new,old,ret,err) {
+    ret,err) {
 
    ret=1;
-   err="";
+   err = "unknown error";
 
    if (folderIsRelevant(oldName) == 0) {
 
@@ -286,18 +286,9 @@ function moveFolder(minfo,oldName,newName,\
        err="un changable folder";
 
    } else {
-       new=qa(newName);
-       old=qa(oldName);
-       if (g_opt_dry_run) { 
-           print "dryrun: from "old"/* to "new"/";
-           ret = 0;
-       } else if (is_empty(oldName) == 0) {
-           INF("move folder:"old"/* --> "new"/");
-           cmd="mkdir -p "new" ;  mv "old"/* "new" ; mv "old"/.[^.]* "new" ; rmdir "old;
-           err = "unknown error";
-           ret = exec(cmd);
-           system("rmdir "old" 2>/dev/null" );
-       }
+
+       ret = movFolder2(oldName,newName);
+
    }
    if (ret != 0) {
        WARNING("folder contents ["oldName"] not renamed to ["newName"] : "err);
@@ -305,3 +296,19 @@ function moveFolder(minfo,oldName,newName,\
    return 0+ ret;
 }
 
+function movFolder2(oldName,newName,\
+old,new,cmd,ret) {
+       new=qa(newName);
+       old=qa(oldName);
+       if (g_opt_dry_run) { 
+           print "dryrun: from "old"/* to "new"/";
+           ret = 0;
+       } else if (is_empty(oldName) == 0) {
+            INF("move folder:"old"/* --> "new"/");
+           # Seems to be a bug on dns323 where globbing fails of the path is too long. 
+           # Havent fully isolated but resolved by replacing "mv /path/* " with "( cd /path ; mv * )"
+           cmd= " mkdir -p "new" ; ( cd "old" ; mv * .* "new" || true ) ; rmdir "old" 2>/dev/null";
+           ret = exec(cmd);
+       }
+       return ret;
+}

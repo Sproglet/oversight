@@ -90,4 +90,6 @@ If a location is specified in _watch_paths_ you do not need to repeat it again i
 
 After you have set up the folders click the 'Rescan All Media' option http://oversight.googlecode.com/svn/trunk/images/nav/set1/rescan.png to start a background scan.
 
+Also for efficient nas scanning see AutomaticNASScanning
+
 If the scan does not work at all, try replacing the NAS name with it's IP address in the Network Setup screen and in the Oversight settings. Also see [NASTimeouts]

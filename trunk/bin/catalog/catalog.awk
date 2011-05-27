@@ -176,6 +176,10 @@ function report_status(msg) {
 
 END{
 
+    g_state_file=APPDIR"/.state";
+
+    load_state(g_state_file,g_state);
+
     if (!g_db) {
         # Running without oversight jukebox - switch off all poster fetching etc.
         GET_POSTERS = UPDATE_POSTERS = 0;
@@ -422,6 +426,40 @@ END{
         exec(APPDIR"/bin/jpg_fetch_and_scale START &");
     }
     rm(PIDFILE);
+
+    if (!RESCAN  && !NEWSCAN ) {
+        g_f = g_settings["catalog_touch_file"];
+        if (g_f != "") {
+            touch(g_f);
+        }
+    }
+}
+
+function replace_share_name(indir,\
+out,share_name) {
+    out = indir;
+    if (out ~ /^[^\/.]/  ) {
+        # Assume it is a share
+        share_name=out;
+        sub(/\/.*/,"",share_name);
+
+        if (!(share_name in g_share_name_to_folder)) {
+            g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings);
+            DEBUG("share name "share_name" = "g_share_name_to_folder[share_name]);
+        }
+        if (g_share_name_to_folder[share_name]) {
+
+            g_share_map[out] = share_name;
+            out = nmt_get_share_path(out);
+
+        } else if (START_DIR != "/share/Apps/oversight" && is_file_or_folder(START_DIR"/"out)) {
+            out = START_DIR"/"out;
+        } else {
+            WARNING(out" not a share or file");
+            out = "";
+        }
+    }
+    return out;
 }
 
 function replace_share_names(folders,\
@@ -430,26 +468,9 @@ f,share_name) {
         #If a pth does not begin with . or / then check if the first part is the 
         #name of an NMT network_share. If so - replace with the share path.
         for(f in folders) {
-            if (folders[f] ~ /^[^\/.]/  ) {
-                # Assume it is a share
-                share_name=folders[f];
-                sub(/\/.*/,"",share_name);
-
-                if (!(share_name in g_share_name_to_folder)) {
-                    g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings);
-                    DEBUG("share name "share_name" = "g_share_name_to_folder[share_name]);
-                }
-                if (g_share_name_to_folder[share_name]) {
-
-                    g_share_map[folders[f]] = share_name;
-                    folders[f] = nmt_get_share_path(folders[f]);
-
-                } else if (START_DIR != "/share/Apps/oversight" && is_file_or_folder(START_DIR"/"folders[f])) {
-                    folders[f] = START_DIR"/"folders[f];
-                } else {
-                    WARNING(folders[f]" not a share or file");
-                    delete folders[f];
-                }
+            folders[f] = replace_share_name(folders[f]);
+            if (folders[f] == "") {
+                delete folders[f];
             }
         }
     }
@@ -1181,6 +1202,14 @@ i,folderCount,moveDown) {
 
         } else if (ARGV[i] == "NEWSCAN" )  {
             NEWSCAN=1;
+            moveDown++;
+        } else if (ARGV[i] == "CHECK_FREE_SPACE" )  {
+            # Do a scan if free space on the device has changed
+            CHECK_FREE_SPACE=1;
+            moveDown++;
+        } else if (ARGV[i] == "CHECK_TRIGGER_FILES" )  {
+            # Do a scan if any of the files listed in catalog_trigger_files have changed.
+            CHECK_TRIGGER_FILES=1;
             moveDown++;
         } else if (ARGV[i] == "RESCAN" )  {
             RESCAN=1;

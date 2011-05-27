@@ -106,3 +106,9 @@ catalog_locale3=-
 # Get local posters =always =never =if_title_changed
 catalog_get_local_posters="if_title_changed"
 catalog_extended_local_plot_search=1
+
+# After renaming - update datestamp of all parent folders
+catalog_touch_parent_folders=1
+
+# This file is touched after any single update. Usefull if catalog script is running on nas etc.
+catalog_touch_file="/share/Apps/oversight/.scan"

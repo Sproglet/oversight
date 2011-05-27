@@ -1,7 +1,10 @@
 catalog_scan_paths:Comma separated list of media paths whose content does not change much or are updated via nzbget. (eg /share/Tv, /share/Movies ) (see http://tinyurl.com/ovspath )
 catalog_watch_paths:Comma separated list of paths for automatic regular scans. Folders that regularly have content added but not by nzbget.  (see http://tinyurl.com/ovspath )
-catalog_watch_frequency:How often to automatically check watch paths for new media. 1hr or more recommended.|off|10m|15m|20m|30m|1h|2h|3h|4h|6h|8h|12h|1d
+catalog_watch_frequency:How often to check watch paths for new media. For < 1hr use trigger files as well.|off|5m|10m|15m|20m|30m|1h|2h|3h|4h|6h|8h|12h|1d
 #catalog_watch_torrents:Watch NMT Transmission for completed torrents. This is EXPERIMENTAL and might not work at present|0|1
 catalog_ignore_paths:List of paths to ignore. *=any string, ?=any single character, <=start of word >=end of word.
 catalog_ignore_names:List of file names to ignore. *=any string, ?=any single character, <=start of word >=end of word.
 catalog_follow_symlinks:Force the scan to follow symlinks. (beware circular links)|0|1
+catalog_trigger_files:list of (remote) files whose datestamp or size must have changed for the scheduled scan to continue.
+catalog_touch_parent_folders:After moving and renaming, update datestamp of all parent folders. May allow top level folder to be used as a trigger file.|0|1
+catalog_touch_file:Update datestamp of this file after a single file update. Use to signal new content if catalog is running on a remote nzbget/nas.

@@ -1,14 +1,97 @@
 # Folder and file scanning functions
+function trigger_any_changed(\
+f,ret,i) {
+    ret = 1;
+    if (split(g_settings["catalog_trigger_files"],f,",")) {
+        ret = 0;
+        for(i in f) {
+            f[i] = replace_share_name(f[i]);
+            if (f[i] != "") {
+                if (trigger_file_changed(f[i])) {
+                    INF("File changed: "f[i]);
+                    ret =1;
+                    break;
+                } else {
+                    INF("File unchanged: "f[i]);
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+function trigger_file_changed(f,\
+ret,key,tmpf,txt) {
+
+    ret = 0;
+    key="file_state:"f;
+    tmpf = new_capture_file("trigger");
+    if (exec("ls -ld "qa(f)" > "qa(tmpf)) == 0) {
+        if ((getline txt < tmpf) > 0) {
+            if (g_state[key] != txt) {
+                update_state(key,txt);
+                ret = 1;
+            }
+        }
+        close(tmpf);
+    }
+    return ret;
+}
+
+function free_kb(device,\
+tmpf,txt,wrds,ret) {
+    ret = -1;
+    tmpf = new_capture_file("df");
+    if (exec("df -k "qa(device)" > "qa(tmpf)) == 0) {
+        while((getline txt < tmpf) > 0 ) {
+            # do nothing
+        }
+        close(tmpf);
+        # line may be
+        # export total used free OR
+        # <space> total used free (if export is long)
+        sub(/^[^ ]* +/,"",txt); 
+        split(txt,wrds," ");
+        ret = wrds[3];
+    }
+    return ret;
+    #system("df -k "qa(device)" | awk 'END { sub(/^[^ ]*/,\"\") ; print $3; }'");
+}
+
+function file_system_changed(dir,\
+key,ret,free) {
+    ret = 0;
+    key="free_mb:"dir;
+
+    free = int(free_kb(dir)/1024);
+    INF("Free space "dir" = "free" was "g_state[key]);
+    if (free >= 0 && g_state[key] != free) {
+        update_state(key,free);
+        ret = 1;
+    } else {
+        INF("Free space unchanged from last scan - skipping");
+    }
+    return ret;
+}
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fcount,total,done) {
+f,fcount,total,done,dir,doscan) {
 
-    for(f in folderArray ) {
+    # If NEWSCAN is not present then force a full scan and ignore CHECK_FREE_SPACE & CHECK_TRIGGER_FILES
+    if(!NEWSCAN || !CHECK_TRIGGER_FILES || trigger_any_changed()) {
 
-        if (folderArray[f] && !(f in done)) {
-            report_status("folder "++fcount);
-            total += scan_contents(folderArray[f],scan_options);
-            done[f]=1;
+        for(f in folderArray ) {
+
+            dir = folderArray[f];
+
+            if (dir && !(dir in done)) {
+                report_status("folder "++fcount);
+
+                if (!CHECK_FREE_SPACE || file_system_changed(dir)) {
+                    total += scan_contents(dir,scan_options);
+                }
+                done[dir]=1;
+            }
         }
     }
 
@@ -70,6 +153,7 @@ ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,fil
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
     INF("scan_contents" root);
+
     qfile = new_capture_file("dbqueue");
     if (root == "") return;
 

@@ -18,6 +18,8 @@ watch_frequency=2h
 
 Oversight will recursively scan all of the watch paths at this time.
 
+*Following settings are not implemented yet. Very soon!*
+
 For efficient scanning it is recommended to use trigger files. This is just a list of files whose datestamp or size will change whenever new content is added to your nas. It mast be visible to the NMT (ideally on the same network share). This allows for more frequent checks for new media.
 
 Eg.

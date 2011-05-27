@@ -665,11 +665,11 @@ function isDvdDir(f) {
 }
 
 function touch(x) {
-    system("touch "qa(x));
+    return system("touch "qa(x));
 }
 
 function touch_and_move(x,y) {
-    system("touch "qa(x)" ; mv "qa(x)" "qa(y));
+    return system("touch "qa(x)" ; mv "qa(x)" "qa(y));
 }
 function gsub_hash(reg,val,h,\
 i) {
@@ -682,7 +682,7 @@ function touch_parents(f) {
     do {
         f = dirname(f);
         INF("touch "f);
-        touch(f);
+        if (touch(f) != 0) break;
     } while(f != "" && f != "/" && f != ".");
 }
 

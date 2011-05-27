@@ -1,4 +1,3 @@
-
 function load_catalog_settings(\
 ign_path) {
 
@@ -128,5 +127,31 @@ ret) {
         ret = 1; # already loaded
     }
     return ret;
+}
+
+function load_state(f,arr,\
+l,words) {
+    while((getline l < f) > 0) {
+        split(l,words,SUBSEP);
+        arr[words[1]] = words[2];
+    }
+    close(f);
+    arr[".loaded"] = 1;
+    dump(0,"state",arr);
+}
+function save_state(arr,f,\
+i) {
+    for(i in arr) {
+        print i SUBSEP arr[i] > f;
+    }
+    close(f);
+}
+
+function update_state(key,val) {
+    if (!g_state[".loaded"]) {
+        load_state(g_state_file,g_state);
+    }
+    g_state[key]=val;
+    save_state(g_state,g_state_file);
 }
 

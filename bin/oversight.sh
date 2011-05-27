@@ -411,7 +411,7 @@ reboot_fix() {
     # Restore cronjobs
 
     freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
-    add_watch_cron "$freq" "watch" "NEWSCAN" 0 0
+    add_watch_cron "$freq" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 0 0
 
     # Delete any catalog 2 oversight messages
     rm -f "$APPDIR/catalog.status"
@@ -419,7 +419,7 @@ reboot_fix() {
 
 case "$1" in 
     NEWSCAN)
-        "$APPDIR/bin/catalog.sh" NEWSCAN 
+        "$APPDIR/bin/catalog.sh" "$@" 
 
         if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
             "$APPDIR/bin/torrent.sh" transmission unpak_all
@@ -427,7 +427,7 @@ case "$1" in
         ;;
 
     WATCH_FOLDERS)
-        add_watch_cron "$2" "watch" "NEWSCAN" 0 0
+        add_watch_cron "$2" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 0 0
         ;;
 
     INSTALL_AS_WGET)

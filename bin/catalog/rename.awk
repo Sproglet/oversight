@@ -150,6 +150,9 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
             system("rmdir -- "qa(oldFolder)); # only remove if empty
         }
+        if (g_settings["catalog_touch_parent_folders"]) {
+            touch_parents(newFolder);
+        }
 
     } else {
         # Name unchanged

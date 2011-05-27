@@ -664,6 +664,10 @@ function isDvdDir(f) {
     return substr(f,length(f)) == "/";
 }
 
+function touch(x) {
+    system("touch "qa(x));
+}
+
 function touch_and_move(x,y) {
     system("touch "qa(x)" ; mv "qa(x)" "qa(y));
 }
@@ -672,6 +676,14 @@ i) {
     for(i in h) {
         gsub(reg,val,h[i]);
     }
+}
+
+function touch_parents(f) {
+    do {
+        f = dirname(f);
+        INF("touch "f);
+        touch(f);
+    } while(f != "" && f != "/" && f != ".");
 }
 
 # split array at unescaped char

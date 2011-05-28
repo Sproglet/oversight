@@ -109,7 +109,8 @@ fi
 #unpak.sh may pass the JOBID to catalog.sh via JOBID env. This allows
 #the log files to share the same number.
 if [ -z "${JOBID:-}" ] ; then
-    JOBID=$$
+    #JOBID=$$
+    JOBID=`date +%d%H%M%S`
 fi
 
 g_tmp_dir="$tmp_root/$JOBID"

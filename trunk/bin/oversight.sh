@@ -288,56 +288,20 @@ FIND_REMOTE() {
     echo "</pre>"
 }
 
-# $1=max value
-# $2=period
-# $3=offset
-# return list of minute values. eq 20,3 returns 3,23,43
-
-get_period() {
-    startms=$(( $2 + $3 ))
-    ms=$startms
-
-    i=0
-
-    while [ "$i" -le "$1" ] ; do
-
-        if [ $(( $i % $startms )) -eq 0 -a $i -ne $startms ] ; then
-
-            ms="$ms,$i"
-
-        fi
-
-        i=$(( $i + 1 ))
-
-    done
-    echo $ms
-}
-            
-
 # $1=frequency
 # $2=cron tag
 # $3=function eg "./bin/catalog.sh function"
-# $4=hour offset
-# $5=minute offset
 
 add_watch_cron() {
     if [ "$1" != "off" ] ; then
         d="*"
-        m="*"
         h="*"
+        m="*"
         case "$1" in
-            10m) d="*"    ; h="*" ; m="`get_period 59 10 $5`";;
-            15m) d="*"    ; h="*" ; m="`get_period 59 15 $5`";;
-            20m) d="*"    ; h="*" ; m="`get_period 59 20 $5`";;
-            30m) d="*"    ; h="*" ; m="`get_period 59 30 $5`" ;;
-            1h)  d="*"    ; h="0-23" ; m="$5" ;;
-            2h)  d="*"    ; h="`get_period 23 2 $4`" ; m="$5" ;;
-            3h)  d="*"    ; h="`get_period 23 3 $4`" ; m="$5" ;;
-            4h)  d="*"    ; h="`get_period 23 4 $4`" ; m="$5" ;;
-            6h)  d="*"    ; h="`get_period 23 6 $4`" ; m="$5" ;;
-            8h)  d="*"    ; h="`get_period 23 8 $4`" ; m="$5" ;;
-            12h) d="*"    ; h="`get_period 23 12 $4`" ; m="$5" ;;
-            1d)  d="1-31" ; h=0 ; m=$5 ;;
+            *m) m="*/`echo $1 | sed 's/m//'`" ;;
+            *h) h="*/`echo $1 | sed 's/h//'`" ; m=0 ;;
+            *d) d="*/`echo $1 | sed 's/d//'`" ; h=0 ; m=0 ;;
+            *) echo Unknown cron format $1 ;;
         esac
         if [ "$d$m$h" != "***" ] ; then
             "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR/bin' && './oversight.sh' $3 >/dev/null 2>&1 &"
@@ -411,7 +375,7 @@ reboot_fix() {
     # Restore cronjobs
 
     freq="`awk -F= '/^catalog_watch_frequency=/ { gsub(/"/,"",$2) ; print $2 }' $CONF`"
-    add_watch_cron "$freq" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 0 0
+    add_watch_cron "$freq" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 
 
     # Delete any catalog 2 oversight messages
     rm -f "$APPDIR/catalog.status"
@@ -427,7 +391,7 @@ case "$1" in
         ;;
 
     WATCH_FOLDERS)
-        add_watch_cron "$2" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 0 0
+        add_watch_cron "$2" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 
         ;;
 
     INSTALL_AS_WGET)

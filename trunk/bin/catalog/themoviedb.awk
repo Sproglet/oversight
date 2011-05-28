@@ -94,13 +94,24 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2,ln,name,id) {
 }
 
 function get_moviedb_img(xml,root,type,size,\
-filters,ret,tags) {
+filters,ret,tags,num,i,url) {
     filters["#type"] = type;
     filters["#size"] = size;
 
-    if (find_elements(xml,root"/images/image",filters,1,tags)) {
-        ret = xml[tags[1]"#url"];
-        if (index(ret,"/") == 1) ret = "http://hwcdn.themoviedb.org"ret;
+    num = find_elements(xml,root"/images/image",filters,0,tags);
+
+    #themoviedb has a few poster fererences that do not exist - so spider each in turn
+    for( i = 1 ; i <= num ; i++ ){
+        if (find_elements(xml,root"/images/image",filters,0,tags)) {
+
+            url = xml[tags[i]"#url"];
+            sub(/^\//,"http://hwcdn.themoviedb.org/",url);
+
+            if (url_online(url,2,2)) {
+                ret = url;
+                break;
+            }
+        }
     }
     return ret;
 }

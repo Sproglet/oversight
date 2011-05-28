@@ -1146,33 +1146,39 @@ err,value){
 function scrape_poster_check(pagestate,title_so_far,\
 opt,ret,t) {
 
-    title_so_far = norm_title(title_so_far);
+    ret = pagestate["checkposters"];
 
-    opt = g_settings["catalog_get_local_posters"]; 
+    # Recheck if checkposters has never been set ("") or was set to 0
+    # Need to recheck if title is changed during scraping and catalog_get_local_posters = if_title_changed.
+    if (!ret) {
+        title_so_far = norm_title(title_so_far);
 
-    ret = 0;
-    if (opt == "always" ) {
-       INF("Force local poster fetching");
-       ret = 1;
-    } else if (opt == "if_title_changed" ) {
-       if (!title_so_far) {
-           INF("local poster fetching not determined");
-       } else {
-           t = pagestate["expectorigtitle_lc"];
-           if (t == "") t = pagestate["expecttitle_lc"];
-           t = norm_title(t);
-              
-           if ( t != "" &&  title_so_far != t ) {
-               INF("local poster fetching - title changed ["title_so_far"] != orig["t"]");
-               ret = 2;
+        opt = g_settings["catalog_get_local_posters"]; 
+
+        ret = 0;
+        if (opt == "always" ) {
+           INF("Force local poster fetching");
+           ret = 1;
+        } else if (opt == "if_title_changed" ) {
+           if (!title_so_far) {
+               INF("local poster fetching not determined");
            } else {
-               INF("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
+               t = pagestate["expectorigtitle_lc"];
+               if (t == "") t = pagestate["expecttitle_lc"];
+               t = norm_title(t);
+                  
+               if ( t != "" &&  title_so_far != t ) {
+                   INF("local poster fetching - title changed ["title_so_far"] != orig["t"]");
+                   ret = 2;
+               } else {
+                   INF("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
+               }
            }
-       }
-    } else {
-       INF("skip local poster fetching");
+        } else {
+           INF("skip local poster fetching");
+        }
+        pagestate["checkposters"] = ret;
     }
-    pagestate["checkposters"] = ret;
     return ret;
 }
 

@@ -249,17 +249,19 @@ fields,i,fnum) {
 function get_name_dir_fields(arr,\
 f,fileRe) {
 
-    f =  arr[FILE];
+    if (!arr[NAME] && !arr[DIR]) {
+        f =  arr[FILE];
 
-    if (isDvdDir(f)) {
-        fileRe="/[^/]+/$"; # /path/to/name/[VIDEO_TS]
-    } else {
-        fileRe="/[^/]+$";  # /path/to/name.avi
-    }
+        if (isDvdDir(f)) {
+            fileRe="/[^/]+/$"; # /path/to/name/[VIDEO_TS]
+        } else {
+            fileRe="/[^/]+$";  # /path/to/name.avi
+        }
 
-    if (match(f,fileRe)) {
-        arr[NAME] = substr(f,RSTART+1);
-        arr[DIR] = substr(f,1,RSTART-1);
+        if (match(f,fileRe)) {
+            arr[NAME] = substr(f,RSTART+1);
+            arr[DIR] = substr(f,1,RSTART-1);
+        }
     }
 }
 
@@ -283,6 +285,8 @@ line) {
 
 function keep_dbline(row,fields,\
 result) {
+
+    get_name_dir_fields(fields);
 
     if (length(row) > g_max_db_len ) {
 

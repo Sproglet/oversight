@@ -22,6 +22,7 @@ ign_path) {
     } else {
         g_settings[ign_path]="^"glob2re(g_settings[ign_path]);
     }
+    INF("ignore name = ["g_settings["catalog_ignore_names"]"]");
     INF("ignore path = ["g_settings[ign_path]"]");
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));

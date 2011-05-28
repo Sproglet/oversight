@@ -181,22 +181,31 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     return 0+ result;
 }
 
+# url_online 1=OK 0=failed
+function url_online(url,tries,timeout) {
+    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url)) == 0;
+}
+
 #TODO We have to watch out for dns servers that return false hits on bad domains.
 #for time being this should mainly be called to check a url on a known web server so DNS issues should not matter.
 # 0=ok 1=error 2=timeout
 function url_state(url,\
 ret,start,tries,timeout) {
+
+    start=systime();
+    ret = 0;
     tries=2;
     timeout=5;
-    start=systime();
-    ret = system("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url));
+    
+    if (!url_online(url,tries,timeout)) {
 
-    #if wget ok - check timeout
-    if (systime() - start >= tries * timeout ) { 
-        WARNING("timeout with domain ["url"]");
-        ret = 2;
-    } else if (ret) { # some other error occured
-        ret = 1;
+        #if wget ok - check timeout
+        if (systime() - start >= tries * timeout ) { 
+            WARNING("timeout with domain ["url"]");
+            ret = 2;
+        } else if (ret) { # some other error occured
+            ret = 1;
+        }
     }
     return ret;
 }

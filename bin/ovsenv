@@ -1,22 +1,58 @@
 #!/bin/sh
 # Set Paths
 
-OVS_HOME=/share/Apps/oversight
+d="`echo $0 | sed 's;/[^/]*$;;'`"
+
+OVS_HOME="`cd "$d" ; cd .. ; pwd`"
 
 export PATH="$OVS_HOME/bin:$PATH"
 
+is_nmt100() {
+    [ -f /mnt/syb8634/MIN_FIRMWARE_VER ]
+}
+is_nmt200() {
+    [ -f /nmt/apps/MIN_FIRMWARE_VER ] 
+}
+is_nmt() {
+    is_nmt100 || is_nmt200
+}
+
+is_dns323() {
+    [ -d /ffp/bin ]
+}
+
 ARCH=
-if [ -f /mnt/syb8634/MIN_FIRMWARE_VER ] ;then
+if is_nmt100 ;then
     ARCH=nmt100
+    uid=nmt
+    gid=nmt
 else
-    if [ -f /nmt/apps/MIN_FIRMWARE_VER ] ; then
+    if is_nmt200 ; then
         ARCH=nmt200
+        uid=nmt
+        gid=nmt
+    else 
+        if is_dns323 ; then
+            ARCH=dns323
+            uid=nobody
+            gid=501
+            #Odd error where globbing sometimes doesnt work when scripts called from awk
+            #eg system("mv blah/*"); 
+            #but always works from command line.
+            #see if SHELL fixes.
+            export SHELL=/ffp/bin/bash
+        fi
     fi
 fi
-if [ -n "$ARCH" ] ; then
-    export PATH="$OVS_HOME/bin/$ARCH:$PATH"
-    export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
-fi
+export uid gid ARCH
+export OVERSIGHT_ID="$uid:$gid"
+
+case "$ARCH" in
+    nmt*)
+        export PATH="$OVS_HOME/bin/$ARCH:$PATH"
+        export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
+        ;;
+esac
 
 TMP=/share/Apps/oversight/tmp
 if [ ! -d $TMP ] ; then 

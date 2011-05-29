@@ -110,7 +110,8 @@ fi
 #the log files to share the same number.
 if [ -z "${JOBID:-}" ] ; then
     #JOBID=$$
-    JOBID=`date +%d%H%M%S`
+    JOBID=`date +%m%d%H%M%S`
+    #JOBID=`date +%s`
 fi
 
 g_tmp_dir="$tmp_root/$JOBID"

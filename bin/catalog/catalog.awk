@@ -433,6 +433,8 @@ END{
             touch(g_f);
         }
     }
+    #Following line is used to tidy log files
+    INF("Total files added : "g_grand_total);
 }
 
 function replace_share_name(indir,\

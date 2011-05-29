@@ -398,6 +398,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                     #start storing current details - may be updated by multipart info
                     storeMovie(minfo,scan_line,currentFolder,ts,files_in_db)
+                    minfo["mi_mb"]=w5/1024/1024; #this will be wrong for folders.
                     # set nfo according to first part.
                     setNfo(minfo,extRe,".nfo");
                 }
@@ -598,6 +599,7 @@ cat,minfo2,locales,id) {
             if (file) {
 
 
+
                 report_status("item "(++g_item_count));
 
                 DEBUG("folder :["fldr"]");
@@ -744,6 +746,9 @@ cat,minfo2,locales,id) {
                     total++;
                     g_total ++;
                     g_batch_total++;
+
+                    set_av_details(minfo);
+
                     queue_minfo(minfo,qfile,person_extid2name);
 
                     thisTime = systime()-thisTime ;

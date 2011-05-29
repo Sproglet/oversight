@@ -2879,6 +2879,9 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                                 JS_ARG_INT,"watched",watched,
                                 JS_ARG_INT,"season",season,
                                 JS_ARG_INT,"count",item->link_count+1,
+                                JS_ARG_STRING,"videosource",item->videosource,
+                                JS_ARG_STRING,"video",item->video,
+                                JS_ARG_STRING,"audio",item->audio,
                                 JS_ARG_END);
                     }
 
@@ -2907,6 +2910,9 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                             JS_ARG_STRING,"source",item->db->source,
                             JS_ARG_STRING,"share",share,
                             JS_ARG_INT,"count",item->link_count+1,
+                            JS_ARG_STRING,"videosource",item->videosource,
+                            JS_ARG_STRING,"video",item->video,
+                            JS_ARG_STRING,"audio",item->audio,
                             JS_ARG_END);
                     if (freeshare) FREE(share);
                     // if (cert_country) FREE(cert_country);
@@ -3729,6 +3735,9 @@ HTML_LOG(0,"num rows = %d",num_rows);
                 JS_ARG_INT,"watched",item->watched,
                 JS_ARG_INT,"locked",is_locked(item),
                 JS_ARG_STRING,"source",item->db->source,
+                JS_ARG_STRING,"videosource",item->videosource,
+                JS_ARG_STRING,"video",item->video,
+                JS_ARG_STRING,"audio",item->audio,
                 JS_ARG_END);
 
         array_add(outa,tmp);

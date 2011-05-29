@@ -112,3 +112,12 @@ catalog_touch_parent_folders=1
 
 # This file is touched after any single update. Usefull if catalog script is running on nas etc.
 catalog_touch_file="/share/Apps/oversight/.scan"
+
+# Patterns to determin source - borrowed from YAMJ config
+catalog_source_keywords=HDTV,PDTV,DVDRip,DVDSCR,DSRip,CAM,R5,LINE,HD2DVD,DVD,DVD5,DVD9,HRHDTV,MVCD,VCD,TS,VHSRip,BluRay,HDDVD,D-THEATER,SDTV
+catalog_source_keywords_SDTV=TVRip,PAL,NTSC
+catalog_source_keywords_D-THEATER=DTH,DTHEATER
+catalog_source_keywords_HDDVD=HD-DVD,HDDVDRIP
+catalog_source_keywords_BluRay=BDRIP,BLURAYRIP,BLU-RAY
+catalog_source_keywords_DVDRip=DVDR
+

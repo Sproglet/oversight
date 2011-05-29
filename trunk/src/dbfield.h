@@ -54,6 +54,10 @@
 #define DB_FLDID_ACTOR_LIST "_A"
 #define DB_FLDID_WRITER_LIST "_W"
 
+#define DB_FLDID_VIDEO "_v"
+#define DB_FLDID_AUDIO "_S"
+#define DB_FLDID_SUBTITLES "_L" 
+
 #define FIELD_TYPE_NONE '-'
 #define FIELD_TYPE_STR 's'
 #define FIELD_TYPE_UTF8_STR 'u'

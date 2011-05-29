@@ -317,42 +317,31 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
             view=get_view_mode(1);  
         }
 
-TRACE1;
         sortedRows = get_sorted_rows_from_params();
-TRACE1;
         dump_all_rows("sorted",sortedRows->num_rows,sortedRows->rows);
-TRACE1;
 
         // Found some data - continue to render page.
         if (sortedRows->num_rows) {
-TRACE1;
             break;
         }
-TRACE1;
 
         // If it's not a tv/movie detail or boxset view then break
         if (view == VIEW_MENU ||  view == VIEW_ADMIN ) {
-TRACE1;
             break;
         }
-TRACE1;
 
         // No data found in this view - try to return to the previous view.
         query_pop();
-TRACE1;
         // Adjust config - 
         // TODO Change the config structure to reload more efficiently.
         //reload_configs();
 
         config_read_dimensions();
-TRACE1;
 
         // Now refetch all data again with new parameters.
         sorted_rows_free_all(sortedRows);
-TRACE1;
         HTML_LOG(0,"reparsing database");
     }
-TRACE1;
 
     // Remove and store the last navigation cell. eg if user clicked on cell 12 this is passed in 
     // the URL as @i=12. The url that returns to this page then has i=12. If we have returned to this
@@ -360,39 +349,30 @@ TRACE1;
     // page.
     set_selected_item();
 
-TRACE1;
     char *skin_name=oversight_val("ovs_skin_name");
 
-TRACE1;
     if (strchr(skin_name,'/') || *skin_name == '.' || !*skin_name ) {
 
         html_error("Invalid skin name[%s]",skin_name);
 
     } else {
 
-TRACE1;
         playlist_open();
         //exp_test();
-TRACE1;
 
         if (view->view_class == VIEW_CLASS_ADMIN) {
-TRACE1;
 
             setPermissions();
             display_admin(sortedRows);
-TRACE1;
 
         } else {
-TRACE1;
 
             display_main_template(skin_name,view->name,sortedRows);
-TRACE1;
             if (view->has_playlist) {
                 build_playlist(sortedRows);
             } 
         } 
     }
-TRACE1;
 
 
     // When troubleshooting we should clean up properly as this may reveal
@@ -613,7 +593,6 @@ char *get_mounted_path(char *source,char *path,int *freeit)
         ovs_asprintf(&new,NETWORK_SHARE "%s/%s",source, path+7);
         HTML_LOG(1,"mounted path[%s]",new);
         *freeit=1;
-TRACE;
     }
     return new;
 }

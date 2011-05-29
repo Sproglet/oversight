@@ -19,10 +19,7 @@
 		<hr>
         <p>Log file diagnostics. Only works from PC at the moment.
         <center>
-            <p><a href="/oversight/logs/last.log">{last scan log}</a>
-            <p><a href="/oversight/logs/prev.log">{previous scan log}</a>
-            <p><a href="/oversight/logs/last.unpak.log">{last unpak log}</a>
-            <p><a href="/oversight/logs/gui.log">{last TV gui log}</a>
+            <p><a href="/oversight/oversight.cgi?/share/Apps/oversight/logs">{log dir}</a>
         </center>
     </body>
 </html>

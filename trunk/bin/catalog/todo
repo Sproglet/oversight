@@ -1,3 +1,6 @@
+# Write audio,video and subtitles info to nfo files.
+# Read audio,video and subtitles info from xmbc nfo files.
+#
 # fixed scraping russian tv show but year still wrong.
 #
 # Also plots of ofdb are corrupt

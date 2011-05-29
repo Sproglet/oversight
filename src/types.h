@@ -156,6 +156,15 @@ typedef struct Dbrowid_struct {
     char *idlist;
 
     int num_seasons; // If this item represents a boxset - this is total number of seasons.
+
+    char *videosource; // DVDRIP, R5 , BluRay etc. Set via catalog script
+    // Video info in a csv list - cN=codec,wN=width,hN=heigth,fN=fps for stream N
+    char *video;
+
+    // Audio info in a csv list - cN=codec,lN=language,chN=channels stream N
+    char *audio;
+    // Subtitle info in a csv list - lN=language
+    char *subtitles;
 } DbItem;
 
 // GROUPS AND IMDB LISTS =========================================================================

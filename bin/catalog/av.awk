@@ -4,6 +4,35 @@
 
 #format will be cN=codec,wN=width,hN=height,fN=fps where N=stream number.
 
+function set_videosource(minfo,
+f,i,tag,src) {
+    f=tolower(minfo["mi_media"]);
+    if (hash_size(g_sources)  == 0 ) {
+        g_source_num = split(g_settings["catalog_source_keywords"],g_sources,",");
+    }
+    for(i = 1 ; i<= g_source_num ; i++ ) { 
+        tag ="\\<"tolower(g_sources[i])"\\>";
+        if (f ~ tag ) {
+            src = g_sources[i];
+            break;
+        }
+        tag = tolower(g_settings["catalog_source_keywords_"g_sources[i]]);
+        gsub(/,/,"|",tag);
+        if (tag != "") {
+            tag = glob2re(tag);
+            if (f ~ "\\<"tag"\\>") {
+                src = g_sources[i];
+                break;
+            }
+        }
+
+    }
+    if (src) {
+        minfo["mi_videosource"] = src;
+        INF("Video Source = "src);
+    }
+}
+
 function set_av_details(minfo,
 f,video,audio,dim,hrs,i,out) {
 

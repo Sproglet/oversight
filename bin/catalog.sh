@@ -365,8 +365,6 @@ else
     LOG_NAME="catalog.$JOBID.log"
     LOG_FILE="$LOG_DIR/$LOG_NAME"
 
-    (cd "$LOG_DIR" && ( mv "last.log" "prev.log" || true ) && ln -sf "$LOG_NAME" "last.log" )
-
     main "$@" > "$LOG_FILE" 2>&1
 
     #If lauched from command line - display log file location
@@ -377,7 +375,6 @@ else
     if grep -q "Total files added : 0" "$LOG_FILE" ; then
         EMPTY_LOG="$LOG_DIR/catalog.emptyscan.log"
         mv "$LOG_FILE" "$EMPTY_LOG"
-        ln -sf "$EMPTY_LOG" "$LOG_DIR/last.log"
     fi
 
     grep dryrun: "$LOG_FILE"

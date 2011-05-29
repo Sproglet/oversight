@@ -61,6 +61,10 @@ void dbf_ids_init()
     add_label(DB_FLDID_EPTITLEIMDB,"IMDB_EPTITLE");
     add_label(DB_FLDID_AIRDATEIMDB,"IMDB_AIRDATE");
     add_label(DB_FLDID_NFO,"NFO");
+
+    add_label(DB_FLDID_VIDEO,"VIDEO");
+    add_label(DB_FLDID_AUDIO,"AUDIO");
+    add_label(DB_FLDID_SUBTITLES,"SUBTITLES");
 }
 
 char *dbf_macro_to_fieldid(char *macro)

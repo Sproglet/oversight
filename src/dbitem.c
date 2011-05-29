@@ -63,6 +63,11 @@ void db_rowid_free(DbItem *item,int free_base)
 
         FREE(item->idlist);
 
+        FREE(item->video);
+        FREE(item->audio);
+        FREE(item->videosource);
+        FREE(item->subtitles);
+
         if (free_base) {
             FREE(item);
         }
@@ -282,6 +287,10 @@ void db_rowid_dump(DbItem *item)
     HTML_LOG(1,"ROWID: genre(%s)",item->genre);
     HTML_LOG(1,"ROWID: ext(%c)",item->category);
     HTML_LOG(1,"ROWID: parts(%s)",item->parts);
+    HTML_LOG(1,"ROWID: videosource(%s)",item->videosource);
+    HTML_LOG(1,"ROWID: video(%s)",item->video);
+    HTML_LOG(1,"ROWID: audio(%s)",item->audio);
+    HTML_LOG(1,"ROWID: subtitles(%s)",item->subtitles);
     t = item->date;
     HTML_LOG(1,"ROWID: date(%s)",asctime(localtime(&t)));
     HTML_LOG(1,"ROWID: eptitle(%s)",item->eptitle);
@@ -469,6 +478,10 @@ void write_row(FILE *fp,DbItem *item) {
     //fprintf(fp,"\t%s\t%s",DB_FLDID_FANART,item->fanart);
     //fprintf(fp,"\t%s\t%s",DB_FLDID_PLOT,item->plot_key);
     //fprintf(fp,"\t%s\t%s",DB_FLDID_EPPLOT,item->episode_plot_key);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_VIDEO,item->video);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_VIDEOSOURCE,item->videosource);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_AUDIO,item->audio);
+    fprintf(fp,"\t%s\t%s",DB_FLDID_SUBTITLES,item->subtitles);
     fprintf(fp,"\t\n");
     fflush(fp);
 }
@@ -692,6 +705,12 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *type = FIELD_TYPE_INT;
                     *overview = 1;
                 }
+            case 'L':
+                break;
+                    if (*p == '\0') {
+                        *offset=&(rowid->subtitles);
+                        *type = FIELD_TYPE_STR;
+                    }
                 break;
             case 'n':
                     if (*p == 'f') {
@@ -743,6 +762,13 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *overview = 1;
                 }
                 break;
+            case 'S':
+                    if (*p == '\0') {
+                        *offset=&(rowid->audio);
+                        *type = FIELD_TYPE_STR;
+                        *overview = 1;
+                    }
+                break;
             case 't':
                 //do nothing - TVCOM
                 break;
@@ -759,6 +785,20 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *type = FIELD_TYPE_STR;
                     *overview = 1;
                 }
+                break;
+            case 'v':
+                    if (*p == '\0') {
+                        *offset=&(rowid->video);
+                        *type = FIELD_TYPE_STR;
+                        *overview = 1;
+                    }
+                break;
+            case 'V':
+                    if (*p == '\0') {
+                        *offset=&(rowid->videosource);
+                        *type = FIELD_TYPE_STR;
+                        *overview = 1;
+                    }
                 break;
             case 'w':
                 if (*p == '\0') {

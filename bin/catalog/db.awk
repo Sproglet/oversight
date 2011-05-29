@@ -101,6 +101,8 @@ row,est,nfo,op,start) {
     if (minfo["mi_conn_remakes"]) row=row"\t"CONN_REMAKES"\t"minfo["mi_conn_remakes"];
     if (minfo["mi_video"]) row=row"\t"VIDEO"\t"minfo["mi_video"];
     if (minfo["mi_audio"]) row=row"\t"AUDIO"\t"minfo["mi_audio"];
+    if (minfo["mi_videosource"]) row=row"\t"VIDEOSOURCE"\t"minfo["mi_videosource"];
+    if (minfo["mi_subtitles"]) row=row"\t"SUBTITLES"\t"minfo["mi_subtitles"];
     return row"\t";
 }
 function short_year(y,\
@@ -218,8 +220,10 @@ function set_db_fields() {
     CONN_FOLLOWED=db_field("_b","FOLLOWED",""); # Comes Before
     CONN_REMAKES=db_field("_k","REMAKES",""); # Movies remaKes
 
-    VIDEO=db_field("_v","VIDEO",""); # Video info
-    AUDIO=db_field("_S","SOUND",""); # Audio info
+    VIDEO=db_field("_v","VIDEO","");
+    AUDIO=db_field("_S","SOUND","");
+    SUBTITLES=db_field("_L","SUBS","");
+    VIDEOSOURCE=db_field("_V","VIDEOSOURCE","");
 }
 
 

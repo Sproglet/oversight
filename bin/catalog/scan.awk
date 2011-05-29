@@ -747,6 +747,7 @@ cat,minfo2,locales,id) {
                     g_total ++;
                     g_batch_total++;
 
+                    set_videosource(minfo);
                     set_av_details(minfo);
 
                     queue_minfo(minfo,qfile,person_extid2name);

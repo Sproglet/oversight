@@ -347,7 +347,7 @@ clean_files() {
 
 clean_all_files() {
     clean_files "$tmp_root" "*" 2
-    clean_files "$APPDIR/logs" "catalog.*.log" 5 
+    clean_files "$APPDIR/logs" "[cu]*.log" 5 
     clean_files "$APPDIR/cache" "tt*" 30
 }
 
@@ -362,9 +362,16 @@ else
     #LOG_FILE="$APPDIR/logs/catalog.`date +%d%H%M`.$$.log"
     LOG_DIR="$APPDIR/logs"
     mkdir -p "$LOG_DIR"
+
+    EMPTY_DIR="$LOG_DIR/emptyscans"
+    mkdir -p "$EMPTY_DIR"
+
+    LAST_LOG="$LOG_DIR/last.log"
+
     LOG_NAME="catalog.$JOBID.log"
     LOG_FILE="$LOG_DIR/$LOG_NAME"
 
+    ln -sf "$LOG_FILE" "$LAST_LOG"
     main "$@" > "$LOG_FILE" 2>&1
 
     #If lauched from command line - display log file location
@@ -374,7 +381,8 @@ else
 
     if grep -q "Total files added : 0" "$LOG_FILE" ; then
         EMPTY_LOG="$LOG_DIR/catalog.emptyscan.log"
-        mv "$LOG_FILE" "$EMPTY_LOG"
+        mv "$LOG_FILE" "$EMPTY_DIR"
+        ln -sf "$EMPTY_DIR/$LOG_NAME" "$LAST_LOG"
     fi
 
     grep dryrun: "$LOG_FILE"

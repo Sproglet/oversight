@@ -308,7 +308,7 @@ char *util_strreg(char *s,char *pattern,int reg_opts)
 }
 
 /*
- * Extract a single regex submatch
+ * Match a regular expression and return the submatch'ed braketed pair 0=the entire match
  */
 char *regextract1(char *s,char *pattern,int submatch,int reg_opts) {
 
@@ -326,7 +326,7 @@ char *regextract1(char *s,char *pattern,int submatch,int reg_opts) {
 }
 
 /*
- * Match a regular expression and return the submatch'ed braketed pair 0=the entire match
+ * Match a regular expression and return array of submatches
  */
 Array *regextract(char *s,char *pattern,int reg_opts)
 {

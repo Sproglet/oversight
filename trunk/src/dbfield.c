@@ -64,6 +64,8 @@ void dbf_ids_init()
 
     add_label(DB_FLDID_VIDEO,"VIDEO");
     add_label(DB_FLDID_AUDIO,"AUDIO");
+    add_label(DB_FLDID_VIDEOSOURCE,"VIDEOSOURCE");
+    add_label(DB_FLDID_SIZEMB,"SIZEMB");
     add_label(DB_FLDID_SUBTITLES,"SUBTITLES");
 }
 

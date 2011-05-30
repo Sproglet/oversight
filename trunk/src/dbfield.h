@@ -55,7 +55,9 @@
 #define DB_FLDID_WRITER_LIST "_W"
 
 #define DB_FLDID_VIDEO "_v"
+#define DB_FLDID_VIDEOSOURCE "_V"
 #define DB_FLDID_AUDIO "_S"
+#define DB_FLDID_SIZEMB "_m"
 #define DB_FLDID_SUBTITLES "_L" 
 
 #define FIELD_TYPE_NONE '-'

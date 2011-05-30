@@ -2797,6 +2797,42 @@ char *macro_fn_writers(MacroCallInfo *call_info) {
     return result;
 }
 
+char *macro_fn_sizegb(MacroCallInfo *call_info)
+{
+    char *result = NULL;
+    DbItem *item = call_info->sorted_rows->rows[0];
+    if (item) {
+        ovs_asprintf(&result,"%.1fGb",dbrow_total_size(item) / 1024.0);
+    }
+
+    return result;
+}
+
+/*
+ * Calc qualith from width (not heigth because of letterboxing)
+ */
+char *macro_fn_videoquality(MacroCallInfo *call_info)
+{
+    char *result = NULL;
+    DbItem *item = call_info->sorted_rows->rows[0];
+    if (item && item->video) {
+        call_info->free_result=0;
+        char *width_str = regextract1(item->video,"w0=([0-9]+)",1,0);
+
+        if (width_str) {
+            int width = atol(width_str);
+            FREE(width_str);
+            if (width >= 1920 ) {
+                result="1080p";
+            } else if (width >= 1280 ) {
+                result="720p";
+            } else {
+                result="sd";
+            }
+        }
+    }
+    return result;
+}
 
 
 void macro_init() {
@@ -2886,6 +2922,7 @@ void macro_init() {
         hashtable_insert(macros,"SELECT_UNLOCK_SUBMIT",macro_fn_select_unlock_submit);
         hashtable_insert(macros,"SETUP_BUTTON",macro_fn_setup_button);
         hashtable_insert(macros,"SKIN_NAME",macro_fn_skin_name);
+        hashtable_insert(macros,"SIZEGB",macro_fn_sizegb);
         hashtable_insert(macros,"SORT_SELECT",macro_fn_sort_select);
         hashtable_insert(macros,"SORT_TYPE_TOGGLE",macro_fn_sort_type_toggle);
         hashtable_insert(macros,"SOURCE",macro_fn_source);
@@ -2903,6 +2940,7 @@ void macro_init() {
         hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);
         hashtable_insert(macros,"URL_BASE",macro_fn_url_base);
         hashtable_insert(macros,"VERSION",macro_fn_version);
+        hashtable_insert(macros,"VIDEOQUALITY",macro_fn_videoquality);
         hashtable_insert(macros,"WATCHED_SELECT",macro_fn_watched_select);
         hashtable_insert(macros,"WATCHED_TOGGLE",macro_fn_watched_toggle);
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);

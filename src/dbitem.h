@@ -52,4 +52,5 @@ int is_on_remote_oversight(DbItem *item);
 int is_on_local_oversight(DbItem *item);
 char *get_item_id(DbItem *item,char *domain,int add_domain);
 char *get_id_from_idlist(char *idlist,char *domain,int add_domain);
+int dbrow_total_size(DbItem *rowid);
 #endif

@@ -54,7 +54,7 @@
 		                    <tr><td colspan=4 height=1%>&nbsp;</td></tr>		
                             <tr>
                             	<td width=1%></td>
-                            	<td colspan=2 align=left><span class="plot">[:PLOT:]</span>
+                            	<td colspan=2 align=left><span class="plot">[:PLOT:]</span><span class="info"> ([:$%VIDEOSOURCE:,][:VIDEOQUALITY:,][:SIZEGB:])</span>
                                 </td>
                     			<td width=1%></td>
                             </tr>				

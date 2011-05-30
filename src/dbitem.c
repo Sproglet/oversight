@@ -482,7 +482,7 @@ void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_VIDEO,item->video);
     fprintf(fp,"\t%s\t%s",DB_FLDID_VIDEOSOURCE,item->videosource);
     fprintf(fp,"\t%s\t%s",DB_FLDID_AUDIO,item->audio);
-    fprintf(fp,"\t%s\t%d",DB_FLDID_AUDIO,item->sizemb);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_SIZEMB,item->sizemb);
     fprintf(fp,"\t%s\t%s",DB_FLDID_SUBTITLES,item->subtitles);
     fprintf(fp,"\t\n");
     fflush(fp);
@@ -1069,3 +1069,14 @@ char *get_id_from_idlist(char *idlist,char *domain,int add_domain)
     HTML_LOG(1,"get_id_from_idlist(%s,%s)=[%s]",idlist,domain,result);
     return result;
 }
+
+int dbrow_total_size(DbItem *rowid)
+{
+    int sz=0;
+    DbItem *ri;
+    for( ri = rowid ; ri ; ri=ri->linked ) {
+        sz += ri->sizemb;
+    }
+    return sz;
+}
+

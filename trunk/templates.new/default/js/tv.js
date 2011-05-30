@@ -72,7 +72,7 @@ function ovs_ep(ep)
 
     // Set cell content based on selected episode
 
-    titlecell.firstChild.nodeValue = epPlot;
+    titlecell.firstChild.nodeValue = epPlot + " "+ ovs_source_quality(ep);
     episodecell.firstChild.nodeValue = epTitle;
     episodedatecell.firstChild.nodeValue = epDate;
 }

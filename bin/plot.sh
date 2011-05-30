@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 # manage the plot file.
 #
@@ -106,6 +106,9 @@ END {
     
     extract_plot_tags(reffile,keep);
 
+    #inf("Keeping plots..");
+    #for(i in keep) inf("keep plot["i"]");
+
     prune_plotfile(plotfile,keep);
 }
 
@@ -139,7 +142,7 @@ ref,m,i,count,parts) {
     while ((getline ref < f ) > 0) {
 
         url=getField("_U",ref);
-        if (length(url) > 9 && match(url,"tt[0-9]+")) {
+        if (length(url) > 9 && match(url,"imdb:tt[0-9]+")) {
             url = substr(url,RSTART,RLENGTH);
             #inf("shortened to ["url"]");
         }
@@ -153,10 +156,10 @@ ref,m,i,count,parts) {
                 season=getField("_s",ref);
                 episode=getField("_e",ref);
 
-                keep["_@"url"@"season"@@_"] = 1;
-                keep["_@"url"@"season"@"episode"@_"] = 1;
+                keep[url"@"season] = 1;
+                keep[url"@"season"@"episode] = 1;
             } else {
-                keep["_@"url"@@@_"] = 1;
+                keep[url] = 1;
             }
         }
     }
@@ -166,7 +169,7 @@ ref,m,i,count,parts) {
 # Go through each line of the plot file, if the plot
 # is in the "keep" array, keep the line.
 function prune_plotfile(f,keep,\
-id,tmpf,kept_count,removed_count,plot,err) {
+id,tmpf,kept_count,removed_count,plot,err,parts) {
 
     tmpf=f"."g_pid;
     inf("Prune plots in "f " using "tmpf);
@@ -176,9 +179,11 @@ id,tmpf,kept_count,removed_count,plot,err) {
     printf "" > tmpf;
     while ((err = (getline plot < f )) > 0) {
 
-        if (match(plot,"^"g_plotpattern) > 0) {
 
-            id=substr(plot,RSTART,RLENGTH);
+        if (split(plot,parts,"\t") > 0) {
+
+            id = parts[1];
+
             if (id in keep) {
                 print plot > tmpf;
                 kept_count ++;

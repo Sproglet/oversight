@@ -4,7 +4,7 @@ function ovsString_tvBoxset(title, menu) {
 	return title + " - [ Boxset - " + menu["num_seasons"] + " seasons ]";
 }
 
-function ovsString_movieBoxset(title, movieCount) {
+function ovsString_movieBoxset(title, menu) {
 	return title + " - [ Boxset - " + menu["count"] + " movies ]";
 }
 

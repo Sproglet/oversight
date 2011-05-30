@@ -290,6 +290,7 @@ void db_rowid_dump(DbItem *item)
     HTML_LOG(1,"ROWID: videosource(%s)",item->videosource);
     HTML_LOG(1,"ROWID: video(%s)",item->video);
     HTML_LOG(1,"ROWID: audio(%s)",item->audio);
+    HTML_LOG(1,"ROWID: size(%d)mb",item->sizemb);
     HTML_LOG(1,"ROWID: subtitles(%s)",item->subtitles);
     t = item->date;
     HTML_LOG(1,"ROWID: date(%s)",asctime(localtime(&t)));
@@ -481,6 +482,7 @@ void write_row(FILE *fp,DbItem *item) {
     fprintf(fp,"\t%s\t%s",DB_FLDID_VIDEO,item->video);
     fprintf(fp,"\t%s\t%s",DB_FLDID_VIDEOSOURCE,item->videosource);
     fprintf(fp,"\t%s\t%s",DB_FLDID_AUDIO,item->audio);
+    fprintf(fp,"\t%s\t%d",DB_FLDID_AUDIO,item->sizemb);
     fprintf(fp,"\t%s\t%s",DB_FLDID_SUBTITLES,item->subtitles);
     fprintf(fp,"\t\n");
     fflush(fp);
@@ -712,6 +714,12 @@ static inline int db_rowid_get_field_offset_type_inline(
                         *type = FIELD_TYPE_STR;
                     }
                 break;
+            case 'm':
+                if (*p == '\0') {
+                    *offset=&(rowid->sizemb);
+                    *type = FIELD_TYPE_INT;
+                    *overview = 1;
+                }
             case 'n':
                     if (*p == 'f') {
                         *offset=&(rowid->nfo);

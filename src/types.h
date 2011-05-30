@@ -165,6 +165,8 @@ typedef struct Dbrowid_struct {
     char *audio;
     // Subtitle info in a csv list - lN=language
     char *subtitles;
+
+    int sizemb;
 } DbItem;
 
 // GROUPS AND IMDB LISTS =========================================================================

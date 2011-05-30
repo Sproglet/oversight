@@ -368,6 +368,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
                             if ( checkMultiPart(minfo,scan_line) ) {
                                 store = 0;
+                                minfo["mi_mb"] += int(w5/1024/1024+0.5); 
                                 if (!is_file(minfo["mi_nfo_default"])) {
                                     #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                                     #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
@@ -398,7 +399,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                     #start storing current details - may be updated by multipart info
                     storeMovie(minfo,scan_line,currentFolder,ts,files_in_db)
-                    minfo["mi_mb"]=w5/1024/1024; #this will be wrong for folders.
+                    # calc size this will be wrong for folders.
+                    minfo["mi_mb"] = int(w5/1024/1024+0.5); 
                     # set nfo according to first part.
                     setNfo(minfo,extRe,".nfo");
                 }

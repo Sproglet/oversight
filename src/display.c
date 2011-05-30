@@ -1892,6 +1892,7 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
     return idlist;
 }
 
+
 /*
  * Go through all Ids that are linked and create an id list of the form.
  * source(id1|id2|id3)source2(id4|id5|id6)
@@ -1899,7 +1900,8 @@ char *add_one_source_to_idlist(DbItem *row_id,char *current_idlist,int *mixed_so
  * in the tv view , rows with the same file are linked.
  * Dont free result - this will be freed when rows are freed.
  */
-char *build_id_list(DbItem *row_id) {
+char *build_id_list(DbItem *row_id)
+{
 
     int mixed_sources=0;
     char *idlist=NULL;
@@ -2821,6 +2823,16 @@ int all_linked_rows_delisted(DbItem *rowid)
     return 1;
 }
 
+int total_size(DbItem *rowid)
+{
+    int sz=0;
+    DbItem *ri;
+    for( ri = rowid ; ri ; ri=ri->linked ) {
+        sz += ri->sizemb;
+    }
+    return sz;
+}
+
 char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **row_ids)
 {
     int i,r,c;
@@ -2866,6 +2878,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                                 JS_ARG_INT,"watched",watched,
                                 JS_ARG_INT,"num_seasons",season_count(item),
                                 JS_ARG_INT,"count",item->link_count+1,
+                                JS_ARG_INT,"mb",total_size(item),
                                 JS_ARG_END);
                     } else {
                         js_fn_call = menu_js_fn(i+1+offset,
@@ -2882,6 +2895,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                                 JS_ARG_STRING,"videosource",item->videosource,
                                 JS_ARG_STRING,"video",item->video,
                                 JS_ARG_STRING,"audio",item->audio,
+                                JS_ARG_INT,"mb",total_size(item),
                                 JS_ARG_END);
                     }
 
@@ -2913,6 +2927,7 @@ char * write_titlechanger(int offset,int rows, int cols, int numids, DbItem **ro
                             JS_ARG_STRING,"videosource",item->videosource,
                             JS_ARG_STRING,"video",item->video,
                             JS_ARG_STRING,"audio",item->audio,
+                            JS_ARG_INT,"mb",total_size(item),
                             JS_ARG_END);
                     if (freeshare) FREE(share);
                     // if (cert_country) FREE(cert_country);

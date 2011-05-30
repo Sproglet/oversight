@@ -68,19 +68,19 @@ function ovs_menu(menu)
        }
        if (menu["view"] == "tvboxset" ) {
 
-           title = ovsString_tvBoxset(title, menu["num_seasons"], menu["year"]);
+           title = ovsString_tvBoxset(title, menu);
 
        } else if (menu["view"] == "movieboxset" ) {
 
-           title = ovsString_movieBoxset(title, menu["count"]);
+           title = ovsString_movieBoxset(title,menu);
 
        } else if (menu["view"] == "tv" ) {
 
-           title = ovsString_tv(title, menu["season"], menu["cert"]);
+           title = ovsString_tv(title, menu);
 
        } else if (menu["view"] == "movie" ) {
 
-           title = ovsString_movie(title, menu["year"], menu["cert"]);
+           title = ovsString_movie(title, menu);
            /*
            if (menu["runtime"]) {
                title = ovsString_movie(title, menu["year"], menu["cert"]+" "+menu["runtime"]+"mins" );

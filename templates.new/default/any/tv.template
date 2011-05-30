@@ -109,6 +109,7 @@
 		[:FORM_END:]
 		[:MENU_TVID:]
 		[:PLAY_TVID:]
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/strings.js):]"></script>
 		<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
 		<script type="text/javascript" src="[:TEMPLATE_URL(js/tv.js):]"></script>
 		[:INCLUDE_TEMPLATE(common):]

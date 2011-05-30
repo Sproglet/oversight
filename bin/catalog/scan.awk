@@ -775,6 +775,7 @@ cat,minfo2,locales,id) {
             g_batch_total = 0;
     }
     delete minfo;
+    return total;
 
 }
 function plot_in_main_lang(minfo) {

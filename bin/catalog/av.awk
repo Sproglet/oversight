@@ -7,6 +7,9 @@
 function set_videosource(minfo,
 f,i,tag,src) {
     f=tolower(minfo["mi_media"]);
+    # replace underscore with . to help word boundary matching
+    gsub(/_/,".",f);
+
     if (hash_size(g_sources)  == 0 ) {
         g_source_num = split(g_settings["catalog_source_keywords"],g_sources,",");
     }
@@ -37,6 +40,9 @@ function set_av_details(minfo,
 f,video,audio,dim,hrs,i,out) {
 
     f=tolower(minfo["mi_media"]);
+
+    # replace underscore with . to help word boundary matching
+    gsub(/_/,".",f);
 
     # watch out for movies with pal in the title. Fix by using mediainfo 
 
@@ -74,7 +80,11 @@ f,video,audio,dim,hrs,i,out) {
             dim = 2;
             if (minfo["mi_mb"] / hrs  > 4000 ) {
                 dim = 3;
-            } 
+            } else if (minfo["mi_mb"] / hrs  > 1000 ) {
+                dim = 2;
+            } else {
+                dim = 1;
+            }
         } else if (f ~ /iso$/) {
             # this could be bd iso or sd iso. Guess sd iso - assume > 4G hr is bd?
             if (video["c0"] == "h264") {
@@ -112,4 +122,14 @@ f,video,audio,dim,hrs,i,out) {
     INF("Video info"out);
 
     minfo["mi_video"]=substr(out,2);
+
+    if ( f ~ /dd5\.1/ || f ~ /ac3/ ) {
+        audio["c0"] = "DD5.1";
+    } else if ( f ~ /dts/ ) {
+        audio["c0"] = "DTS";
+    } else if (minfo["mi_videosource"] == "HDTV" || minfo["mi_videosource"] == "Web" ) {
+        audio["c0"] = "DD5.1";
+    }
+
+
 }

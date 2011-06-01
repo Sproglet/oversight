@@ -64,11 +64,7 @@ row,est,nfo,op,start) {
 
     row=row"\t"YEAR"\t"short_year(minfo["mi_year"]);
 
-    start=1;
-    if (index(minfo["mi_file"],g_mount_root) == 1) {
-        start += length(g_mount_root);
-    }
-    row=row"\t"FILE"\t"substr(minfo["mi_file"],start);
+    row=row"\t"FILE"\t"short_path(minfo["mi_file"]);
 
     if (minfo["mi_additional_info"]) row=row"\t"ADDITIONAL_INF"\t"minfo["mi_additional_info"];
 
@@ -321,7 +317,11 @@ function write_dbline(fields,file,\
 f) {
     for (f in fields) {
         if (f && index(f,"@") == 0) {
-            printf "\t%s\t%s",f,fields[f] >> file;
+            if (f == FILE) {
+                printf "\t%s\t%s",f,short_path(fields[f]) >> file;
+            } else {
+                printf "\t%s\t%s",f,fields[f] >> file;
+            }
         }
     }
     printf "\t\n" >> file;

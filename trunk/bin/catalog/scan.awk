@@ -152,7 +152,7 @@ function scan_contents(root,scan_options,\
 ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
-    INF("scan_contents" root);
+    INF("scan_contents "root);
 
     qfile = new_capture_file("dbqueue");
     if (root == "") return;

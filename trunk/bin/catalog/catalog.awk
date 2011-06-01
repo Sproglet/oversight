@@ -618,6 +618,8 @@ function mount_point(d) {
 function short_path(path) {
     if (index(path,g_mount_root) == 1) {
         path = substr(path,length(g_mount_root)+1);
+    } else if (index(path,"/share") != 1) {
+        INF("file = ["path"] but mount root = "g_mount_root);
     }
     return path;
 }

@@ -136,30 +136,29 @@ out,offset,i) {
 
 # compute all of the plot keys from the ttids , seasons and episodes in the file.
 function extract_plot_tags(f,keep,\
-ref,m,i,count,parts) {
+ref,m,i,num) {
 
     inf("Extract plot tags from "f);
     while ((getline ref < f ) > 0) {
 
         url=getField("_U",ref);
-        if (length(url) > 9 && match(url,"imdb:tt[0-9]+")) {
-            url = substr(url,RSTART,RLENGTH);
-            #inf("shortened to ["url"]");
-        }
+        num = split(url,ids);
+        for (i = 1 ; i <= num ; i++ ) {
 
-        if (url != "" ) {
+            if (ids[i] != "" ) {
 
-            cat=getField("_C",ref);
+                cat=getField("_C",ref);
 
-            if (cat == "T") {
+                if (cat == "T") {
 
-                season=getField("_s",ref);
-                episode=getField("_e",ref);
+                    season=getField("_s",ref);
+                    episode=getField("_e",ref);
 
-                keep[url"@"season] = 1;
-                keep[url"@"season"@"episode] = 1;
-            } else {
-                keep[url] = 1;
+                    keep[ids[i]"@"season] = 1;
+                    keep[ids[i]"@"season"@"episode] = 1;
+                } else {
+                    keep[ids[i]] = 1;
+                }
             }
         }
     }

@@ -39,6 +39,11 @@ line,f,n,v,n2,v2) {
         }
     }
     close(f);
+#    for(line in settings) {
+#        if (line ~ /^servname[0-9]+$/ ) {
+#            g_share_name_to_folder[settings[line]] = "/opt/sybhttpd/localhost.drives/NETWORK_SHARE/"settings[line];
+#        }
+#    }
     settings["@ovs_fetched"] = 1;
 }
 

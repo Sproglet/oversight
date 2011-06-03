@@ -47,6 +47,8 @@ fi
 export uid gid ARCH
 export OVERSIGHT_ID="$uid:$gid"
 
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+
 case "$ARCH" in
     nmt*)
         export PATH="$OVS_HOME/bin/$ARCH:$PATH"

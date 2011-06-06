@@ -25,13 +25,22 @@ function ovs_source_quality(menu) {
 }
 function ovs_quality(menu) {
     // use width to determin quality as letterboxing makes height shorter.
-    var vid,height;
+    var vid,height,interlaced;
     vid = menu["video"];
     vid.match(/w0=([0-9]+)/);
+    if (vid.indexOf("i0=1") >= 0) {
+        interlaced="i";
+    } else {
+        interlaced="p";
+    }
     height = RegExp.$1;
-    if (height == "" ) return "?";
-    else if (height >= 1920 ) return "1080p";
-    else if (height >= 1280 ) return "720p";
+    if (height == "" ) {
+        return "?";
+    } else if (height >= 1920 ) {
+        return "1080"+interlaced;
+    } else if (height >= 1280 ) {
+        return "720"+interlaced;
+    }
     else return "sd";
     
 }

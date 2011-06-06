@@ -63,10 +63,16 @@ f,video,audio,dim,hrs,i,out) {
 
     # set dimensions - pure guesswork
 
-    if (f ~ /\<1080p?\>/ ) {
+    if (f ~ /\<1080[ip]?\>/ ) {
+
         dim=3;
-    } else if (f ~ /\<720p?\>/ ) {
+        if (f ~ /1080i/ ) video["i0"] = 1; # interlaced
+
+    } else if (f ~ /\<720[ip]?\>/ ) {
+
         dim=2;
+        if (f ~ /720i/ ) video["i0"] = 1; # interlaced
+
     } else if (f ~ /\<ntsc\>/ ) {
         dim=0;
     } else if (f ~ /\<pal|r5\>/ ) {

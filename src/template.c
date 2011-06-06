@@ -291,7 +291,7 @@ TRACE;
             if (macro_output == CALL_UNCHANGED ) {
                 // unchanged - do nothing
                 
-            } else if (macro_output) {
+            } else if (!EMPTY_STR(macro_output)) {
 
                 //convert AA[BB:$CC:DD]EE to AABBnewDDEE
 
@@ -320,7 +320,7 @@ TRACE;
                 //convert AA[BB:$CC:DD]EE to AAEE
                 char *p=macro_end+1;
                 int i = strlen(p)+1;
-                memmove(macro_start+1,p,i);
+                memmove(macro_start,p,i);
                 macro_end = macro_start;
 
              }

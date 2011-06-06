@@ -2819,13 +2819,23 @@ char *macro_fn_videoquality(MacroCallInfo *call_info)
         call_info->free_result=0;
         char *width_str = regextract1(item->video,"w0=([0-9]+)",1,0);
 
+        char *interlaced = strstr(item->video,"i0=1");
+
         if (width_str) {
             int width = atol(width_str);
             FREE(width_str);
             if (width >= 1920 ) {
-                result="1080p";
+                if (interlaced) {
+                    result="1080i";
+                } else {
+                    result="1080p";
+                }
             } else if (width >= 1280 ) {
-                result="720p";
+                if (interlaced) {
+                    result="720i";
+                } else {
+                    result="720p";
+                }
             } else {
                 result="sd";
             }

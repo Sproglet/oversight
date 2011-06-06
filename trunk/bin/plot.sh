@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 
 # manage the plot file.
 #

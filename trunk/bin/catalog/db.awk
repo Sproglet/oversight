@@ -274,7 +274,7 @@ f,fileRe) {
 
 # Sort index by file path
 function sort_index(file_in,file_out) {
-    return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\\2\\1\\3/' "qa(file_in)" | sort > "qa(file_out)) == 0;
+    return exec("sed -r 's/(.*)(\t_F\t[^\t]*)(.*)/\\2\\1\\3/' "qa(file_in)" | "SORT" > "qa(file_out)) == 0;
 }
 
 function get_dbline(file,\

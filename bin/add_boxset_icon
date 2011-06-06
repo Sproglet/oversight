@@ -31,7 +31,6 @@ ERROR() {
     echo "[ERROR] `date +%H:%M:%S` : $@"
 }
 
-
 # make sure we have the overlay icon in pnm format.
 # original icon must be png.
 if [ ! -f "$icon_base.pnm" -o ! -f "$icon_base.mask.pnm" ] ; then
@@ -61,4 +60,3 @@ pnmcomp -align=right -valign=bottom -alpha "$icon_base.mask.pnm" "$icon_base.pnm
 if [ -n "$remove_pnm" ] ; then
     rm -f "$remove_pnm"
 fi
-

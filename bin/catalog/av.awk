@@ -84,7 +84,9 @@ f,video,audio,dim,hrs,i,out) {
         if (f ~ /mkv$/) {
             # guess based on file size / length - assume > 4G/hr = 1080p 
             dim = 2;
-            if (minfo["mi_mb"] / hrs  > 4000 ) {
+            if (tolower(minfo["mi_videosource"]) ~ /dvd|[sp]dtv/ ) { 
+                dim = 1;
+            } else if (minfo["mi_mb"] / hrs  > 4000 ) {
                 dim = 3;
             } else if (minfo["mi_mb"] / hrs  > 1000 ) {
                 dim = 2;

@@ -815,6 +815,13 @@ line2) {
     return line;
 }
 
+function remove_src_href(line) {
+    if (index(line,"href=")) gsub(/href="[^"]+"/,"",line);
+    if (index(line,"src=")) gsub(/src="[^"]+"/,"",line);
+    return line;
+}
+
+
 # Remove html tags  - and break into sections defined by tags td,tr,table,div,
 # INPUT line - html text - should already be trimmed.
 # INPUT lcline - lower case of line.
@@ -1088,7 +1095,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
         if (!getting_local_fields || is_prose(lng,fragment)) {
 
             pagestate["gotplot"] = 1;
-            update_minfo(minfo, "mi_plot", add_lang_to_plot(lng,clean_plot(fragment)),domain,pagestate);
+            update_minfo(minfo, "mi_plot", add_lang_to_plot(lng,clean_plot(remove_src_href(fragment))),domain,pagestate);
 
         } else if (length(fragment) > 20 ) {
             if (!("badplot" in pagestate)){ 

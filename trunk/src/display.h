@@ -46,7 +46,6 @@ char *get_play_tvid(char *text);
 char *movie_listing(DbItem *rowid);
 long use_tv_boxsets();
 long use_movie_boxsets();
-char *tv_listing(DbSortedRows *sorted_rows,int rows,int cols);
 char *get_status_static();
 char *cgi_url(int full);
 char *self_url(char *new_params);
@@ -72,4 +71,13 @@ char *get_person_drilldown_link(ViewMode *view,char *dbfieldid,char *id,char *at
 char *actor_image_path(DbItem *item,char *name_id);
 int is_locked(DbItem *item);
 char *drill_down_link(char *params,char *attr,char *title);
+char *js_function(char *function_prefix,char *called_function,long fn_id,va_list ap);
+char *build_id_list(DbItem *row_id);
+char *select_checkbox(DbItem *item,char *text);
+char *href_focus_event_fn(char *function_name_prefix,long function_id);
+char *vod_link(DbItem *rowid,char *title ,char *t2,char *source,char *file,char *href_name,char *href_attr,char *class);
+char *watched_style(DbItem *rowid);
+char *icon_link(char *name);
+char *td_mouse_event_fn(char *function_name_prefix,long function_id);
+DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num);
 #endif

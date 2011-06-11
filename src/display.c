@@ -76,7 +76,7 @@ char *menu_js_fn(long fn_id,...);
 char *get_play_tvid(char *text) {
     char *result;
     ovs_asprintf(&result,
-        "<a href=\"file://" NMT_PLAYLIST "?start_url=\" vod=playlist tvid=\"_PLAY\">%s</a>",text);
+        "<a href=\"file://" NMT_PLAYLIST "?start_url=\" vod=playlist tvid=\"_PLAY\" >%s</a>",text);
     return result;
 }
 
@@ -606,9 +606,9 @@ void query_pop()
 
                         query_update(STRDUP(new_name),STRDUP(val));
                     }
-TRACE1;
+
                     query_remove(name);
-TRACE1;
+
                     HTML_LOG(0,"query_pop:done=[%s]",name);
                 }
             }
@@ -1002,7 +1002,7 @@ char *vod_link(DbItem *rowid,char *title ,char *t2,
 
     } else {
 
-        ovs_asprintf(&vod," %s name=\"%s?1\" %s ",vod_attr(file),href_name,href_attr);
+        ovs_asprintf(&vod," %s name=\"%s\" %s ",vod_attr(file),href_name,href_attr);
 
         if (add_to_playlist) {
             //Build playlist array for this entry.
@@ -1585,7 +1585,7 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
 char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);
 char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview);
 
-char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview)
+char *get_picture_path_with_movie(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview)
 {
 
     char *path = NULL;
@@ -1658,6 +1658,17 @@ TRACE;
     FREE(base);
 
     if (freefile) FREE(file);
+
+    return path;
+}
+
+char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview) {
+
+    char *path = NULL;
+
+    if (0) {
+        path = get_picture_path_with_movie(num_rows,sorted_rows,image_type,newview);
+    }
 
     if (path == NULL) {
 
@@ -2074,7 +2085,7 @@ char *movie_listing(DbItem *rowid)
         char *href_attr;
         ovs_asprintf(&href_attr,"onkeyleftset=up %s",NVL(mouse));
         add_movie_info_text(js,0,rowid->file);
-        char *vod = vod_link(rowid,label,"",rowid->db->source,rowid->file,"0",href_attr,style);
+        char *vod = vod_link(rowid,label,"",rowid->db->source,rowid->file,"[:START_CELL:]",href_attr,style);
         add_movie_part_row(output,0,vod);
 
         FREE(label);
@@ -2781,7 +2792,7 @@ int delisted(DbItem *rowid)
     }
 
     HTML_LOG(1,"auto delist precheck [%s]",path);
-    if (auto_prune && !exists(path)) {
+    if (auto_prune && strstr(path,"@no_auto_prune@") == 0 && !exists(path)) {
         
         HTML_LOG(0,"auto delist check [%s][%s]",rowid->db->source,path);
 
@@ -4080,13 +4091,8 @@ char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals)
     char *selected=query_val(name);
     char *params;
 
-    // Do not take ownership of the keys - thay belong to the hashtable.
+    // Do not take ownership of the keys - they belong to the hashtable.
     Array *keys = util_hashtable_keys(vals,0);
-TRACE1;
-HTML_LOG(0,"option_list[%s]",name);
-
-char *s = "fred";
-HTML_LOG(0,"pos[%s]=%d",s,abet_pos(s,g_abet_title->abet));
 
     //array_sort(keys,array_strcasecmp);
     array_sort(keys,array_abetcmp);

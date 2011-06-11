@@ -180,7 +180,7 @@ void delete_media(DbItem *item,int delete_related) {
             if (util_starts_with(dp->d_name,prefix)) {
 
                 // regex also allows for language tags before the extension
-                if ( util_strreg(dp->d_name+strlen(prefix),"^\\.(|[a-z]+\\.)(srt|nfo|sub|idx|sub|png|jpg)$",REG_ICASE) != NULL ) {
+                if ( util_strreg(dp->d_name+strlen(prefix),"^\\.(|[a-z]+\\.)(srt|nfo|sub|idx|sub|png|jpg|sfv|srr)$",REG_ICASE) != NULL ) {
                     delete_queue_add(item,1,dp->d_name);
 
                 }

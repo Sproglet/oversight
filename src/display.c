@@ -2601,6 +2601,7 @@ DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,i
     int total = 0;
 
     DbItem **new_list = CALLOC(max_new+1,sizeof(DbItem *));
+    HTML_LOG(0,"filter_page_items begin");
 
     for ( i = start ; total < max_new && i < num_rows ; i++ ) {
         DbItem *item = row_ids[i];

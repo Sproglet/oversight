@@ -338,7 +338,7 @@ void delete_queue_delete() {
         char *f=expand_paths(files);
         char *d1=expand_paths(nonempty_folders);
         char *d2=expand_paths(empty_folders);
-        ovs_asprintf(&cmd,"daemon %s/bin/delete.sh --rm %s --rmfr %s --rmdir %s",appDir(),NVL(f),NVL(d1),NVL(d2));
+        ovs_asprintf(&cmd,"daemon sh %s/bin/delete.sh --rm %s --rmfr %s --rmdir %s",appDir(),NVL(f),NVL(d1),NVL(d2));
         util_system(cmd);
         FREE(cmd);
         FREE(f);
@@ -423,7 +423,7 @@ void do_actions() {
         } else if (STRCMP(action,"kill_scans") == 0) {
 
             char *cmd;
-            ovs_asprintf(&cmd,"daemon %s/bin/killscans.sh",appDir());
+            ovs_asprintf(&cmd,"daemon sh %s/bin/killscans.sh",appDir());
             util_system(cmd);
 
         } else if (STRCMP(action,"reinstall") == 0) {
@@ -442,7 +442,7 @@ void do_actions() {
         } else if (STRCMP(action,"reset_dns_cache") == 0) {
 
             char *cmd;
-            ovs_asprintf(&cmd,"daemon %s/bin/dns.sh",appDir());
+            ovs_asprintf(&cmd,"daemon sh %s/bin/dns.sh",appDir());
             util_system(cmd);
 
         } else if (STRCMP(action,"clear_cache") == 0) {

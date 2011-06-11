@@ -80,8 +80,12 @@ jpg_resize() {
     # we do the usual djpeg | pnmscale | cjpeg  but keep the pnm files so we can reuse them for other sizes.
     # also input and output may be the same so we use intermediate file rather than pipes.
     # this may also give better performance on embedded machines.
-    if ( cat "$input.pnm" 2>/dev/null || djpeg -dct fast -scale $initial_scale "$input" ) |\
-             pnmscalefixed $o > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
+    delete_input_pnm=0
+    if [ ! -e "$input.pnm" ] ; then
+        djpeg -dct fast -scale $initial_scale "$input"  > "$input.pnm"
+        delete_input_pnm=1
+    fi
+    if pnmscalefixed $o "$input.pnm" > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
        cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
         perms "$output"
         if [ -n "$boxset" ] ; then
@@ -89,6 +93,9 @@ jpg_resize() {
         fi
     else
         ERROR "Unable to generate $output from $input using $o"
+    fi
+    if [ $delete_input_pnm == 1 ] ; then
+        rm -f "$input.pnm"
     fi
 }
 

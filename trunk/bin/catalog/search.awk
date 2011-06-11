@@ -637,6 +637,11 @@ score) {
         gPriority["mi_poster","motech"]=50;
         gPriority["mi_poster","thetvdb"]=60;
         gPriority["mi_poster","themoviedb"]=60;
+        gPriority["mi_poster","local"]=99;
+
+        gPriority["mi_fanart","thetvdb"]=60;
+        gPriority["mi_fanart","themoviedb"]=60;
+        gPriority["mi_fanart","local"]=99;
 
         gPriority["mi_rating","themoviedb"]=20;
         gPriority["mi_rating","thetvdb"]=20;

@@ -538,6 +538,14 @@ function qa(f) {
     return "'"f"'";
 }
 
+#return 1 if catalog script is running standalone - ie not on nmt
+function scanner_only() {
+    if (g_scanner_only == "") {
+        g_scanner_only = !is_dir("/opt/sybhttpd/default/oversight");
+    }
+    return g_scanner_only;
+}
+
 function formatDate(line,\
 date,nonDate) {
     if (extractDate(line,date,nonDate) == 0) {

@@ -29,11 +29,11 @@ body { color:yellow ; background-color:black; }
     </head>
 
 [:IF($ovs_display_fanart):]
-    <body [:$skin_cursor_style:]  [background=:FANART_URL(default.jpg):] >
+    <body [:$skin_cursor_style:]  [background=:FANART_URL(default.jpg):] onloadset="[:START_CELL:]" >
     <table class="main" width=100%>
     <tr valign="bottom">
 [:ELSE:]
-    <body [:$skin_focus_style:]  height=100% [background=:FANART_URL(lightwave.jpg):] >
+    <body [:$skin_focus_style:]  height=100% [background=:FANART_URL(lightwave.jpg):] onloadset="[:START_CELL:]" >
     <table class="main" width=100% >
     <tr valign="middle">
 [:ENDIF:]

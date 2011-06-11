@@ -92,7 +92,7 @@ hr { color:#FBB917 }
 </head>
 
 [:IF($ovs_display_fanart):]
-<body focuscolor=#FBB917 focustext=black [background=:FANART_URL(default.jpg):] >
+<body focuscolor=#FBB917 focustext=black [background=:FANART_URL(default.jpg):] onloadset="[:START_CELL:]" >
 <table class=main width=100%>
 <tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
 [:ELSE:]

@@ -18,12 +18,13 @@
 #include "db.h"
 #include "dbplot.h"
 #include "dboverview.h"
-#include "oversight.h"
-#include "hashtable.h"
-#include "hashtable_loop.h"
-#include "macro.h"
+
+//#include "oversight.h"
+//#include "hashtable.h"
+//#include "hashtable_loop.h"
+//#include "macro.h"
 //#include "mount.h"
-#include "template.h"
+//#include "template.h"
 //#include "exp.h"
 //#include "filter.h"
 //#include "abet.h"
@@ -238,10 +239,12 @@ TRACE;
     HTML_LOG(0,"pruned_tv_listing num_rows=%d r%d x c%d",num_rows,rows,cols);
 #endif
 
+#define UNWATCHED_UNSET -1
     int i=0;
     for(r=0 ; r < rows ; r++ ) {
         HTML_LOG(1,"tvlisting row %d",r);
         char *row_text = NULL;
+        int first_unwatched = UNWATCHED_UNSET;
         for(c = 0 ; c < cols ; c++ ) {
             HTML_LOG(1,"tvlisting col %d",c);
 
@@ -263,13 +266,20 @@ TRACE;
                     if (ep == NULL || !*ep ) {
                         ep = "play";
                     }
+
+                    char *href_name = ep;
+                    if (item->watched == 0 && first_unwatched == UNWATCHED_UNSET) {
+                        href_name="[:START_CELL:]";
+                        first_unwatched=i;
+                    }
+
                     char *href_attr = href_focus_event_fn(JAVASCRIPT_EPINFO_FUNCTION_PREFIX,function_id);
                     episode_col = vod_link(
                             item,
                             ep,"",
                             item->db->source,
                             item->file,
-                            ep,
+                            href_name,
                             NVL(href_attr),
                             watched_style(item));
                     FREE(href_attr);

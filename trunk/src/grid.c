@@ -1,4 +1,8 @@
 // $Id:$
+//
+// These functions support a list of GRIDs. Each Grid is a rectangle of cells. Each Cell represents a movie or tv season (or boxset).
+// For rendering of the Grid to HTML see grid_display.c
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

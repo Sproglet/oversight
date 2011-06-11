@@ -284,4 +284,6 @@ typedef struct Exp_struct {
 #define QPARAM_FILTER_EQUALS "e"
 
 typedef enum JavascriptArgType_enum { JS_ARG_END , JS_ARG_STRING , JS_ARG_INT } JavascriptArgType;
+
+typedef enum { WATCHED , NORMAL , FRESH } ViewStatus;
 #endif

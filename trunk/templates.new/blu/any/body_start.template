@@ -1,9 +1,9 @@
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" >
+<table class=main width=100%>
 [:IF($ovs_display_fanart):]
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" >
-<table class=main width=100%>
-<tr valign=bottom><td align="center" border=0 height=[:BODY_HEIGHT:] >
+<tr valign=bottom>
 [:ELSE:]
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:BACKGROUND_IMAGE($skin_background_image):]" >
 <table class=main width=100%>
-<tr valign=middle><td align="center" border=0 height=[:BODY_HEIGHT:] >
+<tr valign=middle>
 [:ENDIF:]
+<td align="center" border=0 height=[:BODY_HEIGHT:] >

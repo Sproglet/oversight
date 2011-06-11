@@ -37,6 +37,7 @@ char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
 struct hashtable *args_to_hash(MacroCallInfo *call,char *required_list,char *optional_list);
 void free_named_args(struct hashtable *h);
+char *macro_fn_background_url(MacroCallInfo *call_info);
 
 Db *firstdb(MacroCallInfo *call_info)
 {
@@ -168,14 +169,15 @@ char *macro_fn_fanart_url(MacroCallInfo *call_info) {
     char *result = NULL;
     char *default_wallpaper=NULL;
 
-    if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
-        call_info->free_result=0;
-        return "?";
-    }
     if (*oversight_val("ovs_display_fanart") == '0' ) {
 
-        // do nothing
-        
+        return macro_fn_background_url(call_info);
+
+    } else if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
+
+        call_info->free_result=0;
+        return "?";
+
     } else if (call_info->args && call_info->args->size > 1 ) {
 
         ovs_asprintf(&result,"%s([default wallpaper])",call_info->call);
@@ -1597,7 +1599,8 @@ char *macro_fn_icon_link(MacroCallInfo *call_info) {
   Display image from skin/720 or skin/sd folder. Also see BACKGROUND_URL,FANART_URL
   =end wiki
 **/  
-char *macro_fn_background_url(MacroCallInfo *call_info) {
+char *macro_fn_background_url(MacroCallInfo *call_info)
+{
     char *result=NULL;
     if (call_info->args && call_info->args->size == 1) {
         char *tmp = image_path_by_resolution(call_info->skin_name,call_info->args->array[0]);

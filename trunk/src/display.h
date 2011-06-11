@@ -43,7 +43,6 @@ char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,c
 char *get_tvid_links();
 char *get_tvid_resize_links();
 char *get_play_tvid(char *text);
-char *movie_listing(DbItem *rowid);
 long use_tv_boxsets();
 long use_movie_boxsets();
 char *get_status_static();

@@ -21,6 +21,7 @@
 #include "dbplot.h"
 #include "display.h"
 #include "tv_detail.h"
+#include "movie_detail.h"
 #include "dboverview.h"
 #include "display.h"
 #include "gaya_cgi.h"

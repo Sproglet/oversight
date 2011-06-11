@@ -390,10 +390,12 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     g_fldrInfoCount[currentFolder]++;
                     g_fldrInfoName[currentFolder]=nfo;
                     g_file_date[nfo] = calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
+
                 }
 
                 if (store) {
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
+
                     #Process previous details
                     identify_and_catalog(minfo,qfile,0,person_extid2name);
 
@@ -417,6 +419,35 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     return 0+total;
 }
 
+function got_local_image(minfo,field,path,regex,replace,\
+ipath,ret) {
+    ipath = gensub(regex,replace,1,path);
+    if (ipath != path && is_file(ipath)) {
+        minfo[field] = ipath;
+        minfo[field"_source"] = "local";
+        ret = 1;
+    }
+    INF("image path "ipath" = "ret);
+    return ret;
+
+}
+
+function check_local_image(minfo,field,path,name,suffix,\
+ext,extno,i) {
+    if (minfo[field] == "") {
+        extno=split("jpg,png,JPG,PNG",ext,",");
+        for(i = 1 ; i<= extno ; i++ ) {
+            if (got_local_image(minfo,field,path,"\.[^.]+$",suffix"."ext[i])) break; # eg movie-fanart.png
+            if (got_local_image(minfo,field,path,"/[^/]*$","/"name"."ext[i])) break; #eg cover.png
+        }
+    }
+}
+
+function check_local_images(minfo,path) {
+    check_local_image(minfo,"mi_poster",path,"poster","");
+    check_local_image(minfo,"mi_fanart",path,"fanart",".fanart");
+}
+
 function storeMovie(minfo,file,folder,timeStamp,files_in_db,\
 path) {
 
@@ -432,6 +463,7 @@ path) {
     if (!NEWSCAN || !in_list(path,files_in_db) ) {
         minfo["mi_do_scrape"]=1;
         INF("Queued " path);
+        check_local_images(minfo,path);
     } else {
         DEBUG("Stored " path);
     }
@@ -785,7 +817,7 @@ function plot_in_main_lang(minfo) {
 }
 function get_images(minfo) {
     #Only get posters if catalog is installed as part of oversight
-    if (index(APPDIR,"/oversight") ) {
+    if (!scanner_only()) {
 
         if (GET_POSTERS) {
             minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");

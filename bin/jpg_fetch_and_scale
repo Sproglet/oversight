@@ -106,7 +106,12 @@ fetch_resize() {
     INFO ""
     INFO "Processing : [$type] [$url] [$file]"
 
-    if wget -O "$file" "$@" "$url" && [ -s "$file" ]  ; then
+    case "$url" in
+        http*) wget -O "$file" "$@" "$url" && [ -s "$file" ]  ;;
+        *) cp "$url" "$file"  ;;
+    esac
+
+    if [ $? == 0 ] ; then
         perms $file
         resize_img "$type" "$file"  # &
     else

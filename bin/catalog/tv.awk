@@ -1088,12 +1088,7 @@ allTitles,url,ret,total) {
 
 function tvdb_get_series(title,\
 url) {
-    url = g_thetvdb_web"/api/GetSeries.php?";
-    if (index(url,"thetvdb") && length(title) > utf8len(title)) {
-        # Non-latin characters - search in users locale or all languages.
-        url = url "language=all&";
-    }
-    url = url "seriesname=";
+    url = g_thetvdb_web"/api/GetSeries.php?language=all&seriesname=";
     return expand_url(url,title);
 }
 

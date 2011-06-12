@@ -2123,7 +2123,7 @@ DEBUG("xx 3 season = "minfo["mi_season"]);
 
 function tvDbImageUrl(path) {
     if(path != "") {
-        return "http://thetvdb.com/banners/" url_encode(html_decode(path,0));
+        return "http://thetvdb.com/banners/" url_encode(html_decode(path));
     } else {
         return "";
     }

@@ -75,7 +75,7 @@ key,ret,free) {
 }
 
 function scan_folder_for_new_media(folderArray,scan_options,\
-f,fcount,total,done,dir,doscan) {
+f,fcount,total,done,dir) {
 
     # If NEWSCAN is not present then force a full scan and ignore CHECK_FREE_SPACE & CHECK_TRIGGER_FILES
     if(!NEWSCAN || !CHECK_TRIGGER_FILES || trigger_any_changed()) {
@@ -419,33 +419,48 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     return 0+total;
 }
 
-function got_local_image(minfo,field,path,regex,replace,\
-ipath,ret) {
-    ipath = gensub(regex,replace,1,path);
-    if (ipath != path && is_file(ipath)) {
-        minfo[field] = ipath;
-        minfo[field"_source"] = "local";
-        ret = 1;
-    }
-    INF("image path "ipath" = "ret);
-    return ret;
-
-}
-
-function check_local_image(minfo,field,path,name,suffix,\
-ext,extno,i) {
+function check_local_image(minfo,field,folder,file,name,suffix,\
+ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
     if (minfo[field] == "") {
         extno=split("jpg,png,JPG,PNG",ext,",");
+
+        is_dvd = isDvdDir(file);
+        path = clean_path(folder"/"file);
+
         for(i = 1 ; i<= extno ; i++ ) {
-            if (got_local_image(minfo,field,path,"\.[^.]+$",suffix"."ext[i])) break; # eg movie-fanart.png
-            if (got_local_image(minfo,field,path,"/[^/]*$","/"name"."ext[i])) break; #eg cover.png
+
+            n1 = name"."ext[i]; #eg cover.png
+            n2 = suffix"."ext[i]; # eg movie-fanart.png
+
+            if (is_dvd) {
+                imgname[1]=file"/"n1;
+                imgname[2]=file"/"substr(file,1,length(file)-1) n2;
+            } else {
+                imgname[1]=name"."ext[i]; #eg cover.png
+                imgname[2]=gensub(/\.[^[A-Za-z0-9]{2,4}$/,n2,1,file); # eg movie-fanart.png
+            }
+
+            for(j in imgname) {
+                ipath = clean_path(folder"/"imgname[j]);
+                if (ipath != path) {
+                    if (is_file(ipath)) {
+                        minfo[field] = ipath;
+                        minfo[field"_source"] = "local";
+                        INF("got image path "ipath);
+                        return 1;
+                    } else {
+                        INF("no image path "ipath);
+                    }
+                }
+            }
         }
     }
+    return 0;
 }
 
-function check_local_images(minfo,path) {
-    check_local_image(minfo,"mi_poster",path,"poster","");
-    check_local_image(minfo,"mi_fanart",path,"fanart",".fanart");
+function check_local_images(minfo,folder,file) {
+    check_local_image(minfo,"mi_poster",folder,file,"poster","");
+    check_local_image(minfo,"mi_fanart",folder,file,"fanart",".fanart");
 }
 
 function storeMovie(minfo,file,folder,timeStamp,files_in_db,\
@@ -463,7 +478,7 @@ path) {
     if (!NEWSCAN || !in_list(path,files_in_db) ) {
         minfo["mi_do_scrape"]=1;
         INF("Queued " path);
-        check_local_images(minfo,path);
+        check_local_images(minfo,folder,file);
     } else {
         DEBUG("Stored " path);
     }

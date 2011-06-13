@@ -520,17 +520,6 @@ function merge_queue(qfile,person_extid2name) {
     delete person_extid2name;
 }
 
-
-
-
-
-
-
-
-
-
-
-
 function set_maxid(file,max_id,\
 filemax) {
     filemax = file".maxid";

@@ -395,7 +395,6 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
                 write_dbline(fields2,file_out);
                 keep_plots(fields2,plot_ids);
                 queue_plots(fields2,g_plot_file_queue);
-
             }
             row2 = "";
         } else if (action == 3) { # merge

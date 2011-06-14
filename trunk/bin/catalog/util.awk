@@ -365,13 +365,15 @@ i,key,n) {
 }
 
 function sort_file(f,args,\
-tmpf) {
+tmpf,ret) {
     tmpf=f"."PID;
     if (is_file(f)) {
         if (exec(SORT" "args" "qa(f)" > "qa(tmpf)" && mv "qa(tmpf)" "qa(f)) == 0) {
             set_permissions(f);
+            ret = 1;
         }
     }
+    return ret;
 }
 
 function set_permissions(shellArg) {

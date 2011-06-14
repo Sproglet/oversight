@@ -1,7 +1,7 @@
 
 # changes here should be reflected in db.c:write_row()
 function createIndexRow(minfo,db_index,watched,locked,index_time,\
-row,est,nfo,op,start) {
+row,est,nfo,op) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
     est=file_time(minfo["mi_folder"]"/unpak.log");
@@ -71,9 +71,10 @@ row,est,nfo,op,start) {
     row=row"\t"URL"\t"minfo["mi_idlist"];
 
     row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];
-    if (minfo["mi_director"]) row=row"\t"DIRECTORS"\t"minfo["mi_director"];
-    if (minfo["mi_actors"]) row=row"\t"ACTORS"\t"minfo["mi_actors"];
-    if (minfo["mi_writers"]) row=row"\t"WRITERS"\t"minfo["mi_writers"];
+
+    if (minfo["mi_director_ids"]) row=row"\t"DIRECTORS"\t"minfo["mi_director_ids"];
+    if (minfo["mi_actor_ids"]) row=row"\t"ACTORS"\t"minfo["mi_actor_ids"];
+    if (minfo["mi_writer_ids"]) row=row"\t"WRITERS"\t"minfo["mi_writer_ids"];
 
     row=row"\t"FILETIME"\t"shorttime(minfo["mi_file_time"]);
     row=row"\t"DOWNLOADTIME"\t"shorttime(est);
@@ -100,6 +101,7 @@ row,est,nfo,op,start) {
     if (minfo["mi_mb"]) row=row"\t"SIZEMB"\t"minfo["mi_mb"];
     if (minfo["mi_videosource"]) row=row"\t"VIDEOSOURCE"\t"minfo["mi_videosource"];
     if (minfo["mi_subtitles"]) row=row"\t"SUBTITLES"\t"minfo["mi_subtitles"];
+
     return row"\t";
 }
 function short_year(y,\
@@ -327,138 +329,8 @@ f) {
     printf "\t\n" >> file;
 }
 
-function merge_index(file1,file2,file_out,person_extid2ovsid,\
-row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids) {
-
-    ret = 1;
-    id1("merge_index ["file1"]["file2"]");
 
 
-    max_id = get_maxid(INDEX_DB);
-
-    action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
-    do {
-        #INF("read action="action);
-        if (and(action,1)) { 
-            row1 = get_dbline(file1);
-            parseDbRow(row1,fields1,1);
-        }
-        if (and(action,2)) {
-            row2 = get_dbline(file2);
-            parseDbRow(row2,fields2,1);
-            # change the external actor ids to oversight ids
-            people_change_extid_to_ovsid(fields2,person_extid2ovsid);
-            INF("NEW    :["fields2[FILE]"]");
-        }
-
-        if (row1 == "") {
-            if (row2 == "") {
-                # both finished
-                action = 0;
-            } else {
-                action = 2;
-            }
-        } else {
-            if (row2 == "") {
-                action = 1;
-            } else {
-                # We compare the FILE field 
-
-                if (fields1[FILE] == fields2[FILE]) {
-
-                    action = 3;
-
-                } else if (fields1[FILE] < fields2[FILE]) {
-                    action = 1;
-                } else {
-                    action = 2;
-                }
-            }
-        }
-
-        #DEBUG("merge action="action);
-        if (action == 1) { # output row1
-            if (keep_dbline(row1,fields1)) {
-                total_unchanged++;
-                print row1 >> file_out;
-                keep_plots(fields1,plot_ids);
-            } else {
-                total_removed ++;
-            }
-            row1 = "";
-        } else if (action == 2) { # output row2
-
-            if (keep_dbline(row2,fields2)) {
-
-                fields2[ID] = ++max_id;
-                total_new++;
-                write_dbline(fields2,file_out);
-                keep_plots(fields2,plot_ids);
-                queue_plots(fields2,g_plot_file_queue);
-            }
-            row2 = "";
-        } else if (action == 3) { # merge
-            # Merge the rows.
-            fields2[WATCHED] = fields1[WATCHED];
-            fields2[LOCKED] = fields1[LOCKED];
-            fields2[FILE] = short_path(fields2[FILE]);
-
-            if (keep_dbline(row2,fields2)) {
-                fields2[ID] = fields1[ID];
-                total_changed ++;
-                write_dbline(fields2,file_out);
-                keep_plots(fields2,plot_ids);
-                queue_plots(fields2,g_plot_file_queue);
-
-            } else {
-                total_removed++;
-            }
-        }
-
-    } while (action > 0);
-
-    close(file1);
-    close(file2);
-    close(file_out);
-    close(g_plot_file_queue);
-
-    set_maxid(INDEX_DB,max_id);
-
-    update_plots(g_plot_file,g_plot_file_queue,plot_ids);
-
-    INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
-    id0(ret);
-    return ret;
-}
-
-
-# Merge two index files together
-function sort_and_merge_index(file1,file2,file1_backup,person_extid2name,\
-file1_sorted,file2_sorted,file_merged,person_extid2ovsid) {
-
-    id1("sort_and_merge_index ["file1"]["file2"]["file1_backup"]");
-
-    file1_sorted = new_capture_file("dbsort1");
-    file2_sorted = new_capture_file("dbsort2");
-    file_merged =  new_capture_file("dbmerge");
-
-    if (sort_index(file1,file1_sorted) )  {
-        if (sort_index(file2,file2_sorted) )  {
-
-            people_update_dbs(person_extid2name,person_extid2ovsid);
-
-            if (merge_index(file1_sorted,file2_sorted,file_merged,person_extid2ovsid)) {
-
-                replace_database_with_new(file_merged,file1,file1_backup);
-            }
-            
-        }
-    }
-    rm(file1_sorted); 
-    rm(file2_sorted); 
-    rm(file_merged);
-    id0("");
-}
 
 # Get all of the files that have already been scanned that start with the 
 # same prefix.

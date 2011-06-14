@@ -816,6 +816,8 @@ cat,minfo2,locales,id) {
         }
     }
 
+    close(qfile);
+
     if ((force_merge && g_batch_total) ||  g_batch_total == g_batch_size ) {
 
             if (g_db) {
@@ -847,7 +849,7 @@ function get_images(minfo) {
 # INPUT minfo - scraped information
 # INPUT qfile - name of queuefile
 # OUTPUT person_extid2name - hash of domain:role:extid to name eg imdb:actor:nm000123 => Joe Blogs
-function queue_minfo(minfo,qfile,person_extid2name,\
+function queue_minfo_old(minfo,qfile,person_extid2name,\
 row,people) {
 
     people = person_add_db_queue(minfo,person_extid2name);

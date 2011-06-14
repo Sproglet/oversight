@@ -36,21 +36,14 @@ function person_get_id(domain,url) {
 # INPUT minfo - scraped information esp [mi_actor_ids]=imdb:nm1111@nm2222 etc
 # OUTPUT returns line fragment to add to queue
 # also set  lookup person_extid2name[domain:id]=name
-function person_add_db_queue(minfo,person_extid2name,\
-db_text) {
-    id1("person_add_db_queue");
-    db_text = "\t" person_add_db_queue_role(minfo,"actor",ACTORS,person_extid2name);
-    db_text = db_text "\t" person_add_db_queue_role(minfo,"director",DIRECTORS,person_extid2name);
-    db_text = db_text "\t" person_add_db_queue_role(minfo,"writer",WRITERS,person_extid2name) "\t" ;
-
-    sub(/^\t+/,"",db_text);
-    gsub(/\t\t+/,"\t",db_text);
-    id0(db_text);
-    return db_text;
+function person_add_db_queue(minfo,person_extid2name) {
+    person_add_db_queue_role(minfo,"actor",person_extid2name);
+    person_add_db_queue_role(minfo,"director",person_extid2name);
+    person_add_db_queue_role(minfo,"writer",person_extid2name);
 }
 
-function person_add_db_queue_role(minfo,role,dbfield,person_extid2name,\
-text,i,num,domain,ids,names,key,namekey) {
+function person_add_db_queue_role(minfo,role,person_extid2name,\
+i,num,domain,ids,names,key,namekey) {
 
     id1("person_extid2name:");
 
@@ -58,12 +51,6 @@ text,i,num,domain,ids,names,key,namekey) {
     namekey = "mi_"role"_names" ;
 
     if (key in minfo) {
-
-        # set text=domain:extid1@extid2@...
-        text = minfo[key] ;
-
-        # eg set text=_A\tdomain:extid1@extid2@...
-        text = dbfield "\t" text;
 
         # update lookup table
         num = split(minfo[key],ids,"@");
@@ -77,9 +64,7 @@ text,i,num,domain,ids,names,key,namekey) {
     } else {
         INF("no people data");
     }
-    id0(text);
-
-    return text;
+    id0();
 }
 
 # Pre-Merge phase ===================================

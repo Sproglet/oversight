@@ -377,35 +377,42 @@ END{
 
     plugin_check();
 
-    if (hash_size(FOLDER_ARR)) {
+    gMovieFileCount = 0;
+    gMaxDatabaseId = 0;
 
-        gMovieFileCount = 0;
-        gMaxDatabaseId = 0;
-        
-        load_settings("",UNPAK_CFG,1);
+    load_settings("",UNPAK_CFG,1);
 
-        g_api_tvdb = apply(g_api_tvdb);
-        g_api_tmdb = apply(g_api_tmdb);
-        g_api_rage = apply(g_api_rage);
+    g_api_tvdb = apply(g_api_tvdb);
+    g_api_tmdb = apply(g_api_tmdb);
+    g_api_rage = apply(g_api_rage);
 
-        g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
+    #TODO Remove all references to CONVERT_IMAGES after next milestone
+    if (CONVERT_IMAGES) {
+        convert_images(INDEX_DB);
+    } else {
 
-        delete g_updated_plots;
+        if (hash_size(FOLDER_ARR)) {
 
-        clean_capture_files();
+            g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);
 
-        et=systime()-ELAPSED_TIME;
+            delete g_updated_plots;
 
-        DEBUG(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
 
-        #Check script
-        for(i in g_settings) {
-            if (!(i in g_settings_orig)) {
-                WARNING("Undefined setting "i" referenced");
+            et=systime()-ELAPSED_TIME;
+
+            DEBUG(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
+
+            #Check script
+            for(i in g_settings) {
+                if (!(i in g_settings_orig)) {
+                    WARNING("Undefined setting "i" referenced");
+                }
             }
-        }
 
+        }
     }
+
+    clean_capture_files();
 
     rm(g_status_file);
 
@@ -778,7 +785,7 @@ t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count,new_count
 
 function verify_setup(\
 tmp,tmp2,j,k) {
-    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url mi_video mi_audio mi_mb mi_videosource";
+    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url mi_video mi_audio mi_mb mi_videosource mi_ovsid";
     j=split(tmp,tmp2," ");
     for(k = 1 ; k <= j ; k++ ) {
         tmp2[k+j] = tmp2[k]"_source";
@@ -1140,6 +1147,12 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "RESCAN" )  {
             RESCAN=1;
             moveDown++;
+
+        #TODO one off conversion Remove after next milestone release
+        } else if (ARGV[i] == "CONVERT_IMAGES" )  {
+            CONVERT_IMAGES=1;
+            moveDown++;
+
         } else if (ARGV[i] == "PARALLEL_SCAN" )  {
             PARALLEL_SCAN=1;
             moveDown++;

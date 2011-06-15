@@ -691,7 +691,6 @@ cat,minfo2,locales,id) {
                     if (minfo["mi_id"] == -1 ) {
                         # dont scrape
                         INF("using xbmc nfo only for "minfo["mi_media"]);
-                        get_images(minfo);
 
                     } else {
 
@@ -781,8 +780,6 @@ cat,minfo2,locales,id) {
                         } else {
 
                             fixTitles(minfo);
-
-                            get_images(minfo);
 
                             relocate_files(minfo);
 

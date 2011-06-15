@@ -5,6 +5,10 @@ else
         root=/mnt/pch-c200/share/Apps 
     fi
 fi
+if [ -n "$root" ] ; then
 for f in `find . -maxdepth 1 -newer .x -name \*awk` ; do
         cp -v "$f" $root/oversight/bin/catalog
 done && touch .x
+else
+    echo no root
+fi

@@ -6,21 +6,16 @@
 # ovs: indicates internal database path. 
 # field is a sub folder. All internal posters are stored under "ovs:"POSTER"/"...
 function internal_poster_reference(field_id,minfo,\
-poster_ref,id) {
+poster_ref) {
 
-    id = imdb(minfo);
-
-    if (id) {
-        id = "imdb_"id;
-    } else {
-        id = minfo["mi_title"]"_"minfo["mi_year"];
-    }
-    poster_ref = id;
-
-    gsub("[^-_&" g_alnum8 "]+","_",poster_ref);
+    #Tv show images are stored by season.
     if (minfo["mi_category"] == "T" ) {
         poster_ref = poster_ref "_" minfo["mi_season"];
+    } else {
+        #images are now stored by index.db id - not imdbid - to allow different cuts of the same movie to have distinct images.
+        poster_ref = minfo["mi_ovsid"];
     }
+
     #"ovs:" means store in local database. This abstract path is used because when using
     #crossview in oversight jukebox, different posters have different locations.
     #It also allows the install folder to be changed as it is not referenced within the database.

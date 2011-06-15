@@ -102,7 +102,7 @@ file1_sorted,file_merged,person_extid2ovsid) {
 }
 
 function merge_index(dbfile,qfile,file_out,person_extid2ovsid,\
-row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids,minfo) {
+row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids,minfo,changed_line) {
 
     ret = 1;
     id1("merge_index ["dbfile"]["qfile"]");
@@ -121,8 +121,6 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             if (read_minfo(qfile,minfo)) {
                 row2 = createIndexRow(minfo,-1,0,0,"");
                 parseDbRow(row2,fields2,1);
-                # change the external actor ids to oversight ids
-                people_change_extid_to_ovsid(fields2,person_extid2ovsid);
                 INF("NEW    :["fields2[FILE]"]");
             }
         }
@@ -152,6 +150,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             }
         }
 
+        changed_line = "";
+
         #DEBUG("merge action="action);
         if (action == 1) { # output row1
             if (keep_dbline(row1,fields1)) {
@@ -166,11 +166,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
             if (keep_dbline(row2,fields2)) {
 
-                fields2[ID] = ++max_id;
+                changed_line = ++max_id;
                 total_new++;
-                write_dbline(fields2,file_out);
-                keep_plots(fields2,plot_ids);
-                queue_plots(fields2,g_plot_file_queue);
             }
             row2 = "";
         } else if (action == 3) { # merge
@@ -180,16 +177,28 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             fields2[FILE] = short_path(fields2[FILE]);
 
             if (keep_dbline(row2,fields2)) {
-                fields2[ID] = fields1[ID];
+                changed_line = fields1[ID];
                 total_changed ++;
-                write_dbline(fields2,file_out);
-                keep_plots(fields2,plot_ids);
-                queue_plots(fields2,g_plot_file_queue);
-
             } else {
                 total_removed++;
             }
+            row1 = row2 = "";
         }
+
+        if (changed_line != "") {
+            fields2[ID] = minfo["mi_ovsid"] = changed_line;
+            keep_plots(fields2,plot_ids);
+            queue_plots(minfo,g_plot_file_queue);
+            # change the external actor ids to oversight ids
+            people_change_extid_to_ovsid(fields2,person_extid2ovsid);
+            write_dbline(fields2,file_out);
+
+            get_images(minfo);
+
+            # TODO Pass plot. Change to use minfo ?
+            generate_nfo_file(g_settings["catalog_nfo_format"],fields2);
+        }
+
 
     } while (action > 0);
 
@@ -259,4 +268,29 @@ max_id,line,fields,filemax,tab) {
     return max_id;
 }
 
+
+# Convert images from ovs_tt0000000.jpg to id.jpg
+function convert_images(dbfile,\
+row,fields,poster,fanart,id1,id2) {
+
+    poster=APPDIR "/global/_J/ovs_";
+    fanart=APPDIR "/global/_fa/ovs_";
+
+    while((row=get_dbline(dbfile)) != "") {
+        parseDbRow(row,fields,0);
+        if(fields[CATEGORY] != "T") {
+            id1 = fields[ID];
+            id2 = subexp(fields[URL],"tt[0-9]+");
+            if (id2) {
+                INF("mv "qa(poster id2 ".jpg")" "qa(poster id1 ".jpg"));
+                INF("mv "qa(poster id2 ".thumb.jpg")" "qa(poster id1 ".thumb.jpg"));
+                INF("mv "qa(poster id2 ".thumb.boxset.jpg")" "qa(poster id1 ".thumb.boxset.jpg"));
+
+                INF("mv "qa(fanart id2 ".hd.jpg")" "qa(fanart id1 ".hd.jpg"));
+                INF("mv "qa(fanart id2 ".sd.jpg")" "qa(fanart id1 ".sd.jpg"));
+                INF("mv "qa(fanart id2 ".pal.jpg")" "qa(fanart id1 ".pal.jpg"));
+            }
+        }
+    }
+}
 

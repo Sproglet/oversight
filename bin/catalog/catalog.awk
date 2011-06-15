@@ -668,49 +668,51 @@ new_total,i) {
 function filter_web_titles(count,titles,filterText,filteredTitles,\
 keep,new,newtotal,size,url,i,blocksz) {
 
-    id1("filter_web_titles in="count);
+    if (count) {
+        id1("filter_web_titles in="count);
 
-    newtotal=0;
-    blocksz = 2000;
+        newtotal=0;
+        blocksz = 2000;
 
-    if (count > 36 ) {
-        WARNING("Too many titles to filter. Aborting");
-    } else {
+        if (count > 36 ) {
+            WARNING("Too many titles to filter. Aborting");
+        } else {
 
-        url = g_search_yahoo url_encode("+\""filterText"\"");
+            url = g_search_yahoo url_encode("+\""filterText"\"");
 
-        #Establish baseline for no matches.
-        if (!g_filter_web_titles_baseline) {
-            g_filter_web_titles_baseline = get_page_size(url url_encode(" +"rand()systime()));
-            g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/blocksz);
-        }
-
-        for(i = 1 ; i<= count ; i++ ) {
-            size = get_page_size(url url_encode(" +\""titles[i,2]"\""));
-            size = int(size / blocksz );
-            if (size > g_filter_web_titles_baseline) {
-                keep[i] = size;
-            } else {
-                DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+            #Establish baseline for no matches.
+            if (!g_filter_web_titles_baseline) {
+                g_filter_web_titles_baseline = get_page_size(url url_encode(" +"rand()systime()));
+                g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/blocksz);
             }
+
+            for(i = 1 ; i<= count ; i++ ) {
+                size = get_page_size(url url_encode(" +\""titles[i,2]"\""));
+                size = int(size / blocksz );
+                if (size > g_filter_web_titles_baseline) {
+                    keep[i] = size;
+                } else {
+                    DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+                }
+            }
+
+            bestScores(keep,keep);
+
+            #dump(0,"keep",keep);
+            newtotal = copy_ids_and_titles(keep,titles,new);
+            #dump(0,"new",new);
+
+            #INF("new total = "newtotal);
+
+            delete filteredTitles;
+
+            hash_copy(filteredTitles,new);
+
+            #dump(0,"filteredTitles",filteredTitles);
         }
 
-        bestScores(keep,keep);
-
-        #dump(0,"keep",keep);
-        newtotal = copy_ids_and_titles(keep,titles,new);
-        #dump(0,"new",new);
-
-        #INF("new total = "newtotal);
-
-        delete filteredTitles;
-
-        hash_copy(filteredTitles,new);
-
-        #dump(0,"filteredTitles",filteredTitles);
+        id0(newtotal);
     }
-
-    id0(newtotal);
     return newtotal;
 }
 

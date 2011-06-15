@@ -1501,12 +1501,10 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
     // No pictures on filesystem - look in db
     // first build the name 
     // TV shows =
-    // ovs:fieldid/prefix tt0000000 _ season.jpg
-    // ovs:fieldid/prefix title _ year _ season.jpg
+    // ovs:fieldid/imdb_tt0000000_season.jpg
     //
-    // films  =
-    // ovs:fieldid/prefix tt0000000.jpg
-    // ovs:fieldid/prefix title _ year.jpg
+    // Anything else
+    // ovs:fieldid/ovsid.jpg
     //
 #define INTERNAL_IMAGE_PATH_LEN 250
     static char path[INTERNAL_IMAGE_PATH_LEN+1];
@@ -1517,40 +1515,15 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
             (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
             catalog_val("catalog_poster_prefix"));
 
-    char *id=get_item_id(item,"imdb",0);
-    if (id) {
-        p += sprintf(p,"imdb_%s",id);
-        FREE(id);
-    } else {
-            // Title - year
-            // TODO Cope with UTF-8 Normalised/Expanded titles.
-
-
-        char *t=item->title;
-
-        if (t) {
-            // Add title replacing all runs of non-alnum with single _
-            int first_nonalnum = 1;
-            while(*t) {
-                if (isalnum(*t) || strchr("-_&",*t) || *t < 0 /* utf-8 high bit */ ) {
-                    *p++ = *t;
-                    first_nonalnum=1;
-                } else if (first_nonalnum) {
-                    *p++ = '_';
-                    first_nonalnum=0;
-                }
-                t++;
-            }
-        }
-        *p++ = '_';
-        if (item->year) {
-            p += sprintf(p,"%d",item->year);
-        }
-    }
+    char *id = NULL;
     if (item->category == 'T' ) {
-        p+= sprintf(p,"_%d",item->season);
-    } 
-    p += sprintf(p,".jpg");
+        id=get_item_id(item,"imdb",0);
+    }
+    if (id) {
+        p+= sprintf(p,"imdb_%s_%d.jpg",id,item->season);
+    } else {
+        p+= sprintf(p,"%ld.jpg",item->id);
+    }
 
     HTML_LOG(2,"internal_image_path_static [%s] = [%s]",item->title,path);
     assert(path[INTERNAL_IMAGE_PATH_LEN] == '\0');
@@ -1560,6 +1533,7 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
 char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);
 char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview);
 
+#ifdef FIND_LOCAL_POSTERS
 char *get_picture_path_with_movie(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview)
 {
 
@@ -1636,14 +1610,18 @@ TRACE;
 
     return path;
 }
+#endif
+
 
 char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview) {
 
     char *path = NULL;
 
-    if (0) {
+#ifdef FIND_LOCAL_POSTERS
+        // Looking for posters in the media area at display time is now obsoleted.
+        // The scanner copies local posters to the oversight db.
         path = get_picture_path_with_movie(num_rows,sorted_rows,image_type,newview);
-    }
+#endif
 
     if (path == NULL) {
 
@@ -1683,6 +1661,7 @@ char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMod
 
 TRACE;
     if (path) {
+        // Modify the path extension/suffix depending on image type.
         int freepath=0;
         path = get_path(item,path,&freepath);
 

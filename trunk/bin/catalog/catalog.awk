@@ -386,11 +386,12 @@ END{
     g_api_tmdb = apply(g_api_tmdb);
     g_api_rage = apply(g_api_rage);
 
-    #TODO Remove all references to CONVERT_IMAGES after next milestone
     if (CONVERT_IMAGES) {
-        convert_images(INDEX_DB);
-    } else {
 
+        #TODO Remove all references to CONVERT_IMAGES after next milestone
+        convert_images(INDEX_DB);
+
+    } else {
         if (hash_size(FOLDER_ARR)) {
 
             g_grand_total = scan_folder_for_new_media(FOLDER_ARR,scan_options);

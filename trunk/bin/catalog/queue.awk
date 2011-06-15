@@ -271,26 +271,45 @@ max_id,line,fields,filemax,tab) {
 
 # Convert images from ovs_tt0000000.jpg to id.jpg
 function convert_images(dbfile,\
-row,fields,poster,fanart,id1,id2) {
+row,fields,poster,fanart,id1,id2,flag,t1,t2) {
 
-    poster=APPDIR "/global/_J/ovs_";
-    fanart=APPDIR "/global/_fa/ovs_";
+    poster=APPDIR "/db/global/_J/ovs_";
+    fanart=APPDIR "/db/global/_fa/ovs_";
+    flag=APPDIR "/db/global/.converted0";
 
-    while((row=get_dbline(dbfile)) != "") {
-        parseDbRow(row,fields,0);
-        if(fields[CATEGORY] != "T") {
-            id1 = fields[ID];
-            id2 = subexp(fields[URL],"tt[0-9]+");
-            if (id2) {
-                INF("mv "qa(poster id2 ".jpg")" "qa(poster id1 ".jpg"));
-                INF("mv "qa(poster id2 ".thumb.jpg")" "qa(poster id1 ".thumb.jpg"));
-                INF("mv "qa(poster id2 ".thumb.boxset.jpg")" "qa(poster id1 ".thumb.boxset.jpg"));
+    t1 = t2 = 0;
 
-                INF("mv "qa(fanart id2 ".hd.jpg")" "qa(fanart id1 ".hd.jpg"));
-                INF("mv "qa(fanart id2 ".sd.jpg")" "qa(fanart id1 ".sd.jpg"));
-                INF("mv "qa(fanart id2 ".pal.jpg")" "qa(fanart id1 ".pal.jpg"));
+    if (!is_file(flag)) {
+        id1("convert_images");
+        while((row=get_dbline(dbfile)) != "") {
+            parseDbRow(row,fields,0);
+            if(fields[CATEGORY] != "T") {
+                id1 = fields[ID];
+                id2 = "imdb_"subexp(fields[URL],"tt[0-9]+");
+                if (id2) {
+                    if (is_file(poster id2 ".jpg")) {
+                        if (!exec("mv "qa(poster id2 ".jpg")" "qa(poster id1 ".jpg"))) t2++;
+                        if (!exec("mv "qa(poster id2 ".thumb.jpg")" "qa(poster id1 ".thumb.jpg"))) t2++;
+                        if (!exec("mv "qa(poster id2 ".thumb.boxset.jpg")" "qa(poster id1 ".thumb.boxset.jpg"))) t2++;
+                        t1+=3;
+                    } else {
+                        INF("skip "poster id2 ".jpg");
+                    }
+
+                    if (is_file(fanart id2 ".hd.jpg")) {
+                        if (!exec("mv "qa(fanart id2 ".hd.jpg")" "qa(fanart id1 ".hd.jpg"))) t2++;
+                        if (!exec("mv "qa(fanart id2 ".sd.jpg")" "qa(fanart id1 ".sd.jpg"))) t2++;
+                        if (!exec("mv "qa(fanart id2 ".pal.jpg")" "qa(fanart id1 ".pal.jpg"))) t2++;
+                        t1+=3;
+                    } else {
+                        INF("skip "fanart id2 ".hd.jpg");
+                    }
+                }
             }
         }
+        touch(flag);
+        set_permissions(flag);
+        id0("converted "t2" of "t1" images");
     }
 }
 

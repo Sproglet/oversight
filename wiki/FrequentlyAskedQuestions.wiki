@@ -20,10 +20,15 @@ The delay is to allow for the NMT processes to settle down after a cold boot.
 
 A with telnet you can do
 
-{{{/share/Apps/oversight/catalog.sh RENAME GET_POSTERS GET_FANART GET_PORTRAITS /share/Completed}}}
+{{{/share/Apps/oversight/catalog.sh RENAME  /path/to/media}}}
 
-I would only do this if Oversight is getting all of the film names correct, otherwise they will end up in a wrongly named folder.
-(This is one reason Oversight doesnt change the name of the actual movie avi file yet, I will only add that once Oversight becomes more accurate)
+E.g.
+
+{{{/share/Apps/oversight/catalog.sh RENAME  /share/Completed}}}
+
+This is only recommended if your are sure Oversight is getting all of the movie names correct, otherwise they will end up in a wrongly named folder. This is the reason Oversight doesn't change the name of the actual movie file by default. 
+
+TV show scanning is a little bit more consistent, but pay attention to remakes.
 
 ===How do I clear the database?===
 

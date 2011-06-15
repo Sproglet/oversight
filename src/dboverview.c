@@ -865,6 +865,7 @@ DbGroupIMDB *parse_imdb_list(
                     id = id * 10 + (*p - '0');
                     p++;
                 } else {
+                    html_error("error parsing [%s]",p);
                     assert(0);
                 }
 

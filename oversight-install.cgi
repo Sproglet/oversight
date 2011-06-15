@@ -314,6 +314,8 @@ case "$1" in
         set +x
         PERMS
         BOUNCE_NZBGET
+        # Remove after next milestoone
+        "$INSTALL_DIR/bin/catalog.sh" CONVERT_IMAGES
         ;;
     uninstall)
         NZBGET_UNPAK_UNINSTALL

@@ -886,13 +886,22 @@ tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
 
                 if (total) {
                     #If a show is abbreviated then always do a web search to confirm
-                    if (total < 36) {
-                        #  just do a web search with each title and the filename and return the biggest page. 
-                        total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                    } else {
-                        INF("Lot of possible matches - searching by filename");
-                        total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
+
+                    #INF("Lot of possible matches - searching by filename");
+                    total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
+
+
+                    if (0 && total == 0) {
+
+                        #Maximum number of titles to search individually for 'title' + 'filename'
+                        MAX_TITLES = 36;
+
+                        if (total < MAX_TITLES) {
+                            #  just do a web search with each title and the filename and return the biggest page. 
+                            total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                        }
                     }
+
                     if (total == 0) {
                         #No results using web searchs - try usenet searches 
                         #this uses usenet search engines so they may not be around forever.

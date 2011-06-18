@@ -563,7 +563,7 @@ date,nonDate) {
 #nonDate[1]=bit before date, nonDate[2]=bit after date
 # or empty array
 function extractDate(line,date,nonDate,\
-y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture) {
+y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture,m2,d2) {
 
     line = tolower(line);
     textMonth = 0;
@@ -571,12 +571,13 @@ y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture) {
     delete nonDate;
     #Extract the date.
 
-    #because awk doesnt capture submatches we have to do this a slightly painful way.
     y4=g_year_re;
     ss = SUBSEP;
     s="[-_. /]0*";
-    m1or2 = "([1-9]|0[1-9]|1[012])";
-    d1or2 = "([1-9]|[012][0-9]|3[01])";
+    m1or2 = "([1-9]|0[1-9]|10|11|12)";
+    d1or2 = "([1-9]|[012][0-9]|30|31)";
+    m2 = "(0[1-9]|10|11|12)";
+    d2 = "([012][1-9]|30|31)";
 
     capture=ss"\\1"ss"\\2"ss"\\3"ss; # capture regex subexpressions
 
@@ -605,6 +606,10 @@ y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture) {
         d = matches[3];
         y = matches[4];
         textMonth=1;
+    } else if (split(gensub(g_year_re m2 d2,capture,1,line),matches,ss) == 5) {
+        y = matches[2];
+        m = matches[3];
+        d = matches[4];
     }
     if (d && m && y ) {
         nonDate[1] = matches[1];

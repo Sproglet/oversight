@@ -894,3 +894,213 @@ out,tag_start,tag_end,start_pos,end_pos,tail) {
 }
 
 
+function copy_ids_and_titles(ids,input,out) {
+    delete out;
+    return merge_ids_and_titles(ids,input,out);
+}
+
+function merge_ids_and_titles(ids,input,out,\
+new_total,i) {
+    new_total = out["total"]+0;
+    for (i in ids) {
+        new_total++;
+        out[new_total,1] = input[i,1];
+        out[new_total,2] = input[i,2];
+    }
+    out["total"] = new_total;
+    return new_total;
+}
+
+function clean_html(fin,fout,\
+line,e,inbody) {
+
+    inbody = 0;
+
+    while(enc_getline(fin,line) > 0 ) {
+        line[1] = tolower(line[1]);
+
+        if (!inbody && index(line[1],"<body")) inbody = 1;
+
+        if (inbody) {
+            gsub(/<[^>]+>/,"",line[1]);
+
+            gsub(/\./," ",line[1]);
+            line[1] = clean_title(line[1]);
+            # Ignore full-stops eg Gilmore.Girls.S10
+            print "clean_html ["line[1]"]";
+            print line[1] >> fout;
+        }
+    }
+    if (e >= 0) {
+        enc_close(fin);
+    }
+    close(fout);
+}
+
+#Find title that appears most in web page search
+function filter_web_titles2(count,titles,filterText,filteredTitles,\
+keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
+    if (count) {
+        id1("filter_web_titles2 in="count);
+
+        url = g_search_yahoo url_encode("+\""filterText"\"");
+        f = getUrl(url,"filter",0);
+        if (f) {
+
+            INF("File = "f);
+
+            fclean=f".clean";
+            clean_html(f,fclean);
+
+            #Get number of occurences of tv show
+            for(i = 1 ; i<= count ; i++ ) {
+
+                title = clean_title(titles[i,2]);
+                # Ignore full-stops eg Gilmore.Girls.S10
+                gsub(/\./," ",title);
+
+                num = 0;
+
+                # Check for occurences of title in each line of the file
+                while( (e =  (getline line < fclean ) ) > 0) {
+                    if (index(line,title)) {
+                        INF("found:"line);
+                        num += split(line,tmp,"\\<"title"\\>") - 1;
+                    }
+                }
+                if (e >= 0) {
+                    close(fclean);
+                }
+                if (num > 2) {
+                    keep[i] = num;
+                }
+                if(num) {
+                    INF("Title count "title" = "num" ["line"]");
+                }
+            }
+
+        }
+
+        bestScores(keep,keep);
+        newtotal = copy_ids_and_titles(keep,titles,new);
+        delete filteredTitles;
+        hash_copy(filteredTitles,new);
+        id0(newtotal);
+    }
+    return newtotal;
+}
+
+
+# Find title that returns largest page size.
+function filter_web_titles(count,titles,filterText,filteredTitles,\
+keep,new,newtotal,size,url,i,blocksz) {
+
+    if (count) {
+        id1("filter_web_titles in="count);
+
+        newtotal=0;
+        blocksz = 2000;
+
+        if (count > 36 ) {
+            WARNING("Too many titles to filter. Aborting");
+        } else {
+
+            url = g_search_yahoo url_encode("+\""filterText"\"");
+
+            #Establish baseline for no matches.
+            if (!g_filter_web_titles_baseline) {
+                g_filter_web_titles_baseline = get_page_size(url url_encode(" +"rand()systime()));
+                g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/blocksz);
+            }
+
+            for(i = 1 ; i<= count ; i++ ) {
+                size = get_page_size(url url_encode(" +\""titles[i,2]"\""));
+                size = int(size / blocksz );
+                if (size > g_filter_web_titles_baseline) {
+                    keep[i] = size;
+                } else {
+                    DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+                }
+            }
+
+            bestScores(keep,keep);
+            newtotal = copy_ids_and_titles(keep,titles,new);
+            delete filteredTitles;
+            hash_copy(filteredTitles,new);
+        }
+
+        id0(newtotal);
+    }
+    return newtotal;
+}
+
+
+
+# Given a bunch of titles keep the ones where the filename has been posted with that title
+#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
+#IN titles hash(showId=>title)
+#OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
+#
+# Two engines are used bintube and binsearch in case
+# a) one is unavailable.
+# b) binsearch has slightly better search of files within collections. eg if a series posted under one title.
+function filterUsenetTitles(count,titles,filterText,filteredTitles,\
+result) {
+result = filterUsenetTitles1(count,titles,g_search_binsearch "\""filterText"\" QUERY",filteredTitles);
+   if (result == 0 ) {
+       result = filterUsenetTitles1(count,titles,g_search_nzbindex "\""filterText"\" QUERY",filteredTitles);
+   }
+   return 0+ result;
+}
+
+# Given a bunch of titles keep the ones where the filename has been posted with that title
+#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
+#IN titles - hased by show ID
+#OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
+function filterUsenetTitles1(count,titles,usenet_query_url,filteredTitles,\
+t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count,new_count) {
+
+    found = 0;
+    id1("filterUsenetTitles1 in="count);
+
+    # save for later as titles and filteredTitles may be the same hash
+    hash_copy(origTitles,titles);
+
+    # First get a dummy item to compare
+    dummy=rand()systime()rand();
+    query = usenet_query_url;
+    sub(/QUERY/,dummy,query);
+    baseline = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
+
+    DEBUG("number of links for no match "baseline);
+
+    for(t = 1 ; t<= count ; t++ ) {
+        #Just count the number of table links
+        query = usenet_query_url;
+        sub(/QUERY/,norm_title(clean_title(origTitles[t,2])),query);
+        tmp_count = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
+        DEBUG("number of links "tmp_count);
+        if (tmp_count-baseline > 0) {
+            link_count[t] = tmp_count;
+            found=1;
+        }
+        if (link_count == 0 ) {
+            scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles,1);
+        }
+    }
+
+    new_count = 0;
+    if (found) {
+        # Now keep the ones with most matches
+        bestScores(link_count,link_count,0);
+
+        delete filteredTitles;
+        new_count = copy_ids_and_titles(link_count,origTitles,filteredTitles);
+        dump(0,"post-usenet",filteredTitles);
+    } else {
+        INF("No results found using "usenet_query_url);
+    }
+    id0(new_count);
+    return new_count;
+}
+

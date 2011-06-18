@@ -646,146 +646,6 @@ name) {
     return name;
 }
 
-function copy_ids_and_titles(ids,input,out) {
-    delete out;
-    return merge_ids_and_titles(ids,input,out);
-}
-
-function merge_ids_and_titles(ids,input,out,\
-new_total,i) {
-    new_total = out["total"]+0;
-    for (i in ids) {
-        new_total++;
-        out[new_total,1] = input[i,1];
-        out[new_total,2] = input[i,2];
-    }
-    out["total"] = new_total;
-    return new_total;
-}
-
-
-# Find title that returns largest page size.
-function filter_web_titles(count,titles,filterText,filteredTitles,\
-keep,new,newtotal,size,url,i,blocksz) {
-
-    if (count) {
-        id1("filter_web_titles in="count);
-
-        newtotal=0;
-        blocksz = 2000;
-
-        if (count > 36 ) {
-            WARNING("Too many titles to filter. Aborting");
-        } else {
-
-            url = g_search_yahoo url_encode("+\""filterText"\"");
-
-            #Establish baseline for no matches.
-            if (!g_filter_web_titles_baseline) {
-                g_filter_web_titles_baseline = get_page_size(url url_encode(" +"rand()systime()));
-                g_filter_web_titles_baseline = int(g_filter_web_titles_baseline/blocksz);
-            }
-
-            for(i = 1 ; i<= count ; i++ ) {
-                size = get_page_size(url url_encode(" +\""titles[i,2]"\""));
-                size = int(size / blocksz );
-                if (size > g_filter_web_titles_baseline) {
-                    keep[i] = size;
-                } else {
-                    DEBUG("Discarding "titles[i,1]":"titles[i,2]);
-                }
-            }
-
-            bestScores(keep,keep);
-
-            #dump(0,"keep",keep);
-            newtotal = copy_ids_and_titles(keep,titles,new);
-            #dump(0,"new",new);
-
-            #INF("new total = "newtotal);
-
-            delete filteredTitles;
-
-            hash_copy(filteredTitles,new);
-
-            #dump(0,"filteredTitles",filteredTitles);
-        }
-
-        id0(newtotal);
-    }
-    return newtotal;
-}
-
-
-
-# Given a bunch of titles keep the ones where the filename has been posted with that title
-#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
-#IN titles hash(showId=>title)
-#OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
-#
-# Two engines are used bintube and binsearch in case
-# a) one is unavailable.
-# b) binsearch has slightly better search of files within collections. eg if a series posted under one title.
-function filterUsenetTitles(count,titles,filterText,filteredTitles,\
-result) {
-result = filterUsenetTitles1(count,titles,g_search_binsearch "\""filterText"\" QUERY",filteredTitles);
-   if (result == 0 ) {
-       result = filterUsenetTitles1(count,titles,g_search_nzbindex "\""filterText"\" QUERY",filteredTitles);
-   }
-   return 0+ result;
-}
-
-# Given a bunch of titles keep the ones where the filename has been posted with that title
-#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
-#IN titles - hased by show ID
-#OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
-function filterUsenetTitles1(count,titles,usenet_query_url,filteredTitles,\
-t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count,new_count) {
-
-    found = 0;
-    id1("filterUsenetTitles1 in="count);
-
-    # save for later as titles and filteredTitles may be the same hash
-    hash_copy(origTitles,titles);
-
-    # First get a dummy item to compare
-    dummy=rand()systime()rand();
-    query = usenet_query_url;
-    sub(/QUERY/,dummy,query);
-    baseline = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
-
-    DEBUG("number of links for no match "baseline);
-
-    for(t = 1 ; t<= count ; t++ ) {
-        #Just count the number of table links
-        query = usenet_query_url;
-        sub(/QUERY/,norm_title(clean_title(origTitles[t,2])),query);
-        tmp_count = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
-        DEBUG("number of links "tmp_count);
-        if (tmp_count-baseline > 0) {
-            link_count[t] = tmp_count;
-            found=1;
-        }
-        if (link_count == 0 ) {
-            scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles,1);
-        }
-    }
-
-    new_count = 0;
-    if (found) {
-        # Now keep the ones with most matches
-        bestScores(link_count,link_count,0);
-
-        delete filteredTitles;
-        new_count = copy_ids_and_titles(link_count,origTitles,filteredTitles);
-        dump(0,"post-usenet",filteredTitles);
-    } else {
-        INF("No results found using "usenet_query_url);
-    }
-    id0(new_count);
-    return new_count;
-}
-
 function verify_setup(\
 tmp,tmp2,j,k) {
     tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url mi_video mi_audio mi_mb mi_videosource mi_ovsid";
@@ -829,7 +689,7 @@ ret,f,numok,numbad) {
 # This is used in tv comparison functions for qualified matches so it must not remove any country
 # or year designation
 # deep - if set then [] and {} are removed from text too
-function clean_title(t,deep,\
+function clean_title_nocap(t,deep,\
 punc) {
 
     #ALL# gsub(/[&]/," and ",t);
@@ -864,12 +724,16 @@ punc) {
     gsub(punc," ",t);
 
     if (index(t,"  ")) gsub(/ +/," ",t);
-
-    t=trim(capitalise(tolower(t)));
-
-
-    return t;
+    return trim(tolower(t));
 }
+
+function clean_title(t,deep) {
+
+    return capitalise(clean_title_nocap(t,deep));
+
+}
+
+
 
 # remove html markup from a line.
 function remove_tags(line) {

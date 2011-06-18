@@ -6,12 +6,16 @@
 # ovs: indicates internal database path. 
 # field is a sub folder. All internal posters are stored under "ovs:"POSTER"/"...
 function internal_poster_reference(field_id,minfo,\
-poster_ref) {
+poster_ref,id) {
 
     #Tv show images are stored by season.
     if (minfo["mi_category"] == "T" ) {
-        poster_ref = poster_ref "_" minfo["mi_season"];
-    } else {
+        id = imdb(minfo);
+        if (id) {
+            poster_ref = "imdb_" id "_" minfo["mi_season"];
+        }
+    }
+    if (poster_ref == "") {
         #images are now stored by index.db id - not imdbid - to allow different cuts of the same movie to have distinct images.
         poster_ref = minfo["mi_ovsid"];
     }

@@ -1,3 +1,16 @@
+# thetvdb search is failing with "Neues Aus Buettenwarder" due to not folding the u 
+# in this case we should:
+#
+# 1. Not do abbreviation search if spaces are present ? 
+# 2. Do Neues Aus Buettenwarder site:thetvdb.com  (only works on Google for this show).
+# 3. Do Neues Aus Buettenwarder site:imdb.com then cross map to thetvdb.com (works for all engines as imdb is very searchable - static urls )
+# 4. Check thetvdb.com forums to see if folding will be supported.
+#
+#
+#
+#
+#
+#
 # Write audio,video and subtitles info to nfo files.
 # Read audio,video and subtitles info from xmbc nfo files.
 #

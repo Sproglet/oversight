@@ -884,14 +884,21 @@ tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
                 }
                 dump_ids_and_titles("possible matches",total,showIds);
 
-                #If a show is abbreviated then always do a web search to confirm
-                # This will be an issue if the user has their own abbreviated file names.
-
-                # The alternative is to only do a web search if more than one show is present.
-
-                #  just do a web search and return the biggest page. 
-                total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                #total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+                if (total) {
+                    #If a show is abbreviated then always do a web search to confirm
+                    if (total < 36) {
+                        #  just do a web search with each title and the filename and return the biggest page. 
+                        total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                    } else {
+                        INF("Lot of possible matches - searching by filename");
+                        total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
+                    }
+                    if (total == 0) {
+                        #No results using web searchs - try usenet searches 
+                        #this uses usenet search engines so they may not be around forever.
+                        total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+                    }
+                }
                 dump_ids_and_titles("filtered matches",total,showIds);
 
 
@@ -1595,15 +1602,7 @@ possible_title,i,ltitle,add,total,a) {
 
         # note double abbreviation is checked for "CSI: Crime Scene Investigation" vs csicsi"
         if (abbrevMatch(ltitle,possible_title) || (length(ltitle) >= 3 && abbrevMatch(ltitle ltitle,possible_title)) || abbrevContraction(ltitle,possible_title)) {
-
             add[i] = 1;
-            if ( ++total > 36) {
-                INF("too many matches" );
-                delete add;
-                return -1;
-                break;
-            }
-
         }
     }
     total = merge_ids_and_titles(add,names,alternateTitles);

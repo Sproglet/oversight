@@ -1,14 +1,9 @@
-if [ -d /cygdrive/o/Apps ] ; then
-    root=/cygdrive/o/Apps
-else
-    if [ -d /mnt/pch-c200/share/Apps ] ; then
-        root=/mnt/pch-c200/share/Apps 
-    fi
-fi
-if [ -n "$root" ] ; then
 for f in `find . -maxdepth 1 -newer .x -name \*awk` ; do
-        cp -v "$f" $root/oversight/bin/catalog
+        ftp -n <<HERE
+open 192.168.88.7
+user nmt 1234
+cd /USB_DRIVE/Apps/oversight/bin/catalog
+put "$f"
+dir "$f"
+HERE
 done && touch .x
-else
-    echo no root
-fi

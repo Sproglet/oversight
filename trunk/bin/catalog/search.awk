@@ -943,7 +943,8 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
     if (count) {
         id1("filter_web_titles2 in="count);
 
-        url = g_search_yahoo url_encode("+\""filterText"\"");
+        #url = g_search_yahoo url_encode("+\""filterText"\"");
+        url = g_search_google url_encode(filterText);
         f = getUrl(url,"filter",0);
         if (f) {
 

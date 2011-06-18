@@ -15,8 +15,6 @@ fld) {
         }
     }
     print "" >> qfile;
-
-    system("awk 'END { print $0 }' "qa(qfile));
 }
 
 function queue_fld(minfo,fld,qfile,\

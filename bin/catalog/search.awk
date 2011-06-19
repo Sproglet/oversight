@@ -900,12 +900,20 @@ function copy_ids_and_titles(ids,input,out) {
 }
 
 function merge_ids_and_titles(ids,input,out,\
-new_total,i) {
+new_total,i,dupe_check,new_d,new_itle) {
     new_total = out["total"]+0;
     for (i in ids) {
-        new_total++;
-        out[new_total,1] = input[i,1];
-        out[new_total,2] = input[i,2];
+
+        new_d = input[i,1];
+        new_itle = input[i,2];
+
+        if (dupe_check[new_d] != new_itle) {
+            new_total++;
+            out[new_total,1] = new_d;
+            out[new_total,2] = new_itle;
+
+            dupe_check[new_d] = new_itle;
+        }
     }
     out["total"] = new_total;
     return new_total;
@@ -924,11 +932,14 @@ line,e,inbody) {
         if (inbody) {
             gsub(/<[^>]+>/,"",line[1]);
 
+            # Ignore full-stops eg Gilmore.Girls.S10
             gsub(/\./," ",line[1]);
             line[1] = clean_title(line[1]);
-            # Ignore full-stops eg Gilmore.Girls.S10
-            print "clean_html ["line[1]"]";
-            print line[1] >> fout;
+
+            if (line[1] != "") {
+                #print "clean_html ["line[1]"]";
+                print line[1] >> fout;
+            }
         }
     }
     if (e >= 0) {

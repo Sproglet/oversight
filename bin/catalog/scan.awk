@@ -647,8 +647,6 @@ cat,minfo2,locales,id) {
 
             if (file) {
 
-
-
                 report_status("item "(++g_item_count));
 
                 DEBUG("folder :["fldr"]");
@@ -789,7 +787,6 @@ cat,minfo2,locales,id) {
                             #lang_test(minfo);
                         }
                     }
-                    total++;
                     g_total ++;
                     g_batch_total++;
 
@@ -809,7 +806,7 @@ cat,minfo2,locales,id) {
                 }
             }
 
-            id0(total);
+            id0();
         }
     }
 
@@ -818,7 +815,7 @@ cat,minfo2,locales,id) {
     if ((force_merge && g_batch_total) ||  g_batch_total == g_batch_size ) {
 
             if (g_db) {
-                merge_queue(qfile,person_extid2name);
+                total +=  merge_queue(qfile,person_extid2name);
             }
             g_batch_total = 0;
     }

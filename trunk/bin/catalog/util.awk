@@ -178,21 +178,8 @@ function trimAll(str) {
 
 function trim(str,\
 i,j) {
-    sub(/^[	 ]+/,"",str);
-
-    # trim trailing space 
-    # this was using sub(/ +$/,"",str) 
-    # but if the string has a lot of spaces this can cause a lot of backtracking
-    # eg [one sp sp sp  ... sp sp two sp ]
-    #
-    j = i = length(str);
-    while (i >= 1 && index(" \t\n\r",substr(str,i,1))) {
-        i--;
-    }
-
-    if(i != j) {
-        str = substr(str,1,i);
-    }
+    sub(/^[[:space:]]+/,"",str);
+    sub(/[[:space:]]$/,"",str);
     return str;
 }
 
@@ -384,28 +371,28 @@ function set_permissions(shellArg) {
 }
 
 function capitalise(text,\
-i,rtext,rstart,words,wcount) {
+i,rtext,rstart,words,wcount,s,w2) {
 
     wcount= split(tolower(text),words," ");
     text = "";
 
+    s["in"] = s["of"] = s["and"] = s["it"] = s["or"] = s["not"] = s["a"] = 1;
+
     for(i = 1 ; i<= wcount ; i++) {
-        if (i== 1 || i==wcount || length(words[i]) > 3 || words[i] !~ "^(in|of|and|it|or|not|a)$") {
-            text = text " " toupper(substr(words[i],1,1)) substr(words[i],2);
+        if (i== 1 || i==wcount || length(words[i]) > 3 || !(words[i] in s) ) {
+            w2=toupper(substr(words[i],1,1)) substr(words[i],2);
+
+            # Check for roman numerals
+            if (w2 ~ /^[IVX][ivx]+$/ ) {
+                w2 = toupper(w2);
+            }
+
+            text = text " " w2;
         } else {
             text = text " " words[i];
         }
     }
 
-    ## Uppercase roman
-    # string is alread capitalised at this point so check uppercase for efficiency
-    if (index(text,"I") || index(text,"V") || index(text,"X") ) {
-        if (get_regex_pos(text,"\\<[IVX][ivx]+\\>",0,rtext,rstart)) {
-            for(i in rtext) {
-                text = substr(text,1,rstart[i]-1) toupper(rtext[i]) substr(text,rstart[i]+length(rtext[i]));
-            }
-        }
-    }
     return substr(text,2);
 }
 

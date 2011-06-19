@@ -884,13 +884,24 @@ tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
                 }
                 dump_ids_and_titles("possible matches",total,showIds);
 
-                if (total) {
-                    #If a show is abbreviated then always do a web search to confirm
+                #
+                if (total == 1) {
+                    # If total is 1, then we could still do a filename search to confirm.
+                    # This will reduce false positives for downloaded content, but may not be so good for user generated files 
+                    # or oldder files. So for now we will disable checking if total  = 1.
+                    INF("Title is only option so assuming it is correct. Skipping filename checks ");
+
+                } else if (total > 1) {
+
+                    #If a show is abbreviated then always do a web search to confirm - even if number of options is 1.
+                    #i
 
                     #INF("Lot of possible matches - searching by filename");
                     total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
 
 
+                    # For each title search individually for 'title' + 'filename' and return biggest page.
+                    # This search style is disabled - too slow.
                     if (0 && total == 0) {
 
                         #Maximum number of titles to search individually for 'title' + 'filename'
@@ -1593,7 +1604,7 @@ possible_title,i,ltitle,add,total,a) {
     total = 0;
     ltitle = norm_title(titleIn);
 
-    id1("Checking "titleIn" for abbeviations on menu page - "letter);
+    id1("Checking "titleIn" for abbreviations on menu page - "letter);
     #dump(0,"searchAbbreviation:",names);
 
     if (ltitle == "" ) return ;
@@ -1622,7 +1633,7 @@ possible_title,i,ltitle,add,total,a) {
 #split title into words then see how many words or initials we can match.
 # eg desperateh fguy  "law and order csi"
 #note if a word AND initial match then we try to match the word first.
-#I cant think of a scenario where we would have to backtract and try
+#I cant think of a scenario where we would have to backtrack and try
 # the initial instead.
 #
 #eg toxxx might abbreviate "to xxx" or "t" ...
@@ -1687,7 +1698,7 @@ initials) {
 # eg s1=hello there s2=ho   then result is hello
 #
 #because backtracking is involed best to use regex. eg g.*r.*k to match greek.
-# but .* can be very inefficient so we screen the string first t make sure it contains rg,r and k in order.
+# but .* can be very inefficient so we screen the string first t make sure it contains g,r and k in order.
 function abbreviated_substring(s1,start_regex_anchor,abbrev,end_on_word,\
 ret,i,j,s1lc,abbrevlc,len1,len2,regex,ch) {
     j = 0;
@@ -1697,6 +1708,8 @@ ret,i,j,s1lc,abbrevlc,len1,len2,regex,ch) {
     len2 = length(abbrevlc);
     
     ret = 1;
+
+    # Check all letters in abbreviation appear in order without using expensive .* regex.
     for(i = 1 ; i <= len2 ; i++ ) {
         ch = substr(abbrevlc,i,1);
         j = index(s1lc,ch);
@@ -1763,7 +1776,8 @@ found,part,sw,ini) {
     possible_title = norm_title(possible_title,1);
 
 
-    part = abbreviated_substring(possible_title,"\\<",abbrev,1);
+    # Dont necessarilly end on a word eg 'mb' abbreviates 'Mythbusters'
+    part = abbreviated_substring(possible_title,"\\<",abbrev,0);
 
 
 

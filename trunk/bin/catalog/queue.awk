@@ -54,7 +54,8 @@ line,i,tmp,num) {
 }
 
 
-function merge_queue(qfile,person_extid2name) {
+function merge_queue(qfile,person_extid2name,\
+total) {
 
     if (g_opt_dry_run) {
 
@@ -63,17 +64,18 @@ function merge_queue(qfile,person_extid2name) {
     } else {
 
         if(lock(g_db_lock_file)) {
-            sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD,person_extid2name);
+            total += sort_and_merge_index(INDEX_DB,qfile,INDEX_DB_OLD,person_extid2name);
             unlock(g_db_lock_file);
         }
     }
     rm(qfile);
     delete person_extid2name;
+    return total;
 }
 
 # Merge two index files together
 function sort_and_merge_index(dbfile,qfile,file1_backup,person_extid2name,\
-file1_sorted,file_merged,person_extid2ovsid) {
+file1_sorted,file_merged,person_extid2ovsid,total) {
 
     id1("sort_and_merge_index ["dbfile"]["qfile"]["file1_backup"]");
 
@@ -86,7 +88,8 @@ file1_sorted,file_merged,person_extid2ovsid) {
 
             people_update_dbs(person_extid2name,person_extid2ovsid);
 
-            if (merge_index(file1_sorted,qfile,file_merged,person_extid2ovsid)) {
+            total = merge_index(file1_sorted,qfile,file_merged,person_extid2ovsid);
+            if (total) {
 
                 replace_database_with_new(file_merged,dbfile,file1_backup);
             }
@@ -97,12 +100,12 @@ file1_sorted,file_merged,person_extid2ovsid) {
     rm(qfile); 
     rm(file_merged);
     id0("");
+    return total;
 }
 
 function merge_index(dbfile,qfile,file_out,person_extid2ovsid,\
 row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids,minfo,changed_line) {
 
-    ret = 1;
     id1("merge_index ["dbfile"]["qfile"]");
 
 
@@ -210,6 +213,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     update_plots(g_plot_file,g_plot_file_queue,plot_ids);
 
     INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    ret = total_changed + total_new;
     id0(ret);
     return ret;
 }

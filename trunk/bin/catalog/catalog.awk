@@ -689,13 +689,16 @@ ret,f,numok,numbad) {
 # This is used in tv comparison functions for qualified matches so it must not remove any country
 # or year designation
 # deep - if set then [] and {} are removed from text too
-function clean_title_nocap(t,deep,\
-punc) {
+function clean_title(t,deep,\
+punc,last) {
 
     #ALL# gsub(/[&]/," and ",t);
     if (index(t,"amp")) gsub(/[&]amp;/,"\\&",t);
 
-    sub(/[-_ .]+$/,"",t);
+    last = substr(t,length(t));
+    if (index("-_ .",last)) {
+        sub(/[-_ .]+$/,"",t);
+    }
 
     #Collapse abbreviations. Only if dot is sandwiched between single letters.
     #c.s.i.miami => csi.miami
@@ -714,7 +717,7 @@ punc) {
         # but if there is aready a space , assume they are significant.
 
         # first remove any trailing dot
-        gsub(punc"$","",t);
+        sub(punc"$","",t);
 
         #Now modify regex to keep any internal dots.
         if (sub(/-\]/,"_.-]",punc) != 1) {
@@ -724,14 +727,9 @@ punc) {
     gsub(punc," ",t);
 
     if (index(t,"  ")) gsub(/ +/," ",t);
-    return trim(tolower(t));
+    return capitalise(t);
 }
 
-function clean_title(t,deep) {
-
-    return capitalise(clean_title_nocap(t,deep));
-
-}
 
 
 

@@ -932,8 +932,8 @@ line,e,inbody) {
         if (inbody) {
             gsub(/<[^>]+>/,"",line[1]);
 
-            # Ignore full-stops eg Gilmore.Girls.S10
-            gsub(/\./," ",line[1]);
+            # Ignore full-stops eg Gilmore.Girls.S10 and Hyphens Brothers-and-sisters.
+            gsub(/[-.]/," ",line[1]);
             line[1] = clean_title(line[1]);
 
             if (line[1] != "") {
@@ -976,15 +976,16 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
                 # Check for occurences of title in each line of the file
                 while( (e =  (getline line < fclean ) ) > 0) {
                     if (index(line,title)) {
-                        INF("found:"line);
                         num += split(line,tmp,"\\<"title"\\>") - 1;
+                        INF("found:["title"x"num"]["line"]");
                     }
                 }
                 if (e >= 0) {
                     close(fclean);
                 }
                 if (num > 2) {
-                    keep[i] = num;
+                    # Select longest title : eg "Brothers" vs "Brothers and Sisters" which both abbreviate bs
+                    keep[i] = num*length(title);
                 }
                 if(num) {
                     INF("Title count "title" = "num" ["line"]");

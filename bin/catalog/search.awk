@@ -242,25 +242,24 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
 
 # If no direct urls found. Search using file names.
 function web_search_frequent_imdb_link(minfo,\
-url,txt,linksRequired) {
+url,txt) {
 
     id1("web_search_frequent_imdb_link");
-    linksRequired = 0+g_settings["catalog_imdb_links_required"];
     
     txt = basename(minfo["mi_media"]);
     if (tolower(txt) != "dvd_volume" ) {
-        url=searchHeuristicsForImdbLink(txt,linksRequired);
+        url=searchHeuristicsForImdbLink(txt);
     }
 
     if (url == "" && match(minfo["mi_media"],gExtRegexIso)) {
         txt = getIsoTitle(minfo["mi_folder"]"/"minfo["mi_media"]);
         if (length(txt) - 3 > 0 ) {
-            url=searchHeuristicsForImdbLink(txt,linksRequired);
+            url=searchHeuristicsForImdbLink(txt);
         }
     }
 
     if (url == "" && folderIsRelevant(minfo["mi_folder"])) {
-        url=searchHeuristicsForImdbLink(tolower(basename(minfo["mi_folder"])),linksRequired);
+        url=searchHeuristicsForImdbLink(tolower(basename(minfo["mi_folder"])));
     }
 
     id0(url);
@@ -290,14 +289,17 @@ heuristicId,keywords) {
     # Build array of different styles of keyword search. eg [a b] [+a +b] ["a b"]
     for(heuristicId =  0 ; heuristicId -1  <= 0 ; heuristicId++ ) {
         keywords =textToSearchKeywords(text,heuristicId);
-        keywordArray[keywords]=1;
+        if (keywords) {
+            keywordArray[keywords]=1;
+        }
     }
 }
 
 
-function searchHeuristicsForImdbLink(text,linksRequired,\
-bestUrl,k,text_no_underscore) {
+function searchHeuristicsForImdbLink(text,\
+linksRequired,bestUrl,k,text_no_underscore) {
 
+    linksRequired = 0+g_settings["catalog_imdb_links_required"];
     mergeSearchKeywords(text,k);
 
     text_no_underscore = text;
@@ -350,45 +352,47 @@ bestUrl,keywords) {
 function textToSearchKeywords(f,heuristic\
 ) {
 
-    #heuristic 0 - All words optional (+) and strip format tags strip episode s0ne0n
-    #heuristic 1 - All words mandatory (+%2B) and strip format tags strip episode s0ne0n
-    #heuristic 2 - Quoted file search 
-    f=tolower(f);
+    if (f != "") {
+        #heuristic 0 - All words optional (+) and strip format tags strip episode s0ne0n
+        #heuristic 1 - All words mandatory (+%2B) and strip format tags strip episode s0ne0n
+        #heuristic 2 - Quoted file search 
+        f=tolower(f);
 
-    if (heuristic == 0 || heuristic == 1) {
+        if (heuristic == 0 || heuristic == 1) {
 
-        #removed hyphen from list
-        gsub("[^" g_alnum8"]+","+",f);
+            #removed hyphen from list
+            gsub("[^" g_alnum8"]+","+",f);
 
-        #remove words ending with numbers
-        #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
+            #remove words ending with numbers
+            #gsub(/\<[A-Za-z]+[0-9]+\>/,"",f);
 
-        #remove everything after a year
-        if (match(f,"\\<"g_year_re"\\>")) {
-            f = substr(f,1,RSTART+RLENGTH-1);
+            #remove everything after a year
+            if (match(f,"\\<"g_year_re"\\>")) {
+                f = substr(f,1,RSTART+RLENGTH-1);
+            }
+    #        #remove everything after episode
+    #        if (match(f,"\\<[sS][0-9][0-9][eE][0-9][0-9]")) {
+    #            f = substr(f,1,RSTART+RLENGTH-1);
+    #        }
+
+            f = remove_format_tags(f);
+
+            #Make words mandatory
+            if (heuristic == 1) {
+                DEBUG("Base query = "f);
+                gsub(/[-+.]/,"+%2B",f);
+                f="%2B"f;
+            }
+
+            gsub(/^\+/,"",f);
+            gsub(/\+$/,"",f);
+
+        } else if (heuristic == 2) {
+
+            f = "%22"f"%22"; #double quotes
         }
-#        #remove everything after episode
-#        if (match(f,"\\<[sS][0-9][0-9][eE][0-9][0-9]")) {
-#            f = substr(f,1,RSTART+RLENGTH-1);
-#        }
-
-        f = remove_format_tags(f);
-
-        #Make words mandatory
-        if (heuristic == 1) {
-            DEBUG("Base query = "f);
-            gsub(/[-+.]/,"+%2B",f);
-            f="%2B"f;
-        }
-
-        gsub(/^\+/,"",f);
-        gsub(/\+$/,"",f);
-
-    } else if (heuristic == 2) {
-
-        f = "%22"f"%22"; #double quotes
+        DEBUG("Using search method "heuristic" = ["f"]");
     }
-    DEBUG("Using search method "heuristic" = ["f"]");
     return f;
 }
 

@@ -827,128 +827,155 @@ key) {
 }
 
 function search_tv_series_names2(plugin,minfo,title,search_abbreviations,\
-tvDbSeriesPage,cache_key,showIds,tvdbid,total,first_letter,letters,lpos) {
+tvDbSeriesPage) {
 
     id1("search_tv_series_names2 "plugin":"title);
 
     if ((tvDbSeriesPage = plugin_title_get_url(plugin,title)) == "") {
 
         tvDbSeriesPage = searchTvDbTitles(plugin,minfo,title);
+        DEBUG("search_tv_series_names: bytitles=["tvDbSeriesPage"]"search_abbreviations);
+    }
+    if (tvDbSeriesPage == "" && search_abbreviations) {
 
-        DEBUG("search_tv_series_names: bytitles="tvDbSeriesPage);
-        if (tvDbSeriesPage) {
+        tvDbSeriesPage = search_abbreviations(plugin,minfo,title);
+        DEBUG("search_tv_series_names: search_abbreviations =["tvDbSeriesPage"]");
+    }
 
-            # do nothing
+    DEBUG("search_tv_series_names: pre search_close_spelling =["tvDbSeriesPage"]["plugin"]");
+    if (tvDbSeriesPage == "" && plugin == "thetvdb") {
 
-        } else if ( search_abbreviations ) {
+        # Only call this if there is no exact match via standard apis
+        tvDbSeriesPage = search_close_spelling(plugin,minfo,title);
+        DEBUG("search_tv_series_names: search_close_spelling =["tvDbSeriesPage"]");
 
-            # Abbreviation search
+    }
 
-            cache_key=minfo["mi_folder"]"@"title;
-
-            if(cache_key in g_abbrev_cache) {
-
-                tvDbSeriesPage = g_abbrev_cache[cache_key];
-                INF("Fetched abbreviation "cache_key" = "tvDbSeriesPage);
-
-            } else {
-
-                # List of letters to check - in order.
-                # First try to match abbreviation against all shows beggining with the same letter.
-                # Then try all shows beggning with t (for the)
-                # Then try all shows beggning with a (for a / an)
-                # Finally try all shows beggning with i (for it / in)
-                # Finally try all shows beggning with of (for of )
-
-                if (index(title,"-")) {
-                    sub(/[^-]+-/,"",title);
-                    INF("removed prefix ["title"]");
-                }
-
-                # create list of letters to check
-                first_letter = tolower(substr(title,1,1));
-                letters = "taio";
-                sub(first_letter,"",letters);
-                letters = first_letter letters;
-                
-                delete showIds;
-                for(lpos = 1 ; lpos <= length(letters) ; lpos++ ) {
-                    # Check athe letter if it is the first letter of the abbreviation 
-                    total=searchAbbreviationAgainstTitles(plugin,substr(letters,lpos,1),title,showIds);
-                    if (total == -1) {
-                        INF("too many matches - clearing");
-                        delete showIds;
-                        total = 0;
-                        break;
-                    }
-                }
-                dump_ids_and_titles("possible matches",total,showIds);
-
-                #
-                if (total == 1) {
-                    # If total is 1, then we could still do a filename search to confirm.
-                    # This will reduce false positives for downloaded content, but may not be so good for user generated files 
-                    # or oldder files. So for now we will disable checking if total  = 1.
-                    INF("Title is only option so assuming it is correct. Skipping filename checks ");
-
-                } else if (total > 1) {
-
-                    #If a show is abbreviated then always do a web search to confirm - even if number of options is 1.
-                    #i
-
-                    #INF("Lot of possible matches - searching by filename");
-                    total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
-
-
-                    # For each title search individually for 'title' + 'filename' and return biggest page.
-                    # This search style is disabled - too slow.
-                    if (0 && total == 0) {
-
-                        #Maximum number of titles to search individually for 'title' + 'filename'
-                        MAX_TITLES = 36;
-
-                        if (total < MAX_TITLES) {
-                            #  just do a web search with each title and the filename and return the biggest page. 
-                            total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                        }
-                    }
-
-                    if (total == 0) {
-                        #No results using web searchs - try usenet searches 
-                        #this uses usenet search engines so they may not be around forever.
-                        total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
-                    }
-                }
-                dump_ids_and_titles("filtered matches",total,showIds);
-
-
-                # TODO the selectBestOfBestTitle calls the relativeAge function which also
-                # picks the episide title with the shortest edit distance. Because this does
-                # a query by SnnEnn this is more concrete information than the check for link counts
-                # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
-                # split into:
-                # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
-                # 2. A filter that picks episode title with lowest edit distance.
-                tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
-
-                tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
-
-                if (tvDbSeriesPage) {
-                    g_abbrev_cache[cache_key] = tvDbSeriesPage;
-                    INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
-                }
-            }
-        }
-
-        if (tvDbSeriesPage == "" ) {
-            WARNING("search_tv_series_names could not find series page");
-        } else {
-            DEBUG("search_tv_series_names Search looking at "tvDbSeriesPage);
-        }
+    if (tvDbSeriesPage == "" ) {
+        WARNING("search_tv_series_names could not find series page");
+    } else {
+        DEBUG("search_tv_series_names Search looking at "tvDbSeriesPage);
         plugin_title_set_url(plugin,title,tvDbSeriesPage);
     }
     id0(tvDbSeriesPage);
 
+    return tvDbSeriesPage;
+}
+
+function search_close_spelling(plugin,minfo,title,\
+tvDbSeriesPage,tvdbid,total,closeTitles) {
+    id1("Find title with shortest edit distance.");
+    total = closest_title_in_list(title,closeTitles);
+    tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
+    if (tvdbid != "") {
+        tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
+    }
+    id0(tvDbSeriesPage);
+    return tvDbSeriesPage;
+}
+
+function search_abbreviations(plugin,minfo,title,\
+cache_key,tvDbSeriesPage,tvdbid,first_letter,letters,lpos,showIds,total) {
+    # Abbreviation search
+
+    cache_key=minfo["mi_folder"]"@"title;
+
+    if(cache_key in g_abbrev_cache) {
+
+        tvDbSeriesPage = g_abbrev_cache[cache_key];
+        INF("Fetched abbreviation "cache_key" = "tvDbSeriesPage);
+
+    } else {
+
+        id1("search_abbreviations");
+
+        # List of letters to check - in order.
+        # First try to match abbreviation against all shows beggining with the same letter.
+        # Then try all shows beggning with t (for the)
+        # Then try all shows beggning with a (for a / an)
+        # Finally try all shows beggning with i (for it / in)
+        # Finally try all shows beggning with of (for of )
+
+        if (index(title,"-")) {
+            sub(/[^-]+-/,"",title);
+            INF("removed prefix ["title"]");
+        }
+
+        # create list of letters to check
+        first_letter = tolower(substr(title,1,1));
+        letters = "taio";
+        sub(first_letter,"",letters);
+        letters = first_letter letters;
+        
+        delete showIds;
+        for(lpos = 1 ; lpos <= length(letters) ; lpos++ ) {
+            # Check athe letter if it is the first letter of the abbreviation 
+            total=searchAbbreviationAgainstTitles(plugin,substr(letters,lpos,1),title,showIds);
+            if (total == -1) {
+                INF("too many matches - clearing");
+                delete showIds;
+                total = 0;
+                break;
+            }
+        }
+        dump_ids_and_titles("possible matches",total,showIds);
+
+        #
+        if (total == 1) {
+            # If total is 1, then we could still do a filename search to confirm.
+            # This will reduce false positives for downloaded content, but may not be so good for user generated files 
+            # or oldder files. So for now we will disable checking if total  = 1.
+            INF("Title is only option so assuming it is correct. Skipping filename checks ");
+
+        } else if (total > 1) {
+
+            #If a show is abbreviated then always do a web search to confirm - even if number of options is 1.
+            #i
+
+            #INF("Lot of possible matches - searching by filename");
+            total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
+
+
+            # For each title search individually for 'title' + 'filename' and return biggest page.
+            # This search style is disabled - too slow.
+            if (0 && total == 0) {
+
+                #Maximum number of titles to search individually for 'title' + 'filename'
+                MAX_TITLES = 36;
+
+                if (total < MAX_TITLES) {
+                    #  just do a web search with each title and the filename and return the biggest page. 
+                    total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
+                }
+            }
+
+            if (total == 0) {
+                #No results using web searchs - try usenet searches 
+                #this uses usenet search engines so they may not be around forever.
+                total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
+            }
+        }
+        dump_ids_and_titles("filtered matches",total,showIds);
+
+
+        # TODO the selectBestOfBestTitle calls the relativeAge function which also
+        # picks the episide title with the shortest edit distance. Because this does
+        # a query by SnnEnn this is more concrete information than the check for link counts
+        # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
+        # split into:
+        # 1. a plain filter that checks the SnnEnn exists for a given show ( which is called before the usenet/link count filter.)
+        # 2. A filter that picks episode title with lowest edit distance.
+        tvdbid = selectBestOfBestTitle(plugin,minfo,total,showIds);
+
+        tvDbSeriesPage=get_tv_series_api_url(plugin,tvdbid);
+
+        if (tvDbSeriesPage) {
+            g_abbrev_cache[cache_key] = tvDbSeriesPage;
+            INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
+        }
+
+        id0(tvDbSeriesPage);
+    }
     return tvDbSeriesPage;
 }
 
@@ -1122,15 +1149,14 @@ url) {
 #If the search engine differentiates between &/and or obrien o brien then we need multiple searches.
 # 
 function expand_url(baseurl,title,\
-url) {
+url,url2) {
     url = baseurl title ;
-    if (match(title," [Aa]nd ")) {
+    url2 = gensub(/ [Aa]nd /," %26 ","g",url);
+    if (url2 != url) {
         #try "a and b\ta & b"
-        url=url"\t"url;
-        sub(/ [Aa]nd /," %26 ",url); 
-        #sub(/ [Aa]nd /," \\& ",url); 
+        url=url"\t"url2;
     }
-    if (match(title," O ")) {
+    if (index(title," O ")) {
         #try "Mr O Connor\tMr OConnor"
         url=url"\t"url;
         sub(/ O /," O",url); 
@@ -1268,8 +1294,36 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
     return id2;
 }
 
+function closest_title_in_list(title,allTitles,\
+bestTitles,keep,i,num,d,threshold) {
+
+    num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
+    threshold = 6; # number of letter transformations allowed
+    for(i = 1 ; i<=num ; i++ ) {
+        d = length(title) - length(allTitles[i,2]);
+        if (d >= -3 && d <= 3 ) {
+            d = edit_dist(allTitles[i,2],title,threshold);
+
+            if (d <= threshold) {
+                keep[i] = 100 - d;
+            }
+        }
+    }
+    #bestScores(keep,keep,0);
+    d = getMax(keep,-1,4);
+    delete keep;
+    keep[d]  = 1;
+
+    copy_ids_and_titles(keep,allTitles,bestTitles);
+    dump(0,"closest_title_in_list",bestTitles);
+
+    hash_copy(allTitles,bestTitles);
+    return allTitles["total"];
+}
+
+
 function searchTvDbTitles(plugin,minfo,title,\
-tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
+tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt,u) {
 
     id1("searchTvDbTitles");
     imdb_id = imdb(minfo);
@@ -1290,6 +1344,11 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
         }
     }
 
+#    if (tvdbid == "") {
+#        u = searchHeuristicsForImdbLink(searchHeuristicsForImdbLink(title,3));
+#        INF("XXXX new search here = "u);
+#    }
+
     if (tvdbid == "") {
         alt  = remove_tv_year(title);
     	if(title != alt) {
@@ -1307,6 +1366,7 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
     	}
         
     }
+
     if (tvdbid != "") {
         tvDbSeriesUrl=get_tv_series_api_url(plugin,tvdbid);
     }
@@ -1572,7 +1632,7 @@ url,count,i,names2,regex,parts) {
 # OUT names -> hash of values = [n,1]=id [n,2]=title # to allow for multiple language titles.
 # return number of items
 function get_tvdb_names_by_letter(letter,names,\
-f,count,line,colon) {
+f,count,line,colon,dup,id,title,title_lc) {
 
     delete names;
     id1("get_tvdb_names_by_letter abbreviations for "letter);
@@ -1581,9 +1641,17 @@ f,count,line,colon) {
     while(( getline line < f ) > 0 ) {
         colon = index(line,":");
         if (colon) {
-            count++;
-            names[count,1] = substr(line,1,colon-1);
-            names[count,2] = substr(line,colon+1);
+
+            id = substr(line,1,colon-1);
+            title = substr(line,colon+1);
+            title_lc = tolower(title);
+
+            if (dup[id] != title_lc) {
+                count++;
+                names[count,1] = id;
+                names[count,2] = title;
+                dup[id] = title_lc;
+            }
         }
     }
     close(f);
@@ -1604,11 +1672,10 @@ possible_title,i,ltitle,add,total,a) {
     total = 0;
     ltitle = norm_title(titleIn);
 
-    id1("Checking "titleIn" for abbreviations on menu page - "letter);
-    #dump(0,"searchAbbreviation:",names);
-
     if (ltitle == "" ) return ;
 
+    id1("Checking "titleIn" for abbreviations on menu page - "letter);
+    #dump(0,"searchAbbreviation:",names);
 
     for(i = 1 ; i<= count ; i++ ) {
 

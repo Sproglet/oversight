@@ -765,7 +765,7 @@ maxName,best,nextBest,nextBestName,diff,i,threshold) {
     nextBest=0;
     maxName="";
     best=0;
-    dump(0,"getMax",arr);
+    #dump(0,"getMax",arr);
     for(i in arr) {
         if (arr[i]-best >= 0 ) {
             nextBest = best;

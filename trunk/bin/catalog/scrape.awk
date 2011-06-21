@@ -1307,7 +1307,7 @@ function english_score(text) {
 
 # IN lng - 2 letter language code
 # IN text - check if prose
-function is_prose(lng,text,threshhold,\
+function is_prose(lng,text,\
 words,num,i,len) {
 
     if (length(text) > g_min_plot_len ) {

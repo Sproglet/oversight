@@ -176,8 +176,7 @@ function trimAll(str) {
     return str;
 }
 
-function trim(str,\
-i,j) {
+function trim(str) {
     sub(/^[[:space:]]+/,"",str);
     sub(/[[:space:]]$/,"",str);
     return str;
@@ -916,12 +915,16 @@ count,fcount,i,parts,start,dbg) {
 # Levenshtein or Edit distance - metric of how similar two strings are.
 # http://www.merriampark.com/ld.htm
 # http://www.merriampark.com/ldcpp.htm
-function edit_dist(source,target,\
-m,n,i,j,matrix,cell,left,above,diag,cost,s_i,t_j) {
+
+#added threshold to short circuit
+function edit_dist(source,target,threshold,\
+m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
 
 
-    n = length(source);
-    m = length(target);
+    #n = length(source);
+    #m = length(target);
+    n = split(source,ss,"");
+    m = split(target,tt,"");
     if (n == 0) {
         return m;
     }
@@ -935,28 +938,40 @@ m,n,i,j,matrix,cell,left,above,diag,cost,s_i,t_j) {
 
     for (j = 0; j <= m; j++) {
         matrix[0,j]=j;
-        }
+    }
+
+    if (threshold == 0) {
+        threshold = m+n;
+    }
 
     for (i = 1; i <= n; i++) {
 
-        s_i = substr(source,i,1);
+        #s_i = substr(source,i,1);
+        s_i = ss[i];
 
         for (j = 1; j <= m; j++) {
 
-            t_j = substr(target,j,1);
+            #t_j = substr(target,j,1);
+            t_j = tt[j];
+
+            diag = matrix[i-1,j-1] ;
 
             if (s_i == t_j) {
-                cost = 0;
+                cell = diag;
             } else {
-                cost = 1;
+                above = matrix[i-1,j] + 1;
+                left = matrix[i,j-1] + 1;
+                diag++;
+
+                cell = diag;
+                if (left < cell) cell = left;
+                if (above < cell) cell = above;
+
+                if (cell > threshold && m-i == n-j ) {
+                    INF("abort edit_dist:["source"] ["target"] = " cell);
+                    return cell;
+                }
             }
-
-            above = matrix[i-1,j] + 1;
-            left = matrix[i,j-1] + 1;
-            diag = matrix[i-1,j-1] + cost;
-
-            cell=min3(above,left,diag);
-
 
             # Not really interested in transpositions for this application but c source is 
             # // Step 6A: Cover transposition, in addition to deletion,
@@ -978,24 +993,6 @@ m,n,i,j,matrix,cell,left,above,diag,cost,s_i,t_j) {
 
     INF("edit distance:["source"] ["target"] = " matrix[n,m]);
     return matrix[n,m];
-}
-
-function min3(a,b,c,\
-d) {
-    if (a < b ) {
-        if (a < c ) {
-            d = a ; 
-        } else {
-            d = c;
-        }
-    } else {
-        if (b < c ) {
-            d = b;
-        } else {
-            d = c;
-        }
-    }
-    return d;
 }
 
 # return edit distance / length of string 

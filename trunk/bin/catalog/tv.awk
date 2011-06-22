@@ -1193,6 +1193,8 @@ info,currentId,currentName,i,num,series,empty_filter) {
                 allTitles[i,1] = currentId;
                 allTitles[i,2] = currentName;
             }
+            allTitles["total"] = i;
+            dedup_ids_and_titles(allTitles);
         }
     }
 
@@ -1298,6 +1300,8 @@ function closest_title_in_list(title,allTitles,\
 bestTitles,keep,i,num,d,threshold) {
 
     num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
+
+
     threshold = 6; # number of letter transformations allowed
     for(i = 1 ; i<=num ; i++ ) {
         d = length(title) - length(allTitles[i,2]);
@@ -1309,13 +1313,14 @@ bestTitles,keep,i,num,d,threshold) {
             }
         }
     }
-    #bestScores(keep,keep,0);
-    d = getMax(keep,-1,4);
-    delete keep;
-    keep[d]  = 1;
+    bestScores(keep,keep);
+    #d = getMax(keep,-1,4);
+    #delete keep;
+    #keep[d]  = 1;
 
     copy_ids_and_titles(keep,allTitles,bestTitles);
     dump(0,"closest_title_in_list",bestTitles);
+    dedup_ids_and_titles(bestTitles,1);
 
     hash_copy(allTitles,bestTitles);
     return allTitles["total"];
@@ -1624,8 +1629,12 @@ url,count,i,names2,regex,parts) {
         names[count,1] = parts[2];
         names[count,2] = parts[3];
     }
-    id0(count);
-    return count;
+    names["total"] = count;
+
+    dedup_ids_and_titles(names);
+
+    id0(names["total"]);
+    return names["total"];
 }
 
 # IN start letter
@@ -1654,6 +1663,7 @@ f,count,line,colon,dup,id,title,title_lc) {
             }
         }
     }
+    names["total"] = count;
     close(f);
     id0(count);
     return count;

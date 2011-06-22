@@ -904,23 +904,59 @@ function copy_ids_and_titles(ids,input,out) {
 }
 
 function merge_ids_and_titles(ids,input,out,\
-new_total,i,dupe_check,new_d,new_itle) {
+new_total,i,dupe_check,new_id,new_title) {
     new_total = out["total"]+0;
     for (i in ids) {
 
-        new_d = input[i,1];
-        new_itle = input[i,2];
+        new_id = input[i,1];
+        new_title = input[i,2];
 
-        if (dupe_check[new_d] != new_itle) {
+        if (dupe_check[new_id] != new_title) {
             new_total++;
-            out[new_total,1] = new_d;
-            out[new_total,2] = new_itle;
+            out[new_total,1] = new_id;
+            out[new_total,2] = new_title;
 
-            dupe_check[new_d] = new_itle;
+            dupe_check[new_id] = new_title;
         }
     }
     out["total"] = new_total;
     return new_total;
+}
+function dedup_ids_and_titles(input,dedup_level,\
+out,i,n,total,dup,id,title_lc) {
+
+    n = input["total"];
+
+    if (!n) {
+
+        ERR("Missing total in data");
+
+    } else {
+
+        for(i = 1 ; i <= n ; i++ ) {
+            id = input[i,1];
+            if (dedup_level == 0 ) {
+                # Keep unique titles (case insensitive).
+                title_lc = tolower(input[i,2]);
+                if (dup[id] != title_lc) {
+                    total++;
+                    out[total,1] = id;
+                    out[total,2] = input[i,2];
+                    dup[id] = title_lc;
+                }
+            } else if (dedup_level == 1) {
+                # Keep unique ids.
+                if (!(id in dup)) {
+                    total++;
+                    out[total,1] = id;
+                    out[total,2] = input[i,2];
+                    dup[id] = 1;
+                }
+            }
+        }
+        out["total"] = total;
+        hash_copy(input,out);
+    }
 }
 
 function clean_html(fin,fout,\

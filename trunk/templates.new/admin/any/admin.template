@@ -41,7 +41,8 @@
             <td>[:ICON(reinstall):]</td>
             <td align=left >
                 [:CONFIG_LINK(conf_file=>oversight.cfg,help_suffix=>secure.help,text=>{security}):]
-                <br>[:LINK(view=admin&action=confirm_adm_misc,{miscellaneous}):]
+                <br>[:LINK(view=admin&action=confirm_resets,{reset}):] Resets caches or re-install
+                <br>[:LINK(view=admin&action=confirm_donate,{donate}):]: help the oversight project
             </td>
         </tr>
 		<tr><td colspan=6></td></tr>

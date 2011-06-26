@@ -22,9 +22,9 @@
             <p>If you enjoy using Oversight then please consider making a donation (however small).
             This really encourages me to keep improving it and adding features specifically
 requested by you the end user.
-            <p> At present dontations go to me. Lordy / ProDynamic software. I have spent many hundreds of hours writing oversight.
+            <p> At present dontations go to me. Lordy / ProDynamic software.
 [:IF($@gaya):]
-            <p>Please visit setup-&gt;miscellaneous-&gt;donate link <b>via a web browser</b> to donate or remove this message. Thank you very much.
+            <p>Please visit setup-&gt;-&gt;donate link <b>via a web browser</b> to donate. Thank you very much.
             <br>[:LINK(view=admin&action=donate_continue,{continue}):]</td>
 [:ELSE:]
             <p>To make a donation, click the icon [:PAYPAL:]

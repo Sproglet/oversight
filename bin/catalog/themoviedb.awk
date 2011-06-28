@@ -102,15 +102,13 @@ filters,ret,tags,num,i,url) {
 
     #themoviedb has a few poster fererences that do not exist - so spider each in turn
     for( i = 1 ; i <= num ; i++ ){
-        if (find_elements(xml,root"/images/image",filters,0,tags)) {
 
-            url = xml[tags[i]"#url"];
-            sub(/^\//,"http://hwcdn.themoviedb.org/",url);
+        url = xml[tags[i]"#url"];
+        sub(/^\//,"http://hwcdn.themoviedb.org/",url);
 
-            if (url_online(url,2,2)) {
-                ret = url;
-                break;
-            }
+        if (url_online(url,2,2)) {
+            ret = url;
+            break;
         }
     }
     return ret;

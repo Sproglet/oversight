@@ -27,7 +27,7 @@ num,tags,i,tmp,ret) {
             num = find_elements(xml,"/movie/genre",empty_filter,0,tags);
             if (num) {
                 for(i = 1 ; i <= num ; i++ ) {
-                    tmp = tmp "|"tags[i];
+                    tmp = tmp "|"xml[tags[i]];
                 }
                 minfo2["mi_genre"] = substr(tmp,2);
             }

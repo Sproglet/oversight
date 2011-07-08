@@ -36,7 +36,8 @@ normedt,ret) {
 }
 
 function ficonv(f) {
-    return f".iconv";
+
+    return CAPTURE_PREFIX basename(f) ".iconv";
 }
 
 #getline_encode

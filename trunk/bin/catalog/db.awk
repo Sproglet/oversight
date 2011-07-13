@@ -162,7 +162,7 @@ function replace_database_with_new(newdb,currentdb,olddb) {
 function set_db_fields() {
     #DB fields should start with underscore to speed grepping etc.
     # Fields with @ are not written to the db.
-    ID=db_field("_id","ID","",0);
+    ID=db_field("_id","ID","");
 
     WATCHED=db_field("_w","Watched","watched") ;
     LOCKED=db_field("_l","Locked","locked") ;

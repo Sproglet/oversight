@@ -1,3 +1,6 @@
+# Test nfo write
+#Fix Broken Images
+#
 # thetvdb search is failing with "Neues Aus Buettenwarder" due to not folding the u 
 # in this case we should:
 #

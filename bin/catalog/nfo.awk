@@ -76,25 +76,35 @@ foundId,line) {
 #to rebuild the DB_ARR at a later date. Esp if the file names are no
 #longer appearing in searches.
 function generate_nfo_file(nfoFormat,dbrow,\
-movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
+fields) {
+    parseDbRow(dbrow,fields,1);
+    return generate_nfo_file_from_fields(nfoFormat,fields);
+}
+
+function generate_nfo_file_from_fields(nfoFormat,fields,\
+movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails) {
 
     nfoAdded=0;
     if (g_settings["catalog_nfo_write"] == "never" ) {
         return;
     }
-    parseDbRow(dbrow,dbOne,1);
-    get_name_dir_fields(dbOne);
 
-    if (dbOne[NFO] == "" ) return;
+    get_name_dir_fields(fields);
 
-    nfo=getPath(dbOne[NFO],dbOne[DIR]);
+    if (fields[NFO] == "" ) {
+        INF("No NFO name - skip writing");
+        return;
+    }
+
+    nfo=getPath(fields[NFO],fields[DIR]);
 
 
     if (is_file(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
-        DEBUG("nfo already exists - skip writing");
+        INF("nfo already exists - skip writing");
         return;
     }
     
+    id1("generate_nfo_file_from_fields");
     if (nfoFormat == "xmbc" ) {
         movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
         tvshow=","TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART",";
@@ -109,31 +119,31 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
         DEBUG("Creating ["nfoFormat"] "nfo);
 
         if (nfoFormat == "xmbc") {
-            if (dbOne[CATEGORY] =="M") {
+            if (fields[CATEGORY] =="M") {
 
-                if (dbOne[URL] != "") {
-                    dbOne[IMDBID] = extractImdbId(dbOne[URL]);
+                if (fields[URL] != "") {
+                    fields[IMDBID] = extractImdbId(fields[URL]);
                 }
 
                 startXmbcNfo(nfo);
-                writeXmbcTag(dbOne,"movie",movie,nfo);
+                writeXmbcTag(fields,"movie",movie,nfo);
                 nfoAdded=1;
 
-            } else if (dbOne[CATEGORY] == "T") {
+            } else if (fields[CATEGORY] == "T") {
 
                 startXmbcNfo(nfo);
-                writeXmbcTag(dbOne,"tvshow",tvshow,nfo);
-                writeXmbcTag(dbOne,"episodedetails",episodedetails,nfo);
+                writeXmbcTag(fields,"tvshow",tvshow,nfo);
+                writeXmbcTag(fields,"episodedetails",episodedetails,nfo);
                 nfoAdded=1;
             }
         } else {
             #Flat
             print "#Auto Generated NFO" > nfo;
-            for (fieldId in dbOne) {
-                if (dbOne[fieldId] != "") {
+            for (fieldId in fields) {
+                if (fields[fieldId] != "") {
                     fieldName=g_db_field_name[fieldId];
                     if (fieldName != "") {
-                        print fieldName"\t: "dbOne[fieldId] > nfo;
+                        print fieldName"\t: "fields[fieldId] > nfo;
                     }
                 }
             }
@@ -144,6 +154,7 @@ movie,tvshow,nfo,dbOne,fieldName,fieldId,nfoAdded,episodedetails) {
         close(nfo);
         set_permissions(qa(nfo));
     }
+    id0();
 }
 
 function startXmbcNfo(nfo) {

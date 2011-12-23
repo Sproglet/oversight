@@ -1530,7 +1530,7 @@ tidy_nzb_files() {
         INFO Deleting NZBs older than $unpak_max_nzbfile_age days from $d
         find "$d" -name \*$finished_nzb_ext -mtime +$unpak_max_nzbfile_age > "$gTmpFile.nzb"
         log_stream DETAIL "old nzb" < "$gTmpFile.nzb"
-        sed "s/^/rm '/;s/$/'/" "$gTmpFile.nzb" | sh
+        sed "s/'/'\\\\''/g;s/^/rm '/;s/$/'/" "$gTmpFile.nzb" | sh
         rm -f "$gTmpFile.nzb"
     fi
 }

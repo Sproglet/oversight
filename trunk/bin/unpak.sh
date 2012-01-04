@@ -984,7 +984,7 @@ rar_sanity_check_nzb() {
         wrong_size_count=0
     else
         last_part=$(awk 'END { print }' "$2" )
-        DEBUG " last $last_part pre $prenum num $num post $postnum"
+        DEBUG " last of [$2]=[$last_part] pre $prenum num $num post $postnum"
         num_expected_parts=$(echo "$last_part" | sed -r "s/.*${prenum}0*($num)$postnum\$/\1/" )
         num_expected_parts=$(( $num_expected_parts + $offset ))
         if [ $mode = nzbget ] ; then
@@ -1201,7 +1201,7 @@ unrar_one() {
                     # This only works if rar segments are in order
                     WARNING "$rarfile does not appear to be a rar archive. Joining using cat"
                     mkdir -p "$dirname/$unrar_tmp_dir";
-                    target="$dirname/$unrar_tmp_dir/`BASENAME $rarfile '\.0*1'`"
+                    target="$dirname/$unrar_tmp_dir/`BASENAME "$rarfile" '\.0*1'`"
                     if [ -f "$target" ] ; then
                         ERROR "Target already exists. <$target>"
                     else
@@ -1340,9 +1340,11 @@ first_rarname_filter() {
 #resulting string can be passed to grep,awk or sed -r (not plain sed)
 #Required so we can search for the string whilst using regualr expressions.
 # eg grep "^$string$". this will fail if string contains '[].* etc.
+#
+# Dont escape quotes - \' is a GNU extension 
 re_escape() {
     #sed 's/\([].[*/\(|)]\)/\\\1/g'
-    sed -r 's/([^a-zA-Z0-9_])/\\\1/g'
+    sed -r 's/([^'"'"'a-zA-Z0-9_])/\\\1/g'
 }
 
 quote_file() {
@@ -1791,14 +1793,16 @@ exec_file_list() {
 }
 
 no_rars() {
-    if ls *.rar > /dev/null 2>&1 ; then
+    [ ! -s "$rar_state_list" ]
 
-        INFO "rar files present"
-        return 1
-    else
-        INFO "No rar files"
-        return 0
-    fi
+#    if ls *.rar > /dev/null 2>&1 ; then
+#
+#        INFO "rar files present"
+#        return 1
+#    else
+#        INFO "No rar files"
+#        return 0
+#    fi
 }
 
 set_pass() { gPass=$1 ; INFO "PASS $1" ; }

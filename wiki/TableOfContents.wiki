@@ -23,6 +23,7 @@ Advanced
   * PreviousVersions
   * SearchMethods
   * WgetWrapper
+  * DatabaseFormat  
 
 Developers
   * ChangeLog

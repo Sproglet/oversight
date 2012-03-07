@@ -5,14 +5,26 @@ ARCH=200
 VERFILE=verfile
 
 REV='"`cat verfile`"'
+#
+# Toolchains:
+# nmt200
+# http://www.codesourcery.com/downloads/public/public/gnu_toolchain/
+# https://sourcery.mentor.com/sgpp/lite/mips/portal/package4432/public/mips-linux-gnu/
+# linux  : mips-4.3-154-mips-linux-gnu-i686-pc-linux-gnu.tar.bz2
+# windows: mips-4.3-154-mips-linux-gnu-i686-mingw32.tar.bz2
+#
+# nmt100
+# http://www.lundman.net/ftp/nmt/
+# linux  : nmt-linux-intel-toolchain-gcc-4.0.4-linux-2.6.15.7-uclibc-0.9.28.3-lundman-P1.tgz
+# windows: nmt-cygwin-toolchain-gcc-4.2.2-linux-2.6.15.7-uclibc-0.9.28.3.tar.bz2
 
 ifdef WINDIR
 ifeq ($(ARCH),200) 
-	CROSS_DIR=/mips-4.3/
+	CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt200/mips-4.3/
 	CFLAGS_ARCH=-EL
 	LDFLAGS_ARCH=-EL
 else
-	CROSS_DIR=/cross-gcc/mipsel-linux-uclibc
+	CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt100/mipsel-linux-uclibc
 endif
 else
 ifeq ($(ARCH),200) 

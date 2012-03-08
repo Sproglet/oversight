@@ -391,6 +391,12 @@ END{
         #TODO Remove all references to CONVERT_IMAGES after next milestone
         convert_images(INDEX_DB);
 
+    } else if (EXPORT_XML) {
+        if (FOLDER_ARR[1] != "") {
+            export_xml(FOLDER_ARR[1]);
+        } else {
+            export_xml(INDEX_DB);
+        }
     } else {
         if (hash_size(FOLDER_ARR)) {
 
@@ -436,7 +442,7 @@ END{
     }
     rm(PIDFILE);
 
-    if (!RESCAN  && !NEWSCAN ) {
+    if (g_grand_total) {
         g_f = g_settings["catalog_touch_file"];
         if (g_f != "") {
             touch(g_f);
@@ -1011,6 +1017,11 @@ i,folderCount,moveDown) {
             moveDown++;
         } else if (ARGV[i] == "RESCAN" )  {
             RESCAN=1;
+            moveDown++;
+
+        } else if (ARGV[i] == "EXPORT_XML" )  {
+
+            EXPORT_XML=1;
             moveDown++;
 
         #TODO one off conversion Remove after next milestone release

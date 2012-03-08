@@ -107,6 +107,9 @@ catalog_locale3=-
 catalog_get_local_posters="if_title_changed"
 catalog_extended_local_plot_search=1
 
+catalog_make_ntsc_fanart="no"
+catalog_make_pal_fanart="no"
+
 # After renaming - update datestamp of all parent folders
 catalog_touch_parent_folders=1
 

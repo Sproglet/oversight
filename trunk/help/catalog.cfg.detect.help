@@ -4,6 +4,8 @@ catalog_locale1:Preferred locale for plots/titles/certificates. (to change curre
 catalog_locale2:language to use if lang1 not found|@CMD:cat conf/locale/names
 catalog_locale3:language to use if lang2 not found|@CMD:cat conf/locale/names
 catalog_get_local_posters:Try to download from sites that carry localised posters - increases scan time|if_title_changed|always|never
+catalog_make_ntsc_fanart:Make copies of fanart suitable for NTSC|no|yes
+catalog_make_pal_fanart:Make copies of fanart suitable for PAL|no|yes
 catalog_extended_local_plot_search:Scrape alternate websites If IMDB or TMDB do not have local plots - increases scan time|0|1
 catalog_imdb_links_required:Number of imdb links required in web search results|4
 catalog_imdb_source:Scraping mobile site is faster but only gives US certification|desktop|mobile

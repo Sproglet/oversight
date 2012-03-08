@@ -78,33 +78,40 @@ foundId,line) {
 function generate_nfo_file(nfoFormat,dbrow,\
 fields) {
     parseDbRow(dbrow,fields,1);
-    return generate_nfo_file_from_fields(nfoFormat,fields);
+    return generate_nfo_file_from_fields(nfoFormat,fields,0,1);
 }
 
-function generate_nfo_file_from_fields(nfoFormat,fields,\
-movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails) {
+#do_export - if set then all nfos are dumped into a single export file.
+function generate_nfo_file_from_fields(nfoFormat,fields,do_export,write_tv_block,\
+movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails,nfofilename) {
 
     nfoAdded=0;
-    if (g_settings["catalog_nfo_write"] == "never" ) {
-        return;
-    }
-
     get_name_dir_fields(fields);
 
-    if (fields[NFO] == "" ) {
-        INF("No NFO name - skip writing");
-        return;
-    }
 
-    nfo=getPath(fields[NFO],fields[DIR]);
+    nfofilename=getPath(fields[NFO],fields[DIR]);
+    if (do_export ) {
+        nfo = gExportFile;
+    } else {
+
+        if (g_settings["catalog_nfo_write"] == "never" ) {
+            return;
+        }
+
+        if (fields[NFO] == "" ) {
+            INF("No NFO name - skip writing");
+            return;
+        }
+        nfo=nfofilename;
 
 
-    if (is_file(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
-        INF("nfo already exists - skip writing");
-        return;
+        if (is_file(nfo) && g_settings["catalog_nfo_write"] != "overwrite" ) {
+            INF("nfo already exists - skip writing");
+            return;
+        }
     }
     
-    id1("generate_nfo_file_from_fields");
+    id1("generate_nfo_file_from_fields "nfofilename);
     if (nfoFormat == "xmbc" ) {
         movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
         tvshow=","TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART",";
@@ -112,38 +119,40 @@ movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails) {
     }
 
 
-    if (nfo != "" && !is_file(nfo)) {
+    if (nfo != "" ) {
 
         #sub(/[nN][Ff][Oo]$/,g_settings["catalog_nfo_extension"],nfo);
 
         DEBUG("Creating ["nfoFormat"] "nfo);
 
         if (nfoFormat == "xmbc") {
+
+            if (fields[URL] != "") {
+                fields[IMDBID] = extractImdbId(fields[URL]);
+            }
+
+            startXmbcNfo(nfo,do_export,nfofilename);
+
             if (fields[CATEGORY] =="M") {
 
-                if (fields[URL] != "") {
-                    fields[IMDBID] = extractImdbId(fields[URL]);
-                }
-
-                startXmbcNfo(nfo);
                 writeXmbcTag(fields,"movie",movie,nfo);
-                nfoAdded=1;
 
             } else if (fields[CATEGORY] == "T") {
 
-                startXmbcNfo(nfo);
-                writeXmbcTag(fields,"tvshow",tvshow,nfo);
+                if (write_tv_block) {
+                    writeXmbcTag(fields,"tvshow",tvshow,nfo);
+                }
                 writeXmbcTag(fields,"episodedetails",episodedetails,nfo);
-                nfoAdded=1;
             }
+            nfoAdded=1;
         } else {
             #Flat
-            print "#Auto Generated NFO" > nfo;
+            print "#Auto Generated NFO" >> nfo;
             for (fieldId in fields) {
                 if (fields[fieldId] != "") {
                     fieldName=g_db_field_name[fieldId];
                     if (fieldName != "") {
-                        print fieldName"\t: "fields[fieldId] > nfo;
+                        print fieldName"\t: "fields[fieldId] >> nfo;
                     }
                 }
             }
@@ -151,23 +160,50 @@ movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails) {
         }
     }
     if(nfoAdded) {
+
+        if (!do_export) {
+            endXmbcNfo(nfo,do_export);
+        }
         close(nfo);
-        set_permissions(qa(nfo));
+        if (!do_export) {
+            set_permissions(qa(nfo));
+        }
     }
     id0();
 }
 
-function startXmbcNfo(nfo) {
+function startExport(nfo) {
     print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > nfo;
-    print "<!-- #Auto Generated NFO by catalog.sh -->" > nfo;
+    print "<!-- #Auto Generated NFO by catalog.sh -->" >> nfo;
+    print "<catalog>" >> nfo;
 }
+function endExport(nfo) {
+    print "</catalog>" >> nfo;
+}
+function startXmbcNfo(nfo,do_export,nfofilename) {
+    if (do_export) {
+        print "<entry>" >> nfo;
+        print "<nfofile>"nfofilename"</nfofile>" >> nfo;
+        print "<nfo>" >> nfo;
+    } else {
+        print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" >> nfo;
+        print "<!-- #Auto Generated NFO by catalog.sh -->" >> nfo;
+    }
+}
+function endXmbcNfo(nfo,do_export) {
+    if (do_export) {
+        print "</nfo>" >> nfo;
+        print "</entry>" >> nfo;
+    }
+}
+
 #dbOne = single row of index.db
 function writeXmbcTag(dbOne,tag,children,nfo,\
 fieldId,text,attr,childTag) {
-    print "<"tag">" > nfo;
+    print "<"tag">" >> nfo;
 
     #Define any additional tag attributes here.
-    attr["movie","id"]="moviedb=\"imdb\"";
+    attr["movie","id"]=" moviedb=\"imdb\"";
 
     for (fieldId in dbOne) {
 
@@ -179,20 +215,61 @@ fieldId,text,attr,childTag) {
                 if (childTag != "") {
                     if (childTag == "thumb") {
 #                       if (g_settings["catalog_poster_location"] == "with_media" ) {
-#                            #print "\t<"childTag">file://"dbOne[DIR]"/"text"</"childTag">" > nfo;
-#                            print "\t<"childTag">file://./"xmlEscape(text)"</"childTag">" > nfo;
+#                            #print "\t<"childTag">file://"dbOne[DIR]"/"text"</"childTag">" >> nfo;
+#                            print "\t<"childTag">file://./"xmlEscape(text)"</"childTag">" >> nfo;
 #                        } else {
-                            print "\t<!-- Poster location not exported catalog_poster_location="g_settings["catalog_poster_location"]" -->" > nfo;
-                            print "\t<"childTag">"xmlEscape(text)"</"childTag">" > nfo;
+                            print "\t<!-- Poster location not exported catalog_poster_location="g_settings["catalog_poster_location"]" -->" >> nfo;
+                            print "\t<"childTag">"xmlEscape(text)"</"childTag">" >> nfo;
 #                        }
                     } else {
                         if (childTag == "watched" ) text=((text==1)?"true":"false");
-                        print "\t<"childTag" "attr[tag,childTag]">"xmlEscape(text)"</"childTag">" > nfo;
+                        print "\t<"childTag attr[tag,childTag]">"xmlEscape(text)"</"childTag">" >> nfo;
                     }
                 }
             }
         }
     }
-    print "</"tag">" > nfo;
+    print "</"tag">" >> nfo;
 }
 
+function export_xml(dbfile,\
+    row,fields,write_tv_block,last_url,has_output,dbsorted) {
+
+    gExportFile = "indexdb.xml";
+    id1("export_xml");
+
+    # put all tv shows together
+    dbsorted = new_capture_file("export");
+    sort_index_by_field(URL,dbfile,dbsorted);
+
+
+    # export.
+    startExport(gExportFile);
+
+    while((row=get_dbline(dbsorted)) != "") {
+        has_output++;
+        parseDbRow(row,fields,1);
+	INF(has_output":"fields[URL]);
+        # end previous nfo tag if exporting.
+        # this is to make sure all tv seasons are together.
+	
+        if (fields[URL] != last_url ) {
+            if (last_url != "" ) {
+                endXmbcNfo(gExportFile,1);
+            }
+            last_url = fields[URL];
+            write_tv_block = 1;
+        } else {
+            write_tv_block = 0;
+        }
+
+        generate_nfo_file_from_fields("xmbc",fields,1,write_tv_block);
+    }
+    if (has_output) {
+        endXmbcNfo(gExportFile,1);
+    }
+    endExport(gExportFile);
+    close(gExportFile);
+    id0("export_xml "gExportFile);
+    system("ls");
+}

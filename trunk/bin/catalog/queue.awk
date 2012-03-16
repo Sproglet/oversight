@@ -198,6 +198,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
             # TODO Pass plot. Change to use minfo ?
             generate_nfo_file_from_fields(g_settings["catalog_nfo_format"],fields2);
+            new_content(fields2);
         }
 
 

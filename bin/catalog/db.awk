@@ -104,25 +104,33 @@ row,est,nfo,op) {
 
     return row"\t";
 }
-function short_year(y,\
-ret) {
-    if (y != "" ) ret = sprintf("%x",y-1900);
-    return ret;
+function genre_init(\
+gnames,i) {
+    
+    if (!g_genre_count) {
+        g_genre_count = split(g_settings["catalog_genre"],gnames,",");
+    }
+    for(i = 1 ; i <= g_genre_count ; i += 2) {
+        g_genre_long2short["\\<"gnames[i]"o?\\>"] = gnames[i+1];
+        g_genre_short2long["\\<"gnames[i+1]"\\>"] = gnames[i];
+    }
+
 }
 
-function long_year(y,\
-ret) {
-
-    if (y != "" ) ret = hex2dec(y)+1900;
-    return ret;
+function short_genre(g) {
+    return convert_genre(g,g_genre_long2short);
 }
 
-function short_genre(g,\
-i,gnames,gcount) {
-    gcount = split(g_settings["catalog_genre"],gnames,",");
-    for(i = 1 ; i <= gcount ; i += 2) {
-        if (match(g,"\\<"gnames[i]"o?\\>") ) {
-           g = substr(g,1,RSTART-1) gnames[i+1] substr(g,RSTART+RLENGTH); 
+function long_genre(g) {
+    return convert_genre(g,g_genre_short2long);
+}
+
+function convert_genre(g,genre_map,\
+i) {
+    genre_init();
+    for(i in genre_map) {
+        if (match(g,i) ) {
+           g = substr(g,1,RSTART-1) genre_map[i] substr(g,RSTART+RLENGTH); 
        }
     }
     gsub(/[- /,|]+/,"|",g);
@@ -131,24 +139,6 @@ i,gnames,gcount) {
     return g;
 }
 
-# convert yyyymmddHHMMSS to bitwise yyyyyy yyyymmmm dddddhhh hhmmmmmm
-function shorttime(t,\
-y,m,d,hr,mn,r) {
-    r = t;
-    if (length(t) > 8 ) {
-
-        y = n(substr(t,1,4))-1900;
-        m = n(substr(t,5,2));
-        d = n(substr(t,7,2));
-        hr = n(substr(t,9,2));
-        mn = n(substr(t,11,2));
-
-        r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn;
-        r= sprintf("%x",r);
-    }
-    #INF("shorttime "t" = "r);
-    return r;
-}
 function replace_database_with_new(newdb,currentdb,olddb) {
 
     INF("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
@@ -183,12 +173,12 @@ function set_db_fields() {
 
     CATEGORY=db_field("_C","Category","");
     ADDITIONAL_INF=db_field("_ai","Additional Info","");
-    YEAR=db_field("_Y","Year","year") ;
+    YEAR=db_field("_Y","Year","year",g_dbtype_year) ;
 
     SEASON=db_field("_s","Season","season") ;
     EPISODE=db_field("_e","Episode","episode");
 
-    GENRE=db_field("_G","Genre","genre") ;
+    GENRE=db_field("_G","Genre","genre",g_dbtype_genre) ;
     RUNTIME=db_field("_rt","Runtime","runtime") ;
     RATING=db_field("_r","Rating","rating");
     CERT=db_field("_R","CERT","mpaa"); #Not standard?
@@ -200,9 +190,9 @@ function set_db_fields() {
     POSTER=db_field("_J","Poster","thumb");
     FANART=db_field("_fa","Fanart","fanart");
 
-    DOWNLOADTIME=db_field("_DT","Downloaded","");
-    INDEXTIME=db_field("_IT","Indexed","");
-    FILETIME=db_field("_FT","Modified","");
+    DOWNLOADTIME=db_field("_DT","Downloaded","",g_dbtype_time);
+    INDEXTIME=db_field("_IT","Indexed","",g_dbtype_time);
+    FILETIME=db_field("_FT","Modified","",g_dbtype_time);
 
     SEARCH=db_field("_SRCH","Search URL","search");
     PROD=db_field("_p","ProdId.","");
@@ -215,9 +205,9 @@ function set_db_fields() {
 
     IMDBID=db_field("_imdb","IMDBID","id");
     TVID=db_field("_tvid","TVID","id");
-    CONN_FOLLOWS=db_field("_a","FOLLOWS",""); # Comes After
-    CONN_FOLLOWED=db_field("_b","FOLLOWED",""); # Comes Before
-    CONN_REMAKES=db_field("_k","REMAKES",""); # Movies remaKes
+    CONN_FOLLOWS=db_field("_a","FOLLOWS","",g_dbtype_imdblist); # Comes After
+    CONN_FOLLOWED=db_field("_b","FOLLOWED","",g_dbtype_imdblist); # Comes Before
+    CONN_REMAKES=db_field("_k","REMAKES","",g_dbtype_imdblist); # Movies remaKes
 
     VIDEO=db_field("_v","VIDEO","");
     AUDIO=db_field("_S","SOUND","");
@@ -231,10 +221,11 @@ function set_db_fields() {
 # IN key = database key and html parameter
 # IN name = logical name
 # IN tag = xml tag in xmbc nfo files.
-function db_field(key,name,tag) {
+function db_field(key,name,tag,type) {
     g_db_field_name[key]=name;
     gDbTag2FieldId[tag]=key;
     gDbFieldId2Tag[key]=tag;
+    g_dbtype[key]=type;
     return key;
 }
 ##### LOADING INDEX INTO DB_ARR[] ###############################

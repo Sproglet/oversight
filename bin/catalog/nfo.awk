@@ -207,7 +207,7 @@ fieldId,text,attr,childTag) {
 
     for (fieldId in dbOne) {
 
-        text=dbOne[fieldId];
+        text=to_string(fieldId,dbOne[fieldId]);
 
         if (text != "") {
             if (index(children,fieldId)) {

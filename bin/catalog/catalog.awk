@@ -95,6 +95,12 @@ BEGIN {
     g_tvrage_web="http://www.tvrage.com";
     g_tvrage_api="http://services.tvrage.com";
 
+    g_dbtype_genre="g";
+    g_dbtype_time="t";
+    g_dbtype_year="y";
+    g_dbtype_imdblist="i";
+
+
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
     g_fetch_images_concurrently="START";
 

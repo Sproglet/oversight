@@ -12,48 +12,6 @@ function imdb_img_url(url) {
     return url;
 }
 
-
-function imdb_list_shrink(s,sep,base,\
-i,n,out,ids,m,id) {
-    n = split(s,ids,sep);
-    for(i = 1 ; i <= n ; i++ ) {
-
-
-        if (index(ids[i],"tt") == 1 || index(ids[i],"nm") == 1) {
-
-            id = substr(ids[i],3);
-
-            m = basen(id,base,128);
-
-            out = out sep m ;
-        } else {
-            out = out sep ids[i] ;
-        }
-    }
-    out = substr(out,2);
-    INF("compress ["s"] = ["out"]");
-
-    return out;
-}
-function imdb_list_expand(s,sep,base,\
-i,n,out,ids,m) {
-    n = split(s,ids,sep);
-    for(i = 1 ; i <= n ; i++ ) {
-
-
-        if (index(ids[i],"tt") == 0) {
-
-            m = base10(ids[i],base,128);
-            out = out sep "tt" sprintf("%07d",m) ;
-        } else {
-            out = out sep ids[i] ;
-        }
-    }
-    out = substr(out,2);
-    INF("expand ["s"] = ["out"]");
-    return out;
-}
-
 # input imdb id
 # OUT: list - array of strings of CSV imdb ids.
 # list["Follows"]     = list of imdb ids that follow this movie etc.

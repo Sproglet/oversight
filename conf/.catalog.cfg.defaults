@@ -127,3 +127,5 @@ catalog_source_keywords_BluRay=B[DR]RIP,BLURAYRIP,BLU-RAY
 catalog_source_keywords_DVDRip=DVDR
 catalog_source_keywords_Web=WEB-?DL
 
+catalog_new_content_script="new_content.sh"
+

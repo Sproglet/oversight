@@ -4,3 +4,4 @@ catalog_nfo_write:Enable writing of info files in the given format.|never|if_non
 catalog_nfo_format:Enable writing of info files in the given format.|flat|xmbc
 catalog_user:Unix user account used by catalog process.
 catalog_group:Unix group used by catalog process.
+catalog_new_content_script:Script run after new content is added

@@ -222,6 +222,7 @@ function set_db_fields() {
 # IN name = logical name
 # IN tag = xml tag in xmbc nfo files.
 function db_field(key,name,tag,type) {
+    gsub(/ /,"_",name);
     g_db_field_name[key]=name;
     gDbTag2FieldId[tag]=key;
     gDbFieldId2Tag[key]=tag;

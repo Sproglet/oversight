@@ -5,12 +5,6 @@ EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
-is_nmt=
-is_nmt100=
-is_nmt200=
-is_nmtpop=
-is_nmt300=
-is_dns323=
 ARCH=
 
 nmt_ver=/nmt/apps/VERSION
@@ -38,7 +32,7 @@ check_nmt() {
    fi
 }
 
-check_nmt /mnt/syb8634/MIN_FIRMWARE_VER '-40[0-5]$' nmt100 /mnt/syb8634
+check_nmt /mnt/syb8634/VERSION '-40[0-5]$' nmt100 /mnt/syb8634
 check_nmt "$nmt_ver" '-4(08|11)$' nmt200 /nmt/apps
 check_nmt "$nmt_ver" '-42[01]$' nmt200 /nmt/apps # nmt300 is binary compatible with 200
 
@@ -64,6 +58,8 @@ SORT=sort
 LS=ls
 AWK="gawk --re-interval "
 tr=tr
+
+nmt_version=
 
 case $FAMILY in
     nmt)

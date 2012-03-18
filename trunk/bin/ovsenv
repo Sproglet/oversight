@@ -53,11 +53,7 @@ LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
 os_version=`cat /proc/version`
 
-# nmt busybox have restricted switches no restricted set of commands.
-SORT=sort
-LS=ls
 AWK="gawk --re-interval "
-tr=tr
 
 nmt_version=
 
@@ -78,9 +74,13 @@ case $FAMILY in
         if [ -d /share/bin ] ; then
             PATH="/share/bin:$PATH"
         fi
-        LS="busybox ls"
-        SORT="busybox sort"
-        TR="busybox tr"
+        # nmt busybox have restricted switches or buggy commands.
+        # eg NMT find siliently fails with -mtime and -newer
+        for i in sort find ls tr ; do
+            if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
+                ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
+            fi
+        done
     ;;
     funplug)
         uid=nobody
@@ -93,7 +93,7 @@ case $FAMILY in
     ;;
 esac
 
-export uid gid FAMILY ARCH NMT_APP_DIR BINDIR
+export uid gid FAMILY ARCH NMT_APP_DIR OVS_HOME
 export OVERSIGHT_ID="$uid:$gid"
 
 

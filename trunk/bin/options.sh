@@ -1,12 +1,12 @@
 #!/bin/sh
 VERSION=20090605-1BETA
 
-APPDIR=$( echo $0 | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}" ; cd .. ; pwd )
+OVS_HOME=$( echo $0 | sed -r 's|[^/]+$||' )
+OVS_HOME=$(cd "${OVS_HOME:-.}" ; cd .. ; pwd )
 
-TMPDIR="$APPDIR/tmp"
+TMPDIR="$OVS_HOME/tmp"
 
-#echo "APPDIR=$APPDIR"
+#echo "OVS_HOME=$OVS_HOME"
 
 #$1 = file
 #$2 = variable
@@ -54,7 +54,7 @@ OPTION_PARSE() {
         esac
     done
 
-    cd "$APPDIR"
+    cd "$OVS_HOME"
 
     awk '
 # { print "<!-- "FILENAME " : " $0 "-->"; }

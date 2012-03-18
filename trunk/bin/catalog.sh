@@ -18,7 +18,7 @@ DEBUG=1
 EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
-APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
+OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
 . $APPBINDIR/ovsenv
 
@@ -41,7 +41,7 @@ if df /tmp | grep -q '/[sh]d[a-f]' ; then
     tmp_root=/tmp/oversight
 else
     # on nmt something sometimes changes /tmp permissions so only root can write
-    tmp_root="$APPDIR/tmp"
+    tmp_root="$OVS_HOME/tmp"
 fi
 
 #unpak.sh may pass the JOBID to catalog.sh via JOBID env. This allows
@@ -57,21 +57,21 @@ rm -fr "$g_tmp_dir"
 mkdir -p $g_tmp_dir
 PERMS $g_tmp_dir
 
-INDEX_DB="$APPDIR/index.db"
+INDEX_DB="$OVS_HOME/index.db"
 if [ ! -s "$INDEX_DB" ] ; then
     echo "#Index" > "$INDEX_DB";
     PERMS "$INDEX_DB"
 fi
 
-PLOT_DB="$APPDIR/plot.db"
+PLOT_DB="$OVS_HOME/plot.db"
 if [ ! -s "$PLOT_DB" ] ; then
     touch "$PLOT_DB"
     PERMS "$PLOT_DB"
 fi
 
-COUNTRY_FILE="$APPDIR/conf/country.txt"
-CONF_FILE="$APPDIR/conf/catalog.cfg"
-DEFAULTS_FILE="$APPDIR/conf/.catalog.cfg.defaults"
+COUNTRY_FILE="$OVS_HOME/conf/country.txt"
+CONF_FILE="$OVS_HOME/conf/catalog.cfg"
+DEFAULTS_FILE="$OVS_HOME/conf/.catalog.cfg.defaults"
 
 if [ ! -f "$CONF_FILE" ] ; then
     if [ ! -f "$CONF_FILE.example" ] ; then
@@ -185,7 +185,7 @@ SWITCHUSER() {
 
 get_unpak_cfg() {
     for ext in cfg cfg.example ; do
-        for nzd in "$APPDIR/conf" /share/Apps/NZBGet/.nzbget /share/.nzbget ; do
+        for nzd in "$OVS_HOME/conf" /share/Apps/NZBGet/.nzbget /share/.nzbget ; do
             if [ -f "$nzd/unpak.$ext" ] ; then 
                 echo "$nzd/unpak.$ext"
                 return
@@ -206,7 +206,7 @@ catalog() {
     # clear arrays using split("",array,"")
 
     awk_prg="$AWK "
-    for f in $APPDIR/bin/catalog/*.awk ; do
+    for f in $OVS_HOME/bin/catalog/*.awk ; do
         awk_prg="$awk_prg -f $f"
     done
 
@@ -214,7 +214,7 @@ catalog() {
 
     cd /tmp
 
-    pid_dir="$APPDIR/tmp/pid"
+    pid_dir="$OVS_HOME/tmp/pid"
     mkdir -p "$pid_dir"
     PIDFILE="$pid_dir/$$.pid"
 
@@ -223,9 +223,7 @@ catalog() {
     DAY=`date +%a.%P` \
     "PIDFILE=$PIDFILE" \
     "START_DIR=$START_DIR" \
-    "LS=$LS" \
-    "SORT=$SORT" \
-    "APPDIR=$APPDIR" \
+    "OVS_HOME=$OVS_HOME" \
     "CONF_FILE=$CONF_FILE" \
     "COUNTRY_FILE=$COUNTRY_FILE" \
     "DEFAULTS_FILE=$DEFAULTS_FILE" \
@@ -239,17 +237,17 @@ catalog() {
     g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 
-    rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status" "$PIDFILE"
+    rm -f "$OVS_HOME/catalog.lck" "$OVS_HOME/catalog.status" "$PIDFILE"
 
 }
 
 
 tidy() {
-    rm -f "$APPDIR/catalog.lck" "$APPDIR/catalog.status" "$PIDFILE"
+    rm -f "$OVS_HOME/catalog.lck" "$OVS_HOME/catalog.status" "$PIDFILE"
     clean_all_files
 }
 
-trap "rm -f $APPDIR/catalog.status" INT TERM EXIT
+trap "rm -f $OVS_HOME/catalog.status" INT TERM EXIT
 
 main() {
 
@@ -262,7 +260,7 @@ main() {
     set -e
 
     rm -fr -- "$g_tmp_dir"
-    chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$APPDIR/tmp" 2>/dev/null || true
+    chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$OVS_HOME/tmp" 2>/dev/null || true
     return $x
 }
 
@@ -282,8 +280,8 @@ clean_files() {
 
 clean_all_files() {
     clean_files "$tmp_root" "*" 2
-    clean_files "$APPDIR/logs" "[cu]*.log" 5 
-    clean_files "$APPDIR/cache" "tt*" 30
+    clean_files "$OVS_HOME/logs" "[cu]*.log" 5 
+    clean_files "$OVS_HOME/cache" "tt*" 30
 }
 
 #Due to a very nasty root renaming incident - reinstated user switch
@@ -294,8 +292,8 @@ if [ "$STDOUT" -eq 1 ] ; then
     main "$@"
 else
     LOG_TAG=
-    #LOG_FILE="$APPDIR/logs/catalog.`date +%d%H%M`.$$.log"
-    LOG_DIR="$APPDIR/logs"
+    #LOG_FILE="$OVS_HOME/logs/catalog.`date +%d%H%M`.$$.log"
+    LOG_DIR="$OVS_HOME/logs"
     mkdir -p "$LOG_DIR"
 
     EMPTY_DIR="$LOG_DIR/emptyscans"
@@ -321,9 +319,9 @@ else
     fi
 
     grep dryrun: "$LOG_FILE"
-    PERMS "$APPDIR/logs"
+    PERMS "$OVS_HOME/logs"
 fi
-if [ -f "$APPDIR/oversight.sh" ] ; then
-    $APPDIR/oversight.sh CLEAR_CACHE
+if [ -f "$OVS_HOME/oversight.sh" ] ; then
+    $OVS_HOME/oversight.sh CLEAR_CACHE
 fi
 # vi:sw=4:et:ts=4

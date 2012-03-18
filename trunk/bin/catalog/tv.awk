@@ -1645,10 +1645,10 @@ f,d,count,line,colon,dup,id,title,title_lc) {
 
     delete names;
     id1("get_tvdb_names_by_letter abbreviations for "letter);
-    d=APPDIR"/bin/catalog/tvdb/";
+    d=OVS_HOME"/bin/catalog/tvdb/";
     f=d"tvdb-"toupper(letter)".list";
 
-    exec("sh "qa(APPDIR"/bin/tvdblist.sh")" "letter);
+    exec("sh "qa(OVS_HOME"/bin/tvdblist.sh")" "letter);
 
     while(( getline line < f ) > 0 ) {
         colon = index(line,":");

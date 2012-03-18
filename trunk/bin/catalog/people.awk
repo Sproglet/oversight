@@ -94,8 +94,8 @@ key,extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
 
         if (domain != "" && extid != "") {
 
-            peopledb = APPDIR"/db/people.db";
-            domaindb = APPDIR"/db/people."domain".db";
+            peopledb = OVS_HOME"/db/people.db";
+            domaindb = OVS_HOME"/db/people."domain".db";
 
             ovsid = people_db_lookup(domaindb,1,extid,2);
             if (ovsid == "") {
@@ -124,7 +124,7 @@ i,ovsid,file) {
     dump(0,"g_portrait_queue",g_portrait_queue);
     for(i in g_portrait_queue) {
         ovsid = person_extid2ovsid[i];
-        file = APPDIR"/db/global/"ACTORS"/"g_settings["catalog_poster_prefix"] ovsid".jpg";
+        file = OVS_HOME"/db/global/"ACTORS"/"g_settings["catalog_poster_prefix"] ovsid".jpg";
         get_portrait(ovsid,g_portrait_queue[i],file);
     }
     delete g_portrait_queue;
@@ -141,7 +141,7 @@ ret) {
                 #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
 
                 #remove ampersand from call
-                ret = exec(APPDIR"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
+                ret = exec(OVS_HOME"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
             }
         }
     }
@@ -238,6 +238,6 @@ function people_update(db_name,\
 db_old,db_new) {
 
     db_new = people_tmp_file(db_name);
-    db_old = APPDIR "/db/" db_name;
+    db_old = OVS_HOME "/db/" db_name;
 
 }

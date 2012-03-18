@@ -29,11 +29,11 @@ load_settings() {
     fi
 }
 
-CONFDIR=$APPDIR/conf
-unpak=$APPDIR/bin/unpak.sh
+CONFDIR=$OVS_HOME/conf
+unpak=$OVS_HOME/bin/unpak.sh
 
-load_settings "$APPDIR/conf/.torrent.cfg.defaults"
-load_settings "$APPDIR/conf/torrent.cfg"
+load_settings "$OVS_HOME/conf/.torrent.cfg.defaults"
+load_settings "$OVS_HOME/conf/torrent.cfg"
 
 
 # IN $1=torrent id

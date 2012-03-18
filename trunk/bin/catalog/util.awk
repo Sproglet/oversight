@@ -354,7 +354,7 @@ function sort_file(f,args,\
 tmpf,ret) {
     tmpf=f"."PID;
     if (is_file(f)) {
-        if (exec(SORT" "args" "qa(f)" > "qa(tmpf)" && mv "qa(tmpf)" "qa(f)) == 0) {
+        if (exec("sort "args" "qa(f)" > "qa(tmpf)" && mv "qa(tmpf)" "qa(f)) == 0) {
             set_permissions(f);
             ret = 1;
         }

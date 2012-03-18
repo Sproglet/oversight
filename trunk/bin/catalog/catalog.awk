@@ -183,7 +183,7 @@ function report_status(msg) {
 
 END{
 
-    g_state_file=APPDIR"/.state";
+    g_state_file=OVS_HOME"/.state";
 
     load_state(g_state_file,g_state);
 
@@ -195,7 +195,7 @@ END{
     }
     INF("g_db = "g_db);
     #path for actor db etc.
-    DBDIR = APPDIR"/db";
+    DBDIR = OVS_HOME"/db";
 
     print PROCINFO["pid"] > PIDFILE;
     close(PIDFILE);
@@ -218,21 +218,21 @@ END{
 
 
     g_mount_root="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/";
-    g_winsfile = APPDIR"/conf/wins.txt";
+    g_winsfile = OVS_HOME"/conf/wins.txt";
     g_item_count = 0;
 
 
     g_plot_file=PLOT_DB;
     g_plot_file_queue=PLOT_DB".queue";
-    g_plot_app=qa(APPDIR"/bin/plot.sh");
+    g_plot_app=qa(OVS_HOME"/bin/plot.sh");
 
     for(i in g_settings) {
         g_settings_orig[i] = g_settings[i];
     }
 
-    g_db_lock_file=APPDIR"/catalog.lck";
-    g_scan_lock_file=APPDIR"/catalog.scan.lck";
-    g_status_file=APPDIR"/catalog.status";
+    g_db_lock_file=OVS_HOME"/catalog.lck";
+    g_scan_lock_file=OVS_HOME"/catalog.scan.lck";
+    g_status_file=OVS_HOME"/catalog.status";
     g_abc="abcdefghijklmnopqrstuvwxyz"; # slight rearrange - probably makes no diff
     g_ABC=toupper(g_abc);
     g_tagstartchar=g_ABC g_abc":_";
@@ -366,7 +366,7 @@ END{
         }
     }
 
-    g_timestamp_file=APPDIR"/.lastscan";
+    g_timestamp_file=OVS_HOME"/.lastscan";
 
 
     replace_share_names(FOLDER_ARR);
@@ -377,8 +377,8 @@ END{
         INF("Folder "f"="FOLDER_ARR[f]);
     }
 
-    gLS_FILE_POS=0; # Position of filename in LS format
-    gLS_TIME_POS=0; # Position of timestamp is LS format
+    gLS_FILE_POS=0; # Position of filename in ls format
+    gLS_TIME_POS=0; # Position of timestamp is ls format
     findLSFormat();
 
     plugin_check();
@@ -392,12 +392,7 @@ END{
     g_api_tmdb = apply(g_api_tmdb);
     g_api_rage = apply(g_api_rage);
 
-    if (CONVERT_IMAGES) {
-
-        #TODO Remove all references to CONVERT_IMAGES after next milestone
-        convert_images(INDEX_DB);
-
-    } else if (EXPORT_XML) {
+    if (EXPORT_XML) {
         if (FOLDER_ARR[1] != "") {
             export_xml(FOLDER_ARR[1]);
         } else {
@@ -444,7 +439,7 @@ END{
         }
     }
     if (g_fetch_images_concurrently == "") {
-        exec(APPDIR"/bin/jpg_fetch_and_scale START &");
+        exec(OVS_HOME"/bin/jpg_fetch_and_scale START &");
     }
     rm(PIDFILE);
 
@@ -595,7 +590,7 @@ function getPath(name,localPath) {
         return name;
     } else if (substr(name,1,4) == "ovs:" ) {
         #Paths with ovs:  are relative to oversight folder and are shared between items.(global)
-        return APPDIR"/db/global/"substr(name,5);
+        return OVS_HOME"/db/global/"substr(name,5);
     } else {
         #Other paths are relative to video folder.
         return localPath"/"name;
@@ -1028,11 +1023,6 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "EXPORT_XML" )  {
 
             EXPORT_XML=1;
-            moveDown++;
-
-        #TODO one off conversion Remove after next milestone release
-        } else if (ARGV[i] == "CONVERT_IMAGES" )  {
-            CONVERT_IMAGES=1;
             moveDown++;
 
         } else if (ARGV[i] == "PARALLEL_SCAN" )  {

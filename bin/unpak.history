@@ -1,0 +1,91 @@
+
+ Fixed reference to NZBOP_APPBIN
+VERSION=20090605-1BETA
+   Fixed temp file location
+VERSION=20081207-BETA07
+   Test _brokenlog.txt and get pars right away if present.
+   Kill unrar process as soon as errors are detected.
+   Made re_escape more portable (tx doctorvangogh/nzbget )
+   Works if par binary not available (reported GibberishDriftword/readynas)
+   changed Recent to use html page.
+   Setting to delete sample files after extracting
+   
+VERSION=20081009-BETA06
+   Fixed to allow _partnnn.rar (underscore)(found by geeks @ nmt forums)
+   Fixed to remove leading zero from 00.n% correctly when unraring (found by geeks @ nmt forums)
+   Fixed unpack *.001 archives whether RAR or split. (retest)
+   Removed FAKEFILES functionality
+   Renamed par2s .1 extension to .damaged. (similar to split/rar format)
+   Do not attempt to process Password protected rars
+VERSION=20081009-BETA05
+   Small bugfix detected rar parts.
+VERSION=20081009-BETA04
+   Small bugfix for extracting name from nfo
+VERSION=20081009-BETA03
+   Allow _partnnn (underscore)
+VERSION=20081009-BETA02
+   Also Get TV Name from NFO file if available.
+   Small bug fixes.
+VERSION=20081002-BETA01
+   Added PIN:FOLDER 'hack' until Parental lock arrives.
+   Auto Category looks at NZB name in preference to media names
+   Added Recently Downloaded folders (using managed hard links)
+   Added IMDB Movie categorisation.
+   Diskspace check
+   Checked unrar status 'All OK' in stdout.
+   many bugfixes.
+VERSION=20080911-01
+   Option to pause for entire duration of script.
+   Fixed move_rar_contents to use -e test rather than -f
+   Fixed Par repair bug (failing to match par files to rar file)
+ VERSION=20080909-02
+   Fixed move_rar_contents to use mv checkingfor hidden files and avoiding glob failure.
+ VERSION=20080909-01
+   Do a par repair if there are no rar files at all (using *.par2 not *PAR2) eg for mp3 folders.
+   Fixed subtitle rar overwriting main rar if they have the same name.
+   Autocategory for Music and simple TV series names. 
+   Join avi files if not joined by nzbget.
+ VERSION=20080905-03
+   Minor Bug Fix - removed symlink to par2
+VERSION=20080905-02
+   Typo Bug Fix
+VERSION=20080905-01
+   Specify Alternative Completed location
+   Log Estimate of time to Repair Pars and only do repairs that will be less than n minutes (configurable)
+   Better logic to work with twin rar,par sets (eg cd1,cd2) where one rar works but the other needs pars.
+   Better logic to work with missing start volumes.
+   Stopped using hidden files as they prevent deleting via Remote Control
+   Rar Parts are deleted right at the end of processing rather than during. This may help with pars that span multiple rar sets.
+VERSION=20080902-01
+   Better checks to ensure settings are consistent between nzbget.conf and unpak.sh.
+   Copied logic used by nzbget to convert an NZB file name to the group/folder name.
+ v 20080901-02
+   Bug fix - getting ids when there are square brackets or certain meta-characters in nzb name.
+ v 20080901-01
+   Bug fixes. Settings verification.
+ v 20080831-04
+  External Par Repair option
+ v 20080831-03
+   Minor fixes.
+ v 20080831-01
+   Sanity check if nzbget did not do any par processing.
+   NZBGet , unrar paths set as options.
+   Unpacking depth configurable.
+   MediaCentre feature: HTML Logging for viewing in file browser mode.
+   MediaCentre feature: Error Status via fake AVI file
+   More bug fixes. (Rar Sanity Check)
+ v 20080828-03
+   Added better test for ParCheck/_unbroken courtesy Hugbug.
+ v 20080828-02
+   Fixed nested unrar bug.
+   Added purging of old NZBs
+ v 20080828-01
+   Does a quick sanity check on the rar file before unpacking. 
+   added IFS= to stop read command trimming white space.
+ v 20080827-02 
+   Fixed multiple attempts to unpack failed archives
+ v 20080827-01 
+ - Delete files only if unrar is sucessful.
+ - Cope with multiple ts files in the same folder.
+ - Deleting is on by default - as it is more careful
+ --------------------------------------------------------------------

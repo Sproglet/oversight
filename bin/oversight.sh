@@ -335,7 +335,7 @@ uninstall_as_wget() {
 
 reboot_fix() {
 
-    ln -sf "$OVS_HOME/bin/oversight" "$OVS_HOME/oversight.cgi"
+    ln -sf "$OVS_HOME/bin/$ARCH/oversight" "$OVS_HOME/oversight.cgi"
 
     install_as_wget
 

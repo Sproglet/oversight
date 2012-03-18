@@ -1,7 +1,8 @@
 #!/bin/sh
 # Set Paths
 
-EXE=$0
+#EXE=$0
+EXE=$BASH_SOURCE
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 

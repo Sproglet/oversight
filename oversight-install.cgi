@@ -5,15 +5,17 @@ EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 INSTALL_DIR="$( cd "$( dirname "$EXE" )" && pwd )"
 
+source "$INSTALL_DIR/bin/ovsenv"
+
 appname="oversight"
 wsname="OverSight"
 cgiName="oversight.cgi"
-shPath="$INSTALL_DIR/bin/$appname.sh"
+shPath="$OVS_HOME/bin/$appname.sh"
 start_command="$shPath REBOOTFIX"
 
 httpd="http://127.0.0.1:8883"
 
-NMT="$INSTALL_DIR/install.sh"
+NMT="$OVS_HOME/install.sh"
 
 FIND_FILE() {
     f="$1" ; shift;
@@ -29,8 +31,8 @@ FIND_FILE() {
 
 unpak_nzbget_bin="`FIND_FILE nzbget /share/Apps/NZBget/bin /mnt/syb8634/bin /nmt/apps/bin`"
 unpak_nzbget_conf="`FIND_FILE nzbget.conf /share/Apps/NZBget/.nzbget /share/.nzbget`"
-UNPAK_CONF="$INSTALL_DIR/conf/unpak.cfg"
-CATALOG_CONF="$INSTALL_DIR/conf/catalog.cfg"
+UNPAK_CONF="$OVS_HOME/conf/unpak.cfg"
+CATALOG_CONF="$OVS_HOME/conf/catalog.cfg"
 
 NZBGET() {
     "$unpak_nzbget_bin" -c "$unpak_nzbget_conf" "$@"
@@ -43,26 +45,7 @@ CP() {
     cp "$1" "$2" && chown -R nmt:nmt "$2"
 }
 
-RELOCATE_CONFIGS() {
-    for i in  catalog.cfg oversight.cfg unpak.cfg ; do
-        if [ -f "$i" ] ; then
-            if [ ! -f "conf/$i" ] ; then
-                mv "$i" "./conf/$i"
-            fi
-        fi
-    done
-
-    for i in *.example  ; do
-        if [ -f "$i" ] ; then
-            mv "$i" "./tmp/$i.delete_me"
-        fi
-    done
-}
-
-cd "$INSTALL_DIR"
-
-RELOCATE_CONFIGS
-
+cd "$OVS_HOME"
 
 if [ ! -f "$UNPAK_CONF" ] ; then
     sed -ir "s@(unpak_nzbget_conf=).*@\\1'$unpak_nzbget_conf'@" "$UNPAK_CONF.example"
@@ -110,7 +93,7 @@ SKIN_INSTALL() {
     fi
 
     # run any skin installers
-    for inst in "$INSTALL_DIR"/templates/*/install.sh ; do
+    for inst in "$OVS_HOME"/templates/*/install.sh ; do
 
         if [ -f "$inst" ] ; then
 
@@ -127,7 +110,7 @@ INSTALL() {
         #FIX_NZBGET_DAEMON
         TRANSMISSION_UNPAK_INSTALL
 
-        ( cd "$INSTALL_DIR/cache" && rm -f tt[0-9]*[0-9] ) # clear cache
+        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] ) # clear cache
 
         #not sure how people are still getting wget in busybox but rename it
         if [ -f /share/bin/wget ] ; then
@@ -136,8 +119,8 @@ INSTALL() {
 
         SKIN_INSTALL
 
-        chmod -R 775 "$INSTALL_DIR"
-        chown -R nmt:nmt "$INSTALL_DIR"
+        chmod -R 775 "$OVS_HOME"
+        chown -R nmt:nmt "$OVS_HOME"
         "$NMT" NMT_UNINSTALL "$appname"
         "$NMT" NMT_INSTALL "$appname" "$start_command"
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
@@ -167,7 +150,7 @@ TRANSMISSION_UNPAK_INSTALL() {
         TRANSMISSION_UNPAK_UNINSTALL
         sed -i '
 2 i\
-exec '"$INSTALL_DIR"'/bin/unpak.sh torrent_seeding "$@"
+exec '"$OVS_HOME"'/bin/unpak.sh torrent_seeding "$@"
 ' $TRANSMISSION_UNRAR_FILE
     chown nmt:nmt "$TRANSMISSION_UNRAR_FILE"
     fi
@@ -207,7 +190,7 @@ function debug(x) {
 BEGIN {
 
     #Repair
-    set["postprocess"]="'"$INSTALL_DIR"'/bin/unpak.sh" ;
+    set["postprocess"]="'"$OVS_HOME"'/bin/unpak.sh" ;
     set["allowreprocess"]="yes" ;
     set["parcheck"]="no";
     set["renamebroken"]="no";
@@ -281,14 +264,15 @@ BEGIN { activeCount=0; }
 LOCK=/tmp/oversight-install.lck
 if [ -f $LOCK ] ; then
     if [ -d /proc/`cat $LOCK` ] ; then
+        echo "exiting - lockfile $LOCK"
         exit
     fi
 fi
 echo $$ > $LOCK
 
 PERMS() {
-    chmod -R 775 "$INSTALL_DIR"
-    chown -R nmt:nmt "$INSTALL_DIR"
+    chmod -R 775 "$OVS_HOME"
+    chown -R nmt:nmt "$OVS_HOME"
     chown -R nmt:nmt /share/.nzbget/nzbget.conf*
 }
 
@@ -297,17 +281,17 @@ BOUNCE_NZBGET() {
     #nmt should set its own Daemon user - but wrapped command with su 
     #because of reports of nzbget running as nobody.
 
-    # "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
+    # "$OVS_HOME/bin/unpak.sh nzbget_cmd restart"
 
     if ps | grep -q '[n]zbget' ; then
-        su -s /bin/sh nmt -c "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
+        su -s /bin/sh nmt -c "$OVS_HOME/bin/unpak.sh nzbget_cmd restart"
     fi
 }
 
 # for nmt100
 LINK_GUNZIP() {
-    if [ -f "$INSTALL_DIR/bin/nmt100/gzip" ] ; then 
-        ln -sf "$INSTALL_DIR/bin/nmt100/gzip" "$INSTALL_DIR/bin/nmt100/gunzip"
+    if [ -f "$OVS_HOME/bin/nmt100/gzip" ] ; then 
+        ln -sf "$OVS_HOME/bin/nmt100/gzip" "$OVS_HOME/bin/nmt100/gunzip"
     fi
 }
 
@@ -316,7 +300,7 @@ case "$1" in
     install|oversight-install)
         PERMS
         set -x
-        INSTALL > "$INSTALL_DIR/logs/install.log" 2>&1
+        INSTALL > "$OVS_HOME/logs/install.log" 2>&1
         set +x
         PERMS
         BOUNCE_NZBGET
@@ -332,9 +316,9 @@ case "$1" in
         PERMS
         ;;
     check)
-        $NMT NMT_CHECK "$INSTALL_DIR" 2> "$INSTALL_DIR/check.err"
-        cat "$INSTALL_DIR/logs/listen.log" >> "$INSTALL_DIR/check.log"
-        mv $INSTALL_DIR/check.log $INSTALL_DIR/logs/check.log
+        $NMT NMT_CHECK "$OVS_HOME" 2> "$OVS_HOME/check.err"
+        cat "$OVS_HOME/logs/listen.log" >> "$OVS_HOME/check.log"
+        mv "$OVS_HOME/check.log" "$OVS_HOME/logs/check.log"
         "$NMT" NMT_INSTALL_WS_BANNER "$wsname" "Output saved in logs/check.log"
         PERMS
         ;;

@@ -55,7 +55,6 @@ fi
 uid=`id -u -n`
 gid=`id -g`
 
-echo "family=$FAMILY arch=$ARCH"
 LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
 os_version=`cat /proc/version`

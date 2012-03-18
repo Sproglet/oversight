@@ -1,95 +1,32 @@
 #!/bin/sh
-#! $Id$
-#!This is a compacted file. If looking for the source see catalog.sh.full
-#!If not compressed then awk will report "bad address" error on some platforms.
-#!
-#!blank lines kept to preserve line numbers reported in errors.
-#!All leading white space trimmed so make sure lines ending in \ have any mandatory white space included.
-#!
-#! See end of file for Compress command.
+# $Id$
 
-# TODO Any more memory errors remove :
-# IMDBLINKS code
-# nfo file generation.
-
+# Detect and rename media files. Sounds simple huh?
+# Initially written for NMT platform that has a limited subset of busybox commands and no perl.
 
 # Requires wget (not busybox)
 
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
-VERSION=20100228-1BETA
 
 NMT_APP_DIR=
-nmt_version=unknown
-#Thanks to Jorge for pointing out C200 changes.
-for d in /mnt/syb8634 /nmt/apps ; do
-    if [ -f $d/MIN_FIRMWARE_VER ] ; then
-        NMT_APP_DIR=$d
-        nmt_version=`cat $NMT_APP_DIR/VERSION`
-    fi
-done
-echo NMT_APP_DIR=$NMT_APP_DIR
 
-# Fixed reference to NZBOP_APPBIN
-#VERSION=20090605-1BETA
-# Added more checking around nfo name
-
-# TV AWK INTERFACE
 # This script is horrendous. My comment!
-# Pushing limits of awks usability. Next time I'll use <insert any other scripting language here>
-# Also sometimes lines are left in for debugging
-#
-#TODO should check write permissions to nfo file - not urgent
-#TODO Error displaying titles for Leon Wall-E etc. special chars.
-# (c) Andy Lord andy@lordy.org.uk #License GPLv3
 
 DEBUG=1
 #Find install folder
 EXE=$0
-while [ -L "$EXE" ] ; do
-    EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
-done
-APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}/.." ; pwd )
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
+APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
-. $APPDIR/bin/ovsenv
+. $APPBINDIR/ovsenv
+echo NMT_APP_DIR=$NMT_APP_DIR
 
 NMT=0
-if is_nmt ; then
-    if [ -d /share/bin ] ; then
-        PATH="/share/bin:$PATH" && export PATH
-    fi
-fi
 
 AWK=gawk
 #AWK="$BINDIR/gawk --posix "
-
-#Get newer gzip and wget
-# nmt busybox wget is primitive.
-# nmt /bin/wget is buggy
-# nmt busybox gzip is not graceful for passthru of uncompressed data
-
-SORT=sort
-LS=ls
-if is_nmt ; then
-    if [ -d "$APPDIR/bin" ] ; then
-
-        if grep -q "MIPS 74K" /proc/cpuinfo ; then
-            BINDIR="$APPDIR/bin/nmt200"
-        else
-            BINDIR="$APPDIR/bin/nmt100"
-        fi
-        SORT="$BINDIR/busybox sort"
-        LS="$BINDIR/busybox ls"
-
-        export PATH="$PATH:$BINDIR:$APPDIR/bin"
-
-        AWK="$BINDIR/gawk --re-interval "
-
-    fi
-fi
-
-
 
 set +e
 
@@ -196,6 +133,7 @@ Other options
     RENAME_FILM    - Move the film folders.
     RENAME         - Rename both tv and film
     DRYRUN         - Show effects of RENAME but dont do it.
+    EXPORT_XML     - Export XML database to /tmp/indexdb.xml
     IGNORE_NFO     - dont look in existing NFO for any infomation
     WRITE_NFO      - write NFO files
     NOWRITE_NFO    - dont write NFO files
@@ -317,11 +255,7 @@ main() {
     clean_all_files
 
     set +e
-    sed 's/^/\[INFO\] os version /' /proc/version
-    if is_nmt ; then
-        sed -rn '/./ s/^/\[INFO\] nmt version /p' /???/*/VERSION
-    fi
-    #echo "[INFO] HD:`dmesg | egrep '(, ATA|ATA-)'`"
+    echo "[INFO] $os_version $nmt_version"
     catalog DEBUG$DEBUG "$@" 
     x=$?
     set -e

@@ -4,17 +4,14 @@
 #VERSION=20090605-1BETA
 #Cant use named pipes due to blocking at script level
 EXE=$0
-while [ -L "$EXE" ] ; do
-    EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
-done
-APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-export APPDIR=$(cd "${APPDIR:-.}" ; cd .. ; pwd )
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+export APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
+
 TVMODE=`cat /tmp/tvmode`
+. $APPDIR/bin/ovsenv
 
 CONF=$APPDIR/conf/catalog.cfg
 
-OWNER=nmt
-GROUP=nmt
 appname=oversight
 cd "$APPDIR"
 
@@ -22,7 +19,7 @@ TMPDIR="$APPDIR/tmp"
 if [ ! -d $TMPDIR ] ; then
     if id | grep -q root ; then
         mkdir -p $TMPDIR
-        chown $OWNER:$GROUP $TMPDIR
+        chown $uid:$gid $TMPDIR
     fi
 fi
 
@@ -41,26 +38,6 @@ OVERSIGHT_USE_WGET="$APPDIR/conf/use.wget.wrapper"
 
 WGET_BACKUP="$APPDIR/wget.original"
 WGET_BIN=/bin/wget
-
-# ------- GET NMT Version and set NMT specific paths if applicable ---------
-
-NMT_APP_DIR=
-nmt_version=unknown
-#Thanks to Jorge for pointing out C200 changes.
-for d in /mnt/syb8634 /nmt/apps ; do
-    if [ -f $d/MIN_FIRMWARE_VER ] ; then
-        NMT_APP_DIR=$d
-        nmt_version=`cat $NMT_APP_DIR/VERSION`
-    fi
-done
-
-if grep -q "MIPS 74K" /proc/cpuinfo ; then
-    BINDIR=$APPDIR/bin/nmt200
-else
-    BINDIR=$APPDIR/bin/nmt100
-fi
-
-export PATH="$BINDIR:$PATH"
 
 # -----------------------------------------------------
 
@@ -138,7 +115,7 @@ ARGLIST() {
 }
 
 SWITCHUSER() {
-    if ! id | fgrep -q "($OWNER)" ; then
+    if ! id | fgrep -q "($uid)" ; then
         u=$1
         shift;
         echo "[$USER] != [$u]"
@@ -155,11 +132,11 @@ SAY() {
     #Avoid blocking for pipe
     A="$(ARGLIST "$@")"
     echo "oversight: $A" >> "$PENDING_FILE"
-    chown $OWNER:$GROUP "$PENDING_FILE"
+    chown $uid:$gid "$PENDING_FILE"
 }
 
 PERMS() {
-    chown $OWNER:$GROUP "$1" "$1"/*
+    chown $uid:$gid "$1" "$1"/*
 }
 
 HTML() {
@@ -416,7 +393,7 @@ case "$1" in
             exit
         fi
         if [ -e "$PENDING_FILE" ] ; then
-            #SWITCHUSER "$OWNER" "$@"
+            #SWITCHUSER "$uid" "$@"
             LISTEN >> "$log" 2>&1 || rm -f "$LOCK"
         fi
 

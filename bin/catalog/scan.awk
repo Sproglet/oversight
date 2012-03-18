@@ -103,13 +103,13 @@ f,fcount,total,done,dir) {
 function findLSFormat(\
 tempFile,i,procfile) {
 
-    DEBUG("Finding LS Format");
+    DEBUG("Finding ls format");
 
     procfile="/proc/"PID"/fd"; #Fd always has a recent timestamp even on cygwin
     tempFile=new_capture_file("LS")
 
 
-    exec(LS" -ld "procfile" > "qa(tempFile) );
+    exec("ls -ld "procfile" > "qa(tempFile) );
     FS=" ";
     
     while ((getline < tempFile) > 0 ) {
@@ -183,7 +183,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
     # note ls -L will follow symlinks at any depth - this is passed via catalog_follow_symlinks
-    exec("( "LS" "scan_options" "quotedRoot"/ || "LS" "scan_options" "quotedRoot" ) > "qa(tempFile) );
+    exec("( ls "scan_options" "quotedRoot"/ || ls "scan_options" "quotedRoot" ) > "qa(tempFile) );
     currentFolder = root;
     skipFolder=0;
     folderNameNext=1;

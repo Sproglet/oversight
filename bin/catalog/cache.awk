@@ -4,7 +4,7 @@
 #if file cant be created return blank
 function persistent_cache(fname,suffix,\
 dir) {
-    dir=APPDIR"/cache";
+    dir=OVS_HOME"/cache";
     if (g_cache_ok == 0) { #first time check
         g_cache_ok=2; #bad
         system("mkdir -p "qa(dir));

@@ -5,38 +5,38 @@
 #Cant use named pipes due to blocking at script level
 EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
-export APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
+d="$( cd "$( dirname "$EXE" )" && pwd )"
 
 TVMODE=`cat /tmp/tvmode`
-. $APPDIR/bin/ovsenv
+. "$d/ovsenv"
 
-CONF=$APPDIR/conf/catalog.cfg
+CONF="$OVS_HOME/conf/catalog.cfg"
 
 appname=oversight
-cd "$APPDIR"
+cd "$OVS_HOME"
 
-TMPDIR="$APPDIR/tmp"
-if [ ! -d $TMPDIR ] ; then
-    if id | grep -q root ; then
-        mkdir -p $TMPDIR
-        chown $uid:$gid $TMPDIR
+TMPDIR="$OVS_HOME/tmp"
+if [ ! -d "$TMPDIR" ] ; then
+    mkdir -p "$TMPDIR"
+    if [ `id -u` = 0 ] ; then
+        chown "$uid:$gid" "$TMPDIR"
     fi
 fi
 
 # This file will be created by oversight if it crashed whilst masquerading as wget.
 # If it IS present during a reboot the all of the wget masquerading function is
 # disabled.
-OVERSIGHT_WGET_ERROR="$APPDIR/conf/wget.wrapper.error"
+OVERSIGHT_WGET_ERROR="$OVS_HOME/conf/wget.wrapper.error"
 
 # This file must be present to make oversight intercept oversight urls when the
 # oversight binary is also called "wget". If it is not present then oversight will
 # try to invoke the real wget in /bin/wget.real
 # If it is NOT present during a reboot the all of the wget masquerading function is
 # disabled.
-OVERSIGHT_USE_WGET="$APPDIR/conf/use.wget.wrapper"
+OVERSIGHT_USE_WGET="$OVS_HOME/conf/use.wget.wrapper"
 
 
-WGET_BACKUP="$APPDIR/wget.original"
+WGET_BACKUP="$OVS_HOME/wget.original"
 WGET_BIN=/bin/wget
 
 # -----------------------------------------------------
@@ -45,17 +45,17 @@ CMD_BUF="$TMPDIR/cmd"
 LOCK="$TMPDIR/oversight.lck"
 PENDING_FILE="$TMPDIR/cmd.pending"
 
-NMT="$APPDIR/install.sh"
+NMT="$OVS_HOME/install.sh"
 LISTEN() {
-        #We add the current APPDIR to the path. This allows
+        #We add the current OVS_HOME to the path. This allows
         #oversight.cgi to send commands to oversight.sh running as a cron on the remote nmt.
-        #oversight.sh will use its own idea of APPDIR (ie /share/Apps/oversight) rather than
+        #oversight.sh will use its own idea of OVS_HOME (ie /share/Apps/oversight) rather than
         #oversight.cgi home eg /opt/sybhttpd/local.drives/NETWORK_DRIVE/nmt2/Apps/oversight )
         #
-        # So instead of sending commands as $APPDIR/bin/catalog.sh we just send ./bin/catalog.sh
-        # and let the cron job determine what APPDIR is. (ie from the perspective of the remote box)
+        # So instead of sending commands as $OVS_HOME/bin/catalog.sh we just send ./bin/catalog.sh
+        # and let the cron job determine what OVS_HOME is. (ie from the perspective of the remote box)
 
-        PATH="$APPDIR:$PATH"
+        PATH="$OVS_HOME:$PATH"
 
         date
         if [ -e "$LOCK" ] ; then
@@ -156,7 +156,7 @@ LOAD_SETTINGS() {
 
 #This file contains lines copied from mtab with a comment appended so we know which logical name to associate 
 #the mount point with.
-mounts="$APPDIR/oversight.mounts"
+mounts="$OVS_HOME/oversight.mounts"
 REMOUNT() {
     targetPath="/opt/sybhttpd/localhost.drives/NETWORK_SHARE/$1"
     targetURL="http://localhost.drives:8883/NETWORK_SHARE/$1"
@@ -231,7 +231,7 @@ FIND_REMOTE() {
 
             url="http://localhost:8883/oversight/oversight.cgi?remote=$mountName"
 
-            $APPDIR/install.sh NMT_INSTALL_WS "$wsname" "$url"
+            $OVS_HOME/install.sh NMT_INSTALL_WS "$wsname" "$url"
             echo "<p>Added Web Service $wsname"
 
 
@@ -281,7 +281,7 @@ add_watch_cron() {
             *) echo Unknown cron format $1 ;;
         esac
         if [ "$d$m$h" != "***" ] ; then
-            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$APPDIR/bin' && './oversight.sh' $3 >/dev/null 2>&1 &"
+            "$NMT" NMT_CRON_ADD root "$appname.$2" "$m $h $d * * cd '$OVS_HOME/bin' && './oversight.sh' $3 >/dev/null 2>&1 &"
         fi
     else
         "$NMT" NMT_CRON_DEL root "$appname.$2"
@@ -306,11 +306,11 @@ install_as_wget() {
                 # use rm then cp to avoid symlink overwrite of unexpected file
                 rm -f "$WGET_BIN.real"
                 mv "$WGET_BIN" "$WGET_BIN.real" && \
-                ln -sf "$BINDIR/oversight" "$WGET_BIN"
+                ln -sf "$OVS_HOME/bin/oversight" "$WGET_BIN"
             else
                 # if wget is not really wget it could be an old file based version of oversight
                 # replace it with a symlink.
-                ln -sf "$BINDIR/oversight" "$WGET_BIN"
+                ln -sf "$OVS_HOME/bin/oversight" "$WGET_BIN"
             fi
             echo "wget wrapper installed"
         fi
@@ -334,20 +334,16 @@ uninstall_as_wget() {
 }
 
 reboot_fix() {
-    # NMT find siliently fails with -mtime and -newer
-    if [ ! -L "$APPDIR/bin/nmt100/find" ] ; then
-        ln -sf $APPDIR/bin/nmt100/busybox $APPDIR/bin/nmt100/find
-    fi
 
-    ln -sf "$BINDIR/oversight" "$APPDIR/oversight.cgi"
+    ln -sf "$OVS_HOME/bin/oversight" "$OVS_HOME/oversight.cgi"
 
     install_as_wget
 
     # Restore website link
-    ln -sf "$APPDIR/" /opt/sybhttpd/default/.
+    ln -sf "$OVS_HOME/" /opt/sybhttpd/default/.
 
     # Create symlink to html
-    ln -sf /tmp/0 "$APPDIR/logs/gui.log"
+    ln -sf /tmp/0 "$OVS_HOME/logs/gui.log"
 
     # Restore cronjobs
 
@@ -355,15 +351,15 @@ reboot_fix() {
     add_watch_cron "$freq" "watch" "NEWSCAN CHECK_TRIGGER_FILES" 
 
     # Delete any catalog 2 oversight messages
-    rm -f "$APPDIR/catalog.status"
+    rm -f "$OVS_HOME/catalog.status"
 }
 
 case "$1" in 
     NEWSCAN)
-        "$APPDIR/bin/catalog.sh" "$@" 
+        "$OVS_HOME/bin/catalog.sh" "$@" 
 
         if grep -q /^catalog_watch_torrents=.*1/ $CONF* ; then
-            "$APPDIR/bin/torrent.sh" transmission unpak_all
+            "$OVS_HOME/bin/torrent.sh" transmission unpak_all
         fi
         ;;
 
@@ -381,13 +377,13 @@ case "$1" in
 
     REBOOTFIX)
         set -x
-        reboot_fix > "$APPDIR/logs/reboot.log" 2>&1
+        reboot_fix > "$OVS_HOME/logs/reboot.log" 2>&1
         set +x
 
         ;;
 
     LISTEN)
-        log="$APPDIR/logs/listen.log" 
+        log="$OVS_HOME/logs/listen.log" 
         if [ -f /tmp/oversight.disable ] ; then
             echo "disabled" >> "$log"
             exit

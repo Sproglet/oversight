@@ -14,18 +14,16 @@
 # but it means hdx/egreat users must instally a newer busybox
 # #################################################
 EXE=$0
-while [ -L "$EXE" ] ; do
-    EXE=$( ls -l "$EXE" | sed 's/.*-> //' )
-done
-APPDIR=$( echo $EXE | sed -r 's|[^/]+$||' )
-APPDIR=$(cd "${APPDIR:-.}" ; pwd )
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+APPDIR="$( cd "$( dirname "$EXE" )" && pwd )"
+
+. "$APPDIR/bin/ovsenv"
+
 TVMODE=`cat /tmp/tvmode`
-OWNER=nmt
-GROUP=nmt
-cd "$APPDIR"
+cd "$OVS_HOME"
 
 PERMS() {
-    chown $OWNER:$GROUP "$1" "$1"/*
+    chown $uid:$gid "$1" "$1"/*
 }
 
 HTML() {
@@ -36,7 +34,7 @@ HTML() {
 site="http://prodynamic.co.uk/nmt/"
 site="http://$appnname.googlecode.com/svn/trunk/packages/"
 
-backupdir="$APPDIR.backup_undo"
+backupdir="$OVS_HOME.backup_undo"
 
 # $1 = remove version file
 get_new_version() {
@@ -54,7 +52,7 @@ UPGRADE() {
 
     appname="$1"
 
-    cd "$APPDIR"
+    cd "$OVS_HOME"
 
     new_version_file=version.dl
 
@@ -67,7 +65,7 @@ UPGRADE() {
             else
                 echo ERROR > $new_version_file
             fi
-            chown -R $OWNER:$GROUP $new_version_file
+            chown -R $uid:$gid $new_version_file
             ;;
         check_stable_or_beta)
             #Check both beta and offical releases.
@@ -87,13 +85,13 @@ UPGRADE() {
     print "ERROR";
   }
 }' > $new_version_file
-            chown -R $OWNER:$GROUP $new_version_file
+            chown -R $uid:$gid $new_version_file
             ;;
         re-install|install)
             #This is not a first time install but just to overwrite files with
             # downloaded ones. see install-cgi for first time install
             NEWVERSION=`cat $new_version_file`
-            tardir="$APPDIR/versions"
+            tardir="$OVS_HOME/versions"
             newtgzfile="$appname-$NEWVERSION.tgz" 
             newtarfile="$appname-$NEWVERSION.tar" 
 
@@ -109,7 +107,7 @@ UPGRADE() {
                 exit 1
             fi
 
-            $APPDIR/bin/gunzip -f -c "$tardir/$newtgzfile" > "$tardir/$newtarfile"
+            $OVS_HOME/bin/gunzip -f -c "$tardir/$newtgzfile" > "$tardir/$newtarfile"
             rm -f "$tardir/$newtgzfile"
 
             HTML Backup old files
@@ -119,20 +117,20 @@ UPGRADE() {
                 fi
                 mv "$backupdir" "$backupdir.2"
             fi
-            cp -a "$APPDIR" "$backupdir"
+            cp -a "$OVS_HOME" "$backupdir"
 
             if [ -f post-update.sh ] ; then rm -f ./post-update.sh || true ; fi
 
             HTML Unpack new files
             tar xf "$tardir/$newtarfile"
-            chown -R $OWNER:$GROUP .
+            chown -R $uid:$gid .
 
             HTML Set Permissions
             PERMS "$tardir"
 
             HTML Post Update actions
             if [ -f post-update.sh ] ; then
-                APPDIR="$APPDIR" ./post-update.sh || true
+                OVS_HOME="$OVS_HOME" ./post-update.sh || true
                 rm -f ./post-update.sh || true
             fi
             rm -f $new_version_file
@@ -151,9 +149,9 @@ UPGRADE() {
                 rm -fr -- "$backupdir.abort"
             fi
 
-            mv "$APPDIR" "$backupdir.abort"
-            mv "$backupdir" "$APPDIR"
-            chown -R $OWNER:$GROUP .
+            mv "$OVS_HOME" "$backupdir.abort"
+            mv "$backupdir" "$OVS_HOME"
+            chown -R $uid:$gid .
 
             rm -f $new_version_file
             HTML Undo Complete
@@ -165,11 +163,11 @@ UPGRADE() {
 #
 # DISABLED UNTIL DONE PROPERLY
 #
-#logdir="$APPDIR/logs"
+#logdir="$OVS_HOME/logs"
 #
 #mkdir -p "$logdir"
 #
 #UPGRADE "$@" > $logdir/upgrade.$$.log 2>&1
 #
-#chown -R $OWNER:$GROUP $logdir
+#chown -R $uid:$gid $logdir
 #

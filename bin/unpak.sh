@@ -23,7 +23,7 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 BINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
-APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
+OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
 . $BINDIR/ovsenv
 

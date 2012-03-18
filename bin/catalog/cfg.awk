@@ -106,7 +106,7 @@ f) {
 }
 
 function plugin_file(type,name) {
-    return APPDIR"/conf/"type"/catalog."type"."name".cfg";
+    return OVS_HOME"/conf/"type"/catalog."type"."name".cfg";
 }
 
 

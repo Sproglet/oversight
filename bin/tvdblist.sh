@@ -35,7 +35,7 @@ esac
 
 
 
-items="`echo "$items" | $TR a-z A-Z`"
+items="`echo "$items" | tr a-z A-Z`"
 
 ext=list
 for i in $items ; do

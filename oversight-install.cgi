@@ -1,7 +1,9 @@
 #!/bin/sh
 # $Id$ 
-INSTALL_DIR=$( echo "$0" | sed -r 's/[^/]+$//' )
-INSTALL_DIR=$( cd "$INSTALL_DIR" ; pwd )
+
+EXE=$0
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+INSTALL_DIR="$( cd "$( dirname "$EXE" )" && pwd )"
 
 appname="oversight"
 wsname="OverSight"
@@ -25,7 +27,7 @@ FIND_FILE() {
     return 1
 }
 
-unpak_nzbget_bin="`FIND_FILE nzbget /share/Apps/NZBget/bin /mnt/syb8634/bin`"
+unpak_nzbget_bin="`FIND_FILE nzbget /share/Apps/NZBget/bin /mnt/syb8634/bin /nmt/apps/bin`"
 unpak_nzbget_conf="`FIND_FILE nzbget.conf /share/Apps/NZBget/.nzbget /share/.nzbget`"
 UNPAK_CONF="$INSTALL_DIR/conf/unpak.cfg"
 CATALOG_CONF="$INSTALL_DIR/conf/catalog.cfg"
@@ -63,11 +65,9 @@ RELOCATE_CONFIGS
 
 
 if [ ! -f "$UNPAK_CONF" ] ; then
-    echo $unpak_nzbget_bin
-    echo $unpak_nzbget_conf
-        sed -ir "s@(unpak_nzbget_conf=).*@\\1'$unpak_nzbget_conf'@" "$UNPAK_CONF.example"
-        sed -ir "s@(unpak_nzbget_bin=).*@\\1'$unpak_nzbget_bin'@" "$UNPAK_CONF.example"
-        CP "$UNPAK_CONF.example" "$UNPAK_CONF"
+    sed -ir "s@(unpak_nzbget_conf=).*@\\1'$unpak_nzbget_conf'@" "$UNPAK_CONF.example"
+    sed -ir "s@(unpak_nzbget_bin=).*@\\1'$unpak_nzbget_bin'@" "$UNPAK_CONF.example"
+    CP "$UNPAK_CONF.example" "$UNPAK_CONF"
 fi
 
 # $1=config file
@@ -119,9 +119,6 @@ SKIN_INSTALL() {
         fi
 
     done
-
-    # remove bad skin
-    rm -fr "$INSTALL_DIR/templates/gaya"
 }
 
 INSTALL() {
@@ -302,7 +299,9 @@ BOUNCE_NZBGET() {
 
     # "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
 
-    su -s /bin/sh nmt -c "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
+    if ps | grep -q '[n]zbget' ; then
+        su -s /bin/sh nmt -c "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
+    fi
 }
 
 # for nmt100
@@ -322,8 +321,6 @@ case "$1" in
         PERMS
         BOUNCE_NZBGET
         LINK_GUNZIP
-        # Remove after next milestoone
-        "$INSTALL_DIR/bin/catalog.sh" CONVERT_IMAGES
         ;;
     uninstall)
         NZBGET_UNPAK_UNINSTALL

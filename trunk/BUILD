@@ -2,6 +2,12 @@
 #
 #- (windows) Install cygwin selecting make and gcc 
 #- Install toolchains.
+#
+#     C200 Source Sourcery G++ Lite 4.3 https://sourcery.mentor.com/sgpp/lite/mips/portal/release824
+#
+#
+#
+#
 #- checkout nmt-scripts along side oversight workspace.
 #- build using 
 #      ./util/build -suffix eg.

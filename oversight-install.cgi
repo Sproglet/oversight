@@ -305,6 +305,13 @@ BOUNCE_NZBGET() {
     su -s /bin/sh nmt -c "$INSTALL_DIR/bin/unpak.sh nzbget_cmd restart"
 }
 
+# for nmt100
+LINK_GUNZIP() {
+    if [ -f "$INSTALL_DIR/bin/nmt100/gzip" ] ; then 
+        ln -sf "$INSTALL_DIR/bin/nmt100/gzip" "$INSTALL_DIR/bin/nmt100/gunzip"
+    fi
+}
+
 
 case "$1" in 
     install|oversight-install)
@@ -314,6 +321,7 @@ case "$1" in
         set +x
         PERMS
         BOUNCE_NZBGET
+        LINK_GUNZIP
         # Remove after next milestoone
         "$INSTALL_DIR/bin/catalog.sh" CONVERT_IMAGES
         ;;

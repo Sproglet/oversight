@@ -139,8 +139,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
 
     args=args" --header=\"Accept-Encoding: gzip\" "
     downloadedFile=qa(file".gz");
-    #some devices have gzip not gunzip and vice versa
-    unzip_cmd="( gunzip -c "downloadedFile" || gzip -c -d "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
+    unzip_cmd="( gunzip -c "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
 
     gsub(/ /,"+",url);
 

@@ -1,11 +1,19 @@
 #!/bin/sh
 # ftp port is firewalled.
+EXE=$0
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+OVS_PARENT="$( cd "$( dirname "$EXE" )"/../.. && pwd )"
+
+d="`pwd`"
+d="`echo "$d" | sed "s;$OVS_PARENT;Apps;"`"
+echo "end path = $d"
+
 
 arch=$1 ; shift
-d=$1 ; shift
+
 
 usage() {
-    echo "$0 100|110|200 folder files"
+    echo "$0 100|110|200 files"
     exit
 }
 

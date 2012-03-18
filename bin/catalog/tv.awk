@@ -1641,11 +1641,14 @@ url,count,i,names2,regex,parts) {
 # OUT names -> hash of values = [n,1]=id [n,2]=title # to allow for multiple language titles.
 # return number of items
 function get_tvdb_names_by_letter(letter,names,\
-f,count,line,colon,dup,id,title,title_lc) {
+f,d,count,line,colon,dup,id,title,title_lc) {
 
     delete names;
     id1("get_tvdb_names_by_letter abbreviations for "letter);
-    f=APPDIR"/bin/catalog/tvdb/tvdb-"toupper(letter)".list";
+    d=APPDIR"/bin/catalog/tvdb/";
+    f=d"tvdb-"toupper(letter)".list";
+
+    exec("sh "qa(APPDIR"/bin/tvdblist.sh")" "letter);
 
     while(( getline line < f ) > 0 ) {
         colon = index(line,":");

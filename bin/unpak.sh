@@ -1,6 +1,8 @@
 #!/bin/sh
 # $Id$ 
 
+# unpak script for nzbget.
+
 nzb_launch_dir="$OLDPWD"
 #--------------------------------------------------------------------------
 set -u  #Abort with unset variables
@@ -13,115 +15,18 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #
 # The script just uses syntax/commands found on the Popcorn Hour (busybox/ash)
 # So not all commands are present (eg wc,tail) and some do not support GNU switches.
-# TODO Can delete rars after sucessful unrar if no pars or par repair done
-# (otherwise might be needed for par repair)
-# TODO Problem displaying '%' in nzbget.log test INFO and echo
-# TODO Check symlinks created if no tv match
 # TODO Test Par check with multiple mp3.
 #TODO Cope with par,zip combos. Currently it will try to repair rather than unzip-repair
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
-NMT_APP_DIR=
-NMT_APP_BIN=
-OWNER=nobody:501
-for d in /mnt/syb8634 /nmt/apps ; do
-    if [ -f $d/MIN_FIRMWARE_VER ] ; then
-        NMT_APP_DIR="$d"
-        NMT_APP_BIN="$d/bin"
-        OWNER=nmt:nmt
-    fi
-done
+#Find install folder
+EXE=$0
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+BINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
+APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
-# Fixed reference to NZBOP_APPBIN
-#VERSION=20090605-1BETA
-#   Fixed temp file location
-#VERSION=20081207-BETA07
-#   Test _brokenlog.txt and get pars right away if present.
-#   Kill unrar process as soon as errors are detected.
-#   Made re_escape more portable (tx doctorvangogh/nzbget )
-#   Works if par binary not available (reported GibberishDriftword/readynas)
-#   changed Recent to use html page.
-#   Setting to delete sample files after extracting
-#   
-#VERSION=20081009-BETA06
-#   Fixed to allow _partnnn.rar (underscore)(found by geeks @ nmt forums)
-#   Fixed to remove leading zero from 00.n% correctly when unraring (found by geeks @ nmt forums)
-#   Fixed unpack *.001 archives whether RAR or split. (retest)
-#   Removed FAKEFILES functionality
-#   Renamed par2s .1 extension to .damaged. (similar to split/rar format)
-#   Do not attempt to process Password protected rars
-#VERSION=20081009-BETA05
-#   Small bugfix detected rar parts.
-#VERSION=20081009-BETA04
-#   Small bugfix for extracting name from nfo
-#VERSION=20081009-BETA03
-#   Allow _partnnn (underscore)
-#VERSION=20081009-BETA02
-#   Also Get TV Name from NFO file if available.
-#   Small bug fixes.
-#VERSION=20081002-BETA01
-#   Added PIN:FOLDER 'hack' until Parental lock arrives.
-#   Auto Category looks at NZB name in preference to media names
-#   Added Recently Downloaded folders (using managed hard links)
-#   Added IMDB Movie categorisation.
-#   Diskspace check
-#   Checked unrar status 'All OK' in stdout.
-#   many bugfixes.
-#VERSION=20080911-01
-#   Option to pause for entire duration of script.
-#   Fixed move_rar_contents to use -e test rather than -f
-#   Fixed Par repair bug (failing to match par files to rar file)
-# VERSION=20080909-02
-#   Fixed move_rar_contents to use mv checkingfor hidden files and avoiding glob failure.
-# VERSION=20080909-01
-#   Do a par repair if there are no rar files at all (using *.par2 not *PAR2) eg for mp3 folders.
-#   Fixed subtitle rar overwriting main rar if they have the same name.
-#   Autocategory for Music and simple TV series names. 
-#   Join avi files if not joined by nzbget.
-# VERSION=20080905-03
-#   Minor Bug Fix - removed symlink to par2
-#VERSION=20080905-02
-#   Typo Bug Fix
-#VERSION=20080905-01
-#   Specify Alternative Completed location
-#   Log Estimate of time to Repair Pars and only do repairs that will be less than n minutes (configurable)
-#   Better logic to work with twin rar,par sets (eg cd1,cd2) where one rar works but the other needs pars.
-#   Better logic to work with missing start volumes.
-#   Stopped using hidden files as they prevent deleting via Remote Control
-#   Rar Parts are deleted right at the end of processing rather than during. This may help with pars that span multiple rar sets.
-#VERSION=20080902-01
-#   Better checks to ensure settings are consistent between nzbget.conf and unpak.sh.
-#   Copied logic used by nzbget to convert an NZB file name to the group/folder name.
-# v 20080901-02
-#   Bug fix - getting ids when there are square brackets or certain meta-characters in nzb name.
-# v 20080901-01
-#   Bug fixes. Settings verification.
-# v 20080831-04
-#  External Par Repair option
-# v 20080831-03
-#   Minor fixes.
-# v 20080831-01
-#   Sanity check if nzbget did not do any par processing.
-#   NZBGet , unrar paths set as options.
-#   Unpacking depth configurable.
-#   MediaCentre feature: HTML Logging for viewing in file browser mode.
-#   MediaCentre feature: Error Status via fake AVI file
-#   More bug fixes. (Rar Sanity Check)
-# v 20080828-03
-#   Added better test for ParCheck/_unbroken courtesy Hugbug.
-# v 20080828-02
-#   Fixed nested unrar bug.
-#   Added purging of old NZBs
-# v 20080828-01
-#   Does a quick sanity check on the rar file before unpacking. 
-#   added IFS= to stop read command trimming white space.
-# v 20080827-02 
-#   Fixed multiple attempts to unpack failed archives
-# v 20080827-01 
-# - Delete files only if unrar is sucessful.
-# - Cope with multiple ts files in the same folder.
-# - Deleting is on by default - as it is more careful
-# --------------------------------------------------------------------
+. $BINDIR/ovsenv
+
 # Copyright (C) 2008/9 Andrew Lord <nzbget @ lordy.org.uk>
 # 
 # Contributers:
@@ -142,8 +47,6 @@ done
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-# Notes
-# Careful using ls * if there are directories (ls -d *)
 
 #########################################################################
 # Settings section - see unpak.cfg.example
@@ -232,11 +135,7 @@ load_nzbget_settings_pre_v7() {
 
 WHICH() {
     # search path 
-    b=
-    if [ -n "$NMT_APP_BIN" ] ; then
-     b="$NMT_APP_BIN"
-     fi
-    for d in "$NMT_APP_BIN" `echo "$unpak_nzbget_bin" | sed 's/\/nzbget$//' ` `echo $PATH | sed 's/:/ /g'` ; do
+    for d in "$NMT_APP_DIR/bin" `echo "$unpak_nzbget_bin" | sed 's/\/nzbget$//' ` `echo $PATH | sed 's/:/ /g'` ; do
         if [ -f "$d/$1" ] ; then
             INFO "Using $d/$1"
             echo "$d/$1"
@@ -736,8 +635,6 @@ par_monitor() {
                     else
                         INFO "$msg"
                     fi
-
-                    #stop_screensaver
 
                     gap=0
                 fi
@@ -1276,7 +1173,6 @@ unrar_monitor() {
             kill  $unrarpid
             break
         fi
-        #stop_screensaver
     done
     DEBUG "end monitor"
 }
@@ -1352,16 +1248,6 @@ quote_file() {
 }
 
 
-# $1=file $2=re for extension
-BASENAME() {
-    echo "$1" | sed "s:.*/::;s:${2:-}\$::"
-}
-DIRNAME() {
-    #Add ./ to any path that doesnt start with / or .  
-    #Then find any character folloed by a /[^/]*$(ie ?/filename) and replace with ?
-    echo "$1" | sed -r 's|^([^/.])|./\1|;s|(.)/[^/]*$|\1|'
-}
-
 # MV a file and create any necessary path
 # $1=source $2=dest
 COPY() {
@@ -1379,33 +1265,6 @@ MVCP() {
     $1 "$2" "$3"
 }
 
-# Tee command - borrowed from http://www.gnu.org/manual/gawk/html_node/Tee-Program.html
-# 'Arnold Robbins, arnold@gnu.org, Public Domain 'and tweaked a bit.
-TEE() {
-    awk '
-BEGIN {
-  append=(ARGV[1] == "-a")
-  for(i=append+1 ; i<ARGC;i++) {
-      copy[i]=ARGV[i]
-      if (append == 0) printf "" > copy[i];
-  }
-  ARGC=1; #Force stdin
-
-}
-
-
-{
-    sub(/.*/,""); #remove chars in unrar output
-    print ; 
-    for (i in copy) { 
-        print >> copy[i];
-    }
-    system(""); # Flush all buffers
-    #fflush("");
-}
-END { for (i in copy) close(copy[i]) }
-      ' "$@"
-}
 #Special Tee command for nzbget logging. The main command pipes
 #its stdout and stderr to tee_logfiles which then sends it to
 #1. stdout (to be captured by nzbget)
@@ -1963,7 +1822,7 @@ create_resume_file() {
         arg_list "$@" > "$file"
     fi
     if [ "$is_nmt" = "Y" ] ; then
-        echo "chown -R $OWNER ." >> "$file"
+        echo "chown -R "$uid:$gid" ." >> "$file"
     fi
     chmod ugo+x "$file"
     cat "$file" | log_stream INFO
@@ -1971,7 +1830,7 @@ create_resume_file() {
 
 PERMS() {
     if [ "$is_nmt" = "Y" ] ; then
-        chown -R $OWNER "$@"
+        chown -R "$uid:$gid" "$@"
     fi
 }
 
@@ -1983,9 +1842,10 @@ run_catalog() {
         #User has a correct unpak.cfg file.
         if [ "$is_nmt" = "Y" ] ; then
 	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
-	else
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
-	fi
+	    else
+	        #JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" WRITE_NFO "$@" || true
+	    fi
         #create_resume_file "$folder/unpak.resume" "$root_folder/bin/catalog.sh" "$folder" "$@"
     else
         INFO "Catalog script not present in $root_folder"
@@ -2027,19 +1887,6 @@ single_pass() {
     unrar_all || true
 }
 
-stop_screensaver() {
-
-    DEBUG "is_nmt $is_nmt"
-
-    DEBUG "unpak_nmt_disable_screensaver $unpak_nmt_disable_screensaver"
-
-    if [ "$is_nmt" = "Y" -a "$unpak_nmt_disable_screensaver" = 1 -a -p /tmp/irkey ] ; then
-        if ! ps | egrep '([a]mp_test|[m]ono)' ; then 
-            echo > /tmp/irkey
-        fi
-    fi
-}
-
 #
 ##################################################################################
 # main SCRIPT
@@ -2066,10 +1913,7 @@ main() {
     exit_code=1
     INFO 'unpak version $Id$ '
     INFO "root_folder [$root_folder]"
-    sed 's/^/\[INFO\]/' /proc/version
-    if [ $is_nmt = "Y" ] ; then
-        sed -rn '/./ s/^/\[INFO\] nmt version /p' $NMT_APP_DIR/VERSION
-    fi
+    INFO "$os_version $nmt_version"
 
     env | grep -iv password | log_stream DEBUG env
 
@@ -2090,8 +1934,6 @@ main() {
     fi
 
     INFO " ====== Post-process Started : $NZB_NICE_NAME $(date '+%T')======"
-
-    #stop_screensaver
 
     exit_code="$POSTPROCESS_ERROR"
 
@@ -2203,12 +2045,13 @@ root_folder=$( cd $(DIRNAME "$0") ; cd .. ; pwd )
 TMP=/tmp
 chmod o+w /tmp 2>/dev/null || true
 is_nmt=N
-if [ -n "$NMT_APP_DIR" ] ; then
+
+if [  "$FAMILY" = nmt ] ; then
     is_nmt=Y
     TMP2=$root_folder/tmp
     if mkdir -p "$TMP2" ; then
         TMP="$TMP2"
-        chown $OWNER "$TMP" 2>/dev/null || true
+        chown "$uid:$gid" "$TMP" 2>/dev/null || true
     fi
 fi
 

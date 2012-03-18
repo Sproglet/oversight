@@ -1,60 +1,106 @@
 #!/bin/sh
 # Set Paths
 
-d="`echo $0 | sed 's;/[^/]*$;;'`"
+EXE=$0
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
-OVS_HOME="`cd "$d" ; cd .. ; pwd`"
+is_nmt=
+is_nmt100=
+is_nmt200=
+is_nmtpop=
+is_nmt300=
+is_dns323=
+ARCH=
+
+nmt_ver=/nmt/apps/VERSION
 
 export PATH="$OVS_HOME/bin:$PATH"
 
-is_nmt100() {
-    [ -f /mnt/syb8634/MIN_FIRMWARE_VER ]
+export ARCH
+
+check_fw() {
+    [ -f "$1" ] && egrep -q -- "$2" "$1" 
 }
-is_nmt200() {
-    [ -f /nmt/apps/MIN_FIRMWARE_VER ] 
-}
-is_nmt() {
-    is_nmt100 || is_nmt200
+check_nmt() {
+
+    file="$1"
+    patt="$2"
+    arch="$3"
+    appdir="$4"
+
+    if [ -z "$ARCH" ] ; then
+        if check_fw "$file" "$patt" ; then
+           FAMILY=nmt
+           ARCH=$arch
+           NMT_APP_DIR=$appdir
+       fi
+   fi
 }
 
-is_dns323() {
-    [ -d /ffp/bin ]
-}
+check_nmt /mnt/syb8634/MIN_FIRMWARE_VER '-40[0-5]$' nmt100 /mnt/syb8634
+check_nmt "$nmt_ver" '-4(08|11)$' nmt200 /nmt/apps
+check_nmt "$nmt_ver" '-42[01]$' nmt200 /nmt/apps # nmt300 is binary compatible with 200
 
-ARCH=
-if is_nmt100 ;then
-    ARCH=nmt100
-    uid=nmt
-    gid=nmt
-else
-    if is_nmt200 ; then
-        ARCH=nmt200
-        uid=nmt
-        gid=nmt
-    else 
-        if is_dns323 ; then
-            ARCH=dns323
-            uid=nobody
-            gid=501
-            #Odd error where globbing sometimes doesnt work when scripts called from awk
-            #eg system("mv blah/*"); 
-            #but always works from command line.
-            #see if SHELL fixes.
-            export SHELL=/ffp/bin/bash
-        fi
-    fi
+
+if [ -d /ffp/bin ] ; then
+    FAMILY=funplug
+    ARCH=funplug
 fi
-export uid gid ARCH
-export OVERSIGHT_ID="$uid:$gid"
+if [ -z "$ARCH" ] ; then
+    FAMILY=pc
+    ARCH=pc
+fi
 
+uid=`id -u -n`
+gid=`id -g`
+
+echo "family=$FAMILY arch=$ARCH"
 LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
-case "$ARCH" in
-    nmt*)
-        export PATH="$OVS_HOME/bin/$ARCH:$PATH"
+os_version=`cat /proc/version`
+
+# nmt busybox have restricted switches no restricted set of commands.
+SORT=sort
+LS=ls
+AWK="gawk --re-interval "
+tr=tr
+
+case $FAMILY in
+    nmt)
+        uid=nmt
+        gid=nmt
+        # nmt /bin/wget is buggy
+        # nmt busybox wget does not have all options
+        # nmt busybox gzip is not graceful for passthru of uncompressed data
+        export PATH="$OVS_HOME/bin:$OVS_HOME/bin/$ARCH:$PATH"
         export LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
-        ;;
+        nmt_version=`grep . /???/*/VERSION`
+
+        if [ -d /share/Apps/local/bin ] ; then
+            PATH="/share/Apps/local/bin:$PATH"
+        fi
+        if [ -d /share/bin ] ; then
+            PATH="/share/bin:$PATH"
+        fi
+        LS="busybox ls"
+        SORT="busybox sort"
+        TR="busybox tr"
+    ;;
+    funplug)
+        uid=nobody
+        gid=501
+        #Odd error where globbing sometimes doesnt work when scripts called from awk
+        #eg system("mv blah/*"); 
+        #but always works from command line.
+        #see if SHELL fixes.
+        export SHELL=/ffp/bin/bash
+    ;;
 esac
+
+export uid gid FAMILY ARCH NMT_APP_DIR BINDIR
+export OVERSIGHT_ID="$uid:$gid"
+
 
 TMP=/share/Apps/oversight/tmp
 if [ ! -d $TMP ] ; then 
@@ -64,11 +110,47 @@ fi
 # not included in nmt busybox
 # $1=file $2=re for extension
 BASENAME() {
+    basename "$i" 2>/dev/null || BASENAME2 "$1"
+}
+BASENAME2() {
     echo "$1" | sed "s:.*/::;s:${2:-}\$::"
 }
 # not included in nmt busybox
 DIRNAME() {
+    dirname "$i" 2>/dev/null || DIRNAME2 "$1"
+
+}
+DIRNAME2() {
     #Add ./ to any path that doesnt start with / or .  
     #Then find any character folloed by a /[^/]*$(ie ?/filename) and replace with ?
     echo "$1" | sed -r 's|^([^/.])|./\1|;s|(.)/[^/]*$|\1|'
+}
+
+
+# Tee command - borrowed from http://www.gnu.org/manual/gawk/html_node/Tee-Program.html
+# 'Arnold Robbins, arnold@gnu.org, Public Domain 'and tweaked a bit.
+TEE() {
+    awk '
+BEGIN {
+  append=(ARGV[1] == "-a")
+  for(i=append+1 ; i<ARGC;i++) {
+      copy[i]=ARGV[i]
+      if (append == 0) printf "" > copy[i];
+  }
+  ARGC=1; #Force stdin
+
+}
+
+
+{
+    sub(/.*/,""); #remove chars in unrar output
+    print ; 
+    for (i in copy) { 
+        print >> copy[i];
+    }
+    system(""); # Flush all buffers
+    #fflush("");
+}
+END { for (i in copy) close(copy[i]) }
+      ' "$@"
 }

@@ -21,7 +21,8 @@ APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
 APPDIR="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
 . $APPBINDIR/ovsenv
-echo NMT_APP_DIR=$NMT_APP_DIR
+
+echo "[INFO] family=$FAMILY arch=$ARCH"
 
 NMT=0
 

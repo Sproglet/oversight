@@ -112,7 +112,7 @@ url,json,jsonret,i,num,langs,ret,minfo2,ln,name) {
         url="http://api.themoviedb.org/3/movie/"id"?api_key="g_api_tmdb"&language="langs[i];
 
         jsonret = fetch_json(url,"json",json);
-        dump(0,"themoviedb3",json);
+        #dump(0,"themoviedb3",json);
         if (jsonret == 0) {
 
             ERR("parsing results");
@@ -191,7 +191,7 @@ countries,num,i,j,url,rel,cert,country_key) {
     } else if ("status_code" in rel ) {
         ERR(" themoviedb release info : "rel["status_message"]);
     } else {
-        dump(0,"releases",rel);
+        #dump(0,"releases",rel);
         for( i = 1 ; i <= num ; i++ ) {
             INF("looking for release in "countries[i]);
             for(j = 1 ; (country_key = "countries#"j":iso_3166_1" )  in rel ; j++ ) {
@@ -210,15 +210,16 @@ countries,num,i,j,url,rel,cert,country_key) {
 
 function tmdb_config(key,\
 url) {
-    if (!("images" in g_tmdb_config)) {
+    if (g_tmdb_config["@state"] != 1) {
         url="http://api.themoviedb.org/3/configuration?api_key="g_api_tmdb;
         if (fetch_json(url,"json",g_tmdb_config) == 0) {
             ERR("Error getting TMDB configuration");
         } else {
             dump(0,"themoviedb3 config",g_tmdb_config);
-            g_tmdb_config["poster_path"]=g_tmdb_config["images:base_url"]"/"g_tmdb_config["images:poster_sizes#5"];
-            g_tmdb_config["backdrop_path"]=g_tmdb_config["images:base_url"]"/"g_tmdb_config["images:backdrop_sizes#3"];
-            g_tmdb_config["profile_path"]=g_tmdb_config["images:base_url"]"/"g_tmdb_config["images:profile_sizes#3"];
+            g_tmdb_config["poster_path"]=g_tmdb_config["images:base_url"]"/w500"; #g_tmdb_config["images:poster_sizes#5"];
+            g_tmdb_config["backdrop_path"]=g_tmdb_config["images:base_url"]"/w1280"; #g_tmdb_config["images:backdrop_sizes#3"];
+            g_tmdb_config["profile_path"]=g_tmdb_config["images:base_url"]"/h632"; #g_tmdb_config["images:profile_sizes#3"];
+            g_tmdb_config["@state"]=1;
         }
     }
     return g_tmdb_config[key];

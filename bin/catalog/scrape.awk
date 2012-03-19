@@ -10,7 +10,7 @@ BEGIN {
 # IN/OUT minfo - Movie info
 # IN imdbid - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_page(text,title,year,runtime,director,poster,minfo,imdbid,\
+function find_movie_page(text,title,year,director,poster,minfo,imdbid,\
 i,err,minfo2,num,locales) {
 
     err = 1;
@@ -18,7 +18,7 @@ i,err,minfo2,num,locales) {
 
     num = get_locales(locales);
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_locale(locales[i],text,title,year,runtime,director,poster,minfo2,imdbid);
+        err=find_movie_by_locale(locales[i],text,title,year,director,poster,minfo2,imdbid);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -53,7 +53,7 @@ ret) {
 # IN imdbid - if not blank used to validate page
 # IN orig_title - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_by_locale(locale,text,title,year,runtime,director,poster,minfo,imdbid,orig_title,\
+function find_movie_by_locale(locale,text,title,year,director,poster,minfo,imdbid,orig_title,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
@@ -63,7 +63,7 @@ i,num,sites,minfo2,err,searchhist) {
 
         num=split(g_settings["locale:catalog_locale_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_locale(sites[i],locale,text,title,year,runtime,director,poster,minfo2,imdbid,orig_title,searchhist);
+            err=find_movie_by_site_locale(sites[i],locale,text,title,year,director,poster,minfo2,imdbid,orig_title,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -146,7 +146,7 @@ function get_id_from_url(domain,url) {
 
 # Convert all links to  a standard form http:/domain/somepath..ID
 function clean_links(num,matches,domain,\
-ret,i,url,id,dbg,tmp) {
+ret,i,url,id,tmp) {
 
     ret = 0;
     #dbg = (index(url,"easya") != 0); # "xx"
@@ -181,7 +181,7 @@ ret,i,url,id,dbg,tmp) {
 # IN orig_title - if not blank used to validate page
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_locale(site,locale,text,title,year,runtime,director,poster,minfo,imdbid,orig_title,searchhist,\
+function find_movie_by_site_locale(site,locale,text,title,year,director,poster,minfo,imdbid,orig_title,searchhist,\
 minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) {
 
     err = 1;
@@ -218,7 +218,7 @@ minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) 
                 url = matches[i];
 
                 set_visited_url(url,searchhist);
-                err = scrape_movie_page(text,title,year,runtime,director,poster,url,locale,url_domain,minfo2,imdbid,orig_title);
+                err = scrape_movie_page(text,title,year,director,poster,url,locale,url_domain,minfo2,imdbid,orig_title);
                 if (!err) {
                     minfo_merge(minfo,minfo2,url_domain);
                     break;
@@ -387,7 +387,6 @@ c) {
 # IN text - text so search for. May not necessarily be exact title eg from filename.
 # IN title - movie title
 # IN year 
-# IN runtime of movie in minutes (used for validation - mostly ignore for the time being - movies like Leon have varied runtimes)
 # IN director - Director surname - may have problems matching  other alphabets. Russian / Greek
 # IN url - page to scrape
 # IN locale - eg en_US, fr_FR
@@ -396,7 +395,7 @@ c) {
 # IN imdbid - if not blank used to validate page
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(text,title,year,runtime,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
+function scrape_movie_page(text,title,year,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
 f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng,tmp) {
 
     err = 0;
@@ -736,12 +735,12 @@ ret,similar_threshold) {
     }
     return ret;
 }
-function check_runtime(runtime,minfo,\
-ret) {
-    ret = 1;
-
-    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
-    DEBUG("check_runtime disabled");
+#function check_runtime(runtime,minfo,\
+#ret) {
+#    ret = 1;
+#
+#    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
+#    DEBUG("check_runtime disabled");
 #    if (runtime && minfo["mi_runtime"]) {
 #
 #        ret = (runtime == minfo["mi_runtime"]);
@@ -752,16 +751,16 @@ ret) {
 #            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
 #        }
 #    }
+#
+#    return ret;
+#}
 
-    return ret;
-}
-
-function check_director(runtime,minfo,\
-ret) {
-    ret = 1;
-
-    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
-    DEBUG("check_director disabled");
+#function check_director(runtime,minfo,\
+#ret) {
+#    ret = 1;
+#
+#    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
+#    DEBUG("check_director disabled");
 #    if (runtime && minfo["mi_runtime"]) {
 #
 #        ret = (runtime == minfo["mi_runtime"]);
@@ -772,9 +771,9 @@ ret) {
 #            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
 #        }
 #    }
-
-    return ret;
-}
+#
+#    return ret;
+#}
 
 #
 # This function moves src=url or href=url  outside of the tag.
@@ -1045,7 +1044,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
             max_people = g_settings["catalog_max_"mode"s"];
             if (!max_people) max_people = 3;
-            get_names(domain,fragment,minfo,mode,max_people,pagestate,namestate);
+            get_names(domain,fragment,minfo,mode,max_people,namestate);
 
         } else if ( mode == "title" ) {
 
@@ -1523,7 +1522,7 @@ i,num,locales,minfo2) {
             for(i = 1 ; i <= num ; i++) {
 
                 delete minfo2;
-                if (scrape_movie_page("","","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
+                if (scrape_movie_page("","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
                     if (minfo2["mi_certrating"]) {
                         minfo2["mi_certcountry"] = substr(locales[i],4);
                     }
@@ -1580,7 +1579,7 @@ ret,remakes,connections) {
 # The input should have been cleaned using reduce_markup this will remove homst html markup
 # but convert <a href="some_url" >text</a> to href="some_url"@label@some label@label@
 # 
-function get_names(domain,text,minfo,role,maxnames,pagestate,namestate,\
+function get_names(domain,text,minfo,role,maxnames,namestate,\
 csv,total,i,num){
     # split by commas - this will fail if there is a comma in the URL
     if (index(text,",")) {
@@ -1590,7 +1589,7 @@ csv,total,i,num){
         csv[1] = text;
     }
     for(i = 1 ; i <= num ; i++ ) {
-        total += get_names_by_comma(domain,csv[i],minfo,role,maxnames,pagestate,namestate);
+        total += get_names_by_comma(domain,csv[i],minfo,role,maxnames,namestate);
     }
     return total;
 }
@@ -1607,7 +1606,7 @@ csv,total,i,num){
 
 # The input should have been cleaned using reduce_markup this will remove homst html markup
 # but convert <a href="some_url" >text</a> to href="some_url"@label@some label@label@
-function get_names_by_comma(domain,text,minfo,role,maxnames,pagestate,namestate,\
+function get_names_by_comma(domain,text,minfo,role,maxnames,namestate,\
 dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
     if (role ) {

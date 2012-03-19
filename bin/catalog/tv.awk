@@ -66,7 +66,7 @@ details,line,ret,name,i,start,end) {
            # The assumption is the people abbreviate file names but not folder names.
            more_info[1]=(path_parts == 1); # enable abbrevation scraping later only at filename level
 
-            if (extractEpisodeByPatterns(minfo,plugin,line,details,allow_720)==1) {
+            if (extractEpisodeByPatterns(plugin,line,details,allow_720)==1) {
 
 
                 if (details[TITLE] == "" ) {
@@ -199,7 +199,7 @@ terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
     return ret;
 }
 # If Plugin != "" then it will also check episodes by date.
-function extractEpisodeByPatterns(minfo,plugin,line,details,allow_720,\
+function extractEpisodeByPatterns(plugin,line,details,allow_720,\
 ret,p,pat,i,parts,sreg,ereg,sep,\
 season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
@@ -267,7 +267,7 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
     for(i = 1 ; p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
-            ret = extractEpisodeByDates(minfo,plugin,line,details);
+            ret = extractEpisodeByDates(plugin,line,details);
         } else {
             split(pat[i],parts,"@");
             #dump(0,"epparts",parts);
@@ -422,7 +422,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
     return ret;
 }
 
-function extractEpisodeByDates(minfo,plugin,line,details,\
+function extractEpisodeByDates(plugin,line,details,\
 date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info,total,i) {
 
     result=0;
@@ -1328,7 +1328,7 @@ bestTitles,keep,i,num,d,threshold) {
 
 
 function searchTvDbTitles(plugin,minfo,title,\
-tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt,u) {
+tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
 
     id1("searchTvDbTitles");
     imdb_id = imdb(minfo);
@@ -1349,6 +1349,7 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt,u) {
         }
     }
 
+#    var u
 #    if (tvdbid == "") {
 #        u = searchHeuristicsForImdbLink(searchHeuristicsForImdbLink(title,3));
 #        INF("XXXX new search here = "u);

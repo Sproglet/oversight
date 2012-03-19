@@ -138,7 +138,7 @@ year,text) {
                             if (!bestUrl) {
                                 # Still not found - try searching local sites sirectly.
 
-                                if (find_movie_page(text,title,year,"","","",minfo,"") == 0) {
+                                if (find_movie_page(text,title,year,"","",minfo,"") == 0) {
                                     bestUrl = minfo["mi_url"];
                                     INF("Found at "bestUrl);
                                 }

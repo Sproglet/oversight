@@ -8,7 +8,7 @@
 EXE="${BASH_SOURCE:-}"
 if [ -z "$EXE" ] ; then
     # look for any file this process has open called ovsenv
-    EXE="`ls -l /proc/$$/fd | awk '/ovsenv$/ { sub(/.* -> /,"") ; print }' `"
+    EXE="`ls -l /proc/$$/fd 2>/dev/null | awk '/ovsenv$/ { sub(/.* -> /,"") ; print }' `"
 fi
 
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done

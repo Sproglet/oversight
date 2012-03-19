@@ -15,7 +15,7 @@ uid=nmt
 gid=nmt
 
 input="$1"
-output="`DIRNAME "$1"`/`BASENAME "$1" .jpg`.boxset.jpg"
+output="`dirname "$1"`/`basename "$1" .jpg`.boxset.jpg"
 
 icon_base="$OVS_HOME/templates/default/images/boxset/boxset"
 

@@ -72,7 +72,7 @@ code,t,enc,f8bit) {
             } else {
                 ERR("iconv "enc" to utf-8 failed");
             }
-            rm(f8bit);
+            rm(f8bit,1);
         } 
     }
 
@@ -94,7 +94,7 @@ function enc_close(f) {
     if (g_encoding[f] == "utf-8") {
         if (is_file(ficonv(f))) {
             close(ficonv(f));
-            rm(ficonv(f));
+            rm(ficonv(f),1);
         }
     }
     delete g_encoding[f];

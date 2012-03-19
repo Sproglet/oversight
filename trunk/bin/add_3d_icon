@@ -15,7 +15,7 @@ uid=nmt
 gid=nmt
 
 input="$1"
-output="`DIRNAME "$1"`/`BASENAME "$1" .jpg`.3d.jpg"
+output="`dirname "$1"`/`basename "$1" .jpg`.3d.jpg"
 
 icon_base="$OVS_HOME/templates/default/images/3d/3d"
 

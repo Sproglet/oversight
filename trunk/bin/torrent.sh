@@ -1,6 +1,12 @@
 #!/bin/sh -eu
 # $Id$ 
 
+EXE=$0
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
+
+. $APPBINDIR/ovsenv
+
 load_settings() {
 
     cfg="$1"
@@ -282,17 +288,7 @@ case "${1:-}" in
         ;;
 esac
 
-DIRNAME() {
-    if ! dirname "$1" 2>/dev/null ; then
-        #Add ./ to any path that doesnt start with / or .  
-        #Then find   (.)/[^/]*$ and replace with \1 
-        # eg /a/b/c/d.e find c/d.e replace with c
-        # then emit a/b/c
-        echo "$1" | sed -r 's|^([^/.])|./\1|;s|(.)/[^/]*$|\1|'
-    fi
-}
-
-. `DIRNAME $0`/torrent_plugin_$g_torrent_app.sh
+. `dirname $0`/torrent_plugin_$g_torrent_app.sh
 
 case "${1:-}" in
     "")

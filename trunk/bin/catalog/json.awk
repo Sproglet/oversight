@@ -3,6 +3,7 @@ function fetch_json(url,label,out,\
 f,line,ret,json) {
     ret = 0;
     f=getUrl(url,label".json",1);
+    INF("DELETE json file "f);
     if (f) { 
         FS="\n";
         while(enc_getline(f,line) > 0) {
@@ -63,9 +64,8 @@ ch,i) {
     context["pos"] = i; 
 }
 
-function currch(context,len) {
-    if (!len) len=1;
-    return substr(context["in"],context["pos"],len);
+function currch(context) {
+    return substr(context["in"],context["pos"],1);
 }
 
 function advance(context,ch,optional) {
@@ -79,24 +79,29 @@ function advance(context,ch,optional) {
 }
 
 function json_parse_string(context,\
-q,b,part,ch) {
+q,b,part,ch,ctx_string,ctx_pos,ctx_in,err) {
 
-    context["string"] = "";
-
+    ctx_string = context["string"] = "";
 
     if (advance(context,"\"")) {
+        ctx_pos = context["pos"];
+        ctx_in = context["in"];
         while(1) {
-            q = index(substr(context["in"],context["pos"]),"\"");
+            # get next quote
+            q = index(substr(ctx_in,ctx_pos),"\"");
             if (q == 0) {
-                json_err(context,"missing end quote");
+                err="missing end quote";
                 break;
             } 
 
-            part = substr(context["in"],context["pos"],q-1);
+            part = substr(ctx_in,ctx_pos,q-1);
+
+            #if string contains backtick check it is not a quote
             b = index(part,"\\");
             if (b == 0) {
-                context["string"] = context["string"] part;
-                context["pos"] += q;
+                # no quotes - done
+                ctx_string = ctx_string part;
+                ctx_pos += q;
                 context["type"] = "string";
                 break;
             } else {
@@ -104,9 +109,15 @@ q,b,part,ch) {
                 if (ch == "t" ) ch = "\t";
                 else if (ch == "n" ) ch = "\n";
 
-                context["string"] = context["string"] substr(context["in"],context["pos"],b-1) ch;
-                context["pos"] += b+1;
+                ctx_string = ctx_string substr(ctx_in,ctx_pos,b-1) ch;
+                ctx_pos += b+1;
             }
+        }
+        context["string"] = ctx_string;
+        context["pos"] = ctx_pos;
+        context["in"] = ctx_in;
+        if (err) {
+            json_err(context,err);
         }
     }
 }

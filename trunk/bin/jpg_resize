@@ -28,9 +28,10 @@ old_width=`rdjpgcom -verbose "$input" | awk '/^JPEG image is/ { w=$4 ; sub(/w/,"
 output=`echo "$input" | sed "s/\.jpg$/.$tv_mode.jpg/"`
 
 #scale it
-echo djpeg -scale $new_width/$old_width "$input to $output"
 if [ $new_width == $old_width ] ; then
+    echo "linking $input to $output"
     ln "$input" "$output"
 else
+    echo "djpeg -scale $new_width/$old_width $input to $output"
     djpeg -scale $new_width/$old_width "$input" | cjpeg > "$output"
 fi

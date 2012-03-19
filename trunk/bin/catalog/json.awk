@@ -3,7 +3,6 @@ function fetch_json(url,label,out,\
 f,line,ret,json) {
     ret = 0;
     f=getUrl(url,label".json",1);
-    INF("DELETE json file "f);
     if (f) { 
         FS="\n";
         while(enc_getline(f,line) > 0) {

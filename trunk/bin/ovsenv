@@ -58,8 +58,6 @@ LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
 os_version=`cat /proc/version`
 
-AWK="gawk --re-interval "
-
 nmt_version=
 
 PATH="$OVS_HOME/bin:$PATH"

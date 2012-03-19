@@ -26,9 +26,6 @@ echo "[INFO] family=$FAMILY arch=$ARCH"
 
 NMT=0
 
-AWK=gawk
-#AWK="$BINDIR/gawk --posix "
-
 set +e
 
 PERMS() {
@@ -205,6 +202,7 @@ catalog() {
     # use index before match
     # clear arrays using split("",array,"")
 
+    AWK="gawk --re-interval "
     awk_prg="$AWK "
     for f in $OVS_HOME/bin/catalog/*.awk ; do
         awk_prg="$awk_prg -f $f"

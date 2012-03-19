@@ -1327,7 +1327,7 @@ char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,c
 // Used for poster and fanart links.
 char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
-    assert(alt_text);
+    if (alt_text == NULL) alt_text = "????";
     assert(attr);
 
     char *result;

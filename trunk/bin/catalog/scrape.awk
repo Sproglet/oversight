@@ -1475,16 +1475,16 @@ i,locales,tmp,ret,lng,num) {
 }
 # get unique countries from locales
 function get_countries(countries,\
-i,locales,tmp,ret,c) {
-    ret = get_locales(locales);
+i,locales,tmp,ret,c,num) {
+    num = get_locales(locales);
     for(i in locales ) { 
         if (match(locales[i],"_")) {
             c = substr(locales[i],RSTART+1);
-            tmp[c] = 1;
+            if (!(c in tmp)) {
+                tmp[c] = 1;
+                countries[++ret] = c;
+            }
         }
-    }
-    for ( i in tmp ) {
-        countries[++ret] = i;
     }
     return ret;
 }

@@ -119,6 +119,9 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     if (referer != "") {
         args=args" --referer=\""referer"\" ";
     }
+    if (index(url,"http://api.themoviedb.org/3")) {
+        args=args" --header=\"Accept: application/json\" ";
+    }
 
     # Some domains need cookie tracking to bypass advertising.
     old_cf = cookie_file(url);

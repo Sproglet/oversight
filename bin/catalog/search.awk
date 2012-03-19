@@ -611,10 +611,7 @@ function adjustTitle(minfo,newTitle,source) {
     best_source(minfo,"mi_title",clean_title(newTitle),source);
 }
 
-# TODO plot must be weighted be language match
-function field_priority(field,source,value,\
-score) {
-
+function init_priority() {
     if (!("default" in gPriority)) {
         #initialise
         gPriority["default"]=0;
@@ -632,7 +629,6 @@ score) {
         #however themoviedb title is prefered for localisation.
         gPriority["mi_title","imdb"]=60;
         gPriority["mi_title","themoviedb"]=65;
-
         gPriority["mi_title","thetvdb"]=70;
 
         gPriority["mi_orig_title","themoviedb"]=60; 
@@ -640,12 +636,12 @@ score) {
         gPriority["mi_poster","imdb"]=40;
         gPriority["mi_poster","motech"]=50;
         gPriority["mi_poster","thetvdb"]=60;
-        gPriority["mi_poster","themoviedb"]=60;
-        gPriority["mi_poster","local"]=99;
+        gPriority["mi_poster","local"]=98;
+        gPriority["mi_poster","themoviedb"]=99; # increased now that api v3 has localised poster
 
         gPriority["mi_fanart","thetvdb"]=60;
-        gPriority["mi_fanart","themoviedb"]=60;
-        gPriority["mi_fanart","local"]=99;
+        gPriority["mi_fanart","local"]=98;
+        gPriority["mi_fanart","themoviedb"]=99; # increased now api v3 has localised posters
 
         gPriority["mi_rating","themoviedb"]=20;
         gPriority["mi_rating","thetvdb"]=20;
@@ -660,6 +656,8 @@ score) {
         gPriority["mi_category","tvrage"]=70;
         gPriority["mi_category","imdb"]=60;
 
+        gPriority["mi_certrating","themoviedb"]=70;
+        gPriority["mi_certcountry","themoviedb"]=70;
         gPriority["mi_certrating","imdb"]=60;
         gPriority["mi_certcountry","imdb"]=60;
 
@@ -667,6 +665,16 @@ score) {
         gPriority["mi_genre","thetvdb"]=40;
         gPriority["mi_genre","imdb"]=50;
     }
+}
+function minfo_field_priority(minfo,field) {
+    return field_priority(field,minfo[field"_source"],minfo[field]);
+}
+
+# TODO plot must be weighted be language match
+function field_priority(field,source,value,\
+score) {
+
+    init_priority();
 
     score = 0;
 

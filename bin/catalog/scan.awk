@@ -757,9 +757,11 @@ cat,minfo2,locales,id) {
                                        local_search = 1;
                                    }
                                }
-                               if (g_settings["catalog_get_local_posters"] != "never" ) {
-                                   INF("Checking local posters");
-                                   local_search = 1;
+                               if (gPriority["mi_poster","local"] > minfo_field_priority(minfo,"mi_poster")) {
+                                   if (g_settings["catalog_get_local_posters"] != "never") {
+                                       INF("Checking local posters");
+                                       local_search = 1;
+                                   }
                                }
                            }
 

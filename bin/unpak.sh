@@ -23,7 +23,6 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 BINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
-OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
 . $BINDIR/ovsenv
 
@@ -357,7 +356,7 @@ get_paused_ids() {
 
     #Was using NZB_NICE_NAME but arg_download_dir may be better.
     ids="$NZB_NICE_NAME"
-    ids=`BASENAME "$arg_download_dir" ""`
+    ids=`basename "$arg_download_dir" ""`
     ids=$(nzbget_cmd -L | sed 's/ / */;s,/,*/,' | fgrep "*$ids*/" | sed -n '/[Pp][Aa][Rr]2\>.*paused)$/ s/^\[\([0-9]*\)\].*/\1/p')
     echo $ids | sed 's/ /,/g'
 }
@@ -1032,8 +1031,8 @@ unrar_one() {
         state=$(get_rar_state "$rarfile")
 
         DEBUG "RARFILE $rarfile STATE = $state"
-        dirname=$(DIRNAME "$rarfile")
-        rarname=$(BASENAME "$rarfile" "")
+        dirname=$(dirname "$rarfile")
+        rarname=$(basename "$rarfile" "")
 
         case "$dirname" in
             .) is_toplevel_rar=1 ; is_inner_rar=0 ;;
@@ -1098,7 +1097,7 @@ unrar_one() {
                     # This only works if rar segments are in order
                     WARNING "$rarfile does not appear to be a rar archive. Joining using cat"
                     mkdir -p "$dirname/$unrar_tmp_dir";
-                    target="$dirname/$unrar_tmp_dir/`BASENAME "$rarfile" '\.0*1'`"
+                    target="$dirname/$unrar_tmp_dir/`basename "$rarfile" '\.0*1'`"
                     if [ -f "$target" ] ; then
                         ERROR "Target already exists. <$target>"
                     else
@@ -1387,7 +1386,7 @@ tidy_nzb_files() {
     fi
     if [ $unpak_max_nzbfile_age -gt 0 ] ; then
         #-exec switch doesnt seem to work
-        d=$(DIRNAME "$arg_nzb_file")
+        d=$(dirname "$arg_nzb_file")
         INFO Deleting NZBs older than $unpak_max_nzbfile_age days from $d
         find "$d" -name \*$finished_nzb_ext -mtime +$unpak_max_nzbfile_age > "$gTmpFile.nzb"
         log_stream DETAIL "old nzb" < "$gTmpFile.nzb"
@@ -1761,7 +1760,7 @@ auto_category_from_newsgroups_inside_nzb() {
 
 relocate() {
 
-    b=`BASENAME "$arg_download_dir" ""`
+    b=`basename "$arg_download_dir" ""`
 
 
     if [ -n "$arg_category" ] ; then
@@ -1919,7 +1918,7 @@ main() {
 
     log_args "$@"
 
-    NZB_NICE_NAME=$(BASENAME "$arg_download_dir" "")
+    NZB_NICE_NAME=$(basename "$arg_download_dir" "")
 
     if [ $mode = nzbget ] ; then
         check_settings || exit 1
@@ -2036,9 +2035,9 @@ main() {
     exit_with $exit_code
 }
 
-script_name=$(BASENAME "$0" "")
+script_name=$(basename "$0" "")
 
-root_folder=$( cd $(DIRNAME "$0") ; cd .. ; pwd )
+root_folder=$( cd $(dirname "$0") ; cd .. ; pwd )
 
 ##################################################################################
 # something sometimes changes /tmp permissions so only root can write
@@ -2134,7 +2133,7 @@ case $mode in
             arg_nzb_state="$5"  
             arg_par_fail="$6" 
             arg_category="${7:-}"
-            log_name="`BASENAME "$arg_download_dir" | sed -r 's/[^A-Za-z0-9]+/./g'`.$$"
+            log_name="`basename "$arg_download_dir" | sed -r 's/[^A-Za-z0-9]+/./g'`.$$"
         fi
 esac
 

@@ -370,7 +370,7 @@ function set_permissions(shellArg) {
 }
 
 function capitalise(text,\
-i,rtext,rstart,words,wcount,s,w2) {
+i,words,wcount,s,w2) {
 
     wcount= split(tolower(text),words," ");
     text = "";

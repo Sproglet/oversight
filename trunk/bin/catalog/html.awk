@@ -106,9 +106,9 @@ function get_encoding(f,\
 enc,line,code,n) {
 
 
-    if (is_file(ficonv(f))) {
+    if (index(f,".json")) {
         enc = "utf-8";
-    } else if (index(f,".json")) {
+    } else if (is_file(ficonv(f))) {
         enc = "utf-8";
     } else {
         while ( enc == "" && n < 20 &&  (code = ( getline line < f )) > 0) {

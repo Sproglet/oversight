@@ -35,15 +35,6 @@ num,locales,i,ret) {
     return ret;
 }
 	
-function fetch_ijson_plot(id,minfo,\
-json,ret) {
-    
-    fetch_ijson("title/plot","t-const="id,json);
-    if ( "xxxx" in json) {
-    }
-    return ret;
-}
-
 function fetch_ijson_details(id,minfo,\
 num,locales,i,ret) {
 
@@ -62,7 +53,7 @@ num,locales,i,ret) {
     return ret;
 }
 function fetch_ijson_details_by_locale(id,locale,minfo,\
-json,cast,ret,i,tag,minfo2) {
+json,ret,i,tag,minfo2) {
     
     id1("fetch_ijson_details_by_locale "id","locale);
     if (id && g_has_ijson) { #TODO fix disable of ijson
@@ -105,6 +96,7 @@ json,cast,ret,i,tag,minfo2) {
                     set_ijson_people(json,"data:cast_summary",minfo2,"actor");
 
     #                if (0) { #~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # var cast
     #                    #get cast
     #                    fetch_ijson("title/full-credits","t-const="id,cast);
     #                    for(i = 1 ; ; i++ ) {

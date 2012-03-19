@@ -1052,8 +1052,7 @@ function unit1(label,value) {
     fflush();
 }
 
-function unit(doit,\
-minfo,i,ulang) {
+function unit(doit) {
     if (doit) {
         DIV0("BEGIN UNIT TEST");
         get_locales(g_tmp);
@@ -1107,6 +1106,7 @@ minfo,i,ulang) {
 
         unit1("preserve5",(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'") == " img=\"http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif\" <img " ));
 
+        # var i,ulang,minfo
 #        split("en",ulang,",");
         #find_movie_page("Matrix Reloaded",2003,138,"Wachowski",minfo);
         #dump(0,"moviepage",minfo);

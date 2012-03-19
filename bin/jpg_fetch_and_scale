@@ -47,56 +47,78 @@ jpg_resize() {
     #for example we know that going from hd to sd is roughly 1/2 so we first scale by that
     initial_scale="$3"
 
+    doit=1
     o=
     boxset=
+    w=
+    h=
     case "$output" in 
 
-        */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=90 ;;
+        */_fa/*.hd.jpg) w=1280 ; q=90 ;; # h=720 this is a standard width at themoviedb - no need to convert those
 
-        */_fa/*.sd.jpg) o="-width=685 -height=460" ; q=90 ;;
+        */_fa/*.sd.jpg) w=685 ; h=460 ; q=90 ;;
 
-        */_fa/*.pal.jpg)
-            # Pal is created from the SD but we need to maintain the quality
-            o="-width=685 -height=542" ; q=90 ;;
+        */_fa/*.pal.jpg) w=685 ; h=542 ; q=90 ;; # Pal is created from the SD but we need to maintain the quality
 
-        */_J/*.thumb.jpg) o="-width=200" ; q=90 ; boxset=1 ;;
+        */_J/*.thumb.jpg) w=200 ; q=90 ; boxset=1 ;;
 
-        */_J/*.jpg) o="-width=400" ; q=90 ;;
+        */_J/*.jpg) w=500 ; q=90 ;; # this is a standard width at themoviedb - no need to convert those
 
-        */_A/*.jpg)
-            #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px
-            o="-height=400" ; q=85 ;;
+        */_A/*.jpg) h=400 ; q=85 ;; #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px
 
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac
+    if [ -n "$w" ] ; then o="-width=$w " ; fi
+    if [ -n "$h" ] ; then o="-height=$h " ; fi
 
-    #Could use a pipe but input may = output so use tmp file.
-    # We always resize even if the dimensions are unchanged because it makes file size much smaller
-    # INFO "$o to $output" 
-    # Remove it first in case it was a hard link to the original file.
-    tmpjpg=`thread_prefix`.jpg
-    tmppnm=`thread_prefix`.pnm
-
-    # we do the usual djpeg | pnmscale | cjpeg  but keep the pnm files so we can reuse them for other sizes.
-    # also input and output may be the same so we use intermediate file rather than pipes.
-    # this may also give better performance on embedded machines.
-    delete_input_pnm=0
-    if [ ! -e "$input.pnm" ] ; then
-        djpeg -dct fast -scale $initial_scale "$input"  > "$input.pnm"
-        delete_input_pnm=1
+    # Check if width is already correct - note tvdb currently serves 1280w fanart and 500 posters s
+    if [ -n "$w" -a -z "$h" ] ; then
+        w2=`jpgwidth "$input"`;
+        INFO "compare widths required=$w vs actual=$w2"
+        if [ "$w2" = "$w" ] ; then
+            doit=0
+        fi
     fi
-    if pnmscalefixed $o "$input.pnm" > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
-       cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
-        perms "$output"
-        if [ -n "$boxset" ] ; then
-            "$OVS_HOME/bin/add_boxset_icon" "$output" 
+
+    if [ "$doit" = 0 ] ; then
+        INFO "resize not needed for $output"
+        if [ "$input" != "$output" ]; then
+            cp "$input" "$output"
         fi
     else
-        ERROR "Unable to generate $output from $input using $o"
+        INFO "resizing to $output"
+        #Could use a pipe but input may = output so use tmp file.
+        # We always resize even if the dimensions are unchanged because it makes file size much smaller
+        # INFO "$o to $output" 
+        # Remove it first in case it was a hard link to the original file.
+        tmpjpg=`thread_prefix`.jpg
+        tmppnm=`thread_prefix`.pnm
+
+        # we do the usual djpeg | pnmscale | cjpeg  but keep the pnm files so we can reuse them for other sizes.
+        # also input and output may be the same so we use intermediate file rather than pipes.
+        # this may also give better performance on embedded machines.
+        delete_input_pnm=0
+        if [ ! -e "$input.pnm" ] ; then
+            djpeg -dct fast -scale $initial_scale "$input"  > "$input.pnm"
+            delete_input_pnm=1
+        fi
+        if pnmscalefixed $o "$input.pnm" > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \
+           cjpeg -dct fast -quality $q "$output.pnm" >  $tmpjpg && rm -f "$output" && mv "$tmpjpg" "$output"  ; then
+            perms "$output"
+            if [ -n "$boxset" ] ; then
+                "$OVS_HOME/bin/add_boxset_icon" "$output" 
+            fi
+        else
+            ERROR "Unable to generate $output from $input using $o"
+        fi
+        if [ $delete_input_pnm == 1 ] ; then
+            rm -f "$input.pnm"
+        fi
     fi
-    if [ $delete_input_pnm == 1 ] ; then
-        rm -f "$input.pnm"
-    fi
+}
+
+jpgwidth() {
+    rdjpgcom -verbose "$1" | awk '/image is/ { match($0,"[0-9]+w"); print substr($0,RSTART,RLENGTH-1); } '
 }
 
 
@@ -144,7 +166,7 @@ resize_img() {
                 jpg_resize "$base.hd.jpg" "$base.sd.jpg" "1/2"
             fi
             if [ $get_pal -eq 1 ] ; then
-                jpg_resize "$base.sd.jpg" "$base.pal.jpg" "1/1"
+                jpg_resize "$base.hd.jpg" "$base.pal.jpg" "1/2"
             fi
             ;;
         poster)

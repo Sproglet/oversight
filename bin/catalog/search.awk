@@ -148,54 +148,82 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
-u,s,pages,subtotal,ret,i,matches,m,src) {
+u,s,pages,subtotal,ret,i,matches,m,src,use_yahoo,target) {
 
+
+    ############################################################################
+    ## Now Yahoo is powered by BING the search results are the same. So there
+    ## is no easy way to check for false positives any more.
+    ## The previous logic of search Yahoo & Bing for agreeemnt, if not letting Google decide no longer holds.
+    ## Google itself can supply great results but it will lock us out fast.
+    ## Instead we now just use Bing mobile. / or yahoo - doesnt matter which.
+    ## If no results then use google.
+
+    ## Update: Although yahoo is powered by Bing, it appears to be filtering results.
+    ## So existing system is still useful.
+    ## Eg. Consider query for "mhd begi imdb" which should give Beginners 2010
+    ## Also m.bing.com may give different results to www.bing.com
+    ############################################################################
+    use_yahoo = 0;
 
     set_cache_prefix("@");
     id1("web_search_first "mode" ["qualifier"]");
-    u[1] = search_url("SEARCH" qualifier);
-    u[2] = search_url("SEARCH" qualifier);
-    u[3] = g_search_google qualifier;
-    u[4] = "http://www.imdb.com/find?s=tt&q=" imdb_qual;
+    if (use_yahoo) {
+        u[1] = search_url("SEARCH" qualifier);
+        u[2] = search_url("SEARCH" qualifier);
+        target=2;
+    } else {
+        # Bing seems a bit better still
+        u[1] = g_search_bing qualifier;
+        target=1;
+    }
+    u["google"] = g_search_google qualifier;
+    u["imdb"] = "http://www.imdb.com/find?s=tt&q=" imdb_qual;
     
     #The search string itself will be present not only in the serp but also in the title and input box
     #So if searching for "DVD Aliens (1981)" then the most popular result may include DVD.
     #we can remove these matches by modifying the search string slighty so it will give same results 
     #but will not match the imdb title regex. To do this convert eg. Fred (2009) to "Fred + (2009)"
+
+    # Should this be for all elements?
     for(i = 1 ; i-2 <= 0 ; i++ ) {
         sub("\\<"g_year_re"\\>","+%2B+&",u[i]);
     }
 
-    #Check first two search engines.
-    for(i = 1 ; i-2 <= 0 ; i++ ) {
-        scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,src);
+    scrapeMatches(u[1],freqOrFirst,helptxt,regex,matches,src);
+    if (use_yahoo) {
+        scrapeMatches(u[2],freqOrFirst,helptxt,regex,matches,src);
     }
+        
     i = bestScores(matches,matches,0);
-    if (i == 2 ) {
+    if (i==target) {
 
         ret = firstIndex(matches);
 
-    } else if ( i == 1 ) {
+    } else {
 
         # previous searches have different results. 
         # merge in google results.
+        INF("DEBUG BING YAHOO DIFFER");
         #
-        scrapeMatches(u[3],freqOrFirst,helptxt,regex,matches,src);
-        if (bestScores(matches,matches,0) == 2 ) {
+        scrapeMatches(u["google"],freqOrFirst,helptxt,regex,matches,src);
+        if (bestScores(matches,matches,0) >= target ) {
 
             ret = firstIndex(matches);
 
         } else {
 
+            target == 2;
+
             if(1 && !ret && mode == "imdbtitle" && p2p_filename(qualifier) ) {
                 # Looks like a file name - try nzb sites.
                 scrapeMatches(g_search_binsearch qualifier,freqOrFirst,helptxt,regex,matches,src);
-                if (bestScores(matches,matches,0) == 2 ) {
+                if (bestScores(matches,matches,0) >= target ) {
                     ret = firstIndex(matches);
                 }
                 if (!ret) {
                     scrapeMatches(g_search_nzbindex qualifier,freqOrFirst,helptxt,regex,matches,src);
-                    if (bestScores(matches,matches,0) == 2 ) {
+                    if (bestScores(matches,matches,0) >= target ) {
                         ret = firstIndex(matches);
                     }
                 }
@@ -203,9 +231,9 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
 
             if (!ret && imdb_qual != "" ) {
                 # TODO Try direct imdb search
-                scrapeMatches(u[4],freqOrFirst,helptxt,regex,matches,src);
+                scrapeMatches(u["imdb"],freqOrFirst,helptxt,regex,matches,src);
                 
-                if (bestScores(matches,matches,0) == 2 ) {
+                if (bestScores(matches,matches,0) >= target ) {
 
                     ret = firstIndex(matches);
                 }
@@ -220,7 +248,7 @@ u,s,pages,subtotal,ret,i,matches,m,src) {
                     id1("cross_page_rank "m"|");
                     pages=0;
                     subtotal=0;
-                    for(i = 1 ; i-3 <= 0 ; i++ ) {
+                    for(i in u ) {
                         if (index(src[m],":"u[i]":") == 0) {
                             s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
                             if (s != 0) pages++;

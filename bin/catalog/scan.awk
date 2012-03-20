@@ -448,8 +448,8 @@ ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
                         minfo[field"_source"] = "local";
                         INF("got image path "ipath);
                         return 1;
-                    } else {
-                        INF("no image path "ipath);
+                    #} else {
+                    #    INF("no image path "ipath);
                     }
                 }
             }
@@ -475,12 +475,12 @@ path) {
     minfo["mi_file_time"] = timeStamp;
 
     gMovieFileCount++;
-    if (!NEWSCAN || !in_list(path,files_in_db) ) {
-        minfo["mi_do_scrape"]=1;
-        INF("Queued " path);
-        check_local_images(minfo,folder,file);
+    if (NEWSCAN && in_list(path,files_in_db) ) {
+        DEBUG("Keep " file);
     } else {
-        DEBUG("Stored " path);
+        minfo["mi_do_scrape"]=1;
+        INF("New  " file);
+        check_local_images(minfo,folder,file);
     }
         
 }
@@ -882,7 +882,7 @@ function clear_folder_info() {
     delete g_file_date; 
 
     gMovieFileCount = 0;
-    DEBUG("Reset scanned files store");
+    #DEBUG("Reset scanned files store");
 }
 
 

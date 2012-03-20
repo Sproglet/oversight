@@ -140,10 +140,11 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     targetFile=qa(file);
     htmlFile=targetFile;
 
-    args=args" --header=\"Accept-Encoding: gzip\" "
+    args=args" --header=\"Accept-Encoding: gzip, deflate\" "
     downloadedFile=qa(file".gz");
     unzip_cmd="( gunzip -c "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
 
+    gsub(/;/,"\\&",url); # m.bing.com doesnt like ;
     gsub(/ /,"+",url);
 
     # nmt wget has a bug that causes a segfault if the url basename already exists and has no extension.

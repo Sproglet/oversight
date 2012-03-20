@@ -2209,7 +2209,6 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
     } else {
         WARNING("Failed to find ID in XML");
     }
-DEBUG("xx 3 season = "minfo["mi_season"]);
 
     if (iid == "" ) {
         WARNING("get_tv_series_info returns blank imdb url. Consider updating the imdb field for this series at "g_thetvdb_web);

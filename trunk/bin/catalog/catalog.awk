@@ -308,10 +308,13 @@ END{
     # Another option is to search sites directly but thier search algorithms are usually too strict
     # with scoring each keyword.
     g_search_yahoo = "http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=";
+
     g_search_bing = "http://www.bing.com/search?q=";
+    g_search_bing = "http://m.bing.com/search/search.aspx?A=webresults;D=Web;q=";
+
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=
-    g_search_google = "http://www.google.com/search?ie=utf-8&oe=utf-8&q=";
+    g_search_google = "http://www.google.com/search?ie=utf-8;oe=utf-8;q=";
     g_search_binsearch = "http://binsearch.info/?max=25&adv_age=&q=";
     g_search_nzbindex = "http://www.nzbindex.nl/rss/?q=";
     g_search_nzbclub = "http://www.nzbclub.com/nzbfeed.aspx?q=";

@@ -2,6 +2,8 @@
 #sidebar TableOfContents
 <wiki:toc max_depth="3" />
 
+== Using Oversight ==
+
 ===How do I make Oversight start automatically===
 
 Try saving the following txt as index.htm in the root folder of your HDD. For SD TV save as index_sd.htm
@@ -164,3 +166,45 @@ In the standard NMT file browser,
    # Press the blue button on the remote to see non-media files (esp If using an older nmt (eg 100 series, hdx 1000 etc)
    # Select oversight-install.cgi
    # Follow instructions to re-install.
+
+== Technical FAQ ==
+
+=== Why not perl instead of awk ===
+
+This project was started on then NMT mediaplayer platform. Perl had not been compiled. It did have php, but I wanted something that was available on most embedded platforms. 
+With hindsight I should have made the effort to use a loanguage that has a good set of libraries (xml,json,http etc) , instead I had to write buggy versions of everything or launch help processes (wget,iconv) etc. 
+So it was a mistake, that I'm not in a hurry to fix.
+
+=== Why a text database / why not sqllite ===
+
+Because I used awk. - Yes, on reflection awk was a bad choice!
+
+=== Why so many space optimisations that dont seem very effective ===
+
+Oversight is a dynamic Jukebox running originally on a very low powered media player running embedded linux. 100 series(ie slow) building HTML pages from a database in real time, as the user loads each page.
+
+This had to take around 200ms in total on a A100, (excluding time for NMT to render HTML to the screen which is about 0.5 secs), before usability tanked.
+
+That is in about 2 tenths of a second to:
+
+- reading and filtering the entire index db for entries to display, (this bit takes around 10-30ms)
+- check file system for media present (eg NAS on/off or file deleted remotely),
+- loading HTML templates,
+- writing new HTML for the page the user just requested,
+
+So the main thing at the time were two almost conflicting requirements:
+
+a) to keep the index.db as small as possible because it was scanned at each page load and both NMT CPU and IO are slow. [the gui, was originally an awk script before I re-wrote it in C]
+b) but conversely keep it as text because scans are added by an awk script. (see FAQ on why awk!)
+
+and also
+
+c) allow optional and variable length fields and easy addition of new fields (hence field markers in each line)
+
+Every character counted, hence some of the optimisations which may seen like badly re-inventing wheels, if you dont run Oversight (esp on 100 series) or are used to static jukeboxes.
+
+I think I got the index.db load down to around 10-20ms for my small collection, and the main bottle neck for page loading was the NMT rendering the HTML page. For which there is no solution apart from Flash or doing my own rendering etc.
+
+Going forward, now that Oversight GUI might be obsoleted in the near future/and as the rendering platforms become faster, it would make sense to relax or remove some of less optimal optimisations, in favour of clearer format.
+
+These days most devices have plenty of RAM and CPU , and application developers dont really need to pay much attention to performance.

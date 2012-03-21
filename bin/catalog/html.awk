@@ -240,9 +240,8 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
                 }
                 # A few sites have IMDB ID 0123456 
                 if (index(line[1],"IMDB ") || index(line[1],"imdb ") ) {
-                    if (gsub("[Ii][Mm][Dd][Bb][^0-9]{1,10}","tt",line[1])) {
-                        #INF("fixed imdb reference "line[1]);
-                    }
+                    l2 = gensub(/[Ii][Mm][Dd][Bb][^0-9]{1,10}([0-9]{6})\>/,"tt\\1","g",line[1]);
+                    line[1] = l2;
                 }
             }
 

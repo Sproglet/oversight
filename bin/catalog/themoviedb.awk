@@ -101,7 +101,7 @@ url,xml,i,num,langs,root,ret,xmlret,minfo2,ln,name,id) {
 }
 # Works with imdb id or tmdb id
 function get_themoviedb_info30(id,minfo,\
-url,json,jsonret,i,num,langs,ret,minfo2,ln,name) {
+url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,ln,name) {
 
     id1("get_themoviedb_info "id);
     num = get_langs(langs);
@@ -109,10 +109,12 @@ url,json,jsonret,i,num,langs,ret,minfo2,ln,name) {
     ret = 0 ;
 
     for(i = 1 ; i<= num ; i++ ) {
-        url="http://api.themoviedb.org/3/movie/"id"?api_key="g_api_tmdb"&language="langs[i];
+        url=g_themoviedb_api_url"/movie/"id"?api_key="g_api_tmdb"&language="langs[i];
+        url2=g_themoviedb_api_url"/movie/"id"/releases?api_key="g_api_tmdb"&language="langs[i];
 
-        jsonret = fetch_json(url,"json",json);
+        jsonret = fetch_json2(url"\t"url2,"json",json,json2);
         #dump(0,"themoviedb3",json);
+        #dump(0,"themoviedb3-2",json2);
         if (jsonret == 0) {
 
             ERR("parsing results");
@@ -131,7 +133,7 @@ url,json,jsonret,i,num,langs,ret,minfo2,ln,name) {
 
         if (ln) {
 
-            #dumpxml("themoviedb",json);
+            dumpxml("themoviedb",json);
             
             name = html_to_utf8(json["name"]);
 
@@ -150,7 +152,8 @@ url,json,jsonret,i,num,langs,ret,minfo2,ln,name) {
 
             minfo2["mi_rating"]=json["vote_average"];
 
-            minfo2["mi_certrating"]=tmdb_get_release(json["id"]);
+            #minfo2["mi_certrating"]=tmdb_get_release(json["id"]);
+            minfo2["mi_certrating"]=tmdb_match_release(json2);
 
             minfo2["mi_runtime"]=json["runtime"];
 
@@ -181,26 +184,31 @@ url,json,jsonret,i,num,langs,ret,minfo2,ln,name) {
     return ret;
 }
 
+# obsoleted 
 function tmdb_get_release(id,\
-countries,num,i,j,url,rel,cert,country_key) {
-    num = get_countries(countries);
-    url="http://api.themoviedb.org/3/movie/"id"/releases?api_key="g_api_tmdb;
+ret,url,rel) {
+    url=g_themoviedb_api_url"/movie/"id"/releases?api_key="g_api_tmdb;
     if (fetch_json(url,"json",rel) == 0) {
 
         ERR("parsing release results");
     } else if ("status_code" in rel ) {
         ERR(" themoviedb release info : "rel["status_message"]);
     } else {
-        #dump(0,"releases",rel);
-        for( i = 1 ; i <= num ; i++ ) {
-            INF("looking for release in "countries[i]);
-            for(j = 1 ; (country_key = "countries#"j":iso_3166_1" )  in rel ; j++ ) {
-                if (rel[country_key] == countries[i]) {
-                    cert = rel["countries#"j":certification"];
-                    if (cert != "") {
-                        INF("found cert = "cert);
-                        return cert;
-                    }
+        ret = tmdb_match_release(rel);
+    }
+    return ret;
+}
+function tmdb_match_release(json,\
+countries,num,i,j,cert,country_key) {
+    num = get_countries(countries);
+    for( i = 1 ; i <= num ; i++ ) {
+        INF("looking for release in "countries[i]);
+        for(j = 1 ; (country_key = "countries#"j":iso_3166_1" )  in json ; j++ ) {
+            if (json[country_key] == countries[i]) {
+                cert = json["countries#"j":certification"];
+                if (cert != "") {
+                    INF("found cert = "cert);
+                    return cert;
                 }
             }
         }
@@ -211,7 +219,7 @@ countries,num,i,j,url,rel,cert,country_key) {
 function tmdb_config(key,\
 url) {
     if (g_tmdb_config["@state"] != 1) {
-        url="http://api.themoviedb.org/3/configuration?api_key="g_api_tmdb;
+        url=g_themoviedb_api_url"/configuration?api_key="g_api_tmdb;
         if (fetch_json(url,"json",g_tmdb_config) == 0) {
             ERR("Error getting TMDB configuration");
         } else {

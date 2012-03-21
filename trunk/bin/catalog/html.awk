@@ -139,7 +139,7 @@ enc,line,code,n) {
         enc = "utf-8"; # google pages assumed to be utf-8 ?
     }
 
-    DEBUG("Encoding:" enc);
+    if (enc != "utf-8" ) INF("Encoding:" enc);
     return enc;
 }
 
@@ -147,7 +147,7 @@ enc,line,code,n) {
 # Check engine 0=bad 1 or more = good
 function engine_check(url,\
 ret) {
-    ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","[\"']http://[^/]+imdb[/.a-z]+tt0076752/?[\"']",1);
+    ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","tt0076752/",1);
     if (ret) {
         INF("search engine ready ["url"]\n");
     } else {
@@ -195,7 +195,7 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 #    }
 
     delete matches;
-    id1("scan_page_for_matches["url"]["fixed_text"]["regex"]");
+    id1("scan_page_for_matches["fixed_text"]["regex"]");
     INF("["fixed_text"]["\
         (regex == g_imdb_regex\
             ?"<imdbtag>"\
@@ -232,8 +232,18 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
             # Quick hack to find Title?0012345 as tt0012345  because altering the regex
             # itself is more work - for example the results will come back as two different 
             # counts. 
-            if (is_imdb && index(line[1],"/Title?") ) {
-                gsub(/\/Title\?/,"/tt",line[1]);
+            if (is_imdb) {
+                if (index(line[1],"/Title?") ) {
+                    if (gsub(/\/Title\?/,"/tt",line[1])) {
+                        INF("fixed imdb reference "line[1]);
+                    }
+                }
+                # A few sites have IMDB ID 0123456 
+                if (index(line[1],"IMDB ") || index(line[1],"imdb ") ) {
+                    if (gsub("[Ii][Mm][Dd][Bb][^0-9]{1,10}","tt",line[1])) {
+                        #INF("fixed imdb reference "line[1]);
+                    }
+                }
             }
 
 

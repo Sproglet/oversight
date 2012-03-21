@@ -67,7 +67,7 @@ i,referer) {
     return referer;
 }
 
-# Note nmt wget has a bug when using -O flag. Only one file is redirected.
+# Note nmt wget has a bug when using -O flag. Must use proper wget.
 function wget(url,file,referer,\
 i,urls,tmpf,qf,r) {
     split(url,urls,"\t");
@@ -119,7 +119,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     if (referer != "") {
         args=args" --referer=\""referer"\" ";
     }
-    if (index(url,"http://api.themoviedb.org/3")) {
+    if (index(url,g_themoviedb_api_url)) {
         args=args" --header=\"Accept: application/json\" ";
     }
 
@@ -135,7 +135,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     }
     arg_cf=" --keep-session-cookies --load-cookies="qa(new_cf)" --save-cookies="qa(new_cf)" --keep-session-cookies";
     args=args arg_cf;
-    INF(arg_cf);
+    #INF(arg_cf);
 
     targetFile=qa(file);
     htmlFile=targetFile;
@@ -157,30 +157,20 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
 
     url=qa(url);
 
-#ALL#    if (url in g_url_blacklist) {
-#ALL#
-#ALL#        WARNING("Skipping url ["url"] due to previous error");
-#ALL#        result = 1;
-#ALL#
-#ALL#    } else {
+    cmd = "wget -O "downloadedFile" "args" "url;
+    #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
+    # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
 
-        cmd = "wget -O "downloadedFile" "args" "url;
-        #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
-        # Get url if we havent got it before or it has zero size. --no-clobber switch doesnt work on NMT
+    # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-        # Set this between 1 and 4 to throttle speed of requests to the same domain
-
-        INF("WGET ["url"]");
-        result = exec(cmd);
-        if (result == 0 ) {
-            result = exec(unzip_cmd);
-        }
-        if (result != 0) {
-#ALL#            g_url_blacklist[url] = 1;
-#ALL#            WARNING("Blacklisting url ["url"]");
-            rm(downloadedFile,1);
-        }
-#ALL#    }
+    INF("WGET ["url"]");
+    result = exec(cmd);
+    if (result == 0 ) {
+        result = exec(unzip_cmd);
+    }
+    if (result != 0) {
+        rm(downloadedFile,1);
+    }
     return 0+ result;
 }
 

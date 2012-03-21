@@ -7,7 +7,7 @@
 #
 # Special case is if searching via IMDB search page - then the imdb_qual is used
 function web_search_first_imdb_link(qualifier,imdb_qual) {
-    return web_search_first(qualifier,imdb_qual,1,"imdbid","/tt",g_imdb_regex);
+    return web_search_first(qualifier,imdb_qual,1,"imdbid","tt",g_imdb_regex);
 }
 function web_search_first_imdb_title(qualifier,imdb_qual) {
     return web_search_first(qualifier,imdb_qual,0,"imdbtitle","",g_imdb_title_re);
@@ -148,7 +148,7 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
-u,s,pages,subtotal,ret,i,matches,m,src,use_yahoo,target) {
+u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,use_yahoo,target,num) {
 
 
     ############################################################################
@@ -165,110 +165,90 @@ u,s,pages,subtotal,ret,i,matches,m,src,use_yahoo,target) {
     ## Also m.bing.com may give different results to www.bing.com
     ############################################################################
     use_yahoo = 0;
+    num = 0;
 
+    # During this search cache all pages in case we need to do a cross page ranking against prior results.
     set_cache_prefix("@");
+
     id1("web_search_first "mode" ["qualifier"]");
+
+    # target[n] = how many times a match must come first , on its own to "win"
+    # eg scan1  tt0000001 = 1  tt0000002 = 1 - not unique but score is kept for next scan
+    # eg scan2  tt0000001 += 1 tt0000002 += 0 - tt0000001 now scores 2.
     if (use_yahoo) {
-        u[1] = search_url("SEARCH" qualifier);
-        u[2] = search_url("SEARCH" qualifier);
-        target=2;
+        u[++num] = search_url("SEARCH" qualifier); target[num]=1;
+        u[++num] = search_url("SEARCH" qualifier); target[num]=2;
+        u[++num] = search_url("SEARCH" qualifier); target[num]=2;
     } else {
-        # Bing seems a bit better still
-        u[1] = g_search_bing qualifier;
-        target=1;
+        # Bing seems a bit better still -
+        u[++num] = g_search_bing_mobile qualifier; target[num]=1;
+        u[++num] = g_search_bing_desktop qualifier; target[num]=2;
+        u[++num] = g_search_yahoo qualifier; target[num]=2;
     }
-    u["google"] = g_search_google qualifier;
-    u["imdb"] = "http://www.imdb.com/find?s=tt&q=" imdb_qual;
-    
+    u[++num] = g_search_google qualifier; target[num]=2;
+
     #The search string itself will be present not only in the serp but also in the title and input box
     #So if searching for "DVD Aliens (1981)" then the most popular result may include DVD.
     #we can remove these matches by modifying the search string slighty so it will give same results 
     #but will not match the imdb title regex. To do this convert eg. Fred (2009) to "Fred + (2009)"
-
-    # Should this be for all elements?
-    for(i = 1 ; i-2 <= 0 ; i++ ) {
+    for(i in u) {
         sub("\\<"g_year_re"\\>","+%2B+&",u[i]);
     }
 
-    scrapeMatches(u[1],freqOrFirst,helptxt,regex,matches,src);
-    if (use_yahoo) {
-        scrapeMatches(u[2],freqOrFirst,helptxt,regex,matches,src);
+    # Add some more specialised searches. These will not need/understand syntax manipulation above.
+    if(mode == "imdbtitle" && p2p_filename(qualifier) ) {
+        u[++num] = g_search_binsearch qualifier; target[num]=2;
+        u[++num] = g_search_nzbindex qualifier; target[num]=2;
     }
-        
-    i = bestScores(matches,matches,0);
-    if (i==target) {
+    if (imdb_qual != "") {
+        u[+num] = "http://www.imdb.com/find?s=tt&q=" imdb_qual; target[num]=2;
+    }
+    
 
-        ret = firstIndex(matches);
+    # Cycle through each URL grabbing best id and merging into matches.
+    # For each match the urls are also tracked in case we to a "cross-page" ranking later.
+    for(i = 1 ; i <= num ; i++ ) {
+        scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,src);
+        if (bestScores(matches,bestmatches,0) >= target[i] ) {
+           dump(0,"websearch-matches",matches);
+           dump(0,"websearch-best",bestmatches);
+           #check unique best match
+           if (hash_size(bestmatches) == 1) {
+               ret = firstIndex(bestmatches);
+               break;
+           }
+       }
+    }
 
-    } else {
-
-        # previous searches have different results. 
-        # merge in google results.
-        INF("DEBUG BING YAHOO DIFFER");
-        #
-        scrapeMatches(u["google"],freqOrFirst,helptxt,regex,matches,src);
-        if (bestScores(matches,matches,0) >= target ) {
-
-            ret = firstIndex(matches);
-
-        } else {
-
-            target == 2;
-
-            if(1 && !ret && mode == "imdbtitle" && p2p_filename(qualifier) ) {
-                # Looks like a file name - try nzb sites.
-                scrapeMatches(g_search_binsearch qualifier,freqOrFirst,helptxt,regex,matches,src);
-                if (bestScores(matches,matches,0) >= target ) {
-                    ret = firstIndex(matches);
-                }
-                if (!ret) {
-                    scrapeMatches(g_search_nzbindex qualifier,freqOrFirst,helptxt,regex,matches,src);
-                    if (bestScores(matches,matches,0) >= target ) {
-                        ret = firstIndex(matches);
-                    }
-                }
-            }
-
-            if (!ret && imdb_qual != "" ) {
-                # TODO Try direct imdb search
-                scrapeMatches(u["imdb"],freqOrFirst,helptxt,regex,matches,src);
-                
-                if (bestScores(matches,matches,0) >= target ) {
-
-                    ret = firstIndex(matches);
+    if (ret == "") {
+        # No match stands out.
+        #Go through each match and see how many times it appears on the other pages.
+        # this is why we track the matching urls in the src array.
+        for(m in bestmatches) {
+            id1("cross_page_rank "m"|");
+            pages=0;
+            subtotal=0;
+            for(i in u ) {
+                #if the url did dot contribute to this matches best score
+                if (index(src[m],":"u[i]":") == 0) {
+                    s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
+                    if (s != 0) pages++;
+                    subtotal += s;
                 }
             }
-            
-            if (ret == "") {
-
-                # Still nothing appears twice. 
-                #Go through each match and see how many times it appears on the other pages.
-                # this is why we track the matching urls in the src array.
-                for(m in matches) {
-                    id1("cross_page_rank "m"|");
-                    pages=0;
-                    subtotal=0;
-                    for(i in u ) {
-                        if (index(src[m],":"u[i]":") == 0) {
-                            s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
-                            if (s != 0) pages++;
-                            subtotal += s;
-                        }
-                    }
-                    matches[m] += pages * subtotal;
-                    id0(pages*subtotal);
-                }
-                ret = getMax(matches,4,1);
-            }
+            bestmatches[m] += pages * subtotal;
+            id0(pages*subtotal);
         }
+        ret = getMax(matches,4,1);
     }
 
+    #delete all cahced pages.
     clear_cache_prefix("@");
     id0(ret);
     return ret;
 }
 
-# If no direct urls found. Search using file names.
+# This is disabled -  I think it was too intensive and too many false positives.
 function web_search_frequent_imdb_link(minfo,\
 url,txt) {
 

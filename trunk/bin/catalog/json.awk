@@ -1,15 +1,35 @@
-# real json content from url into array.
-function fetch_json(url,label,out,\
-f,line,ret,json) {
-    ret = 0;
+function json_load(url,label,\
+text,f,line) {
     f=getUrl(url,label".json",1);
     if (f) { 
         FS="\n";
         while(enc_getline(f,line) > 0) {
-            json = json " " line[1];
+            text = text " " line[1];
         }
         enc_close(f);
+    }
+    return text;
+}
+
+# real json content from url into array.
+function fetch_json(url,label,out,\
+ret,json) {
+    ret = 0;
+    json = json_load(url,label);
+
+    if (json) { 
         ret = json_parse(json,out);
+    }
+    return ret;
+}
+
+# real json content from 2 urls into array. - used when 2urls passed to wget
+function fetch_json2(url,label,out,out2,\
+ret,json) {
+    ret = 0;
+    json = json_load(url,label);
+    if (json) { 
+        ret = json_parse2(json,out,out2);
     }
     return ret;
 }
@@ -36,11 +56,26 @@ f,line,ret,json) {
 function json_parse(input,out,\
 context) {
     delete out;
+    json_init_context(context,input);
+    json_parse_object(context,out);
+    return context["err"] == "";
+}
+
+# If 2 urls are passed together there may be two objects together.
+function json_parse2(input,out1,out2,\
+context) {
+    delete out1;
+    delete out2;
+    json_init_context(context,input);
+    json_parse_object(context,out1);
+    json_parse_object(context,out2);
+    return context["err"] == "";
+}
+
+function json_init_context(context,input) {
     context["dbg"] = 1;
     context["in"] = input;
     context["pos"] = 1;
-    json_parse_object(context,out);
-    return context["err"] == "";
 }
 
 function json_err(context,msg) {

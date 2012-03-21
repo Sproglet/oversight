@@ -149,10 +149,12 @@ function dir_contains(dir,pattern) {
 
 # Input is ls -lR or ls -l
 function scan_contents(root,scan_options,\
-ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
+rootlen,ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
     INF("scan_contents "root);
+
+    rootlen = length(root);
 
     qfile = new_capture_file("dbqueue");
     if (root == "") return;
@@ -218,7 +220,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
            currentFolder = scan_line;
            sub(/\/*:$/,"",currentFolder);
-           DEBUG("Folder = "currentFolder);
+           DEBUG("/- "substr(currentFolder,rootlen+2)); #allow for ls index +2
            folderNameNext=0;
             if ( ign_path != "" && currentFolder ~ ign_path ) {
 
@@ -288,7 +290,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                     g_fldrCount[currentFolder]++;
 
-                    DEBUG("Folder ["scan_line"]");
+                    #DEBUG("/- "scan_line);
 
                     if (is_videots_fldr(currentFolder"/"scan_line) || is_bdmv_fldr(currentFolder"/"scan_line) ) {
 
@@ -476,10 +478,10 @@ path) {
 
     gMovieFileCount++;
     if (NEWSCAN && in_list(path,files_in_db) ) {
-        DEBUG("Keep " file);
+        DEBUG(" | \t" file);
     } else {
         minfo["mi_do_scrape"]=1;
-        INF("New  " file);
+          INF(" ++\t" file);
         check_local_images(minfo,folder,file);
     }
         

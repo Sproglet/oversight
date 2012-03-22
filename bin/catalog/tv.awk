@@ -875,7 +875,7 @@ tvDbSeriesPage,tvdbid,total,closeTitles) {
 }
 
 function search_abbreviations(plugin,minfo,title,\
-cache_key,tvDbSeriesPage,tvdbid,first_letter,letters,lpos,showIds,total) {
+cache_key,tvDbSeriesPage,tvdbid,first_letter,showIds,total) {
     # Abbreviation search
 
     cache_key=minfo["mi_folder"]"@"title;
@@ -903,20 +903,14 @@ cache_key,tvDbSeriesPage,tvdbid,first_letter,letters,lpos,showIds,total) {
 
         # create list of letters to check
         first_letter = tolower(substr(title,1,1));
-        letters = "taio";
-        sub(first_letter,"",letters);
-        letters = first_letter letters;
         
         delete showIds;
-        for(lpos = 1 ; lpos <= length(letters) ; lpos++ ) {
-            # Check athe letter if it is the first letter of the abbreviation 
-            total=searchAbbreviationAgainstTitles(plugin,substr(letters,lpos,1),title,showIds);
-            if (total == -1) {
-                INF("too many matches - clearing");
-                delete showIds;
-                total = 0;
-                break;
-            }
+        # Check athe letter if it is the first letter of the abbreviation 
+        total=searchAbbreviationAgainstTitles(plugin,first_letter,title,showIds);
+        if (total == -1) {
+            INF("too many matches - clearing");
+            delete showIds;
+            total = 0;
         }
         dump_ids_and_titles("possible matches",total,showIds);
 
@@ -1719,34 +1713,38 @@ possible_title,i,ltitle,add,total,a) {
 #
 #eg toxxx might abbreviate "to xxx" or "t" ...
 function abbrevMatch(abbrev , possible_title,\
-wrd,a,words,rest_of_abbrev,found,abbrev_len,short_words) {
-    split(tolower(possible_title),words," ");
+word_no,a,words,rest_of_abbrev,found,abbrev_len,short_words,num_words,current_word,current_letter) {
+    num_words = split(tolower(possible_title),words," ");
     a=1;
-    wrd=1;
+    word_no=1;
     abbrev_len = length(abbrev);
 
-    short_words["and"] = short_words["in"] = short_words["it"] = short_words["of"] = 1;
+    short_words["and"] = short_words["on"] = short_words["in"] = short_words["it"] = short_words["of"] = 1;
 
-    while(abbrev_len-a  >= 0 && (wrd in words)) {
+    while(abbrev_len-a  >= 0 && word_no <= num_words) {
         rest_of_abbrev = substr(abbrev,a);
+        current_word = words[word_no];
 
-        if (index(   rest_of_abbrev  ,   words[wrd]  ) == 1) {
-            #abbreviation starts with entire word.
-            a += length(words[wrd]);
-            wrd++;
-        } else if (substr(words[wrd],1,1) == substr(rest_of_abbrev,1,1)) {
-            a ++;
-            wrd++;
-        } else if (substr(rest_of_abbrev,1,1) == " ") {
-            a ++;
-        } else if (words[wrd] in short_words ) {
-            wrd++;
+        if (index(   rest_of_abbrev  ,   current_word  ) == 1) {
+            #abbreviation starts with entire word. eg "depserate" of desperateh or "guy" of fguy.
+            a += length(current_word);
+            word_no++;
         } else {
-            #no match
-            break;
+            current_letter = substr(rest_of_abbrev,1,1);
+            if (substr(current_word,1,1) == current_letter) {
+                a ++;
+                word_no++;
+            } else if (current_letter == " ") {
+                a ++;
+            } else if (current_word in short_words ) {
+                word_no++;
+            } else {
+                #no match
+                break;
+            }
         }
     }
-    found = ((a -abbrev_len ) > 0 ) && !(wrd in words);
+    found = ((a -abbrev_len ) > 0 ) && word_no > num_words;
     if (found) {
         INF(possible_title " abbreviated by ["abbrev"]");
     }

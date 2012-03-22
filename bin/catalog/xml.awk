@@ -4,7 +4,7 @@
 # RETURN ok=1 failed=0
 function fetchXML(url,label,xml,ignorePaths,\
 f,ret) {
-    f=getUrl(url,label,1);
+    f=getUrl(url,label".xml",1);
     ret = readXML(f,xml,ignorePaths);
     DEBUG("fetchXML["url"] = "ret);
     return ret;
@@ -274,7 +274,7 @@ t,xmlpathSlash,xmlpathHash) {
 function fetch_xml_single_child(url,filelabel,xmlpath,tagfilters,xmlout,ignorePaths,\
 f,found) {
 
-   f = getUrl(url,filelabel,1);
+   f = getUrl(url,filelabel".xml",1);
    id1("fetch_xml_single_child ["url"] path = "xmlpath);
    found =  scan_xml_single_child(f,xmlpath,tagfilters,xmlout,ignorePaths);
    id0(found);

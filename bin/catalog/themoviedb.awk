@@ -112,7 +112,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,ln,name) {
         url=g_themoviedb_api_url"/movie/"id"?api_key="g_api_tmdb"&language="langs[i];
         url2=g_themoviedb_api_url"/movie/"id"/releases?api_key="g_api_tmdb"&language="langs[i];
 
-        jsonret = fetch_json2(url"\t"url2,"json",json,json2);
+        jsonret = fetch_json(url,"json",json);
         #dump(0,"themoviedb3",json);
         #dump(0,"themoviedb3-2",json2);
         if (jsonret == 0) {
@@ -153,6 +153,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,ln,name) {
             minfo2["mi_rating"]=json["vote_average"];
 
             #minfo2["mi_certrating"]=tmdb_get_release(json["id"]);
+            fetch_json(url2,"json",json2);
             minfo2["mi_certrating"]=tmdb_match_release(json2);
 
             minfo2["mi_runtime"]=json["runtime"];

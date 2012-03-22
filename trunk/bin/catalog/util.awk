@@ -873,34 +873,33 @@ function get_regex_pos(line,regex,max,rtext,rstart) {
 # OUT rstart  is updated with (order -> start pos)
 # OUT total number of occurences.
 function get_regex_count_or_pos(mode,line,regex,max,rtext,rstart,\
-count,fcount,i,parts,start,dbg) {
+count,fcount,i,parts,start) {
     count =0 ;
 
     delete rtext;
     delete rstart;
 
-
-    #dbg = index(line,"spielfilm"); # edit as applicable when debugging
     fcount = chop(line,regex,parts);
-    if (dbg) {
-        DEBUG("xx DELETE line["line"]");
-        dump(0,"spielfilm-"mode,parts);
-    }
 
     start=1;
-    for(i=2 ; i-fcount <= 0 ; i += 2 ) {
-        count++;
-        if (mode == "c") {
+    max = max+0;
+    if (mode == "c") {
+        for(i=2 ; i-fcount <= 0 ; i += 2 ) {
+            count++;
             rtext[parts[i]]++;
-        } else {
+            if (max > 0 && count >= max ) {
+                break;
+            }
+        }
+    } else {
+        for(i=2 ; i-fcount <= 0 ; i += 2 ) {
+            count++;
             rtext[count] = parts[i];
 
             start += length(parts[i-1]);
             rstart[count] = start;
             start += length(parts[i]);
-        }
-        if (max+0 > 0 ) {
-            if (count - max >= 0) {
+            if (max > 0 && count >= max ) {
                 break;
             }
         }
@@ -1019,7 +1018,7 @@ function similar(s1,s2,\
 
 function get_page_size(url,\
 f) {
-    f = getUrl(url,"tmp",0);
+    f = getUrl(url,".html",0);
     return get_file_size(f);
 }
 
@@ -1061,3 +1060,64 @@ keep_the) {
     return tolower(trim(t));
 }
 
+#Collapse abbreviations. Only if dot is sandwiched between single letters.
+#c.s.i.miami => csi.miami
+#this has to be done in two stages otherwise the collapsing prevents the next match. 
+# eg C.S.I. -> CS.I but now CS . I will not match - and dots after words must be preserved as 
+# they could represent spaces in scne names.
+function collapse_dotted_abbr(t,\
+t2,changed) {
+    changed=0;
+    if (index(t,".")) {
+        do {
+            t2=gensub(/\<([A-Za-z])\.([A-Za-z])\>/,"\\1@@\\2","g",t);
+            if (t2 ==t) {
+                if (changed) gsub(/@@/,"",t);
+                break;
+            }
+            t=t2;
+            changed=1;
+        } while(1);
+
+#        while (match(t,"\\<[A-Za-z]\\>[.]\\<[A-Za-z]\\>")) {
+#            t = substr(t,1,RSTART) "@@" substr(t,RSTART+2);
+#        }
+#        gsub(/@@/,"",t);
+    }
+    return t;
+}
+
+# This is used in tv comparison functions for qualified matches so it must not remove any country
+# or year designation
+# deep - if set then [] and {} are removed from text too
+function clean_title(t,deep,\
+punc,last) {
+
+    #ALL# gsub(/[&]/," and ",t);
+    if (index(t,"amp")) gsub(/[&]amp;/,"\\&",t);
+
+    last = substr(t,length(t));
+    if (index("-_ .",last)) {
+        sub(/[-_ .]+$/,"",t);
+    }
+
+    t = collapse_dotted_abbr(t);
+
+    punc = g_punc[deep+0];
+    if (index(t," ") ) {
+        # If there is a space then also preserve . and _ . These are often used as spaces
+        # but if there is aready a space , assume they are significant.
+
+        # first remove any trailing dot
+        sub(punc"$","",t);
+
+        #Now modify regex to keep any internal dots.
+        if (sub(/-\]/,"_.-]",punc) != 1) {
+            ERR("Fix punctuation string");
+        }
+    }
+    gsub(punc," ",t);
+
+    if (index(t,"  ")) gsub(/ +/," ",t);
+    return capitalise(t);
+}

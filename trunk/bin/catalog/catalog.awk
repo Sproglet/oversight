@@ -516,7 +516,7 @@ function plugin_check(\
 p,plugin) {
     for (p in g_tv_plugin_list) {
         plugin = g_tv_plugin_list[p];
-        if (getUrl(g_tv_check_urls[plugin],"test",0) == "" ) {
+        if (getUrl(g_tv_check_urls[plugin],"test.xml",0) == "" ) {
             WARNING("Removing plugin "plugin);
             delete g_tv_plugin_list[p];
         }
@@ -698,53 +698,6 @@ ret,f,numok,numbad) {
     id0(ret);
     return ret;
 }
-
-# This is used in tv comparison functions for qualified matches so it must not remove any country
-# or year designation
-# deep - if set then [] and {} are removed from text too
-function clean_title(t,deep,\
-punc,last) {
-
-    #ALL# gsub(/[&]/," and ",t);
-    if (index(t,"amp")) gsub(/[&]amp;/,"\\&",t);
-
-    last = substr(t,length(t));
-    if (index("-_ .",last)) {
-        sub(/[-_ .]+$/,"",t);
-    }
-
-    #Collapse abbreviations. Only if dot is sandwiched between single letters.
-    #c.s.i.miami => csi.miami
-    #this has to be done in two stages otherwise the collapsing prevents the next match.
-    if (index(t,".")) {
-        while (match(t,"\\<[A-Za-z]\\>[.]\\<[A-Za-z]\\>")) {
-            t = substr(t,1,RSTART) "@@" substr(t,RSTART+2);
-        }
-
-        gsub(/@@/,"",t);
-    }
-
-    punc = g_punc[deep+0];
-    if (index(t," ") ) {
-        # If there is a space then also preserve . and _ . These are often used as spaces
-        # but if there is aready a space , assume they are significant.
-
-        # first remove any trailing dot
-        sub(punc"$","",t);
-
-        #Now modify regex to keep any internal dots.
-        if (sub(/-\]/,"_.-]",punc) != 1) {
-            ERR("Fix punctuation string");
-        }
-    }
-    gsub(punc," ",t);
-
-    if (index(t,"  ")) gsub(/ +/," ",t);
-    return capitalise(t);
-}
-
-
-
 
 # remove html markup from a line.
 function remove_tags(line) {

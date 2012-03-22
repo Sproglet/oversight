@@ -432,7 +432,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
         store = 1;
 
         # caching disabled to allow for websites that have advertising cookies that block initial access.
-        f=getUrl(url,locale":"domain":"title":"year,0);
+        f=getUrl(url,locale":"domain":"title":"year".html",0);
         if (f == "") {
             err=1;
         } else {

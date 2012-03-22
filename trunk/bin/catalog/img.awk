@@ -143,7 +143,7 @@ function download_image(field_id,minfo,mi_field,\
 #ALL#     #href_regex="http:[-_%A-Za-z0-9.?&:=]+(jpg|png)";
 #ALL#     href_regex="http://[^\"<>]+(jpg|png)";
 #ALL# 
-#ALL#     f = getUrl(url,"image",0);
+#ALL#     f = getUrl(url,"image.img",0);
 #ALL#     if (f) {
 #ALL#         FS="\n";
 #ALL#         while((getline txt < f) > 0 && imgurl == "" ) {

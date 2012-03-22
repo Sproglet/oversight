@@ -809,7 +809,7 @@ i,url2,f) {
 
         url2 = search_url(url);
 
-        f=getUrl(url2,"scan4match",cache,referer);
+        f=getUrl(url2,".html",cache,referer);
 
         if (f != "") break;
     }
@@ -817,6 +817,7 @@ i,url2,f) {
 }
 
 
+# Extract part of a html page.
 # start_text = csv list of tokens to be matched in sequence before we extract the item
 # start_include = include line that matched the last start token if true
 # end_text = last line of the extracted item
@@ -825,7 +826,7 @@ i,url2,f) {
 function scrape_one_item(label,url,start_text,start_include,end_text,end_include,cache,\
 f,line,out,found,tokens,token_count,token_i) {
     #DEBUG("scrape_one_item "label" start at ["start_text"]");
-    f=getUrl(url,label,cache);
+    f=getUrl(url,label".html",cache);
 
     token_count = split(start_text,tokens,",");
     if (f) {
@@ -1012,7 +1013,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
 
         #url = g_search_yahoo url_encode("+\""filterText"\"");
         url = g_search_google url_encode(filterText);
-        f = getUrl(url,"filter",0);
+        f = getUrl(url,".html",0);
         if (f) {
 
             INF("File = "f);

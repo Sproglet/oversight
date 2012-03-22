@@ -68,37 +68,13 @@ i,referer) {
 }
 
 # Note nmt wget has a bug when using -O flag. Must use proper wget.
-function wget(url,file,referer,\
-i,urls,tmpf,qf,r) {
-    split(url,urls,"\t");
-    tmpf = file ".tmp";
-    qf = qa(tmpf);
-
-    r=1;
-    for(i in urls) {
-        if (urls[i] != "") {
-            if (wget2(urls[i],tmpf,referer) == 0) {
-
-                # Long html lines were split to avoid memory issues with bbawk.
-                # With gawk it may be possible to go back to using cat.
-
-                #Insert line feeds - but try not to split text that has bold or span tags.
-
-                #exec("cat "qf" >> "qa(file));
-                exec(AWK " '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P|LI|li|script|SCRIPT|style|STYLE)[ >]/,\"\\n&\") ; print ; }' "qf" >> "qa(file));
-                r=0;
-            }
-        }
-        system("rm -f "qf);
-    }
-    return r;
-}
 
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
-function wget2(url,file,referer,\
-args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,old_cf,new_cf,arg_cf) {
+function wget(url,file,referer,\
+args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,old_cf,new_cf,arg_cf,filter_count) {
 
+    filter_count = 0;
     if (index(url,"/app.")) { 
         ua = g_iphone_user_agent;
     } else if (index(url,g_search_yahoo)) { 
@@ -140,9 +116,31 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     targetFile=qa(file);
     htmlFile=targetFile;
 
-    args=args" --header=\"Accept-Encoding: gzip, deflate\" "
-    downloadedFile=qa(file".gz");
-    unzip_cmd="( gunzip -c "downloadedFile" || cat "downloadedFile") > "htmlFile" 2>/dev/null && rm "downloadedFile;
+    # wget doesnt combine multiple files and compression
+    if (index(url,"\t")) {
+        downloadedFile=qa(file".dl");
+        unzip_cmd=" cat "downloadedFile" "; 
+    } else {
+        args=args" --header=\"Accept-Encoding: gzip, deflate\" "
+        downloadedFile=qa(file".gz");
+        unzip_cmd="( gunzip -c "downloadedFile" || cat "downloadedFile") "; 
+        filter_count ++;
+    }
+
+    if (index(file,".html")) {
+        # Long html lines were split to avoid memory issues with bbawk.
+        # With gawk it may be possible to go back to using cat.
+
+        #Insert line feeds - but try not to split text that has bold or span tags.
+        html_filter = " | "AWK" '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P|LI|li|script|SCRIPT|style|STYLE)[ >]/,\"\\n&\") ; print ; }' ";
+        filter_count ++;
+    }
+
+    if (filter_count) {
+        unzip_cmd=unzip_cmd" "html_filter" > "htmlFile" 2>/dev/null && rm "downloadedFile;
+    } else {
+        unzip_cmd="mv "downloadedFile" "htmlFile;
+    }
 
     gsub(/;/,"\\&",url); # m.bing.com doesnt like ;
     gsub(/ /,"+",url);
@@ -150,12 +148,15 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     # nmt wget has a bug that causes a segfault if the url basename already exists and has no extension.
     # To fix either make sure action url basename doesnt already exist (not easy with html redirects)
     # or delete the -O target file and use the -c option together.
+
     rm(downloadedFile,1);
-    args = args " -c ";
 
     #d=g_tmp_dir"/wget."PID;
 
     url=qa(url);
+
+    #For tab separated urls - pass as separate args.
+    gsub(/\t/,"' '",url);
 
     cmd = "wget -O "downloadedFile" "args" "url;
     #cmd="( mkdir "d" ; cd "d" ; "cmd" ; rm -fr -- "d" ) ";
@@ -166,6 +167,7 @@ args,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,
     INF("WGET ["url"]");
     result = exec(cmd);
     if (result == 0 ) {
+        #INF("WGET ["unzip_cmd"]");
         result = exec(unzip_cmd);
     }
     if (result != 0) {

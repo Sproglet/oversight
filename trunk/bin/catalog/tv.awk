@@ -874,8 +874,32 @@ tvDbSeriesPage,tvdbid,total,closeTitles) {
     return tvDbSeriesPage;
 }
 
+function same_show_diff_titles(total,showIds,\
+all_same,i,id,title) {
+    if (total > 1) {
+        id=showIds[1,1];
+        title=showIds[1,2];
+        DEBUG(" Check if this is alternate names for same show . eg 'CSI NY' 'CSI: NY'");
+        all_same=1;
+        for(i = 2; i<= total ; i++ ) {
+            if (showIds[i,1] != id) {
+                all_same=0;
+                break;
+            }
+        }
+        if (all_same) {
+            total = 1;
+            INF("Selecting first show");
+            delete showIds;
+            showIds[1,1]=id;
+            showIds[1,2]=title;
+        }
+    }
+    return total;
+}
+
 function search_abbreviations(plugin,minfo,title,\
-cache_key,tvDbSeriesPage,tvdbid,first_letter,showIds,total) {
+cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
     # Abbreviation search
 
     cache_key=minfo["mi_folder"]"@"title;
@@ -891,30 +915,21 @@ cache_key,tvDbSeriesPage,tvdbid,first_letter,showIds,total) {
 
         # List of letters to check - in order.
         # First try to match abbreviation against all shows beggining with the same letter.
-        # Then try all shows beggning with t (for the)
-        # Then try all shows beggning with a (for a / an)
-        # Finally try all shows beggning with i (for it / in)
-        # Finally try all shows beggning with of (for of )
+        # Note the indexes are built so that 'The Walking Dead' is under both T and W.
+        delete showIds;
 
-        if (index(title,"-")) {
+        # Check the letter if it is the first letter of the abbreviation 
+        total=searchAbbreviationAgainstTitles(plugin,tolower(substr(title,1,1)),title,showIds);
+        if (total == 0 && index(title,"-")) {
             sub(/[^-]+-/,"",title);
             INF("removed prefix ["title"]");
+            total=searchAbbreviationAgainstTitles(plugin,tolower(substr(title,1,1)),title,showIds);
         }
 
-        # create list of letters to check
-        first_letter = tolower(substr(title,1,1));
-        
-        delete showIds;
-        # Check athe letter if it is the first letter of the abbreviation 
-        total=searchAbbreviationAgainstTitles(plugin,first_letter,title,showIds);
-        if (total == -1) {
-            INF("too many matches - clearing");
-            delete showIds;
-            total = 0;
-        }
         dump_ids_and_titles("possible matches",total,showIds);
 
         #
+        total = same_show_diff_titles(total,showIds);
         if (total == 1) {
             # If total is 1, then we could still do a filename search to confirm.
             # This will reduce false positives for downloaded content, but may not be so good for user generated files 
@@ -924,24 +939,9 @@ cache_key,tvDbSeriesPage,tvdbid,first_letter,showIds,total) {
         } else if (total > 1) {
 
             #If a show is abbreviated then always do a web search to confirm - even if number of options is 1.
-            #i
 
             #INF("Lot of possible matches - searching by filename");
             total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
-
-
-            # For each title search individually for 'title' + 'filename' and return biggest page.
-            # This search style is disabled - too slow.
-            if (0 && total == 0) {
-
-                #Maximum number of titles to search individually for 'title' + 'filename'
-                MAX_TITLES = 36;
-
-                if (total < MAX_TITLES) {
-                    #  just do a web search with each title and the filename and return the biggest page. 
-                    total = filter_web_titles(total,showIds,cleanSuffix(minfo),showIds);
-                }
-            }
 
             if (total == 0) {
                 #No results using web searchs - try usenet searches 
@@ -995,6 +995,11 @@ names,count) {
     clean_titles_for_abbrev(count,names);
     #dump_ids_and_titles("initial",count,names);
     count = searchAbbreviation(initial,count,names,abbrev,alternateTitles);
+    if (count == -1) {
+        INF("too many matches - clearing");
+        delete alternateTitles;
+        count = 0;
+    }
     id0(count);
     return count;
 }

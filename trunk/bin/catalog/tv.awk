@@ -1136,7 +1136,8 @@ allTitles,url,ret,total) {
 
     if (total == 1) {
         INF("One result - assume it is the match we are looking for - skip similarity check");
-        ret = hash_copy(allTitles,closeTitles);
+        hash_copy(closeTitles,allTitles);
+        ret = 1;
     } else {
         ret = filterSimilarTitles(title,total,allTitles,closeTitles);
     }

@@ -967,7 +967,7 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
                 if (above < cell) cell = above;
 
                 if (cell > threshold && m-i == n-j ) {
-                    INF("abort edit_dist:["source"] ["target"] = " cell);
+                    #INF("abort edit_dist:["source"] ["target"] = " cell);
                     return cell;
                 }
             }

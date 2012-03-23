@@ -1,4 +1,5 @@
-# Add field typde to db.awk
+# When changing search methods pass near misses from one method to the other so that we can correlate across different search methods.
+#
 # add to_string function for all field types.
 # call to_string in new_content and in nfo.db
 # =====================================

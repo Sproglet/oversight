@@ -1112,7 +1112,7 @@ tnum,tried,tmp) {
 # Series are only considered if they have the tags listed in requiredTags
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
-# RETURNS Similarity Score - eg Office UK vs Office UK is a fully qualifed match high score.
+# RETURNS total matches
 # This wrapper function will search with or without the country code.
 function searchTv(plugin,title,closeTitles,\
 allTitles,url,ret,total) {
@@ -1134,7 +1134,12 @@ allTitles,url,ret,total) {
         plugin_error(plugin);
     }
 
-    ret = filterSimilarTitles(title,total,allTitles,closeTitles);
+    if (total == 1) {
+        INF("One result - assume it is the match we are looking for - skip similarity check");
+        ret = hash_copy(allTitles,closeTitles);
+    } else {
+        ret = filterSimilarTitles(title,total,allTitles,closeTitles);
+    }
     id0(ret);
     return 0+ret;
 }
@@ -1300,8 +1305,7 @@ bestTitles,keep,i,num,d,threshold) {
 
     num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
 
-
-    threshold = 6; # number of letter transformations allowed
+    threshold = 4; # number of letter transformations allowed 
     for(i = 1 ; i<=num ; i++ ) {
         d = length(title) - length(allTitles[i,2]);
         if (d >= -3 && d <= 3 ) {

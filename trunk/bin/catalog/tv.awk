@@ -57,63 +57,68 @@ details,line,ret,name,i,start,end) {
 
        line = last_path_parts(minfo,i);
 
-       if (line) {
-           DEBUG("CHECK TV ["line"] vs ["name"]");
+       if (match(tolower(line),"(video|tv|movies).*\\/")) {
+           INF("Generic folder? "line);
+           break;
+       }
+
+       if (line == "") break;
+
+       DEBUG("CHECK TV ["line"] vs ["name"]");
 
 
-           # After extracting the title text we look for matching tv programs
-           # We only look at abbreviations if the title did NOT use the folder name.
-           # The assumption is the people abbreviate file names but not folder names.
-           more_info[1]=(path_parts == 1); # enable abbrevation scraping later only at filename level
+       # After extracting the title text we look for matching tv programs
+       # We only look at abbreviations if the title did NOT use the folder name.
+       # The assumption is the people abbreviate file names but not folder names.
+       more_info[1]=(path_parts == 1); # enable abbrevation scraping later only at filename level
 
-            if (extractEpisodeByPatterns(plugin,line,details,allow_720)==1) {
+        if (extractEpisodeByPatterns(plugin,line,details,allow_720)==1) {
 
 
-                if (details[TITLE] == "" ) {
-                    # format = 202 some text...
-                    # title may be in parent folder. but we will try to search by additional info first.
-                    searchByEpisodeName(plugin,details);
+            if (details[TITLE] == "" ) {
+                # format = 202 some text...
+                # title may be in parent folder. but we will try to search by additional info first.
+                searchByEpisodeName(plugin,details);
+            }
+            if (details[TITLE] ) {
+
+                adjustTitle(minfo,details[TITLE],"filename");
+
+                ret = 1;
+
+                minfo["mi_season"]=details[SEASON];
+                minfo["mi_episode"]=details[EPISODE];
+
+                INF("Found tv info in file name:"line" title:["minfo["mi_title"]"] ["minfo["mi_season"]"] x ["minfo["mi_episode"]"]");
+
+                ## Commented Out As Double Episode checked elsewhere to shrink code ##
+                ## Left In So We Can Ensure It's Ok ##
+                ## If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
+                ## Then prior to any DB lookups we just use the first integer (episode+0)
+                ## To avoid changing the e in the BigBrother d000e format first check its not at the end 
+
+                # local ePos
+
+                #ePos = index(minfo["mi_episode"],",");
+                #if (ePos -1 >= 0 && ( ePos - length(minfo["mi_episode"]) < 0 )) {
+                #    #gsub(/[-e]+/,",",minfo["mi_episode"]);
+                #    #sub(/[-]/,"",minfo["mi_episode"]);
+                #    DEBUG("Double Episode : "minfo["mi_episode"]);
+                #}
+
+
+                minfo_set_id(plugin,details[TVID],minfo);
+
+                # This is the weakest form of tv categorisation, as the filename may just look like a TV show
+                # So only set if it is blank
+                if (minfo["mi_category"] == "") {
+                    minfo["mi_category"] = "T";
                 }
-                if (details[TITLE] ) {
 
-                    adjustTitle(minfo,details[TITLE],"filename");
-
-                    ret = 1;
-
-                    minfo["mi_season"]=details[SEASON];
-                    minfo["mi_episode"]=details[EPISODE];
-
-                    INF("Found tv info in file name:"line" title:["minfo["mi_title"]"] ["minfo["mi_season"]"] x ["minfo["mi_episode"]"]");
-
-                    ## Commented Out As Double Episode checked elsewhere to shrink code ##
-                    ## Left In So We Can Ensure It's Ok ##
-                    ## If the episode is a twin episode eg S05E23E24 => 23e24 then replace e with ,
-                    ## Then prior to any DB lookups we just use the first integer (episode+0)
-                    ## To avoid changing the e in the BigBrother d000e format first check its not at the end 
-
-                    # local ePos
-
-                    #ePos = index(minfo["mi_episode"],",");
-                    #if (ePos -1 >= 0 && ( ePos - length(minfo["mi_episode"]) < 0 )) {
-                    #    #gsub(/[-e]+/,",",minfo["mi_episode"]);
-                    #    #sub(/[-]/,"",minfo["mi_episode"]);
-                    #    DEBUG("Double Episode : "minfo["mi_episode"]);
-                    #}
-
-
-                    minfo_set_id(plugin,details[TVID],minfo);
-
-                    # This is the weakest form of tv categorisation, as the filename may just look like a TV show
-                    # So only set if it is blank
-                    if (minfo["mi_category"] == "") {
-                        minfo["mi_category"] = "T";
-                    }
-
-                    minfo["mi_additional_info"] = clean_title(details[ADDITIONAL_INF]);
-                    # Now check the title.
-                    #TODO
-                    break;
-                }
+                minfo["mi_additional_info"] = clean_title(details[ADDITIONAL_INF]);
+                # Now check the title.
+                #TODO
+                break;
             }
         }
     }

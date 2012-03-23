@@ -20,7 +20,7 @@ function imdb_img_url(url) {
 # list["Remake of"]   =
 #
 function getMovieConnections(id,list,\
-url,htag,connections,i,count,relationship,ret,txt,sep) {
+url,htag,connections,i,count,relationship,ret,txt,sep,hdr) {
     id1("getMovieConnections:"id);
     delete list;
     id = extractImdbId(id);
@@ -28,22 +28,20 @@ url,htag,connections,i,count,relationship,ret,txt,sep) {
     if(id) {
         htag = "h5";
         sep=",";
-        url = "http://www.imdb.com/title/"id"/movieconnections";
-        count=scan_page_for_match_order(url,"<h"SUBSEP"/tt","(<h[1-5]>[^<]+</h[1-5]>|"g_imdb_regex")",0,0,"",connections);
+        url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
+        count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|"g_imdb_regex")",0,0,"",connections);
 
         #dump(0,"movieconnections-"count,connections);
         for(i = 1 ; i <= count ; i++ ) {
             txt = connections[i];
-            if (substr(txt,1,2) == "tt" ) {
+            if (substr(txt,1,2) == "tt" && txt != id ) {
                 if (relationship != "") {
                     list[relationship] = list[relationship] sep connections[i];
                 }
-            } else if(index(txt,"<") ) {
-                if (match(txt,">[^<]+")) {
-                    relationship=substr(txt,RSTART+1,RLENGTH-1);
-                }
             } else {
-                relationship="";
+                # <h4,,,>Header
+                split(txt,hdr,">");
+                relationship=trim(hdr[2]);
             }
         }
         # remove leading comma

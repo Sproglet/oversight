@@ -4,7 +4,7 @@ text,f,line) {
     if (f) { 
         FS="\n";
         while(enc_getline(f,line) > 0) {
-            DEBUG("json:["line[1]"]");
+            #DEBUG("json:["line[1]"]");
             text = text " " line[1];
         }
         enc_close(f);

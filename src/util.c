@@ -835,8 +835,8 @@ int is_nmt200()
     static int result;
     if (check) {
         check = 0;
-        char *cpu_model = getenv("CPU_MODEL");
-        result = (cpu_model != NULL && STRCMP(cpu_model,"74K") == 0);
+        char *path = getenv("PATH");
+        result = (path != NULL && strstr(path,"/opt/syb/sigma/bdj") >= 0);
     }
     return result;
 }

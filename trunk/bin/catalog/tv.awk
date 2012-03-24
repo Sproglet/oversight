@@ -1311,10 +1311,10 @@ bestTitles,keep,i,num,d,threshold) {
 
     num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
 
-    threshold = 4; # number of letter transformations allowed 
+    threshold = 2; # number of letter transformations allowed 
     for(i = 1 ; i<=num ; i++ ) {
         d = length(title) - length(allTitles[i,2]);
-        if (d >= -3 && d <= 3 ) {
+        if (d >= -2 && d <= 2 ) {
             d = edit_dist(allTitles[i,2],title,threshold);
 
             if (d <= threshold) {

@@ -940,7 +940,7 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
     }
 
     if (threshold == 0) {
-        threshold = m+n;
+        threshold = 2;
     }
 
     for (i = 1; i <= n; i++) {

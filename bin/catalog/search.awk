@@ -642,7 +642,6 @@ function init_priority() {
         gPriority["mi_orig_title","themoviedb"]=60; 
 
         gPriority["mi_poster","imdb"]=40;
-        gPriority["mi_poster","motech"]=50;
         gPriority["mi_poster","thetvdb"]=60;
         gPriority["mi_poster","local"]=98;
         gPriority["mi_poster","themoviedb"]=99; # increased now that api v3 has localised poster

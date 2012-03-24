@@ -132,69 +132,7 @@ function download_image(field_id,minfo,mi_field,\
     return poster_ref;
 }
 
-#ALL# To be implemented - maybe
-#ALL# # q = query terms
-#ALL# # wdivh = required width div height ratio (approx)
-#ALL# # dimAfterLink is whether dimension occurs after link in the search results.
-#ALL# # dimreg = regex that matches dimensions 
-#ALL# function bingimg(q,minw,minh,wdivh,dimAfterLink,dimreg,\
-#ALL# url,f,imgurl,txt,html,numhtml,i,w,h,zero,dim,href_regex,len) {
-#ALL#     url="http://www.bing.com/images/search?q="q"&FORM=BIFD";
-#ALL#     #href_regex="http:[-_%A-Za-z0-9.?&:=]+(jpg|png)";
-#ALL#     href_regex="http://[^\"<>]+(jpg|png)";
-#ALL# 
-#ALL#     f = getUrl(url,"image.img",0);
-#ALL#     if (f) {
-#ALL#         FS="\n";
-#ALL#         while((getline txt < f) > 0 && imgurl == "" ) {
-#ALL#             numhtml = split(txt,html,dimreg);
-#ALL#             if (numhtml -1 > 0 ) INF("Image search found "numhtml" images");
-#ALL#             len=0;
-#ALL#             #loop through html segments - looking at each dimension split.
-#ALL#             #as we are looking at the splitsnote we dont need to loop on the last item
-#ALL#             for(i = 1 ; i - numhtml < 0 && imgurl == "" ; i++ ) {
-#ALL# 
-#ALL#                 #track the length as we go along so we know how many chars matched each dimension regex from split
-#ALL#                 len += length(html[i]);
-#ALL# 
-#ALL#                 #extract the dimension
-#ALL#                 dim = substr(txt,len+1);
-#ALL#                 if (match(dim,"^"dimreg)) {
-#ALL#                     dim=substr(dim,1,RLENGTH);
-#ALL#                     len += RLENGTH;
-#ALL#                     INF("Got dimension ["dim"]");
-#ALL#                 } else {
-#ALL#                     ERR("Expected dimension here ["substr(text,len+1,10)"...]");
-#ALL#                     continue;
-#ALL#                 }
-#ALL#                 # Check dimensions
-#ALL#                 w = h = 0;
-#ALL#                 if (match(dim,"^[0-9]+")) w=substr(dim,1,RLENGTH);
-#ALL#                 if (match(dim,"[0-9]+$")) h=substr(dim,RSTART);
-#ALL#                 if (w-minw < 0 || h-minh < 0 ) { INF("Skipping size "dim) ; break }
-#ALL#                 zero = (h * wdivh / w) - 1 ;
-#ALL#                 if (zero * zero > 0.1 ) { INF("Skipping a/r "dim) ; break ; }
-#ALL# 
-#ALL#                 #now try to extract the image
-#ALL#                 if (dimAfterLink) {
-#ALL#                     #get first image url in the next html segment
-#ALL#                     if (match(html[i+1],href_regex) ) {
-#ALL#                         imgurl=substr(html[i+1],RSTART,RLENGTH);
-#ALL#                     }
-#ALL#                 } else {
-#ALL#                     #get the last image url in the current html segment
-#ALL#                     if (match(html[i+1],".*"href_regex)) {
-#ALL#                         if ( match(substr(html[i+1],RSTART,RLENGTH) , href_regex"$" )) {
-#ALL#                             imgurl=substr(html[i+1],RSTART,RLENGTH);
-#ALL#                         }
-#ALL#                     }
-#ALL#                 }
-#ALL#                 INF("Found ["imgurl"] with dimension "dim);
-#ALL#             }
-#ALL#         }
-#ALL#     }
-#ALL# }
-#ALL# 
+#ALL# for poster search use the iamge API bing or yahoo have one. To be implemented - maybe
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
@@ -204,39 +142,8 @@ function getNiceMoviePosters(minfo) {
 
         #poster_url = bingimg(minfo["mi_title"]" "minfo["mi_year"]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
 
-        if (is_better_source(minfo,"mi_poster","motech")) {
-            best_source(minfo,"mi_poster",get_motech_img(minfo),"motech");
-        }
+#        if (is_better_source(minfo,"mi_poster","XXXXXX")) {
+#            best_source(minfo,"mi_poster",get_XXXXXX_img(minfo),"xxxxxx");
+#        }
     }
 }
-
-# TODO this may have to use original title if title is localized
-function get_motech_img(minfo,\
-referer_url,url,url2,motech_title) {
-    #if (1) {
-
-    motech_title = tolower(minfo["mi_title"]"-"minfo["mi_year"]);
-    gsub(/[^[:alnum:]]+/,"-",motech_title);
-    sub(/-$/,"",motech_title);
-
-    referer_url = "http://www.motechposters.com/title/"motech_title"/";
-    #} else {
-    #search_url="http://www.google.com/search?q=allintitle%3A+"minfo["mi_title"]"+("minfo["mi_year"]")+site%3Amotechposters.com";
-    #referer_url=scanPageFirstMatch(search_url,"http://www.motechposters.com/title[^\"]+",0);
-    #}
-    if (referer_url != "" ) {
-        url2=scanPageFirstMatch(referer_url,"/posters","/posters/[^\"]+jpg",0);
-        if (url2 != ""  && index(url2,"thumb.jpg") == 0 ) {
-            url="http://www.motechposters.com" url2;
-
-            url=url"\t"referer_url;
-            INF("Got motech poster "url);
-        } else {
-            INF("No motech poster for "motech_title);
-        }
-    }
-    return url;
-}
-
-
-

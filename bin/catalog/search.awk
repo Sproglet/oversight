@@ -643,12 +643,14 @@ function init_priority() {
 
         gPriority["mi_poster","imdb"]=40;
         gPriority["mi_poster","thetvdb"]=60;
-        gPriority["mi_poster","local"]=98;
-        gPriority["mi_poster","themoviedb"]=99; # increased now that api v3 has localised poster
+        gPriority["mi_poster","web"]=70;
+        gPriority["mi_poster","themoviedb"]=90; # increased now that api v3 has localised poster
+        gPriority["mi_poster","local"]=100;
 
         gPriority["mi_fanart","thetvdb"]=60;
-        gPriority["mi_fanart","local"]=98;
-        gPriority["mi_fanart","themoviedb"]=99; # increased now api v3 has localised posters
+        gPriority["mi_fanart","web"]=70;
+        gPriority["mi_fanart","themoviedb"]=90; # increased now api v3 has localised posters
+        gPriority["mi_fanart","local"]=100;
 
         gPriority["mi_rating","themoviedb"]=20;
         gPriority["mi_rating","thetvdb"]=20;

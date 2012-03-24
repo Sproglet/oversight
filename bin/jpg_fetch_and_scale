@@ -193,7 +193,13 @@ add_queue() {
         args=
         type="$2"
         for i in "$@" ; do
-            i="`echo "$i" | sed "s/'/'\\''/g;s/^/'/;s/$/'/"`"
+            # Yes sixteen backslashes to get a single one in output
+            # 1 = oput
+            # *2 to survive final eval - line 250
+            # *2 to survive final echo
+            # *2 to survive backticks
+            # * 2 for sed.
+            i="`echo "$i" | sed "s/'/'\\\\\\\\\\\\\\\\''/g;s/^/'/;s/$/'/"`"
             args="$args $i"
         done
         mkdir -p "$Q.$type"
@@ -247,7 +253,8 @@ process_queue() {
 
 
             while FS= read line ; do
-                eval fetch_resize $line
+                INFO "line[$line]"
+                eval fetch_resize "$line"
             done < "$pq_args"
 
             rm -f "$pq_args"

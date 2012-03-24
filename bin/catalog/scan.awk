@@ -747,8 +747,8 @@ cat,minfo2,locales,id) {
                         if (cat == "M") {
                             id = extractImdbId(bestUrl);
                             get_themoviedb_info(id,minfo);
-                            # Only get IMDB connections if we havent got tmdb one
-                            if (minfo["mi_set"] == "") {
+                            # Only get IMDB connections if we havent got tmdb one and we have not visited tmdb
+                            if (minfo["mi_set"] == "" && index(minfo["mi_idlist"],"themoviedb") == 0) {
                                 imdb_movie_connections(minfo);
                             }
                             getNiceMoviePosters(minfo);

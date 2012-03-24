@@ -18,7 +18,7 @@
 #define IMDB_GROUP_SEP ','
 #define IMDB_GROUP_BASE 128
 
-int in_same_set(DbItem *d1,DbItem *d2);
+int in_same_set(DbItem *item1,DbItem *item2);
 
 DbGroupIMDB *db_group_imdb_new(
         int size,      // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
@@ -406,24 +406,45 @@ int db_overview_menu_eqf(void *item1,void *item2) {
         }
 
     }
+    /*
+    HTML_LOG(0,"EQUALS [%d:%s] vs [%d:%s] = %d",
+            ((DbItem*)item1)->external_id,((DbItem*)item1)->title,
+            ((DbItem*)item2)->external_id,((DbItem*)item2)->title,ret);
+            */
     return ret;
 }
 
-int in_same_set(DbItem *d1,DbItem *d2)
+/**
+ * Each movie might have an optional list of set ids in space separated string.
+ */
+int in_same_set(DbItem *item1,DbItem *item2)
 {
-    if (d1->sets != NULL && d2->sets != NULL) {
-        int i,j;
-        if (d1->set_array == NULL) d1->set_array=split(d1->sets," ",0);
-        if (d2->set_array == NULL) d2->set_array=split(d2->sets," ",0);
-        for(i = 0 ; i < d1->set_array->size ; i++ ) {
-            for(j = 0 ; j < d2->set_array->size ; j++ ) {
-                if (STRCMP(d1->set_array->array[i],d2->set_array->array[j]) == 0) {
-                    return 1;
+    int ret = 0;
+
+    if (g_moviebox_mode) {
+        if ( EQ_MOVIE(item1,item2)) {
+            ret = 1;
+        } else {
+            if (item1->sets != NULL && item2->sets != NULL) {
+
+                // Sensible way - aplit into an array and loop through values.
+                int i,j;
+                if (item1->set_array == NULL) item1->set_array=splitstr(item1->sets," ");
+                if (item2->set_array == NULL) item2->set_array=splitstr(item2->sets," ");
+                for(i = 0 ; !ret && (i < item1->set_array->size) ; i++ ) {
+                    for(j = 0 ; j < item2->set_array->size ; j++ ) {
+                        if (STRCMP(item1->set_array->array[i],item2->set_array->array[j]) == 0) {
+                            ret = 1;
+                            break;
+                        }
+                    }
                 }
             }
         }
+    } else {
+       ret = EQ_FILE(item1,item2);
     }
-    return 0;
+    return ret;
 }
 
 unsigned int db_overview_menu_hashf(void *item)
@@ -440,22 +461,11 @@ unsigned int db_overview_menu_hashf(void *item)
                 }
                 break;
             case 'M':
-                if (DBR(item)->external_id == 0) {
-
-                    h  = stringhash(DBR(item)->file);
-
+                if (g_moviebox_mode) {
+                    h = 1; // let equals function do the hard work.
                 } else {
-
-                    if (g_moviebox_mode) {
-                        if (DBR(item)->sets != NULL) {
-                            h = 1; // let equals function do the hard work.
-                        } else {
-                            h  = stringhash(DBR(item)->file);
-                        }
-                    } else {
-                        // All movies are unique by file
-                        h  = stringhash(DBR(item)->file);
-                    }
+                    h = DBR(item)->id;
+                    // h  = stringhash(DBR(item)->file);
                 }
                 break;
             default:

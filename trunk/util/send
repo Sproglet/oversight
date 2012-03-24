@@ -5,7 +5,7 @@ while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 OVS_PARENT="$( cd "$( dirname "$EXE" )"/../.. && pwd )"
 
 d="`pwd`"
-d="`echo "$d" | sed "s;$OVS_PARENT;Apps;"`"
+d="`echo "$d" | sed "s;.*/oversight/;Apps/oversight/;"`"
 echo "end path = $d"
 
 

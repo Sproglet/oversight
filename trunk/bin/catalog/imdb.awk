@@ -13,44 +13,50 @@ function imdb_img_url(url) {
 }
 
 # input imdb id
-# OUT: list - array of strings of CSV imdb ids.
-# list["Follows"]     = list of imdb ids that follow this movie etc.
-# list["Followed by"] = 
-# list["Remade as"]   =
-# list["Remake of"]   =
-#
-function getMovieConnections(id,list,\
-url,htag,connections,i,count,relationship,ret,txt,sep,hdr) {
-    id1("getMovieConnections:"id);
-    delete list;
-    id = extractImdbId(id);
+# OUT: id of lowest movie id in Follows(prequels)
+# updates minfo["mi_set"]
+function imdb_movie_connections(minfo,\
+id,url,htag,connections,i,count,relationship,ret,txt,sep,hdr,prequels,sequels,sections,set) {
 
-    if(id) {
-        htag = "h5";
-        sep=",";
-        url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
-        count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|"g_imdb_regex")",0,0,"",connections);
 
-        #dump(0,"movieconnections-"count,connections);
-        for(i = 1 ; i <= count ; i++ ) {
-            txt = connections[i];
-            if (substr(txt,1,2) == "tt" && txt != id ) {
-                if (relationship != "") {
-                    list[relationship] = list[relationship] sep connections[i];
+    prequels = "Follows";
+    sequels = "Followed by";
+
+    if (minfo["mi_category"] == "M") {
+        id = imdb(minfo);
+        id1("getMovieConnections:"id);
+
+        if(id) {
+            htag = "h5";
+            sep=",";
+            url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
+            count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|"g_imdb_regex")",0,0,"",connections);
+
+            #dump(0,"movieconnections-"count,connections);
+            set[id] = id;
+            for(i = 1 ; i <= count ; i++ ) {
+                txt = connections[i];
+                if (substr(txt,1,2) == "tt" ) {
+                    if (relationship == prequels || relationship == sequels ) {
+                        # Sequels may have lower ID eg Star Wars etc. Prequels made after first movie.
+                        set[txt] = txt;
+                    }
+                } else {
+                    if (relationship == prequels ) sections++;
+                    else if (relationship == sequels ) sections++;
+                    else if (sections == 2) break;
+                    # <h4,,,>Header
+                    split(txt,hdr,">");
+                    relationship=trim(hdr[2]);
                 }
-            } else {
-                # <h4,,,>Header
-                split(txt,hdr,">");
-                relationship=trim(hdr[2]);
+            }
+            asort(set);
+            if (sections) {
+                ret = minfo["mi_set"] = "imdb:"set[1];
             }
         }
-        # remove leading comma
-        for(i in list) {
-            list[i] = imdb_list_shrink(substr(list[i],length(sep)+1),sep,128);
-        }
+        id0(ret);
     }
-    dump(0,id" movie connections",list);
-    id0(ret);
     return ret;
 }
 

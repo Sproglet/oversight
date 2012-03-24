@@ -93,9 +93,7 @@ row,est,nfo,op) {
     if (is_file(minfo["mi_folder"]"/"nfo)) {
         row=row"\t"NFO"\t"nfo;
     }
-    if (minfo["mi_conn_follows"]) row=row"\t"CONN_FOLLOWS"\t"minfo["mi_conn_follows"];
-    if (minfo["mi_conn_followed_by"]) row=row"\t"CONN_FOLLOWED"\t"minfo["mi_conn_followed_by"];
-    if (minfo["mi_conn_remakes"]) row=row"\t"CONN_REMAKES"\t"minfo["mi_conn_remakes"];
+    if (minfo["mi_set"]) row=row"\t"SET"\t"minfo["mi_set"];
     if (minfo["mi_video"]) row=row"\t"VIDEO"\t"minfo["mi_video"];
     if (minfo["mi_audio"]) row=row"\t"AUDIO"\t"minfo["mi_audio"];
     if (minfo["mi_mb"]) row=row"\t"SIZEMB"\t"minfo["mi_mb"];
@@ -205,9 +203,7 @@ function set_db_fields() {
 
     IMDBID=db_field("_imdb","IMDBID","id");
     TVID=db_field("_tvid","TVID","id");
-    CONN_FOLLOWS=db_field("_a","FOLLOWS","",g_dbtype_imdblist); # Comes After
-    CONN_FOLLOWED=db_field("_b","FOLLOWED","",g_dbtype_imdblist); # Comes Before
-    CONN_REMAKES=db_field("_k","REMAKES","",g_dbtype_imdblist); # Movies remaKes
+    SET=db_field("_a","SET","",""); 
 
     VIDEO=db_field("_v","VIDEO","");
     AUDIO=db_field("_S","SOUND","");

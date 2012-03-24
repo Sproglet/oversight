@@ -661,7 +661,7 @@ name) {
 
 function verify_setup(\
 tmp,tmp2,j,k) {
-    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_conn_followed_by mi_conn_follows mi_conn_remakes mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb_title mi_media mi_motech_title mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url mi_video mi_audio mi_mb mi_videosource mi_ovsid";
+    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_set mi_set_name mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb_title mi_media mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url mi_video mi_audio mi_mb mi_videosource mi_ovsid";
     j=split(tmp,tmp2," ");
     for(k = 1 ; k <= j ; k++ ) {
         tmp2[k+j] = tmp2[k]"_source";

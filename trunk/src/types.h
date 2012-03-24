@@ -136,9 +136,9 @@ typedef struct Dbrowid_struct {
     struct Dbrowid_struct *linked;
     int link_count;
 
-    struct DbGroupIMDB_struct *comes_after;
-    struct DbGroupIMDB_struct *comes_before;
-    struct DbGroupIMDB_struct *remakes;
+    // Space separated list of set ids - imdb sets are imdb:ttnnnnn = id of first movie , tmdb sets use collection id
+    char *sets;
+    Array *set_array; // sets split into array.
 
     struct DbGroupIMDB_struct *directors;
     struct DbGroupIMDB_struct *actors;

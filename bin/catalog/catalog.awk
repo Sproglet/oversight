@@ -322,11 +322,13 @@ END{
 
     g_themoviedb_api_url = "http://api.themoviedb.org/3";
 
-    #g_search_engine[0]=g_search_bing2;
-    g_search_engine[0]=g_search_yahoo;
-    g_search_engine[1]=g_search_bing;
+    # Following search engines are used in round robi,=n
+    g_search_engine[0]=g_search_bing_mobile;
+    g_search_engine[1]=g_search_yahoo;
+    g_search_engine[2]=g_search_bing_desktop;
+
     #g_search_engine[2]=g_search_ask; results too similar to google giving false +ves.
-    g_search_engine_count=2;
+    g_search_engine_count=hash_size(g_search_engine);
     g_search_engine_current=0;
 
     engine_check(g_search_google);

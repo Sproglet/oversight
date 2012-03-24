@@ -53,26 +53,10 @@ GridDirection str2grid_direction(char *tmp) {
 
 // --------------------------------------------------------
 
-MovieBoxsetMode str2movie_boxset_mode(char *tmp)
-{
-    static EnumSet es[] = {
-        { "by_first", MOVIE_BOXSETS_FIRST },
-        { "by_last", MOVIE_BOXSETS_LAST },
-        { "by_any", MOVIE_BOXSETS_ANY },
-        { "disbled", MOVIE_BOXSETS_NONE },
-        { NULL, MOVIE_BOXSETS_NONE }
-    };
-    return (MovieBoxsetMode) enum_name2id(tmp,es);
-}
-
 void get_boxset_modes()
 {
-    g_moviebox_mode = str2movie_boxset_mode(oversight_val("ovs_movieboxsets"));
-
-    if (!config_check_long(g_oversight_config,"ovs_tvboxsets",&g_tvboxset_mode)) {
-        g_tvboxset_mode = 0;
-    }
-
+    g_moviebox_mode = (*oversight_val("ovs_movieboxsets") != '0');
+    g_tvboxset_mode = (*oversight_val("ovs_tvboxsets") != '0');
 }
 
 // ---------------------------------------------------------

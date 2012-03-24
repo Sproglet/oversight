@@ -153,7 +153,7 @@ function timestamp(label,x) {
     if (index(x,g_api_rage) ) gsub(g_api_rage,".",x);
 
     if (index(x,"app.i") ) {
-        sub("app.i[a-z0-9/?=&]+","",x);
+        sub("app.i[[:alnum:]/?=&]+","",x);
     }
     if (index(x,"d=") ) {
         sub("password.?=([^,]+)","password=***",x);
@@ -263,7 +263,7 @@ i,bestScore,count,tmp,isHigher) {
 }
 
 function p2p_filename(f) {
-    return f ~ /^[a-z0-9]+-[a-z0-9-]*$/ ;
+    return f ~ /^[[:alnum:]]+-[[:alnum:]-]*$/ ;
 }
 
 #result in a2
@@ -567,7 +567,7 @@ y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture,m2,d2) {
 
     capture=ss"\\1"ss"\\2"ss"\\3"ss; # capture regex subexpressions
 
-    #mword="[A-Za-z]+";
+    #mword="[[:alpha:]]+";
     mword=tolower("("g_months_short"|"g_months_long")");
 
     if (split(gensub(g_year_re s m1or2 s d1or2,capture,1,line),matches,ss) == 5) {
@@ -1070,7 +1070,7 @@ t2,changed) {
     changed=0;
     if (index(t,".")) {
         do {
-            t2=gensub(/\<([A-Za-z])\.([A-Za-z])\>/,"\\1@@\\2","g",t);
+            t2=gensub(/\<([[:alpha:]])\.([[:alpha:]])\>/,"\\1@@\\2","g",t);
             if (t2 ==t) {
                 if (changed) gsub(/@@/,"",t);
                 break;
@@ -1079,7 +1079,7 @@ t2,changed) {
             changed=1;
         } while(1);
 
-#        while (match(t,"\\<[A-Za-z]\\>[.]\\<[A-Za-z]\\>")) {
+#        while (match(t,"\\<[[:alpha:]]\\>[.]\\<[[:alpha:]]\\>")) {
 #            t = substr(t,1,RSTART) "@@" substr(t,RSTART+2);
 #        }
 #        gsub(/@@/,"",t);

@@ -91,7 +91,7 @@ year,text) {
 
                     } else if (search_order[s] == "IMDBFIRST") {
 
-                        if (name_try ~ "^[a-zA-Z0-9]+-[a-zA-Z0-9]+$" ) {
+                        if (name_try ~ "^[[:alnum:]]+-[[:alnum:]]+$" ) {
                             # quote hyphenated file names
                             name_try = "\""name_try"\"";
                         } else {

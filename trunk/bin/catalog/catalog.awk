@@ -113,7 +113,7 @@ BEGIN {
     # there is some overlap between words and phrases - eg 'and' - this will be refined over time. Esp with Germanic languages some
     # short words may not be enough to distinguish
     g_english_words_re="([Ww]oman|girls?|boys?|family|group|[Ss]he|[Hh]e|from|who|what|where|when|how|with|his|and|for|are|[Tt]hey|their|them|attempt(|s|ed)|decides?|learns?|forced|offers|goes|plans?|wants?|tries|try|until|became|becomes?|lives?|life|have|after|before|must|plays?|years?|come|has|out|stops?|helps?|will|finds?|reali[sz]es?|that|into|falls|retrieve|[Ii]nvestigat(es?|ing)|a plot|[Ss]muggl(es?|ing)|to be|plan(s?|ning)|destroys?)"g_english_end_re;
-    # Investigating / smuggling / planning / replaced with [a-z]+[bcdfghj-np-tv-z]ing
+    # Investigating / smuggling / planning / replaced with [[:lower:]]+[bcdfghj-np-tv-z]ing
     g_english_phrase_re="((in|to|by|for|is|on|as|of|and) (a|an|the|his|her|their|they|order)"g_english_end_re"|[Tt]he +[a-z])";
     g_english_re=g_english_start_re"("g_english_words_re"|"g_english_phrase_re")";
 
@@ -128,7 +128,7 @@ BEGIN {
 
     g_8bit="€-ÿ"; // range 0x80 - 0xff
 
-    g_alnum8 = "a-zA-Z0-9" g_8bit;
+    g_alnum8 = "[:alnum:]" g_8bit;
 
     # Remove any punctuation except quotes () [] {} - also keep high bit
     # Added Semicolon for titles such as Terminator:Sarah Connor Chronicles, Star Wars: Clone Wars etc.
@@ -141,10 +141,10 @@ BEGIN {
     g_nonquote_regex = "[^\"']";
 
     #g_imdb_regex="\\<tt[0-9]+\\>";
-    g_imdb_regex="tt[0-9][0-9][0-9][0-9][0-9]+"; #bit better performance
+    g_imdb_regex="tt[[:digit:]]{5,7}"; #bit better performance
 
     g_year_re="(20[01][0-9]|19[0-9][0-9])";
-    g_imdb_title_re="[A-Z0-9"g_8bit"]["g_alnum8"& '.]*[ (.]"g_year_re"[).]?";
+    g_imdb_title_re="[[:upper:][:digit:]"g_8bit"]["g_alnum8"& '.]*[ (.]"g_year_re"[).]?";
 
     g_roman_regex="i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv";
 
@@ -680,7 +680,7 @@ ret,f,numok,numbad) {
             ERR("bad field ["f"] = ["minfo[f]"]");
             numbad++;
         }  else {
-            if (match(f,"^mi_[a-z]+_(names|ids)$")  && index(minfo[f],"@") == 0) {
+            if (match(f,"^mi_[[:lower:]]+_(names|ids)$")  && index(minfo[f],"@") == 0) {
                 #format should be domain@id1@id2@.. or domain@name1@name2@..
                 #eg imdb@nm0000123@nm0000456 or allocine@Sean Connery@Roger Moore@
                 ERR("bad format field ["f"] = ["minfo[f]"]");
@@ -715,7 +715,7 @@ function remove_tags(line) {
     }
 
     if (index(line,"&")) {
-        gsub(/[&][a-z]+;/,"",line);
+        gsub(/[&][[:lower:]]+;/,"",line);
     }
 
     #line=de_emphasise(line);
@@ -987,7 +987,7 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "PARALLEL_SCAN" )  {
             PARALLEL_SCAN=1;
             moveDown++;
-        } else if (match(ARGV[i],"^[a-zA-Z_]+=")) {
+        } else if (match(ARGV[i],"^[[:alpha:]_]+=")) {
             #variable assignment - keep for awk to process
         } else {
             # A folder or file

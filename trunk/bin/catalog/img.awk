@@ -216,7 +216,7 @@ referer_url,url,url2,motech_title) {
     #if (1) {
 
     motech_title = tolower(minfo["mi_title"]"-"minfo["mi_year"]);
-    gsub(/[^a-z0-9]+/,"-",motech_title);
+    gsub(/[^[:alnum:]]+/,"-",motech_title);
     sub(/-$/,"",motech_title);
 
     referer_url = "http://www.motechposters.com/title/"motech_title"/";

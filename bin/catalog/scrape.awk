@@ -558,9 +558,6 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
         }
 
         if (!err) {
-            if(index(domain,"imdb")) {
-                imdb_extra_info(minfo2,url);
-            }
             if (store) {
                 if (imdbid) {
                     minfo_set_id("imdb",imdbid,minfo2);
@@ -1510,7 +1507,6 @@ i,num,locales,minfo2) {
 
         if (fetch_ijson_details(extractImdbId(url),minfo2)) {
 
-            imdb_extra_info(minfo2,url);
             minfo_merge(minfo,minfo2,"imdb");
 
         } else {
@@ -1537,29 +1533,6 @@ i,num,locales,minfo2) {
     return minfo["mi_category"];
 }
 
-# Get extra imdb info
-function imdb_extra_info(minfo,url,\
-ret,remakes,connections) {
-    minfo_set_id("imdb",extractImdbId(url),minfo);
-    if (minfo["mi_category"] == "M") {
-
-        getMovieConnections(extractImdbId(url),connections);
-
-        if (connections["Remake of"] != "") {
-            getMovieConnections(imdb_list_expand(connections["Remake of"]),remakes);
-        }
-
-        minfo["mi_conn_follows"]= connections["Follows"];
-        minfo["mi_conn_followed_by"]= connections["Followed by"];
-        minfo["mi_conn_remakes"]=remakes["Remade as"];
-
-        INF("follows="minfo["mi_conn_follows"]);
-        INF("followed_by="minfo["mi_conn_followed_by"]);
-        INF("remakes="minfo["mi_conn_remakes"]);
-    }
-    ret = minfo["mi_category"];
-    return ret;
-}
 
 # Extract Actor names and portraits from html.
 #

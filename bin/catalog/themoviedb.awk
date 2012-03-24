@@ -173,6 +173,9 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,ln,name) {
 
             minfo2["mi_fanart"]=tmdb_config("backdrop_path")json["backdrop_path"];
 
+            minfo2["mi_set"] = sprintf("themoviedb:%06d",json["belongs_to_collection:id"]);
+            minfo2["mi_set_name"] = json["belongs_to_collection:name"];
+
             minfo_merge(minfo,minfo2,"themoviedb");
             ret = 1;
             break;

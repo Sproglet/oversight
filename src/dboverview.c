@@ -19,6 +19,7 @@
 #define IMDB_GROUP_BASE 128
 
 static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode);
+int in_same_set(DbItem *d1,DbItem *d2);
 
 DbGroupIMDB *db_group_imdb_new(
         int size,      // max number of imdb entries 0 = IMDB_GROUP_MAX_SIZE
@@ -393,7 +394,13 @@ int db_overview_menu_eqf(void *item1,void *item2) {
                 }
                 break;
             case 'M':
-               ret = in_same_db_imdb_group(((DbItem*)item1),((DbItem*)item2),g_moviebox_mode);
+                /***-----
+                 * This code needs a big re-write to support multiple sets.
+                 * Because it uses a hash - each movie can only appear in a single set.
+                 * However because Oversight GUI might not be around much longer, we'll create
+                 * a broken equals function.
+                 */
+                 ret = in_same_set(((DbItem*)item1),((DbItem*)item2));
                 break;
             default:
                ret = EQ_FILE(item1,item2);
@@ -402,6 +409,24 @@ int db_overview_menu_eqf(void *item1,void *item2) {
     }
     return ret;
 }
+
+int in_same_set(DbItem *d1,DbItem *d2)
+{
+    if (d1->sets != NULL && d2->sets != NULL) {
+        int i,j;
+        if (d1->set_array == NULL) d1->set_array=split(d1->sets," ",0);
+        if (d2->set_array == NULL) d2->set_array=split(d2->sets," ",0);
+        for(i = 0 ; i < d1->set_array->size ; i++ ) {
+            for(j = 0 ; j < d2->set_array->size ; j++ ) {
+                if (STRCMP(d1->set_array->array[i],d2->set_array->array[j]) == 0) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 unsigned int db_overview_menu_hashf(void *item)
 {
     if (DBR(item)->tmp_hash == 0) {
@@ -422,39 +447,15 @@ unsigned int db_overview_menu_hashf(void *item)
 
                 } else {
 
-                    switch(g_moviebox_mode) {
-                        case MOVIE_BOXSETS_FIRST:
-                            if (DBR(item)->comes_after == NULL) {
-                                // If it doesnt follow anything then it is the main item
-                                h = DBR(item)->external_id ;
-                            } else {
-                                h = DBR(item)->comes_after->dbgi_ids[0];
-                            }
-                            break;
-                        case MOVIE_BOXSETS_LAST:
-                            if (DBR(item)->comes_before == NULL) {
-                                // If nothing follows it is the last item
-                                h = DBR(item)->external_id ;
-                            } else {
-                                int size = DBR(item)->comes_before->dbgi_size;
-                                h = DBR(item)->comes_before->dbgi_ids[size-1];
-                            }
-                            break;
-                        case MOVIE_BOXSETS_ANY:
-                            // If we are comparing any item then all items 
-                            // have the same hash value and the eq fn does the 
-                            // heavy lifting.
-                            // This may not work as expected.
-                            h = 1;
-                            break;
-                        case MOVIE_BOXSETS_NONE:
-                            // All movies are unique by file
+                    if (g_moviebox_mode == MOVIE_BOXSETS_NONE) {
+                        // All movies are unique by file
+                        h  = stringhash(DBR(item)->file);
+                    } else {
+                        if (DBR(item)->sets != NULL) {
+                            h = 1; // let equals function do the hard work.
+                        } else {
                             h  = stringhash(DBR(item)->file);
-                            break;
-                        default:
-                            // All movies are unique by file
-                            h  = stringhash(DBR(item)->file);
-                            break;
+                        }
                     }
                 }
                 //HTML_LOG(0,"%d title[%s (%d)] hash [%u]",g_moviebox_mode,DBR(item)->title,DBR(item)->year,h);
@@ -466,137 +467,6 @@ unsigned int db_overview_menu_hashf(void *item)
     }
     return DBR(item)->tmp_hash;
 }
-
-// Used to iterate over the various movie connections.
-// return the next valid movie connection.
-// r = row id
-// *list = 1 (return from comes_after ) =2 return external_id , =3 return from comes_before
-// *idx = index within the above list.
-// If *idx exceeeds list size then *list is incremented.
-// group must be evaluated first.
-//
-static inline int get_imdbid_from_connections(DbItem *r,int *list,int *idx) {
-    switch(*list) {
-        case 0: // looking at ->comes_after
-            if (r->comes_after==NULL || *idx >= r->comes_after->dbgi_size ) {
-                *idx = 0;
-                (*list)++;
-                // fall thru
-            } else {
-                return r->comes_after->dbgi_ids[*idx];
-            }
-        case 1: // looking at ->external_id
-            if (*idx >= 1) {
-                *idx = 0;
-                (*list)++;
-                // fall thru
-            } else {
-                return r->external_id;
-            }
-        case 2: // looking at ->comes_before
-            if (r->comes_before==NULL || *idx >= r->comes_before->dbgi_size ) {
-                *idx = 0;
-                (*list)++;
-                // fall thru
-            } else {
-                return r->comes_before->dbgi_ids[*idx];
-            }
-        default:
-            return 0;
-    }
-}
-#define FIRST_CONNECTION(r) ((r)->comes_after\
-        ?(r)->comes_after->dbgi_ids[0]\
-        :(r)->external_id)
-
-#define LAST_CONNECTION(r) ((r)->comes_before\
-        ?(r)->comes_before->dbgi_ids[(r)->comes_before->dbgi_size-1]\
-        :(r)->external_id)
-
-static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode)
-{
-   int ret = 0;
-   //int log=0;
-
-   //HTML_LOG(0,"in_same_db_imdb_group [%s] against [%s]", item1->title,item2->title);
-
-   if (item1->external_id && item2->external_id ) {
-
-       if (item1->external_id == item2->external_id) {
-           ret = 1;
-
-       } else {
-           //if (item1->external_id == 78748) log=1;
-           //if (item2->external_id == 78748) log=1;
-
-           switch(movie_boxset_mode) {
-               case MOVIE_BOXSETS_FIRST:
-                   //EVALUATE_GROUP(item1->comes_after);
-                   //EVALUATE_GROUP(item2->comes_after);
-                   ret = FIRST_CONNECTION(item1) == FIRST_CONNECTION(item2);
-                   break;
-               case MOVIE_BOXSETS_LAST:
-                   //EVALUATE_GROUP(item1->comes_before);
-                   //EVALUATE_GROUP(item2->comes_before);
-                   ret = LAST_CONNECTION(item1) == LAST_CONNECTION(item2);
-                   break;
-               case MOVIE_BOXSETS_ANY:
-                   //EVALUATE_GROUP(item1->comes_after);
-                   //EVALUATE_GROUP(item2->comes_after);
-                   //EVALUATE_GROUP(item1->comes_before);
-                   //EVALUATE_GROUP(item2->comes_before);
-                       // only check for overlap if at least one of the movies has before/after sets
-                   if ( item1->comes_before || item1->comes_after || item2->comes_before || item2->comes_after ) {
-                       // Step over both item1 and item2 movie connections until we hit a connection.
-                       // This is coded to be a O(n) search. Step over both sets of movie connections 
-                       // at the same time.
-                       // The code is a little messy because movie connections are split into 3 parts
-                       // comes_after, external_id and comes_before.
-                       // We could join it together and have a neat iteration over a single array for each item but that is more clock cycles.
-                       int rid1list = 0;
-                       int rid2list = 0;
-                       int rid1idx = 0;
-                       int rid2idx = 0;
-
-                       int imdb1,imdb2;
-                       while(1) {
-                           if ((imdb1= get_imdbid_from_connections(item1,&rid1list,&rid1idx)) == 0 ) {
-                               break;
-                           }
-
-                           if ((imdb2= get_imdbid_from_connections(item2,&rid2list,&rid2idx)) == 0 ) {
-                               break;
-                           }
-
-                           //if (log) {
-                               //HTML_LOG(0,"cmp [%s/%d/%d]=%d against [%s/%d/%d]=%d",
-                                       //item1->title,rid1list,rid1idx,imdb1,
-                                       //item2->title,rid2list,rid2idx,imdb2);
-                           //}
-
-                           if (imdb1 < imdb2 ) {
-                               rid1idx ++;
-                           } else if (imdb1 > imdb2 ) {
-                               rid2idx ++;
-                           } else {
-                               ret = 1;
-                               break;
-                           }
-                       }
-                   }
-                  break;
-              case MOVIE_BOXSETS_NONE:
-                  ret = EQ_FILE(item1,item2);
-                  break;
-              default:
-                  ret = EQ_FILE(item1,item2);
-                  break;
-          }
-      }
-   }
-   return ret;
-}
-
 
 void overview_dump(int level,char *label,struct hashtable *overview) {
     struct hashtable_itr *itr;

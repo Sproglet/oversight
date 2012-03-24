@@ -27,6 +27,9 @@ void db_rowid_free(DbItem *item,int free_base)
     int i;
     if(item) {
 
+        FREE(item->sets);
+        ARRAY_FREE(item->set_array);
+
     //    HTML_LOG(0,"%s %lu %lu",item->title,item,item->file);
     //    HTML_LOG(0,"%s",item->file);
         FREE(item->title);
@@ -56,10 +59,6 @@ void db_rowid_free(DbItem *item,int free_base)
         FREE(item->nfo);
 
         FREE(item->certificate);
-
-        db_group_imdb_free(item->comes_after,1);
-        db_group_imdb_free(item->comes_before,1);
-        db_group_imdb_free(item->remakes,1);
 
         FREE(item->idlist);
 
@@ -232,14 +231,6 @@ DbItem *dbread_and_parse_row(
 
     if (rowid) {
 #if 0
-        if (rowid->comes_after) {
-            HTML_LOG(0,"[%s/%d] comes_after [%s]",rowid->title,rowid->external_id,
-                    db_group_imdb_string_static(rowid->comes_after,"tt"));
-        }
-        if (rowid->comes_before) {
-            HTML_LOG(0,"[%s/%d] comes_before [%s]",rowid->title,rowid->external_id,
-                    db_group_imdb_string_static(rowid->comes_before,"tt"));
-        }
         if (rowid->directors) {
             HTML_LOG(0,"[%s/%d] directors [%s]",rowid->title,rowid->external_id,
                     db_group_imdb_string_static(rowid->directors,"nm"));
@@ -301,9 +292,7 @@ void db_rowid_dump(DbItem *item)
     HTML_LOG(1,"ROWID: airdate(%s)",asctime(localtime(&t)));
     t = item->airdate_imdb;
     HTML_LOG(1,"ROWID: airdate_imdb(%s)",asctime(localtime(&t)));
-    HTML_LOG(1,"ROWID: follows(%s)",db_group_imdb_string_static(item->comes_after));
-    HTML_LOG(1,"ROWID: followed by(%s)",db_group_imdb_string_static(item->comes_before));
-    HTML_LOG(1,"ROWID: remakes(%s)",db_group_imdb_string_static(item->remakes));
+    HTML_LOG(1,"ROWID: set(%s)",item->sets);
     HTML_LOG(1,"ROWID: directors(%s)",db_group_imdb_string_static(item->directors));
     HTML_LOG(1,"ROWID: actors(%s)",db_group_imdb_string_static(item->actors));
     HTML_LOG(1,"----");
@@ -467,12 +456,6 @@ void write_row(FILE *fp,DbItem *item) {
 
     fprintf(fp,"\t%s\t%s",DB_FLDID_EPTITLE,item->eptitle);
     fprintf(fp,"\t%s\t%s",DB_FLDID_NFO,item->nfo);
-    if (item->comes_after) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_AFTER,db_group_imdb_compressed_string_static(item->comes_after));
-    }
-    if (item->comes_before) {
-        fprintf(fp,"\t%s\t%s",DB_FLDID_COMES_BEFORE,db_group_imdb_compressed_string_static(item->comes_before));
-    }
     if (item->remakes) {
         fprintf(fp,"\t%s\t%s",DB_FLDID_REMAKE,db_group_imdb_compressed_string_static(item->remakes));
     }
@@ -587,10 +570,9 @@ static inline int db_rowid_get_field_offset_type_inline(
 
                     }
                 } else if (*p == '\0' ) { // _a
-                    *offset=&(rowid->comes_after);
-                    *type = FIELD_TYPE_IMDB_LIST;
+                    *offset=&(rowid->sets);
+                    *type = FIELD_TYPE_STR;
                     *overview = 1;
-                    imdb_prefix = "tt";
                 }
                 break;
             case 'A':
@@ -599,14 +581,6 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *type = FIELD_TYPE_IMDB_LIST_NOEVAL;
                     *overview = 1;
                     imdb_prefix = "nm";
-                }
-                break;
-            case 'b':
-                if (*p == '\0' ) { // _b
-                    *offset=&(rowid->comes_before);
-                    *type = FIELD_TYPE_IMDB_LIST;
-                    *overview = 1;
-                    imdb_prefix = "tt";
                 }
                 break;
             case 'C':
@@ -691,14 +665,6 @@ static inline int db_rowid_get_field_offset_type_inline(
                     *offset=&(rowid->date);
                     *type = FIELD_TYPE_TIMESTAMP;
                     *overview = 1;
-                }
-                break;
-            case 'k':
-                if (*p == '\0' ) { // _k
-                    *offset=&(rowid->remakes);
-                    *type = FIELD_TYPE_IMDB_LIST;
-                    *overview = 1;
-                    imdb_prefix = "tt";
                 }
                 break;
             case 'l':

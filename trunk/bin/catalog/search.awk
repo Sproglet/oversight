@@ -148,7 +148,7 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
-u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,use_yahoo,target,num) {
+u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,round_robin,target,num) {
 
 
     ############################################################################
@@ -164,7 +164,7 @@ u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,use_yahoo,target,num) {
     ## Eg. Consider query for "mhd begi imdb" which should give Beginners 2010
     ## Also m.bing.com may give different results to www.bing.com
     ############################################################################
-    use_yahoo = 0;
+    round_robin = 0;
     num = 0;
 
     # During this search cache all pages in case we need to do a cross page ranking against prior results.
@@ -175,7 +175,7 @@ u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,use_yahoo,target,num) {
     # target[n] = how many times a match must come first , on its own to "win"
     # eg scan1  tt0000001 = 1  tt0000002 = 1 - not unique but score is kept for next scan
     # eg scan2  tt0000001 += 1 tt0000002 += 0 - tt0000001 now scores 2.
-    if (use_yahoo) {
+    if (round_robin) {
         u[++num] = search_url("SEARCH" qualifier); target[num]=1;
         u[++num] = search_url("SEARCH" qualifier); target[num]=2;
         u[++num] = search_url("SEARCH" qualifier); target[num]=2;

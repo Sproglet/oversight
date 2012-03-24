@@ -163,8 +163,8 @@ OVS_EXTERN1(ViewMode *VIEW_MOVIEBOXSET);
 OVS_EXTERN1(ViewMode *VIEW_MENU);
 OVS_EXTERN1(ViewMode *VIEW_MIXED);
 
-OVS_EXTERN(long g_tvboxset_mode,-1);
-OVS_EXTERN(MovieBoxsetMode g_moviebox_mode,MOVIE_BOXSETS_UNSET);
+OVS_EXTERN(int g_tvboxset_mode,1);
+OVS_EXTERN(int g_moviebox_mode,1);
 
 #endif
 

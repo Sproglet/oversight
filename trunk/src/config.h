@@ -15,8 +15,6 @@
 #define CONFIG_LABEL_TEXT "=>"
 
 
-MovieBoxsetMode movie_boxset_mode();
-
 typedef struct dimension_str {
     int tv_mode;
     int is_pal;

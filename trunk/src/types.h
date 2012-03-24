@@ -61,14 +61,6 @@ typedef struct ViewMode_struct {
 #define VIEW_CLASS_DETAIL 3
 
 
-typedef enum MovieBoxsetMode_enum {
-    MOVIE_BOXSETS_UNSET , 
-    MOVIE_BOXSETS_NONE ,
-    MOVIE_BOXSETS_FIRST , // Box sets are related by first movie connection
-    MOVIE_BOXSETS_LAST , // Box sets are related by last movie connection 
-    MOVIE_BOXSETS_ANY    // Box sets are related by any movie connection
-} MovieBoxsetMode;
-
 typedef struct Dbrowid_struct {
 
     long id;

@@ -18,7 +18,6 @@
 #define IMDB_GROUP_SEP ','
 #define IMDB_GROUP_BASE 128
 
-static inline int in_same_db_imdb_group(DbItem *item1,DbItem *item2,MovieBoxsetMode movie_boxset_mode);
 int in_same_set(DbItem *d1,DbItem *d2);
 
 DbGroupIMDB *db_group_imdb_new(
@@ -447,18 +446,17 @@ unsigned int db_overview_menu_hashf(void *item)
 
                 } else {
 
-                    if (g_moviebox_mode == MOVIE_BOXSETS_NONE) {
-                        // All movies are unique by file
-                        h  = stringhash(DBR(item)->file);
-                    } else {
+                    if (g_moviebox_mode) {
                         if (DBR(item)->sets != NULL) {
                             h = 1; // let equals function do the hard work.
                         } else {
                             h  = stringhash(DBR(item)->file);
                         }
+                    } else {
+                        // All movies are unique by file
+                        h  = stringhash(DBR(item)->file);
                     }
                 }
-                //HTML_LOG(0,"%d title[%s (%d)] hash [%u]",g_moviebox_mode,DBR(item)->title,DBR(item)->year,h);
                 break;
             default:
                     h  = stringhash(DBR(item)->file);

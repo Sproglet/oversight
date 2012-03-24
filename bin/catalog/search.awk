@@ -70,7 +70,7 @@ t,t2,y,quoted) {
         #Ignore anything that looks like a date.
         if (t2 !~ "(©|Gmt|Pdt|("g_months_short"|"g_months_long")(| [0-9][0-9])) "g_year_re"$" ) {
             #or a sentence blah blah blah In 2003
-            if (t2 !~ "[A-Z][a-z]* [A-Z][a-z]* [A-Z][a-z]* (In|Of) "g_year_re"$" ) {
+            if (t2 !~ "([[:upper:]][[:lower:]]* ){3}(In|Of) "g_year_re"$" ) {
 
                 # remove tags from "movie name DVD 2009" etc.
                 if (match(t2," \\(?"g_year_re"\\)?$")) {
@@ -417,7 +417,7 @@ function remove_format_tags(text,\
     while (match(tolower(text),"^"tags)) {
         # Remove the first word (the format tag may only be a partial word match)
         DEBUG("found start format tag ["substr(text,RSTART,RLENGTH)"]");
-        sub(/^[a-zA-Z0-9]+[^a-zA-Z0-9]*/,"",text);
+        sub(/^[[:alnum:]]+[^[:alnum:]]*/,"",text);
     }
 
     # Remove all trailing tags and any other text.
@@ -524,7 +524,7 @@ function searchOnlineNfoLinksForImdb(name,domain,queryPath,nfoPathRegex,maxNfosT
 nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,count,result) {
 
 
-    if (length(name) <= 4 || name !~ "^[-.a-zA-Z0-9]+$" ) {
+    if (length(name) <= 4 || name !~ "^[-.[:alnum:]]+$" ) {
         INF("onlinenfo: ["name"] ignored");
     } else {
 

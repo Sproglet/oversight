@@ -223,7 +223,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
         
         if (index(parts[i],"=")) {
             #first split a=b c=d into name value array
-            attr=gensub(/([:A-Za-z_][-_:A-Za-z0-9.]+)=("([^"]*)"|([^"][^ "'>=]*))/,SUBSEP"\\1"SUBSEP"\\3\\4"SUBSEP,"g",parts[i]);
+            attr=gensub(/([:[:alpha:]_][-_:[:alnum:].]+)=("([^"]*)"|([^"][^ "'>=]*))/,SUBSEP"\\1"SUBSEP"\\3\\4"SUBSEP,"g",parts[i]);
             attrnum = split(attr,attr_parts,SUBSEP);
             for(attr = 2 ; attr <= attrnum ; attr += 3 ) {
                 attrname=currentTag"#"attr_parts[attr];

@@ -241,19 +241,19 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     #multi episode
     pat[++p]="s()"sreg sep "[eE/]([0-9][0-9]?([-,eE]+[0-9][0-9]?){1,})@\\1\t\\2\t\\3@";
     # long forms season 1 ep  3
-    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg sep ep_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@";
+    pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg sep ep_prefix"[^[:alnum:]]*"ereg"@\\1\t\\3\t\\5@";
 
     # TV DVDs
-    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg sep dvd_prefix"[^a-z0-9]*"ereg"@\\1\t\\3\t\\5@dvd";
+    pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg sep dvd_prefix"[^[:alnum:]]*"ereg"@\\1\t\\3\t\\5@dvd";
 
     #s00e00 (allow d00a for BigBrother)
     pat[++p]="s()?"sreg sep "[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
 
     # season but no episode
-    pat[++p]="\\<()"season_prefix"[^a-z0-9]*"sreg"()@\\1\t\\3\t\\4@FILE";
+    pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg"()@\\1\t\\3\t\\4@FILE";
 
     #00x00
-    pat[++p]="([^a-z0-9])"sreg sep "x" sep ereg"@\\1\t\\2\t\\3@";
+    pat[++p]="([^[:alnum:]])"sreg sep "x" sep ereg"@\\1\t\\2\t\\3@";
 
 
     #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
@@ -268,7 +268,7 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     }
 
     # Part n - no season
-    pat[++p]="\\<()()"part_prefix"[^a-z0-9]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
+    pat[++p]="\\<()()"part_prefix"[^[:alnum:]]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
 
     for(i = 1 ; p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
@@ -378,7 +378,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
         #Remove release group info only if there is no space in the title.
         #scene releases are often group-title.s01e01.avi with no spaces and all lower case.
         if (index(title,"-")) {
-            if (!index(line," ") &&  match(title,"^[a-z][a-z0-9]+[-][a-z0-9]+$")) {
+            if (!index(line," ") &&  match(title,"^[[:alpha:]][[:alnum:]]+[-][[:alnum:]]+$")) {
                tmpTitle=substr(title,RSTART+RLENGTH);
                if (tmpTitle != "" ) {
                    INF("Removed group was ["title"] now ["tmpTitle"]");
@@ -1229,9 +1229,9 @@ info,currentId,currentName,i,num,series,empty_filter) {
 # Create a regex for searching titles , allowing for optional punctuation at the end of each word 
 # eg dot following abbreviations , and optional year or country qualifier.
 function tv_title2regex(title) {
-    #gsub(/[A-Za-z0-9]\>/,"&"g_punc[0]"?",title);
-    gsub(/[A-Za-z0-9]\>/,"&[.?!]?",title);
-    return title"(| \\([a-z0-9]\\))";
+    #gsub(/[[:alnum:]]\>/,"&"g_punc[0]"?",title);
+    gsub(/[[:alnum:]]\>/,"&[.?!]?",title);
+    return title"(| \\([[:alnum:]]\\))";
 }
 
 # IN imdb id tt0000000

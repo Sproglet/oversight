@@ -438,7 +438,7 @@ parts,part,count,code,newcode,text2) {
 
     if (index(text,"&") && index(text,";")) {
 
-        count = chop(text,"[&][a-zA-Z]+;",parts);
+        count = chop(text,"[&][[:alpha:]]+;",parts);
 
         for(part=2 ; part-count < 0 ; part += 2 ) {
 

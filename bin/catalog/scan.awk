@@ -439,7 +439,7 @@ ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
                 imgname[2]=file"/"substr(file,1,length(file)-1) n2;
             } else {
                 imgname[1]=name"."ext[i]; #eg cover.png
-                imgname[2]=gensub(/\.[A-Za-z0-9]{2,4}$/,n2,1,file); # eg movie-fanart.png
+                imgname[2]=gensub(/\.[[:alnum:]]{2,4}$/,n2,1,file); # eg movie-fanart.png
             }
 
             for(j in imgname) {

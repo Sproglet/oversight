@@ -51,7 +51,7 @@ i,n,v,option,ret,err) {
         # remove outer quotes
         sub("=[\"']","=",option);
         sub("[\"']$","",option);
-        if (match(option,"^[A-Za-z0-9_]+=")) {
+        if (match(option,"^[[:alnum:]_]+=")) {
             n=prefix substr(option,1,RLENGTH-1);
             v=substr(option,RLENGTH+1);
             #gsub(/ *[,] */,",",v);

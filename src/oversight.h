@@ -1,6 +1,8 @@
 #ifndef __OVS_OVERSIGHT_H__
 #define __OVS_OVERSIGHT_H__
 
+#define ASSERTSTR(x,def) do { if ((!x)) { HTML_LOG(0,"ASSERT FAIL "); x = def ; } } while (0)
+
 #ifdef OVS_MAIN
 #define OVS_EXTERN(x,y) x = y
 #define OVS_EXTERN1(x) x 
@@ -165,6 +167,7 @@ OVS_EXTERN1(ViewMode *VIEW_MIXED);
 
 OVS_EXTERN(int g_tvboxset_mode,1);
 OVS_EXTERN(int g_moviebox_mode,1);
+
 
 #endif
 

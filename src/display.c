@@ -1327,8 +1327,8 @@ char * template_image_link(char *subfolder,char *name,char *ext,char *alt_text,c
 // Used for poster and fanart links.
 char * get_local_image_link(char *path,char *alt_text,char *attr) {
 
-    if (alt_text == NULL) alt_text = "????";
-    assert(attr);
+    ASSERTSTR(alt_text,"???");
+    ASSERTSTR(attr,"");
 
     char *result;
 
@@ -1724,7 +1724,7 @@ char * get_poster_image_tag(DbItem *rowid,char *attr,ImageType image_type,ViewMo
 {
 
     assert(rowid);
-    assert(attr);
+    ASSERTSTR(attr,"");
 TRACE;
     char *result = NULL;
     

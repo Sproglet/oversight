@@ -836,7 +836,7 @@ int is_nmt200()
     if (check) {
         check = 0;
         char *path = getenv("PATH");
-        result = (path != NULL && strstr(path,"/opt/syb/sigma/bdj") >= 0);
+        result = (path != NULL && strstr(path,"/opt/syb/sigma/bdj") != NULL);
     }
     return result;
 }

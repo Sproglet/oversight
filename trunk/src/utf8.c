@@ -62,7 +62,18 @@ char *utf8norm(char *s,int len)
         // Use COMPOSE rather than DECOMPOSE to preserve composed characters
         int uerr = utf8proc_map((uint8_t *)s,len,(uint8_t**)&out,UTF8PROC_COMPOSE|UTF8PROC_COMPAT|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
         if (uerr < 0) {
-            HTML_LOG(0,"Error [%.*s] [%s]",len,s,utf8proc_errmsg(uerr));
+            if (out == NULL) {
+               // copy ascii bytes
+                int i;
+                char *p = out = COPY_STRING(len,s);
+                for (i = 0 ; i < len ; i++ ) {
+                    if (s[i] > 0) {
+                        *p++ = s[i];
+                    }
+                } 
+                *p = '\0';
+            }
+            HTML_LOG(0,"Error [%.*s] [%s] using [%s]",len,s,utf8proc_errmsg(uerr),out);
         } else {
             //HTML_LOG(0,"utf8[%s]",NVL(out));
         }

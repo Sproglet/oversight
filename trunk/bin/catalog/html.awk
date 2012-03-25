@@ -111,7 +111,7 @@ enc,line,code,n) {
     } else if (is_file(ficonv(f))) {
         enc = "utf-8";
     } else {
-        while ( enc == "" && n < 20 &&  (code = ( getline line < f )) > 0) {
+        while ( enc == "" && (code = ( getline line < f )) > 0) {
 
             line=tolower(line);
 

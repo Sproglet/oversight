@@ -1,3 +1,9 @@
+# Logic should be
+#
+# tv search filename only
+# movie searcn
+# tv seach - folder/filenames
+#
 # When changing search methods pass near misses from one method to the other so that we can correlate across different search methods.
 #
 # add to_string function for all field types.

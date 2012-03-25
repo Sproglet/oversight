@@ -20,7 +20,6 @@ function web_search_first_imdb_title(qualifier,imdb_qual) {
 function scrapeMatches(url,freqOrFirst,helptxt,regex,matches,src,\
 match1,submatch,dots) {
 
-    delete submatch;
     if (freqOrFirst == 1) {
 
         match1=scanPageFirstMatch(url,helptxt,regex,1);
@@ -148,7 +147,7 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
-u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,round_robin,target,num) {
+u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,round_robin,target,num) {
 
 
     ############################################################################
@@ -164,7 +163,7 @@ u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,round_robin,target,num) {
     ## Eg. Consider query for "mhd begi imdb" which should give Beginners 2010
     ## Also m.bing.com may give different results to www.bing.com
     ############################################################################
-    round_robin = 0;
+    round_robin = 1;
     num = 0;
 
     # During this search cache all pages in case we need to do a cross page ranking against prior results.
@@ -201,20 +200,46 @@ u,s,pages,subtotal,ret,i,matches,bestmatches,m,src,round_robin,target,num) {
         u[++num] = g_search_nzbindex qualifier; target[num]=2;
     }
     if (imdb_qual != "") {
-        u[+num] = "http://www.imdb.com/find?s=tt&q=" imdb_qual; target[num]=2;
+        u[++num] = "http://www.imdb.com/find?s=tt&q=" imdb_qual; target[num]=2;
     }
     
 
     # Cycle through each URL grabbing best id and merging into matches.
     # For each match the urls are also tracked in case we to a "cross-page" ranking later.
     for(i = 1 ; i <= num ; i++ ) {
+
         scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,src);
+        dump(0,"websearch-matches",matches);
+
         if (bestScores(matches,bestmatches,0) >= target[i] ) {
-           dump(0,"websearch-matches",matches);
            dump(0,"websearch-best",bestmatches);
+
+           best1 = firstIndex(bestmatches);
+           if (i == 1 && target[i] == 1 && freqOrFirst == 1) {
+               # As we have only searched one page and looking for the first match.
+               # not reduce false positive also make sure it is most frequent match and occurs 2 or more times.
+
+               if (best1 != "") {
+                   scanPageMostFreqMatch(u[i],helptxt,regex,1,"",freq);
+                   dump(0,"websearch-freq",freq);
+                   freq1 = firstIndex(freq);
+                   freq_target = 3;
+
+                   if (freq1 != best1 ) {
+                       INF(best1" is not most frequent "freq1"  - continue searching ...");
+                       continue;
+                   } else if (freq[freq1] < freq_target) {
+                       INF(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
+                       continue;
+                   } else if (hash_size(freq) > 1) {
+                        INF(best1" does not occur more frequently than others");
+                   } 
+               } 
+           }
+
            #check unique best match
            if (hash_size(bestmatches) == 1) {
-               ret = firstIndex(bestmatches);
+               ret = best1;
                break;
            }
        }

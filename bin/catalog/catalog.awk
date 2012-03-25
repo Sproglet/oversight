@@ -852,13 +852,11 @@ function xmlEscape(text) {
     return text;
 }
 
-# Some times epguides and imdb disagree. We only give a title if both are the same.
-#
+# If no title set - just use the filename
 function fixTitles(minfo,\
 t) {
 
     t = minfo["mi_title"];
-    # If no title set - just use the filename
     if (t == "") {
         t = minfo["mi_media"];
         sub(/\/$/,"",t);

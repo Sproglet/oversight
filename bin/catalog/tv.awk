@@ -34,7 +34,7 @@ ret,i,j,dirCount,dirs) {
 # RET 0 - no format found
 #     1 - tv format found - needs to be confirmed by scraping 
 #
-function checkTvFilenameFormat(minfo,plugin,path_parts,more_info,allow_720,\
+function checkTvFilenameFormat(minfo,plugin,path_parts,more_info,episode_sep_present,episode_sep_absent,\
 details,line,ret,name,i,start,end) {
 
     ret = 0;
@@ -43,7 +43,9 @@ details,line,ret,name,i,start,end) {
 
    name = minfo["mi_media"];
 
-   id1("checkTvFilenameFormat "plugin);
+
+   # During normal TV scan path_parts is set from calling function.
+   # hoever it is also called with 0 from scan.awk
 
    if (path_parts == 0) {
        start = 1;
@@ -64,15 +66,13 @@ details,line,ret,name,i,start,end) {
 
        if (line == "") break;
 
-       DEBUG("CHECK TV ["line"] vs ["name"]");
-
 
        # After extracting the title text we look for matching tv programs
        # We only look at abbreviations if the title did NOT use the folder name.
        # The assumption is the people abbreviate file names but not folder names.
        more_info[1]=(path_parts == 1); # enable abbrevation scraping later only at filename level
 
-        if (extractEpisodeByPatterns(plugin,line,details,allow_720)==1) {
+        if (extractEpisodeByPatterns(plugin,line,details,episode_sep_present,episode_sep_absent)==1) {
 
 
             if (details[TITLE] == "" ) {
@@ -122,7 +122,6 @@ details,line,ret,name,i,start,end) {
             }
         }
     }
-    id0(ret);
     return ret;
 }
 
@@ -204,7 +203,7 @@ terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
     return ret;
 }
 # If Plugin != "" then it will also check episodes by date.
-function extractEpisodeByPatterns(plugin,line,details,allow_720,\
+function extractEpisodeByPatterns(plugin,line,details,episode_sep_present,episode_sep_absent,\
 ret,p,pat,i,parts,sreg,ereg,sep,\
 season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
@@ -236,39 +235,44 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
     sep="[-_./ ]*";
 
 
-    #pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
+    # Text is between season and episode - search these before movies.
+    if (episode_sep_present) {
+        #pat[++p]="s()"sreg"[/ .]?[e/]([0-9]+[-,e0-9]+)@\\1\t\\2\t\\3@";
 
-    #multi episode
-    pat[++p]="s()"sreg sep "[eE/]([0-9][0-9]?([-,eE]+[0-9][0-9]?){1,})@\\1\t\\2\t\\3@";
-    # long forms season 1 ep  3
-    pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg sep ep_prefix"[^[:alnum:]]*"ereg"@\\1\t\\3\t\\5@";
+        #multi episode
+        pat[++p]="s()"sreg sep "[eE/]([0-9][0-9]?([-,eE]+[0-9][0-9]?){1,})@\\1\t\\2\t\\3@";
+        # long forms season 1 ep  3
+        pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg sep ep_prefix"[^[:alnum:]]*"ereg"@\\1\t\\3\t\\5@";
 
-    # TV DVDs
-    pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg sep dvd_prefix"[^[:alnum:]]*"ereg"@\\1\t\\3\t\\5@dvd";
+        # TV DVDs
+        pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg sep dvd_prefix"[^[:alnum:]]*"ereg"@\\1\t\\3\t\\5@dvd";
 
-    #s00e00 (allow d00a for BigBrother)
-    pat[++p]="s()?"sreg sep "[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
+        #s00e00 (allow d00a for BigBrother)
+        pat[++p]="s()?"sreg sep "[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
 
-    # season but no episode
-    pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg"()@\\1\t\\3\t\\4@FILE";
+        # season but no episode
+        pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg"()@\\1\t\\3\t\\4@FILE";
 
-    #00x00
-    pat[++p]="([^[:alnum:]])"sreg sep "x" sep ereg"@\\1\t\\2\t\\3@";
-
-
-    #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
-    # extractEpisodeByDates is also called by other logic. 
-    pat[++p]="DATE";
-    ## just numbers.
-    if (allow_720) {
-        pat[++p]="([^-0-9]|\\<)([1-9]|2[1-9]|1[0-8]|[03-9][0-9])"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
-    } else {
-        pat[++p]="([^-0-9]|\\<)([1-689]|2[1-9]|1[0-8]|[03-9][0-9])"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
-        pat[++p]="([^-0-9]|\\<)(7)"sep"([013-9][0-9]|2[1-9])@\\1\t\\2\t\\3@";
+        #00x00
+        pat[++p]="([^[:alnum:]])"sreg sep "x" sep ereg"@\\1\t\\2\t\\3@";
+        #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
+        # extractEpisodeByDates is also called by other logic. 
+        pat[++p]="DATE";
     }
 
-    # Part n - no season
-    pat[++p]="\\<()()"part_prefix"[^[:alnum:]]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
+    #just a number - search these last after trying movies first.
+    if(episode_sep_absent) {
+        pat[++p]="([^-0-9]|\\<)([1-9]|2[1-9]|1[0-8]|[03-9][0-9])"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
+
+        #exclude 720p
+        # pat[++p]="([^-0-9]|\\<)([1-689]|2[1-9]|1[0-8]|[03-9][0-9])"sep"([0-9][0-9])@\\1\t\\2\t\\3@";
+        #pat[++p]="([^-0-9]|\\<)(7)"sep"([013-9][0-9]|2[1-9])@\\1\t\\2\t\\3@";
+
+        # Part n - no season
+        pat[++p]="\\<()()"part_prefix"[^[:alnum:]]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
+    }
+
+
 
     for(i = 1 ; p-i >= 0 ; i++ ) {
         if (pat[i] == "DATE" && plugin != "" ) {
@@ -598,12 +602,12 @@ function remove_season(t) {
     return clean_title(t);
 }
 
-function tv_search_simple(minfo,bestUrl,allow_720) {
-    return tv_check_and_search_all(minfo,bestUrl,0,allow_720);
+function tv_search_simple(minfo,bestUrl,episode_sep_present,episode_sep_absent) {
+    return tv_check_and_search_all(minfo,bestUrl,0,episode_sep_present,episode_sep_absent);
 }
 
-function tv_search_complex(minfo,bestUrl,allow_720) {
-    return tv_check_and_search_all(minfo,bestUrl,1,allow_720);
+function tv_search_complex(minfo,bestUrl,episode_sep_present,episode_sep_absent) {
+    return tv_check_and_search_all(minfo,bestUrl,1,episode_sep_present,episode_sep_absent);
 }
 
 
@@ -615,7 +619,7 @@ function tv_search_complex(minfo,bestUrl,allow_720) {
 #
 # returns cat="T" tv show , "M" = movie , "" = unknown.
 
-function tv_check_and_search_all(minfo,bestUrl,check_tv_names,allow_720,\
+function tv_check_and_search_all(minfo,bestUrl,check_tv_names,episode_sep_present,episode_sep_absent,\
 plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
 
@@ -646,7 +650,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
             if (check_tv_names) {
 
-                if (checkTvFilenameFormat(minfo,plugin,path_num,more_info,allow_720)) {
+                if (checkTvFilenameFormat(minfo,plugin,path_num,more_info,episode_sep_present,episode_sep_absent)) {
 
                     search_abbreviations = more_info[1];
 

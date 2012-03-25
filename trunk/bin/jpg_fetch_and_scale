@@ -242,7 +242,7 @@ process_queue() {
     pq_count=0 
     pq_args="`thread_prefix`.cmd"
 
-    INFO "Begin Processing folder [$1]"
+    #INFO "Begin Processing folder [$1]"
 
     cd $pq_folder
     for f in $prefix* ; do

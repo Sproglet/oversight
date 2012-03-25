@@ -714,18 +714,23 @@ cat,minfo2,locales,id) {
 
                             # Its definitely a series according to IMDB or NFO
                             # get the episode info
-                            hash_copy(minfo2,minfo);
+                            #hash_copy(minfo2,minfo);
+
+                            #Get the season and episode details only - not show details. (title mainly)
                             checkTvFilenameFormat(minfo2,"",0);
                             minfo["mi_season"] = minfo2["mi_season"];
                             minfo["mi_episode"] = minfo2["mi_episode"];
                             minfo["mi_additional_info"] = minfo2["mi_additional_info"];
 
-                            cat = tv_search_simple(minfo,bestUrl,1);
+                            # Now get the actual show details.
+                            # Doesnt this overwrite what we've just fetched? BUG
+                            cat = tv_search_simple(minfo,bestUrl,1,1);
 
                         } else if (cat != "M" ) {
 
-                            # Not sure - try a TV search looking for various abbreviations.
-                            cat = tv_search_complex(minfo,bestUrl,0);
+                            # Not sure - try a TV search looking for various abbreviations -
+                            # but exlcude files whithout sep between season and episode - usually movies.
+                            cat = tv_search_complex(minfo,bestUrl,1,0);
 
                             if (cat != "T") {
                                 # Could not find any hits using tv abbreviations, try heuristis for a movie search.
@@ -738,8 +743,12 @@ cat,minfo2,locales,id) {
                                         # If we get here we found an IMDB id , but it looks like a TV show after all.
                                         # This may happen with mini-series that do not have normal naming conventions etc.
                                         # At this point we should have scraped a better title from IMDB so try a simple TV search again.
-                                        cat = tv_search_simple(minfo,bestUrl,1);
+                                        cat = tv_search_simple(minfo,bestUrl,1,1);
                                     }
+                                } else {
+                                    # No movie found...
+                                    # Try the files without separate between season and episode now
+                                    cat = tv_search_complex(minfo,bestUrl,0,1);
                                 }
                             }
                         }
@@ -763,7 +772,7 @@ cat,minfo2,locales,id) {
                                        local_search = 1;
                                    }
                                }
-                               if (gPriority["mi_poster","local"] > minfo_field_priority(minfo,"mi_poster")) {
+                               if (gPriority["mi_poster","web"] > minfo_field_priority(minfo,"mi_poster")) {
                                    if (g_settings["catalog_get_local_posters"] != "never") {
                                        INF("Checking local posters");
                                        local_search = 1;
@@ -784,6 +793,10 @@ cat,minfo2,locales,id) {
                             WARNING("Unknown item "minfo["mi_media"]);
 
                         } else {
+
+                            if (tolower(minfo["mi_media"]) ~ "\\<trailer\\>" && minfo["mi_title"] != "Trailer" ) {
+                                minfo["mi_title"] = minfo["mi_title"] " - Trailer";
+                            }
 
                             fixTitles(minfo);
 
@@ -814,7 +827,7 @@ cat,minfo2,locales,id) {
                 }
             }
 
-            id0();
+            id0(imdb(minfo)minfo["mi_title"]);
         }
     }
 

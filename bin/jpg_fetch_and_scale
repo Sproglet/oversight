@@ -22,12 +22,13 @@
 maxthreads=1
 
 
-OVS_HOME=/share/Apps/oversight
-
-. $OVS_HOME/bin/ovsenv
-
-uid=nmt
-gid=nmt
+if [ -z "${OVS_HOME:-}" ] ; then
+    # Called from catalog.sh/awk so env should already be set.
+    EXE=$0
+    while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+    OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
+    . $OVS_HOME/bin/ovsenv
+fi
 
 prefix=ovsq.
 
@@ -76,7 +77,12 @@ jpg_resize() {
         w2=`jpgwidth "$input"`;
         INFO "compare widths required=$w vs actual=$w2"
         if [ "$w2" = "$w" ] ; then
-            doit=0
+            jpg_size="`sizekb "$2"`"
+            if [ "$jpg_size" -lt 1000 ] ; then
+                doit=0
+            else
+                INFO "dimensions ok but file size too big ${jpg_size}KB - resizing"
+            fi
         fi
     fi
 
@@ -186,7 +192,7 @@ resize_img() {
     rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm" "$base.thumb.jpg.pnm"
 }
 
-Q=$TMP/resize.queue
+Q=$OVS_TMP/resize.queue
 
 add_queue() {
     if [ -n "$1" ] ; then
@@ -272,7 +278,7 @@ process_queue() {
 
 #caculate in real time to track $$
 thread_group() {
-    echo "$TMP/.thread"
+    echo "$OVS_TMP/.thread"
 }
 
 thread_prefix() {
@@ -348,7 +354,7 @@ startup() {
 }
 
 check_pal() {
-    location_file=$TMP/.location
+    location_file=$OVS_TMP/.location
     location=`$OVS_HOME/bin/locate.sh $location_file`
     tv_file="$OVS_HOME/conf/tv.txt"
     if grep -q "^$location:" $tv_file ; then
@@ -396,7 +402,7 @@ trap tidy 1 2 3 6
 case "$1" in
 
     STOP)
-        kill `cat $TMP/.thread.*`
+        kill `cat $OVS_TMP/.thread.*`
         ;;
 
     START)

@@ -75,7 +75,7 @@
 				<br>
             </center>
             <p>This will return immediately and start a background scan of the listed paths.
-            Scan speed is approx 300 new files per hour (x2 if getting fanart).
+            Scan speed is approx 300 new files per hour for English titles.
             Other applications may also affect overall scan speed.
             Covers and fanart are downloaded independently so may appear later.
             <input type=hidden name=old_action value="[:$?action:]">

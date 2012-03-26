@@ -178,13 +178,15 @@ u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,
         u[++num] = search_url("SEARCH" qualifier); target[num]=1;
         u[++num] = search_url("SEARCH" qualifier); target[num]=2;
         u[++num] = search_url("SEARCH" qualifier); target[num]=2;
+        u[++num] = g_search_google qualifier; target[num]=2;
     } else {
         # Bing seems a bit better still -
         u[++num] = g_search_bing_mobile qualifier; target[num]=1;
+        u[++num] = g_search_google qualifier; target[num]=2;
         u[++num] = g_search_bing_desktop qualifier; target[num]=2;
-        u[++num] = g_search_yahoo qualifier; target[num]=2;
+        #yahoo gives too many false positives even with Bing technology. eg. http://search.yahoo.com/search?ei=UTF-8&eo=UTF-8&p=Family+Guy+0914+imdb
+        #u[++num] = g_search_yahoo qualifier; target[num]=2;
     }
-    u[++num] = g_search_google qualifier; target[num]=2;
 
     #The search string itself will be present not only in the serp but also in the title and input box
     #So if searching for "DVD Aliens (1981)" then the most popular result may include DVD.

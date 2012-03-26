@@ -24,12 +24,12 @@
                         <h2>Web Database Status</h2>
                         <table>
                             <tr>
-                                <td>[:WEB_STATUS(www.imdb.com/favicon.ico):]</td>
-                                <td ><span class=resource>IMDB</span> - Plots &amp; IMDB Ratings</td>
+                                <td>[:WEB_STATUS(imdb.com/favicon.ico):]</td>
+                                <td ><span class=resource>IMDB</span> Plots,IMDB Ratings</td>
                             </tr>
                             <tr>
                                 <td>[:WEB_STATUS(api.themoviedb.org/favicon.ico):]</td>
-                                <td><span class=resource>Movie Db</span>- Main Index</td>
+                                <td><span class=resource>The Movie Db</span> Movie Plots,Images</td>
                             </tr>
 <!--
                             <tr>
@@ -39,12 +39,11 @@
 -->
                             <tr>
                                 <td>[:WEB_STATUS(thetvdb.com/api/GetSeries.php?seriesname=FlashForward,FlashForward):]</td>
-                                <td><span class=resource>TheTvDb</span>- Tv plots &amp; images</td>
+                                <td><span class=resource>TvDb.com</span> TV Plots,Images</td>
                             </tr>
                             <tr>
                                 <td>[:WEB_STATUS(services.tvrage.com/feeds/showinfo.php?sid=20798,FlashForward):]</td>
-                                <td><span class=resource>TvRage(api)</span>-
-                                TV Plots (backup)</td>
+                                <td><span class=resource>TV Rage</span> TV Plots (backup)</td>
                             </tr>
                         </table>
 					</td>
@@ -53,17 +52,17 @@
                         <table>
                             <tr>
                                 <!-- Check that search engine has not blacklisted us -->
-                                <td>[:WEB_STATUS(www.bing.com/search?q=transformers+imdb,tt0418279):]</td>
+                                <td>[:WEB_STATUS(m.bing.com/search/search.aspx?Q=transformers+imdb&a=results,tt0418279):]</td>
                                 <td><span class=resource>Bing</span></td>
                             </tr>
                             <tr>
                                 <!-- Check that search engine has not blacklisted us -->
-                                <td>[:WEB_STATUS(search.yahoo.com/search?q=transformers,tt0418279):]</td>
+                                <td>[:WEB_STATUS(search.yahoo.com/search?q=transformers+imdb,tt0418279):]</td>
                                 <td><span class=resource>Yahoo</span></td>
                             </tr>
                             <tr>
                                 <!-- Check that search engine has not blacklisted us -->
-                                <td>[:WEB_STATUS(www.google.co.uk/search?q=transformers,tt0418279):]</td>
+                                <td>[:WEB_STATUS(www.google.co.uk/search?q=transformers+imdb,tt0418279):]</td>
                                 <td><span class=resource>Google</span></td>
                             </tr>
                         </table>

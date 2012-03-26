@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 # $Id$
 
 # Detect and rename media files. Sounds simple huh?

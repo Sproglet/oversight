@@ -250,9 +250,6 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
         #s00e00 (allow d00a for BigBrother)
         pat[++p]="s()?"sreg sep "[Ee/]([0-9]+[a-e]?)@\\1\t\\2\t\\3@";
 
-        # season but no episode
-        pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg"()@\\1\t\\3\t\\4@FILE";
-
         #00x00
         pat[++p]="([^[:alnum:]])"sreg sep "x" sep ereg"@\\1\t\\2\t\\3@";
         #Try to extract dates before patterns because 2009 could be part of 2009.12.05 or  mean s20e09
@@ -270,6 +267,13 @@ season_prefix,ep_prefix,dvd_prefix,part_prefix) {
 
         # Part n - no season
         pat[++p]="\\<()()"part_prefix"[^[:alnum:]]?("ereg"|"g_roman_regex")@\\1\t\\2\t\\4@";
+
+        # season but no episode
+        # eg Season 9/family guy 0915 will match this but episode will be blank, so matching is deferred until 2nd phase
+        # of TV searching when the 0915 pattern will get matched first
+        # 
+        pat[++p]="\\<()"season_prefix"[^[:alnum:]]*"sreg"()@\\1\t\\3\t\\4@FILE";
+
     }
 
 
@@ -648,7 +652,10 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
 
             do_search = 1;
 
-            if (check_tv_names) {
+            ## The check for blank episode is a result of some dodgy coding.
+            # see split_episode_search in scan.awk.
+            ################################################################
+            if (check_tv_names || minfo["mi_episode"] == "" ) {
 
                 if (checkTvFilenameFormat(minfo,plugin,path_num,more_info,episode_sep_present,episode_sep_absent)) {
 

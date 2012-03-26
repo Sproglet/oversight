@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # $Id$
 
 # Detect and rename media files. Sounds simple huh?
@@ -13,11 +13,9 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 
 DEBUG=1
 #Find install folder
-EXE=$0
+EXE="$0"
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
-OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
-
 . $APPBINDIR/ovsenv
 
 echo "[INFO] family=$FAMILY arch=$ARCH"
@@ -166,18 +164,6 @@ quoted_arg_list() {
     echo "$ARGS"
 }
 
-SWITCHUSER() {
-    if ! id | fgrep -q "($1)" ; then
-        u=$1
-        shift;
-        echo "[$USER] != [$u]"
-        
-        a="$0 $(quoted_arg_list "$@")"
-        echo "CMD=$a"
-        exec su $u -s /bin/sh -c "$a"
-    fi
-}
-
 get_unpak_cfg() {
     for ext in cfg cfg.example ; do
         for nzd in "$OVS_HOME/conf" /share/Apps/NZBGet/.nzbget /share/.nzbget ; do
@@ -280,9 +266,6 @@ clean_all_files() {
     clean_files "$OVS_HOME/cache" "tt*" 30
 }
 
-#Due to a very nasty root renaming incident - reinstated user switch
-#SWITCHUSER "$uid" "$@"
-
 if [ "$STDOUT" -eq 1 ] ; then
     LOG_TAG="catalog:"
     main "$@"
@@ -301,7 +284,7 @@ else
     LOG_FILE="$LOG_DIR/$LOG_NAME"
 
     ln -sf "$LOG_FILE" "$LAST_LOG"
-    main "$@" > "$LOG_FILE" 2>&1
+    main "$@" >> "$LOG_FILE" 2>(sed 's/^/[ERROR] /')  >> "$LOG_FILE"
 
     #If lauched from command line - display log file location
     if [ -z "${REMOTE_ADDR:-}" ] ;then

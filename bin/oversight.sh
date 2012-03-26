@@ -15,14 +15,6 @@ CONF="$OVS_HOME/conf/catalog.cfg"
 appname=oversight
 cd "$OVS_HOME"
 
-TMPDIR="$OVS_HOME/tmp"
-if [ ! -d "$TMPDIR" ] ; then
-    mkdir -p "$TMPDIR"
-    if [ `id -u` = 0 ] ; then
-        chown "$uid:$gid" "$TMPDIR"
-    fi
-fi
-
 # This file will be created by oversight if it crashed whilst masquerading as wget.
 # If it IS present during a reboot the all of the wget masquerading function is
 # disabled.
@@ -41,9 +33,9 @@ WGET_BIN=/bin/wget
 
 # -----------------------------------------------------
 
-CMD_BUF="$TMPDIR/cmd"
-LOCK="$TMPDIR/oversight.lck"
-PENDING_FILE="$TMPDIR/cmd.pending"
+CMD_BUF="$OVS_TMP/cmd"
+LOCK="$OVS_TMP/oversight.lck"
+PENDING_FILE="$OVS_TMP/cmd.pending"
 
 NMT="$OVS_HOME/install.sh"
 LISTEN() {

@@ -179,14 +179,6 @@ get_nzbpath() {
         fi 
     fi
     WARNING "unpak_nzbget_conf=${unpak_nzbget_conf:-}"
-
-    #unrar and par2 binaries. If not set in the config search nzbget and $PATH
-    if [ -z "${unpak_unrar_bin:-}" ] ; then
-        unpak_unrar_bin=`WHICH unrar`
-    fi
-    if [ -z "${unpak_par2_bin:-}" ] ; then
-        unpak_par2_bin=`WHICH par2`
-    fi
 }
 
 #This will get nzbget path from versions of nzbget earlier than 0.7
@@ -390,37 +382,11 @@ delete_paused_pars() {
     fi
 }
 
-#Spent over an hour before realising permisions not set properly on par2!
-#Make an executable copy so users dont need to telnet in
-nmt_fix_par2_permissions() {
-    if [ ! -x "$unpak_par2_bin" ] ; then
-        PAR2Alternative=/share/.nzbget/par2
-        if [ -x "$PAR2Alternative" ] ; then
-            unpak_par2_bin="$PAR2Alternative"
-        else
-            cp "$unpak_par2_bin" "$PAR2Alternative"
-            chmod o+x "$PAR2Alternative"
-            if [ ! -x "$PAR2Alternative" ] ; then
-                ERROR "Make sure $unpak_par2_bin has execute permissions"
-                return 1
-            else
-                unpak_par2_bin="$PAR2Alternative"
-            fi
-        fi
-    fi
-}
-
 #In case there are two or more par sets just look for .par2 files. (not PAR2 files)
 #TODO. We may need to know which Pars fix which rars in future so we can be more
 #selective with unraring when errors occur. But for now take an all or nothing approach.
 par_repair_all() {
     INFO "Start Par Repair"
-    if [ ! -f "$unpak_par2_bin" ] ; then
-        WARNING "PAR2Binary [$unpak_par2_bin] not present. Skipping repair"
-        return 1
-    fi
-
-    nmt_fix_par2_permissions
 
     ordered_par_list > "$gTmpFile.par_size" 
     #First identify parsets for all FAILED or UNKNOWN rars.
@@ -486,7 +452,7 @@ par_repair() {
     set +e
     out="$gTmpFile.p2_out"
     err="$gTmpFile.p2_err"
-    "$unpak_par2_bin" repair "$parFile" > "$out" 2>"$err" &
+    par2 repair "$parFile" > "$out" 2>"$err" &
     par_monitor "$out"
     set -e
 
@@ -586,7 +552,7 @@ par_monitor() {
     bad_eta_count=0
     DEBUG "par_monitor"
     touch "$outfile"
-    p2pid=$(get_pid_by_exe "$unpak_par2_bin" "$PWD")
+    p2pid=$(get_pid_by_exe par2 "$PWD")
     if [ ! -n "$p2pid" ] ; then
         return 1
     fi
@@ -670,10 +636,14 @@ get_pid_by_exe() {
     INFO "getpid [$1]"
     for i in 1 2 3 4 5 ; do
         for pid in /proc/[0-9]* ; do
-            if [ "$pid/cwd" -ef "$2" -a "$pid/exe" -ef "$1" ] ; then
-                DEBUG "PID dir for $1 = $pid"
-                echo "$pid" | sed 's;/proc/;;'
-                return 0
+            if [ "$pid/cwd" -ef "$2" ] ; then
+                case "`readlink "$pid/exe"`" in
+                    *$1 )
+                        DEBUG "PID dir for $1 = $pid"
+                        echo "$pid" | sed 's;/proc/;;'
+                        return 0
+                        ;;
+                esac
             fi
         done
         sleep 1
@@ -987,7 +957,7 @@ check_parts() {
 check_header() {
     DETAIL Checking header for "$1"
     one_header=0
-    if  "$unpak_unrar_bin" lb "$1" > "$gTmpFile.rar_hdr" 2> "$gTmpFile.rar_hdr_err" ; then
+    if  unrar lb "$1" > "$gTmpFile.rar_hdr" 2> "$gTmpFile.rar_hdr_err" ; then
         if [ ! -s "$gTmpFile.rar_hdr" ] ; then
             WARNING "$1 rar header is bad"
             one_header=1
@@ -1015,8 +985,8 @@ wrong_size_count() {
 #If the last file is missing the 'num_expected_parts' will be wrong, so list the 
 #contents of the last part and check it is either '100%' or '<--'
 check_last_rar_part() {
-    count=$("$unpak_unrar_bin" vl "$1" | line_count)
-    code=$("$unpak_unrar_bin" vl "$1" | awk 'NR == '$count'-3 { print $3 }')
+    count=$(unrar vl "$1" | line_count)
+    code=$(unrar vl "$1" | awk 'NR == '$count'-3 { print $3 }')
     [ "$code" != "-->" -a "$code" != "<->" ]
 }
 
@@ -1069,7 +1039,7 @@ unrar_one() {
             0)
                 # Unrar file
                 mkdir -p "$dirname/$unrar_tmp_dir" 
-                ( cd "$dirname/$unrar_tmp_dir" && "$unpak_unrar_bin" x -y -p- "../$rarname" 2>"$rar_std_err" |\
+                ( cd "$dirname/$unrar_tmp_dir" && unrar x -y -p- "../$rarname" 2>"$rar_std_err" |\
                     TEE "$rar_std_out" |\
                     log_stream INFO "unrar" 
                 ) &
@@ -1153,7 +1123,7 @@ unrar_monitor() {
     errfile="$1"
     dir="$2"
     touch "$errfile"
-    unrarpid=$(get_pid_by_exe "$unpak_unrar_bin" "$dir")
+    unrarpid=$(get_pid_by_exe unrar "$dir")
     if [ ! -n "$unrarpid" ] ; then
         return 0
     fi
@@ -1835,15 +1805,16 @@ PERMS() {
 
 # $@ = args to catalog.sh
 run_catalog() {
+    set -x
     folder="$1"
     shift
     if [ -f "$root_folder/bin/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
         if [ "$is_nmt" = "Y" ] ; then
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" #|| true
 	    else
 	        #JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" WRITE_NFO "$@" || true
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" #|| true
 	    fi
         #create_resume_file "$folder/unpak.resume" "$root_folder/bin/catalog.sh" "$folder" "$@"
     else

@@ -9,8 +9,6 @@
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 
-NMT_APP_DIR=
-
 # This script is horrendous. My comment!
 
 DEBUG=1
@@ -231,7 +229,7 @@ catalog() {
     "UID=$uid" \
     "OVERSIGHT_ID=$OVERSIGHT_ID" \
     "AWK=$AWK" \
-    "NMT_APP_DIR=$NMT_APP_DIR" \
+    "ARCH=$ARCH" \
     g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 

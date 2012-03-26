@@ -20,7 +20,7 @@ tmp,err) {
 }
 
 function isnmt() {
-    return 0+ is_file(NMT_APP_DIR"/MIN_FIRMWARE_VER");
+    return ARCH == "nmt";
 }
 
 # changed from getline error check because gawk 3.1.6 has uncatchable error if input is a directory

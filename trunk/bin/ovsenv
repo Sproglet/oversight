@@ -1,22 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
 # Set Paths
 
-# Find install folder.
-# Script may be source in which case $0 is wrong - use $BASH_SOURCE
-# But BASH_SOURCE might not be supported - on nmt
-
-EXE="${BASH_SOURCE:-}"
-if [ -z "$EXE" ] ; then
-    # look for any file this process has open called ovsenv
-    EXE="`ls -l /proc/$$/fd 2>/dev/null | awk '/ovsenv$/ { sub(/.* -> /,"") ; print }' `"
-fi
-
-while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
-OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
-
-ARCH=
-
-nmt_ver=/nmt/apps/VERSION
 
 check_fw() {
     [ -f "$1" ] && egrep -q -- "$2" "$1" 
@@ -36,76 +20,6 @@ check_nmt() {
        fi
    fi
 }
-
-check_nmt /mnt/syb8634/VERSION '-40[0-5]$' nmt100 /mnt/syb8634
-check_nmt "$nmt_ver" '-4(08|11)$' nmt200 /nmt/apps
-check_nmt "$nmt_ver" '-42[01]$' nmt200 /nmt/apps # nmt300 is binary compatible with 200
-
-
-if [ -d /ffp/bin ] ; then
-    FAMILY=funplug
-    ARCH=funplug
-fi
-if [ -z "$ARCH" ] ; then
-    FAMILY=pc
-    ARCH=pc
-fi
-
-uid=`id -u -n`
-gid=`id -g`
-
-LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
-
-os_version=`cat /proc/version`
-
-nmt_version=
-
-PATH="$OVS_HOME/bin:$PATH"
-case $FAMILY in
-    nmt)
-        uid=nmt
-        gid=nmt
-        # nmt /bin/wget is buggy
-        # nmt busybox wget does not have all options
-        # nmt busybox gzip is not graceful for passthru of uncompressed data
-        PATH="$OVS_HOME/bin/$ARCH:$PATH"
-        LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
-        nmt_version=`grep . /???/*/VERSION`
-
-        if [ -d /share/Apps/local/bin ] ; then
-            PATH="/share/Apps/local/bin:$PATH"
-        fi
-        if [ -d /share/bin ] ; then
-            PATH="/share/bin:$PATH"
-        fi
-        # nmt busybox have restricted switches or buggy commands.
-        # eg NMT find siliently fails with -mtime and -newer
-        for i in sort find ls tr dirname basename ; do
-            if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
-                ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
-            fi
-        done
-    ;;
-    funplug)
-        uid=nobody
-        gid=501
-        #Odd error where globbing sometimes doesnt work when scripts called from awk
-        #eg system("mv blah/*"); 
-        #but always works from command line.
-        #see if SHELL fixes.
-        export SHELL=/ffp/bin/bash
-    ;;
-esac
-
-export uid gid FAMILY ARCH NMT_APP_DIR OVS_HOME PATH LD_LIBRARY_PATH
-export OVERSIGHT_ID="$uid:$gid"
-
-
-TMP=/share/Apps/oversight/tmp
-if [ ! -d $TMP ] ; then 
-    TMP=/tmp
-fi
-
 # Tee command - borrowed from http://www.gnu.org/manual/gawk/html_node/Tee-Program.html
 # 'Arnold Robbins, arnold@gnu.org, Public Domain 'and tweaked a bit.
 TEE() {
@@ -133,3 +47,107 @@ BEGIN {
 END { for (i in copy) close(copy[i]) }
       ' "$@"
 }
+
+if [ -z "${OVS_ENV_SET:-}" ] ; then
+
+    export OVS_ENV_SET=1
+
+    # Find install folder.
+    # Script may be source in which case $0 is wrong - use $BASH_SOURCE
+    # But BASH_SOURCE might not be supported - on nmt
+
+    EXE="${BASH_SOURCE:-}"
+    if [ -z "$EXE" ] ; then
+        # look for any file this process has open called ovsenv
+        EXE="`ls -l /proc/$$/fd 2>/dev/null | awk '/ovsenv$/ { sub(/.* -> /,"") ; print }' `"
+    fi
+
+    while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+    OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
+
+    ARCH=
+
+    nmt_ver=/nmt/apps/VERSION
+
+
+    check_nmt /mnt/syb8634/VERSION '-40[0-5]$' nmt100 /mnt/syb8634
+    check_nmt "$nmt_ver" '-4(08|11)$' nmt200 /nmt/apps
+    check_nmt "$nmt_ver" '-42[01]$' nmt200 /nmt/apps # nmt300 is binary compatible with 200
+
+
+    if [ -d /ffp/bin ] ; then
+        FAMILY=funplug
+        ARCH=funplug
+    fi
+    if [ -z "$ARCH" ] ; then
+        FAMILY=pc
+        ARCH=pc
+    fi
+
+    uid=`id -u -n`
+    gid=`id -g`
+
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+
+    os_version=`cat /proc/version`
+
+    nmt_version=
+
+    PATH="$OVS_HOME/bin:$PATH"
+    case $FAMILY in
+        nmt)
+            uid=nmt
+            gid=nmt
+            # nmt /bin/wget is buggy
+            # nmt busybox wget does not have all options
+            # nmt busybox gzip is not graceful for passthru of uncompressed data
+            PATH="$OVS_HOME/bin/$ARCH:$NMT_APP_DIR/bin:$PATH"
+            LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
+            nmt_version=`grep . /???/*/VERSION`
+
+            # on 100 series permissions are not set properly on all executables.
+            # But we might be invoked as nobody - so make executable copies
+            for i in unrar par2 ; do
+                e_from="$NMT_APP_DIR/bin/$i" 
+                e_to="$OVS_HOME/bin/$ARCH/$i"
+                if [ -e "$e_from" -a ! -x "$e_from" -a ! -x "$e_to" ] ; then
+                    cp "$e_from" "$e_to" && chmod 775 "$e_to"
+                fi
+            done
+
+            if [ -d /share/Apps/local/bin ] ; then
+                PATH="/share/Apps/local/bin:$PATH"
+            fi
+            if [ -d /share/bin ] ; then
+                PATH="/share/bin:$PATH"
+            fi
+            # nmt busybox have restricted switches or buggy commands.
+            # eg NMT find siliently fails with -mtime and -newer
+            for i in sort find ls tr dirname basename readlink ; do
+                if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
+                    ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
+                fi
+            done
+        ;;
+        funplug)
+            uid=nobody
+            gid=501
+            #Odd error where globbing sometimes doesnt work when scripts called from awk
+            #eg system("mv blah/*"); 
+            #but always works from command line.
+            #see if SHELL fixes.
+            export SHELL=/ffp/bin/bash
+        ;;
+    esac
+
+    export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH
+    export OVERSIGHT_ID="$uid:$gid"
+
+
+    TMP=/share/Apps/oversight/tmp
+    if [ ! -d $TMP ] ; then 
+        TMP=/tmp
+    fi
+
+fi
+

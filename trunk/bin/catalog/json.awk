@@ -253,7 +253,7 @@ ch) {
         # string
 
         json_parse_string(context);
-        if (context["err"]) break;
+        if (context["err"]) return;
         context["value"] = context[context["type"]];
 
     } else if (index("-+0123456789.eE",ch) && match(substr(context["in"],context["pos"]),"^[-+0-9.eE]+") ) {

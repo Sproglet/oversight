@@ -480,7 +480,7 @@ function csv2re(text) {
 
 function exec(cmd,\
 err) {
-   DEBUG("SYSTEM : "substr(cmd,1,100)"...");
+   #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
    #DEBUG("SYSTEM : [["cmd"]]");
    if ((err=system(cmd)) != 0) {
       ERR("Return code "err" executing "cmd) ;

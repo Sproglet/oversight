@@ -75,24 +75,24 @@ jpg_resize() {
     # Check if width is already correct - note tvdb currently serves 1280w fanart and 500 posters s
     if [ -n "$w" -a -z "$h" ] ; then
         w2=`jpgwidth "$input"`;
-        INFO "compare widths required=$w vs actual=$w2"
         if [ "$w2" = "$w" ] ; then
-            jpg_size="`sizekb "$2"`"
+            jpg_size="`sizekb "$input"`"
             if [ "$jpg_size" -lt 1000 ] ; then
+                INFO "width ($w) ok ,  file size ok ${jpg_size}KB - copy to $output"
                 doit=0
             else
-                INFO "dimensions ok but file size too big ${jpg_size}KB - resizing"
+                INFO "dimensions ok but file size too big ${jpg_size}KB - resizing to $output"
             fi
+        else
+            INFO "width=$w2 - required=$w - resizing to $output"
         fi
     fi
 
     if [ "$doit" = 0 ] ; then
-        INFO "resize not needed for $output"
         if [ "$input" != "$output" ]; then
             cp "$input" "$output"
         fi
     else
-        INFO "resizing to $output"
         #Could use a pipe but input may = output so use tmp file.
         # We always resize even if the dimensions are unchanged because it makes file size much smaller
         # INFO "$o to $output" 

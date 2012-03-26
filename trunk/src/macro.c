@@ -243,13 +243,13 @@ char *macro_fn_web_status(MacroCallInfo *call_info) {
 
         char *cmd;
 
-        ovs_asprintf(&cmd,"/bin/wget -U \"%s\" -q -t 1 --dns-timeout 2 --connect-timeout 5 --read-timeout 10 --ignore-length \"%s%s\" %s",
+        ovs_asprintf(&cmd,"wget -U \"%s\" -q -t 1 --dns-timeout 3 --connect-timeout 3 --read-timeout 20 --ignore-length \"%s%s\" %s",
                 USER_AGENT,
                 (util_starts_with(call_info->args->array[0],"http")?"":"http://"),
                 call_info->args->array[0],
                 expected_text);
 
-        HTML_LOG(0,"web status cmd [%s]",cmd);
+        //HTML_LOG(0,"web status cmd [%s]",cmd);
         int ok = system(cmd) == 0;
         HTML_LOG(0,"web status result (1=good) %d",ok);
         FREE(cmd);

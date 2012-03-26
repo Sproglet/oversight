@@ -253,7 +253,7 @@ load_unpak_settings() {
     cfg="$1"
     case "$cfg" in
         /*) true;;
-        *) cfg="$root_folder/$cfg" ;;
+        *) cfg="$OVS_HOME/$cfg" ;;
     esac
 
     INFO "load_unpak_settings [$cfg]"
@@ -291,7 +291,7 @@ load_unpak_settings() {
 }
 
 check_settings() {
-    if [ $mode != nzbget ] ; then return ; fi
+    if [ "$mode" != nzbget ] ; then return ; fi
     settings=0
     external_par_check=0
     load_nzbget_settings_pre_v7
@@ -354,7 +354,7 @@ get_paused_ids() {
 }
 #Unpauses par files. Returns error if nothing to unpause.
 unpause_pars_and_reprocess() {
-    if [ $mode != nzbget ] ; then return ; fi
+    if [ "$mode" != nzbget ] ; then return ; fi
     if [ "$NZBOP_ALLOWREPROCESS" != "yes" ] ; then
         ERROR "AllowReProcess disabled. Cannot repair"
         return 1
@@ -371,7 +371,7 @@ unpause_pars_and_reprocess() {
     fi
 }
 delete_paused_pars() {
-    if [ $mode != nzbget ] ; then return ; fi
+    if [ "$mode" != nzbget ] ; then return ; fi
     if [ "$arg_par_check" -eq 0 -a "$external_par_check" -eq 1 -a "$unpak_external_par_repair_tidy_queue" -eq 1 ] ; then
         INFO "Deleting paused parts of $arg_nzb_file"
         ids=$(get_paused_ids)
@@ -440,7 +440,7 @@ END {
 }
 
 par_repair() {
-    if [ $mode != nzbget ] ; then return ; fi
+    if [ "$mode" != nzbget ] ; then return ; fi
     parFile="$1"
 
     INFO "Par Repair using $parFile"
@@ -469,7 +469,7 @@ par_repair() {
         unpause_nzbget
     fi
 
-    if [ $par_state -eq 0 ] ; then
+    if [ "$par_state" -eq 0 ] ; then
 
         INFO "Repair OK : $parFile"
         #We delete par files right away once par is repaired
@@ -487,7 +487,7 @@ par_repair() {
     #Avoid confusion due to .1 extension
     par_rename_damaged_files "$out"
     rm -f -- "$err" "$out"
-    return $par_state
+    return "$par_state"
 }
 
 # Input $1 = par stdout file (with emedded \r's)
@@ -559,7 +559,7 @@ par_monitor() {
     fi
 
     while true ; do
-        sleep $poll_time
+        sleep "$poll_time"
         if [ ! -f "$outfile" ] ; then break ; fi
         if [ ! -d "/proc/$p2pid" ] ; then break ; fi # Par process gone?
         
@@ -667,7 +667,7 @@ first_volumes() {
     #  (ie end in 1.rar but not 0*1.rar ) 
     # .*.[0-9]*[02-9]
     # .*.[0-9]*[1-9][0-9]*1
-    if [ $mode = nzbget ] ; then
+    if [ "$mode" = nzbget ] ; then
         #Get all possible rar files at any depth
         find . -name \*.rar -o -name \*1 2>/dev/null |\
         sed 's;\./;;' |\
@@ -687,7 +687,7 @@ first_volumes() {
 unrar_all() {
     loop=1
     INFO "Unrar all files"
-    if [ $mode = nzbget ] ; then
+    if [ "$mode" = nzbget ] ; then
         if [ "$unpak_pause_nzbget_during_unrar" -eq 1 ] ; then
             pause_nzbget
         fi
@@ -695,7 +695,7 @@ unrar_all() {
 
     failed=0
 
-    if [ $mode = nzbget ] ; then
+    if [ "$mode" = nzbget ] ; then
         # If there are broken files then fail right away and get pars.
         if [ -e _brokenlog.txt -a "$gPass" -eq 1 ] ; then
             ERROR "Detected brokenlog. Getting pars"
@@ -709,7 +709,7 @@ unrar_all() {
         if first_volumes > "$gTmpFile.unrar" ; then
             while IFS= read rarfile ; do
                 if ! unrar_one "$rarfile" ; then
-                    if [ $mode = nzbget -a  "$gPass" -eq 1 ] ; then
+                    if [ "$mode" = nzbget -a  "$gPass" -eq 1 ] ; then
                         #no point in trying any more until we get all pars.
                         DEBUG "Abort unrar_all"
                         failed=1
@@ -724,7 +724,7 @@ unrar_all() {
     done
     DEBUG "Done STEPS"
     # Unpause NZBGet
-    if [ $mode = nzbget ] ; then
+    if [ "$mode" = nzbget ] ; then
         if [ "$unpak_pause_nzbget_during_unrar" -eq 1 ] ; then
             unpause_nzbget
         fi
@@ -758,9 +758,9 @@ check_top_level_unrar_state() {
 
 # $1 = rarfile 
 rar_sanity_check() {
-    related_rar_files "$rarfile" > "$gTmpFile.related"
+    related_rar_files "$1" > "$gTmpFile.related"
     cat "$gTmpFile.related" | log_stream INFO "related"
-    if [ $mode = nzbget ] ; then 
+    if [ "$mode" = nzbget ] ; then 
         rar_sanity_check_nzb "$1" "$gTmpFile.related"
     else
         rar_sanity_check_torrent "$1" "$gTmpFile.related"
@@ -1371,7 +1371,7 @@ tidy_nzb_files() {
 }
 
 clear_tmpfiles() {
-    rm -f $OVS_TMP/unpak.$$.*
+    rm -f "$OVS_TMP/unpak.$$."*
 }
 
 #Store the state of each rar file.
@@ -1397,7 +1397,7 @@ delete_queue="unpak.delete.sh"
 
 get_rar_state() {
     r=$(flagid "$1")
-    [ ! -f $rar_state_list ] || awk "-F$rar_state_sep" '$1 == "'"$r"'" {print $2}' $rar_state_list
+    [ ! -f "$rar_state_list" ] || awk "-F$rar_state_sep" '$1 == "'"$r"'" {print $2}' "$rar_state_list"
 }
 #Change if it already exists
 change_rar_state() {
@@ -1405,8 +1405,8 @@ change_rar_state() {
     r=$(flagid "$1")
     s="$2"
     touch "$rar_state_list"
-    awk "-F$rar_state_sep" '{ if ( $1=="'"$r"'" ) { print $1"'"$rar_state_sep$s"'" } else { print }}' $rar_state_list > $rar_state_list.1 &&\
-    mv $rar_state_list.1 $rar_state_list
+    awk "-F$rar_state_sep" '{ if ( $1=="'"$r"'" ) { print $1"'"$rar_state_sep$s"'" } else { print }}' "$rar_state_list" > "$rar_state_list.1" &&\
+    mv "$rar_state_list.1" "$rar_state_list"
 }
 set_rar_state() {
     INFO "set_rar_state $1 = $2"
@@ -1414,15 +1414,15 @@ set_rar_state() {
     s="$2"
     DEBUG "flagid [$1]=[$r]"
     touch "$rar_state_list"
-    awk "-F$rar_state_sep" '{ if ( $1 != "'"$r"'" ) { print }} END { print "'"$r$rar_state_sep$s"'" } ' $rar_state_list > $rar_state_list.1 &&\
-    mv $rar_state_list.1 $rar_state_list
+    awk "-F$rar_state_sep" '{ if ( $1 != "'"$r"'" ) { print }} END { print "'"$r$rar_state_sep$s"'" } ' "$rar_state_list" > "$rar_state_list.1" &&\
+    mv "$rar_state_list.1" "$rar_state_list"
     DEBUG "SET RARSTATE [$r]=[$s]"
 }
 
 list_rar_states() {
     state_pattern="$1"
     touch "$rar_state_list"
-    awk "-F$rar_state_sep" '{ if ( $2 ~ "'"$state_pattern"'" ) { print $1 }}' $rar_state_list
+    awk "-F$rar_state_sep" '{ if ( $2 ~ "'"$state_pattern"'" ) { print $1 }}' "$rar_state_list"
 }
 
 #The script is rar-driven (we may not have downloaded any pars yet and unrar before looking at pars)
@@ -1695,7 +1695,7 @@ nmt_get_pin_folder() {
 
 # Ensure a folder exists by following all relative paths and doing mkdir
 prepare_target_folder() {
-    if [ $mode = nzbget ] ; then
+    if [ "$mode" = nzbget ] ; then
         prepare_target_folder2 "$NZBOP_DESTDIR" "$unpak_completed_dir" "$@"
     else
         prepare_target_folder2 "$unpak_completed_dir" "$@"
@@ -1813,17 +1813,17 @@ run_catalog() {
     set -x
     folder="$1"
     shift
-    if [ -f "$root_folder/bin/catalog.sh" ] ; then
+    if [ -f "$OVS_HOME/bin/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
         if [ "$is_nmt" = "Y" ] ; then
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
+	        JOBID="$log_name" "$OVS_HOME/bin/catalog.sh" "$folder" "$@" || true
 	    else
-	        #JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
+	        #JOBID="$log_name" "$OVS_HOME/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
+	        JOBID="$log_name" "$OVS_HOME/bin/catalog.sh" "$folder" "$@" || true
 	    fi
-        #create_resume_file "$folder/unpak.resume" "$root_folder/bin/catalog.sh" "$folder" "$@"
+        #create_resume_file "$folder/unpak.resume" "$OVS_HOME/bin/catalog.sh" "$folder" "$@"
     else
-        INFO "Catalog script not present in $root_folder"
+        INFO "Catalog script not present in $OVS_HOME"
     fi
 }
 
@@ -1887,7 +1887,7 @@ main() {
 
     exit_code=1
     INFO 'unpak version $Id$ '
-    INFO "root_folder [$root_folder]"
+    INFO "OVS_HOME [$OVS_HOME]"
     INFO "$os_version $nmt_version"
 
     env | grep -iv password | log_stream DEBUG env
@@ -1896,7 +1896,7 @@ main() {
 
     NZB_NICE_NAME=$(basename "$arg_download_dir" "")
 
-    if [ $mode = nzbget ] ; then
+    if [ "$mode" = nzbget ] ; then
         check_settings || exit 1
         set_nzbget_exit_codes
     else
@@ -1919,7 +1919,7 @@ main() {
 
     case "$arg_par_check" in
         0)
-            if [ $mode = nzbget ] ; then
+            if [ "$mode" = nzbget ] ; then
                 if [ -f _brokenlog.txt -a "$external_par_check" -ne 1 ] ; then
                     ERROR "par-check is disabled or no pars present, but a rar is broken, exiting"
                     abort
@@ -1935,7 +1935,7 @@ main() {
 
     #---------------------------------------------------------
 
-    case $mode in
+    case "$mode" in
         nzbget)
             if [ $unpak_pause_nzbget -eq 1 ] ; then
                 pause_nzbget
@@ -2012,8 +2012,6 @@ main() {
 }
 
 script_name=$(basename "$0" "")
-
-root_folder=$( cd $(dirname "$0") ; cd .. ; pwd )
 
 ##################################################################################
 # something sometimes changes /tmp permissions so only root can write
@@ -2106,9 +2104,7 @@ case $mode in
         fi
 esac
 
-echo B
-
-log_dir="$root_folder/logs"
+log_dir="$OVS_HOME/logs"
 
 mkdir -p $log_dir
 
@@ -2128,7 +2124,7 @@ clean_logs "$log_dir"
 
 
 cd "$arg_download_dir"
-create_resume_file unpak.resume "$root_folder/bin/unpak.sh" "$@"
+create_resume_file unpak.resume "$OVS_HOME/bin/unpak.sh" "$@"
 
 INFO "OVS_TMP=[$OVS_TMP]"
 

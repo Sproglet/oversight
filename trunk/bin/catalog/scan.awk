@@ -621,7 +621,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,local_search,\
-cat,minfo2,locales,id) {
+cat,minfo2,locales,id,split_episode_search) {
 
     if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
        
@@ -728,9 +728,15 @@ cat,minfo2,locales,id) {
 
                         } else if (cat != "M" ) {
 
+                            # If set then tv search for xx.0915 will be done  after movie search
+                            # however currently a bug in this approach because tv_search_simple does not re-parse the 
+                            # filename to extract the episodes, so it will use the blank episode and will not get 
+                            #the episode details.
+                            split_episode_search = 1;
+
                             # Not sure - try a TV search looking for various abbreviations -
                             # but exlcude files whithout sep between season and episode - usually movies.
-                            cat = tv_search_complex(minfo,bestUrl,1,0);
+                            cat = tv_search_complex(minfo,bestUrl,1,1-split_episode_search); # changed from 1,0 
 
                             if (cat != "T") {
                                 # Could not find any hits using tv abbreviations, try heuristis for a movie search.
@@ -748,7 +754,7 @@ cat,minfo2,locales,id) {
                                 } else {
                                     # No movie found...
                                     # Try the files without separate between season and episode now
-                                    cat = tv_search_complex(minfo,bestUrl,0,1);
+                                    cat = tv_search_complex(minfo,bestUrl,0,split_episode_search);
                                 }
                             }
                         }

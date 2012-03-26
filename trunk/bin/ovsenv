@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 # Set Paths
 
 
@@ -15,8 +15,8 @@ check_nmt() {
     if [ -z "$ARCH" ] ; then
         if check_fw "$file" "$patt" ; then
            FAMILY=nmt
-           ARCH=$arch
-           NMT_APP_DIR=$appdir
+           ARCH="$arch"
+           NMT_APP_DIR="$appdir"
        fi
    fi
 }
@@ -86,6 +86,7 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
 
     uid=`id -u -n`
     gid=`id -g`
+    OVS_TMP=/tmp
 
     LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
@@ -128,6 +129,13 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
                     ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
                 fi
             done
+            OVS_TMP="$OVS_HOME/tmp"
+            if [ ! -d "$OVS_TMP" ] ; then
+                mkdir -p $OVS_TMP || true
+                if id | grep -q root ; then
+                    chown $uid:$gid $OVS_TMP || true
+                fi
+            fi
         ;;
         funplug)
             uid=nobody
@@ -140,14 +148,10 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
         ;;
     esac
 
-    export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH
+    export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH OVS_TMP
     export OVERSIGHT_ID="$uid:$gid"
 
 
-    TMP=/share/Apps/oversight/tmp
-    if [ ! -d $TMP ] ; then 
-        TMP=/tmp
-    fi
 
 fi
 

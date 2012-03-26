@@ -20,7 +20,7 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 #this IS the default bevaviour for non-rar sets. but other types of archive maybe not best.
 
 #Find install folder
-EXE=$0
+EXE="$0"
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 BINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
 
@@ -275,7 +275,7 @@ load_unpak_settings() {
                 #cat preserves dest permissions
                 if grep -q '$' "$cfg" ; then
                     WARNING Fixing corrupted config file
-                    tmpFile="$TMP/unpak.cfg.$$"
+                    tmpFile="$OVS_TMP/unpak.cfg.$$"
                     sed -r 's/$//' "$cfg" > "$tmpFile"
                     cat "$tmpFile" > "$cfg" 
                     rm -f "$tmpFile"
@@ -453,7 +453,7 @@ par_repair() {
     out="$gTmpFile.p2_out"
     err="$gTmpFile.p2_err"
     par2 repair "$parFile" > "$out" 2>"$err" &
-    par_monitor "$out"
+    par_monitor "$out" "$parFile"
     set -e
 
     par_state=1
@@ -538,7 +538,8 @@ par_output_get_last_line() {
 }
 
 par_monitor() {
-    outfile=$1
+    outfile="$1"
+    cmdTxt="$2"
     percent_old=
     scanning_old=""
     loggedParStats=0
@@ -552,7 +553,7 @@ par_monitor() {
     bad_eta_count=0
     DEBUG "par_monitor"
     touch "$outfile"
-    p2pid=$(get_pid_by_exe par2 "$PWD")
+    p2pid=$(get_pid_by_exe par2 "$PWD" "$cmdTxt" )
     if [ ! -n "$p2pid" ] ; then
         return 1
     fi
@@ -632,6 +633,7 @@ par_monitor() {
 #Works on Linux only
 #$1 = binary
 #$2 = home folder
+#$3 = some text on command line
 get_pid_by_exe() {
     INFO "getpid [$1]"
     for i in 1 2 3 4 5 ; do
@@ -639,9 +641,11 @@ get_pid_by_exe() {
             if [ "$pid/cwd" -ef "$2" ] ; then
                 case "`readlink "$pid/exe"`" in
                     *$1 )
-                        DEBUG "PID dir for $1 = $pid"
-                        echo "$pid" | sed 's;/proc/;;'
-                        return 0
+                        if fgrep -q "$3" "$pid/cmdline" ; then
+                            DEBUG "PID dir for $1 = $pid"
+                            echo "$pid" | sed 's;/proc/;;'
+                            return 0
+                        fi
                         ;;
                 esac
             fi
@@ -978,7 +982,7 @@ check_header() {
 
 #Takes ls -l of rar parts as input and returns number of parts with unexpected size.
 wrong_size_count() {
-    size=$1
+    size="$1"
     all_but_last_line | awk '$5 != '$size' {print $5}' | line_count
 }
 
@@ -1046,7 +1050,7 @@ unrar_one() {
                     #sed 's/.*//' 
                 sleep 1
                 ls -l "$rar_std_out" | log_stream INFO ls
-                unrar_monitor "$rar_std_err" "$dirname/$unrar_tmp_dir"
+                unrar_monitor "$rar_std_err" "$dirname/$unrar_tmp_dir" "$rarname"
                 ls -l "$rar_std_out" | log_stream INFO ls
 
                 if grep -q '^All OK' "$rar_std_out" ; then
@@ -1122,8 +1126,9 @@ unrar_one() {
 unrar_monitor() {
     errfile="$1"
     dir="$2"
+    cmdtxt="$3"
     touch "$errfile"
-    unrarpid=$(get_pid_by_exe unrar "$dir")
+    unrarpid=$(get_pid_by_exe unrar "$dir" "$cmdtxt" )
     if [ ! -n "$unrarpid" ] ; then
         return 0
     fi
@@ -1366,7 +1371,7 @@ tidy_nzb_files() {
 }
 
 clear_tmpfiles() {
-    rm -f $TMP/unpak.$$.*
+    rm -f $OVS_TMP/unpak.$$.*
 }
 
 #Store the state of each rar file.
@@ -1537,7 +1542,7 @@ delete_extended_glob_pattern() {
 }
 
 clear_all_rar_states() {
-    force=$1
+    force="$1"
     if [ "$force" -eq 1 -o $unpak_debug_mode -eq 0 ] ; then
         rm -f "$rar_state_list"
     fi
@@ -1785,7 +1790,7 @@ arg_list() {
 }
 
 create_resume_file() {
-    file=$1
+    file="$1"
     shift
     if [ -n "$1" ] ; then
         arg_list "$@" > "$file"
@@ -1811,10 +1816,10 @@ run_catalog() {
     if [ -f "$root_folder/bin/catalog.sh" ] ; then
         #User has a correct unpak.cfg file.
         if [ "$is_nmt" = "Y" ] ; then
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" #|| true
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
 	    else
 	        #JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" NO_DB WRITE_NFO "$@" || true
-	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" #|| true
+	        JOBID="$log_name" "$root_folder/bin/catalog.sh" "$folder" "$@" || true
 	    fi
         #create_resume_file "$folder/unpak.resume" "$root_folder/bin/catalog.sh" "$folder" "$@"
     else
@@ -2012,23 +2017,16 @@ root_folder=$( cd $(dirname "$0") ; cd .. ; pwd )
 
 ##################################################################################
 # something sometimes changes /tmp permissions so only root can write
-TMP=/tmp
-chmod o+w /tmp 2>/dev/null || true
 is_nmt=N
 
 if [  "$FAMILY" = nmt ] ; then
     is_nmt=Y
-    TMP2=$root_folder/tmp
-    if mkdir -p "$TMP2" ; then
-        TMP="$TMP2"
-        chown "$uid:$gid" "$TMP" 2>/dev/null || true
-    fi
 fi
 
 #Some global settings
 finished_nzb_folder="processed"
 finished_nzb_ext=".processed"
-gTmpFile="$TMP/unpak.$$"
+gTmpFile="$OVS_TMP/unpak.$$"
 flatten="=@="
 ###################### Parameters #####################################
 
@@ -2110,7 +2108,7 @@ esac
 
 echo B
 
-log_dir=$root_folder/logs
+log_dir="$root_folder/logs"
 
 mkdir -p $log_dir
 
@@ -2132,7 +2130,7 @@ clean_logs "$log_dir"
 cd "$arg_download_dir"
 create_resume_file unpak.resume "$root_folder/bin/unpak.sh" "$@"
 
-INFO "TMP=[$TMP]"
+INFO "OVS_TMP=[$OVS_TMP]"
 
 load_unpak_settings "$unpak_default_settings"
 

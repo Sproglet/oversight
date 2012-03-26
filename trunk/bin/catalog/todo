@@ -1,3 +1,17 @@
+# fg.s08e04 
+# instead of fileter web titles. spider episode url for each possible match - esp if series > 4
+# 
+# <End possible matches=[=[60]]
+# [DEBUG]    18:43:29 :                      Check if this is alternate names for same show . eg 'CSI NY' 'CSI: NY'
+# [INFO]     18:43:29 :                     >Begin filter_web_titles2 in=60
+# ---------------------------------------------
+#
+# work through tv listings backwards - for each match check if
+# 1. current eposide exists score =1
+# 2. next episode does not exist score *= 2
+#
+# --------------------------------------------
+#
 # Logic should be
 # Share selection DDL
 #

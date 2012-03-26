@@ -1,10 +1,10 @@
 #!/bin/sh
 VERSION=20090605-1BETA
 
-OVS_HOME=$( echo $0 | sed -r 's|[^/]+$||' )
-OVS_HOME=$(cd "${OVS_HOME:-.}" ; cd .. ; pwd )
-
-TMPDIR="$OVS_HOME/tmp"
+EXE="$0"
+while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
+APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
+. $APPBINDIR/ovsenv
 
 #echo "OVS_HOME=$OVS_HOME"
 
@@ -112,7 +112,7 @@ function run_option_command(cmd,opts,\
 tmpf,count,err) {
 
     delete opts;
-    tmpf = "'"$TMPDIR/option.$$"'";
+    tmpf = "'"$OVS_TMP/option.$$"'";
     cmd = cmd" > "quoteFile(tmpf);
     if (system(cmd) == 0 ) {
         count = 1;

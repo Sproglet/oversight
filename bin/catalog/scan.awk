@@ -766,7 +766,7 @@ cat,minfo2,locales,id,split_episode_search) {
                             if (minfo["mi_set"] == "" && index(minfo["mi_idlist"],"themoviedb") == 0) {
                                 imdb_movie_connections(minfo);
                             }
-                            getNiceMoviePosters(minfo);
+                            defaultPosters(minfo);
 
                            local_search=0;
 

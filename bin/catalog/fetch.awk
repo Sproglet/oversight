@@ -178,7 +178,7 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 
 # url_online 1=OK 0=failed
 function url_online(url,tries,timeout) {
-    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -q -O /dev/null "qa(url)) == 0;
+    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -q -O /dev/null "qa(url)) == 0;
 }
 
 #TODO We have to watch out for dns servers that return false hits on bad domains.

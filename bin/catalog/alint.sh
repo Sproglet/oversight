@@ -304,3 +304,6 @@ function analyse(f,\
 }
 
 lint "$@"
+cat "$@" > all 
+echo | awk -f all
+rm -f all

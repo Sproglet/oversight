@@ -161,9 +161,10 @@ BEGIN {
 
     g_db = 1; # true if db is updated - yes for oversight no for anything else.
 
-    g_api_tvdb="A110A5718F912D21070A77194F";
-    g_api_tmdb="2d51eee0579c36499df410b337edc79658dac1ae14";
-    g_api_rage="fP8i46657c9qe22678pt4M08315u554A68263Hh7";
+    g_api_tvdb="A110A5718F912D21070AF";
+    g_api_tmdb="2d51eee0579c36499df410b337edcdac1ae14";
+    g_api_rage="fP8i46657c9qept4Mu554AHh7";
+    g_api_bing="4C83349CD70CC9F6125EA40CACED1D950730533E97EA0";
 
     INF("$Id$");
     get_folders_from_args(FOLDER_ARR);
@@ -311,6 +312,7 @@ END{
 
     g_search_bing_mobile = "http://m.bing.com/search/search.aspx?A=webresults;D=Web;q=";
     g_search_bing_desktop = "http://www.bing.com/search?q=";
+    g_search_bing_api = "http://api.search.live.net/json.aspx?";
     g_search_bing = g_search_bing_mobile;
 
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
@@ -399,6 +401,7 @@ END{
     g_api_tvdb = apply(g_api_tvdb);
     g_api_tmdb = apply(g_api_tmdb);
     g_api_rage = apply(g_api_rage);
+    g_api_bing = apply(g_api_bing);
 
     if (EXPORT_XML) {
         if (FOLDER_ARR[1] != "") {

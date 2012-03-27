@@ -138,14 +138,114 @@ function download_image(field_id,minfo,mi_field,\
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
-function getNiceMoviePosters(minfo) {
+function defaultPosters(minfo) {
 
-    if (getting_poster(minfo,1) || getting_fanart(minfo,1)) {
-
-        #poster_url = bingimg(minfo["mi_title"]" "minfo["mi_year"]"+site%3aimpawards.com",300,450,2/3,0,"[0-9]+ x [0-9]+");
-
-#        if (is_better_source(minfo,"mi_poster","XXXXXX")) {
-#            best_source(minfo,"mi_poster",get_XXXXXX_img(minfo),"xxxxxx");
-#        }
+    if (getting_poster(minfo,1)) {
+       search_bing_image(minfo,"mi_poster","Tall",700,300);
+    }
+    if (getting_fanart(minfo,1)) {
+       search_bing_image(minfo,"mi_fanart","Wide",1280,600);
     }
 }
+
+function search_bing_image(minfo,fld,aspect,w1,w2,\
+query,qnum,q) {
+
+    if (minfo[fld] == "") {
+        id1("search_bing_image "fld);
+
+        query[++qnum]=imdb(minfo);
+        query[++qnum]=minfo["mi_title"]" "minfo["mi_year"];
+
+
+        for(q = 1 ; q<= qnum ; q++ ) {
+            minfo[fld] = bing_image(aspect,query[q],"Large",w1,w2);
+            if (minfo[fld] != "" ) break;
+            minfo[fld] = bing_image(aspect,query[q],"Medium",w1,w2);
+            if (minfo[fld] != "" ) break;
+        }
+        id0(minfo[fld]);
+    }
+}
+
+function bing_image(aspect,query,size,w1,w2,\
+json,url,imageUrl,i,prefix,w,h,finalUrl) {
+    aspect = capitalise(aspect);
+    url=g_search_bing_api"Appid="g_api_bing;
+    url = url "&sources=image";
+    url = url "&Image.Count=20";
+    url = url "&Image.Filters=Size:"capitalise(size); # Small Large Medium
+    url = url "&Image:Filters=Aspect:"capitalise(aspect); # Wide , Tall
+    url = url "&query="url_encode(query);
+
+    id1("bing image "aspect" "w1"-"w2" "query);
+
+    if (fetch_json(url,"img",json)) {
+
+        i = 0 ;
+        prefix="SearchResponse:Image:Results#";
+        do {
+            i++;
+            imageUrl = json[prefix i ":MediaUrl"];
+            w = json[prefix i ":Width"];
+            h = json[prefix i ":Height"];
+            INF("image "w"x"h" "imageUrl);
+            if (imageUrl == "") {
+               INF("no image for "prefix i ":MediaUrl");
+               break;
+            }
+            if (imageUrl !~ "jpg$" ) {
+               DEBUG("Skipping non jpg");
+            } else if (imageUrl ~ "//[-.[:alnum:]]*(img|image|photo)[-.[:alnum:]]*.com" && imageUrl !~ "(movie|film)" ) {
+               DEBUG("Skipping image site");
+            } else {
+                if (w+0 > w2+0) {
+                    if (aspect == "Tall" ) {
+                       if (!check_aspect(w,h,500,740)) continue;
+                    } else if (aspect == "Wide" ) {
+                       if (!check_aspect(w,h,1920,1080) && !check_aspect(w,h,640,480)) continue;
+                    }  
+
+                    # Check url is online
+                    if (w+0 > w1+0 || finalUrl == "") {
+                        if (!url_online(imageUrl,1,1)) {
+                            INF("url is offline?");
+                            continue;
+                        }
+                    }
+
+                    if ((w+0 >= w1+0) ) {
+                        # Image is wider than w1 - return this result
+                        finalUrl = imageUrl;
+                        INF("found large image "finalUrl);
+                        break;
+                    } else if (finalUrl == ""  ) { 
+                        # Image is wider than w2 - keep first result but keep looking
+                        finalUrl = imageUrl;
+                        INF("found first medium image "finalUrl);
+#                    } else {
+#                        DEBUG("found another medium image "imageUrl);
+                    }
+                }
+            }
+        } while(1);
+        gsub(/\\/,"",finalUrl);
+    }
+
+    id0(finalUrl);
+
+    return finalUrl;
+}
+
+function check_aspect(w,h,w1,h1,\
+ar) {
+    ar = ( w * h1 ) / ( h * w1 ) - 1;
+    ar = ar * ar;
+    if (ar < 0.1) {
+        INF("good aspect "w","h" wrt. "w1","h1" = "ar);
+        return 1;
+    } 
+    return 0;
+
+}
+

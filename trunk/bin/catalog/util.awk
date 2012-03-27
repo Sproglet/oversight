@@ -151,6 +151,7 @@ function timestamp(label,x) {
     if (index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
     if (index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
     if (index(x,g_api_rage) ) gsub(g_api_rage,".",x);
+    if (index(x,g_api_bing) ) gsub(g_api_bing,".",x);
 
     if (index(x,"app.i") ) {
         sub("app.i[[:alnum:]/?=&]+","",x);
@@ -183,7 +184,7 @@ function trim(str) {
 }
 
 function apply(text) {
-    gsub(/[0-9][0-9][0-9][0-9][0-9]/,"",text);
+    sub(/[0-9]{5}/,"",text);
     return text;
 }
 #baseN - return a number base n. All output bytes are offset by 128 so the characters will not 

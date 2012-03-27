@@ -2124,10 +2124,10 @@ ret) {
     ret = 0;
     if (minfo[field] == "") {
         minfo[field] = value;
-        print "["field"] set to ["value"]";
+        DEBUG( "["field"] set to ["value"]");
         ret = 1;
     } else {
-        print "["field"] already set to ["minfo[field]"] ignoring ["value"]";
+        DEBUG( "["field"] already set to ["minfo[field]"] ignoring ["value"]");
     }
     return ret;
 }

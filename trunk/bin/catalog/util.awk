@@ -343,7 +343,7 @@ i,key,n) {
         }
         asort(key);
         for(i = 1 ; i<= n ; i++ ) {
-            DEBUG(" "label":"key[i]"=["array[key[i]]"]");
+            DEBUG(" "label" : "key[i]" =["array[key[i]]"]");
         }
         if (n == 0 ) {
             DEBUG("  "label":<empty>");

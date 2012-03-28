@@ -766,7 +766,6 @@ cat,minfo2,locales,id,split_episode_search) {
                             if (minfo["mi_set"] == "" && index(minfo["mi_idlist"],"themoviedb") == 0) {
                                 imdb_movie_connections(minfo);
                             }
-                            defaultPosters(minfo);
 
                            local_search=0;
 
@@ -799,6 +798,8 @@ cat,minfo2,locales,id,split_episode_search) {
                             WARNING("Unknown item "minfo["mi_media"]);
 
                         } else {
+
+                            defaultPosters(minfo);
 
                             if (tolower(minfo["mi_media"]) ~ "\\<trailer\\>" && minfo["mi_title"] != "Trailer" ) {
                                 minfo["mi_title"] = minfo["mi_title"] " - Trailer";

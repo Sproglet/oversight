@@ -178,7 +178,8 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 
 # url_online 1=OK 0=failed
 function url_online(url,tries,timeout) {
-    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -q -O /dev/null "qa(url)) == 0;
+    # slight bug with wget 1.12 return code 4 when OK so grep output for 'Remote file exists'
+    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -S -O /dev/null "qa(url)" 2>&1 | grep -q '200 OK'") == 0;
 }
 
 #TODO We have to watch out for dns servers that return false hits on bad domains.

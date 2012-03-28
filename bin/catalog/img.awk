@@ -140,36 +140,40 @@ function download_image(field_id,minfo,mi_field,\
 #id = imdbid
 function defaultPosters(minfo) {
 
+    #DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo["mi_poster"] = minfo["mi_fanart"] = "";
+
     if (getting_poster(minfo,1)) {
-       search_bing_image(minfo,"mi_poster","Tall",700,300);
+       search_bing_image(minfo,"mi_poster","Tall");
     }
     if (getting_fanart(minfo,1)) {
-       search_bing_image(minfo,"mi_fanart","Wide",1280,600);
+       search_bing_image(minfo,"mi_fanart","Wide");
     }
 }
 
-function search_bing_image(minfo,fld,aspect,w1,w2,\
+function search_bing_image(minfo,fld,aspect,\
 query,qnum,q) {
 
     if (minfo[fld] == "") {
         id1("search_bing_image "fld);
 
-        query[++qnum]=imdb(minfo);
+        #query[++qnum]=imdb(minfo); # tt searches find lots of screencaps - stick to title searches
+        query[++qnum]="\""minfo["mi_title"]"\" +"minfo["mi_year"];
         query[++qnum]=minfo["mi_title"]" "minfo["mi_year"];
 
 
         for(q = 1 ; q<= qnum ; q++ ) {
-            minfo[fld] = bing_image(aspect,query[q],"Large",w1,w2);
+            # For some reason Bing api does not let you specify both Large and Medium - you get 0 results,
+            minfo[fld] = bing_image(minfo,aspect,query[q],"Large");
             if (minfo[fld] != "" ) break;
-            minfo[fld] = bing_image(aspect,query[q],"Medium",w1,w2);
+            minfo[fld] = bing_image(minfo,aspect,query[q],"Medium");
             if (minfo[fld] != "" ) break;
         }
         id0(minfo[fld]);
     }
 }
 
-function bing_image(aspect,query,size,w1,w2,\
-json,url,imageUrl,i,prefix,w,h,finalUrl) {
+function bing_image(minfo,aspect,query,size,\
+json,url,imageUrl,i,prefix,sc,best,finalUrl) {
     aspect = capitalise(aspect);
     url=g_search_bing_api"Appid="g_api_bing;
     url = url "&sources=image";
@@ -178,7 +182,7 @@ json,url,imageUrl,i,prefix,w,h,finalUrl) {
     url = url "&Image:Filters=Aspect:"capitalise(aspect); # Wide , Tall
     url = url "&query="url_encode(query);
 
-    id1("bing image "aspect" "w1"-"w2" "query);
+    id1("bing image "aspect" "query);
 
     if (fetch_json(url,"img",json)) {
 
@@ -187,49 +191,15 @@ json,url,imageUrl,i,prefix,w,h,finalUrl) {
         do {
             i++;
             imageUrl = json[prefix i ":MediaUrl"];
-            w = json[prefix i ":Width"];
-            h = json[prefix i ":Height"];
-            INF("image "w"x"h" "imageUrl);
             if (imageUrl == "") {
                INF("no image for "prefix i ":MediaUrl");
                break;
             }
-            if (imageUrl !~ "jpg$" ) {
-               DEBUG("Skipping non jpg");
-            } else if (imageUrl ~ "//[-.[:alnum:]]*(img|image|photo)[-.[:alnum:]]*.com" && imageUrl !~ "(movie|film)" ) {
-               DEBUG("Skipping image site");
-            } else {
-                if (w+0 > w2+0) {
-                    if (aspect == "Tall" ) {
-                       if (!check_aspect(w,h,500,740)) continue;
-                    } else if (aspect == "Wide" ) {
-                       if (!check_aspect(w,h,1920,1080) && !check_aspect(w,h,640,480)) continue;
-                    }  
-
-                    # Check url is online
-                    if (w+0 > w1+0 || finalUrl == "") {
-                        if (!url_online(imageUrl,1,1)) {
-                            INF("url is offline?");
-                            continue;
-                        }
-                    }
-
-                    if ((w+0 >= w1+0) ) {
-                        # Image is wider than w1 - return this result
-                        finalUrl = imageUrl;
-                        INF("found large image "finalUrl);
-                        break;
-                    } else if (finalUrl == ""  ) { 
-                        # Image is wider than w2 - keep first result but keep looking
-                        finalUrl = imageUrl;
-                        INF("found first medium image "finalUrl);
-#                    } else {
-#                        DEBUG("found another medium image "imageUrl);
-                    }
-                }
-            }
+            sc[imageUrl] = img_score(json,prefix i,aspect,minfo);
         } while(1);
-        gsub(/\\/,"",finalUrl);
+    }
+    if (bestScores(sc,best,0) > 0) {
+        finalUrl = firstIndex(best);
     }
 
     id0(finalUrl);
@@ -237,15 +207,85 @@ json,url,imageUrl,i,prefix,w,h,finalUrl) {
     return finalUrl;
 }
 
-function check_aspect(w,h,w1,h1,\
+# only keep alnum.
+function collapse(t) {
+    return tolower(gensub(/[^[:alnum:]]+/,"","g",t));
+}
+
+
+function img_score(json,key,aspect,minfo,\
+sc,imageUrl,w,h,imdbid,title,img_title,url_file_title) {
+
+    title = collapse(minfo["mi_title"]);
+
+    img_title = collapse(json[key ":Title"]);
+    imageUrl = json[key ":MediaUrl"];
+
+    url_file_title = collapse(gensub(/.*\//,"",1,imageUrl));
+
+    w = json[key ":Width"];
+    h = json[key ":Height"];
+    imdbid = imdb(minfo);
+    sc = 0;
+
+    do { # break block
+
+        if (aspect == "Tall" ) {
+
+           if (!check_aspect(w,h,0.674)) break;
+           sc = 1;
+           if (w < 500) sc *= 0.8;
+
+        } else if (aspect == "Wide" ) {
+
+           if (check_aspect(w,h,1.7777)) { # common pc wallpaper size
+               sc = 1;
+           } else if (check_aspect(w,h,1.3333)) {
+               sc = 0.9;
+           } else if (check_aspect(w,h,1.25)) { # common pc wallpaper size
+               sc = 0.8;
+           } else {
+               break;
+           }
+           if (w < 1000) sc *= 0.8;
+            if ((imageUrl ~ "(cover)" )) sc *= 0.9; #cover sites usually have dvd covers in fanart sizes
+
+        }  
+        if (imageUrl ~ "png$") sc*=.7; 
+        if (imageUrl ~ "gif$") sc*=.8;
+        
+        if (!url_online(imageUrl,1,1)) {
+            INF("url is offline?");
+            sc = 0;
+            break;
+        }
+
+        if (imageUrl ~ "//[-.[:alnum:]]*(img|image|photo)[-.[:alnum:]]*.com" ) {
+            sc *= 0.7;
+        }
+        #if (!(imageUrl ~ "impawards" )) sc *= 0.9;
+        if (!(imageUrl ~ "(movie|film|guide|tv|poster)" )) sc *= 0.9;
+
+        if (!index(img_title,title)) sc *=0.7;
+        if (!index(url_file_title,title)) sc *=0.7;
+
+        if (!index(img_title,imdbid)) sc *=0.7;
+        if (!index(imageUrl,imdbid)) sc *=0.7;
+
+    } while(0);
+
+    INF("image score="sc" for "w"x"h" "imageUrl" "img_title" "url_file_title);
+    return sc;
+}
+
+function check_aspect(w,h,ratio,\
 ar) {
-    ar = ( w * h1 ) / ( h * w1 ) - 1;
+    ar = ratio * h / w - 1;
     ar = ar * ar;
-    if (ar < 0.1) {
-        INF("good aspect "w","h" wrt. "w1","h1" = "ar);
+    if (ar < 0.04) {
+        #INF("good aspect "w","h" wrt. "ratio" = "ar);
         return 1;
     } 
     return 0;
-
 }
 

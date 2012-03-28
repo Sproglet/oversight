@@ -341,7 +341,9 @@ END{
 
     unit(1);
 
-    scan_options="-Rl";
+    # Process folders in reverse order. This is in the hope that a last episode gives a little
+    # more chance of correctly identifying a season of a remake show.
+    scan_options="-Rlr";
     if (g_settings["catalog_follow_symlinks"]==1) {
         scan_options= scan_options"L";
     }

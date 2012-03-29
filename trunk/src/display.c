@@ -169,10 +169,9 @@ char *cgi_url(int full) {
     if (g_dimension->local_browser || full) {
         url = getenv("SCRIPT_NAME");
         //HTML_LOG(0,"cgi_url = SCRIPT_NAME = [%s]",url);
-    } else {
-        url = "";
         //HTML_LOG(0,"cgi_url = [%s]",url);
     }
+    if (!url) url = "";
     return url;
 }
 
@@ -718,7 +717,6 @@ TRACE;
      */
 
     char *final = self_url2(new_params,new_drilldown_params);
-HTML_LOG(0,"XX [%s] [%s] to [%s]",new_params,new_drilldown_params,final);
     FREE(new_drilldown_params);
 
     return final;

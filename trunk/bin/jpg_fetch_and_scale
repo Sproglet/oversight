@@ -75,10 +75,10 @@ jpg_resize() {
     # Check if width is already correct - note tvdb currently serves 1280w fanart and 500 posters s
     if [ -n "$w" -a -z "$h" ] ; then
         w2=`jpgwidth "$input"`;
-        if [ "$w2" = "$w" ] ; then
+        if [ "$w2" -le "$w" ] ; then
             jpg_size="`sizekb "$input"`"
             if [ "$jpg_size" -lt 1000 ] ; then
-                INFO "width ($w) ok ,  file size ok ${jpg_size}KB - copy to $output"
+                INFO "width ($w2) ok ,  file size ok ${jpg_size}KB - copy to $output"
                 doit=0
             else
                 INFO "dimensions ok but file size too big ${jpg_size}KB - resizing to $output"

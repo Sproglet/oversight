@@ -188,7 +188,7 @@ catalog() {
 
     AWK="gawk --re-interval "
     awk_prg="$AWK "
-    for f in $OVS_HOME/bin/catalog/*.awk ; do
+    for f in "$OVS_HOME/bin/catalog/"*.awk ; do
         awk_prg="$awk_prg -f $f"
     done
 
@@ -215,6 +215,7 @@ catalog() {
     "UID=$uid" \
     "OVERSIGHT_ID=$OVERSIGHT_ID" \
     "AWK=$AWK" \
+    "FAMILY=$FAMILY" \
     "ARCH=$ARCH" \
     g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
@@ -284,7 +285,7 @@ else
     LOG_FILE="$LOG_DIR/$LOG_NAME"
 
     ln -sf "$LOG_FILE" "$LAST_LOG"
-    main "$@" >> "$LOG_FILE" 2>(sed 's/^/[ERROR] /')  >> "$LOG_FILE"
+    main "$@" >> "$LOG_FILE" 2>&1
 
     #If lauched from command line - display log file location
     if [ -z "${REMOTE_ADDR:-}" ] ;then

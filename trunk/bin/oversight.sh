@@ -298,13 +298,18 @@ install_as_wget() {
                 # use rm then cp to avoid symlink overwrite of unexpected file
                 rm -f "$WGET_BIN.real"
                 mv "$WGET_BIN" "$WGET_BIN.real" && \
-                ln -sf "$OVS_HOME/bin/oversight" "$WGET_BIN"
+                ln -sf "$OVS_HOME/bin/$ARCH/oversight" "$WGET_BIN"
             else
                 # if wget is not really wget it could be an old file based version of oversight
                 # replace it with a symlink.
-                ln -sf "$OVS_HOME/bin/oversight" "$WGET_BIN"
+                ln -sf "$OVS_HOME/bin/$ARCH/oversight" "$WGET_BIN"
             fi
-            echo "wget wrapper installed"
+            if "$WGET_BIN" --version ; then
+                echo "wget wrapper installed"
+            else
+                echo "wget install failed"
+                uninstall_as_wget
+            fi
         fi
     fi
 }

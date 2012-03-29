@@ -194,6 +194,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             people_change_extid_to_ovsid(fields2,person_extid2ovsid);
             write_dbline(fields2,file_out);
 
+            # Now the ovsid is known - get images.
             get_images(minfo);
 
             # TODO Pass plot. Change to use minfo ?

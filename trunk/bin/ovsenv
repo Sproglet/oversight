@@ -124,16 +124,17 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
             fi
             # nmt busybox have restricted switches or buggy commands.
             # eg NMT find siliently fails with -mtime and -newer
-            for i in sort find ls tr dirname basename readlink ; do
+            for i in sort find ls tr dirname basename readlink wc sed ; do
                 if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
                     ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
                 fi
             done
             OVS_TMP="$OVS_HOME/tmp"
             if [ ! -d "$OVS_TMP" ] ; then
-                mkdir -p $OVS_TMP || true
-                if id | grep -q root ; then
-                    chown $uid:$gid $OVS_TMP || true
+                mkdir -p "$OVS_TMP" || true
+                chmod -R 777 "$OVS_TMP" || true
+                if [ "`id -u -n`" = root ] ; then
+                    chown -R $uid:$gid "$OVS_TMP" || true
                 fi
             fi
         ;;

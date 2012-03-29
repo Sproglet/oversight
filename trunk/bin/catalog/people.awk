@@ -141,7 +141,7 @@ ret) {
                 #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
 
                 #remove ampersand from call
-                ret = exec(OVS_HOME"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"");
+                ret = exec("jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"",1);
             }
         }
     }

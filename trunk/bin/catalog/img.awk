@@ -82,7 +82,7 @@ function download_image(field_id,minfo,mi_field,\
 
         get_it = 0;
         if (field_id == POSTER) {
-            get_it = getting_poster(minfo,1);
+            get_it = getting_poster(minfo,0);
         } else if (field_id == FANART) {
             get_it = getting_fanart(minfo,0);
         }
@@ -123,7 +123,7 @@ function download_image(field_id,minfo,mi_field,\
 
             rm(internal_path,1);
 
-            exec("jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" ");
+            exec("jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args,1);
             #exec(OVS_HOME"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
             g_image_inspected[internal_path]=1;
         }

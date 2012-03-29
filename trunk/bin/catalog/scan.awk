@@ -89,6 +89,7 @@ f,fcount,total,done,dir) {
 
                 if (!CHECK_FREE_SPACE || file_system_changed(dir)) {
                     total += scan_contents(dir,scan_options);
+                    INF("New/Changed total = "total);
                 }
                 done[dir]=1;
             }
@@ -799,7 +800,6 @@ cat,minfo2,locales,id,split_episode_search) {
 
                         } else {
 
-                            defaultPosters(minfo);
 
                             if (tolower(minfo["mi_media"]) ~ "\\<trailer\\>" && minfo["mi_title"] != "Trailer" ) {
                                 minfo["mi_title"] = minfo["mi_title"] " - Trailer";
@@ -857,6 +857,8 @@ function plot_in_main_lang(minfo) {
 function get_images(minfo) {
     #Only get posters if catalog is installed as part of oversight
     if (!scanner_only()) {
+
+        defaultPosters(minfo);
 
         if (GET_POSTERS) {
             minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");

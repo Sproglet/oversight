@@ -115,7 +115,7 @@ function new_capture_file(label,\
 }
 
 function clean_capture_files() {
-    INF("Clean up");
+    INF("Clean tmp files");
     exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* 2>/dev/null");
 }
 function DEBUG(x) {
@@ -479,10 +479,10 @@ function csv2re(text) {
     return "("text")";
 }
 
-function exec(cmd,\
+function exec(cmd,verbose,\
 err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   #DEBUG("SYSTEM : [["cmd"]]");
+   if (verbose) DEBUG("SYSTEM : [ "cmd" ]");
    if ((err=system(cmd)) != 0) {
       ERR("Return code "err" executing "cmd) ;
   }

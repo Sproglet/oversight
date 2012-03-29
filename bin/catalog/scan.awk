@@ -302,7 +302,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
-                        identify_and_catalog(minfo,qfile,0,person_extid2name);
+                        total += identify_and_catalog(minfo,qfile,0,person_extid2name);
                         storeMovie(minfo,f"/",d,ts,files_in_db);
                         setNfo(minfo,"/$",".nfo");
                     }
@@ -400,7 +400,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     ts=calcTimestamp(lsMonth,lsDate,lsTimeOrYear,NOW);
 
                     #Process previous details
-                    identify_and_catalog(minfo,qfile,0,person_extid2name);
+                    total += identify_and_catalog(minfo,qfile,0,person_extid2name);
 
                     #start storing current details - may be updated by multipart info
                     storeMovie(minfo,scan_line,currentFolder,ts,files_in_db)

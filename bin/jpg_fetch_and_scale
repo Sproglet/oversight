@@ -19,9 +19,6 @@
 # scrapes details.
 # for NMT platform use either 1 or 2. 
 
-echo "0=$0"
-echo "BASHSOURCE=$BASH_SOURCE"
-
 maxthreads=1
 
 

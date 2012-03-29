@@ -457,7 +457,7 @@ END{
         }
     }
     if (g_fetch_images_concurrently == "") {
-        exec(OVS_HOME"/bin/jpg_fetch_and_scale START &");
+        exec("jpg_fetch_and_scale START &",1);
     }
     rm(PIDFILE);
 

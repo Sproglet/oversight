@@ -372,6 +372,7 @@ function remove_absent_files_from_new_db(db,\
     # TODO : not needed : get_files_in_db("",db);
 
     if (lock(g_db_lock_file)) {
+        exec("wc -l "qa(db));
         g_kept_file_count=0;
         g_absent_file_count=0;
 
@@ -444,6 +445,7 @@ function remove_absent_files_from_new_db(db,\
         INF("unchanged:"g_kept_file_count);
         INF("removed:"g_absent_file_count);
         replace_database_with_new(tmp_db,db,INDEX_DB_OLD);
+        exec("wc -l "qa(db));
         unlock(g_db_lock_file);
     }
 }

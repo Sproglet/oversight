@@ -19,6 +19,9 @@
 # scrapes details.
 # for NMT platform use either 1 or 2. 
 
+echo "0=$0"
+echo "BASHSOURCE=$BASH_SOURCE"
+
 maxthreads=1
 
 
@@ -192,9 +195,10 @@ resize_img() {
     rm -f "$2.pnm" "$base.hd.jpg.pnm" "$base.sd.jpg.pnm" "$base.pal.jpg.pnm" "$base.thumb.jpg.pnm"
 }
 
-Q=$OVS_TMP/resize.queue
+Q="$OVS_TMP/resize.queue"
 
 add_queue() {
+    bs='\';
     if [ -n "$1" ] ; then
         args=
         type="$2"
@@ -205,12 +209,11 @@ add_queue() {
             # *2 to survive final echo
             # *2 to survive backticks
             # * 2 for sed.
-            i="`echo "$i" | sed "s/'/'\\\\\\\\\\\\\\\\''/g;s/^/'/;s/$/'/"`"
-            args="$args $i"
+            args="$args '${i//\'/\'\\\'\'}'"
         done
         mkdir -p "$Q.$type"
         perms "$Q.$type"
-        echo "$args" >> "$Q.$type/$prefix$$"
+        echo "fetch_resize $args" >> "$Q.$type/$prefix$$"
         chmod 666 "$Q.$type/$prefix$$"
         perms "$Q.$type/$prefix$$"
         INFO "Queued $args"
@@ -255,14 +258,10 @@ process_queue() {
 
         if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
 
-            #INFO "got image queue file $pq_folder/$f"
+            INFO "got image queue file $pq_folder/$f"
 
-
-            while FS= read line ; do
-                INFO "line[$line]"
-                eval fetch_resize "$line"
-            done < "$pq_args"
-
+            cat "$pq_args"
+            . "$pq_args"
             rm -f "$pq_args"
 
             pq_count=$(( $pq_count + 1 ))

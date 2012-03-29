@@ -304,7 +304,4 @@ function analyse(f,\
 }
 
 lint "$@"
-read x
-cat "$@" > all 
-echo | awk -f all 2>&1 | less
-rm -f all
+echo | gawk --lint `ls *k | sed 's/^/-f /'` 2>&1 | grep error

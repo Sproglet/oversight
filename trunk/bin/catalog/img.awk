@@ -151,23 +151,46 @@ function defaultPosters(minfo) {
 }
 
 function search_bing_image(minfo,fld,aspect,\
-query,qnum,q) {
+query,qnum,q,cat,key) {
 
     if (minfo[fld] == "") {
         id1("search_bing_image "fld);
 
+        if (minfo["mi_category"] == "M" ) cat = "Film";
+        else if (minfo["mi_category"] == "T" ) cat = "Tv";
+
         #query[++qnum]=imdb(minfo); # tt searches find lots of screencaps - stick to title searches
-        query[++qnum]="\""minfo["mi_title"]"\" +"minfo["mi_year"];
-        query[++qnum]=minfo["mi_title"]" "minfo["mi_year"];
+        query[++qnum]="\""minfo["mi_title"]"\" +"minfo["mi_year"]" "cat;
+
+        query[++qnum] = minfo["mi_title"]" "minfo["mi_year"]" "cat;
+        key = minfo["mi_title"]" "minfo["mi_year"]" "cat" "fld;
+
+        query[++qnum]= key;
+
+        if (key in g_webimg) {
+            minfo[fld] = g_webimg[key];
+        } else {
 
 
-        for(q = 1 ; q<= qnum ; q++ ) {
-            # For some reason Bing api does not let you specify both Large and Medium - you get 0 results,
-            minfo[fld] = bing_image(minfo,aspect,query[q],"Large");
-            if (minfo[fld] != "" ) break;
-            minfo[fld] = bing_image(minfo,aspect,query[q],"Medium");
-            if (minfo[fld] != "" ) break;
+            for(q = 1 ; q<= qnum ; q++ ) {
+
+
+                # Try to scrape bing desktop first as images are much better than API seach.
+                minfo[fld] = bing_image_scrape(minfo,aspect,query[q],"Large","Medium");
+                if (minfo[fld] != "" ) break;
+
+                # If no luck (eg site changed) then use the API - this is stable but results are not as good.
+                # For some reason Bing api does not let you specify both Large and Medium - you get 0 results,
+                minfo[fld] = bing_image(minfo,aspect,query[q],"Large");
+                if (minfo[fld] != "" ) break;
+
+                minfo[fld] = bing_image(minfo,aspect,query[q],"Medium");
+                if (minfo[fld] != "" ) break;
+            }
+
+            g_webimg[key] = minfo[fld];
         }
+
         id0(minfo[fld]);
     }
 }
@@ -195,8 +218,81 @@ json,url,imageUrl,i,prefix,sc,best,finalUrl) {
                INF("no image for "prefix i ":MediaUrl");
                break;
             }
-            sc[imageUrl] = img_score(json,prefix i,aspect,minfo);
+            sc[imageUrl] = img_score(json,prefix,i,aspect,minfo);
         } while(1);
+    }
+    if (bestScores(sc,best,0) > 0) {
+        finalUrl = firstIndex(best);
+    }
+
+    id0(finalUrl);
+
+    return finalUrl;
+}
+
+#Bing api seems inaccurate for images - try desktop search
+function bing_image_scrape(minfo,aspect,query,size,size2,\
+json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,score,best_so_far) {
+    aspect = capitalise(aspect);
+
+
+    prefix="SearchResponse:Image:Results#";
+    dim_regex = "([0-9]+) *[Xx] *([0-9]+)";
+    dim_regex = "([a-z]+):\"([^\"]*)\"[,}]";
+
+    url="http://www.bing.com/images/search?FORM=BFID&q=" url_encode(query);
+    url = url "&sources=image";
+    url=url "&qft=";
+    url = url "+filterui:aspect-"tolower(aspect); # Wide , Tall
+    if (size2) {
+        url = url "=+(filterui:imagesize-"tolower(size)"+|+filterui:imagesize-"tolower(size2)")"; # Small Large Medium
+    }   else {
+        url = url "=+filterui:imagesize-"tolower(size); # Small Large Medium
+    }
+
+    id1("bing image "aspect" "query);
+
+    html = get_url_source(url,1);
+    gsub(/[&]quot;/,"\"",html);
+
+    # To process
+    # split at dimension indicators.
+    # for each block:
+        # scan backwards for first non-bing url
+        # Scan forward for all plain/utf8 text inside > < and treat that as the title.
+        # Extract width & heigth from dimension match.
+
+    n = chop(html,dim_regex,blocks);
+
+    id = 0;
+
+    map["imgurl"] = "MediaUrl";
+    map["w"] = "Width";
+    map["h"] = "Height";
+    map["t"] = "Title";
+    map["s"] = "Size";
+
+    # convert desktop search to json api output format so we can reuse the api functions to process the output
+    for(i = 2 ; i <= n ; i+=2 ) {
+
+        text = blocks[i];
+        if (match(text,dim_regex,parts) ) {
+            if (parts[1] == "imgurl") {
+                id++;
+            }
+            if (id) {
+                json[prefix id ":" map[parts[1]]] = parts[2];
+            }
+        }
+    }
+
+    # Keep tract of score = only spider urls that exceed current score.
+    best_so_far = 0;
+    for(i = 1 ; i <= id ; i++ ) {
+        sc[json[prefix i ":MediaUrl"]] = score = img_score(json,prefix,i,aspect,minfo,best_so_far);
+        if (score > best_so_far) {
+            best_so_far = score;
+        }
     }
     if (bestScores(sc,best,0) > 0) {
         finalUrl = firstIndex(best);
@@ -213,9 +309,10 @@ function collapse(t) {
 }
 
 
-function img_score(json,key,aspect,minfo,\
-sc,imageUrl,w,h,imdbid,title,img_title,url_file_title) {
+function img_score(json,json_prefix,pos,aspect,minfo,best_so_far,\
+sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
 
+    key = json_prefix pos;
     title = collapse(minfo["mi_title"]);
 
     img_title = collapse(json[key ":Title"]);
@@ -254,11 +351,6 @@ sc,imageUrl,w,h,imdbid,title,img_title,url_file_title) {
         if (imageUrl ~ "png$") sc*=.7; 
         if (imageUrl ~ "gif$") sc*=.8;
         
-        if (!url_online(imageUrl,1,1)) {
-            INF("url is offline?");
-            sc = 0;
-            break;
-        }
 
         if (imageUrl ~ "//[-.[:alnum:]]*(img|image|photo)[-.[:alnum:]]*.com" ) {
             sc *= 0.7;
@@ -271,6 +363,19 @@ sc,imageUrl,w,h,imdbid,title,img_title,url_file_title) {
 
         if (!index(img_title,imdbid)) sc *=0.7;
         if (!index(imageUrl,imdbid)) sc *=0.7;
+
+        # Assume search engine as done its job and put more relevant first
+        sc *= (30-pos) / 30;
+
+        # Avoid false positives.
+        if (sc < 0.2 ) sc = 0;
+
+        if (sc >= best_so_far ) {
+            if (!url_online(imageUrl,1,5)) {
+                INF("url is offline?");
+                sc = 0;
+            }
+        } 
 
     } while(0);
 

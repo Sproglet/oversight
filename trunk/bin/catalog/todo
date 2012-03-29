@@ -1,4 +1,6 @@
 # fg.s08e04 
+# cache bing image searches by ttid
+# write equivalent of rage_get_other_ids() for thetvdb when ther is no imdb url
 # instead of fileter web titles. spider episode url for each possible match - esp if series > 4
 # 
 # <End possible matches=[=[60]]

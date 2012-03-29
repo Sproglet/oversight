@@ -20,7 +20,7 @@ tmp,err) {
 }
 
 function isnmt() {
-    return ARCH == "nmt";
+    return FAMILY == "nmt";
 }
 
 # changed from getline error check because gawk 3.1.6 has uncatchable error if input is a directory

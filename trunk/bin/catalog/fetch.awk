@@ -179,8 +179,50 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 # url_online 1=OK 0=failed
 function url_online(url,tries,timeout) {
     # slight bug with wget 1.12 return code 4 when OK so grep output for 'Remote file exists'
-    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -S -O /dev/null "qa(url)" 2>&1 | grep -q '200 OK'") == 0;
+    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -S -O - "qa(url)" 2>&1 | grep -q '200 OK'") == 0;
 }
+
+# Filter a bunch of urls at the same domain
+function spiders(url_list,tries,timeout,\
+list2,f,n,i,batch,cmd,total,inv,u,txt,s,code) {
+    batch = 20;
+    n = hash_size(url_list);
+    hash_invert(url_list,inv);
+    s = 1;
+    f = new_capture_file("wget");
+
+    cmd="";
+    id1("spidering "n" urls");
+    for (i in url_list) {
+        s++;
+        cmd=cmd"\t"qa(url_list[i]);
+        if (s%batch == 0 || s == n) {
+            exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -O - "cmd" >"qa(f)" 2>&1 ");
+            while ((code = (getline txt < f )) > 0 ) {
+                #INF("spider ["txt"]");
+                if (match(txt,"--  http://")) {
+                    u = substr(txt,RSTART+4);
+                    #INF("url="u);
+                } else if (match(txt,"^Remote file exists.")) {
+                    list2[inv[u]] = u;
+                    INF("found url "u);
+                    total++;
+                }
+            }
+            if (code == 0) close(f);
+        }
+    }
+    if (total) {
+        hash_copy(url_list,list2);
+        dump(0,"spiders",url_list);
+    } else {
+        INF("unchanged");
+        total = n;
+    }
+    id0(total);
+    return total;
+}
+
 
 #TODO We have to watch out for dns servers that return false hits on bad domains.
 #for time being this should mainly be called to check a url on a known web server so DNS issues should not matter.
@@ -216,3 +258,14 @@ function check_domain_speed(url) {
     return g_domain_status[url];
 }
 
+# url - the url
+function get_url_source(url,cache,\
+f,code,txt,source) {
+    f = getUrl(url,"raw.img",cache);
+    while((code = getline txt < f) > 0) {
+        source = source txt;
+    }
+    if (!code) close(f);
+    INF("fetched "length(source)" bytes for "url);
+    return source;
+}

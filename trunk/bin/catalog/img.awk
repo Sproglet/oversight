@@ -368,7 +368,7 @@ sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
         sc *= (30-pos) / 30;
 
         # Avoid false positives.
-        if (sc < 0.2 ) sc = 0;
+        if (sc < 0.18 ) sc = 0;
 
         if (sc >= best_so_far ) {
             if (!url_online(imageUrl,1,5)) {

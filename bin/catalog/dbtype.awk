@@ -24,11 +24,11 @@ y,m,d,hr,mn,r) {
     r = t;
     if (length(t) >= 8 ) {
 
-        y = n(substr(t,1,4))-1900;
-        m = n(substr(t,5,2));
-        d = n(substr(t,7,2));
-        hr = n(substr(t,9,2));
-        mn = n(substr(t,11,2));
+        y = num(substr(t,1,4))-1900;
+        m = num(substr(t,5,2));
+        d = num(substr(t,7,2));
+        hr = num(substr(t,9,2));
+        mn = num(substr(t,11,2));
 
         r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn;
         r= sprintf("%x",r);

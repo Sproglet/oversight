@@ -1034,13 +1034,14 @@ line,e,inbody) {
 }
 
 #Find title that appears most in web page search
-function filter_web_titles2(count,titles,filterText,filteredTitles,\
+function filter_web_titles2(engine,count,titles,filterText,\
 keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
-    if (count) {
+    newtotal = count;
+    if (count > 1) {
         id1("filter_web_titles2 in="count);
 
         #url = g_search_yahoo url_encode("+\""filterText"\"");
-        url = g_search_google url_encode(filterText);
+        url = engine url_encode(filterText);
         f = getUrl(url,".html",0);
         if (f) {
 
@@ -1080,9 +1081,11 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
         }
 
         bestScores(keep,keep);
-        newtotal = copy_ids_and_titles(keep,titles,new);
-        delete filteredTitles;
-        hash_copy(filteredTitles,new);
+        if (hash_size(keep)) {
+            newtotal = copy_ids_and_titles(keep,titles,new);
+            delete titles;
+            hash_copy(titles,new);
+        }
         id0(newtotal);
     }
     return newtotal;
@@ -1130,75 +1133,5 @@ keep,new,newtotal,size,url,i,blocksz) {
         id0(newtotal);
     }
     return newtotal;
-}
-
-
-
-# Given a bunch of titles keep the ones where the filename has been posted with that title
-#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
-#IN titles hash(showId=>title)
-#OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
-#
-# Two engines are used bintube and binsearch in case
-# a) one is unavailable.
-# b) binsearch has slightly better search of files within collections. eg if a series posted under one title.
-function filterUsenetTitles(count,titles,filterText,filteredTitles,\
-result) {
-result = filterUsenetTitles1(count,titles,g_search_binsearch "\""filterText"\" QUERY",filteredTitles);
-   if (result == 0 ) {
-       result = filterUsenetTitles1(count,titles,g_search_nzbindex "\""filterText"\" QUERY",filteredTitles);
-   }
-   return 0+ result;
-}
-
-# Given a bunch of titles keep the ones where the filename has been posted with that title
-#IN filterText - text to look for along with each title. This is usually filename w/o ext ie cleanSuffix(minfo)
-#IN titles - hased by show ID
-#OUT filteredTitles hashed by show ID ONLY if result = 1 otherwise UNCHANGED
-function filterUsenetTitles1(count,titles,usenet_query_url,filteredTitles,\
-t,tmp_count,tmpTitles,origTitles,dummy,found,query,baseline,link_count,new_count) {
-
-    found = 0;
-    id1("filterUsenetTitles1 in="count);
-
-    # save for later as titles and filteredTitles may be the same hash
-    hash_copy(origTitles,titles);
-
-    # First get a dummy item to compare
-    dummy=rand()systime()rand();
-    query = usenet_query_url;
-    sub(/QUERY/,dummy,query);
-    baseline = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
-
-    DEBUG("number of links for no match "baseline);
-
-    for(t = 1 ; t<= count ; t++ ) {
-        #Just count the number of table links
-        query = usenet_query_url;
-        sub(/QUERY/,norm_title(clean_title(origTitles[t,2])),query);
-        tmp_count = scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles);
-        DEBUG("number of links "tmp_count);
-        if (tmp_count-baseline > 0) {
-            link_count[t] = tmp_count;
-            found=1;
-        }
-        if (link_count == 0 ) {
-            scan_page_for_match_counts(query,"</","</[Aa]>",0,1,"",tmpTitles,1);
-        }
-    }
-
-    new_count = 0;
-    if (found) {
-        # Now keep the ones with most matches
-        bestScores(link_count,link_count,0);
-
-        delete filteredTitles;
-        new_count = copy_ids_and_titles(link_count,origTitles,filteredTitles);
-        dump(0,"post-usenet",filteredTitles);
-    } else {
-        INF("No results found using "usenet_query_url);
-    }
-    id0(new_count);
-    return new_count;
 }
 

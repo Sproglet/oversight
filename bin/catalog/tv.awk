@@ -422,7 +422,7 @@ tmpTitle,ret,ep,season,title,inf,matches) {
             sub(/^,+/,"",ep);
 
             details[EPISODE] = ep;
-            details[SEASON] = n(season);
+            details[SEASON] = num(season);
             details[TITLE] = title;
             details[ADDITIONAL_INF]=inf;
             ret=1;
@@ -914,6 +914,32 @@ all_same,i,id,title) {
     return total;
 }
 
+# Given a list of potential show ids, a season and an episode,  go through then all to check the page exists.
+function filter_episode_exists(plugin,total,showIds,minfo,\
+s,e,i,newShows,newTotal,u,ulist) {
+
+    id1("filter_episode_exists "total);
+    e=minfo["mi_episode"];
+    s=minfo["mi_season"];
+    newTotal = total;
+    if (s ~ /^[0-9]+$/ && e ~ /^[0-9]+$/ ) {
+        for(i = 1 ; i<= total ; i++ ) {
+            u = get_tv_series_api_url(plugin,showIds[i,1]);
+            u = get_episode_url(plugin,u,s,e);
+            ulist[i] = u;
+        }
+        if (spiders(ulist,1,5)) {
+            newTotal = copy_ids_and_titles(ulist,showIds,newShows);
+        }
+    }
+
+    dump(0,"filter_episode_exists",showIds);
+    id0(newTotal);
+
+    return newTotal;
+}
+
+
 function search_abbreviations(plugin,minfo,title,\
 cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
     # Abbreviation search
@@ -944,6 +970,16 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
 
         dump_ids_and_titles("possible matches",total,showIds);
 
+        #If a show is abbreviated then always do a web search to confirm - even if number of options is 1.
+        total = filter_web_titles2(g_search_google,total,showIds,cleanSuffix(minfo));
+        total = filter_web_titles2(g_search_bing_desktop,total,showIds,cleanSuffix(minfo));
+        total = filter_web_titles2(g_search_nzbindex,total,showIds,cleanSuffix(minfo));
+        total = filter_web_titles2(g_search_mysterbin,total,showIds,cleanSuffix(minfo));
+        #total = filter_web_titles2(g_search_binsearch,total,showIds,cleanSuffix(minfo));
+
+        if (total > 1) {
+            total = filter_episode_exists(plugin,total,showIds,minfo);
+        }
         #
         total = same_show_diff_titles(total,showIds);
         if (total == 1) {
@@ -952,19 +988,8 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
             # or oldder files. So for now we will disable checking if total  = 1.
             INF("Title is only option so assuming it is correct. Skipping filename checks ");
 
-        } else if (total > 1) {
-
-            #If a show is abbreviated then always do a web search to confirm - even if number of options is 1.
-
-            #INF("Lot of possible matches - searching by filename");
-            total = filter_web_titles2(total,showIds,cleanSuffix(minfo),showIds);
-
-            if (total == 0) {
-                #No results using web searchs - try usenet searches 
-                #this uses usenet search engines so they may not be around forever.
-                total = filterUsenetTitles(total,showIds,cleanSuffix(minfo),showIds);
-            }
         }
+
         dump_ids_and_titles("filtered matches",total,showIds);
 
 

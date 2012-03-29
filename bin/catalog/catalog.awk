@@ -132,7 +132,7 @@ BEGIN {
 
     # Remove any punctuation except quotes () [] {} - also keep high bit
     # Added Semicolon for titles such as Terminator:Sarah Connor Chronicles, Star Wars: Clone Wars etc.
-    g_punc[0]="[^][}{&()'!:?" g_alnum8 "-]+";
+    g_punc[0]="[^][}{&#()'!:?" g_alnum8 "-]+";
     # Remove any punctuation except quotes () - also keep high bit
     g_punc[1]="[^&'!?()"g_alnum8"-]+";
     # Remove any punctuation except quotes () - also keep high bit
@@ -147,6 +147,9 @@ BEGIN {
     g_imdb_title_re="[[:upper:][:digit:]"g_8bit"]["g_alnum8"& '.]*[ (.]"g_year_re"[).]?";
 
     g_roman_regex="i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv";
+
+    g_url_regex = "https?://[^\"'\\/]*"re_escape(site)"[^\"']+";
+
 
     split(g_roman_regex,g_roman1,"[|]");
     hash_invert(g_roman1,g_roman);
@@ -227,8 +230,8 @@ END{
     g_plot_file_queue=PLOT_DB".queue";
     g_plot_app=qa(OVS_HOME"/bin/plot.sh");
 
-    for(i in g_settings) {
-        g_settings_orig[i] = g_settings[i];
+    for(gI in g_settings) {
+        g_settings_orig[gI] = g_settings[gI];
     }
 
     g_db_lock_file=OVS_HOME"/catalog.lck";
@@ -264,10 +267,10 @@ END{
 
     # underscores should also be treated as word boundaries.
 
-    tmp = tolower(g_settings["catalog_format_tags"]);
+    gTmp = tolower(g_settings["catalog_format_tags"]);
 
     # allow tag to be at beginning or end of a word.
-    g_settings["catalog_format_tags"]="(((\\<|_)("tmp"))|(("tmp")(_|\\>)))";
+    g_settings["catalog_format_tags"]="(((\\<|_)("gTmp"))|(("gTmp")(_|\\>)))";
 
     DEBUG("catalog_format_tags="g_settings["catalog_format_tags"]);
 
@@ -318,8 +321,10 @@ END{
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=
     g_search_google = "http://www.google.com/search?ie=utf-8;oe=utf-8;q=";
-    g_search_binsearch = "http://binsearch.info/?max=25&adv_age=&q=";
+
+    g_search_mysterbin = "http://www.mysterbin.com/search?q=";
     g_search_nzbindex = "http://www.nzbindex.nl/rss/?q=";
+    g_search_binsearch = "http://binsearch.info/?max=25&adv_age=&q=";
     g_search_nzbclub = "http://www.nzbclub.com/nzbfeed.aspx?q=";
 
     g_themoviedb_api_url = "http://api.themoviedb.org/3";
@@ -343,7 +348,7 @@ END{
 
     # Process folders in reverse order. This is in the hope that a last episode gives a little
     # more chance of correctly identifying a season of a remake show.
-    scan_options="-Rlr";
+    scan_options="-Rl";
     if (g_settings["catalog_follow_symlinks"]==1) {
         scan_options= scan_options"L";
     }
@@ -385,8 +390,8 @@ END{
 
     make_paths_absolute(FOLDER_ARR);
 
-    for(f in FOLDER_ARR) {
-        INF("Folder "f"="FOLDER_ARR[f]);
+    for(gF in FOLDER_ARR) {
+        INF("Folder "gF"="FOLDER_ARR[gF]);
     }
 
     gLS_FILE_POS=0; # Position of filename in ls format
@@ -424,9 +429,9 @@ END{
             DEBUG(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
 
             #Check script
-            for(i in g_settings) {
-                if (!(i in g_settings_orig)) {
-                    WARNING("Undefined setting "i" referenced");
+            for(gI in g_settings) {
+                if (!(gI in g_settings_orig)) {
+                    WARNING("Undefined setting "gI" referenced");
                 }
             }
 
@@ -885,7 +890,7 @@ function file_time(f) {
 #busybox awk - I think has some issues converting numbers with leading zeroes
 #this will try to return an integer extracted from a string. Just guesswork
 #would not be needed with well behaved awk
-function n(x) \
+function num(x) \
 {
     sub(/^[^-0-9]*0*/,"",x);
 #    if (0+x == 0 ) {

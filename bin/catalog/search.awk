@@ -700,6 +700,9 @@ function init_priority() {
         gPriority["mi_genre","themoviedb"]=40;
         gPriority["mi_genre","thetvdb"]=40;
         gPriority["mi_genre","imdb"]=50;
+
+        gPriority["mi_set","imdb"]=50;
+        gPriority["mi_set","themoviedb"]=30;
     }
 }
 function minfo_field_priority(minfo,field) {

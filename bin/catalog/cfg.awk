@@ -4,8 +4,6 @@ ign_path) {
     load_settings("",DEFAULTS_FILE,1);
     load_settings("",CONF_FILE,1);
 
-    load_settings(g_country_prefix , COUNTRY_FILE,0);
-
     ign_path = "catalog_ignore_paths";
 
 

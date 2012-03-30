@@ -21,7 +21,7 @@ To send scan logs:
   # (on the TV/NMT go to Setup/NMT Applications) and make sure SMB/Samba service is started.
   # Assuming you have a windows PC go to the Run dialog (Start->Run) and enter  \\192.168.x.y where 192.168.x.y is the IP address of your NMT. ( You can also put this is the address bar of Windows Explorer - it will probably NOT work with 3rd party browsers)
   # Browse to Apps\oversight\
-  # Right click on the logs folder and zip it (send to Compressed Folder/Winzip/7zip/Winrar etc)
+  # Right click on the logs folder and zip it (send to Compressed Folder/Winzip/7zip/Winrar etc - I recommend [http://www.7-zip.org/ 7zip])
   # Email the new compressed file to me. nmt at lordy dot org dot uk.
   # In the email *mention one or two specific examples of the problem*. Eg. The file "star trek 2009.avi" is indexed as "Star Trek Series 20 episode 9" (just an example - that shouldn't really happen ;) ). *Dont skip this step* - log files without any particular problem file identified may get ignored. 
   # *If you have reported the problem in the Oversight Threads on NMT forums mention your forum name/handle and add a direct link to the post number (not page) in the email*.

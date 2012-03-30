@@ -397,7 +397,7 @@ i,words,wcount,s,w2) {
 }
 
 function is_alive(pid,\
-code,f) {
+code,f,line) {
     # Cant use is_file as that spawns a process to avoid fatal error if file is a directory
     f="/proc/"pid"/cmdline";
     code = (getline line < f );

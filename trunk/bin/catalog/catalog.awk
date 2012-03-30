@@ -87,7 +87,6 @@ BEGIN {
     g_min_plot_len=90; # this is th eminimum length when scraping - not via api
     g_max_db_len=4000;
     g_path_depth=3;
-    g_country_prefix="country_";
     g_indent="";
     g_sigma="Σ"; # Tv rage uses Sigma in title like Greek - in place of the e.
     g_start_time = systime();

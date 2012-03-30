@@ -62,7 +62,6 @@ if [ ! -s "$PLOT_DB" ] ; then
     PERMS "$PLOT_DB"
 fi
 
-COUNTRY_FILE="$OVS_HOME/conf/country.txt"
 CONF_FILE="$OVS_HOME/conf/catalog.cfg"
 DEFAULTS_FILE="$OVS_HOME/conf/.catalog.cfg.defaults"
 
@@ -207,7 +206,6 @@ catalog() {
     "START_DIR=$START_DIR" \
     "OVS_HOME=$OVS_HOME" \
     "CONF_FILE=$CONF_FILE" \
-    "COUNTRY_FILE=$COUNTRY_FILE" \
     "DEFAULTS_FILE=$DEFAULTS_FILE" \
     "LOG_TAG=$LOG_TAG" \
     "PLOT_DB=$PLOT_DB" \

@@ -16,48 +16,87 @@ function imdb_img_url(url) {
 # OUT: id of lowest movie id in Follows(prequels)
 # updates minfo["mi_set"]
 function imdb_movie_connections(minfo,\
-id,url,htag,connections,i,count,relationship,ret,txt,sep,hdr,prequels,sequels,sections,set) {
-
-
-    prequels = "Follows";
-    sequels = "Followed by";
+id,series,versions,ret) {
 
     if (minfo["mi_category"] == "M") {
         id = imdb(minfo);
         id1("getMovieConnections:"id);
 
         if(id) {
-            htag = "h5";
-            sep=",";
-            url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
-            count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|"g_imdb_regex")",0,0,"",connections);
+            imdb_movie_connections1(id,series,versions,3);
+            asort(series);
 
-            #dump(0,"movieconnections-"count,connections);
-            set[id] = id;
-            for(i = 1 ; i <= count ; i++ ) {
-                txt = connections[i];
-                if (substr(txt,1,2) == "tt" ) {
-                    if (relationship == prequels || relationship == sequels ) {
-                        # Sequels may have lower ID eg Star Wars etc. Prequels made after first movie.
-                        set[txt] = txt;
-                    }
-                } else {
-                    if (relationship == prequels ) sections++;
-                    else if (relationship == sequels ) sections++;
-                    else if (sections == 2) break;
-                    # <h4,,,>Header
-                    split(txt,hdr,">");
-                    relationship=trim(hdr[2]);
-                }
-            }
-            asort(set);
-            if (sections) {
-                ret = minfo["mi_set"] = "imdb:"set[1];
+            if (series[1] != "") {
+                ret = minfo["mi_set"] = "imdb:"series[1];
             }
         }
         id0(ret);
     }
     return ret;
+}
+function imdb_movie_connections1(id,series,versions,get_version_series,\
+sections,series_heading,version_heading,end,numsections,\
+found_section,relationship,htag,sep,i,count,html,txt,v,url,hdr) {
+
+    series_heading = 1;
+    version_heading = 2;
+    end=99;
+    sections["Follows"] = sections["Followed by"] = series_heading;
+
+
+    sections["Remake of"] = sections["Remade as"] = sections["Version of"] = end;
+    # uncomment this like to get remakes into boxsets.
+    #sections["Remake of"] = sections["Remade as"] = sections["Version of"] = version_heading;
+    sections["References"] = sections["Referenced in"] = end;
+    numsections = hash_size(sections);
+
+    if(id && !(id in series)){
+        id1("getMovieConnections1:"id);
+        htag = "h5";
+        sep=",";
+        url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
+        count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|"g_imdb_regex")",0,0,"",html);
+
+        #dump(0,"movieconnections-"count,html);
+        for(i = 1 ; i <= count ; i++ ) {
+            txt = html[i];
+            if (substr(txt,1,2) == "tt" ) {
+                if (relationship in sections) {
+                    # Sequels may have lower ID eg Star Wars etc. Prequels made after first movie.
+                    if (sections[relationship] == series_heading) {
+                        series[txt] = txt;
+                    } else if (sections[relationship] == version_heading) {
+                        versions[txt] = txt;
+                    }
+                }
+            } else {
+                
+                if (sections[relationship] ) {
+                    found_section ++;
+                    if (found_section == numsections) {
+                        break;
+                    }
+                }
+
+                # <h4,,,>Header
+                split(txt,hdr,">");
+                relationship=trim(hdr[2]);
+
+                if (sections[relationship] == end) break;
+            }
+        }
+        # Make sure this id goes in its own collection
+        series[id] = id;
+
+        if (get_version_series > 0) {
+            for(v in versions) {
+                imdb_movie_connections1(v,series,versions,get_version_series-1);
+            }
+        }
+        if (hash_size(series)) dump(0,"series",series);
+        if (hash_size(versions)) dump(0,"versions",versions);
+    }
+    id0();
 }
 
 function extractImdbId(text,quiet,\

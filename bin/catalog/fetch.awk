@@ -28,12 +28,14 @@ function getUrl(url,capture_label,cache,referer,\
     }
 
     if (g_settings["catalog_cache_film_info"] == "yes") {
-        if (url ~ ".imdb.com/title/tt[0-9]+/?$" ) {
-            f = persistent_cache(extractImdbId(url),cache_suffix);
-            cache=1;
-#        } else if (index(url,"tab=mc" )) {
-#            f = persistent_cache(extractImdbId(url),cache_suffix "_mc");
-#            cache=1;
+        if (index(url,".imdb.")) {
+            if (url ~ ".imdb.com/title/tt[0-9]+/?$" ) {
+                f = persistent_cache(extractImdbId(url),cache_suffix);
+                cache=1;
+            } else if (index(url,"tab=mc" )) {
+                f = persistent_cache(extractImdbId(url),cache_suffix "_mc");
+                cache=1;
+            }
         }
     }
 

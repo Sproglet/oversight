@@ -970,13 +970,15 @@ new_total,i,dupe_check,new_id,new_title) {
 function dedup_ids_and_titles(input,dedup_level,\
 out,i,n,total,dup,id,title_lc) {
 
-    n = input["total"];
+    total = n = input["total"];
 
     if (!n) {
 
         ERR("Missing total in data");
 
     } else {
+
+        total = 0;
 
         for(i = 1 ; i <= n ; i++ ) {
             id = input[i,1];
@@ -1002,6 +1004,7 @@ out,i,n,total,dup,id,title_lc) {
         out["total"] = total;
         hash_copy(input,out);
     }
+    return out["total"];
 }
 
 function clean_html(fin,fout,\

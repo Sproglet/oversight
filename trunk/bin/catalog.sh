@@ -62,49 +62,11 @@ if [ ! -s "$PLOT_DB" ] ; then
     PERMS "$PLOT_DB"
 fi
 
-CONF_FILE="$OVS_HOME/conf/catalog.cfg"
-DEFAULTS_FILE="$OVS_HOME/conf/.catalog.cfg.defaults"
-
-if [ ! -f "$CONF_FILE" ] ; then
-    if [ ! -f "$CONF_FILE.example" ] ; then
-        cp "$DEFAULTS_FILE" "$CONF_FILE.example"
-    fi
-    cp "$CONF_FILE.example" "$CONF_FILE"
-fi
-
-# Have to do fix endings because of WordPad. Also not all platforms have sed -i
-#cat preserves dest permissions
-# note replace ^M with ^L-^N to avoid eol issues with subervsion
-# eol-style not doing as expected via cygwin/windows.
-if grep -q '[-]' "$CONF_FILE" ; then
-    tmpFile="$g_tmp_dir/catalog.cfg.$$"
-    sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
-    cat "$tmpFile" > "$CONF_FILE"
-    rm -f "$tmpFile"
-fi
-. "$DEFAULTS_FILE"
-. "$CONF_FILE"
-
-check_missing_settings() {
-    # Just in case user has an earlier config file that doesnt have these settings.
-    if [ -z "$catalog_tv_file_fmt" ] ; then 
-        catalog_tv_file_fmt="/share/Tv/{:TITLE:}{ - Season :SEASON:}/{:NAME:}"
-        echo "[WARNING] Please add catalog_tv_file_fmt settings to catalog.cfg. See catlog.cfg.example for examples."
-    fi
-    if [ -z "$catalog_film_folder_fmt" ] ; then 
-        catalog_film_folder_fmt="/share/Movies/{:TITLE:}{-:CERT:}"
-        echo "[WARNING] Please add catalog_film_folder_fmt settings to catalog.cfg. See catlog.cfg.example for examples."
-    fi
-}
-
-
 RENAME_TV=0
 RENAME_FILM=0
 STDOUT=0
 
 START_DIR="$PWD"
-
-check_missing_settings
 
 if [ -z "$*" ] ; then
     cat<<USAGE
@@ -205,8 +167,6 @@ catalog() {
     "PIDFILE=$PIDFILE" \
     "START_DIR=$START_DIR" \
     "OVS_HOME=$OVS_HOME" \
-    "CONF_FILE=$CONF_FILE" \
-    "DEFAULTS_FILE=$DEFAULTS_FILE" \
     "LOG_TAG=$LOG_TAG" \
     "PLOT_DB=$PLOT_DB" \
     "UNPAK_CFG=$UNPAK_CFG" \

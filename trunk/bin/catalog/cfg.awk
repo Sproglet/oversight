@@ -1,8 +1,11 @@
 function load_catalog_settings(\
-ign_path) {
+ign_path,env) {
 
-    load_settings("",DEFAULTS_FILE,1);
-    load_settings("",CONF_FILE,1);
+    for(env in ENVIRON) {
+        if (env ~ "^catalog_") {
+            g_settings[env] = ENVIRON[env];
+        }
+    }
 
     ign_path = "catalog_ignore_paths";
 
@@ -54,26 +57,10 @@ i,n,v,option,ret,err) {
             v=substr(option,RLENGTH+1);
             #gsub(/ *[,] */,",",v);
 
-            if (n in g_settings) {
-
-                if (n ~ "movie_search") DEBUG("index check "n"="index(n,"catalog_movie_search")); #TODO remove
-
-                if (index(n,"catalog_movie_search") || n == "catalog_format_tags" || n == "catalog_format_tags" ) {
-
-                    INF("Ignoring user setings for "n);
-
-                } else {
-                    if (g_settings[n] != v ) {
-                        INF("Overriding "n": "g_settings[n]" -> "v);
-                    }
-                    g_settings[n] = v;
-                }
-            } else {
-                g_settings_orig[n]=v;
-                g_settings[n] = v;
-                if (verbose) {
-                    INF(n"=["g_settings[n]"]");
-                }
+            g_settings_orig[n]=v;
+            g_settings[n] = v;
+            if (verbose) {
+                INF(n"=["g_settings[n]"]");
             }
         }
     }

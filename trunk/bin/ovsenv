@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/bin/sh -e
 # Set Paths
 
 
@@ -48,9 +48,43 @@ END { for (i in copy) close(copy[i]) }
       ' "$@"
 }
 
+catalog_config() {
+    CONF_FILE="$OVS_HOME/conf/catalog.cfg"
+    DEFAULTS_FILE="$OVS_HOME/conf/.catalog.cfg.defaults"
+
+    if [ ! -f "$CONF_FILE" ] ; then
+        if [ ! -f "$CONF_FILE.example" ] ; then
+            cp "$DEFAULTS_FILE" "$CONF_FILE.example"
+        fi
+        cp "$CONF_FILE.example" "$CONF_FILE"
+    fi
+
+    # Have to do fix endings because of WordPad. Also not all platforms have sed -i
+    #cat preserves dest permissions
+    # note replace ^M with ^L-^N to avoid eol issues with subervsion
+    # eol-style not doing as expected via cygwin/windows.
+    if grep -q '[-]' "$CONF_FILE" ; then
+        tmpFile="$g_tmp_dir/catalog.cfg.$$"
+        sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
+        cat "$tmpFile" > "$CONF_FILE"
+        rm -f "$tmpFile"
+    fi
+
+    # Load the config files and flag all for export.
+    set -a
+
+    set +e #ignore errors
+
+    . "$DEFAULTS_FILE"
+    . "$CONF_FILE"
+    set -e
+    set +a
+}
+
 if [ -z "${OVS_ENV_SET:-}" ] ; then
 
     export OVS_ENV_SET=1
+
 
     # Find install folder.
     # Script may be source in which case $0 is wrong - use $BASH_SOURCE
@@ -152,6 +186,7 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
     export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH OVS_TMP
     export OVERSIGHT_ID="$uid:$gid"
 
+    catalog_config
 
 
 fi

@@ -163,8 +163,8 @@ sizekb() {
 # $2 = source file
 resize_img() {
 
-    base=${base%.jpg}
-    base=${base%.png}
+    base="${2%.jpg}"
+    base="${base%.png}"
 
     case "$1" in
         fanart)
@@ -196,7 +196,7 @@ resize_img() {
 Q="$OVS_TMP/resize.queue"
 
 add_queue() {
-    bs='\';
+    q="'\\''";
     if [ -n "$1" ] ; then
         args=
         type="$2"
@@ -207,7 +207,7 @@ add_queue() {
             # *2 to survive final echo
             # *2 to survive backticks
             # * 2 for sed.
-            args="$args '${i//\'/\'\\\'\'}'"
+            args="$args '${i//\'/$q}'"
         done
         mkdir -p "$Q.$type"
         perms "$Q.$type"
@@ -261,7 +261,7 @@ process_queue() {
                 INFO "got image queue file $pq_folder/$f"
 
                 cat "$pq_args"
-                . "$pq_args"
+                source "$pq_args"
                 rm -f "$pq_args"
 
                 pq_count=$(( $pq_count + 1 ))

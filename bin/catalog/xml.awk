@@ -134,7 +134,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
                 if (text == "﻿" ) { #XML UTF8 BOM
                     text="";
                 } else {
-                    ERR("encountered text outside of xml ["text"]");
+                    WARNING("encountered text outside of xml ["text"]");
                     ret = 0;
                     break;
                 }

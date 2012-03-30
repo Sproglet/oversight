@@ -163,7 +163,8 @@ sizekb() {
 # $2 = source file
 resize_img() {
 
-    base=`echo "$2" | sed -r 's/\.(jpg|png)$//'`
+    base=${base%.jpg}
+    base=${base%.png}
 
     case "$1" in
         fanart)
@@ -220,13 +221,14 @@ add_queue() {
 
 # Manage a pid / lock file
 running() {
-    if [ -f $1 ] ; then
-        pid=`cat "$1" 2>/dev/null`
-        if [ -n "$pid" ] ; then
-            if [ -d /proc/$pid ] ; then
-                return 0
-            else
-                rm -f "$1"
+    if [ -f "$1" ] ; then
+        if read pid < "$1" ; then
+            if [ -n "$pid" ] ; then
+                if [ -d /proc/$pid ] ; then
+                    return 0
+                else
+                    rm -f "$1"
+                fi
             fi
         fi
     fi
@@ -250,21 +252,23 @@ process_queue() {
 
     #INFO "Begin Processing folder [$1]"
 
-    cd $pq_folder
-    for f in $prefix* ; do
+    if [ -d "$pq_folder" ] ; then
+        cd "$pq_folder"
+        for f in $prefix* ; do
 
-        if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
+            if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
 
-            INFO "got image queue file $pq_folder/$f"
+                INFO "got image queue file $pq_folder/$f"
 
-            cat "$pq_args"
-            . "$pq_args"
-            rm -f "$pq_args"
+                cat "$pq_args"
+                . "$pq_args"
+                rm -f "$pq_args"
 
-            pq_count=$(( $pq_count + 1 ))
-        fi
-        if [ $pq_loop -eq 0 ] ; then break ; fi
-    done
+                pq_count=$(( $pq_count + 1 ))
+            fi
+            if [ $pq_loop -eq 0 ] ; then break ; fi
+        done
+    fi
     #INFO "End processing $1 : $pq_count files"
     # If no files then return error code.
     [ $pq_count -gt 0 ]
@@ -349,17 +353,6 @@ startup() {
     synchronise 0
 }
 
-check_pal() {
-    location_file=$OVS_TMP/.location
-    location=`$OVS_HOME/bin/locate.sh $location_file`
-    tv_file="$OVS_HOME/conf/tv.txt"
-    if grep -q "^$location:" $tv_file ; then
-        if egrep -v "^$location:.*(pal|secam)" ; then
-            get_pal=0
-        fi
-    fi
-}
-
 if [ -z "$1" ] ; then
     cat <<HERE
 	usage:
@@ -379,19 +372,16 @@ HERE
 	exit 1
 fi
 
-if grep -q catalog_make_pal_fanart.*yes "$OVS_HOME/conf/catalog.cfg" ; then
+if [ "$catalog_make_pal_fanart" = yes ] ; then
     get_pal=1
 else
     get_pal=0
 fi
-if grep -q catalog_make_ntsc_fanart.*yes "$OVS_HOME/conf/catalog.cfg" ; then
+if [ "$catalog_make_ntsc_fanart" = yes ] ; then
     get_ntsc=1
 else
     get_ntsc=0
 fi
-
-## If you really want pal backdrops but are not getting them comment out the following line
-# check_pal
 
 trap tidy 1 2 3 6
 

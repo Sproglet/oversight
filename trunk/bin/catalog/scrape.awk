@@ -1529,6 +1529,9 @@ i,num,locales,minfo2) {
                 }
             }
         }
+        # TMDB connections are inconsistent. eg no Carrie Box set, but Stephen King box set
+        # that includes Carrie, Shawshank etc.
+        imdb_movie_connections(minfo);
     }
     return minfo["mi_category"];
 }

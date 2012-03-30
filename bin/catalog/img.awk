@@ -347,8 +347,8 @@ sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
             if ((imageUrl ~ "(cover)" )) sc *= 0.9; #cover sites usually have dvd covers in fanart sizes
 
         }  
-        if (imageUrl ~ "png$") sc*=.7; 
-        if (imageUrl ~ "gif$") sc*=.8;
+        # Check type - use png2pnm can convert png
+        if (imageUrl ~ "gif$") sc*=.7;
         
 
         if (imageUrl ~ "//[-.[:alnum:]]*(img|image|photo)[-.[:alnum:]]*.com" ) {

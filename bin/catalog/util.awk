@@ -396,6 +396,18 @@ i,words,wcount,s,w2) {
     return substr(text,2);
 }
 
+function is_alive(pid,\
+code,f) {
+    # Cant use is_file as that spawns a process to avoid fatal error if file is a directory
+    f="/proc/"pid"/cmdline";
+    code = (getline line < f );
+    if (code >= 0) {
+        close(f);
+        return 1;
+    }
+    return 0;
+}
+
 function is_locked(lock_file,\
 pid) {
     if (is_file(lock_file) == 0) return 0;
@@ -407,7 +419,7 @@ pid) {
     if (pid == "" ) {
        DEBUG("Not Locked = "pid);
        return 0;
-    } else if (is_dir("/proc/"pid)) {
+    } else if (is_alive(pid)) {
         if (pid == PID ) {
             DEBUG("Locked by this process "pid);
             return 0;
@@ -525,14 +537,6 @@ function clean_path(f) {
 function qa(f) {
     gsub(/'/,"'\\''",f);
     return "'"f"'";
-}
-
-#return 1 if catalog script is running standalone - ie not on nmt
-function scanner_only() {
-    if (g_scanner_only == "") {
-        g_scanner_only = !is_dir("/opt/sybhttpd/default/oversight");
-    }
-    return g_scanner_only;
 }
 
 function formatDate(line,\

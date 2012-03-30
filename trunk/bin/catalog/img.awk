@@ -237,7 +237,10 @@ json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,sco
 
 
     prefix="SearchResponse:Image:Results#";
-    dim_regex = "([0-9]+) *[Xx] *([0-9]+)";
+
+    #Look for javascript onject notation inside page
+    # field:"value",
+    # field:"value"}
     dim_regex = "([a-z]+):\"([^\"]*)\"[,}]";
 
     url="http://www.bing.com/images/search?FORM=BFID&q=" url_encode(query);
@@ -255,16 +258,13 @@ json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,sco
     html = get_url_source(url,1);
     gsub(/[&]quot;/,"\"",html);
 
-    # To process
-    # split at dimension indicators.
-    # for each block:
-        # scan backwards for first non-bing url
-        # Scan forward for all plain/utf8 text inside > < and treat that as the title.
-        # Extract width & heigth from dimension match.
 
     n = chop(html,dim_regex,blocks);
 
     id = 0;
+
+    # Map the javascript object field names to the ones used by the proper Bing JSON API.
+    # so we can reuse the existing api functions to process the output and score the images.
 
     map["imgurl"] = "MediaUrl";
     map["w"] = "Width";
@@ -272,7 +272,6 @@ json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,sco
     map["t"] = "Title";
     map["s"] = "Size";
 
-    # convert desktop search to json api output format so we can reuse the api functions to process the output
     for(i = 2 ; i <= n ; i+=2 ) {
 
         text = blocks[i];

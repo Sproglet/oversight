@@ -59,16 +59,9 @@ catalog_config() {
         cp "$CONF_FILE.example" "$CONF_FILE"
     fi
 
-    # Have to do fix endings because of WordPad. Also not all platforms have sed -i
-    #cat preserves dest permissions
-    # note replace ^M with ^L-^N to avoid eol issues with subervsion
-    # eol-style not doing as expected via cygwin/windows.
-    if grep -q '[-]' "$CONF_FILE" ; then
-        tmpFile="$g_tmp_dir/catalog.cfg.$$"
-        sed 's/[-]$//' "$CONF_FILE" > "$tmpFile"
-        cat "$tmpFile" > "$CONF_FILE"
-        rm -f "$tmpFile"
-    fi
+    # Have to do fix endings because of users editing files with notepad etc. 
+    dos2unix "$DEFAULTS_FILE"
+    dos2unix "$CONF_FILE"
 
     # Load the config files and flag all for export.
     set -a
@@ -158,7 +151,7 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
             fi
             # nmt busybox have restricted switches or buggy commands.
             # eg NMT find siliently fails with -mtime and -newer
-            for i in sort find ls tr dirname basename readlink wc sed ; do
+            for i in sort find ls tr dirname basename readlink wc sed dos2unix ; do
                 if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
                     ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
                 fi

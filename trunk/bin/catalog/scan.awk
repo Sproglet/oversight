@@ -856,17 +856,14 @@ function plot_in_main_lang(minfo) {
 }
 function get_images(minfo) {
     #Only get posters if catalog is installed as part of oversight
-    if (!scanner_only()) {
+    defaultPosters(minfo);
 
-        defaultPosters(minfo);
+    if (GET_POSTERS) {
+        minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+    }
 
-        if (GET_POSTERS) {
-            minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
-        }
-
-        if (GET_FANART) {
-            minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
-        }
+    if (GET_FANART) {
+        minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
     }
 }
 

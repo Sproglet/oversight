@@ -48,9 +48,11 @@ int ls(char *path) {
         while((f = readdir(d)) != NULL) {
             
             char *p,*u;
-            double size;
-            char unit;
+            double size=0;
+            char *unit="b";
+            int precision=0;
             char *size_str=NULL;
+            struct stat64 st;
 
             ovs_asprintf(&p,"%s/%s",path,f->d_name);
             //printf("<br>checking %s\n",p);
@@ -58,10 +60,17 @@ int ls(char *path) {
 
             ovs_asprintf(&u,"?%s",p);
 
-            size = file_size(p);
-            if (size > 1024 ) { size /= 1024 ; unit='K' ; }
-            if (size > 1024 ) { size /= 1024 ; unit='M' ; }
-            if (size > 1024 ) { size /= 1024 ; unit='G' ; }
+            util_stat(p,&st);
+
+            size = st.st_size;
+            if (f->d_type == 0) {
+                // more nmt100 oddness - dirent type not set?
+                if (S_ISREG(st.st_mode)) f->d_type = DT_REG;
+                else if (S_ISDIR(st.st_mode)) f->d_type = DT_DIR;
+            }
+            if (size > 1024 ) { size /= 1024 ; unit="<span style=\"color:green;\">K</span>" ; precision=1; }
+            if (size > 1024 ) { size /= 1024 ; unit="<span style=\"color:orange;\">M</span>" ; }
+            if (size > 1024 ) { size /= 1024 ; unit="<span style=\"color:red;\">G</span>" ; }
 
             if (strcmp(f->d_name,"..") == 0) {
                 // find parent folder name
@@ -74,8 +83,8 @@ int ls(char *path) {
                 char *tmp;
                 switch(f->d_type) {
                     case DT_REG:
-                        //ovs_asprintf(&tmp,"<tr><td>%.2f%c</td><td><a href=\"%s\">%s</a></td></tr>",size,unit,u,f->d_name);
-                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a> - %.2f%c</td></tr>",u,f->d_name,size,unit);
+                        //ovs_asprintf(&tmp,"<tr><td>%.1f%s</td><td><a href=\"%s\">%s</a></td></tr>",size,unit,u,f->d_name);
+                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td> - %.*f%s</td></tr>",u,f->d_name,precision,size,unit);
                         array_add(files,tmp);
                         break;
                     case DT_DIR:
@@ -83,7 +92,7 @@ int ls(char *path) {
                         array_add(dirs,tmp);
                         break;
                     default:
-                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td>?</td></tr>",u,f->d_name);
+                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td>%d?</td></tr>",u,f->d_name,f->d_type);
                         array_add(files,tmp);
                         break;
                 }
@@ -234,13 +243,20 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                     char *all_headers = NULL;
                     char *content_headers = NULL;
 
+                    int open_compressed_log_in_browser=0;
 
-                    if (strstr(path,".log.gz") || strstr(path,".txt.gz") ) {
+
+                    if (open_compressed_log_in_browser && (strstr(path,".log.gz") || strstr(path,".txt.gz")) ) {
 
                         ovs_asprintf(&content_headers,"%s%s\n%s%s",
                                 CONTENT_TYPE,"text/plain ;charset=utf-8", CONTENT_ENC,"gzip");
 
-                    } else if (strcmp(dot,".gz") == 0) {
+                    } else if (strstr(path,".tar.gz") == 0 || strcmp(dot,".tgz") == 0) {
+
+                        ovs_asprintf(&content_headers,"%s%s\n%s%s",
+                                CONTENT_TYPE,"application/x-tar",CONTENT_ENC,"gzip");
+
+                    } else if (strcmp(dot,".gz") == 0 || strcmp(dot,".tgz") == 0) {
 
                         ovs_asprintf(&content_headers,"%s%s\n%s%s",
                                 CONTENT_TYPE,"application/x-gzip",CONTENT_ENC,"identity");

@@ -2121,7 +2121,8 @@ cd "$arg_download_dir"
 
 
 main "$@" 2>&1 | tee_logfiles "$log_file"
-gzip "$log_file"
+
+archive "$log_file"
 #
 # vi:shiftwidth=4:tabstop=4:expandtab
 #

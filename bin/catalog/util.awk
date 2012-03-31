@@ -148,10 +148,10 @@ function DETAIL(x) {
 
 function timestamp(label,x) {
 
-    if (index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
-    if (index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
-    if (index(x,g_api_rage) ) gsub(g_api_rage,".",x);
-    if (index(x,g_api_bing) ) gsub(g_api_bing,".",x);
+    if (g_api_tvdb && index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
+    if (g_api_tmdb && index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
+    if (g_api_rage && index(x,g_api_rage) ) gsub(g_api_rage,".",x);
+    if (g_api_bing && index(x,g_api_bing) ) gsub(g_api_bing,".",x);
 
     if (index(x,"app.i") ) {
         sub("app.i[[:alnum:]/?=&]+","",x);

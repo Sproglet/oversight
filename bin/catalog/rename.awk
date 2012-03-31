@@ -148,7 +148,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         INF("checking "qa(oldFolder));
         if (is_dir(oldFolder) ) {
 
-            system("rmdir -- "qa(oldFolder)); # only remove if empty
+            system("rmdir -- "qa(oldFolder)" 2>/dev/null" ); # only remove if empty
         }
         if (g_settings["catalog_touch_parent_folders"]) {
             touch_parents(newFolder);

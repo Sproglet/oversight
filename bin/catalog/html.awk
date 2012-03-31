@@ -332,21 +332,11 @@ function extractTagText(str,startText,\
 }
 function de_emphasise(html) {
 
-    if (index(html,"<")) {
+    gsub(/(<\/?(b|em|strong)>|<br ?\/>)/,"",html); #remove emphasis tags - assuming tag as no attributes. small risk here
 
-        if (index(html,"b>") || index(html,"em>") || index(html,"strong>") ) {
-
-            gsub(/<\/?(b|em|strong)>/,"",html); #remove emphasis tags - assuming tag as no attributes. small risk here
-        }
-
-        if (index(html,"wbr")) {
-            # Note yahoo will sometimes break an imdb tag with a space and wbr eg. tt1234 <wbr>567
-            gsub(/ *<\/?wbr>/,"",html); #remove emphasis tags
-        }
-
-        if (index("/>",html)) {
-            gsub(/<[a-z]+ ?\/>/,"",html); #remove single tags eg <wbr />
-        }
+    if (index(html,"wbr")) {
+        # Note yahoo will sometimes break an imdb tag with a space and wbr eg. tt1234 <wbr>567
+        gsub(/ ?<\/?wbr>/,"",html); #remove emphasis tags
     }
     return html;
 }

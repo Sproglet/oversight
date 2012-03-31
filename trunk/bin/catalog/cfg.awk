@@ -2,7 +2,7 @@ function load_catalog_settings(\
 ign_path,env) {
 
     for(env in ENVIRON) {
-        if (env ~ "^catalog_") {
+        if (env ~ "^(catalog|unpak)_") {
             g_settings[env] = ENVIRON[env];
         }
     }
@@ -30,6 +30,8 @@ ign_path,env) {
 
     #Search engines used for simple keywords+"imdb" searches.
     split(tolower(g_settings["catalog_search_engines"]),g_link_search_engines,g_cvs_sep);
+
+    dump(0,"settings",g_settings);
 }
 
 # Load configuration file

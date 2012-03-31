@@ -48,11 +48,21 @@ int ls(char *path) {
         while((f = readdir(d)) != NULL) {
             
             char *p,*u;
+            double size;
+            char unit;
+            char *size_str=NULL;
+
             ovs_asprintf(&p,"%s/%s",path,f->d_name);
             //printf("<br>checking %s\n",p);
             //u = file_to_url(p);
 
             ovs_asprintf(&u,"?%s",p);
+
+            size = file_size(p);
+            if (size > 1024 ) { size /= 1024 ; unit='K' ; }
+            if (size > 1024 ) { size /= 1024 ; unit='M' ; }
+            if (size > 1024 ) { size /= 1024 ; unit='G' ; }
+
             if (strcmp(f->d_name,"..") == 0) {
                 // find parent folder name
                 char *tmp = STRDUP(path);
@@ -64,7 +74,8 @@ int ls(char *path) {
                 char *tmp;
                 switch(f->d_type) {
                     case DT_REG:
-                        ovs_asprintf(&tmp,"<br><a href=\"%s\">%s</a>",u,f->d_name);
+                        //ovs_asprintf(&tmp,"<tr><td>%.2f%c</td><td><a href=\"%s\">%s</a></td></tr>",size,unit,u,f->d_name);
+                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a> - %.2f%c</td></tr>",u,f->d_name,size,unit);
                         array_add(files,tmp);
                         break;
                     case DT_DIR:
@@ -72,11 +83,12 @@ int ls(char *path) {
                         array_add(dirs,tmp);
                         break;
                     default:
-                        ovs_asprintf(&tmp,"<br><a href=\"%s\">%s [?]</a>",u,f->d_name);
+                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td>?</td></tr>",u,f->d_name);
                         array_add(files,tmp);
                         break;
                 }
             }
+            FREE(size_str);
             FREE(u);
             FREE(p);
         }
@@ -91,13 +103,14 @@ int ls(char *path) {
         }
         FREE(out);
 
-        printf("<hr>");
+        printf("<hr><table border=\"0\">");
         array_sort(files,NULL);
         out = arraystr(files);
         if (out) {
             printf("%s",out);
         }
         FREE(out);
+        printf("</table>");
 
         array_free(dirs);
         array_free(files);
@@ -110,16 +123,16 @@ int ls(char *path) {
 }
 
 
-int cat(char *content,char *file)
+int cat(char *headers,char *file)
 {
-    printf("Content-Type: %s\n\n",content);
+    printf("%s\n\n",headers);
     FILE *fp = fopen (file,"r");
     if (fp) {
         append_content(fp,stdout);
         fclose(fp);
         return 0;
     } else {
-        fprintf(stderr,"Error %d opening [%s|%s]\n",errno,content,file);
+        fprintf(stderr,"Error %d opening [%s|%s]\n",errno,headers,file);
         return errno;
     }
 }
@@ -171,6 +184,9 @@ static void start_page(char *callmode) {
     printf("<!-- %s:%s -->\n",callmode,OVS_VERSION);
 }
 
+#define CONTENT_TYPE "Content-Type: "
+#define CONTENT_ENC "Content-Encoding: "
+#define CONTENT_LENGTH "Content-Length: "
 int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
 
@@ -199,21 +215,49 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 char *dot = strrchr(path,'.');
                 int result = 0;
 
+                // should really use file command or magic number to determine file type
+
                 if (dot && STRCMP(dot,".png") == 0 ) {
 
-                    result = cat("image/png",path);
+                    result = cat(CONTENT_TYPE"image/png",path);
 
                 } else if (dot &&  STRCMP(dot,".jpg") == 0 ) {
 
-                    result = cat("image/jpeg",path);
+                    result = cat(CONTENT_TYPE"image/jpeg",path);
 
                 } else if (dot &&  STRCMP(dot,".gif") == 0) {
 
-                    result = cat("image/gif",path);
+                    result = cat(CONTENT_TYPE"image/gif",path);
 
                 } else if (is_file(path) && browsing_from_lan() ) {
 
-                    result = cat("text/html ;charset=utf-8",path);
+                    char *all_headers = NULL;
+                    char *content_headers = NULL;
+
+
+                    if (strstr(path,".log.gz") || strstr(path,".txt.gz") ) {
+
+                        ovs_asprintf(&content_headers,"%s%s\n%s%s",
+                                CONTENT_TYPE,"text/plain ;charset=utf-8", CONTENT_ENC,"gzip");
+
+                    } else if (strcmp(dot,".gz") == 0) {
+
+                        ovs_asprintf(&content_headers,"%s%s\n%s%s",
+                                CONTENT_TYPE,"application/x-gzip",CONTENT_ENC,"identity");
+
+                    } else if (strcmp(dot,".html") == 0 ) {
+
+                        ovs_asprintf(&content_headers,"%s%s",
+                                CONTENT_TYPE,"text/html ;charset=utf-8");
+
+                    } else {
+                        ovs_asprintf(&content_headers,"%s%s",
+                                CONTENT_TYPE,"text/plain ;charset=utf-8");
+                    }
+                    ovs_asprintf(&all_headers,"%s\n%s%ld",content_headers,CONTENT_LENGTH,file_size(path));
+                    FREE(content_headers);
+                    result = cat(all_headers,path);
+                    FREE(all_headers);
 
                 } else if (is_dir(path) && browsing_from_lan()) {
 

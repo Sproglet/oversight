@@ -555,6 +555,14 @@ int is_file(char *path) {
         return 0;
     }
 }
+long file_size(char *path) {
+    struct stat64 s;
+    if (stat64(path,&s) == 0) {
+        return s.st_size;
+    } else {
+        return 0;
+    }
+}
 
 int is_dir(char *path) {
     struct stat64 s;

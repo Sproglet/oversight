@@ -132,6 +132,7 @@ void reload_configs()
 }
 
 // Dont check g_dimension->local_browser as this may be called before configuration is read
+// Dont output any debug statements here - may be called prior to sending HTML headers.
 int browsing_from_lan() {
     static int result = -1;
     if (result == -1) {
@@ -147,8 +148,6 @@ int browsing_from_lan() {
                     result = 1;
                 }
             }
-        printf("<!-- browsing from lan = %d -->",result);
-        //HTML_LOG(0,"browsing from lan = %d",result);
     }
     return result;
 }

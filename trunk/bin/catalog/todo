@@ -1,4 +1,5 @@
 # fg.s08e04 
+# make sure ovsenv is reload if launch from nzbget - ie nzbget -D should not load catalog_ unpak_ settings.
 # cache bing image searches by ttid
 # write equivalent of rage_get_other_ids() for thetvdb when ther is no imdb url
 # instead of fileter web titles. spider episode url for each possible match - esp if series > 4

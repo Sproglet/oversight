@@ -163,7 +163,7 @@ u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,
     ## Eg. Consider query for "mhd begi imdb" which should give Beginners 2010
     ## Also m.bing.com may give different results to www.bing.com
     ############################################################################
-    round_robin = 1;
+    round_robin = 0;
     num = 0;
 
     # During this search cache all pages in case we need to do a cross page ranking against prior results.
@@ -183,8 +183,8 @@ u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,
         # Bing seems a bit better still -
         u[++num] = g_search_bing_mobile qualifier; target[num]=1;
         u[++num] = g_search_google qualifier; target[num]=2;
-        u[++num] = g_search_bing_desktop qualifier; target[num]=2;
-        #yahoo gives too many false positives even with Bing technology. eg. http://search.yahoo.com/search?ei=UTF-8&eo=UTF-8&p=Family+Guy+0914+imdb
+        #u[++num] = g_search_bing_desktop qualifier; target[num]=2;
+        #yahoo gives too many false positives even with Bing technology. eg. http://search.yahoo.com/search?ei=UTF-8&eo=UTF-8&p=Family+Guy+0914+imdb - give sopranos
         #u[++num] = g_search_yahoo qualifier; target[num]=2;
     }
 

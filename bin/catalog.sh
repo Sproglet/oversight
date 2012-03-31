@@ -16,7 +16,7 @@ DEBUG=1
 EXE="$0"
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 APPBINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
-. $APPBINDIR/ovsenv
+source $APPBINDIR/ovsenv
 
 echo "[INFO] family=$FAMILY arch=$ARCH"
 
@@ -178,7 +178,7 @@ catalog() {
     g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 
-    rm -f "$OVS_HOME/catalog.lck" "$OVS_HOME/catalog.status" "$PIDFILE"
+    tidy
 
 }
 
@@ -222,8 +222,15 @@ clean_files() {
 clean_all_files() {
     clean_files "$tmp_root" "*" 2
     clean_files "$OVS_HOME/logs" "[cu]*.log" 5 
+    clean_files "$EMPTY_DIR" "[cu]*.log" 1
     clean_files "$OVS_HOME/cache" "tt*" 30
 }
+
+LOG_DIR="$OVS_HOME/logs"
+mkdir -p "$LOG_DIR"
+
+EMPTY_DIR="$LOG_DIR/emptyscans"
+mkdir -p "$EMPTY_DIR"
 
 if [ "$STDOUT" -eq 1 ] ; then
     LOG_TAG="catalog:"
@@ -231,19 +238,16 @@ if [ "$STDOUT" -eq 1 ] ; then
 else
     LOG_TAG=
     #LOG_FILE="$OVS_HOME/logs/catalog.`date +%d%H%M`.$$.log"
-    LOG_DIR="$OVS_HOME/logs"
-    mkdir -p "$LOG_DIR"
-
-    EMPTY_DIR="$LOG_DIR/emptyscans"
-    mkdir -p "$EMPTY_DIR"
-
-    LAST_LOG="$LOG_DIR/last.log"
 
     LOG_NAME="catalog.$JOBID.log"
+
+    # quicker to find current scans - prefix with 0
+    TMP_LOG_FILE="$LOG_DIR/0-$LOG_NAME"
     LOG_FILE="$LOG_DIR/$LOG_NAME"
 
-    ln -sf "$LOG_FILE" "$LAST_LOG"
-    main "$@" >> "$LOG_FILE" 2>&1
+    main "$@" >> "$TMP_LOG_FILE" 2>&1
+
+    mv "$TMP_LOG_FILE" "$LOG_FILE"
 
     #If lauched from command line - display log file location
     if [ -z "${REMOTE_ADDR:-}" ] ;then
@@ -251,13 +255,12 @@ else
     fi
 
     if grep -q "Total files added : 0" "$LOG_FILE" ; then
-        EMPTY_LOG="$LOG_DIR/catalog.emptyscan.log"
         mv "$LOG_FILE" "$EMPTY_DIR"
-        ln -sf "$EMPTY_DIR/$LOG_NAME" "$LAST_LOG"
+        gzip "$EMPTY_DIR/$LOG_NAME" 
+    else
+        gzip "$LOG_FILE"
     fi
 
-    grep dryrun: "$LOG_FILE"
-    PERMS "$OVS_HOME/logs"
 fi
 if [ -f "$OVS_HOME/oversight.sh" ] ; then
     $OVS_HOME/oversight.sh CLEAR_CACHE

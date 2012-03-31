@@ -8,6 +8,7 @@ nzb_launch_dir="$OLDPWD"
 set -u  #Abort with unset variables
 set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 
+
 #
 # unpak.sh - 
 #   nzbget post processing script for Popcornhour. Based on the one release
@@ -24,7 +25,7 @@ EXE="$0"
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 BINDIR="$( cd "$( dirname "$EXE" )" && pwd )"
 
-. $BINDIR/ovsenv
+source $BINDIR/ovsenv
 
 # Copyright (C) 2008/9 Andrew Lord <nzbget @ lordy.org.uk>
 # 
@@ -134,7 +135,7 @@ load_nzbget_settings_pre_v7() {
 
 WHICH() {
     # search path 
-    for d in "$NMT_APP_DIR/bin" `echo "$unpak_nzbget_bin" | sed 's/\/nzbget$//' ` `echo $PATH | sed 's/:/ /g'` ; do
+    for d in "$NMT_APP_DIR/bin" "${unpak_nzbget_bin%/nzbget}" ${PATH//:/ } ; do
         if [ -f "$d/$1" ] ; then
             INFO "Using $d/$1"
             echo "$d/$1"
@@ -205,7 +206,9 @@ get_nzbpath_pre_v7() {
         #pidof doesnt tell us the oldest process. so look at proc/*/status for name and ppid=1
         for st in $( grep -l 'Name:.nzbget$' /proc/*/status ) ; do
             if grep -q 'PPid:.1$' $st 2>/dev/null ; then
-                pid=$( echo $st | sed 's,/proc/,,;s,/status,,' )
+                pid="${st#/proc/}"
+                pid="${pid%/status}"
+                break
             fi
         done
         echo from proc pid = $pid
@@ -268,25 +271,9 @@ load_unpak_settings() {
             echo "Create $cfg file from example"
         fi
 
-        if [ -f "$cfg" ] ; then
-            if egrep -q "^ *unpak_settings_version=('|)$unpak_settings_version($|[^0-9])" "$cfg" ; then
-                #echo "Loading settings from $cfg"
-                # Have to do fix endings because of WordPad. Also not all platforms have sed -i
-                #cat preserves dest permissions
-                if grep -q '$' "$cfg" ; then
-                    WARNING Fixing corrupted config file
-                    tmpFile="$OVS_TMP/unpak.cfg.$$"
-                    sed -r 's/$//' "$cfg" > "$tmpFile"
-                    cat "$tmpFile" > "$cfg" 
-                    rm -f "$tmpFile"
-                fi
-                . "$cfg"
-            else
-                echo "Settings in $cfg ignored. Not compatible"
-            fi
-        else
-            echo "Using Default Settings"
-        fi
+        # fix endings for notepad people
+        dos2unix "$cfg"
+        source "$cfg"
     fi
 }
 
@@ -1530,7 +1517,11 @@ list_extended_glob_pattern () {
     if [ -n "$1"  ] ; then
         #Pattern is glob format plus <> for word boundaries. Convert to regexp
         #convert . to \. then * to .* then < > to \< \>
-       p=`echo "$1" | sed 's/\./\\\\./g;s/\*/.*/g;s/</\\\\</g;s/>/\\\\>/g'` 
+       p="${1//./\.}"
+       p="${p//\?/.}"
+       p="${p//\*/.*}"
+       p="${p//</\<}"
+       p="${p//>/\>}"
        DEBUG "search for files matching $p"
        ls -A 2>/dev/null | egrep -i "^($p)$" | log_stream DEBUG
        ls -A 2>/dev/null | egrep -i "^($p)$"
@@ -1771,22 +1762,6 @@ relocate() {
 mvlog() {
     INFO "moving [$1] to [$2]"
     mv "$1" "$2"
-}
-
-arg_list() {
-    ARGS=""
-    for i in "$@" ; do
-        case "$i" in
-        *\'*)
-            case "$i" in
-            *\"*) ARGS=`echo "$ARGS" | sed -r 's/[][ *"()?!'"'"']/\\\1/g'` ;;
-            *) ARGS="$ARGS "'"'"$i"'"' ;;
-            esac
-            ;;
-        *) ARGS="$ARGS '$i'" ;;
-        esac
-    done
-    echo "$ARGS"
 }
 
 create_resume_file() {
@@ -2110,9 +2085,6 @@ mkdir -p $log_dir
 
 log_file="$log_dir/unpak.$log_name.log"
 
-( cd "$log_dir" && ln -sf "unpak.$log_name.log" last.unpak.log )
-
-
 clean_logs() {
     find "$1" -name unpak.\*.log -mtime +5 | while IFS= read f ; do
         rm -f -- "$f"
@@ -2148,7 +2120,8 @@ cd "$arg_download_dir"
 #ln * "$arg_download_dir.2/."
 
 
-main "$@" 2>&1 | tee_logfiles $log_file 
+main "$@" 2>&1 | tee_logfiles "$log_file"
+gzip "$log_file"
 #
 # vi:shiftwidth=4:tabstop=4:expandtab
 #

@@ -48,9 +48,9 @@ END { for (i in copy) close(copy[i]) }
       ' "$@"
 }
 
-catalog_config() {
-    CONF_FILE="$OVS_HOME/conf/catalog.cfg"
-    DEFAULTS_FILE="$OVS_HOME/conf/.catalog.cfg.defaults"
+load_config() {
+    CONF_FILE="$OVS_HOME/conf/$1.cfg"
+    DEFAULTS_FILE="$OVS_HOME/conf/.$1.cfg.defaults"
 
     if [ ! -f "$CONF_FILE" ] ; then
         if [ ! -f "$CONF_FILE.example" ] ; then
@@ -59,22 +59,34 @@ catalog_config() {
         cp "$CONF_FILE.example" "$CONF_FILE"
     fi
 
-    # Have to do fix endings because of users editing files with notepad etc. 
-    dos2unix "$DEFAULTS_FILE"
-    dos2unix "$CONF_FILE"
-
-    # Load the config files and flag all for export.
     set -a
-
     set +e #ignore errors
 
-    . "$DEFAULTS_FILE"
-    . "$CONF_FILE"
+    if [ -f "$DEFAULTS_FILE" ]; then
+        dos2unix "$DEFAULTS_FILE" # fix for notepad users
+        . "$DEFAULTS_FILE"
+    fi
+    if [ -f "$CONF_FILE" ]; then
+        dos2unix "$CONF_FILE" # fix for notepad users
+        . "$CONF_FILE"
+    fi
     set -e
     set +a
 }
 
-if [ -z "${OVS_ENV_SET:-}" ] ; then
+# reconstruct quoted argument list
+arg_list() {
+    escaped_quote="'\\''"
+    local ARG_LIST=""
+    for i in "$@" ; do
+        ARG_LIST="$ARG_LIST '${i//\'/$escaped_quote}'" 
+    done
+    echo "$ARG_LIST"
+}
+
+export arg_list
+
+if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
 
     export OVS_ENV_SET=1
 
@@ -126,9 +138,22 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
         nmt)
             uid=nmt
             gid=nmt
-            # nmt /bin/wget is buggy
-            # nmt busybox wget does not have all options
-            # nmt busybox gzip is not graceful for passthru of uncompressed data
+
+            ############################################################
+            # Binaries for nmt platform
+            #
+            # The default firmware on nmt has an old version of busybox with many commands
+            # that are either buggy or have missing options.
+            # For this reason OVersight is bundled with a newer busybox.
+            # However enve then some commands need all fetures of the GNU versions.
+            #
+            # 
+            # ------------
+            # wget : needs gnu - note nmt have their own version of gnu wget - this is buggy
+            # find : new busybox - fails silently with -mtime -newer switches.
+            # gunzip : needs gnu to handle passthru of uncompressed data (when retrieving html)
+            ##############################################################
+
             PATH="$OVS_HOME/bin/$ARCH:$NMT_APP_DIR/bin:$PATH"
             LD_LIBRARY_PATH="$OVS_HOME/bin/$ARCH:$LD_LIBRARY_PATH"
             nmt_version=`grep . /???/*/VERSION`
@@ -149,9 +174,7 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
             if [ -d /share/bin ] ; then
                 PATH="/share/bin:$PATH"
             fi
-            # nmt busybox have restricted switches or buggy commands.
-            # eg NMT find siliently fails with -mtime and -newer
-            for i in sort find ls tr dirname basename readlink wc sed dos2unix ; do
+            for i in sort find ls tr dirname basename readlink wc sed dos2unix gzip ; do
                 if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
                     ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
                 fi
@@ -179,7 +202,8 @@ if [ -z "${OVS_ENV_SET:-}" ] ; then
     export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH OVS_TMP
     export OVERSIGHT_ID="$uid:$gid"
 
-    catalog_config
+    load_config unpak
+    load_config catalog
 
 
 fi

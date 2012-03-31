@@ -256,9 +256,9 @@ else
 
     if grep -q "Total files added : 0" "$LOG_FILE" ; then
         mv "$LOG_FILE" "$EMPTY_DIR"
-        gzip "$EMPTY_DIR/$LOG_NAME" 
+        archive "$EMPTY_DIR/$LOG_NAME" 
     else
-        gzip "$LOG_FILE"
+        archive "$LOG_FILE"
     fi
 
 fi

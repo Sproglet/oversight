@@ -86,6 +86,12 @@ arg_list() {
 
 export arg_list
 
+archive() {
+    # some browser/zip tool combos on windows dont like plain gz files.
+    tar czf "$1.tgz" "$1" && rm "$1"
+}
+export archive
+
 if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
 
     export OVS_ENV_SET=1

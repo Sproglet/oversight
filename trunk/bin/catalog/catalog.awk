@@ -75,6 +75,7 @@ function plugin_error(p) {
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
     verify_setup();
+    load_catalog_settings();
     g_articles["en"]="\\<([Tt]he)\\>";
     g_articles["de"]="\\<(([Dd](er|ie|as|es|em|en))|([Ee]in(|e[rmn]?)))\\>";
     g_articles["nl"]="\\<([Dd]e|[Hh]et|[Ee]en)\\>";
@@ -245,7 +246,6 @@ END{
     g_lang_articles = g_articles[main_lang()];
     INF("Articles="g_lang_articles);
 
-    load_catalog_settings();
 
     g_max_actors=g_settings["catalog_max_actors"];
     g_max_directors = 3;
@@ -401,8 +401,6 @@ END{
 
     gMovieFileCount = 0;
     gMaxDatabaseId = 0;
-
-    load_settings("",UNPAK_CFG,1);
 
     g_api_tvdb = apply(g_api_tvdb);
     g_api_tmdb = apply(g_api_tmdb);

@@ -1,31 +1,46 @@
 #!/bin/sh
 # ftp port is firewalled.
+
+usage() {
+    cat <<HERE
+Script to ftp files in current folder to oversight installation on
+test NMTs.
+
+    $0 [100|200|all] localfiles ...
+HERE
+    exit 1
+}
+
+
 EXE=$0
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
 OVS_PARENT="$( cd "$( dirname "$EXE" )"/../.. && pwd )"
 
+# Find path fragment after "oversight/"
 d="`pwd`"
-d="`echo "$d" | sed "s;.*/oversight/;Apps/oversight/;"`"
+d="${d/*oversight\//Apps/oversight/}"
 echo "end path = $d"
 
-
-arch=$1 ; shift
-
-
-usage() {
-    echo "$0 100|110|200 files"
-    exit
-}
-
+sendto() {
+    local arch="$1"
+    shift
 if ( ifconfig || ipconfig ) 2>/dev/null | grep -q 192.168.88 ; then
     case "$arch" in
-        100) ip=192.168.88.11  ; user=ftpuser ; root=/ ;;
+        100)
+            ip=192.168.88.11
+            user=ftpuser
+            root=/
+            ;;
         #200) ip=192.168.88.7  ; user=nmt root=/SATA_DISK ;;
-        200) ip=192.168.88.7  ; user=nmt root=/USB_DRIVE ;;
+        200)
+            ip=192.168.88.7
+            user=nmt
+            root=/USB_DRIVE
+            ;;
         *) usage ;;
     esac
 else
-    ip=lordy.org.uk
+    ip=xxx.xx.xx.xx
     user=ftpuser 
 fi
 
@@ -42,3 +57,15 @@ hash
 prompt
 mput $@ 
 HERE
+}
+
+arch=$1 ; shift
+
+if [ "$arch" = all ] ; then
+    arch="100 200"
+fi
+
+for dest in $arch ; do
+    sendto $dest "$@"
+done
+

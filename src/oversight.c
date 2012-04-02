@@ -83,8 +83,15 @@ int ls(char *path) {
                 char *tmp;
                 switch(f->d_type) {
                     case DT_REG:
-                        //ovs_asprintf(&tmp,"<tr><td>%.1f%s</td><td><a href=\"%s\">%s</a></td></tr>",size,unit,u,f->d_name);
-                        ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td> - %.*f%s</td></tr>",u,f->d_name,precision,size,unit);
+                        if(strstr(f->d_name,"log.gz")) {
+                            // Display inline link
+                            ovs_asprintf(&tmp,"<tr><td><a href=\"%s.txt\">%s</a> <a href=\"%s\">*</a></td><td> - %.*f%s</td></tr>",
+                                    u,f->d_name,u, precision,size,unit);
+                        } else {
+                            //ovs_asprintf(&tmp,"<tr><td>%.1f%s</td><td><a href=\"%s\">%s</a></td></tr>",size,unit,u,f->d_name);
+                            ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td> - %.*f%s</td></tr>",
+                                    u,f->d_name, precision,size,unit);
+                        }
                         array_add(files,tmp);
                         break;
                     case DT_DIR:
@@ -238,47 +245,57 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
                     result = cat(CONTENT_TYPE"image/gif",path);
 
-                } else if (is_file(path) && browsing_from_lan() ) {
+                } else if (browsing_from_lan() ) {
 
-                    char *all_headers = NULL;
-                    char *content_headers = NULL;
+                    if (is_dir(path)) {
 
-                    int open_compressed_log_in_browser=0;
-
-
-                    if (open_compressed_log_in_browser && (strstr(path,".log.gz") || strstr(path,".txt.gz")) ) {
-
-                        ovs_asprintf(&content_headers,"%s%s\n%s%s",
-                                CONTENT_TYPE,"text/plain ;charset=utf-8", CONTENT_ENC,"gzip");
-
-                    } else if (strstr(path,".tar.gz") == 0 || strcmp(dot,".tgz") == 0) {
-
-                        ovs_asprintf(&content_headers,"%s%s\n%s%s",
-                                CONTENT_TYPE,"application/x-tar",CONTENT_ENC,"gzip");
-
-                    } else if (strcmp(dot,".gz") == 0 || strcmp(dot,".tgz") == 0) {
-
-                        ovs_asprintf(&content_headers,"%s%s\n%s%s",
-                                CONTENT_TYPE,"application/x-gzip",CONTENT_ENC,"identity");
-
-                    } else if (strcmp(dot,".html") == 0 ) {
-
-                        ovs_asprintf(&content_headers,"%s%s",
-                                CONTENT_TYPE,"text/html ;charset=utf-8");
-
+                        // load_configs(); // load configs so we can use file_to_url() functions 
+                        result = ls(path);
                     } else {
-                        ovs_asprintf(&content_headers,"%s%s",
-                                CONTENT_TYPE,"text/plain ;charset=utf-8");
+                        
+                        int exists = is_file(path);
+
+                        char *all_headers = NULL;
+                        char *content_headers = NULL;
+
+                        if (exists) {
+                            if (strstr(path,".tar.gz") == 0 || strcmp(dot,".tgz") == 0) {
+
+                                ovs_asprintf(&content_headers,"%s%s\n%s%s",
+                                        CONTENT_TYPE,"application/x-tar",CONTENT_ENC,"gzip");
+
+                            } else if (strcmp(dot,".gz") == 0 ) {
+
+                                ovs_asprintf(&content_headers,"%s%s\n%s%s",
+                                        CONTENT_TYPE,"application/x-gzip",CONTENT_ENC,"identity");
+
+                            } else if (strcmp(dot,".html") == 0 ) {
+
+                                ovs_asprintf(&content_headers,"%s%s",
+                                        CONTENT_TYPE,"text/html;charset=utf-8");
+
+                            } else {
+                                ovs_asprintf(&content_headers,"%s%s",
+                                        CONTENT_TYPE,"text/plain;charset=utf-8");
+                            }
+                        } else {
+                            // .gz.txt is a fake extension added by the ls command to view log.gz inline without browser downloading.
+                            if (strstr(path,".gz.txt")) {
+                                ovs_asprintf(&content_headers,"%s%s\n%s%s",
+                                        CONTENT_TYPE,"text/plain;charset=utf-8", CONTENT_ENC,"gzip");
+                                // remove .txt to get real zip file.
+                                // .txt is needed so a certain browser displays inline. (might be other ways)
+                                *dot = '\0';
+                            } else {
+                                // 404 error would be here
+                            }
+                        }
+                        ovs_asprintf(&all_headers,"%s\n%s%ld",content_headers,CONTENT_LENGTH,file_size(path));
+                        FREE(content_headers);
+                        result = cat(all_headers,path);
+                        FREE(all_headers);
+
                     }
-                    ovs_asprintf(&all_headers,"%s\n%s%ld",content_headers,CONTENT_LENGTH,file_size(path));
-                    FREE(content_headers);
-                    result = cat(all_headers,path);
-                    FREE(all_headers);
-
-                } else if (is_dir(path) && browsing_from_lan()) {
-
-                    // load_configs(); // load configs so we can use file_to_url() functions 
-                    result = ls(path);
                 }
                 FREE(path);
                 exit(result);

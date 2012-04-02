@@ -19,9 +19,7 @@
 		<hr>
         <p>Log file diagnostics. Only works from PC.
         <center>
-            <p><a href="/oversight/logs/last.log">{last scan}</a>
             <p><a href="/oversight/oversight.cgi?/share/Apps/oversight/logs">{log dir}</a>
-            <p><a href="/oversight/logs/last.unpak.log">{last unpak}</a>
             <p><a href="/oversight/logs/gui.log">{gui log}</a>
         </center>
     </body>

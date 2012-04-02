@@ -64,32 +64,32 @@ json,ret,i,tag,minfo2) {
                 if ( "data:year" in json) {
                     ret = 1;
                     minfo2["mi_plot"] = add_lang_to_plot(locale,clean_plot(json["data:plot:outline"]));
-                    minfo2["mi_year"] = json["data:year"];
+                    minfo2[YEAR] = json["data:year"];
                     minfo2["mi_certrating"] = json["data:certificate:certificate"];
                     minfo2["mi_certcountry"] = substr(json["@locale@"],4);
                     minfo2["mi_poster"] = json["data:image:url"];
-                    minfo2["mi_rating"] = json["data:rating"];
-                    minfo2["mi_runtime"] = json["data:runtime:time"]/60;
-                    minfo2["mi_title"] = json["data:title"];
+                    minfo2[RATING] = json["data:rating"];
+                    minfo2[RUNTIME] = json["data:runtime:time"]/60;
+                    minfo2[TITLE] = json["data:title"];
 
                     # other values are "feature" and "documentary" - for now treat all non-tv_series as feature and use genre to differentiate.
                     if (json["data:type"] == "tv_series" ) {
-                        minfo2["mi_category"] = "T";
+                        minfo2[CATEGORY] = "T";
                     } else if (json["data:type"] == "tv_episode" ) {
                         INF("This is episode data - go to series data");
                         id = json["data:series:tconst"]; 
                         return fetch_ijson_details_by_locale(id,locale,minfo);
                     } else {
-                        minfo2["mi_category"] = "M";
+                        minfo2[CATEGORY] = "M";
                     }
 
                     # Genres
                     for(i = 1 ; ; i++ ) {
                         tag = "data:genres#"i;
                         if (!(tag in json)) break;
-                        minfo2["mi_genre"] = minfo2["mi_genre"] "|" json[tag];
+                        minfo2[GENRE] = minfo2[GENRE] "|" json[tag];
                     }
-                    sub(/^[|]/,"",minfo2["mi_genre"]);
+                    sub(/^[|]/,"",minfo2[GENRE]);
 
                     set_ijson_people(json,"data:writers_summary",minfo2,"writer");
                     set_ijson_people(json,"data:directors_summary",minfo2,"director");
@@ -115,7 +115,7 @@ json,ret,i,tag,minfo2) {
         }
         minfo_merge(minfo,minfo2,"imdb");
     }
-    ret= (minfo2["mi_year"] != "");
+    ret= (minfo2[YEAR] != "");
     id0(ret);
     return ret;
 }

@@ -1,36 +1,36 @@
 
+# final = only write fields in final index.db
 # changes here should be reflected in db.c:write_row()
-function createIndexRow(minfo,db_index,watched,locked,index_time,\
-row,est,nfo,op) {
+function createIndexRow(final,minfo,db_index,watched,locked,index_time,\
+row,est,op,fld) {
 
     # Estimated download date. cant use nfo time as these may get overwritten.
-    est=file_time(minfo["mi_folder"]"/unpak.log");
+    est=file_time(minfo[DIR]"/unpak.log");
     if (est == "") {
-        est=file_time(minfo["mi_folder"]"/unpak.txt");
+        est=file_time(minfo[DIR]"/unpak.txt");
     }
     if (est == "") {
-        est = minfo["mi_file_time"];
+        est = minfo[FILETIME];
     }
 
-    if (minfo["mi_file"] == "" ) {
-        minfo["mi_file"]=getPath(minfo["mi_media"],minfo["mi_folder"]);
+    if (minfo[FILE] == "" ) {
+        minfo[FILE]=getPath(minfo[NAME],minfo[DIR]);
     }
-    minfo["mi_file"] = clean_path(minfo["mi_file"]);
+    minfo[FILE] = clean_path(minfo[FILE]);
 
-    if ((minfo["mi_file"] in g_fldrCount ) && g_fldrCount[minfo["mi_file"]]) {
+    if ((minfo[FILE] in g_fldrCount ) && g_fldrCount[minfo[FILE]]) {
         DEBUG("Adjusting file for video_ts");
-        minfo["mi_file"] = minfo["mi_file"] "/";
+        minfo[FILE] = minfo[FILE] "/";
     }
 
     op="update";
     if (db_index == -1 ) {
-        db_index = ++gMaxDatabaseId;
+        if (minfo[ID]) ERR("ID already set to "minfo[ID]);
+
+        minfo[ID] = ++gMaxDatabaseId;
         op="add";
     }
-    row="\t"ID"\t"db_index;
-    INF("dbrow "op" ["db_index":"minfo["mi_file"]"]");
-
-    row=row"\t"CATEGORY"\t"minfo["mi_category"];
+    INF("dbrow "op" ["db_index":"minfo[FILE]"]");
 
     if (index_time == "") {
         if (RESCAN == 1 ) {
@@ -39,102 +39,40 @@ row,est,nfo,op) {
             index_time = NOW;
         }
     }
+    minfo[DOWNLOADTIME] = est;
 
-    row=row"\t"INDEXTIME"\t"shorttime(index_time);
-
-    row=row"\t"WATCHED"\t"watched;
-    row=row"\t"LOCKED"\t"locked;
+    minfo[INDEXTIME] = index_time;
+    minfo[WATCHED] = watched;
+    minfo[LOCKED] = locked;
 
     #Title and Season must be kept next to one another to aid grepping.
     #Put the overview items near the start to speed up scanning
-    row=row"\t"TITLE"\t"minfo["mi_title"];
-    if (minfo["mi_orig_title"] != "" && norm_title(minfo["mi_orig_title"]) != norm_title(minfo["mi_title"]) ) {
-        row=row"\t"ORIG_TITLE"\t"minfo["mi_orig_title"];
+    if (minfo[ORIG_TITLE] != "" && norm_title(minfo[ORIG_TITLE]) == norm_title(minfo[TITLE]) ) {
+        minfo[ORIG_TITLE] = "";
     }
-    if (minfo["mi_season"] != "") row=row"\t"SEASON"\t"minfo["mi_season"];
-
-    row=row"\t"RATING"\t"minfo["mi_rating"];
-
-    if (minfo["mi_episode"] != "") row=row"\t"EPISODE"\t"minfo["mi_episode"];
-
-    row=row"\t"GENRE"\t"short_genre(minfo["mi_genre"]);
-    row=row"\t"RUNTIME"\t"minfo["mi_runtime"];
-
-    if (minfo["mi_parts"]) row=row"\t"PARTS"\t"minfo["mi_parts"];
-
-    row=row"\t"YEAR"\t"short_year(minfo["mi_year"]);
-
-    row=row"\t"FILE"\t"short_path(minfo["mi_file"]);
-
-    if (minfo["mi_additional_info"]) row=row"\t"ADDITIONAL_INF"\t"minfo["mi_additional_info"];
-
-    row=row"\t"URL"\t"minfo["mi_idlist"];
-
-    row=row"\t"CERT"\t"minfo["mi_certcountry"]":"minfo["mi_certrating"];
-
-    if (minfo["mi_director_ids"]) row=row"\t"DIRECTORS"\t"minfo["mi_director_ids"];
-    if (minfo["mi_actor_ids"]) row=row"\t"ACTORS"\t"minfo["mi_actor_ids"];
-    if (minfo["mi_writer_ids"]) row=row"\t"WRITERS"\t"minfo["mi_writer_ids"];
-
-    row=row"\t"FILETIME"\t"shorttime(minfo["mi_file_time"]);
-    row=row"\t"DOWNLOADTIME"\t"shorttime(est);
-    #row=row"\t"SEARCH"\t"g_search[i];
-
-
-    if (minfo["mi_airdate"]) row=row"\t"AIRDATE"\t"minfo["mi_airdate"];
-
-    if (minfo["mi_eptitle"]) row=row"\t"EPTITLE"\t"minfo["mi_eptitle"];
-    nfo="";
-
-    if (g_settings["catalog_nfo_write"] != "never" || is_file(minfo["mi_nfo_default"]) ) {
-        nfo=minfo["mi_nfo_default"];
-        gsub(/.*\//,"",nfo);
-        row=row"\t"NFO"\t"nfo;
+    if (minfo[CERT] == "") {
+        minfo[CERT] = minfo["mi_certcountry"]":"minfo["mi_certrating"];
+        sub(/^:/,"",minfo[CERT]);
     }
-    if (minfo["mi_set"]) row=row"\t"SET"\t"minfo["mi_set"];
-    if (minfo["mi_video"]) row=row"\t"VIDEO"\t"minfo["mi_video"];
-    if (minfo["mi_audio"]) row=row"\t"AUDIO"\t"minfo["mi_audio"];
-    if (minfo["mi_mb"]) row=row"\t"SIZEMB"\t"minfo["mi_mb"];
-    if (minfo["mi_videosource"]) row=row"\t"VIDEOSOURCE"\t"minfo["mi_videosource"];
-    if (minfo["mi_subtitles"]) row=row"\t"SUBTITLES"\t"minfo["mi_subtitles"];
+
+    if (g_settings["catalog_nfo_write"] != "never" || is_file(minfo[NFO]) ) {
+        gsub(/.*\//,"",minfo[NFO]);
+    } else {
+        minfo[NFO] = "";
+    } 
+
+    for(fld in minfo) {
+        if (fld ~ /^_/ ) {
+            if (!final || g_dbkeep[fld]) { #write field if intermediate computation  OR it is flagged for final index.db(g_dbkeep)
+                if (minfo[fld] != "") {
+                    row=row"\t"fld"\t"shortform(fld,minfo[fld]);
+                }
+            }
+        }
+    }
 
     return row"\t";
 }
-function genre_init(\
-gnames,i) {
-    
-    if (!g_genre_count) {
-        g_genre_count = split(g_settings["catalog_genre"],gnames,",");
-    }
-    for(i = 1 ; i <= g_genre_count ; i += 2) {
-        g_genre_long2short["\\<"gnames[i]"o?\\>"] = gnames[i+1];
-        g_genre_short2long["\\<"gnames[i+1]"\\>"] = gnames[i];
-    }
-
-}
-
-function short_genre(g) {
-    return convert_genre(g,g_genre_long2short);
-}
-
-function long_genre(g) {
-    return convert_genre(g,g_genre_short2long);
-}
-
-function convert_genre(g,genre_map,\
-i) {
-    genre_init();
-    for(i in genre_map) {
-        if (match(g,i) ) {
-           g = substr(g,1,RSTART-1) genre_map[i] substr(g,RSTART+RLENGTH); 
-       }
-    }
-    gsub(/[- /,|]+/,"|",g);
-    gsub(/^[|]/,"",g);
-    gsub(/[|]$/,"",g);
-    return g;
-}
-
 function replace_database_with_new(newdb,currentdb,olddb) {
 
     INF("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
@@ -148,66 +86,60 @@ function replace_database_with_new(newdb,currentdb,olddb) {
 function set_db_fields() {
     #DB fields should start with underscore to speed grepping etc.
     # Fields with @ are not written to the db.
-    ID=db_field("_id","ID","");
+    ID=db_field("_id","ID","",1);
 
-    WATCHED=db_field("_w","Watched","watched") ;
-    LOCKED=db_field("_l","Locked","locked") ;
-    PARTS=db_field("_pt","PARTS","");
-    FILE=db_field("_F","FILE","filenameandpath");
-    NAME=db_field("_@N","NAME","");
-    DIR=db_field("_@D","DIR","");
-    EXT=db_field("_ext","EXT",""); # not a real field
+    WATCHED=db_field("_w","Watched","watched",g_dbtype_string,1) ;
+    LOCKED=db_field("_l","Locked","locked",g_dbtype_string,1) ;
+    PARTS=db_field("_pt","PARTS","",g_dbtype_string,1);
+    FILE=db_field("_F","FILE","filenameandpath",g_gbtype_path,1);
+    NAME=db_field("_@N","NAME","",g_dbtype_string,0);
+    DIR=db_field("_@D","DIR","",g_dbtype_string,0);
+    EXT=db_field("_ext","EXT","",g_dbtype_string,0); # not a real field
 
 
-    ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle");
-    TITLE=db_field("_T","Title","title") ;
-    DIRECTORS=db_field("_d","Director","director") ;
-    ACTORS=db_field("_A","Actors","actors") ;
-    WRITERS=db_field("_W","Writers","writers") ;
-    CREATOR=db_field("_c","Creator","creator") ;
-    AKA=db_field("_K","AKA","");
+    ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle",g_dbtype_string,1);
+    TITLE=db_field("_T","Title","title",g_dbtype_string,1) ;
+    DIRECTORS=db_field("_d","Director","director",g_dbtype_string,1) ;
+    ACTORS=db_field("_A","Actors","actors",g_dbtype_string,1) ;
+    WRITERS=db_field("_W","Writers","writers",g_dbtype_string,1) ;
 
-    CATEGORY=db_field("_C","Category","");
-    ADDITIONAL_INF=db_field("_ai","Additional Info","");
-    YEAR=db_field("_Y","Year","year",g_dbtype_year) ;
+    CATEGORY=db_field("_C","Category","",g_dbtype_string,1);
+    ADDITIONAL_INF=db_field("_ai","Additional Info","",g_dbtype_string,1);
+    YEAR=db_field("_Y","Year","year",g_dbtype_year,1) ;
 
-    SEASON=db_field("_s","Season","season") ;
-    EPISODE=db_field("_e","Episode","episode");
+    SEASON=db_field("_s","Season","season",g_dbtype_string,1) ;
+    EPISODE=db_field("_e","Episode","episode",g_dbtype_string,1);
 
-    GENRE=db_field("_G","Genre","genre",g_dbtype_genre) ;
-    RUNTIME=db_field("_rt","Runtime","runtime") ;
-    RATING=db_field("_r","Rating","rating");
-    CERT=db_field("_R","CERT","mpaa"); #Not standard?
+    GENRE=db_field("_G","Genre","genre",g_dbtype_genre,1) ;
+    RUNTIME=db_field("_rt","Runtime","runtime",g_dbtype_string,1) ;
+    RATING=db_field("_r","Rating","rating",g_dbtype_string,1);
+    CERT=db_field("_R","CERT","mpaa",g_dbtype_string,1); #Not standard?
 
-    PLOT=db_field("_P","Plot","plot");
+    PLOT=db_field("_P","Plot","plot",g_dbtype_string,0);
     #EPPLOT=db_field("_ep","Plot","plot");
 
-    URL=db_field("_U","URL","url");
-    POSTER=db_field("_J","Poster","thumb");
-    FANART=db_field("_fa","Fanart","fanart");
+    URL=db_field("_U","URL","url",g_dbtype_string,1);
+    POSTER=db_field("_J","Poster","thumb",g_dbtype_string,0);
+    FANART=db_field("_fa","Fanart","fanart",g_dbtype_string,0);
 
-    DOWNLOADTIME=db_field("_DT","Downloaded","",g_dbtype_time);
-    INDEXTIME=db_field("_IT","Indexed","",g_dbtype_time);
-    FILETIME=db_field("_FT","Modified","",g_dbtype_time);
+    DOWNLOADTIME=db_field("_DT","Downloaded","",g_dbtype_time,1);
+    INDEXTIME=db_field("_IT","Indexed","",g_dbtype_time,1);
+    FILETIME=db_field("_FT","Modified","",g_dbtype_time,1);
 
-    SEARCH=db_field("_SRCH","Search URL","search");
-    PROD=db_field("_p","ProdId.","");
-    AIRDATE=db_field("_ad","Air Date","aired");
-    TVCOM=db_field("_tc","TvCom","");
-    EPTITLE=db_field("_et","Episode Title","title");
-    EPTITLEIMDB=db_field("_eti","Episode Title(imdb)","");
-    AIRDATEIMDB=db_field("_adi","Air Date(imdb)","");
-    NFO=db_field("_nfo","NFO","nfo");
+    SEARCH=db_field("_SRCH","Search URL","search",g_dbtype_string,0);
+    AIRDATE=db_field("_ad","Air Date","aired",g_dbtype_string,1);
+    EPTITLE=db_field("_et","Episode Title","title",g_dbtype_string,1);
+    NFO=db_field("_nfo","NFO","nfo",g_dbtype_string,1);
 
-    IMDBID=db_field("_imdb","IMDBID","id");
-    TVID=db_field("_tvid","TVID","id");
-    SET=db_field("_a","SET","",""); 
+    IMDBID=db_field("_imdb","IMDBID","id",g_dbtype_string,0);
+    TVID=db_field("_tvid","TVID","id",g_dbtype_string,0);
+    SET=db_field("_a","SET","","",g_dbtype_string,1); 
 
-    VIDEO=db_field("_v","VIDEO","");
-    AUDIO=db_field("_S","SOUND","");
-    SUBTITLES=db_field("_L","SUBS","");
-    VIDEOSOURCE=db_field("_V","VIDEOSOURCE","");
-    SIZEMB=db_field("_m","SIZEMB","");
+    VIDEO=db_field("_v","VIDEO","",g_dbtype_string,1);
+    AUDIO=db_field("_S","SOUND","",g_dbtype_string,1);
+    SUBTITLES=db_field("_L","SUBS","",g_dbtype_string,1);
+    VIDEOSOURCE=db_field("_V","VIDEOSOURCE","",g_dbtype_string,1);
+    SIZEMB=db_field("_m","SIZEMB","",g_dbtype_string,1);
 }
 
 
@@ -215,12 +147,13 @@ function set_db_fields() {
 # IN key = database key and html parameter
 # IN name = logical name
 # IN tag = xml tag in xmbc nfo files.
-function db_field(key,name,tag,type) {
+function db_field(key,name,tag,type,keep) {
     gsub(/ /,"_",name);
     g_db_field_name[key]=name;
     gDbTag2FieldId[tag]=key;
     gDbFieldId2Tag[key]=tag;
     g_dbtype[key]=type;
+    g_dbkeep[key]=keep; #if written to final index.db
     return key;
 }
 ##### LOADING INDEX INTO DB_ARR[] ###############################

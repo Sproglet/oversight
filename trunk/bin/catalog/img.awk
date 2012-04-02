@@ -14,10 +14,10 @@ poster_ref,id,ret) {
         # Store images in Oversight folder.
 
         #Tv show images are stored by season.
-        if (minfo["mi_category"] == "T" ) {
+        if (minfo[CATEGORY] == "T" ) {
             id = imdb(minfo);
             if (id) {
-                poster_ref = "imdb_" id "_" minfo["mi_season"];
+                poster_ref = "imdb_" id "_" minfo[SEASON];
             }
         }
         if (poster_ref == "") {
@@ -33,7 +33,7 @@ poster_ref,id,ret) {
     } else {
 
         # Store images with media.
-        if (minfo["mi_category"] == "T" ) {
+        if (minfo[CATEGORY] == "T" ) {
             if (field_id == FANART ) {
                 ret ="fanart.jpg";
             } if (field_id == POSTER ) {
@@ -41,9 +41,9 @@ poster_ref,id,ret) {
             }
         } else {
             if (field_id == FANART ) {
-                ret = gensub("\.[^.]+$","-fanart.jpg",1,minfo["mi_media"]);
+                ret = gensub("\.[^.]+$","-fanart.jpg",1,minfo[NAME]);
             } if (field_id == POSTER ) {
-                ret = gensub("\.[^.]+$",".jpg",1,minfo["mi_media"]);
+                ret = gensub("\.[^.]+$",".jpg",1,minfo[NAME]);
             }
         }
     }
@@ -64,7 +64,7 @@ function getting_image(minfo,image_field_id,get_image,update_image,verbose,\
 poster_ref,internal_path) {
 
     poster_ref = internal_poster_reference(image_field_id,minfo);
-    internal_path = getPath(poster_ref,minfo["mi_folder"]);
+    internal_path = getPath(poster_ref,minfo[DIR]);
 
     if (internal_path in g_image_inspected) {
         if(verbose) INF("Already looked at "poster_ref);
@@ -100,7 +100,7 @@ function download_image(field_id,minfo,mi_field,\
         #Note for internal posters the reference contains a sub path.
         # (relative to database folder ovs: )
         poster_ref = internal_poster_reference(field_id,minfo);
-        internal_path = getPath(poster_ref,minfo["mi_folder"]);
+        internal_path = getPath(poster_ref,minfo[DIR]);
 
         #DEBUG("internal_path = ["internal_path"]");
         #DEBUG("poster_ref = ["poster_ref"]");
@@ -182,14 +182,14 @@ query,qnum,q,cat,key) {
     if (minfo[fld] == "") {
         id1("search_bing_image "fld);
 
-        if (minfo["mi_category"] == "M" ) cat = "Film";
-        else if (minfo["mi_category"] == "T" ) cat = "Tv";
+        if (minfo[CATEGORY] == "M" ) cat = "Film";
+        else if (minfo[CATEGORY] == "T" ) cat = "Tv";
 
         #query[++qnum]=imdb(minfo); # tt searches find lots of screencaps - stick to title searches
-        query[++qnum]="\""minfo["mi_title"]"\" +"minfo["mi_year"]" "cat;
+        query[++qnum]="\""minfo[TITLE]"\" +"minfo[YEAR]" "cat;
 
-        query[++qnum] = minfo["mi_title"]" "minfo["mi_year"]" "cat;
-        key = minfo["mi_title"]" "minfo["mi_year"]" "cat" "fld;
+        query[++qnum] = minfo[TITLE]" "minfo[YEAR]" "cat;
+        key = minfo[TITLE]" "minfo[YEAR]" "cat" "fld;
 
         query[++qnum]= key;
 
@@ -338,7 +338,7 @@ function img_score(json,json_prefix,pos,aspect,minfo,best_so_far,\
 sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
 
     key = json_prefix pos;
-    title = collapse(minfo["mi_title"]);
+    title = collapse(minfo[TITLE]);
 
     img_title = collapse(json[key ":Title"]);
     imageUrl = json[key ":MediaUrl"];

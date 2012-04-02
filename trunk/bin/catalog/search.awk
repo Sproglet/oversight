@@ -281,20 +281,20 @@ url,txt) {
 
     id1("web_search_frequent_imdb_link");
     
-    txt = basename(minfo["mi_media"]);
+    txt = basename(minfo[NAME]);
     if (tolower(txt) != "dvd_volume" ) {
         url=searchHeuristicsForImdbLink(txt);
     }
 
-    if (url == "" && match(minfo["mi_media"],gExtRegexIso)) {
-        txt = getIsoTitle(minfo["mi_folder"]"/"minfo["mi_media"]);
+    if (url == "" && match(minfo[NAME],gExtRegexIso)) {
+        txt = getIsoTitle(minfo[DIR]"/"minfo[NAME]);
         if (length(txt) - 3 > 0 ) {
             url=searchHeuristicsForImdbLink(txt);
         }
     }
 
-    if (url == "" && folderIsRelevant(minfo["mi_folder"])) {
-        url=searchHeuristicsForImdbLink(tolower(basename(minfo["mi_folder"])));
+    if (url == "" && folderIsRelevant(minfo[DIR])) {
+        url=searchHeuristicsForImdbLink(tolower(basename(minfo[DIR])));
     }
 
     id0(url);
@@ -307,7 +307,7 @@ txt) {
     #This could affect the search adversely, esp if the film name is abbreviated.
     # Too much information is lost. eg coa-v-xvid will eventually become just v
     #so we do this last. 
-    txt = tolower(basename(minfo["mi_media"]));
+    txt = tolower(basename(minfo[NAME]));
 
     #Remove the cd1 partb bit.
     if (minfo["mi_multipart_tag_pos"]) {
@@ -643,30 +643,30 @@ amzurl,amazon_urls,imdb_per_page,imdb_id) {
 # returns 1 if title adjusted or is the same.
 # returns 0 if title ignored.
 function adjustTitle(minfo,newTitle,source) {
-    best_source(minfo,"mi_title",clean_title(newTitle),source);
+    best_source(minfo,TITLE,clean_title(newTitle),source);
 }
 
 function init_priority() {
     if (!("default" in gPriority)) {
         #initialise
         gPriority["default"]=0;
-        gPriority["mi_title","filename"]=1;
-        gPriority["mi_title","search"]=10;
-        gPriority["mi_title","tvrage"]=20; # demote tvrage due to non-accented Carnivale
-        gPriority["mi_title","imdb"]=30;
-        gPriority["mi_title","epguides"]=30;
-        gPriority["mi_title","imdb_aka"]=40;
-        gPriority["mi_title","imdb_orig"]=50;
+        gPriority[TITLE,"filename"]=1;
+        gPriority[TITLE,"search"]=10;
+        gPriority[TITLE,"tvrage"]=20; # demote tvrage due to non-accented Carnivale
+        gPriority[TITLE,"imdb"]=30;
+        gPriority[TITLE,"epguides"]=30;
+        gPriority[TITLE,"imdb_aka"]=40;
+        gPriority[TITLE,"imdb_orig"]=50;
 
         # themoviedb is demoted below IMDB as some entries not good eg tt0892769 it:Dragons instead of it:Dragon Trainer
         # Also in themoviedb people link DVD shorts to the main ttid causing imdb lookup to fail eg Desplicable Me -> Minion Madness
 
         #however themoviedb title is prefered for localisation.
-        gPriority["mi_title","imdb"]=60;
-        gPriority["mi_title","themoviedb"]=65;
-        gPriority["mi_title","thetvdb"]=70;
+        gPriority[TITLE,"imdb"]=60;
+        gPriority[TITLE,"themoviedb"]=65;
+        gPriority[TITLE,"thetvdb"]=70;
 
-        gPriority["mi_orig_title","themoviedb"]=60; 
+        gPriority[ORIG_TITLE,"themoviedb"]=60; 
 
         gPriority["mi_poster","imdb"]=40;
         gPriority["mi_poster","thetvdb"]=60;
@@ -679,30 +679,30 @@ function init_priority() {
         gPriority["mi_fanart","themoviedb"]=90; # increased now api v3 has localised posters
         gPriority["mi_fanart","local"]=100;
 
-        gPriority["mi_rating","themoviedb"]=20;
-        gPriority["mi_rating","thetvdb"]=20;
-        gPriority["mi_rating","imdb"]=60;
+        gPriority[RATING,"themoviedb"]=20;
+        gPriority[RATING,"thetvdb"]=20;
+        gPriority[RATING,"imdb"]=60;
 
-        gPriority["mi_runtime","themoviedb"]=50;
-        gPriority["mi_runtime","imdb"]=60;
+        gPriority[RUNTIME,"themoviedb"]=50;
+        gPriority[RUNTIME,"imdb"]=60;
 
         # If info obtained from TV websites then ignore imdb category
         # Sometimes wrong for mini-series etc wg Thorne tt1610518
-        gPriority["mi_category","thetvdb"]=70;
-        gPriority["mi_category","tvrage"]=70;
-        gPriority["mi_category","imdb"]=60;
+        gPriority[CATEGORY,"thetvdb"]=70;
+        gPriority[CATEGORY,"tvrage"]=70;
+        gPriority[CATEGORY,"imdb"]=60;
 
         gPriority["mi_certrating","themoviedb"]=70;
         gPriority["mi_certcountry","themoviedb"]=70;
         gPriority["mi_certrating","imdb"]=60;
         gPriority["mi_certcountry","imdb"]=60;
 
-        gPriority["mi_genre","themoviedb"]=40;
-        gPriority["mi_genre","thetvdb"]=40;
-        gPriority["mi_genre","imdb"]=50;
+        gPriority[GENRE,"themoviedb"]=40;
+        gPriority[GENRE,"thetvdb"]=40;
+        gPriority[GENRE,"imdb"]=50;
 
-        gPriority["mi_set","imdb"]=50;
-        gPriority["mi_set","themoviedb"]=30;
+        gPriority[SET,"imdb"]=50;
+        gPriority[SET,"themoviedb"]=30;
     }
 }
 function minfo_field_priority(minfo,field) {

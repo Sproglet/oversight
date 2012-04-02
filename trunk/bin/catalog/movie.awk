@@ -130,9 +130,9 @@ function build_query_list(minfo,name_list,\
     dups[""]=1; 
     name_id=0;
 
-    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
+    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo[NAME])));
 
-    if (minfo["mi_parts"] != "") {
+    if (minfo[PARTS] != "") {
         v=remove_part_suffix(minfo);
         if (!(v in dups)) {
             name_list[++name_id]=v; dups[v]=1;

@@ -441,7 +441,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
         } else {
 
             minfo2["mi_url"] = url;
-            minfo2["mi_category"] = "M";
+            minfo2[CATEGORY] = "M";
 
             pagestate["mode"] = "head";
             g_settings["domain_edit_id"] = get_id_from_url(domain,url); # used so domain_edit() inserts {ID} in regex
@@ -507,7 +507,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 }
 
                 if (!getting_local_fields) {
-                    if (minfo2["mi_plot"] && minfo2["mi_poster"] && minfo2["mi_year"] && minfo2["mi_title"]) {
+                    if (minfo2["mi_plot"] && minfo2["mi_poster"] && minfo2[YEAR] && minfo2[TITLE]) {
                         DEBUG("Got info - leaving page");
                         break;
                     }
@@ -529,7 +529,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
         #if page fails then the normal logical flow of the program should prevent re-visits. not the visited flag.
         set_visited(minfo2,domain":"locale);
 
-        if (!err && minfo2["mi_category"] == "M") {
+        if (!err && minfo2[CATEGORY] == "M") {
 
             if (!err  &&  !is_prose(lng,minfo2["mi_plot"]) ) {
                 #We got the movie but there is no plot;
@@ -618,13 +618,13 @@ f,source,ret) {
     # dump(0,"new",new);
 
     # Keep best title
-    new["mi_title"] = clean_title(new["mi_title"]);
+    new[TITLE] = clean_title(new[TITLE]);
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
-    minfo_merge_ids(current,new["mi_idlist"]);
+    minfo_merge_ids(current,new[URL]);
 
     for(f in new) {
         source="";
-        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" ) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != URL ) {
             if (f"_source" in new) {
                 source = new[f"_source"];
             }
@@ -635,7 +635,7 @@ f,source,ret) {
         }
     }
     for(f in current) {
-        if (f !~ "_(source|score)$" && f != "mi_visited" && f != "mi_idlist" ) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != URL ) {
             if (!(f  in new )) {
                 if ( !(f"_source" in current)) {
                     current[f"_source"] = default_source;
@@ -651,9 +651,9 @@ f,source,ret) {
 # eg "imdb:tt1234567 thetvdb:77304"
 function minfo_set_id(domain,id,minfo) {
     domain = tolower(domain);
-    if (id &&  index(minfo["mi_idlist"]," "domain":") == 0) {
-        minfo["mi_idlist"] =  minfo["mi_idlist"]" "domain":"id;
-        INF("idlist = "minfo["mi_idlist"]);
+    if (id &&  index(minfo[URL]," "domain":") == 0) {
+        minfo[URL] =  minfo[URL]" "domain":"id;
+        INF("idlist = "minfo[URL]);
     }
 }
 function get_id(text,domain,adddomain,\
@@ -668,9 +668,9 @@ ret) {
 # return a website id from the idlist
 function minfo_get_id(minfo,domain,\
 id) {
-    id = get_id(minfo["mi_idlist"],domain);
+    id = get_id(minfo[URL],domain);
     if (!id) {
-        WARNING("blank id for "domain" current list = ["minfo["mi_idlist"]"]");
+        WARNING("blank id for "domain" current list = ["minfo[URL]"]");
     }
     return id;
 }
@@ -711,7 +711,7 @@ ret,similar_threshold) {
     similar_threshold = 0.3 ; # edit distance / string length.
     ret = 1;
     title = remove_brackets(title);
-    if (title && minfo["mi_title"]) {
+    if (title && minfo[TITLE]) {
 
 
        ret = 0 ;
@@ -720,17 +720,17 @@ ret,similar_threshold) {
        #For better results we should scrape all pages and pick the one with the most similar title but
        # a. this is time consuming.
        # b. the order of URLS come from a SERP so its expected that the earlier ones should be more relevant.
-       if (index(tolower(minfo["mi_title"]),tolower(title)) || index(tolower(minfo["mi_orig_title"]),tolower(title)))  {
+       if (index(tolower(minfo[TITLE]),tolower(title)) || index(tolower(minfo[ORIG_TITLE]),tolower(title)))  {
            
            ret = 1
            DEBUG("check_title - titles are substrings");
            
-       } else if (similar(minfo["mi_title"],title) < similar_threshold || similar(minfo["mi_orig_title"],title) < similar_threshold ) {
+       } else if (similar(minfo[TITLE],title) < similar_threshold || similar(minfo[ORIG_TITLE],title) < similar_threshold ) {
 
            ret = 1;
            DEBUG("check_title - titles are similar");
        } else {
-           INF("page rejected title ["minfo["mi_title"]"] or ["minfo["mi_orig_title"]"] != ["title"]");
+           INF("page rejected title ["minfo[TITLE]"] or ["minfo[ORIG_TITLE]"] != ["title"]");
        }
     }
     return ret;
@@ -741,14 +741,14 @@ ret,similar_threshold) {
 #
 #    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
 #    DEBUG("check_runtime disabled");
-#    if (runtime && minfo["mi_runtime"]) {
+#    if (runtime && minfo[RUNTIME]) {
 #
-#        ret = (runtime == minfo["mi_runtime"]);
+#        ret = (runtime == minfo[RUNTIME]);
 #
 #        if (ret) {
 #            DEBUG("runtime scraped ok");
 #        } else {
-#            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
+#            INF("page rejected by runtime ["minfo[RUNTIME]"] != ["runtime"]");
 #        }
 #    }
 #
@@ -761,14 +761,14 @@ ret,similar_threshold) {
 #
 #    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
 #    DEBUG("check_director disabled");
-#    if (runtime && minfo["mi_runtime"]) {
+#    if (runtime && minfo[RUNTIME]) {
 #
-#        ret = (runtime == minfo["mi_runtime"]);
+#        ret = (runtime == minfo[RUNTIME]);
 #
 #        if (ret) {
 #            DEBUG("runtime scraped ok");
 #        } else {
-#            INF("page rejected by runtime ["minfo["mi_runtime"]"] != ["runtime"]");
+#            INF("page rejected by runtime ["minfo[RUNTIME]"] != ["runtime"]");
 #        }
 #    }
 #
@@ -949,7 +949,7 @@ i,num,sections,err,dbg,lcline) {
     lcline = tolower(line);
 
     # if the title occurs in the main text, then allow plot to be parsed.
-    if (!pagestate["titleinpage"] && minfo["mi_title"] && index(lcline,tolower(minfo["mi_title"]))) {
+    if (!pagestate["titleinpage"] && minfo[TITLE] && index(lcline,tolower(minfo[TITLE]))) {
         pagestate["titleinpage"] = 1;
         DEBUG("setting titleinpage 1");
     }
@@ -995,7 +995,7 @@ function scrape_movie_fragment(lng,domain,fragment,minfo,pagestate,namestate,\
 mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
     
-    #DEBUG("scrape_movie_fragment:["minfo["mi_title"]":"pagestate["mode"]":"fragment"]");
+    #DEBUG("scrape_movie_fragment:["minfo[TITLE]":"pagestate["mode"]":"fragment"]");
 
     err=0;
     #DEBUG("scrape_movie_fragment:("lng","domain","fragment")");
@@ -1029,12 +1029,12 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
                 # extract the year if present AND in brackets
                 if (index(value,"(") || index(value,"[")) {
                     if (split(gensub("([[(].*)("g_year_re")(.*[])])","\t\\1\t\\2\t\\3\t",1,value),matches,"\t") == 5) {
-                        update_minfo(minfo,"mi_year",matches[3],domain,pagestate);
+                        update_minfo(minfo,YEAR,matches[3],domain,pagestate);
                     }
                 }
-                err = title_update(minfo,domain,value,"mi_title","catalog_domain_filter_title_regex_list",pagestate);
+                err = title_update(minfo,domain,value,TITLE,"catalog_domain_filter_title_regex_list",pagestate);
                 if (!err) {
-                    err = title_update(minfo,domain,value,"mi_orig_title","catalog_domain_filter_orig_title_regex_list",pagestate);
+                    err = title_update(minfo,domain,value,ORIG_TITLE,"catalog_domain_filter_orig_title_regex_list",pagestate);
                 }
             }
         }
@@ -1048,15 +1048,15 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         } else if ( mode == "title" ) {
 
-            if (update_minfo(minfo,"mi_title", trim(fragment),domain,pagestate)) {
+            if (update_minfo(minfo,TITLE, trim(fragment),domain,pagestate)) {
                 pagestate["titleinpage"] = 2;
                 DEBUG("setting titleinpage 2");
             }
 
         } else if ( mode == "year" ) {
 
-            if (minfo["mi_year"] == "") {
-                update_minfo(minfo,"mi_year",subexp(fragment,"("g_year_re")") ,domain,pagestate);
+            if (minfo[YEAR] == "") {
+                update_minfo(minfo,YEAR,subexp(fragment,"("g_year_re")") ,domain,pagestate);
             }
 
         } else if ( mode == "country" ) {
@@ -1065,16 +1065,16 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         } else if ( mode == "original_title" ) {
 
-            update_minfo(minfo,"mi_orig_title", trim(fragment),domain,pagestate);
+            update_minfo(minfo,ORIG_TITLE, trim(fragment),domain,pagestate);
 
         } else if ( mode == "duration" ) {
 
-            update_minfo(minfo, "mi_runtime",extract_duration(fragment) ,domain,pagestate);
+            update_minfo(minfo, RUNTIME,extract_duration(fragment) ,domain,pagestate);
 
         } else if ( mode == "genre" ) {
 
             if (index(fragment,"@label@")) {
-                field = "mi_genre";
+                field = GENRE;
                 split(fragment,tmp,"@label@");
 
                 minfo[field] = minfo[field]"|"tmp[2];
@@ -1084,7 +1084,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
         } else if ( mode == "released" ) {
 
             if (extractDate(fragment,matches)) {
-                update_minfo(minfo, "mi_year", matches[1],domain,pagestate);
+                update_minfo(minfo, YEAR, matches[1],domain,pagestate);
             }
 
         }
@@ -1106,18 +1106,18 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
     }
 
     # Allow year to be parsed if plot not found yet.
-    if (pagestate["titleinpage"] && !minfo["mi_year"] ) {
+    if (pagestate["titleinpage"] && !minfo[YEAR] ) {
         # Not re starts with [ (>] instead of word boundary to help avoid 4 digit ids id=1234 etc.
         # Also allow "@" as its used  for label markers
-        if (update_minfo(minfo, "mi_year",subexp(fragment,"(^|[ (>;@])("g_year_re")($|[ )<&@])",2) ,domain,pagestate)) {
-            INF("Capture first year expression "minfo["mi_year"]);
+        if (update_minfo(minfo, YEAR,subexp(fragment,"(^|[ (>;@])("g_year_re")($|[ )<&@])",2) ,domain,pagestate)) {
+            INF("Capture first year expression "minfo[YEAR]);
         }
     }
 
     if (!err) {
         # category - special case for imdb only
         if (domain == "imdb" && index(fragment,"/episodes\"")) {
-            minfo["mi_category"] = "T";
+            minfo[CATEGORY] = "T";
         }
 
         extract_rating(fragment,minfo,domain);
@@ -1243,15 +1243,15 @@ ret) {
 
             ret = 1;
 
-            if (field == "mi_year" ) {
-                if ( value == minfo["mi_title"] || value == minfo["mi_orig_title"] ) {
+            if (field == YEAR ) {
+                if ( value == minfo[TITLE] || value == minfo[ORIG_TITLE] ) {
                     INF("year ["value"] looks like title? ignoring");
                     ret = 0;
                 } else {
                     check_year(value,pagestate);
                 }
             }
-            if (field == "mi_title" ) {
+            if (field == TITLE ) {
                 update_confidence(value,minfo,pagestate);
                 scrape_poster_check(pagestate,value);
             }
@@ -1267,7 +1267,7 @@ ret) {
 
 function extract_rating(text,minfo,domain,\
 ret) {
-    if (minfo["mi_rating"] == "") {
+    if (minfo[RATING] == "") {
         if (index(text,"/") ) {
             ret = subexp(text,"([0-9][,.][0-9]+) ?\\/ ?10");
         }
@@ -1280,7 +1280,7 @@ ret) {
             }
         }
         if (ret) {
-            best_source(minfo,"mi_rating",ret,domain);
+            best_source(minfo,RATING,ret,domain);
             INF("Rating set ["ret"]");
         }
     }
@@ -1536,7 +1536,7 @@ i,num,locales,minfo2) {
         # that includes Carrie, Shawshank etc.
         imdb_movie_connections(minfo);
     }
-    return minfo["mi_category"];
+    return minfo[CATEGORY];
 }
 
 

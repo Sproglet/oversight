@@ -1,17 +1,45 @@
 function to_string(fieldid,v,\
 type) {
     type = g_dbtype[fieldid];
-    if(type == "") {
+    if(type == g_dbtype_string) {
     } else if (type == g_dbtype_time) {
         v= longtime(v);
     } else if (type == g_dbtype_year) {
         if (length(v) < 4) {
             v= long_year(v);
         }
+    } else if (type == g_dbtype_path) {
+        if (!STANDALONE) {
+            v=nmt_get_share_path(v);
+        }
     } else if (type == g_dbtype_genre) {
         v= long_genre(v);
     } else if (type == g_dbtype_imdblist) {
         v= imdb_list_expand(v,",",128);
+    } else {
+        ERR("Unknown db type ["type"] for fieldid ["fieldid"]");
+    }
+    return v;
+
+}
+function shortform(fieldid,v,\
+type) {
+    type = g_dbtype[fieldid];
+    if(type == g_dbtype_string) {
+    } else if (type == g_dbtype_time) {
+        v= shorttime(v);
+    } else if (type == g_dbtype_year) {
+        if (length(v) == 4) {
+            v= short_year(v);
+        }
+    } else if (type == g_dbtype_path) {
+        if (!STANDALONE) {
+            v=short_path(v);
+        }
+    } else if (type == g_dbtype_genre) {
+        v= short_genre(v);
+    } else if (type == g_dbtype_imdblist) {
+        v= imdb_list_shrink(v,",",128);
     } else {
         ERR("Unknown db type ["type"] for fieldid ["fieldid"]");
     }
@@ -111,5 +139,40 @@ ret) {
 
     if (y != "" ) ret = hex2dec(y)+1900;
     return ret;
+}
+
+function short_genre(g) {
+    return convert_genre(g,g_genre_long2short);
+}
+
+function long_genre(g) {
+    return convert_genre(g,g_genre_short2long);
+}
+
+function convert_genre(g,genre_map,\
+i) {
+    genre_init();
+    for(i in genre_map) {
+        if (match(g,i) ) {
+           g = substr(g,1,RSTART-1) genre_map[i] substr(g,RSTART+RLENGTH); 
+       }
+    }
+    gsub(/[- /,|]+/,"|",g);
+    gsub(/^[|]/,"",g);
+    gsub(/[|]$/,"",g);
+    return g;
+}
+
+function genre_init(\
+gnames,i) {
+    
+    if (!g_genre_count) {
+        g_genre_count = split(g_settings["catalog_genre"],gnames,",");
+    }
+    for(i = 1 ; i <= g_genre_count ; i += 2) {
+        g_genre_long2short["\\<"gnames[i]"o?\\>"] = gnames[i+1];
+        g_genre_short2long["\\<"gnames[i+1]"\\>"] = gnames[i];
+    }
+
 }
 

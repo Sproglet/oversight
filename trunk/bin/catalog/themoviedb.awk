@@ -51,7 +51,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
         }
 
 
-        minfo2["mi_rating"]=json["vote_average"];
+        minfo2[RATING]=json["vote_average"];
 
         #minfo2["mi_certrating"]=tmdb_get_release(json["id"]);
         if (minfo2["mi_certrating"] == "") {
@@ -59,22 +59,22 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
             minfo2["mi_certrating"]=tmdb_match_release(json2);
         }
 
-        minfo2["mi_runtime"]=json["runtime"];
+        minfo2[RUNTIME]=json["runtime"];
 
 
-        minfo2["mi_orig_title"]=html_to_utf8(json["original_name"]);
+        minfo2[ORIG_TITLE]=html_to_utf8(json["original_name"]);
 
         minfo2["mi_url"]="http://www.themoviedb.org/movie/"json["id"];
 
-        minfo2["mi_idlist"]="themoviedb:"json["id"];
+        minfo2[URL]="themoviedb:"json["id"];
         if ( "imdb_id" in json) {
-            minfo2["mi_idlist"] = minfo2["mi_idlist"]" imdb:"json["imdb_id"];
+            minfo2[URL] = minfo2[URL]" imdb:"json["imdb_id"];
         }
 
 
         set = json["belongs_to_collection:id"];
         if (set) {
-            minfo2["mi_set"] = sprintf("themoviedb:%06d",set);
+            minfo2[SET] = sprintf("themoviedb:%06d",set);
             minfo2["mi_set_name"] = json["belongs_to_collection:name"];
         }
         if (json["overview"] != "null" && length(json["overview"]) > 1 ) {
@@ -82,7 +82,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
             minfo2["mi_plot"]=add_lang_to_plot(langs[i],clean_plot(json["overview"]));
 
             # Keep title and language the same
-            minfo2["mi_title"]=html_to_utf8(json["name"]);
+            minfo2[TITLE]=html_to_utf8(json["name"]);
             ret = 1;
             break;
 

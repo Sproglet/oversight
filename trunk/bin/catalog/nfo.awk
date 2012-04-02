@@ -15,21 +15,21 @@ num,tags,i,tmp,ret) {
                     minfo_set_id("imdb",minfo2["mi_id"],minfo2);
                 }
             }
-            minfo2["mi_title"] = xml["/movie/title"];
-            minfo2["mi_orig_title"] = xml["/movie/originaltitle"];
-            minfo2["mi_rating"] = xml["/movie/rating"];
-            minfo2["mi_year"] = xml["/movie/year"];
+            minfo2[TITLE] = xml["/movie/title"];
+            minfo2[ORIG_TITLE] = xml["/movie/originaltitle"];
+            minfo2[RATING] = xml["/movie/rating"];
+            minfo2[YEAR] = xml["/movie/year"];
             minfo2["mi_plot"] = xml["/movie/plot"];
-            minfo2["mi_runtime"] = xml["/movie/runtime"];
+            minfo2[RUNTIME] = xml["/movie/runtime"];
             minfo2["mi_poster"] = xml["/movie/thumb"];
             minfo2["mi_fanart"] = xml["/movie/fanart"];
-            minfo2["mi_category"] = "M";
+            minfo2[CATEGORY] = "M";
             num = find_elements(xml,"/movie/genre",empty_filter,0,tags);
             if (num) {
                 for(i = 1 ; i <= num ; i++ ) {
                     tmp = tmp "|"xml[tags[i]];
                 }
-                minfo2["mi_genre"] = substr(tmp,2);
+                minfo2[GENRE] = substr(tmp,2);
             }
 
             #TODO add writer , director and actor parsing.
@@ -39,10 +39,10 @@ num,tags,i,tmp,ret) {
             ret = 1;
         } else if ( "/xml/tvshow" in xml ) {
             INF("tvshow xbmc not supported yet...");
-            minfo2["mi_category"] = "T";
+            minfo2[CATEGORY] = "T";
         } else if ( "/tvshow" in xml ) {
             INF("tvshow xbmc not supported yet...");
-            minfo2["mi_category"] = "T";
+            minfo2[CATEGORY] = "T";
         }
 
         # next load into minfo2 then minfo_merge with source = @nfo then set best_score to prioritise nfo and short circuit searching.

@@ -2,15 +2,15 @@
 
 function queue_minfo(minfo,qfile,person_extid2name,\
 fld) {
-    INF("queue:queue_minfo:"minfo["mi_media"]);
+    INF("queue:queue_minfo:"minfo[NAME]);
 
     person_add_db_queue(minfo,person_extid2name);
 
     # Write mi_folder and mi_media first for easy sorting.
-    queue_fld(minfo,"mi_folder",qfile);
-    queue_fld(minfo,"mi_media",qfile);
+    queue_fld(minfo,DIR,qfile);
+    queue_fld(minfo,NAME,qfile);
     for(fld in minfo) {
-        if (fld != "mi_folder" && fld != "mi_media") {
+        if (fld != DIR && fld != NAME) {
             queue_fld(minfo,fld,qfile);
         }
     }
@@ -43,7 +43,7 @@ line,i,tmp,num) {
             for(i = 1 ; i<=num ; i+= 2) {
                 minfo[tmp[i]] = tmp[i+1];
             }
-            #INF("read "num" fields minfo media = "minfo["mi_media"]);
+            #INF("read "num" fields minfo media = "minfo[NAME]);
             return num;
             break;
         }

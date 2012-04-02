@@ -9,9 +9,9 @@ function clear_tv_folder_info() {
 function last_path_parts(minfo,n,\
 ret,i,j,dirCount,dirs) {
 
-    ret = remove_format_tags(minfo["mi_media"]);
+    ret = remove_format_tags(minfo[NAME]);
     if (n > 1 ) {
-       dirCount = split(minfo["mi_folder"],dirs,"/");
+       dirCount = split(minfo[DIR],dirs,"/");
        if (n > dirCount ) {
            ret = ""; # no more n
        } else {
@@ -41,7 +41,7 @@ details,line,ret,name,i,start,end) {
    delete more_info;
    #First get season and episode information
 
-   name = minfo["mi_media"];
+   name = minfo[NAME];
 
 
    # During normal TV scan path_parts is set from calling function.
@@ -86,10 +86,10 @@ details,line,ret,name,i,start,end) {
 
                 ret = 1;
 
-                minfo["mi_season"]=details[SEASON];
-                minfo["mi_episode"]=details[EPISODE];
+                minfo[SEASON]=details[SEASON];
+                minfo[EPISODE]=details[EPISODE];
 
-                INF("Found tv info in file name:"line" title:["minfo["mi_title"]"] ["minfo["mi_season"]"] x ["minfo["mi_episode"]"]");
+                INF("Found tv info in file name:"line" title:["minfo[TITLE]"] ["minfo[SEASON]"] x ["minfo[EPISODE]"]");
 
                 ## Commented Out As Double Episode checked elsewhere to shrink code ##
                 ## Left In So We Can Ensure It's Ok ##
@@ -99,11 +99,11 @@ details,line,ret,name,i,start,end) {
 
                 # local ePos
 
-                #ePos = index(minfo["mi_episode"],",");
-                #if (ePos -1 >= 0 && ( ePos - length(minfo["mi_episode"]) < 0 )) {
-                #    #gsub(/[-e]+/,",",minfo["mi_episode"]);
-                #    #sub(/[-]/,"",minfo["mi_episode"]);
-                #    DEBUG("Double Episode : "minfo["mi_episode"]);
+                #ePos = index(minfo[EPISODE],",");
+                #if (ePos -1 >= 0 && ( ePos - length(minfo[EPISODE]) < 0 )) {
+                #    #gsub(/[-e]+/,",",minfo[EPISODE]);
+                #    #sub(/[-]/,"",minfo[EPISODE]);
+                #    DEBUG("Double Episode : "minfo[EPISODE]);
                 #}
 
 
@@ -111,11 +111,11 @@ details,line,ret,name,i,start,end) {
 
                 # This is the weakest form of tv categorisation, as the filename may just look like a TV show
                 # So only set if it is blank
-                if (minfo["mi_category"] == "") {
-                    minfo["mi_category"] = "T";
+                if (minfo[CATEGORY] == "") {
+                    minfo[CATEGORY] = "T";
                 }
 
-                minfo["mi_additional_info"] = clean_title(details[ADDITIONAL_INF]);
+                minfo[ADDITIONAL_INF] = clean_title(details[ADDITIONAL_INF]);
                 # Now check the title.
                 #TODO
                 break;
@@ -170,12 +170,12 @@ terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
 
                     url = get_tv_series_api_url(plugin,bing_id);
                     if (get_tv_series_info(plugin,minfo2,url,details[SEASON],details[EPISODE])) {
-                        if (similar(minfo2["mi_eptitle"],details[ADDITIONAL_INF]) < 0.5 ) {
+                        if (similar(minfo2[EPTITLE],details[ADDITIONAL_INF]) < 0.5 ) {
 
-                            if (minfo2["mi_eptitle"] != "Pilot" || details[SEASON]details[EPISODE] != 11 ) {
+                            if (minfo2[EPTITLE] != "Pilot" || details[SEASON]details[EPISODE] != 11 ) {
 
                                 #This maps all blank titles to a given title for the current folder.
-                                g_default_tv_title_for_folder[plugin,TITLE] = minfo2["mi_title"];
+                                g_default_tv_title_for_folder[plugin,TITLE] = minfo2[TITLE];
                                 g_default_tv_title_for_folder[plugin] = bing_id;
 
                                 #Now also add the maapinf from the title to the specifc show id.
@@ -508,7 +508,7 @@ episodeInfo,url) {
     if (tvdbid != "") {
         dump(0,"ep by date",episodeInfo);
 
-        minfo["mi_airdate"]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+        minfo[AIRDATE]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
         details[SEASON]=episodeInfo["/Data/Episode/SeasonNumber"];
         details[EPISODE]=episodeInfo["/Data/Episode/EpisodeNumber"];
         details[ADDITIONAL_INF]=episodeInfo["/Data/Episode/EpisodeName"];
@@ -592,7 +592,7 @@ xml,match_date,result,cmp,season,ep,low,high) {
     }
     if (cmp == 0) {
 
-        minfo["mi_airdate"]=formatDate(match_date);
+        minfo[AIRDATE]=formatDate(match_date);
         details[SEASON] = season;
         details[EPISODE] = ep;
         details[ADDITIONAL_INF]=xml["/show/episode/title"];
@@ -641,10 +641,10 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
             plugin = g_tv_plugin_list[p];
 
             # demote back to imdb title
-            if (minfo["mi_imdb_title"] != minfo["mi_title"] && minfo["mi_imdb_title"] != "" ) {
+            if (minfo["mi_imdb_title"] != minfo[TITLE] && minfo["mi_imdb_title"] != "" ) {
 
-                INF("*** revert title from "minfo["mi_title"]" to "minfo["mi_imdb_title"]);
-                minfo["mi_title"] = minfo["mi_imdb_title"];
+                INF("*** revert title from "minfo[TITLE]" to "minfo["mi_imdb_title"]);
+                minfo[TITLE] = minfo["mi_imdb_title"];
             }
 
             # checkTvFilenameFormat also uses the plugin to detect daily formats.
@@ -655,7 +655,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
             ## The check for blank episode is a result of some dodgy coding.
             # see split_episode_search in scan.awk.
             ################################################################
-            if (check_tv_names || minfo["mi_episode"] == "" ) {
+            if (check_tv_names || minfo[EPISODE] == "" ) {
 
                 if (checkTvFilenameFormat(minfo,plugin,path_num,more_info,episode_sep_present,episode_sep_absent)) {
 
@@ -679,7 +679,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
             }
             if (do_search) {
                 tv_status = tv_search(plugin,minfo,bestUrl,search_abbreviations);
-                if (minfo["mi_episode"] !~ "^[0-9]+$" ) {
+                if (minfo[EPISODE] !~ "^[0-9]+$" ) {
                     #no point in trying other tv plugins
                     break;
                 }
@@ -689,7 +689,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
         }
     }
     if (tv_status) {
-        cat = minfo["mi_category"];
+        cat = minfo[CATEGORY];
     }
     #minfo["mi_imdb"] may have been set by tvdb info in tv_search
     if (bestUrl == "") {
@@ -719,11 +719,11 @@ tvDbSeriesPage,result,tvid,cat,iid) {
 
     if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
         # do not know tvid nor imdbid - use the title to search tv indexes.
-        tvDbSeriesPage = search_tv_series_names(plugin,minfo,minfo["mi_title"],search_abbreviations);
+        tvDbSeriesPage = search_tv_series_names(plugin,minfo,minfo[TITLE],search_abbreviations);
         if (tvDbSeriesPage == "" ) {
 
-            if (minfo["mi_title"] ~ /^[Bb][Bb][Cc] / ) {
-                tvDbSeriesPage = search_tv_series_names(plugin,minfo,substr(minfo["mi_title"],4),search_abbreviations);
+            if (minfo[TITLE] ~ /^[Bb][Bb][Cc] / ) {
+                tvDbSeriesPage = search_tv_series_names(plugin,minfo,substr(minfo[TITLE],4),search_abbreviations);
             }
         }
     }
@@ -804,7 +804,7 @@ iid) {
     iid = imdb(minfo);
     if (iid == "") {
 
-        iid = tv_title_year_to_imdb(minfo["mi_title"],minfo["mi_year"]);
+        iid = tv_title_year_to_imdb(minfo[TITLE],minfo[YEAR]);
     
         minfo_set_id("imdb",iid,minfo);
     }
@@ -919,8 +919,8 @@ function filter_episode_exists(plugin,total,showIds,minfo,\
 s,e,i,newShows,newTotal,u,ulist) {
 
     id1("filter_episode_exists "total);
-    e=minfo["mi_episode"];
-    s=minfo["mi_season"];
+    e=minfo[EPISODE];
+    s=minfo[SEASON];
     newTotal = total;
     if (s ~ /^[0-9]+$/ && e ~ /^[0-9]+$/ ) {
         for(i = 1 ; i<= total ; i++ ) {
@@ -944,7 +944,7 @@ function search_abbreviations(plugin,minfo,title,\
 cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
     # Abbreviation search
 
-    cache_key=minfo["mi_folder"]"@"title;
+    cache_key=minfo[DIR]"@"title;
 
     if(cache_key in g_abbrev_cache) {
 
@@ -1088,7 +1088,7 @@ bestId,bestFirstAired,age_scores,eptitle_scores) {
     } else {
         TODO("Refine selection rules here.");
 
-        INF("Getting the most recent first aired for s"minfo["mi_season"]"e"minfo["mi_episode"]);
+        INF("Getting the most recent first aired for s"minfo[SEASON]"e"minfo[EPISODE]);
         # disabled in the hope another search method is triggered
         if(1) {
             bestFirstAired="";
@@ -1299,12 +1299,12 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
                 #
                 # This may cause a false match if two series with exactly the same name
                 # started within two years of one another.
-                year_range="("(minfo["mi_year"]-1)"|"minfo["mi_year"]"|"(minfo["mi_year"]+1)")";
-                title_regex=tv_title2regex(minfo["mi_title"]);
+                year_range="("(minfo[YEAR]-1)"|"minfo[YEAR]"|"(minfo[YEAR]+1)")";
+                title_regex=tv_title2regex(minfo[TITLE]);
 
                 if(plugin == "thetvdb") {
 
-                    url=tvdb_get_series(minfo["mi_title"]);
+                    url=tvdb_get_series(minfo[TITLE]);
 
                     if (fetchXML(url,"imdb2tvdb",showInfo,"")) {
                         #allow for titles "The Office (US)" or "The Office" and 
@@ -1319,7 +1319,7 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
 
                 } else if(plugin == "tvrage") {
 
-                    if (fetchXML(g_tvrage_api"/feeds/search.php?show="minfo["mi_title"],"imdb2tvdb",showInfo,"")) {
+                    if (fetchXML(g_tvrage_api"/feeds/search.php?show="minfo[TITLE],"imdb2tvdb",showInfo,"")) {
                         #allow for titles "The Office (US)" or "The Office" and 
                         # hope the start year is enough to differentiate.
                         filter["/name"] = "~:^"title_regex"$";
@@ -2099,35 +2099,35 @@ result,minfo2) {
     id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
 
     if (season != "") {
-        minfo["mi_season"] = season;
+        minfo[SEASON] = season;
     }
     if (episode != "") {
-        minfo["mi_episode"] = episode;
+        minfo[EPISODE] = episode;
     }
 
     # mini-series may not have season set
-    if (minfo["mi_season"] == "") {
-        minfo["mi_season"] = 1;
+    if (minfo[SEASON] == "") {
+        minfo[SEASON] = 1;
     }
 
     if (plugin == "thetvdb") {
 
-        result = get_tv_series_info_tvdb(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
+        result = get_tv_series_info_tvdb(minfo2,tvDbSeriesUrl,minfo[SEASON],minfo[EPISODE]);
 
     } else if (plugin == "tvrage") {
 
-        result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo["mi_season"],minfo["mi_episode"]);
+        result = get_tv_series_info_rage(minfo2,tvDbSeriesUrl,minfo[SEASON],minfo[EPISODE]);
 
     } else {
         plugin_error(plugin);
     }
     if (result) {
-        minfo["mi_category"] = "T";
+        minfo[CATEGORY] = "T";
     }
 
 
 #    ERR("UNCOMMENT THIS CODE");
-    if (minfo["mi_episode"] ~ "^DVD[0-9]+$" ) {
+    if (minfo[EPISODE] ~ "^DVD[0-9]+$" ) {
         result++;
     }
 #    ERR("UNCOMMENT THIS CODE");
@@ -2135,7 +2135,7 @@ result,minfo2) {
     if (result) {
         minfo_merge(minfo,minfo2,plugin);
 
-        DEBUG("Title:["minfo["mi_title"]"] Episode:["minfo["mi_eptitle"]"]"minfo["mi_season"]"x"minfo["mi_episode"]" date:"minfo["mi_airdate"]);
+        DEBUG("Title:["minfo[TITLE]"] Episode:["minfo[EPTITLE]"]"minfo[SEASON]"x"minfo[EPISODE]" date:"minfo[AIRDATE]);
         DEBUG("");
     }
 
@@ -2196,20 +2196,20 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
         dumpxml("tvdb series",seriesInfo);
 
-        minfo["mi_season"]=season;
+        minfo[SEASON]=season;
         #Refine the title.
-        minfo["mi_title"] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
+        minfo[TITLE] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
 
-        minfo["mi_year"] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
+        minfo[YEAR] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
         minfo["mi_premier"] = formatDate(seriesInfo["/Data/Series/FirstAired"]);
 
         lang=seriesInfo["/Data/Series/Language"];
         plot=clean_plot(seriesInfo["/Data/Series/Overview"]);
         minfo["mi_plot"]=add_lang_to_plot(lang,plot);
 
-        minfo["mi_genre"]= seriesInfo["/Data/Series/Genre"];
+        minfo[GENRE]= seriesInfo["/Data/Series/Genre"];
         minfo["mi_certrating"] = seriesInfo["/Data/Series/ContentRating"];
-        minfo["mi_rating"] = seriesInfo["/Data/Series/Rating"];
+        minfo[RATING] = seriesInfo["/Data/Series/Rating"];
         minfo["mi_poster"]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
 
         thetvdbid = seriesInfo["/Data/Series/id"];
@@ -2226,7 +2226,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
     if (result) {
 
-        minfo["mi_episode"]=episode;
+        minfo[EPISODE]=episode;
 
         # For twin episodes just use the first episode number for lookup by adding 0
 
@@ -2235,7 +2235,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
             if (get_episode_xml("thetvdb",tvDbSeriesUrl,season,episode,episodeInfo)) {
 
                 if ("/Data/Episode/id" in episodeInfo) {
-                    minfo["mi_airdate"]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
+                    minfo[AIRDATE]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
 
                     set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
 
@@ -2245,9 +2245,9 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
                         minfo["mi_epplot"] = add_lang_to_plot(lang,plot);
                     }
 
-                    if (minfo["mi_eptitle"] != "" ) {
-                       if ( minfo["mi_eptitle"] ~ /^Episode [0-9]+$/ && minfo["mi_epplot"] == "" ) {
-                           INF("Due to Episode title of ["minfo["mi_eptitle"]"] Demoting result to force another TV plugin search");
+                    if (minfo[EPTITLE] != "" ) {
+                       if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo["mi_epplot"] == "" ) {
+                           INF("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");
                        } else {
                            result ++;
                        }
@@ -2294,7 +2294,7 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
         delete filter;
         filter["/BannerType"] = "season";
         filter["/BannerType2"] = "season";
-        filter["/Season"] = minfo["mi_season"];
+        filter["/Season"] = minfo[SEASON];
         for(i = 1 ; i <= lnum ; i++ ) {
             filter["/Language"] = langs[i];
             if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
@@ -2321,17 +2321,17 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
 }
 
 function set_eptitle(minfo,title) {
-    if (minfo["mi_eptitle"] == "" ) {
+    if (minfo[EPTITLE] == "" ) {
 
-        minfo["mi_eptitle"] = title;
+        minfo[EPTITLE] = title;
         INF("Setting episode title ["title"]");
 
-    } else if (title != "" && title !~ /^Episode [0-9]+$/ && minfo["mi_eptitle"] ~ /^Episode [0-9]+$/ ) {
+    } else if (title != "" && title !~ /^Episode [0-9]+$/ && minfo[EPTITLE] ~ /^Episode [0-9]+$/ ) {
 
-        INF("Overiding episode title ["minfo["mi_eptitle"]"] with ["title"]");
-        minfo["mi_eptitle"] = title;
+        INF("Overiding episode title ["minfo[EPTITLE]"] with ["title"]");
+        minfo[EPTITLE] = title;
     } else {
-        INF("Keeping episode title ["minfo["mi_eptitle"]"] ignoring ["title"]");
+        INF("Keeping episode title ["minfo[EPTITLE]"] ignoring ["title"]");
     }
 }
 
@@ -2350,9 +2350,9 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
     } else if (fetchXML(tvDbSeriesUrl,"tvinfo-show",seriesInfo,"") && ( "/Showinfo/showid" in seriesInfo ) ) {
 
         dumpxml("tvrage series",seriesInfo);
-        minfo["mi_season"]=season;
-        minfo["mi_title"]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
-        minfo["mi_year"] = substr(seriesInfo["/Showinfo/started"],8,4);
+        minfo[SEASON]=season;
+        minfo[TITLE]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
+        minfo[YEAR] = substr(seriesInfo["/Showinfo/started"],8,4);
         minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
 
 
@@ -2373,7 +2373,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 
     if (result) {
 
-        minfo["mi_episode"]=episode;
+        minfo[EPISODE]=episode;
 
         e="/show/episode";
         if (episode ~ "^[0-9,]+$" ) {
@@ -2381,7 +2381,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 
                 set_eptitle(minfo,episodeInfo[e"/title"]);
 
-                minfo["mi_airdate"]=formatDate(episodeInfo[e"/airdate"]);
+                minfo[AIRDATE]=formatDate(episodeInfo[e"/airdate"]);
 
                 if (minfo["mi_epplot"] == "") {
                     minfo["mi_epplot"] = clean_plot(episodeInfo[e"/summary"]);
@@ -2424,7 +2424,7 @@ id,xml,eptitle,i) {
     for(i = 1 ; i <= total ; i++) {
         id = titleHash[i,1];
         if (id) {
-            if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo["mi_season"],minfo["mi_episode"],xml)) {
+            if (get_episode_xml(plugin,get_tv_series_api_url(plugin,id),minfo[SEASON],minfo[EPISODE],xml)) {
                 if (plugin == "thetvdb") {
 
                     ageHash[id] = xml["/Data/Episode/FirstAired"];
@@ -2439,8 +2439,8 @@ id,xml,eptitle,i) {
                     plugin_error(plugin);
                 }
 
-                if (minfo["mi_additional_info"]) {
-                    eptitleHash[id] = -edit_dist(eptitle,minfo["mi_additional_info"]); # bigger number closer the string.
+                if (minfo[ADDITIONAL_INF]) {
+                    eptitleHash[id] = -edit_dist(eptitle,minfo[ADDITIONAL_INF]); # bigger number closer the string.
                 }
             }
         }

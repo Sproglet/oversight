@@ -15,7 +15,7 @@ id,out) {
 
     id = minfo_to_plot_id(minfo);
 
-    if (minfo["mi_category"] == "T" ) {
+    if (minfo[CATEGORY] == "T" ) {
         if (minfo["mi_plot"]) {
             out = out plot_to_season_id(id)"\t"minfo["mi_plot"] "\n" ;
         }
@@ -135,7 +135,7 @@ function fields_to_plot_id(fields) {
 }
 
 function minfo_to_plot_id(minfo) {
-    return plot_id(minfo["mi_idlist"],minfo["mi_title"],minfo["mi_year"],minfo["mi_category"],minfo["mi_season"],minfo["mi_episode"]);
+    return plot_id(minfo[URL],minfo[TITLE],minfo[YEAR],minfo[CATEGORY],minfo[SEASON],minfo[EPISODE]);
 }
 
 function plot_id(idlist,title,year,cat,season,episode,\

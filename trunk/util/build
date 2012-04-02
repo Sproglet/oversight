@@ -52,13 +52,13 @@ done
     conf/locale \
     conf/domain \
     conf/*.example conf/.*defaults \
-    conf/use.wget.wrapper conf/country.txt conf/.version \
+    conf/use.wget.wrapper conf/.version \
     help/*.help \
     templates.new \
     db \
     bin \
     imdb/imdb.sh \
-    imdb/download/.keep logs/.keep tmp/.keep cache/.keep
+    imdb/download/.keep */.keep
 
 prompt "Do svn commit and tag"
 

@@ -57,7 +57,7 @@ i,n,tag,ids,t) {
 function parseXML(line,xml,ignorePaths,\
 sep,\
 currentTag,oldTag,i,tag,text,parts,sp,slash,tag_data_count,\
-attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
+attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_ok) {
 
     if (index(line,"<?")) return 1;
     ret = 1;
@@ -186,6 +186,16 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
                 tag=substr(tag,1,sp-1);
             }
 
+            if (!(tag in tag_ok)) {
+               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ ) {
+                   ERR("XML Parse error: Invalid tag ["tag"]");
+                   ret = 0;
+                   break;
+               } else {
+                   tag_ok[tag] = 1;
+               }
+            }
+
             oldTag = currentTag;
             currentTag = currentTag "/" tag;
 
@@ -240,6 +250,10 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg) {
             xml[currentTag]="";
             currentTag = oldTag;
         }
+    }
+
+    if (ret == 0) {
+        delete xml;
     }
 
     xml["@CURRENT"] = currentTag;

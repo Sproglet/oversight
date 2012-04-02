@@ -1,57 +1,27 @@
 #""=not found "M"=movie "T"=tv??
 function movie_search(minfo,\
 bestUrl,\
-name,i,\
-n,name_seen,name_list,name_id,name_try,\
-search_regex_key,search_order_key,search_order,s,search_order_size,title,\
-year,text) {
+name,\
+n,name_list,name_id,name_try,\
+search_order,s,search_order_size,title,\
+year) {
 
     id1("movie search");
 
-    # search online info using film basename looking for imdb link
-    # -----------------------------------------------------------------------------
-    name_id=0;
-
-    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
-
-    if (minfo["mi_parts"] != "") {
-        name_list[++name_id]=remove_part_suffix(minfo);
-    }
-
-    name=cleanSuffix(minfo);
-
-
-    # Build hash of name->order
-    if (match(name,g_imdb_regex)) {
-        name_list[++name_id] = substr(name,RSTART,RLENGTH);
-    }
-    if (match(name,g_imdb_title_re))  {
-        name_list[++name_id] = substr(name,RSTART,RLENGTH);
-    }
-
-    name_list[++name_id] = name;
+    name_id = build_query_list(minfo,name_list);
 
     dump(0,"name_tries",name_list);
 
-    #Read search order definitions from config file.
-    for(i = 1 ; i < 5 ; i++ ) {
-        search_regex_key="catalog_movie_search_regex"i;
-
-        #Find any search order that matches the file format
-        if (name ~ g_settings[search_regex_key]) {
-
-            search_order_key="catalog_movie_search_order"i;
-            if (!(search_order_key in g_settings)) {
-                ERR("Missing setting "search_order_key);
-            } else {
-                search_order_size = split(g_settings[search_order_key],search_order," *, *");
-                break;
-            }
-        }
-        delete search_order;
-    }
+    search_order_size = get_search_order(name,search_order);
 
     dump(0,"search order",search_order);
+
+    # At this point there are two lists.
+    # 1. A list of search texts in name_list[]
+    # 2. A list of search methods in search_order[]
+    #
+    # Loop though each search method..
+    #    Some methods will then loop throough each name time
 
     for( s = 1 ; bestUrl=="" && s-search_order_size <= 0 ; s++ ) { # Must do them in strict sequence
 
@@ -69,89 +39,81 @@ year,text) {
 
                 name_try = name_list[n];
 
-                if (!name_seen[name_try,s]  && name_try != "") {
+                id1("Search Phase: "search_order[s]"["name_try"]");
 
-                    name_seen[name_try,s]=1;
+                if (search_order[s] == "ONLINE_NFO") {
 
-                    id1("Search Phase: "search_order[s]"["name_try"]");
+                    #Add a dot on the end to stop binsearch false matching sub words.
+                    #eg binsearch will find "a-bcd" given "a-b" to prevent this 
+                    # change a-b to "a-b."
+                    #bintube will ignore the dot.
+                    bestUrl = searchOnlineNfoImdbLinks(name_try".");
 
-                    if (search_order[s] == "ONLINE_NFO") {
+                } else if (search_order[s] == "IMDB") {
 
-                        #Add a dot on the end to stop binsearch false matching sub words.
-                        #eg binsearch will find "a-bcd" given "a-b" to prevent this 
-                        # change a-b to "a-b."
-                        #bintube will ignore the dot.
-                        bestUrl = searchOnlineNfoImdbLinks(name_try".");
+                    #This is a web search of imdb site returning the first match.
 
-                    } else if (search_order[s] == "IMDB") {
+                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"),name_try);
 
-                        #This is a web search of imdb site returning the first match.
+                } else if (search_order[s] == "IMDBFIRST") {
 
-                        bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"),name_try);
+                    if (name_try ~ "^[[:alnum:]]+-[[:alnum:]]+$" ) {
+                        # quote hyphenated file names
+                        name_try = "\""name_try"\"";
+                    } else {
+                        # Remove punctuation runs
+                        gsub("[^()"g_alnum8" ]+"," ",name_try);
+                        name_try = trim(name_try);
+                    }
 
-                    } else if (search_order[s] == "IMDBFIRST") {
+                    title="";
 
-                        if (name_try ~ "^[[:alnum:]]+-[[:alnum:]]+$" ) {
-                            # quote hyphenated file names
-                            name_try = "\""name_try"\"";
+                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"),name_try);
+
+                } else if (search_order[s] == "TITLEYEAR") {
+
+                    # look for imdb style titles 
+                    title = web_search_first_imdb_title(name_try,"");
+                    if (title == "" ) {
+                        title = web_search_first_imdb_title(name_try"+movie","");
+                    }
+
+                    if (title != "" && title != name_try) {
+
+                        # We have found a title by looking at SERPS for 'title (year)'
+
+                        if (match(title,g_year_re"$")) {
+                            year = substr(title,RSTART,RLENGTH);
+                            title = trim(substr(title,1,RSTART-1));
                         } else {
-                            # Remove punctuation runs
-                            gsub("[^()"g_alnum8" ]+"," ",name_try);
-                            name_try = trim(name_try);
-                        }
-
-                        title="";
-
-                        bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"),name_try);
-
-                    } else if (search_order[s] == "TITLEYEAR") {
-
-                        # look for imdb style titles 
-                        title = web_search_first_imdb_title(name_try,"");
-                        if (title == "" ) {
-                            title = web_search_first_imdb_title(name_try"+movie","");
-                        }
-
-                        if (title != "" && title != name_try) {
-
-
-                            text = "";
-                            if (match(title,g_year_re"$")) {
-                                year = substr(title,RSTART,RLENGTH);
-                                title = trim(substr(title,1,RSTART-1));
-                            } else {
-                                year = "";
-                            }
-                        } else {
-                            text = name_try;
-                            title = "";
                             year = "";
                         }
 
-                        # Now we have a title (year) format. 
+                        # First look for imdb id associated with this name.
+                        bestUrl=web_search_first_imdb_link(url_encode("+\""title"\" "year" imdb"),name_try);
 
-                        if (title) {
+                        if (!bestUrl) {
+                            # Still not found - try searching local sites sirectly.
 
-                            # First look for imdb id associated with this name.
-                            bestUrl=web_search_first_imdb_link(url_encode("+\""title"\" "year" imdb"),name_try);
-
-                            if (!bestUrl) {
-                                # Still not found - try searching local sites sirectly.
-
-                                if (find_movie_page(text,title,year,"","",minfo,"") == 0) {
-                                    bestUrl = minfo["mi_url"];
-                                    INF("Found at "bestUrl);
-                                }
+                            if (find_movie_page(title,year,"","",minfo,"") == 0) {
+                                bestUrl = minfo["mi_url"];
                             }
                         }
-
-                    } else {
-
-                        ERR("Unknown search method "search_order[s]);
                     }
 
-                    id0(bestUrl);
+                } else if (search_order[s] == "WEB") {
+
+                    # look for anything with title=name_try
+                    if (find_movie_page(name_try,"","","",minfo,"") == 0) {
+                        bestUrl = minfo["mi_url"];
+                    }
+
+                } else {
+
+                    ERR("Unknown search method "search_order[s]);
                 }
+
+                id0(bestUrl);
             }
         }
     }
@@ -159,5 +121,76 @@ year,text) {
 
     id0(bestUrl);
     return bestUrl;
+}
+
+# Build list of diffent queries based on the file name
+function build_query_list(minfo,name_list,\
+ name_id,name,v,dups) {
+
+    dups[""]=1; 
+    name_id=0;
+
+    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo["mi_media"])));
+
+    if (minfo["mi_parts"] != "") {
+        v=remove_part_suffix(minfo);
+        if (!(v in dups)) {
+            name_list[++name_id]=v; dups[v]=1;
+        }
+    }
+
+    name=cleanSuffix(minfo);
+
+    # Build hash of name->order
+    # need imdbregex without word boundary for _tt1234
+    if (match(name,"tt[0-9]{5,9}")) {
+        v = substr(name,RSTART,RLENGTH);
+        if (!(v in dups)) {
+            name_list[++name_id]=v; dups[v]=1;
+        }
+    }
+    if (match(name,g_imdb_title_re))  {
+        v = substr(name,RSTART,RLENGTH);
+        if (!(v in dups)) {
+            name_list[++name_id]=v; dups[v]=1;
+        }
+    }
+
+    v = name;
+    if (!(v in dups)) {
+        name_list[++name_id]=v; dups[v]=1;
+    }
+    return name_id;
+}
+
+function get_search_order(name,search_order,\
+order) {
+    # Search methods - all started by searching on parts of filename:
+    # IMDBFIRST - look at first imdb id returned in SERPS, if id does not occur 3 times then look at other engines.
+    # TITLEYEAR - look at SERPS for frequent occurrences of "xxxx (year)" then search on that ..
+    # ONLINE_NFO - search nzb indexers
+    # WEB - search for "file details +site:xxx.com" where site is listed in ./conf/locale/catalog.locale.<LANG>.cfg
+    # http://code.google.com/p/oversight/wiki/SearchMethods
+
+    #scene names - online_nfo is often best?
+    if (name ~ "^[[:alnum:]]+[-.][-.[:alnum:]]+\.[[:alnum:]]{2,3}$") {
+
+        order = "IMDBFIRST,ONLINE_NFO,TITLEYEAR,WEB";
+
+    } else if (name ~ ".{30,}" ) {
+
+        #Long title
+        order="IMDBFIRST,TITLEYEAR,WEB,ONLINE_NFO";
+
+    } else if (name ~ " .(20|19)[0-9][0-9]" ) {
+
+        #something with the year in it.
+        order = "IMDBFIRST,TITLEYEAR,ONLINE_NFO,WEB";
+
+    } else {
+        order="IMDBFIRST,TITLEYEAR,ONLINE_NFO,WEB"
+    }
+
+    return split(order,search_order,",");
 }
 

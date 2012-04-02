@@ -66,28 +66,6 @@ catalog_search_engines="YAHOO,YAHOOUK,YAHOOAU"
 catalog_tv_plugins="THETVDB,TVRAGE"
 
 catalog_imdb_source="desktop"
-# Here the order of search methods can be selected based on the file name.
-# Note that the IMDBFIRST search will always find something and can give false +ve
-# so only use for short titles where other search methods might get confused.
-# Available searches: See http://code.google.com/p/oversight/wiki/SearchMethods
-# 
-
-#scene names - online_nfo is often best?
-catalog_movie_search_regex1="^[-a-z0-9.]+$"
-catalog_movie_search_order1="IMDBFIRST,ONLINE_NFO,TITLEYEAR,IMDBLINKS"
-#something with the year in it.
-catalog_movie_search_regex2=" .(20|19)[0-9][0-9]"
-catalog_movie_search_order2="IMDBFIRST,TITLEYEAR,ONLINE_NFO,IMDBLINKS"
-
-# 10 characters or more - search for most frequently occuring imdb reference first
-catalog_movie_search_regex3=".........."
-catalog_movie_search_order3="IMDBFIRST,TITLEYEAR,ONLINE_NFO,IMDBLINKS"
-
-# Short titles - best try a simple search first.
-catalog_movie_search_regex4="."
-catalog_movie_search_order4="IMDBFIRST,TITLEYEAR,ONLINE_NFO,IMDBLINKS"
-
-#scene tags - dont use ones that are normal words.
 catalog_config_version=1
 # Cache info downloaded from web - approx 50k per movie.
 # This speeds up full scans but ratings may become outdated
@@ -120,7 +98,7 @@ catalog_touch_file="/share/Apps/oversight/.scan"
 # WEB might appear in movie title so test last.
 catalog_source_keywords="HDTV,PDTV,DVDRip,DVDSCR,DSRip,CAM,R5,LINE,HD2DVD,DVD,DVD5,DVD9,HRHDTV,MVCD,VCD,TS,VHSRip,3DBluRay,BluRay,HDDVD,D-THEATER,SDTV,Web"
 catalog_source_keywords_SDTV="TVRip,PAL,NTSC"
-catalog_source_keywords_D-THEATER="DTH,DTHEATER"
+catalog_source_keywords_DTHEATER="DTH,DTHEATER"
 catalog_source_keywords_HDDVD="HD-DVD,HDDVDRIP"
 catalog_source_keywords_3DBluRay="3DBD"
 catalog_source_keywords_BluRay="B[DR]RIP,BLURAYRIP,BLU-RAY"

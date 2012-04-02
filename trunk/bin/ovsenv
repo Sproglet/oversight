@@ -63,11 +63,11 @@ load_config() {
     set +e #ignore errors
 
     if [ -f "$DEFAULTS_FILE" ]; then
-        dos2unix "$DEFAULTS_FILE" # fix for notepad users
+        dos2unix "$DEFAULTS_FILE" 2>/dev/null # fix for notepad users
         . "$DEFAULTS_FILE"
     fi
     if [ -f "$CONF_FILE" ]; then
-        dos2unix "$CONF_FILE" # fix for notepad users
+        dos2unix "$CONF_FILE" 2>/dev/null # fix for notepad users
         . "$CONF_FILE"
     fi
     set -e
@@ -88,10 +88,20 @@ export arg_list
 
 archive() {
     # some browser/zip tool combos on windows dont like plain gz files.
-    tar czf "$1.tgz" "$1" && rm "$1"
+    local d="`dirname "$1"`";
+    local f="`basename "$1"`";
+
+    #tgz simple to open via browser->zip program->editor
+    #( cd "$d" && tar czf "$f.tgz" "$f" && rm "$f" )
+
+    #gz -> Broswer can unzip but slower for some reason. Doesnt work great with IE?
+    ( cd "$d" && gzip "$f" )
 }
 export archive
 
+# Check if file has been loaded, but always reload if launched from unpak.sh
+# This is in case nzbget itself has been started as a long running process under this environment.
+# we want to make sure it picks up latest configuration when post processing is launched.
 if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
 
     export OVS_ENV_SET=1

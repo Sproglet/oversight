@@ -89,8 +89,6 @@ row,est,nfo,op) {
     if (g_settings["catalog_nfo_write"] != "never" || is_file(minfo["mi_nfo_default"]) ) {
         nfo=minfo["mi_nfo_default"];
         gsub(/.*\//,"",nfo);
-    }
-    if (is_file(minfo["mi_folder"]"/"nfo)) {
         row=row"\t"NFO"\t"nfo;
     }
     if (minfo["mi_set"]) row=row"\t"SET"\t"minfo["mi_set"];

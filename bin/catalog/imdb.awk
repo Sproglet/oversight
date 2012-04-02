@@ -119,19 +119,21 @@ id) {
 
 function extractImdbLink(text,quiet,locale,\
 t) {
-    t = extractImdbId(text,quiet);
-    if (t != "") {
-        t = "http://www.imdb.com/title/"t"/"; # Adding the / saves a redirect
+    if (text != "-1") {
+        t = extractImdbId(text,quiet);
+        if (t != "") {
+            t = "http://www.imdb.com/title/"t"/"; # Adding the / saves a redirect
 
-        if (locale) {
-            if (locale == "fi_FI" )  sub("www","finnish",t);
-            else if (locale == "en_GB" ) sub("www","uk",t);
-            else if (locale == "en_US" ) sub("www","m",t);
-            else if (locale == "it_IT" || locale == "fr_FR" || locale == "pt_PT" || locale == "es_ES" || locale == "ee_EE" ) {
-                sub("com",tolower(substr(locale,4)),t);
-            } else {
-               INF("No localized imdb for "locale);
-               t = "";
+            if (locale) {
+                if (locale == "fi_FI" )  sub("www","finnish",t);
+                else if (locale == "en_GB" ) sub("www","uk",t);
+                else if (locale == "en_US" ) sub("www","m",t);
+                else if (locale == "it_IT" || locale == "fr_FR" || locale == "pt_PT" || locale == "es_ES" || locale == "ee_EE" ) {
+                    sub("com",tolower(substr(locale,4)),t);
+                } else {
+                   INF("No localized imdb for "locale);
+                   t = "";
+                }
             }
         }
     }

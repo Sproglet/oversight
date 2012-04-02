@@ -88,7 +88,6 @@ movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails,nfofilename) {
     nfoAdded=0;
     get_name_dir_fields(fields);
 
-
     nfofilename=getPath(fields[NFO],fields[DIR]);
     if (do_export ) {
         nfo = gExportFile;

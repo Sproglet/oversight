@@ -6,25 +6,51 @@
 # ovs: indicates internal database path. 
 # field is a sub folder. All internal posters are stored under "ovs:"POSTER"/"...
 function internal_poster_reference(field_id,minfo,\
-poster_ref,id) {
+poster_ref,id,ret) {
 
-    #Tv show images are stored by season.
-    if (minfo["mi_category"] == "T" ) {
-        id = imdb(minfo);
-        if (id) {
-            poster_ref = "imdb_" id "_" minfo["mi_season"];
+    id1("internal_poster_reference "field_id);
+
+    if(!STANDALONE) {
+        # Store images in Oversight folder.
+
+        #Tv show images are stored by season.
+        if (minfo["mi_category"] == "T" ) {
+            id = imdb(minfo);
+            if (id) {
+                poster_ref = "imdb_" id "_" minfo["mi_season"];
+            }
+        }
+        if (poster_ref == "") {
+            #images are now stored by index.db id - not imdbid - to allow different cuts of the same movie to have distinct images.
+            poster_ref = minfo["mi_ovsid"];
+        }
+
+        #"ovs:" means store in local database. This abstract path is used because when using
+        #crossview in oversight jukebox, different posters have different locations.
+        #It also allows the install folder to be changed as it is not referenced within the database.
+        ret = "ovs:" field_id "/" g_settings["catalog_poster_prefix"] poster_ref ".jpg";
+
+    } else {
+
+        # Store images with media.
+        if (minfo["mi_category"] == "T" ) {
+            if (field_id == FANART ) {
+                ret ="fanart.jpg";
+            } if (field_id == POSTER ) {
+                ret ="poster.jpg";
+            }
+        } else {
+            if (field_id == FANART ) {
+                ret = gensub("\.[^.]+$","-fanart.jpg",1,minfo["mi_media"]);
+            } if (field_id == POSTER ) {
+                ret = gensub("\.[^.]+$",".jpg",1,minfo["mi_media"]);
+            }
         }
     }
-    if (poster_ref == "") {
-        #images are now stored by index.db id - not imdbid - to allow different cuts of the same movie to have distinct images.
-        poster_ref = minfo["mi_ovsid"];
-    }
-
-    #"ovs:" means store in local database. This abstract path is used because when using
-    #crossview in oversight jukebox, different posters have different locations.
-    #It also allows the install folder to be changed as it is not referenced within the database.
-    return "ovs:" field_id "/" g_settings["catalog_poster_prefix"] poster_ref ".jpg";
+    id0(ret);
+    return ret;
 }
+
 
 function getting_fanart(minfo,verbose) {
     return 0+ getting_image(minfo,FANART,GET_FANART,UPDATE_FANART,verbose);

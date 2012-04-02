@@ -170,7 +170,20 @@ BEGIN {
     g_api_bing="4C83349CD70CC9F6125EA40CACED1D950730533E97EA0";
 
     INF("$Id$");
+
+    STANDALONE = !isnmt();
+
     get_folders_from_args(FOLDER_ARR);
+
+    INF("Mode="(STANDALONE?"STANDALONE":"OVERSIGHT"));
+
+    if (STANDALONE) {
+        # true if catalog.sh is running is a generic scraper.
+        # info and images files are written to media location.
+        # index.db is not built.
+        # portraits are not downloaded.
+        g_settings["catalog_nfo_write"] = "if_none_exists"; # WRITE_NFO
+    }
 }
 
 function report_status(msg) {
@@ -906,6 +919,11 @@ i,folderCount,moveDown) {
         if (ARGV[i] == "IGNORE_NFO" ) {
             g_settings["catalog_nfo_read"] = "no";
             moveDown++;
+
+        } else if (ARGV[i] == "STANDALONE" ) {
+            STANDALONE=1;
+        } else if (ARGV[i] == "NOSTANDALONE" ) {
+            STANDALONE=0;
 
         } else if (ARGV[i] == "WRITE_NFO" ) {
 

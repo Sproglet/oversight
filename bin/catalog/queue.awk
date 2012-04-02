@@ -86,7 +86,9 @@ file1_sorted,file_merged,person_extid2ovsid,total) {
 
         if (sort_file(qfile) )  {
 
-            people_update_dbs(person_extid2name,person_extid2ovsid);
+            if (!STANDALONE) {
+                people_update_dbs(person_extid2name,person_extid2ovsid);
+            }
 
             total = merge_index(file1_sorted,qfile,file_merged,person_extid2ovsid);
             if (total) {
@@ -192,13 +194,15 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             queue_plots(minfo,g_plot_file_queue);
             # change the external actor ids to oversight ids
             people_change_extid_to_ovsid(fields2,person_extid2ovsid);
+
+            # TODO Pass plot. Change to use minfo ? - this may update the NFO field.
+            generate_nfo_file_from_fields(g_settings["catalog_nfo_format"],fields2);
+
             write_dbline(fields2,file_out);
 
             # Now the ovsid is known - get images.
             get_images(minfo);
 
-            # TODO Pass plot. Change to use minfo ?
-            generate_nfo_file_from_fields(g_settings["catalog_nfo_format"],fields2);
             new_content(fields2);
         }
 
@@ -212,7 +216,10 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
     set_maxid(INDEX_DB,max_id);
 
-    update_plots(g_plot_file,g_plot_file_queue,plot_ids);
+    if (!STANDALONE){
+        update_plots(g_plot_file,g_plot_file_queue,plot_ids);
+    }
+    rm(g_plot_file_queue);
 
     INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     ret = total_changed + total_new;

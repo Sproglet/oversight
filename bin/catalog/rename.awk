@@ -1,7 +1,7 @@
 
 ## UNUSED
 function relocating_files(minfo) {
-    return (RENAME_TV == 1 && minfo["mi_category"] == "T") ||(RENAME_FILM==1 && minfo["mi_category"] == "M");
+    return (RENAME_TV == 1 && minfo[CATEGORY] == "T") ||(RENAME_FILM==1 && minfo[CATEGORY] == "M");
 }
 
 # Pad episode required for multiple episodes.
@@ -20,28 +20,28 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     newName="";
     oldName="";
     fileType="";
-    if (RENAME_TV == 1 && minfo["mi_category"] == "T") {
+    if (RENAME_TV == 1 && minfo[CATEGORY] == "T") {
 
-        oldName=minfo["mi_folder"]"/"minfo["mi_media"];
+        oldName=minfo[DIR]"/"minfo[NAME];
         newName=g_settings["catalog_tv_file_fmt"];
-        newName = substitute("SEASON",minfo["mi_season"],newName);
-        newName = substitute("EPISODE",minfo["mi_episode"],newName);
-        newName = substitute("INF",minfo["mi_additional_info"],newName);
+        newName = substitute("SEASON",minfo[SEASON],newName);
+        newName = substitute("EPISODE",minfo[EPISODE],newName);
+        newName = substitute("INF",minfo[ADDITIONAL_INF],newName);
 
-        epTitle=minfo["mi_eptitle"];
+        epTitle=minfo[EPTITLE];
         gsub("[^-" g_alnum8 ",. ]","",epTitle);
         gsub(/[{]EPTITLE[}]/,epTitle,newName);
 
         newName = substitute("EPTITLE",epTitle,newName);
-        newName = substitute("0SEASON",sprintf("%02d",minfo["mi_season"]),newName);
-        newName = substitute("0EPISODE",pad_episode(minfo["mi_episode"]),newName);
+        newName = substitute("0SEASON",sprintf("%02d",minfo[SEASON]),newName);
+        newName = substitute("0EPISODE",pad_episode(minfo[EPISODE]),newName);
 
 
         fileType="file";
 
-    } else if (RENAME_FILM==1 && minfo["mi_category"] == "M") {
+    } else if (RENAME_FILM==1 && minfo[CATEGORY] == "M") {
 
-        oldName=minfo["mi_folder"];
+        oldName=minfo[DIR];
         newName=g_settings["catalog_film_folder_fmt"];
         fileType="folder";
 
@@ -52,32 +52,32 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
     # if name has changed at this point ?
     if (newName != "" && newName != oldName) {
 
-        oldFolder=minfo["mi_folder"];
+        oldFolder=minfo[DIR];
 
         if (fileType == "file") {
-            newName = substitute("NAME",minfo["mi_media"],newName);
-            if (match(minfo["mi_media"],"[.][^.]+$")) {
-                #DEBUG("BASE EXT="minfo["mi_media"] " AT "RSTART);
-                newName = substitute("BASE",substr(minfo["mi_media"],1,RSTART-1),newName);
-                newName = substitute("EXT",substr(minfo["mi_media"],RSTART),newName);
+            newName = substitute("NAME",minfo[NAME],newName);
+            if (match(minfo[NAME],"[.][^.]+$")) {
+                #DEBUG("BASE EXT="minfo[NAME] " AT "RSTART);
+                newName = substitute("BASE",substr(minfo[NAME],1,RSTART-1),newName);
+                newName = substitute("EXT",substr(minfo[NAME],RSTART),newName);
             } else {
-                #DEBUG("BASE EXT="minfo["mi_media"] "]");
-                newName = substitute("BASE",minfo["mi_media"],newName);
+                #DEBUG("BASE EXT="minfo[NAME] "]");
+                newName = substitute("BASE",minfo[NAME],newName);
                 newName = substitute("EXT","",newName);
             }
         }
-        newName = substitute("DIR",minfo["mi_folder"],newName);
+        newName = substitute("DIR",minfo[DIR],newName);
 
 
-        if (minfo["mi_orig_title"]) {
-            newName = substitute("ORIG_TITLE",minfo["mi_orig_title"],newName);
+        if (minfo[ORIG_TITLE]) {
+            newName = substitute("ORIG_TITLE",minfo[ORIG_TITLE],newName);
         } else {
-            newName = substitute("ORIG_TITLE",minfo["mi_title"],newName);
+            newName = substitute("ORIG_TITLE",minfo[TITLE],newName);
         }
-        newName = substitute("TITLE",minfo["mi_title"],newName);
-        newName = substitute("YEAR",minfo["mi_year"],newName);
+        newName = substitute("TITLE",minfo[TITLE],newName);
+        newName = substitute("YEAR",minfo[YEAR],newName);
         newName = substitute("CERT",minfo["mi_certrating"],newName);
-        newName = substitute("GENRE",minfo["mi_genre"],newName);
+        newName = substitute("GENRE",minfo[GENRE],newName);
 
         #Remove characters windows doesnt like
         gsub(/[\\:*\"<>|]/,"_",newName); #"
@@ -90,8 +90,8 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    return;
                }
 
-               minfo["mi_file"]="";
-               minfo["mi_folder"]=newName;
+               minfo[FILE]="";
+               minfo[DIR]=newName;
            } else {
 
                # Move media file
@@ -99,21 +99,21 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                    return;
                }
 
-               g_fldrMediaCount[minfo["mi_folder"]]--;
-               minfo["mi_file"]=newName;
+               g_fldrMediaCount[minfo[DIR]]--;
+               minfo[FILE]=newName;
 
                newFolder=newName;
                sub(/\/[^\/]+$/,"",newFolder);
 
                #Update new folder location
-               minfo["mi_folder"]=newFolder;
+               minfo[DIR]=newFolder;
 
-               minfo["mi_media"]=newName;
-               sub(/.*\//,"",minfo["mi_media"]);
+               minfo[NAME]=newName;
+               sub(/.*\//,"",minfo[NAME]);
 
                # Move nfo file
-               DEBUG("Checking nfo file ["minfo["mi_nfo_default"]"]");
-               if(is_file(minfo["mi_nfo_default"])) {
+               DEBUG("Checking nfo file ["minfo[NFO]"]");
+               if(is_file(minfo[NFO])) {
 
                    nfoName = newName;
                    sub(/\.[^.]+$/,"",nfoName);
@@ -123,17 +123,17 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                        return;
                    }
 
-                   DEBUG("Moving nfo file ["minfo["mi_nfo_default"]"] to ["nfoName"]");
-                   if (moveFileIfPresent(minfo["mi_nfo_default"],nfoName) != 0) {
+                   DEBUG("Moving nfo file ["minfo[NFO]"] to ["nfoName"]");
+                   if (moveFileIfPresent(minfo[NFO],nfoName) != 0) {
                        return;
                    }
                    if (!g_opt_dry_run) {
 
-                       g_file_date[nfoName]=g_file_date[minfo["mi_nfo_default"]];
-                       delete g_file_date[minfo["mi_nfo_default"]];
+                       g_file_date[nfoName]=g_file_date[minfo[NFO]];
+                       delete g_file_date[minfo[NFO]];
 
-                       minfo["mi_nfo_default"] = nfoName;
-                       DEBUG("Moved nfo file ["minfo["mi_nfo_default"]"]");
+                       minfo[NFO] = nfoName;
+                       DEBUG("Moved nfo file ["minfo[NFO]"]");
                    }
                }
 
@@ -276,7 +276,7 @@ function moveFolder(minfo,oldName,newName,\
 
        err="not listed in the arguments";
 
-   } else if ((!isDvdDir(minfo["mi_media"]) &&  g_fldrCount[oldName] > 1) || g_fldrCount[oldName] > 2 ) {
+   } else if ((!isDvdDir(minfo[NAME]) &&  g_fldrCount[oldName] > 1) || g_fldrCount[oldName] > 2 ) {
 
        err= g_fldrCount[oldName]" sub folders";
 

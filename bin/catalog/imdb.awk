@@ -14,11 +14,11 @@ function imdb_img_url(url) {
 
 # input imdb id
 # OUT: id of lowest movie id in Follows(prequels)
-# updates minfo["mi_set"]
+# updates minfo[SET]
 function imdb_movie_connections(minfo,\
 id,series,versions,ret) {
 
-    if (minfo["mi_category"] == "M") {
+    if (minfo[CATEGORY] == "M") {
         id = imdb(minfo);
         id1("getMovieConnections:"id);
 
@@ -27,7 +27,7 @@ id,series,versions,ret) {
             asort(series);
 
             if (series[1] != "") {
-                ret = minfo["mi_set"] = "imdb:"series[1];
+                ret = minfo[SET] = "imdb:"series[1];
             }
         }
         id0(ret);
@@ -145,18 +145,18 @@ function extract_imdb_title_category(minfo,title\
 ) {
     # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
-    minfo["mi_category"]="M";
+    minfo[CATEGORY]="M";
     DEBUG("imdb title=["title"]");
     if (match(title,"^\".*\"") ) {   # www.imdb.com
         title=substr(title,RSTART+1,RLENGTH-2);
-        minfo["mi_category"]="T";
+        minfo[CATEGORY]="T";
     } else if (sub(/ ?T[vV] [Ss]eries ?/,"",title)) { # m.imdb.com
-        minfo["mi_category"]="T";
+        minfo[CATEGORY]="T";
     }
 
     #Remove the year
     gsub(/ \((19|20)[0-9][0-9](\/I|)\) *(\([A-Z]+\)|)$/,"",title);
 
-    DEBUG("Imdb title = "minfo["mi_category"]":["title"]");
+    DEBUG("Imdb title = "minfo[CATEGORY]":["title"]");
     return title;
 }

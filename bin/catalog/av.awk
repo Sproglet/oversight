@@ -6,7 +6,7 @@
 
 function set_videosource(minfo,
 f,i,tag,src) {
-    f=tolower(minfo["mi_media"]);
+    f=tolower(minfo[NAME]);
     # replace underscore with . to help word boundary matching
     gsub(/_/,".",f);
 
@@ -31,7 +31,7 @@ f,i,tag,src) {
 
     }
     if (src) {
-        minfo["mi_videosource"] = src;
+        minfo[VIDEOSOURCE] = src;
         INF("Video Source = "src);
     }
 }
@@ -39,7 +39,7 @@ f,i,tag,src) {
 function set_av_details(minfo,
 f,video,audio,dim,hrs,i,out) {
 
-    f=tolower(minfo["mi_media"]);
+    f=tolower(minfo[NAME]);
 
     # replace underscore with . to help word boundary matching
     gsub(/_/,".",f);
@@ -78,17 +78,17 @@ f,video,audio,dim,hrs,i,out) {
     } else if (f ~ /\<pal|r5\>/ ) {
         dim=1;
     } else {
-        hrs = minfo["mi_runtime"] / 60.0 ;
+        hrs = minfo[RUNTIME] / 60.0 ;
         if (!hrs) hrs = 1.5; 
 
         if (f ~ /mkv$/) {
             # guess based on file size / length - assume > 4G/hr = 1080p 
             dim = 2;
-            if (tolower(minfo["mi_videosource"]) ~ /dvd|[sp]dtv/ ) { 
+            if (tolower(minfo[VIDEOSOURCE]) ~ /dvd|[sp]dtv/ ) { 
                 dim = 1;
-            } else if (minfo["mi_mb"] / hrs  > 4000 ) {
+            } else if (minfo[SIZEMB] / hrs  > 4000 ) {
                 dim = 3;
-            } else if (minfo["mi_mb"] / hrs  > 1000 ) {
+            } else if (minfo[SIZEMB] / hrs  > 1000 ) {
                 dim = 2;
             } else {
                 dim = 1;
@@ -99,7 +99,7 @@ f,video,audio,dim,hrs,i,out) {
                 dim = 2;
             } else if (video["c0"] == "mpeg2") {
                 dim = 0;
-            } else if (minfo["mi_mb"] / hrs  > 4000 ) {
+            } else if (minfo[SIZEMB] / hrs  > 4000 ) {
                 dim = 2;
                 video["c0"]= "h264";
             }  else {
@@ -129,13 +129,13 @@ f,video,audio,dim,hrs,i,out) {
     }
     INF("Video info"out);
 
-    minfo["mi_video"]=substr(out,2);
+    minfo[VIDEO]=substr(out,2);
 
     if ( f ~ /dd5\.1/ || f ~ /ac3/ ) {
         audio["c0"] = "DD5.1";
     } else if ( f ~ /dts/ ) {
         audio["c0"] = "DTS";
-    } else if (minfo["mi_videosource"] == "HDTV" || minfo["mi_videosource"] == "Web" ) {
+    } else if (minfo[VIDEOSOURCE] == "HDTV" || minfo[VIDEOSOURCE] == "Web" ) {
         audio["c0"] = "DD5.1";
     }
 

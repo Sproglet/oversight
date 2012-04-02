@@ -371,8 +371,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                         if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
                             if ( checkMultiPart(minfo,scan_line) ) {
                                 store = 0;
-                                minfo["mi_mb"] += int(w5/1024/1024+0.5); 
-                                if (!is_file(minfo["mi_nfo_default"])) {
+                                minfo[SIZEMB] += int(w5/1024/1024+0.5); 
+                                if (!is_file(minfo[NFO])) {
                                     #replace xxx.cd1.ext with xxx.nfo (Internet convention)
                                     #otherwise leave xxx.cd1.yyy.ext with xxx.cd1.yyy.nfo (YAMJ convention)
                                     setNfo(minfo,".(|"g_multpart_tags")[1-9]" extRe,".nfo");
@@ -405,7 +405,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
                     #start storing current details - may be updated by multipart info
                     storeMovie(minfo,scan_line,currentFolder,ts,files_in_db)
                     # calc size this will be wrong for folders.
-                    minfo["mi_mb"] = int(w5/1024/1024+0.5); 
+                    minfo[SIZEMB] = int(w5/1024/1024+0.5); 
                     # set nfo according to first part.
                     setNfo(minfo,extRe,".nfo");
                 }
@@ -473,9 +473,9 @@ path) {
 
     g_fldrMediaCount[folder]++;
 
-    minfo["mi_folder"]=folder;
-    minfo["mi_media"] = file;
-    minfo["mi_file_time"] = timeStamp;
+    minfo[DIR]=folder;
+    minfo[NAME] = file;
+    minfo[FILETIME] = timeStamp;
 
     gMovieFileCount++;
     if (NEWSCAN && in_list(path,files_in_db) ) {
@@ -495,7 +495,7 @@ path) {
 function checkMultiPart(minfo,name,\
 lastNameSeen,i,lastch,ch) {
 
-    lastNameSeen = minfo["mi_media"];
+    lastNameSeen = minfo[NAME];
 
     if (length(lastNameSeen) != length(name)) {
         return 0;
@@ -554,7 +554,7 @@ lastNameSeen,i,lastch,ch) {
     }
 
     INF("Found multi part file - linked "name" with "lastNameSeen);
-    minfo["mi_parts"] = (minfo["mi_parts"] =="" ? "" : minfo["mi_parts"]"/" ) name;
+    minfo[PARTS] = (minfo[PARTS] =="" ? "" : minfo[PARTS]"/" ) name;
     minfo["mi_multipart_tag_pos"] = i;
     return 1;
 }
@@ -562,12 +562,12 @@ lastNameSeen,i,lastch,ch) {
 # set the nfo file by replacing the pattern with the given text.
 function setNfo(minfo,pattern,replace,\
 nfo,lcNfo) {
-    nfo = minfo["mi_media"];
+    nfo = minfo[NAME];
     lcNfo = tolower(nfo);
 
     if (match(lcNfo,pattern)) {
         nfo=substr(nfo,1,RSTART-1) replace substr(nfo,RSTART+RLENGTH);
-        minfo["mi_nfo_default"] = getPath(nfo,minfo["mi_folder"]);
+        minfo[NFO] = getPath(nfo,minfo[DIR]);
         return 1;
     } else {
         return 0;
@@ -610,7 +610,7 @@ ret) {
 
                DEBUG("Using single nfo "g_fldrInfoName[path]);
 
-               minfo["mi_nfo_default"] = g_fldrInfoName[path];
+               minfo[NFO] = g_fldrInfoName[path];
 
                ret = 1;
            }
@@ -624,16 +624,16 @@ file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,local_search,\
 cat,minfo2,locales,id,split_episode_search) {
 
-    if (("mi_do_scrape" in minfo) && minfo["mi_media"] != "" ) {
+    if (("mi_do_scrape" in minfo) && minfo[NAME] != "" ) {
        
-        DIV0("Start item "(g_item_count)": ["minfo["mi_media"]"]");
+        DIV0("Start item "(g_item_count)": ["minfo[NAME]"]");
 
         if (verify(minfo)) {
 
-            id1("identify_and_catalog "minfo["mi_folder"]"/"minfo["mi_media"]);
+            id1("identify_and_catalog "minfo[DIR]"/"minfo[NAME]);
 
-            if (!minfo["mi_title"]) {
-                minfo["mi_title"] = clean_title(remove_format_tags(minfo["mi_media"]));
+            if (!minfo[TITLE]) {
+                minfo[TITLE] = clean_title(remove_format_tags(minfo[NAME]));
                 minfo["mi_title_source"] = "filename";
             }
 
@@ -645,8 +645,8 @@ cat,minfo2,locales,id,split_episode_search) {
 
             scanNfo=0;
 
-            file=minfo["mi_media"];
-            fldr=minfo["mi_folder"];
+            file=minfo[NAME];
+            fldr=minfo[DIR];
 
             if (file) {
 
@@ -665,7 +665,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
                     if (g_settings["catalog_nfo_read"] != "no") {
 
-                        if (is_file(minfo["mi_nfo_default"])) {
+                        if (is_file(minfo[NFO])) {
 
                            DEBUG("Using default info to find url");
                            scanNfo = 1;
@@ -681,17 +681,17 @@ cat,minfo2,locales,id,split_episode_search) {
                     }
 
                     if (scanNfo){
-                        if (read_xbmc_nfo(minfo,minfo["mi_nfo_default"])) {
+                        if (read_xbmc_nfo(minfo,minfo[NFO])) {
                             bestUrl = extractImdbLink(minfo["mi_id"]);
                         }
                         if (!bestUrl) {
-                           bestUrl = scanNfoForImdbLink(minfo["mi_nfo_default"]);
+                           bestUrl = scanNfoForImdbLink(minfo[NFO]);
                        }
                     }
 
                     if (minfo["mi_id"] == -1 ) {
                         # dont scrape
-                        INF("using xbmc nfo only for "minfo["mi_media"]);
+                        INF("using xbmc nfo only for "minfo[NAME]);
 
                     } else {
 
@@ -719,9 +719,9 @@ cat,minfo2,locales,id,split_episode_search) {
 
                             #Get the season and episode details only - not show details. (title mainly)
                             checkTvFilenameFormat(minfo2,"",0);
-                            minfo["mi_season"] = minfo2["mi_season"];
-                            minfo["mi_episode"] = minfo2["mi_episode"];
-                            minfo["mi_additional_info"] = minfo2["mi_additional_info"];
+                            minfo[SEASON] = minfo2[SEASON];
+                            minfo[EPISODE] = minfo2[EPISODE];
+                            minfo[ADDITIONAL_INF] = minfo2[ADDITIONAL_INF];
 
                             # Now get the actual show details.
                             # Doesnt this overwrite what we've just fetched? BUG
@@ -786,20 +786,20 @@ cat,minfo2,locales,id,split_episode_search) {
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],minfo["mi_title"],minfo["mi_year"],"",minfo["mi_poster"],minfo,id,minfo["mi_orig_title"]);
+                                find_movie_by_locale(locales[1],minfo[TITLE],minfo[YEAR],"",minfo["mi_poster"],minfo,id,minfo[ORIG_TITLE]);
                             }
                         }
 
 
                         if (cat == "") {
 
-                            WARNING("Unknown item "minfo["mi_media"]);
+                            WARNING("Unknown item "minfo[NAME]);
 
                         } else {
 
 
-                            if (tolower(minfo["mi_media"]) ~ "\\<trailer\\>" && minfo["mi_title"] != "Trailer" ) {
-                                minfo["mi_title"] = minfo["mi_title"] " - Trailer";
+                            if (tolower(minfo[NAME]) ~ "\\<trailer\\>" && minfo[TITLE] != "Trailer" ) {
+                                minfo[TITLE] = minfo[TITLE] " - Trailer";
                             }
 
                             fixTitles(minfo);
@@ -807,7 +807,7 @@ cat,minfo2,locales,id,split_episode_search) {
                             relocate_files(minfo);
 
                             if (g_opt_dry_run) {
-                                print "dryrun: "minfo["mi_file"]" -> "minfo["mi_title"];
+                                print "dryrun: "minfo[FILE]" -> "minfo[TITLE];
                             }
                             #lang_test(minfo);
                         }
@@ -823,7 +823,7 @@ cat,minfo2,locales,id,split_episode_search) {
                     thisTime = systime()-thisTime ;
                     if (g_total) {
                         DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f [%s]",\
-                                 (g_process_time/g_total),(g_elapsed_time/g_total),minfo["mi_media"]));
+                                 (g_process_time/g_total),(g_elapsed_time/g_total),minfo[NAME]));
                     }
                     g_process_time += thisTime;
                     g_elapsed_time = systime() - g_start_time;
@@ -831,7 +831,7 @@ cat,minfo2,locales,id,split_episode_search) {
                 }
             }
 
-            id0(imdb(minfo)minfo["mi_title"]);
+            id0(imdb(minfo)minfo[TITLE]);
         }
     }
 
@@ -864,31 +864,6 @@ function get_images(minfo) {
     }
 }
 
-# INPUT minfo - scraped information
-# INPUT qfile - name of queuefile
-# OUTPUT person_extid2name - hash of domain:role:extid to name eg imdb:actor:nm000123 => Joe Blogs
-function queue_minfo_old(minfo,qfile,person_extid2name,\
-row,people) {
-
-    people = person_add_db_queue(minfo,person_extid2name);
-
-    row = createIndexRow(minfo,-1,0,0,"");
-
-    row = row people;
-
-    print row >> qfile;
-
-    INF("queued ["row"] to ["qfile"]");
-    queue_plots(minfo,g_plot_file_queue);
-
-
-    # If plots need to be written to nfo file then they should 
-    # be added to the row at this point.
-    row = row PLOT"\t"minfo["mi_plot"]"\t";
-    generate_nfo_file(g_settings["catalog_nfo_format"],row);
-
-    close(qfile);
-}
 function clear_folder_info() {
 
     # Clean when folder changed

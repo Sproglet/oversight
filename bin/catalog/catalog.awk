@@ -99,6 +99,8 @@ BEGIN {
     g_dbtype_time="t";
     g_dbtype_year="y";
     g_dbtype_imdblist="i";
+    g_dbtype_string="s";
+    g_dbtype_path="p";
 
 
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
@@ -664,7 +666,7 @@ function calcTimestamp(lsMonth,lsDate,lsTimeOrYear,_default,\
 
 function cleanSuffix(minfo,\
 name) {
-    name=minfo["mi_media"];
+    name=minfo[NAME];
     if(name !~ "/$") {
         # remove extension
         sub(/\.[^.\/]+$/,"",name);
@@ -672,7 +674,7 @@ name) {
 
         # no point in removing the CD parts as this makes binsearch more inaccurate
 
-        #    if (minfo["mi_parts"] != "" ) {
+        #    if (minfo[PARTS] != "" ) {
         #        #remove  part qualifier xxxx1 or xxxxxa
         #        sub(/(|cd|part)[1a]$/,"",name);
         #    }
@@ -876,9 +878,9 @@ function xmlEscape(text) {
 function fixTitles(minfo,\
 t) {
 
-    t = minfo["mi_title"];
+    t = minfo[TITLE];
     if (t == "") {
-        t = minfo["mi_media"];
+        t = minfo[NAME];
         sub(/\/$/,"",t);
         sub(/.*\//,"",t); #remove path
         t = remove_format_tags(t);
@@ -886,7 +888,7 @@ t) {
         DEBUG("Setting title to file["t"]");
     }
 
-    minfo["mi_title"]=clean_title(t);
+    minfo[TITLE]=clean_title(t);
 }
 
 function file_time(f) {

@@ -786,7 +786,7 @@ cat,minfo2,locales,id,split_episode_search) {
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],"",minfo["mi_title"],minfo["mi_year"],"",minfo["mi_poster"],minfo,id,minfo["mi_orig_title"]);
+                                find_movie_by_locale(locales[1],minfo["mi_title"],minfo["mi_year"],"",minfo["mi_poster"],minfo,id,minfo["mi_orig_title"]);
                             }
                         }
 

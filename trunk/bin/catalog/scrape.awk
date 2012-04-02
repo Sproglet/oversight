@@ -2,7 +2,6 @@ BEGIN {
     getting_local_fields=0;
 }
 # Given a movie title and year try to find a site in the required language and scrape
-# IN text - text to search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
 # INPUT year  - used for validation can be blank
 # INPUT runtime  - used for validation can be blank
@@ -10,15 +9,15 @@ BEGIN {
 # IN/OUT minfo - Movie info
 # IN imdbid - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_page(text,title,year,director,poster,minfo,imdbid,\
+function find_movie_page(title,year,director,poster,minfo,imdbid,\
 i,err,minfo2,num,locales) {
 
     err = 1;
-    id1("find_movie_page text ["text"] title ["title"] year("year")");
+    id1("find_movie_page title ["title"] year("year")");
 
     num = get_locales(locales);
     for ( i = 1 ; i <= num ; i++ ) {
-        err=find_movie_by_locale(locales[i],text,title,year,director,poster,minfo2,imdbid);
+        err=find_movie_by_locale(locales[i],title,year,director,poster,minfo2,imdbid);
         if (!err) {
             minfo_merge(minfo,minfo2);
             break;
@@ -43,7 +42,6 @@ ret) {
 
 # Given a movie title and year try to find a site in the required language and scrape
 # INPUT locale - eg en_US
-# IN text - text so search for. May not necessarily be exact title eg from filename.
 # INPUT title - movie title - used for validation can be blank
 # INPUT year  - used for validation can be blank
 # INPUT runtime  - used for validation can be blank
@@ -53,17 +51,17 @@ ret) {
 # IN imdbid - if not blank used to validate page
 # IN orig_title - if not blank used to validate page
 # RETURN 0 = no errors
-function find_movie_by_locale(locale,text,title,year,director,poster,minfo,imdbid,orig_title,\
+function find_movie_by_locale(locale,title,year,director,poster,minfo,imdbid,orig_title,\
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
-    id1("find_movie_by_locale:"locale" text ["text"] title ["title"] year("year")");
+    id1("find_movie_by_locale:"locale" title ["title"] year("year")");
     if (load_locale_settings(locale)) {
 
 
         num=split(g_settings["locale:catalog_locale_movie_site_search"],sites,",");
         for ( i = 1 ; i <= num ; i++ ) {
-            err=find_movie_by_site_locale(sites[i],locale,text,title,year,director,poster,minfo2,imdbid,orig_title,searchhist);
+            err=find_movie_by_site_locale(sites[i],locale,title,year,director,poster,minfo2,imdbid,orig_title,searchhist);
             if (!err) {
                 minfo_merge(minfo,minfo2);
                 break;
@@ -81,13 +79,12 @@ i,num,sites,minfo2,err,searchhist) {
 # The links are filtered according to the regex in conf/domain/catalog.domain.xxx.cfg
 #
 # IN search_engine_prefix eg http://google.com/q=
-# IN text - text to find - eg filename may be blank if title set
 # IN title - movie title
 # IN year - year of release
 # IN site - site to search - eg allocine.fr if / present then inurl is added eg inurl:imdb.com/title
 # OUT matches - array of matching urls.
 
-function find_links_1engine(search_engine_prefix,text,title,year,site,matches,\
+function find_links_1engine(search_engine_prefix,title,year,site,matches,\
 keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
     delete matches;
@@ -101,7 +98,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     # this gives usable results from yahoo and bing
     keyword="site:";
 
-    qualifier = url_encode(text" "title" "year" "keyword site);
+    qualifier = url_encode(title" "year" "keyword site);
     url = search_engine_prefix qualifier;
 
     # load config file for this domain (load defaults if a top level domain)
@@ -173,7 +170,6 @@ ret,i,url,id,tmp) {
 # Search Engine query to hopefully find movie url 
 # IN site  - from cf file, used in search. It may be just domain (site:xxx) or include part of the url (inurl:)
 # IN locale - eg en_US
-# IN text - text so search for. May not necessarily be exact title eg from filename.
 # IN title - movie title - passed to query
 # IN year  - passed to query
 # OUT minfo - Movie info - cleared before use.
@@ -181,15 +177,23 @@ ret,i,url,id,tmp) {
 # IN orig_title - if not blank used to validate page
 # IN/OUT searchhist - hash of visited urls(keys) and domains.
 # RETURN 0 = no errors
-function find_movie_by_site_locale(site,locale,text,title,year,director,poster,minfo,imdbid,orig_title,searchhist,\
+function find_movie_by_site_locale(site,locale,title,year,director,poster,minfo,imdbid,orig_title,searchhist,\
 minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) {
 
     err = 1;
     id1("find_movie_by_site_locale("site","locale")");
 
     # Bing cannot do inurl: searches very well. so use yahoo and fall back to google.
-    engines[++engnum] = g_search_yahoo;
+
+    # Update use google first for these searches. Bing/Yahho not too accurate when searching amazon etc.
+    # fall back to another engine just incase google locks out..
+
+    # eg https://www.google.co.uk/search?q=Skiing+Skills+-+Piste+Performance+site%3Aamazon.com
+    # vs http://www.bing.com/search?q=%2BSkiing+%2BSkills+%2B+Piste+%2BPerformance+site%3Aamazon.com
+    # vs http://uk.search.yahoo.com/search?p=Skiing+Skills+-+Piste+Performance+site%3Aamazon.com
+
     engines[++engnum] = g_search_google;
+    engines[++engnum] = g_search_yahoo;
 
     # Set maximum allowed results
     if (site ~ "^\\.[a-z]+$") {
@@ -200,7 +204,7 @@ minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) 
 
     for(eng = 1 ; err && eng <= engnum ; eng++ ) {
 
-        num = find_links_1engine(engines[eng],text,title,year,site,matches);
+        num = find_links_1engine(engines[eng],title,year,site,matches);
         num = remove_visited_urls(num,matches,searchhist);
 
         if (num > max_allowed_results) {
@@ -218,7 +222,7 @@ minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) 
                 url = matches[i];
 
                 set_visited_url(url,searchhist);
-                err = scrape_movie_page(text,title,year,director,poster,url,locale,url_domain,minfo2,imdbid,orig_title);
+                err = scrape_movie_page(title,year,director,poster,url,locale,url_domain,minfo2,imdbid,orig_title);
                 if (!err) {
                     minfo_merge(minfo,minfo2,url_domain);
                     break;
@@ -384,7 +388,6 @@ c) {
 }
 
 # Scrape a movie page - results into minfo
-# IN text - text so search for. May not necessarily be exact title eg from filename.
 # IN title - movie title
 # IN year 
 # IN director - Director surname - may have problems matching  other alphabets. Russian / Greek
@@ -395,11 +398,11 @@ c) {
 # IN imdbid - if not blank used to validate page
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
-function scrape_movie_page(text,title,year,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
+function scrape_movie_page(title,year,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
 f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng,tmp) {
 
     err = 0;
-    id1("scrape_movie_page("url","locale","domain",text="text",title="title",y="year",orig="orig_title")");
+    id1("scrape_movie_page("url","locale","domain",title="title",y="year",orig="orig_title")");
 
     if (substr(orig_title,1,4) == "The ") {
         alternate_orig = tolower(substr(orig_title,5)", The");
@@ -1518,7 +1521,7 @@ i,num,locales,minfo2) {
             for(i = 1 ; i <= num ; i++) {
 
                 delete minfo2;
-                if (scrape_movie_page("","","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
+                if (scrape_movie_page("","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
                     if (minfo2["mi_certrating"]) {
                         minfo2["mi_certcountry"] = substr(locales[i],4);
                     }

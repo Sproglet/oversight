@@ -125,7 +125,6 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     close(file_out);
     touch_and_move(file_out,plot_file);
     set_permissions(qa(plot_file));
-    rm(queue_file);
 
     INF("update_plots  database:["plot_file"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     id0();

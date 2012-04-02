@@ -37,7 +37,7 @@ ign_path,env) {
 # Load configuration file
 # Return 1=success 0 = failed
 function load_settings(prefix,file_name,verbose,\
-i,n,v,option,ret,err) {
+i,n,v,option,ret,err,cfg) {
 
     id1("load_settings "file_name);
     FS="\n";
@@ -60,7 +60,7 @@ i,n,v,option,ret,err) {
             #gsub(/ *[,] */,",",v);
 
             g_settings_orig[n]=v;
-            g_settings[n] = v;
+            cfg[n] = g_settings[n] = v;
             if (verbose) {
                 INF(n"=["g_settings[n]"]");
             }
@@ -72,6 +72,7 @@ i,n,v,option,ret,err) {
     } else {
         ret = 0;
     }
+    dump(0,file_name,cfg);
     id0(ret);
     return ret;
 }

@@ -22,7 +22,7 @@ poster_ref,id,ret) {
         }
         if (poster_ref == "") {
             #images are now stored by index.db id - not imdbid - to allow different cuts of the same movie to have distinct images.
-            poster_ref = minfo["mi_ovsid"];
+            poster_ref = minfo[ID];
         }
 
         #"ovs:" means store in local database. This abstract path is used because when using
@@ -166,13 +166,13 @@ function download_image(field_id,minfo,mi_field,\
 #id = imdbid
 function defaultPosters(minfo) {
 
-    #DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo["mi_poster"] = minfo["mi_fanart"] = "";
+    #DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo[POSTER] = minfo[FANART] = "";
 
     if (getting_poster(minfo,1)) {
-       search_bing_image(minfo,"mi_poster","Tall");
+       search_bing_image(minfo,POSTER,"Tall");
     }
     if (getting_fanart(minfo,1)) {
-       search_bing_image(minfo,"mi_fanart","Wide");
+       search_bing_image(minfo,FANART,"Wide");
     }
 }
 

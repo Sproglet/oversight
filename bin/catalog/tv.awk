@@ -2205,12 +2205,12 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
         lang=seriesInfo["/Data/Series/Language"];
         plot=clean_plot(seriesInfo["/Data/Series/Overview"]);
-        minfo["mi_plot"]=add_lang_to_plot(lang,plot);
+        minfo[PLOT]=add_lang_to_plot(lang,plot);
 
         minfo[GENRE]= seriesInfo["/Data/Series/Genre"];
         minfo["mi_certrating"] = seriesInfo["/Data/Series/ContentRating"];
         minfo[RATING] = seriesInfo["/Data/Series/Rating"];
-        minfo["mi_poster"]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
+        minfo[POSTER]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
 
         thetvdbid = seriesInfo["/Data/Series/id"];
         minfo_set_id("thetvdb",thetvdbid,minfo);
@@ -2239,14 +2239,14 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
                     set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
 
-                    if (minfo["mi_epplot"] == "") {
+                    if (minfo[EPPLOT] == "") {
                         lang=episodeInfo["/Data/Episode/Language"];
                         plot=clean_plot(episodeInfo["/Data/Episode/Overview"]);
-                        minfo["mi_epplot"] = add_lang_to_plot(lang,plot);
+                        minfo[EPPLOT] = add_lang_to_plot(lang,plot);
                     }
 
                     if (minfo[EPTITLE] != "" ) {
-                       if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo["mi_epplot"] == "" ) {
+                       if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo[EPPLOT] == "" ) {
                            INF("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");
                        } else {
                            result ++;
@@ -2298,8 +2298,8 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
         for(i = 1 ; i <= lnum ; i++ ) {
             filter["/Language"] = langs[i];
             if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
-                minfo["mi_poster"]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                DEBUG("Season Poster = "minfo["mi_poster"]);
+                minfo[POSTER]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                DEBUG("Season Poster = "minfo[POSTER]);
                 break;
             }
         }
@@ -2312,8 +2312,8 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
         for(i = 1 ; i <= lnum ; i++ ) {
             filter["/Language"] = langs[i];
             if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
-                minfo["mi_fanart"]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                DEBUG("Fanart = "minfo["mi_fanart"]);
+                minfo[FANART]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                DEBUG("Fanart = "minfo[FANART]);
                 break;
             }
         }
@@ -2357,7 +2357,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 
 
         url=urladd(seriesInfo["/Showinfo/showlink"],"remove_add336=1&bremove_add=1");
-        minfo["mi_plot"]=clean_plot(seriesInfo["/Showinfo/summary"]);
+        minfo[PLOT]=clean_plot(seriesInfo["/Showinfo/summary"]);
 
         minfo_set_id("tvrage",seriesInfo["/Showinfo/showid"],minfo);
 
@@ -2383,8 +2383,8 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
 
                 minfo[AIRDATE]=formatDate(episodeInfo[e"/airdate"]);
 
-                if (minfo["mi_epplot"] == "") {
-                    minfo["mi_epplot"] = clean_plot(episodeInfo[e"/summary"]);
+                if (minfo[EPPLOT] == "") {
+                    minfo[EPPLOT] = clean_plot(episodeInfo[e"/summary"]);
                 }
                 result ++;
             } else {

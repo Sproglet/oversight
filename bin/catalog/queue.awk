@@ -1,30 +1,22 @@
 # This module has functions that initially move the scanned information into the various database files index.db, people, plot
 
 function queue_minfo(minfo,qfile,person_extid2name,\
-fld) {
+fld,line) {
     INF("queue:queue_minfo:"minfo[NAME]);
 
     person_add_db_queue(minfo,person_extid2name);
 
-    # Write mi_folder and mi_media first for easy sorting.
-    queue_fld(minfo,DIR,qfile);
-    queue_fld(minfo,NAME,qfile);
+    # Write DIR and NAME first for easy sorting.
+    line = line SUBSEP DIR SUBSEP minfo[DIR] ;
+    line = line SUBSEP NAME SUBSEP minfo[NAME] ;
+
     for(fld in minfo) {
-        if (fld != DIR && fld != NAME) {
-            queue_fld(minfo,fld,qfile);
+        if (fld != DIR && fld != NAME && fld !~ /_source$/ ) {
+            line = line SUBSEP fld SUBSEP minfo[fld] ;
         }
     }
-    print "" >> qfile;
-}
-
-function queue_fld(minfo,fld,qfile,\
-txt) {
-    txt=minfo[fld];
-
-    #replace CR
-    if (index(txt,"\n")) gsub(/\n/,"\\n",txt);
-
-    printf "%s",fld SUBSEP txt SUBSEP >> qfile;
+    if (index(line,"\n")) gsub(/\n/,"\\n",line);
+    print substr(line,2) >> qfile;
 }
 
 function read_minfo(qfile,minfo,\
@@ -42,6 +34,7 @@ line,i,tmp,num) {
             num = split(line,tmp,SUBSEP);
             for(i = 1 ; i<=num ; i+= 2) {
                 minfo[tmp[i]] = tmp[i+1];
+                DEBUG("readq "db_fieldname(tmp[i])"=["tmp[i+1]"]");
             }
             #INF("read "num" fields minfo media = "minfo[NAME]);
             return num;
@@ -106,14 +99,19 @@ file1_sorted,file_merged,person_extid2ovsid,total) {
 }
 
 function merge_index(dbfile,qfile,file_out,person_extid2ovsid,\
-row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids,minfo,changed_line) {
+row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,total_removed,ret,plot_ids,changed_line) {
 
     id1("merge_index ["dbfile"]["qfile"]");
+
+    exec("cat "qa(qfile),1);
+
+    INF("---------------------");
 
 
     max_id = get_maxid(INDEX_DB);
 
     action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
+    row2 = 0;
     do {
         #INF("read action="action);
         if (and(action,1)) { 
@@ -121,22 +119,22 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             parseDbRow(row1,fields1,1);
         }
         if (and(action,2)) {
-            if (read_minfo(qfile,minfo)) {
-                row2 = createIndexRow(minfo,-1,0,0,"");
-                parseDbRow(row2,fields2,1);
+            if (read_minfo(qfile,fields2)) {
+                row2=1;
+                fields2[ID] = sequence();
                 INF("NEW    :["fields2[FILE]"]");
             }
         }
 
         if (row1 == "") {
-            if (row2 == "") {
+            if (!row2) {
                 # both finished
                 action = 0;
             } else {
                 action = 2;
             }
         } else {
-            if (row2 == "") {
+            if (!row2) {
                 action = 1;
             } else {
                 # We compare the FILE field 
@@ -157,7 +155,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
         #DEBUG("merge action="action);
         if (action == 1) { # output row1
-            if (keep_dbline(row1,fields1)) {
+            if (keep_dbline(fields1)) {
                 total_unchanged++;
                 print row1 >> file_out;
                 keep_plots(fields1,plot_ids);
@@ -167,31 +165,32 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             row1 = "";
         } else if (action == 2) { # output row2
 
-            if (keep_dbline(row2,fields2)) {
+            if (keep_dbline(fields2)) {
 
                 changed_line = ++max_id;
                 total_new++;
             }
-            row2 = "";
+            row2 = 0;
         } else if (action == 3) { # merge
             # Merge the rows.
             fields2[WATCHED] = fields1[WATCHED];
             fields2[LOCKED] = fields1[LOCKED];
             fields2[FILE] = short_path(fields2[FILE]);
 
-            if (keep_dbline(row2,fields2)) {
+            if (keep_dbline(fields2)) {
                 changed_line = fields1[ID];
                 total_changed ++;
             } else {
                 total_removed++;
             }
-            row1 = row2 = "";
+            row1 = "";
+            row2 = 0;
         }
 
         if (changed_line != "") {
-            fields2[ID] = minfo["mi_ovsid"] = changed_line;
+            fields2[ID] = changed_line;
             keep_plots(fields2,plot_ids);
-            queue_plots(minfo,g_plot_file_queue);
+            queue_plots(fields2,g_plot_file_queue);
             # change the external actor ids to oversight ids
             people_change_extid_to_ovsid(fields2,person_extid2ovsid);
 
@@ -201,7 +200,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             write_dbline(fields2,file_out);
 
             # Now the ovsid is known - get images.
-            get_images(minfo);
+            get_images(fields2);
 
             new_content(fields2);
         }

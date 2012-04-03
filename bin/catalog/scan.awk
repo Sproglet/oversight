@@ -186,7 +186,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     # ls -Rl x/ will do symlink but not normal file.
     #so do  ls -Rl x/ || ls -Rl x  
     # note ls -L will follow symlinks at any depth - this is passed via catalog_follow_symlinks
-    exec("( ls "scan_options" "quotedRoot"/ || ls "scan_options" "quotedRoot" ) > "qa(tempFile) );
+    exec("( ls "scan_options" "quotedRoot"/ || ls "scan_options" "quotedRoot" ) > "qa(tempFile) , 1 );
     currentFolder = root;
     skipFolder=0;
     folderNameNext=1;
@@ -462,8 +462,8 @@ ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
 }
 
 function check_local_images(minfo,folder,file) {
-    check_local_image(minfo,"mi_poster",folder,file,"poster","");
-    check_local_image(minfo,"mi_fanart",folder,file,"fanart",".fanart");
+    check_local_image(minfo,POSTER,folder,file,"poster","");
+    check_local_image(minfo,FANART,folder,file,"fanart",".fanart");
 }
 
 function storeMovie(minfo,file,folder,timeStamp,files_in_db,\
@@ -768,14 +768,14 @@ cat,minfo2,locales,id,split_episode_search) {
                            local_search=0;
 
                            if (main_lang() != "en") {
-                               if ( lang(minfo["mi_plot"]) != main_lang()) {
+                               if ( lang(minfo[PLOT]) != main_lang()) {
                                    INF("Plot not in main language");
                                    if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
                                        INF("Forcing local search for plot");
                                        local_search = 1;
                                    }
                                }
-                               if (gPriority["mi_poster","web"] > minfo_field_priority(minfo,"mi_poster")) {
+                               if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
                                    if (g_settings["catalog_get_local_posters"] != "never") {
                                        INF("Checking local posters");
                                        local_search = 1;
@@ -786,7 +786,7 @@ cat,minfo2,locales,id,split_episode_search) {
                            if (local_search) {
                                 # We know it is a movie but still do not have good localised info
                                 get_locales(locales);
-                                find_movie_by_locale(locales[1],minfo[TITLE],minfo[YEAR],"",minfo["mi_poster"],minfo,id,minfo[ORIG_TITLE]);
+                                find_movie_by_locale(locales[1],minfo[TITLE],minfo[YEAR],"",minfo[POSTER],minfo,id,minfo[ORIG_TITLE]);
                             }
                         }
 
@@ -849,18 +849,18 @@ cat,minfo2,locales,id,split_episode_search) {
 
 }
 function plot_in_main_lang(minfo) {
-    return lang(minfo["mi_plot"]) == main_lang();
+    return lang(minfo[PLOT]) == main_lang();
 }
 function get_images(minfo) {
     #Only get posters if catalog is installed as part of oversight
     defaultPosters(minfo);
 
     if (GET_POSTERS) {
-        minfo["mi_poster"] = download_image(POSTER,minfo,"mi_poster");
+        minfo[POSTER] = download_image(POSTER,minfo,POSTER);
     }
 
     if (GET_FANART) {
-        minfo["mi_fanart"] = download_image(FANART,minfo,"mi_fanart");
+        minfo[FANART] = download_image(FANART,minfo,FANART);
     }
 }
 

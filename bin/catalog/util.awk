@@ -20,7 +20,7 @@ tmp,err) {
 }
 
 function isnmt() {
-    return FAMILY == "nmt";
+    return ENVIRON["FAMILY"] == "nmt";
 }
 
 # changed from getline error check because gawk 3.1.6 has uncatchable error if input is a directory

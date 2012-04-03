@@ -147,7 +147,7 @@ fetch_resize() {
     esac
 
     if [ $? == 0 ] ; then
-        perms $file
+        perms "$file"
         resize_img "$type" "$file"  # &
     else
         rm -f "$file" 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # $Id$ 
 # Fixed reference to NZBOP_APPBIN
 #VERSION=20090605-1BETA

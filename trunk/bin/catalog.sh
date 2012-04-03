@@ -173,8 +173,6 @@ catalog() {
     "UID=$uid" \
     "OVERSIGHT_ID=$OVERSIGHT_ID" \
     "AWK=$AWK" \
-    "FAMILY=$FAMILY" \
-    "ARCH=$ARCH" \
     g_tmp_dir="$g_tmp_dir" \
     "INDEX_DB=$INDEX_DB" "$@"
 

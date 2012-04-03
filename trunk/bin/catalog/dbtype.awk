@@ -2,6 +2,9 @@ function to_string(fieldid,v,\
 type) {
     type = g_dbtype[fieldid];
     if(type == g_dbtype_string) {
+        v=v"";
+    } else if(type == g_dbtype_int) {
+        v=v+0;
     } else if (type == g_dbtype_time) {
         v= longtime(v);
     } else if (type == g_dbtype_year) {
@@ -26,6 +29,9 @@ function shortform(fieldid,v,\
 type) {
     type = g_dbtype[fieldid];
     if(type == g_dbtype_string) {
+        v=v"";
+    } else if(type == g_dbtype_int) {
+        v = v+0;
     } else if (type == g_dbtype_time) {
         v= shorttime(v);
     } else if (type == g_dbtype_year) {

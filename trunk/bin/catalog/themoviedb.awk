@@ -42,12 +42,12 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
 
 
         # Get TMDB posters if present - if plot is not translated then assume posters arent too?
-        if (minfo2["mi_poster"]=="") {
-            minfo2["mi_poster"]=tmdb_config("poster_path")json["poster_path"];
+        if (minfo2[POSTER]=="") {
+            minfo2[POSTER]=tmdb_config("poster_path")json["poster_path"];
         }
 
-        if (minfo2["mi_fanart"]=="") {
-            minfo2["mi_fanart"]=tmdb_config("backdrop_path")json["backdrop_path"];
+        if (minfo2[FANART]=="") {
+            minfo2[FANART]=tmdb_config("backdrop_path")json["backdrop_path"];
         }
 
 
@@ -79,7 +79,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
         }
         if (json["overview"] != "null" && length(json["overview"]) > 1 ) {
 
-            minfo2["mi_plot"]=add_lang_to_plot(langs[i],clean_plot(json["overview"]));
+            minfo2[PLOT]=add_lang_to_plot(langs[i],clean_plot(json["overview"]));
 
             # Keep title and language the same
             minfo2[TITLE]=html_to_utf8(json["name"]);

@@ -19,10 +19,10 @@ num,tags,i,tmp,ret) {
             minfo2[ORIG_TITLE] = xml["/movie/originaltitle"];
             minfo2[RATING] = xml["/movie/rating"];
             minfo2[YEAR] = xml["/movie/year"];
-            minfo2["mi_plot"] = xml["/movie/plot"];
+            minfo2[PLOT] = xml["/movie/plot"];
             minfo2[RUNTIME] = xml["/movie/runtime"];
-            minfo2["mi_poster"] = xml["/movie/thumb"];
-            minfo2["mi_fanart"] = xml["/movie/fanart"];
+            minfo2[POSTER] = xml["/movie/thumb"];
+            minfo2[FANART] = xml["/movie/fanart"];
             minfo2[CATEGORY] = "M";
             num = find_elements(xml,"/movie/genre",empty_filter,0,tags);
             if (num) {
@@ -112,9 +112,9 @@ movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails,nfofilename) {
     
     id1("generate_nfo_file_from_fields "nfofilename);
     if (nfoFormat == "xmbc" ) {
-        movie=","TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE",";
-        tvshow=","TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART",";
-        episodedetails=","EPTITLE","SEASON","EPISODE","AIRDATE",";
+        split(TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","SET","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE,movie,",");
+        split(TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART,tvshow,",");
+        split(EPTITLE","SEASON","EPISODE","AIRDATE","EPPLOT,episodedetails,",");
     }
 
 
@@ -206,24 +206,14 @@ fieldId,text,attr,childTag) {
 
     for (fieldId in dbOne) {
 
-        text=to_string(fieldId,dbOne[fieldId]);
+        if (fieldId in children) {
+            childTag=gDbFieldId2Tag[fieldId];
+            if (childTag != "") {
+                text=to_string(fieldId,dbOne[fieldId]);
 
-        if (text != "") {
-            if (index(children,fieldId)) {
-                childTag=gDbFieldId2Tag[fieldId];
-                if (childTag != "") {
-                    if (childTag == "thumb") {
-#                       if (g_settings["catalog_poster_location"] == "with_media" ) {
-#                            #print "\t<"childTag">file://"dbOne[DIR]"/"text"</"childTag">" >> nfo;
-#                            print "\t<"childTag">file://./"xmlEscape(text)"</"childTag">" >> nfo;
-#                        } else {
-                            print "\t<!-- Poster location not exported catalog_poster_location="g_settings["catalog_poster_location"]" -->" >> nfo;
-                            print "\t<"childTag">"xmlEscape(text)"</"childTag">" >> nfo;
-#                        }
-                    } else {
-                        if (childTag == "watched" ) text=((text==1)?"true":"false");
-                        print "\t<"childTag attr[tag,childTag]">"xmlEscape(text)"</"childTag">" >> nfo;
-                    }
+                if (text != "") {
+                    if (childTag == "watched" ) text=((text==1)?"true":"false");
+                    print "\t<"childTag attr[tag,childTag]">"xmlEscape(text)"</"childTag">" >> nfo;
                 }
             }
         }

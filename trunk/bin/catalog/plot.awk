@@ -16,15 +16,15 @@ id,out) {
     id = minfo_to_plot_id(minfo);
 
     if (minfo[CATEGORY] == "T" ) {
-        if (minfo["mi_plot"]) {
-            out = out plot_to_season_id(id)"\t"minfo["mi_plot"] "\n" ;
+        if (minfo[PLOT]) {
+            out = out plot_to_season_id(id)"\t"minfo[PLOT] "\n" ;
         }
-        if (minfo["mi_epplot"]) {
-            out = out id"\t"minfo["mi_epplot"] "\n" ;
+        if (minfo[EPPLOT]) {
+            out = out id"\t"minfo[EPPLOT] "\n" ;
         }
     } else {
-        if (minfo["mi_plot"]) {
-            out = id"\t"minfo["mi_plot"] "\n" ;
+        if (minfo[PLOT]) {
+            out = id"\t"minfo[PLOT] "\n" ;
         }
     }
     if (out) {

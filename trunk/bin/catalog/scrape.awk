@@ -355,7 +355,7 @@ tmp,lctext) {
                 adjust_confidence(pagestate,1000,"imdb id in page",text);
             }
         }
-        if (minfo["mi_plot"] == "" ) {
+        if (minfo[PLOT] == "" ) {
             #dont check anything after the main plot. Could be reviews, or forums etc.
             lctext = tolower(text);
 
@@ -507,7 +507,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 }
 
                 if (!getting_local_fields) {
-                    if (minfo2["mi_plot"] && minfo2["mi_poster"] && minfo2[YEAR] && minfo2[TITLE]) {
+                    if (minfo2[PLOT] && minfo2[POSTER] && minfo2[YEAR] && minfo2[TITLE]) {
                         DEBUG("Got info - leaving page");
                         break;
                     }
@@ -531,7 +531,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
         if (!err && minfo2[CATEGORY] == "M") {
 
-            if (!err  &&  !is_prose(lng,minfo2["mi_plot"]) ) {
+            if (!err  &&  !is_prose(lng,minfo2[PLOT]) ) {
                 #We got the movie but there is no plot;
                 #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
                 #a significant failure. Most other scraped info is language neutral.
@@ -640,7 +640,7 @@ f,source,ret) {
                 if ( !(f"_source" in current)) {
                     current[f"_source"] = default_source;
                 }
-                INF("minfo_merge: keeping "current[f"_source"]":"f" = ["current[f]"]");
+                INF("minfo_merge: keeping "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
             }
         }
     }
@@ -1088,13 +1088,13 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
             }
 
         }
-    } else if ( mode == "plot" && pagestate["mode"] != "head" && minfo["mi_plot"] == "" ) {
+    } else if ( mode == "plot" && pagestate["mode"] != "head" && minfo[PLOT] == "" ) {
 
         # If plot is set  then if !getting_local_fields then it means that is_prose is true so no need to retest.
         if (!getting_local_fields || is_prose(lng,fragment)) {
 
             pagestate["gotplot"] = 1;
-            update_minfo(minfo, "mi_plot", add_lang_to_plot(lng,clean_plot(remove_src_href(fragment))),domain,pagestate);
+            update_minfo(minfo, PLOT, add_lang_to_plot(lng,clean_plot(remove_src_href(fragment))),domain,pagestate);
 
         } else if (length(fragment) > 20 ) {
             if (!("badplot" in pagestate)){ 
@@ -1202,7 +1202,7 @@ dnum,dtext,i,value,pri) {
         pri = 80;
         if (g_settings["domain:catalog_domain_poster_url_regex_list"]) {
             # check for poster. Need to check hrefs too as imdb uses link image_src for IE user agent
-            if (minfo["mi_poster"] == "" && \
+            if (minfo[POSTER] == "" && \
                 (index(text,"src=") || index(text,"href=")) && image_url(text) ) {
 
                 dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
@@ -1211,7 +1211,7 @@ dnum,dtext,i,value,pri) {
                         dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
                         value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
                         if (value) {
-                            if (update_minfo(minfo,"mi_poster",add_domain_to_url(domain,value),domain,pagestate)) {
+                            if (update_minfo(minfo,POSTER,add_domain_to_url(domain,value),domain,pagestate)) {
                                 minfo["mi_poster_source"] = pri":"domain;
                                 delete pagestate["checkposters"];
                                 break;

@@ -668,16 +668,16 @@ function init_priority() {
 
         gPriority[ORIG_TITLE,"themoviedb"]=60; 
 
-        gPriority["mi_poster","imdb"]=40;
-        gPriority["mi_poster","thetvdb"]=60;
-        gPriority["mi_poster","web"]=70;
-        gPriority["mi_poster","themoviedb"]=90; # increased now that api v3 has localised poster
-        gPriority["mi_poster","local"]=100;
+        gPriority[POSTER,"imdb"]=40;
+        gPriority[POSTER,"thetvdb"]=60;
+        gPriority[POSTER,"web"]=70;
+        gPriority[POSTER,"themoviedb"]=90; # increased now that api v3 has localised poster
+        gPriority[POSTER,"local"]=100;
 
-        gPriority["mi_fanart","thetvdb"]=60;
-        gPriority["mi_fanart","web"]=70;
-        gPriority["mi_fanart","themoviedb"]=90; # increased now api v3 has localised posters
-        gPriority["mi_fanart","local"]=100;
+        gPriority[FANART,"thetvdb"]=60;
+        gPriority[FANART,"web"]=70;
+        gPriority[FANART,"themoviedb"]=90; # increased now api v3 has localised posters
+        gPriority[FANART,"local"]=100;
 
         gPriority[RATING,"themoviedb"]=20;
         gPriority[RATING,"thetvdb"]=20;
@@ -721,7 +721,7 @@ score) {
             if (source ~ "^[0-9]+") {
                 # if source is numeric then it IS the score.
                 score = 0+source;
-            } else if (field == "mi_plot" || field == "mi_epplot") {
+            } else if (field == PLOT || field == EPPLOT) {
                 if (source == "@nfo" ) {
                     score = plot_score("@nfo");
                 } else {
@@ -779,8 +779,9 @@ score,langs,plot_lang,i,num,lang_score,len_score) {
 }
 
 function is_better_source(minfo,field,source,value,\
-old_inf,new_inf,ret,old_num,new_num,old_src) {
+old_inf,new_inf,ret,old_num,new_num,old_src,n) {
 
+    n = db_fieldname(field);
     source = tolower(source);
     old_src = minfo[field"_source"];
 
@@ -802,9 +803,13 @@ old_inf,new_inf,ret,old_num,new_num,old_src) {
         ret = 0;
     }
     if (old_src) {
-        INF(ret"set_source "field": old:"old_inf" "(ret?"<=":" >")" new:"new_inf);
+        if (ret) {
+            INF("update\t"n": "new_inf"\twas: "old_inf);
+        } else {
+            INF("keep\t"n": "old_inf"\tignore: "new_inf);
+        }
     } else {
-        INF(ret"set_source "field": new:"new_inf);
+        INF("new "n": new:"new_inf);
     }
     return ret;
 }

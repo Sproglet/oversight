@@ -1,78 +1,7 @@
-
-# final = only write fields in final index.db
-# changes here should be reflected in db.c:write_row()
-function createIndexRow(final,minfo,db_index,watched,locked,index_time,\
-row,est,op,fld) {
-
-    # Estimated download date. cant use nfo time as these may get overwritten.
-    est=file_time(minfo[DIR]"/unpak.log");
-    if (est == "") {
-        est=file_time(minfo[DIR]"/unpak.txt");
-    }
-    if (est == "") {
-        est = minfo[FILETIME];
-    }
-
-    if (minfo[FILE] == "" ) {
-        minfo[FILE]=getPath(minfo[NAME],minfo[DIR]);
-    }
-    minfo[FILE] = clean_path(minfo[FILE]);
-
-    if ((minfo[FILE] in g_fldrCount ) && g_fldrCount[minfo[FILE]]) {
-        DEBUG("Adjusting file for video_ts");
-        minfo[FILE] = minfo[FILE] "/";
-    }
-
-    op="update";
-    if (db_index == -1 ) {
-        if (minfo[ID]) ERR("ID already set to "minfo[ID]);
-
-        minfo[ID] = ++gMaxDatabaseId;
-        op="add";
-    }
-    INF("dbrow "op" ["db_index":"minfo[FILE]"]");
-
-    if (index_time == "") {
-        if (RESCAN == 1 ) {
-            index_time = est;
-        } else {
-            index_time = NOW;
-        }
-    }
-    minfo[DOWNLOADTIME] = est;
-
-    minfo[INDEXTIME] = index_time;
-    minfo[WATCHED] = watched;
-    minfo[LOCKED] = locked;
-
-    #Title and Season must be kept next to one another to aid grepping.
-    #Put the overview items near the start to speed up scanning
-    if (minfo[ORIG_TITLE] != "" && norm_title(minfo[ORIG_TITLE]) == norm_title(minfo[TITLE]) ) {
-        minfo[ORIG_TITLE] = "";
-    }
-    if (minfo[CERT] == "") {
-        minfo[CERT] = minfo["mi_certcountry"]":"minfo["mi_certrating"];
-        sub(/^:/,"",minfo[CERT]);
-    }
-
-    if (g_settings["catalog_nfo_write"] != "never" || is_file(minfo[NFO]) ) {
-        gsub(/.*\//,"",minfo[NFO]);
-    } else {
-        minfo[NFO] = "";
-    } 
-
-    for(fld in minfo) {
-        if (fld ~ /^_/ ) {
-            if (!final || g_dbkeep[fld]) { #write field if intermediate computation  OR it is flagged for final index.db(g_dbkeep)
-                if (minfo[fld] != "") {
-                    row=row"\t"fld"\t"shortform(fld,minfo[fld]);
-                }
-            }
-        }
-    }
-
-    return row"\t";
+function sequence() {
+    return ++gMaxDatabaseId;
 }
+
 function replace_database_with_new(newdb,currentdb,olddb) {
 
     INF("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
@@ -88,14 +17,13 @@ function set_db_fields() {
     # Fields with @ are not written to the db.
     ID=db_field("_id","ID","",1);
 
-    WATCHED=db_field("_w","Watched","watched",g_dbtype_string,1) ;
-    LOCKED=db_field("_l","Locked","locked",g_dbtype_string,1) ;
+    WATCHED=db_field("_w","Watched","watched",g_dbtype_int,1) ;
+    LOCKED=db_field("_l","Locked","locked",g_dbtype_int,1) ;
     PARTS=db_field("_pt","PARTS","",g_dbtype_string,1);
     FILE=db_field("_F","FILE","filenameandpath",g_gbtype_path,1);
     NAME=db_field("_@N","NAME","",g_dbtype_string,0);
     DIR=db_field("_@D","DIR","",g_dbtype_string,0);
     EXT=db_field("_ext","EXT","",g_dbtype_string,0); # not a real field
-
 
     ORIG_TITLE=db_field("_ot","ORIG_TITLE","originaltitle",g_dbtype_string,1);
     TITLE=db_field("_T","Title","title",g_dbtype_string,1) ;
@@ -116,7 +44,7 @@ function set_db_fields() {
     CERT=db_field("_R","CERT","mpaa",g_dbtype_string,1); #Not standard?
 
     PLOT=db_field("_P","Plot","plot",g_dbtype_string,0);
-    #EPPLOT=db_field("_ep","Plot","plot");
+    EPPLOT=db_field("_ep","EpPlot","plot",g_dbtype_string,0);
 
     URL=db_field("_U","URL","url",g_dbtype_string,1);
     POSTER=db_field("_J","Poster","thumb",g_dbtype_string,0);
@@ -142,6 +70,12 @@ function set_db_fields() {
     SIZEMB=db_field("_m","SIZEMB","",g_dbtype_string,1);
 }
 
+function db_fieldname(fld,\
+ret) {
+    ret = g_db_field_name[fld];
+    if (ret == "") ret = fld;
+    return ret;
+}
 
 #Setup db_field identifier, pretty name ,
 # IN key = database key and html parameter
@@ -215,16 +149,12 @@ line) {
     return "";
 }
 
-function keep_dbline(row,fields,\
+function keep_dbline(fields,\
 result) {
 
     get_name_dir_fields(fields);
 
-    if (length(row) > g_max_db_len ) {
-
-        INF("Row too long");
-
-    } else if ( g_settings["catalog_ignore_paths"] != "" && fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
+    if ( g_settings["catalog_ignore_paths"] != "" && fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
         INF("Removing Ignored Path ["fields[FILE]"]");
 
@@ -238,14 +168,53 @@ result) {
     return result;
 }
 
-function write_dbline(fields,file,\
-f) {
+function write_dbline(fields,file,final,\
+f,est) {
+    if (fields[FILE] == "" ) {
+        fields[FILE]=getPath(fields[NAME],fields[DIR]);
+    }
+    fields[FILE] = clean_path(fields[FILE]);
+
+    if ((fields[FILE] in g_fldrCount ) && g_fldrCount[fields[FILE]]) {
+        DEBUG("Adjusting file for video_ts");
+        fields[FILE] = fields[FILE] "/";
+    }
+
+    if (fields[CERT] == "") {
+        fields[CERT] = fields["mi_certcountry"]":"fields["mi_certrating"];
+        sub(/^:/,"",fields[CERT]);
+    }
+    if (g_settings["catalog_nfo_write"] != "never" || is_file(fields[NFO]) ) {
+        gsub(/.*\//,"",fields[NFO]);
+    } else {
+        fields[NFO] = "";
+    } 
+    if (fields[ORIG_TITLE] != "" && norm_title(fields[ORIG_TITLE]) == norm_title(fields[TITLE]) ) {
+        fields[ORIG_TITLE] = "";
+    }
+
+    # Estimated download date. cant use nfo time as these may get overwritten.
+    est=file_time(fields[DIR]"/unpak.log");
+    if (est == "") {
+        est=file_time(fields[DIR]"/unpak.txt");
+    }
+    if (est == "") {
+        est = fields[FILETIME];
+    }
+    fields[DOWNLOADTIME] = est;
+
+    if (RESCAN == 1 ) {
+        fields[INDEXTIME] = est;
+    } else {
+        fields[INDEXTIME] = NOW;
+    }
+
     for (f in fields) {
-        if (f && index(f,"@") == 0) {
-            if (f == FILE) {
-                printf "\t%s\t%s",f,short_path(fields[f]) >> file;
-            } else {
-                printf "\t%s\t%s",f,fields[f] >> file;
+        if (f && index(f,"_") == 1 && f ~ /^_/ ) {
+            if (!final || g_dbkeep[f]) { #write field if intermediate computation  OR it is flagged for final index.db(g_dbkeep)
+                if (fields[f] != "") {
+                    printf "\t%s\t%s",f,shortform(f,fields[f]) >> file;
+                }
             }
         }
     }

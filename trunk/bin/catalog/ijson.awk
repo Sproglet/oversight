@@ -63,11 +63,11 @@ json,ret,i,tag,minfo2) {
 
                 if ( "data:year" in json) {
                     ret = 1;
-                    minfo2["mi_plot"] = add_lang_to_plot(locale,clean_plot(json["data:plot:outline"]));
+                    minfo2[PLOT] = add_lang_to_plot(locale,clean_plot(json["data:plot:outline"]));
                     minfo2[YEAR] = json["data:year"];
                     minfo2["mi_certrating"] = json["data:certificate:certificate"];
                     minfo2["mi_certcountry"] = substr(json["@locale@"],4);
-                    minfo2["mi_poster"] = json["data:image:url"];
+                    minfo2[POSTER] = json["data:image:url"];
                     minfo2[RATING] = json["data:rating"];
                     minfo2[RUNTIME] = json["data:runtime:time"]/60;
                     minfo2[TITLE] = json["data:title"];

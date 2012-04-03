@@ -99,6 +99,7 @@ BEGIN {
     g_dbtype_time="t";
     g_dbtype_year="y";
     g_dbtype_imdblist="i";
+    g_dbtype_int="I";
     g_dbtype_string="s";
     g_dbtype_path="p";
 
@@ -700,7 +701,7 @@ ret,f,numok,numbad) {
     id1("verify");
     ret=1;
     for (f in minfo) {
-        if (!(f in g_verify)) {
+        if (!(f in g_verify) && f !~ /^_/) {
             ERR("bad field ["f"] = ["minfo[f]"]");
             numbad++;
         }  else {

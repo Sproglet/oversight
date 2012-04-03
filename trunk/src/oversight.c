@@ -259,7 +259,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                         char *content_headers = NULL;
 
                         if (exists) {
-                            if (strstr(path,".tar.gz") == 0 || strcmp(dot,".tgz") == 0) {
+                            if (strstr(path,".tar.gz") || strcmp(dot,".tgz") == 0) {
 
                                 ovs_asprintf(&content_headers,"%s%s\n%s%s",
                                         CONTENT_TYPE,"application/x-tar",CONTENT_ENC,"gzip");

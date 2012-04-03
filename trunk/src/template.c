@@ -481,18 +481,24 @@ char *icon_source(char *image_name) {
 // returns a quoted url.
 char *image_source(char *subfolder,char *image_name,char *ext)
 {
-    assert(image_name);
-    static char *ico=NULL;
-    
-    if (ext == NULL) {
-        if (ico == NULL) ico = ovs_icon_type();
-        ext = ico;
-    }
-    char *image_folder=NULL;
-    ovs_asprintf(&image_folder,"images%s%s",(EMPTY_STR(subfolder)?"":"/"),NVL(subfolder));
+    char *result = NULL;
 
-    char *result =  file_source(image_folder,image_name,ext);
-    FREE(image_folder);
+    if (!image_name) {
+        HTML_LOG(0,"empty image_name subfolder[%s]",subfolder);
+    } else {
+
+        static char *ico=NULL;
+        
+        if (ext == NULL) {
+            if (ico == NULL) ico = ovs_icon_type();
+            ext = ico;
+        }
+        char *image_folder=NULL;
+        ovs_asprintf(&image_folder,"images%s%s",(EMPTY_STR(subfolder)?"":"/"),NVL(subfolder));
+
+        result =  file_source(image_folder,image_name,ext);
+        FREE(image_folder);
+    }
 
     return result;
 }

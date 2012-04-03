@@ -3,6 +3,10 @@
 
 All downloads are listed [http://code.google.com/p/oversight/downloads/list here] 
 
+==Pre-requisites==
+
+NMT 100 series users should install the CSI telnet package before installing Oversight. This provides a more complete [http://busybox.net/about.html Busybox] environment, for the scripts.
+ 
 ==Latest Versions==
 
 If you want the latest version use the [http://www.nmtinstaller.com/ Community Software Installer (CSI)] or the [http://code.google.com/p/nmt-mini-installer/ mini-installer] to download it for you. 
@@ -16,4 +20,3 @@ If you want a specific version then either:
 OR
 
 2. Use the [http://code.google.com/p/nmt-mini-installer/ Mini-Installer] and select the required version.
-

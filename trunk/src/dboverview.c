@@ -227,7 +227,7 @@ unsigned int db_overview_name_hashf(void *item) {
 //#define EQ_FILE(item1,item2) EQ_NUM(item1,item2,db) && EQ_STR(item1,item2,file) && EQ_SHOW(item1,item2,source)
 #define EQ_FILE(item1,item2) (item1 == item2)
 
-#define EQ_MOVIE(item1,item2) EQ_NUM(item1,item2,db) && EQ_NUM(item1,item2,external_id)
+#define EQ_MOVIE(item1,item2) (EQ_NUM(item1,item2,db) && EQ_NUM(item1,item2,external_id) && ((DbItem*)item1)->external_id)
 
 // true if two records are part of the same show. Assuemes category=T already tested.
 #define EQ_SHOW(item1,item2) (EQ_NUM(item1,item2,year) && EQ_STR(item1,item2,title))
@@ -321,7 +321,8 @@ unsigned int db_overview_movieboxset_hashf(void *item)
 }
 
 
-int db_overview_admin_eqf(void *item1,void *item2) {
+int db_overview_admin_eqf(void *item1,void *item2)
+{
    return EQ_FILE(item1,item2);
 }
 unsigned int db_overview_admin_hashf(void *item)
@@ -402,7 +403,9 @@ int db_overview_menu_eqf(void *item1,void *item2) {
                  ret = in_same_set(((DbItem*)item1),((DbItem*)item2));
                 break;
             default:
-               ret = EQ_FILE(item1,item2);
+
+                ret = EQ_FILE(item1,item2);
+                //HTML_LOG(0,"compare [%ld] [%ld] = %d",item1,item2,ret);
         }
 
     }
@@ -427,6 +430,7 @@ int in_same_set(DbItem *item1,DbItem *item2)
         } else {
             if (item1->sets != NULL && item2->sets != NULL) {
 
+
                 // Sensible way - aplit into an array and loop through values.
                 int i,j;
                 if (item1->set_array == NULL) item1->set_array=splitstr(item1->sets," ");
@@ -439,11 +443,14 @@ int in_same_set(DbItem *item1,DbItem *item2)
                         }
                     }
                 }
+                //HTML_LOG(0,"set compare [%s] [%s] = %d",item1->sets,item2->sets,ret);
             }
         }
     } else {
        ret = EQ_FILE(item1,item2);
     }
+
+    //HTML_LOG(0,"insameset [%d] [%d] = %d",item1->id,item2->id,ret);
     return ret;
 }
 

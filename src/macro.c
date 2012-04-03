@@ -934,30 +934,33 @@ char *macro_fn_cert_img(MacroCallInfo *call_info) {
 
         cert = util_tolower(call_info->sorted_rows->rows[0]->certificate);
 
-        tmp=replace_str(cert,"usa:","us:");
-        FREE(cert);
-        cert=tmp;
+        if (!EMPTY_STR(cert)) {
 
-
-        translate_inplace(cert,":_","/-");
-
-        char *attr;
-        ovs_asprintf(&attr," height=%d ",g_dimension->certificate_size);
-
-        tmp = template_image_link("/cert",cert,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
-        if (tmp == NULL) {
-            // Try to find the image without country prefix
-            char *no_country = strchr(cert,'/');
-            if (no_country) {
-                no_country++;
-                tmp = template_image_link("/cert",no_country,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
-            }
-        }
-        if (tmp) {
-            // relace text with image.
+            tmp=replace_str(cert,"usa:","us:");
             FREE(cert);
-            FREE(attr);
             cert=tmp;
+
+
+            translate_inplace(cert,":_","/-");
+
+            char *attr;
+            ovs_asprintf(&attr," height=%d ",g_dimension->certificate_size);
+
+            tmp = template_image_link("/cert",cert,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
+            if (tmp == NULL) {
+                // Try to find the image without country prefix
+                char *no_country = strchr(cert,'/');
+                if (no_country) {
+                    no_country++;
+                    tmp = template_image_link("/cert",no_country,NULL,call_info->sorted_rows->rows[0]->certificate,attr);
+                }
+            }
+            if (tmp) {
+                // relace text with image.
+                FREE(cert);
+                FREE(attr);
+                cert=tmp;
+            }
         }
     }
 

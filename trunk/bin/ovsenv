@@ -99,6 +99,33 @@ archive() {
 }
 export archive
 
+
+package_check() {
+    local package="$1"
+    local cmd="$2"
+    local option="$3"
+    local expect="$4"
+    local verbose="${5:-}"
+    if "$cmd" "$option" 2>&1 | grep -i -q "$expect" ; then
+        export OVS_DEPEND_${package}_STATUS=0
+    else
+        export OVS_DEPEND_${package}_STATUS=1
+        if [ -n "$verbose" ] ; then
+            echo "Package $package failed. [$cmd] not on path."
+            exit 1
+        fi
+    fi
+}
+package_mandatory() {
+    package_check GAWK gawk -V GNU 1
+    package_check ICONV iconv -h Usage 1
+    package_check WGET wget -h GNU 1
+}
+package_optional() {
+    package_check LIBJPEG djpeg -h usage
+    package_check NETPBM pnmscalefixed -h option
+}
+
 # Check if file has been loaded, but always reload if launched from unpak.sh
 # This is in case nzbget itself has been started as a long running process under this environment.
 # we want to make sure it picks up latest configuration when post processing is launched.
@@ -220,6 +247,9 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
 
     load_config unpak
     load_config catalog
+
+    package_mandatory
+    package_optional
 
 
 fi

@@ -75,7 +75,7 @@ jpg_resize() {
     # Check if width is already correct - note tvdb currently serves 1280w fanart and 500 posters s
     if [ -n "$w" -a -z "$h" ] ; then
         w2=`jpgwidth "$input"`;
-        if [ "$w2" -le "$w" ] ; then
+        if [ "$w2" -ne "$w" ] ; then
             jpg_size="`sizekb "$input"`"
             if [ "$jpg_size" -lt 1000 ] ; then
                 INFO "width ($w2) ok ,  file size ok ${jpg_size}KB - copy to $output"
@@ -138,7 +138,6 @@ fetch_resize() {
     url="$1" ; shift;
     file="$1" ; shift ;
 
-    INFO ""
     INFO "Processing : [$type] [$url] [$file]"
 
     case "$url" in
@@ -148,7 +147,10 @@ fetch_resize() {
 
     if [ $? == 0 ] ; then
         perms "$file"
-        resize_img "$type" "$file"  # &
+        case "$OVS_DEPEND_NETPBM_STATUS$OVS_DEPEND_LIBJPEG_STATUS" in
+            00) resize_img "$type" "$file" ;;
+            *) INFO "No resize - no netpbm" ;;
+        esac
     else
         rm -f "$file" 
         ERROR "Failed wget -O $file $@ $url"
@@ -401,6 +403,10 @@ case "$1" in
         start_thread "$2"
         ;;
 
+    NOW)
+        shift
+        fetch_resize "$@"
+        ;;
     *)
         add_queue  "$@"
         ;;

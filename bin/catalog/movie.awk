@@ -125,18 +125,17 @@ year) {
 
 # Build list of diffent queries based on the file name
 function build_query_list(minfo,name_list,\
- name_id,name,v,dups) {
+ name_id,name,dups) {
 
     dups[""]=1; 
     name_id=0;
 
-    name_list[++name_id] = remove_format_tags(remove_brackets(basename(minfo[NAME])));
+    name =remove_format_tags(remove_brackets(basename(minfo[NAME])));
+    name_id = add_unique(name,name_id,name_list,dups);
 
     if (minfo[PARTS] != "") {
-        v=remove_part_suffix(minfo);
-        if (!(v in dups)) {
-            name_list[++name_id]=v; dups[v]=1;
-        }
+        name = remove_part_suffix(minfo);
+        name_id = add_unique(name,name_id,name_list,dups);
     }
 
     name=cleanSuffix(minfo);
@@ -144,23 +143,25 @@ function build_query_list(minfo,name_list,\
     # Build hash of name->order
     # need imdbregex without word boundary for _tt1234
     if (match(name,"tt[0-9]{5,9}")) {
-        v = substr(name,RSTART,RLENGTH);
-        if (!(v in dups)) {
-            name_list[++name_id]=v; dups[v]=1;
-        }
+        name_id = add_unique(substr(name,RSTART,RLENGTH),name_id,name_list,dups);
     }
     if (match(name,g_imdb_title_re))  {
-        v = substr(name,RSTART,RLENGTH);
-        if (!(v in dups)) {
-            name_list[++name_id]=v; dups[v]=1;
-        }
+        name_id = add_unique(substr(name,RSTART,RLENGTH),name_id,name_list,dups);
     }
 
-    v = name;
-    if (!(v in dups)) {
-        name_list[++name_id]=v; dups[v]=1;
-    }
+    name_id = add_unique(name,name_id,name_list,dups);
+
+    dump(0,"dups",dups);
+
     return name_id;
+}
+function add_unique(value,count,list,dups) {
+    value = tolower(value);
+    if (!(value in dups)) {
+        list[++count] = value;
+        dups[value] = 1;
+    }
+    return count;
 }
 
 function get_search_order(name,search_order,\

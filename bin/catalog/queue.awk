@@ -34,8 +34,11 @@ line,i,tmp,num) {
             num = split(line,tmp,SUBSEP);
             for(i = 1 ; i<=num ; i+= 2) {
                 minfo[tmp[i]] = tmp[i+1];
-                DEBUG("readq "db_fieldname(tmp[i])"=["tmp[i+1]"]");
+                #DEBUG("readq "db_fieldname(tmp[i])"=["tmp[i+1]"]");
             }
+
+            if (!(FILE in minfo)) minfo[FILE] = minfo[DIR]"/"minfo[NAME];
+
             #INF("read "num" fields minfo media = "minfo[NAME]);
             return num;
             break;
@@ -103,9 +106,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
     id1("merge_index ["dbfile"]["qfile"]");
 
-    exec("cat "qa(qfile),1);
-
-    INF("---------------------");
+    #exec("cat "qa(qfile),1);
+    #INF("---------------------");
 
 
     max_id = get_maxid(INDEX_DB);
@@ -117,12 +119,12 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         if (and(action,1)) { 
             row1 = get_dbline(dbfile);
             parseDbRow(row1,fields1,1);
+            #DEBUG("OLD    :["fields1[FILE]"]");
         }
         if (and(action,2)) {
             if (read_minfo(qfile,fields2)) {
                 row2=1;
-                fields2[ID] = sequence();
-                INF("NEW    :["fields2[FILE]"]");
+                #INF("NEW    :["fields2[FILE]"]");
             }
         }
 
@@ -197,7 +199,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             # TODO Pass plot. Change to use minfo ? - this may update the NFO field.
             generate_nfo_file_from_fields(g_settings["catalog_nfo_format"],fields2);
 
-            write_dbline(fields2,file_out);
+            write_dbline(fields2,file_out,1);
 
             # Now the ovsid is known - get images.
             get_images(fields2);

@@ -399,7 +399,7 @@ c) {
 # IN orig_title - if not blank used to validate page
 # RETURN 0 if no issues, 1 if title or field mismatch. 2 if no plot (skip rest of this domain)
 function scrape_movie_page(title,year,director,poster,url,locale,domain,minfo,imdbid,orig_title,\
-f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng,tmp) {
+f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_title,required_confidence,lng,tmp,imdbid_page) {
 
     err = 0;
     id1("scrape_movie_page("url","locale","domain",title="title",y="year",orig="orig_title")");
@@ -561,17 +561,29 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
         }
 
         if (!err) {
-            if (store) {
-                if (imdbid) {
-                    minfo_set_id("imdb",imdbid,minfo2);
+            # ensure found imdbid is passed up
+            imdbid_page = pagestate_getimdb(pagestate);
+            if (imdbid_page) {
+               minfo_set_id("imdb",imdbid_page,minfo2);
+            }
 
-                    #Only store to cache if the imdb id is set. 
-                    #This ensures that only known pages are cached. Otherwise they must be re-scrapped which will
-                    #force full "confidence" checking. 
-                    #If pages were cached without imdb then it means the full confidence checks will not be performed, and this 
-                    #is different for each input title.
-                    scrape_cache_add(url,minfo2);
+            if (imdbid ) {
+               if (imdbid != imdbid_page ) {
+                   err= 1;
+                   ERR("imdb mismatch "imdbid" vs "imdbid_page);
+                   store=0;
+               }
+            } else {
+                if (!imdbid_page) {
+                    #Both input and computed imdb id are blank. Do not store. This will force confidence checking.
+                    # for other searches which may have slightly different inputs. eg Title.
+                    store=0;
                 }
+            }
+
+            if (store) {
+
+                scrape_cache_add(url,minfo2);
             }
         }
     } 
@@ -583,6 +595,45 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
     id0(err);
     return err;
+}
+
+function pagestate_getimdb(pagestate,\
+i,imdbid) {
+    if (pagestate["imdbids"] == 1) {
+        for(i in pagestate) {
+            if (match(i,"^imdbids,")) {
+                imdbid = substr(i,RSTART+RLENGTH);
+                break;
+            }
+        }
+        DEBUG("No imdb was provided in search but exactly one imdbid "imdbid" was found on this page.");
+    }
+    return imdbid;
+}
+
+
+function pagestate_mergeimdb(text,pagestate,\
+imdbid_list,i,num) {
+    # if 0 or 1 imdbid encountered - keep tracking all imdb ids on page.
+    if (pagestate["imdbids"] <= 1 && text ~ /\<tt/ ) {
+        num = get_regex_counts(text,g_imdb_regex,0,imdbid_list);
+        if (num) {
+            for(i in imdbid_list) {
+                pagestate["imdbids,"i] += imdbid_list[i];
+            }
+            # count all unique ids.
+            pagestate["imdbids"]  = 0;
+            for(i in pagestate) {
+                if (i ~ "^imdbids," ) {
+                    ++pagestate["imdbids"];
+                    # log first occurrence
+                    if ( pagestate["imdbids"] == 1 && pagestate[i] == 1) {
+                        dump(0,"pagestate new "i" imdb",pagestate);
+                    }
+                }
+            }
+        }
+    }
 }
 
 function load_local_words(pagestate,locale,\
@@ -620,11 +671,11 @@ f,source,ret) {
     # Keep best title
     new[TITLE] = clean_title(new[TITLE]);
     new["mi_visited"] = current["mi_visited"] new["mi_visited"];
-    minfo_merge_ids(current,new[URL]);
+    minfo_merge_ids(current,new[IDLIST]);
 
     for(f in new) {
         source="";
-        if (f !~ "_(source|score)$" && f != "mi_visited" && f != URL ) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != IDLIST ) {
             if (f"_source" in new) {
                 source = new[f"_source"];
             }
@@ -635,7 +686,7 @@ f,source,ret) {
         }
     }
     for(f in current) {
-        if (f !~ "_(source|score)$" && f != "mi_visited" && f != URL ) {
+        if (f !~ "_(source|score)$" && f != "mi_visited" && f != IDLIST ) {
             if (!(f  in new )) {
                 if ( !(f"_source" in current)) {
                     current[f"_source"] = default_source;
@@ -651,9 +702,9 @@ f,source,ret) {
 # eg "imdb:tt1234567 thetvdb:77304"
 function minfo_set_id(domain,id,minfo) {
     domain = tolower(domain);
-    if (id &&  index(minfo[URL]," "domain":") == 0) {
-        minfo[URL] =  minfo[URL]" "domain":"id;
-        INF("idlist = "minfo[URL]);
+    if (id &&  index(minfo[IDLIST]," "domain":") == 0) {
+        minfo[IDLIST] =  minfo[IDLIST]" "domain":"id;
+        INF("idlist = "minfo[IDLIST]);
     }
 }
 function get_id(text,domain,adddomain,\
@@ -668,9 +719,9 @@ ret) {
 # return a website id from the idlist
 function minfo_get_id(minfo,domain,\
 id) {
-    id = get_id(minfo[URL],domain);
+    id = get_id(minfo[IDLIST],domain);
     if (!id) {
-        WARNING("blank id for "domain" current list = ["minfo[URL]"]");
+        WARNING("blank id for "domain" current list = ["minfo[IDLIST]"]");
     }
     return id;
 }
@@ -979,6 +1030,7 @@ i,num,sections,err,dbg,lcline) {
             }
         }
     }
+    pagestate_mergeimdb(line,pagestate);
     return err;
 }
 
@@ -1098,7 +1150,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         } else if (length(fragment) > 20 ) {
             if (!("badplot" in pagestate)){ 
-                DEBUG("Missing plot ???");
+                DEBUG("Missing plot ???"fragment);
                 pagestate["badplot"] = 1;
             }
         }
@@ -1212,7 +1264,7 @@ dnum,dtext,i,value,pri) {
                         value = domain_edits(domain,dtext[i],"catalog_domain_poster_url_regex_list",0);
                         if (value) {
                             if (update_minfo(minfo,POSTER,add_domain_to_url(domain,value),domain,pagestate)) {
-                                minfo["mi_poster_source"] = pri":"domain;
+                                minfo[POSTER"_source"] = pri":"domain;
                                 delete pagestate["checkposters"];
                                 break;
                             }

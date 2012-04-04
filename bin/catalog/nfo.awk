@@ -1,18 +1,19 @@
 function read_xbmc_nfo(minfo,file,\
 xml,empty_filter,minfo2,\
-num,tags,i,tmp,ret) {
+num,tags,i,tmp,ret,id) {
 
     ret = 0;
     if (readXML(file,xml,""))  {
         dumpxml("nfoxml",xml);
         if ("/movie" in xml) {
             if ("/movie/id" in xml ) {
-                minfo2["mi_id"] = xml["/movie/id"];
-                if ("X"minfo2["mi_id"] == "X0" ) minfo2["mi_id"] = -1;
+                id = xml["/movie/id"];
+                if ("X"id == "X0" ) id = -1;
 
-                if (minfo2["mi_id"] ~ "^tt[0-9]+" ) {
-
-                    minfo_set_id("imdb",minfo2["mi_id"],minfo2);
+                if (id ~ "^tt[0-9]+" ) {
+                    minfo_set_id("imdb",id,minfo2);
+                } else {
+                    minfo_set_id("@nfo",id,minfo2);
                 }
             }
             minfo2[TITLE] = xml["/movie/title"];
@@ -113,7 +114,7 @@ movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails,nfofilename) {
     id1("generate_nfo_file_from_fields "nfofilename);
     if (nfoFormat == "xmbc" ) {
         split(TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","SET","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE,movie,",");
-        split(TITLE","URL","RATING","PLOT","GENRE","POSTER","FANART,tvshow,",");
+        split(TITLE","IDLIST","RATING","PLOT","GENRE","POSTER","FANART,tvshow,",");
         split(EPTITLE","SEASON","EPISODE","AIRDATE","EPPLOT,episodedetails,",");
     }
 
@@ -126,8 +127,8 @@ movie,tvshow,nfo,fieldName,fieldId,nfoAdded,episodedetails,nfofilename) {
 
         if (nfoFormat == "xmbc") {
 
-            if (fields[URL] != "") {
-                fields[IMDBID] = extractImdbId(fields[URL]);
+            if (fields[IDLIST] != "") {
+                fields[IMDBID] = extractImdbId(fields[IDLIST]);
             }
 
             startXmbcNfo(nfo,do_export,nfofilename);
@@ -229,7 +230,7 @@ function export_xml(dbfile,\
 
     # put all tv shows together
     dbsorted = new_capture_file("export");
-    sort_index_by_field(URL,dbfile,dbsorted);
+    sort_index_by_field(IDLIST,dbfile,dbsorted);
 
 
     # export.
@@ -238,15 +239,15 @@ function export_xml(dbfile,\
     while((row=get_dbline(dbsorted)) != "") {
         has_output++;
         parseDbRow(row,fields,1);
-	INF(has_output":"fields[URL]);
+	INF(has_output":"fields[IDLIST]);
         # end previous nfo tag if exporting.
         # this is to make sure all tv seasons are together.
 	
-        if (fields[URL] != last_url ) {
+        if (fields[IDLIST] != last_url ) {
             if (last_url != "" ) {
                 endXmbcNfo(gExportFile,1);
             }
-            last_url = fields[URL];
+            last_url = fields[IDLIST];
             write_tv_block = 1;
         } else {
             write_tv_block = 0;

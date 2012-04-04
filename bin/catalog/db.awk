@@ -15,12 +15,12 @@ function replace_database_with_new(newdb,currentdb,olddb) {
 function set_db_fields() {
     #DB fields should start with underscore to speed grepping etc.
     # Fields with @ are not written to the db.
-    ID=db_field("_id","ID","",1);
+    ID=db_field("_id","ID","",g_dbtype_int,1);
 
     WATCHED=db_field("_w","Watched","watched",g_dbtype_int,1) ;
     LOCKED=db_field("_l","Locked","locked",g_dbtype_int,1) ;
     PARTS=db_field("_pt","PARTS","",g_dbtype_string,1);
-    FILE=db_field("_F","FILE","filenameandpath",g_gbtype_path,1);
+    FILE=db_field("_F","FILE","filenameandpath",g_dbtype_path,1);
     NAME=db_field("_@N","NAME","",g_dbtype_string,0);
     DIR=db_field("_@D","DIR","",g_dbtype_string,0);
     EXT=db_field("_ext","EXT","",g_dbtype_string,0); # not a real field
@@ -46,7 +46,7 @@ function set_db_fields() {
     PLOT=db_field("_P","Plot","plot",g_dbtype_string,0);
     EPPLOT=db_field("_ep","EpPlot","plot",g_dbtype_string,0);
 
-    URL=db_field("_U","URL","url",g_dbtype_string,1);
+    IDLIST=db_field("_U","IDs","idlist",g_dbtype_string,1);
     POSTER=db_field("_J","Poster","thumb",g_dbtype_string,0);
     FANART=db_field("_fa","Fanart","fanart",g_dbtype_string,0);
 
@@ -57,17 +57,33 @@ function set_db_fields() {
     SEARCH=db_field("_SRCH","Search URL","search",g_dbtype_string,0);
     AIRDATE=db_field("_ad","Air Date","aired",g_dbtype_string,1);
     EPTITLE=db_field("_et","Episode Title","title",g_dbtype_string,1);
-    NFO=db_field("_nfo","NFO","nfo",g_dbtype_string,1);
+    NFO=db_field("_nfo","NFO","nfo",g_dbtype_string,0);
 
     IMDBID=db_field("_imdb","IMDBID","id",g_dbtype_string,0);
     TVID=db_field("_tvid","TVID","id",g_dbtype_string,0);
-    SET=db_field("_a","SET","","",g_dbtype_string,1); 
+    SET=db_field("_a","SET","",g_dbtype_string,1); 
 
     VIDEO=db_field("_v","VIDEO","",g_dbtype_string,1);
     AUDIO=db_field("_S","SOUND","",g_dbtype_string,1);
     SUBTITLES=db_field("_L","SUBS","",g_dbtype_string,1);
     VIDEOSOURCE=db_field("_V","VIDEOSOURCE","",g_dbtype_string,1);
     SIZEMB=db_field("_m","SIZEMB","",g_dbtype_string,1);
+
+    # Transitory fields - add to suppress unknown dbtype errors
+    db_field("mi_do_scrape","","",g_dbtype_string,1);
+    db_field("mi_writer_total","","",g_dbtype_string,1);
+    db_field("mi_writer_names","","",g_dbtype_string,1);
+    db_field("mi_writer_ids","","",g_dbtype_string,1);
+    db_field("mi_actor_total","","",g_dbtype_string,1);
+    db_field("mi_actor_ids","","",g_dbtype_string,1);
+    db_field("mi_actor_names","","",g_dbtype_string,1);
+    db_field("mi_director_total","","",g_dbtype_string,1);
+    db_field("mi_director_names","","",g_dbtype_string,1);
+    db_field("mi_director_ids","","",g_dbtype_string,1);
+    db_field("mi_certcountry","","",g_dbtype_string,1);
+    db_field("mi_certrating","","",g_dbtype_string,1);
+    db_field("mi_visited","","",g_dbtype_string,1);
+    db_field("mi_imdb_title","","",g_dbtype_string,1);
 }
 
 function db_fieldname(fld,\
@@ -82,6 +98,11 @@ ret) {
 # IN name = logical name
 # IN tag = xml tag in xmbc nfo files.
 function db_field(key,name,tag,type,keep) {
+    if (keep == "") {
+        INF("bad args db_field "key name tag type);
+        exit;
+    }
+    if (name == "") name = key;
     gsub(/ /,"_",name);
     g_db_field_name[key]=name;
     gDbTag2FieldId[tag]=key;
@@ -169,7 +190,7 @@ result) {
 }
 
 function write_dbline(fields,file,final,\
-f,est) {
+f,est,line) {
     if (fields[FILE] == "" ) {
         fields[FILE]=getPath(fields[NAME],fields[DIR]);
     }
@@ -210,15 +231,15 @@ f,est) {
     }
 
     for (f in fields) {
-        if (f && index(f,"_") == 1 && f ~ /^_/ ) {
+        if (f && f ~ /^_/ ) {
             if (!final || g_dbkeep[f]) { #write field if intermediate computation  OR it is flagged for final index.db(g_dbkeep)
                 if (fields[f] != "") {
-                    printf "\t%s\t%s",f,shortform(f,fields[f]) >> file;
+                    line = line "\t" f "\t" shortform(f,fields[f]);
                 }
             }
         }
     }
-    printf "\t\n" >> file;
+    print line"\t" >> file;
 }
 
 

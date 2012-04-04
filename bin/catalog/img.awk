@@ -1,3 +1,9 @@
+BEGIN {
+    # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
+    #g_fetch_images_concurrently="START"; # jpg_fetch_and_scale will spawn a seperate thread to process images - only do this on PCs
+    g_fetch_images_concurrently="NOW"; # process images sequentially
+}
+
 # Some of these functions will eventually be replaced by plugin code.
 
 #Return reference to an internal poster location. eg
@@ -41,9 +47,9 @@ poster_ref,id,ret) {
             }
         } else {
             if (field_id == FANART ) {
-                ret = gensub("\.[^.]+$","-fanart.jpg",1,minfo[NAME]);
+                ret = gensub("\\.[^.]+$","-fanart.jpg",1,minfo[NAME]);
             } if (field_id == POSTER ) {
-                ret = gensub("\.[^.]+$",".jpg",1,minfo[NAME]);
+                ret = gensub("\\.[^.]+$",".jpg",1,minfo[NAME]);
             }
         }
     }
@@ -88,7 +94,7 @@ poster_ref,internal_path) {
 # or internally in a common folder.
 # Note if poster may be url<tab>referer_url
 function download_image(field_id,minfo,mi_field,\
-    url,poster_ref,internal_path,urls,referer,wget_args,get_it,script_arg,default_referer) {
+    url,poster_ref,internal_path,urls,referer,get_it,script_arg) {
 
     url = minfo[mi_field];
     id1("download_image["field_id"]["url"]");
@@ -124,22 +130,6 @@ function download_image(field_id,minfo,mi_field,\
             url=urls[1];
             referer=urls[2];
 
-            # -t retries - oversight runs the command twice so halve number of retries.
-            # -w time between retries.
-            # -T network timeouts
-            wget_args=g_wget_opts g_art_timeout;
-
-            DEBUG("Image url = "url);
-            default_referer = get_referer(url);
-            if (referer == "" ) {
-                referer = default_referer;
-            }
-            if (referer != "" ) {
-                DEBUG("Referer = "referer);
-                wget_args = wget_args " --referer=\""referer"\" ";
-            }
-            wget_args = wget_args " -U \""g_user_agent"\" ";
-
             # Script to fetch poster and create sd and hd versions
             if (field_id == POSTER) {
                 script_arg="poster";
@@ -149,8 +139,7 @@ function download_image(field_id,minfo,mi_field,\
 
             rm(internal_path,1);
 
-            exec("jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args,1);
-            #exec(OVS_HOME"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
+            fetch_and_scale(script_arg,url,internal_path,referer);
             g_image_inspected[internal_path]=1;
         }
     }
@@ -158,6 +147,27 @@ function download_image(field_id,minfo,mi_field,\
     id0(poster_ref);
 
     return poster_ref;
+}
+
+function fetch_and_scale(type,url,path,referer,\
+wget_args) {
+
+    # -t retries - oversight runs the command twice so halve number of retries.
+    # -w time between retries.
+    # -T network timeouts
+    wget_args=g_wget_opts g_art_timeout;
+
+    DEBUG("Image url = "url);
+    if (referer == "" ) {
+        referer = get_referer(url);
+    }
+    if (referer != "" ) {
+        DEBUG("Referer = "referer);
+        wget_args = wget_args " --referer=\""referer"\" ";
+    }
+    wget_args = wget_args " -U \""g_user_agent"\" ";
+    exec("jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "type" "qa(url)" "qa(path)" "wget_args,1);
+    #exec(OVS_HOME"/bin/jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" "script_arg" "qa(url)" "qa(internal_path)" "wget_args" &");
 }
 
 #ALL# for poster search use the iamge API bing or yahoo have one. To be implemented - maybe

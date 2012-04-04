@@ -13,7 +13,7 @@ type) {
         }
     } else if (type == g_dbtype_path) {
         if (!STANDALONE) {
-            v=nmt_get_share_path(v);
+            v=long_path(v);
         }
     } else if (type == g_dbtype_genre) {
         v= long_genre(v);

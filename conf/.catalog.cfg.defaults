@@ -107,3 +107,7 @@ catalog_source_keywords_Web="WEB-?DL"
 
 catalog_new_content_script="new_content.sh"
 
+
+# How many movies to process before writing out information.
+# Reduce to save memory. Increase for slightly faster speed for big scans.
+catalog_scan_batch_size=50

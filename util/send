@@ -31,7 +31,6 @@ if ( ifconfig || ipconfig ) 2>/dev/null | grep -q 192.168.88 ; then
             user=ftpuser
             root=/
             ;;
-        #200) ip=192.168.88.7  ; user=nmt root=/SATA_DISK ;;
         200)
             ip=192.168.88.7
             user=nmt
@@ -50,8 +49,11 @@ ftp -n  <<HERE
 open $ip
 user $user 1234
 # First go to root. on c200 this may be / or /SATA_DISK
-cd $root
-cd ./$d
+cd /SATA_DISK/Apps # 200 HD
+cd /USB_DRIVE/Apps # 200 USB
+cd /Apps # 100
+cd ../$d
+pwd
 bin
 hash
 prompt

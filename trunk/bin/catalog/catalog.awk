@@ -74,7 +74,8 @@ function plugin_error(p) {
 
 # Note we dont call the real init code until after the command line variables are read.
 BEGIN {
-    verify_setup();
+
+    default_settings();
     load_catalog_settings();
     g_articles["en"]="\\<([Tt]he)\\>";
     g_articles["de"]="\\<(([Dd](er|ie|as|es|em|en))|([Ee]in(|e[rmn]?)))\\>";
@@ -104,9 +105,6 @@ BEGIN {
     g_dbtype_path="p";
 
 
-    # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
-    g_fetch_images_concurrently="START";
-
     #Matches most english prose for plots / summary - cant use words that appear in other languages. of , it?
     # 'The' only counts if followed by lowecase. This allows its use in titles eg Edward the Longshanks?
     # Cant use 'man' as it is in Dutch an Swedish
@@ -123,7 +121,6 @@ BEGIN {
     g_tv_check_urls["tvrage"]=g_tvrage_web;
     g_tv_check_urls["thetvdb"]=g_thetvdb_web;
 
-    g_batch_size=30;
     g_cvs_sep=" *, *";
     g_opt_dry_run=0;
     yes="yes";
@@ -469,9 +466,6 @@ END{
             unlock(g_db_lock_file);
         }
     }
-    if (g_fetch_images_concurrently == "") {
-        exec("jpg_fetch_and_scale START &",1);
-    }
     rm(PIDFILE);
 
     if (g_grand_total) {
@@ -583,8 +577,13 @@ function mount_point(d) {
 function short_path(path) {
     if (index(path,g_mount_root) == 1) {
         path = substr(path,length(g_mount_root)+1);
-    } else if (index(path,"/share") != 1) {
-        INF("file = ["path"] but mount root = "g_mount_root);
+    }
+    return path;
+}
+
+function long_path(path) {
+    if (path !~ /^\//  && isnmt() ) {
+        path = g_mount_root path;
     }
     return path;
 }
@@ -684,16 +683,6 @@ name) {
     return name;
 }
 
-function verify_setup(\
-tmp,tmp2,j,k) {
-    tmp = "mi_additional_info mi_airdate mi_category mi_certcountry mi_certrating mi_set mi_set_name mi_director mi_director_name mi_episode mi_epplot mi_eptitle mi_fanart mi_file mi_file_time mi_folder mi_genre mi_imdb_title mi_media mi_multipart_tag_pos mi_nfo_default mi_orig_title mi_parts mi_plot mi_poster mi_premier mi_rating mi_runtime mi_season mi_title mi_title_rank mi_title mi_writers mi_year mi_actor_ids mi_actor_names mi_writer_ids mi_writer_names mi_director_ids mi_directo_names mi_actor_total mi_director_total mi_writer_total mi_do_scrape mi_url mi_video mi_audio mi_mb mi_videosource mi_ovsid";
-    j=split(tmp,tmp2," ");
-    for(k = 1 ; k <= j ; k++ ) {
-        tmp2[k+j] = tmp2[k]"_source";
-    }
-    hash_invert(tmp2,g_verify);
-}
-
 # Check we havent set any bad fields in movie information array
 function verify(minfo,\
 ret,f,numok,numbad) {
@@ -701,7 +690,7 @@ ret,f,numok,numbad) {
     id1("verify");
     ret=1;
     for (f in minfo) {
-        if (!(f in g_verify) && f !~ /^_/) {
+        if (!(f in g_db_field_name) && f !~ /_source$/ && f != "mi_do_scrape" ) {
             ERR("bad field ["f"] = ["minfo[f]"]");
             numbad++;
         }  else {
@@ -711,7 +700,7 @@ ret,f,numok,numbad) {
                 ERR("bad format field ["f"] = ["minfo[f]"]");
                 numbad++;
             } else {
-                INF("ok field ["f"] = ["minfo[f]"]");
+                #INF("ok field ["f"] = ["minfo[f]"]");
                 numok++;
             }
         }

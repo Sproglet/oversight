@@ -131,11 +131,11 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
 }
 
 function fields_to_plot_id(fields) {
-    return plot_id(fields[URL],fields[TITLE],long_year(fields[YEAR]),fields[CATEGORY],fields[SEASON],fields[EPISODE]);
+    return plot_id(fields[IDLIST],fields[TITLE],long_year(fields[YEAR]),fields[CATEGORY],fields[SEASON],fields[EPISODE]);
 }
 
 function minfo_to_plot_id(minfo) {
-    return plot_id(minfo[URL],minfo[TITLE],minfo[YEAR],minfo[CATEGORY],minfo[SEASON],minfo[EPISODE]);
+    return plot_id(minfo[IDLIST],minfo[TITLE],minfo[YEAR],minfo[CATEGORY],minfo[SEASON],minfo[EPISODE]);
 }
 
 function plot_id(idlist,title,year,cat,season,episode,\

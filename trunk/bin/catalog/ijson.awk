@@ -39,17 +39,20 @@ function fetch_ijson_details(id,minfo,\
 num,locales,i,ret) {
 
     ret = 0;
-    id1("fetch_ijson_details "id);
 
-    num = get_locales(locales);
-    for(i = 1 ; i<= num ; i++ ) {
-        if (fetch_ijson_details_by_locale(id,locales[i],minfo) ) {
-            ret = 1;
-            break;
+    if(id) {
+        id1("fetch_ijson_details "id);
+
+        num = get_locales(locales);
+        for(i = 1 ; i<= num ; i++ ) {
+            if (fetch_ijson_details_by_locale(id,locales[i],minfo) ) {
+                ret = 1;
+                break;
+            }
         }
-    }
 
-    id0(ret);
+        id0(ret);
+    }
     return ret;
 }
 function fetch_ijson_details_by_locale(id,locale,minfo,\

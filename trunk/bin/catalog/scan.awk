@@ -634,7 +634,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
             if (!minfo[TITLE]) {
                 minfo[TITLE] = clean_title(remove_format_tags(minfo[NAME]));
-                minfo["mi_title_source"] = "filename";
+                minfo[TITLE"_source"] = "filename";
             }
 
             eta="";
@@ -682,16 +682,16 @@ cat,minfo2,locales,id,split_episode_search) {
 
                     if (scanNfo){
                         if (read_xbmc_nfo(minfo,minfo[NFO])) {
-                            bestUrl = extractImdbLink(minfo["mi_id"]);
+                            bestUrl = extractImdbLink(minfo[IDLIST]);
                         }
                         if (!bestUrl) {
                            bestUrl = scanNfoForImdbLink(minfo[NFO]);
                        }
                     }
 
-                    if (minfo["mi_id"] == -1 ) {
+                    if (minfo_get_id(minfo,"@nfo") == -1 ) {
                         # dont scrape
-                        INF("using xbmc nfo only for "minfo[NAME]);
+                        INF("using XML nfo only for "minfo[NAME]);
 
                     } else {
 
@@ -837,7 +837,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
     close(qfile);
 
-    if ((force_merge && g_batch_total) ||  g_batch_total == g_batch_size ) {
+    if ((force_merge && g_batch_total) ||  g_batch_total >= g_settings["catalog_scan_batch_size"] ) {
 
             if (g_db) {
                 total +=  merge_queue(qfile,person_extid2name);

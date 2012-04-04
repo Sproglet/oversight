@@ -138,10 +138,8 @@ ret) {
         if (UPDATE_PORTRAITS || !hasContent(file) ) {
             if (preparePath(file) == 0) {
                 g_portrait[id]=1;
-                #ret = exec("wget -o /dev/null -O "qa(file)" "qa(url));
 
-                #remove ampersand from call
-                ret = exec("jpg_fetch_and_scale "g_fetch_images_concurrently" "PID" portrait "qa(url)" "qa(file)" "g_wget_opts" -U \""g_user_agent"\"",1);
+                fetch_and_scale("portrait",url,file);
             }
         }
     }

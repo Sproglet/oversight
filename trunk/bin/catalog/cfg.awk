@@ -1,3 +1,7 @@
+function default_settings() {
+    g_settings["catalog_scan_batch_size"]=30;
+}
+
 function load_catalog_settings(\
 ign_path,env) {
 

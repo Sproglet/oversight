@@ -39,7 +39,12 @@ void clear_playlist() {
 
 int ls(char *path) {
     int result = 0;
-    printf("Content-Type: text/html; charset=utf-8\n\n<html><head><title>%s</title></head><body>%s<br>",path,path);
+    printf("Content-Type: text/html; charset=utf-8\n\n<html><head><title>%s</title><style type=\"text/css\">"
+            " .K { color:green; }"
+            " .M { color:orange; }"
+            " .G { text-color:red; }"
+            " td.size { text-align:right; }"
+            "</style></head><body>%s<br>",path,path);
     DIR *d = opendir(path);
     if (d) {
         Array *dirs = array_new(free);
@@ -68,15 +73,17 @@ int ls(char *path) {
                 if (S_ISREG(st.st_mode)) f->d_type = DT_REG;
                 else if (S_ISDIR(st.st_mode)) f->d_type = DT_DIR;
             }
-            if (size > 1024 ) { size /= 1024 ; unit="<span style=\"color:green;\">K</span>" ; precision=1; }
-            if (size > 1024 ) { size /= 1024 ; unit="<span style=\"color:orange;\">M</span>" ; }
-            if (size > 1024 ) { size /= 1024 ; unit="<span style=\"color:red;\">G</span>" ; }
+            if (size > 1024 ) { size /= 1024 ; unit="<span class=\"K\">K</span>" ; precision=1; }
+            if (size > 1024 ) { size /= 1024 ; unit="<font class=\"M\">M</span>" ; }
+            if (size > 1024 ) { size /= 1024 ; unit="<span class=\"G\">G</span>" ; }
 
+            char *display = f->d_name;
             if (strcmp(f->d_name,"..") == 0) {
                 // find parent folder name
                 char *tmp = STRDUP(path);
                 ovs_asprintf(&u,"?%s",dirname(tmp));
                 FREE(tmp);
+                display="up↑";  ; // UP
             }
 
             if (strcmp(f->d_name,".") != 0) {
@@ -85,17 +92,17 @@ int ls(char *path) {
                     case DT_REG:
                         if(strstr(f->d_name,"log.gz")) {
                             // Display inline link
-                            ovs_asprintf(&tmp,"<tr><td><a href=\"%s.txt\">%s</a> <a href=\"%s\">*</a></td><td> - %.*f%s</td></tr>",
-                                    u,f->d_name,u, precision,size,unit);
+                            ovs_asprintf(&tmp,"<tr><td><a href=\"%s.txt\">%s</a> <a href=\"%s\">*</a></td><td class=\"size\"> - %.*f%s</td></tr>",
+                                    u,display,u, precision,size,unit);
                         } else {
                             //ovs_asprintf(&tmp,"<tr><td>%.1f%s</td><td><a href=\"%s\">%s</a></td></tr>",size,unit,u,f->d_name);
-                            ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td> - %.*f%s</td></tr>",
-                                    u,f->d_name, precision,size,unit);
+                            ovs_asprintf(&tmp,"<tr><td><a href=\"%s\">%s</a></td><td class=\"size\"> - %.*f%s</td></tr>",
+                                    u,display, precision,size,unit);
                         }
                         array_add(files,tmp);
                         break;
                     case DT_DIR:
-                        ovs_asprintf(&tmp,"<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ",u,f->d_name);
+                        ovs_asprintf(&tmp,"<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ",u,display);
                         array_add(dirs,tmp);
                         break;
                     default:

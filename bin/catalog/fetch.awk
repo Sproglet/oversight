@@ -1,5 +1,5 @@
 
-function getUrl(url,capture_label,cache,referer,\
+function getUrl(url,capture_label,cache,referer,quiet_fail,\
     f,label,url_key,cache_suffix) {
     
     label="getUrl:"capture_label": ";
@@ -44,7 +44,7 @@ function getUrl(url,capture_label,cache,referer,\
     }
     if (is_file(f) == 0) {
 
-        if (wget(url,f,referer) ==0) {
+        if (wget(url,f,referer,quiet_fail) ==0) {
             if (cache) {
                 gUrlCache[url_key]=f;
                 #DEBUG(label" Fetched & Cached ["url"] to ["f"]");
@@ -62,6 +62,7 @@ function getUrl(url,capture_label,cache,referer,\
 function get_referer(url,\
 i,referer) {
     # fake referer anyway
+    referer = url;
     i = index(substr(url,10),"/");
     if (i) {
         referer=substr(url,1,9+i);
@@ -73,7 +74,7 @@ i,referer) {
 
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
 # Note nmt wget has a bug when using -O flag. Only one file is redirected.
-function wget(url,file,referer,\
+function wget(url,file,referer,quiet_fail,\
 args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,old_cf,new_cf,arg_cf,filter_count) {
 
     filter_count = 0;
@@ -167,10 +168,10 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
     # Set this between 1 and 4 to throttle speed of requests to the same domain
 
     INF("WGET ["url"]");
-    result = exec(cmd);
+    result = exec(cmd,0,quiet_fail);
     if (result == 0 ) {
         #INF("WGET ["unzip_cmd"]");
-        result = exec(unzip_cmd);
+        result = exec(unzip_cmd,0,quiet_fail);
     }
     if (result != 0) {
         rm(downloadedFile,1);
@@ -179,9 +180,13 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 }
 
 # url_online 1=OK 0=failed
-function url_online(url,tries,timeout) {
+function url_online(url,tries,timeout,quiet_fail,\
+cmd,ret) {
     # slight bug with wget 1.12 return code 4 when OK so grep output for 'Remote file exists'
-    return exec("wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -S -O - "qa(url)" 2>&1 | grep -q '200 OK'") == 0;
+    cmd ="wget --spider --no-check-certificate -t "tries" -T "timeout" --referer="get_referer(url)" -S -O - "qa(url)" 2>&1 | grep -q '200 OK'";
+    
+    ret = exec(cmd,0,quiet_fail);
+    return ret;
 }
 
 # Filter a bunch of urls at the same domain
@@ -199,7 +204,7 @@ list2,f,n,i,batch,cmd,total,inv,u,txt,s,code) {
         s++;
         cmd=cmd"\t"qa(url_list[i]);
         if (s%batch == 0 || s == n) {
-            exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -O - "cmd" >"qa(f)" 2>&1 ");
+            exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -O - "cmd" >"qa(f)" 2>&1 || true ");
             while ((code = (getline txt < f )) > 0 ) {
                 #INF("spider ["txt"]");
                 if (match(txt,"--  http://")) {
@@ -237,7 +242,7 @@ ret,start,tries,timeout) {
     tries=2;
     timeout=5;
     
-    if (!url_online(url,tries,timeout)) {
+    if (!url_online(url,tries,timeout,1)) {
 
         #if wget ok - check timeout
         if (systime() - start >= tries * timeout ) { 

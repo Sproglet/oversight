@@ -61,7 +61,7 @@ function set_db_fields() {
 
     IMDBID=db_field("_imdb","IMDBID","id",g_dbtype_string,0);
     TVID=db_field("_tvid","TVID","id",g_dbtype_string,0);
-    SET=db_field("_a","SET","",g_dbtype_string,1); 
+    SET=db_field("_a","SET","set",g_dbtype_string,1); 
 
     VIDEO=db_field("_v","VIDEO","",g_dbtype_string,1);
     AUDIO=db_field("_S","SOUND","",g_dbtype_string,1);
@@ -84,6 +84,8 @@ function set_db_fields() {
     db_field("mi_certrating","","",g_dbtype_string,1);
     db_field("mi_visited","","",g_dbtype_string,1);
     db_field("mi_imdb_title","","",g_dbtype_string,1);
+    db_field("mi_url","","",g_dbtype_string,1);
+    db_field("mi_set_name","","",g_dbtype_string,1);
 }
 
 function db_fieldname(fld,\

@@ -217,7 +217,7 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
             if [ -d /share/bin ] ; then
                 PATH="/share/bin:$PATH"
             fi
-            for i in sort find ls tr dirname basename readlink wc sed dos2unix gzip ; do
+            for i in sort find ls tr dirname basename readlink wc sed dos2unix gzip tee ; do
                 if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
                     ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
                 fi

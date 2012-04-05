@@ -1,7 +1,7 @@
 BEGIN {
     # Additional argument passed to jpg_fetch_and_scale - comment out to do all images last
-    #g_fetch_images_concurrently="START"; # jpg_fetch_and_scale will spawn a seperate thread to process images - only do this on PCs
-    g_fetch_images_concurrently="NOW"; # process images sequentially
+    g_fetch_images_concurrently="START"; # jpg_fetch_and_scale will spawn a seperate thread to process images - only do this on PCs
+    #g_fetch_images_concurrently="NOW"; # process images sequentially
 }
 
 # Some of these functions will eventually be replaced by plugin code.
@@ -406,7 +406,7 @@ sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
         if (sc < 0.18 ) sc = 0;
 
         if (sc >= best_so_far ) {
-            if (!url_online(imageUrl,1,5)) {
+            if (!url_online(imageUrl,1,5,1)) {
                 INF("url is offline?");
                 sc = 0;
             }

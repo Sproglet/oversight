@@ -2,9 +2,9 @@
 #Load an xml file into array - note duplicate elements are clobbered.
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
 # RETURN ok=1 failed=0
-function fetchXML(url,label,xml,ignorePaths,\
+function fetchXML(url,label,xml,ignorePaths,quiet_fail,\
 f,ret) {
-    f=getUrl(url,label".xml",1);
+    f=getUrl(url,label".xml",1,"",quiet_fail);
     ret = readXML(f,xml,ignorePaths);
     DEBUG("fetchXML["url"] = "ret);
     return ret;
@@ -187,7 +187,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
             }
 
             if (!(tag in tag_ok)) {
-               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ ) {
+               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ && tag !~ /^!--/ ) {
                    ERR("XML Parse error: Invalid tag ["tag"]");
                    ret = 0;
                    break;

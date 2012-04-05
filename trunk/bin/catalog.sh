@@ -212,7 +212,7 @@ main() {
 # $3 = age
 # find exec doesnt work on nmt
 clean_files() {
-    find "$1" -name "$2" -mtime "+$3" | while IFS= read f ; do
+    find "$1" -name "$2*" -mtime "+$3" | while IFS= read f ; do
         rm -fr -- "$f"
     done
 }
@@ -222,6 +222,16 @@ clean_all_files() {
     clean_files "$OVS_HOME/logs" "[cu]*.log" 5 
     clean_files "$EMPTY_DIR" "[cu]*.log" 1
     clean_files "$OVS_HOME/cache" "tt*" 30
+}
+
+errors() {
+awk '
+
+/(Start|Merge) item/ { i=$0 ; system(""); } 
+
+/\[ERR\]/ { if (i) { print i ; i="" ;} ; print "'"$1"':"$0 ; } 
+
+END { exit c }' 
 }
 
 LOG_DIR="$OVS_HOME/logs"
@@ -243,24 +253,30 @@ else
     TMP_LOG_FILE="$LOG_DIR/0-$LOG_NAME"
     LOG_FILE="$LOG_DIR/$LOG_NAME"
 
-    main "$@" >> "$TMP_LOG_FILE" 2>&1
+    TMP_ERR_FILE="$TMP_LOG_FILE.err"
+    ERR_FILE="$LOG_FILE.err"
+
+    ( main "$@" 2>&1 ) | tee "$TMP_LOG_FILE" | errors "$LOG_NAME" > "$TMP_ERR_FILE"
 
     mv "$TMP_LOG_FILE" "$LOG_FILE"
 
-    #If lauched from command line - display log file location
-    if [ -z "${REMOTE_ADDR:-}" ] ;then
-        echo "[INFO] $LOG_FILE"
+    # Rename or delete error file
+    if [ -s "$TMP_ERR_FILE" ] ; then
+        mv "$TMP_ERR_FILE" "$ERR_FILE"
+    else
+        rm -f "$TMP_ERR_FILE"
     fi
 
     if grep -q "Total files added : 0" "$LOG_FILE" ; then
-        mv "$LOG_FILE" "$EMPTY_DIR"
-        archive "$EMPTY_DIR/$LOG_NAME" 
-    else
-        archive "$LOG_FILE"
+        mv "$LOG_FILE"* "$EMPTY_DIR"
+        LOG_FILE="$EMPTY_DIR/$LOG_NAME" 
+    fi
+    archive "$LOG_FILE"
+
+    #If lauched from command line - display log file location
+    if [ -z "${REMOTE_ADDR:-}" ] ;then
+        echo "[INFO] $LOG_FILE.gz"
     fi
 
-fi
-if [ -f "$OVS_HOME/oversight.sh" ] ; then
-    $OVS_HOME/oversight.sh CLEAR_CACHE
 fi
 # vi:sw=4:et:ts=4

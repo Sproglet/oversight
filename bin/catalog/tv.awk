@@ -1273,7 +1273,7 @@ function tv_title2regex(title) {
 # IN imdb id tt0000000
 # RETURN tvdb id
 function find_tvid(plugin,minfo,imdbid,\
-url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
+url,id2,key,filter,showInfo,year_range,title_regex,tags) {
     # If site does not have IMDB ids then use the title and premier date to search via web search
     if (imdbid) {
 
@@ -1292,8 +1292,6 @@ url,id2,date,nondate,key,filter,showInfo,year_range,title_regex,tags) {
 
             if (id2 == "" ) {
 
-                # search for series name directly using raw(ish) imdb name
-                extractDate(minfo["mi_premier"],date,nondate);
                 # We do a fuzzy year search esp for programs that have a pilot in the
                 # year before episode 1
                 #
@@ -1964,7 +1962,7 @@ episodeUrl,result) {
     if (episodeUrl != "") {
         if (plugin == "thetvdb" || plugin == "tvrage" ) {
 
-            result = fetchXML(episodeUrl,plugin"-episode",episodeInfo);
+            result = fetchXML(episodeUrl,plugin"-episode",episodeInfo,"",1);
 
         } else {
             plugin_error(plugin);
@@ -2201,7 +2199,7 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
         minfo[TITLE] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
 
         minfo[YEAR] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
-        minfo["mi_premier"] = formatDate(seriesInfo["/Data/Series/FirstAired"]);
+        #minfo["mi_premier"] = formatDate(seriesInfo["/Data/Series/FirstAired"]);
 
         lang=seriesInfo["/Data/Series/Language"];
         plot=clean_plot(seriesInfo["/Data/Series/Overview"]);
@@ -2353,7 +2351,7 @@ seriesInfo,episodeInfo,filter,url,e,result,pi,thetvdbid) {
         minfo[SEASON]=season;
         minfo[TITLE]=clean_title(remove_br_year(seriesInfo["/Showinfo/showname"]));
         minfo[YEAR] = substr(seriesInfo["/Showinfo/started"],8,4);
-        minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
+        #minfo["mi_premier"]=formatDate(seriesInfo["/Showinfo/started"]);
 
 
         url=urladd(seriesInfo["/Showinfo/showlink"],"remove_add336=1&bremove_add=1");

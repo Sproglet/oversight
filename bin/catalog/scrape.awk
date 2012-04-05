@@ -1556,37 +1556,40 @@ ret) {
 
 # return ""=unknown "M"=movie "T"=tv??
 function get_imdb_info(url,minfo,\
-i,num,locales,minfo2) {
+i,num,locales,minfo2,id) {
 
-    if (!have_visited(minfo,"imdb")) {
+    id = extractImdbId(url);
+    if (id) {
+        if (!have_visited(minfo,"imdb")) {
 
-        if (fetch_ijson_details(extractImdbId(url),minfo2)) {
+            if (fetch_ijson_details(id,minfo2)) {
 
-            minfo_merge(minfo,minfo2,"imdb");
+                minfo_merge(minfo,minfo2,"imdb");
 
-        } else {
+            } else {
 
-            #dump(0,"ijson",minfo2);
-            delete minfo2;
-
-            num = get_locales(locales);
-            for(i = 1 ; i <= num ; i++) {
-
+                #dump(0,"ijson",minfo2);
                 delete minfo2;
-                if (scrape_movie_page("","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
-                    if (minfo2["mi_certrating"]) {
-                        minfo2["mi_certcountry"] = substr(locales[i],4);
+
+                num = get_locales(locales);
+                for(i = 1 ; i <= num ; i++) {
+
+                    delete minfo2;
+                    if (scrape_movie_page("","","","",extractImdbLink(url,"",locales[i]),locales[i],"imdb",minfo2) == 0) {
+                        if (minfo2["mi_certrating"]) {
+                            minfo2["mi_certcountry"] = substr(locales[i],4);
+                        }
+                        minfo_set_id("imdb",id,minfo2);
+                        #dump(0,"scrape",minfo2);
+                        minfo_merge(minfo,minfo2,"imdb");
+                        break;
                     }
-                    minfo_set_id("imdb",extractImdbId(url),minfo2);
-                    #dump(0,"scrape",minfo2);
-                    minfo_merge(minfo,minfo2,"imdb");
-                    break;
                 }
             }
+            # TMDB connections are inconsistent. eg no Carrie Box set, but Stephen King box set
+            # that includes Carrie, Shawshank etc.
+            imdb_movie_connections(minfo);
         }
-        # TMDB connections are inconsistent. eg no Carrie Box set, but Stephen King box set
-        # that includes Carrie, Shawshank etc.
-        imdb_movie_connections(minfo);
     }
     return minfo[CATEGORY];
 }

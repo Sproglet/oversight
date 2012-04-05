@@ -19,7 +19,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
             #dump(0,"themoviedb3-2",json2);
             if (jsonret == 0) {
 
-                ERR("parsing results");
+                ERR("parsing json results for ["url" | "url2"]");
                 break;
 
             } else if ("status_code" in json ) {

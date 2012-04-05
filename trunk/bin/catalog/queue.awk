@@ -124,7 +124,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         if (and(action,2)) {
             if (read_minfo(qfile,fields2)) {
                 row2=1;
-                #INF("NEW    :["fields2[FILE]"]");
+                INF("Merge item    :["fields2[FILE]"]");
             }
         }
 
@@ -197,7 +197,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             people_change_extid_to_ovsid(fields2,person_extid2ovsid);
 
             # TODO Pass plot. Change to use minfo ? - this may update the NFO field.
-            generate_nfo_file_from_fields(g_settings["catalog_nfo_format"],fields2);
+            generate_nfo_file_from_fields(g_settings["catalog_nfo_format"],fields2,0,1);
 
             write_dbline(fields2,file_out,1);
 

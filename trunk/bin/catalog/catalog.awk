@@ -151,8 +151,8 @@ BEGIN {
     g_url_regex = "https?://[^\"'\\/]*"re_escape(site)"[^\"']+";
 
 
-    split(g_roman_regex,g_roman1,"[|]");
-    hash_invert(g_roman1,g_roman);
+    split(g_roman_regex,g_roman,"[|]");
+    hash_invert(g_roman,g_roman);
 
     ELAPSED_TIME=systime();
     GET_POSTERS=1;

@@ -269,9 +269,9 @@ function p2p_filename(f) {
 
 #result in a2
 function hash_invert(a1,a2,\
-i) {
-    delete a2;
-    for(i in a1) a2[a1[i]] = i;
+i,tmp) {
+    for(i in a1) tmp[a1[i]] = i;
+    hash_copy(a2,tmp);
 }
 
 # result in a1
@@ -491,12 +491,14 @@ function csv2re(text) {
     return "("text")";
 }
 
-function exec(cmd,verbose,\
+function exec(cmd,verbose,quiet,\
 err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
    if (verbose) DEBUG("SYSTEM : [ "cmd" ]");
    if ((err=system(cmd)) != 0) {
-      ERR("Return code "err" executing "cmd) ;
+      if(!quiet) {
+          ERR("Return code "err" executing "cmd) ;
+      }
   }
   return 0+ err;
 }
@@ -1097,6 +1099,8 @@ t2,changed) {
 # deep - if set then [] and {} are removed from text too
 function clean_title(t,deep,\
 punc,last) {
+
+    if (index(t,"-")) gsub(/-/," ",t);
 
     #ALL# gsub(/[&]/," and ",t);
     if (index(t,"amp")) gsub(/[&]amp;/,"\\&",t);

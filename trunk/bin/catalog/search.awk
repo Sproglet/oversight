@@ -15,9 +15,9 @@ function web_search_first_imdb_title(qualifier,imdb_qual) {
 
 # search for either first occurence OR most common occurences.
 # return is array matches(index=matching text, value is incremented for each match)
-# also src contains all urls that matched each pattern.
+# also match_src contains all urls that matched each pattern.
 # results are merged into existing array values.
-function scrapeMatches(url,freqOrFirst,helptxt,regex,matches,src,\
+function scrapeMatches(url,freqOrFirst,helptxt,regex,matches,match_src,\
 match1,submatch,dots) {
 
     if (freqOrFirst == 1) {
@@ -39,8 +39,8 @@ match1,submatch,dots) {
         }
 
         matches[match1] ++; 
-        if (index(src[match1],":" url ":") == 0) {
-            src[match1]=src[match1] ":" url ":";
+        if (index(match_src[match1],":" url ":") == 0) {
+            match_src[match1]=match_src[match1] ":" url ":";
         }
     }
 }
@@ -147,7 +147,7 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
-u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,round_robin,target,num) {
+u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num) {
 
 
     ############################################################################
@@ -201,16 +201,16 @@ u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,
         u[++num] = g_search_binsearch qualifier; target[num]=2;
         u[++num] = g_search_nzbindex qualifier; target[num]=2;
     }
-    if (imdb_qual != "") {
-        u[++num] = "http://www.imdb.com/find?s=tt&q=" imdb_qual; target[num]=2;
-    }
+#    if (imdb_qual != "") {
+#        u[++num] = "http://www.imdb.com/find?s=tt&q=" imdb_qual; target[num]=2;
+#    }
     
 
     # Cycle through each URL grabbing best id and merging into matches.
     # For each match the urls are also tracked in case we to a "cross-page" ranking later.
     for(i = 1 ; i <= num ; i++ ) {
 
-        scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,src);
+        scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,match_src);
         dump(0,"websearch-matches",matches);
 
         if (bestScores(matches,bestmatches,0) >= target[i] ) {
@@ -248,30 +248,46 @@ u,s,pages,subtotal,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,m,src,
     }
 
     if (ret == "") {
-        # No match stands out.
-        #Go through each match and see how many times it appears on the other pages.
-        # this is why we track the matching urls in the src array.
-        for(m in bestmatches) {
-            id1("cross_page_rank "m"|");
-            pages=0;
-            subtotal=0;
-            for(i in u ) {
-                #if the url did dot contribute to this matches best score
-                if (index(src[m],":"u[i]":") == 0) {
-                    s = scan_page_for_match_counts(u[i],m,title_to_re(m),0,1,"");
-                    if (s != 0) pages++;
-                    subtotal += s;
-                }
-            }
-            bestmatches[m] += pages * subtotal;
-            id0(pages*subtotal);
-        }
-        ret = getMax(matches,4,1);
+        ret = cross_page_rank(mode,bestmatches,match_src,u);
     }
 
     #delete all cahced pages.
     clear_cache_prefix("@");
     id0(ret);
+    return ret;
+}
+
+function cross_page_rank(mode,matches,match_src,urls,\
+m,s,i,pages,subtotal,ret,noyear) {
+    # No match stands out.
+    #Go through each match and see how many times it appears on the other pages.
+    # this is why we track the matching urls in the match_src array.
+    for(m in matches) {
+        id1("cross_page_rank "m"|");
+        pages=0;
+        subtotal=0;
+        for(i in urls ) {
+            #if the url did dot contribute to this matches best score
+            if (index(match_src[m],":"urls[i]":") == 0) {
+                s = scan_page_for_match_counts(urls[i],m,title_to_re(m),0,1,"");
+
+                if (mode == "imdbtitle" ) {
+                    # Now get number of occurences without the year. 
+                    # This also includes ocurrences with the year so adds suitable weight to names with years.
+                    noyear = gensub(/ [12][0-9]{3}\>/,"","g",m);
+                    if (noyear != m ) {
+                        s += scan_page_for_match_counts(urls[i],noyear,title_to_re(noyear),0,1,"");
+                        s  =s **= 2;
+                    }
+                }
+                if (s != 0) pages++;
+                subtotal += s;
+            }
+        }
+        matches[m] += pages * subtotal;
+        id0(pages*subtotal);
+    }
+    ret = getMax(matches,4,1);
     return ret;
 }
 

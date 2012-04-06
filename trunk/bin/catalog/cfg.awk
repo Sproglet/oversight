@@ -8,9 +8,9 @@ ign_path,env) {
     for(env in ENVIRON) {
         if (env ~ "^(catalog|unpak)_") {
             g_settings[env] = ENVIRON[env];
-            INF("cfg:"env"=["g_settings[env]"]");
         }
     }
+    dump(0,"settings",g_settings);
 
     ign_path = "catalog_ignore_paths";
 

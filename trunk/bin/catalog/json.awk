@@ -11,12 +11,22 @@ text,f,line) {
     }
     return text;
 }
+function json_load2(url,label,\
+response) {
+    if (url_get(url,response)) {
+        return response["body"];
+    }
+}
 
 # real json content from url into array.
 function fetch_json(url,label,out,\
 ret,json) {
     ret = 0;
-    json = json_load(url,label);
+    if(g_settings["catalog_awk_browser"]) {
+        json = json_load2(url,label);
+    } else {
+        json = json_load(url,label);
+    }
 
     if (json) { 
         ret = json_parse(json,out);
@@ -93,7 +103,7 @@ ch,i) {
     while(1) {
         ch = substr(context["in"],i,1);
 
-        if (ch != " " && ch != "\t" ) break;
+        if (index(" \t\r\n",ch) == 0) break;
 
         i++;
     }

@@ -3,9 +3,15 @@
 #To parse xml with duplicate lements call parseXML in a loop and trigger on index(line,"</tag>")
 # RETURN ok=1 failed=0
 function fetchXML(url,label,xml,ignorePaths,quiet_fail,\
-f,ret) {
-    f=getUrl(url,label".xml",1,"",quiet_fail);
-    ret = readXML(f,xml,ignorePaths);
+f,ret,response) {
+    if(g_settings["catalog_awk_browser"]) {
+        if (url_get(url,response)) {
+            ret = parseXML(response["body"],xml,ignorePaths);
+        }
+    } else {
+        f=getUrl(url,label".xml",1,"",quiet_fail);
+        ret = readXML(f,xml,ignorePaths);
+    }
     DEBUG("fetchXML["url"] = "ret);
     return ret;
 }
@@ -59,7 +65,10 @@ sep,\
 currentTag,oldTag,i,tag,text,parts,sp,slash,tag_data_count,\
 attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_ok) {
 
-    if (index(line,"<?")) return 1;
+    if (index(line,"<?")) {
+        line = substr(line,index(line,"?>")+2);
+    }
+
     ret = 1;
 
     sep = "<";
@@ -130,11 +139,11 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
             }
         } else {
             # No tag yet - check only white space
-            if (text !~ "^[ \t]*$" ) {
+            if (text !~ "^[[:space:]]*$" ) {
                 if (text == "﻿" ) { #XML UTF8 BOM
                     text="";
                 } else {
-                    WARNING("encountered text outside of xml ["text"]");
+                    ("encountered text outside of xml ["text"]");
                     ret = 0;
                     break;
                 }

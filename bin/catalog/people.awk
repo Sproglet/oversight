@@ -191,20 +191,25 @@ function people_domain_db_add(domaindb,extid,ovsid) {
 # ie _A=domain:id1,id2,id3 with _A:ovsid1,ovsid2,ovsid3
 #
 function people_change_extid_to_ovsid(fields,person_extid2ovsid) {
-    people_change_extid_to_ovsid_by_role(ACTORS,fields,person_extid2ovsid);
-    people_change_extid_to_ovsid_by_role(DIRECTORS,fields,person_extid2ovsid);
-    people_change_extid_to_ovsid_by_role(WRITERS,fields,person_extid2ovsid);
+
+    dump(0,"DELETE idmapping",person_extid2ovsid);
+    dump(0,"DELETE current record",fields);
+
+    people_change_extid_to_ovsid_by_role("mi_actor_ids",ACTORS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role("mi_director_ids",DIRECTORS,fields,person_extid2ovsid);
+    people_change_extid_to_ovsid_by_role("mi_writer_ids",WRITERS,fields,person_extid2ovsid);
+    dump(0,"DELETE new record",fields);
 }
 
 # INPUT db field array f[dbfield]="domain@extid1@extid2@...." dbfield=ACTORS,WRITERS,DIRECTORS
 # OUTPUT f[dbfield]="ovsid1,ovsid2,..."
-function people_change_extid_to_ovsid_by_role(db_field,fields,person_extid2ovsid,\
+function people_change_extid_to_ovsid_by_role(role_id_field,ovs_role_id_field,fields,person_extid2ovsid,\
 extids,ovsids,num,domain,i,key) {
 
-    if (db_field in fields) {
+    if (role_id_field in fields) {
 
 
-        num = split(fields[db_field],extids,"@");
+        num = split(fields[role_id_field],extids,"@");
         domain = extids[1];
         for(i = 2 ; i <= num ; i++ ) {
 
@@ -216,8 +221,8 @@ extids,ovsids,num,domain,i,key) {
 
         ovsids = substr(ovsids,2);
 
-        INF("person_extid2ovsid ["fields[db_field]"] = ["ovsids"]");
-        fields[db_field] = ovsids;
+        INF("person_extid2ovsid ["fields[ovs_role_id_field]"] = ["ovsids"]");
+        fields[ovs_role_id_field] = ovsids;
     }
 }
 #

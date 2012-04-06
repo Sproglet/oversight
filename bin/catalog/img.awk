@@ -14,8 +14,6 @@ BEGIN {
 function internal_poster_reference(field_id,minfo,\
 poster_ref,id,ret) {
 
-    id1("internal_poster_reference "field_id);
-
     if(!STANDALONE) {
         # Store images in Oversight folder.
 
@@ -53,7 +51,6 @@ poster_ref,id,ret) {
             }
         }
     }
-    id0(ret);
     return ret;
 }
 

@@ -333,20 +333,13 @@ function id0(x) {
 
 function dump(lvl,label,array,\
 i,key,n) {
-    if (DBG-lvl >= 0)   {
-        for(i in array) {
-            if (i ~ "^[0-9]+$") {
-                key[++n] = i+0;
-            } else {
-                key[++n] = i;
-            }
-        }
-        asort(key);
+    if (lvl == 0 || DBG-lvl >= 0)   {
+        n = asorti(array,key);
         for(i = 1 ; i<= n ; i++ ) {
-            DEBUG(" "label" : "key[i]" =["array[key[i]]"]");
+            INF(" "label" : "key[i]" =["array[key[i]]"]");
         }
         if (n == 0 ) {
-            DEBUG("  "label":<empty>");
+            INF("  "label":<empty>");
         }
     }
 }

@@ -991,6 +991,9 @@ new_total,i,dupe_check,new_id,new_title) {
     out["total"] = new_total;
     return new_total;
 }
+# remove dupliace ids,titles from array if id,title pairs. [x,1]=id [x,2]=title
+# dedup_level=0 - remove duplicate titles.
+# dedup_level=1 - Also remove duplicate ids (possible different titles for i18n)
 function dedup_ids_and_titles(input,dedup_level,\
 out,i,n,total,dup,id,title_lc) {
 

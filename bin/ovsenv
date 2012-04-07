@@ -76,8 +76,8 @@ load_config() {
 
 # reconstruct quoted argument list
 arg_list() {
-    escaped_quote="'\\''"
-    local ARG_LIST=""
+    local escaped_quote="'\\''"
+    ARG_LIST=""
     for i in "$@" ; do
         ARG_LIST="$ARG_LIST '${i//\'/$escaped_quote}'" 
     done

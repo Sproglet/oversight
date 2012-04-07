@@ -192,13 +192,9 @@ function people_domain_db_add(domaindb,extid,ovsid) {
 #
 function people_change_extid_to_ovsid(fields,person_extid2ovsid) {
 
-    dump(0,"DELETE idmapping",person_extid2ovsid);
-    dump(0,"DELETE current record",fields);
-
     people_change_extid_to_ovsid_by_role("mi_actor_ids",ACTORS,fields,person_extid2ovsid);
     people_change_extid_to_ovsid_by_role("mi_director_ids",DIRECTORS,fields,person_extid2ovsid);
     people_change_extid_to_ovsid_by_role("mi_writer_ids",WRITERS,fields,person_extid2ovsid);
-    dump(0,"DELETE new record",fields);
 }
 
 # INPUT db field array f[dbfield]="domain@extid1@extid2@...." dbfield=ACTORS,WRITERS,DIRECTORS

@@ -16,10 +16,6 @@
 # This module is disbled for now, but I dont want to lose code.
 # might be useful for spidering/HEAD etc.
 
-BEGIN {
-    g_url_agent="Oversight";
-}
-
 END {
 
     #url_get("http://api.themoviedb.org/3/movie/tt0848228?api_key=2d51eee0579cdf410b337edcdac1ae14",r1);

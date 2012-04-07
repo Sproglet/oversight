@@ -55,15 +55,60 @@ i,n,tag,ids,t) {
     DEBUG("end:"label":xml");
 }
 
+# PArse XML - remove comments before passing to real parser
+function parseXML(line,xml,ignorePaths,\
+beg,end,ret) {
+
+    if (xml["!"]) {
+
+        # in a comment
+
+        if (match(line,"-->")) line = substr(line,RSTART+3);
+        delete xml["!"];
+
+    }
+
+    # remove single line comments
+    while ((beg=index(line,"<!--")) > 0) {
+       if ((end=index(line,"-->")) > 0) {
+          line = substr(line,1,beg-1) substr(line,end+3);
+          beg = end = 0;
+       } else {
+          break;
+       }
+    }
+
+    if (beg) {
+
+        #parse bit before start of comment.
+        line = substr(line,1,beg-1);
+        ret = parseXML2(line,xml,ignorePaths);
+        xml["!"] = 1;
+
+    } else if (!xml["!"]) {
+
+        # not in a comment - parse
+        ret = parseXML2(line,xml,ignorePaths);
+
+    } else {
+        # line is within a comment
+        ret = 1;
+    }
+    return ret;
+}
+
+
 
 #Parse flat XML into an array - does NOT clear xml array as it is used in fetchXML
 # @ignorePaths = csv of paths to ignore
 #sep is used if merging repeated element values together
 # ret 1=parsed ok 0=error
-function parseXML(line,xml,ignorePaths,\
+function parseXML2(line,xml,ignorePaths,\
 sep,\
 currentTag,oldTag,i,tag,text,parts,sp,slash,tag_data_count,\
 attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_ok) {
+
+    if (line == "") return 1;
 
     if (index(line,"<?")) {
         line = substr(line,index(line,"?>")+2);
@@ -196,7 +241,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
             }
 
             if (!(tag in tag_ok)) {
-               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ && tag !~ /^!--/ ) {
+               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ && tag !~ /!--/ ) {
                    ERR("XML Parse error: Invalid tag ["tag"]");
                    ret = 0;
                    break;

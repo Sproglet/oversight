@@ -48,14 +48,14 @@ jpg_resize() {
     #for example we know that going from hd to sd is roughly 1/2 so we first scale by that
     initial_scale="$3"
 
-    doit=1
-    o=
-    boxset=
-    w=
-    h=
-    case "$output" in 
+    local doit=1
+    local o=
+    local boxset=
+    local w=
+    local h=
+    local width_cmp_fn=
 
-        */_fa/*.hd.jpg) w=1280 ; q=90 ;; # h=720 this is a standard width at themoviedb - no need to convert those
+    case "$output" in 
 
         */_fa/*.sd.jpg) w=685 ; h=460 ; q=90 ;;
 
@@ -63,9 +63,13 @@ jpg_resize() {
 
         */_J/*.thumb.jpg) w=200 ; q=90 ; boxset=1 ;;
 
-        */_J/*.jpg) w=500 ; q=90 ;; # this is a standard width at themoviedb - no need to convert those
-
         */_A/*.jpg) h=400 ; q=85 ;; #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px
+
+        fanart.jpg|*-fanart.jpg|*/_fa/*.hd.jpg)
+            w=1280 ; q=90 ; width_cmp_fn=ne ;; # h=720 this is a standard width at themoviedb - no need to convert those
+
+        poster.jpg|*-fanart.jpg|*/_J/*.jpg)
+            w=500 ; q=90 ; width_cmp_fn=gt ;; # this is a standard width at themoviedb - no need to convert those
 
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac
@@ -73,9 +77,11 @@ jpg_resize() {
     if [ -n "$h" ] ; then o="-height=$h " ; fi
 
     # Check if width is already correct - note tvdb currently serves 1280w fanart and 500 posters s
-    if [ -n "$w" -a -z "$h" ] ; then
+    if [ -n "$width_cmp_fn" ] ; then
         w2=`jpgwidth "$input"`;
-        if [ "$w2" -ne "$w" ] ; then
+        if [ "$w2" -$width_cmp_fn "$w" ] ; then
+            INFO "width=$w2 - required=$w - resizing to $output"
+        else
             jpg_size="`sizekb "$input"`"
             if [ "$jpg_size" -lt 1000 ] ; then
                 INFO "width ($w2) ok ,  file size ok ${jpg_size}KB - copy to $output"
@@ -83,8 +89,6 @@ jpg_resize() {
             else
                 INFO "dimensions ok but file size too big ${jpg_size}KB - resizing to $output"
             fi
-        else
-            INFO "width=$w2 - required=$w - resizing to $output"
         fi
     fi
 
@@ -168,24 +172,37 @@ resize_img() {
     base="${2%.jpg}"
     base="${base%.png}"
 
+    oversight=0;
+    case "$base" in
+        */Apps/oversight/*) oversight=1 ;;
+    esac
+
     case "$1" in
         fanart)
-            jpg_resize "$2" "$base.hd.jpg" "1/1"
-            if [ $get_ntsc -eq 1 ] ; then
-                jpg_resize "$base.hd.jpg" "$base.sd.jpg" "1/2"
-            fi
-            if [ $get_pal -eq 1 ] ; then
-                jpg_resize "$base.hd.jpg" "$base.pal.jpg" "1/2"
+            if [ $oversight = 1 ] ; then
+                jpg_resize "$2" "$base.hd.jpg" "1/1"
+                if [ $get_ntsc -eq 1 ] ; then
+                    jpg_resize "$base.hd.jpg" "$base.sd.jpg" "1/2"
+                fi
+                if [ $get_pal -eq 1 ] ; then
+                    jpg_resize "$base.hd.jpg" "$base.pal.jpg" "1/2"
+                fi
+            else
+                jpg_resize "$2" "$2" "1/1"
             fi
             ;;
         poster)
             # assuming covers are high quality we can start with 50% reduction in djpeg stage
             jpg_resize "$2" "$2" "1/1"
-            jpg_resize "$2" "$base.thumb.jpg" "1/2"
+            if [ $oversight = 1 ] ; then
+                jpg_resize "$2" "$base.thumb.jpg" "1/2"
+            fi
             ;;
         portrait)
-            if [ `sizekb "$2"` -gt 30 ] ; then
-                jpg_resize "$2" "$2" "1/1"
+            if [ $oversight = 1 ] ; then
+                if [ `sizekb "$2"` -gt 30 ] ; then
+                    jpg_resize "$2" "$2" "1/1"
+                fi
             fi
             ;;
         *)
@@ -374,12 +391,13 @@ HERE
 	exit 1
 fi
 
-if [ "$catalog_make_pal_fanart" = yes ] ; then
+
+if [ "$catalog_make_pal_fanart" = yes -a "$FAMILY" = nmt ] ; then
     get_pal=1
 else
     get_pal=0
 fi
-if [ "$catalog_make_ntsc_fanart" = yes ] ; then
+if [ "$catalog_make_ntsc_fanart" = yes -a "$FAMILY" = nmt ] ; then
     get_ntsc=1
 else
     get_ntsc=0

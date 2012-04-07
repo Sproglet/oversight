@@ -477,7 +477,7 @@ function remove_format_tags(text,\
 # similar web results eg the.movie 2009 and  The Movie (2009)
 # The incoming titles will not have brackets on the year.
 function title_to_re(s,\
-i,words,count,s2,ch) {
+i,s2,ch) {
 
     # "the movie 2009" to "the movie \(?2009\)?"
     sub(g_year_re"$","\\(?&\\)?",s); 
@@ -485,7 +485,6 @@ i,words,count,s2,ch) {
     # "the movie" to "[Tt][Hh][Ee] [Mm][Oo]vie"
     # could use tolower() but this means another parameter to scan_page_for_match_counts and complicates
     # returning matches as the match string is modified by tolower().
-    count = chop(s,"\\<[a-zA-z]",words);
     s2="";
     for(i = 1 ; i - length(s) <= 0 ; i++ ) {
         ch = substr(s,i,1);

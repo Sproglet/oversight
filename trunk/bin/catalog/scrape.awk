@@ -1257,7 +1257,7 @@ dnum,dtext,i,value,pri) {
             if (minfo[POSTER] == "" && \
                 (index(text,"src=") || index(text,"href=")) && image_url(text) ) {
 
-                dnum = get_regex_pos(text,"((src|href)=\"[^\"]+)",0,dtext);
+                dnum = ovs_patsplit(text,dtext,"((src|href)=\"[^\"]+)");
                 for(i = 1 ; i <= dnum ; i++ ) {
                     if (image_url(dtext[i])) {
                         dtext[i] = substr(dtext[i],index(dtext[i],"\"")+1);
@@ -1660,7 +1660,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
                 #DEBUG("XX1 text=["text"]");
 
-                dnum = get_regex_pos(text,"("href_reg"|"src_reg"|"name_reg")",0,dtext);
+                dnum = ovs_patsplit(text,dtext,"("href_reg"|"src_reg"|"name_reg")");
 
                 for(i = 1 ; i <= dnum && count < maxnames ; i++ ) {
 
@@ -1730,8 +1730,8 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
 # return number of minutes.
 function extract_duration(text,\
-num,n,p,ret) {
-    num = get_regex_pos(text,"[0-9]+",0,n,p);
+num,n,ret) {
+    num = ovs_patsplit(text,n,"[0-9]+");
 
     if (num == 1 && n[1] > 3 ) {
         # If there is one number then it is minutes if > 3 else assume hours.

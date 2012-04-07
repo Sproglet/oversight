@@ -1082,6 +1082,9 @@ function unit(doit) {
 
         unit1("preserve5",(preserve_src_href("<img src='http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif'") == " img=\"http://images.allocine.fr/cx_120_90/b_1_x/o_play.png_5_se/medias/nmedia/00/02/53/34/18352141_rep.gif\" <img " ));
 
+        unit1("html1",(html_decode("A&amp;B&nbsp;C") == "A&B C"));
+        unit1("html2",(html_decode("A&#x20;B&#65;C") == "A BAC"));
+
         # var i,ulang,minfo
 #        split("en",ulang,",");
         #find_movie_page("Matrix Reloaded",2003,138,"Wachowski",minfo);

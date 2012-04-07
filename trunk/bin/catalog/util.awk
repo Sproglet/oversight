@@ -808,36 +808,25 @@ matches,ret) {
     return ret;
 }
 
-# Split a line at regex boundaries.
-# used by get_regex_counts
-# IN s - line to split
-# IN regex - regular expression
-# OUT parts - index 1,2,3.. values text,match1,text,match2,...
-# RET number of parts.
-function chop(s_in,regex,parts,\
-flag,i,s) {
-    #first find split text that doesnt occur in the string.
-    #flag="=#z@~";
-    flag=SUBSEP;
+# This emulates gawk 4 patsplit()
+function ovs_patsplit(text,array,regex,seps,\
+i,n,expand,parts,ret) {
+    #return patsplit(text,array,regex,seps);
 
-    # insert the split text around the regex boundaries
+    # eg --XX--XX-- => --,XX,--,XX,--
+    expand = gensub(regex,SUBSEP"&"SUBSEP,"g",text);
+    n=split(expand,parts,SUBSEP);
 
-    s = s_in;
+    ret = 0;
+    i=0;
 
-    if (gsub(regex,flag "&" flag , s )) {
-        # now split at boundaries.
-        i = split(s,parts,flag);
-        if (i % 2 == 0) ERR("Even chop of ["s"] by ["flag"]");
-    } else {
-        i = 1;
-        delete parts;
-        parts[1] = s_in;
+    for (i = 1 ; i < n ; i+= 2) {
+        seps[ret] = parts[i];
+        array[++ret] = parts[i+1];
     }
-    return i+0;
+    seps[ret] = parts[n];
+    return ret;
 }
-
-
-
 
 # Find all occurences of a regular expression within a string, and return in an array.
 # IN Line to match against.
@@ -845,9 +834,33 @@ flag,i,s) {
 # IN max = max occurences (0 = all)
 # OUT matches is updated with (text=>num occurrences)
 # RET total number of occurences.
-function get_regex_counts(line,regex,max,matches) {
-    return 0+get_regex_count_or_pos("c",line,regex,max,matches);
+function get_regex_counts(line,regex,max,matches,\
+i,n,pieces) {
+    n = ovs_patsplit(line,pieces,regex);
+    delete matches;
+    if (max == 0 || max > n) max = n;
+    for(i=1 ; i<= max ; i++ ) {
+        matches[pieces[i]]++;
+    }
+    return max;
 }
+
+# PAt split but only return first few results.
+function patsplitn(line,regex,max,rtext,\
+i,count,tmp) {
+    if (max == 0) {
+        count = ovs_patsplit(line,rtext,regex);
+    } else {
+        # copy max elements
+        count = ovs_patsplit(line,tmp,regex);
+        if (max > count) max = count;
+        for(i = 1 ; i<= max ; i++ ) {
+            rtext[i] = tmp[i];
+        }
+    }
+    return count;
+}
+
 # Find all occurences of a regular expression within a string, and return in an array.
 # IN mode : c=count matches  p=return match positions.
 # IN Line to match against.
@@ -856,58 +869,25 @@ function get_regex_counts(line,regex,max,matches) {
 # OUT rtext is updated with (order=>match text)
 # OUT rstart  is updated with (order -> start pos)
 # RET total number of occurences.
-function get_regex_pos(line,regex,max,rtext,rstart) {
-    return 0+get_regex_count_or_pos("p",line,regex,max,rtext,rstart);
-}
+function get_regex_pos(line,regex,max,rtext,rstart,\
+count,i,start,seps) {
 
-
-# Find all occurences of a regular expression within a string, and return in an array.
-# IN mode : c=count matches  p=return match positions.
-# IN Line to match against.
-# IN regex to match with.
-# IN max = max occurences (0 = all)
-# mode=c:
-# OUT rtext is updated with (mode=c:text=>num occurrences mode=p:order=>match text)
-# mode=p:
-# OUT rtext is updated with (order=>match text)
-# OUT rstart  is updated with (order -> start pos)
-# OUT total number of occurences.
-function get_regex_count_or_pos(mode,line,regex,max,rtext,rstart,\
-count,fcount,i,parts,start) {
-    count =0 ;
-
-    delete rtext;
     delete rstart;
 
-    fcount = chop(line,regex,parts);
+    count = ovs_patsplit(line,rtext,regex,seps);
 
     start=1;
-    max = max+0;
-    if (mode == "c") {
-        for(i=2 ; i-fcount <= 0 ; i += 2 ) {
-            count++;
-            rtext[parts[i]]++;
-            if (max > 0 && count >= max ) {
-                break;
-            }
-        }
-    } else {
-        for(i=2 ; i-fcount <= 0 ; i += 2 ) {
-            count++;
-            rtext[count] = parts[i];
 
-            start += length(parts[i-1]);
-            rstart[count] = start;
-            start += length(parts[i]);
-            if (max > 0 && count >= max ) {
-                break;
-            }
-        }
+    if (max == 0 || max > count) max = count;
+
+    for(i = 1 ; i <= max ; i++ ) {
+
+        start += length(seps[i-1]);
+        rstart[i] = start;
+        start += length(rtext[i]);
     }
 
-    dump(3,"get_regex_count_or_pos:"mode,rtext);
-
-    return 0+count;
+    return count;
 }
 
 

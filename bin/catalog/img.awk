@@ -296,7 +296,8 @@ json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,sco
     gsub(/[&]quot;/,"\"",html);
 
 
-    n = chop(html,dim_regex,blocks);
+
+    n = ovs_patsplit(html,blocks,dim_regex);
 
     id = 0;
 
@@ -309,7 +310,7 @@ json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,sco
     map["t"] = "Title";
     map["s"] = "Size";
 
-    for(i = 2 ; i <= n ; i+=2 ) {
+    for(i = 1 ; i <= n ; i++ ) {
 
         text = blocks[i];
         if (match(text,dim_regex,parts) ) {

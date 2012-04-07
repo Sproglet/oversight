@@ -146,7 +146,12 @@ enc,line,code,n) {
 
 # Check engine 0=bad 1 or more = good
 function engine_check(url,\
-ret) {
+ret,matches) {
+    # function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
+    ret = scan_page_for_match_order(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","title/tt0076752",0,0,"",matches);
+    dump(0,"match order",matches);
+    ret = scan_page_for_match_counts(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","title/tt0076752",0,0,"",matches);
+    dump(0,"match counts",matches);
     ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","tt0076752/",1);
     if (ret) {
         INF("search engine ready ["url"]\n");
@@ -261,7 +266,7 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 
                 if (count_or_order) {
                     # Get all ordered matches. 1=>test1, 2=>text2 , etc.
-                    linecount = get_regex_pos(line[1],regex,remain,matches2);
+                    linecount = patsplitn(line[1],regex,remain,matches2);
                     if (verbose) {
                         DEBUG("linecount = "linecount" remain="remain);
                         dump(0,"matches2",matches2);
@@ -418,7 +423,7 @@ err,l) {
 }
 
 function html_decode(text,utf8mode,\
-parts,part,count,code,newcode,text2) {
+parts,seps,part,count,code,newcode,text2) {
     if (g_chr[32] == "" ) {
         decode_init();
     }
@@ -428,9 +433,9 @@ parts,part,count,code,newcode,text2) {
 
     if (index(text,"&") && index(text,";")) {
 
-        count = chop(text,"[&][[:alpha:]]+;",parts);
+        count = ovs_patsplit(text,parts,"[&][[:alpha:]]+;",seps);
 
-        for(part=2 ; part-count < 0 ; part += 2 ) {
+        for(part=1 ; part <= count ; part++ ) {
 
             newcode="";
 
@@ -445,9 +450,9 @@ parts,part,count,code,newcode,text2) {
             if (newcode == "") {
                 newcode=parts[part]; #unchanged
             }
-            text2=text2 parts[part-1] newcode;
+            text2=text2 seps[part-1] newcode;
         }
-        text2 = text2 parts[count];
+        text2 = text2 seps[count];
         if (text != text2 ) {
             text = text2;
         }
@@ -468,12 +473,12 @@ function html_to_8bit(text) {
 
 # Convert &#123; to the binary representation. If utf8mode use utf8 for numbers > 127
 function html_convert_numbers(text,utf8mode,\
-ret,num,i,parts,code) {
+ret,num,i,parts,seps,code) {
 
     if (index(text,"&#")) {
         decode_init();
-        num = chop(text,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",parts);
-        for(i = 2 ; i < num ; i+=2) {
+        num = ovs_patsplit(text,parts,"[&](#[0-9]{1,4}|#[Xx][0-9a-fA-F]{1,4});",seps);
+        for(i = 1 ; i <= num ; i++) {
             if (tolower(substr(parts[i],1,3)) == "&#x" ) {
                 # &#x123;
                 code = hex2dec(substr(parts[i],4,length(parts[i])-4));
@@ -482,15 +487,15 @@ ret,num,i,parts,code) {
                 code = substr(parts[i],3,length(parts[i])-3);
             }
             if (utf8mode) {
-                ret = ret parts[i-1] code_to_utf8(code+0);
+                ret = ret seps[i-1] code_to_utf8(code+0);
             } else if (code <= 255 ) {
-                ret = ret parts[i-1] g_chr[code+0];
+                ret = ret seps[i-1] g_chr[code+0];
             } else {
                 INF("Forced utf8 character "code" : might get corrupted by iconv");
-                ret = ret parts[i-1] code_to_utf8(code+0);
+                ret = ret seps[i-1] code_to_utf8(code+0);
             }
         }
-        ret = ret parts[num];
+        ret = ret seps[num];
         text = ret;
     }
     return text;

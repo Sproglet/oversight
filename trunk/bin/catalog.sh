@@ -84,27 +84,31 @@ To simply index all files in a folder:
         This is usually all that is needed. The new oversight viewer will take care of showing nice names to the user.
 ____________________________________________________________________________________________________________________    
 Other options 
-    RENAME_TV      - Move the tv folders.
-    RENAME_FILM    - Move the film folders.
-    RENAME         - Rename both tv and film
-    DRYRUN         - Show effects of RENAME but dont do it.
-    EXPORT_XML     - Export XML database to /tmp/indexdb.xml
-    IGNORE_NFO     - dont look in existing NFO for any infomation
-    WRITE_NFO      - write NFO files
-    NOWRITE_NFO    - dont write NFO files
-    DEBUG          - lots of logging
-    REBUILD        - Run even if no folders. Usually to tidy database.
-    RESCAN         - Rescan default paths
-    NEWSCAN        - Rescan default paths - new media only
-    PARALLEL_SCAN  - Allow multiple scans with RESCAN or NEWSCAN keyword
-    NOACTIONS      - Do not run any actions and hide Delete actions from overview.
-    STDOUT         - Write to stdout (if not present output goes to log file)
-    GET_POSTERS    - Download posters
-    UPDATE_POSTERS- Fetch new posters for each scanned item.
-    GET_FANART     - Download fanart
-    UPDATE_FANART - Fetch new fanart for each scanned item.
+    RENAME_TV        - Move the tv folders.
+    RENAME_FILM      - Move the film folders.
+    RENAME           - Rename both tv and film
+    EXPORT_XML       - Export XML database to /tmp/indexdb.xml (Experimental)
+
+    IGNORE_NFO       - dont look in existing NFO for any infomation
+    WRITE_NFO        - write NFO files
+    NOWRITE_NFO      - Dont write NFO files
+
+    DEBUG            - lots of logging
+    NOACTIONS        - Do not run any actions and hide Delete actions from overview.
+    DRYRUN           - Show effects of RENAME but dont do it.
+
+    REBUILD          - Run even if no folders. Usually to tidy database.
+    RESCAN           - Rescan default paths
+    NEWSCAN          - Rescan default paths - new media only
+    PARALLEL_SCAN    - Allow multiple scans with RESCAN or NEWSCAN keyword
+    STDOUT           - Write to stdout (if not present output goes to log file)
+
+    GET_POSTERS      - Download posters if not present
+    UPDATE_POSTERS   - Download fresh posters for scanned items.
+    GET_FANART       - Download fanart if not present
+    UPDATE_FANART    - Download fresh fanart for scanned items.
     GET_PORTRAITS    - Download actor portraits
-    UPDATE_PORTRAITS - Fetch new actor portrait for each scanned item.
+    UPDATE_PORTRAITS - Download fresh portraits for actors associated with scanned items.
 USAGE
     exit 0
 fi
@@ -161,7 +165,7 @@ catalog() {
     mkdir -p "$pid_dir"
     PIDFILE="$pid_dir/$$.pid"
 
-    $awk_prg \
+    LC_ALL=C $awk_prg \
     JOBID="$JOBID" PID=$$ NOW=`date +%Y%m%d%H%M%S` \
     DAY=`date +%a.%P` \
     "PIDFILE=$PIDFILE" \
@@ -229,7 +233,7 @@ awk '
 
 /(Start|Merge) item/ { i=$0 ; system(""); } 
 
-/\[ERR\]/ { if (i) { print i ; i="" ;} ; print "'"$1"':"$0 ; } 
+/\[ERR\]/ { if (i) { printf "\n%s\n\n",i ; i="" ;} ; print "'"$1"':"$0 ; } 
 
 END { exit c }' 
 }

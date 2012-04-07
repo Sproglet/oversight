@@ -210,7 +210,7 @@ line,set,code,ret,i,is_xml,is_generated) {
 }
 
 function start_xml(f) {
-    print g_nfo_encoding >> f;
+    print g_nfo_encoding > f;
     print g_nfo_comment >> f
 }
 
@@ -240,11 +240,9 @@ function endXmbcNfo(nfo,do_export) {
 
 #dbOne = single row of index.db
 function writeXmbcTag(dbOne,tag,children,nfo,\
-fieldId,text,attr,childTag,lang) {
+fieldId,text,childTag,lang,genres) {
     print "<"tag">" >> nfo;
 
-    #Define any additional tag attributes here.
-    attr["movie","id"]=" moviedb=\"imdb\"";
 
     for (fieldId in dbOne) {
 
@@ -254,18 +252,27 @@ fieldId,text,attr,childTag,lang) {
                 text=to_string(fieldId,dbOne[fieldId]);
 
                 if (text != "") {
-                    if (childTag == "watched" ) {
+                    if (childTag == "genre" ) {
+                        split(text,genres,"\\|");
+                        writeTags(tag,childTag,genres,nfo);
+                    } else {
+                        if (childTag == "watched" ) {
 
-                        text=((text==1)?"true":"false");
+                            text=((text==1)?"true":"false");
 
-                    } else if (childTag == "plot" && text ~ /^[a-z]{2}:/ ) {
-                       lang=substr(text,1,2);
-                       text=substr(text,4);
-                       # uncomment following line to add langage attribute to plot.
-                       #attr[tag,childTag] = attr[tag,childTag]" language=\""lang"\"";
+                        } else if (childTag == "plot" ) {
+                           delete g_nfo_attr[tag,childTag]; 
+
+                           if (text ~ /^[a-z]{2}:/ ) {
+                               lang=substr(text,1,2);
+                               text=substr(text,4);
+                               # uncomment following line to add langage attribute to plot.
+                               g_nfo_attr[tag,childTag] = " language=\""lang"\"";
+                           }
+                        }
+                        writeTag(tag,childTag,text,nfo);
+
                     }
-
-                    print "\t<"childTag attr[tag,childTag]">"xmlEscape(text)"</"childTag">" >> nfo;
                 }
             } else {
                 ERR("undefined tag for field "fieldId);
@@ -273,6 +280,22 @@ fieldId,text,attr,childTag,lang) {
         }
     }
     print "</"tag">" >> nfo;
+}
+function writeTags(parent_tag,tag,array,nfo,\
+i) {
+    for(i in array) {
+        writeTag(parent_tag,tag,array[i],nfo);
+    }
+}
+
+function writeTag(parent_tag,tag,text,nfo,\
+attr) {
+    #Define any additional tag attributes here.
+    if (!(1 in g_nfo_attr)) {
+        g_nfo_attr[1]=1;
+        g_nfo_attr["movie","id"]=" moviedb=\"imdb\"";
+    }
+    print "\t<"tag g_nfo_attr[parent_tag,tag]">"xmlEscape(text)"</"tag">" >> nfo;
 }
 
 function export_xml(dbfile,\

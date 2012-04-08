@@ -2092,7 +2092,7 @@ partners,p,partner,showurl,link,ret) {
 
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info(plugin,minfo,tvDbSeriesUrl,season,episode,\
-result,minfo2) {
+result,minfo2,tvdbid) {
 
     id1("get_tv_series_info("plugin"," tvDbSeriesUrl")");
 
@@ -2132,6 +2132,12 @@ result,minfo2) {
 
     if (result) {
         minfo_merge(minfo,minfo2,plugin);
+
+        # Once items are merged we hanve NAME and DIR fields in order to determine iamge destinations.
+        tvdbid = minfo_get_id(minfo,"thetvdb");
+        if (tvdbid) {
+            getTvDbSeasonBanner(minfo,tvdbid);
+        }
 
         DEBUG("Title:["minfo[TITLE]"] Episode:["minfo[EPTITLE]"]"minfo[SEASON]"x"minfo[EPISODE]" date:"minfo[AIRDATE]);
         DEBUG("");
@@ -2216,7 +2222,6 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
         iid = seriesInfo["/Data/Series/IMDB_ID"];
         minfo_set_id("imdb",iid,minfo);
 
-        getTvDbSeasonBanner(minfo,thetvdbid);
 
         scrape_cache_add(season":"tvDbSeriesUrl,minfo);
         result ++;

@@ -1000,37 +1000,46 @@ out,i,n,total,dup,id,title_lc) {
 
     if (!n) {
 
-        ERR("Missing total in data");
+        n = hash_size(input);
+        if (n%1) {
+            ERR("Odd total "n" for data");
+            return;
+        }
+        n = int(n/2);
+        if (n) {
+            ERR("Missing total "n" from data");
+            dump(0,"data",input);
+        }
+    }
 
-    } else {
+    total = 0;
 
-        total = 0;
-
-        for(i = 1 ; i <= n ; i++ ) {
-            id = input[i,1];
-            if (dedup_level == 0 ) {
-                # Keep unique titles (case insensitive).
-                title_lc = tolower(input[i,2]);
-                if (dup[id] != title_lc) {
-                    total++;
-                    out[total,1] = id;
-                    out[total,2] = input[i,2];
-                    dup[id] = title_lc;
-                }
-            } else if (dedup_level == 1) {
-                # Keep unique ids.
-                if (!(id in dup)) {
-                    total++;
-                    out[total,1] = id;
-                    out[total,2] = input[i,2];
-                    dup[id] = 1;
-                }
+    for(i = 1 ; i <= n ; i++ ) {
+        id = input[i,1];
+        if (dedup_level == 0 ) {
+            # Keep unique titles (case insensitive).
+            title_lc = tolower(input[i,2]);
+            if (dup[id] != title_lc) {
+                total++;
+                out[total,1] = id;
+                out[total,2] = input[i,2];
+                dup[id] = title_lc;
+            }
+        } else if (dedup_level == 1) {
+            # Keep unique ids.
+            if (!(id in dup)) {
+                total++;
+                out[total,1] = id;
+                out[total,2] = input[i,2];
+                dup[id] = 1;
             }
         }
-        out["total"] = total;
+    }
+    if (total < n ) {
         hash_copy(input,out);
     }
-    return out["total"];
+    input["total"] = total;
+    return input["total"];
 }
 
 function clean_html(fin,fout,\

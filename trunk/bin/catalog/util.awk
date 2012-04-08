@@ -14,8 +14,14 @@ function basename(f) {
 
 function hasContent(f,\
 tmp,err) {
-    err = (getline tmp < f );
-    if (err != -1) close(f);
+    if (f=="") {
+        ERR("hasContent:blank file?");
+    } else if (system("test -e "qa(f)" && ! test -f "qa(f)) == 0) {
+        ERR("hasContent:not file? ["f"]");
+    } else {
+        err = (getline tmp < f );
+        if (err != -1) close(f);
+    }
     return (err == 1 );
 }
 

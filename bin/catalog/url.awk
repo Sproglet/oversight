@@ -109,7 +109,12 @@ function url_eof_init() {
         g_url_eof[1]=1;
         # g_url_eof must a a string that grabs very lasy byte for the site.
         # if not specified it uses the application type. json='}' html='</html>' xml='>'
-        g_url_eof["www.thetvdb.com"] = "\n";
+        #g_url_eof["www.thetvdb.com"] = ">[[:space:]]*";
+
+        # Generic EOF markers - these will fail if the site sends trailing white space CR/LF etc.
+        g_url_eof["xml"] = "/[^>]+>\n?"; #any end tag followed by optional white space
+        g_url_eof["json"] = "}";
+        g_url_eof["html"] = "html>[[:space:]]*";
     }
 }
 function url_eof(request,response,rec_sep,\
@@ -133,11 +138,12 @@ ct,host) {
 
             ct = response["content-type"];
             if (ct ~ "json" ) {
-                rec_sep = "}";
+                rec_sep = g_url_eof["json"];
             } else if (ct ~ "html" ) {
-                rec_sep = "html>";
+                rec_sep = g_url_eof["html"];
             } else if (ct ~ "xml" ) {
-                rec_sep = "/[[:alnum:]]+>";
+                rec_sep = g_url_eof["xml"];
+              
             } else {
                 rec_sep = "\r\n";
             }
@@ -153,7 +159,7 @@ ct,host) {
 # eg for JSON "}" for XML ">" for HTML </html> 
 # Performance for HTML m
 function url_get(url,response,rec_sep,\
-request,bytes,bytes2,ret,con,body,chunked,chunk_len,content_length,read_body) {
+request,bytes,bytes2,ret,con,body,chunked,chunk_len,content_length,read_body,is_xml) {
 
     gsub(/ /,"%20",url);
 
@@ -185,6 +191,9 @@ request,bytes,bytes2,ret,con,body,chunked,chunk_len,content_length,read_body) {
     if (response["transfer-encoding"] == "chunked") {
         chunked = 1;
     }
+    if (index(response["content-type"],"xml")) {
+        is_xml=1;
+    }
 
     if (ret) {
         read_body = 1;
@@ -198,8 +207,8 @@ request,bytes,bytes2,ret,con,body,chunked,chunk_len,content_length,read_body) {
     if (read_body) {
 
         DEBUG("begin body sep="rec_sep);
-        _RS = RS;
-        RS=rec_sep;
+        _FS = FS ; FS = SUBSEP ;
+        _RS = RS; RS = rec_sep;
 
         if (chunked) {
             while ( con |& getline bytes ) {
@@ -232,9 +241,20 @@ request,bytes,bytes2,ret,con,body,chunked,chunk_len,content_length,read_body) {
             content_length = response["content-length"]+0;
             while ( con |& getline bytes ) {
                 body = body bytes RT;
+                DEBUG("[" bytes "][" RT "]");
                 if (content_length && l(body)+0 >= content_length) break;
+
+                # If XML then change RS to be the expected end tag corresponding the the first opening tag.
+                if (is_xml==1 && RS == g_url_eof["xml"]) {
+                    if (match(bytes,"<[^[:space:]>?/!]+")) {
+                        is_xml++;
+                        RS = substr(body,RSTART+1,RLENGTH-1)"[[:space:]]*>\n";
+                        DEBUG("xml eof changed to "RS);
+                    }
+                }
             }
         }
+        FS = _FS;
         RS = _RS;
         DEBUG("end body");
         response["body"] = body;

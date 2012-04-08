@@ -40,17 +40,20 @@ poster_ref,id,ret) {
         if (minfo[CATEGORY] == "T" ) {
             if (field_id == FANART ) {
                 ret ="fanart.jpg";
-            } if (field_id == POSTER ) {
+            } else if (field_id == POSTER ) {
                 ret ="poster.jpg";
             }
         } else {
             if (field_id == FANART ) {
                 ret = gensub("\\.[^.]+$","-fanart.jpg",1,minfo[NAME]);
-            } if (field_id == POSTER ) {
+            } else if (field_id == POSTER ) {
                 ret = gensub("\\.[^.]+$",".jpg",1,minfo[NAME]);
             }
         }
+        DEBUG("internal_poster_reference for "field_id"  = "ret);
+        #dump(0,"internal_poster_reference",minfo);
     }
+        DEBUG("internal_poster_reference for "field_id"  = "ret);
     return ret;
 }
 

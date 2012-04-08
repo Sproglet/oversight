@@ -174,7 +174,7 @@ order) {
     # http://code.google.com/p/oversight/wiki/SearchMethods
 
     #scene names - online_nfo is often best?
-    if (name ~ "^[[:alnum:]]+[-.][-.[:alnum:]]+\.[[:alnum:]]{2,3}$") {
+    if (name ~ "^[[:alnum:]]+[-.][-.[:alnum:]]+\\.[[:alnum:]]{2,3}$") {
 
         order = "IMDBFIRST,ONLINE_NFO,TITLEYEAR,WEB";
 

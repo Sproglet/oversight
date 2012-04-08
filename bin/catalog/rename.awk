@@ -113,27 +113,23 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
                # Move nfo file
                DEBUG("Checking nfo file ["minfo[NFO]"]");
-               if(is_file(minfo[NFO])) {
+               if(minfo[NFO] != "") {
 
                    nfoName = newName;
                    sub(/\.[^.]+$/,"",nfoName);
                    nfoName = nfoName ".nfo";
 
-                   if (nfoName == newName ) {
-                       return;
-                   }
+                   if (nfoName != newName ) {
 
-                   DEBUG("Moving nfo file ["minfo[NFO]"] to ["nfoName"]");
-                   if (moveFileIfPresent(minfo[NFO],nfoName) != 0) {
-                       return;
-                   }
-                   if (!g_opt_dry_run) {
+                       if (moveFileIfPresent(minfo[NFO],nfoName) != 0) {
+                           return;
+                       }
 
                        g_file_date[nfoName]=g_file_date[minfo[NFO]];
                        delete g_file_date[minfo[NFO]];
 
                        minfo[NFO] = nfoName;
-                       DEBUG("Moved nfo file ["minfo[NFO]"]");
+                       DEBUG("new nfo location ["minfo[NFO]"]");
                    }
                }
 
@@ -196,13 +192,13 @@ function substitute(keyword,value,str,\
 
 function rename_related(oldName,newName,\
     extensions,ext,oldBase,newBase) {
-    split("jpg png srt idx sub nfo",extensions," ");
+    split(".jpg .png .srt .idx .sub .nfo -fanart.jpg",extensions," ");
 
     oldBase = oldName;
-    sub(/\....$/,".",oldBase);
+    sub(/\....?$/,"",oldBase);
 
     newBase = newName;
-    sub(/\....$/,".",newBase);
+    sub(/\....?$/,"",newBase);
 
     for(ext in extensions) {
         moveFileIfPresent(oldBase extensions[ext],newBase extensions[ext]);

@@ -79,8 +79,8 @@ json,ret,i,tag,minfo2) {
                     if (json["data:type"] == "tv_series" ) {
                         minfo2[CATEGORY] = "T";
                     } else if (json["data:type"] == "tv_episode" ) {
-                        INF("This is episode data - go to series data");
                         id = json["data:series:tconst"]; 
+                        id0("going to series data");
                         return fetch_ijson_details_by_locale(id,locale,minfo);
                     } else {
                         minfo2[CATEGORY] = "M";

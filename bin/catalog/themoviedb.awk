@@ -37,6 +37,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
                 # Duplicate movie - go to original
                 id = subexp(name,"([0-9]+).$");
                 if (id) {
+                    id0("duplicate movie "id);
                     return get_themoviedb_info(id,minfo);
                 }
             }

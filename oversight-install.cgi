@@ -119,8 +119,7 @@ INSTALL() {
 
         SKIN_INSTALL
 
-        chmod -R 775 "$OVS_HOME"
-        chown -R nmt:nmt "$OVS_HOME"
+        PERMS
         "$NMT" NMT_UNINSTALL "$appname"
         "$NMT" NMT_INSTALL "$appname" "$start_command"
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
@@ -271,9 +270,9 @@ fi
 echo $$ > $LOCK
 
 PERMS() {
-    chmod -R 775 "$OVS_HOME"
-    chown -R nmt:nmt "$OVS_HOME"
-    chown -R nmt:nmt /share/.nzbget/nzbget.conf*
+    chmod -R 775 "$OVS_HOME" || true
+    chown -R nmt:nmt "$OVS_HOME" || true
+    chown -R nmt:nmt /share/.nzbget/nzbget.conf* || true
 }
 
 BOUNCE_NZBGET() {

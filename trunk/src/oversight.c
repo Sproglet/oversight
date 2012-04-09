@@ -42,7 +42,7 @@ int ls(char *path) {
     printf("Content-Type: text/html; charset=utf-8\n\n<html><head><title>%s</title><style type=\"text/css\">"
             " .K { color:green; }"
             " .M { color:orange; }"
-            " .G { text-color:red; }"
+            " .G { color:red; }"
             " td.size { text-align:right; }"
             "</style></head><body>%s<br>",path,path);
     DIR *d = opendir(path);

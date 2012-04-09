@@ -812,11 +812,20 @@ iid) {
 }
 
 function search_tv_series_names(plugin,minfo,title,search_abbreviations,\
-tnum,t,i,url) {
+tnum,t,i,url,dups) {
 
-    tnum = alternate_titles(title,t);
+    tnum = alternate_titles(tnum,title,t,dups);
+    if (tolower(title) ~ /^bbc /) {
+        tnum = alternate_titles(tnum,substr(title,4),t,dups);
+    }
+    # Remove possible scene name prefix? xx-show.s01e01 xx-show-s01e01
+    if (match(minfo[NAME],"^[a-z]+-[-.a-z0-9]+$")) {
+        tnum = alternate_titles(tnum,gensub(/[^ ]+ /,"",1,title),t,dups);
+    }
 
-    for(i = 0 ; i-tnum < 0 ; i++ ) {
+    dump(0,"search_tv_series_names titles",t);
+
+    for(i = 1 ; i <= tnum ; i++ ) {
         url = search_tv_series_names2(plugin,minfo,t[i],search_abbreviations);
         if (url != "") break;
     } 
@@ -1116,37 +1125,36 @@ function remove_country(t) {
     return t;
 }
 
-#return array of alternate titles in array t.
-function alternate_titles(title,t,\
-tnum,tried,tmp) {
+# Add alternate titles to list of titles in title_list
+#IN tnum - current title count
+#IN title - base title to add
+#IN/OUT title_list - ordered search title list
+#IN/OUT dups - hash of unique titles - used to screen out duplicates
+#RETURN new title count 
+function alternate_titles(tnum,title,title_list,dups,\
+tmp) {
     # Build list of possible titles.
-    tnum = 0;
     tmp = clean_title(title,1);
-    tried[tmp]=1;
-    t[tnum++] = tmp;
+    tnum = add_title(tnum,tmp,title_list,dups);
 
     tmp = clean_title(remove_brackets(title),1);
-    if (!(tmp in tried)) {
-        tried[tmp]=1;
-        t[tnum++] = tmp;
-    }
+    tnum = add_title(tnum,tmp,title_list,dups);
 
     tmp = clean_title(remove_country(title),1);
-    if (!(tmp in tried)) {
-        tried[tmp]=1;
-        t[tnum++] = tmp;
-    }
+    tnum = add_title(tnum,tmp,title_list,dups);
 
     tmp = clean_title(remove_country(remove_brackets(title)),1);
-    if (!(tmp in tried)) {
-        tried[tmp]=1;
-        t[tnum++] = tmp;
+    tnum = add_title(tnum,tmp,title_list,dups);
+
+    return tnum;
+}
+
+function add_title(count,title,list,dups) {
+    if (!(title in dups)) {
+        dups[title]=1;
+        list[++count] = title;
     }
-
-    dump(0,"alternate_titles",t);
-
-    return tnum+0;
-
+    return count;
 }
 
 # Search tvDb and return titles hashed by seriesId

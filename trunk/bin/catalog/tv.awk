@@ -720,12 +720,6 @@ tvDbSeriesPage,result,tvid,cat,iid) {
     if (tvDbSeriesPage == "" && imdbUrl == "" ) { 
         # do not know tvid nor imdbid - use the title to search tv indexes.
         tvDbSeriesPage = search_tv_series_names(plugin,minfo,minfo[TITLE],search_abbreviations);
-        if (tvDbSeriesPage == "" ) {
-
-            if (minfo[TITLE] ~ /^[Bb][Bb][Cc] / ) {
-                tvDbSeriesPage = search_tv_series_names(plugin,minfo,substr(minfo[TITLE],4),search_abbreviations);
-            }
-        }
     }
 
     if (tvDbSeriesPage != "" ) { 

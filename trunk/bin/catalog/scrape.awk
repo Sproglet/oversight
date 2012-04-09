@@ -414,7 +414,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
     if (have_visited(minfo,domain":"locale)) {
 
-        INF("Already visited");
+        #INF("Already visited");
 
     } else if (url=="" || locale=="" )  {
         ERR("paramters missing");
@@ -1543,12 +1543,12 @@ i,locales,tmp,ret,c,num) {
 
 # Note where we have already visisted. Usually domain:locale
 function set_visited(minfo,key) {
-    minfo["mi_visited"] = minfo["mi_visited"] " " key ;
+    minfo["mi_visited:"key] = 1 ;
 }
 function have_visited(minfo,key,\
 ret) {
-    ret = ( minfo["mi_visited"] ~ "\\<"key"\\>" );
-    if (ret) {
+    if ((ret = ( "mi_visited:"key in minfo )) != 0) {
+
         INF("already visited "key);
     }
     return ret;
@@ -1560,7 +1560,7 @@ i,num,locales,minfo2,id) {
 
     id = extractImdbId(url);
     if (id) {
-        if (!have_visited(minfo,"imdb")) {
+        if (!have_visited(minfo,"imdb:"id)) {
 
             if (fetch_ijson_details(id,minfo2)) {
 
@@ -1589,6 +1589,7 @@ i,num,locales,minfo2,id) {
             # TMDB connections are inconsistent. eg no Carrie Box set, but Stephen King box set
             # that includes Carrie, Shawshank etc.
             imdb_movie_connections(minfo);
+            set_visited(minfo,"imdb:"id);
         }
     }
     return minfo[CATEGORY];

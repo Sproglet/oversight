@@ -219,16 +219,24 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
            best1 = firstIndex(bestmatches);
            if (i == 1 && target[i] == 1 && freqOrFirst == 1) {
                # As we have only searched one page and looking for the first match.
-               # not reduce false positive also make sure it is most frequent match and occurs 2 or more times.
+               # to reduce false positive also make sure it is most frequent match and occurs 2 or more times.
 
                if (best1 != "") {
-                   scanPageMostFreqMatch(u[i],helptxt,regex,1,"",freq);
-                   dump(0,"websearch-freq",freq);
-                   freq1 = firstIndex(freq);
-                   freq_target = 3;
+                   if (1) {
+                       freq1 = scanPageMostSignificantMatch(u[i],helptxt,regex,1,"",freq);
+                   } else {
+                       # Changed down from 3 to 2 to reduce amount of times google is used.
+                       # IF this gives false positives then change scanPageMostFreqMatch to just return count of all patterns
+                       # and make sure the best is the same as the first. and is significantly more than the second.
+                       scanPageMostFreqMatch(u[i],helptxt,regex,1,"",freq);
+                       dump(0,"websearch-freq",freq);
+                       freq1 = firstIndex(freq);
+                   }
+
+                   freq_target = 2;
 
                    if (freq1 != best1 ) {
-                       INF(best1" is not most frequent "freq1"  - continue searching ...");
+                       INF(best1" is not most frequent. ["freq1"]  - continue searching ...");
                        continue;
                    } else if (freq[freq1] < freq_target) {
                        INF(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
@@ -239,7 +247,7 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
                } 
            }
 
-           #check unique best match
+           #check exactly one match only.
            if (hash_size(bestmatches) == 1) {
                ret = best1;
                break;

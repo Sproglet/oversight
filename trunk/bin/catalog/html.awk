@@ -34,6 +34,22 @@ normedt,ret) {
     id0(ret);
     return ret;
 }
+# Scan a page for given regex return the most frequently occuring matching text.
+# fixed_text is used to quickly filter strings that may match the regex.
+# result returned in matches as count index by matching text.
+# return value is the number of matches.
+function scanPageMostSignificantMatch(url,fixed_text,regex,cache,referer,matches,\
+normedt,ret) {
+    id1("scanPageMostSignificantMatch");
+    scan_page_for_match_counts(url,fixed_text,regex,0,cache,referer,matches);
+    if (regex == g_imdb_title_re) {
+        normalise_title_matches(matches,normedt);
+        hash_copy(matches,normedt);
+    }
+    ret=getMax(matches,1,1);
+    id0(ret);
+    return ret;
+}
 
 function ficonv(f) {
 

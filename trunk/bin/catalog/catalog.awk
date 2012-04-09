@@ -750,33 +750,32 @@ maxName,best,nextBest,nextBestName,diff,i,threshold) {
         if (arr[i]-best >= 0 ) {
             nextBest = best;
             nextBestName = maxName;
-            best = threshold = arr[i];
+            best = threshold = arr[i]+0;
             maxName = i;
 
         } else if (arr[i]-nextBest >= 0 ) {
 
-            nextBest = arr[i];
+            nextBest = arr[i]+0;
             nextBestName = i;
         }
     }
-    DEBUG("Best "best"*"arr[i]". Required="requiredThreshold);
 
     if (0+best < 0+requiredThreshold ) {
-        DEBUG("Rejected as "best" does not meet requiredThreshold of "requiredThreshold);
+        DEBUG("getMax: Rejected "maxName":"best" as does not meet requiredThreshold of "requiredThreshold);
         maxName = "";
 
-    } else if (requireDifferenceSquared ) {
+    }
+    if (requireDifferenceSquared ) {
 
         diff=best-nextBest;
-        DEBUG("Next best count = "nextBest" diff^2 = "(diff*diff));
-        if (diff * diff - best  < 0 ) {
+        if (diff * diff < best ) {
 
-            DEBUG("But rejected as "best" too close to next best "nextBest" to be certain");
+            DEBUG("getMax: rejected "maxName":"best" too close to next best "nextBestName":"nextBest" to be certain");
             maxName = "";
 
         }
     }
-    DEBUG("getMax: best index = ["maxName"]");
+    DEBUG("getMax: best=["maxName":"(maxName?arr[maxName]:"")"]");
     return maxName;
 }
 

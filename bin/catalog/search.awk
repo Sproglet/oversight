@@ -244,7 +244,7 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
                            freq1 = firstIndex(freq);
                        }
 
-                       freq_target = 2;
+                       freq_target = 3; # changed back to 3 to avoid false positives. May invoke google block.
 
                        if (freq1 != best1 ) {
                            INF(best1" is not most frequent. ["freq1"]  - continue searching ...");

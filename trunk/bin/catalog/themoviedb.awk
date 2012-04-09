@@ -64,7 +64,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
             minfo2[RUNTIME]=json["runtime"];
 
 
-            minfo2[ORIG_TITLE]=html_to_utf8(json["original_name"]);
+            minfo2[ORIG_TITLE]=html_to_utf8(json["original_title"]);
 
             minfo2[IDLIST]="themoviedb:"json["id"];
             if ( "imdb_id" in json) {
@@ -82,7 +82,8 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
                 minfo2[PLOT]=add_lang_to_plot(langs[i],clean_plot(json["overview"]));
 
                 # Keep title and language the same
-                minfo2[TITLE]=html_to_utf8(json["name"]);
+                minfo2[TITLE]=html_to_utf8(json["title"]);
+
                 ret = 1;
                 break;
 

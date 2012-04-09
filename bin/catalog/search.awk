@@ -872,6 +872,8 @@ ret) {
             minfo[field"_source"] = source;
             ret = 1;
         }
+    } else {
+        INF("blank value for "field" ignored");
     }
     return ret;
 }

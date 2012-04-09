@@ -147,7 +147,7 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
-u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num) {
+u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num,bing_desktop_order,bing_mobile_order) {
 
 
     ############################################################################
@@ -182,7 +182,11 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
     } else {
         # Bing seems a bit better still -
         u[++num] = g_search_bing_mobile qualifier; target[num]=1;
+        bing_mobile_order = num;
         u[++num] = g_search_google qualifier; target[num]=2;
+        u[++num] = g_search_bing_desktop qualifier; target[num]=2;
+        bing_desktop_order = num;
+
         #u[++num] = g_search_bing_desktop qualifier; target[num]=2;
         #yahoo gives too many false positives even with Bing technology. eg. http://search.yahoo.com/search?ei=UTF-8&eo=UTF-8&p=Family+Guy+0914+imdb - give sopranos
         #u[++num] = g_search_yahoo qualifier; target[num]=2;
@@ -210,47 +214,56 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
     # For each match the urls are also tracked in case we to a "cross-page" ranking later.
     for(i = 1 ; i <= num ; i++ ) {
 
-        scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,match_src);
-        dump(0,"websearch-matches",matches);
+        if (u[i]) {
 
-        if (bestScores(matches,bestmatches,0) >= target[i] ) {
-           dump(0,"websearch-best",bestmatches);
+            scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,match_src);
+            dump(0,"websearch-matches",matches);
 
-           best1 = firstIndex(bestmatches);
-           if (i == 1 && target[i] == 1 && freqOrFirst == 1) {
-               # As we have only searched one page and looking for the first match.
-               # to reduce false positive also make sure it is most frequent match and occurs 2 or more times.
+            #if bing mobile gave results then do not use bing desktop
+            if (i == bing_mobile_order && hash_size(matches)) {
+               delete u[bing_desktop_order];
+            }
 
-               if (best1 != "") {
-                   if (1) {
-                       freq1 = scanPageMostSignificantMatch(u[i],helptxt,regex,1,"",freq);
-                   } else {
-                       # Changed down from 3 to 2 to reduce amount of times google is used.
-                       # IF this gives false positives then change scanPageMostFreqMatch to just return count of all patterns
-                       # and make sure the best is the same as the first. and is significantly more than the second.
-                       scanPageMostFreqMatch(u[i],helptxt,regex,1,"",freq);
-                       dump(0,"websearch-freq",freq);
-                       freq1 = firstIndex(freq);
-                   }
+            if (bestScores(matches,bestmatches,0) >= target[i] ) {
+               dump(0,"websearch-best",bestmatches);
 
-                   freq_target = 2;
+               best1 = firstIndex(bestmatches);
+               if (i == 1 && target[i] == 1 ) {
+                   # As we have only searched one page and looking for the first match.
+                   # to reduce false positive also make sure it is most frequent match and occurs 2 or more times.
 
-                   if (freq1 != best1 ) {
-                       INF(best1" is not most frequent. ["freq1"]  - continue searching ...");
-                       continue;
-                   } else if (freq[freq1] < freq_target) {
-                       INF(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
-                       continue;
-                   } else if (hash_size(freq) > 1) {
-                        INF(best1" does not occur more frequently than others");
+                   if (best1 != "") {
+                       if (1) {
+                           freq1 = scanPageMostSignificantMatch(u[i],helptxt,regex,1,"",freq);
+                       } else {
+                           # Changed down from 3 to 2 to reduce amount of times google is used.
+                           # IF this gives false positives then change scanPageMostFreqMatch to just return count of all patterns
+                           # and make sure the best is the same as the first. and is significantly more than the second.
+                           scanPageMostFreqMatch(u[i],helptxt,regex,1,"",freq);
+                           dump(0,"websearch-freq",freq);
+                           freq1 = firstIndex(freq);
+                       }
+
+                       freq_target = 2;
+
+                       if (freq1 != best1 ) {
+                           INF(best1" is not most frequent. ["freq1"]  - continue searching ...");
+                           continue;
+                       } else if (freq[freq1] < freq_target) {
+                           INF(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
+                           continue;
+                       } else if (hash_size(freq) > 1) {
+                            INF(best1" does not occur more frequently than others");
+                       } 
                    } 
-               } 
-           }
+               }
 
-           #check exactly one match only.
-           if (hash_size(bestmatches) == 1) {
-               ret = best1;
-               break;
+               #check exactly one match only.
+               if (hash_size(bestmatches) == 1) {
+                   ret = best1;
+                   break;
+               }
+
            }
        }
     }
@@ -275,21 +288,23 @@ m,s,i,pages,subtotal,ret,noyear) {
         pages=0;
         subtotal=0;
         for(i in urls ) {
-            #if the url did dot contribute to this matches best score
-            if (index(match_src[m],":"urls[i]":") == 0) {
-                s = scan_page_for_match_counts(urls[i],m,title_to_re(m),0,1,"");
+            if (urls[i]) {
+                #if the url did dot contribute to this matches best score
+                if (index(match_src[m],":"urls[i]":") == 0) {
+                    s = scan_page_for_match_counts(urls[i],m,title_to_re(m),0,1,"");
 
-                if (mode == "imdbtitle" ) {
-                    # Now get number of occurences without the year. 
-                    # This also includes ocurrences with the year so adds suitable weight to names with years.
-                    noyear = gensub(/ [12][0-9]{3}\>/,"","g",m);
-                    if (noyear != m ) {
-                        s += scan_page_for_match_counts(urls[i],noyear,title_to_re(noyear),0,1,"");
-                        s  =s **= 2;
+                    if (mode == "imdbtitle" ) {
+                        # Now get number of occurences without the year. 
+                        # This also includes ocurrences with the year so adds suitable weight to names with years.
+                        noyear = gensub(/ [12][0-9]{3}\>/,"","g",m);
+                        if (noyear != m ) {
+                            s += scan_page_for_match_counts(urls[i],noyear,title_to_re(noyear),0,1,"");
+                            s  =s **= 2;
+                        }
                     }
+                    if (s != 0) pages++;
+                    subtotal += s;
                 }
-                if (s != 0) pages++;
-                subtotal += s;
             }
         }
         matches[m] += pages * subtotal;

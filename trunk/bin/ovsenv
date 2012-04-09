@@ -63,11 +63,11 @@ load_config() {
     set +e #ignore errors
 
     if [ -f "$DEFAULTS_FILE" ]; then
-        dos2unix "$DEFAULTS_FILE" 2>/dev/null # fix for notepad users
+        dos2unix "$DEFAULTS_FILE" 2>/dev/null || true # fix for notepad users
         . "$DEFAULTS_FILE"
     fi
     if [ -f "$CONF_FILE" ]; then
-        dos2unix "$CONF_FILE" 2>/dev/null # fix for notepad users
+        dos2unix "$CONF_FILE" 2>/dev/null || true # fix for notepad users
         . "$CONF_FILE"
     fi
     set -e
@@ -147,6 +147,7 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
     while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
     OVS_HOME="$( cd "$( dirname "$EXE" )"/.. && pwd )"
 
+    FAMILY=
     ARCH=
 
     nmt_ver=/nmt/apps/VERSION
@@ -177,7 +178,7 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
     nmt_version=
 
     PATH="$OVS_HOME/bin:$PATH"
-    case $FAMILY in
+    case "${FAMILY:-}" in
         nmt)
             uid=nmt
             gid=nmt

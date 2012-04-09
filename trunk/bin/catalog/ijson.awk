@@ -114,7 +114,9 @@ json,ret,i,tag,minfo2) {
                     minfo_set_id("imdb",id,minfo2);
                 }
             }
-            scrape_cache_add("imdb:"id,minfo2);
+            if (minfo2[CATEGORY] == "T") {
+                scrape_cache_add("imdb:"id,minfo2);
+            }
         }
         minfo_merge(minfo,minfo2,"imdb");
     }

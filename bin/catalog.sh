@@ -242,7 +242,7 @@ awk '
 
 /(Start|Merge) item/ { i=$0 ; system(""); } 
 
-/\[ERR\]/ { if (i) { printf "\n%s\n\n",i ; i="" ;} ; print "'"$1"':"$0 ; } 
+/^(\[ERR\]|Terminated)/ { if (i) { printf "\n%s\n\n",i ; i="" ;} ; print "'"$1"':"$0 ; } 
 
 END { exit c }' 
 }

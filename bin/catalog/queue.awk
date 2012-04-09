@@ -11,7 +11,7 @@ fld,line) {
     line = line SUBSEP NAME SUBSEP minfo[NAME] ;
 
     for(fld in minfo) {
-        if (fld != DIR && fld != NAME && fld !~ /_source$/ ) {
+        if (fld != DIR && fld != NAME && fld !~ /_source$/ && fld !~ /^mi_visited/ ) {
             line = line SUBSEP fld SUBSEP minfo[fld] ;
         }
     }

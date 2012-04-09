@@ -720,11 +720,15 @@ function init_priority() {
         gPriority[SET,"themoviedb"]=30;
     }
 }
-function minfo_field_priority(minfo,field) {
-    return field_priority(field,minfo[field"_source"],minfo[field]);
+function minfo_field_priority(minfo,field,\
+key,source) {
+    key=field"_source";
+    if (key in minfo) source = minfo[key];
+
+    return field_priority(field,source,minfo[field]);
 }
 
-# TODO plot must be weighted be language match
+# TODO plot could be weighted by language match
 function field_priority(field,source,value,\
 score) {
 
@@ -733,18 +737,18 @@ score) {
     score = 0;
 
     if (value != "") {
-            if (source ~ "^[0-9]+") {
-                # if source is numeric then it IS the score.
-                score = 0+source;
-            } else if (field == PLOT || field == EPPLOT) {
-                if (source == "@nfo" ) {
-                    score = plot_score("@nfo");
-                } else {
-                    score = plot_score(value);
-                }
+        if (source ~ "^[0-9]+") {
+            # if source is numeric then it IS the score.
+            score = 0+source;
+        } else if (field == PLOT || field == EPPLOT) {
+            if (source == "@nfo" ) {
+                score = plot_score("@nfo");
             } else {
-                score = gPriority[field,source];
+                score = plot_score(value);
             }
+        } else if (source != "") {
+            score = gPriority[field,source];
+        }
         if (score) {
 
             #DEBUG("field_priority("field","source")="score);
@@ -794,11 +798,15 @@ score,langs,plot_lang,i,num,lang_score,len_score) {
 }
 
 function is_better_source(minfo,field,source,value,\
-old_inf,new_inf,ret,old_num,new_num,old_src,n) {
+old_inf,new_inf,ret,old_num,new_num,old_src_key,old_src,n) {
 
     n = db_fieldname(field);
     source = tolower(source);
-    old_src = minfo[field"_source"];
+
+    old_src_key = field"_source";
+    if (old_src_key in minfo) {
+        old_src = minfo[old_src_key];
+    }
 
     old_inf="["old_src":"minfo[field]"]";
     new_inf="["source":"value"]";

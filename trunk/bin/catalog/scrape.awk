@@ -55,7 +55,7 @@ function find_movie_by_locale(locale,title,year,director,poster,minfo,imdbid,ori
 i,num,sites,minfo2,err,searchhist) {
 
     err=1;
-    id1("find_movie_by_locale:"locale" title ["title"] year("year")");
+    id1("find_movie_by_locale:"locale" title ["title"] year("year") imdbid="imdbid);
     if (load_locale_settings(locale)) {
 
 
@@ -568,7 +568,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
             }
 
             if (imdbid ) {
-               if (imdbid != imdbid_page ) {
+               if (imdbid_page && imdbid != imdbid_page ) {
                    err= 1;
                    ERR("imdb mismatch "imdbid" vs "imdbid_page);
                    store=0;

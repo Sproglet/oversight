@@ -12,7 +12,7 @@ unpak_external_par_repair_tidy_queue:Remove paused PARs from queue after unrar|1
 unpak_pause_nzbget:Pause nzbget while script is active (Note nzbget 0.5 has PostPauseQueue setting which is preferred)|0|1
 unpak_pause_nzbget_during_unrar:Pause nzbget during unrar|0|1
 unpak_touch_files:change timestamp of downloaded files for easy identification of new content|1|0
-pause_nzbget_during_par2repair:Pause nbget suring repair|0|1
+pause_nzbget_during_par2repair:Pause nzbget during repair|0|1
 unpak_maximum_par_repair_minutes:Only attempt par repairs if they will complete in the given amount of minutes (0=always repair)|300
 #unpak_nmt_pin_root:Folder for mature content|/share/~Other
 #unpak_nmt_pin="2468" 

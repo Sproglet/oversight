@@ -5,8 +5,8 @@
 # Different embedded environments use different shells and have bash in different places. /opt/bin/ /ffp/bin
 # For same reason /usr/bin/env might not always work
 case "`ls -l /proc/$$/exe`" in # no readlink on nmt
-    */bash) ;;
-    *) exec bash "$0" "$@" ;;
+    */bash|*/busybox) ;;
+    *) exec bash "$0" "$@" || exec busybox sh "$0" "$@" ;;
 esac
 
 

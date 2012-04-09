@@ -1,6 +1,14 @@
 #!/bin/sh
 # $Id$ 
 
+# Make sure running bash
+# Different embedded environments use different shells and have bash in different places. /opt/bin/ /ffp/bin
+# For same reason /usr/bin/env might not always work
+case "`ls -l /proc/$$/exe`" in # no readlink on nmt
+    */bash) ;;
+    *) exec bash "$0" "$@" ;;
+esac
+
 # unpak script for nzbget.
 
 nzb_launch_dir="$OLDPWD"
@@ -179,7 +187,7 @@ get_nzbpath() {
             fi 
         fi 
     fi
-    WARNING "unpak_nzbget_conf=${unpak_nzbget_conf:-}"
+    INFO "unpak_nzbget_conf=${unpak_nzbget_conf:-}"
 }
 
 #This will get nzbget path from versions of nzbget earlier than 0.7
@@ -2055,16 +2063,21 @@ case $mode in
     *)
         if [ "$#" -lt 6 ]
         then
-            echo "*** NZBGet post-process script ***"
-            echo "This script is supposed to be called from nzbget."
-            echo "usage:"
-            echo
-            echo "  $0 dir nzbname parname parcheck-result nzb-job-state failed-jobs"
-            echo
-            echo "or to manually run a failed job. cd to the folder and then:"
-            echo
-            echo "  $0 torrent_seeding folder"
-            echo "  $0 torrent_finished folder"
+            cat <<HERE
+NZBGet post-process script
+
+usage:
+
+  $0 dir nzbname parname parcheck-result nzb-job-state failed-jobs
+
+or to manually run a failed job. cd to the folder and then:
+
+  $0 torrent_seeding folder"
+  $0 torrent_finished folder"
+
+current args: $@
+HERE
+
             get_nzbpath
             abort
         else

@@ -1,6 +1,15 @@
 #!/bin/sh
 # $Id$
 
+# Make sure running bash
+# Different embedded environments use different shells and have bash in different places. /opt/bin/ /ffp/bin
+# For same reason /usr/bin/env might not always work
+case "`ls -l /proc/$$/exe`" in # no readlink on nmt
+    */bash) ;;
+    *) exec bash "$0" "$@" ;;
+esac
+
+
 # Detect and rename media files. Sounds simple huh?
 # Initially written for NMT platform that has a limited subset of busybox commands and no perl.
 

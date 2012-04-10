@@ -1,3 +1,5 @@
+# Fix unpack rar  sanilty check when DirectWrite=No - it should check all byte sizes are the same apart from the "last" one.
+# (note rar is actually last in lex order)
 # duplicate posters
 # cloudy with a chance - huge poster.
 # unpack script not running on bridgetown

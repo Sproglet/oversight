@@ -280,7 +280,7 @@ load_unpak_settings() {
         fi
 
         # fix endings for notepad people
-        dos2unix "$cfg"
+        dos2unix "$cfg" || true
         source "$cfg"
     fi
 }
@@ -1793,7 +1793,6 @@ PERMS() {
 
 # $@ = args to catalog.sh
 run_catalog() {
-    set -x
     folder="$1"
     shift
     if [ -f "$OVS_HOME/bin/catalog.sh" ] ; then

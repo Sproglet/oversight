@@ -333,6 +333,7 @@ END{
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=
     g_search_google = "http://www.google.com/search?ie=utf-8;oe=utf-8;q=";
+    g_search_google1 = "http://search.alot.com/web?q=";
 
     g_search_mysterbin = "http://www.mysterbin.com/search?q=";
     g_search_nzbindex = "http://www.nzbindex.nl/rss/?q=";

@@ -24,7 +24,7 @@ if [ "x$1" = "x-older" ] ; then
 fi
 
 if [ -z "$1" ] ; then
-    echo "ussage [-older days] $0 [all] - fetch TV shows starting with the given letter/number - or 'all' for all shows"
+    echo "usage $0 [-older days] [all] - fetch TV shows starting with the given letter/number - or 'all' for all shows"
     exit 1
 fi
 
@@ -39,16 +39,16 @@ letter_path() {
 }
 
 update() {
-    letter=$1;
+    local letter=$1;
 
-    output="`letter_path $letter`"
+    local output="`letter_path $letter`"
 
     if find "$output" -mtime -$refresh_age | grep -q $ext && [ -s "$output" ] ; then
         false
         #echo $letter is up to date
     else
         echo updating index $letter
-        zip="--header=accept-encoding: gzip"
+        local zip="--header=accept-encoding: gzip"
         wget "$zip" -q -c -O - "http://thetvdb.com/?string=$letter&searchseriesid=&tab=listseries&function=Search" |\
         gunzip -c |\
         sed -rn "s/.*tab=series.amp;id=([0-9]+).amp.lid=[0-9]+.>($letter[^<]+).*/\1:\2/p" > "$output.tmp" &&\
@@ -59,21 +59,36 @@ update() {
 }
 
 merge() {
-    letter="$1"
-    prefix="$2"
-    words="$3"
+    local letter="$1"
+    local prefix="$2"
+    local words="$3"
 
     if [ $letter != $prefix ] ; then
-        echo merging $prefix into $letter
         input="`letter_path $prefix`"
         output="`letter_path $letter`"
-        egrep "^[0-9]*:($3) $letter" "$input" >> "$output"
+        if egrep "^[0-9]*:($3) $letter" "$input" >> "$output" ; then
+            #echo merged $prefix into $letter
+            #echo "adding $prefix $input to $letter $output "
+            #egrep "^[0-9]*:($3) $letter" "$input" 
+            sort_index "$letter"
+        fi
     fi
 }
 
 sort_index() {
-    input="`letter_path $1`"
+    local input="`letter_path $1`"
     sort -u "$input" > "$input.tmp" && mv "$input.tmp" "$input"
+}
+
+mergeall() {
+    merge $1 A 'A|An|As' 
+    merge $1 E 'Ein(|ne[rsmn]?)' 
+    merge $1 D 'Des' 
+    merge $1 I 'I|Il'
+    merge $1 O 'O|Os' 
+    merge $1 T The 
+    merge $1 U 'Un|Una|Unos|Unas|Um|Uma|Uns|Umas|Une' 
+    sort_index $1
 }
 
 items="`echo "$items" | tr a-z A-Z`"
@@ -87,20 +102,28 @@ for i in $items ; do
     fi
 done
 
+shorts="T A D E I O U"
+
 if [ $do_short_words = 1 ] ; then
     # Get all series that begin with prepositions or articles and merge into main list.
     # eg "The Walking Dead" should be merged into the 'W' list, as people might call it "Walking Dead"
-    for x in T A D E I O U ; do
-        update $x || true 
+    for x in $shorts ; do
+        case "$items" in
+            *$x*) ;;
+            *) update $x || true 
+        esac
     done
+    echo "Merging prefixes for [$items]"
     for i in $items ; do
-        merge $i A 'A|An|As' 
-        merge $i E 'Ein(|ne[rsmn]?)' 
-        merge $i D 'Des' 
-        merge $i I 'I|Il'
-        merge $i O 'O|Os' 
-        merge $i T The 
-        merge $i U 'Un|Una|Unos|Unas|Um|Uma|Uns|Umas|Une' 
-        sort_index $i
+        mergeall $i
+    done
+
+    # restore short files
+    echo "Merging prefixes for [$shorts]"
+    for i in $shorts ; do
+        case "$items" in
+            *$i*) ;;
+            *) mergeall $i ;;
+        esac
     done
 fi

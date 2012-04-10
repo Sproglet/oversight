@@ -303,6 +303,7 @@
 149911:Angelique -When the Heart Awakens
 150001:Addicted
 150321:A Fistful of Stances
+150471:Angel Beats
 150471:Angel Beats!
 150601:A Band for Britain
 150611:Algeria a tragedy
@@ -379,7 +380,7 @@
 162621:Alarm für Cobra 11 - Einsatz Team 2
 162621:Alerta Cobra: Unidad Especial
 162981:The Armstrong and Miller Show
-163061:All of Norway
+163061:Alt for Norge
 163071:Animated Hero Classics
 163531:Az esemény
 163691:Australian Families of Crime
@@ -798,7 +799,6 @@
 246981:Auctioneer$
 247021:Asunaro Hakusho
 247431:The Adventure Show
-247671:Antonsen
 247691:A Channel
 247691:A Channel: The Animation
 247691:A-Channel
@@ -876,6 +876,7 @@
 248794:Art of the Western World
 248795:All Quiet on the Preston Front
 248812:Apartment 23
+248812:Apt 23
 248813:Are you there, Chelsea?
 248813:Are You There, Chelsea?
 248813:Are You There, Vodka? It's Me, Chelsea
@@ -958,7 +959,6 @@
 250342:Apocalypse: The Second World War
 250351:Alaskan Monster Hunt Hillstranded
 250372:A'dam - E.V.A.
-250376:Alexander - Cronache di guerra di Alessandro il Grande
 250438:Alfa Papa Tango
 250447:Anna San no Omame
 250478:Attacker You!
@@ -1053,14 +1053,14 @@
 252617:American Hoggers
 252642:Aardman Classics
 252649:Allir litir hafsins eru kaldir
+252679:The A List : Dallas
 252679:The A-List: Dallas
 252687:Avengers I più potenti eroi della terra
 252704:Alavilla mailla hallanvaara
 252755:Anderson
 252827:A Change of Destiny
-252836:The A List : Dallas
+252836:The A List : Dallas ***Duplicate 252679****
 252864:Alan Carr Stand-up Shows
-252883:A Girl's Guide to 21st Century Sex
 252885:Alondra
 253031:The Amazing Race IL
 253036:Alifim
@@ -1161,6 +1161,7 @@
 255270:Alpha Alpha
 255302:America's Money Class with Suze Orman
 255355:Ali: Still the Greatest
+255381:Au pays des Tetes a Claques
 255381:Au pays des Têtes à Claques
 255400:Art of the Northern Renaissance
 255442:A TV Dante
@@ -1168,6 +1169,8 @@
 255491:Attack of the Cyber Pirates
 255523:Adieu, camarades!
 255535:Achtung Kontrolle
+255535:Achtung Kontrolle! Einsatz für die Ordnungshüter
+255535:Achtung, Kontrolle!
 255546:Animal Fugitives
 255659:The Art of Survival
 255662:Aztecs
@@ -1267,6 +1270,30 @@
 257373:Achterbahn
 257391:A Day In The Life
 257437:Afrique des paradis naturels
+257468:Alle elsker Raymond
+257472:Alexander
+257516:Accel World
+257578:The Amazing Race Norge
+257580:Apartamento Para dos
+257597:The Amazing Adrenalini Brothers
+257613:Al otro lado
+257613:Ausztrália csak egy lépés Írországtól
+257632:Agony Uncles
+257655:Arrow
+257702:Os Andrades
+257721:Aptekar
+257731:Alpenpanorama
+257743:Australia: The Time Traveller's Guide
+257766:A Town Where You Live
+257820:Americas Psychic Challenge
+257820:America's Psychic Challenge
+257860:A la sombra de los dinosaurios
+257888:Acchi Kocchi
+257890:AKB0048
+257899:The Age of Dinosaurs
+257910:A Wife's Credentials
+257911:Astronomia
+258030:After They Were Famous
 70351:About Face
 70371:Against All Odds
 70377:A Kind of Loving
@@ -1866,7 +1893,8 @@
 79496:Australian Idol
 79502:Around the World in 80 Days with Michael Palin
 79529:Ayúdame, Ayúdate
-79534:A Girls Guide  to 21st Century Sex
+79534:A Girl's Guide  to 21st Century Sex
+79534:A Girl's Guide to 21st Century Sex
 79535:A Haunting
 79545:Abenteuer Survival
 79548:Affaires d'Etats
@@ -2170,6 +2198,7 @@
 83196:Alerte Cobra
 83223:A Very British Coup
 83246:Alas Smith and Jones
+83299:A nagy mágusok kulisszatitkai
 83315:Akane-Iro ni Somaru Saka
 83322:A Certain Magical Index
 83338:Ace Of Cakes
@@ -2181,6 +2210,7 @@
 83466:Angelina Ballerina
 83466:Anniina Ballerina
 83468:Alan Carr's Celebrity Ding Dong
+83472:Andersens julehemmelighed
 83496:Arabela returns
 83496:Arabela se vrací
 83505:The Adventures Of Portland Bill
@@ -2227,7 +2257,6 @@
 84099:America's Game
 84126:A rózsa vére
 84127:Auf Schienen
-84158:Andersens julehemmelighed
 84175:Arthur C. Clarke's Mysterious World
 84194:Amazon with Bruce Parry
 84200:A History of China
@@ -2309,7 +2338,6 @@
 85318:Alice im Wunderland
 85318:Alice in Wonderland
 85318:Alice no País das Maravilhas
-85433:A nagy mágusok kulisszatitkai
 85456:Automodelli
 85468:Al Murray's Multiple Personality Disorder
 85495:Alive

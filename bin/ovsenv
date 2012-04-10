@@ -241,6 +241,15 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
             #see if SHELL fixes.
             export SHELL=/ffp/bin/bash
         ;;
+        *)
+            #optware
+            if [ -d /opt/etc/init.d -a -d /opt/bin ] ; then
+                case "$PATH" in
+                    */opt/bin*) ;;
+                    *) PATH="/opt/bin:$PATH" ;;
+                esac
+            fi
+            ;;
     esac
 
     export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH OVS_TMP

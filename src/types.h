@@ -226,6 +226,7 @@ typedef enum Op_enum {
     OP_STARTS_WITH='^',
     OP_CONTAINS='#',
     OP_DBFIELD='_',
+    OP_LEFT='[',
 
     OP_REGEX_CONTAINS='r',
     OP_REGEX_MATCH='R',

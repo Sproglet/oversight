@@ -7,6 +7,7 @@
 
 #include "types.h"
 #include "exp.h"
+#include "utf8.h"
 #include "util.h"
 #include "oversight.h"
 #include "db.h"
@@ -116,6 +117,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
     switch (e->op) {
         case OP_CONSTANT:
             break;
+
         case OP_ADD:
             e->val.type = VAL_TYPE_NUM;
             if (evaluate_with_err(e->subexp[0],item,err) == 0) {
@@ -200,6 +202,40 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                             default:
                                 assert(0);
                         }
+                    }
+                }
+            }
+            break;
+        case OP_LEFT:
+            e->val.type = VAL_TYPE_STR;
+            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
+                if (e->subexp[0]->val.type != VAL_TYPE_STR) {
+                    html_error("1st argument to left must be a string");
+                    assert(0);
+                } else if (evaluate_with_err(e->subexp[1],item,err) == 0) {
+                    if (e->subexp[1]->val.type != VAL_TYPE_NUM) {
+                        html_error("2nd argument to left must be a number");
+                        assert(0);
+                    } else {
+
+                        int len = e->subexp[1]->val.num_val ;
+                        if (len < 0 ) len = 0;
+
+                        int i;
+                        char *p,*s;
+                       
+                        p = s  = e->subexp[0]->val.str_val;
+                        for(i = 0 ; i < len ; i++ ) {
+                            if (IS_UTF8STARTP(p)) {
+                                p++;
+                                while(IS_UTF8CONTP(p)) p++;
+                            } else if (*p) {
+                                p++;
+                            } else {
+                                break;
+                            }
+                        }
+                        e->val.str_val = COPY_STRING(p-s,s);
                     }
                 }
             }
@@ -532,6 +568,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
         { OP_LT      ,"~lt~" , 2 , 2 },
         { OP_GT      ,"~gt~" , 2 , 2 },
         { OP_GE      ,"~ge~" , 2 , 2 },
+        { OP_LEFT    ,"~l~"  , 2 , 2 },
 
         // Letters used for following operators are passed in URLs also
         { OP_EQ      ,"~" QPARAM_FILTER_EQUALS "~" , 2 , 1 },

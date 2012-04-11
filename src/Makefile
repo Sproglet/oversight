@@ -57,6 +57,7 @@ LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
 else
 	CFLAGS_ARCH=-DSTAT64=stat
+	STRIP=strip
 endif
 
 #CFLAGS=-O3 -Wall -Wunused-parameter -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)

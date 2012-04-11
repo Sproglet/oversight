@@ -83,7 +83,8 @@ void free_yamj_subcatetory(void *in)
     if (in) {
         YAMJSubCat *ptr = in;
         FREE(ptr->name);
-        FREE(ptr->query);
+        FREE(ptr->filter_expr_url);
+        exp_free(ptr->filter_expr,1);
         FREE(ptr);
     }
 }
@@ -93,7 +94,8 @@ void free_yamj_catetory(void *in)
     if (in) {
         YAMJCat *ptr = in;
         FREE(ptr->name);
-        FREE(ptr->expr);
+        FREE(ptr->auto_subcat_expr_url);
+        exp_free(ptr->auto_subcat_expr,1);
         array_free(ptr->subcats);
         FREE(ptr);
     }
@@ -173,17 +175,19 @@ YAMJSubCat *yamj_subcat_config(int num,int sub)
         FREE(key);
         ovs_asprintf(&key,CONFIG_PREFIX "%d_sub%d_query",num,sub);
 
-        ret->query = STRDUP(oversight_val(key));
-        if (EMPTY_STR(ret->query)) {
+        ret->filter_expr_url = STRDUP(oversight_val(key));
+        if (EMPTY_STR(ret->filter_expr_url)) {
             html_error("missing query value for [%s]",key);
             free_yamj_subcatetory(ret);
             ret = NULL;
+        } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
+            html_error("unable to parse query value for [%s]",key);
         }
     }
 
     FREE(key);
     if (ret) {
-        HTML_LOG(0,"read subcat[%d,%d] name=[%s] query=[%s]",num,sub,ret->name,ret->query);
+        HTML_LOG(0,"read subcat[%d,%d] name=[%s] auto_subcat_expr_url=[%s]",num,sub,ret->name,ret->filter_expr_url);
     }
     return ret;
 }
@@ -236,7 +240,7 @@ YAMJCat *yamj_cat_config(int num)
         FREE(key);
         ovs_asprintf(&key,CONFIG_PREFIX "%d_expr",num);
 
-        ret->expr = STRDUP(oversight_val(key));
+        ret->auto_subcat_expr_url = STRDUP(oversight_val(key));
         ret->subcats = array_new(free_yamj_subcatetory);
 
         int j = 0;
@@ -244,16 +248,20 @@ YAMJCat *yamj_cat_config(int num)
             array_add(ret->subcats,subcat);
             subcat->owner_cat=ret;
         }
-        if (EMPTY_STR(ret->expr) && j == 1) {
+        if (EMPTY_STR(ret->auto_subcat_expr_url)) {
+            if (j == 1) {
+                html_error("missing query  or expr value for ovs_yamj_cat[%d]",num);
+                free_yamj_catetory(ret);
+                ret = NULL;
+            }
+        } else if ((ret->auto_subcat_expr = parse_full_url_expression(ret->auto_subcat_expr_url)) == NULL) {
             html_error("missing query  or expr value for ovs_yamj_cat[%d]",num);
-            free_yamj_catetory(ret);
-            ret = NULL;
         }
     }
 
     FREE(key);
     if (ret) {
-        HTML_LOG(0,"read cat[%d] name=[%s] expr=[%s]",num,ret->name,ret->expr);
+        HTML_LOG(0,"read cat[%d] name=[%s] expr=[%s]",num,ret->name,ret->auto_subcat_expr_url);
     }
     return ret;
 }
@@ -326,7 +334,7 @@ int evaluate_dynamic_subcat_names(YAMJCat *cat)
     int ret = 1;
 
     assert(cat);
-    if (cat->expr && !cat->evaluated) {
+    if (cat->auto_subcat_expr_url && !cat->evaluated) {
         HTML_LOG(0,"TODO evaluate expression here and populate subcats");
         cat->evaluated = 1;
     } else {

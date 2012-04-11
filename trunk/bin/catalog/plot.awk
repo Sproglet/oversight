@@ -2,7 +2,7 @@
 function keep_plots(fields,plot_ids,\
 id) {
 
-    id = fields_to_plot_id(fields);
+    id = plot_id(fields);
     plot_ids[id] = 1;
     if (fields[CATEGORY] == "T") {
         id = plot_to_season_id(id);
@@ -13,7 +13,7 @@ id) {
 function queue_plots(minfo,queue_file,\
 id,out) {
 
-    id = minfo_to_plot_id(minfo);
+    id = plot_id(minfo);
 
     if (minfo[CATEGORY] == "T" ) {
         if (minfo[PLOT]) {
@@ -107,6 +107,7 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
             if (tabs2[1] in plot_ids) { # should always be true
                 if (plot_ids[tabs2[1]]++ == 1) {
                     print tabs2[1]"\t"tabs2[2] >> file_out;
+                    #DEBUG("add plot "tabs2[1]"\t"substr(tabs2[2],1,20)"....");
 
                     if (action == 2) {
                         total_new ++;
@@ -130,35 +131,37 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     id0();
 }
 
-function fields_to_plot_id(fields) {
-    return plot_id(fields[IDLIST],fields[TITLE],long_year(fields[YEAR]),fields[CATEGORY],fields[SEASON],fields[EPISODE]);
-}
+function plot_id(fields,\
+idlist,id) {
 
-function minfo_to_plot_id(minfo) {
-    return plot_id(minfo[IDLIST],minfo[TITLE],minfo[YEAR],minfo[CATEGORY],minfo[SEASON],minfo[EPISODE]);
-}
+    idlist=fields[IDLIST];
 
-function plot_id(idlist,title,year,cat,season,episode,\
-id) {
     id = get_id(idlist,"imdb",1);
     if (id == "" ) {
-       if ( cat == "T" ) {
+       if ( fields[CATEGORY] == "T" ) {
            id = get_id(idlist,"thetvdb",1);
        } else {
            id = get_id(idlist,"themoviedb",1);
        }
    }
    if (id == "" ) {
-       id = get_id(idlist,"",1); # get first expression
+       id = get_id(idlist,"ovs",1);
+       if (id == "" ) {
+           # Special case - if no ID then add ovs:id to the idlist.
+           # This is duplication of the ID field but simplifies the code
+           # that looks up plot ids.
+           minfo_set_id("ovs",fields[ID],fields);
+           idlist=fields[IDLIST];
+           id = get_id(idlist,"ovs",1);
+       }
    }
    if (id == "" ) {
-       id = title"@"year;
+       id = get_id(idlist,"",1); # get first expression
    }
-   if (cat == "T" ) {
-        id = id"@"season"@"episode;
-    }
-    #DEBUG("plot_id ["idlist"]="id);
-    return id;
+   if (fields[CATEGORY] == "T" ) {
+        id = id"@"fields[SEASON]"@"fields[EPISODE];
+   }
+   return id;
 }
 
 function plot_to_season_id(id) {

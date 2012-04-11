@@ -26,7 +26,6 @@ FIND_FILE() {
         fi
     done
     echo UNSET
-    return 1
 }
 
 unpak_nzbget_bin="`FIND_FILE nzbget /share/Apps/NZBget/bin /mnt/syb8634/bin /nmt/apps/bin`"
@@ -35,7 +34,7 @@ UNPAK_CONF="$OVS_HOME/conf/unpak.cfg"
 CATALOG_CONF="$OVS_HOME/conf/catalog.cfg"
 
 NZBGET() {
-    "$unpak_nzbget_bin" -c "$unpak_nzbget_conf" "$@"
+    "$unpak_nzbget_bin" -c "$unpak_nzbget_conf" "$@" || true
 }
 
 echo "Content-Type: text/html"
@@ -47,7 +46,7 @@ CP() {
 
 cd "$OVS_HOME"
 
-if [ ! -f "$UNPAK_CONF" ] ; then
+if [ ! -f "$UNPAK_CONF" -a -f "$UNPAK_CONF.example" ] ; then
     sed -ir "s@(unpak_nzbget_conf=).*@\\1'$unpak_nzbget_conf'@" "$UNPAK_CONF.example"
     sed -ir "s@(unpak_nzbget_bin=).*@\\1'$unpak_nzbget_bin'@" "$UNPAK_CONF.example"
     CP "$UNPAK_CONF.example" "$UNPAK_CONF"
@@ -105,10 +104,10 @@ SKIN_INSTALL() {
 }
 
 INSTALL() {
-        "$shPath" UNINSTALL
-        NZBGET_UNPAK_INSTALL 
+        "$shPath" UNINSTALL || true
+        NZBGET_UNPAK_INSTALL || true
         #FIX_NZBGET_DAEMON
-        TRANSMISSION_UNPAK_INSTALL
+        TRANSMISSION_UNPAK_INSTALL || true
 
         ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] ) # clear cache
 
@@ -117,7 +116,7 @@ INSTALL() {
             mv /share/bin/wget /share/bin/wget2 || true
         fi
 
-        SKIN_INSTALL
+        SKIN_INSTALL || true
 
         PERMS
         "$NMT" NMT_UNINSTALL "$appname"
@@ -167,20 +166,23 @@ FIX_NZBGET_DAEMON() {
     # even though DaemonUserName is set. 
 
     f="/share/Apps/NZBget/daemon.sh"
+    if [ -f "$f" ] ; then
 
-    # Set up nmt user prowerly to allow su to work
-    cp "$f" "$f.old"
+        # Set up nmt user prowerly to allow su to work
+        cp "$f" "$f.old"
 
-    sed '/[  ]\/share\/Apps\/NZBget\/bin\/nzbget -D/ {
+        sed '/[  ]\/share\/Apps\/NZBget\/bin\/nzbget -D/ {
 s;\(/.*conf\);su - nmt -c "\1";
 i\
 set -e ; sed -i "/^nmt/ s/true/sh/" /etc/passwd  ; mkdir -p /home/nmt && chown nmt:nmt /home/nmt ; set +e
 }' "$f.old" > "$f"
+    fi
 
 }
 
 NZBGET_UNPAK_INSTALL() {
     NZBGET_UNPAK_UNINSTALL
+    if  [ -f "$unpak_nzbget_conf" ] ; then
     CP "$unpak_nzbget_conf" "$unpak_nzbget_conf.pre_oversight" &&\
     awk '
 function debug(x) {
@@ -243,10 +245,12 @@ END {
         }
     }
 }' "$unpak_nzbget_conf.pre_oversight" > "$unpak_nzbget_conf.new" && mv "$unpak_nzbget_conf.new" "$unpak_nzbget_conf" 
+    fi
 
 }
 
 NZBGET_UNPAK_UNINSTALL() {
+    if  [ -f "$unpak_nzbget_conf" ] ; then
     CP "$unpak_nzbget_conf" "$unpak_nzbget_conf.post_oversight"
     awk '
 BEGIN { activeCount=0; }
@@ -258,6 +262,7 @@ BEGIN { activeCount=0; }
 
 { print }
 ' "$unpak_nzbget_conf.post_oversight" > "$unpak_nzbget_conf.new" && mv "$unpak_nzbget_conf.new" "$unpak_nzbget_conf" 
+    fi
 }
 
 LOCK=/tmp/oversight-install.lck
@@ -306,9 +311,9 @@ case "$1" in
         LINK_GUNZIP
         ;;
     uninstall)
-        NZBGET_UNPAK_UNINSTALL
-        TRANSMISSION_UNPAK_UNINSTALL
-        "$shPath" UNINSTALL
+        NZBGET_UNPAK_UNINSTALL || true
+        TRANSMISSION_UNPAK_UNINSTALL || true
+        "$shPath" UNINSTALL || true
         "$NMT" NMT_UNINSTALL "$appname"
         "$NMT" NMT_UNINSTALL_WS "$wsname" 
         "$NMT" NMT_INSTALL_WS_BANNER "$wsname" "Uninstalled"

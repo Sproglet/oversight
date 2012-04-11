@@ -23,15 +23,44 @@
 //TODO Add macro or inline function to check access to val members is consistent with val.type
 
 static int evaluate_with_err(Exp *e,DbItem *item,int *err);
-int exp_compile(Exp *e,Exp *source);
+int exp_regex_compile(Exp *e,Exp *source);
+
+void clr_val(Exp *e) {
+    switch(e->val.type) {
+        case VAL_TYPE_STR:
+
+            if (e->val.str_val  && e->val.free_str ) {
+                FREE(e->val.str_val);
+                e->val.free_str = 0;
+            }
+            break;
+        case VAL_TYPE_LIST:
+            if (e->val.list_val ) {
+                array_free(e->val.list_val);
+            }
+            break;
+       default:
+            // donothing
+            break;
+    }
+    e->val.type = VAL_TYPE_NONE;
+}
+
+void set_str(Exp *e,char *s,int free_str) {
+
+    clr_val(e);
+    e->val.type = VAL_TYPE_STR;
+    e->val.str_val = s;
+    e->val.free_str = free_str;
+}
+
 
 Exp *new_val_str(char *s,int free_str)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
     e->op = OP_CONSTANT;
-    e->val.type = VAL_TYPE_STR;
-    e->val.str_val = s;
-    e->val.free_str = free_str;
+
+    set_str(e,s,free_str);
     HTML_LOG(0,"str value [%s]",s);
     return e;
 }
@@ -109,6 +138,62 @@ char *num2str_static(double d) {
     return s;
 }
 
+/*
+ * 0 = success
+ */
+static int validate_type(Exp *e,int types,Exp *parent,int argno)
+{
+    int ret = -1;
+    if (e->val.type & types ) {
+        ret = 0 ;
+    } else {
+        html_error("type mismatch arg %d of exp",argno+1);
+        html_error("expected ");
+        if (types & VAL_TYPE_NUM ) html_error(" number");
+        if (types & VAL_TYPE_STR ) html_error(" string");
+        if (types & VAL_TYPE_CHAR ) html_error(" char");
+        if (types & VAL_TYPE_LIST ) html_error(" list (split)");
+        if (types & VAL_TYPE_IMDB_LIST ) html_error(" imdblist");
+        exp_dump(parent,1,1);
+    }
+    //HTML_LOG(0,"validate type child %d type=%d",argno,ret);
+    return ret;
+}
+/*
+ * 0 = success
+ */
+static int evaluate_child(Exp *e,DbItem *item,int child_no,int argtype,int *err) 
+{
+    int ret = 0;
+    if (argtype) {
+
+        //HTML_LOG(0,"begin eval child %d type=%d",child_no,argtype);
+        //exp_dump(e->subexp[child_no],1,1);
+
+        //HTML_LOG(0,"evaluating... eval child %d type=%d",child_no,argtype);
+        ret = -1;
+        if ((ret = evaluate_with_err(e->subexp[child_no],item,err)) == 0) {
+            //HTML_LOG(0,"validating... eval child %d type=%d",child_no,argtype);
+            ret = validate_type(e->subexp[child_no],argtype,e,child_no);
+        }
+
+    }
+    //HTML_LOG(0,"eval child %d = %d",child_no,ret);
+    return ret;
+} 
+/*
+ * 0 = success
+ */
+static int evaluate_children(Exp *e,DbItem *item,int arg1type,int arg2type,int *err) 
+{
+    int ret = 0;
+    if ((ret = evaluate_child(e,item,0,arg1type,err)) == 0) {
+        ret = evaluate_child(e,item,1,arg2type,err);
+    }
+    //HTML_LOG(0,"eval children = %d",ret);
+    //exp_dump(e,1,1);
+    return ret;
+}
 
 static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 {
@@ -120,42 +205,34 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
         case OP_ADD:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    e->val.num_val = e->subexp[0]->val.num_val + e->subexp[1]->val.num_val;
-                }
+            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+                e->val.num_val = e->subexp[0]->val.num_val + e->subexp[1]->val.num_val;
             }
             break;
         case OP_SUBTRACT:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    e->val.num_val = e->subexp[0]->val.num_val - e->subexp[1]->val.num_val;
-                }
+            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+                e->val.num_val = e->subexp[0]->val.num_val - e->subexp[1]->val.num_val;
             }
             break;
         case OP_MULTIPLY:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    e->val.num_val = e->subexp[0]->val.num_val * e->subexp[1]->val.num_val;
-                }
+            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+                e->val.num_val = e->subexp[0]->val.num_val * e->subexp[1]->val.num_val;
             }
             break;
         case OP_DIVIDE:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    e->val.num_val = e->subexp[0]->val.num_val / e->subexp[1]->val.num_val;
-                }
+            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+                e->val.num_val = e->subexp[0]->val.num_val / e->subexp[1]->val.num_val;
             }
             break;
         case OP_AND:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
+            if (evaluate_child(e,item,0,VAL_TYPE_NUM,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val;
                 if (e->val.num_val) {
-                    if (evaluate_with_err(e->subexp[1],item,err) == 0) {
+                    if (evaluate_child(e,item,1,VAL_TYPE_NUM,err) == 0) {
                         e->val.num_val = e->subexp[1]->val.num_val;
                     }
                 }
@@ -163,10 +240,10 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
         case OP_OR:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
+            if (evaluate_child(e,item,0,VAL_TYPE_NUM,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val;
                 if (!e->val.num_val) {
-                    if (evaluate_with_err(e->subexp[1],item,err) == 0) {
+                    if (evaluate_child(e,item,1,VAL_TYPE_NUM,err) == 0) {
                         e->val.num_val = e->subexp[1]->val.num_val;
                     }
                 }
@@ -174,7 +251,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
         case OP_NOT:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
+            if (evaluate_child(e,item,0,VAL_TYPE_NUM,err) == 0) {
                 e->val.num_val = !e->subexp[0]->val.num_val;
             }
             break;
@@ -184,167 +261,179 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
         case OP_LT:
         case OP_GT:
         case OP_GE:
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    e->val.type = VAL_TYPE_NUM;
-                    if (e->subexp[0]->val.type != e->subexp[1]->val.type) {
-                        e->val.num_val = 0;
-                    } else {
-                        switch (e->subexp[0]->val.type ) {
-                            case VAL_TYPE_STR:
-                                e->val.num_val = compare(e->op,index_STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
-                                break;
-                            case VAL_TYPE_CHAR:
-                            case VAL_TYPE_NUM:
-                                //HTML_LOG(0,"XXX %lf %c %lf",e->subexp[0]->val.num_val,e->op,e->subexp[1]->val.num_val);
-                                e->val.num_val = compare(e->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
-                                break;
-                            default:
-                                assert(0);
-                        }
+            if (evaluate_children(e,item,VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,err) == 0) {
+                e->val.type = VAL_TYPE_NUM;
+                if (e->subexp[0]->val.type != e->subexp[1]->val.type) {
+                    e->val.num_val = 0;
+                } else {
+                    switch (e->subexp[0]->val.type ) {
+                        case VAL_TYPE_STR:
+                            e->val.num_val = compare(e->op,index_STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
+                            break;
+                        case VAL_TYPE_CHAR:
+                        case VAL_TYPE_NUM:
+                            //HTML_LOG(0,"XXX %lf %c %lf",e->subexp[0]->val.num_val,e->op,e->subexp[1]->val.num_val);
+                            e->val.num_val = compare(e->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
+                            break;
+                        default:
+                            assert(0);
                     }
                 }
             }
             break;
         case OP_LEFT:
             e->val.type = VAL_TYPE_STR;
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (e->subexp[0]->val.type != VAL_TYPE_STR) {
-                    html_error("1st argument to left must be a string");
-                    assert(0);
-                } else if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    if (e->subexp[1]->val.type != VAL_TYPE_NUM) {
-                        html_error("2nd argument to left must be a number");
-                        assert(0);
-                    } else {
+            if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_NUM,err) == 0) {
 
-                        int len = e->subexp[1]->val.num_val ;
-                        if (len < 0 ) len = 0;
+                int len = e->subexp[1]->val.num_val ;
+                if (len < 0 ) len = 0;
 
-                        int i;
-                        char *p,*s;
+                int i;
+                char *p,*s;
                        
-                        p = s  = e->subexp[0]->val.str_val;
-                        for(i = 0 ; i < len ; i++ ) {
-                            if (IS_UTF8STARTP(p)) {
-                                p++;
-                                while(IS_UTF8CONTP(p)) p++;
-                            } else if (*p) {
-                                p++;
-                            } else {
-                                break;
-                            }
-                        }
-                        e->val.str_val = COPY_STRING(p-s,s);
+                p = s  = e->subexp[0]->val.str_val;
+                for(i = 0 ; i < len ; i++ ) {
+                    if (IS_UTF8STARTP(p)) {
+                        p++;
+                        while(IS_UTF8CONTP(p)) p++;
+                    } else if (*p) {
+                        p++;
+                    } else {
+                        break;
                     }
                 }
+                s = COPY_STRING(p-s,s);
+                set_str(e,s,1);
             }
             break;
         case OP_STARTS_WITH:
         case OP_CONTAINS:
 
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
-                if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    //exp_dump(e->subexp[1],0,1);
+            if (evaluate_children(e,item,
+                    VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR,
+                    VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,err) == 0) {
 
-                    // INT/STR = not supported
-                    // INT/INT = not supported
-                    // INT/LIST = not supported
-                    //
-                    // STR/STR = string functions
-                    // STR/INT = string functions
-                    // LIST/STR = string functions
-                    // LIST/INT = group function
-                    //
-                    // LIST/LIST = not supported
-                    // STR/LIST = not supported
-                    // INT/LIST = not supported
-                    char *left=NULL;
-                    char *right=NULL;
-                    int imdb_list_check = 0;
+                //exp_dump(e->subexp[1],0,1);
 
-                    int char_on_right = 0;
+                // INT/STR = not supported
+                // INT/INT = not supported
+                // INT/LIST = not supported
+                //
+                // STR/STR = string functions
+                // STR/INT = string functions
+                // LIST/STR = string functions
+                // LIST/INT = group function
+                //
+                // LIST/LIST = not supported
+                // STR/LIST = not supported
+                // INT/LIST = not supported
+                char *left=NULL;
+                char *right=NULL;
+                int imdb_list_check = 0;
+                int list_check = 0;
 
-                    char right_chr = '\0';
+                int char_on_right = 0;
 
-                    switch(e->subexp[1]->val.type) {
-                        case VAL_TYPE_IMDB_LIST:
-                            html_error("2nd list argument not supported");
+                char right_chr = '\0';
+
+                switch(e->subexp[1]->val.type) {
+                    case VAL_TYPE_STR:
+                        right = e->subexp[1]->val.str_val;
+                        break;
+                    case VAL_TYPE_CHAR:
+                        right_chr = e->subexp[1]->val.num_val;
+                        char_on_right = 1;
+                        break;
+                    case VAL_TYPE_NUM:
+
+                        if (e->subexp[0]->val.type == VAL_TYPE_STR) {
+
+                            right = num2str_static(e->subexp[1]->val.num_val);
+
+                        } else if (e->subexp[0]->val.type == VAL_TYPE_IMDB_LIST) {
+                            imdb_list_check = 1;
+                        }
+                        break;
+                    default:
+                        assert(0);
+                }
+
+                switch(e->subexp[0]->val.type) {
+                    case VAL_TYPE_LIST:
+
+                        list_check=1;
+                        break;
+
+                    case VAL_TYPE_IMDB_LIST:
+                        if (!imdb_list_check) {
+                            left = db_group_imdb_string_static(e->subexp[0]->val.imdb_list_val);
+                        } 
+                        break;
+                    case VAL_TYPE_STR:
+                        left = e->subexp[0]->val.str_val;
+                        break;
+                    default:
+                        assert(0);
+                }
+                e->val.type = VAL_TYPE_NUM;
+                if (list_check) {
+
+                    int i;
+                    e->val.num_val = 0;
+                    for(i = 0 ; i < e->subexp[0]->val.list_val->size ; i++ ) {
+                        char *v = e->subexp[0]->val.list_val->array[i];
+                        if (strcmp(v,e->subexp[1]->val.str_val) ==0) {
+                            e->val.num_val = 1;
+                            break;
+                        }
+                    }
+                
+                } if (imdb_list_check) {
+                    int id = e->subexp[1]->val.num_val;
+                    int in_list = id_in_db_imdb_group(id,e->subexp[0]->val.imdb_list_val);
+                    e->val.num_val = in_list;
+
+                } else if (char_on_right) {
+                    // String contains character
+                    switch(e->op) {
+                        case OP_STARTS_WITH:
+                            if (STARTS_WITH_THE(left)) left+= 4;
+                            e->val.num_val = (tolower(*(unsigned char *)left) == tolower((unsigned char)right_chr));
+                            break;
+                        case OP_CONTAINS:
+                            e->val.num_val = (strchr(left,right_chr) != NULL);
+                            break;
+                        default:
                             assert(0);
-                            break;
-                        case VAL_TYPE_STR:
-                            right = e->subexp[1]->val.str_val;
-                            break;
-                        case VAL_TYPE_CHAR:
-                            right_chr = e->subexp[1]->val.num_val;
-                            char_on_right = 1;
-                            break;
-                        case VAL_TYPE_NUM:
-
-                            if (e->subexp[0]->val.type == VAL_TYPE_STR) {
-
-                                right = num2str_static(e->subexp[1]->val.num_val);
-
-                            } else if (e->subexp[0]->val.type == VAL_TYPE_IMDB_LIST) {
-                                imdb_list_check = 1;
-                            }
-                            break;
                     }
 
-                    switch(e->subexp[0]->val.type) {
-                        case VAL_TYPE_CHAR:
-                            html_error("1st character argument not supported");
+                } else {
+
+                    // String contains string
+                    switch(e->op) {
+                        case OP_STARTS_WITH:
+                            if (STARTS_WITH_THE(left)) left+= 4;
+                            e->val.num_val = util_starts_with_ignore_case(left,right);
+                            break;
+                        case OP_CONTAINS:
+                            e->val.num_val = (util_strcasestr(left,right) != NULL);
+                            break;
+                        default:
                             assert(0);
-                            break;
-                        case VAL_TYPE_NUM:
-                            html_error("1st numeric argument not supported");
-                            assert(0);
-                            break;
-                        case VAL_TYPE_IMDB_LIST:
-                            if (!imdb_list_check) {
-                                left = db_group_imdb_string_static(e->subexp[0]->val.imdb_list_val);
-                            } 
-                            break;
-                        case VAL_TYPE_STR:
-                            left = e->subexp[0]->val.str_val;
-                            break;
-                    }
-                    e->val.type = VAL_TYPE_NUM;
-                    if (imdb_list_check) {
-                        int id = e->subexp[1]->val.num_val;
-                        int in_list = id_in_db_imdb_group(id,e->subexp[0]->val.imdb_list_val);
-                        e->val.num_val = in_list;
-
-                    } else if (char_on_right) {
-                        // String contains character
-                        switch(e->op) {
-                            case OP_STARTS_WITH:
-                                if (STARTS_WITH_THE(left)) left+= 4;
-                                e->val.num_val = (tolower(*left) == tolower(right_chr));
-                                break;
-                            case OP_CONTAINS:
-                                e->val.num_val = (strchr(left,right_chr) != NULL);
-                                break;
-                            default:
-                                assert(0);
-                        }
-
-                    } else {
-
-                        // String contains string
-                        switch(e->op) {
-                            case OP_STARTS_WITH:
-                                if (STARTS_WITH_THE(left)) left+= 4;
-                                e->val.num_val = util_starts_with_ignore_case(left,right);
-                                break;
-                            case OP_CONTAINS:
-                                e->val.num_val = (util_strcasestr(left,right) != NULL);
-                                break;
-                            default:
-                                assert(0);
-                        }
                     }
                 }
+            }
+            break;
+
+        case OP_SPLIT:
+            if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_STR,err) == 0) {
+                e->val.type = VAL_TYPE_LIST;
+                Array *a = splitstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
+
+                clr_val(e);
+
+                if (e->val.list_val) array_free(e->val.list_val);
+                e->val.list_val = a;
             }
             break;
 
@@ -352,102 +441,94 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
             assert(item);
 
-            if (evaluate_with_err(e->subexp[0],item,err) == 0) {
+            if (evaluate_child(e,item,0,VAL_TYPE_STR,err) == 0) {
 
                 //HTML_LOG(0,"OP_DBFIELD item [%s]",item->title);
                 //exp_dump(e->subexp[0],0,1);
-                
+            
 
                 void *offset;
                 char *fname =e->subexp[0]->val.str_val;
 
-                if (e->subexp[0]->val.type != VAL_TYPE_STR) {
+                if (e->fld_type == FIELD_TYPE_NONE || e->subexp[0]->op != OP_CONSTANT ) {
 
-                    html_error("string value expected");
-                    *err = __LINE__;
+                    // Get the field attributes. Type, offset in DbItem, 
+                    // whether it is an overview field (or only parsed during detail view - eg PLOT)
+                   
+                    //HTML_LOG(0,"Fetching field details for [%s]",fname);
+                    if (!db_rowid_get_field_offset_type(item,fname,&offset,&(e->fld_type),&(e->fld_overview),&(e->fld_imdb_prefix))) {
 
-                } else {
-
-                    if (e->fld_type == FIELD_TYPE_NONE || e->subexp[0]->op != OP_CONSTANT ) {
-
-                        // Get the field attributes. Type, offset in DbItem, 
-                        // whether it is an overview field (or only parsed during detail view - eg PLOT)
-                       
-                        //HTML_LOG(0,"Fetching field details for [%s]",fname);
-                        if (!db_rowid_get_field_offset_type(item,fname,&offset,&(e->fld_type),&(e->fld_overview),&(e->fld_imdb_prefix))) {
-
-                            html_error("bad field [%s]",fname);
-                            *err = __LINE__;
-                        } else {
-                            e->fld_offset = (char *)offset - (char *)item;
-                        }
-
+                        html_error("bad field [%s]",fname);
+                        *err = __LINE__;
+                    } else {
+                        e->fld_offset = (char *)offset - (char *)item;
                     }
 
-                    offset = (char *)item + e->fld_offset;
+                }
 
-                    /*
-                    char *p = item->title;
-                    char *q = *(char **)offset;
-                    HTML_LOG(0,"OP_DBFIELD fname [%s]",fname);
-                    HTML_LOG(0,"OP_DBFIELD ftype [%c]",ftype);
-                    HTML_LOG(0,"OP_DBFIELD item [%lu]",(unsigned long)item);
-                    HTML_LOG(0,"OP_DBFIELD item->title [%lu]",(unsigned long)&(item->title));
-                    HTML_LOG(0,"OP_DBFIELD offset [%lu]",(unsigned long)offset);
-                    HTML_LOG(0,"OP_DBFIELD item->title [%s]",item->title);
-                    HTML_LOG(0,"OP_DBFIELD offset [%s]",offset);
-                    HTML_LOG(0,"OP_DBFIELD p [%lu] q[%lu]",p,q);
-                    HTML_LOG(0,"OP_DBFIELD p [%s] q[%s]",p,q);
-                    */
-                    switch(e->fld_type){
+                offset = (char *)item + e->fld_offset;
 
-                        case FIELD_TYPE_UTF8_STR:
-                        case FIELD_TYPE_STR:
-                            e->val.type = VAL_TYPE_STR;
-                            e->val.free_str = 0;
-                            e->val.str_val = *(char **)offset;
-                            break;
+                /*
+                char *p = item->title;
+                char *q = *(char **)offset;
+                HTML_LOG(0,"OP_DBFIELD fname [%s]",fname);
+                HTML_LOG(0,"OP_DBFIELD ftype [%c]",ftype);
+                HTML_LOG(0,"OP_DBFIELD item [%lu]",(unsigned long)item);
+                HTML_LOG(0,"OP_DBFIELD item->title [%lu]",(unsigned long)&(item->title));
+                HTML_LOG(0,"OP_DBFIELD offset [%lu]",(unsigned long)offset);
+                HTML_LOG(0,"OP_DBFIELD item->title [%s]",item->title);
+                HTML_LOG(0,"OP_DBFIELD offset [%s]",offset);
+                HTML_LOG(0,"OP_DBFIELD p [%lu] q[%lu]",p,q);
+                HTML_LOG(0,"OP_DBFIELD p [%s] q[%s]",p,q);
+                */
+                switch(e->fld_type){
 
-                        case FIELD_TYPE_CHAR:
-                            e->val.type = VAL_TYPE_CHAR;
-                            e->val.num_val = *(char *)offset;
-                            break;
+                    case FIELD_TYPE_UTF8_STR:
+                    case FIELD_TYPE_STR:
+                        e->val.type = VAL_TYPE_STR;
+                        e->val.free_str = 0;
+                        e->val.str_val = *(char **)offset;
+                        break;
 
-                        case FIELD_TYPE_LONG:
-                            e->val.type = VAL_TYPE_NUM;
-                            e->val.num_val = *(long *)offset;
-                            break;
+                    case FIELD_TYPE_CHAR:
+                        e->val.type = VAL_TYPE_CHAR;
+                        e->val.num_val = *(char *)offset;
+                        break;
 
-                        case FIELD_TYPE_INT:
-                        case FIELD_TYPE_YEAR:
-                            e->val.type = VAL_TYPE_NUM;
-                            e->val.num_val = *(int *)offset;
-                            break;
+                    case FIELD_TYPE_LONG:
+                        e->val.type = VAL_TYPE_NUM;
+                        e->val.num_val = *(long *)offset;
+                        break;
 
-                        case FIELD_TYPE_DOUBLE:
-                            e->val.type = VAL_TYPE_NUM;
-                            e->val.num_val = *(double *)offset;
-                            break;
+                    case FIELD_TYPE_INT:
+                    case FIELD_TYPE_YEAR:
+                        e->val.type = VAL_TYPE_NUM;
+                        e->val.num_val = *(int *)offset;
+                        break;
 
-                        case FIELD_TYPE_IMDB_LIST:
-                        case FIELD_TYPE_IMDB_LIST_NOEVAL:
+                    case FIELD_TYPE_DOUBLE:
+                        e->val.type = VAL_TYPE_NUM;
+                        e->val.num_val = *(double *)offset;
+                        break;
 
-                            e->val.type = VAL_TYPE_IMDB_LIST;
-                            e->val.free_str = 0;
-                            e->val.imdb_list_val = *(DbGroupIMDB **)offset;
-                            break;
+                    case FIELD_TYPE_IMDB_LIST:
+                    case FIELD_TYPE_IMDB_LIST_NOEVAL:
 
-                        case FIELD_TYPE_DATE:
-                        case FIELD_TYPE_TIMESTAMP:
+                        e->val.type = VAL_TYPE_IMDB_LIST;
+                        e->val.free_str = 0;
+                        e->val.imdb_list_val = *(DbGroupIMDB **)offset;
+                        break;
 
-                        case FIELD_TYPE_NONE:
-                            html_error("unsupported field type [%c]",e->fld_type);
-                            break;
+                    case FIELD_TYPE_DATE:
+                    case FIELD_TYPE_TIMESTAMP:
 
-                        default:
-                            html_error("unknown field type [%c]",e->fld_type);
-                            *err = __LINE__;
-                    }
+                    case FIELD_TYPE_NONE:
+                        html_error("unsupported field type [%c]",e->fld_type);
+                        break;
+
+                    default:
+                        html_error("unknown field type [%c]",e->fld_type);
+                        *err = __LINE__;
                 }
             }
             break;
@@ -457,7 +538,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
         case OP_REGEX_MATCH:
             if (evaluate_with_err(e->subexp[0],item,err) == 0) {
                 if (evaluate_with_err(e->subexp[1],item,err) == 0) {
-                    if (exp_compile(e,e->subexp[1]) == 0) {
+                    if (exp_regex_compile(e,e->subexp[1]) == 0) {
                         e->val.type=VAL_TYPE_NUM;
                         //HTML_LOG(0,"[%s] vs [%s]",e->subexp[0]->val.str_val,e->regex_str);
                         e->val.num_val = (regexec(e->regex,e->subexp[0]->val.str_val,0,NULL,0) == 0);
@@ -474,7 +555,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
     return *err;
 }
 
-int exp_compile(Exp *e,Exp *source)
+int exp_regex_compile(Exp *e,Exp *source)
 {
     int result = 0;
     // Only compile strings
@@ -723,7 +804,17 @@ void exp_dump(Exp *e,int depth,int show_holding_values)
                 case VAL_TYPE_STR:
                     HTML_LOG(0,"%*s str[%s]",depth*4," ",e->val.str_val);
                     break;
-                case VAL_TYPE_IMDB_LIST:
+                case VAL_TYPE_LIST:
+                    {
+                        int i;
+                        for(i = 0 ; i < e->val.list_val->size ; i++ ) {
+                            HTML_LOG(0,"%*s list[%s]",depth*4," ",e->val.list_val->array[i]);
+                        }
+                    }
+                    break;
+
+
+                case VAL_TYPE_IMDB_LIST: // deprecated
                     HTML_LOG(0,"%*s list[%s]",depth*4," ",db_group_imdb_string_static(e->val.imdb_list_val));
                     break;
             }
@@ -744,6 +835,11 @@ void exp_free(Exp *e,int recursive)
         if (e->val.type == VAL_TYPE_STR && e->val.free_str) {
             FREE(e->val.str_val);
         }
+
+        if (e->val.type == VAL_TYPE_LIST) {
+            array_free(e->val.list_val);
+        }
+
         if (e->regex) {
             regfree(e->regex);
             FREE(e->regex);

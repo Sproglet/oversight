@@ -153,7 +153,7 @@ int abet_strcmp(char *s1,char *s2,Abet *a)
     assert(s1);
     assert(s2);
 
-    int i,j,ret;
+    int i,j,ret=0;
     char *p =  s1;
     char *q =  s2;
     //HTML_LOG(0,"abet_strcmp[%s][%s]",s1,s2);

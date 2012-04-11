@@ -2229,7 +2229,7 @@ long numeric_constant_eval_str(long val,char *expression) {
         } else
 #endif
             
-            if (*p == '-' || isdigit(*p)) {
+            if (*p == '-' || isdigit(*(unsigned char *)p)) {
 
             num2=strtol(p,&nextp,10);
             numstr=p;

@@ -226,6 +226,7 @@ typedef enum Op_enum {
     OP_STARTS_WITH='^',
     OP_CONTAINS='#',
     OP_DBFIELD='_',
+    OP_SPLIT='|',
     OP_LEFT='[',
 
     OP_REGEX_CONTAINS='r',
@@ -234,16 +235,20 @@ typedef enum Op_enum {
 } Op;
 
 typedef enum ValType_enum {
-    VAL_TYPE_IMDB_LIST='I',
-    VAL_TYPE_NUM='i',
-    VAL_TYPE_STR='s',
-    VAL_TYPE_CHAR='c'
+    VAL_TYPE_NONE=0,
+    VAL_TYPE_IMDB_LIST=1,
+    VAL_TYPE_NUM=2,
+    VAL_TYPE_STR=4,
+    VAL_TYPE_CHAR=8,
+    VAL_TYPE_LIST=16
 } ValType;
 
 typedef struct Value_struct {
     ValType type;
     double num_val;
     char *str_val;
+    Array *list_val;
+    // True if string or list values must be freed.
     int free_str;
     DbGroupIMDB *imdb_list_val;
 

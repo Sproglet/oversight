@@ -152,37 +152,79 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat)
     return ret;
 }
 
+YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url) {
+
+    assert(owner);
+    YAMJSubCat *ret = NULL;
+
+    ret = CALLOC(sizeof(YAMJSubCat),1);
+    ret->name = STRDUP(name);
+    ret->owner_cat = owner;
+
+    ret->filter_expr_url = STRDUP(filter_url);
+
+TRACE1;
+    if (EMPTY_STR(ret->filter_expr_url)) {
+TRACE1;
+
+        html_error("missing query value for subcat [%s_%s]",owner->name,name);
+        free_yamj_subcatetory(ret);
+        ret = NULL;
+
+TRACE1;
+    } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
+TRACE1;
+
+        html_error("unable to parse query value for [%s_%s]",owner->name,name);
+        free_yamj_subcatetory(ret);
+        ret = NULL;
+TRACE1;
+    }
+
+TRACE1;
+    if (ret) {
+TRACE1;
+
+        if (owner->subcats == NULL) {
+TRACE1;
+            owner->subcats = array_new(free_yamj_subcatetory);
+TRACE1;
+        }
+TRACE1;
+        array_add(owner->subcats,ret);
+TRACE1;
+    }
+
+    return ret;
+}
+
 /*
  * config file format:
  * ovs_yamj_cat1_sub1_name="1950-59"
  * ovs_yamj_cat1_sub1_query="_Y~f~~ge~1950~a~_Y~f~~le~1959"
  */
-YAMJSubCat *yamj_subcat_config(int num,int sub)
+YAMJSubCat *yamj_subcat_config(YAMJCat *owner,int num,int sub)
 {
     YAMJSubCat *ret = NULL;
 
-    char *key;
+    char *key=NULL;
     char *name;
 
     ovs_asprintf(&key,CONFIG_PREFIX "%d_sub%d_name",num,sub);
     name = oversight_val(key);
     if (!EMPTY_STR(name)) {
 
-        ret = CALLOC(1,sizeof(YAMJSubCat));
-
-        ret->name = STRDUP(name);
         
         FREE(key);
         ovs_asprintf(&key,CONFIG_PREFIX "%d_sub%d_query",num,sub);
 
-        ret->filter_expr_url = STRDUP(oversight_val(key));
-        if (EMPTY_STR(ret->filter_expr_url)) {
-            html_error("missing query value for [%s]",key);
-            free_yamj_subcatetory(ret);
-            ret = NULL;
-        } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
-            html_error("unable to parse query value for [%s]",key);
-        }
+        char *query = oversight_val(key);
+
+        HTML_LOG(0,"query = [%s]",query);
+
+TRACE1;
+        ret = new_subcat(owner,name,query);
+TRACE1;
     }
 
     FREE(key);
@@ -241,13 +283,14 @@ YAMJCat *yamj_cat_config(int num)
         ovs_asprintf(&key,CONFIG_PREFIX "%d_expr",num);
 
         ret->auto_subcat_expr_url = STRDUP(oversight_val(key));
-        ret->subcats = array_new(free_yamj_subcatetory);
 
+TRACE1;
         int j = 0;
-        while((subcat = yamj_subcat_config(num,++j)) != NULL) {
-            array_add(ret->subcats,subcat);
-            subcat->owner_cat=ret;
+        while((subcat = yamj_subcat_config(ret,num,++j)) != NULL) {
+            /** EMPTY LOOP **/;
         }
+
+TRACE1;
         if (EMPTY_STR(ret->auto_subcat_expr_url)) {
             if (j == 1) {
                 html_error("missing query  or expr value for ovs_yamj_cat[%d]",num);
@@ -308,11 +351,12 @@ int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories)
 
 
     DbItem **itemPtr;
-    for (itemPtr = subcat->items ; *itemPtr ; itemPtr++ ) ;
-    int count = itemPtr - subcat->items;
+    for (itemPtr = subcat->sorted_items ; *itemPtr ; itemPtr++ ) /* empty loop */ ;
+
+    int count = itemPtr - subcat->sorted_items;
 
     printf("<movies count=\"%d\">\n",count);
-    for (itemPtr = subcat->items ; *itemPtr ; itemPtr++ ) {
+    for (itemPtr = subcat->sorted_items ; *itemPtr ; itemPtr++ ) {
         DbItem *item = *itemPtr;
         yamj_video_xml(request,item);
     }
@@ -362,65 +406,73 @@ int compute_subcat(YAMJSubCat *subcat)
 YAMJSubCat *find_subcat(char *request,Array *categories)
 {
     int i,j;
-    YAMJSubCat *ret=NULL;
-    char *page_pos=NULL;
+    YAMJSubCat *subcat=NULL;
+    char *pattern = "([^_]+)_([^_].*)_([0-9]+).xml";
 
     assert(request);
     assert(categories);
 
-    char *p = strstr(request,".xml");
-    if (*p) {
-        p--;
-        if(isdigit(*(unsigned char *)p)) {
-            do {
-                p--;
-            } while (isdigit(*(unsigned char *)p));
-            if (*p == '_') {
-                page_pos = p+1;
-            }
-        }
-    }
+    Array *request_parts = regextract(request,pattern,0);
 
-    if (page_pos) {
-        HTML_LOG(0,"findCat - page=[%s]",page_pos);
+    if (!request_parts || request_parts->size != 4) {
+        html_error("invalid request [%s] expect pattern [%s]",request,pattern);
+        array_dump(0,"regex",request_parts);
+    } else {
 
-        for(i = 0 ; !ret && i < categories->size ; i++ ) {
-            p = request;
-            YAMJCat *cat = categories->array[i];
-            if (strstr(p,cat->name) == p ) {
-                // found a possible category check followed by _
-                p += strlen(cat->name);
-                if (*p == '_') {
-                    p++;
+        char *cat_name = request_parts->array[1];
+        char *subcat_name = request_parts->array[2];
+        int page = atoi(request_parts->array[3]);
 
-                    HTML_LOG(0,"findCat - cat=[%s]",cat->name);
 
-                    // now check subcats - for dynamic subcats this means we have to do a full database scan
-                    // to create the subcats. eg Title_Letter_1.xml
-                    evaluate_dynamic_subcat_names(cat);
+        HTML_LOG(0,"findCat - %s - %s - %d",cat_name,subcat_name,page);
+        // See if the subcat exists.
+        //
+        YAMJCat *cat = NULL;
 
-                    Array *subcats = cat->subcats;
+        for(i = 0 ; !cat && i < categories->size ; i++ ) {
+            YAMJCat *cat1 = categories->array[i];
+            if (strcmp(cat_name,cat1->name) == 0 ) {
 
-                    for(j = 0 ; !ret && j < subcats->size ; j++ ) {
-                        YAMJSubCat *subcat = subcats->array[j];
-                        if (strstr(p,subcat->name) == p) {
-                            p+=strlen(subcat->name);
-                            if (p+1 == page_pos) {
-                                HTML_LOG(0,"found sub exp [%s]",subcat->name);
-                                ret = subcat;
-                                subcat->page = atoi(page_pos);
-                            }
+                HTML_LOG(0,"found cat [%s]",cat_name);
+                cat = cat1;
+
+                Array *subcats = cat->subcats;
+                if (subcats) {
+                    for(j = 0 ; !subcat && j < subcats->size ; j++ ) {
+                        YAMJSubCat *subcat1 = subcats->array[j];
+                        if (strcmp(subcat_name,subcat1->name) == 0) {
+                            subcat = subcat1;
+                            HTML_LOG(0,"found subcat [%s]",subcat_name);
                         }
-                    }
-                    if (!ret) {
-                        HTML_LOG(0,"Did not find subcategory [%s] for category [%s]",request,cat->name);
                     }
                 }
             }
         }
+
+        // If No subcat exists then create one using a combination of the owner_cat auto_subcat_expr_url and the
+        // subcat name.
+        // Eg
+        //    cat->auto_subcat_expr_url = _T~f~~l~1 (1st character of title field)
+        //    subcat name = B
+        //    Create subcat with filter 'B'~e~_T~f~~l~1 ( 'B' = 1st character of title field )
+        //
+        if (!cat) {
+            html_error("request [%s] : Category %s not found in configuration",request,cat_name);
+        } else if (!subcat) {
+            if (EMPTY_STR(cat->auto_subcat_expr_url)) {
+                html_error("request [%s] : Subcategory %s not found in configuration",request,subcat_name);
+            } else {
+                char *query;
+                ovs_asprintf(&query,"'%s'~e~%s",subcat_name,cat->auto_subcat_expr_url);
+                HTML_LOG(0,"creating auto subcategory %s_%s using query %s",cat_name,subcat_name,query);
+                subcat = new_subcat(cat,subcat_name,query);
+                FREE(query);
+            }
+        }
     }
 
-    return ret;
+    array_free(request_parts);
+    return subcat;
 }
 
 

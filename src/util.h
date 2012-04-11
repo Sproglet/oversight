@@ -162,7 +162,7 @@ struct hashtable *array_to_set(Array *args);
 void set_free(struct hashtable *h);
 int bchop(int id,int size,int *ids);
 int index_STRCMP(char *a,char *b);
-int util_stat(char *path,struct stat64 *st);
+int util_stat(char *path,struct STAT64 *st);
 char *expand_paths(Array *paths);
 void util_file_list_command(char *command_and_args,Array *paths);
 void util_file_command(char *command_and_args,char *path);

@@ -1,7 +1,7 @@
 CC=gcc
 
 
-ARCH=200
+ARCH=
 VERFILE=verfile
 
 REV='"`cat verfile`"'
@@ -18,38 +18,49 @@ REV='"`cat verfile`"'
 # linux  : nmt-linux-intel-toolchain-gcc-4.0.4-linux-2.6.15.7-uclibc-0.9.28.3-lundman-P1.tgz
 # windows: nmt-cygwin-toolchain-gcc-4.2.2-linux-2.6.15.7-uclibc-0.9.28.3.tar.bz2
 
-ifdef WINDIR
+ifneq ($(ARCH),pc) 
+
+ifeq ($(ARCH),200) 
+	CFLAGS_ARCH=-EL -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
+	LDFLAGS_ARCH=-EL
+	CROSS_TYPE=mips-linux-gnu
+else
+ifeq ($(ARCH),100) 
+	CFLAGS_ARCH=-D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
+	CROSS_TYPE=mipsel-linux-uclibc
+endif
+endif
+
+ifdef WINDIR #####################################
 ifeq ($(ARCH),200) 
 	CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt200/mips-4.3/
-	CFLAGS_ARCH=-EL
-	LDFLAGS_ARCH=-EL
 else
+ifeq ($(ARCH),100) 
 	CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt100/mipsel-linux-uclibc
 endif
-else
+endif
+
+else ############################################
+
 ifeq ($(ARCH),200) 
 	CROSS_DIR=~/nmt/packages/toolchain_200/mips-4.3
-	CFLAGS_ARCH=-EL
-	LDFLAGS_ARCH=-EL
 else
+ifeq ($(ARCH),100) 
 	CROSS_DIR=~/nmt/packages/toolchain_100/usr/local/mips
 endif
 endif
 
-ifeq ($(ARCH),200) 
-	BADARCH=100
-	CROSS_TYPE=mips-linux-gnu
-else
-	BADARCH=200
-	CROSS_TYPE=mipsel-linux-uclibc
-endif
+endif ############################################
 
 CC=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
 STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
+else
+	CFLAGS_ARCH=-DSTAT64=stat
+endif
 
 #CFLAGS=-O3 -Wall -Wunused-parameter -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
-CFLAGS=-O3 -Wall -DOUT=$(OUT) -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
+CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 #-DNOLOG=$(NOLOG)
 
 # Most stable last to speed compile-fail cycle
@@ -65,6 +76,7 @@ OBJS=initials.o utf8.o tree.o \
    	time.o network.o \
    	hashtable_loop.o vasprintf.o \
    	hashtable.o hashtable_itr.o hashtable_utility.o \
+	yamj.o
 
 SRC=$(OBJS:.o=.c)
 
@@ -73,7 +85,7 @@ HEADERS=$(SRC:.c=.h)
 HASH_OBJECTS=hashtable.o hashtable_itr.o tester.o
 
 .c.o:
-	@echo [CC] $<
+	@echo [CC] [$(ARCH)] $<
 	@$(CC) $(CFLAGS) -c $<
 
 TARGET=oversight
@@ -96,9 +108,17 @@ $(VERFILE):
 	echo r`../util/svnv oversight 1` > $(VERFILE)
 
 
-$(ARCH):
-	if [ -f $(BADARCH) ] ; then echo "Do make clean" ; false ; fi
-	touch $(ARCH)
+200:
+	if [ -f 100 -o -f pc ] ; then echo "Do make clean" ; false ; fi
+	touch 200
+
+100:
+	if [ -f 200 -o -f pc ] ; then echo "Do make clean" ; false ; fi
+	touch 100
+
+pc:
+	if [ -f 100 -o -f 200 ] ; then echo "Do make clean" ; false ; fi
+	touch pc
 
 
 $(TARGET):  libutf8proc.a tags $(OBJS)
@@ -148,7 +168,7 @@ tester: $(HASH_OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(HASH_OBJECTS)
 
 tidy:
-	rm -f *.o $(ARCH) $(BADARCH) $(VERFILE)
+	rm -f *.o 100 200 pc $(VERFILE)
 
 clean: tidy
 	rm -f tester old_tester $(TARGET) daemon

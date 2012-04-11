@@ -29,7 +29,7 @@ void display_admin(DbSortedRows *sorted_rows) {
         if (show_donate) {
             if (exists(donated_file())) {
 
-                struct stat64 stat;
+                struct STAT64 stat;
                 if (util_stat(donated_file(),&stat) == 0) {
 
                     HTML_LOG(0,"now=%u time = %u",time(NULL),stat.st_mtime);

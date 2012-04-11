@@ -21,7 +21,7 @@ void permissions(uid_t uid,gid_t gid,int mode,int recursive,char *path)
         ovs_asprintf(&full_path,"%s/%s",appDir(),path);
     }
 
-    struct stat64 st;
+    struct STAT64 st;
     util_stat(full_path,&st);
 
     //HTML_LOG(0,"chown %d:%d chmod %o [%s]",uid,gid,mode,full_path);

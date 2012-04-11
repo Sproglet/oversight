@@ -28,6 +28,7 @@
 #include "exp.h"
 #include "utf8.h"
 #include "abet.h"
+#include "yamj.h"
 
 
 //void exec_old_cgi(int argc,char **argv);
@@ -57,7 +58,7 @@ int ls(char *path) {
             char *unit="b";
             int precision=0;
             char *size_str=NULL;
-            struct stat64 st;
+            struct STAT64 st;
 
             ovs_asprintf(&p,"%s/%s",path,f->d_name);
             //printf("<br>checking %s\n",p);
@@ -207,9 +208,6 @@ static void start_page(char *callmode) {
     printf("<!-- %s:%s -->\n",callmode,OVS_VERSION);
 }
 
-#define CONTENT_TYPE "Content-Type: "
-#define CONTENT_ENC "Content-Encoding: "
-#define CONTENT_LENGTH "Content-Length: "
 int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
 
@@ -231,7 +229,12 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
         if (argc > 1 ) {
 
-            if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
+            printf("ARG1[%s]\n",argv[1]);
+            if ( argv[1] && *argv[1] && argv[2] == NULL && strncmp(argv[1],"yamj/",4) == 0) {
+                result = yamj_xml(argv[1]);
+                exit(result);
+
+            } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
                 // Single argument passed.
                 //
                 char *path = url_decode(argv[1]);

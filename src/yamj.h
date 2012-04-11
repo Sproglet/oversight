@@ -15,8 +15,13 @@ typedef struct {
     // Sort order - if null use owning YAMJCat sort order.
     char *sort_order;
     int page; // page requested
+
+    // temporary array for items before sorting
+    Array *items;
+
     // For the current category this will be populated with rows from the database.
-    DbItem **items;
+    DbItem **sorted_items;
+
     int item_total;
     int evaluated;
 
@@ -36,6 +41,9 @@ typedef struct YAMJCat_str {
     int evaluated;
     Array *subcats;
     int page_size;
+
+    // Used to mak computed values to Subcats.
+    struct Hashtable *value_to_auto_subcat;
 } YAMJCat;
 
 int yamj_xml(char *name);

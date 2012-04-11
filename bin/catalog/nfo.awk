@@ -288,8 +288,7 @@ i) {
     }
 }
 
-function writeTag(parent_tag,tag,text,nfo,\
-attr) {
+function writeTag(parent_tag,tag,text,nfo) {
     #Define any additional tag attributes here.
     if (!(1 in g_nfo_attr)) {
         g_nfo_attr[1]=1;

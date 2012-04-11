@@ -130,12 +130,17 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
         filter_count ++;
     }
 
+    if (g_fetch_filter) {
+        html_filter = html_filter" | "g_fetch_filter;
+        filter_count ++;
+    }
+
     if (index(file,".html")) {
         # Long html lines were split to avoid memory issues with bbawk.
         # With gawk it may be possible to go back to using cat.
 
         #Insert line feeds - but try not to split text that has bold or span tags.
-        html_filter = " | "AWK" '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P|LI|li|script|SCRIPT|style|STYLE)[ >]/,\"\\n&\") ; print ; }' ";
+        html_filter = html_filter" | "AWK" '{ gsub(/<([hH][1-5]|div|DIV|td|TD|tr|TR|p|P|LI|li|script|SCRIPT|style|STYLE)[ >]/,\"\\n&\") ; print ; }' ";
         filter_count ++;
     }
 

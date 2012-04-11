@@ -185,8 +185,8 @@ ret,matches) {
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,matches,verbose) {
-    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,0,matches,verbose);
+function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,matches,verbose,label) {
+    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,0,matches,verbose,label);
 }
 # Scan a page for matches to regular expression
 # IN url to scan
@@ -195,8 +195,8 @@ function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,match
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by order of occurrence
 # return number of matches
-function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matches,verbose) {
-    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,1,matches,verbose);
+function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matches,verbose,label) {
+    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,1,matches,verbose,label);
 }
 # Scan a page for matches to regular expression
 # IN url to scan
@@ -206,7 +206,7 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matche
 # IN count_or_order = 0=count 1=order
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
+function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,label,\
 f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
 
 #    if (index(url,"yahoo") && index(url,"2010") && index(url,"site:imdb.com")) {
@@ -229,7 +229,8 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
     if (index(url,"SEARCH") == 1) {
         f = search_url2file(url,cache,referer);
     } else {
-        f=getUrl(url,"scan4match.html",cache,referer);
+        if (!label) label = "scan4match.html";
+        f=getUrl(url,label,cache,referer);
     }
 
     text_num = 0;

@@ -71,6 +71,9 @@ void set_plot_keys(DbItem *item) {
             id = get_id_from_idlist(idlist,"themoviedb",1);
         }
         if(!id) {
+            id = get_id_from_idlist(idlist,"ovs",1);
+        }
+        if(!id) {
             // get first id
             char *start=idlist;
             char *space;

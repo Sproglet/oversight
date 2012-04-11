@@ -136,14 +136,14 @@ i,n,out,ids,m,ascii_offset) {
 }
 function short_year(y,\
 ret) {
-    if (y != "" ) ret = sprintf("%x",y-1900);
+    if (y != "" && length(y) == 4 ) ret = sprintf("%x",y-1900);
     return ret;
 }
 
 function long_year(y,\
 ret) {
 
-    if (y != "" ) ret = hex2dec(y)+1900;
+    if (y != "" && length(y) < 4 ) ret = hex2dec(y)+1900;
     return ret;
 }
 

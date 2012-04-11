@@ -168,6 +168,10 @@ OVS_EXTERN1(ViewMode *VIEW_MIXED);
 OVS_EXTERN(int g_tvboxset_mode,1);
 OVS_EXTERN(int g_moviebox_mode,1);
 
+#define CONTENT_TYPE "Content-Type: "
+#define CONTENT_ENC "Content-Encoding: "
+#define CONTENT_LENGTH "Content-Length: "
+int cat(char *headers,char *file);
 
 #endif
 

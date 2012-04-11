@@ -996,11 +996,11 @@ char *get_crossview_local_copy(char *path,char *label)
 
     if (util_starts_with(path,NETWORK_SHARE) ) {
 
-        struct stat64 remote_s;
+        struct STAT64 remote_s;
         if (util_stat(path,&remote_s) == 0) {
             char *tmp;
             ovs_asprintf(&tmp,"%s/tmp/%s.%s",appDir(),util_basename(path),label);
-            struct stat64 local_s;
+            struct STAT64 local_s;
             if (util_stat(tmp,&local_s) != 0 || remote_s.st_mtime > local_s.st_mtime ) {
                 // copy remote file
                 if (copy_file(path,tmp) == 0) {

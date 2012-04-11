@@ -258,7 +258,7 @@ void delete_queue_add(DbItem *item,int force,char *path) {
 
         char *real_path=get_path(item,path,&freepath);
 
-        struct stat64 st;
+        struct STAT64 st;
 
         if (util_stat(real_path,&st) == 0) {
 

@@ -114,3 +114,58 @@ ovs_font_size_eptitle="90"
 ovs_font_size_epdate="90"
 ovs_transparency="40"
 ovs_fade="1"
+
+
+# Currently re-using the URL expression parser - hence ugly syntax
+# db :
+# ~f~ = field
+# Maths:
+# ~A~ = Add
+# ~S~=Subtract
+# ~M~ = Multiply
+# ~D~ = Divide
+# Boolean:
+# ~a~ AND
+# ~o~ OR
+# ~!~ not
+# Cmp:
+# ~ne~ ~le~ ~gt~ ~ge~
+# ~e~ Equals
+# ~s~ Starts With string
+# ~c~ Contain string
+# ~er~ Match regex
+# ~sr~ Starts Withs
+# ~cr~ Contains regex
+# String
+# ~l~ Left n chars TODO
+# ~sp~ Split - used to split Genre , Actor lists.
+ovs_yamj_page_size=10
+ovs_yamj_cat1_name="Year"
+ovs_yamj_cat1_sub1_name="1950-59"
+ovs_yamj_cat1_sub1_query="_Y~f~~ge~1950~a~_Y~f~~le~1959"
+ovs_yamj_cat1_sub2_name="1960-69"
+ovs_yamj_cat1_sub2_query="_Y~f~~ge~1960~a~_Y~f~~le~1969"
+ovs_yamj_cat1_sub3_name="1970-79"
+ovs_yamj_cat1_sub3_query="_Y~f~~ge~1970~a~_Y~f~~le~1979"
+ovs_yamj_cat1_sub4_name="1980-89"
+ovs_yamj_cat1_sub4_query="_Y~f~~ge~1980~a~_Y~f~~le~1989"
+ovs_yamj_cat1_sub5_name="1990-99"
+ovs_yamj_cat1_sub5_query="_Y~f~~ge~1990~a~_Y~f~~le~1999"
+ovs_yamj_cat1_sub6_name="2000-09"
+ovs_yamj_cat1_sub6_query="_Y~f~~ge~2000~a~_Y~f~~le~2009"
+# need to add a current_year constant
+ovs_yamj_cat1_sub7_name="2010"
+ovs_yamj_cat1_sub7_query="_Y~f~~e~2010"
+ovs_yamj_cat1_sub8_name="2011"
+ovs_yamj_cat1_sub8_query="_Y~f~~e~2011"
+ovs_yamj_cat1_sub9_name="2012"
+ovs_yamj_cat1_sub9_query="_Y~f~~e~2012"
+ovs_yamj_cat2_name="Title"
+ovs_yamj_cat2_expr="_T~f~~l~1"
+ovs_yamj_cat3_name="Certification"
+ovs_yamj_cat3_expr="_R~f~"
+ovs_yamj_cat4_name="Genre"
+ovs_yamj_cat4_expr="_G~f~~sp~|"
+ovs_yamj_cat5_name="Other"
+ovs_yamj_cat5_sub1_name="Unwatched"
+ovs_yamj_cat5_sub1_query="_w~f~~e~0"

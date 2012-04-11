@@ -55,7 +55,11 @@ found_section,relationship,htag,sep,i,count,html,txt,v,url,hdr) {
         htag = "h5";
         sep=",";
         url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
-        count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|\\<"g_imdb_regex")",0,0,"",html);
+        g_fetch_filter = " sed '1,/<h1/ d;/<h4.*>Refer/,$ d;/TOP_RHS/,$ d' ";
+
+        count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|\\<"g_imdb_regex")",0,0,"",html,0,"raw.img");
+
+        g_fetch_filter = "";
 
         #dump(0,"movieconnections-"count,html);
         for(i = 1 ; i <= count ; i++ ) {

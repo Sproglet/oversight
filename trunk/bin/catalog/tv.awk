@@ -2281,7 +2281,7 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(minfo,tvdbid,\
-xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
+xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i,banners,key) {
 
     lnum = get_langs(langs);
 
@@ -2292,35 +2292,41 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i) {
     get_fanart = getting_fanart(minfo,1);
 
     if (get_poster || get_fanart) {
-        fetched = fetchXML(bannerApiUrl,"banners",xml,"");
-    }
 
-    if (get_poster && fetched) {
-        delete filter;
-        filter["/BannerType"] = "season";
-        filter["/BannerType2"] = "season";
-        filter["/Season"] = minfo[SEASON];
-        for(i = 1 ; i <= lnum ; i++ ) {
-            filter["/Language"] = langs[i];
-            if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
-                minfo[POSTER]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                DEBUG("Season Poster = "minfo[POSTER]);
-                break;
+        key="banners:"tvdbid ":" minfo[SEASON];
+
+        if (!scrape_cache_get(key,minfo)) {
+            fetched = fetchXML(bannerApiUrl,"banners",xml,"");
+
+            if (get_poster && fetched) {
+                delete filter;
+                filter["/BannerType"] = "season";
+                filter["/BannerType2"] = "season";
+                filter["/Season"] = minfo[SEASON];
+                for(i = 1 ; i <= lnum ; i++ ) {
+                    filter["/Language"] = langs[i];
+                    if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
+                        banners[POSTER] = minfo[POSTER]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                        DEBUG("Season Poster = "minfo[POSTER]);
+                        break;
+                    }
+                }
             }
-        }
-    }
 
-    if (get_fanart && fetched) {
+            if (get_fanart && fetched) {
 
-        delete filter;
-        filter["/BannerType"] = "fanart";
-        for(i = 1 ; i <= lnum ; i++ ) {
-            filter["/Language"] = langs[i];
-            if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
-                minfo[FANART]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                DEBUG("Fanart = "minfo[FANART]);
-                break;
+                delete filter;
+                filter["/BannerType"] = "fanart";
+                for(i = 1 ; i <= lnum ; i++ ) {
+                    filter["/Language"] = langs[i];
+                    if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
+                        banners[FANART] = minfo[FANART]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                        DEBUG("Fanart = "minfo[FANART]);
+                        break;
+                    }
+                }
             }
+            scrape_cache_add(key,banners);
         }
     }
 }

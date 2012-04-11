@@ -109,7 +109,7 @@ jpg_resize() {
         # this may also give better performance on embedded machines.
         delete_input_pnm=0
         if [ ! -e "$input.pnm" ] ; then
-            djpeg -dct fast -scale $initial_scale "$input"  > "$input.pnm"
+            djpeg -dct fast -scale $initial_scale "$input"  > "$input.pnm" || ERROR "unable to convert $input"
             delete_input_pnm=1
         fi
         if pnmscalefixed $o "$input.pnm" > "$tmppnm" && mv "$tmppnm" "$output.pnm" && \

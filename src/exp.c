@@ -427,10 +427,15 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
         case OP_SPLIT:
             if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_STR,err) == 0) {
+                clr_val(e);
                 e->val.type = VAL_TYPE_LIST;
+                //
                 Array *a = splitstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
 
-                clr_val(e);
+                // Array string is split IN place. This corrupts e->subexp[0]!!
+                // Very dodgy use above line for safe version!
+                //Array *a = splitstr_inplace_max(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val,0);
+
 
                 if (e->val.list_val) array_free(e->val.list_val);
                 e->val.list_val = a;
@@ -650,6 +655,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
         { OP_GT      ,"~gt~" , 2 , 2 },
         { OP_GE      ,"~ge~" , 2 , 2 },
         { OP_LEFT    ,"~l~"  , 2 , 2 },
+        { OP_SPLIT   ,"~sp~" , 2 , 2 },
 
         // Letters used for following operators are passed in URLs also
         { OP_EQ      ,"~" QPARAM_FILTER_EQUALS "~" , 2 , 1 },
@@ -817,6 +823,10 @@ void exp_dump(Exp *e,int depth,int show_holding_values)
                 case VAL_TYPE_IMDB_LIST: // deprecated
                     HTML_LOG(0,"%*s list[%s]",depth*4," ",db_group_imdb_string_static(e->val.imdb_list_val));
                     break;
+                case VAL_TYPE_NONE:
+                    HTML_LOG(0,"%*s NONE",depth*4," ");
+                    break;
+
             }
         }
 

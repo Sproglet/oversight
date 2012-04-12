@@ -343,7 +343,7 @@ TRACE;
     char *p = input;
 
     if (*has_macro_ptr) {
-        while(isspace(*p)) {
+        while(isspace(*(unsigned char *)p)) {
             p++;
         }
         macro_start = strstr(p,MACRO_STR_START);

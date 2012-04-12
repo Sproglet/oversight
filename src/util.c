@@ -737,7 +737,7 @@ char *util_tolower(char *s) {
         p = MALLOC(strlen(s)+1);
         char *q = p ;
         while (*s) {
-            *q++ = tolower(*s++);
+            *q++ = tolower(*(unsigned char *)s++);
         }
         *q='\0';
     }
@@ -875,7 +875,7 @@ char *util_strcasestr(char *a,char *b)
         char *p;
         p = aa;
         char *q = b;
-        while(*p && tolower(*p) == tolower(*q) ) {
+        while(*p && tolower(*(unsigned char *)p) == tolower(*(unsigned char *)q) ) {
             p++;
             q++;
         }
@@ -888,7 +888,7 @@ int util_starts_with_ignore_case(char *a,char *b)
 {
     if (!a) a = "";
     if (!b) b = "";
-    while(tolower(*a) == tolower(*b) ) {
+    while(tolower(*(unsigned char *)a) == tolower(*(unsigned char *)b) ) {
         if (*b == '\0') return 1;
         a++;
         b++;
@@ -1124,7 +1124,7 @@ void replace_char(char *string,char in,char out)
 // If no change the SAME string is returned.
 char *escape(char *in,char esc,char *meta)
 {
-    char *out,*inp,*outp;
+    char *out,*inp,*outp=NULL;
    
     out =  inp = in;
 
@@ -1167,7 +1167,7 @@ char *escape(char *in,char esc,char *meta)
  */
 char *unescape(char *in,char esc)
 {
-    char *out,*inp,*outp;
+    char *out,*inp,*outp=NULL;
    
     out =  inp = in;
 

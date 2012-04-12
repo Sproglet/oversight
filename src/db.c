@@ -14,6 +14,7 @@
 #include <ctype.h>
 
 #include "db.h"
+#include "yamj.h"
 #include "dbread.h"
 #include "dbitem.h"
 #include "dbnames.h"
@@ -231,18 +232,24 @@ char *localDbPath() {
 // Return 1 if db should be scanned according to html get parameters.
 int db_to_be_scanned(char *name) {
     char *idlist = query_val(QUERY_PARAM_IDLIST);
+TRACE1;
     if (*idlist) {
+TRACE1;
         //Look for "name(" in idlist
         char *p = idlist;
         char *q;
         int name_len = strlen(name);
 
+TRACE1;
         while((q=strstr(p,name)) != NULL) {
+TRACE1;
             if (q[name_len] == '(') {
                 return 1;
             }
             p = q+name_len;
+TRACE1;
         }
+TRACE1;
         return 0;
     } else {
         // Empty idlist parameter - always scan
@@ -251,10 +258,15 @@ int db_to_be_scanned(char *name) {
 }
 
 void db_scan_and_add_rowset(char *path,char *name,Exp *exp,
-        int *rowset_count_ptr,DbItemSet ***row_set_ptr) {
+        int *rowset_count_ptr,DbItemSet ***row_set_ptr,
+        Array *yamj_cats,       // For YAMJ Emulation mode only - the dynamic categories are populated 
+        YAMJSubCat *yamj_subcat // For YAMJ Emulation mode only - the sub category item list is populated with matching items.
+        ) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
+TRACE1;
     if (db_to_be_scanned(name)) {
+TRACE1;
 
         Db *db = db_init(path,name);
 
@@ -262,7 +274,9 @@ void db_scan_and_add_rowset(char *path,char *name,Exp *exp,
 
             int num_ids;
             int *ids = extract_ids_by_source(query_val(QUERY_PARAM_IDLIST),db->source,&num_ids);
-            DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL,NULL);
+TRACE1;
+            DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL,NULL,yamj_cats,yamj_subcat);
+TRACE1;
 
             FREE(ids);
 
@@ -308,16 +322,20 @@ char *is_nmt_network_share(char *mtab_line) {
 
 //
 // Returns null terminated array of rowsets
+//
 DbItemSet **db_crossview_scan_titles(
-        int crossview,
-        Exp *exp){
+        int crossview,      // True if crossview mode
+        Exp *exp,           // Filter expression
+        Array *yamj_cats,       // For YAMJ Emulation mode only - the dynamic categories are populated 
+        YAMJSubCat *yamj_subcat // For YAMJ Emulation mode only - the sub category item list is populated with matching items.
+        ){
     int rowset_count=0;
     DbItemSet **rowsets = NULL;
 
 TRACE;
     HTML_LOG(1,"begin db_crossview_scan_titles");
     // Add information from the local database
-    db_scan_and_add_rowset( localDbPath(),"*", exp, &rowset_count,&rowsets);
+    db_scan_and_add_rowset( localDbPath(),"*", exp, &rowset_count,&rowsets,yamj_cats,yamj_subcat);
 TRACE;
 
     if (crossview) {
@@ -337,7 +355,7 @@ TRACE;
                     if (is_file(path)) {
 
                         HTML_LOG(0,"crossview [%s]",path);
-                        db_scan_and_add_rowset( path,name, exp, &rowset_count,&rowsets);
+                        db_scan_and_add_rowset( path,name, exp, &rowset_count,&rowsets,yamj_cats,yamj_subcat);
 
                     } else {
                         HTML_LOG(0,"crossview search [%s] doesnt exist",path);
@@ -440,7 +458,10 @@ int *extract_ids_by_source(char *query,char *dbsource,int *num_ids)
     return result;
 }
 
-DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *,void *),void *action_data)
+DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *,void *),void *action_data,
+        Array *yamj_cats,       // For YAMJ Emulation mode only - the dynamic categories are populated 
+        YAMJSubCat *yamj_subcat // For YAMJ Emulation mode only - the sub category item list is populated with matching items.
+        )
 {
 
     DbItemSet *rowset = NULL;
@@ -514,6 +535,9 @@ TRACE;
                     HTML_LOG(1,"Path not mounted [%s]",rowid.file);
                     keeprow=0;
 
+                } if (yamj_cats) {
+                    // YAMJ Emulation
+                    keeprow = yamj_check_item(&rowid,yamj_cats,yamj_subcat);
                 } else {
 
                     switch(rowid.category) {

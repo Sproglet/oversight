@@ -2188,7 +2188,7 @@ TRACE;
     HTML_LOG(0,"Scan..");
 
     // Get array of rowsets. One item for each database source. 
-    DbItemSet **rowsets = db_crossview_scan_titles( crossview, query_exp);
+    DbItemSet **rowsets = db_crossview_scan_titles( crossview, query_exp,NULL,NULL);
 
     exp_free(query_exp,1);
 

@@ -17,6 +17,7 @@ Array *split(char *s,char *pattern,int reg_opts);
 Array *splitstr(char *s_in,char *sep);
 Array *splitstr_max(char *s_in,char *sep,int n);
 Array *split1ch(char *s_in,char *sep);
+Array *splitstr_inplace_max(char *s_in,char *sep,int n);
 int array_strcasecmp(const void *a,const void *b);
 void array_sort(Array *a,int (*fn)(const void *,const void *));
 char *join(Array *a,char *sep);

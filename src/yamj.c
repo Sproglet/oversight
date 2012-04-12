@@ -34,6 +34,7 @@
 
 #define YAMJ_PREFIX "yamj/"
 #define CONFIG_PREFIX "ovs_yamj_cat"
+#define CATEGORY_INDEX "Categories.xml"
 
 /*
  * The plan is as follows:
@@ -69,9 +70,6 @@
  * Eg.
  */
 
-
-
-
 void xml_headers()
 {
     printf("%s%s\n\n",CONTENT_TYPE,"application/xml");
@@ -101,13 +99,197 @@ void free_yamj_catetory(void *in)
     }
 }
 
-int yamj_video_xml(char *request,DbItem *item)
+
+YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_filter,int alert_duplicate)
+{
+
+    assert(owner);
+    YAMJSubCat *ret = NULL;
+
+    // check name
+    if (owner->subcats) {
+        int i;
+        for(i = 0 ; i < owner->subcats->size ; i++ ) {
+            YAMJSubCat *sc = owner->subcats->array[i];
+            if (STRCMP(sc->name,name) == 0) {
+                // Duplicate subcat
+                if (alert_duplicate) {
+                    html_error("duplicate sub category [%s_%s]",owner->name,name);
+                    ret = NULL;
+                } else {
+                    ret = sc;
+                }
+                return ret;
+            }
+        }
+    }
+
+    ret = CALLOC(sizeof(YAMJSubCat),1);
+    ret->name = STRDUP(name);
+    ret->owner_cat = owner;
+
+    ret->filter_expr_url = STRDUP(filter_url);
+
+    if (EMPTY_STR(ret->filter_expr_url)) {
+
+        if (require_filter) {
+
+            html_error("missing query value for subcat [%s_%s]",owner->name,name);
+            free_yamj_subcatetory(ret);
+            ret = NULL;
+        }
+
+    } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
+
+        html_error("unable to parse query value for [%s_%s]",owner->name,name);
+        free_yamj_subcatetory(ret);
+        ret = NULL;
+    }
+
+    if (ret) {
+
+        if (owner->subcats == NULL) {
+            owner->subcats = array_new(free_yamj_subcatetory);
+        }
+        array_add(owner->subcats,ret);
+    }
+
+    return ret;
+}
+
+/*
+ * For each row do two things.
+ * 1. Evaluate any dynamic categories - eg First Letter of Title , Genre list etc.
+ * 2. if subcat parent is a dynamic category then check evaluated value against subcat name
+ *      eg Title_A_1.xml check computed 1st letter of title against current subcat name 'A'
+ * 3. if subcat parent is not a dynamic category then evaluate the subcat - keeprow if true
+ *      eg _Y~f~~e~2010 for movies in 2010
+ */
+int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *subcat)
+{
+    int keeprow = 0;
+
+    // First create all sub categories.
+    int i;
+    for(i = 0 ; i < categories->size ; i++ ) {
+
+        int check_against_subcat_name = 0;
+
+        YAMJCat *cat = categories->array[i];
+        Exp *e = cat->auto_subcat_expr;
+        if (e) {
+
+            // If the current category is a dynamic category and it contains our current subcategory and 
+            // we have not yet selected this row then check to see if row is eligible for selection.
+            //
+            if (!keeprow && subcat && subcat->owner_cat == cat ) {
+                check_against_subcat_name = 1;
+            }
+
+            if (evaluate(e,item) == 0) {
+
+                char *val;
+                // Create a new subcat if none exists.
+                // Just use a simple loop - no hashes as numbers should be small
+                if (e->val.type == VAL_TYPE_STR) {
+
+                    val = e->val.str_val;
+
+                    new_subcat(cat,val,NULL,0,0);
+                    if (check_against_subcat_name) {
+                        keeprow = (STRCMP(subcat->name,val) == 0);
+                    }
+
+                } else if (e->val.type == VAL_TYPE_NUM) {
+                    // TODO loss of precicsion here - may affect rating filters.
+                    char num[20];
+                    sprintf(num,"%f",e->val.num_val);
+                    char *p = strrchr(num,'\0');
+                    while (*(--p) == '0') {
+                        ;
+                    }
+                    *++p='\0';
+                    new_subcat(cat,num,NULL,0,0);
+                    if (check_against_subcat_name) {
+                        keeprow = (STRCMP(subcat->name,num) == 0);
+                    }
+
+                } else if (e->val.type == VAL_TYPE_LIST) {
+                    int j;
+                    for(j = 0 ; j < e->val.list_val->size ; j++ ) {
+                        val = e->val.list_val->array[j];
+                        new_subcat(cat,val,NULL,0,0);
+                        if (check_against_subcat_name) {
+                            keeprow = (STRCMP(subcat->name,val) == 0);
+                        }
+                    }
+                } else {
+                    HTML_LOG(0,"could not compute for item id %d",item->id);
+                    exp_dump(e,3,1);
+                }
+            }
+        }
+    }
+
+    if (!keeprow) {
+
+        if (subcat == NULL) {
+            // No filter
+            keeprow = 1;
+        } else {
+            if (!subcat->owner_cat->auto_subcat_expr) {
+                // Now if current subcat is NOT part of a dynamic category then evaluate its filter and check
+                // value is non-zero.
+                if (subcat->filter_expr) {
+                    Exp *e = subcat->filter_expr;
+                    keeprow = evaluate_num(e,item) != 0;
+                }
+            }
+        }
+    }
+    return keeprow;
+}
+
+
+
+int yamj_video_xml(char *request,DbItem *item,int details)
 {
     int ret = 1;
     if (item == NULL) {
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
     }
     printf("<movie>\n");
+    char *id;
+    
+    printf("\t<td moviedb=\"ovs\">%ld</id>\n",item->id);
+
+    id = get_id_from_idlist(item->url,"imdb",1);
+    if (id) { printf("\t<td moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1); FREE(id) ; }
+
+    id = get_id_from_idlist(item->url,"themoviedb",1);
+    if (id) { printf("\t<td moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1); FREE(id) ; }
+
+    id = get_id_from_idlist(item->url,"thetvdb",1);
+    if (id) { printf("\t<td moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1); FREE(id) ; }
+
+    printf("\t<title>%s</title>\n",NVL(item->title));
+
+    if (!EMPTY_STR(item->orig_title)) {
+        printf("\t<originalTitle>%s</originalTitle>\n",item->orig_title);
+    }
+    printf("\t<year>%d</year>\n",item->year);
+
+    if (item->category == 'T') {
+        printf("\t<season>%d</season>\n",item->season);
+    }
+
+    if (details) {
+        char *plot = get_plot(item,PLOT_MAIN);
+        printf("\t<year>%s</year>\n",plot);
+        printf("\t<episode>%s</episode>\n",item->episode);
+        FREE(plot);
+    }
+
     printf("</movie>\n");
     return ret;
 }
@@ -152,51 +334,6 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat)
     return ret;
 }
 
-YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url) {
-
-    assert(owner);
-    YAMJSubCat *ret = NULL;
-
-    ret = CALLOC(sizeof(YAMJSubCat),1);
-    ret->name = STRDUP(name);
-    ret->owner_cat = owner;
-
-    ret->filter_expr_url = STRDUP(filter_url);
-
-TRACE1;
-    if (EMPTY_STR(ret->filter_expr_url)) {
-TRACE1;
-
-        html_error("missing query value for subcat [%s_%s]",owner->name,name);
-        free_yamj_subcatetory(ret);
-        ret = NULL;
-
-TRACE1;
-    } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
-TRACE1;
-
-        html_error("unable to parse query value for [%s_%s]",owner->name,name);
-        free_yamj_subcatetory(ret);
-        ret = NULL;
-TRACE1;
-    }
-
-TRACE1;
-    if (ret) {
-TRACE1;
-
-        if (owner->subcats == NULL) {
-TRACE1;
-            owner->subcats = array_new(free_yamj_subcatetory);
-TRACE1;
-        }
-TRACE1;
-        array_add(owner->subcats,ret);
-TRACE1;
-    }
-
-    return ret;
-}
 
 /*
  * config file format:
@@ -223,7 +360,7 @@ YAMJSubCat *yamj_subcat_config(YAMJCat *owner,int num,int sub)
         HTML_LOG(0,"query = [%s]",query);
 
 TRACE1;
-        ret = new_subcat(owner,name,query);
+        ret = new_subcat(owner,name,query,1,1);
 TRACE1;
     }
 
@@ -332,7 +469,7 @@ int yamj_build_categories(char *cat_name,Array *categories)
     return ret;
 }
 
-int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories)
+int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories,DbItemSet **itemSet)
 {
     int ret = 1;
     int i;
@@ -340,27 +477,43 @@ int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories)
 
     printf("<library count=\"%d\">\n",categories->size);
 
-    if (!subcat) {
+/*
+ * if (!subcat) {
         html_error("unknown request [%s]",request);
         printf("<error>see html comments</error>\n");
     }
+    */
 
     for(i = 0 ; i < categories->size ; i++ ) {
         yamj_category_xml(request,subcat,(YAMJCat *)(categories->array[i]));
+TRACE1;
     }
 
+TRACE1;
 
-    DbItem **itemPtr;
-    for (itemPtr = subcat->sorted_items ; *itemPtr ; itemPtr++ ) /* empty loop */ ;
 
-    int count = itemPtr - subcat->sorted_items;
+    if (subcat && itemSet) {
 
-    printf("<movies count=\"%d\">\n",count);
-    for (itemPtr = subcat->sorted_items ; *itemPtr ; itemPtr++ ) {
-        DbItem *item = *itemPtr;
-        yamj_video_xml(request,item);
+        if (itemSet[1]) assert(0); //TODO crossview not coded
+        int num = itemSet[0]->size;
+        // itemSet = array of rowsets. One item for each database source. 
+        printf("<movies count=\"%d\">\n",num);
+
+
+        int page_size = subcat->owner_cat->page_size;
+        int start = subcat->page * page_size;
+        int end = start + page_size;
+
+        if ( start >= num ) start = num;
+        if ( end >= num ) end = num;
+
+
+        for (i = start ; i < end ; i++ ) {
+            DbItem *item = itemSet[0]->rows+i;
+            yamj_video_xml(request,item,0);
+        }
+        printf("</movies>\n");
     }
-    printf("</movies>\n");
     printf("</library>\n");
 
     array_free(categories);
@@ -388,18 +541,6 @@ int evaluate_dynamic_subcat_names(YAMJCat *cat)
     return ret;
 }
 
-int compute_subcat(YAMJSubCat *subcat)
-{
-    assert(subcat);
-    int ret = 1;
-
-    if (!subcat->evaluated) {
-        HTML_LOG(0,"TODO populate subcat db items here.");
-        subcat->evaluated = 1;
-    }
-    return ret;
-}
-
 /*
  * check name = Category_SubCat_Page.xml
  */
@@ -408,6 +549,7 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
     int i,j;
     YAMJSubCat *subcat=NULL;
     char *pattern = "([^_]+)_([^_].*)_([0-9]+).xml";
+    int page;
 
     assert(request);
     assert(categories);
@@ -421,7 +563,7 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
 
         char *cat_name = request_parts->array[1];
         char *subcat_name = request_parts->array[2];
-        int page = atoi(request_parts->array[3]);
+        page = atoi(request_parts->array[3]);
 
 
         HTML_LOG(0,"findCat - %s - %s - %d",cat_name,subcat_name,page);
@@ -465,9 +607,13 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
                 char *query;
                 ovs_asprintf(&query,"'%s'~e~%s",subcat_name,cat->auto_subcat_expr_url);
                 HTML_LOG(0,"creating auto subcategory %s_%s using query %s",cat_name,subcat_name,query);
-                subcat = new_subcat(cat,subcat_name,query);
+                subcat = new_subcat(cat,subcat_name,query,0,1);
                 FREE(query);
             }
+        }
+        if (subcat) {
+            subcat->page = page;
+            HTML_LOG(0,"setting page %d",page);
         }
     }
 
@@ -497,7 +643,7 @@ int yamj_xml(char *request)
             HTML_LOG(0,"processing [%s]",request);
             load_configs();
             printf("<details>\n");
-            ret = yamj_video_xml(request,NULL);
+            ret = yamj_video_xml(request,NULL,1);
             printf("</details>\n");
 
         } else if ( util_strreg(request,"\\.jpg$",0)) {
@@ -505,7 +651,7 @@ int yamj_xml(char *request)
             // Send image
             cat(CONTENT_TYPE"image/jpeg",request);
 
-        } else if ( util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
+        } else if (STRCMP(request,CATEGORY_INDEX) == 0 || util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
             xml_headers();
             HTML_LOG(0,"processing [%s]",request);
@@ -515,11 +661,17 @@ int yamj_xml(char *request)
 
             yamj_build_categories(request,categories);
 
-            YAMJSubCat *subcat = find_subcat(request,categories);
+            YAMJSubCat *subcat = NULL;
+            
+            if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
+                subcat = find_subcat(request,categories);
+            }
 
-            compute_subcat(subcat);
+TRACE1;
+            DbItemSet **itemSet = db_crossview_scan_titles(0,NULL,categories,subcat);
+TRACE1;
 
-            yamj_categories_xml(request,subcat,categories);
+            yamj_categories_xml(request,subcat,categories,itemSet);
 
         } else {
             HTML_LOG(0,"error invalid request [%s]",request);

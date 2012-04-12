@@ -278,7 +278,7 @@ struct hashtable *config_load(char *filename,int include_unquoted_space,int verb
 }
 
 int is_comment(char *line) {
-    while(*line && isspace(*line)) {
+    while(*line && isspace(*(unsigned char *)line)) {
         line++;
     }
     return (*line == '#');
@@ -306,7 +306,7 @@ int parse_key_val(char *line,
         // key = value where value = X....X or just X (where X= ^space )
         // \x5b = [ \x5d = ]
         //
-        char *p = line;
+        unsigned char *p = (unsigned char *)line;
         while (isspace(*p)) p++;
         key = p;
         while (isalnum(*p) || (*p && strchr("_.[]",*p))) {
@@ -567,7 +567,11 @@ int config_get_str(struct hashtable *h,char *key,char **out) {
 //gets optional string config value via out : returns 1 if found 0 if not
 int config_check_str(struct hashtable *h,char *key,char **out) {
     //HTML_LOG(4,"Checking string [%s]",key);
-    *out =  hashtable_search(h,key);
+    *out = "";
+   
+    if (h) {
+       *out  =  hashtable_search(h,key);
+    }
     //HTML_LOG(4,"Checked string [%s] = [%s]",key,*out);
     return (*out != NULL);
 }

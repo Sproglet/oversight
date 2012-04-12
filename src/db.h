@@ -69,7 +69,7 @@ Db *db_init(char *filename, // path to the file
         char *source       // logical name or tag - local="*"
         );
 
-DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *,void *),void *action_data);
+DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)(DbItem *,void *),void *action_data,Array *yamj_cats,YAMJSubCat *yamj_subcat);
 int db_lock(Db *db);
 int db_unlock(Db *db);
 void db_rowset_free(DbItemSet *dbrs);
@@ -80,7 +80,10 @@ void db_rowset_dump(int level,char *label,DbItemSet *dbrs);
 
 DbItemSet **db_crossview_scan_titles(
         int crossview,
-        Exp *exp);
+        Exp *exp,
+        Array *yamj_cats,       // For YAMJ Emulation mode only - the dynamic categories are populated 
+        YAMJSubCat *yamj_subcat // For YAMJ Emulation mode only - the sub category item list is populated with matching items.
+        );
 void db_free_rowsets_and_dbs(DbItemSet **rowsets);
 int db_full_size();
 void db_set_fields(char *field_id,char *new_value,struct hashtable *ids_by_source,int delete_mode);

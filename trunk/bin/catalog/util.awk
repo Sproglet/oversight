@@ -315,6 +315,16 @@ s,i){
     return 0+ s;
 }
 
+function hash_val_sub(h,old,new,\
+i) {
+    for(i in h) if ( h[i] == old ) h[i] = new;
+}
+
+function hash_val_del(h,old,\
+i) {
+    for(i in h) if ( h[i] == old ) delete h[i];
+}
+
 function id1(x) {
 
     #Track stack calls
@@ -1109,3 +1119,10 @@ punc,last) {
     if (index(t,"  ")) gsub(/ +/," ",t);
     return capitalise(t);
 }
+
+function log_bigstring(label,body,sz,\
+l) {
+    l = length(body) - sz; 
+    DEBUG( label " "length(body)" bytes ["substr(body,1,sz)"..."(l>1 ? substr(body,l)"]" : "" ) );
+}
+

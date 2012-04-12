@@ -691,7 +691,7 @@ ret,f,numok,numbad) {
     id1("verify");
     ret=1;
     for (f in minfo) {
-        if (!(f in g_db_field_name) && f !~ /_source$/ && f != "mi_do_scrape" ) {
+        if (!(f in g_db_field_name) && f !~ /_source$/ && f != "mi_do_scrape" && f != "mi_multipart_tag_pos" ) {
             ERR("bad field ["f"] = ["minfo[f]"]");
             numbad++;
         }  else {

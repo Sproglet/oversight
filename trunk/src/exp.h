@@ -9,5 +9,6 @@ int evaluate_num(Exp *e,DbItem *item);
 Exp *parse_full_url_expression(char *text_ptr);
 void exp_free(Exp *e,int recursive);
 void exp_test();
+int evaluate(Exp *e,DbItem *item);
 
 #endif

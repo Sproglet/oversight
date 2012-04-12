@@ -501,6 +501,7 @@ char *macro_fn_plot(MacroCallInfo *call_info)
         }
     }
     if (result) {
+        // TODO plot should be freed???
         if (result[2] == ':') result += 3; // skip language qualifier
         result = STRDUP(result);
     }
@@ -2288,7 +2289,7 @@ void replace_variables(Array *args,DbSortedRows *sorted_rows)
                     free_result = 1;
                     endv++;
                 }
-                while (*endv && (isalnum(*endv) || strchr("_[]",*endv))) {
+                while (*endv && (isalnum(*(unsigned char *)endv) || strchr("_[]",*endv))) {
                     endv++;
                 }
                 char tmp = *endv;

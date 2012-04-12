@@ -68,7 +68,7 @@ void array_set(Array *a,int idx,void *ptr) {
 #define ARRAY_EXPAND 10
     //extend memory
     if (idx >=  a->mem_size) {
-        int new_size = idx + ARRAY_EXPAND;
+        int new_size = idx * 5 / 3 + ARRAY_EXPAND;
         int i;
         a->array = realloc(a->array , new_size * sizeof(void *));
 
@@ -263,6 +263,45 @@ Array *splitstr_max(char *s_in,char *sep,int n)
     }
     array_add(a,STRDUP(s));
 
+    return a;
+
+}
+/*
+ * Split a strin s_in into an array using character ch.
+ * Max n parts. 0 = all parts.
+ * String is split IN PLACE! The Array elements should NOT be freed.
+ */
+Array *splitstr_inplace_max(char *s_in,char *sep,int n)
+{
+    Array *a = array_new(NULL);
+    char *s = s_in;
+    char *p;
+
+    int seplen = strlen(sep);
+    // printf("split ch [%s] by [%c]\n",s,ch);
+
+    if (s_in == NULL || *s_in == '\0' ) {
+        return a;
+    }
+
+
+    while ((p=strstr(s,sep)) != NULL && n != 0 ) {
+
+        char *part;
+
+        *p = '\0';
+
+        HTML_LOG(0,"part[%s]",s);
+
+        array_add(a,s);
+
+        s = p+seplen;
+
+        if (n>0) n--;
+    }
+    array_add(a,s);
+
+    array_dump(0,"inplace",a);
     return a;
 
 }

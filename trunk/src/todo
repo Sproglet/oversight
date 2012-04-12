@@ -1,0 +1,12 @@
+- Add sort field and order at category level - to sort both DbItems and SubCats.
+eg ~Y   Sort by year ASC DESC
+
+- Display Movie Details in XML (Overview info only?)
+
+- Split - Expand Genre
+
+- Generate Detail XML by OVS ID
+
+- Auto Box Sets
+
+- TV Shows

@@ -1027,7 +1027,7 @@ void do_action_by_id(struct hashtable *ids_by_source,void (*action)(DbItem *,voi
 
         Db *db = db_init(NULL,source);
 
-        DbItemSet *is = db_scan_titles(db,NULL,num_ids,ids,action,action_data);
+        DbItemSet *is = db_scan_titles(db,NULL,num_ids,ids,action,action_data,NULL,NULL);
 
         db_rowset_free(is);
 

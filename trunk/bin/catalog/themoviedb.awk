@@ -28,6 +28,19 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
                 break;
 
             }
+            hash_val_del(json,"null");
+
+            minfo2[IDLIST]="themoviedb:"json["id"];
+            if ( "imdb_id" in json) {
+                if (json["imdb_id"] ~ /^tt[0-9]/) {
+                    if (id ~ /^tt[0-9]/ && json["imdb_id"] != id ) {
+                        ERR("tmdb : imdbid mismatch "id" != "json["imdb_id"]);
+                        break;
+                    }
+                    minfo2[IDLIST] = minfo2[IDLIST]" imdb:"json["imdb_id"];
+                }
+            }
+
             merge = 1;
 
             name = html_to_utf8(json["name"]);
@@ -44,14 +57,13 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
 
 
             # Get TMDB posters if present - if plot is not translated then assume posters arent too?
-            if (minfo2[POSTER]=="") {
+            if (minfo2[POSTER]=="" && json["poster_path"] ) {
                 minfo2[POSTER]=tmdb_config("poster_path")json["poster_path"];
             }
 
-            if (minfo2[FANART]=="") {
+            if (minfo2[FANART]=="" && json["backdrop_path"] ) {
                 minfo2[FANART]=tmdb_config("backdrop_path")json["backdrop_path"];
             }
-
 
             minfo2[RATING]=json["vote_average"];
 
@@ -66,18 +78,13 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
 
             minfo2[ORIG_TITLE]=html_to_utf8(json["original_title"]);
 
-            minfo2[IDLIST]="themoviedb:"json["id"];
-            if ( "imdb_id" in json) {
-                minfo2[IDLIST] = minfo2[IDLIST]" imdb:"json["imdb_id"];
-            }
-
 
             set = json["belongs_to_collection:id"];
             if (set) {
                 minfo2[SET] = sprintf("themoviedb:%06d",set);
                 minfo2["mi_set_name"] = json["belongs_to_collection:name"];
             }
-            if (json["overview"] != "null" && length(json["overview"]) > 1 ) {
+            if (json["overview"] != "" && length(json["overview"]) > 1 ) {
 
                 minfo2[PLOT]=add_lang_to_plot(langs[i],clean_plot(json["overview"]));
 

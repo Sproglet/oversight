@@ -621,7 +621,7 @@ ret) {
 
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
-total,local_search,\
+total,local_search,poster,\
 cat,minfo2,locales,id,split_episode_search) {
 
     if (("mi_do_scrape" in minfo) && minfo[NAME] != "" ) {
@@ -775,8 +775,16 @@ cat,minfo2,locales,id,split_episode_search) {
                                        local_search = 1;
                                    }
                                }
-                               if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
-                                   if (g_settings["catalog_get_local_posters"] != "never") {
+                               if (g_settings["catalog_get_local_posters"] != "never") {
+
+                                   # Check movieposterdb
+                                   if (gPriority[POSTER,"movieposterdb"] > minfo_field_priority(minfo,POSTER)) {
+                                       poster = mpdb_get_poster(imdb(minfo),minfo[TITLE]);
+                                       best_source(minfo,POSTER,poster,"movieposterdb");
+                                   }
+
+                                   # Check other sites
+                                   if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
                                        INF("Checking local posters");
                                        local_search = 1;
                                    }
@@ -852,8 +860,9 @@ function plot_in_main_lang(minfo) {
     return lang(minfo[PLOT]) == main_lang();
 }
 function get_images(minfo) {
+
     #Only get posters if catalog is installed as part of oversight
-    defaultPosters(minfo);
+    #defaultPosters(minfo);
 
     if (GET_POSTERS) {
         minfo[POSTER] = download_image(POSTER,minfo,POSTER);

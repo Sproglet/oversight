@@ -174,21 +174,25 @@ wget_args) {
 
 #movie db - search direct for imdbid then extract picture
 #id = imdbid
-function defaultPosters(minfo) {
-
-    #DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo[POSTER] = minfo[FANART] = "";
-
-    if(0) {
-        #Bing scraping disabled - too many false positives.
-
-        if (getting_poster(minfo,1)) {
-           search_bing_image(minfo,POSTER,"Tall");
-        }
-        if (getting_fanart(minfo,1)) {
-           search_bing_image(minfo,FANART,"Wide");
-        }
-    }
-}
+#function defaultPosters(minfo) {
+#
+#    #DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo[POSTER] = minfo[FANART] = "";
+#    if (getting_poster(minfo,1)) {
+#        mpdb_get_poster(imdb(minfo),minfo[TITLE]);
+#        best_source(minfo,POSTER,mpdb_poster,"movieposterdb");
+#    }
+#
+#    if(0) {
+#        #Bing scraping disabled - too many false positives.
+#
+#        if (getting_poster(minfo,1)) {
+#           search_bing_image(minfo,POSTER,"Tall");
+#        }
+#        if (getting_fanart(minfo,1)) {
+#           search_bing_image(minfo,FANART,"Wide");
+#        }
+#    }
+#}
 
 function search_bing_image(minfo,fld,aspect,\
 query,qnum,q,cat,key) {

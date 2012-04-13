@@ -710,6 +710,7 @@ function init_priority() {
         gPriority[POSTER,"thetvdb"]=60;
         gPriority[POSTER,"web"]=70;
         gPriority[POSTER,"themoviedb"]=90; # increased now that api v3 has localised poster
+        gPriority[POSTER,"movieposterdb"]=95; # Only if local poster fetching - lang != en
         gPriority[POSTER,"local"]=100;
 
         gPriority[FANART,"thetvdb"]=60;

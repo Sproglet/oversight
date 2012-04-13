@@ -200,6 +200,7 @@ function report_status(msg) {
 
 END{
 
+
     g_state_file=OVS_HOME"/.state";
 
     load_state(g_state_file,g_state);
@@ -314,6 +315,7 @@ END{
 
     CAPTURE_PREFIX=g_tmp_dir"/catalog."
 
+    #url_get("http://m.bing.com/search/search.aspx?A=webresults;D=Web;q=mission%20impossible%20ghost%20protocol%20+%2B+2011+imdb"); exit;
     #INF("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
 
     # Bing and yahoo are in the process of merging. I expect this means they will soon
@@ -411,7 +413,7 @@ END{
     gLS_TIME_POS=0; # Position of timestamp is ls format
     findLSFormat();
 
-    plugin_check();
+    #plugin_check();
 
     gMovieFileCount = 0;
     gMaxDatabaseId = 0;
@@ -477,6 +479,8 @@ END{
     }
     #Following line is used to tidy log files
     INF("Total files added : "g_grand_total);
+
+    url_stats();
 }
 
 function replace_share_name(indir,\

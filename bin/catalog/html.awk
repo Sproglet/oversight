@@ -129,16 +129,7 @@ enc,line,code,n) {
     } else {
         while ( enc == "" && (code = ( getline line < f )) > 0) {
 
-            line=tolower(line);
-
-            if (index(line,"encoding") || index(line,"charset")) {
-
-                enc=subexp(line,"(encoding|charset)=\"?([-_a-z0-9]+)[\"> ]",2);
-
-                if (index(line,"<?xml")) break;
-
-
-            } else if (index(line,"</head>") || index(line,"<body>")) break;
+            enc = extract_encoding(line);
 
             # Track lack of markup
             if (index(line,"<") == 0) n++; else n = 0;
@@ -150,12 +141,36 @@ enc,line,code,n) {
             }
         }
     }
-    if (enc == "") {
+    if (enc == "" ) {
         #enc = "iso-8859-1";
         enc = "utf-8"; # google pages assumed to be utf-8 ?
     }
 
-    if (enc != "utf-8" ) INF("Encoding:" enc);
+    return enc;
+}
+
+
+#returns
+# encoding eg utf-8 iso-8859-1 etcs
+# OR "?"=unknown/giveup
+# OR blank=keep checking
+function extract_encoding(line,\
+enc) {
+    line=tolower(line);
+
+    if (index(line,"encoding") || index(line,"charset")) {
+
+        enc=subexp(line,"(encoding|charset)=\"?([-_a-z0-9]+)[\"> ]",2);
+
+        if (index(line,"<?xml")) {
+            if (!enc) enc="utf-8";
+        }
+
+
+    } else if (index(line,"</head>") || index(line,"<body>")) {
+        if (!enc) enc = "utf-8" ; #assume utf8 if not specified.
+    }
+    if (enc && (enc != "utf-8") ) INF("Encoding:" enc);
     return enc;
 }
 
@@ -207,7 +222,7 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matche
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
 function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,label,\
-f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
+f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
 
 #    if (index(url,"yahoo") && index(url,"2010") && index(url,"site:imdb.com")) {
 #        verbose=1; # Debug line edit as required
@@ -226,99 +241,124 @@ f,line,count,linecount,remain,is_imdb,matches2,i,text_num,text_arr,scan) {
               )\
        )"]["max"]");
 
-    if (index(url,"SEARCH") == 1) {
-        f = search_url2file(url,cache,referer);
-    } else {
-        if (!label) label = "scan4match.html";
-        f=getUrl(url,label,cache,referer);
-    }
+    if (g_fetch["force_awk"] && g_settings["catalog_awk_browser"] ) {
 
-    text_num = 0;
-    if (fixed_text != "") text_num = split(fixed_text,text_arr,SUBSEP);
+        # Use the inline browser - this is not as robust as external command line but should be faster.
 
-    count=0;
-
-    is_imdb = (regex == g_imdb_regex );
-
-    if (f != "" ) {
-
-        FS="\n";
-        remain=max;
-
-        while(enc_getline(f,line) > 0 ) {
-
-            line[1] = de_emphasise(line[1]);
-
-            if (verbose) DEBUG("["line[1]"]");
-
-            # Quick hack to find Title?0012345 as tt0012345  because altering the regex
-            # itself is more work - for example the results will come back as two different 
-            # counts. 
-            if (is_imdb) {
-                if (index(line[1],"/Title?") ) {
-                    if (gsub(/\/Title\?/,"/tt",line[1])) {
-                        INF("fixed imdb reference "line[1]);
-                    }
-                }
-                # A few sites have IMDB ID 0123456 
-                if (index(line[1],"IMDB") || index(line[1],"imdb") ) {
-                    line[1] = gensub(/[Ii][Mm][Dd][Bb][^0-9]{1,10}([0-9]{6})\>/,"tt\\1","g",line[1]);
-                }
-            }
-
-
-            scan = 1;
-            if (text_num) {
-                scan = 0;
-                for(i = 1 ; i<= text_num ; i++ ) {
-                    if ((scan = index(line[1],text_arr[i])) != 0) {
-                        break;
-                    }
-                }
-            }
-
-            if (verbose) DEBUG("scanindex = "scan":"line[1]);
-
-            if (scan) {
-
-                if (count_or_order) {
-                    # Get all ordered matches. 1=>test1, 2=>text2 , etc.
-                    linecount = patsplitn(line[1],regex,remain,matches2);
-                    if (verbose) {
-                        DEBUG("linecount = "linecount" remain="remain);
-                        dump(0,"matches2",matches2);
-                    }
-                    # 
-                    # Append the matches2 array of ordered regex matches. Index by order.
-                    for(i = 1 ; i+0 <= linecount+0 ; i++) {
-                        matches[count+i] = matches2[i];
-                        if (verbose) DEBUG("xx match ["matches[count+i]"]");
-                    }
-                } else {
-                    # Get all occurence counts text1=m , text2=n etc.
-                    linecount = get_regex_counts(line[1],regex,remain,matches2);
-                    if (verbose) {
-                        DEBUG("linecount2 = "linecount" remain="remain);
-                        dump(0,"matches2",matches2);
-                    }
-                    # Add to the total occurences so far , index by pattern.
-                    hash_add(matches,matches2);
-                }
-
-                count += linecount;
-                if (max > 0) {
-                    remain -= count;
-                    if (remain <= 0) {
-                        break;
-                    }
-                }
-            }
+        if (url_get(url,line,"",cache)) {
+            #DEBUG("DELETE" gensub(/</,"\n<","g",line["body"]));
+            count +=get_matches(count_or_order,line["body"],regex,max,count,matches,verbose);
         }
-        enc_close(f);
+
+    } else {
+
+        # Map obsolete this is things still work OK.
+
+        if (index(url,"SEARCH") == 1) {
+            f = search_url2file(url,cache,referer);
+        } else {
+            if (!label) label = "scan4match.html";
+            f=getUrl(url,label,cache,referer);
+        }
+
+        text_num = 0;
+        if (fixed_text != "") text_num = split(fixed_text,text_arr,SUBSEP);
+
+        count=0;
+
+        is_imdb = (regex == g_imdb_regex );
+
+        if (f != "" ) {
+
+            FS="\n";
+            remain=max;
+
+            while(enc_getline(f,line) > 0 ) {
+
+                line[1] = de_emphasise(line[1]);
+
+                if (verbose) DEBUG("["line[1]"]");
+
+                # Quick hack to find Title?0012345 as tt0012345  because altering the regex
+                # itself is more work - for example the results will come back as two different 
+                # counts. 
+                if (is_imdb) {
+                    if (index(line[1],"/Title?") ) {
+                        if (gsub(/\/Title\?/,"/tt",line[1])) {
+                            INF("fixed imdb reference "line[1]);
+                        }
+                    }
+                    # A few sites have IMDB ID 0123456 
+                    if (index(line[1],"IMDB") || index(line[1],"imdb") ) {
+                        line[1] = gensub(/[Ii][Mm][Dd][Bb][^0-9]{1,10}([0-9]{6})\>/,"tt\\1","g",line[1]);
+                    }
+                }
+
+
+                scan = 1;
+                if (text_num) {
+                    scan = 0;
+                    for(i = 1 ; i<= text_num ; i++ ) {
+                        if ((scan = index(line[1],text_arr[i])) != 0) {
+                            break;
+                        }
+                    }
+                }
+
+                if (verbose) DEBUG("scanindex = "scan":"line[1]);
+
+                if (scan) {
+                    count += get_matches(count_or_order,line[1],regex,remain,count,matches,verbose);
+                    if (max > 0) {
+                        remain -= count;
+                        if (remain <= 0) {
+                            break;
+                        }
+                    }
+                }
+            }
+            enc_close(f);
+        }
     }
     dump(2,count" matches",matches);
     id0(count);
     return 0+ count;
+}
+
+# Extract the text patterns
+#
+# IN regex to scan for
+# IN max = max number to match 0=all
+# IN count_or_order = 0=count 1=order
+# OUT matches = array of matches index by the match text value = number of occurences.
+# return number of matches
+function get_matches(count_or_order,text,regex,max,count_so_far,matches,verbose,\
+linecount,i,matches2) {
+
+    if (count_or_order) {
+        # Get all ordered matches. 1=>test1, 2=>text2 , etc.
+        linecount = patsplitn(text,regex,max,matches2);
+        if (verbose) {
+            DEBUG("linecount = "linecount" max="max);
+            dump(0,"matches2",matches2);
+        }
+        # 
+        # Append the matches2 array of ordered regex matches. Index by order.
+        for(i = 1 ; i+0 <= linecount+0 ; i++) {
+            matches[count_so_far+i] = matches2[i];
+            if (verbose) DEBUG("xx match ["matches[count_so_far+i]"]");
+        }
+    } else {
+        # Get all occurence counts text1=m , text2=n etc.
+        linecount = get_regex_counts(text,regex,max,matches2);
+        if (verbose) {
+            DEBUG("linecount2 = "linecount" max="max);
+            dump(0,"matches2",matches2);
+        }
+        # Add to the total occurences so far , index by pattern.
+        hash_add(matches,matches2);
+    }
+    return linecount;
 }
 
 function extractAttribute(str,tag,attr,\

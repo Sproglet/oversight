@@ -1,6 +1,6 @@
-function json_load(url,label,\
+function json_load(url,label,cache,\
 text,f,line) {
-    f=getUrl(url,label".json",1);
+    f=getUrl(url,label".json",cache);
     if (f) { 
         FS="\n";
         while(enc_getline(f,line) > 0) {
@@ -11,21 +11,21 @@ text,f,line) {
     }
     return text;
 }
-function json_load2(url,label,\
+function json_load2(url,label,cache,\
 response) {
-    if (url_get(url,response)) {
+    if (url_get(url,response,cache)) {
         return response["body"];
     }
 }
 
 # real json content from url into array.
-function fetch_json(url,label,out,\
+function fetch_json(url,label,out,cache,\
 ret,json) {
     ret = 0;
     if(g_settings["catalog_awk_browser"]) {
-        json = json_load2(url,label);
+        json = json_load2(url,label,cache);
     } else {
-        json = json_load(url,label);
+        json = json_load(url,label,cache);
     }
 
     if (json) { 

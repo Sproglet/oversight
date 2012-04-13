@@ -149,6 +149,12 @@ t,t2,y,quoted) {
 function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
 u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num,bing_desktop_order,bing_mobile_order) {
 
+    g_fetch["force_awk"] = 1;
+    if (mode == "imdbid") {
+        g_fetch["no_encode"] = 1; # dont care about encoding
+    } else {
+        g_fetch["no_encode"] = 0; # need utf-8 for titles
+    }
 
     ############################################################################
     ## Now Yahoo is powered by BING the search results are the same. So there
@@ -202,7 +208,7 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
 
     # Add some more specialised searches. These will not need/understand syntax manipulation above.
     if(mode == "imdbtitle" && p2p_filename(qualifier) ) {
-        u[++num] = g_search_binsearch qualifier; target[num]=2;
+        #u[++num] = g_search_binsearch qualifier; target[num]=2;
         u[++num] = g_search_nzbindex qualifier; target[num]=2;
     }
 #    if (imdb_qual != "") {
@@ -272,7 +278,9 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
         ret = cross_page_rank(mode,bestmatches,match_src,u);
     }
 
-    #delete all cahced pages.
+    g_fetch["no_encode"] = 0;
+    g_fetch["force_awk"] = 0;
+    #delete all cached pages.
     clear_cache_prefix("@");
     id0(ret);
     return ret;
@@ -684,7 +692,8 @@ function adjustTitle(minfo,newTitle,source) {
     best_source(minfo,TITLE,clean_title(newTitle),source);
 }
 
-function init_priority() {
+function init_priority(\
+langs) {
     if (!("default" in gPriority)) {
         #initialise
         gPriority["default"]=0;
@@ -707,10 +716,22 @@ function init_priority() {
         gPriority[ORIG_TITLE,"themoviedb"]=60; 
 
         gPriority[POSTER,"imdb"]=40;
-        gPriority[POSTER,"thetvdb"]=60;
+        gPriority[POSTER,"thetvdb"]=80;
         gPriority[POSTER,"web"]=70;
-        gPriority[POSTER,"themoviedb"]=90; # increased now that api v3 has localised poster
-        gPriority[POSTER,"movieposterdb"]=95; # Only if local poster fetching - lang != en
+
+        get_langs(langs);
+
+        if(langs[1] == "en" ) {
+            gPriority[POSTER,"web"]=70;
+            gPriority[POSTER,"movieposterdb"]=80; 
+            gPriority[POSTER,"themoviedb"]=90; 
+            gPriority[POSTER,"thetvdb"]=90;
+        } else {
+            gPriority[POSTER,"thetvdb"]=70;
+            gPriority[POSTER,"web"]=70;
+            gPriority[POSTER,"themoviedb"]=80; 
+            gPriority[POSTER,"movieposterdb"]=90; 
+        }
         gPriority[POSTER,"local"]=100;
 
         gPriority[FANART,"thetvdb"]=60;

@@ -3,6 +3,9 @@ countries,country_count,i,count,url,matches,ret) {
 
     id1("mpdb_get_poster id="id);
 
+    g_fetch["force_awk"] = 1;
+    g_fetch["no_encode"] = 1;
+
     if (id) {
 
         g_mpdb = "http://www.movieposterdb.com";
@@ -38,6 +41,8 @@ countries,country_count,i,count,url,matches,ret) {
             }
         }
     }
+    g_fetch["force_awk"] = 0;
+    g_fetch["no_encode"] = 0;
 
     id0(ret);
     return ret;

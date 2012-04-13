@@ -11,12 +11,13 @@ fld,line) {
     line = line SUBSEP NAME SUBSEP minfo[NAME] ;
 
     for(fld in minfo) {
-        if (fld != DIR && fld != NAME && fld !~ /_source$/ && fld !~ /^mi_visited/ ) {
+        if (fld != DIR && fld != NAME && fld !~ /_source$/ && fld !~ /^mi_visited/ && fld != "mi_multipart_tag_pos" ) {
             line = line SUBSEP fld SUBSEP minfo[fld] ;
         }
     }
     if (index(line,"\n")) gsub(/\n/,"\\n",line);
     print substr(line,2) >> qfile;
+    #INF("DELETE Queued item   " gensub(SUBSEP,"\n" , "g", line));
 }
 
 function read_minfo(qfile,minfo,\
@@ -123,8 +124,9 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
         }
         if (and(action,2)) {
             if (read_minfo(qfile,fields2)) {
+                #dump(0,"DELETE read fields2",fields2);
                 row2=1;
-                INF("Merge item    :["fields2[FILE]"]");
+                #INF("Merge item    :["fields2[FILE]"]");
             }
         }
 

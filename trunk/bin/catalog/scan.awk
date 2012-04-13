@@ -767,25 +767,27 @@ cat,minfo2,locales,id,split_episode_search) {
 
                            local_search=0;
 
+                           if (want_posters(minfo)) {
+                               # Check movieposterdb
+                               if (gPriority[POSTER,"movieposterdb"] > minfo_field_priority(minfo,POSTER)) {
+                                   poster = mpdb_get_poster(imdb(minfo),minfo[TITLE]);
+                                   best_source(minfo,POSTER,poster,"movieposterdb");
+                               }
+                           }
+
+                           if (want_posters(minfo)) {
+                               # Check other sites
+                               if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
+                                   INF("Checking local posters");
+                                   local_search = 1;
+                               }
+                           }
+
                            if (main_lang() != "en") {
                                if ( lang(minfo[PLOT]) != main_lang()) {
                                    INF("Plot not in main language");
                                    if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
                                        INF("Forcing local search for plot");
-                                       local_search = 1;
-                                   }
-                               }
-                               if (g_settings["catalog_get_local_posters"] != "never") {
-
-                                   # Check movieposterdb
-                                   if (gPriority[POSTER,"movieposterdb"] > minfo_field_priority(minfo,POSTER)) {
-                                       poster = mpdb_get_poster(imdb(minfo),minfo[TITLE]);
-                                       best_source(minfo,POSTER,poster,"movieposterdb");
-                                   }
-
-                                   # Check other sites
-                                   if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
-                                       INF("Checking local posters");
                                        local_search = 1;
                                    }
                                }
@@ -845,17 +847,25 @@ cat,minfo2,locales,id,split_episode_search) {
 
     close(qfile);
 
+    url_connection_purge(10);
+
     if ((force_merge && g_batch_total) ||  g_batch_total >= g_settings["catalog_scan_batch_size"] ) {
 
-            if (g_db) {
-                total +=  merge_queue(qfile,person_extid2name);
-            }
-            g_batch_total = 0;
+        if (g_db) {
+            total +=  merge_queue(qfile,person_extid2name);
+        }
+        g_batch_total = 0;
+
+        url_connection_purge();
     }
     delete minfo;
     return total;
 
 }
+function want_posters(minfo) {
+    return !minfo[POSTER] !! (main_lang() != "en" && g_settings["catalog_get_local_posters"]);
+}
+
 function plot_in_main_lang(minfo) {
     return lang(minfo[PLOT]) == main_lang();
 }

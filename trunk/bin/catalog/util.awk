@@ -152,15 +152,16 @@ function DETAIL(x) {
     timestamp("[DETAIL] ",x);
 }
 
-function timestamp(label,x) {
+function timestamp(label,x,\
+new_str) {
 
-    if (g_api_tvdb && index(x,g_api_tvdb) ) gsub(g_api_tvdb,".",x);
-    if (g_api_tmdb && index(x,g_api_tmdb) ) gsub(g_api_tmdb,".",x);
-    if (g_api_rage && index(x,g_api_rage) ) gsub(g_api_rage,".",x);
-    if (g_api_bing && index(x,g_api_bing) ) gsub(g_api_bing,".",x);
+    if (g_api_tvdb && index(x,g_api_tvdb) ) gsub(g_api_tvdb,"-t-",x);
+    if (g_api_tmdb && index(x,g_api_tmdb) ) gsub(g_api_tmdb,"-m-",x);
+    if (g_api_rage && index(x,g_api_rage) ) gsub(g_api_rage,"-r-",x);
+    if (g_api_bing && index(x,g_api_bing) ) gsub(g_api_bing,"-b-",x);
 
     if (index(x,"app.i") ) {
-        sub("app.i[[:alnum:]/?=&]+","",x);
+        sub("app.i[[:alnum:]/?=&]+","movieapi",x);
     }
     if (index(x,"d=") ) {
         sub("password.?=([^,]+)","password=***",x);
@@ -169,9 +170,17 @@ function timestamp(label,x) {
     }
 
     if (systime() != g_last_ts) {
+
+        new_str=strftime("%H:%M:%S : ",systime());
+
+        if (g_last_ts && (systime() - g_last_ts) > 10) {
+            print "[ERR]   "new_str"going slow? from "g_last_ts_str;
+        }
+
         g_last_ts=systime();
-        g_last_ts_str=strftime("%H:%M:%S : ",g_last_ts);
+        g_last_ts_str=new_str;
     }
+
     print label" "LOG_TAG" "g_last_ts_str g_indent x;
     fflush();
 }

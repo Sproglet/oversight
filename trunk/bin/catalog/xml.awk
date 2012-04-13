@@ -68,6 +68,14 @@ beg,end,ret) {
 
     }
 
+    # TODO hope DOCTYPE is on one line!!
+    if ((beg = index(line,"<!DOCTYPE")) > 0) {
+       if ((end=index(line,">")) > 0) {
+          line = substr(line,1,beg-1) substr(line,end+1);
+          beg = end = 0;
+      }
+    }
+
     # remove single line comments
     while ((beg=index(line,"<!--")) > 0) {
        if ((end=index(line,"-->")) > 0) {
@@ -124,9 +132,8 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
     }
 
     if (index(line,g_sigma) ) { 
-        INF("Sigma:"line);
         gsub(g_sigma,"e",line);
-        INF("Sigma:"line);
+        INF("Sigma replaced");
     }
 
     #break at each tag/endtag
@@ -241,7 +248,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
             }
 
             if (!(tag in tag_ok)) {
-               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ && tag !~ /!--/ ) {
+               if (tag !~ /^(|[[:alnum:]]:)[[:alpha:]][_[:alnum:]]*$/ && tag !~ /!/ ) {
                    ERR("XML Parse error: Invalid tag ["tag"]");
                    ret = 0;
                    break;

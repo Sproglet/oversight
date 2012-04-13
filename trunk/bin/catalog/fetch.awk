@@ -1,14 +1,14 @@
+function cache_key(url) {
+    return g_cache_prefix url;
+}
+function cache_path(cache,url,\
+f,url_key,cache_suffix) {
+    url_key = cache_key(url);
 
-function getUrl(url,capture_label,cache,referer,quiet_fail,\
-    f,label,url_key,cache_suffix) {
-    
-    label="getUrl:"capture_label": ";
+    if(cache && (url_key in gUrlCache) ) {
 
-    #DEBUG(label url);
-
-    if (url == "" ) {
-        WARNING(label"Ignoring empty URL");
-        return;
+        DEBUG(" fetched ["url_key"] from cache");
+        f = gUrlCache[url_key];
     }
 
     if (g_settings["catalog_imdb_source"] == "mobile" ) {
@@ -18,15 +18,6 @@ function getUrl(url,capture_label,cache,referer,quiet_fail,\
             cache_suffix="_mb";
         }
     }
-
-    url_key = g_cache_prefix url;
-
-    if(cache && (url_key in gUrlCache) ) {
-
-        DEBUG(label" fetched ["url_key"] from cache");
-        f = gUrlCache[url_key];
-    }
-
     if (g_settings["catalog_cache_film_info"] == "yes") {
         if (index(url,".imdb.")) {
             if (url ~ ".imdb.com/title/tt[0-9]+/?$" ) {
@@ -38,6 +29,24 @@ function getUrl(url,capture_label,cache,referer,quiet_fail,\
             }
         }
     }
+    return f;
+
+}
+
+function getUrl(url,capture_label,cache,referer,quiet_fail,\
+    f,label) {
+    
+    label="getUrl:"capture_label": ";
+
+    #DEBUG(label url);
+
+    if (url == "" ) {
+        WARNING(label"Ignoring empty URL");
+        return;
+    }
+
+
+    f = cache_path(cache,url);
 
     if (f =="" ) {
         f=new_capture_file(capture_label);
@@ -46,7 +55,7 @@ function getUrl(url,capture_label,cache,referer,quiet_fail,\
 
         if (wget(url,f,referer,quiet_fail) ==0) {
             if (cache) {
-                gUrlCache[url_key]=f;
+                gUrlCache[cache_key(url)]=f;
                 #DEBUG(label" Fetched & Cached ["url"] to ["f"]");
             } else {
                 #DEBUG(label" Fetched ["url"] into ["f"]"); 
@@ -70,6 +79,19 @@ i,referer) {
     return referer;
 }
 
+
+function set_user_agent(url,\
+ret) {
+
+    if (index(url,".google.")) ret="Lynx"; # Smaller page.
+    else if (index(url,"/app.")) ret="g_iphone_user_agent"; # imdb
+    else if (index(url,g_search_yahoo)) ret=g_yahoo_user_agent;         #Yahoo returns weird bloated results with most end-user browsers.
+    else ret = g_user_agent;
+
+    return ret;
+}
+
+
 # Note nmt wget has a bug when using -O flag. Must use proper wget.
 
 #Get a url. Several urls can be passed if separated by tab character, if so they are put in the same file.
@@ -78,14 +100,9 @@ function wget(url,file,referer,quiet_fail,\
 args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default_referer,ua,old_cf,new_cf,arg_cf,filter_count) {
 
     filter_count = 0;
-    if (index(url,"/app.")) { 
-        ua = g_iphone_user_agent;
-    } else if (index(url,g_search_yahoo)) { 
-        #Yahoo returns weird bloated results with most end-user browsers.
-        ua = g_yahoo_user_agent;
-    } else {
-        ua = g_user_agent;
-    }
+
+    ua = set_user_agent(url);
+
     args=" -U \""ua"\" "g_wget_opts;
     default_referer = get_referer(url);
     if (check_domain_speed(default_referer) == 0) {

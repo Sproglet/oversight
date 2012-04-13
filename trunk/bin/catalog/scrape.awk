@@ -54,6 +54,8 @@ ret) {
 function find_movie_by_locale(locale,title,year,director,poster,minfo,imdbid,orig_title,\
 i,num,sites,minfo2,err,searchhist) {
 
+    g_fetch["force_awk"] = 1;
+    g_fetch["no_encode"] = 0;
     err=1;
     id1("find_movie_by_locale:"locale" title ["title"] year("year") imdbid="imdbid);
     if (load_locale_settings(locale)) {
@@ -68,6 +70,8 @@ i,num,sites,minfo2,err,searchhist) {
             }
         }
     }
+    g_fetch["force_awk"] = 0;
+    g_fetch["no_encode"] = 0;
     id0(err);
     return err;
 }

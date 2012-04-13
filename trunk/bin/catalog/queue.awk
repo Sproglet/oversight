@@ -84,12 +84,15 @@ file1_sorted,file_merged,person_extid2ovsid,total) {
         if (sort_file(qfile) )  {
 
             if (!STANDALONE) {
+                url_connection_purge();
                 people_update_dbs(person_extid2name,person_extid2ovsid);
             }
 
+            url_connection_purge();
             total = merge_index(file1_sorted,qfile,file_merged,person_extid2ovsid);
             if (total) {
 
+                url_connection_purge();
                 replace_database_with_new(file_merged,dbfile,file1_backup);
             }
             
@@ -207,6 +210,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             get_images(fields2);
 
             new_content(fields2);
+
+            url_connection_purge();
         }
 
 
@@ -221,6 +226,8 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
     if (!STANDALONE){
         update_plots(g_plot_file,g_plot_file_queue,plot_ids);
+
+        url_connection_purge();
     }
     rm(g_plot_file_queue);
 

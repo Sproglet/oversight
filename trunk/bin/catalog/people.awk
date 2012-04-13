@@ -156,7 +156,7 @@ line,err,fields,ret) {
             split(line,fields,"\t");
             if (fields[infield] == value) {
                 ret = fields[outfield];
-                INF("found ["line"] in "file" "value" = "ret);
+                INF("found person ["line"]" );
                 break;
             }
         }

@@ -122,6 +122,12 @@ function url_next_source_port(host_port) {
    }
 }
 
+function url_con_str(parts,\
+host_port) {
+    host_port = parts["host"]"/"parts["port"];
+    return "/inet/tcp/"g_url_source_port[host_port]0"/"parts["host"]"/"parts["port"];
+}
+
 function url_connect(url,request,response,attempt,\
 parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max) {
 
@@ -136,28 +142,26 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
             host = parts["host"];
             host_port = host"/"parts["port"];
 
-            con = "/inet/tcp/"g_url_source_port[host_port]0"/"host"/"parts["port"];
+            con = url_con_str(parts);
 
 
-            dump(0,"stamps",g_url_con_timestamps);
+            dump(0,"stamps",g_url_con_usedtime);
             elapsed = url_con_elapsed(con);
 
             DEBUG("elapsed time "con" = "elapsed);
-            DEBUG("systime time = "systime());
-            DEBUG("timestamp "con" = "g_url_con_timestamps[con]);
+            DEBUG("create time "con" = "strftime("%H:%M:%S : ",g_url_con_createtime[con]));
+            DEBUG("used time "con" = "strftime("%H:%M:%S : ",g_url_con_usedtime[con]));
             DEBUG("timout time "host_port" = "url_host_timeout(host_port));
 
-            if (g_url_con_timestamps[con] && (elapsed > url_host_timeout(host_port) )) {
-                if (elapsed < 20) {
-                    INF("closing stale connection "con": elapsed time = "elapsed);
-                    url_disconnect(con);
-                } else {
-                    INF("abandoning stale connection "con": elapsed time = "elapsed);
-                    # Get a new connection
-                    # just bump up to next source port.
-                    url_next_source_port(host_port);
-                    con = "/inet/tcp/"g_url_source_port[host_port]0"/"host"/"parts["port"];
-                }
+            if (g_url_con_usedtime[con] && (elapsed > url_host_timeout(host_port) )) {
+                url_disconnect(con,(elapsed < 20),"elapsed time = "elapsed);
+                # regenerate connection name in case it changed.
+                con = url_con_str(parts);
+            }
+
+            if (!g_url_con_usedtime[con]) {
+                # new connection
+                g_url_con_createtime[con] = systime();
             }
 
             DEBUG("connecting ["con"]");
@@ -189,13 +193,13 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
                     url_adjust_timout(host_port);
                 }
                 
-                url_disconnect(con);
+                url_disconnect(con,0,"no headers");
                 con="";
                 break;
 
             } else {
             
-                g_url_con_timestamps[con] = systime();
+                g_url_con_usedtime[con] = systime();
                 g_url_con_opened[con]++;
 
                 if (index(response["@status"],"1.1 2")) {
@@ -205,7 +209,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
 
                 } else if (response["@status"] ~ "1 3[0-9][0-9]") {
                     # Redirect
-                    url_disconnect(con);
+                    url_disconnect(con,1,"due to redirect");
                     con="";
 
                     query = parts["query"];
@@ -223,7 +227,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
                 } else if (index(response["@status"],"1.1 4") || index(response["@status"],"1.1 5")) {
 
                     ERR("Error response : "response["@status"]" closing "url);
-                    url_disconnect(con);
+                    url_disconnect(con,1);
                     con="";
                     break;
 
@@ -247,32 +251,37 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
 # for more than a few seconds. Otherwise the remote server abandons the socket,
 # and the close from the client will timeout. In that case its better not to 
 # close the socket but start a new one using local port /00/ /000/ etc ..
-function url_connection_purge(age,\
-con,idle,start) {
-    if (!age) age = 10;
+function url_connection_purge(max_idle,max_age,\
+con,idle,start,age) {
+    if (!max_idle) max_idle = 10;
+    if (!max_idle) max_age = 25;
 
     do {
-        id1("purge connections older than "age);
+        id1("purge connections older than "max_idle);
         start = systime();
 
-        for(con in g_url_con_timestamps) {
+        for(con in g_url_con_usedtime) {
             if (index(con,"/inet")) {
                 idle = url_con_elapsed(con);
-                if (idle > age) {
-                    if (idle > 30) {
-                        # too old to close quickly - change from port /0/ to port /00/ etc
-                        ERR("abandoning "con" idle for "idle" - review logic to avoid");
-                        url_next_source_port(url_extract_host_port(con));
-                        delete g_url_con_timestamps[con];
-                    } else {
-                        INF("closing "con" idle for "idle);
-                        url_disconnect(con);
-                    }
+                if (idle > max_idle) {
+                    url_disconnect(con,(idle <= 30),"idle for "idle);
                 } else {
                     INF("connection "con" idle for "idle);
                 }
             }
         }
+        # Also prune threads that have been alive too long.
+        # this is really only foe tvdb.com other sites not too bothered.
+        for(con in g_url_con_createtime) {
+            if (index(con,"tvdb")) {
+                if (g_url_con_createtime[con] ) {
+                    age = systime() - g_url_con_createtime[con] ;
+                   if (age > max_age ) {
+                       url_disconnect(con,(age < max_age+10),"age="age);
+                   }
+               }
+           }
+       }
 
         id0();
         # If we took too long to close a conection then others might by going stale too
@@ -281,12 +290,18 @@ con,idle,start) {
 
 }
 
-function url_disconnect(con) {
-    close(con);
-    INF("closed "con);
-    delete g_url_con_timestamps[con];
+function url_disconnect(con,do_close,msg) {
+
+    delete g_url_con_usedtime[con];
+    delete g_url_con_createtime[con];
     g_url_con_closed[con]++;
-    url_log_state("closed",con);
+    if(do_close) {
+        close(con);
+        url_log_state(msg":closed",con);
+    } else {
+        url_next_source_port(url_extract_host_port(con));
+        url_log_state(msg":abandoned",con);
+    }
     return "";
 }
 
@@ -338,7 +353,7 @@ function url_eof_init() {
         # This is not needed if chunked transfers are used.
         g_url_eof["www.thetvdb.com","xml"] = ">\n";
         g_url_eof["www.thetvdb.com","json"] = "}\n";
-        g_url_eof["www.thetvdb.com","html"] = "html>\n";
+        g_url_eof["www.thetvdb.com","html"] = ">\n";
 
         g_url_eof["api.themoviedb.org","json"] = "}";
         g_url_eof["api.themoviedb.org","xml"] = ">";
@@ -348,8 +363,8 @@ function url_eof_init() {
         # Generic EOF markers - these will fail if the site sends trailing white space CR/LF etc.
         g_url_eof["xml"] = ">"; #any end tag followed by optional white space
         g_url_eof["json"] = "}";
-        g_url_eof["html"] = "html>";
-        g_url_eof["xhtml"] = "html>";
+        g_url_eof["html"] = ">";
+        g_url_eof["xhtml"] = ">";
     }
 }
 function url_ct(response,\
@@ -486,7 +501,8 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
         if (con && response["content-encoding"] == "gzip" && response["transfer-encoding"] != "chunked") {
 
-            con = url_disconnect(con,1);
+            url_disconnect(con,1);
+            con = "";
 
             id0("non-chunked binary transfer - using external function");
 
@@ -504,9 +520,9 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
     } else if (response["content-length"] ) {
 
-        WARNING("Error in response headers - reading body...");
+        WARNING("Error in response headers - ignoring body...");
 
-        read_body = 1;
+        read_body = 0;
 
     } else {
 
@@ -568,7 +584,7 @@ ret) {
 }
 function url_con_elapsed(con,\
 ts) {
-    ts = g_url_con_timestamps[con];
+    ts = g_url_con_usedtime[con];
     if (!ts) {
         return 0;
     } else {

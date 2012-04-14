@@ -34,9 +34,27 @@ id,series,versions,ret) {
     }
     return ret;
 }
+function remove_unwanted_html(body,
+i,j,cut) {
+    # remove top of page
+    i = index(body,"<h1");
+    if (i) body = substr(body,i);
+    #remove end of page
+    cut[1] = ">References";
+    cut[2] = ">Referenced in";
+    cut[3] = "TOP_RHS";
+    for(i = 1 ; i<= 3 ; i++ ) {
+        if ((j = index(body,cut[i])) > 0) {
+            body = substr(body,1,j);
+            break;
+        }
+    }
+    return body;
+}
+
 function imdb_movie_connections1(id,series,versions,get_version_series,\
 sections,series_heading,version_heading,end,numsections,\
-found_section,relationship,htag,sep,i,count,html,txt,v,url,hdr) {
+found_section,relationship,i,count,html,txt,v,url,hdr,body,regex,response) {
 
     series_heading = 1;
     version_heading = 2;
@@ -49,17 +67,32 @@ found_section,relationship,htag,sep,i,count,html,txt,v,url,hdr) {
     #sections["Remake of"] = sections["Remade as"] = sections["Version of"] = version_heading;
     sections["References"] = sections["Referenced in"] = end;
     numsections = hash_size(sections);
+    regex = "(<h[1-5][^>]*>[^<&]+|\\<"g_imdb_regex")" ; # Grab headings or imdb ids
+    url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
 
     if(id && !(id in series)){
+
         id1("getMovieConnections1:"id);
-        htag = "h5";
-        sep=",";
-        url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
-        g_fetch_filter = " sed '1,/<h1/ d;/<h4.*>Refer/,$ d;/TOP_RHS/,$ d' ";
+        if (g_settings["catalog_awk_browser"] ) {
 
-        count=scan_page_for_match_order(url,"","(<h[1-5][^>]*>[^<&]+|\\<"g_imdb_regex")",0,0,"",html,0,"raw.img");
+            # Use the inline browser - this is not as robust as external command line but should be faster.
+            # could have just sef g_fetch["force_awk"] and hand off to scan_page_for_match_order()
+            # but beneficial to remove a lot of stuff from the page first.
 
-        g_fetch_filter = "";
+            if (url_get(url,response,"",0)) {
+                body = remove_unwanted_html(response["body"]);
+                count = get_matches(1,body,regex,0,0,html,0);
+            }
+
+        } else {
+
+            # External browser
+            g_fetch_filter = " sed '1,/<h1/ d;/<h4.*>Refer/,$ d;/TOP_RHS/,$ d' ";
+
+            count=scan_page_for_match_order(url,"",regex,0,0,"",html,0,"raw.img");
+
+            g_fetch_filter = "";
+        }
 
         #dump(0,"movieconnections-"count,html);
         for(i = 1 ; i <= count ; i++ ) {

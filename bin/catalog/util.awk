@@ -369,6 +369,18 @@ i,key,n) {
     }
 }
 
+function join(a,sep,\
+i,s,n) {
+    n = hash_size(a);
+
+    s = a[1];
+    for(i = 2 ; i<= n ; i++ ){
+        s = s sep a[i];
+    }
+    return s;
+}
+
+
 function sort_file(f,args,\
 tmpf,ret) {
     tmpf=f"."PID;

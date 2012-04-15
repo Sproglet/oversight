@@ -53,10 +53,6 @@ END {
     #url_get("http://www.thetvdb.com/data/series/257364/default/2/1/en.xml",r1,"\n");
 }
 
-function url_referer(url) {
-    return gensub(/([a-z])\/.*/,"\\1",1,url);
-}
-
 function url_dump(label,h,i) {
     for(i in h ) print label" "i":"h[i];
 }
@@ -116,7 +112,7 @@ key,query) {
 # We can still do this using ephemeral ports by using /0/ /00/ etc !
 function url_next_source_port(host_port) {
     g_url_source_port[host_port] = "0"g_url_source_port[host_port];
-    if (length(g_url_source_port[host_port]) > 40) {
+    if (length(g_url_source_port[host_port]) > 60) {
         ERR("Resetting ephemeral port counter for "host_port" - tcp with awk - hmmm");
        g_url_source_port[host_port] = "";
    }
@@ -129,7 +125,7 @@ host_port) {
 }
 
 function url_connect(url,request,response,attempt,\
-parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max) {
+parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,msg) {
 
     delete request;
     redirect_max = 6;
@@ -145,13 +141,16 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
             con = url_con_str(parts);
 
 
-            dump(0,"stamps",g_url_con_usedtime);
             elapsed = url_con_elapsed(con);
 
-            DEBUG("elapsed time "con" = "elapsed);
-            DEBUG("create time "con" = "strftime("%H:%M:%S : ",g_url_con_createtime[con]));
-            DEBUG("used time "con" = "strftime("%H:%M:%S : ",g_url_con_usedtime[con]));
-            DEBUG("timout time "host_port" = "url_host_timeout(host_port));
+            if (1) {
+                msg = con" elapsed "elapsed;
+                msg = msg" created "strftime("%H:%M:%S",g_url_con_createtime[con]);
+                msg = msg" used "strftime("%H:%M:%S",g_url_con_usedtime[con]);
+                msg = msg" timout "host_port" = "url_host_timeout(host_port);
+                DEBUG(msg);
+            }
+            url_connection_purge();
 
             if (g_url_con_usedtime[con] && (elapsed > url_host_timeout(host_port) )) {
                 url_disconnect(con,(elapsed < 20),"elapsed time = "elapsed);
@@ -172,7 +171,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
             request["User-Agent"] = set_user_agent(url);
             request["Accept"] = "*/*";
             request["Accept-Encoding"] = "";
-            request["Referer"] = url_referer(url);
+            request["Referer"] = get_referer(url);
             request["Connection"] = "Keep-Alive";
 
             for(i in request) {
@@ -187,17 +186,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
 
             DEBUG("hdr state = "ret);
 
-            if (!ret) {
-
-                if (attempt == 1) {
-                    url_adjust_timout(host_port);
-                }
-                
-                url_disconnect(con,0,"no headers");
-                con="";
-                break;
-
-            } else {
+            if (ret == 1) {
             
                 g_url_con_usedtime[con] = systime();
                 g_url_con_opened[con]++;
@@ -237,6 +226,18 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
                     # Anything else break
                     break;
                 }
+            } else if (ret == 0) {
+
+                url_disconnect(con,1,"eof reading headers");
+                con="";
+                break;
+
+            } else if (ret == -1) { #Error
+
+                url_disconnect(con,0,"error reading headers");
+                con="";
+                break;
+
             }
         }
     }
@@ -251,39 +252,64 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max)
 # for more than a few seconds. Otherwise the remote server abandons the socket,
 # and the close from the client will timeout. In that case its better not to 
 # close the socket but start a new one using local port /00/ /000/ etc ..
-function url_connection_purge(max_idle,max_age,\
-con,idle,start,age) {
-    if (!max_idle) max_idle = 10;
-    if (!max_idle) max_age = 25;
+function url_connection_purge(max_idle,max_age,max_used,\
+con,idle,start,age,host_max_age,host_max_idle,host_max_used,host_port) {
+
+    if (!g_url_host_max_init) {
+        g_url_host_max_init = 1;
+        g_url_host_max_idle["www.thetvdb.com/80"] = 5;
+        g_url_host_max_age["www.thetvdb.com/80"] = 10;
+        #g_url_host_max_used["www.thetvdb.com/80"] = 6;
+    }
 
     do {
-        id1("purge connections older than "max_idle);
+        #id1("purge connections older than "max_idle);
         start = systime();
 
         for(con in g_url_con_usedtime) {
-            if (index(con,"/inet")) {
+            if (con) {
+
+                host_port = url_extract_host_port(con);
+
+                host_max_idle = max_idle;
+                host_max_age  = max_age;
+                host_max_used = max_used;
+
+                if (!host_max_idle) host_max_idle = g_url_host_max_idle[host_port];
+                if (!host_max_age)  host_max_age = g_url_host_max_age[host_port];
+                if (!host_max_used) host_max_used = g_url_host_max_used[host_port];
+                
+                if (!host_max_idle) host_max_idle = 10;
+                if (!host_max_age)  host_max_age = 20;
+                if (!host_max_used) host_max_used = 30;
+
+                DEBUG("host "host_port" "host_max_idle"/"host_max_age"/"host_max_used);
+
                 idle = url_con_elapsed(con);
-                if (idle > max_idle) {
+                age = (g_url_con_createtime[con]? systime() - g_url_con_createtime[con] : 0) ;
+
+                if (idle > host_max_idle) {
+
                     url_disconnect(con,(idle <= 30),"idle for "idle);
+
+                } else if (age > host_max_age ) {
+
+                   # prune threads that have been alive too long.
+                   # this is really only foe tvdb.com other sites not too bothered.
+                   url_disconnect(con,(age < host_max_age+10),"age="age);
+
+                } else if (g_url_con_opened[con] - g_url_con_closed[con] > host_max_used ) {
+
+                    # check usage
+                    url_disconnect(con,1,"max reconnections > "host_max_used);
+
                 } else {
-                    INF("connection "con" idle for "idle);
+                    INF((age?"keeping":"new")" connection "con" idle for "idle);
                 }
             }
         }
-        # Also prune threads that have been alive too long.
-        # this is really only foe tvdb.com other sites not too bothered.
-        for(con in g_url_con_createtime) {
-            if (index(con,"tvdb")) {
-                if (g_url_con_createtime[con] ) {
-                    age = systime() - g_url_con_createtime[con] ;
-                   if (age > max_age ) {
-                       url_disconnect(con,(age < max_age+10),"age="age);
-                   }
-               }
-           }
-       }
 
-        id0();
+        #id0();
         # If we took too long to close a conection then others might by going stale too
         # so go around again.
     } while( (systime() - start) > age );
@@ -297,10 +323,10 @@ function url_disconnect(con,do_close,msg) {
     g_url_con_closed[con]++;
     if(do_close) {
         close(con);
-        url_log_state(msg":closed",con);
+        url_log_state("closed: reason "msg,con);
     } else {
         url_next_source_port(url_extract_host_port(con));
-        url_log_state(msg":abandoned",con);
+        url_log_state("abandoned: reason "msg,con);
     }
     return "";
 }
@@ -313,32 +339,39 @@ code,bytes,i,num,j,all_hdrs) {
 
     _RS = RS;
     RS="\r\n\r\n";
+
+    delete response;
+
     code = ( con |& getline all_hdrs );
 
-    num = split(all_hdrs,bytes,"\r\n");
+    if (code > 0) {
+        num = split(all_hdrs,bytes,"\r\n");
 
-    for(i = 1 ; i<= num ; i++) {
+        for(i = 1 ; i<= num ; i++) {
 
-        if (bytes[i]) {
+            if (bytes[i]) {
 
-            if (bytes[i] ~ /^(HTTP|[Cc]on)/) {
-                INF("hdr["bytes[i]"]");
-            }
+                if (1 || bytes[i] ~ /^(HTTP|[Cc]on)/) {
+                    INF("hdr["bytes[i]"]");
+                }
 
-            if ((j=index(bytes[i],":")) > 0) {
-                response[tolower(substr(bytes[i],1,j-1))] =  trim(substr(bytes[i],j+2));
+                if ((j=index(bytes[i],":")) > 0) {
+                    response[tolower(substr(bytes[i],1,j-1))] =  trim(substr(bytes[i],j+2));
 
-            } else if (index(bytes[i],"HTTP/1")) {
-                # HTTP/1.1 200 OK
-                response["@status"] = bytes[i];
+                } else if (index(bytes[i],"HTTP/1")) {
+                    # HTTP/1.1 200 OK
+                    response["@status"] = bytes[i];
 
-            } else {
-                ERR("dont understand header ["bytes[i]"]");
+                } else {
+                    ERR("dont understand header ["bytes[i]"]");
+                }
             }
         }
+    } else {
+        ERR("Error "code" getting headers ");
     }
     RS = _RS;
-    return index(response["@status"],"HTTP/1");
+    return (code);
 }
 
 function url_eof_init() {
@@ -567,11 +600,18 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
         url_encode_utf8(response);
 
         ret = (response["body"] != "");
+        if (response["connection"] == "close" ) {
+            url_disconnect(con,1,"closed by server");
+        } else if (index(response["@status"],"1.0") && !response["connection"] == "keep-alive" ) {
+            url_disconnect(con,1,"assume closed by server");
+        }
     }
 
     response["enc"] = enc;
     log_bigstring(enc" body",response["body"],20);
     id0(response["@status"] ~ "200");
+
+
     return ret;
 }
 
@@ -592,31 +632,34 @@ ts) {
     }
 }
 
-function url_extract_host_port(con) {
-    return gensub(/\/inet\/tcp\/0+\//,"",1,con);
+# /inet/tcp/0/host/port
+function url_extract_host_port(con,\
+i) {
+    i = index(con,"0/");
+    return substr(con,i+2);
 }
 
-function url_adjust_timout(con,\
-host_port,elapsed) {
-
-    host_port = url_extract_host_port(con);
-    elapsed = url_con_elapsed(con);
-
-    # Something went wrong with connection.
-    if (elapsed < url_host_timeout(host_port)) {
-        INF("elapsed time = "elapsed" current timout = "url_host_timeout(host_port));
-        g_url_timeout[host_port] = elapsed - 1;
-        if (g_url_timeout[host_port] < 5) g_url_timeout[host_port] = 5;
-        INF("Adjusted client timeout for "host_port" to "g_url_timeout[host_port]);
-    }
-}
-
+#function url_adjust_timout(con,\
+#host_port,elapsed) {
+#
+#    host_port = url_extract_host_port(con);
+#    elapsed = url_con_elapsed(con);
+#
+#    # Something went wrong with connection.
+#    if (elapsed < url_host_timeout(host_port)) {
+#        INF("elapsed time = "elapsed" current timout = "url_host_timeout(host_port));
+#        g_url_timeout[host_port] = elapsed - 1;
+#        if (g_url_timeout[host_port] < 5) g_url_timeout[host_port] = 5;
+#        INF("Adjusted client timeout for "host_port" to "g_url_timeout[host_port]);
+#    }
+#}
+#
 
 # read chunked stream
 function url_read_chunked(con,\
-body,bytes,bytes2,chunk_len) {
+body,bytes,bytes2,chunk_len,code) {
 
-    while ( con |& getline bytes ) {
+    while ( (code =  ( con |& getline bytes )) > 0) {
         chunk_len=strtonum("0x"bytes);
 
         #DEBUG("chunked  len["bytes"] = "chunk_len" bytes");
@@ -628,7 +671,7 @@ body,bytes,bytes2,chunk_len) {
             break;
         }
         bytes="";
-        while ( con |& getline bytes2 ) {
+        while ( (code =  ( con |& getline bytes2 )) > 0) {
             bytes = bytes bytes2 RT;
 
 
@@ -648,14 +691,14 @@ body,bytes,bytes2,chunk_len) {
 
 # read fixed stream
 function url_read_fixed(con,response,initial_rs,\
-content_length,body,bytes,is_xml) {
+content_length,body,bytes,is_xml,code) {
 
     content_length = response["content-length"]+0;
 
     if (index(response["content-type"],"xml")) {
         is_xml=1;
     }
-    while ( con |& getline bytes ) {
+    while ( (code =  ( con |& getline bytes )) > 0) {
         body = body bytes RT;
         #DEBUG("[" bytes "][" RT "]");
         

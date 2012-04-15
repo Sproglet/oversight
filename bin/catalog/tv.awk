@@ -1665,9 +1665,15 @@ url,count,i,names2,regex,parts) {
 
     delete names;
     id1("get_tvrage_names_by_letter abbreviations for "letter);
+
+    g_fetch["force_awk"]=1;
+
     regex="<id>([^<]+)</id><name>([^<]*)</name>";
     url = g_tvrage_api"/feeds/show_list_letter.php?letter="letter;
     scan_page_for_match_order(url,"<name>",regex,0,1,"",names2);
+
+    g_fetch["force_awk"]=0;
+
     for(i in names2) {
         gsub(/\&amp;/,"And",names2[i]);
         split(gensub(regex,SUBSEP"\\1"SUBSEP"\\2"SUBSEP,"g",names2[i]),parts,SUBSEP);

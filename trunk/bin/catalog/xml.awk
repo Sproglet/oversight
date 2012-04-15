@@ -39,14 +39,19 @@ line,ret,code) {
 }
 
 function dumpxml(label,xml,\
-i,n,tag,ids,t) {
+i,n,tag,ids,t,val) {
     ids["name"] = ids["id"] = 1;
     n = xml["@count"];
     DEBUG(label":xml");
     for(i = 1 ; i <= n ; i++ ) {
         tag = xml[i];
 
-        if (xml[tag]) INF(tag" = "xml[tag]);
+        val = xml[tag];
+
+        # display all non empty values that either do not have cr or are not blank
+        if (val != "" && (!index(val,"\n") || val !~ /^[[:space:]]*/ )) {
+            INF(tag" = "xml[tag]);
+        }
 
         for (t in ids) {
             if (tag"#"t in xml) INF(tag"#"t" = "xml[tag"#"t]);

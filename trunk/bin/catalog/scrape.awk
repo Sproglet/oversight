@@ -695,7 +695,7 @@ f,source,ret) {
                 if ( !(f"_source" in current)) {
                     current[f"_source"] = default_source;
                 }
-                INF("minfo_merge: keeping "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
+                #DEBUG("keep "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
             }
         }
     }

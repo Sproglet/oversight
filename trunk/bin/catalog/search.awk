@@ -872,12 +872,12 @@ old_inf,new_inf,ret,old_num,new_num,old_src_key,old_src,n) {
     }
     if (old_src) {
         if (ret) {
-            INF("update\t"n": "new_inf"\twas: "old_inf);
+            INF("updated "n" "new_inf" was "old_inf);
         } else {
-            INF("keep\t"n": "old_inf"\tignore: "new_inf);
+            INF("kept "n" "old_inf" ignore "new_inf);
         }
     } else {
-        INF("new "n": new:"new_inf);
+        INF("added "n" "new_inf);
     }
     return ret;
 }

@@ -5,7 +5,7 @@
 
 == Incremental Scan Request from Nzbget on NMT ==
 
-When overisht is installed it updates the nzbget configuration with its own post processing script. This performs unpacking an renaming of downloads. The script is 
+When oversight is installed it updates the nzbget configuration with its own post processing script. This performs unpacking an renaming of downloads. The script is 
 {{{
 /share/Apps/oversight/bin/unpak.sh
 }}}
@@ -14,7 +14,7 @@ See nzbget.conf post processing option 'PostProcess'. This script tries to avoid
 
 == Incremental Scan Request via a URL  ==
 
-Scans can be launched remote via a URL. 
+Scans can be launched remotely via a URL. 
 
 {{{
 wget -O - 'http://nmt_ipaddress:8883/oversight/oversight.cgi?view=admin&action=rescan_request&rescan_opt_@group1=NEWSCAN&rescan_dir_/path/to/your/media/folder_or_file=on'

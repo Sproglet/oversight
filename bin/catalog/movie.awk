@@ -10,11 +10,12 @@ year) {
 
     name_id = build_query_list(minfo,name_list);
 
-    dump(0,"name_tries",name_list);
+    DEBUG("name_tries"join(name_list," / "));
 
     search_order_size = get_search_order(name,search_order);
 
-    dump(0,"search order",search_order);
+    DEBUG("search order "join(search_order," / "));
+
 
     # At this point there are two lists.
     # 1. A list of search texts in name_list[]
@@ -150,8 +151,6 @@ function build_query_list(minfo,name_list,\
     }
 
     name_id = add_unique(name,name_id,name_list,dups);
-
-    dump(0,"dups",dups);
 
     return name_id;
 }

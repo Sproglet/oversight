@@ -50,10 +50,8 @@ poster_ref,id,ret) {
                 ret = gensub("\\.[^.]+$",".jpg",1,minfo[NAME]);
             }
         }
-        DEBUG("internal_poster_reference for "field_id"  = "ret);
         #dump(0,"internal_poster_reference",minfo);
     }
-        DEBUG("internal_poster_reference for "field_id"  = "ret);
     return ret;
 }
 
@@ -97,7 +95,6 @@ function download_image(field_id,minfo,mi_field,\
     url,poster_ref,internal_path,urls,referer,get_it,script_arg) {
 
     url = minfo[mi_field];
-    id1("download_image["field_id"]["url"]");
     if (url != "") {
 
         #Posters are all held in the same folder so
@@ -144,7 +141,7 @@ function download_image(field_id,minfo,mi_field,\
         }
     }
 
-    id0(poster_ref);
+    INF("download_image["field_id"]["url"]="poster_ref);
 
     return poster_ref;
 }

@@ -48,7 +48,7 @@ The path can also be very specific. This makes the update run faster. Any spaces
 There can be multiple `&rescan_dir_/path/to/media1=on` options in the same URL.
 
 
-== When new content is added to 'watch folder' ==
+== Incremental Scan Request when new content is added to a folder ==
 
 In the 'setup->media sources' screen , oversight can be configured to regularly poll a folder. This will force deep directory search of the folders listed in the 'watch_paths' setting.
 

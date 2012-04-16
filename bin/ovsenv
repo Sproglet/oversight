@@ -2,24 +2,6 @@
 # Set Paths
 
 
-check_fw() {
-    [ -f "$1" ] && egrep -q -- "$2" "$1" 
-}
-check_nmt() {
-
-    file="$1"
-    patt="$2"
-    arch="$3"
-    appdir="$4"
-
-    if [ -z "$ARCH" ] ; then
-        if check_fw "$file" "$patt" ; then
-           FAMILY=nmt
-           ARCH="$arch"
-           NMT_APP_DIR="$appdir"
-       fi
-   fi
-}
 # Tee command - borrowed from http://www.gnu.org/manual/gawk/html_node/Tee-Program.html
 # 'Arnold Robbins, arnold@gnu.org, Public Domain 'and tweaked a bit.
 TEE() {
@@ -150,18 +132,23 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
     FAMILY=
     ARCH=
 
-    nmt_ver=/nmt/apps/VERSION
-
-
-    check_nmt /mnt/syb8634/VERSION '-40[0-5]$' nmt100 /mnt/syb8634
-    check_nmt "$nmt_ver" '-4(08|11)$' nmt200 /nmt/apps
-    check_nmt "$nmt_ver" '-42[01]$' nmt200 /nmt/apps # nmt300 is binary compatible with 200
-
-
-    if [ -d /ffp/bin ] ; then
-        FAMILY=funplug
-        ARCH=funplug
+    if [ -f /mnt/syb8634/VERSION  ] ; then
+        FAMILY=nmt
+        ARCH=nmt100
+        NMT_APP_DIR=/mnt/syb8634
+    else
+        if grep -q -- '-4[0-9][0-9]$' /nmt/apps/VERSION 2>/dev/null ; then
+            FAMILY=nmt
+            ARCH=nmt200
+            NMT_APP_DIR=/nmt/apps
+        else
+            if [ -d /ffp/bin ] ; then
+                FAMILY=funplug
+                ARCH=funplug
+            fi
+        fi
     fi
+
     if [ -z "$ARCH" ] ; then
         FAMILY=pc
         ARCH=pc

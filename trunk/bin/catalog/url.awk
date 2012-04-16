@@ -124,8 +124,12 @@ host_port) {
     return "/inet/tcp/"g_url_source_port[host_port]0"/"parts["host"]"/"parts["port"];
 }
 
-function url_connect(url,request,response,attempt,\
-parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,msg) {
+# IN url
+# IN headers - SUBSEP list of headers.
+# OUT request 
+# OUT response
+function url_connect(url,headers,request,response,\
+parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,msg,hdr) {
 
     delete request;
     redirect_max = 6;
@@ -177,6 +181,13 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
             for(i in request) {
                 #DEBUG("Header : " i ": "request[i]);
                 printf "%s: %s\r\n", i,request[i] |& con;
+            }
+            if (headers) {
+                split(headers,hdr,SUBSEP);
+                for(i in hdr) {
+                    #DEBUG("Header : " i ": "request[i]);
+                    printf "%s\r\n", i,hdr[i] |& con;
+                }
             }
             printf "\r\n" |& con;
             fflush(con);
@@ -478,16 +489,24 @@ key,ct,tail,rec_sep) {
 # A record separator must be passed that matches the last bytes of the content , but must not match too many other records.
 # eg for JSON "}" for XML ">" for HTML </html> 
 # Performance for HTML m
-function url_get(url,response,rec_sep,cache,\
+
+# IN url
+# IN headers - SUBSEP list of headers.
+# OUT response
+function url_get(url,response,rec_sep,cache,headers,\
 ret,code,f,body,line) {
 
     if (!g_settings["catalog_awk_browser"]) {
-        ERR("Awk browser not set!!");
+
+        delete response;
+        response["body"] = get_url_source(url,0);
+        ret = (response["body"] != "");
+
     } else if (cache) {
         f = g_url_cache[url];
 
         if (!f || !is_file(f)) {
-            if ((ret = url_get2(url,response,rec_sep)) != 0) {
+            if ((ret = url_get2(url,response,rec_sep,headers)) != 0) {
                 f = new_capture_file("url_get");
                 INF("saving to cache "f);
                 printf "%s",response["body"] > f;
@@ -511,7 +530,10 @@ ret,code,f,body,line) {
    return ret;
 }
 
-function url_get2(url,response,rec_sep,\
+# IN url
+# IN headers - SUBSEP list of headers.
+# OUT response
+function url_get2(url,response,rec_sep,headers,\
 request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
     if (ENVIRON["LC_ALL"] != "C") {
@@ -540,7 +562,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
             DEBUG("reconnect attempt "try);
         }
 
-        con = url_connect(url,request,response,try);
+        con = url_connect(url,headers,request,response,try);
 
         if (con && response["content-encoding"] == "gzip" && response["transfer-encoding"] != "chunked") {
 

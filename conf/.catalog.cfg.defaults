@@ -107,6 +107,10 @@ catalog_source_keywords_Web="WEB-?DL"
 
 catalog_new_content_script="new_content.sh"
 
+catalog_image_portrait_height=400
+catalog_image_poster_width=500
+catalog_image_thumb_width=200
+catalog_image_fanart_width=1280
 
 # How many movies to process before writing out information.
 # Reduce to save memory. Increase for slightly faster speed for big scans.

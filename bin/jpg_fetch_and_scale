@@ -61,15 +61,15 @@ jpg_resize() {
 
         */_fa/*.pal.jpg) w=685 ; h=542 ; q=90 ;; # Pal is created from the SD but we need to maintain the quality
 
-        */_J/*.thumb.jpg) w=200 ; q=90 ; boxset=1 ;;
+        */_J/*.thumb.jpg) w=$catalog_image_thumb_width ; q=90 ; boxset=1 ;;
 
-        */_A/*.jpg) h=400 ; q=85 ;; #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px
+        */_A/*.jpg) h=$catalog_image_portrait_height ; q=85 ;; #Actor images are all different sizes. from <100px to 3000 (eg nm0068338). Scale all to 200px
 
         fanart.jpg|*-fanart.jpg|*/_fa/*.hd.jpg)
-            w=1280 ; q=90 ; width_cmp_fn=ne ;; # h=720 this is a standard width at themoviedb - no need to convert those
+            w=$catalog_image_fanart_width ; q=90 ; width_cmp_fn=ne ;; # h=720 this is a standard width at themoviedb - no need to convert those
 
         poster.jpg|*-fanart.jpg|*/_J/*.jpg)
-            w=500 ; q=90 ; width_cmp_fn=gt ;; # this is a standard width at themoviedb - no need to convert those
+            w=$catalog_image_poster_width ; q=90 ; width_cmp_fn=gt ;; # this is a standard width at themoviedb - no need to convert those
 
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
     esac
@@ -200,7 +200,7 @@ resize_img() {
             ;;
         portrait)
             if [ $oversight = 1 ] ; then
-                if [ `sizekb "$2"` -gt 30 ] ; then
+                if [ `sizekb "$2"` -gt 60 ] ; then
                     jpg_resize "$2" "$2" "1/1"
                 fi
             fi

@@ -1,5 +1,5 @@
 BEGIN {
-    g_tvdb_season_plus_episode=1; # Get seasons and episodes together
+    #g_tvdb_season_plus_episode=1; # Get seasons and episodes together
 }
 # called from main scan function at the start of each new scan folder.
 function clear_tv_folder_info() {

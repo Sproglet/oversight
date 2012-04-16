@@ -528,3 +528,22 @@ root_re,numbers,strings,regexs,found,num,tag,child,numtags,do_filter) {
     return num;
 }
 
+# look for /parentTag>?/tag = value
+#assumes that tag is not an array , and if parentTag itself is within an array - only that item is looked at
+# ie parent=/level1/level2 tag=3
+# will find /level1/level2>4/tag=3 but not /level1>2/level2/tag=3
+function find_tag(xml,parent,tag,value,tag2,value2,\
+i,n,p2,ret) {
+    n = xml["@count:"parent];
+    for(i = 1 ; i<= n ; i++ ) {
+        p2 = parent (i>1?">"i:"");
+        if (xml[p2 tag] == value) {
+            if (!tag2 || xml[p2 tag2] == value2) {
+                ret = p2;
+                break;
+            }
+        }
+    }
+    INF("xml: "parent "tag = ["tag"="value"] ["tag2"="value2"] = ["ret"]");
+    return ret;
+}

@@ -1,3 +1,6 @@
+BEGIN {
+    g_tvdb_season_plus_episode=1; # Get seasons and episodes together
+}
 # called from main scan function at the start of each new scan folder.
 function clear_tv_folder_info() {
     delete g_default_tv_title_for_folder;
@@ -997,7 +1000,7 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
 
 
         # TODO the selectBestOfBestTitle calls the relativeAge function which also
-        # picks the episide title with the shortest edit distance. Because this does
+        # picks the episode title with the shortest edit distance. Because this does
         # a query by SnnEnn this is more concrete information than the check for link counts
         # performed by filterUsenetTitles - so the getRelativeAgeAndEpTitles should be
         # split into:
@@ -1428,7 +1431,11 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
 
 function tvdb_series_url(id,lang) {
 
-    return g_thetvdb_web"/data/series/"id"/"lang".xml";
+    if (g_tvdb_season_plus_episode) {
+        return g_thetvdb_web"/data/series/"id"/all/"lang".xml";
+    } else {
+        return g_thetvdb_web"/data/series/"id"/"lang".xml";
+    }
 
 }
 
@@ -1939,7 +1946,7 @@ episodeUrl ) {
     episodeUrl = seriesUrl;
     if (plugin == "thetvdb") {
         #Note episode may be 23,24 so convert to number.
-        if (sub(/[a-z][a-z].xml$/,"default/"season"/"(episode+0)"/&",episodeUrl)) {
+        if (sub(/(all\/|)[a-z][a-z].xml$/,"default/"season"/"(episode+0)"/&",episodeUrl)) {
             return episodeUrl;
         }
     } else if (plugin == "tvrage") {
@@ -2196,17 +2203,25 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
+seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot,ep_ok,episode_tag) {
 
     result=0;
 
-    if (scrape_cache_get(season":"tvDbSeriesUrl,minfo)) {
+    # if g_tvdb_season_plus_episode then we must get original XML from cache to get episode info later
+    # if not set we can use the cache with just season info and make web call to get episode info.
 
-        result = 1;
+    if (!scrape_cache_get(season":"tvDbSeriesUrl,seriesInfo)) {
 
-    } else if (fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo) && ("/Data/Series/id" in seriesInfo)) {
+        if (fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo)) {
+           
+            scrape_cache_add(season":"tvDbSeriesUrl,seriesInfo);
+            #dumpxml("tvdb series",seriesInfo);
 
-        dumpxml("tvdb series",seriesInfo);
+        }
+    }
+
+
+    if ("/Data/Series/id" in seriesInfo) {
 
         minfo[SEASON]=season;
         #Refine the title.
@@ -2230,8 +2245,6 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
         iid = seriesInfo["/Data/Series/IMDB_ID"];
         minfo_set_id("imdb",iid,minfo);
 
-
-        scrape_cache_add(season":"tvDbSeriesUrl,minfo);
         result ++;
     }
 
@@ -2243,26 +2256,23 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
 
         if (episode ~ "^[0-9,]+$" ) {
 
-            if (get_episode_xml("thetvdb",tvDbSeriesUrl,season,episode,episodeInfo)) {
-
-                if ("/Data/Episode/id" in episodeInfo) {
-                    minfo[AIRDATE]=formatDate(episodeInfo["/Data/Episode/FirstAired"]);
-
-                    set_eptitle(minfo,episodeInfo["/Data/Episode/EpisodeName"]);
-
-                    if (minfo[EPPLOT] == "") {
-                        lang=episodeInfo["/Data/Episode/Language"];
-                        plot=clean_plot(episodeInfo["/Data/Episode/Overview"]);
-                        minfo[EPPLOT] = add_lang_to_plot(lang,plot);
-                    }
-
-                    if (minfo[EPTITLE] != "" ) {
-                       if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo[EPPLOT] == "" ) {
-                           INF("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");
-                       } else {
-                           result ++;
-                       }
-                    }
+            episode_tag="";
+            if (g_tvdb_season_plus_episode) {
+                episode_tag = find_tag(seriesInfo,"/Data/Episode","/EpisodeNumber",episode,"/SeasonNumber",season);
+                ep_ok=tvDbEpisode(minfo,seriesInfo,episode_tag);
+            } else {
+                if (get_episode_xml("thetvdb",tvDbSeriesUrl,season,episode,episodeInfo)) {
+                    episode_tag="/Data/Episode";
+                    ep_ok=tvDbEpisode(minfo,episodeInfo,episode_tag);
+                }
+            }
+            if (ep_ok) {
+                if (minfo[EPTITLE] != "" ) {
+                   if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo[EPPLOT] == "" ) {
+                       INF("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");
+                   } else {
+                       result ++;
+                   }
                 }
             }
         }
@@ -2276,6 +2286,27 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot) {
         DEBUG("get_tv_series_info returns imdb url ["iid"]");
     }
     return 0+ result;
+}
+
+function tvDbEpisode(minfo,episodeInfo,episode_tag,\
+lang,plot,ret) {
+    if (episode_tag) {
+        if (episode_tag"/id" in episodeInfo) {
+            ret = 1;
+            minfo[AIRDATE]=formatDate(episodeInfo[episode_tag"/FirstAired"]);
+
+            set_eptitle(minfo,episodeInfo[episode_tag"/EpisodeName"]);
+
+            if (minfo[EPPLOT] == "") {
+                lang=episodeInfo[episode_tag"/Language"];
+                plot=clean_plot(episodeInfo[episode_tag"/Overview"]);
+                minfo[EPPLOT] = add_lang_to_plot(lang,plot);
+            }
+        } else {
+            ERR("missing episode id? "episode_tag);
+        }
+    }
+    return ret;
 }
 
 function tvDbImageUrl(path) {

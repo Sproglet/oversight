@@ -1,12 +1,14 @@
 
 function scrape_cache_clear() {
     #DEBUG("scrape_cache_clear");
-    delete g_scrape_cache;
+    delete g_scrape_cache_vals;
+    delete g_scrape_cache_flds;
     g_scrape_cache_index_size=0;
 }
 
+# Id must include some text not normally in a string
 function scrape_cache_gen_index(url) {
-    if (url in g_scrape_cache) {
+    if (url in g_scrape_cache_vals) {
         ERR("duplicate cache entry");
         exit;
     }
@@ -14,29 +16,29 @@ function scrape_cache_gen_index(url) {
 }
 
 function scrape_cache_add(url,minfo,\
-i,id) {
+fld,id) {
     id = scrape_cache_gen_index(url);
-    g_scrape_cache[url] = id;
+    g_scrape_cache_vals[url] = id;
 
-    for ( i in minfo ) { 
-        g_scrape_cache[id i] = minfo[i];
+    for ( fld in minfo ) { 
+        g_scrape_cache_flds[id,fld] = fld;
+        g_scrape_cache_vals[id,fld] = minfo[fld];
     }
-    dump(0,"scrape_cache_add",minfo);
+    #dump(0,"scrape_cache_add",minfo);
     INF("scrape_cache_added ["url","id"]");
 }
 
 function scrape_cache_get(url,minfo,\
-i,ret,offset,fld,id) {
+i,ret,fld,id) {
     ret = 0;
 
-    if (url in g_scrape_cache) {
-        id = g_scrape_cache[url];
+    if (url in g_scrape_cache_vals) {
+        id = g_scrape_cache_vals[url];
         ret = 1;
-        offset = length(id) + 1;
-        for ( i in g_scrape_cache ) { 
+        for ( i in g_scrape_cache_vals ) { 
             if ( index(i,id) == 1 && i != id ) {
-                fld = substr(i,offset);
-                minfo[fld] = g_scrape_cache[i];
+                fld        = g_scrape_cache_flds[i];
+                minfo[fld] = g_scrape_cache_vals[i];
             }
         }
     }

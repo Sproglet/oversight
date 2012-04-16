@@ -153,7 +153,7 @@ function DETAIL(x) {
 }
 
 function timestamp(label,x,\
-new_str) {
+new_str,gap) {
 
     if (g_api_tvdb && index(x,g_api_tvdb) ) gsub(g_api_tvdb,"-t-",x);
     if (g_api_tmdb && index(x,g_api_tmdb) ) gsub(g_api_tmdb,"-m-",x);
@@ -173,9 +173,11 @@ new_str) {
 
         new_str=strftime("%H:%M:%S : ",systime());
 
-        if (g_last_ts && (systime() - g_last_ts) > 10) {
-            print "[ERR]   "new_str"going slow? from "g_last_ts_str;
+        gap = systime() - g_last_ts;
+        if (!g_ignore_log_gap && g_last_ts && gap > 30) {
+            print "[ERR]      "new_str"going slow? "gap" seconds elapsed";
         }
+        g_ignore_log_gap = 0;
 
         g_last_ts=systime();
         g_last_ts_str=new_str;
@@ -525,6 +527,7 @@ function exec(cmd,verbose,quiet,\
 err) {
    #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
    if (verbose) DEBUG("SYSTEM : [ "cmd" ]");
+   g_ignore_log_gap=1;
    if ((err=system(cmd)) != 0) {
       if(!quiet) {
           ERR("Return code "err" executing "cmd) ;

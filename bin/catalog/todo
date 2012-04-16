@@ -1,3 +1,12 @@
+# Change fetchXML - dont PArse - string process...
+# Grab all tvdb seasion xml
+#
+# If media count in file > 3 then grab series xml otherwise do episodes. ?
+#
+# grab language in tvdb.com index
+# use tvdb.com index for searching ?
+# log Warnings, change Errors to things that affect user
+# using default record sep for key services.tvrage.comxml  = >[[:space:]]*
 # # replace binsearch which now uses ssl
 #
 # Fix unpack rar  sanilty check when DirectWrite=No - it should check all byte sizes are the same apart from the "last" one.

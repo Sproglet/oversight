@@ -158,7 +158,7 @@ i,tag,img,id,total,max,mi_total,mi_names,mi_ids) {
             if (role == "actor") {
                 img = tag":image:url";
                 if (img in json) {
-                    g_portrait_queue["imdb:"id] = json[img];
+                    g_portrait_queue["imdb:"id] = imdb_img_height(json[img],g_settings["catalog_image_portrait_height"]);
                 }
             }
         }

@@ -176,17 +176,20 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
             request["Accept"] = "*/*";
             request["Accept-Encoding"] = "";
             request["Referer"] = get_referer(url);
+            request["TE"] = "chunked";
             request["Connection"] = "Keep-Alive";
 
-            for(i in request) {
-                #DEBUG("Header : " i ": "request[i]);
-                printf "%s: %s\r\n", i,request[i] |& con;
-            }
             if (headers) {
                 split(headers,hdr,SUBSEP);
                 for(i in hdr) {
-                    #DEBUG("Header : " i ": "request[i]);
-                    printf "%s\r\n", i,hdr[i] |& con;
+                    DEBUG("Header : "hdr[i]);
+                    printf "%s\r\n", hdr[i] |& con;
+                }
+            }
+            for(i in request) {
+                if (!index(headers,i)) {
+                    DEBUG("Header : " i ": "request[i]);
+                    printf "%s: %s\r\n", i,request[i] |& con;
                 }
             }
             printf "\r\n" |& con;
@@ -525,7 +528,7 @@ ret,code,f,body,line) {
             ret = 1;
         }
     } else {
-        ret = url_get2(url,response,rec_sep);
+        ret = url_get2(url,response,rec_sep,headers);
    }
    return ret;
 }
@@ -562,7 +565,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
             DEBUG("reconnect attempt "try);
         }
 
-        con = url_connect(url,headers,request,response,try);
+        con = url_connect(url,headers,request,response);
 
         if (con && response["content-encoding"] == "gzip" && response["transfer-encoding"] != "chunked") {
 

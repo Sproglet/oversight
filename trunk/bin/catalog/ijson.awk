@@ -8,7 +8,7 @@ url,ret) {
     id1("fetch_ijson_by_locale "fn","args","locale);
     url = "http://a-pp.imdb.com/"fn"?api=v1&app-id=i-phone1&locale="locale"&"args;
     gsub(/-/,"",url);
-    if (fetch_json(url,"imdb",out)) {
+    if (fetch_json(url,"imdb",out,0,"Accept-Encoding: gzip")) {
         out["@locale@"] = locale;
         #dump(0,locale,out);
         ret = 1;

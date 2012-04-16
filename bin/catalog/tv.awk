@@ -1,5 +1,5 @@
 BEGIN {
-    #g_tvdb_season_plus_episode=1; # Get seasons and episodes together
+    g_tvdb_season_plus_episode=1; # Get seasons and episodes together
 }
 # called from main scan function at the start of each new scan folder.
 function clear_tv_folder_info() {
@@ -2203,7 +2203,7 @@ function clean_plot(txt) {
 # http://thetvdb.com/api/key/series/73141/en.xml
 # 0=nothing 1=series 2=series+episode
 function get_tv_series_info_tvdb(minfo,tvDbSeriesUrl,season,episode,\
-seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot,ep_ok,episode_tag) {
+seriesInfo,result,iid,thetvdbid,lang,plot,ep_ok,episodeUrl,xmlstr,num) {
 
     result=0;
 
@@ -2212,37 +2212,39 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot,ep_ok,episode_tag) {
 
     if (!scrape_cache_get(season":"tvDbSeriesUrl,seriesInfo)) {
 
-        if (fetchXML(tvDbSeriesUrl,"thetvdb-series",seriesInfo)) {
-           
+        if (url_get(tvDbSeriesUrl,xmlstr,0,"Accept-Encoding: gzip")) {
+            num = xml_chop(xmlstr["body"],"Episode|Series",seriesInfo);
+            dump(0,"series xml",seriesInfo);
+            if (g_tvdb_season_plus_episode) {
+                xml_reindex(seriesInfo,"SeasonNumber EpisodeNumber");
+                dump(0,"reindexed",seriesInfo);
+            }
             scrape_cache_add(season":"tvDbSeriesUrl,seriesInfo);
-            #dumpxml("tvdb series",seriesInfo);
-
         }
     }
 
 
-    if ("/Data/Series/id" in seriesInfo) {
+    if (index(seriesInfo[1],"<id")) {
 
         minfo[SEASON]=season;
         #Refine the title.
-        minfo[TITLE] = remove_br_year(seriesInfo["/Data/Series/SeriesName"]);
+        minfo[TITLE] = remove_br_year(xml_extract(seriesInfo[1],"SeriesName"));
 
-        minfo[YEAR] = substr(seriesInfo["/Data/Series/FirstAired"],1,4);
-        #minfo["mi_premier"] = formatDate(seriesInfo["/Data/Series/FirstAired"]);
+        minfo[YEAR] = substr(xml_extract(seriesInfo[1],"FirstAired"),1,4);
 
-        lang=seriesInfo["/Data/Series/Language"];
-        plot=clean_plot(seriesInfo["/Data/Series/Overview"]);
+        lang=xml_extract(seriesInfo[1],"Language");
+        plot=clean_plot(xml_extract(seriesInfo[1],"Overview"));
         minfo[PLOT]=add_lang_to_plot(lang,plot);
 
-        minfo[GENRE]= seriesInfo["/Data/Series/Genre"];
-        minfo["mi_certrating"] = seriesInfo["/Data/Series/ContentRating"];
-        minfo[RATING] = seriesInfo["/Data/Series/Rating"];
-        minfo[POSTER]=tvDbImageUrl(seriesInfo["/Data/Series/poster"]);
+        minfo[GENRE]= xml_extract(seriesInfo[1],"Genre");
+        minfo["mi_certrating"] = xml_extract(seriesInfo[1],"ContentRating");
+        minfo[RATING] = xml_extract(seriesInfo[1],"Rating");
+        minfo[POSTER]=tvDbImageUrl(xml_extract(seriesInfo[1],"poster"));
 
-        thetvdbid = seriesInfo["/Data/Series/id"];
+        thetvdbid = xml_extract(seriesInfo[1],"id");
         minfo_set_id("thetvdb",thetvdbid,minfo);
 
-        iid = seriesInfo["/Data/Series/IMDB_ID"];
+        iid = xml_extract(seriesInfo[1],"IMDB_ID");
         minfo_set_id("imdb",iid,minfo);
 
         result ++;
@@ -2256,14 +2258,14 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot,ep_ok,episode_tag) {
 
         if (episode ~ "^[0-9,]+$" ) {
 
-            episode_tag="";
             if (g_tvdb_season_plus_episode) {
-                episode_tag = find_tag(seriesInfo,"/Data/Episode","/EpisodeNumber",episode,"/SeasonNumber",season);
-                ep_ok=tvDbEpisode(minfo,seriesInfo,episode_tag);
+                ep_ok=tvDbEpisode(minfo,seriesInfo[0,season,episode]);
             } else {
-                if (get_episode_xml("thetvdb",tvDbSeriesUrl,season,episode,episodeInfo)) {
-                    episode_tag="/Data/Episode";
-                    ep_ok=tvDbEpisode(minfo,episodeInfo,episode_tag);
+                episodeUrl = get_episode_url("thetvdb",tvDbSeriesUrl,season,episode);
+                if (episodeUrl) {
+                    if (url_get(episodeUrl,xmlstr,0,"Accept-Encoding: gzip")) {
+                        ep_ok=tvDbEpisode(minfo,xmlstr["body"]);
+                    }
                 }
             }
             if (ep_ok) {
@@ -2288,23 +2290,21 @@ seriesInfo,episodeInfo,result,iid,thetvdbid,lang,plot,ep_ok,episode_tag) {
     return 0+ result;
 }
 
-function tvDbEpisode(minfo,episodeInfo,episode_tag,\
+function tvDbEpisode(minfo,episodeInfo,\
 lang,plot,ret) {
-    if (episode_tag) {
-        if (episode_tag"/id" in episodeInfo) {
-            ret = 1;
-            minfo[AIRDATE]=formatDate(episodeInfo[episode_tag"/FirstAired"]);
+    if (index(episodeInfo,"<id")) {
+        ret = 1;
+        minfo[AIRDATE]=formatDate(xml_extract(episodeInfo,"FirstAired"));
 
-            set_eptitle(minfo,episodeInfo[episode_tag"/EpisodeName"]);
+        set_eptitle(minfo,xml_extract(episodeInfo,"EpisodeName"));
 
-            if (minfo[EPPLOT] == "") {
-                lang=episodeInfo[episode_tag"/Language"];
-                plot=clean_plot(episodeInfo[episode_tag"/Overview"]);
-                minfo[EPPLOT] = add_lang_to_plot(lang,plot);
-            }
-        } else {
-            ERR("missing episode id? "episode_tag);
+        if (minfo[EPPLOT] == "") {
+            lang=xml_extract(episodeInfo,"Language");
+            plot=clean_plot(xml_extract(episodeInfo,"Overview"));
+            minfo[EPPLOT] = add_lang_to_plot(lang,plot);
         }
+    } else {
+        ERR("missing episode id? "episodeInfo);
     }
     return ret;
 }
@@ -2318,7 +2318,7 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(minfo,tvdbid,\
-xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i,banners,key) {
+xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url,size) {
 
     lnum = get_langs(langs);
 
@@ -2332,32 +2332,44 @@ xml,filter,r,bannerApiUrl,get_poster,get_fanart,fetched,xmlout,langs,lnum,i,bann
 
         key="banners:"tvdbid ":" minfo[SEASON];
 
-        if (!scrape_cache_get(key,minfo)) {
-            fetched = fetchXML(bannerApiUrl,"banners",xml,"");
+        if (!scrape_cache_get(key,xml)) {
 
-            if (get_poster && fetched) {
-                delete filter;
-                filter["/BannerType"] = "season";
-                filter["/BannerType2"] = "season";
-                filter["/Season"] = minfo[SEASON];
+            if (url_get(bannerApiUrl,xmlstr,0,"Accept-Encoding: gzip")) {
+                num = xml_chop(xmlstr["body"],"Banner",xml);
+
+                #index sesion posters
+                xml_reindex(xml,"BannerType BannerType2 Season Language");
+                #index non-seasion images
+                xml_reindex(xml,"BannerType BannerType2 Language");
+                scrape_cache_add(key,xml);
+                dump(0,"banners",xml);
+            }
+        }
+
+        if (!firstIndex(xml)) {
+
+            if (get_poster) {
                 for(i = 1 ; i <= lnum ; i++ ) {
-                    filter["/Language"] = langs[i];
-                    if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
-                        banners[POSTER] = minfo[POSTER]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
-                        DEBUG("Season Poster = "minfo[POSTER]);
+                    url = xml_extract(xml[0,"season","season",minfo[SEASON],langs[i]],"BannerPath");
+                    if (url) {
+                        banners[POSTER] = minfo[POSTER]=tvDbImageUrl(url);
+                        DEBUG("POSTER = "minfo[POSTER]);
                         break;
                     }
                 }
             }
 
-            if (get_fanart && fetched) {
+            if (get_fanart) {
 
-                delete filter;
-                filter["/BannerType"] = "fanart";
+                if (g_settings["catalog_image_fanart_width"]  == 1920 ) {
+                    size = "2930x1080";
+                } else {
+                    size = "1280x720";
+                }
                 for(i = 1 ; i <= lnum ; i++ ) {
-                    filter["/Language"] = langs[i];
-                    if (find_elements(xml,"/Banners/Banner",filter,1,xmlout)) {
-                        banners[FANART] = minfo[FANART]=tvDbImageUrl(xml[xmlout[1]"/BannerPath"]);
+                    url = xml_extract(xml[0,"fanart",size,langs[i]],"BannerPath");
+                    if (url) {
+                        banners[FANART] = minfo[FANART]=tvDbImageUrl(url);
                         DEBUG("Fanart = "minfo[FANART]);
                         break;
                     }

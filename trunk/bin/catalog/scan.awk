@@ -89,11 +89,13 @@ f,fcount,total,done,dir) {
 
                 if (!CHECK_FREE_SPACE || file_system_changed(dir)) {
                     total += scan_contents(dir,scan_options);
+                    url_connection_purge();
                     INF("New/Changed total = "total);
                 }
                 done[dir]=1;
             }
         }
+        url_connection_purge(0,0,0);
     }
 
     return 0+total;

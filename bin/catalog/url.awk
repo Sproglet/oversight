@@ -190,10 +190,11 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
             
                 g_url_con_usedtime[con] = systime();
                 g_url_con_opened[con]++;
+                g_url_con_persist_subtotal[con]++;
 
                 if (index(response["@status"],"1.1 2")) {
 
-                    url_log_state("open",con);
+                    url_log_state((g_url_con_persist_subtotal[con]==1?"reconnect":"open"),con);
                     break;
 
                 } else if (response["@status"] ~ "1 3[0-9][0-9]") {
@@ -252,75 +253,78 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
 # for more than a few seconds. Otherwise the remote server abandons the socket,
 # and the close from the client will timeout. In that case its better not to 
 # close the socket but start a new one using local port /00/ /000/ etc ..
+# call with (0,0,0) to force a disconnect
 function url_connection_purge(max_idle,max_age,max_used,\
-con,idle,start,age,host_max_age,host_max_idle,host_max_used,host_port) {
+con,idle,age,host_max_age,host_max_idle,host_max_used,host_port,poll_time,final) {
 
-    if (!g_url_host_max_init) {
-        g_url_host_max_init = 1;
-        g_url_host_max_idle["www.thetvdb.com/80"] = 5;
-        g_url_host_max_age["www.thetvdb.com/80"] = 10;
-        #g_url_host_max_used["www.thetvdb.com/80"] = 6;
-    }
+    if (g_settings["catalog_awk_browser"]) {
+        if (!g_url_host_max_init) {
+            g_url_host_max_init = 1;
+            g_url_host_max_idle["www.thetvdb.com/80"] = 3;
+            g_url_host_max_age["www.thetvdb.com/80"] = 5;
+            #g_url_host_max_used["www.thetvdb.com/80"] = 6;
+        }
 
-    do {
-        #id1("purge connections older than "max_idle);
-        start = systime();
+        poll_time = 3;
 
-        for(con in g_url_con_usedtime) {
-            if (con) {
+        while (systime() - g_url_con_purge_time > poll_time) {
 
-                host_port = url_extract_host_port(con);
+            # If we took too long to close a conection then others might by going stale too
+            # so go around again.
+            g_url_con_purge_time = systime();
 
-                host_max_idle = max_idle;
-                host_max_age  = max_age;
-                host_max_used = max_used;
+            for(con in g_url_con_usedtime) {
+                if (con) {
 
-                if (!host_max_idle) host_max_idle = g_url_host_max_idle[host_port];
-                if (!host_max_age)  host_max_age = g_url_host_max_age[host_port];
-                if (!host_max_used) host_max_used = g_url_host_max_used[host_port];
-                
-                if (!host_max_idle) host_max_idle = 10;
-                if (!host_max_age)  host_max_age = 20;
-                if (!host_max_used) host_max_used = 30;
+                    host_port = url_extract_host_port(con);
 
-                DEBUG("host "host_port" "host_max_idle"/"host_max_age"/"host_max_used);
+                    host_max_idle = max_idle;
+                    host_max_age  = max_age;
+                    host_max_used = max_used;
 
-                idle = url_con_elapsed(con);
-                age = (g_url_con_createtime[con]? systime() - g_url_con_createtime[con] : 0) ;
+                    if (host_max_idle=="") host_max_idle = g_url_host_max_idle[host_port];
+                    if (host_max_age=="")  host_max_age = g_url_host_max_age[host_port];
+                    if (host_max_used=="") host_max_used = g_url_host_max_used[host_port];
+                    
+                    if (host_max_idle=="") host_max_idle = 10;
+                    if (host_max_age=="")  host_max_age = 20;
+                    if (host_max_used=="") host_max_used = 50;
 
-                if (idle > host_max_idle) {
+                    DEBUG("host "host_port" "host_max_idle"/"host_max_age"/"host_max_used);
 
-                    url_disconnect(con,(idle <= 30),"idle for "idle);
+                    idle = url_con_elapsed(con);
+                    age = (g_url_con_createtime[con]? systime() - g_url_con_createtime[con] : 0) ;
 
-                } else if (age > host_max_age ) {
+                    if (host_max_used == 0) {
+                        final = "final ";
+                    }
 
-                   # prune threads that have been alive too long.
-                   # this is really only foe tvdb.com other sites not too bothered.
-                   url_disconnect(con,(age < host_max_age+10),"age="age);
+                    if (idle >= host_max_idle) {
 
-                } else if (g_url_con_opened[con] - g_url_con_closed[con] > host_max_used ) {
+                        url_disconnect(con,(idle <= 30),final" idle for "idle);
 
-                    # check usage
-                    url_disconnect(con,1,"max reconnections > "host_max_used);
+                    } else if (age >= host_max_age ) {
 
-                } else {
-                    INF((age?"keeping":"new")" connection "con" idle for "idle);
+                       # prune threads that have been alive too long.
+                       # this is really only foe tvdb.com other sites not too bothered.
+                       url_disconnect(con,(age < host_max_age+10),final" age="age);
+
+                    } else if (g_url_con_persist_subtotal[con] > host_max_used ) {
+
+                        # check usage
+                        url_disconnect(con,1,"max reconnections > "host_max_used);
+
+                    } else {
+                        INF((age?"keeping":"new")" connection "con" idle for "idle);
+                    }
                 }
             }
         }
-
-        #id0();
-        # If we took too long to close a conection then others might by going stale too
-        # so go around again.
-    } while( (systime() - start) > age );
-
+    }
 }
 
 function url_disconnect(con,do_close,msg) {
 
-    delete g_url_con_usedtime[con];
-    delete g_url_con_createtime[con];
-    g_url_con_closed[con]++;
     if(do_close) {
         close(con);
         url_log_state("closed: reason "msg,con);
@@ -328,7 +332,11 @@ function url_disconnect(con,do_close,msg) {
         url_next_source_port(url_extract_host_port(con));
         url_log_state("abandoned: reason "msg,con);
     }
-    return "";
+
+    delete g_url_con_usedtime[con];
+    delete g_url_con_createtime[con];
+    g_url_con_closed[con]++;
+    delete g_url_con_persist_subtotal[con];
 }
 
 # return true if headers read OK
@@ -473,7 +481,9 @@ key,ct,tail,rec_sep) {
 function url_get(url,response,rec_sep,cache,\
 ret,code,f,body,line) {
 
-    if (cache) {
+    if (!g_settings["catalog_awk_browser"]) {
+        ERR("Awk browser not set!!");
+    } else if (cache) {
         f = g_url_cache[url];
 
         if (!f || !is_file(f)) {
@@ -763,11 +773,13 @@ iconv_pipe,b,txt,enc) {
 }
 
 function url_log_state(label,con) {
-    INF(label" : connection "con" opened "g_url_con_opened[con]" closed "g_url_con_closed[con]);
+    INF(label" : connection "con" reconnect sub total "g_url_con_persist_subtotal[con]" opened "g_url_con_opened[con]" closed "g_url_con_closed[con]);
 }
 function url_stats(\
 con) {
-    for( con in g_url_con_opened) {
-        url_log_state("final",con);
+    if (!g_settings["catalog_awk_browser"]) {
+        for( con in g_url_con_opened) {
+            url_log_state("final",con);
+        }
     }
 }

@@ -1,13 +1,9 @@
 #!/bin/sh
 # $Id$ 
 
-# Make sure running bash
-# Different embedded environments use different shells and have bash in different places. /opt/bin/ /ffp/bin
-# For same reason /usr/bin/env might not always work
-case "`ls -l /proc/$$/exe`" in # no readlink on nmt
-    */bash|*/busybox) ;;
-    *) exec bash "$0" "$@" || exec busybox sh "$0" "$@" ;;
-esac
+# Force bash else run under current shell and hope it can cope - eg *some* busybox
+[ -z "${OVS_ENV_UNPAK:-}" ] && which bash > /dev/null && OVS_ENV_UNPAK=1 exec bash "$0" "$@"
+
 
 # unpak script for nzbget.
 

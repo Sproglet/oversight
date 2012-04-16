@@ -2212,12 +2212,10 @@ seriesInfo,result,iid,thetvdbid,lang,plot,ep_ok,episodeUrl,xmlstr,num) {
 
     if (!scrape_cache_get(season":"tvDbSeriesUrl,seriesInfo)) {
 
-        if (url_get(tvDbSeriesUrl,xmlstr,0,"Accept-Encoding: gzip")) {
+        if (url_get(tvDbSeriesUrl,xmlstr,"",0,"Accept-Encoding: gzip")) {
             num = xml_chop(xmlstr["body"],"Episode|Series",seriesInfo);
-            dump(0,"series xml",seriesInfo);
             if (g_tvdb_season_plus_episode) {
                 xml_reindex(seriesInfo,"SeasonNumber EpisodeNumber");
-                dump(0,"reindexed",seriesInfo);
             }
             scrape_cache_add(season":"tvDbSeriesUrl,seriesInfo);
         }
@@ -2263,7 +2261,7 @@ seriesInfo,result,iid,thetvdbid,lang,plot,ep_ok,episodeUrl,xmlstr,num) {
             } else {
                 episodeUrl = get_episode_url("thetvdb",tvDbSeriesUrl,season,episode);
                 if (episodeUrl) {
-                    if (url_get(episodeUrl,xmlstr,0,"Accept-Encoding: gzip")) {
+                    if (url_get(episodeUrl,xmlstr,"",0,"Accept-Encoding: gzip")) {
                         ep_ok=tvDbEpisode(minfo,xmlstr["body"]);
                     }
                 }
@@ -2334,7 +2332,7 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
 
         if (!scrape_cache_get(key,xml)) {
 
-            if (url_get(bannerApiUrl,xmlstr,0,"Accept-Encoding: gzip")) {
+            if (url_get(bannerApiUrl,xmlstr,"",0,"Accept-Encoding: gzip")) {
                 num = xml_chop(xmlstr["body"],"Banner",xml);
 
                 #index sesion posters
@@ -2342,7 +2340,6 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
                 #index non-seasion images
                 xml_reindex(xml,"BannerType BannerType2 Language");
                 scrape_cache_add(key,xml);
-                dump(0,"banners",xml);
             }
         }
 

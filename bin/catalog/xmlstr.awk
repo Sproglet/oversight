@@ -20,7 +20,6 @@ i,j,t,tags,regex,key,val,add,str) {
     for(i = 1 ; i <= t ; i++ ) {
         regex[i] = xml_textre(tags[i]);
     }
-    dump(0,"regexs",regex);
     
     for(i  in bits) {
         if (!index(i,SUBSEP)) {
@@ -33,7 +32,6 @@ i,j,t,tags,regex,key,val,add,str) {
                 if (match(str,regex[j],val)) {
                     key= key SUBSEP val[1];
                 } else {
-                    INF("no match for "regex[j]" in "str);
                     add=0;
                     break;
                 }

@@ -3,6 +3,14 @@
 # 2. very generic format tolerant web scraping of arbitry sites (intelligent scraping).
 #
 
+function imdb_img_height(url,n) {
+    #Get smaller image from server.
+    if (!sub(/_SY[0-9]+/,"_SY"n,url)) {
+        sub(/_.jpg$/,"._SY"n".jpg",url);
+    }
+    return url;
+}
+
 #Get highest quality imdb image by removing dimension info
 function imdb_img_url(url) {
     while (sub(/\.?_(SX|SY|CR)[0-9,]+/,"",url)) {

@@ -169,7 +169,7 @@ BEGIN {
     g_api_rage="fP8i46657c9qept4Mu554AHh7";
     g_api_bing="4C83349CD70CC9F6125EA40CACED1D950730533E97EA0";
 
-    INF("$Id$");
+    DETAIL("$Id$");
 
     STANDALONE = !isnmt();
 
@@ -192,7 +192,7 @@ function report_status(msg) {
     } else {
         print msg > g_status_file;
         close(g_status_file);
-        INF("status:"msg);
+        DETAIL("status:"msg);
         set_permissions(g_status_file);
     }
 }
@@ -211,7 +211,7 @@ END{
         GET_FANART = UPDATE_FANART = 0;
         GET_PORTRAITS = UPDATE_PORTRAITS = 0;
     }
-    INF("g_db = "g_db);
+    DETAIL("g_db = "g_db);
     #path for actor db etc.
     DBDIR = OVS_HOME"/db";
 
@@ -258,7 +258,7 @@ END{
     report_status("scanning");
 
     g_lang_articles = g_articles[main_lang()];
-    INF("Articles="g_lang_articles);
+    DETAIL("Articles="g_lang_articles);
 
 
     g_max_actors=g_settings["catalog_max_actors"];
@@ -294,13 +294,13 @@ END{
     gExtList2=tolower(gExtList2) "|" toupper(gExtList2);
 
     gExtRegexIso="\\.("gExtList2")$";
-    #INF(gExtRegexIso);
+    #DETAIL(gExtRegexIso);
 
     gExtRegEx1="\\.("gExtList1")$";
-    #INF(gExtRegEx1);
+    #DETAIL(gExtRegEx1);
 
     gExtRegExAll="\\.("gExtList1"|"gExtList2")$";
-    #INF(gExtRegExAll);
+    #DETAIL(gExtRegExAll);
 
     g_months_short="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
     monthHash(g_months_short,"|",gMonthConvert);
@@ -316,7 +316,7 @@ END{
     CAPTURE_PREFIX=g_tmp_dir"/catalog."
 
     #url_get("http://m.bing.com/search/search.aspx?A=webresults;D=Web;q=mission%20impossible%20ghost%20protocol%20+%2B+2011+imdb"); exit;
-    #INF("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
+    #DETAIL("noaccent:"no_accent("ŠŒšœŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïğñòóôõöøùúûüıÿ"));
 
     # Bing and yahoo are in the process of merging. I expect this means they will soon
     # start returning the same results. This will invalidate the searh voting.
@@ -374,11 +374,11 @@ END{
 
             if (NEWSCAN == 1) {
                 # Get watch folders only
-                INF("Scanning watch paths");
+                DETAIL("Scanning watch paths");
                 folder_list=g_settings["catalog_watch_paths"];
             } else {
                 # Get all folders only
-                INF("Scanning default and watch paths");
+                DETAIL("Scanning default and watch paths");
                 folder_list=g_settings["catalog_scan_paths"];
                 if (g_settings["catalog_watch_paths"] != "") {
                     folder_list = folder_list "," g_settings["catalog_watch_paths"];
@@ -392,7 +392,7 @@ END{
         }
         if (PARALLEL_SCAN != 1 ) {
             if (lock(g_scan_lock_file) == 0 ) {
-                INF("Scan already in progress");
+                DETAIL("Scan already in progress");
                 exit;
             }
         }
@@ -406,7 +406,7 @@ END{
     make_paths_absolute(FOLDER_ARR);
 
     for(gF in FOLDER_ARR) {
-        INF("Folder "gF"="FOLDER_ARR[gF]);
+        DETAIL("Folder "gF"="FOLDER_ARR[gF]);
     }
 
     gLS_FILE_POS=0; # Position of filename in ls format
@@ -439,7 +439,7 @@ END{
 
             et=systime()-ELAPSED_TIME;
 
-            DEBUG(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
+            INF(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
 
             #Check script
             for(gI in g_settings) {
@@ -478,7 +478,7 @@ END{
         }
     }
     #Following line is used to tidy log files
-    INF("Total files added : "g_grand_total);
+    DETAIL("Total files added : "g_grand_total);
 
     url_stats();
 }
@@ -705,7 +705,7 @@ ret,f,numok,numbad) {
                 ERR("bad format field ["f"] = ["minfo[f]"]");
                 numbad++;
             } else {
-                #INF("ok field ["f"] = ["minfo[f]"]");
+                #DETAIL("ok field ["f"] = ["minfo[f]"]");
                 numok++;
             }
         }
@@ -840,7 +840,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
     getline f < tmpFile;
     getline f < tmpFile;
     system("rm -f -- "tmpFile" "isoPart);
-    INF("iso title for "isoPath" = ["f"]");
+    DETAIL("iso title for "isoPath" = ["f"]");
     gsub(/[Ww]in32/,"",f);
     return clean_title(f);
     close(tmpFile);
@@ -849,7 +849,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
 # Make two urls point to the same cache page.
 function equate_urls(u1,u2) {
 
-    INF("equate ["u1"] =\n\t ["u2"]");
+    DETAIL("equate ["u1"] =\n\t ["u2"]");
 
     if (u1 in gUrlCache) {
 
@@ -900,7 +900,7 @@ function num(x) \
 {
     sub(/^[^-0-9]*0*/,"",x);
 #    if (0+x == 0 ) {
-#        INF("n("x") = "0);
+#        DETAIL("n("x") = "0);
 #    }
     return 0+x;
 }
@@ -1017,13 +1017,13 @@ i,folderCount,moveDown) {
             moveDown++;
         }
     }
-    INF("============ END ARGS ============"moveDown);
+    DETAIL("============ END ARGS ============"moveDown);
     ARGC -= moveDown;
     # Add dev null as dummy input
     ARGV[ARGC++] = "/dev/null";
     return folderCount;
     for(i = 1 ; i <= ARGC ; i++ ) {
-        INF("Final arg["i"] = ["ARGV[i]"]");
+        DETAIL("Final arg["i"] = ["ARGV[i]"]");
     }
 }
 
@@ -1042,10 +1042,10 @@ function unit(doit) {
 
         json_parse("{\"first\":\"andrew\" , \"age\" : 31 }");
 
-        INF("1." subexp("Title?012345","Title.([0-9]+)\\>"));
-        INF("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
-        INF("3." subexp("Title?012345","Title.([0-9]+)"));
-        INF("4." subexp("Title?012345 ","Title.([0-9]+)"));
+        DETAIL("1." subexp("Title?012345","Title.([0-9]+)\\>"));
+        DETAIL("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
+        DETAIL("3." subexp("Title?012345","Title.([0-9]+)"));
+        DETAIL("4." subexp("Title?012345 ","Title.([0-9]+)"));
 
         unit1("html_to_utf8",(html_to_utf8("z&#1001;a") == "z"g_chr[0xcf]g_chr[0xA9]"a"));
         unit1("utf8len",(utf8len("z&#1001;a") == 3));

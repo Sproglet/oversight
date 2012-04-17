@@ -8,11 +8,11 @@ f,ret,i) {
             f[i] = replace_share_name(f[i]);
             if (f[i] != "") {
                 if (trigger_file_changed(f[i])) {
-                    INF("File changed: "f[i]);
+                    DETAIL("File changed: "f[i]);
                     ret =1;
                     break;
                 } else {
-                    INF("File unchanged: "f[i]);
+                    DETAIL("File unchanged: "f[i]);
                 }
             }
         }
@@ -64,12 +64,12 @@ key,ret,free) {
     key="free_mb:"dir;
 
     free = int(free_kb(dir)/1024);
-    INF("Free space "dir" = "free" was "g_state[key]);
+    DETAIL("Free space "dir" = "free" was "g_state[key]);
     if (free >= 0 && g_state[key] != free) {
         update_state(key,free);
         ret = 1;
     } else {
-        INF("Free space unchanged from last scan - skipping");
+        DETAIL("Free space unchanged from last scan - skipping");
     }
     return ret;
 }
@@ -123,8 +123,8 @@ tempFile,i,procfile) {
         break;
     }
     close(tempFile);
-    INF("ls -l file position at "gLS_FILE_POS);
-    INF("ls -l time position at "gLS_TIME_POS);
+    DETAIL("ls -l file position at "gLS_FILE_POS);
+    DETAIL("ls -l time position at "gLS_TIME_POS);
 
 }
 function is_hidden_fldr(d,\
@@ -155,7 +155,7 @@ function scan_contents(root,scan_options,\
 rootlen,ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
-    INF("scan_contents "root);
+    DETAIL("scan_contents "root);
 
     rootlen = length(root);
 
@@ -197,7 +197,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
 
         #DEBUG( "ls: ["scan_line"]"); 
-        #INF("scan_line: length="length(scan_line)" "url_encode(scan_line));
+        #DETAIL("scan_line: length="length(scan_line)" "url_encode(scan_line));
 
         store=0;
 
@@ -228,17 +228,17 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             if ( ign_path != "" && currentFolder ~ ign_path ) {
 
                 skipFolder=1;
-                INF("Ignore path "currentFolder);
+                DETAIL("Ignore path "currentFolder);
 
             } else if ( is_movie_structure_fldr(currentFolder)) {
 
-                INF("Ignore DVD/BDMV sub folder "currentFolder);
+                DETAIL("Ignore DVD/BDMV sub folder "currentFolder);
                 skipFolder=1;
 
             } else if(is_hidden_fldr(currentFolder)) {
 
                 skipFolder=1;
-                INF("SKIPPING "currentFolder);
+                DETAIL("SKIPPING "currentFolder);
 
             } else if (currentFolder in g_fldrCount) {
 
@@ -261,7 +261,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             lc=tolower(scan_line);
 
             if ( lc ~ g_settings["catalog_ignore_names"] ) {
-                INF("Ignore name "scan_line);
+                DETAIL("Ignore name "scan_line);
                 continue;
             }
 
@@ -349,7 +349,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                     scan_line = substr(scan_line,RLENGTH+1);
                     lc = tolower(scan_line);
-                    INF("Looking at direct file argument ["currentFolder"]["scan_line"]");
+                    DETAIL("Looking at direct file argument ["currentFolder"]["scan_line"]");
                 }
 
                 # Now continue to check the file 
@@ -362,7 +362,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         # Check image size. Images should be very large or for testing only, very small.
                         if (length(w5) > 1 && length(w5) - 10 < 0) {
-                            INF("Skipping image ["scan_line"] - too small");
+                            DETAIL("Skipping image ["scan_line"] - too small");
                             store = 0;
                         }
                     }
@@ -451,10 +451,10 @@ ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
                     if (is_file(ipath)) {
                         minfo[field] = ipath;
                         minfo[field"_source"] = "local";
-                        INF("got image path "ipath);
+                        DETAIL("got image path "ipath);
                         return 1;
                     #} else {
-                    #    INF("no image path "ipath);
+                    #    DETAIL("no image path "ipath);
                     }
                 }
             }
@@ -484,7 +484,7 @@ path) {
         DEBUG(" | \t" file);
     } else {
         minfo["mi_do_scrape"]=1;
-          INF(" ++\t" file);
+          DETAIL(" ++\t" file);
         check_local_images(minfo,folder,file);
     }
         
@@ -555,7 +555,7 @@ lastNameSeen,i,lastch,ch) {
         return 0;
     }
 
-    INF("Found multi part file - linked "name" with "lastNameSeen);
+    DETAIL("Found multi part file - linked "name" with "lastNameSeen);
     minfo[PARTS] = (minfo[PARTS] =="" ? "" : minfo[PARTS]"/" ) name;
     minfo["mi_multipart_tag_pos"] = i;
     return 1;
@@ -693,7 +693,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
                     if (minfo_get_id(minfo,"@nfo") == -1 ) {
                         # dont scrape
-                        INF("using XML nfo only for "minfo[NAME]);
+                        DETAIL("using XML nfo only for "minfo[NAME]);
 
                     } else {
 
@@ -703,7 +703,7 @@ cat,minfo2,locales,id,split_episode_search) {
                             # scan filename for imdb link
                             bestUrl = extractImdbLink(file,1);
                             if (bestUrl) {
-                                INF("extract imdb id from "file);
+                                DETAIL("extract imdb id from "file);
                             }
                         }
 
@@ -780,16 +780,16 @@ cat,minfo2,locales,id,split_episode_search) {
                            if (want_posters(minfo)) {
                                # Check other sites
                                if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
-                                   INF("Checking local posters");
+                                   DETAIL("Checking local posters");
                                    local_search = 1;
                                }
                            }
 
                            if (main_lang() != "en") {
                                if ( lang(minfo[PLOT]) != main_lang()) {
-                                   INF("Plot not in main language");
+                                   DETAIL("Plot not in main language");
                                    if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
-                                       INF("Forcing local search for plot");
+                                       DETAIL("Forcing local search for plot");
                                        local_search = 1;
                                    }
                                }
@@ -834,7 +834,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
                     thisTime = systime()-thisTime ;
                     if (g_total) {
-                        DEBUG(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f [%s]",\
+                        INF(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f [%s]",\
                                  (g_process_time/g_total),(g_elapsed_time/g_total),minfo[NAME]));
                     }
                     g_process_time += thisTime;
@@ -883,6 +883,7 @@ function get_images(minfo) {
     if (GET_FANART) {
         minfo[FANART] = download_image(FANART,minfo,FANART);
     }
+    DEBUG("Delete get_images done");
 }
 
 function clear_folder_info() {

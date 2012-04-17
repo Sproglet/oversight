@@ -9,7 +9,7 @@ function new_content(fields\
             g_new_content_script = OVS_HOME "/bin/" g_new_content_script;
         }
         if ( !is_file(g_new_content_script)) {
-            INF("new content script ["g_new_content_script"] ignored");
+            DETAIL("new content script ["g_new_content_script"] ignored");
             g_new_content_script = badfile;
         }
     }

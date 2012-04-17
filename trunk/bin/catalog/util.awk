@@ -132,6 +132,14 @@ function DEBUG(x) {
 
 }
 
+function rs_push(x) {
+    g_rs[++g_rs_top] = RS;
+    RS = x;
+}
+function rs_pop() {
+    RS = g_rs[g_rs_top--];
+}
+
 function DIV0(x) {
     INF("\n\t\t@@@@@@@\t"x"\t@@@@@@@@@@\n");
 }
@@ -140,16 +148,22 @@ function DIV(x) {
 }
 
 function INF(x) {
-    timestamp("[INFO]   ",x);
+    if (g_catalog_log_level <= 1) {
+        timestamp("[INFO]   ",x);
+    }
 }
 function WARNING(x) {
-    timestamp("[WARNING]",x);
+    if (g_catalog_log_level <= 2) {
+        timestamp("[WARNING]",x);
+    }
 }
 function ERR(x) {
     timestamp("[ERR]    ",x);
 }
 function DETAIL(x) {
-    timestamp("[DETAIL] ",x);
+    if (g_catalog_log_level == 0) {
+        timestamp("[DETAIL] ",x);
+    }
 }
 
 function timestamp(label,x,\
@@ -276,7 +290,7 @@ i,bestScore,count,tmp,isHigher) {
         count++;
     }
     dump(0,"post best",outHash);
-    INF("bestScore = "bestScore);
+    DETAIL("bestScore = "bestScore);
     return bestScore;
 }
 
@@ -342,7 +356,7 @@ function id1(x) {
     g_idstack2[g_idtos] = length(g_indent);
 
     g_idstack[g_idtos++] = x;
-    INF(">Begin " x);
+    DETAIL(">Begin " x);
     g_indent="\t"g_indent;
     
 }
@@ -350,7 +364,7 @@ function id1(x) {
 function id0(x) {
     g_indent=substr(g_indent,2);
     
-    INF("<End "g_idstack[--g_idtos]"=[" ( (x!="") ? "=["x"]" : "") "]");
+    DETAIL("<End "g_idstack[--g_idtos]"=[" ( (x!="") ? "=["x"]" : "") "]");
 
     #check stack
     if (g_idtos > 1 && g_idstack2[g_idtos] != length(g_indent)) {
@@ -360,14 +374,12 @@ function id0(x) {
 
 function dump(lvl,label,array,\
 i,key,n) {
-    if (lvl == 0 || DBG-lvl >= 0)   {
-        n = asorti(array,key);
-        for(i = 1 ; i<= n ; i++ ) {
-            INF(" "label" : "key[i]" =["array[key[i]]"]");
-        }
-        if (n == 0 ) {
-            INF("  "label":<empty>");
-        }
+    n = asorti(array,key);
+    for(i = 1 ; i<= n ; i++ ) {
+        timestamp((lvl?"[INFO]   ":"[DETAIL] "),label" : "key[i]" =["array[key[i]]"]");
+    }
+    if (n == 0 ) {
+        DETAIL((lvl?"[INFO]   ":"[DETAIL] "),label":<empty>");
     }
 }
 
@@ -474,7 +486,7 @@ attempts,sleep,backoff) {
         if (is_locked(lock_file) == 0) {
             print PID > lock_file;
             close(lock_file);
-            INF("Locked "lock_file);
+            DETAIL("Locked "lock_file);
             set_permissions(qa(lock_file));
             return 1;
         }
@@ -488,7 +500,7 @@ attempts,sleep,backoff) {
 }
 
 function unlock(lock_file) {
-    INF("Unlocked "lock_file);
+    DETAIL("Unlocked "lock_file);
     system("rm -f -- "qa(lock_file));
 }
 
@@ -667,8 +679,8 @@ function roman_replace(s,\
 out) {
     if (match(s,"("g_roman_regex")$")) {
         out = substr(s,1,RSTART-1) g_roman[substr(s,RSTART,RLENGTH)];
-        INF("roman_replace = "s);
-        INF("roman_replace = "out);
+        DETAIL("roman_replace = "s);
+        DETAIL("roman_replace = "out);
         s = out;
     }
     return s;
@@ -693,7 +705,7 @@ function removeContent(cmd,x,quiet,quick) {
     if (changeable(x) == 0) return 1;
 
     if (!quiet) {
-        INF("Deleting "x);
+        DETAIL("Deleting "x);
     }
     cmd=cmd qa(x)" 2>/dev/null ";
     if (quick) {
@@ -724,7 +736,7 @@ i) {
 function touch_parents(f) {
     do {
         f = dirname(f);
-        INF("touch "f);
+        DETAIL("touch "f);
         if (touch(f) != 0) break;
     } while(f != "" && f != "/" && f != ".");
 }
@@ -1010,7 +1022,7 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
         }
     }
 
-    INF("edit distance:["source"] ["target"] = " matrix[n,m]);
+    DETAIL("edit distance:["source"] ["target"] = " matrix[n,m]);
     return matrix[n,m];
 }
 
@@ -1032,7 +1044,7 @@ function similar(s1,s2,\
 
     e = edit_dist(s1,s2);
     ret = e / min ;
-    INF("similar:" ret);
+    DETAIL("similar:" ret);
     return ret;
 }
 

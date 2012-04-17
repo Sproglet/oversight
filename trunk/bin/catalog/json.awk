@@ -227,7 +227,7 @@ label) {
 
             ltrim(context);
 
-            #INF("END FIELD AT "substr(context["in"],context["pos"],50)"....");
+            #DETAIL("END FIELD AT "substr(context["in"],context["pos"],50)"....");
             if (!advance(context,",",1)) break;
         }
         if (advance(context,"}")) {
@@ -342,5 +342,5 @@ idx) {
     }
 }
 function json_dbg(context,x) {
-    if (context["dbg"])  print "INF:" x ;
+    if (context["dbg"])  print "DETAIL:" x ;
 }

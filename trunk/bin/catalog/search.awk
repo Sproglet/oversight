@@ -78,7 +78,7 @@ t,t2,y,quoted) {
                 }
                 t2 = remove_format_tags(t2) y;
 
-                INF("["t"]=>["t2"]");
+                DETAIL("["t"]=>["t2"]");
 
 
                 normed[t2] += matches[t];
@@ -253,13 +253,13 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
                        freq_target = 3; # changed back to 3 to avoid false positives. May invoke google block.
 
                        if (freq1 != best1 ) {
-                           INF(best1" is not most frequent. ["freq1"]  - continue searching ...");
+                           DETAIL(best1" is not most frequent. ["freq1"]  - continue searching ...");
                            continue;
                        } else if (freq[freq1] < freq_target) {
-                           INF(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
+                           DETAIL(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
                            continue;
                        } else if (hash_size(freq) > 1) {
-                            INF(best1" does not occur more frequently than others");
+                            DETAIL(best1" does not occur more frequently than others");
                        } 
                    } 
                }
@@ -598,13 +598,13 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
 
 
     if (length(name) <= 4 || name !~ "^[-.[:alnum:]]+$" ) {
-        INF("onlinenfo: ["name"] ignored");
+        DETAIL("onlinenfo: ["name"] ignored");
     } else {
 
         id1("Online nfo search for ["name"]");
 
         sub(/QUERY/,name,queryPath);
-        INF("query["queryPath"]");
+        DETAIL("query["queryPath"]");
 
         #Get all nfo links
         scan_page_for_match_counts(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
@@ -647,7 +647,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
     #    }
 
         if (hash_size(totalImdbIds) > 3 ) {
-            INF("Too many nfo results from online search");
+            DETAIL("Too many nfo results from online search");
         } else {
 
             #return most frequent match
@@ -659,11 +659,11 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
 
             } else if (count == 0) {
 
-                INF("No matches");
+                DETAIL("No matches");
 
             } else {
 
-                INF("To many equal matches. Discarding results");
+                DETAIL("To many equal matches. Discarding results");
             }
         }
         id0(result);
@@ -679,7 +679,7 @@ amzurl,amazon_urls,imdb_per_page,imdb_id) {
         for(amzurl in amazon_urls) {
             if (scan_page_for_match_counts(amzurl, "/tt", g_imdb_regex ,0,1,"", imdb_per_page)) {
                 for(imdb_id in imdb_per_page) {
-                    INF("Found "imdb_id" via amazon link");
+                    DETAIL("Found "imdb_id" via amazon link");
                     imdbIds[imdb_id] += imdb_per_page[imdb_id];
                 }
             }
@@ -872,12 +872,12 @@ old_inf,new_inf,ret,old_num,new_num,old_src_key,old_src,n) {
     }
     if (old_src) {
         if (ret) {
-            INF("updated "n" "new_inf" was "old_inf);
+            DETAIL("updated "n" "new_inf" was "old_inf);
         } else {
-            INF("kept "n" "old_inf" ignore "new_inf);
+            DETAIL("kept "n" "old_inf" ignore "new_inf);
         }
     } else {
-        INF("added "n" "new_inf);
+        DETAIL("added "n" "new_inf);
     }
     return ret;
 }
@@ -895,7 +895,7 @@ ret) {
             ret = 1;
         }
     } else {
-        INF("blank value for "field" ignored");
+        DETAIL("blank value for "field" ignored");
     }
     return ret;
 }
@@ -941,7 +941,7 @@ f,line,out,found,tokens,token_count,token_i) {
             # eat up start tokens
             if (token_i - token_count <= 0 ) {
                 if (match(line[1],tokens[token_i])) {
-                    INF("matched token ["tokens[token_i]"]");
+                    DETAIL("matched token ["tokens[token_i]"]");
                     token_i++;
                 }
             }
@@ -1014,7 +1014,7 @@ out,tag_start,tag_end,start_pos,end_pos,tail) {
         if (end_pos > 0 ) {
             tail = substr(out,end_pos+length(tag)+3);
         }
-        #INF("removing "substr(out,start_pos,end_pos-start_pos));
+        #DETAIL("removing "substr(out,start_pos,end_pos-start_pos));
         out = substr(out,1,start_pos-1) tail;
     }
     return out;
@@ -1138,7 +1138,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
         f = getUrl(url,".html",0);
         if (f) {
 
-            INF("File = "f);
+            DETAIL("File = "f);
 
             fclean=f".clean";
             clean_html(f,fclean);
@@ -1156,7 +1156,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
                 while( (e =  (getline line < fclean ) ) > 0) {
                     if (index(line,title)) {
                         num += split(line,tmp,"\\<"title"\\>") - 1;
-                        INF("found:["title"x"num"]["line"]");
+                        DETAIL("found:["title"x"num"]["line"]");
                     }
                 }
                 if (e >= 0) {
@@ -1167,7 +1167,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
                     keep[i] = num*length(title);
                 }
                 if(num) {
-                    INF("Title count "title" = "num" ["line"]");
+                    DETAIL("Title count "title" = "num" ["line"]");
                 }
             }
 

@@ -137,7 +137,7 @@ enc,line,code,n) {
         if (n >= 20) WARNING("Lack of markup");
         if (code >= 0) {
             if ((code = close(f)) != 0) {
-               INF("Failed to close "f" code = "code) ; 
+               DETAIL("Failed to close "f" code = "code) ; 
             }
         }
     }
@@ -170,7 +170,7 @@ enc) {
     } else if (index(line,"</head>") || index(line,"<body>")) {
         if (!enc) enc = "utf-8" ; #assume utf8 if not specified.
     }
-    if (enc && (enc != "utf-8") ) INF("Encoding:" enc);
+    if (enc && (enc != "utf-8") ) DETAIL("Encoding:" enc);
     return enc;
 }
 
@@ -185,7 +185,7 @@ ret,matches) {
     dump(0,"match counts",matches);
     ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","tt0076752/",1);
     if (ret) {
-        INF("search engine ready ["url"]\n");
+        DETAIL("search engine ready ["url"]\n");
     } else {
         ERR("!!!search engine error!!! ["url"]\n");
     }
@@ -232,7 +232,7 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
 
     delete matches;
     id1("scan_page_for_matches["fixed_text"]["regex"]");
-    INF("["fixed_text"]["\
+    DETAIL("["fixed_text"]["\
         (regex == g_imdb_regex\
             ?"<imdbtag>"\
             :(regex==g_imdb_title_re\
@@ -285,7 +285,7 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
                 if (is_imdb) {
                     if (index(line[1],"/Title?") ) {
                         if (gsub(/\/Title\?/,"/tt",line[1])) {
-                            INF("fixed imdb reference "line[1]);
+                            DETAIL("fixed imdb reference "line[1]);
                         }
                     }
                     # A few sites have IMDB ID 0123456 
@@ -548,7 +548,7 @@ ret,num,i,parts,seps,code) {
             } else if (code <= 255 ) {
                 ret = ret seps[i-1] g_chr[code+0];
             } else {
-                INF("Forced utf8 character "code" : might get corrupted by iconv");
+                DETAIL("Forced utf8 character "code" : might get corrupted by iconv");
                 ret = ret seps[i-1] code_to_utf8(code+0);
             }
         }

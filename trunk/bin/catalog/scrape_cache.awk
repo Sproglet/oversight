@@ -25,7 +25,7 @@ fld,id) {
         g_scrape_cache_vals[id,fld] = minfo[fld];
     }
     #dump(0,"scrape_cache_add",minfo);
-    INF("scrape_cache_added ["url","id"]");
+    DETAIL("scrape_cache_added ["url","id"]");
 }
 
 function scrape_cache_get(url,minfo,\
@@ -43,6 +43,6 @@ i,ret,fld,id) {
         }
     }
     #dump(0,"scrape_cache_get",minfo);
-    INF("scrape_cache_get ["url","id"] = "ret);
+    DETAIL("scrape_cache_get ["url","id"] = "ret);
     return ret;
 }

@@ -29,7 +29,7 @@ year) {
         if (search_order[s] == "IMDBLINKS") {
 
             #TODO Merge the web_search_frequent_imdb_link heuristics into this functions logic.
-            INF("DISABLED: Search Phase: "search_order[s]);
+            DETAIL("DISABLED: Search Phase: "search_order[s]);
             #id1("Search Phase: "search_order[s]);
             #bestUrl=web_search_frequent_imdb_link(minfo);
             #id0(bestUrl);
@@ -118,7 +118,7 @@ year) {
             }
         }
     }
-    DEBUG("movie_search bestUrl=["bestUrl"]");
+    INF("movie_search "minfo[TITLE]" ["bestUrl"]");
 
     id0(bestUrl);
     return bestUrl;

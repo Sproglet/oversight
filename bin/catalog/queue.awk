@@ -2,7 +2,7 @@
 
 function queue_minfo(minfo,qfile,person_extid2name,\
 fld,line) {
-    INF("queue:queue_minfo:"minfo[NAME]);
+    DETAIL("queue:queue_minfo:"minfo[NAME]);
 
     person_add_db_queue(minfo,person_extid2name);
 
@@ -17,14 +17,14 @@ fld,line) {
     }
     if (index(line,"\n")) gsub(/\n/,"\\n",line);
     print substr(line,2) >> qfile;
-    #INF("DELETE Queued item   " gensub(SUBSEP,"\n" , "g", line));
+    #DETAIL("DELETE Queued item   " gensub(SUBSEP,"\n" , "g", line));
 }
 
 function read_minfo(qfile,minfo,\
 line,i,tmp,num) {
     delete minfo;
     while ((getline line < qfile ) > 0 ) {
-        #INF("queue: line=["line"]");
+        #DETAIL("queue: line=["line"]");
         if (index(line,SUBSEP) ) {
 
             #reinstate CR
@@ -40,7 +40,7 @@ line,i,tmp,num) {
 
             if (!(FILE in minfo)) minfo[FILE] = minfo[DIR]"/"minfo[NAME];
 
-            #INF("read "num" fields minfo media = "minfo[NAME]);
+            #DETAIL("read "num" fields minfo media = "minfo[NAME]);
             return num;
             break;
         }
@@ -56,7 +56,7 @@ total) {
 
     if (g_opt_dry_run) {
 
-        INF("Database update skipped - dry run");
+        DETAIL("Database update skipped - dry run");
 
     } else {
 
@@ -111,7 +111,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     id1("merge_index ["dbfile"]["qfile"]");
 
     #exec("cat "qa(qfile),1);
-    #INF("---------------------");
+    #DETAIL("---------------------");
 
 
     max_id = get_maxid(INDEX_DB);
@@ -119,7 +119,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     row2 = 0;
     do {
-        #INF("read action="action);
+        #DETAIL("read action="action);
         if (and(action,1)) { 
             row1 = get_dbline(dbfile);
             parseDbRow(row1,fields1,1);
@@ -129,7 +129,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
             if (read_minfo(qfile,fields2)) {
                 #dump(0,"DELETE read fields2",fields2);
                 row2=1;
-                #INF("Merge item    :["fields2[FILE]"]");
+                #DETAIL("Merge item    :["fields2[FILE]"]");
             }
         }
 
@@ -231,7 +231,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     }
     rm(g_plot_file_queue);
 
-    INF("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    DETAIL("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     ret = total_changed + total_new;
     id0(ret);
     return ret;
@@ -241,7 +241,7 @@ filemax) {
     filemax = file".maxid";
     print max_id > filemax;
     close(filemax);
-    INF("set_maxid["file"]="max_id);
+    DETAIL("set_maxid["file"]="max_id);
 }
 
 
@@ -284,7 +284,7 @@ max_id,line,fields,filemax,tab) {
         getline max_id < filemax;
         close(filemax);
         max_id += 0;
-        INF("get_maxid["file"]="max_id);
+        DETAIL("get_maxid["file"]="max_id);
     }
     return max_id;
 }

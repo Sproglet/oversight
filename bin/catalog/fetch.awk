@@ -125,13 +125,13 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 
     if (is_file(old_cf)) {
         if (!is_file(new_cf)){
-            INF("setting default cookies");
+            DETAIL("setting default cookies");
             file_copy(old_cf,new_cf);
         }
     }
     arg_cf=" --keep-session-cookies --load-cookies="qa(new_cf)" --save-cookies="qa(new_cf)" --keep-session-cookies";
     args=args arg_cf;
-    #INF(arg_cf);
+    #DETAIL(arg_cf);
 
     targetFile=qa(file);
     htmlFile=targetFile;
@@ -189,10 +189,10 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 
     # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-    INF("WGET ["url"]");
+    DETAIL("WGET ["url"]");
     result = exec(cmd,0,quiet_fail);
     if (result == 0 ) {
-        #INF("WGET ["unzip_cmd"]");
+        #DETAIL("WGET ["unzip_cmd"]");
         result = exec(unzip_cmd,0,quiet_fail);
     }
     if (result != 0) {
@@ -228,13 +228,13 @@ list2,f,n,i,batch,cmd,total,inv,u,txt,s,code) {
         if (s%batch == 0 || s == n) {
             exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -O - "cmd" >"qa(f)" 2>&1 || true ");
             while ((code = (getline txt < f )) > 0 ) {
-                #INF("spider ["txt"]");
+                #DETAIL("spider ["txt"]");
                 if (match(txt,"--  http://")) {
                     u = substr(txt,RSTART+4);
-                    #INF("url="u);
+                    #DETAIL("url="u);
                 } else if (match(txt,"^Remote file exists.")) {
                     list2[inv[u]] = u;
-                    INF("found url "u);
+                    DETAIL("found url "u);
                     total++;
                 }
             }
@@ -245,7 +245,7 @@ list2,f,n,i,batch,cmd,total,inv,u,txt,s,code) {
         hash_copy(url_list,list2);
         dump(0,"spiders",url_list);
     } else {
-        INF("unchanged");
+        DETAIL("unchanged");
         total = n;
     }
     id0(total);
@@ -295,6 +295,6 @@ f,code,txt,source) {
         source = source txt;
     }
     if (!code) close(f);
-    INF("fetched "length(source)" bytes for "url);
+    DETAIL("fetched "length(source)" bytes for "url);
     return source;
 }

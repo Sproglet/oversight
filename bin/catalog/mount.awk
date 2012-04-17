@@ -110,7 +110,7 @@ path,link_details,p,newlink,usr,pwd,lnk) {
     if ( p == "" ) {
        if ( index(lnk,"smb:") ) {
           if ( match(lnk,"[0-9]\\.[0-9]") == 0) {
-            INF("Trying to resolve windows name");
+            DETAIL("Trying to resolve windows name");
             newlink = wins_resolve(lnk);
             if (newlink != "" && newlink != lnk ) {
                 p = mount_link(path,newlink,usr,pwd) ;
@@ -148,7 +148,7 @@ remote,cmd,result,t) {
     if (result == 255 && systime() - t <= 1 ) {
         # if you try to double mount smb share you get error 255. Which is a meaningless error really.
         # Just assume it worked if it happened quickly.
-        INF("Ignoring mount error");
+        DETAIL("Ignoring mount error");
         result=0;
     }
     if (result) {
@@ -171,7 +171,7 @@ line,host,ip,newlink,hostend,cmd) {
         
         while (newlink == "" && (getline line < g_winsfile ) > 0 ) {
             if (index(line," "g_tmp_settings["workgroup"]"\\"host" ")) {
-                INF("Found Wins name "line);
+                DETAIL("Found Wins name "line);
                 if (match(line,"^[0-9.]+")) {
                     ip=substr(line,RSTART,RLENGTH);
                     newlink="smb://"ip substr(link,hostend);
@@ -183,7 +183,7 @@ line,host,ip,newlink,hostend,cmd) {
         }
         close(g_winsfile);
     }
-    INF("new link "newlink);
+    DETAIL("new link "newlink);
     return newlink;
 }
 

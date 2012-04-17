@@ -4,7 +4,7 @@ function sequence() {
 
 function replace_database_with_new(newdb,currentdb,olddb) {
 
-    INF("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
+    DETAIL("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
 
     file_copy(currentdb,olddb);
 
@@ -101,7 +101,7 @@ ret) {
 # IN tag = xml tag in xmbc nfo files.
 function db_field(key,name,tag,type,keep) {
     if (keep == "") {
-        INF("bad args db_field "key name tag type);
+        DETAIL("bad args db_field "key name tag type);
         exit;
     }
     if (name == "") name = key;
@@ -179,11 +179,11 @@ result) {
 
     if ( g_settings["catalog_ignore_paths"] != "" && fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
-        INF("Removing Ignored Path ["fields[FILE]"]");
+        DETAIL("Removing Ignored Path ["fields[FILE]"]");
 
     } else if ( fields[NAME] ~ g_settings["catalog_ignore_names"] ) {
 
-        INF("Removing Ignored Name "fields[FILE]"]");
+        DETAIL("Removing Ignored Name "fields[FILE]"]");
 
     } else {
         result = 1;
@@ -257,7 +257,7 @@ dbline,dbfields,err,count,filter) {
     list["@PREFIX"] = prefix =  short_path(prefix);
     list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]*\t";
 
-    #INF("filter=["filter"]");
+    #DETAIL("filter=["filter"]");
 
     while((err = (getline dbline < db )) > 0) {
 
@@ -288,7 +288,7 @@ function remove_absent_files_from_new_db(db,\
     list="";
     maxCommandLength=3999;
 
-    INF("Pruning...");
+    DETAIL("Pruning...");
     tmp_db = db "." JOBID ".tmp";
 
     # TODO if index is sorted by file we can do this a folder at a time.
@@ -308,7 +308,7 @@ function remove_absent_files_from_new_db(db,\
 
             f = dbfields[FILE];
             shortf = short_path(f);
-            #INF("Prune ? ["f"]");
+            #DETAIL("Prune ? ["f"]");
 
             keep=1;
 
@@ -342,7 +342,7 @@ function remove_absent_files_from_new_db(db,\
                             if (is_dir(gp) && !is_empty(gp)) {
                                 keep=0;
                             } else {
-                                INF("Not mounted?");
+                                DETAIL("Not mounted?");
                             }
                         } else {
                             # just delete it.
@@ -357,7 +357,7 @@ function remove_absent_files_from_new_db(db,\
                 print dbline > tmp_db;
                 g_kept_file_count++;
             } else {
-                INF("Removing "f);
+                DETAIL("Removing "f);
                 g_absent_file_count++;
                 
             }
@@ -365,8 +365,8 @@ function remove_absent_files_from_new_db(db,\
         }
         close(tmp_db);
         close(db);
-        INF("unchanged:"g_kept_file_count);
-        INF("removed:"g_absent_file_count);
+        DETAIL("unchanged:"g_kept_file_count);
+        DETAIL("removed:"g_absent_file_count);
         replace_database_with_new(tmp_db,db,INDEX_DB_OLD);
         exec("wc -l "qa(db));
         unlock(g_db_lock_file);

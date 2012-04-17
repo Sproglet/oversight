@@ -176,7 +176,7 @@ t) {
                 else if (locale == "it_IT" || locale == "fr_FR" || locale == "pt_PT" || locale == "es_ES" || locale == "ee_EE" ) {
                     sub("com",tolower(substr(locale,4)),t);
                 } else {
-                   INF("No localized imdb for "locale);
+                   DETAIL("No localized imdb for "locale);
                    t = "";
                 }
             }

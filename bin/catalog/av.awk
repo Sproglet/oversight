@@ -32,7 +32,7 @@ f,i,tag,src) {
     }
     if (src) {
         minfo[VIDEOSOURCE] = src;
-        INF("Video Source = "src);
+        DETAIL("Video Source = "src);
     }
 }
 
@@ -127,7 +127,7 @@ f,video,audio,dim,hrs,i,out) {
     for(i in video) {
         out=out","i"="video[i];
     }
-    INF("Video info"out);
+    DETAIL("Video info"out);
 
     minfo[VIDEO]=substr(out,2);
 

@@ -1,5 +1,162 @@
+# Fetch a URL and keep connection open.
+# Doesn not work well with pure binary data.
+# A record separator must be passed that matches the last bytes of the content , but must not match too many other records.
+# eg for JSON "}" for XML ">" for HTML </html> 
+# Performance for HTML m
+
+# IN url
+# IN headers - SUBSEP list of headers.
+# OUT response
+function url_get(url,response,rec_sep,cache,headers,\
+ret,code,f,body,line) {
+
+    if (cache) {
+        f = g_url_cache[url];
+
+        if (!f || !is_file(f)) {
+            if ((ret = url_get_uncached(url,response,rec_sep,headers)) != 0) {
+                f = new_capture_file("url_get");
+                DETAIL("saving to cache "f);
+                printf "%s",response["body"] > f;
+                close(f);
+                g_url_cache[url] = f;
+            }
+        } else {
+            DETAIL("loading from cache "f);
+            while((code=getline line < f) > 0) {
+                body = body line;
+            }
+            if (code >= 0) {
+                close(f);
+            }
+            response["body"] = body;
+            ret = 1;
+        }
+    } else {
+        ret = url_get_uncached(url,response,rec_sep,headers);
+   }
+    DETAIL("url_get [ "url" ] = "ret);
+   return ret;
+}
+
+function url_get_uncached(url,response,rec_sep,headers,\
+ret) {
+    if (g_settings["catalog_awk_browser"] && !index(url,"thetvdb") ) {
+        ret = url_get_awk(url,response,rec_sep,headers);
+    } else {
+        delete response;
+        ret = url_get_wget(url,response,headers);
+    }
+    DETAIL("url_get_uncached [ "url" ] = "ret);
+    return ret;
+}
+
+# Get a URL with wget
+function url_get_wget(url,response,headers,\
+cmd,body,ret,i,hdr,txt,enc,code) {
+
+    cmd = "wget -q --referer "get_referer(url);
+    cmd = cmd " -U "qa(set_user_agent(url));
+    cmd = cmd " -q --header='Accept-Encoding: gzip' "qa(url)" -O -";
+
+    if (headers) {
+        split(headers,hdr,SUBSEP);
+        for(i in hdr) {
+            cmd=cmd " --header='"hdr[i]"'";
+        }
+    }
+    DETAIL("url_get_wget cmd = ["cmd"]");
+
+    while ((code = ( cmd |& getline txt )) > 0) {
+        body = body txt RT;
+    }
+    if (code >= 0) {
+        close(cmd);
+        response["body"] = body;
+        DETAIL("response body len = "length(body));
+        url_gunzip(response); 
+        if (!enc) {
+            response["enc"] = extract_encoding(response["body"]);
+        }
+        url_encode_utf8(response);
+        ret = length(response["body"]);
+    }
+    DETAIL("url_get_wget [ "cmd" ] = "ret);
+    return ret;
+}
+
+# Unzip Body - return 1 if work done.
+function url_gunzip(response,\
+zip_pipe,b,txt,ret,code) {
+    ret = 0;
+
+    b = response["body"];
+#    if (response["content-encoding"] && index(response["content-encoding"],"gzip") == 0 ) {
+#        # nothing to do
+#        ret = 0;
+#    } else
+    if (substr(b,1,1) == "") { # gzip magin number 0x8b1f starts with 1f > 0a < 20
+
+        DETAIL("url_gunzip decompressing ...");
+        zip_pipe = "gunzip 2>/dev/null ";
+
+        #awk strings can contain nul \0 so this will work!
+        printf "%s",b |& zip_pipe
+        fflush(zip_pipe);
+        close(zip_pipe,"to");
+        b="";
+        while ( ( code = ( zip_pipe |& getline txt ) ) > 0) {
+            b = b txt RT;
+        }
+        if (code >= 0 ) {
+            if (length(b)) {
+                response["body"] = b;
+                ret = 1;
+            }
+            close(zip_pipe);
+        } else {
+            WARNING("url_gunzip pipe error");
+        }
+    }
+    DETAIL("url_gunzip = "ret"  out body length = ["length(response["body"])"]");
+    return ret;
+}
+
+# Make sure file is UTF8
+function url_encode_utf8(response,\
+iconv_pipe,b,txt,enc,ret,code) {
+    enc = response["enc"] ;
+    if (enc ) {
+       if (enc == "utf-8" ) {
+           ret = 1;
+       } else if (g_fetch["no_encode"]) {
+           DETAIL("leaving "enc" to utf-8 ...");
+       } else {
+           DETAIL("converting "enc" to utf-8 ...");
+           iconv_pipe = "iconv -f "enc" -t utf-8";
+
+           printf "%s",response["body"] |& iconv_pipe
+           fflush(iconv_pipe);
+           close(iconv_pipe,"to");
+           while ( ( code = ( iconv_pipe |& getline txt )) > 0 ) {
+                b = b txt RT;
+           }
+           if (code >= 0) {
+               response["body"] = b;
+               response["enc"] = "utf-8";
+               close(iconv_pipe);
+               ret = 1;
+            } else {
+                WARNING("url_encode_utf8 pipe error");
+           }
+       }
+    }
+    DETAIL("url_encode_utf8 = "ret" in body length = ["length(response["body"])"]");
+    return ret;
+}
+
 #
-# A classic case of wrong tool for the job. Trying to use awk as a web browser...
+# Beyond this point is a classic case of wrong tool for the job. Trying to use awk as a web browser...
 # Why? Re-using connections can save a LOT of time, but not many widely available tools
 # will let me drip-feed them with URLs whils maintaining keep-alive.
 # in perl this would have been simple, but awk has issues reading to exact EOF for fixed
@@ -18,12 +175,7 @@
 #   is data is not compressed.
 #   awk cannot properly read the final record of binary data, so we have to pass what we hope is the last byte.
 #   requires LC_ALL=C  to compute content lengths correctly- this might be a good thing.
-#   but means we may lose the utf8 features elsewhere.
-#
-#
-# At present IO (reading to body) seems slow on embedded systems as to make spawning WGET a faster option. Might revisit in near future.
-# This module is disbled for now, but I dont want to lose code.
-# might be useful for spidering/HEAD etc.
+#   but means we may lose the utf-8 features elsewhere.
 #
 # To read to end of line the ASSUMPTION we are making is that for a given domain the EOF is the same.
 # Initially for JSON this is }[[:space:]]* and for XML this is >[[:space:]]*
@@ -100,7 +252,7 @@ key,query) {
 
     while (key in g_fetch_redirect) {
         key = g_fetch_redirect[key];
-        INF("stored redirect = "key);
+        DETAIL("stored redirect = "key);
     }
     url_split_parts(key query,parts);
     return key query;
@@ -182,13 +334,13 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
             if (headers) {
                 split(headers,hdr,SUBSEP);
                 for(i in hdr) {
-                    DEBUG("Header : "hdr[i]);
+                    #DEBUG("Header : "hdr[i]);
                     printf "%s\r\n", hdr[i] |& con;
                 }
             }
             for(i in request) {
                 if (!index(headers,i)) {
-                    DEBUG("Header : " i ": "request[i]);
+                    #DEBUG("Header : " i ": "request[i]);
                     printf "%s: %s\r\n", i,request[i] |& con;
                 }
             }
@@ -226,7 +378,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
                     g_fetch_redirect[old_key] = new_key;
 
                     url=new_key query ;
-                    INF("redirect to "url);
+                    DETAIL("redirect to "url);
 
                 } else if (index(response["@status"],"1.1 4") || index(response["@status"],"1.1 5")) {
 
@@ -329,7 +481,7 @@ con,idle,age,host_max_age,host_max_idle,host_max_used,host_port,poll_time,final)
                         url_disconnect(con,1,"max reconnections > "host_max_used);
 
                     } else {
-                        INF((age?"keeping":"new")" connection "con" idle for "idle);
+                        DETAIL((age?"keeping":"new")" connection "con" idle for "idle);
                     }
                 }
             }
@@ -359,8 +511,7 @@ code,bytes,i,num,j,all_hdrs) {
 
     #DEBUG("url_get_headers");
 
-    _RS = RS;
-    RS="\r\n\r\n";
+    rs_push("\r\n\r\n");
 
     delete response;
 
@@ -374,7 +525,7 @@ code,bytes,i,num,j,all_hdrs) {
             if (bytes[i]) {
 
                 if (1 || bytes[i] ~ /^(HTTP|[Cc]on)/) {
-                    INF("hdr["bytes[i]"]");
+                    DETAIL("hdr["bytes[i]"]");
                 }
 
                 if ((j=index(bytes[i],":")) > 0) {
@@ -392,7 +543,7 @@ code,bytes,i,num,j,all_hdrs) {
     } else {
         ERR("Error "code" getting headers ");
     }
-    RS = _RS;
+    rs_pop();
     return (code);
 }
 
@@ -441,7 +592,7 @@ ct,key) {
         rec_sep = "\r\n";
 
     } else if (rec_sep) {
-        INF("using supplied record sep"rec_sep);
+        DETAIL("using supplied record sep"rec_sep);
     } else {
 
         key = url_eof_key(request,response);
@@ -455,7 +606,7 @@ ct,key) {
 
             ct = url_ct(response);
             rec_sep = g_url_eof[ct] "[[:space:]]*"; #change to ? from *
-            INF("using default record sep for key "key"  = "rec_sep);
+            DETAIL("using default record sep for key "key"  = "rec_sep);
         }
     }
     return rec_sep;
@@ -487,56 +638,10 @@ key,ct,tail,rec_sep) {
     }
 }
 
-# Fetch a URL and keep connection open.
-# Doesn not work well with pure binary data.
-# A record separator must be passed that matches the last bytes of the content , but must not match too many other records.
-# eg for JSON "}" for XML ">" for HTML </html> 
-# Performance for HTML m
-
 # IN url
 # IN headers - SUBSEP list of headers.
 # OUT response
-function url_get(url,response,rec_sep,cache,headers,\
-ret,code,f,body,line) {
-
-    if (!g_settings["catalog_awk_browser"]) {
-
-        delete response;
-        response["body"] = get_url_source(url,0);
-        ret = (response["body"] != "");
-
-    } else if (cache) {
-        f = g_url_cache[url];
-
-        if (!f || !is_file(f)) {
-            if ((ret = url_get2(url,response,rec_sep,headers)) != 0) {
-                f = new_capture_file("url_get");
-                INF("saving to cache "f);
-                printf "%s",response["body"] > f;
-                close(f);
-                g_url_cache[url] = f;
-            }
-        } else {
-            INF("loading from cache "f);
-            while((code=getline line < f) > 0) {
-                body = body line;
-            }
-            if (code >= 0) {
-                close(f);
-            }
-            response["body"] = body;
-            ret = 1;
-        }
-    } else {
-        ret = url_get2(url,response,rec_sep,headers);
-   }
-   return ret;
-}
-
-# IN url
-# IN headers - SUBSEP list of headers.
-# OUT response
-function url_get2(url,response,rec_sep,headers,\
+function url_get_awk(url,response,rec_sep,headers,\
 request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
     if (ENVIRON["LC_ALL"] != "C") {
@@ -599,7 +704,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
     if (read_body) {
 
-        #get encoding - assume xml / json is utf8
+        #get encoding - assume xml / json is utf-8
         ct = url_ct(response);
         if (index("json,xml,xhtml",ct)) enc="utf-8";
         else if (index(tolower(response["content-type"]),"utf-8")) enc = "utf-8";
@@ -611,7 +716,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
             chunked = 1;
         }
 
-        _RS = RS; RS = rec_sep;
+        rs_push(rec_sep);
 
         if (chunked) {
             body = url_read_chunked(con);
@@ -620,18 +725,17 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
             body = url_read_fixed(con,response,rec_sep);
             url_eof_learn(request,response);
         }
-        RS = _RS;
+        rs_pop()
         #DEBUG("end body");
 
         response["body"] = body;
         fflush(con);
 
         #close(con);
-        if (!enc) {
-            enc = extract_encoding(body);
-        }
-
         url_gunzip(response); 
+        if (!enc) {
+            enc = extract_encoding(response["body"]);
+        }
         url_encode_utf8(response);
 
         ret = (response["body"] != "");
@@ -643,7 +747,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
     }
 
     response["enc"] = enc;
-    log_bigstring(enc" body",response["body"],20);
+    #log_bigstring(enc" body",response["body"],20);
     id0(response["@status"] ~ "200");
 
 
@@ -682,10 +786,10 @@ i) {
 #
 #    # Something went wrong with connection.
 #    if (elapsed < url_host_timeout(host_port)) {
-#        INF("elapsed time = "elapsed" current timout = "url_host_timeout(host_port));
+#        DETAIL("elapsed time = "elapsed" current timout = "url_host_timeout(host_port));
 #        g_url_timeout[host_port] = elapsed - 1;
 #        if (g_url_timeout[host_port] < 5) g_url_timeout[host_port] = 5;
-#        INF("Adjusted client timeout for "host_port" to "g_url_timeout[host_port]);
+#        DETAIL("Adjusted client timeout for "host_port" to "g_url_timeout[host_port]);
 #    }
 #}
 #
@@ -730,6 +834,7 @@ content_length,body,bytes,is_xml,code) {
 
     content_length = response["content-length"]+0;
 
+    rs_push(RS);
     if (index(response["content-type"],"xml")) {
         is_xml=1;
     }
@@ -753,52 +858,13 @@ content_length,body,bytes,is_xml,code) {
             }
         }
     }
+    rs_pop();
     return body;
 }
 
 
-function url_gunzip(response,\
-zip_pipe,b,txt) {
-    if (response["content-encoding"] == "gzip" ) {
-        INF("url_gunzip decompressing ...");
-        zip_pipe = "gunzip";
-
-        #awk strings can contain nul \0 so this will work!
-        printf "%s",response["body"] |& zip_pipe
-        fflush(zip_pipe);
-        close(zip_pipe,"to");
-        while ( zip_pipe |& getline txt ) {
-            b = b txt;
-        }
-        response["body"] = b;
-        close(zip_pipe);
-    }
-}
-function url_encode_utf8(response,\
-iconv_pipe,b,txt,enc) {
-    enc = response["enc"] ;
-    if (enc && (enc != "utf8" )) {
-        if (g_fetch["no_encode"]) {
-            INF("leaving "enc" to utf8 ...");
-        } else {
-            INF("converting "enc" to utf8 ...");
-            iconv_pipe = "iconv -f "enc" -t utf-8";
-
-            printf "%s",response["body"] |& iconv_pipe
-            fflush(iconv_pipe);
-            close(iconv_pipe,"to");
-            while ( iconv_pipe |& getline txt ) {
-                b = b txt;
-            }
-            response["body"] = b;
-            response["enc"] = "utf-8";
-            close(iconv_pipe);
-        }
-    }
-}
-
 function url_log_state(label,con) {
-    INF(label" : connection "con" reconnect sub total "g_url_con_persist_subtotal[con]" opened "g_url_con_opened[con]" closed "g_url_con_closed[con]);
+    DETAIL(label" : connection "con" reconnect sub total "g_url_con_persist_subtotal[con]" opened "g_url_con_opened[con]" closed "(g_url_con_closed[con]+0));
 }
 function url_stats(\
 con) {

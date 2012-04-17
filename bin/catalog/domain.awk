@@ -31,12 +31,12 @@ plist,ret,key) {
         if (plist) {
             if (index(plist,"{ID}") && g_settings["domain_edit_id"] ) {
                 if (gsub(/\{ID\}/,g_settings["domain_edit_id"],plist)) {
-                    INF("regex id modified to "plist);
+                    DETAIL("regex id modified to "plist);
                 }
             }
             ret=apply_edits(ret,plist,verbose);
         } else {
-            INF("keyword ["key"] not present for domain ["domain"]");
+            DETAIL("keyword ["key"] not present for domain ["domain"]");
         }
     }
     if (ret && verbose) DEBUG("domain_edits:["domain":"text"]=["ret"]");

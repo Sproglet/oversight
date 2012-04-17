@@ -71,19 +71,19 @@ poster_ref,internal_path) {
     internal_path = getPath(poster_ref,minfo[DIR]);
 
     if (internal_path in g_image_inspected) {
-        if(verbose) INF("Already looked at "poster_ref);
+        if(verbose) DETAIL("Already looked at "poster_ref);
         return 0;
     } else if (update_image) {
-        if(verbose) INF("Force Update of "poster_ref);
+        if(verbose) DETAIL("Force Update of "poster_ref);
         return 1;
     } else if (!get_image) {
-        if(verbose) INF("Skipping "poster_ref);
+        if(verbose) DETAIL("Skipping "poster_ref);
         return 0;
     } else if (hasContent(internal_path)) {
-        if(verbose) INF("Already have "poster_ref" ["internal_path"]");
+        if(verbose) DETAIL("Already have "poster_ref" ["internal_path"]");
         return 0;
     } else {
-        if(verbose) INF("Getting "poster_ref);
+        if(verbose) DETAIL("Getting "poster_ref);
         return 1;
     }
 }
@@ -116,7 +116,7 @@ function download_image(field_id,minfo,mi_field,\
             get_it = getting_fanart(minfo,0);
         }
 
-        INF("getting image = "get_it);
+        DETAIL("getting image = "get_it);
 
         if (get_it ) {
 
@@ -141,7 +141,7 @@ function download_image(field_id,minfo,mi_field,\
         }
     }
 
-    INF("download_image["field_id"]["url"]="poster_ref);
+    DETAIL("download_image["field_id"]["url"]="poster_ref);
 
     return poster_ref;
 }
@@ -256,7 +256,7 @@ json,url,imageUrl,i,prefix,sc,best,finalUrl) {
             i++;
             imageUrl = json[prefix i ":MediaUrl"];
             if (imageUrl == "") {
-               INF("no image for "prefix i ":MediaUrl");
+               DETAIL("no image for "prefix i ":MediaUrl");
                break;
             }
             sc[imageUrl] = img_score(json,prefix,i,aspect,minfo);
@@ -413,14 +413,14 @@ sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
 
         if (sc >= best_so_far ) {
             if (!url_online(imageUrl,1,5,1)) {
-                INF("url is offline?");
+                DETAIL("url is offline?");
                 sc = 0;
             }
         } 
 
     } while(0);
 
-    INF("image score="sc" for "w"x"h" "imageUrl" "img_title" "url_file_title);
+    DETAIL("image score="sc" for "w"x"h" "imageUrl" "img_title" "url_file_title);
     return sc;
 }
 
@@ -429,7 +429,7 @@ ar) {
     ar = ratio * h / w - 1;
     ar = ar * ar;
     if (ar < 0.04) {
-        #INF("good aspect "w","h" wrt. "ratio" = "ar);
+        #DETAIL("good aspect "w","h" wrt. "ratio" = "ar);
         return 1;
     } 
     return 0;

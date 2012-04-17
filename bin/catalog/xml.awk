@@ -50,11 +50,11 @@ i,n,tag,ids,t,val) {
 
         # display all non empty values that either do not have cr or are not blank
         if (val != "" && (!index(val,"\n") || val !~ /^[[:space:]]*/ )) {
-            INF(tag" = "xml[tag]);
+            DETAIL(tag" = "xml[tag]);
         }
 
         for (t in ids) {
-            if (tag"#"t in xml) INF(tag"#"t" = "xml[tag"#"t]);
+            if (tag"#"t in xml) DETAIL(tag"#"t" = "xml[tag"#"t]);
         }
     }
     DEBUG("end:"label":xml");
@@ -138,7 +138,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
 
     if (index(line,g_sigma) ) { 
         gsub(g_sigma,"e",line);
-        INF("Sigma replaced");
+        DETAIL("Sigma replaced");
     }
 
     #break at each tag/endtag
@@ -288,7 +288,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
             if (countTag in xml) {
                xml[countTag] ++;
                currentTag = currentTag ">" xml[countTag];
-                if (dbg) INF("xml: changed currentTag ["currentTag"] tag=["tag"]");
+                if (dbg) DETAIL("xml: changed currentTag ["currentTag"] tag=["tag"]");
             } else {
                 xml[countTag] = 1;
             }
@@ -544,6 +544,6 @@ i,n,p2,ret) {
             }
         }
     }
-    INF("xml: "parent "tag = ["tag"="value"] ["tag2"="value2"] = ["ret"]");
+    DETAIL("xml: "parent "tag = ["tag"="value"] ["tag2"="value2"] = ["ret"]");
     return ret;
 }

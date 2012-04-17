@@ -53,7 +53,7 @@ i,url,count,posters_and_flags,current_poster,ret,cap,flag,country_hash) {
 
     url=g_mpdb group;
 
-    INF("mpdb_parse_group "url);
+    DETAIL("mpdb_parse_group "url);
 
     hash_invert(countries,country_hash);
 
@@ -66,7 +66,7 @@ i,url,count,posters_and_flags,current_poster,ret,cap,flag,country_hash) {
 
             current_poster = posters_and_flags[i];
 
-            #INF(" poster= " g_mpdb current_poster);
+            #DETAIL(" poster= " g_mpdb current_poster);
 
         } else if (match(posters_and_flags[i],"/flags/([[:alpha:]]+)",cap) ) {
 
@@ -82,11 +82,11 @@ i,url,count,posters_and_flags,current_poster,ret,cap,flag,country_hash) {
                 if (current_poster) {
                     if (!matches[flag]) {
                         matches[flag] = g_mpdb gensub(/\/[a-z]_/,"/l_",1,current_poster);
-                        INF("Stored "flag" = "matches[flag]);
+                        DETAIL("Stored "flag" = "matches[flag]);
                     
                         # check if users main country
                         if (country_hash[flag] == 1) {
-                            INF("Found Primary country");
+                            DETAIL("Found Primary country");
                             break;
                         }
                     }

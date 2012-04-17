@@ -44,17 +44,17 @@ num,tags,i,tmp,ret,id) {
             minfo_merge(minfo,minfo2,"@nfo");
             ret = 1;
         } else if ( "/xml/tvshow" in xml ) {
-            INF("tvshow xbmc not supported yet...");
+            DETAIL("tvshow xbmc not supported yet...");
             minfo2[CATEGORY] = "T";
         } else if ( "/tvshow" in xml ) {
-            INF("tvshow xbmc not supported yet...");
+            DETAIL("tvshow xbmc not supported yet...");
             minfo2[CATEGORY] = "T";
         }
 
         # next load into minfo2 then minfo_merge with source = @nfo then set best_score to prioritise nfo and short circuit searching.
 
     } else {
-        INF("Non XML nfo - "file);
+        DETAIL("Non XML nfo - "file);
     }
     return ret;
 }
@@ -64,7 +64,7 @@ function scanNfoForImdbLink(nfoFile,\
 foundId,line) {
 
     foundId="";
-    INF("scanNfoForImdbLink ["nfoFile"]");
+    DETAIL("scanNfoForImdbLink ["nfoFile"]");
 
     if (system("test -f "qa(nfoFile)) == 0) {
         FS="\n";
@@ -75,7 +75,7 @@ foundId,line) {
         }
         close(nfoFile);
     }
-    INF("scanNfoForImdbLink = ["foundId"]");
+    DETAIL("scanNfoForImdbLink = ["foundId"]");
     return foundId;
 }
 
@@ -107,7 +107,7 @@ nfo,fieldName,fieldId,nfoAdded,nfofilename,tvnfo) {
     } else {
 
         if (fields[NFO] == "" ) {
-            INF("No NFO name - skip writing");
+            DETAIL("No NFO name - skip writing");
             return;
         }
 
@@ -204,7 +204,7 @@ line,set,code,ret,i,is_xml,is_generated) {
             ret = is_generated;
             # could also overwrite non-xml nfos | !is_xml?
         }
-        INF("overwrite nfo = "ret" - "nfo);
+        DETAIL("overwrite nfo = "ret" - "nfo);
     }
     return ret;
 }
@@ -314,7 +314,7 @@ function export_xml(dbfile,\
     while((row=get_dbline(dbsorted)) != "") {
         has_output++;
         parseDbRow(row,fields,1);
-        INF(has_output":"fields[IDLIST]);
+        DETAIL(has_output":"fields[IDLIST]);
         # end previous nfo tag if exporting.
         # this is to make sure all tv seasons are together.
 	

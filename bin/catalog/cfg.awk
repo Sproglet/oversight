@@ -1,3 +1,7 @@
+BEGIN {
+    g_catalog_log_level = 1;
+}
+
 function default_settings() {
     g_settings["catalog_scan_batch_size"]=30;
 }
@@ -10,7 +14,12 @@ ign_path,env) {
             g_settings[env] = ENVIRON[env];
         }
     }
-    dump(0,"settings",g_settings);
+
+    if ( g_settings["catalog_log_level"] != "" ) {
+        g_catalog_log_level = g_settings["catalog_log_level"];
+    }
+
+    dump(1,"settings",g_settings);
 
     ign_path = "catalog_ignore_paths";
 
@@ -28,13 +37,14 @@ ign_path,env) {
     } else {
         g_settings[ign_path]="^"glob2re(g_settings[ign_path]);
     }
-    INF("ignore name = ["g_settings["catalog_ignore_names"]"]");
-    INF("ignore path = ["g_settings[ign_path]"]");
+    DETAIL("ignore name = ["g_settings["catalog_ignore_names"]"]");
+    DETAIL("ignore path = ["g_settings[ign_path]"]");
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));
 
     #Search engines used for simple keywords+"imdb" searches.
     split(tolower(g_settings["catalog_search_engines"]),g_link_search_engines,g_cvs_sep);
+
 }
 
 # Load configuration file
@@ -65,7 +75,7 @@ i,n,v,option,ret,err,cfg) {
             g_settings_orig[n]=v;
             cfg[n] = g_settings[n] = v;
             if (verbose) {
-                INF(n"=["g_settings[n]"]");
+                DETAIL(n"=["g_settings[n]"]");
             }
         }
     }
@@ -111,7 +121,7 @@ ret) {
     #DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"]");
 
     if (g_last_plugin[type] != name) {
-        INF("loading...");
+        DETAIL("loading...");
         remove_settings("^"type ":");
         ret = load_settings(type":",plugin_file(type,name),1);
         g_last_plugin[type] = name;

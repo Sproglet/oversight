@@ -63,7 +63,7 @@ details,line,ret,name,i,start,end) {
        line = last_path_parts(minfo,i);
 
        if (match(tolower(line),"(video|tv|movies).*\\/")) {
-           INF("Generic folder? "line);
+           DETAIL("Generic folder? "line);
            break;
        }
 
@@ -92,7 +92,7 @@ details,line,ret,name,i,start,end) {
                 minfo[SEASON]=details[SEASON];
                 minfo[EPISODE]=details[EPISODE];
 
-                INF("Found tv info in file name:"line" title:["minfo[TITLE]"] ["minfo[SEASON]"] x ["minfo[EPISODE]"]");
+                DETAIL("Found tv info in file name:"line" title:["minfo[TITLE]"] ["minfo[SEASON]"] x ["minfo[EPISODE]"]");
 
                 ## Commented Out As Double Episode checked elsewhere to shrink code ##
                 ## Left In So We Can Ensure It's Ok ##
@@ -159,14 +159,14 @@ terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
             if (bing_url != "") {
                 scan_page_for_match_counts(bing_url,filter_text,filter_regex,0,0,"",results);
                 bing_id = subexp(getMax(results,1,1),"[0-9]+");
-                INF("bing_id="bing_id);
+                DETAIL("bing_id="bing_id);
 
                 google_url = scan_page_for_first_link(g_search_google terms,domain,0);
 
                 if (google_url != "") {
                     scan_page_for_match_counts(google_url,filter_text,filter_regex,0,0,"",results);
                     google_id = subexp(getMax(results,1,1),"[0-9]+");
-                    INF("google_id="google_id);
+                    DETAIL("google_id="google_id);
                 }
 
                 if (bing_id == google_id) {
@@ -187,7 +187,7 @@ terms,results,ret,url,domain,filter_text,filter_regex,minfo2,\
                         }
                     }
                 } else {
-                    INF("different ids bing:"bing_id" != google:"google_id" - ignoring");
+                    DETAIL("different ids bing:"bing_id" != google:"google_id" - ignoring");
                 }
             }
         } else {
@@ -348,9 +348,9 @@ tmpTitle,ret,ep,season,title,inf,matches) {
         id1("extractEpisodeByPatternSingle:"reg_match);
 
 
-        #INF("regex=["regex"]");
-        #INF("capture_list=["capture_list"]");
-        #INF("reg_match=["reg_match"]");
+        #DETAIL("regex=["regex"]");
+        #DETAIL("capture_list=["capture_list"]");
+        #DETAIL("reg_match=["reg_match"]");
         dump(0,"extractEpisodeByPatternSingle",matches);
 
         # split the line up
@@ -392,11 +392,11 @@ tmpTitle,ret,ep,season,title,inf,matches) {
             if (!index(line," ") &&  match(title,"^[[:alpha:]][[:alnum:]]+[-][[:alnum:]]+$")) {
                tmpTitle=substr(title,RSTART+RLENGTH);
                if (tmpTitle != "" ) {
-                   INF("Removed group was ["title"] now ["tmpTitle"]");
+                   DETAIL("Removed group was ["title"] now ["tmpTitle"]");
                    title=tmpTitle;
                }
             } else {
-               INF("Using full hyphenated title "title);
+               DETAIL("Using full hyphenated title "title);
             }
         }
 
@@ -477,13 +477,13 @@ date,nonDate,title,rest,y,m,d,tvdbid,result,closeTitles,tmp_info,total,i) {
                 plugin_error(plugin);
             }
             if (result) {
-                INF("Found episode of "tvdbid":"closeTitles[i,2]" on "y"-"m"-"d);
+                DETAIL("Found episode of "tvdbid":"closeTitles[i,2]" on "y"-"m"-"d);
                 details[TVID]=tvdbid;
                 break;
             }
         }
         if (result == 0) {
-            INF(":( Couldnt find episode "y"/"m"/"d" - using file information");
+            DETAIL(":( Couldnt find episode "y"/"m"/"d" - using file information");
             details[SEASON]=y;
             details[EPISODE]=sprintf("%02d%02d",m,d);
             sub(/\....$/,"",rest);
@@ -646,7 +646,7 @@ plugin,cat,p,tv_status,do_search,search_abbreviations,more_info,path_num,ret) {
             # demote back to imdb title
             if (minfo["mi_imdb_title"] != minfo[TITLE] && minfo["mi_imdb_title"] != "" ) {
 
-                INF("*** revert title from "minfo[TITLE]" to "minfo["mi_imdb_title"]);
+                DETAIL("*** revert title from "minfo[TITLE]" to "minfo["mi_imdb_title"]);
                 minfo[TITLE] = minfo["mi_imdb_title"];
             }
 
@@ -777,6 +777,7 @@ tvDbSeriesPage,result,tvid,cat,iid) {
         get_imdb_info(extractImdbLink(iid),minfo);
     }
     
+    INF("tv_search "(result?"found "minfo[TITLE]:"not found"));
     id0(result);
     return 0+ result;
 }
@@ -834,9 +835,9 @@ ret,key) {
     key=plugin"/"title;
     if ((key in g_tvDbIndex)) {
         ret = g_tvDbIndex[key];
-        INF("previous tv mapping ["key"] -> ["ret"]");
+        DETAIL("previous tv mapping ["key"] -> ["ret"]");
     } else {
-        INF("no tv mapping ["key"]");
+        DETAIL("no tv mapping ["key"]");
     }
     return ret;
 }
@@ -844,7 +845,7 @@ ret,key) {
 function plugin_title_set_url(plugin,title,url,\
 key) {
     key=plugin"/"title;
-    INF("set tv mapping ["key"] = ["url"]");
+    DETAIL("set tv mapping ["key"] = ["url"]");
     g_tvDbIndex[key] = url;
 }
 
@@ -911,7 +912,7 @@ all_same,i,id,title) {
         }
         if (all_same) {
             total = 1;
-            INF("Selecting first show");
+            DETAIL("Selecting first show");
             delete showIds;
             showIds[1,1]=id;
             showIds[1,2]=title;
@@ -955,7 +956,7 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
     if(cache_key in g_abbrev_cache) {
 
         tvDbSeriesPage = g_abbrev_cache[cache_key];
-        INF("Fetched abbreviation "cache_key" = "tvDbSeriesPage);
+        DETAIL("Fetched abbreviation "cache_key" = "tvDbSeriesPage);
 
     } else {
 
@@ -970,7 +971,7 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
         total=searchAbbreviationAgainstTitles(plugin,tolower(substr(title,1,1)),title,showIds);
         if (total == 0 && index(title,"-")) {
             sub(/[^-]+-/,"",title);
-            INF("removed prefix ["title"]");
+            DETAIL("removed prefix ["title"]");
             total=searchAbbreviationAgainstTitles(plugin,tolower(substr(title,1,1)),title,showIds);
         }
 
@@ -992,7 +993,7 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
             # If total is 1, then we could still do a filename search to confirm.
             # This will reduce false positives for downloaded content, but may not be so good for user generated files 
             # or oldder files. So for now we will disable checking if total  = 1.
-            INF("Title is only option so assuming it is correct. Skipping filename checks ");
+            DETAIL("Title is only option so assuming it is correct. Skipping filename checks ");
 
         }
 
@@ -1012,7 +1013,7 @@ cache_key,tvDbSeriesPage,tvdbid,showIds,total) {
 
         if (tvDbSeriesPage) {
             g_abbrev_cache[cache_key] = tvDbSeriesPage;
-            INF("Caching abbreviation "cache_key" = "tvDbSeriesPage);
+            DETAIL("Caching abbreviation "cache_key" = "tvDbSeriesPage);
         }
 
         id0(tvDbSeriesPage);
@@ -1043,7 +1044,7 @@ names,count) {
     #dump_ids_and_titles("initial",count,names);
     count = searchAbbreviation(initial,count,names,abbrev,alternateTitles);
     if (count == -1) {
-        INF("too many matches - clearing");
+        DETAIL("too many matches - clearing");
         delete alternateTitles;
         count = 0;
     }
@@ -1063,7 +1064,7 @@ i) {
     id1(label);
     if (total >= 1) {
         for(i = 1 ; i <= total ; i++ ) {
-            INF(label":"i"/"total":"ids[i,1]":"ids[i,2]);
+            DETAIL(label":"i"/"total":"ids[i,1]":"ids[i,2]);
         }
     }
     id0(total);
@@ -1094,7 +1095,7 @@ bestId,bestFirstAired,age_scores,eptitle_scores) {
     } else {
         TODO("Refine selection rules here.");
 
-        INF("Getting the most recent first aired for s"minfo[SEASON]"e"minfo[EPISODE]);
+        DETAIL("Getting the most recent first aired for s"minfo[SEASON]"e"minfo[EPISODE]);
         # disabled in the hope another search method is triggered
         if(1) {
             bestFirstAired="";
@@ -1111,7 +1112,7 @@ bestId,bestFirstAired,age_scores,eptitle_scores) {
         }
         #TODO also try to get first episode of season.
     }
-    INF("Selected:"bestId);
+    DETAIL("Selected:"bestId);
     return bestId;
 }
 
@@ -1181,7 +1182,7 @@ allTitles,url,ret,total) {
     }
 
     if (total == 1) {
-        INF("One result - assume it is the match we are looking for - skip similarity check");
+        DETAIL("One result - assume it is the match we are looking for - skip similarity check");
         hash_copy(closeTitles,allTitles);
         ret = 1;
     } else {
@@ -1232,7 +1233,7 @@ info,currentId,currentName,i,num,series,empty_filter) {
             # at present thetvdb truncates search results to 100 entries. This causes ,
             # http://www.thetvdb.com/api/GetSeries.php?seriesname=Life to fail to find BBC Life.
             # So we abort the search and hope tvrage plugin does the job.
-            INF("100 results returned - using internal tvdb data because thetvdb may have truncated results");
+            DETAIL("100 results returned - using internal tvdb data because thetvdb may have truncated results");
             num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
         } else {
             for(i = 1 ; i <= num ; i++ ) {
@@ -1315,7 +1316,7 @@ url,id2,key,filter,showInfo,year_range,title_regex,tags) {
                         filter["/SeriesName"] = "~:^"title_regex"$";
                         filter["/FirstAired"] = "~:^"year_range"-";
                         if (find_elements(showInfo,"/Data/Series",filter,1,tags)) {
-                            INF("Looking at tvdb "showInfo[tags[1]"/SeriesName"]);
+                            DETAIL("Looking at tvdb "showInfo[tags[1]"/SeriesName"]);
                             id2 = showInfo[tags[1]"/seriesid"];
                         }
                     }
@@ -1328,7 +1329,7 @@ url,id2,key,filter,showInfo,year_range,title_regex,tags) {
                         filter["/name"] = "~:^"title_regex"$";
                         filter["/started"] = "~:"year_range;
                         if (find_elements(showInfo,"/Results/show",filter,1,tags)) {
-                            INF("Looking at tv rage "showInfo[tags[1]"/name"]);
+                            DETAIL("Looking at tv rage "showInfo[tags[1]"/name"]);
                             id2 = showInfo[tags[1]"/showid"];
                         }
                     }
@@ -1391,7 +1392,7 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
 
         alt = gensub("([^ 0-9])("g_year_re")","\\1 \\2","g",title);
         if (alt != title) {
-            INF("Try to insert a space before year - eg v2009 -> v 2009");
+            DETAIL("Try to insert a space before year - eg v2009 -> v 2009");
             total = searchTv(plugin,alt,closeTitles);
             tvdbid = selectBestOfBestTitle(plugin,minfo,total,closeTitles);
         }
@@ -1400,13 +1401,13 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
 #    var u
 #    if (tvdbid == "") {
 #        u = searchHeuristicsForImdbLink(searchHeuristicsForImdbLink(title,3));
-#        INF("XXXX new search here = "u);
+#        DETAIL("XXXX new search here = "u);
 #    }
 
     if (tvdbid == "") {
         alt  = remove_tv_year(title);
     	if(title != alt) {
-    	    INF("Try without a year");
+    	    DETAIL("Try without a year");
             # the tvdb api can return better hits without the year.
             # compare e.g.
             # http://www.thetvdb.com/api/GetSeries.php?seriesname=Carnivale%202003 Bad
@@ -1468,7 +1469,7 @@ url,i,num,langs,key,plot) {
                             if (fetchXML(url,"tvxml",xml,"")) {
                                 plot = xml["/Data/Series/Overview"];
                                 if (is_english(plot)) {
-                                    INF("expected lang="langs[i]" but found "show_english(plot));
+                                    DETAIL("expected lang="langs[i]" but found "show_english(plot));
                                 } else {
                                     break;
                                 }
@@ -1544,7 +1545,7 @@ possible_in_title,title_in_possible,unqualified_in_title,qualifier_re) {
 
     #DEBUG("XX titleIn["titleIn"]");
     #DEBUG("XX possible_title["possible_title"]");
-#    INF("qualifed titleIn["titleIn" ("yearOrCountry")]");
+#    DETAIL("qualifed titleIn["titleIn" ("yearOrCountry")]");
 
     #This will match exact name OR if BOTH contain original year or country
     
@@ -1569,7 +1570,7 @@ possible_in_title,title_in_possible,unqualified_in_title,qualifier_re) {
 
         if (unqualified_in_title==1 && yearOrCountry && substr(titleIn,length(unqualified_title)+1) ~ " \\(?"yearOrCountry"\\)?") {
 
-            INF("titleIn["titleIn"] matches unqualified_title["unqualified_title"] + qualification["yearOrCountry"]");
+            DETAIL("titleIn["titleIn"] matches unqualified_title["unqualified_title"] + qualification["yearOrCountry"]");
             # eg the titleIn had qualification without brackets. eg "The Office US"
             # The possible_title had qualification with brackets "The Office (US)"
             # These essentially match but there is a slim to non-existant chance it may
@@ -1580,41 +1581,41 @@ possible_in_title,title_in_possible,unqualified_in_title,qualifier_re) {
 
         } else if (unqualified_in_title==1 && yearOrCountry && ( unqualified_title  == titleIn )) {
 
-            INF("titleIn["titleIn"] matches unqualified_title["unqualified_title"]  but not qualification["yearOrCountry"]");
+            DETAIL("titleIn["titleIn"] matches unqualified_title["unqualified_title"]  but not qualification["yearOrCountry"]");
             matchLevel = 3;
 
         } else if (title_in_possible == 1 && titleIn == shortName) {
                 #Check for comma. eg maych House to House,M D
-            INF("titleIn["titleIn"] matches shortName["shortName"]");
+            DETAIL("titleIn["titleIn"] matches shortName["shortName"]");
             matchLevel=5;
 
         } else if (title_in_possible == 1 && index(possible_title,titleIn" show")) {
             #eg "jay leno show","jay leno"
             # eg "(The) Jay Leno Show" vs "Jay Leno"
-            INF("titleIn["titleIn"]+show matches shortName["possible_title"]");
+            DETAIL("titleIn["titleIn"]+show matches shortName["possible_title"]");
             matchLevel = 4;
 
         } else if (title_in_possible == 1 && (substr(possible_title,length(titleIn)+1) ~ qualifier_re )) {
 
-            INF("titleIn +["titleIn"]+some qualifier matches possible_title["possible_title"]");
+            DETAIL("titleIn +["titleIn"]+some qualifier matches possible_title["possible_title"]");
             matchLevel = 5;
 
         } else if (possible_in_title == 1 && (substr(titleIn,length(possible_title)+1) ~ qualifier_re )) {
 
-            INF("titleIn +["titleIn"] matches possible_title["possible_title"] + some qualifier");
+            DETAIL("titleIn +["titleIn"] matches possible_title["possible_title"] + some qualifier");
             matchLevel = 5;
 
         } else if (title_in_possible &&  index(possible_title,"late night with "titleIn)) {
             # Late Night With Some Person might just be known as "Some Person"
             # eg The Tonight Show With Jay Leno
-            INF("titleIn late night with+["titleIn"]+show matches shortName["possible_title"]");
+            DETAIL("titleIn late night with+["titleIn"]+show matches shortName["possible_title"]");
             matchLevel = 4;
 
         } else if (title_in_possible && index(possible_title,"show with "titleIn)) {
 
             # The blah blah Show With Some Person might just be known as "Some Person"
             # eg The Tonight Show With Jay Leno
-            INF("titleIn show with+["titleIn"]+show matches shortName["possible_title"]");
+            DETAIL("titleIn show with+["titleIn"]+show matches shortName["possible_title"]");
             matchLevel = 4;
 
         }
@@ -1649,13 +1650,13 @@ i,score,bestScore,tmpTitles,total) {
     total = 0;
     delete titleHashOut;
     if (bestScore == 0 ) {
-        INF("all zero score - discard them all to trigger another match method");
+        DETAIL("all zero score - discard them all to trigger another match method");
     } else {
         for(i in score) {
             total++;
             titleHashOut[total,1] = tmpTitles[i,1];
             titleHashOut[total,2] = tmpTitles[i,2];
-            INF("similar:"titleHashOut[i,1]":"titleHashOut[i,2]);
+            DETAIL("similar:"titleHashOut[i,1]":"titleHashOut[i,2]);
         }
     }
 
@@ -1810,7 +1811,7 @@ word_no,a,words,rest_of_abbrev,found,abbrev_len,short_words,num_words,current_wo
     }
     found = ((a -abbrev_len ) > 0 ) && word_no > num_words;
     if (found) {
-        INF(possible_title " abbreviated by ["abbrev"]");
+        DETAIL(possible_title " abbreviated by ["abbrev"]");
     }
     return 0+ found;
 }
@@ -1870,7 +1871,7 @@ ret,i,j,s1lc,abbrevlc,len1,len2,regex,ch) {
         if (match(tolower(s1),regex)) {
             ret = substr(s1,RSTART,RLENGTH);
             if (index(substr(s1,RSTART+RLENGTH)," ")) {
-                #INF("abbreviation ["s1"] ignored due to trailng words/space after ["ret"]");
+                #DETAIL("abbreviation ["s1"] ignored due to trailng words/space after ["ret"]");
                 ret = "";
             }
         } 
@@ -1929,10 +1930,10 @@ found,part,sw,ini) {
         # 
         sw = significant_words(possible_title);
         ini = get_initials(sw);
-        #INF("abbrev["abbrev"] possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
+        #DETAIL("abbrev["abbrev"] possible_title=["possible_title"] part=["part"] sig=["sw"] init=["ini"]");
 
         if (abbreviated_substring(abbrev,"",ini,0) == "") {
-            #INF("["possible_title "] rejected. ["ini"] not in abbrev ["abbrev"]");
+            #DETAIL("["possible_title "] rejected. ["ini"] not in abbrev ["abbrev"]");
         } else {
             found = 1;
         }
@@ -1984,7 +1985,7 @@ episodeUrl,result) {
         }
         dumpxml("episode-xml",episodeInfo);
     } else {
-        INF("cant determine episode url from "seriesUrl);
+        DETAIL("cant determine episode url from "seriesUrl);
     }
     id0(result);
     return 0+ result;
@@ -1999,7 +2000,7 @@ ret,xml) {
         g_imdb2thetvdb[imdbid] = xml["/Data/Series/seriesid"];
     }
     ret = g_imdb2thetvdb[imdbid];
-    INF("imdb2thetvdb "imdbid" = "ret);
+    DETAIL("imdb2thetvdb "imdbid" = "ret);
     return ret;
 }
 
@@ -2269,7 +2270,7 @@ seriesInfo,result,iid,thetvdbid,lang,plot,ep_ok,episodeUrl,xmlstr,num) {
             if (ep_ok) {
                 if (minfo[EPTITLE] != "" ) {
                    if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo[EPPLOT] == "" ) {
-                       INF("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");
+                       DETAIL("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");
                    } else {
                        result ++;
                    }
@@ -2343,7 +2344,7 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
             }
         }
 
-        if (!firstIndex(xml)) {
+        if (firstIndex(xml) != "") {
 
             if (get_poster) {
                 for(i = 1 ; i <= lnum ; i++ ) {
@@ -2359,10 +2360,11 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
             if (get_fanart) {
 
                 if (g_settings["catalog_image_fanart_width"]  == 1920 ) {
-                    size = "2930x1080";
+                    size = "1920x1080";
                 } else {
                     size = "1280x720";
                 }
+
                 for(i = 1 ; i <= lnum ; i++ ) {
                     url = xml_extract(xml[0,"fanart",size,langs[i]],"BannerPath");
                     if (url) {
@@ -2372,7 +2374,6 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
                     }
                 }
             }
-            scrape_cache_add(key,banners);
         }
     }
 }
@@ -2381,14 +2382,14 @@ function set_eptitle(minfo,title) {
     if (minfo[EPTITLE] == "" ) {
 
         minfo[EPTITLE] = title;
-        INF("Setting episode title ["title"]");
+        DETAIL("Setting episode title ["title"]");
 
     } else if (title != "" && title !~ /^Episode [0-9]+$/ && minfo[EPTITLE] ~ /^Episode [0-9]+$/ ) {
 
-        INF("Overiding episode title ["minfo[EPTITLE]"] with ["title"]");
+        DETAIL("Overiding episode title ["minfo[EPTITLE]"] with ["title"]");
         minfo[EPTITLE] = title;
     } else {
-        INF("Keeping episode title ["minfo[EPTITLE]"] ignoring ["title"]");
+        DETAIL("Keeping episode title ["minfo[EPTITLE]"] ignoring ["title"]");
     }
 }
 

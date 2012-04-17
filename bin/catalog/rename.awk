@@ -26,7 +26,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         newName=g_settings["catalog_tv_file_fmt"];
         newName = substitute("SEASON",minfo[SEASON],newName);
         newName = substitute("EPISODE",minfo[EPISODE],newName);
-        newName = substitute("INF",minfo[ADDITIONAL_INF],newName);
+        newName = substitute("DETAIL",minfo[ADDITIONAL_INF],newName);
 
         epTitle=minfo[EPTITLE];
         gsub("[^-" g_alnum8 ",. ]","",epTitle);
@@ -141,7 +141,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
            }
         }
 
-        INF("checking "qa(oldFolder));
+        DETAIL("checking "qa(oldFolder));
         if (is_dir(oldFolder) ) {
 
             system("rmdir -- "qa(oldFolder)" 2>/dev/null" ); # only remove if empty
@@ -156,7 +156,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
             print "dryrun:\t"newName" unchanged.";
             print "dryrun:";
         } else {
-            INF("rename:\t"newName" unchanged.");
+            DETAIL("rename:\t"newName" unchanged.");
         }
     }
 }
@@ -253,7 +253,7 @@ function moveFile(oldName,newName,\
         }
         return 0;
     } else {
-    # INF("move file:\t"old" --> "new);
+    # DETAIL("move file:\t"old" --> "new);
         if ((ret=preparePath(newName)) == 0) {
             ret = exec("mv "old" "new);
         }
@@ -303,7 +303,7 @@ old,new,cmd,ret) {
            print "dryrun: from "old"/* to "new"/";
            ret = 0;
        } else if (is_empty(oldName) == 0) {
-            INF("move folder:"old"/* --> "new"/");
+            DETAIL("move folder:"old"/* --> "new"/");
            # Seems to be a bug on dns323 where globbing fails of the path is too long. 
            # Havent fully isolated but resolved by replacing "mv /path/* " with "( cd /path ; mv * )"
            cmd= " mkdir -p "new" ; ( cd "old" ; mv * .* "new" || true ) ; rmdir "old" 2>/dev/null";

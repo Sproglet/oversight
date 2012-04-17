@@ -1,6 +1,6 @@
 
 function scrape_cache_clear() {
-    #DEBUG("scrape_cache_clear");
+    #if(LG)DEBUG("scrape_cache_clear");
     delete g_scrape_cache_vals;
     delete g_scrape_cache_flds;
     g_scrape_cache_index_size=0;
@@ -25,7 +25,7 @@ fld,id) {
         g_scrape_cache_vals[id,fld] = minfo[fld];
     }
     #dump(0,"scrape_cache_add",minfo);
-    DETAIL("scrape_cache_added ["url","id"]");
+    if(LD)DETAIL("scrape_cache_added ["url","id"]");
 }
 
 function scrape_cache_get(url,minfo,\
@@ -43,6 +43,6 @@ i,ret,fld,id) {
         }
     }
     #dump(0,"scrape_cache_get",minfo);
-    DETAIL("scrape_cache_get ["url","id"] = "ret);
+    if(LD)DETAIL("scrape_cache_get ["url","id"] = "ret);
     return ret;
 }

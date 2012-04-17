@@ -64,7 +64,7 @@
 #!catalog
 
 function TODO(x) {
-    DEBUG("TODO:"x);
+    if(LG)DEBUG("TODO:"x);
 }
 
 
@@ -169,13 +169,13 @@ BEGIN {
     g_api_rage="fP8i46657c9qept4Mu554AHh7";
     g_api_bing="4C83349CD70CC9F6125EA40CACED1D950730533E97EA0";
 
-    DETAIL("$Id$");
+    if(LD)DETAIL("$Id$");
 
     STANDALONE = !isnmt();
 
     get_folders_from_args(FOLDER_ARR);
 
-    INF("Mode="(STANDALONE?"STANDALONE":"OVERSIGHT"));
+    if(LI)INF("Mode="(STANDALONE?"STANDALONE":"OVERSIGHT"));
 
     if (STANDALONE) {
         # true if catalog.sh is running is a generic scraper.
@@ -192,7 +192,7 @@ function report_status(msg) {
     } else {
         print msg > g_status_file;
         close(g_status_file);
-        DETAIL("status:"msg);
+        if(LD)DETAIL("status:"msg);
         set_permissions(g_status_file);
     }
 }
@@ -211,7 +211,7 @@ END{
         GET_FANART = UPDATE_FANART = 0;
         GET_PORTRAITS = UPDATE_PORTRAITS = 0;
     }
-    DETAIL("g_db = "g_db);
+    if(LD)DETAIL("g_db = "g_db);
     #path for actor db etc.
     DBDIR = OVS_HOME"/db";
 
@@ -258,7 +258,7 @@ END{
     report_status("scanning");
 
     g_lang_articles = g_articles[main_lang()];
-    DETAIL("Articles="g_lang_articles);
+    if(LD)DETAIL("Articles="g_lang_articles);
 
 
     g_max_actors=g_settings["catalog_max_actors"];
@@ -267,8 +267,8 @@ END{
 
     split(tolower(g_settings["catalog_tv_plugins"]),g_tv_plugin_list,g_cvs_sep);
 
-    DEBUG("RENAME_TV="RENAME_TV);
-    DEBUG("RENAME_FILM="RENAME_FILM);
+    if(LD)DETAIL("RENAME_TV="RENAME_TV);
+    if(LD)DETAIL("RENAME_FILM="RENAME_FILM);
 
     set_db_fields();
 
@@ -285,7 +285,7 @@ END{
     # allow tag to be at beginning or end of a word.
     g_settings["catalog_format_tags"]="(((\\<|_)("gTmp"))|(("gTmp")(_|\\>)))";
 
-    DEBUG("catalog_format_tags="g_settings["catalog_format_tags"]);
+    if(LD)DETAIL("catalog_format_tags="g_settings["catalog_format_tags"]);
 
     gExtList1="avi|divx|mkv|mp4|ts|m2ts|xmv|mpg|mpeg|mov|m4v|wmv";
     gExtList2="img|iso";
@@ -294,13 +294,13 @@ END{
     gExtList2=tolower(gExtList2) "|" toupper(gExtList2);
 
     gExtRegexIso="\\.("gExtList2")$";
-    #DETAIL(gExtRegexIso);
+    #if(LD)DETAIL(gExtRegexIso);
 
     gExtRegEx1="\\.("gExtList1")$";
-    #DETAIL(gExtRegEx1);
+    #if(LD)DETAIL(gExtRegEx1);
 
     gExtRegExAll="\\.("gExtList1"|"gExtList2")$";
-    #DETAIL(gExtRegExAll);
+    #if(LD)DETAIL(gExtRegExAll);
 
     g_months_short="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
     monthHash(g_months_short,"|",gMonthConvert);
@@ -316,7 +316,7 @@ END{
     CAPTURE_PREFIX=g_tmp_dir"/catalog."
 
     #url_get("http://m.bing.com/search/search.aspx?A=webresults;D=Web;q=mission%20impossible%20ghost%20protocol%20+%2B+2011+imdb"); exit;
-    #DETAIL("noaccent:"no_accent("äåéöúûü•µ¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷ÿŸ⁄€‹›ﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ¯˘˙˚¸˝ˇ"));
+    #if(LD)DETAIL("noaccent:"no_accent("äåéöúûü•µ¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷ÿŸ⁄€‹›ﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ¯˘˙˚¸˝ˇ"));
 
     # Bing and yahoo are in the process of merging. I expect this means they will soon
     # start returning the same results. This will invalidate the searh voting.
@@ -374,11 +374,11 @@ END{
 
             if (NEWSCAN == 1) {
                 # Get watch folders only
-                DETAIL("Scanning watch paths");
+                if(LD)DETAIL("Scanning watch paths");
                 folder_list=g_settings["catalog_watch_paths"];
             } else {
                 # Get all folders only
-                DETAIL("Scanning default and watch paths");
+                if(LD)DETAIL("Scanning default and watch paths");
                 folder_list=g_settings["catalog_scan_paths"];
                 if (g_settings["catalog_watch_paths"] != "") {
                     folder_list = folder_list "," g_settings["catalog_watch_paths"];
@@ -392,7 +392,7 @@ END{
         }
         if (PARALLEL_SCAN != 1 ) {
             if (lock(g_scan_lock_file) == 0 ) {
-                DETAIL("Scan already in progress");
+                if(LD)DETAIL("Scan already in progress");
                 exit;
             }
         }
@@ -406,7 +406,7 @@ END{
     make_paths_absolute(FOLDER_ARR);
 
     for(gF in FOLDER_ARR) {
-        DETAIL("Folder "gF"="FOLDER_ARR[gF]);
+        if(LD)DETAIL("Folder "gF"="FOLDER_ARR[gF]);
     }
 
     gLS_FILE_POS=0; # Position of filename in ls format
@@ -439,7 +439,7 @@ END{
 
             et=systime()-ELAPSED_TIME;
 
-            INF(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
+            if(LI)INF(sprintf("Finished: Elapsed time %dm %ds",int(et/60),(et%60)));
 
             #Check script
             for(gI in g_settings) {
@@ -478,7 +478,7 @@ END{
         }
     }
     #Following line is used to tidy log files
-    DETAIL("Total files added : "g_grand_total);
+    if(LD)DETAIL("Total files added : "g_grand_total);
 
     url_stats();
 }
@@ -493,7 +493,7 @@ out,share_name) {
 
         if (!(share_name in g_share_name_to_folder)) {
             g_share_name_to_folder[share_name] = nmt_mount_share(share_name,g_tmp_settings);
-            DEBUG("share name "share_name" = "g_share_name_to_folder[share_name]);
+            if(LD)DETAIL("share name "share_name" = "g_share_name_to_folder[share_name]);
         }
         if (g_share_name_to_folder[share_name]) {
 
@@ -604,7 +604,7 @@ result) {
 
 function add_file(path,list) {
     path = short_path(path);
-    #DEBUG("already seen "path);
+    #if(LG)DEBUG("already seen "path);
     list[path] = 1;
 }
 
@@ -705,7 +705,7 @@ ret,f,numok,numbad) {
                 ERR("bad format field ["f"] = ["minfo[f]"]");
                 numbad++;
             } else {
-                #DETAIL("ok field ["f"] = ["minfo[f]"]");
+                #if(LD)DETAIL("ok field ["f"] = ["minfo[f]"]");
                 numok++;
             }
         }
@@ -766,7 +766,7 @@ maxName,best,nextBest,nextBestName,diff,i,threshold) {
     }
 
     if (0+best < 0+requiredThreshold ) {
-        DEBUG("getMax: Rejected "maxName":"best" as does not meet requiredThreshold of "requiredThreshold);
+        if(LG)DEBUG("getMax: Rejected "maxName":"best" as does not meet requiredThreshold of "requiredThreshold);
         maxName = "";
 
     }
@@ -775,12 +775,12 @@ maxName,best,nextBest,nextBestName,diff,i,threshold) {
         diff=best-nextBest;
         if (diff * diff < best ) {
 
-            DEBUG("getMax: rejected "maxName":"best" too close to next best "nextBestName":"nextBest" to be certain");
+            if(LG)DEBUG("getMax: rejected "maxName":"best" too close to next best "nextBestName":"nextBest" to be certain");
             maxName = "";
 
         }
     }
-    DEBUG("getMax: best=["maxName":"(maxName?arr[maxName]:"")"]");
+    if(LG)DEBUG("getMax: best=["maxName":"(maxName?arr[maxName]:"")"]");
     return maxName;
 }
 
@@ -832,15 +832,15 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
         return 0;
     }
 
-    DEBUG("Get strings "isoPath);
+    if(LG)DEBUG("Get strings "isoPath);
 
-    DEBUG("tmp file "tmpFile);
+    if(LG)DEBUG("tmp file "tmpFile);
 
     system(AWK" 'BEGIN { FS=\"_\" } { gsub(/[^ -~]+/,\"~\"); gsub(\"~+\",\"~\") ; split($0,w,\"~\"); for (i in w)  if (w[i]) print w[i] ; }' "isoPart" > "tmpFile);
     getline f < tmpFile;
     getline f < tmpFile;
     system("rm -f -- "tmpFile" "isoPart);
-    DETAIL("iso title for "isoPath" = ["f"]");
+    if(LD)DETAIL("iso title for "isoPath" = ["f"]");
     gsub(/[Ww]in32/,"",f);
     return clean_title(f);
     close(tmpFile);
@@ -849,7 +849,7 @@ sep,tmpFile,f,outputWords,isoPart,outputText) {
 # Make two urls point to the same cache page.
 function equate_urls(u1,u2) {
 
-    DETAIL("equate ["u1"] =\n\t ["u2"]");
+    if(LD)DETAIL("equate ["u1"] =\n\t ["u2"]");
 
     if (u1 in gUrlCache) {
 
@@ -879,7 +879,7 @@ t) {
         sub(/.*\//,"",t); #remove path
         t = remove_format_tags(t);
         gsub("[^" g_alnum8 "]"," ",t); #remove odd chars
-        DEBUG("Setting title to file["t"]");
+        if(LG)DEBUG("Setting title to file["t"]");
     }
 
     minfo[TITLE]=clean_title(t);
@@ -900,7 +900,7 @@ function num(x) \
 {
     sub(/^[^-0-9]*0*/,"",x);
 #    if (0+x == 0 ) {
-#        DETAIL("n("x") = "0);
+#        if(LD)DETAIL("n("x") = "0);
 #    }
     return 0+x;
 }
@@ -911,7 +911,7 @@ i,folderCount,moveDown) {
     folderCount=0;
     moveDown=0;
     for(i = 1 ; i - ARGC < 0 ; i++ ) {
-        INF("Arg:["ARGV[i]"]");
+        if(LI)INF("Arg:["ARGV[i]"]");
         if (ARGV[i] == "IGNORE_NFO" ) {
             g_settings["catalog_nfo_read"] = "no";
             moveDown++;
@@ -934,8 +934,20 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "REBUILD" ) {
             REBUILD=1;
             moveDown++;
-        } else if (ARGV[i] ~ "^DEBUG[0-9]$" ) {
-            DBG=substr(ARGV[i],length(ARGV[i])) + 0;
+        } else if (ARGV[i] ~ "^LOGERR" ) {
+            g_catalog_log_level=3;
+            moveDown++;
+        } else if (ARGV[i] ~ "^LOGWARN" ) {
+            g_catalog_log_level=2;
+            moveDown++;
+        } else if (ARGV[i] ~ "^LOGINFO" ) {
+            g_catalog_log_level=1;
+            moveDown++;
+        } else if (ARGV[i] ~ "^LOGDETAIL" ) {
+            g_catalog_log_level=0;
+            moveDown++;
+        } else if (ARGV[i] ~ "^LOGDEBUG" ) {
+            g_catalog_log_level=-1;
             moveDown++;
         } else if (ARGV[i] == "STDOUT" ) {
             STDOUT=1;
@@ -1012,18 +1024,18 @@ i,folderCount,moveDown) {
             #variable assignment - keep for awk to process
         } else {
             # A folder or file
-            INF("Scan Path:["ARGV[i]"]");
+            if(LI)INF("Scan Path:["ARGV[i]"]");
             folder_arr[++folderCount] = ARGV[i];
             moveDown++;
         }
     }
-    DETAIL("============ END ARGS ============"moveDown);
+    if(LD)DETAIL("============ END ARGS ============"moveDown);
     ARGC -= moveDown;
     # Add dev null as dummy input
     ARGV[ARGC++] = "/dev/null";
     return folderCount;
     for(i = 1 ; i <= ARGC ; i++ ) {
-        DETAIL("Final arg["i"] = ["ARGV[i]"]");
+        if(LD)DETAIL("Final arg["i"] = ["ARGV[i]"]");
     }
 }
 
@@ -1042,10 +1054,10 @@ function unit(doit) {
 
         json_parse("{\"first\":\"andrew\" , \"age\" : 31 }");
 
-        DETAIL("1." subexp("Title?012345","Title.([0-9]+)\\>"));
-        DETAIL("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
-        DETAIL("3." subexp("Title?012345","Title.([0-9]+)"));
-        DETAIL("4." subexp("Title?012345 ","Title.([0-9]+)"));
+        if(LD)DETAIL("1." subexp("Title?012345","Title.([0-9]+)\\>"));
+        if(LD)DETAIL("2." subexp("Title?012345 ","Title.([0-9]+)\\>"));
+        if(LD)DETAIL("3." subexp("Title?012345","Title.([0-9]+)"));
+        if(LD)DETAIL("4." subexp("Title?012345 ","Title.([0-9]+)"));
 
         unit1("html_to_utf8",(html_to_utf8("z&#1001;a") == "z"g_chr[0xcf]g_chr[0xA9]"a"));
         unit1("utf8len",(utf8len("z&#1001;a") == 3));

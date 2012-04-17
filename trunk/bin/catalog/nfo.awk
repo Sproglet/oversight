@@ -44,17 +44,17 @@ num,tags,i,tmp,ret,id) {
             minfo_merge(minfo,minfo2,"@nfo");
             ret = 1;
         } else if ( "/xml/tvshow" in xml ) {
-            DETAIL("tvshow xbmc not supported yet...");
+            if(LD)DETAIL("tvshow xbmc not supported yet...");
             minfo2[CATEGORY] = "T";
         } else if ( "/tvshow" in xml ) {
-            DETAIL("tvshow xbmc not supported yet...");
+            if(LD)DETAIL("tvshow xbmc not supported yet...");
             minfo2[CATEGORY] = "T";
         }
 
         # next load into minfo2 then minfo_merge with source = @nfo then set best_score to prioritise nfo and short circuit searching.
 
     } else {
-        DETAIL("Non XML nfo - "file);
+        if(LD)DETAIL("Non XML nfo - "file);
     }
     return ret;
 }
@@ -64,7 +64,7 @@ function scanNfoForImdbLink(nfoFile,\
 foundId,line) {
 
     foundId="";
-    DETAIL("scanNfoForImdbLink ["nfoFile"]");
+    if(LD)DETAIL("scanNfoForImdbLink ["nfoFile"]");
 
     if (system("test -f "qa(nfoFile)) == 0) {
         FS="\n";
@@ -75,7 +75,7 @@ foundId,line) {
         }
         close(nfoFile);
     }
-    DETAIL("scanNfoForImdbLink = ["foundId"]");
+    if(LD)DETAIL("scanNfoForImdbLink = ["foundId"]");
     return foundId;
 }
 
@@ -107,7 +107,7 @@ nfo,fieldName,fieldId,nfoAdded,nfofilename,tvnfo) {
     } else {
 
         if (fields[NFO] == "" ) {
-            DETAIL("No NFO name - skip writing");
+            if(LD)DETAIL("No NFO name - skip writing");
             return;
         }
 
@@ -133,7 +133,7 @@ nfo,fieldName,fieldId,nfoAdded,nfofilename,tvnfo) {
 
         #sub(/[nN][Ff][Oo]$/,g_settings["catalog_nfo_extension"],nfo);
 
-        DEBUG("Creating ["nfoFormat"] "nfo);
+        if(LG)DEBUG("Creating ["nfoFormat"] "nfo);
 
         if (nfoFormat == "xmbc") {
 
@@ -204,7 +204,7 @@ line,set,code,ret,i,is_xml,is_generated) {
             ret = is_generated;
             # could also overwrite non-xml nfos | !is_xml?
         }
-        DETAIL("overwrite nfo = "ret" - "nfo);
+        if(LD)DETAIL("overwrite nfo = "ret" - "nfo);
     }
     return ret;
 }
@@ -314,7 +314,7 @@ function export_xml(dbfile,\
     while((row=get_dbline(dbsorted)) != "") {
         has_output++;
         parseDbRow(row,fields,1);
-        DETAIL(has_output":"fields[IDLIST]);
+        if(LD)DETAIL(has_output":"fields[IDLIST]);
         # end previous nfo tag if exporting.
         # this is to make sure all tv seasons are together.
 	

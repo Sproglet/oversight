@@ -14,7 +14,7 @@ dir) {
     }
     
     if (g_cache_ok == 1) { # good
-        DETAIL("Using persistent cache");
+        if(LD)DETAIL("Using persistent cache");
         return dir "/" fname suffix ;
     } else if (g_cache_ok == 2) { # bad
         return "";
@@ -28,7 +28,7 @@ function clear_cache_prefix(p,\
 u) { 
     for(u in gUrlCache) {
         if (index(u,p) == 1) {
-            DEBUG("Deleting cache entry "u);
+            if(LG)DEBUG("Deleting cache entry "u);
             delete gUrlCache[u];
         }
     }

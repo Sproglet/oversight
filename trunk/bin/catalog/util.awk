@@ -121,13 +121,13 @@ function new_capture_file(label,\
 }
 
 function clean_capture_files() {
-    INF("Clean tmp files");
+    if(LI)INF("Clean tmp files");
     exec("rm -f -- "qa(CAPTURE_PREFIX JOBID) ".* 2>/dev/null");
 }
 function DEBUG(x) {
         
-    if ( DBG ) {
-        timestamp("[DEBUG]  ",x);
+    if ( g_catalog_log_level < 0 ) {
+        timestamp(-1,x);
     }
 
 }
@@ -141,64 +141,69 @@ function rs_pop() {
 }
 
 function DIV0(x) {
-    INF("\n\t\t@@@@@@@\t"x"\t@@@@@@@@@@\n");
+    if(LI)INF("\n\t\t@@@@@@@\t"x"\t@@@@@@@@@@\n");
 }
 function DIV(x) {
-    INF("\t===\t"x"\t===");
+    if(LI)INF("\t===\t"x"\t===");
 }
 
 function INF(x) {
-    if (g_catalog_log_level <= 1) {
-        timestamp("[INFO]   ",x);
-    }
+    timestamp(1,x);
 }
 function WARNING(x) {
-    if (g_catalog_log_level <= 2) {
-        timestamp("[WARNING]",x);
-    }
+    timestamp(2,x);
 }
 function ERR(x) {
-    timestamp("[ERR]    ",x);
+    timestamp(3,x);
 }
 function DETAIL(x) {
-    if (g_catalog_log_level == 0) {
-        timestamp("[DETAIL] ",x);
-    }
+    timestamp(0,x);
 }
 
-function timestamp(label,x,\
+function timestamp(lvl,x,\
 new_str,gap) {
+    if (lvl >= g_catalog_log_level ) {
 
-    if (g_api_tvdb && index(x,g_api_tvdb) ) gsub(g_api_tvdb,"-t-",x);
-    if (g_api_tmdb && index(x,g_api_tmdb) ) gsub(g_api_tmdb,"-m-",x);
-    if (g_api_rage && index(x,g_api_rage) ) gsub(g_api_rage,"-r-",x);
-    if (g_api_bing && index(x,g_api_bing) ) gsub(g_api_bing,"-b-",x);
+        if (!(1 in g_log_labels)) {
 
-    if (index(x,"app.i") ) {
-        sub("app.i[[:alnum:]/?=&]+","movieapi",x);
-    }
-    if (index(x,"d=") ) {
-        sub("password.?=([^,]+)","password=***",x);
-        sub("pwd=([^,]+)","pwd=xxx",x);
-        sub("passwd=([^,]+)","passwd=***",x);
-    }
-
-    if (systime() != g_last_ts) {
-
-        new_str=strftime("%H:%M:%S : ",systime());
-
-        gap = systime() - g_last_ts;
-        if (!g_ignore_log_gap && g_last_ts && gap > 30) {
-            print "[ERR]      "new_str"going slow? "gap" seconds elapsed";
+            g_log_labels[-1] = "[DEBUG]  "LOG_TAG" ";
+            g_log_labels[0]  = "[DETAIL] "LOG_TAG" ";
+            g_log_labels[1]  = "[INFO]   "LOG_TAG" ";
+            g_log_labels[2]  = "[WARN]   "LOG_TAG" ";
+            g_log_labels[3]  = "[ERR]    "LOG_TAG" ";
         }
-        g_ignore_log_gap = 0;
 
-        g_last_ts=systime();
-        g_last_ts_str=new_str;
+        if (g_api_tvdb && index(x,g_api_tvdb) ) gsub(g_api_tvdb,"-t-",x);
+        if (g_api_tmdb && index(x,g_api_tmdb) ) gsub(g_api_tmdb,"-m-",x);
+        if (g_api_rage && index(x,g_api_rage) ) gsub(g_api_rage,"-r-",x);
+        if (g_api_bing && index(x,g_api_bing) ) gsub(g_api_bing,"-b-",x);
+
+        if (index(x,"app.i") ) {
+            sub("app.i[[:alnum:]/?=&]+","movieapi",x);
+        }
+        if (index(x,"d=") ) {
+            sub("password.?=([^,]+)","password=***",x);
+            sub("pwd=([^,]+)","pwd=xxx",x);
+            sub("passwd=([^,]+)","passwd=***",x);
+        }
+
+        if (systime() != g_last_ts) {
+
+            new_str=strftime("%H:%M:%S : ",systime());
+
+            gap = systime() - g_last_ts;
+            if (!g_catalog_log_level && !g_ignore_log_gap && g_last_ts && gap > 30) {
+                print g_log_labels[2]new_str"going slow? "gap" seconds elapsed";
+            }
+            g_ignore_log_gap = 0;
+
+            g_last_ts=systime();
+            g_last_ts_str=new_str;
+            fflush();
+        }
+
+        print g_log_labels[lvl] g_last_ts_str g_indent x;
     }
-
-    print label" "LOG_TAG" "g_last_ts_str g_indent x;
-    fflush();
 }
 
 # Remove spaces and non alphanum
@@ -290,7 +295,7 @@ i,bestScore,count,tmp,isHigher) {
         count++;
     }
     dump(0,"post best",outHash);
-    DETAIL("bestScore = "bestScore);
+    if(LD)DETAIL("bestScore = "bestScore);
     return bestScore;
 }
 
@@ -352,34 +357,40 @@ i) {
 
 function id1(x) {
 
-    #Track stack calls
-    g_idstack2[g_idtos] = length(g_indent);
+    if (g_catalog_log_level <= 0) {
+        #Track stack calls
+        g_idstack2[g_idtos] = length(g_indent);
 
-    g_idstack[g_idtos++] = x;
-    DETAIL(">Begin " x);
-    g_indent="\t"g_indent;
+        g_idstack[g_idtos++] = x;
+        if(LD)DETAIL(">Begin " x);
+        g_indent="\t"g_indent;
+    }
     
 }
 
 function id0(x) {
-    g_indent=substr(g_indent,2);
+    if (g_catalog_log_level <= 0) {
+        g_indent=substr(g_indent,2);
     
-    DETAIL("<End "g_idstack[--g_idtos]"=[" ( (x!="") ? "=["x"]" : "") "]");
+        if(LD)DETAIL("<End "g_idstack[--g_idtos]"=[" ( (x!="") ? "=["x"]" : "") "]");
 
-    #check stack
-    if (g_idtos > 1 && g_idstack2[g_idtos] != length(g_indent)) {
-        ERR("**MISSING STACK CALL dropping from  "g_idstack[g_idtos+1]" to "g_idstack[g_idtos]);
+        #check stack
+        if (g_idtos > 1 && g_idstack2[g_idtos] != length(g_indent)) {
+            ERR("**MISSING STACK CALL dropping from  "g_idstack[g_idtos+1]" to "g_idstack[g_idtos]);
+        }
     }
 }
 
 function dump(lvl,label,array,\
 i,key,n) {
     n = asorti(array,key);
-    for(i = 1 ; i<= n ; i++ ) {
-        timestamp((lvl?"[INFO]   ":"[DETAIL] "),label" : "key[i]" =["array[key[i]]"]");
-    }
-    if (n == 0 ) {
-        DETAIL((lvl?"[INFO]   ":"[DETAIL] "),label":<empty>");
+    if (lvl >= g_catalog_log_level) {
+        for(i = 1 ; i<= n ; i++ ) {
+            timestamp(lvl,label" : "key[i]" =["array[key[i]]"]");
+        }
+        if (n == 0 ) {
+            timestamp(lvl,label":<empty>");
+        }
     }
 }
 
@@ -461,18 +472,18 @@ pid) {
         close(lock_file);
     }
     if (pid == "" ) {
-       DEBUG("Not Locked = "pid);
+       if(LG)DEBUG("Not Locked = "pid);
        return 0;
     } else if (is_alive(pid)) {
         if (pid == PID ) {
-            DEBUG("Locked by this process "pid);
+            if(LG)DEBUG("Locked by this process "pid);
             return 0;
         } else {
-            DEBUG("Locked by another process "pid " not "PID);
+            if(LG)DEBUG("Locked by another process "pid " not "PID);
             return 1;
         }
     } else {
-        DEBUG("Was locked by dead process "pid " not "PID);
+        if(LG)DEBUG("Was locked by dead process "pid " not "PID);
         return 0;
     }
 }
@@ -486,7 +497,7 @@ attempts,sleep,backoff) {
         if (is_locked(lock_file) == 0) {
             print PID > lock_file;
             close(lock_file);
-            DETAIL("Locked "lock_file);
+            if(LD)DETAIL("Locked "lock_file);
             set_permissions(qa(lock_file));
             return 1;
         }
@@ -500,7 +511,7 @@ attempts,sleep,backoff) {
 }
 
 function unlock(lock_file) {
-    DETAIL("Unlocked "lock_file);
+    if(LD)DETAIL("Unlocked "lock_file);
     system("rm -f -- "qa(lock_file));
 }
 
@@ -537,8 +548,8 @@ function csv2re(text) {
 
 function exec(cmd,verbose,quiet,\
 err) {
-   #DEBUG("SYSTEM : "substr(cmd,1,100)"...");
-   if (verbose) DEBUG("SYSTEM : [ "cmd" ]");
+   #if(LG)DEBUG("SYSTEM : "substr(cmd,1,100)"...");
+   if (verbose) if(LG)DEBUG("SYSTEM : [ "cmd" ]");
    g_ignore_log_gap=1;
    if ((err=system(cmd)) != 0) {
       if(!quiet) {
@@ -657,10 +668,10 @@ y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture,m2,d2) {
         date[3]=d+0;
 
         if ( textMonth == 1 ) {
-            DEBUG("date[2]="date[2]);
+            if(LG)DEBUG("date[2]="date[2]);
             if (date[2] in gMonthConvert ) {
                 date[2] = 0+gMonthConvert[date[2]];
-                DEBUG(m"="date[2]);
+                if(LG)DEBUG(m"="date[2]);
                 ret = 1;
             }
         } else {
@@ -668,7 +679,7 @@ y4,d1or2,m1or2,d,m,y,matches,textMonth,s,mword,ret,ss,capture,m2,d2) {
         }
     }
     if (ret) {
-        DEBUG("Found date ["date[1]"/"date[2]"/"date[3]"] in "line);
+        if(LG)DEBUG("Found date ["date[1]"/"date[2]"/"date[3]"] in "line);
     }
     return ret;
 }
@@ -679,8 +690,8 @@ function roman_replace(s,\
 out) {
     if (match(s,"("g_roman_regex")$")) {
         out = substr(s,1,RSTART-1) g_roman[substr(s,RSTART,RLENGTH)];
-        DETAIL("roman_replace = "s);
-        DETAIL("roman_replace = "out);
+        if(LD)DETAIL("roman_replace = "s);
+        if(LD)DETAIL("roman_replace = "out);
         s = out;
     }
     return s;
@@ -705,7 +716,7 @@ function removeContent(cmd,x,quiet,quick) {
     if (changeable(x) == 0) return 1;
 
     if (!quiet) {
-        DETAIL("Deleting "x);
+        if(LD)DETAIL("Deleting "x);
     }
     cmd=cmd qa(x)" 2>/dev/null ";
     if (quick) {
@@ -736,7 +747,7 @@ i) {
 function touch_parents(f) {
     do {
         f = dirname(f);
-        DETAIL("touch "f);
+        if(LD)DETAIL("touch "f);
         if (touch(f) != 0) break;
     } while(f != "" && f != "/" && f != ".");
 }
@@ -763,7 +774,7 @@ function apply_edits(text,plist,verbose,\
 i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
 
     ret = text;
-    #DEBUG("using "plist);
+    #if(LG)DEBUG("using "plist);
 
     # Split at unescaped forward slashes
     num = split_list(plist,",",patterns);
@@ -780,7 +791,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
         split_list(patterns[i],sep,pinfo);
 
         if (verbose) {
-            DEBUG("apply_edits["text"] split="sep);
+            if(LG)DEBUG("apply_edits["text"] split="sep);
             dump(0,"apply_edits",pinfo);
         }
 
@@ -795,7 +806,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
             } else {
                 ERR("apply_edits: Bad value ["patterns[i]"]");
             }
-            if (verbose) DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")=["matched"|"ret"]");
+            if (verbose) if(LG)DEBUG(pinfo[4]"sub("pinfo[2]","pinfo[3]","prev")=["matched"|"ret"]");
 
         } else if (lcop == "e") { # extract
 
@@ -805,7 +816,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
                 matched = 1;
                 ret = substr(ret,RSTART,RLENGTH);
             }
-            if (verbose) DEBUG(pinfo[4]"extract match("prev","pinfo[2]")=["matched"|"ret"]");
+            if (verbose) if(LG)DEBUG(pinfo[4]"extract match("prev","pinfo[2]")=["matched"|"ret"]");
 
         } else if (lcop == "t") { # following text must occur - faster than regex - matches t/dddd/
 
@@ -814,7 +825,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
             } else if (index(ret,pinfo[2])) {
                 matched = 1;
             }
-            if (verbose) DEBUG("text "pinfo[2]" = "matched);
+            if (verbose) if(LG)DEBUG("text "pinfo[2]" = "matched);
 
         } else if (pinfo[1] == "" || pinfo[1] == "r" ) { # matches /dddd/
 
@@ -823,7 +834,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
             } else if (match(ret,pinfo[2])) {
                 matched = 1;
             }
-            if (verbose) DEBUG("match "pinfo[2]" = "matched);
+            if (verbose) if(LG)DEBUG("match "pinfo[2]" = "matched);
         }
         # If there was no match, and a lower case operation was used then clear the entire result.
         #ie if s/ or e/ used then the regex must be present
@@ -832,7 +843,7 @@ i,num,patterns,matched,pinfo,ret,prev,sep,lcop) {
             break;
         }
     }
-    #DEBUG("apply_edits:["text"]=["ret"]");
+    #if(LG)DEBUG("apply_edits:["text"]=["ret"]");
     return ret;
 }
 
@@ -999,7 +1010,7 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
                 if (above < cell) cell = above;
 
                 if (cell > threshold && m-i == n-j ) {
-                    #INF("abort edit_dist:["source"] ["target"] = " cell);
+                    #if(LI)INF("abort edit_dist:["source"] ["target"] = " cell);
                     return cell;
                 }
             }
@@ -1022,7 +1033,7 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
         }
     }
 
-    DETAIL("edit distance:["source"] ["target"] = " matrix[n,m]);
+    if(LD)DETAIL("edit distance:["source"] ["target"] = " matrix[n,m]);
     return matrix[n,m];
 }
 
@@ -1044,7 +1055,7 @@ function similar(s1,s2,\
 
     e = edit_dist(s1,s2);
     ret = e / min ;
-    DETAIL("similar:" ret);
+    if(LD)DETAIL("similar:" ret);
     return ret;
 }
 
@@ -1066,7 +1077,7 @@ line,code,total) {
             close(f);
         }
     }
-    DEBUG("size["f"] = "total" bytes");
+    if(LG)DEBUG("size["f"] = "total" bytes");
     return total;
 }
     
@@ -1159,6 +1170,6 @@ punc,last) {
 function log_bigstring(label,body,sz,\
 l) {
     l = length(body) - sz; 
-    DEBUG( label " "length(body)" bytes ["substr(body,1,sz)"..."(l>1 ? substr(body,l)"]" : "" ) );
+    if(LG)DEBUG( label " "length(body)" bytes ["substr(body,1,sz)"..."(l>1 ? substr(body,l)"]" : "" ) );
 }
 

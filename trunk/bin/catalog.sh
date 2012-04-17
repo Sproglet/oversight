@@ -15,7 +15,6 @@ set -e  #Abort with any error can be suppressed locally using EITHER cmd||true O
 
 # This script is horrendous. My comment!
 
-DEBUG=1
 #Find install folder
 EXE="$0"
 while [ -h "$EXE" ] ; do EXE="$(readlink "$EXE")"; done
@@ -74,7 +73,7 @@ START_DIR="$PWD"
 
 if [ -z "$*" ] ; then
     cat<<USAGE
-    usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [DEBUG] [REBUILD] [NOACTIONS] [RESCAN] [NEWSCAN]
+    usage $0 [STDOUT] [IGNORE_NFO] [WRITE_NFO] [LOGERR|LOGWARN|LOGINFO|LOGDETAIL|LOGDEBUG] [REBUILD] [NOACTIONS] [RESCAN] [NEWSCAN]
              [RENAME] [RENAME_TV] [RENAME_FILM] [DRYRUN]
              [GET_POSTERS] [UPDATE_POSTERS]
              [GET_FANART] [UPDATE_FANART]
@@ -97,7 +96,10 @@ Other options
     WRITE_NFO        - write NFO files
     NOWRITE_NFO      - Dont write NFO files
 
-    DEBUG            - lots of logging
+    LOGERR | LOGWARN 
+    LOGINFO | LOGDETAIL 
+    LOGDEBUG         - Logging - default LOGINFO
+
     NOACTIONS        - Do not run any actions and hide Delete actions from overview.
     DRYRUN           - Show effects of RENAME but dont do it.
 
@@ -202,7 +204,7 @@ main() {
 
     set +e
     echo "[INFO] $os_version $nmt_version"
-    catalog DEBUG$DEBUG "$@" 
+    catalog "$@" 
     x=$?
     set -e
 

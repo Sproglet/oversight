@@ -12,7 +12,7 @@ f,ret,response) {
         f=getUrl(url,label".xml",1,"",quiet_fail);
         ret = readXML(f,xml,ignorePaths);
     }
-    DEBUG("fetchXML["url"] = "ret);
+    if(LG)DEBUG("fetchXML["url"] = "ret);
     return ret;
 }
 
@@ -42,7 +42,7 @@ function dumpxml(label,xml,\
 i,n,tag,ids,t,val) {
     ids["name"] = ids["id"] = 1;
     n = xml["@count"];
-    DEBUG(label":xml");
+    if(LG)DEBUG(label":xml");
     for(i = 1 ; i <= n ; i++ ) {
         tag = xml[i];
 
@@ -50,14 +50,14 @@ i,n,tag,ids,t,val) {
 
         # display all non empty values that either do not have cr or are not blank
         if (val != "" && (!index(val,"\n") || val !~ /^[[:space:]]*/ )) {
-            DETAIL(tag" = "xml[tag]);
+            if(LD)DETAIL(tag" = "xml[tag]);
         }
 
         for (t in ids) {
-            if (tag"#"t in xml) DETAIL(tag"#"t" = "xml[tag"#"t]);
+            if (tag"#"t in xml) if(LD)DETAIL(tag"#"t" = "xml[tag"#"t]);
         }
     }
-    DEBUG("end:"label":xml");
+    if(LG)DEBUG("end:"label":xml");
 }
 
 # PArse XML - remove comments before passing to real parser
@@ -138,7 +138,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
 
     if (index(line,g_sigma) ) { 
         gsub(g_sigma,"e",line);
-        DETAIL("Sigma replaced");
+        if(LD)DETAIL("Sigma replaced");
     }
 
     #break at each tag/endtag
@@ -160,8 +160,8 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
     currentTag = xml["@CURRENT"];
     numtags = xml["@count"];
 
-    if (dbg) DEBUG("xml: start currentTag=["currentTag"] numtags=["numtags"]");
-    if (dbg) DEBUG("xml: start tag_data_count=["tag_data_count"] line=["line"]");
+    if (dbg) if(LG)DEBUG("xml: start currentTag=["currentTag"] numtags=["numtags"]");
+    if (dbg) if(LG)DEBUG("xml: start tag_data_count=["tag_data_count"] line=["line"]");
 
     i = 0 ;
     while ( i <= tag_data_count ) {
@@ -179,7 +179,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
 
         text = parts[i];
 
-        if (dbg) DEBUG("xml: XMLtext "i"["text"]");
+        if (dbg) if(LG)DEBUG("xml: XMLtext "i"["text"]");
 
         if (i == tag_data_count && ( text == "" || (index(text," ") == 1 && trim(text) == "")) ) {
             # ignore trailing blank space
@@ -214,7 +214,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
 
         tag = parts[i];
 
-        if (dbg) DEBUG("xml: XMLtag "i"["tag"]");
+        if (dbg) if(LG)DEBUG("xml: XMLtag "i"["tag"]");
 
         taglen = length(tag);
 
@@ -288,7 +288,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
             if (countTag in xml) {
                xml[countTag] ++;
                currentTag = currentTag ">" xml[countTag];
-                if (dbg) DETAIL("xml: changed currentTag ["currentTag"] tag=["tag"]");
+                if (dbg) if(LD)DETAIL("xml: changed currentTag ["currentTag"] tag=["tag"]");
             } else {
                 xml[countTag] = 1;
             }
@@ -325,7 +325,7 @@ attr,attrnum,attrname,attr_parts,single_tag,taglen,countTag,numtags,ret,dbg,tag_
     xml["@CURRENT"] = currentTag;
     xml["@count"] = numtags;
 
-    if (dbg) DEBUG("xml: end currentTag=["currentTag"] numtags=["numtags"]");
+    if (dbg) if(LG)DEBUG("xml: end currentTag=["currentTag"] numtags=["numtags"]");
 
     return ret;
 }
@@ -338,7 +338,7 @@ t,xmlpathSlash,xmlpathHash) {
     xmlpathSlash=xmlpath"/";
     xmlpathHash=xmlpath"#";
 
-#DEBUG("@@ clean_xml_path ["xmlpath"]");
+#if(LG)DEBUG("@@ clean_xml_path ["xmlpath"]");
 
     #index function is faster than substr
     for(t in xml) {
@@ -367,7 +367,7 @@ function reset_filters(tagfilters,numbers,strings,regexs,\
 t,ret) {
     ret = 0;
    for(t in tagfilters) {
-       DEBUG("filter ["t"]=["tagfilters[t]"]");
+       if(LG)DEBUG("filter ["t"]=["tagfilters[t]"]");
 
        if (tagfilters[t] ~ "^[0-9]+$" ) {
            numbers[t] = tagfilters[t];
@@ -431,7 +431,7 @@ line,start_tag,end_tag,last_tag,number_type,regex_type,string_type,do_filter) {
 
                 if (do_filter == 0 || check_filtered_element(xmlout,"",numbers,strings,regexs)) {
                     found = 1;
-                    DEBUG("Filter matched.");
+                    if(LG)DEBUG("Filter matched.");
                     break;
                 }
 
@@ -505,18 +505,18 @@ root_re,numbers,strings,regexs,found,num,tag,child,numtags,do_filter) {
     #Create re to match on array elements.
     # Convert /parent/child to /parent(>[0-9]+|)/child(>[0-9]+|)
     root_re="^"gensub("(.)(/|$)","\\1(>[0-9]+|)\\2","g",root)"$";
-    #DEBUG("XX regex["root_re"]");
+    #if(LG)DEBUG("XX regex["root_re"]");
 
     numtags = xml["@count"];
     for(tag = 1 ; tag <= numtags ; tag++) {
         # Need to make sure tag  always appears even if epty text element
         if ( match(xml[tag],root_re)) {
             child = substr(xml[tag],RSTART,RLENGTH);
-            #DEBUG("XX possible ["child"] from tag ["xml[tag]"]");
+            #if(LG)DEBUG("XX possible ["child"] from tag ["xml[tag]"]");
 
             if (do_filter == 0 || check_filtered_element(xml,child,numbers,strings,regexs)) {
 
-                DEBUG("Filter matched ["child"]");
+                if(LG)DEBUG("Filter matched ["child"]");
                 tagsout[++num] = child;
                 if (maxtags && num >= maxtags) {
                     break;
@@ -544,6 +544,6 @@ i,n,p2,ret) {
             }
         }
     }
-    DETAIL("xml: "parent "tag = ["tag"="value"] ["tag2"="value2"] = ["ret"]");
+    if(LD)DETAIL("xml: "parent "tag = ["tag"="value"] ["tag2"="value2"] = ["ret"]");
     return ret;
 }

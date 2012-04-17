@@ -16,13 +16,13 @@ ret,code,f,body,line) {
         if (!f || !is_file(f)) {
             if ((ret = url_get_uncached(url,response,rec_sep,headers)) != 0) {
                 f = new_capture_file("url_get");
-                DETAIL("saving to cache "f);
+                if(LD)DETAIL("saving to cache "f);
                 printf "%s",response["body"] > f;
                 close(f);
                 g_url_cache[url] = f;
             }
         } else {
-            DETAIL("loading from cache "f);
+            if(LD)DETAIL("loading from cache "f);
             while((code=getline line < f) > 0) {
                 body = body line;
             }
@@ -35,7 +35,7 @@ ret,code,f,body,line) {
     } else {
         ret = url_get_uncached(url,response,rec_sep,headers);
    }
-    DETAIL("url_get [ "url" ] = "ret);
+   if(LI)INF("url_get [ "url" ] = "ret);
    return ret;
 }
 
@@ -47,7 +47,7 @@ ret) {
         delete response;
         ret = url_get_wget(url,response,headers);
     }
-    DETAIL("url_get_uncached [ "url" ] = "ret);
+    if(LD)DETAIL("url_get_uncached [ "url" ] = "ret);
     return ret;
 }
 
@@ -57,15 +57,17 @@ cmd,body,ret,i,hdr,txt,enc,code) {
 
     cmd = "wget -q --referer "get_referer(url);
     cmd = cmd " -U "qa(set_user_agent(url));
-    cmd = cmd " -q --header='Accept-Encoding: gzip' "qa(url)" -O -";
+    cmd = cmd " --header='Accept-Encoding: gzip' "qa(url)" -O -";
 
     if (headers) {
         split(headers,hdr,SUBSEP);
         for(i in hdr) {
-            cmd=cmd " --header='"hdr[i]"'";
+            if (!index(hdr[i],"gzip")) {
+                cmd=cmd " --header='"hdr[i]"'";
+            }
         }
     }
-    DETAIL("url_get_wget cmd = ["cmd"]");
+    if(LD)DETAIL("url_get_wget cmd = ["cmd"]");
 
     while ((code = ( cmd |& getline txt )) > 0) {
         body = body txt RT;
@@ -73,7 +75,7 @@ cmd,body,ret,i,hdr,txt,enc,code) {
     if (code >= 0) {
         close(cmd);
         response["body"] = body;
-        DETAIL("response body len = "length(body));
+        if(LD)DETAIL("response body len = "length(body));
         url_gunzip(response); 
         if (!enc) {
             response["enc"] = extract_encoding(response["body"]);
@@ -81,7 +83,7 @@ cmd,body,ret,i,hdr,txt,enc,code) {
         url_encode_utf8(response);
         ret = length(response["body"]);
     }
-    DETAIL("url_get_wget [ "cmd" ] = "ret);
+    if(LD)DETAIL("url_get_wget [ "cmd" ] = "ret);
     return ret;
 }
 
@@ -97,7 +99,7 @@ zip_pipe,b,txt,ret,code) {
 #    } else
     if (substr(b,1,1) == "") { # gzip magin number 0x8b1f starts with 1f > 0a < 20
 
-        DETAIL("url_gunzip decompressing ...");
+        if(LD)DETAIL("url_gunzip decompressing ...");
         zip_pipe = "gunzip 2>/dev/null ";
 
         #awk strings can contain nul \0 so this will work!
@@ -118,7 +120,7 @@ zip_pipe,b,txt,ret,code) {
             WARNING("url_gunzip pipe error");
         }
     }
-    DETAIL("url_gunzip = "ret"  out body length = ["length(response["body"])"]");
+    if(LD)DETAIL("url_gunzip = "ret"  out body length = ["length(response["body"])"]");
     return ret;
 }
 
@@ -130,9 +132,9 @@ iconv_pipe,b,txt,enc,ret,code) {
        if (enc == "utf-8" ) {
            ret = 1;
        } else if (g_fetch["no_encode"]) {
-           DETAIL("leaving "enc" to utf-8 ...");
+           if(LD)DETAIL("leaving "enc" to utf-8 ...");
        } else {
-           DETAIL("converting "enc" to utf-8 ...");
+           if(LD)DETAIL("converting "enc" to utf-8 ...");
            iconv_pipe = "iconv -f "enc" -t utf-8";
 
            printf "%s",response["body"] |& iconv_pipe
@@ -151,7 +153,7 @@ iconv_pipe,b,txt,enc,ret,code) {
            }
        }
     }
-    DETAIL("url_encode_utf8 = "ret" in body length = ["length(response["body"])"]");
+    if(LD)DETAIL("url_encode_utf8 = "ret" in body length = ["length(response["body"])"]");
     return ret;
 }
 
@@ -210,12 +212,12 @@ function url_dump(label,h,i) {
 }
 function url_split_parts(url,parts,\
 tmp) {
-    if (match(url,/(https?):\/\/([^/:]+)(|:([0-9]+))(\/[^#?]*)(|[?#].*)$/,tmp)) {
-        parts["proto"]=tmp[1];
-        parts["host"]=tmp[2];
-        parts["port"]=tmp[4]; # no ssl
-        parts["path"]=tmp[5];
-        parts["query"]=tmp[6];
+    if (match(url,/(|(https?):\/\/([^/:]+)(|:([0-9]+)))(|\/[^#?]*)(|[?#].*)$/,tmp)) {
+        parts["proto"]=tmp[2];
+        parts["host"]=tmp[3];
+        parts["port"]=tmp[5]; # no ssl
+        parts["path"]=tmp[6];
+        parts["query"]=tmp[7];
         if (parts["proto"] == "http" && !parts["port"] ) {
             parts["port"] = 80;
         } else if (parts["proto"] == "https" && !parts["port"] ) {
@@ -227,7 +229,7 @@ tmp) {
     ERR("failed to parse url "url);
     return 0;
 }
-function url_join_parts(parts,add_query,\
+function url_join_parts(parts,\
 url,port) {
     port = parts["port"];
     if (parts["proto"] == "http" && port == 80 ) {
@@ -237,25 +239,20 @@ url,port) {
     } else {
         port = ":" port;
     }
-    url =parts["proto"] "://" parts["host"] port  parts["path"];
-    if (add_query) {
-        url = url parts["query"];
-    }
+    url =parts["proto"] "://" parts["host"] port  parts["path"] parts["query"];
     return url;
 }
 
-function url_get_stored_redirect(parts,\
-key,query) {
-    query = parts["query"];
-
-    key =  url_join_parts(parts,0);
-
-    while (key in g_fetch_redirect) {
-        key = g_fetch_redirect[key];
-        DETAIL("stored redirect = "key);
+function url_merge(url1,url2,\
+parts1,parts2,i) {
+    url_split_parts(url1,parts1);
+    url_split_parts(url2,parts2);
+    for(i in parts1) {
+        if (parts2[i] != "") {
+            parts1[i] = parts2[i];
+        }
     }
-    url_split_parts(key query,parts);
-    return key query;
+    return url_join_parts(parts1);
 }
 
 # we specifiy explit source port because if server has closed a connection
@@ -281,15 +278,13 @@ host_port) {
 # OUT request 
 # OUT response
 function url_connect(url,headers,request,response,\
-parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,msg,hdr) {
+parts,con,host,host_port,i,ret,elapsed,count,redirect_max,msg,hdr) {
 
     delete request;
     redirect_max = 6;
     for(count = 1 ; count <= redirect_max ; count++ ) {
         # Loop while following redirects...
         if (url_split_parts(url,parts)) {
-
-            url = url_get_stored_redirect(parts);
 
             host = parts["host"];
             host_port = host"/"parts["port"];
@@ -304,7 +299,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
                 msg = msg" created "strftime("%H:%M:%S",g_url_con_createtime[con]);
                 msg = msg" used "strftime("%H:%M:%S",g_url_con_usedtime[con]);
                 msg = msg" timout "host_port" = "url_host_timeout(host_port);
-                DEBUG(msg);
+                if(LG)DEBUG(msg);
             }
             url_connection_purge();
 
@@ -319,7 +314,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
                 g_url_con_createtime[con] = systime();
             }
 
-            DEBUG("connecting ["con"]");
+            if(LG)DEBUG("connecting ["con"]");
 
             printf "GET %s%s HTTP/1.1\r\n",parts["path"],parts["query"] |& con;
 
@@ -334,13 +329,13 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
             if (headers) {
                 split(headers,hdr,SUBSEP);
                 for(i in hdr) {
-                    #DEBUG("Header : "hdr[i]);
+                    #if(LG)DEBUG("Header : "hdr[i]);
                     printf "%s\r\n", hdr[i] |& con;
                 }
             }
             for(i in request) {
                 if (!index(headers,i)) {
-                    #DEBUG("Header : " i ": "request[i]);
+                    #if(LG)DEBUG("Header : " i ": "request[i]);
                     printf "%s: %s\r\n", i,request[i] |& con;
                 }
             }
@@ -350,7 +345,7 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
             # Read headers
             ret=url_get_headers(con,response);
 
-            DEBUG("hdr state = "ret);
+            if(LG)DEBUG("hdr state = "ret);
 
             if (ret == 1) {
             
@@ -365,20 +360,9 @@ parts,con,host,host_port,i,old_key,new_key,query,ret,elapsed,count,redirect_max,
 
                 } else if (response["@status"] ~ "1 3[0-9][0-9]") {
                     # Redirect
-                    url_disconnect(con,1,"due to redirect");
-                    con="";
-
-                    query = parts["query"];
-                    old_key = url_join_parts(parts,0);
-                    new_key = response["location"]
-                    if (old_key == new_key) {
-                        ERR("redirection loop "con" ?");
-                        break;
-                    } 
-                    g_fetch_redirect[old_key] = new_key;
-
-                    url=new_key query ;
-                    DETAIL("redirect to "url);
+                    url=url_merge(url,response["location"]) ;
+                    if(LD)DETAIL("redirect to "url);
+                    con=""; # clear con in case redirection loop exhausted 
 
                 } else if (index(response["@status"],"1.1 4") || index(response["@status"],"1.1 5")) {
 
@@ -456,7 +440,7 @@ con,idle,age,host_max_age,host_max_idle,host_max_used,host_port,poll_time,final)
                     if (host_max_age=="")  host_max_age = 20;
                     if (host_max_used=="") host_max_used = 50;
 
-                    DEBUG("host "host_port" "host_max_idle"/"host_max_age"/"host_max_used);
+                    if(LG)DEBUG("host "host_port" "host_max_idle"/"host_max_age"/"host_max_used);
 
                     idle = url_con_elapsed(con);
                     age = (g_url_con_createtime[con]? systime() - g_url_con_createtime[con] : 0) ;
@@ -481,7 +465,7 @@ con,idle,age,host_max_age,host_max_idle,host_max_used,host_port,poll_time,final)
                         url_disconnect(con,1,"max reconnections > "host_max_used);
 
                     } else {
-                        DETAIL((age?"keeping":"new")" connection "con" idle for "idle);
+                        if(LD)DETAIL((age?"keeping":"new")" connection "con" idle for "idle);
                     }
                 }
             }
@@ -509,7 +493,7 @@ function url_disconnect(con,do_close,msg) {
 function url_get_headers(con,response,\
 code,bytes,i,num,j,all_hdrs) {
 
-    #DEBUG("url_get_headers");
+    #if(LG)DEBUG("url_get_headers");
 
     rs_push("\r\n\r\n");
 
@@ -525,7 +509,7 @@ code,bytes,i,num,j,all_hdrs) {
             if (bytes[i]) {
 
                 if (1 || bytes[i] ~ /^(HTTP|[Cc]on)/) {
-                    DETAIL("hdr["bytes[i]"]");
+                    if(LD)DETAIL("hdr["bytes[i]"]");
                 }
 
                 if ((j=index(bytes[i],":")) > 0) {
@@ -592,7 +576,7 @@ ct,key) {
         rec_sep = "\r\n";
 
     } else if (rec_sep) {
-        DETAIL("using supplied record sep"rec_sep);
+        if(LD)DETAIL("using supplied record sep"rec_sep);
     } else {
 
         key = url_eof_key(request,response);
@@ -606,7 +590,7 @@ ct,key) {
 
             ct = url_ct(response);
             rec_sep = g_url_eof[ct] "[[:space:]]*"; #change to ? from *
-            DETAIL("using default record sep for key "key"  = "rec_sep);
+            if(LD)DETAIL("using default record sep for key "key"  = "rec_sep);
         }
     }
     return rec_sep;
@@ -630,7 +614,7 @@ key,ct,tail,rec_sep) {
 
             g_url_eof[key] = g_url_eof[ct] tail;
 
-            DEBUG("Updating EOF marker for "key" = ["g_url_eof[key]"]");
+            if(LG)DEBUG("Updating EOF marker for "key" = ["g_url_eof[key]"]");
 
         } else {
             WARNING("unable to learn EOF for "key);
@@ -667,7 +651,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
         if (try > 1) {
             
-            DEBUG("reconnect attempt "try);
+            if(LG)DEBUG("reconnect attempt "try);
         }
 
         con = url_connect(url,headers,request,response);
@@ -709,7 +693,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
         if (index("json,xml,xhtml",ct)) enc="utf-8";
         else if (index(tolower(response["content-type"]),"utf-8")) enc = "utf-8";
 
-        #DEBUG("pre-encoding type = "enc);
+        #if(LG)DEBUG("pre-encoding type = "enc);
 
         rec_sep = url_eof(request,response,rec_sep);
         if (response["transfer-encoding"] == "chunked") {
@@ -721,12 +705,12 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
         if (chunked) {
             body = url_read_chunked(con);
         } else {
-            DEBUG("begin body sep="rec_sep);
+            if(LG)DEBUG("begin body sep="rec_sep);
             body = url_read_fixed(con,response,rec_sep);
             url_eof_learn(request,response);
         }
         rs_pop()
-        #DEBUG("end body");
+        #if(LG)DEBUG("end body");
 
         response["body"] = body;
         fflush(con);
@@ -786,10 +770,10 @@ i) {
 #
 #    # Something went wrong with connection.
 #    if (elapsed < url_host_timeout(host_port)) {
-#        DETAIL("elapsed time = "elapsed" current timout = "url_host_timeout(host_port));
+#        if(LD)DETAIL("elapsed time = "elapsed" current timout = "url_host_timeout(host_port));
 #        g_url_timeout[host_port] = elapsed - 1;
 #        if (g_url_timeout[host_port] < 5) g_url_timeout[host_port] = 5;
-#        DETAIL("Adjusted client timeout for "host_port" to "g_url_timeout[host_port]);
+#        if(LD)DETAIL("Adjusted client timeout for "host_port" to "g_url_timeout[host_port]);
 #    }
 #}
 #
@@ -801,11 +785,11 @@ body,bytes,bytes2,chunk_len,code) {
     while ( (code =  ( con |& getline bytes )) > 0) {
         chunk_len=strtonum("0x"bytes);
 
-        #DEBUG("chunked  len["bytes"] = "chunk_len" bytes");
+        #if(LG)DEBUG("chunked  len["bytes"] = "chunk_len" bytes");
 
         if (chunk_len == 0) {
             # for tvdb read one more blank record - will probably break for imdb
-            #DEBUG("read final blank");
+            #if(LG)DEBUG("read final blank");
             con |& getline bytes2;
             break;
         }
@@ -815,7 +799,7 @@ body,bytes,bytes2,chunk_len,code) {
 
 
             #log_bigstring("chunk",bytes2,10);
-            #DEBUG(length(bytes)" of "chunk_len);
+            #if(LG)DEBUG(length(bytes)" of "chunk_len);
 
             if (length(bytes) >= chunk_len) {
                 # remove final RT
@@ -840,7 +824,7 @@ content_length,body,bytes,is_xml,code) {
     }
     while ( (code =  ( con |& getline bytes )) > 0) {
         body = body bytes RT;
-        #DEBUG("[" bytes "][" RT "]");
+        #if(LG)DEBUG("[" bytes "][" RT "]");
         
         if (content_length && length(body)+0 >= content_length) break;
 
@@ -854,7 +838,7 @@ content_length,body,bytes,is_xml,code) {
 
                 #RS = substr(bytes,RSTART+1,RLENGTH-1)"[[:space:]]*" initial_rs;
                 RS = substr(bytes,RSTART+1,RLENGTH-1) initial_rs;
-                DEBUG("xml eof changed to "RS);
+                if(LG)DEBUG("xml eof changed to "RS);
             }
         }
     }
@@ -864,7 +848,7 @@ content_length,body,bytes,is_xml,code) {
 
 
 function url_log_state(label,con) {
-    DETAIL(label" : connection "con" reconnect sub total "g_url_con_persist_subtotal[con]" opened "g_url_con_opened[con]" closed "(g_url_con_closed[con]+0));
+    if(LD)DETAIL(label" : connection "con" reconnect sub total "g_url_con_persist_subtotal[con]" opened "g_url_con_opened[con]" closed "(g_url_con_closed[con]+0));
 }
 function url_stats(\
 con) {

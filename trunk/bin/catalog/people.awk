@@ -59,10 +59,10 @@ i,num,domain,ids,names,key,namekey) {
         domain = ids[1];
         for(i = 2 ; i <= num ; i++ ) {
             person_extid2name[domain":"ids[i]] = names[i];
-            DETAIL("person_extid2name["domain":"ids[i]"] => "names[i]);
+            if(LD)DETAIL("person_extid2name["domain":"ids[i]"] => "names[i]);
         }
     } else {
-        DETAIL("no people data");
+        if(LD)DETAIL("no people data");
     }
     id0();
 }
@@ -87,7 +87,7 @@ key,extid,ovsid,domain,tmp,peopledb,domaindb,sortfiles,name,f) {
     for (key in person_extid2name) {
 
         name = person_extid2name[key];
-        DEBUG(key"="name);
+        if(LG)DEBUG(key"="name);
         split(key,tmp,":");
         domain = tmp[1];
         extid = tmp[2];
@@ -156,7 +156,7 @@ line,err,fields,ret) {
             split(line,fields,"\t");
             if (fields[infield] == value) {
                 ret = fields[outfield];
-                DETAIL("found person ["line"]" );
+                if(LD)DETAIL("found person ["line"]" );
                 break;
             }
         }
@@ -172,7 +172,7 @@ newovsid) {
 
     newovsid = get_maxid(dbfile)+1;
     print newovsid"\t"name >> dbfile;
-    DETAIL("add new "dbfile": "newovsid"\t"name);
+    if(LD)DETAIL("add new "dbfile": "newovsid"\t"name);
     close(dbfile);
     set_maxid(dbfile,newovsid);
     return newovsid;
@@ -180,7 +180,7 @@ newovsid) {
 
 function people_domain_db_add(domaindb,extid,ovsid) {
     print extid"\t"ovsid >> domaindb;
-    DETAIL("add new "domaindb": "extid"\t"ovsid);
+    if(LD)DETAIL("add new "domaindb": "extid"\t"ovsid);
     close(domaindb);
 }
 
@@ -217,7 +217,7 @@ extids,ovsids,num,domain,i,key) {
 
         ovsids = substr(ovsids,2);
 
-        DETAIL("person_extid2ovsid ["fields[ovs_role_id_field]"] = ["ovsids"]");
+        if(LD)DETAIL("person_extid2ovsid ["fields[ovs_role_id_field]"] = ["ovsids"]");
         fields[ovs_role_id_field] = ovsids;
     }
 }

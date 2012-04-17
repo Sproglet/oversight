@@ -46,7 +46,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
             name = html_to_utf8(json["name"]);
 
             if (sub(/^Duplicate: /,"",name)) {
-                DETAIL("Duplicate: "name);
+                if(LD)DETAIL("Duplicate: "name);
                 # Duplicate movie - go to original
                 id = subexp(name,"([0-9]+).$");
                 if (id) {
@@ -95,7 +95,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
                 break;
 
             }
-            DETAIL("page not translated to "langs[i]);
+            if(LD)DETAIL("page not translated to "langs[i]);
         }
         if (merge) {
             minfo_merge(minfo,minfo2,"themoviedb");
@@ -109,12 +109,12 @@ function tmdb_match_release(json,\
 countries,num,i,j,cert,country_key) {
     num = get_countries(countries);
     for( i = 1 ; i <= num ; i++ ) {
-        DETAIL("looking for release in "countries[i]);
+        if(LD)DETAIL("looking for release in "countries[i]);
         for(j = 1 ; (country_key = "countries#"j":iso_3166_1" )  in json ; j++ ) {
             if (json[country_key] == countries[i]) {
                 cert = json["countries#"j":certification"];
                 if (cert != "") {
-                    DETAIL("found cert = "cert);
+                    if(LD)DETAIL("found cert = "cert);
                     return cert;
                 }
             }

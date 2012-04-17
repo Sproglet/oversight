@@ -6,7 +6,7 @@ line,parts,f) {
     while((getline line < f ) > 0) {
         split(line,parts," ");
         mtab[parts[2]]=1;
-        DEBUG("mtab ["parts[2]"]");
+        if(LG)DEBUG("mtab ["parts[2]"]");
     }
     mtab["@ovs_fetched"] = 1;
 }
@@ -24,7 +24,7 @@ line,f,n,v,n2,v2) {
         if ( index(n,"_BKMRK_") == 0) {
 
             settings[n] = v;
-            DEBUG("setting ["n"]=["v"]");
+            if(LG)DEBUG("setting ["n"]=["v"]");
 
             # if servname2=nas then store servname_nas=2 - this makes it easier to
             # find the corresponding servlink2 using the share name.
@@ -34,7 +34,7 @@ line,f,n,v,n2,v2) {
                 v2="servlink"substr(n,length(n));
 
                 settings[n2] = v2;
-                DEBUG("setting *** ["n2"]=["v2"]");
+                if(LG)DEBUG("setting *** ["n2"]=["v2"]");
             }
         }
     }
@@ -74,7 +74,7 @@ f,result,line) {
        }
     }
     close(f);
-    DEBUG("is mounted "path" = "result);
+    if(LG)DEBUG("is mounted "path" = "result);
     return 0+ result;
 }
 
@@ -86,15 +86,15 @@ path,link_details,p,newlink,usr,pwd,lnk) {
 
     if (is_mounted(path)) {
 
-        DEBUG(s " already mounted at "path);
+        if(LG)DEBUG(s " already mounted at "path);
         return path;
     }
 
     get_settings(settings);
 
-    DEBUG("servname_"s" = "settings[settings["servname_"s]]);
+    if(LG)DEBUG("servname_"s" = "settings[settings["servname_"s]]);
     if (parse_link(settings[settings["servname_"s]],link_details) == 0) {
-        DEBUG("Could not find "s" in shares");
+        if(LG)DEBUG("Could not find "s" in shares");
         return "";
     }
 
@@ -102,7 +102,7 @@ path,link_details,p,newlink,usr,pwd,lnk) {
     usr=link_details["smb.user"];
     pwd=link_details["smb.passwd"];
 
-    DEBUG("Link for "s" is "lnk);
+    if(LG)DEBUG("Link for "s" is "lnk);
 
     p = mount_link(path,lnk,usr,pwd) ;
 
@@ -110,7 +110,7 @@ path,link_details,p,newlink,usr,pwd,lnk) {
     if ( p == "" ) {
        if ( index(lnk,"smb:") ) {
           if ( match(lnk,"[0-9]\\.[0-9]") == 0) {
-            DETAIL("Trying to resolve windows name");
+            if(LD)DETAIL("Trying to resolve windows name");
             newlink = wins_resolve(lnk);
             if (newlink != "" && newlink != lnk ) {
                 p = mount_link(path,newlink,usr,pwd) ;
@@ -148,7 +148,7 @@ remote,cmd,result,t) {
     if (result == 255 && systime() - t <= 1 ) {
         # if you try to double mount smb share you get error 255. Which is a meaningless error really.
         # Just assume it worked if it happened quickly.
-        DETAIL("Ignoring mount error");
+        if(LD)DETAIL("Ignoring mount error");
         result=0;
     }
     if (result) {
@@ -163,7 +163,7 @@ function wins_resolve(link,\
 line,host,ip,newlink,hostend,cmd) {
 
     cmd = "nbtscan "g_tmp_settings["eth_gateway"]"/24 > "qa(g_winsfile);
-    DEBUG(cmd);
+    if(LG)DEBUG(cmd);
     exec(cmd);;
     if(match(link,"smb://[^/]+")) {
         hostend=RSTART+RLENGTH;
@@ -171,19 +171,19 @@ line,host,ip,newlink,hostend,cmd) {
         
         while (newlink == "" && (getline line < g_winsfile ) > 0 ) {
             if (index(line," "g_tmp_settings["workgroup"]"\\"host" ")) {
-                DETAIL("Found Wins name "line);
+                if(LD)DETAIL("Found Wins name "line);
                 if (match(line,"^[0-9.]+")) {
                     ip=substr(line,RSTART,RLENGTH);
                     newlink="smb://"ip substr(link,hostend);
                     break;
                 }
             } else {
-                DEBUG("skip "line);
+                if(LG)DEBUG("skip "line);
             }
         }
         close(g_winsfile);
     }
-    DETAIL("new link "newlink);
+    if(LD)DETAIL("new link "newlink);
     return newlink;
 }
 
@@ -191,7 +191,7 @@ line,host,ip,newlink,hostend,cmd) {
 function nmt_get_share_path(f,\
 share,share_path,rest) {
     if (f ~ "^/") {
-        DEBUG("nmt_get_share_path "f" unchanged");
+        if(LG)DEBUG("nmt_get_share_path "f" unchanged");
         return f;
     } else {
         share=g_share_map[f];
@@ -199,7 +199,7 @@ share,share_path,rest) {
         sub(/^[^\/]+/,"",rest);
         share_path=g_share_name_to_folder[share] rest;
 
-        DEBUG("nmt_get_share_path "f" = "share_path);
+        if(LG)DEBUG("nmt_get_share_path "f" = "share_path);
         return share_path;
     }
 }

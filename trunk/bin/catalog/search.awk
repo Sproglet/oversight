@@ -78,7 +78,7 @@ t,t2,y,quoted) {
                 }
                 t2 = remove_format_tags(t2) y;
 
-                DETAIL("["t"]=>["t2"]");
+                if(LD)DETAIL("["t"]=>["t2"]");
 
 
                 normed[t2] += matches[t];
@@ -253,13 +253,13 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
                        freq_target = 3; # changed back to 3 to avoid false positives. May invoke google block.
 
                        if (freq1 != best1 ) {
-                           DETAIL(best1" is not most frequent. ["freq1"]  - continue searching ...");
+                           if(LD)DETAIL(best1" is not most frequent. ["freq1"]  - continue searching ...");
                            continue;
                        } else if (freq[freq1] < freq_target) {
-                           DETAIL(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
+                           if(LD)DETAIL(best1" does not occur "freq_target" or more times on first search result  - continue searching ...");
                            continue;
                        } else if (hash_size(freq) > 1) {
-                            DETAIL(best1" does not occur more frequently than others");
+                            if(LD)DETAIL(best1" does not occur more frequently than others");
                        } 
                    } 
                }
@@ -360,7 +360,7 @@ txt) {
     if (minfo["mi_multipart_tag_pos"]) {
         txt = substr(txt,1,minfo["mi_multipart_tag_pos"]-1);
         sub("("g_multpart_tags"|)[1a]$","",txt);
-        DEBUG("MultiPart Suffix removed = ["txt"]");
+        if(LG)DEBUG("MultiPart Suffix removed = ["txt"]");
     }
 
     return txt;
@@ -461,7 +461,7 @@ function textToSearchKeywords(f,heuristic\
 
             #Make words mandatory
             if (heuristic == 1) {
-                DEBUG("Base query = "f);
+                if(LG)DEBUG("Base query = "f);
                 gsub(/[-+.]/,"+%2B",f);
                 f="%2B"f;
             }
@@ -473,7 +473,7 @@ function textToSearchKeywords(f,heuristic\
 
             f = "%22"f"%22"; #double quotes
         }
-        DEBUG("Using search method "heuristic" = ["f"]");
+        if(LG)DEBUG("Using search method "heuristic" = ["f"]");
     }
     return f;
 }
@@ -490,13 +490,13 @@ function remove_format_tags(text,\
     # Remove format tags at the beginning
     while (match(tolower(text),"^"tags)) {
         # Remove the first word (the format tag may only be a partial word match)
-        DEBUG("found start format tag ["substr(text,RSTART,RLENGTH)"]");
+        if(LG)DEBUG("found start format tag ["substr(text,RSTART,RLENGTH)"]");
         sub(/^[[:alnum:]]+[^[:alnum:]]*/,"",text);
     }
 
     # Remove all trailing tags and any other text.
     if (match(tolower(text),tags)) {
-        DEBUG("found format tag ["substr(text,RSTART,RLENGTH)"]");
+        if(LG)DEBUG("found format tag ["substr(text,RSTART,RLENGTH)"]");
         text = substr(text,1,RSTART-1);
     }
 
@@ -598,13 +598,13 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
 
 
     if (length(name) <= 4 || name !~ "^[-.[:alnum:]]+$" ) {
-        DETAIL("onlinenfo: ["name"] ignored");
+        if(LD)DETAIL("onlinenfo: ["name"] ignored");
     } else {
 
         id1("Online nfo search for ["name"]");
 
         sub(/QUERY/,name,queryPath);
-        DETAIL("query["queryPath"]");
+        if(LD)DETAIL("query["queryPath"]");
 
         #Get all nfo links
         scan_page_for_match_counts(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
@@ -647,7 +647,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
     #    }
 
         if (hash_size(totalImdbIds) > 3 ) {
-            DETAIL("Too many nfo results from online search");
+            if(LD)DETAIL("Too many nfo results from online search");
         } else {
 
             #return most frequent match
@@ -659,11 +659,11 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
 
             } else if (count == 0) {
 
-                DETAIL("No matches");
+                if(LD)DETAIL("No matches");
 
             } else {
 
-                DETAIL("To many equal matches. Discarding results");
+                if(LD)DETAIL("To many equal matches. Discarding results");
             }
         }
         id0(result);
@@ -679,7 +679,7 @@ amzurl,amazon_urls,imdb_per_page,imdb_id) {
         for(amzurl in amazon_urls) {
             if (scan_page_for_match_counts(amzurl, "/tt", g_imdb_regex ,0,1,"", imdb_per_page)) {
                 for(imdb_id in imdb_per_page) {
-                    DETAIL("Found "imdb_id" via amazon link");
+                    if(LD)DETAIL("Found "imdb_id" via amazon link");
                     imdbIds[imdb_id] += imdb_per_page[imdb_id];
                 }
             }
@@ -796,7 +796,7 @@ score) {
         }
         if (score) {
 
-            #DEBUG("field_priority("field","source")="score);
+            #if(LG)DEBUG("field_priority("field","source")="score);
 
         } else {
 
@@ -808,7 +808,7 @@ score) {
             } else {
                 score = gPriority["default"];
             }
-            #DEBUG("field_priority: "field" source ["source"] defaults to "score);
+            #if(LG)DEBUG("field_priority: "field" source ["source"] defaults to "score);
         }
     }
     return score;
@@ -872,12 +872,12 @@ old_inf,new_inf,ret,old_num,new_num,old_src_key,old_src,n) {
     }
     if (old_src) {
         if (ret) {
-            DETAIL("updated "n" "new_inf" was "old_inf);
+            if(LD)DETAIL("updated "n" "new_inf" was "old_inf);
         } else {
-            DETAIL("kept "n" "old_inf" ignore "new_inf);
+            if(LD)DETAIL("kept "n" "old_inf" ignore "new_inf);
         }
     } else {
-        DETAIL("added "n" "new_inf);
+        if(LD)DETAIL("added "n" "new_inf);
     }
     return ret;
 }
@@ -889,13 +889,13 @@ ret) {
     ret = 0;
     if (value) {
         if (is_better_source(minfo,field,source,value)) {
-            #DEBUG("xx updating ["source":"value"]");
+            #if(LG)DEBUG("xx updating ["source":"value"]");
             minfo[field] = value;
             minfo[field"_source"] = source;
             ret = 1;
         }
     } else {
-        DETAIL("blank value for "field" ignored");
+        if(LD)DETAIL("blank value for "field" ignored");
     }
     return ret;
 }
@@ -931,7 +931,7 @@ i,url2,f) {
 # cache = store in cache
 function scrape_one_item(label,url,start_text,start_include,end_text,end_include,cache,\
 f,line,out,found,tokens,token_count,token_i) {
-    #DEBUG("scrape_one_item "label" start at ["start_text"]");
+    #if(LG)DEBUG("scrape_one_item "label" start at ["start_text"]");
     f=getUrl(url,label".html",cache);
 
     token_count = split(start_text,tokens,",");
@@ -941,7 +941,7 @@ f,line,out,found,tokens,token_count,token_i) {
             # eat up start tokens
             if (token_i - token_count <= 0 ) {
                 if (match(line[1],tokens[token_i])) {
-                    DETAIL("matched token ["tokens[token_i]"]");
+                    if(LD)DETAIL("matched token ["tokens[token_i]"]");
                     token_i++;
                 }
             }
@@ -949,9 +949,9 @@ f,line,out,found,tokens,token_count,token_i) {
                 # Now parse the item we want
                 out = scrape_until(f,end_text,end_include);
                 if (start_include) {
-                    #DEBUG("scrape_one_item line = "line[1]);
+                    #if(LG)DEBUG("scrape_one_item line = "line[1]);
                     out = remove_tags(line[1]) out;
-                    #DEBUG("scrape_one_item out = "out);
+                    #if(LG)DEBUG("scrape_one_item out = "out);
                 }
                 found = 1;
                 break;
@@ -962,7 +962,7 @@ f,line,out,found,tokens,token_count,token_i) {
     if (found != 1) {
         ERR("Cant find ["start_text"] in "label":"url);
     }
-    #DEBUG("scrape_one_item "label" out ["out"]");
+    #if(LG)DEBUG("scrape_one_item "label" out ["out"]");
     return out;
 }
 
@@ -979,7 +979,7 @@ function raw_scrape_until(f,end_text,inclusive,\
 line,out,ending,isre) {
     ending = 0;
     isre = isreg(end_text);
-    #DEBUG("isreg["end_text"] = "isre);
+    #if(LG)DEBUG("isreg["end_text"] = "isre);
 
 
     while(!ending && enc_getline(f,line) > 0) {
@@ -1014,7 +1014,7 @@ out,tag_start,tag_end,start_pos,end_pos,tail) {
         if (end_pos > 0 ) {
             tail = substr(out,end_pos+length(tag)+3);
         }
-        #DETAIL("removing "substr(out,start_pos,end_pos-start_pos));
+        #if(LD)DETAIL("removing "substr(out,start_pos,end_pos-start_pos));
         out = substr(out,1,start_pos-1) tail;
     }
     return out;
@@ -1138,7 +1138,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
         f = getUrl(url,".html",0);
         if (f) {
 
-            DETAIL("File = "f);
+            if(LD)DETAIL("File = "f);
 
             fclean=f".clean";
             clean_html(f,fclean);
@@ -1156,7 +1156,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
                 while( (e =  (getline line < fclean ) ) > 0) {
                     if (index(line,title)) {
                         num += split(line,tmp,"\\<"title"\\>") - 1;
-                        DETAIL("found:["title"x"num"]["line"]");
+                        if(LD)DETAIL("found:["title"x"num"]["line"]");
                     }
                 }
                 if (e >= 0) {
@@ -1167,7 +1167,7 @@ keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
                     keep[i] = num*length(title);
                 }
                 if(num) {
-                    DETAIL("Title count "title" = "num" ["line"]");
+                    if(LD)DETAIL("Title count "title" = "num" ["line"]");
                 }
             }
 
@@ -1213,7 +1213,7 @@ keep,new,newtotal,size,url,i,blocksz) {
                 if (size > g_filter_web_titles_baseline) {
                     keep[i] = size;
                 } else {
-                    DEBUG("Discarding "titles[i,1]":"titles[i,2]);
+                    if(LG)DEBUG("Discarding "titles[i,1]":"titles[i,2]);
                 }
             }
 

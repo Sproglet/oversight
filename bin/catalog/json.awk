@@ -4,7 +4,7 @@ text,f,line) {
     if (f) { 
         FS="\n";
         while(enc_getline(f,line) > 0) {
-            #DEBUG("json:["line[1]"]");
+            #if(LG)DEBUG("json:["line[1]"]");
             text = text " " line[1];
         }
         enc_close(f);
@@ -79,7 +79,7 @@ context) {
     delete out2;
     json_init_context(context,input);
     json_parse_object(context,out1);
-    DEBUG("PArsin 2nd opbject"substr(context["in"],context["pos"],50)"...");
+    if(LG)DEBUG("PArsin 2nd opbject"substr(context["in"],context["pos"],50)"...");
     json_parse_object(context,out2);
     return context["err"] == "";
 }
@@ -227,7 +227,7 @@ label) {
 
             ltrim(context);
 
-            #DETAIL("END FIELD AT "substr(context["in"],context["pos"],50)"....");
+            #if(LD)DETAIL("END FIELD AT "substr(context["in"],context["pos"],50)"....");
             if (!advance(context,",",1)) break;
         }
         if (advance(context,"}")) {

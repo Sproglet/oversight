@@ -67,7 +67,7 @@ y,m,d,hr,mn,r) {
         r = lshift(lshift(lshift(lshift(and(y,1023),4)+m,5)+d,5)+hr,6)+mn;
         r= sprintf("%x",r);
     }
-    #DETAIL("shorttime "t" = "r);
+    #if(LD)DETAIL("shorttime "t" = "r);
     return r;
 }
 function longtime(t,\
@@ -107,7 +107,7 @@ i,n,out,ids,m,id,ascii_offset) {
         }
     }
     out = substr(out,1+length(sep));
-    DETAIL("compress ["s"] = ["out"]");
+    if(LD)DETAIL("compress ["s"] = ["out"]");
 
     return out;
 }
@@ -131,7 +131,7 @@ i,n,out,ids,m,ascii_offset) {
         }
     }
     out = substr(out,1+length(sep));
-    DETAIL("expand ["s"] = ["out"]");
+    if(LD)DETAIL("expand ["s"] = ["out"]");
     return out;
 }
 function short_year(y,\

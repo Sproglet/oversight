@@ -7,7 +7,7 @@ f,url_key,cache_suffix) {
 
     if(cache && (url_key in gUrlCache) ) {
 
-        DEBUG(" fetched ["url_key"] from cache");
+        if(LG)DEBUG(" fetched ["url_key"] from cache");
         f = gUrlCache[url_key];
     }
 
@@ -38,7 +38,7 @@ function getUrl(url,capture_label,cache,referer,quiet_fail,\
     
     label="getUrl:"capture_label": ";
 
-    #DEBUG(label url);
+    #if(LG)DEBUG(label url);
 
     if (url == "" ) {
         WARNING(label"Ignoring empty URL");
@@ -56,9 +56,9 @@ function getUrl(url,capture_label,cache,referer,quiet_fail,\
         if (wget(url,f,referer,quiet_fail) ==0) {
             if (cache) {
                 gUrlCache[cache_key(url)]=f;
-                #DEBUG(label" Fetched & Cached ["url"] to ["f"]");
+                #if(LG)DEBUG(label" Fetched & Cached ["url"] to ["f"]");
             } else {
-                #DEBUG(label" Fetched ["url"] into ["f"]"); 
+                #if(LG)DEBUG(label" Fetched ["url"] into ["f"]"); 
             }
         } else {
             ERR(label" Failed getting ["url"] into ["f"]");
@@ -125,13 +125,13 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 
     if (is_file(old_cf)) {
         if (!is_file(new_cf)){
-            DETAIL("setting default cookies");
+            if(LD)DETAIL("setting default cookies");
             file_copy(old_cf,new_cf);
         }
     }
     arg_cf=" --keep-session-cookies --load-cookies="qa(new_cf)" --save-cookies="qa(new_cf)" --keep-session-cookies";
     args=args arg_cf;
-    #DETAIL(arg_cf);
+    #if(LD)DETAIL(arg_cf);
 
     targetFile=qa(file);
     htmlFile=targetFile;
@@ -189,10 +189,10 @@ args,html_filter,unzip_cmd,cmd,htmlFile,downloadedFile,targetFile,result,default
 
     # Set this between 1 and 4 to throttle speed of requests to the same domain
 
-    DETAIL("WGET ["url"]");
+    if(LD)DETAIL("WGET ["url"]");
     result = exec(cmd,0,quiet_fail);
     if (result == 0 ) {
-        #DETAIL("WGET ["unzip_cmd"]");
+        #if(LD)DETAIL("WGET ["unzip_cmd"]");
         result = exec(unzip_cmd,0,quiet_fail);
     }
     if (result != 0) {
@@ -228,13 +228,13 @@ list2,f,n,i,batch,cmd,total,inv,u,txt,s,code) {
         if (s%batch == 0 || s == n) {
             exec("wget --spider --no-check-certificate -t "tries" -T "timeout" -O - "cmd" >"qa(f)" 2>&1 || true ");
             while ((code = (getline txt < f )) > 0 ) {
-                #DETAIL("spider ["txt"]");
+                #if(LD)DETAIL("spider ["txt"]");
                 if (match(txt,"--  http://")) {
                     u = substr(txt,RSTART+4);
-                    #DETAIL("url="u);
+                    #if(LD)DETAIL("url="u);
                 } else if (match(txt,"^Remote file exists.")) {
                     list2[inv[u]] = u;
-                    DETAIL("found url "u);
+                    if(LD)DETAIL("found url "u);
                     total++;
                 }
             }
@@ -245,7 +245,7 @@ list2,f,n,i,batch,cmd,total,inv,u,txt,s,code) {
         hash_copy(url_list,list2);
         dump(0,"spiders",url_list);
     } else {
-        DETAIL("unchanged");
+        if(LD)DETAIL("unchanged");
         total = n;
     }
     id0(total);
@@ -295,6 +295,6 @@ f,code,txt,source) {
         source = source txt;
     }
     if (!code) close(f);
-    DETAIL("fetched "length(source)" bytes for "url);
+    if(LD)DETAIL("fetched "length(source)" bytes for "url);
     return source;
 }

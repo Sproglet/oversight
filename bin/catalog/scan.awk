@@ -8,11 +8,11 @@ f,ret,i) {
             f[i] = replace_share_name(f[i]);
             if (f[i] != "") {
                 if (trigger_file_changed(f[i])) {
-                    DETAIL("File changed: "f[i]);
+                    if(LD)DETAIL("File changed: "f[i]);
                     ret =1;
                     break;
                 } else {
-                    DETAIL("File unchanged: "f[i]);
+                    if(LD)DETAIL("File unchanged: "f[i]);
                 }
             }
         }
@@ -64,12 +64,12 @@ key,ret,free) {
     key="free_mb:"dir;
 
     free = int(free_kb(dir)/1024);
-    DETAIL("Free space "dir" = "free" was "g_state[key]);
+    if(LD)DETAIL("Free space "dir" = "free" was "g_state[key]);
     if (free >= 0 && g_state[key] != free) {
         update_state(key,free);
         ret = 1;
     } else {
-        DETAIL("Free space unchanged from last scan - skipping");
+        if(LD)DETAIL("Free space unchanged from last scan - skipping");
     }
     return ret;
 }
@@ -90,7 +90,7 @@ f,fcount,total,done,dir) {
                 if (!CHECK_FREE_SPACE || file_system_changed(dir)) {
                     total += scan_contents(dir,scan_options);
                     url_connection_purge();
-                    INF("New/Changed total = "total);
+                    if(LI)INF("New/Changed total = "total);
                 }
                 done[dir]=1;
             }
@@ -106,7 +106,7 @@ f,fcount,total,done,dir) {
 function findLSFormat(\
 tempFile,i,procfile) {
 
-    DEBUG("Finding ls format");
+    if(LG)DEBUG("Finding ls format");
 
     procfile="/proc/"PID"/fd"; #Fd always has a recent timestamp even on cygwin
     tempFile=new_capture_file("LS")
@@ -123,8 +123,8 @@ tempFile,i,procfile) {
         break;
     }
     close(tempFile);
-    DETAIL("ls -l file position at "gLS_FILE_POS);
-    DETAIL("ls -l time position at "gLS_TIME_POS);
+    if(LD)DETAIL("ls -l file position at "gLS_FILE_POS);
+    if(LD)DETAIL("ls -l time position at "gLS_TIME_POS);
 
 }
 function is_hidden_fldr(d,\
@@ -155,7 +155,7 @@ function scan_contents(root,scan_options,\
 rootlen,ign_path,tempFile,currentFolder,skipFolder,i,folderNameNext,perms,w5,lsMonth,files_in_db,\
 lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,ts,total,minfo,person_extid2name,qfile) {
 
-    DETAIL("scan_contents "root);
+    if(LD)DETAIL("scan_contents "root);
 
     rootlen = length(root);
 
@@ -196,8 +196,8 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
     while((getline scan_line < tempFile) > 0 ) {
 
 
-        #DEBUG( "ls: ["scan_line"]"); 
-        #DETAIL("scan_line: length="length(scan_line)" "url_encode(scan_line));
+        #if(LG)DEBUG( "ls: ["scan_line"]"); 
+        #if(LD)DETAIL("scan_line: length="length(scan_line)" "url_encode(scan_line));
 
         store=0;
 
@@ -223,22 +223,22 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
            currentFolder = scan_line;
            sub(/\/*:$/,"",currentFolder);
-           DEBUG("/- "substr(currentFolder,rootlen+2)); #allow for ls index +2
+           if(LG)DEBUG("/- "substr(currentFolder,rootlen+2)); #allow for ls index +2
            folderNameNext=0;
             if ( ign_path != "" && currentFolder ~ ign_path ) {
 
                 skipFolder=1;
-                DETAIL("Ignore path "currentFolder);
+                if(LD)DETAIL("Ignore path "currentFolder);
 
             } else if ( is_movie_structure_fldr(currentFolder)) {
 
-                DETAIL("Ignore DVD/BDMV sub folder "currentFolder);
+                if(LD)DETAIL("Ignore DVD/BDMV sub folder "currentFolder);
                 skipFolder=1;
 
             } else if(is_hidden_fldr(currentFolder)) {
 
                 skipFolder=1;
-                DETAIL("SKIPPING "currentFolder);
+                if(LD)DETAIL("SKIPPING "currentFolder);
 
             } else if (currentFolder in g_fldrCount) {
 
@@ -261,7 +261,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
             lc=tolower(scan_line);
 
             if ( lc ~ g_settings["catalog_ignore_names"] ) {
-                DETAIL("Ignore name "scan_line);
+                if(LD)DETAIL("Ignore name "scan_line);
                 continue;
             }
 
@@ -293,7 +293,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                     g_fldrCount[currentFolder]++;
 
-                    #DEBUG("/- "scan_line);
+                    #if(LG)DEBUG("/- "scan_line);
 
                     if (is_videots_fldr(currentFolder"/"scan_line) || is_bdmv_fldr(currentFolder"/"scan_line) ) {
 
@@ -349,7 +349,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                     scan_line = substr(scan_line,RLENGTH+1);
                     lc = tolower(scan_line);
-                    DETAIL("Looking at direct file argument ["currentFolder"]["scan_line"]");
+                    if(LD)DETAIL("Looking at direct file argument ["currentFolder"]["scan_line"]");
                 }
 
                 # Now continue to check the file 
@@ -362,13 +362,13 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
                         # Check image size. Images should be very large or for testing only, very small.
                         if (length(w5) > 1 && length(w5) - 10 < 0) {
-                            DETAIL("Skipping image ["scan_line"] - too small");
+                            if(LD)DETAIL("Skipping image ["scan_line"] - too small");
                             store = 0;
                         }
                     }
 
                     if (store) {
-                        #DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
+                        #if(LG)DEBUG("g_fldrMediaCount[currentFolder]="g_fldrMediaCount[currentFolder]);
                         #Only add it if previous one is not part of same file.
                         if (g_fldrMediaCount[currentFolder] > 0 && gMovieFileCount - 1 >= 0 ) {
                             if ( checkMultiPart(minfo,scan_line) ) {
@@ -420,7 +420,7 @@ lsDate,lsTimeOrYear,f,d,extRe,pos,store,lc,nfo,quotedRoot,scan_line,scan_words,t
 
     total += identify_and_catalog(minfo,qfile,1,person_extid2name);
 
-    DEBUG("Finished Scanning "root);
+    if(LG)DEBUG("Finished Scanning "root);
     return 0+total;
 }
 
@@ -451,10 +451,10 @@ ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
                     if (is_file(ipath)) {
                         minfo[field] = ipath;
                         minfo[field"_source"] = "local";
-                        DETAIL("got image path "ipath);
+                        if(LD)DETAIL("got image path "ipath);
                         return 1;
                     #} else {
-                    #    DETAIL("no image path "ipath);
+                    #    if(LD)DETAIL("no image path "ipath);
                     }
                 }
             }
@@ -481,10 +481,10 @@ path) {
 
     gMovieFileCount++;
     if (NEWSCAN && in_list(path,files_in_db) ) {
-        DEBUG(" | \t" file);
+        if(LG)DEBUG(" | \t" file);
     } else {
         minfo["mi_do_scrape"]=1;
-          DETAIL(" ++\t" file);
+          if(LD)DETAIL(" ++\t" file);
         check_local_images(minfo,folder,file);
     }
         
@@ -504,7 +504,7 @@ lastNameSeen,i,lastch,ch) {
     }
     if (lastNameSeen == name) return 0;
 
-    #DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
+    #if(LG)DEBUG("Multipart check ["lastNameSeen"] vs ["name"]");
 
     for(i=1 ; i - length(lastNameSeen) <= 0 ; i++ ) {
         lastch = substr(lastNameSeen,i,1);
@@ -516,7 +516,7 @@ lastNameSeen,i,lastch,ch) {
 
     # Check following characters...
     if (substr(lastNameSeen,i+1) != substr(name,i+1)) {
-        #DEBUG("checkMultiPart: no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
+        #if(LG)DEBUG("checkMultiPart: no match last bit ["substr(lastNameSeen,i+1)"] != ["substr(name,i+1)"]");
         return 0;
     }
 
@@ -527,12 +527,12 @@ lastNameSeen,i,lastch,ch) {
 
     if (lastch == "1" ) {
         if (index("2345",ch) == 0) {
-            #DEBUG("checkMultiPart : expected 2345 got "ch);
+            #if(LG)DEBUG("checkMultiPart : expected 2345 got "ch);
             return 0;
         }
         # Ignore double digit xxx01 xxx02 these are likely tv series.
         if (substr(lastNameSeen,i-1,2) ~ "[0-9]1" ) {
-            #DEBUG("checkMultiPart : ignore double digit multiparts.");
+            #if(LG)DEBUG("checkMultiPart : ignore double digit multiparts.");
             return 0;
         }
         # Avoid matching tv programs e0n x0n 11n
@@ -541,7 +541,7 @@ lastNameSeen,i,lastch,ch) {
         # reject 0e1 0x1 "ep 1" "dvd 1" etc.
         # we could change this to a white list instead. eg part01 cd1 etc.
         if (tolower(substr(lastNameSeen,1,i)) ~ "([0-9][.edx]|dvd|disc|ep|episode|vol(\\.?|ume)) *1$") {
-            #DEBUG("checkMultiPart: rejected ["lastNameSeen"]");
+            #if(LG)DEBUG("checkMultiPart: rejected ["lastNameSeen"]");
             return 0;
         }
 
@@ -551,11 +551,11 @@ lastNameSeen,i,lastch,ch) {
             return 0;
         }
     } else {
-        #DEBUG("checkMultiPart: exptected 1 or a");
+        #if(LG)DEBUG("checkMultiPart: exptected 1 or a");
         return 0;
     }
 
-    DETAIL("Found multi part file - linked "name" with "lastNameSeen);
+    if(LD)DETAIL("Found multi part file - linked "name" with "lastNameSeen);
     minfo[PARTS] = (minfo[PARTS] =="" ? "" : minfo[PARTS]"/" ) name;
     minfo["mi_multipart_tag_pos"] = i;
     return 1;
@@ -581,19 +581,19 @@ nfo,lcNfo) {
 # True is the folder was included as part of the scan and is specific to the current media file
 function folderIsRelevant(dir) {
 
-    DEBUG("Check parent folder relation to media ["dir"]");
+    if(LG)DEBUG("Check parent folder relation to media ["dir"]");
         if ( !(dir in g_fldrCount) || g_fldrCount[dir] == "") { 
-            DEBUG("unknown folder ["dir"]" );
+            if(LG)DEBUG("unknown folder ["dir"]" );
             dump(0,"folder count",g_fldrCount);
             return 0;
         }
     #Ensure the folder was scanned and also it has 2 or fewer sub folders (VIDEO_TS,AUDIO_TS)
     if (g_fldrCount[dir] - 2 > 0 ) {
-        DEBUG("Too many sub folders - general folder");
+        if(LG)DEBUG("Too many sub folders - general folder");
         return 0;
     }
    if (g_fldrMediaCount[dir] - 2 > 0 ) {
-       DEBUG("Too much media  general folder");
+       if(LG)DEBUG("Too much media  general folder");
        return 0;
    }
    return 1;
@@ -610,7 +610,7 @@ ret) {
            
            if( is_file(g_fldrInfoName[path])) {
 
-               DEBUG("Using single nfo "g_fldrInfoName[path]);
+               if(LG)DEBUG("Using single nfo "g_fldrInfoName[path]);
 
                minfo[NFO] = g_fldrInfoName[path];
 
@@ -624,7 +624,7 @@ ret) {
 function identify_and_catalog(minfo,qfile,force_merge,person_extid2name,\
 file,fldr,bestUrl,scanNfo,thisTime,eta,\
 total,local_search,poster,\
-cat,minfo2,locales,id,split_episode_search) {
+cat,minfo2,locales,id,split_episode_search,msg) {
 
     if (("mi_do_scrape" in minfo) && minfo[NAME] != "" ) {
        
@@ -654,7 +654,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
                 report_status("item "(++g_item_count));
 
-                DEBUG("folder :["fldr"]");
+                if(LG)DEBUG("folder :["fldr"]");
 
                 if (isDvdDir(file) == 0 && !match(file,gExtRegExAll)) {
 
@@ -669,7 +669,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
                         if (is_file(minfo[NFO])) {
 
-                           DEBUG("Using default info to find url");
+                           if(LG)DEBUG("Using default info to find url");
                            scanNfo = 1;
 
                         # Look at other files in the same folder.
@@ -693,7 +693,7 @@ cat,minfo2,locales,id,split_episode_search) {
 
                     if (minfo_get_id(minfo,"@nfo") == -1 ) {
                         # dont scrape
-                        DETAIL("using XML nfo only for "minfo[NAME]);
+                        if(LD)DETAIL("using XML nfo only for "minfo[NAME]);
 
                     } else {
 
@@ -703,7 +703,7 @@ cat,minfo2,locales,id,split_episode_search) {
                             # scan filename for imdb link
                             bestUrl = extractImdbLink(file,1);
                             if (bestUrl) {
-                                DETAIL("extract imdb id from "file);
+                                if(LD)DETAIL("extract imdb id from "file);
                             }
                         }
 
@@ -780,16 +780,16 @@ cat,minfo2,locales,id,split_episode_search) {
                            if (want_posters(minfo)) {
                                # Check other sites
                                if (gPriority[POSTER,"web"] > minfo_field_priority(minfo,POSTER)) {
-                                   DETAIL("Checking local posters");
+                                   if(LD)DETAIL("Checking local posters");
                                    local_search = 1;
                                }
                            }
 
                            if (main_lang() != "en") {
                                if ( lang(minfo[PLOT]) != main_lang()) {
-                                   DETAIL("Plot not in main language");
+                                   if(LD)DETAIL("Plot not in main language");
                                    if (g_settings["catalog_extended_local_plot_search"] == 1 ) {
-                                       DETAIL("Forcing local search for plot");
+                                       if(LD)DETAIL("Forcing local search for plot");
                                        local_search = 1;
                                    }
                                }
@@ -833,12 +833,17 @@ cat,minfo2,locales,id,split_episode_search) {
                     queue_minfo(minfo,qfile,person_extid2name);
 
                     thisTime = systime()-thisTime ;
-                    if (g_total) {
-                        INF(sprintf("processed in "thisTime"s net av:%.1f gross av:%.1f [%s]",\
-                                 (g_process_time/g_total),(g_elapsed_time/g_total),minfo[NAME]));
-                    }
                     g_process_time += thisTime;
                     g_elapsed_time = systime() - g_start_time;
+                    if (g_total) {
+                        if (minfo[CATEGORY] == "T") {
+                            msg = minfo[TITLE]" "minfo[SEASON]"x"minfo[EPISODE]" "minfo[EPTITLE];
+                        } else {
+                            msg = minfo[TITLE]" ("minfo[YEAR]")";
+                        }
+                        if(LI)INF(sprintf("[%s] => [%s] processed in %.1fs (av:%.1f)",\
+                                 minfo[NAME],msg,thisTime,(g_process_time/g_total)));
+                    }
 
                 }
             }
@@ -883,7 +888,7 @@ function get_images(minfo) {
     if (GET_FANART) {
         minfo[FANART] = download_image(FANART,minfo,FANART);
     }
-    DEBUG("Delete get_images done");
+    if(LG)DEBUG("Delete get_images done");
 }
 
 function clear_folder_info() {
@@ -901,7 +906,7 @@ function clear_folder_info() {
     delete g_file_date; 
 
     gMovieFileCount = 0;
-    #DEBUG("Reset scanned files store");
+    #if(LG)DEBUG("Reset scanned files store");
 }
 
 

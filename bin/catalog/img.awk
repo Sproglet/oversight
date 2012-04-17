@@ -71,19 +71,19 @@ poster_ref,internal_path) {
     internal_path = getPath(poster_ref,minfo[DIR]);
 
     if (internal_path in g_image_inspected) {
-        if(verbose) DETAIL("Already looked at "poster_ref);
+        if(verbose) if(LD)DETAIL("Already looked at "poster_ref);
         return 0;
     } else if (update_image) {
-        if(verbose) DETAIL("Force Update of "poster_ref);
+        if(verbose) if(LD)DETAIL("Force Update of "poster_ref);
         return 1;
     } else if (!get_image) {
-        if(verbose) DETAIL("Skipping "poster_ref);
+        if(verbose) if(LD)DETAIL("Skipping "poster_ref);
         return 0;
     } else if (hasContent(internal_path)) {
-        if(verbose) DETAIL("Already have "poster_ref" ["internal_path"]");
+        if(verbose) if(LD)DETAIL("Already have "poster_ref" ["internal_path"]");
         return 0;
     } else {
-        if(verbose) DETAIL("Getting "poster_ref);
+        if(verbose) if(LD)DETAIL("Getting "poster_ref);
         return 1;
     }
 }
@@ -105,9 +105,9 @@ function download_image(field_id,minfo,mi_field,\
         poster_ref = internal_poster_reference(field_id,minfo);
         internal_path = getPath(poster_ref,minfo[DIR]);
 
-        #DEBUG("internal_path = ["internal_path"]");
-        #DEBUG("poster_ref = ["poster_ref"]");
-        #DEBUG("new poster url = "url);
+        #if(LG)DEBUG("internal_path = ["internal_path"]");
+        #if(LG)DEBUG("poster_ref = ["poster_ref"]");
+        #if(LG)DEBUG("new poster url = "url);
 
         get_it = 0;
         if (field_id == POSTER) {
@@ -116,7 +116,7 @@ function download_image(field_id,minfo,mi_field,\
             get_it = getting_fanart(minfo,0);
         }
 
-        DETAIL("getting image = "get_it);
+        if(LD)DETAIL("getting image = "get_it);
 
         if (get_it ) {
 
@@ -141,7 +141,7 @@ function download_image(field_id,minfo,mi_field,\
         }
     }
 
-    DETAIL("download_image["field_id"]["url"]="poster_ref);
+    if(LD)DETAIL("download_image["field_id"]["url"]="poster_ref);
 
     return poster_ref;
 }
@@ -154,12 +154,12 @@ wget_args) {
     # -T network timeouts
     wget_args=g_wget_opts g_art_timeout;
 
-    DEBUG("Image url = "url);
+    if(LG)DEBUG("Image url = "url);
     if (referer == "" ) {
         referer = get_referer(url);
     }
     if (referer != "" ) {
-        DEBUG("Referer = "referer);
+        if(LG)DEBUG("Referer = "referer);
         wget_args = wget_args " --referer=\""referer"\" ";
     }
     wget_args = wget_args " -U \""g_user_agent"\" ";
@@ -173,7 +173,7 @@ wget_args) {
 #id = imdbid
 #function defaultPosters(minfo) {
 #
-#    #DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo[POSTER] = minfo[FANART] = "";
+#    #if(LG)DEBUG("IGNORING POSTER INFORMATION !!! COMMENT OUT THIS LINE IF YOU SEE IT!!!"); minfo[POSTER] = minfo[FANART] = "";
 #    if (getting_poster(minfo,1)) {
 #        mpdb_get_poster(imdb(minfo),minfo[TITLE]);
 #        best_source(minfo,POSTER,mpdb_poster,"movieposterdb");
@@ -256,7 +256,7 @@ json,url,imageUrl,i,prefix,sc,best,finalUrl) {
             i++;
             imageUrl = json[prefix i ":MediaUrl"];
             if (imageUrl == "") {
-               DETAIL("no image for "prefix i ":MediaUrl");
+               if(LD)DETAIL("no image for "prefix i ":MediaUrl");
                break;
             }
             sc[imageUrl] = img_score(json,prefix,i,aspect,minfo);
@@ -413,14 +413,14 @@ sc,imageUrl,w,h,imdbid,title,key,img_title,url_file_title) {
 
         if (sc >= best_so_far ) {
             if (!url_online(imageUrl,1,5,1)) {
-                DETAIL("url is offline?");
+                if(LD)DETAIL("url is offline?");
                 sc = 0;
             }
         } 
 
     } while(0);
 
-    DETAIL("image score="sc" for "w"x"h" "imageUrl" "img_title" "url_file_title);
+    if(LD)DETAIL("image score="sc" for "w"x"h" "imageUrl" "img_title" "url_file_title);
     return sc;
 }
 
@@ -429,7 +429,7 @@ ar) {
     ar = ratio * h / w - 1;
     ar = ar * ar;
     if (ar < 0.04) {
-        #DETAIL("good aspect "w","h" wrt. "ratio" = "ar);
+        #if(LD)DETAIL("good aspect "w","h" wrt. "ratio" = "ar);
         return 1;
     } 
     return 0;

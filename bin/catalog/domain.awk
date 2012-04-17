@@ -31,15 +31,15 @@ plist,ret,key) {
         if (plist) {
             if (index(plist,"{ID}") && g_settings["domain_edit_id"] ) {
                 if (gsub(/\{ID\}/,g_settings["domain_edit_id"],plist)) {
-                    DETAIL("regex id modified to "plist);
+                    if(LD)DETAIL("regex id modified to "plist);
                 }
             }
             ret=apply_edits(ret,plist,verbose);
         } else {
-            DETAIL("keyword ["key"] not present for domain ["domain"]");
+            if(LD)DETAIL("keyword ["key"] not present for domain ["domain"]");
         }
     }
-    if (ret && verbose) DEBUG("domain_edits:["domain":"text"]=["ret"]");
+    if (ret && verbose) if(LG)DEBUG("domain_edits:["domain":"text"]=["ret"]");
     return ret;
 }
 

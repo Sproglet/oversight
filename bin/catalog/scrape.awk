@@ -115,7 +115,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
 
     # Scrape domain if poster extraction regex is set OR if local posters are not required
     if(g_settings["catalog_get_local_posters"]=="always" && !g_settings["domain:catalog_domain_poster_url_regex_list"] ) {
-        DETAIL("Skipping "get_main_domain(search_domain)" as catalog_get_local_posters=always");
+        if(LD)DETAIL("Skipping "get_main_domain(search_domain)" as catalog_get_local_posters=always");
     } else {
 
         # get the links from page one of the search
@@ -157,9 +157,9 @@ ret,i,url,id,tmp) {
         if (id) {
             tmp = matches[++ret] = g_settings["domain:catalog_domain_movie_url"];
             sub(/\{ID\}/,id,matches[ret]);
-            if (url != matches[ret]) DEBUG("clean_link: ["url"] -> ["matches[ret]"]");
+            if (url != matches[ret]) if(LG)DEBUG("clean_link: ["url"] -> ["matches[ret]"]");
         } else {
-            DEBUG("clean_link: ["url"] removed.");
+            if(LG)DEBUG("clean_link: ["url"] removed.");
         }
 
     }
@@ -220,7 +220,7 @@ minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) 
             url_domain = get_main_domain(matches[i]);
 
             if (is_visited_domain(url_domain,searchhist)) {
-                DETAIL("ignoring ["matches[i]"] - previous visit to site does not have plot");
+                if(LD)DETAIL("ignoring ["matches[i]"] - previous visit to site does not have plot");
             } else {
 
                 url = matches[i];
@@ -232,7 +232,7 @@ minfo2,err,matches,num,url,url_domain,i,max_allowed_results,engines,engnum,eng) 
                     break;
                 } else if (err == 2) {
                     # scrape ok but no plot - ignore entire domain
-                    DETAIL("ignoring further searches at "url_domain);
+                    if(LD)DETAIL("ignoring further searches at "url_domain);
                     set_visited_domain(url_domain,searchhist);
                 }
             }
@@ -267,11 +267,11 @@ i,j,keep,keep_num) {
         if (is_visited_url(matches[i],hist) ) {
 
             # ignore - duplicate url
-            DETAIL("ignore ["matches[i]"] - already visited");
+            if(LD)DETAIL("ignore ["matches[i]"] - already visited");
 
         } else if (is_visited_domain(get_main_domain(matches[i]),hist) ) {
 
-            DETAIL("ignore ["matches[i]"] - previous visit to site does not have plot");
+            if(LD)DETAIL("ignore ["matches[i]"] - previous visit to site does not have plot");
         } else {
             keep[++j] = matches[i];
         }
@@ -286,13 +286,13 @@ i,j,keep,keep_num) {
     keep_num = num;
 
     if (regex && regex != "." ) {
-        DETAIL("filter urls by regex ["regex"]");
+        if(LD)DETAIL("filter urls by regex ["regex"]");
         j = 0;
         for(i = 1 ; i<= num ; i++ ) {
             if (matches[i] ~ regex ) {
                 keep[++j] = matches[i];
             } else {
-                DEBUG("removing non-movie url "matches[i]);
+                if(LG)DEBUG("removing non-movie url "matches[i]);
             }
         }
         hash_copy(matches,keep);
@@ -312,7 +312,7 @@ i,j,keep) {
             for(j = i+1 ; j <= num ; j++ ) {
                 if (matches[j]) {
                     if (index(matches[j],matches[i]) == 1 ) {
-                        DEBUG("suburl ["matches[j]"] removed.");
+                        if(LG)DEBUG("suburl ["matches[j]"] removed.");
                         matches[j] = 0;
                     }
                 }
@@ -336,7 +336,7 @@ tmpa) {
     if (value) {
         pagestate[key] = tolower(value);
         pagestate[key"_score"] = weight*split(value,tmpa," ");
-        DETAIL(key" = "pagestate[key]" weight="pagestate[key"_score"]);
+        if(LD)DETAIL(key" = "pagestate[key]" weight="pagestate[key"_score"]);
     }
 }
 function check_title_score(pagestate,key,text) {
@@ -386,7 +386,7 @@ c) {
     c = pagestate["confidence"];
     if (c > -1000 && c < 1000 ) {
         c += delta;
-        DETAIL("Confidence changed by "delta" to "c" : "info" : "text);
+        if(LD)DETAIL("Confidence changed by "delta" to "c" : "info" : "text);
         pagestate["confidence"] = c;
     }
 }
@@ -418,7 +418,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
     if (have_visited(minfo,domain":"locale)) {
 
-        #DETAIL("Already visited");
+        #if(LD)DETAIL("Already visited");
 
     } else if (url=="" || locale=="" )  {
         ERR("paramters missing");
@@ -429,7 +429,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
             if (imdbid == imdb(minfo2)) {
                 adjust_confidence(pagestate,1000,"imdbid");
             } else {
-                DETAIL("wrong movie");
+                if(LD)DETAIL("wrong movie");
                 err = 1;
             }
         } 
@@ -462,7 +462,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
             pagestate["expectdirector"] = tolower(director);
             if (!poster) {
                 pagestate["checkposters"] = 1;
-                DETAIL("Force local poster fetching - no poster yet");
+                if(LD)DETAIL("Force local poster fetching - no poster yet");
             } else {
                 scrape_poster_check(pagestate,"");
             }
@@ -473,20 +473,20 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
             while(!err && enc_getline(f,line) > 0  ) {
 
-                #DEBUG("scrape["line[1]"]");
+                #if(LG)DEBUG("scrape["line[1]"]");
 
                 # If set apply this filter to all lines
                 if (g_settings["domain:catalog_domain_filter_all"] ) {
                     tmp = domain_edits(domain,line[1],"catalog_domain_filter_all");
                     if (tmp != line[1]) {
-                        DEBUG("line changed from \n"line[1]"\n to \n"tmp);
+                        if(LG)DEBUG("line changed from \n"line[1]"\n to \n"tmp);
                         line[1] = tmp;
                     }
                 }
 
-                #DEBUG("xx read["line[1]"] script="pagestate["script"]);
+                #if(LG)DEBUG("xx read["line[1]"] script="pagestate["script"]);
                 if (update_confidence(line[1],minfo2,pagestate) < 0 ) {
-                    DEBUG("update_confidence - leaving page");
+                    if(LG)DEBUG("update_confidence - leaving page");
                     err = 1;
                     break;
                 }
@@ -497,12 +497,12 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                     # There is a bug joining the last line if it ends with "text<br>"
                     if (index(line[1],"{") == 0 && index(line[1],"<") == 0) {
                         fullline = trim(fullline) " " trim(line[1]);
-                        #DEBUG("xx full line now = ["fullline"]");
+                        #if(LG)DEBUG("xx full line now = ["fullline"]");
                     } else {
                         if (fullline) {
                             err = scrape_movie_line(lng,domain,fullline,minfo2,pagestate,namestate);
                             if (err) {
-                                DEBUG("scrape_movie_line - leaving page");
+                                if(LG)DEBUG("scrape_movie_line - leaving page");
                                 break;
                             }
                         }
@@ -512,7 +512,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
 
                 if (!getting_local_fields) {
                     if (minfo2[PLOT] && minfo2[POSTER] && minfo2[YEAR] && minfo2[TITLE]) {
-                        DEBUG("Got info - leaving page");
+                        if(LG)DEBUG("Got info - leaving page");
                         break;
                     }
                 }
@@ -525,7 +525,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
             }
 
             if (err) {
-                DETAIL("!ABORT PAGE!\n");
+                if(LD)DETAIL("!ABORT PAGE!\n");
             }
         }
 
@@ -539,7 +539,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 #We got the movie but there is no plot;
                 #The main reason for alternate site scraping is to get a title and a plot, so a missing plot is
                 #a significant failure. Most other scraped info is language neutral.
-                DETAIL("missing plot");
+                if(LD)DETAIL("missing plot");
                 #err = 2; # we may want posters too!
             }
             if (pagestate["confidence"] < 1000) {
@@ -553,7 +553,7 @@ f,minfo2,err,line,pagestate,namestate,store,fullline,alternate_orig,alternate_ti
                 #if (!orig_title) required_confidence -= 20;
                 #if (!imdbid) required_confidence -= 20;
                 #if (!year) required_confidence -= 20;
-                DETAIL("Confidence:"pagestate["confidence"]"/"required_confidence);
+                if(LD)DETAIL("Confidence:"pagestate["confidence"]"/"required_confidence);
                 if (pagestate["confidence"] < required_confidence) {
                     err = 1;
                 }
@@ -610,7 +610,7 @@ i,imdbid) {
                 break;
             }
         }
-        DEBUG("No imdb was provided in search but exactly one imdbid "imdbid" was found on this page.");
+        if(LG)DEBUG("No imdb was provided in search but exactly one imdbid "imdbid" was found on this page.");
     }
     return imdbid;
 }
@@ -644,7 +644,7 @@ function load_local_words(pagestate,locale,\
 all_keys,key,regex) {
     # Get language regexs
     if (getting_local_fields && !pagestate["locale_regex"]) {
-        DETAIL("loading locale_regex");
+        if(LD)DETAIL("loading locale_regex");
         if (load_locale_settings(locale)) {
             pagestate["locale_regex"] = 1;
             for (key in g_settings) {
@@ -695,7 +695,7 @@ f,source,ret) {
                 if ( !(f"_source" in current)) {
                     current[f"_source"] = default_source;
                 }
-                #DEBUG("keep "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
+                #if(LG)DEBUG("keep "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
             }
         }
     }
@@ -708,7 +708,7 @@ function minfo_set_id(domain,id,minfo) {
     domain = tolower(domain);
     if (id &&  index(minfo[IDLIST]," "domain":") == 0) {
         minfo[IDLIST] =  minfo[IDLIST]" "domain":"id;
-        DETAIL("idlist = "minfo[IDLIST]);
+        if(LD)DETAIL("idlist = "minfo[IDLIST]);
     }
 }
 function get_id(text,domain,adddomain,\
@@ -725,7 +725,7 @@ function minfo_get_id(minfo,domain,\
 id) {
     id = get_id(minfo[IDLIST],domain);
     if (!id) {
-        WARNING("blank id for "domain" current list = ["minfo[IDLIST]"]");
+        if(LD)DETAIL("blank id for "domain" current list = ["minfo[IDLIST]"]");
     }
     return id;
 }
@@ -778,14 +778,14 @@ ret,similar_threshold) {
        if (index(tolower(minfo[TITLE]),tolower(title)) || index(tolower(minfo[ORIG_TITLE]),tolower(title)))  {
            
            ret = 1
-           DEBUG("check_title - titles are substrings");
+           if(LG)DEBUG("check_title - titles are substrings");
            
        } else if (similar(minfo[TITLE],title) < similar_threshold || similar(minfo[ORIG_TITLE],title) < similar_threshold ) {
 
            ret = 1;
-           DEBUG("check_title - titles are similar");
+           if(LG)DEBUG("check_title - titles are similar");
        } else {
-           DETAIL("page rejected title ["minfo[TITLE]"] or ["minfo[ORIG_TITLE]"] != ["title"]");
+           if(LD)DETAIL("page rejected title ["minfo[TITLE]"] or ["minfo[ORIG_TITLE]"] != ["title"]");
        }
     }
     return ret;
@@ -795,15 +795,15 @@ ret,similar_threshold) {
 #    ret = 1;
 #
 #    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
-#    DEBUG("check_runtime disabled");
+#    if(LG)DEBUG("check_runtime disabled");
 #    if (runtime && minfo[RUNTIME]) {
 #
 #        ret = (runtime == minfo[RUNTIME]);
 #
 #        if (ret) {
-#            DEBUG("runtime scraped ok");
+#            if(LG)DEBUG("runtime scraped ok");
 #        } else {
-#            DETAIL("page rejected by runtime ["minfo[RUNTIME]"] != ["runtime"]");
+#            if(LD)DETAIL("page rejected by runtime ["minfo[RUNTIME]"] != ["runtime"]");
 #        }
 #    }
 #
@@ -815,15 +815,15 @@ ret,similar_threshold) {
 #    ret = 1;
 #
 #    # Runtime varies too much for some movies that get a lot of scenes cut like Leon
-#    DEBUG("check_director disabled");
+#    if(LG)DEBUG("check_director disabled");
 #    if (runtime && minfo[RUNTIME]) {
 #
 #        ret = (runtime == minfo[RUNTIME]);
 #
 #        if (ret) {
-#            DEBUG("runtime scraped ok");
+#            if(LG)DEBUG("runtime scraped ok");
 #        } else {
-#            DETAIL("page rejected by runtime ["minfo[RUNTIME]"] != ["runtime"]");
+#            if(LD)DETAIL("page rejected by runtime ["minfo[RUNTIME]"] != ["runtime"]");
 #        }
 #    }
 #
@@ -863,7 +863,7 @@ line2) {
     }
     #if (line != line2) {
     #    if (index(line2,"Thumbnail")) {
-    #        DEBUG("xx3 preserve_src_href ["line"]");
+    #        if(LG)DEBUG("xx3 preserve_src_href ["line"]");
     #    }
     #}
     return line;
@@ -888,12 +888,12 @@ sep,ret,arr,styleOrScript,dbg) {
     
     #dbg = index(line,".3.jpg"); #edit as required
 
-    if (pagestate["debug"]) DEBUG("reduce_markup0:["line"]");
+    if (pagestate["debug"]) if(LG)DEBUG("reduce_markup0:["line"]");
 
     if (line) {
 
         sep="#";
-        if (dbg) DEBUG("reduce_markup0:["line"]");
+        if (dbg) if(LG)DEBUG("reduce_markup0:["line"]");
 
         if (1) {
             if (index(lcline,"tr")) gsub(/<\/?(tr|TR)[^>]*>/,sep,line);
@@ -906,7 +906,7 @@ sep,ret,arr,styleOrScript,dbg) {
         } else {
             gsub(/<\/?(table|TABLE|tr|TR|td|TD|div|DIV|br|BR|hr|HR|[Hh][1-5])[^>]*>/,sep,line);
         }
-        if (dbg) DEBUG("reduce_markup1:["line"]");
+        if (dbg) if(LG)DEBUG("reduce_markup1:["line"]");
 
         # remove option list text, otherwise after removing html tags a long list(imdb) can look too
         # much like prose, and be mistaken for the plot.
@@ -915,7 +915,7 @@ sep,ret,arr,styleOrScript,dbg) {
         }
 
         line = preserve_src_href(line);
-        if (dbg) DEBUG("reduce_markup3:["line"]");
+        if (dbg) if(LG)DEBUG("reduce_markup3:["line"]");
 
         #Flag link text.
         if (index(lcline,"<a") ) {
@@ -928,7 +928,7 @@ sep,ret,arr,styleOrScript,dbg) {
             if (index(lcline,"<script") || index(lcline,"<style") ||  index(lcline,"/script>") || index(lcline,"/style>")) {
                 styleOrScript = split(lcline,arr,"<(script|style)")-split(lcline,arr,"</(script|style)>");
                 pagestate["script"] +=  styleOrScript;
-                #DETAIL("pagestate[script]="pagestate["script"]":due to ["lcline"]");
+                #if(LD)DETAIL("pagestate[script]="pagestate["script"]":due to ["lcline"]");
             }
         }
 
@@ -981,8 +981,8 @@ sep,ret,arr,styleOrScript,dbg) {
             sections[ret] = line;
         }
     }
-    if (pagestate["debug"]) DEBUG("reduce_markup9:["line"]");
-    #DEBUG("reduce_markup9:["line"]="ret);
+    if (pagestate["debug"]) if(LG)DEBUG("reduce_markup9:["line"]");
+    #if(LG)DEBUG("reduce_markup9:["line"]="ret);
     return ret;
 }
 
@@ -1006,14 +1006,14 @@ i,num,sections,err,dbg,lcline) {
     # if the title occurs in the main text, then allow plot to be parsed.
     if (!pagestate["titleinpage"] && minfo[TITLE] && index(lcline,tolower(minfo[TITLE]))) {
         pagestate["titleinpage"] = 1;
-        DEBUG("setting titleinpage 1");
+        if(LG)DEBUG("setting titleinpage 1");
     }
 
     num = reduce_markup(line,lcline,sections,pagestate);
-    if (dbg) DEBUG("xx line["line"]"num);
+    if (dbg) if(LG)DEBUG("xx line["line"]"num);
     if (num) {
         if (!pagestate["script"] ) {
-            # DETAIL("skip script or style");
+            # if(LD)DETAIL("skip script or style");
         #} else if (pagestate["mode"] != "head" ) {
 
             if (dbg) {
@@ -1022,12 +1022,12 @@ i,num,sections,err,dbg,lcline) {
 
             for(i = 1 ; i <= num ; i++ ) {
 
-                if (dbg) DEBUG("xx section["sections[i]"]");
+                if (dbg) if(LG)DEBUG("xx section["sections[i]"]");
 
                 if (sections[i]) {
                     err = scrape_movie_fragment(lng,domain,sections[i],minfo,pagestate,namestate);
                     if (err) {
-                        DETAIL("abort line");
+                        if(LD)DETAIL("abort line");
                         break;
                     }
                 }
@@ -1051,17 +1051,17 @@ function scrape_movie_fragment(lng,domain,fragment,minfo,pagestate,namestate,\
 mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
     
-    #DEBUG("scrape_movie_fragment:["minfo[TITLE]":"pagestate["mode"]":"fragment"]");
+    #if(LG)DEBUG("scrape_movie_fragment:["minfo[TITLE]":"pagestate["mode"]":"fragment"]");
 
     err=0;
-    #DEBUG("scrape_movie_fragment:("lng","domain","fragment")");
+    #if(LG)DEBUG("scrape_movie_fragment:("lng","domain","fragment")");
     # Check if fragment is a fieldname eg Plot: Cast: etc.
     mode = get_movie_fieldname(lng,fragment,rest_fragment,pagestate);
     if(mode) {
         pagestate["mode"] = mode;
         fragment = rest_fragment[1];
         pagestate["keyword_count"] ++;
-        DEBUG("@@@ mode = "mode);
+        if(LG)DEBUG("@@@ mode = "mode);
     }
     mode = pagestate["mode"];
 
@@ -1072,7 +1072,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
         }
         if (pagestate["intitle"]) {
             pagestate["title"] = pagestate["title"]fragment;
-            DEBUG("title so far["pagestate["title"]"]");
+            if(LG)DEBUG("title so far["pagestate["title"]"]");
             if ( index(fragment,"@title-end") ) {
                 pagestate["intitle"]=0;
 
@@ -1106,7 +1106,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
             if (update_minfo(minfo,TITLE, trim(fragment),domain,pagestate)) {
                 pagestate["titleinpage"] = 2;
-                DEBUG("setting titleinpage 2");
+                if(LG)DEBUG("setting titleinpage 2");
             }
 
         } else if ( mode == "year" ) {
@@ -1134,7 +1134,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
                 split(fragment,tmp,"@label@");
 
                 minfo[field] = minfo[field]"|"tmp[2];
-                DEBUG("genre set to ["minfo[field]"]");
+                if(LG)DEBUG("genre set to ["minfo[field]"]");
             }
 
         } else if ( mode == "released" ) {
@@ -1154,7 +1154,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
 
         } else if (length(fragment) > 20 ) {
             if (!("badplot" in pagestate)){ 
-                DEBUG("Missing plot ???"fragment);
+                if(LG)DEBUG("Missing plot ???"fragment);
                 pagestate["badplot"] = 1;
             }
         }
@@ -1166,7 +1166,7 @@ mode,rest_fragment,max_people,field,value,tmp,matches,err) {
         # Not re starts with [ (>] instead of word boundary to help avoid 4 digit ids id=1234 etc.
         # Also allow "@" as its used  for label markers
         if (update_minfo(minfo, YEAR,subexp(fragment,"(^|[ (>;@])("g_year_re")($|[ )<&@])",2) ,domain,pagestate)) {
-            DETAIL("Capture first year expression "minfo[YEAR]);
+            if(LD)DETAIL("Capture first year expression "minfo[YEAR]);
         }
     }
 
@@ -1191,13 +1191,13 @@ err,value){
     if (g_settings["domain:"regex_list_name]) {
         value=domain_edits(domain,text,regex_list_name,1);
         if (value == "") {
-            DETAIL("Rejected title ["text"]");
+            if(LD)DETAIL("Rejected title ["text"]");
             err=1;
         } else {
             if (index(value,"Experience")) {
                 sub(/:? ?(An|The) I[Mm][Aa][Xx] (3[Dd] |)Experience/,"",value);
             }
-            DETAIL("Scraped "field" = ["value"] from ["text"]");
+            if(LD)DETAIL("Scraped "field" = ["value"] from ["text"]");
             update_minfo(minfo,field,value,domain,pagestate);
             minfo[field"_source"] = "80:"domain;
         }
@@ -1219,25 +1219,25 @@ opt,ret,t) {
 
         ret = 0;
         if (opt == "always" ) {
-           DETAIL("Force local poster fetching");
+           if(LD)DETAIL("Force local poster fetching");
            ret = 1;
         } else if (opt == "if_title_changed" ) {
            if (!title_so_far) {
-               DETAIL("local poster fetching not determined");
+               if(LD)DETAIL("local poster fetching not determined");
            } else {
                t = pagestate["expectorigtitle_lc"];
                if (t == "") t = pagestate["expecttitle_lc"];
                t = norm_title(t);
                   
                if ( t != "" &&  title_so_far != t ) {
-                   DETAIL("local poster fetching - title changed ["title_so_far"] != orig["t"]");
+                   if(LD)DETAIL("local poster fetching - title changed ["title_so_far"] != orig["t"]");
                    ret = 2;
                } else {
-                   DETAIL("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
+                   if(LD)DETAIL("ignore local poster fetching - title["title_so_far"] = ["pagestate["expecttitle_lc"]"] ");
                }
            }
         } else {
-           DETAIL("skip local poster fetching");
+           if(LD)DETAIL("skip local poster fetching");
         }
         pagestate["checkposters"] = ret;
     }
@@ -1294,14 +1294,14 @@ ret) {
     ret = 0;
     if (field && value ) {
         if (minfo[field]) {
-            #DEBUG("scrape_movie_fragment:"field" ignoring ["value"]");
+            #if(LG)DEBUG("scrape_movie_fragment:"field" ignoring ["value"]");
         } else {
 
             ret = 1;
 
             if (field == YEAR ) {
                 if ( value == minfo[TITLE] || value == minfo[ORIG_TITLE] ) {
-                    DETAIL("year ["value"] looks like title? ignoring");
+                    if(LD)DETAIL("year ["value"] looks like title? ignoring");
                     ret = 0;
                 } else {
                     check_year(value,pagestate);
@@ -1312,7 +1312,7 @@ ret) {
                 scrape_poster_check(pagestate,value);
             }
             if (ret) {
-                DETAIL("update_minfo: set "field"=["value"]");
+                if(LD)DETAIL("update_minfo: set "field"=["value"]");
                 minfo[field]=value;
                 minfo[field"_source"]=domain;
             }
@@ -1337,7 +1337,7 @@ ret) {
         }
         if (ret) {
             best_source(minfo,RATING,ret,domain);
-            DETAIL("Rating set ["ret"]");
+            if(LD)DETAIL("Rating set ["ret"]");
         }
     }
 }
@@ -1388,7 +1388,7 @@ words,num,i,len) {
 
 
                     num = split(text,words," ")+0;
-                    #DEBUG("words = "num" required "(length(text)/10));
+                    #if(LG)DEBUG("words = "num" required "(length(text)/10));
                     if (num >= len/10 ) { #av word length less than 11 chars - Increased for Russian
                         if (num <= len/5 ) { # av word length > 4 chars (minus space)
                             if ( index(text,"Mozilla") == 0) {
@@ -1398,7 +1398,7 @@ words,num,i,len) {
                                 # remove lists (of names)
                                 if (match(text,"(,[^.]+){5,}")) {
                                     if (RLENGTH * 2 > length(text)) {
-                                        DEBUG("ignore list ["text"]");
+                                        if(LG)DEBUG("ignore list ["text"]");
                                         return 0;
                                     }
                                 }
@@ -1439,7 +1439,7 @@ key,regex,ret,lcfragment,dbg) {
     if (!("badplot" in pagestate) && pagestate["inbody"] && pagestate["titleinpage"]  && !pagestate["gotplot"] &&  is_prose(lng,fragment)) {
 
        ret = "plot";
-       #DEBUG("xx pagestate[titleinpage]="pagestate["titleinpage"]);
+       #if(LG)DEBUG("xx pagestate[titleinpage]="pagestate["titleinpage"]);
 
     }  else if (getting_local_fields) {
 
@@ -1456,13 +1456,13 @@ key,regex,ret,lcfragment,dbg) {
                 if (index(key,"locale:catalog_locale_keyword_") == 1) {
                     regex = pagestate[key];
                     if (pagestate["debug"] || dbg) {
-                        DEBUG("checking fragment["fragment"] against ["key"]="regex);
+                        if(LG)DEBUG("checking fragment["fragment"] against ["key"]="regex);
                     }
                     if (match(lcfragment,regex)) {
                         rest[1] = substr(fragment,RSTART+RLENGTH);
 
                         ret = gensub(/locale:catalog_locale_keyword_/,"",1,key);
-                        DEBUG("matching regex = ["regex"]");
+                        if(LG)DEBUG("matching regex = ["regex"]");
                         break;
                     }
                 }
@@ -1470,7 +1470,7 @@ key,regex,ret,lcfragment,dbg) {
         }
     }
     if (ret) {
-        DEBUG("matched "ret" rest = ["rest[1]"]");
+        if(LG)DEBUG("matched "ret" rest = ["rest[1]"]");
     }
     return ret;
 }
@@ -1495,7 +1495,7 @@ ret,lng) {
     if (plot) {
         lng = lang(lang_or_locale); 
         if (lng != "en" && is_english(plot) ) {
-            DETAIL("expected "lang_or_locale" but plot appears English? found "show_english(plot));
+            if(LD)DETAIL("expected "lang_or_locale" but plot appears English? found "show_english(plot));
             lng="en";
         }
         ret = lng":"plot;
@@ -1553,7 +1553,7 @@ function have_visited(minfo,key,\
 ret) {
     if ((ret = ( "mi_visited:"key in minfo )) != 0) {
 
-        DETAIL("already visited "key);
+        if(LD)DETAIL("already visited "key);
     }
     return ret;
 }
@@ -1663,7 +1663,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                 name_reg = ">[^<]+";
                 name_reg = "@label@[^@]+@label@";
 
-                #DEBUG("XX1 text=["text"]");
+                #if(LG)DEBUG("XX1 text=["text"]");
 
                 dnum = ovs_patsplit(text,dtext,"("href_reg"|"src_reg"|"name_reg")");
 
@@ -1673,12 +1673,12 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
                     if (index(dtext[i],"src=") == 1) {
 
-                        #DEBUG("XX1 got image ["dtext[i]"]");
+                        #if(LG)DEBUG("XX1 got image ["dtext[i]"]");
                         #dump(0,"xx namestate",namestate);
 
                     # Convert URL from thumbnail to big
                         namestate["src"] = person_get_img_url(domain,add_domain_to_url(domain,substr(dtext[i],6)));
-                        #DEBUG("XX1 got full size image ["namestate["src"]"]");
+                        #if(LG)DEBUG("XX1 got full size image ["namestate["src"]"]");
                         check_img = 1;
 
                     } else if (index(dtext[i],"@label@") ) {
@@ -1687,7 +1687,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
 
                         if (namestate["id"] && namestate["name"]) {
 
-                            DETAIL("get_names:name="namestate["name"]"...");
+                            if(LD)DETAIL("get_names:name="namestate["name"]"...");
 
                             if (! ("mi_"role"_names" in minfo) ) {
                                 minfo["mi_"role"_names"]  = domain;
@@ -1717,7 +1717,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
                             # Store it for later download once we know the oversight id for this 
                             # person. After the people.db us updated.
                             g_portrait_queue[domain":"namestate["id"]] = namestate["src"];
-                            DETAIL("Image for ["namestate["id"]"] = ["namestate["src"]"]");
+                            if(LD)DETAIL("Image for ["namestate["id"]"] = ["namestate["src"]"]");
                             delete namestate["src"];
                         }
                     }
@@ -1726,7 +1726,7 @@ dtext,dnum,i,count,href_reg,src_reg,name_reg,check_img) {
             }
             if (count > minfo["mi_"role"_total"] ) {
                 minfo["mi_"role"_total"] = count;
-                DETAIL("get_names:"role"="count);
+                if(LD)DETAIL("get_names:"role"="count);
             }
         }
     }

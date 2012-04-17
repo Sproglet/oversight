@@ -154,7 +154,7 @@ id) {
         id = "tt"id;
 
     } else if (!quiet) {
-        WARNING("Failed to extract imdb id from ["text"]");
+        if (text) WARNING("Failed to extract imdb id from ["text"]");
     }
     if (id != "" && length(id) != 9) {
         id = sprintf("tt%07d",substr(id,3));
@@ -176,7 +176,7 @@ t) {
                 else if (locale == "it_IT" || locale == "fr_FR" || locale == "pt_PT" || locale == "es_ES" || locale == "ee_EE" ) {
                     sub("com",tolower(substr(locale,4)),t);
                 } else {
-                   DETAIL("No localized imdb for "locale);
+                   if(LD)DETAIL("No localized imdb for "locale);
                    t = "";
                 }
             }
@@ -191,7 +191,7 @@ function extract_imdb_title_category(minfo,title\
     # semicolon,quote,quotePos,title2
     #If title starts and ends with some hex code ( &xx;Name&xx; (2005) ) extract it and set tv type.
     minfo[CATEGORY]="M";
-    DEBUG("imdb title=["title"]");
+    if(LG)DEBUG("imdb title=["title"]");
     if (match(title,"^\".*\"") ) {   # www.imdb.com
         title=substr(title,RSTART+1,RLENGTH-2);
         minfo[CATEGORY]="T";
@@ -202,6 +202,6 @@ function extract_imdb_title_category(minfo,title\
     #Remove the year
     gsub(/ \((19|20)[0-9][0-9](\/I|)\) *(\([A-Z]+\)|)$/,"",title);
 
-    DEBUG("Imdb title = "minfo[CATEGORY]":["title"]");
+    if(LG)DEBUG("Imdb title = "minfo[CATEGORY]":["title"]");
     return title;
 }

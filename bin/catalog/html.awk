@@ -134,10 +134,10 @@ enc,line,code,n) {
             # Track lack of markup
             if (index(line,"<") == 0) n++; else n = 0;
         }
-        if (n >= 20) WARNING("Lack of markup");
+        if (n >= 20) if(LD)DETAIL("Lack of markup");
         if (code >= 0) {
             if ((code = close(f)) != 0) {
-               DETAIL("Failed to close "f" code = "code) ; 
+               if(LD)DETAIL("Failed to close "f" code = "code) ; 
             }
         }
     }
@@ -170,7 +170,7 @@ enc) {
     } else if (index(line,"</head>") || index(line,"<body>")) {
         if (!enc) enc = "utf-8" ; #assume utf8 if not specified.
     }
-    if (enc && (enc != "utf-8") ) DETAIL("Encoding:" enc);
+    if (enc && (enc != "utf-8") ) if(LD)DETAIL("Encoding:" enc);
     return enc;
 }
 
@@ -185,7 +185,7 @@ ret,matches) {
     dump(0,"match counts",matches);
     ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","tt0076752/",1);
     if (ret) {
-        DETAIL("search engine ready ["url"]\n");
+        if(LD)DETAIL("search engine ready ["url"]\n");
     } else {
         ERR("!!!search engine error!!! ["url"]\n");
     }
@@ -227,12 +227,12 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
 #    if (index(url,"yahoo") && index(url,"2010") && index(url,"site:imdb.com")) {
 #        verbose=1; # Debug line edit as required
 #    } else {
-#        DEBUG("disable me !!!!!!!!!!");
+#        if(LG)DEBUG("disable me !!!!!!!!!!");
 #    }
 
     delete matches;
     id1("scan_page_for_matches["fixed_text"]["regex"]");
-    DETAIL("["fixed_text"]["\
+    if(LD)DETAIL("["fixed_text"]["\
         (regex == g_imdb_regex\
             ?"<imdbtag>"\
             :(regex==g_imdb_title_re\
@@ -241,12 +241,12 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
               )\
        )"]["max"]");
 
-    if (g_fetch["force_awk"] && g_settings["catalog_awk_browser"] ) {
+    if (1){ #g_fetch["force_awk"] && g_settings["catalog_awk_browser"] ) 
 
         # Use the inline browser - this is not as robust as external command line but should be faster.
 
         if (url_get(url,line,"",cache)) {
-            #DEBUG("DELETE" gensub(/</,"\n<","g",line["body"]));
+            #if(LG)DEBUG("DELETE" gensub(/</,"\n<","g",line["body"]));
             count +=get_matches(count_or_order,line["body"],regex,max,count,matches,verbose);
         }
 
@@ -277,7 +277,7 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
 
                 line[1] = de_emphasise(line[1]);
 
-                if (verbose) DEBUG("["line[1]"]");
+                if (verbose) if(LG)DEBUG("["line[1]"]");
 
                 # Quick hack to find Title?0012345 as tt0012345  because altering the regex
                 # itself is more work - for example the results will come back as two different 
@@ -285,7 +285,7 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
                 if (is_imdb) {
                     if (index(line[1],"/Title?") ) {
                         if (gsub(/\/Title\?/,"/tt",line[1])) {
-                            DETAIL("fixed imdb reference "line[1]);
+                            if(LD)DETAIL("fixed imdb reference "line[1]);
                         }
                     }
                     # A few sites have IMDB ID 0123456 
@@ -305,7 +305,7 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
                     }
                 }
 
-                if (verbose) DEBUG("scanindex = "scan":"line[1]);
+                if (verbose) if(LG)DEBUG("scanindex = "scan":"line[1]);
 
                 if (scan) {
                     count += get_matches(count_or_order,line[1],regex,remain,count,matches,verbose);
@@ -320,7 +320,7 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
             enc_close(f);
         }
     }
-    dump(2,count" matches",matches);
+    dump(0,count" matches",matches);
     id0(count);
     return 0+ count;
 }
@@ -339,20 +339,20 @@ linecount,i,matches2) {
         # Get all ordered matches. 1=>test1, 2=>text2 , etc.
         linecount = patsplitn(text,regex,max,matches2);
         if (verbose) {
-            DEBUG("linecount = "linecount" max="max);
+            if(LG)DEBUG("linecount = "linecount" max="max);
             dump(0,"matches2",matches2);
         }
         # 
         # Append the matches2 array of ordered regex matches. Index by order.
         for(i = 1 ; i+0 <= linecount+0 ; i++) {
             matches[count_so_far+i] = matches2[i];
-            if (verbose) DEBUG("xx match ["matches[count_so_far+i]"]");
+            if (verbose) if(LG)DEBUG("xx match ["matches[count_so_far+i]"]");
         }
     } else {
         # Get all occurence counts text1=m , text2=n etc.
         linecount = get_regex_counts(text,regex,max,matches2);
         if (verbose) {
-            DEBUG("linecount2 = "linecount" max="max);
+            if(LG)DEBUG("linecount2 = "linecount" max="max);
             dump(0,"matches2",matches2);
         }
         # Add to the total occurences so far , index by pattern.
@@ -381,7 +381,7 @@ function extractAttribute(str,tag,attr,\
     }  else  {
         endAttr=indexFrom(str," ",attrPos);
     }
-    #DEBUG("Extracted attribute value ["substr(str,attrPos,endAttr-attrPos)"] from tag ["substr(str,tagPos,closeTag-tagPos+1)"]");
+    #if(LG)DEBUG("Extracted attribute value ["substr(str,attrPos,endAttr-attrPos)"] from tag ["substr(str,tagPos,closeTag-tagPos+1)"]");
     return substr(str,attrPos,endAttr-attrPos);
 }
 
@@ -425,7 +425,7 @@ i,text2,ll,c) {
         }
     }
     if (text != text2 ) {
-        DEBUG("url encode ["text"]=["text2"]");
+        if(LG)DEBUG("url encode ["text"]=["text2"]");
     }
 
     return text2;
@@ -434,7 +434,7 @@ i,text2,ll,c) {
 function decode_init(\
 i,c,h) {
     if (g_chr[32] == "" ) {
-        DEBUG("create decode matrix");
+        if(LG)DEBUG("create decode matrix");
         for(i=0 ; i - 256 < 0 ; i++ ) {
             c=sprintf("%c",i);
             h=sprintf("%02x",i);
@@ -548,7 +548,7 @@ ret,num,i,parts,seps,code) {
             } else if (code <= 255 ) {
                 ret = ret seps[i-1] g_chr[code+0];
             } else {
-                DETAIL("Forced utf8 character "code" : might get corrupted by iconv");
+                if(LD)DETAIL("Forced utf8 character "code" : might get corrupted by iconv");
                 ret = ret seps[i-1] code_to_utf8(code+0);
             }
         }

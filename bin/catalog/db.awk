@@ -4,7 +4,7 @@ function sequence() {
 
 function replace_database_with_new(newdb,currentdb,olddb) {
 
-    DETAIL("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
+    if(LD)DETAIL("Replace Database ["newdb"] to ["currentdb"] to ["olddb"]");
 
     file_copy(currentdb,olddb);
 
@@ -101,7 +101,7 @@ ret) {
 # IN tag = xml tag in xmbc nfo files.
 function db_field(key,name,tag,type,keep) {
     if (keep == "") {
-        DETAIL("bad args db_field "key name tag type);
+        if(LD)DETAIL("bad args db_field "key name tag type);
         exit;
     }
     if (name == "") name = key;
@@ -168,7 +168,7 @@ line) {
         }
     }
     close(file);
-    #DEBUG("eof:"file);
+    #if(LG)DEBUG("eof:"file);
     return "";
 }
 
@@ -179,11 +179,11 @@ result) {
 
     if ( g_settings["catalog_ignore_paths"] != "" && fields[DIR] ~ g_settings["catalog_ignore_paths"] ) {
 
-        DETAIL("Removing Ignored Path ["fields[FILE]"]");
+        if(LD)DETAIL("Removing Ignored Path ["fields[FILE]"]");
 
     } else if ( fields[NAME] ~ g_settings["catalog_ignore_names"] ) {
 
-        DETAIL("Removing Ignored Name "fields[FILE]"]");
+        if(LD)DETAIL("Removing Ignored Name "fields[FILE]"]");
 
     } else {
         result = 1;
@@ -199,7 +199,7 @@ f,est,line) {
     fields[FILE] = clean_path(fields[FILE]);
 
     if ((fields[FILE] in g_fldrCount ) && g_fldrCount[fields[FILE]]) {
-        DEBUG("Adjusting file for video_ts");
+        if(LG)DEBUG("Adjusting file for video_ts");
         fields[FILE] = fields[FILE] "/";
     }
 
@@ -257,7 +257,7 @@ dbline,dbfields,err,count,filter) {
     list["@PREFIX"] = prefix =  short_path(prefix);
     list["@REGEX"] = filter = "\t" FILE "\t" re_escape(prefix) "/?[^/]*\t";
 
-    #DETAIL("filter=["filter"]");
+    #if(LD)DETAIL("filter=["filter"]");
 
     while((err = (getline dbline < db )) > 0) {
 
@@ -271,7 +271,7 @@ dbline,dbfields,err,count,filter) {
         }
     }
     if (err >= 0 ) close(db);
-    #DEBUG("get_files_in_db ["prefix"]="count" files");
+    #if(LG)DEBUG("get_files_in_db ["prefix"]="count" files");
 }
 
 
@@ -288,7 +288,7 @@ function remove_absent_files_from_new_db(db,\
     list="";
     maxCommandLength=3999;
 
-    DETAIL("Pruning...");
+    if(LD)DETAIL("Pruning...");
     tmp_db = db "." JOBID ".tmp";
 
     # TODO if index is sorted by file we can do this a folder at a time.
@@ -308,7 +308,7 @@ function remove_absent_files_from_new_db(db,\
 
             f = dbfields[FILE];
             shortf = short_path(f);
-            #DETAIL("Prune ? ["f"]");
+            #if(LD)DETAIL("Prune ? ["f"]");
 
             keep=1;
 
@@ -333,7 +333,7 @@ function remove_absent_files_from_new_db(db,\
                             sub(/.*NETWORK_SHARE/,"",blacklist_dir);
                             ERR("Unresponsive device : Blacklisting access to NETWORK_SHARE"blacklist_dir);
                             blacklist_re = blacklist_re "|" blacklist_dir;
-                            DEBUG("re = "blacklist_re);
+                            if(LG)DEBUG("re = "blacklist_re);
                         }
                     } else {
                         gp = mount_point(f);
@@ -342,7 +342,7 @@ function remove_absent_files_from_new_db(db,\
                             if (is_dir(gp) && !is_empty(gp)) {
                                 keep=0;
                             } else {
-                                DETAIL("Not mounted?");
+                                if(LD)DETAIL("Not mounted?");
                             }
                         } else {
                             # just delete it.
@@ -357,7 +357,7 @@ function remove_absent_files_from_new_db(db,\
                 print dbline > tmp_db;
                 g_kept_file_count++;
             } else {
-                DETAIL("Removing "f);
+                if(LD)DETAIL("Removing "f);
                 g_absent_file_count++;
                 
             }
@@ -365,8 +365,8 @@ function remove_absent_files_from_new_db(db,\
         }
         close(tmp_db);
         close(db);
-        DETAIL("unchanged:"g_kept_file_count);
-        DETAIL("removed:"g_absent_file_count);
+        if(LD)DETAIL("unchanged:"g_kept_file_count);
+        if(LD)DETAIL("removed:"g_absent_file_count);
         replace_database_with_new(tmp_db,db,INDEX_DB_OLD);
         exec("wc -l "qa(db));
         unlock(g_db_lock_file);

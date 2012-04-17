@@ -61,11 +61,11 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     do {
         if (and(action,1)) {
             get_plotline(plot_file,tabs1);
-            #DEBUG("read plot id 1["tabs1[1]"]");
+            #if(LG)DEBUG("read plot id 1["tabs1[1]"]");
         }
         if (and(action,2)) {
             get_plotline(queue_file,tabs2);
-            DEBUG("read plot id 2["tabs2[1]"]");
+            if(LG)DEBUG("read plot id 2["tabs2[1]"]");
         }
 
         if (tabs1[1] == "") {
@@ -107,7 +107,7 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
             if (tabs2[1] in plot_ids) { # should always be true
                 if (plot_ids[tabs2[1]]++ == 1) {
                     print tabs2[1]"\t"tabs2[2] >> file_out;
-                    #DEBUG("add plot "tabs2[1]"\t"substr(tabs2[2],1,20)"....");
+                    #if(LG)DEBUG("add plot "tabs2[1]"\t"substr(tabs2[2],1,20)"....");
 
                     if (action == 2) {
                         total_new ++;
@@ -127,7 +127,7 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     touch_and_move(file_out,plot_file);
     set_permissions(qa(plot_file));
 
-    DETAIL("update_plots  database:["plot_file"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    if(LD)DETAIL("update_plots  database:["plot_file"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     id0();
 }
 

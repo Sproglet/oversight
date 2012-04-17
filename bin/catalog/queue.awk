@@ -2,7 +2,7 @@
 
 function queue_minfo(minfo,qfile,person_extid2name,\
 fld,line) {
-    DETAIL("queue:queue_minfo:"minfo[NAME]);
+    if(LD)DETAIL("queue:queue_minfo:"minfo[NAME]);
 
     person_add_db_queue(minfo,person_extid2name);
 
@@ -17,14 +17,14 @@ fld,line) {
     }
     if (index(line,"\n")) gsub(/\n/,"\\n",line);
     print substr(line,2) >> qfile;
-    #DETAIL("DELETE Queued item   " gensub(SUBSEP,"\n" , "g", line));
+    #if(LD)DETAIL("DELETE Queued item   " gensub(SUBSEP,"\n" , "g", line));
 }
 
 function read_minfo(qfile,minfo,\
 line,i,tmp,num) {
     delete minfo;
     while ((getline line < qfile ) > 0 ) {
-        #DETAIL("queue: line=["line"]");
+        #if(LD)DETAIL("queue: line=["line"]");
         if (index(line,SUBSEP) ) {
 
             #reinstate CR
@@ -35,18 +35,18 @@ line,i,tmp,num) {
             num = split(line,tmp,SUBSEP);
             for(i = 1 ; i<=num ; i+= 2) {
                 minfo[tmp[i]] = tmp[i+1];
-                #DEBUG("readq "db_fieldname(tmp[i])"=["tmp[i+1]"]");
+                #if(LG)DEBUG("readq "db_fieldname(tmp[i])"=["tmp[i+1]"]");
             }
 
             if (!(FILE in minfo)) minfo[FILE] = minfo[DIR]"/"minfo[NAME];
 
-            #DETAIL("read "num" fields minfo media = "minfo[NAME]);
+            #if(LD)DETAIL("read "num" fields minfo media = "minfo[NAME]);
             return num;
             break;
         }
     }
     close(qfile);
-    #DEBUG("eof:"file);
+    #if(LG)DEBUG("eof:"file);
     return num;
 }
 
@@ -56,7 +56,7 @@ total) {
 
     if (g_opt_dry_run) {
 
-        DETAIL("Database update skipped - dry run");
+        if(LD)DETAIL("Database update skipped - dry run");
 
     } else {
 
@@ -111,7 +111,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     id1("merge_index ["dbfile"]["qfile"]");
 
     #exec("cat "qa(qfile),1);
-    #DETAIL("---------------------");
+    #if(LD)DETAIL("---------------------");
 
 
     max_id = get_maxid(INDEX_DB);
@@ -119,17 +119,17 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     action = 3; # 0=quit 1=advance 1 2=advance 2 3=merge and advance both
     row2 = 0;
     do {
-        #DETAIL("read action="action);
+        #if(LD)DETAIL("read action="action);
         if (and(action,1)) { 
             row1 = get_dbline(dbfile);
             parseDbRow(row1,fields1,1);
-            #DEBUG("OLD    :["fields1[FILE]"]");
+            #if(LG)DEBUG("OLD    :["fields1[FILE]"]");
         }
         if (and(action,2)) {
             if (read_minfo(qfile,fields2)) {
                 #dump(0,"DELETE read fields2",fields2);
                 row2=1;
-                #DETAIL("Merge item    :["fields2[FILE]"]");
+                #if(LD)DETAIL("Merge item    :["fields2[FILE]"]");
             }
         }
 
@@ -160,7 +160,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
 
         changed_line = "";
 
-        #DEBUG("merge action="action);
+        #if(LG)DEBUG("merge action="action);
         if (action == 1) { # output row1
             if (keep_dbline(fields1)) {
                 total_unchanged++;
@@ -231,7 +231,7 @@ row1,row2,fields1,fields2,action,max_id,total_unchanged,total_changed,total_new,
     }
     rm(g_plot_file_queue);
 
-    DETAIL("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
+    if(LD)DETAIL("merge complete database:["file_out"]  unchanged:"total_unchanged" changed "total_changed" new "total_new" removed:"total_removed);
     ret = total_changed + total_new;
     id0(ret);
     return ret;
@@ -241,7 +241,7 @@ filemax) {
     filemax = file".maxid";
     print max_id > filemax;
     close(filemax);
-    DETAIL("set_maxid["file"]="max_id);
+    if(LD)DETAIL("set_maxid["file"]="max_id);
 }
 
 
@@ -284,7 +284,7 @@ max_id,line,fields,filemax,tab) {
         getline max_id < filemax;
         close(filemax);
         max_id += 0;
-        DETAIL("get_maxid["file"]="max_id);
+        if(LD)DETAIL("get_maxid["file"]="max_id);
     }
     return max_id;
 }

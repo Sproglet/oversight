@@ -10,11 +10,11 @@ year) {
 
     name_id = build_query_list(minfo,name_list);
 
-    DEBUG("name_tries"join(name_list," / "));
+    if(LG)DEBUG("name_tries"join(name_list," / "));
 
     search_order_size = get_search_order(name,search_order);
 
-    DEBUG("search order "join(search_order," / "));
+    if(LG)DEBUG("search order "join(search_order," / "));
 
 
     # At this point there are two lists.
@@ -29,7 +29,7 @@ year) {
         if (search_order[s] == "IMDBLINKS") {
 
             #TODO Merge the web_search_frequent_imdb_link heuristics into this functions logic.
-            DETAIL("DISABLED: Search Phase: "search_order[s]);
+            if(LD)DETAIL("DISABLED: Search Phase: "search_order[s]);
             #id1("Search Phase: "search_order[s]);
             #bestUrl=web_search_frequent_imdb_link(minfo);
             #id0(bestUrl);
@@ -118,7 +118,7 @@ year) {
             }
         }
     }
-    INF("movie_search "minfo[TITLE]" ["bestUrl"]");
+    if(LI)INF("movie_search "minfo[TITLE]" ["bestUrl"]");
 
     id0(bestUrl);
     return bestUrl;

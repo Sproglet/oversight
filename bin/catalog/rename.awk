@@ -15,7 +15,7 @@ function pad_episode(e) {
 function relocate_files(minfo,\
 newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
-   DEBUG("relocate_files");
+   if(LG)DEBUG("relocate_files");
 
     newName="";
     oldName="";
@@ -57,11 +57,11 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
         if (fileType == "file") {
             newName = substitute("NAME",minfo[NAME],newName);
             if (match(minfo[NAME],"[.][^.]+$")) {
-                #DEBUG("BASE EXT="minfo[NAME] " AT "RSTART);
+                #if(LG)DEBUG("BASE EXT="minfo[NAME] " AT "RSTART);
                 newName = substitute("BASE",substr(minfo[NAME],1,RSTART-1),newName);
                 newName = substitute("EXT",substr(minfo[NAME],RSTART),newName);
             } else {
-                #DEBUG("BASE EXT="minfo[NAME] "]");
+                #if(LG)DEBUG("BASE EXT="minfo[NAME] "]");
                 newName = substitute("BASE",minfo[NAME],newName);
                 newName = substitute("EXT","",newName);
             }
@@ -112,7 +112,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                sub(/.*\//,"",minfo[NAME]);
 
                # Move nfo file
-               DEBUG("Checking nfo file ["minfo[NFO]"]");
+               if(LG)DEBUG("Checking nfo file ["minfo[NFO]"]");
                if(minfo[NFO] != "") {
 
                    nfoName = newName;
@@ -129,7 +129,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
                        delete g_file_date[minfo[NFO]];
 
                        minfo[NFO] = nfoName;
-                       DEBUG("new nfo location ["minfo[NFO]"]");
+                       if(LG)DEBUG("new nfo location ["minfo[NFO]"]");
                    }
                }
 
@@ -141,7 +141,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
            }
         }
 
-        DETAIL("checking "qa(oldFolder));
+        if(LD)DETAIL("checking "qa(oldFolder));
         if (is_dir(oldFolder) ) {
 
             system("rmdir -- "qa(oldFolder)" 2>/dev/null" ); # only remove if empty
@@ -156,7 +156,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
             print "dryrun:\t"newName" unchanged.";
             print "dryrun:";
         } else {
-            DETAIL("rename:\t"newName" unchanged.");
+            if(LD)DETAIL("rename:\t"newName" unchanged.");
         }
     }
 }
@@ -182,9 +182,9 @@ function substitute(keyword,value,str,\
     }
 
     if ( oldStr != str ) {
-        DEBUG("Keyword ["keyword"]=["value"]");
-        DEBUG("Old path ["oldStr"]");
-        DEBUG("New path ["str"]");
+        if(LG)DEBUG("Keyword ["keyword"]=["value"]");
+        if(LG)DEBUG("Old path ["oldStr"]");
+        if(LG)DEBUG("New path ["str"]");
     }
 
     return str;
@@ -253,7 +253,7 @@ function moveFile(oldName,newName,\
         }
         return 0;
     } else {
-    # DETAIL("move file:\t"old" --> "new);
+    # if(LD)DETAIL("move file:\t"old" --> "new);
         if ((ret=preparePath(newName)) == 0) {
             ret = exec("mv "old" "new);
         }
@@ -303,7 +303,7 @@ old,new,cmd,ret) {
            print "dryrun: from "old"/* to "new"/";
            ret = 0;
        } else if (is_empty(oldName) == 0) {
-            DETAIL("move folder:"old"/* --> "new"/");
+            if(LD)DETAIL("move folder:"old"/* --> "new"/");
            # Seems to be a bug on dns323 where globbing fails of the path is too long. 
            # Havent fully isolated but resolved by replacing "mv /path/* " with "( cd /path ; mv * )"
            cmd= " mkdir -p "new" ; ( cd "old" ; mv * .* "new" || true ) ; rmdir "old" 2>/dev/null";

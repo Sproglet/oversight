@@ -1,5 +1,7 @@
 BEGIN {
-    g_catalog_log_level = 1;
+    if (g_catalog_log_level == "") {
+        g_catalog_log_level = 1;
+    }
 }
 
 function default_settings() {
@@ -19,6 +21,12 @@ ign_path,env) {
         g_catalog_log_level = g_settings["catalog_log_level"];
     }
 
+    LG=LD=LI=LW=1; # logging
+    if (g_catalog_log_level>-1) LG=0;
+    if (g_catalog_log_level>0) LD=0;
+    if (g_catalog_log_level>1) LI=0;
+    if (g_catalog_log_level>2) LW=0;
+
     dump(1,"settings",g_settings);
 
     ign_path = "catalog_ignore_paths";
@@ -37,8 +45,8 @@ ign_path,env) {
     } else {
         g_settings[ign_path]="^"glob2re(g_settings[ign_path]);
     }
-    DETAIL("ignore name = ["g_settings["catalog_ignore_names"]"]");
-    DETAIL("ignore path = ["g_settings[ign_path]"]");
+    if(LD)DETAIL("ignore name = ["g_settings["catalog_ignore_names"]"]");
+    if(LD)DETAIL("ignore path = ["g_settings[ign_path]"]");
 
     #catalog_scene_tags = csv2re(tolower(catalog_scene_tags));
 
@@ -75,7 +83,7 @@ i,n,v,option,ret,err,cfg) {
             g_settings_orig[n]=v;
             cfg[n] = g_settings[n] = v;
             if (verbose) {
-                DETAIL(n"=["g_settings[n]"]");
+                if(LD)DETAIL(n"=["g_settings[n]"]");
             }
         }
     }
@@ -118,10 +126,10 @@ ret) {
 
     ret = 0;
 
-    #DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"]");
+    #if(LG)DEBUG("type=["type"] last=["g_last_plugin[type]"] name=["name"]");
 
     if (g_last_plugin[type] != name) {
-        DETAIL("loading...");
+        if(LD)DETAIL("loading...");
         remove_settings("^"type ":");
         ret = load_settings(type":",plugin_file(type,name),1);
         g_last_plugin[type] = name;

@@ -320,7 +320,9 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
             enc_close(f);
         }
     }
-    dump(0,count" matches",matches);
+    if (count < 50 ) {
+        dump(0,count" matches",matches);
+    }
     id0(count);
     return 0+ count;
 }

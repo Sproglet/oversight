@@ -14,7 +14,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
             url=g_themoviedb_api_url"/movie/"id"?api_key="g_api_tmdb"&language="langs[i];
             url2=g_themoviedb_api_url"/movie/"id"/releases?api_key="g_api_tmdb"&language="langs[i];
 
-            jsonret = fetch_json(url,"json",json);
+            jsonret = fetch_json(url,json);
             #dump(0,"themoviedb3",json);
             #dump(0,"themoviedb3-2",json2);
             if (jsonret == 0) {
@@ -69,7 +69,7 @@ url,url2,json,json2,jsonret,i,num,langs,ret,minfo2,name,set,merge) {
 
             #minfo2["mi_certrating"]=tmdb_get_release(json["id"]);
             if (minfo2["mi_certrating"] == "") {
-                fetch_json(url2,"json",json2);
+                fetch_json(url2,json2);
                 minfo2["mi_certrating"]=tmdb_match_release(json2);
             }
 
@@ -127,7 +127,7 @@ function tmdb_config(key,\
 url) {
     if (g_tmdb_config["@state"] != 1) {
         url=g_themoviedb_api_url"/configuration?api_key="g_api_tmdb;
-        if (fetch_json(url,"json",g_tmdb_config) == 0) {
+        if (fetch_json(url,g_tmdb_config) == 0) {
             ERR("Error getting TMDB configuration");
         } else {
             dump(0,"themoviedb3 config",g_tmdb_config);

@@ -248,7 +248,7 @@ json,url,imageUrl,i,prefix,sc,best,finalUrl) {
 
     id1("bing image "aspect" "query);
 
-    if (fetch_json(url,"img",json)) {
+    if (fetch_json(url,json)) {
 
         i = 0 ;
         prefix="SearchResponse:Image:Results#";

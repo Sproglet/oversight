@@ -437,7 +437,7 @@ HTML_LOG(0,"ovs_config_increment old val %s = (%s)",name,old_val);
     return ret;
 }
 
-int ovs_config_dimension_inherit(char *keyword_prefix) 
+int ovs_config_dimension_default(char *keyword_prefix) 
 {
     return ovs_config_dimension_increment(keyword_prefix,"="INHERIT_DIMENSION_STR,INHERIT_DIMENSION,INHERIT_DIMENSION);
 }
@@ -626,7 +626,7 @@ int config_check_str_indexed(struct hashtable *h,char *k,char *index,char **out)
 
 /* read mandatory array variable from config - eg key[index]=value 1=good else halt
  * If the value is -1 then set it to the inherit value */
-int config_get_long_indexed_inherit(struct hashtable *h,char *k,char *key_suffix,char *index,long inherit_value,long *out) {
+int config_get_long_indexed_default(struct hashtable *h,char *k,char *key_suffix,char *index,long inherit_value,long *out) {
 /* read mandatory array variable from config - eg key[index]=value */
     char *full_key;
     ovs_asprintf(&full_key,"%s%s",NVL(k),NVL(key_suffix));
@@ -675,9 +675,13 @@ long get_scanlines(int *is_pal) {
 
     if (g_dimension->local_browser) {
         //Localbrowser- get resolution
-        char *tv_mode = hashtable_search(g_nmt_settings,"video_output");
-        tv_mode_int = atoi(tv_mode);
-        HTML_LOG(0,"tvmode = %d",tv_mode_int);
+        char *tv_mode;
+       
+       if (g_nmt_settings) {
+          tv_mode = hashtable_search(g_nmt_settings,"video_output");
+          tv_mode_int = atoi(tv_mode);
+          HTML_LOG(0,"tvmode = %d",tv_mode_int);
+       }
     }
 
     if (is_nmt100()) {
@@ -732,22 +736,22 @@ void config_get_grid_dimensions(
         int grid_index // GRID_MAIN, GRID_MOVIEBOXSET etc.
         ) {
 
-    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_rows",
+    config_get_long_indexed_default(config_hash,"ovs_poster_mode_rows",
             key_suffix,  
             g_dimension->set_name, // eg sd , hd, pc
             g_dimension->grids[GRID_MAIN].rows,&(g_dimension->grids[grid_index].rows));
 
-    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_cols",
+    config_get_long_indexed_default(config_hash,"ovs_poster_mode_cols",
             key_suffix, 
             g_dimension->set_name, // eg sd , hd, pc
             g_dimension->grids[GRID_MAIN].cols,&(g_dimension->grids[grid_index].cols));
 
-    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_height",
+    config_get_long_indexed_default(config_hash,"ovs_poster_mode_height",
             key_suffix,
             g_dimension->set_name, // eg sd , hd, pc
             g_dimension->grids[GRID_MAIN].img_height,&(g_dimension->grids[grid_index].img_height));
 
-    config_get_long_indexed_inherit(config_hash,"ovs_poster_mode_width",
+    config_get_long_indexed_default(config_hash,"ovs_poster_mode_width",
             key_suffix,
             g_dimension->set_name, // eg sd , hd, pc
             g_dimension->grids[GRID_MAIN].img_width,&(g_dimension->grids[grid_index].img_width));
@@ -758,7 +762,6 @@ void config_read_dimensions() {
 
     int ar_fixed = 0;
 
-    
     html_comment("read dimensions");
 
     char *addr = getenv("REMOTE_ADDR");
@@ -768,6 +771,7 @@ void config_read_dimensions() {
     g_dimension->local_browser = (addr == NULL || STRCMP(addr,"127.0.0.1") == 0);
 
     html_comment("local browser = %d",g_dimension->local_browser);
+HTML_LOG(0,"local browser = %d",g_dimension->local_browser);
     //g_dimension->local_browser = 1;
 
     g_dimension->scanlines = get_scanlines(&(g_dimension->is_pal));
@@ -790,22 +794,22 @@ void config_read_dimensions() {
 
         g_dimension->grid_direction = str2grid_direction(oversight_val("ovs_grid_direction"));
 
-        config_get_long_indexed(g_oversight_config,"ovs_font_size",g_dimension->set_name,&(g_dimension->font_size));
-        config_get_long_indexed(g_oversight_config,"ovs_title_size",g_dimension->set_name,&(g_dimension->title_size));
-        config_get_long_indexed(g_oversight_config,"ovs_movie_poster_height",g_dimension->set_name,&(g_dimension->movie_img_height));
-        config_get_long_indexed(g_oversight_config,"ovs_tv_poster_height",g_dimension->set_name,&(g_dimension->tv_img_height));
-        config_get_long_indexed(g_oversight_config,"ovs_max_plot_length",g_dimension->set_name,&(g_dimension->max_plot_length));
-        config_get_long_indexed(g_oversight_config,"ovs_button_size",g_dimension->set_name,&(g_dimension->button_size));
-        config_get_long_indexed(g_oversight_config,"ovs_certificate_size",g_dimension->set_name,&(g_dimension->certificate_size));
-        config_get_long_indexed(g_oversight_config,"ovs_poster_mode",g_dimension->set_name,&(g_dimension->poster_mode));
+        config_get_long_indexed_default(g_oversight_config,"ovs_font_size",NULL,g_dimension->set_name,20,&(g_dimension->font_size));
+        config_get_long_indexed_default(g_oversight_config,"ovs_title_size",NULL,g_dimension->set_name,20,&(g_dimension->title_size));
+        config_get_long_indexed_default(g_oversight_config,"ovs_movie_poster_height",NULL,g_dimension->set_name,500,&(g_dimension->movie_img_height));
+        config_get_long_indexed_default(g_oversight_config,"ovs_tv_poster_height",NULL,g_dimension->set_name,500,&(g_dimension->tv_img_height));
+        config_get_long_indexed_default(g_oversight_config,"ovs_max_plot_length",NULL,g_dimension->set_name,200,&(g_dimension->max_plot_length));
+        config_get_long_indexed_default(g_oversight_config,"ovs_button_size",NULL,g_dimension->set_name,100,&(g_dimension->button_size));
+        config_get_long_indexed_default(g_oversight_config,"ovs_certificate_size",NULL,g_dimension->set_name,100,&(g_dimension->certificate_size));
+        config_get_long_indexed_default(g_oversight_config,"ovs_poster_mode",NULL,g_dimension->set_name,1,&(g_dimension->poster_mode));
 
         g_dimension->current_grid = &(g_dimension->grids[GRID_MAIN]);
 
 
         if (!g_dimension->poster_mode) {
 
-            config_get_long_indexed(g_oversight_config,"ovs_rows",g_dimension->set_name,&(g_dimension->text_rows));
-            config_get_long_indexed(g_oversight_config,"ovs_cols",g_dimension->set_name,&(g_dimension->text_cols));
+            config_get_long_indexed_default(g_oversight_config,"ovs_rows",NULL,g_dimension->set_name,2,&(g_dimension->text_rows));
+            config_get_long_indexed_default(g_oversight_config,"ovs_cols",NULL,g_dimension->set_name,8,&(g_dimension->text_cols));
             // Force all boxset views to use main menu dimensions. Otherwise we'd have to maintain another set of dimensions
             // for text mode tvboxsets and text mode movie boxsets which I think is not necessary. Text mode is really
             // obsoleted by now.

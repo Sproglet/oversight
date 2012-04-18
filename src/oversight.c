@@ -231,6 +231,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
             printf("ARG1[%s]\n",argv[1]);
             if ( argv[1] && *argv[1] && argv[2] == NULL && strncmp(argv[1],"yamj/",4) == 0) {
+                config_read_dimensions(0);
                 result = yamj_xml(argv[1]);
                 exit(result);
 
@@ -384,7 +385,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 #endif
 
 
-    config_read_dimensions();
+    config_read_dimensions(1);
 
     HTML_LOG(0,"Begin Actions");
     do_actions();
@@ -423,7 +424,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         // TODO Change the config structure to reload more efficiently.
         //reload_configs();
 
-        config_read_dimensions();
+        config_read_dimensions(1);
 
         // Now refetch all data again with new parameters.
         sorted_rows_free_all(sortedRows);

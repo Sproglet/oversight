@@ -73,6 +73,7 @@ typedef struct Dbrowid_struct {
     char *orig_title;
     char *poster;
     char *genre;
+    Array *genre_list; // build from genre on demand
     char category;
     int season;
 

@@ -47,7 +47,7 @@ typedef struct DbResults_struct {
     Db *db;
     long size;
     long memsize;
-    DbItem *rows; // Array of actual entries.
+    DbItem *rows; // Array of actual entries not pointers
     int movie_total;
     int series_total;
     int episode_total;

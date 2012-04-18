@@ -92,12 +92,9 @@ static void clear_selection() {
     }
 
     int i;
-TRACE1;
     for(i=0 ; i<a->size ; i++) {
-TRACE1;
         query_remove(a->array[i]);
     }
-TRACE1;
     array_free(a);
 }
 
@@ -205,7 +202,7 @@ void delete_media(DbItem *item,int delete_related) {
 static void insert_image_list(DbItem *item,Array *a) {
 
 TRACE;
-    char *poster = internal_image_path_static(item,POSTER_IMAGE);
+    char *poster = internal_image_path_static(item,POSTER_IMAGE,0);
     //HTML_LOG(0,"poster[%s]",poster);
     if (poster) {
         array_add(a,STRDUP(poster));
@@ -213,7 +210,7 @@ TRACE;
         array_add(a,replace_all(poster,"\\.jpg$",IMAGE_EXT_THUMB_BOXSET,0));
     }
 
-    char *fanart = internal_image_path_static(item,FANART_IMAGE);
+    char *fanart = internal_image_path_static(item,FANART_IMAGE,0);
     //HTML_LOG(0,"fanart[%s]",fanart);
     if (fanart) {
         array_add(a,STRDUP(fanart));
@@ -715,14 +712,14 @@ TRACE;
 
                 if (STRCMP(dimension_set,"grid")==0) {
 
-                   ovs_config_dimension_inherit("ovs_poster_mode_rows_movieboxset");
-                   ovs_config_dimension_inherit("ovs_poster_mode_cols_movieboxset");
+                   ovs_config_dimension_default("ovs_poster_mode_rows_movieboxset");
+                   ovs_config_dimension_default("ovs_poster_mode_cols_movieboxset");
                     reload_configs();
 
                 } else if (STRCMP(dimension_set,"poster")==0) {
 
-                    ovs_config_dimension_inherit("ovs_poster_mode_height_movieboxset");
-                    ovs_config_dimension_inherit("ovs_poster_mode_width_movieboxset");
+                    ovs_config_dimension_default("ovs_poster_mode_height_movieboxset");
+                    ovs_config_dimension_default("ovs_poster_mode_width_movieboxset");
                     reload_configs();
 
                 } else {

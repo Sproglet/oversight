@@ -59,7 +59,7 @@ char *auto_option_list(char *name,char *firstItem,struct hashtable *vals);
 char *option_list(char *name,char *attr,char *firstItem,struct hashtable *vals);
 char *add_network_icon(DbItem *r,char *text);
 char *share_name(DbItem *r,int *freeme);
-char *internal_image_path_static(DbItem *item,ImageType image_type);
+char *internal_image_path_static(DbItem *item,ImageType image_type,int name_only);
 void xx_dump_genre(char *file,int line,int num,DbItem **rows);
 char *return_query_string();
 void query_pop();

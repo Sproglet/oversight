@@ -21,41 +21,43 @@ REV='"`cat verfile`"'
 ifneq ($(ARCH),pc) 
 
 ifeq ($(ARCH),200) 
-	CFLAGS_ARCH=-EL -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
-	LDFLAGS_ARCH=-EL
-	CROSS_TYPE=mips-linux-gnu
+		CFLAGS_ARCH=-EL -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
+		LDFLAGS_ARCH=-EL
+		CROSS_TYPE=mips-linux-gnu
 else
 ifeq ($(ARCH),100) 
-	CFLAGS_ARCH=-D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
-	CROSS_TYPE=mipsel-linux-uclibc
+			CFLAGS_ARCH=-D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
+			CROSS_TYPE=mipsel-linux-uclibc
 endif
 endif
 
-ifdef WINDIR #####################################
+ifdef WINDIR 
 ifeq ($(ARCH),200) 
-	CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt200/mips-4.3/
+		CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt200/mips-4.3/
 else
 ifeq ($(ARCH),100) 
-	CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt100/mipsel-linux-uclibc
+			CROSS_DIR=/cygdrive/c/nmt/cross-gcc/nmt100/mipsel-linux-uclibc
 endif
-endif
+endif 
 
-else ############################################
+else # !WINDIR
 
 ifeq ($(ARCH),200) 
-	CROSS_DIR=~/nmt/packages/toolchain_200/mips-4.3
+		CROSS_DIR=~/nmt/packages/toolchain_200/mips-4.3
 else
 ifeq ($(ARCH),100) 
-	CROSS_DIR=~/nmt/packages/toolchain_100/usr/local/mips
+			CROSS_DIR=~/nmt/packages/toolchain_100/usr/local/mips
 endif
 endif
 
-endif ############################################
+endif # WINDIR
 
-CC=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
-LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
-STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
-else
+	CC=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
+	LD=$(CROSS_DIR)/bin/$(CROSS_TYPE)-gcc
+	STRIP=$(CROSS_DIR)/bin/$(CROSS_TYPE)-strip
+	TARGET_DIR=bin/nmt$(ARCH)
+else #pc
+	TARGET_DIR=bin/$(ARCH)
 	CFLAGS_ARCH=-DSTAT64=stat
 	STRIP=strip
 endif
@@ -90,7 +92,6 @@ HASH_OBJECTS=hashtable.o hashtable_itr.o tester.o
 	@$(CC) $(CFLAGS) -c $<
 
 TARGET=oversight
-TARGET_DIR=bin/nmt$(ARCH)
 EXE=../$(TARGET_DIR)/$(TARGET)
 
 LIBS=-lm

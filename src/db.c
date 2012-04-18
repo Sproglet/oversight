@@ -232,24 +232,18 @@ char *localDbPath() {
 // Return 1 if db should be scanned according to html get parameters.
 int db_to_be_scanned(char *name) {
     char *idlist = query_val(QUERY_PARAM_IDLIST);
-TRACE1;
     if (*idlist) {
-TRACE1;
         //Look for "name(" in idlist
         char *p = idlist;
         char *q;
         int name_len = strlen(name);
 
-TRACE1;
         while((q=strstr(p,name)) != NULL) {
-TRACE1;
             if (q[name_len] == '(') {
                 return 1;
             }
             p = q+name_len;
-TRACE1;
         }
-TRACE1;
         return 0;
     } else {
         // Empty idlist parameter - always scan
@@ -264,9 +258,7 @@ void db_scan_and_add_rowset(char *path,char *name,Exp *exp,
         ) {
 
     HTML_LOG(0,"begin db_scan_and_add_rowset [%s][%s]",path,name);
-TRACE1;
     if (db_to_be_scanned(name)) {
-TRACE1;
 
         Db *db = db_init(path,name);
 
@@ -274,9 +266,7 @@ TRACE1;
 
             int num_ids;
             int *ids = extract_ids_by_source(query_val(QUERY_PARAM_IDLIST),db->source,&num_ids);
-TRACE1;
             DbItemSet *r = db_scan_titles(db,exp,num_ids,ids,NULL,NULL,yamj_cats,yamj_subcat);
-TRACE1;
 
             FREE(ids);
 
@@ -338,7 +328,7 @@ TRACE;
     db_scan_and_add_rowset( localDbPath(),"*", exp, &rowset_count,&rowsets,yamj_cats,yamj_subcat);
 TRACE;
 
-    if (crossview) {
+    if (crossview && g_nmt_settings) {
         //get iformation from any remote databases
         // Get crossview mounts by looking at pflash settings servnameN=name
         char *settingname,*name;

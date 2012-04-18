@@ -250,9 +250,67 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *subcat)
     return keeprow;
 }
 
+/*
+ * contents are overwritten must not be freed
+ */
+char *xmlstr_static(char *text)
+{
+    static char *out=NULL;
+    static int free_last = 0;
+    if (out && free_last) {
+        FREE(out);
+        free_last=0;
+    }
+    out = text;
+    if (strchr(out,'<')) out = replace_str(text,"<","&lt;");
+
+    if (strchr(out,'>')) {
+       char *tmp = replace_str(out,">","&gt;");
+       if (out != text) FREE(out);
+       out = tmp;
+    }
+
+    free_last =  (out != text);
+
+    return out;
+}
+
+void video_field_long(char *tag,long value,char *attr,char *attrval) {
+
+    if (value || attrval ) {
+        printf("\t<%s",tag);
+        if (attrval) {
+            printf(" %s=\"%s\"",attr,attrval);
+        }
+        printf(">%ld</%s>\n",value,tag);
+    }
+}
+void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval) {
+
+    char *encoded=NULL;
+    int free_it=0;
+
+    if (value || attrval ) {
+        printf("\t<%s",tag);
+        if (attrval) {
+            printf(" %s=\"%s\"",attr,attrval);
+        }
+        printf(">");
+        if (url_encode) {
+            encoded=url_encode_static(value,&free_it);
+        } else {
+            encoded = value;
+            free_it = 0;
+        }
+        printf("%s</%s>\n",xmlstr_static(encoded),tag);
+        if (free_it) {
+            FREE(encoded);
+        }
+    }
+}
 
 
-int yamj_video_xml(char *request,DbItem *item,int details)
+int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int pos,int total)
 {
     int ret = 1;
     if (item == NULL) {
@@ -264,31 +322,93 @@ int yamj_video_xml(char *request,DbItem *item,int details)
     printf("\t<td moviedb=\"ovs\">%ld</id>\n",item->id);
 
     id = get_id_from_idlist(item->url,"imdb",1);
-    if (id) { printf("\t<td moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1); FREE(id) ; }
-
-    id = get_id_from_idlist(item->url,"themoviedb",1);
-    if (id) { printf("\t<td moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1); FREE(id) ; }
-
-    id = get_id_from_idlist(item->url,"thetvdb",1);
-    if (id) { printf("\t<td moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1); FREE(id) ; }
-
-    printf("\t<title>%s</title>\n",NVL(item->title));
-
-    if (!EMPTY_STR(item->orig_title)) {
-        printf("\t<originalTitle>%s</originalTitle>\n",item->orig_title);
+    if (id) {
+        printf("\t<td moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1);
+        FREE(id);
     }
+
+    if (id) {
+        printf("\t<td moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1);
+        FREE(id);
+    }
+
+    if (id) {
+        printf("\t<td moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1);
+        FREE(id);
+    }
+    printf("\t<mjbVersion>2.6-SNAPSHOT</mjbVersion>\n");
+    printf("\t<mjbRevision>1234</mjbRevision>\n");
+
+    printf("\t<baseFilenameBase>%ld</baseFilenameBase>\n",item->id);
+    printf("\t<baseFilename>%ld</baseFilename>\n",item->id);
+
+    video_field("title",NVL(item->title),0,NULL,NULL);
+
+
+    if (item->rating != 0.0) {
+        printf("\t<rating>%d</rating>\n",(int)(item->rating *100));
+    }
+
+    printf("\t<watched>%s</watched>\n",(item->watched?"true":"false"));
+
+    printf("\t<posterFile>poster.%ld.jpg</posterFile>\n",item->id);
+    
+    printf("\t<fanartFile>fanart.%ld.jpg</fanartosterFile>\n",item->id);
+
+    video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
+
     printf("\t<year>%d</year>\n",item->year);
 
-    if (item->category == 'T') {
-        printf("\t<season>%d</season>\n",item->season);
+    video_field("certification",item->certificate,0,NULL,NULL);
+    printf("\t<season>%d</season>\n",(item->category == 'T' ? item->season : -1 ));
+
+    video_field("language","",0,NULL,NULL);
+    video_field("subtitles","",0,NULL,NULL);
+    video_field("trailerExchange","",0,NULL,NULL);
+    video_field("trailerLastScan","",0,NULL,NULL);
+    video_field("container","",0,NULL,NULL);
+    video_field("videoCodec","UNKNOWN",0,NULL,NULL);
+    video_field("audioCodec","UNKNOWN",0,NULL,NULL);
+    video_field("audioChannels","",0,NULL,NULL);
+    video_field("resolution","UNKNOWN",0,NULL,NULL);
+    video_field("videoSource",item->videosource,0,NULL,NULL);
+    video_field("videoOutput","UNKNOWN",0,NULL,NULL);
+    video_field("aspect","UNKNOWN",0,NULL,NULL);
+    video_field("fps","60",0,NULL,NULL);
+
+    char *date_format="%y-%m-%d";
+#define DATE_BUF_SIZ 40
+    char date[DATE_BUF_SIZ];
+    if (item->filetime) {
+        strftime(date,DATE_BUF_SIZ,date_format,internal_time2tm(item->filetime,NULL));
+        video_field("fileDate",date,0,NULL,NULL);
+    }
+    if (item->sizemb) {
+        printf("\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
     }
 
-    if (details) {
-        char *plot = get_plot(item,PLOT_MAIN);
-        printf("\t<year>%s</year>\n",plot);
-        printf("\t<episode>%s</episode>\n",item->episode);
-        FREE(plot);
+    if (total) printf("\t<first>%ld</first>\n",all_items[0].id);
+
+    if (pos>0) {
+        printf("\t<previous>%ld</previous>\n",all_items[pos-1].id);
+    } else {
+        printf("\t<previous>UNKNOWN</previous>\n");
     }
+
+    if (pos<total-1) {
+        printf("\t<next>%ld<next>\n",all_items[pos+1].id);
+    } else {
+        printf("\t<next>UNKNOWN</next>\n");
+    }
+
+    if (total) printf("\t<last>%ld</last>\n",all_items[total-1].id);
+
+    char *plot = get_plot(item,PLOT_MAIN);
+    printf("\t<plot>%s</plot>\n",xmlstr_static(plot));
+    FREE(plot);
+        
+
+    printf("\t<episode>%s</episode>\n",xmlstr_static(NVL(item->episode)));
 
     printf("</movie>\n");
     return ret;
@@ -327,7 +447,15 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat)
             printf("\t\tprevious=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,prev);
             printf("\t\tlastIndex=\"%d\"",last);
         }
-        printf(">%s_%s_1</index>\n",s->owner_cat->name,s->name);
+
+        // url encode the cat_subcat_1 
+        char *name,*name_enc;
+        int free_it;
+        ovs_asprintf(&name,"%s_%s_1",s->owner_cat->name,s->name);
+        name_enc = url_encode_static(name,&free_it);
+        printf(">%s</index>\n",name_enc);
+        if (free_it) FREE(name_enc);
+        FREE(name);
 
     }
     printf("</category>\n");
@@ -359,9 +487,7 @@ YAMJSubCat *yamj_subcat_config(YAMJCat *owner,int num,int sub)
 
         HTML_LOG(0,"query = [%s]",query);
 
-TRACE1;
         ret = new_subcat(owner,name,query,1,1);
-TRACE1;
     }
 
     FREE(key);
@@ -421,13 +547,11 @@ YAMJCat *yamj_cat_config(int num)
 
         ret->auto_subcat_expr_url = STRDUP(oversight_val(key));
 
-TRACE1;
         int j = 0;
         while((subcat = yamj_subcat_config(ret,num,++j)) != NULL) {
             /** EMPTY LOOP **/;
         }
 
-TRACE1;
         if (EMPTY_STR(ret->auto_subcat_expr_url)) {
             if (j == 1) {
                 html_error("missing query  or expr value for ovs_yamj_cat[%d]",num);
@@ -486,10 +610,8 @@ int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories,DbIte
 
     for(i = 0 ; i < categories->size ; i++ ) {
         yamj_category_xml(request,subcat,(YAMJCat *)(categories->array[i]));
-TRACE1;
     }
 
-TRACE1;
 
 
     if (subcat && itemSet) {
@@ -501,16 +623,18 @@ TRACE1;
 
 
         int page_size = subcat->owner_cat->page_size;
-        int start = subcat->page * page_size;
+        int start = (subcat->page-1) * page_size;
         int end = start + page_size;
 
         if ( start >= num ) start = num;
         if ( end >= num ) end = num;
 
+        HTML_LOG(0,"page %d page size = %d start = %d end = %d ",subcat->page,page_size,start,end);
+
 
         for (i = start ; i < end ; i++ ) {
             DbItem *item = itemSet[0]->rows+i;
-            yamj_video_xml(request,item,0);
+            yamj_video_xml(request,item,0,itemSet[0]->rows,i,num);
         }
         printf("</movies>\n");
     }
@@ -636,14 +760,15 @@ int yamj_xml(char *request)
         // request = Cat_SubCat_page.xml
         //
 
-        if ( util_strreg(request,"^[0-9]+.xml$",0)) {
+        if (0 && util_strreg(request,"^[0-9]+.xml$",0)) {
 
+            // Detail files not used by eversion so we wont dwell on these.
             // write movie XML
             xml_headers();
             HTML_LOG(0,"processing [%s]",request);
             load_configs();
             printf("<details>\n");
-            ret = yamj_video_xml(request,NULL,1);
+            ret = yamj_video_xml(request,NULL,1,NULL,0,1);
             printf("</details>\n");
 
         } else if ( util_strreg(request,"\\.jpg$",0)) {
@@ -667,14 +792,12 @@ int yamj_xml(char *request)
                 subcat = find_subcat(request,categories);
             }
 
-TRACE1;
             DbItemSet **itemSet = db_crossview_scan_titles(0,NULL,categories,subcat);
-TRACE1;
 
             yamj_categories_xml(request,subcat,categories,itemSet);
 
         } else {
-            HTML_LOG(0,"error invalid request [%s]",request);
+            HTML_LOG(0,"error invalid request [%s] %d",request,STRCMP(request,CATEGORY_INDEX));
         }
     }
 

@@ -1425,14 +1425,14 @@ char *utf8pos(char *p,int n)
 
             if (*p > 0 ) {
                 p++;
-            } else if ( (*p  & 0x40 ) ) {
-                // 0x80 is set here because p[i] < 0, so just need to check 0x40 is set for utf8 lead char.
+            } else if (!*p) {
+                break;
+            } else {
+                // high bit character - assume first one is the chracter ans skip the continuation ones
                 p++;
                 while (( *p & 0xC0 ) == 0x80 ) {
                     p++;
                 }
-            } else if (*p == 0) {
-                break;
             }
             n--;
         }

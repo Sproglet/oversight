@@ -1494,7 +1494,7 @@ char *actor_image_path(DbItem *item,char *name_id)
 
 }
 
-char *internal_image_path_static(DbItem *item,ImageType image_type)
+char *internal_image_path_static(DbItem *item,ImageType image_type,int name_only)
 {
     // No pictures on filesystem - look in db
     // first build the name 
@@ -1509,9 +1509,11 @@ char *internal_image_path_static(DbItem *item,ImageType image_type)
     path[INTERNAL_IMAGE_PATH_LEN] = '\0';
     char *p = path;
 
-    p += sprintf(p,"ovs:%s/%s",
-            (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
-            catalog_val("catalog_poster_prefix"));
+    if (!name_only) {
+        p += sprintf(p,"ovs:%s/%s",
+                (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
+                catalog_val("catalog_poster_prefix"));
+    }
 
     char *id = NULL;
     if (item->category == 'T' ) {
@@ -1655,7 +1657,7 @@ char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,Image
  */
 char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview)
 {
-    char *path = internal_image_path_static(item,image_type);
+    char *path = internal_image_path_static(item,image_type,0);
 
 TRACE;
     if (path) {

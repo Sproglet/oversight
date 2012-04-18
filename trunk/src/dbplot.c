@@ -202,6 +202,8 @@ char *truncate_plot(char *plot,int *free_result)
     *free_result = 0;
     int max;
 
+    HTML_LOG(0,"%d",g_dimension);
+    HTML_LOG(0,"%d",g_dimension->max_plot_length);
     max = utf8pos(plot,g_dimension->max_plot_length)-plot;
 
     //HTML_LOG(0,"binary length=%d max cfg=%d = binary:%d [%.*s]",strlen(plot),g_dimension->max_plot_length,max,max,plot);

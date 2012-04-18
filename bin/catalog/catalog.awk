@@ -918,8 +918,10 @@ i,folderCount,moveDown) {
 
         } else if (ARGV[i] == "STANDALONE" ) {
             STANDALONE=1;
+            moveDown++;
         } else if (ARGV[i] == "NOSTANDALONE" ) {
             STANDALONE=0;
+            moveDown++;
 
         } else if (ARGV[i] == "WRITE_NFO" ) {
 

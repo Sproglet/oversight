@@ -10,6 +10,7 @@
 function url_get(url,response,rec_sep,cache,headers,\
 ret,code,f,body,line) {
 
+    url = url_norm(url);
     if (cache) {
         f = g_url_cache[url];
 
@@ -30,12 +31,12 @@ ret,code,f,body,line) {
                 close(f);
             }
             response["body"] = body;
-            ret = 1;
+            ret = length(body);
         }
+        if(LD)DETAIL("url_get [ "url" ](cache) = "ret);
     } else {
         ret = url_get_uncached(url,response,rec_sep,headers);
    }
-   if(LI)INF("url_get [ "url" ] = "ret);
    return ret;
 }
 
@@ -47,7 +48,7 @@ ret) {
         delete response;
         ret = url_get_wget(url,response,headers);
     }
-    if(LD)DETAIL("url_get_uncached [ "url" ] = "ret);
+    if(LI)INF("url_get [ "url" ] = "ret);
     return ret;
 }
 
@@ -55,6 +56,7 @@ ret) {
 function url_get_wget(url,response,headers,\
 cmd,body,ret,i,hdr,txt,enc,code) {
 
+    url = url_norm(url);
     cmd = "wget -q --referer "get_referer(url);
     cmd = cmd " -U "qa(set_user_agent(url));
     cmd = cmd " --header='Accept-Encoding: gzip' "qa(url)" -O -";
@@ -99,7 +101,6 @@ zip_pipe,b,txt,ret,code) {
 #    } else
     if (substr(b,1,1) == "") { # gzip magin number 0x8b1f starts with 1f > 0a < 20
 
-        if(LD)DETAIL("url_gunzip decompressing ...");
         zip_pipe = "gunzip 2>/dev/null ";
 
         #awk strings can contain nul \0 so this will work!
@@ -107,9 +108,12 @@ zip_pipe,b,txt,ret,code) {
         fflush(zip_pipe);
         close(zip_pipe,"to");
         b="";
+
+        rs_push("eeeeeee"); #unlikely to be in a zip file - it should all get read at once.
         while ( ( code = ( zip_pipe |& getline txt ) ) > 0) {
             b = b txt RT;
         }
+        rs_pop();
         if (code >= 0 ) {
             if (length(b)) {
                 response["body"] = b;
@@ -120,7 +124,7 @@ zip_pipe,b,txt,ret,code) {
             WARNING("url_gunzip pipe error");
         }
     }
-    if(LD)DETAIL("url_gunzip = "ret"  out body length = ["length(response["body"])"]");
+    if(ret && LD)DETAIL("url_gunzip = "ret"  out body length = ["length(response["body"])"]");
     return ret;
 }
 
@@ -130,7 +134,7 @@ iconv_pipe,b,txt,enc,ret,code) {
     enc = response["enc"] ;
     if (enc ) {
        if (enc == "utf-8" ) {
-           ret = 1;
+           ret = 0;
        } else if (g_fetch["no_encode"]) {
            if(LD)DETAIL("leaving "enc" to utf-8 ...");
        } else {
@@ -140,9 +144,13 @@ iconv_pipe,b,txt,enc,ret,code) {
            printf "%s",response["body"] |& iconv_pipe
            fflush(iconv_pipe);
            close(iconv_pipe,"to");
+
+           rs_push("eeeeeee"); #unlikely to be in the file - it should all get read at once.
            while ( ( code = ( iconv_pipe |& getline txt )) > 0 ) {
                 b = b txt RT;
            }
+           rs_pop();
+
            if (code >= 0) {
                response["body"] = b;
                response["enc"] = "utf-8";
@@ -153,7 +161,7 @@ iconv_pipe,b,txt,enc,ret,code) {
            }
        }
     }
-    if(LD)DETAIL("url_encode_utf8 = "ret" in body length = ["length(response["body"])"]");
+    if(ret && LD)DETAIL("url_encode_utf8 = "ret" in body length = ["length(response["body"])"]");
     return ret;
 }
 
@@ -321,9 +329,9 @@ parts,con,host,host_port,i,ret,elapsed,count,redirect_max,msg,hdr) {
             request["Host"] = parts["host"];
             request["User-Agent"] = set_user_agent(url);
             request["Accept"] = "*/*";
-            request["Accept-Encoding"] = "";
             request["Referer"] = get_referer(url);
             request["TE"] = "chunked";
+            request["Accept-Encoding"] = "gzip";
             request["Connection"] = "Keep-Alive";
 
             if (headers) {
@@ -622,6 +630,12 @@ key,ct,tail,rec_sep) {
     }
 }
 
+function url_norm(url) {
+    if (index(url,";")) gsub(/;/,"\\&",url); # m.bing.com doesnt like ;
+    if (index(url," ")) gsub(/ /,"+",url);
+    return url;
+}
+
 # IN url
 # IN headers - SUBSEP list of headers.
 # OUT response
@@ -631,9 +645,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
     if (ENVIRON["LC_ALL"] != "C") {
         ERR("length byte count may be wrong");
     }
-    gsub(/;/,"\\&",url); # m.bing.com doesnt like ;
-    gsub(/ /,"+",url);
-    #gsub(/ /,"%20",url);
+    url = url_norm(url);
 
     #for tvdb.com it sometimes sends gzip even though Accept-Encoding is blank
     #this can be prevented by adding query to the request.

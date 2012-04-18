@@ -1,46 +1,10 @@
-function json_load(url,label,cache,\
-text,f,line) {
-    f=getUrl(url,label".json",cache);
-    if (f) { 
-        FS="\n";
-        while(enc_getline(f,line) > 0) {
-            #if(LG)DEBUG("json:["line[1]"]");
-            text = text " " line[1];
-        }
-        enc_close(f);
-    }
-    return text;
-}
-function json_load2(url,label,cache,headers,\
-response) {
-    if (url_get(url,response,"",cache,headers)) {
-        return response["body"];
-    }
-}
-
 # real json content from url into array.
-function fetch_json(url,label,out,cache,headers,\
-ret,json) {
+function fetch_json(url,out,cache,\
+ret,response) {
     ret = 0;
-    if(g_settings["catalog_awk_browser"]) {
-        json = json_load2(url,label,cache,headers);
-    } else {
-        json = json_load(url,label,cache,headers);
-    }
 
-    if (json) { 
-        ret = json_parse(json,out);
-    }
-    return ret;
-}
-
-# real json content from 2 urls into array. - used when 2urls passed to wget
-function fetch_json2(url,label,out,out2,\
-ret,json) {
-    ret = 0;
-    json = json_load(url,label);
-    if (json) { 
-        ret = json_parse2(json,out,out2);
+    if (url_get(url,response,"",cache)) {
+        ret = json_parse(response["body"],out);
     }
     return ret;
 }

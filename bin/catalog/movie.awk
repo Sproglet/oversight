@@ -118,9 +118,8 @@ year) {
             }
         }
     }
-    if(LI)INF("movie_search "minfo[TITLE]" ["bestUrl"]");
 
-    id0(bestUrl);
+    id0(minfo[TITLE]" - "bestUrl);
     return bestUrl;
 }
 

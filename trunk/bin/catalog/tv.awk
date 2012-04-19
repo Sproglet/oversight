@@ -1346,15 +1346,20 @@ url,id2,key,filter,showInfo,year_range,title_regex,tags) {
 }
 
 function closest_title_in_list(title,allTitles,\
-bestTitles,keep,i,num,d,threshold) {
+bestTitles,keep,i,num,d,threshold,len,lctitle) {
 
     num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
+    clean_titles_for_abbrev(num,allTitles);
+    
+    lctitle = norm_title(title);
+    len = length(title);
 
     threshold = 2; # number of letter transformations allowed 
     for(i = 1 ; i<=num ; i++ ) {
-        d = length(title) - length(allTitles[i,2]);
-        if (d >= -2 && d <= 2 ) {
-            d = edit_dist(allTitles[i,2],title,threshold);
+        d = len - length(allTitles[i,2]);
+        if (d*d <= 4 ) {
+
+            d = edit_dist(tolower(allTitles[i,2]),lctitle,threshold);
 
             if (d <= threshold) {
                 keep[i] = 100 - d;
@@ -2316,7 +2321,7 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(minfo,tvdbid,\
-xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url,size) {
+xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url,size,banner_scores) {
 
     lnum = get_langs(langs);
 
@@ -2335,10 +2340,6 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
             if (url_get(bannerApiUrl,xmlstr,"",0)) {
                 num = xml_chop(xmlstr["body"],"Banner",xml);
 
-                #index sesion posters
-                xml_reindex(xml,"BannerType BannerType2 Season Language");
-                #index non-seasion images
-                xml_reindex(xml,"BannerType BannerType2 Language");
                 scrape_cache_add(key,xml);
             }
         }
@@ -2346,17 +2347,24 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
         if (firstIndex(xml) != "") {
 
             if (get_poster) {
-                for(i = 1 ; i <= lnum ; i++ ) {
-                    url = xml_extract(xml[0,"season","season",minfo[SEASON],langs[i]],"BannerPath");
-                    if (url) {
-                        banners[POSTER] = minfo[POSTER]=tvDbImageUrl(url);
-                        if(LG)DEBUG("POSTER = "minfo[POSTER]);
-                        break;
+                delete banner_scores;
+                for(i in xml) {
+                    if (index(xml[i],"BannerType>season<") && index(xml[i],"BannerType2>season<") && index(xml[i],"Season>"minfo[SEASON]"<")) {
+
+                        url = xml_extract(xml[i],"BannerPath");
+                        banner_scores[tvDbImageUrl(url)] = banner_score(xml[i],lnum,langs);
                     }
+                }
+                dump(0,"poster scores",banner_scores);
+                if (bestScores(banner_scores,banner_scores)) {
+                    banners[POSTER] = minfo[POSTER] = firstIndex(banner_scores);
+                    if(LG)DEBUG("Poster = "minfo[POSTER]);
                 }
             }
 
             if (get_fanart) {
+
+                delete banner_scores;
 
                 if (g_settings["catalog_image_fanart_width"]  == 1920 ) {
                     size = "1920x1080";
@@ -2364,17 +2372,38 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
                     size = "1280x720";
                 }
 
-                for(i = 1 ; i <= lnum ; i++ ) {
-                    url = xml_extract(xml[0,"fanart",size,langs[i]],"BannerPath");
-                    if (url) {
-                        banners[FANART] = minfo[FANART]=tvDbImageUrl(url);
-                        if(LG)DEBUG("Fanart = "minfo[FANART]);
-                        break;
+                for(i in xml) {
+                    if (index(xml[i],">fanart<")) {
+
+                        url = xml_extract(xml[i],"BannerPath");
+                        banner_scores[tvDbImageUrl(url)] = banner_score(xml[i],lnum,langs,size);
                     }
+                }
+                dump(0,"fanart scores",banner_scores);
+                if (bestScores(banner_scores,banner_scores)) {
+                    banners[FANART] = minfo[FANART] = firstIndex(banner_scores);
+                    if(LG)DEBUG("Fanart = "minfo[FANART]);
                 }
             }
         }
     }
+}
+
+function banner_score(xml,lnum,langs,size,\
+i,xrating,xlang,xsize,sc) {
+
+    xrating = xml_extract(xml,"Rating") - 5;
+    xrating *= xml_extract(xml,"RatingCount");
+    xlang = xml_extract(xml,"Language");
+    if (size) {
+        xsize = xml_extract(xml,"BannerType2"); # only for fanart
+    }
+    for(i = 1 ; i <= lnum ; i++ ) {
+        if (xlang == langs[i]) break;
+    }
+    sc = -i*1000 + 100 * ( xsize == size) + 10 * xrating;
+    #DEBUG("score "sc" for "xml);
+    return sc;
 }
 
 function set_eptitle(minfo,title) {

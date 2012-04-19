@@ -960,7 +960,7 @@ count,i,start,seps) {
 
 #added threshold to short circuit
 function edit_dist(source,target,threshold,\
-m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
+m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt,early_fail) {
 
 
     #n = length(source);
@@ -991,6 +991,7 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
         #s_i = substr(source,i,1);
         s_i = ss[i];
 
+        early_fail=1;
         for (j = 1; j <= m; j++) {
 
             #t_j = substr(target,j,1);
@@ -1030,6 +1031,12 @@ m,n,i,j,matrix,cell,left,above,diag,s_i,t_j,ss,tt) {
             # }
 
             matrix[i,j]=cell;
+            if (cell <= threshold) early_fail = 0;
+        }
+        if (early_fail) {
+            INF("Abort "n","m" at "i","j);
+            matrix[n,m] = 9999;
+            break;
         }
     }
 

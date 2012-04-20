@@ -632,10 +632,16 @@ void db_free(Db *db)
  * Expand list of genre keys. eg. 
  * r = Romance
  * a | c = Action | Comedy
+ *
+ * if new_sep is not null then | is replaced with new_sep
  */
-char *translate_genre(char *genre_keys,int expand)
+#define MAX_GENRE 200
+char *translate_genre(char *genre_in,int expand,char *new_sep)
 {
     static Array *genres = NULL;
+
+    char final_genre[MAX_GENRE+1];
+
     if (genres == NULL) {
         char *list = catalog_val("catalog_genre");
         //HTML_LOG(0,"catalog_genre = [%s] ",list);
@@ -646,56 +652,81 @@ char *translate_genre(char *genre_keys,int expand)
         //array_dump(0,"genres",genres);
     }
 
-    char *out = genre_keys;
-    if (out == NULL) {
-        out = STRDUP("");
-    } else if (genres) {
-        int i;
-        for(i = 0 ; i < genres->size ; i += 2 ) {
+    // -----------------------------------
 
-            char *key = genres->array[i+1];
-            char *val = genres->array[i];
+    char *new = final_genre;
+    *new = '\0';
+    int i;
 
-            char *from,*to;
+    // set buffer overflow flag
+    final_genre[MAX_GENRE]='\0';
 
-            if (expand) {
-                from = key;
-                to = val;
-            } else {
-                from = val;
-                to = key;
-            }
+    if (genre_in && genres) {
+       char *p = genre_in;
+       while(p && *p) {
+           *new ='\0';
 
-            // If key is a letter on its own replace with val.
-            // could use regex replace \<key\> , val but this is slow platform
-            char *p;
-            if ((p=delimited_substring(out," |",from," |",1,1)) != NULL) {
+           char *old = new;
 
-                char *new;
-                ovs_asprintf(&new,"%.*s%s%s",p-out,out,to,p+strlen(from));
-                if (out != genre_keys) FREE(out);
-                out = new;
-            }
+           // copy delimiter
+           while(*p == ' ' ) p++;
+           if(*p == '|' ) {
+              if (new_sep) {
+                 new += sprintf(new,"%s",new_sep);
+              } else {
+                  *new++ = *p;
+              }
+              p++;
+           }
+           while(*p == ' ' ) p++;
 
-        }
+           if (!*p) break;
+
+           //look for next genre
+           for(i = 0 ; i < genres->size ; i += 2 ) {
+
+                char *key = genres->array[i+1];
+                char *val = genres->array[i];
+
+                char *from,*to;
+
+                if (expand) {
+                    from = key;
+                    to = val;
+                } else {
+                    from = val;
+                    to = key;
+                }
+               // Replace next genre
+                if (util_starts_with(p,from) && strchr(" |",p[strlen(from)])) {
+                    new += sprintf(new,"%s",to);
+                    p += strlen(from);
+                    break;
+                }
+           }
+           if (new == old ) {
+               // copy next genre as is
+               while (*p && *p != ' ' && *p != '|') {
+                   *new++ = *p++;
+               }
+           }
+       }
+       *new = '\0';
+       assert(new < final_genre + MAX_GENRE);
     }
-    if (out == genre_keys) out = STRDUP(out);
 
-    //HTML_LOG(0,"genre[%s] is [%s]",genre_keys,out);
-    return out;
+    //HTML_LOG(0,"genre[%s] is [%s]",genre_in,final_genre);
+    return STRDUP(final_genre);
 }
 // * a | c = Action | Comedy
-char *expand_genre(char *genre_keys)
+char *expand_genre(char *genre_in)
 {
-    char *tmp = translate_genre(genre_keys,1);
-    char *tmp2 = replace_all(tmp," *\\| *"," | ",0);
-    FREE(tmp);
-    return tmp2;
+    return translate_genre(genre_in,1," | ");
 }
 // * Action | Comedy = a|c
 char *compress_genre(char *genre_names)
 {
-    return translate_genre(genre_names,0);
+    return translate_genre(genre_names,0,NULL);
 }
 
 

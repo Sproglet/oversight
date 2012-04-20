@@ -100,6 +100,7 @@ void fix_file_paths(int num_row,DbItem **rows);
 char *get_crossview_local_copy(char *path,char *label);
 char *expand_genre(char *genre_keys);
 char *compress_genre(char *genre_names);
+char *translate_genre(char *genre_in,int expand,char *new_sep);
 char * db_rowid_get_field(DbItem *rowid,char *name);
 int local_db_size();
 int *extract_ids_by_source(char *query,char *dbsource,int *num_ids);

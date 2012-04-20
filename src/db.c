@@ -640,7 +640,8 @@ char *translate_genre(char *genre_in,int expand,char *new_sep)
 {
     static Array *genres = NULL;
 
-    char final_genre[MAX_GENRE+1];
+    static char last_genre_seen[MAX_GENRE+1];
+    static char genre_out[MAX_GENRE+1];
 
     if (genres == NULL) {
         char *list = catalog_val("catalog_genre");
@@ -650,73 +651,81 @@ char *translate_genre(char *genre_in,int expand,char *new_sep)
             genres=splitstr(list,",");
         }
         //array_dump(0,"genres",genres);
+        *genre_out = *last_genre_seen='\0';
     }
 
     // -----------------------------------
 
-    char *new = final_genre;
-    *new = '\0';
-    int i;
 
-    // set buffer overflow flag
-    final_genre[MAX_GENRE]='\0';
+    if (strcmp(genre_in,last_genre_seen) != 0) {
 
-    if (genre_in && genres) {
-       char *p = genre_in;
-       while(p && *p) {
-           *new ='\0';
+        char *new = genre_out;
+        *new = '\0';
+        int i;
 
-           char *old = new;
+        // set buffer overflow flag
+        genre_out[MAX_GENRE]='\0';
 
-           // copy delimiter
-           while(*p == ' ' ) p++;
-           if(*p == '|' ) {
-              if (new_sep) {
-                 new += sprintf(new,"%s",new_sep);
-              } else {
-                  *new++ = *p;
-              }
-              p++;
-           }
-           while(*p == ' ' ) p++;
+        if (genre_in && genres) {
+           char *p = genre_in;
+           while(p && *p) {
+               *new ='\0';
 
-           if (!*p) break;
+               char *old = new;
 
-           //look for next genre
-           for(i = 0 ; i < genres->size ; i += 2 ) {
+               // copy delimiter
+               while(*p == ' ' ) p++;
+               if(*p == '|' ) {
+                  if (new_sep) {
+                     new += sprintf(new,"%s",new_sep);
+                  } else {
+                      *new++ = *p;
+                  }
+                  p++;
+               }
+               while(*p == ' ' ) p++;
 
-                char *key = genres->array[i+1];
-                char *val = genres->array[i];
+               if (!*p) break;
 
-                char *from,*to;
+               //look for next genre
+               for(i = 0 ; i < genres->size ; i += 2 ) {
 
-                if (expand) {
-                    from = key;
-                    to = val;
-                } else {
-                    from = val;
-                    to = key;
-                }
-               // Replace next genre
-                if (util_starts_with(p,from) && strchr(" |",p[strlen(from)])) {
-                    new += sprintf(new,"%s",to);
-                    p += strlen(from);
-                    break;
-                }
-           }
-           if (new == old ) {
-               // copy next genre as is
-               while (*p && *p != ' ' && *p != '|') {
-                   *new++ = *p++;
+                    char *key = genres->array[i+1];
+                    char *val = genres->array[i];
+
+                    char *from,*to;
+
+                    if (expand) {
+                        from = key;
+                        to = val;
+                    } else {
+                        from = val;
+                        to = key;
+                    }
+                   // Replace next genre
+                    if (util_starts_with(p,from) && strchr(" |",p[strlen(from)])) {
+                        new += sprintf(new,"%s",to);
+                        p += strlen(from);
+                        break;
+                    }
+               }
+               if (new == old ) {
+                   // copy next genre as is
+                   while (*p && *p != ' ' && *p != '|') {
+                       *new++ = *p++;
+                   }
                }
            }
-       }
-       *new = '\0';
-       assert(new < final_genre + MAX_GENRE);
+           *new = '\0';
+           assert(new < genre_out + MAX_GENRE);
+        }
+        strcpy(last_genre_seen,genre_in);
+        //HTML_LOG(0,"genre[%s] is [%s] last was [%s]",genre_in,genre_out,last_genre_seen);
+    } else {
+        //HTML_LOG(0,"cached genre[%s] is [%s] last was [%s]",genre_in,genre_out,last_genre_seen);
     }
 
-    HTML_LOG(0,"genre[%s] is [%s]",genre_in,final_genre);
-    return STRDUP(final_genre);
+    return STRDUP(genre_out);
 }
 // * a | c = Action | Comedy
 char *expand_genre(char *genre_in)

@@ -287,8 +287,6 @@ Array *splitstr_inplace_max(char *s_in,char *sep,int n)
 
     while ((p=strstr(s,sep)) != NULL && n != 0 ) {
 
-        char *part;
-
         *p = '\0';
 
         HTML_LOG(0,"part[%s]",s);

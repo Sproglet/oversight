@@ -36,6 +36,9 @@
 #define CONFIG_PREFIX "ovs_yamj_cat"
 #define CATEGORY_INDEX "Categories.xml"
 
+// Prototypes
+void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
+
 /*
  * The plan is as follows:
  *
@@ -157,97 +160,242 @@ YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_fi
     return ret;
 }
 
-/*
- * For each row do two things.
- * 1. Evaluate any dynamic categories - eg First Letter of Title , Genre list etc.
- * 2. if subcat parent is a dynamic category then check evaluated value against subcat name
- *      eg Title_A_1.xml check computed 1st letter of title against current subcat name 'A'
- * 3. if subcat parent is not a dynamic category then evaluate the subcat - keeprow if true
- *      eg _Y~f~~e~2010 for movies in 2010
- */
-int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *subcat)
+void add_index_to_item(DbItem *item,YAMJSubCat *subcat)
 {
-    int keeprow = 0;
 
-    // First create all sub categories.
+    if (!item->yamj_member_of) {
+        item->yamj_member_of = array_new(NULL);
+    }
+    array_add(item->yamj_member_of,subcat);
+}
+
+#if 0
+/*
+* If this item is eligibe for addition to the current YAMJ file , then also find all other categories it
+* belongs to.  Required for YAMJ indexes. not needed with full dynamic jukebox.
+*/
+int add_item_indexes(DbItem *item,Array *categories,YAMJSubCat *subcat)
+{
     int i;
     for(i = 0 ; i < categories->size ; i++ ) {
 
-        int check_against_subcat_name = 0;
+        int j;
 
         YAMJCat *cat = categories->array[i];
+        Exp *e = cat->auto_subcat_expr;
+        if (e) {
+            
+            
+        } else {
+            // static subcategory - check all subcategories to build 
+
+            for(j = 0 ; j < cat->subcats->size ; j++ ) {
+                YAMJSubCat *sc = cat->subcats->array[j];
+                if (sc != subcat && sc->filter_expr) { 
+                    Exp *e = sc->filter_expr;
+                    if (evaluate_num(e,item)) {
+                        add_index_to_item(item,sc);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
+
+/*
+ * For dynamic subcats -
+ * compare the evaluated expression against the expected target(selected_subcat) name
+ *
+ * IN target_name - if present then the expression is checked against this value
+ * return 1=match
+ * 0 = no match
+ * -1 = error
+ *
+ * Two sideeffects:
+ * 1. Dynamic subcats are created for each unique expression result seen - eg to populate Title_YYY_1, Genre_XXX_1
+ * 2. The item->yamj_member_of array is updated with the new dynamic subcats.
+ */
+int create_dynamic_cat_expression(YAMJCat *cat,DbItem *item,Exp *e,char *selected_subcat_name)
+{
+    char *val;
+    int keeprow=-1;
+    // Create a new subcat if none exists.
+    // Just use a simple loop - no hashes as numbers should be small
+    if (e->val.type == VAL_TYPE_STR) {
+
+        val = e->val.str_val;
+
+        add_index_to_item(item,new_subcat(cat,val,NULL,0,0));
+
+        if (selected_subcat_name) {
+            keeprow = (STRCMP(selected_subcat_name,val) == 0);
+        }
+
+    } else if (e->val.type == VAL_TYPE_NUM) {
+
+        // TODO loss of precicsion here - may affect rating filters.
+        char num[20];
+        sprintf(num,"%f",e->val.num_val);
+        char *p = strrchr(num,'\0');
+        while (*(--p) == '0') {
+            ;
+        }
+        *++p='\0';
+        add_index_to_item(item,new_subcat(cat,val,NULL,0,0));
+        if (selected_subcat_name) {
+            keeprow = (STRCMP(selected_subcat_name,num) == 0);
+        }
+
+    } else if (e->val.type == VAL_TYPE_LIST) {
+        int j;
+        keeprow=0;
+        for(j = 0 ; j < e->val.list_val->size ; j++ ) {
+            val = e->val.list_val->array[j];
+            add_index_to_item(item,new_subcat(cat,val,NULL,0,0));
+
+            if (selected_subcat_name) {
+                if (STRCMP(selected_subcat_name,val) == 0) {
+                    keeprow = 1;
+                }
+            }
+        }
+    } else {
+        HTML_LOG(0,"could not compute for item id %d",item->id);
+        exp_dump(e,3,1);
+    }
+    return keeprow;
+
+}
+
+#define STATIC_CAT(c) ((c)->auto_subcat_expr == NULL)
+#define DYNAMIC_CAT(c) ((c)->auto_subcat_expr != NULL)
+#define STATIC_SUBCAT(s) STATIC_CAT((s)->owner_cat)
+#define DYNAMIC_SUBCAT(s) DYNAMIC_CAT((s)->owner_cat)
+/*
+ * if subcat parent is a dynamic category then check evaluated value against subcat name
+ *      eg Title_A_1.xml check computed 1st letter of title against current subcat name 'A'
+ *
+ * returns true if this item matches the current selected subcat
+ */
+int add_dynamic_subcategories(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
+{
+    int keeprow = 0;
+    int i;
+    for(i = 0 ; i < categories->size ; i++ ) {
+
+        YAMJCat *cat = categories->array[i];
+
         Exp *e = cat->auto_subcat_expr;
         if (e) {
 
             // If the current category is a dynamic category and it contains our current subcategory and 
             // we have not yet selected this row then check to see if row is eligible for selection.
-            //
-            if (!keeprow && subcat && subcat->owner_cat == cat ) {
-                check_against_subcat_name = 1;
-            }
-
+            
             if (evaluate(e,item) == 0) {
 
-                char *val;
-                // Create a new subcat if none exists.
-                // Just use a simple loop - no hashes as numbers should be small
-                if (e->val.type == VAL_TYPE_STR) {
-
-                    val = e->val.str_val;
-
-                    new_subcat(cat,val,NULL,0,0);
-                    if (check_against_subcat_name) {
-                        keeprow = (STRCMP(subcat->name,val) == 0);
-                    }
-
-                } else if (e->val.type == VAL_TYPE_NUM) {
-                    // TODO loss of precicsion here - may affect rating filters.
-                    char num[20];
-                    sprintf(num,"%f",e->val.num_val);
-                    char *p = strrchr(num,'\0');
-                    while (*(--p) == '0') {
-                        ;
-                    }
-                    *++p='\0';
-                    new_subcat(cat,num,NULL,0,0);
-                    if (check_against_subcat_name) {
-                        keeprow = (STRCMP(subcat->name,num) == 0);
-                    }
-
-                } else if (e->val.type == VAL_TYPE_LIST) {
-                    int j;
-                    for(j = 0 ; j < e->val.list_val->size ; j++ ) {
-                        val = e->val.list_val->array[j];
-                        new_subcat(cat,val,NULL,0,0);
-                        if (check_against_subcat_name && !keeprow) {
-                            keeprow = (STRCMP(subcat->name,val) == 0);
-                        }
-                    }
-                } else {
-                    HTML_LOG(0,"could not compute for item id %d",item->id);
-                    exp_dump(e,3,1);
-                }
-            }
-        }
-    }
-
-    if (!keeprow) {
-
-        if (subcat == NULL) {
-            // No filter
-            keeprow = 1;
-        } else {
-            if (!subcat->owner_cat->auto_subcat_expr) {
-                // Now if current subcat is NOT part of a dynamic category then evaluate its filter and check
-                // value is non-zero.
-                if (subcat->filter_expr) {
-                    Exp *e = subcat->filter_expr;
-                    keeprow = evaluate_num(e,item) != 0;
+                if (create_dynamic_cat_expression(cat,item,e,selected_subcat->name) == 1) {
+                    // match
+                    keeprow = 1;
                 }
             }
         }
     }
     return keeprow;
+}
+
+
+/*
+ * For each row do two things.
+ * 1. Evaluate any dynamic categories - eg First Letter of Title , Genre list etc.
+ * 3. if subcat parent is not a dynamic category then evaluate the subcat - keeprow if true
+ *      eg _Y~f~~e~2010 for movies in 2010
+ */
+int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
+{
+    int keeprow = 0;
+
+    /*
+     * Update all dynamic subcats for this item.
+     * For YAMJ dynamic subcats must be populated because all XML files contain subcat menus. eg Title_B_1.xml
+     *
+     * As we had to evalute the expression to build subcat menus, als use the expression to 
+     * a) determine whether to keep this item (for selected subcat).
+     * b) Populate item->yamj_member_of populated for dynamic subcats only for the /movies/movie/index tags.
+     */
+    keeprow = add_dynamic_subcategories(item,categories,selected_subcat);
+
+    /*
+     * If no dynamic subcat matches (which have to be built anyway for the Category selections)
+     * then check the explicitly selected * static subcat.
+     */
+    if (!keeprow) {
+        if (selected_subcat == NULL) {
+            // No filter - eg main home view.
+            keeprow = 1;
+
+        } else if (STATIC_SUBCAT(selected_subcat)) {
+
+            // Now if current subcat is NOT part of a dynamic category then evaluate its filter and check
+            // value is non-zero.
+            if (selected_subcat->filter_expr) {
+                Exp *e = selected_subcat->filter_expr;
+                keeprow = evaluate_num(e,item) != 0;
+                if (keeprow) {
+                    add_index_to_item(item,selected_subcat);
+                }
+            }
+        }
+    }
+
+    return keeprow;
+
+    /* Now the item->yamj_member_of is partially populated with
+     * 1) all matching dynamic subcats.
+     * 2. the current user selected static subcat if any
+     * This leaves all of the other static subcats. These only need to be populated 
+     * if the item is going in the actual xml
+     * see add_static_indices_to_item()
+     */
+}
+
+/*
+ * This is called to populate the final indices for the given item
+ * Due to layout of YAMJ XML files:
+ * 1. We have already computed all of the dynamic sub categories in order to build index for skins - so if item is a member of these
+ * this is already set in item->yamj_member_of
+ * 2. If current user subcat is static we have checked this to see if item is going in current XML - again this will be in
+ * item->yamj_member_of
+ * All that remains are other static subcats.
+ */
+void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories)
+{
+    int i;
+    for(i = 0 ; i < categories->size ; i++ ) {
+
+        YAMJCat *cat = categories->array[i];
+        if (STATIC_CAT(cat)) {
+
+            int j;
+            for(j = 0 ; j < cat->subcats->size ; j++ ) {
+
+                YAMJSubCat *sc = cat->subcats->array[j];
+                
+                if (sc != selected_subcat) { // already processed selected subcat at this point
+
+                    if(sc->filter_expr) {
+
+                        if (evaluate_num(sc->filter_expr,item)) {
+
+                            //  This is ONLY called for items that are being written to the current YAMJ XML
+                            //  so the totals are not meaningful here.
+                            add_index_to_item(item,sc);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /*
@@ -275,7 +423,8 @@ char *xmlstr_static(char *text)
     return out;
 }
 
-void video_field_long(char *tag,long value,char *attr,char *attrval) {
+void video_field_long(char *tag,long value,char *attr,char *attrval)
+{
 
     if (value || attrval ) {
         printf("\t<%s",tag);
@@ -285,7 +434,9 @@ void video_field_long(char *tag,long value,char *attr,char *attrval) {
         printf(">%ld</%s>\n",value,tag);
     }
 }
-void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval) {
+
+void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
+{
 
     char *encoded=NULL;
     int free_it=0;
@@ -320,21 +471,21 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     printf("<movie>\n");
     char *id;
     
-    printf("\t<td moviedb=\"ovs\">%ld</id>\n",item->id);
+    //printf("\t<id moviedb=\"ovs\">%ld</id>\n",item->id);
 
     id = get_id_from_idlist(item->url,"imdb",1);
     if (id) {
-        printf("\t<td moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1);
+        printf("\t<id moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
 
-    if (id) {
-        printf("\t<td moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1);
+    if (0 && id) {
+        printf("\t<id moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
 
-    if (id) {
-        printf("\t<td moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1);
+    if (0 && id) {
+        printf("\t<id moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
     printf("\t<mjbVersion>2.6-SNAPSHOT</mjbVersion>\n");
@@ -388,6 +539,8 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
         printf("\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
     }
 
+    //---------------------------
+    //
     if (total) printf("\t<first>%ld</first>\n",all_items[0].id);
 
     if (pos>0) {
@@ -401,6 +554,9 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     } else {
         printf("\t<next>UNKNOWN</next>\n");
     }
+    if (total) printf("\t<last>%ld</last>\n",all_items[total-1].id);
+
+    //---------------------------
     
     Array *genres = splitstr(item->expanded_genre,"|");
     printf("\t<genres count=\"%d\">\n",genres->size);
@@ -411,7 +567,29 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     printf("\t</genres>\n");
     array_free(genres);
 
-    if (total) printf("\t<last>%ld</last>\n",all_items[total-1].id);
+    //---------------------------
+
+    if (item->yamj_member_of) {
+        int i;
+        printf("\t<indexes>\n");
+        for(i= 0 ; i<item->yamj_member_of->size ; i++ ) {
+            int free_it;
+            YAMJSubCat *sc = item->yamj_member_of->array[i];
+
+            char *name=sc->name;
+            char *ownername=sc->owner_cat->name;
+            char *encname=url_encode_static(name,&free_it);
+
+            printf("\t\t<index encoded=\"%s\" originalName=\"%s\" type=\"%s\">%s</index>\n",
+                encname,ownername,ownername,encname);
+
+            if(free_it) FREE(encname);
+
+        }
+        printf("\t</indexes>\n");
+    }
+
+    //----------------------------
 
     char *plot = get_plot(item,PLOT_MAIN);
     printf("\t<plot>%s</plot>\n",xmlstr_static(plot));
@@ -429,11 +607,21 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
  * subcat = Sub category corresponding to input
  * cat = any category for output. If it contains the current subcat then extr page info is output.
  */
-int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat)
+int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbItemSet **item_sets)
 {
     int ret = 1;
     int i;
 
+
+    if (subcat->owner_cat == cat) {
+    HTML_LOG(0,"subcat %s_%s total = %d movies , %d series , %d episodes , %d other",
+            cat->name,subcat->name,
+            item_sets[0]->movie_total,
+            item_sets[0]->series_total,
+            item_sets[0]->episode_total,
+            item_sets[0]->other_media_total
+            );
+    }
     printf("<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
     for(i = 0 ; i < cat->subcats->size ; i++ ) {
         YAMJSubCat *s = cat->subcats->array[i];
@@ -603,7 +791,7 @@ int yamj_build_categories(char *cat_name,Array *categories)
     return ret;
 }
 
-int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories,DbItemSet **itemSet)
+int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categories,DbItemSet **itemSet)
 {
     int ret = 1;
     int i;
@@ -612,19 +800,19 @@ int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories,DbIte
     printf("<library count=\"%d\">\n",categories->size);
 
 /*
- * if (!subcat) {
+ * if (!selected_subcat) {
         html_error("unknown request [%s]",request);
         printf("<error>see html comments</error>\n");
     }
     */
 
     for(i = 0 ; i < categories->size ; i++ ) {
-        yamj_category_xml(request,subcat,(YAMJCat *)(categories->array[i]));
+        yamj_category_xml(request,selected_subcat,(YAMJCat *)(categories->array[i]),itemSet);
     }
 
 
 
-    if (subcat && itemSet) {
+    if (selected_subcat && itemSet) {
 
         if (itemSet[1]) assert(0); //TODO crossview not coded
         int num = itemSet[0]->size;
@@ -632,18 +820,22 @@ int yamj_categories_xml(char *request,YAMJSubCat *subcat,Array *categories,DbIte
         printf("<movies count=\"%d\">\n",num);
 
 
-        int page_size = subcat->owner_cat->page_size;
-        int start = (subcat->page-1) * page_size;
+        int page_size = selected_subcat->owner_cat->page_size;
+        int start = (selected_subcat->page-1) * page_size;
         int end = start + page_size;
 
         if ( start >= num ) start = num;
         if ( end >= num ) end = num;
 
-        HTML_LOG(0,"page %d page size = %d start = %d end = %d ",subcat->page,page_size,start,end);
+        HTML_LOG(0,"page %d page size = %d start = %d end = %d ",selected_subcat->page,page_size,start,end);
 
 
         for (i = start ; i < end ; i++ ) {
             DbItem *item = itemSet[0]->rows+i;
+
+            // Finish populating item->yamj_member_of with all categories this member belongs to
+            add_static_indices_to_item(item,selected_subcat,categories);
+
             yamj_video_xml(request,item,0,itemSet[0]->rows,i,num);
         }
         printf("</movies>\n");
@@ -796,15 +988,15 @@ int yamj_xml(char *request)
 
             yamj_build_categories(request,categories);
 
-            YAMJSubCat *subcat = NULL;
+            YAMJSubCat *selected_subcat = NULL;
             
             if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
-                subcat = find_subcat(request,categories);
+                selected_subcat = find_subcat(request,categories);
             }
 
-            DbItemSet **itemSet = db_crossview_scan_titles(0,NULL,categories,subcat);
+            DbItemSet **itemSet = db_crossview_scan_titles(0,NULL,categories,selected_subcat);
 
-            yamj_categories_xml(request,subcat,categories,itemSet);
+            yamj_categories_xml(request,selected_subcat,categories,itemSet);
 
         } else {
             HTML_LOG(0,"error invalid request [%s] %d",request,STRCMP(request,CATEGORY_INDEX));

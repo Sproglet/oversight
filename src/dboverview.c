@@ -132,7 +132,7 @@ int numSTRCMP(char *a,char *b) {
     char *anext,*bnext;
 
     while (*a && *b ) {
-        if (isdigit(*a) && isdigit(*b)) {
+        if (isdigit(*(unsigned char *)a) && isdigit(*(unsigned char *)b)) {
             anum=strtol(a,&anext,10);
             bnum=strtol(b,&bnext,10);
             if (anum != bnum) {

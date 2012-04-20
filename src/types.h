@@ -160,6 +160,10 @@ typedef struct Dbrowid_struct {
     char *subtitles;
 
     int sizemb;
+
+
+    // For YAMJ emulation - XML outputs sub indexes for each item - presumable for mavigation between categories.
+    Array * yamj_member_of;
 } DbItem;
 
 // GROUPS AND IMDB LISTS =========================================================================

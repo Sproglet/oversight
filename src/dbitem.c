@@ -68,6 +68,8 @@ void db_rowid_free(DbItem *item,int free_base)
         FREE(item->videosource);
         FREE(item->subtitles);
 
+        FREE(item->yamj_member_of);
+
         if (free_base) {
             FREE(item);
         }

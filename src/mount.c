@@ -101,7 +101,7 @@ void get_mount_points() {
                     //seek to end of path skipping escapes.
                     while(*q) {
                        if (*q == '\\' ) {
-                          if (isdigit(q[1]) && isdigit(q[2]) && isdigit(q[3])) {
+                          if (isdigit((unsigned char)q[1]) && isdigit((unsigned char)q[2]) && isdigit((unsigned char)q[3])) {
                               // octal
                               int c;
                               q++;

@@ -331,7 +331,7 @@ parts,con,host,host_port,i,ret,elapsed,count,redirect_max,msg,hdr) {
                 g_url_con_createtime[con] = systime();
             }
 
-            if(LG)DEBUG("connecting ["con"]");
+            if(LD)DETAIL("connecting ["con"]"url);
 
             printf "GET %s%s HTTP/1.1\r\n",parts["path"],parts["query"] |& con;
 
@@ -389,7 +389,7 @@ parts,con,host,host_port,i,ret,elapsed,count,redirect_max,msg,hdr) {
                     break;
 
                 } else {
-                    ERR("Dont understand response from server? - if any");
+                    ERR("Dont understand response ["response["@status"]"] from server? - if any");
                     dump(0,"response",response);
                     # Anything else break
                     break;

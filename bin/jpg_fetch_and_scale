@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Force bash else run under current shell and hope it can cope - eg *some* busybox
+[ -z "${OVS_ENV_JPG:-}" ] && which bash > /dev/null && OVS_ENV_JPG=1 exec bash "$0" "$@"
 # $Id:$
 #
 # run commands to resize a backdrop
@@ -142,7 +144,7 @@ fetch_resize() {
     url="$1" ; shift;
     file="$1" ; shift ;
 
-    INFO "Processing : [$type] [$url] [$file]"
+    INFO "Processing : [$type] [$url]"
 
     case "$url" in
         http*) wget -O "$file" "$@" "$url" && [ -s "$file" ]  ;;
@@ -233,7 +235,7 @@ add_queue() {
         echo "fetch_resize $args" >> "$Q.$type/$prefix$$"
         chmod 666 "$Q.$type/$prefix$$"
         perms "$Q.$type/$prefix$$"
-        INFO "Queued $args"
+        INFO "Queued $2 $3"
     fi
 }
 
@@ -277,7 +279,7 @@ process_queue() {
 
             if  [ -f "$f" ] && mv "$f" "$pq_args" ; then
 
-                INFO "got image queue file $pq_folder/$f"
+                INFO "got image queue file $f"
 
                 cat "$pq_args"
                 source "$pq_args"
@@ -309,7 +311,7 @@ thread_prefix() {
 start_thread() {
     eval pid=\$\$
     thread=$pid.$1
-    INFO "Thread $pid starting ($$)"
+    #INFO "Thread $pid starting ($$)"
     echo $pid > `thread_prefix`.pid
     while \
         process_queue "$Q.poster" 1 || \
@@ -317,7 +319,7 @@ start_thread() {
         process_queue "$Q.portrait" 0 ; do
         true
     done
-    INFO "Thread $pid stopping ($$)"
+    #INFO "Thread $pid stopping ($$)"
     rm -f `thread_prefix`.pid
 }
 
@@ -363,7 +365,7 @@ startup() {
 
     synchronise 1
     tc=`numthreads`
-    INFO "thread count = $tc"
+    #INFO "thread count = $tc"
     while [ $tc -lt $maxthreads ] ; do
         ( $0 SPAWN $tc.`date +%H%M%S` & )
         tc=$(( $tc + 1 ))

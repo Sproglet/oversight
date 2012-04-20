@@ -35,6 +35,7 @@ void db_rowid_free(DbItem *item,int free_base)
         FREE(item->title);
         FREE(item->poster);
         FREE(item->genre);
+        FREE(item->expanded_genre);
         FREE(item->file);
         FREE(item->episode);
         //Dont free ext as it points to file.

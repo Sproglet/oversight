@@ -715,7 +715,7 @@ char *translate_genre(char *genre_in,int expand,char *new_sep)
        assert(new < final_genre + MAX_GENRE);
     }
 
-    //HTML_LOG(0,"genre[%s] is [%s]",genre_in,final_genre);
+    HTML_LOG(0,"genre[%s] is [%s]",genre_in,final_genre);
     return STRDUP(final_genre);
 }
 // * a | c = Action | Comedy

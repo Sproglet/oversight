@@ -219,7 +219,7 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *subcat)
                     for(j = 0 ; j < e->val.list_val->size ; j++ ) {
                         val = e->val.list_val->array[j];
                         new_subcat(cat,val,NULL,0,0);
-                        if (check_against_subcat_name) {
+                        if (check_against_subcat_name && !keeprow) {
                             keeprow = (STRCMP(subcat->name,val) == 0);
                         }
                     }
@@ -312,6 +312,7 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval) 
 
 int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int pos,int total)
 {
+    int i;
     int ret = 1;
     if (item == NULL) {
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
@@ -400,6 +401,15 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     } else {
         printf("\t<next>UNKNOWN</next>\n");
     }
+    
+    Array *genres = splitstr(item->expanded_genre,"|");
+    printf("\t<genres count=\"%d\">\n",genres->size);
+    for(i = 0 ; i < genres->size ; i++ ) {
+        char *g = genres->array[i];
+        printf("\t\t<genre index=\"Genres_%s_1\">%s</Genre>\n",g,g);
+    }
+    printf("\t</genres>\n");
+    array_free(genres);
 
     if (total) printf("\t<last>%ld</last>\n",all_items[total-1].id);
 

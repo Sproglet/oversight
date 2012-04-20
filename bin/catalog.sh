@@ -244,16 +244,29 @@ awk '
 END { exit c }' 
 }
 
+update_remote_oversight() {
+    ip="$1"
+    path="$2"
+    if [ -n "$ip" ] ; then
+        set -x
+        wget -q "http://$ip:8883/oversight/oversight.cgi?view=admin&action=rescan_request&rescan_opt_@group1=NEWSCAN&rescan_dir_$path=on" -O /dev/null
+        set +x
+    fi
+}
+
+
 LOG_DIR="$OVS_HOME/logs"
 mkdir -p "$LOG_DIR"
 
 EMPTY_DIR="$LOG_DIR/emptyscans"
 mkdir -p "$EMPTY_DIR"
 
-if [ "$STDOUT" -eq 1 ] ; then
+case "$*" in
+*\ STDOUT\ * )
     LOG_TAG="catalog:"
     main "$@"
-else
+    ;;
+*)
     LOG_TAG=
     #LOG_FILE="$OVS_HOME/logs/catalog.`date +%d%H%M`.$$.log"
 
@@ -287,6 +300,9 @@ else
     if [ -z "${REMOTE_ADDR:-}" ] ;then
         echo "[INFO] $LOG_FILE.gz"
     fi
-
-fi
+    ;;
+esac
+update_remote_oversight "${catalog_oversight_remote_ip1:-}" "${catalog_oversight_remote_path1:-}"
+update_remote_oversight "${catalog_oversight_remote_ip2:-}" "${catalog_oversight_remote_path2:-}"
+update_remote_oversight "${catalog_oversight_remote_ip3:-}" "${catalog_oversight_remote_path3:-}"
 # vi:sw=4:et:ts=4

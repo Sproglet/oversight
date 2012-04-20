@@ -7,7 +7,8 @@
 # IN url
 # IN headers - SUBSEP list of headers.
 # OUT response
-function url_get(url,response,rec_sep,cache,headers,\
+# IN un_bold - remove <b> tags etc - common on SERPS
+function url_get(url,response,rec_sep,cache,headers,un_bold,\
 ret,code,f,body,line) {
 
     url = url_norm(url);
@@ -17,6 +18,13 @@ ret,code,f,body,line) {
         if (!f || !is_file(f)) {
             if ((ret = url_get_uncached(url,response,rec_sep,headers)) != 0) {
                 f = new_capture_file("url_get");
+
+                if (un_bold) {
+                    if(LD)DETAIL("begin de_emphasise");
+                    response["body"] = de_emphasise(response["body"]);
+                    if(LD)DETAIL("end de_emphasise");
+                }
+
                 if(LD)DETAIL("saving to cache "f);
                 printf "%s",response["body"] > f;
                 close(f);
@@ -220,7 +228,8 @@ function url_dump(label,h,i) {
 }
 function url_split_parts(url,parts,\
 tmp) {
-    if (match(url,/(|(https?):\/\/([^/:]+)(|:([0-9]+)))(|\/[^#?]*)(|[?#].*)$/,tmp)) {
+    # if (match(url,/(|(https?):\/\/([^/:]+)(|:([0-9]+)))(|\/[^#?]*)(|[?#].*)$/,tmp)) 
+    if (match(url,"(|(https?)://([^/:]+)(|:([0-9]+)))(|/[^#?]*)(|[?#].*)$",tmp)) {
         parts["proto"]=tmp[2];
         parts["host"]=tmp[3];
         parts["port"]=tmp[5]; # no ssl
@@ -445,8 +454,8 @@ con,idle,age,host_max_age,host_max_idle,host_max_used,host_port,poll_time,final)
                     if (host_max_used=="") host_max_used = g_url_host_max_used[host_port];
                     
                     if (host_max_idle=="") host_max_idle = 10;
-                    if (host_max_age=="")  host_max_age = 20;
-                    if (host_max_used=="") host_max_used = 50;
+                    if (host_max_age=="")  host_max_age = 30;
+                    if (host_max_used=="") host_max_used = 99;
 
                     if(LG)DEBUG("host "host_port" "host_max_idle"/"host_max_age"/"host_max_used);
 
@@ -675,9 +684,7 @@ request,ret,con,body,chunked,read_body,tries,try,ct,enc) {
 
             id0("non-chunked binary transfer - using external function");
 
-            response["body"] = get_url_source(url,0);
-
-            return (response["body"] != "");
+            return url_get_wget(url,response,rec_sep,headers);
 
         }
 

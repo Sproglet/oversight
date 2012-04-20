@@ -24,7 +24,7 @@ countries,country_count,i,count,url,matches,ret) {
         url= g_mpdb"/movie/"gensub(/^tt/,"",1,id)"/"title".html";
 
         g_fetch_filter = " sed '1,/<body>/ d;/id=.footer/,$ d' ";
-        count=scan_page_for_match_order(url,"","/poster/[0-9a-f]+",0,0,"",groups,0,"raw.img");
+        count=scan_page_for_match_order(url,"","/poster/[0-9a-f]+",0,0,groups,0);
         g_fetch_filter = "";
 
         for(i = 1 ; i <= count ; i++ ) {
@@ -58,7 +58,7 @@ i,url,count,posters_and_flags,current_poster,ret,cap,flag,country_hash) {
     hash_invert(countries,country_hash);
 
     g_fetch_filter = " sed '1,/<body>/ d;/id=.footer/,$ d' ";
-    count=scan_page_for_match_order(url,"","(/posters/[^\"'[:space:]]+jpg|/images/flags/[[:alpha:]]+.png)",0,0,"",posters_and_flags,0,"raw.img");
+    count=scan_page_for_match_order(url,"","(/posters/[^\"'[:space:]]+jpg|/images/flags/[[:alpha:]]+.png)",0,0,posters_and_flags,0);
     g_fetch_filter = "";
 
     for(i = 1 ; i <= count ; i++ ) {

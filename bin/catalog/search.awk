@@ -6,11 +6,11 @@
 # other engines in round-robin. If they disagree then google cast the deciding vote.
 #
 # Special case is if searching via IMDB search page - then the imdb_qual is used
-function web_search_first_imdb_link(qualifier,imdb_qual) {
-    return web_search_first(qualifier,imdb_qual,1,"imdbid","tt",g_imdb_regex);
+function web_search_first_imdb_link(qualifier) {
+    return web_search_first(qualifier,1,"imdbid","tt",g_imdb_regex);
 }
-function web_search_first_imdb_title(qualifier,imdb_qual) {
-    return web_search_first(qualifier,imdb_qual,0,"imdbtitle","",g_imdb_title_re);
+function web_search_first_imdb_title(qualifier) {
+    return web_search_first(qualifier,0,"imdbtitle","",g_imdb_title_re);
 }
 
 # search for either first occurence OR most common occurences.
@@ -28,7 +28,7 @@ match1,submatch,dots) {
         }
     } else {
 
-        scanPageMostFreqMatch(url,helptxt,regex,1,"",submatch);
+        scanPageMostFreqMatch(url,helptxt,regex,1,submatch);
     }
     # for each match we increment its score by one.
 
@@ -146,7 +146,7 @@ t,t2,y,quoted) {
 # freqOrFirst =0 freq match | =1 first match
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
-function web_search_first(qualifier,imdb_qual,freqOrFirst,mode,helptxt,regex,\
+function web_search_first(qualifier,freqOrFirst,mode,helptxt,regex,\
 u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num,bing_desktop_order,bing_mobile_order) {
 
     g_fetch["force_awk"] = 1;
@@ -211,10 +211,6 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
         #u[++num] = g_search_binsearch qualifier; target[num]=2;
         u[++num] = g_search_nzbindex qualifier; target[num]=2;
     }
-#    if (imdb_qual != "") {
-#        u[++num] = "http://www.imdb.com/find?s=tt&q=" imdb_qual; target[num]=2;
-#    }
-    
 
     # Cycle through each URL grabbing best id and merging into matches.
     # For each match the urls are also tracked in case we to a "cross-page" ranking later.
@@ -240,12 +236,12 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
 
                    if (best1 != "") {
                        if (1) {
-                           freq1 = scanPageMostSignificantMatch(u[i],helptxt,regex,1,"",freq);
+                           freq1 = scanPageMostSignificantMatch(u[i],helptxt,regex,1,freq);
                        } else {
                            # Changed down from 3 to 2 to reduce amount of times google is used.
                            # IF this gives false positives then change scanPageMostFreqMatch to just return count of all patterns
                            # and make sure the best is the same as the first. and is significantly more than the second.
-                           scanPageMostFreqMatch(u[i],helptxt,regex,1,"",freq);
+                           scanPageMostFreqMatch(u[i],helptxt,regex,1,freq);
                            dump(0,"websearch-freq",freq);
                            freq1 = firstIndex(freq);
                        }
@@ -299,14 +295,14 @@ m,s,i,pages,subtotal,ret,noyear) {
             if (urls[i]) {
                 #if the url did dot contribute to this matches best score
                 if (index(match_src[m],":"urls[i]":") == 0) {
-                    s = scan_page_for_match_counts(urls[i],m,title_to_re(m),0,1,"");
+                    s = scan_page_for_match_counts(urls[i],m,title_to_re(m),0,1);
 
                     if (mode == "imdbtitle" ) {
                         # Now get number of occurences without the year. 
                         # This also includes ocurrences with the year so adds suitable weight to names with years.
                         noyear = gensub(/ [12][0-9]{3}\>/,"","g",m);
                         if (noyear != m ) {
-                            s += scan_page_for_match_counts(urls[i],noyear,title_to_re(noyear),0,1,"");
+                            s += scan_page_for_match_counts(urls[i],noyear,title_to_re(noyear),0,1);
                             s  =s **= 2;
                         }
                     }
@@ -607,7 +603,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
         if(LD)DETAIL("query["queryPath"]");
 
         #Get all nfo links
-        scan_page_for_match_counts(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,"",nfoPaths);
+        scan_page_for_match_counts(domain queryPath,"",nfoPathRegex,maxNfosToScan,1,nfoPaths);
 
         #Scan each link for imdb matches and tally
 
@@ -636,7 +632,7 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
                 }
                 sub(/[&]amp;/,"\\&",nfo2);
 
-                if (scan_page_for_match_counts(nfo2,"tt", g_imdb_regex ,0,1,"", imdbIds) == 0) {
+                if (scan_page_for_match_counts(nfo2,"tt", g_imdb_regex ,0,1, imdbIds) == 0) {
                     scanPageForIMDBviaLinksInNfo(nfo2,imdbIds);
                 }
 
@@ -675,9 +671,9 @@ nfo,nfo2,nfoPaths,imdbIds,totalImdbIds,wgetWorksWithMultipleUrlRedirects,id,coun
 # This is really for amazon links in nfo files but might work for some other sites.
 function scanPageForIMDBviaLinksInNfo(url,imdbIds,\
 amzurl,amazon_urls,imdb_per_page,imdb_id) {
-    if (scan_page_for_match_counts(url, "amazon","http://(www.|)amazon[ !#-;=?-~]+",0,1,"",amazon_urls)) {
+    if (scan_page_for_match_counts(url, "amazon","http://(www.|)amazon[ !#-;=?-~]+",0,1,amazon_urls)) {
         for(amzurl in amazon_urls) {
-            if (scan_page_for_match_counts(amzurl, "/tt", g_imdb_regex ,0,1,"", imdb_per_page)) {
+            if (scan_page_for_match_counts(amzurl, "/tt", g_imdb_regex ,0,1, imdb_per_page)) {
                 for(imdb_id in imdb_per_page) {
                     if(LD)DETAIL("Found "imdb_id" via amazon link");
                     imdbIds[imdb_id] += imdb_per_page[imdb_id];
@@ -909,63 +905,6 @@ function search_url(url) {
     return url;
 }
 
-function search_url2file(url,cache,referer,\
-i,url2,f) {
-    for(i = 0 ; i < 0+g_search_engine_count ; i++ ) {
-
-        url2 = search_url(url);
-
-        f=getUrl(url2,".html",cache,referer);
-
-        if (f != "") break;
-    }
-    return f;
-}
-
-
-# Extract part of a html page.
-# start_text = csv list of tokens to be matched in sequence before we extract the item
-# start_include = include line that matched the last start token if true
-# end_text = last line of the extracted item
-# end_include = include line that matched the end_text if true
-# cache = store in cache
-function scrape_one_item(label,url,start_text,start_include,end_text,end_include,cache,\
-f,line,out,found,tokens,token_count,token_i) {
-    #if(LG)DEBUG("scrape_one_item "label" start at ["start_text"]");
-    f=getUrl(url,label".html",cache);
-
-    token_count = split(start_text,tokens,",");
-    if (f) {
-        token_i = 1;
-        while(enc_getline(f,line) > 0 ) {
-            # eat up start tokens
-            if (token_i - token_count <= 0 ) {
-                if (match(line[1],tokens[token_i])) {
-                    if(LD)DETAIL("matched token ["tokens[token_i]"]");
-                    token_i++;
-                }
-            }
-            if (token_i - token_count > 0 ) {
-                # Now parse the item we want
-                out = scrape_until(f,end_text,end_include);
-                if (start_include) {
-                    #if(LG)DEBUG("scrape_one_item line = "line[1]);
-                    out = remove_tags(line[1]) out;
-                    #if(LG)DEBUG("scrape_one_item out = "out);
-                }
-                found = 1;
-                break;
-            }
-        }
-        enc_close(f);
-    }
-    if (found != 1) {
-        ERR("Cant find ["start_text"] in "label":"url);
-    }
-    #if(LG)DEBUG("scrape_one_item "label" out ["out"]");
-    return out;
-}
-
 function isreg(t) {
     if (index(t,"\\<")) return 1;
     gsub(/\\./,"",t);
@@ -1131,7 +1070,7 @@ function filter_web_titles2(engine,count,titles,filterText,\
 keep,new,newtotal,url,f,fclean,i,e,line,title,num,tmp) {
     newtotal = count;
     if (count > 1) {
-        id1("filter_web_titles2 in="count);
+        id1("filter_web_titles2 "engine" in="count);
 
         #url = g_search_yahoo url_encode("+\""filterText"\"");
         url = engine url_encode(filterText);

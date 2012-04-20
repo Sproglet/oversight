@@ -9,10 +9,10 @@ function scan_page_for_first_link(url,domain,cache) {
 # max = max number to match
 # returns match or empty.
 # if freqOrFirst=1 return first match else
-function scanPageFirstMatch(url,fixed_text,regex,cache,referer,\
+function scanPageFirstMatch(url,fixed_text,regex,cache,\
 matches,ret) {
     id1("scanPageFirstMatch");
-    scan_page_for_match_counts(url,fixed_text,regex,1,cache,referer,matches);
+    scan_page_for_match_counts(url,fixed_text,regex,1,cache,matches);
     ret = firstIndex(matches);
     id0(ret);
     return ret;
@@ -22,10 +22,10 @@ matches,ret) {
 # fixed_text is used to quickly filter strings that may match the regex.
 # result returned in matches as count index by matching text.
 # return value is the number of matches.
-function scanPageMostFreqMatch(url,fixed_text,regex,cache,referer,matches,\
+function scanPageMostFreqMatch(url,fixed_text,regex,cache,matches,\
 normedt,ret) {
     id1("scanPageMostFreqMatch");
-    scan_page_for_match_counts(url,fixed_text,regex,0,cache,referer,matches);
+    scan_page_for_match_counts(url,fixed_text,regex,0,cache,matches);
     if (regex == g_imdb_title_re) {
         normalise_title_matches(matches,normedt);
         hash_copy(matches,normedt);
@@ -38,10 +38,10 @@ normedt,ret) {
 # fixed_text is used to quickly filter strings that may match the regex.
 # result returned in matches as count index by matching text.
 # return value is the number of matches.
-function scanPageMostSignificantMatch(url,fixed_text,regex,cache,referer,matches,\
+function scanPageMostSignificantMatch(url,fixed_text,regex,cache,matches,\
 normedt,ret) {
     id1("scanPageMostSignificantMatch");
-    scan_page_for_match_counts(url,fixed_text,regex,0,cache,referer,matches);
+    scan_page_for_match_counts(url,fixed_text,regex,0,cache,matches);
     if (regex == g_imdb_title_re) {
         normalise_title_matches(matches,normedt);
         hash_copy(matches,normedt);
@@ -179,9 +179,9 @@ enc) {
 function engine_check(url,\
 ret,matches) {
     # function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,\
-    ret = scan_page_for_match_order(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","title/tt0076752",0,0,"",matches);
+    ret = scan_page_for_match_order(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","title/tt0076752",0,0,matches);
     dump(0,"match order",matches);
-    ret = scan_page_for_match_counts(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","title/tt0076752",0,0,"",matches);
+    ret = scan_page_for_match_counts(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","title/tt0076752",0,0,matches);
     dump(0,"match counts",matches);
     ret = scan_page_for_matches(url url_encode("\"The Spy Who Loved Me\" imdb"),"imdb","tt0076752/",1);
     if (ret) {
@@ -200,8 +200,8 @@ ret,matches) {
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,matches,verbose,label) {
-    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,0,matches,verbose,label);
+function scan_page_for_match_counts(url,fixed_text,regex,max,cache,matches,verbose) {
+    return scan_page_for_matches(url,fixed_text,regex,max,cache,0,matches,verbose);
 }
 # Scan a page for matches to regular expression
 # IN url to scan
@@ -210,8 +210,8 @@ function scan_page_for_match_counts(url,fixed_text,regex,max,cache,referer,match
 # IN max = max number to match 0=all
 # OUT matches = array of matches index by order of occurrence
 # return number of matches
-function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matches,verbose,label) {
-    return scan_page_for_matches(url,fixed_text,regex,max,cache,referer,1,matches,verbose,label);
+function scan_page_for_match_order(url,fixed_text,regex,max,cache,matches,verbose) {
+    return scan_page_for_matches(url,fixed_text,regex,max,cache,1,matches,verbose);
 }
 # Scan a page for matches to regular expression
 # IN url to scan
@@ -221,8 +221,8 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,referer,matche
 # IN count_or_order = 0=count 1=order
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
-function scan_page_for_matches(url,fixed_text,regex,max,cache,referer,count_or_order,matches,verbose,label,\
-f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
+function scan_page_for_matches(url,fixed_text,regex,max,cache,count_or_order,matches,verbose,\
+line,count) {
 
 #    if (index(url,"yahoo") && index(url,"2010") && index(url,"site:imdb.com")) {
 #        verbose=1; # Debug line edit as required
@@ -241,85 +241,13 @@ f,line,count,remain,is_imdb,i,text_num,text_arr,scan) {
               )\
        )"]["max"]");
 
-    if (1){ #g_fetch["force_awk"] && g_settings["catalog_awk_browser"] ) 
+    # Use the inline browser - this is not as robust as external command line but should be faster.
 
-        # Use the inline browser - this is not as robust as external command line but should be faster.
-
-        if (url_get(url,line,"",cache)) {
-            #if(LG)DEBUG("DELETE" gensub(/</,"\n<","g",line["body"]));
-            count +=get_matches(count_or_order,line["body"],regex,max,count,matches,verbose);
-        }
-
-    } else {
-
-        # Map obsolete this is things still work OK.
-
-        if (index(url,"SEARCH") == 1) {
-            f = search_url2file(url,cache,referer);
-        } else {
-            if (!label) label = "scan4match.html";
-            f=getUrl(url,label,cache,referer);
-        }
-
-        text_num = 0;
-        if (fixed_text != "") text_num = split(fixed_text,text_arr,SUBSEP);
-
-        count=0;
-
-        is_imdb = (regex == g_imdb_regex );
-
-        if (f != "" ) {
-
-            FS="\n";
-            remain=max;
-
-            while(enc_getline(f,line) > 0 ) {
-
-                line[1] = de_emphasise(line[1]);
-
-                if (verbose) if(LG)DEBUG("["line[1]"]");
-
-                # Quick hack to find Title?0012345 as tt0012345  because altering the regex
-                # itself is more work - for example the results will come back as two different 
-                # counts. 
-                if (is_imdb) {
-                    if (index(line[1],"/Title?") ) {
-                        if (gsub(/\/Title\?/,"/tt",line[1])) {
-                            if(LD)DETAIL("fixed imdb reference "line[1]);
-                        }
-                    }
-                    # A few sites have IMDB ID 0123456 
-                    if (index(line[1],"IMDB") || index(line[1],"imdb") ) {
-                        line[1] = gensub(/[Ii][Mm][Dd][Bb][^0-9]{1,10}([0-9]{6})\>/,"tt\\1","g",line[1]);
-                    }
-                }
-
-
-                scan = 1;
-                if (text_num) {
-                    scan = 0;
-                    for(i = 1 ; i<= text_num ; i++ ) {
-                        if ((scan = index(line[1],text_arr[i])) != 0) {
-                            break;
-                        }
-                    }
-                }
-
-                if (verbose) if(LG)DEBUG("scanindex = "scan":"line[1]);
-
-                if (scan) {
-                    count += get_matches(count_or_order,line[1],regex,remain,count,matches,verbose);
-                    if (max > 0) {
-                        remain -= count;
-                        if (remain <= 0) {
-                            break;
-                        }
-                    }
-                }
-            }
-            enc_close(f);
-        }
+    if (url_get(url,line,"",cache,"",(regex == g_imdb_title_re))) {
+        #if(LG)DEBUG("DELETE" gensub(/</,"\n<","g",line["body"]));
+        count +=get_matches(count_or_order,line["body"],regex,max,count,matches,verbose);
     }
+
     if (count < 50 ) {
         dump(0,count" matches",matches);
     }

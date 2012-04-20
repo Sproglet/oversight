@@ -119,7 +119,7 @@ keyword,qualifier,url,search_domain,url_text,url_regex,num,i) {
     } else {
 
         # get the links from page one of the search
-        num = scan_page_for_matches(url,url_text,url_regex,0,0,"",1,matches);
+        num = scan_page_for_matches(url,url_text,url_regex,0,0,1,matches);
 
         for(i in matches) {
             sub(/href=./,"",matches[i]);

@@ -797,7 +797,7 @@ i1,result,matchList,bestUrl) {
         keywords = keywords"+%2Bimdb+%2Btitle+-inurl%3Aimdb";
 
         # bing is not very good here.
-        scan_page_for_match_counts(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,"",matchList);
+        scan_page_for_match_counts(g_search_yahoo keywords,"tt",g_imdb_regex,0,0,matchList);
         # Find the url with the highest count for each index.
         #To help stop false matches we requre at least two occurences.
         bestUrl=getMax(matchList,linkThreshold,1);

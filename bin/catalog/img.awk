@@ -50,6 +50,7 @@ poster_ref,id,ret) {
                 ret = gensub("\\.[^.]+$",".jpg",1,minfo[NAME]);
             }
         }
+        ret = minfo[DIR]"/"ret;
         #dump(0,"internal_poster_reference",minfo);
     }
     return ret;
@@ -273,7 +274,7 @@ json,url,imageUrl,i,prefix,sc,best,finalUrl) {
 
 #Bing api seems inaccurate for images - try desktop search
 function bing_image_scrape(minfo,aspect,query,size,size2,\
-json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,score,best_so_far) {
+json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,score,best_so_far,response) {
     aspect = capitalise(aspect);
 
 
@@ -296,7 +297,9 @@ json,url,i,prefix,sc,best,finalUrl,html,blocks,id,text,n,dim_regex,parts,map,sco
 
     id1("bing image "aspect" "query);
 
-    html = get_url_source(url,1);
+    if (url_get(url,response,"",1)) {
+        html = response["body"];
+    }
     gsub(/[&]quot;/,"\"",html);
 
 

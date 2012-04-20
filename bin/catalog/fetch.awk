@@ -286,15 +286,3 @@ function check_domain_speed(url) {
     }
     return g_domain_status[url];
 }
-
-# url - the url
-function get_url_source(url,cache,\
-f,code,txt,source) {
-    f = getUrl(url,"raw.img",cache);
-    while((code = getline txt < f) > 0) {
-        source = source txt;
-    }
-    if (!code) close(f);
-    if(LD)DETAIL("fetched "length(source)" bytes for "url);
-    return source;
-}

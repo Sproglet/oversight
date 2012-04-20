@@ -81,25 +81,14 @@ found_section,relationship,i,count,html,txt,v,url,hdr,body,regex,response) {
     if(id && !(id in series)){
 
         id1("getMovieConnections1:"id);
-        if (g_settings["catalog_awk_browser"] ) {
 
-            # Use the inline browser - this is not as robust as external command line but should be faster.
-            # could have just sef g_fetch["force_awk"] and hand off to scan_page_for_match_order()
-            # but beneficial to remove a lot of stuff from the page first.
+        # Use the inline browser - this is not as robust as external command line but should be faster.
+        # could have just sef g_fetch["force_awk"] and hand off to scan_page_for_match_order()
+        # but beneficial to remove a lot of stuff from the page first.
 
-            if (url_get(url,response,"",0)) {
-                body = remove_unwanted_html(response["body"]);
-                count = get_matches(1,body,regex,0,0,html,0);
-            }
-
-        } else {
-
-            # External browser
-            g_fetch_filter = " sed '1,/<h1/ d;/<h4.*>Refer/,$ d;/TOP_RHS/,$ d' ";
-
-            count=scan_page_for_match_order(url,"",regex,0,0,"",html,0,"raw.img");
-
-            g_fetch_filter = "";
+        if (url_get(url,response,"",0)) {
+            body = remove_unwanted_html(response["body"]);
+            count = get_matches(1,body,regex,0,0,html,0);
         }
 
         #dump(0,"movieconnections-"count,html);

@@ -54,7 +54,7 @@ year) {
 
                     #This is a web search of imdb site returning the first match.
 
-                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"),name_try);
+                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("site:imdb.com"));
 
                 } else if (search_order[s] == "IMDBFIRST") {
 
@@ -69,14 +69,14 @@ year) {
 
                     title="";
 
-                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"),name_try);
+                    bestUrl=web_search_first_imdb_link(name_try"+"url_encode("imdb"));
 
                 } else if (search_order[s] == "TITLEYEAR") {
 
                     # look for imdb style titles 
-                    title = web_search_first_imdb_title(name_try,"");
+                    title = web_search_first_imdb_title(name_try);
                     if (title == "" ) {
-                        title = web_search_first_imdb_title(name_try"+movie","");
+                        title = web_search_first_imdb_title(name_try"+movie");
                     }
 
                     if (title != "" && title != name_try) {
@@ -91,7 +91,7 @@ year) {
                         }
 
                         # First look for imdb id associated with this name.
-                        bestUrl=web_search_first_imdb_link(url_encode("+\""title"\" "year" imdb"),name_try);
+                        bestUrl=web_search_first_imdb_link(url_encode("+\""title"\" "year" imdb"));
 
                         if (!bestUrl) {
                             # Still not found - try searching local sites sirectly.

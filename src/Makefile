@@ -18,7 +18,7 @@ REV='"`cat verfile`"'
 # linux  : nmt-linux-intel-toolchain-gcc-4.0.4-linux-2.6.15.7-uclibc-0.9.28.3-lundman-P1.tgz
 # windows: nmt-cygwin-toolchain-gcc-4.2.2-linux-2.6.15.7-uclibc-0.9.28.3.tar.bz2
 
-ifneq ($(ARCH),pc) 
+ifneq ($(ARCH),cygwin) 
 
 ifeq ($(ARCH),200) 
 		CFLAGS_ARCH=-EL -D__USE_LARGEFILE64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -DSTAT64=stat64
@@ -111,16 +111,16 @@ $(VERFILE):
 
 
 200:
-	if [ -f 100 -o -f pc ] ; then echo "Do make clean" ; false ; fi
+	if [ -f 100 -o -f cygwin ] ; then echo "Do make clean" ; false ; fi
 	touch 200
 
 100:
-	if [ -f 200 -o -f pc ] ; then echo "Do make clean" ; false ; fi
+	if [ -f 200 -o -f cygwin ] ; then echo "Do make clean" ; false ; fi
 	touch 100
 
-pc:
+cygwin:
 	if [ -f 100 -o -f 200 ] ; then echo "Do make clean" ; false ; fi
-	touch pc
+	touch cygwin
 
 
 $(TARGET):  libutf8proc.a tags $(OBJS)
@@ -170,7 +170,7 @@ tester: $(HASH_OBJECTS)
 	$(CC) $(LDFLAGS) -o tester $(HASH_OBJECTS)
 
 tidy:
-	rm -f *.o 100 200 pc $(VERFILE)
+	rm -f *.o 100 200 cygwin $(VERFILE)
 
 clean: tidy
 	rm -f tester old_tester $(TARGET) daemon

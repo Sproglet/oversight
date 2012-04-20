@@ -115,3 +115,9 @@ catalog_image_fanart_width=1280
 # How many movies to process before writing out information.
 # Reduce to save memory. Increase for slightly faster speed for big scans.
 catalog_scan_batch_size=50
+
+# Remote update of oversight
+#catalog_oversight_remote_ip1="192.168.88.11"
+#catalog_oversight_remote_path1="nasb/data/Movies"
+#catalog_oversight_remote_ip2="192.168.88.11"
+#catalog_oversight_remote_path2="nasb/data/Tv"

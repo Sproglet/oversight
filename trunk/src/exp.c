@@ -86,6 +86,11 @@ Exp *new_exp(Op op,Exp *left,Exp *right)
     return e;
 }
 
+/*
+ * IN/OUT e
+ * IN item
+ * return 0=OK anything else error
+ */
 int evaluate(Exp *e,DbItem *item)
 {
     int result = 0;
@@ -195,6 +200,12 @@ static int evaluate_children(Exp *e,DbItem *item,int arg1type,int arg2type,int *
     return ret;
 }
 
+/*
+ * IN/OUT e
+ * IN item
+ * INT/OUT *err = current error number
+ * return 0=OK anything else error
+ */
 static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 {
     if (*err) return *err;

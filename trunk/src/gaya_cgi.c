@@ -272,7 +272,7 @@ struct hashtable *read_post_data(char *post_filename) {
  * ========================================================================*/
 /* Converts a hex character to its integer value */
 char from_hex(char ch) {
-  return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
+  return isdigit((unsigned char)ch) ? ch - '0' : tolower((unsigned char)ch) - 'a' + 10;
 }
 
 /*==========================================================================
@@ -298,7 +298,7 @@ char *url_encode(char *str) {
   char *pbuf = buf;
 
   while (*pstr) {
-    if (NO_URLENCODE(*pstr)) { 
+    if (NO_URLENCODE(*(unsigned char *)pstr)) { 
       *pbuf++ = *pstr++;
     } else  {
       *pbuf++ = '%' ;
@@ -316,7 +316,7 @@ char *url_encode_static(char *str,int *free_result)
 {
     assert(str);
   char *pstr = str;
-  while (*pstr && NO_URLENCODE(*pstr)) {
+  while (*pstr && NO_URLENCODE(*(unsigned char *)pstr)) {
       pstr++;
   }
   if (*pstr) {
@@ -434,7 +434,7 @@ void remove_password(char *s)
         if (p == NULL) p = strstr(start,"pwd=");
         if (p == NULL) break;
         p = strchr(p,'=') + 1;
-        while(*p && !isspace(*p)) *p++ = '*';
+        while(*p && !isspace(*(unsigned char *)p)) *p++ = '*';
         start = p;
     }
 }

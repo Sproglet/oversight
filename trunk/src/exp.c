@@ -427,18 +427,10 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
         case OP_SPLIT:
             if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_STR,err) == 0) {
+
                 clr_val(e);
                 e->val.type = VAL_TYPE_LIST;
-                //
-                Array *a = splitstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
-
-                // Array string is split IN place. This corrupts e->subexp[0]!!
-                // Very dodgy use above line for safe version!
-                //Array *a = splitstr_inplace_max(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val,0);
-
-
-                if (e->val.list_val) array_free(e->val.list_val);
-                e->val.list_val = a;
+                e->val.list_val = splitstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
             }
             break;
 
@@ -493,6 +485,13 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                         e->val.type = VAL_TYPE_STR;
                         e->val.free_str = 0;
                         e->val.str_val = *(char **)offset;
+
+                        if (strcmp(fname,DB_FLDID_GENRE) == 0) {
+                            if (!item->expanded_genre) {
+                                item->expanded_genre = translate_genre(*(char **)offset,1,"|");
+                            }
+                            e->val.str_val = item->expanded_genre;
+                        }
                         break;
 
                     case FIELD_TYPE_CHAR:

@@ -94,7 +94,6 @@ package_check() {
         export OVS_DEPEND_${package}_STATUS=1
         if [ -n "$verbose" ] ; then
             echo "Package $package failed. [$cmd] not on path."
-            exit 1
         fi
     fi
 }

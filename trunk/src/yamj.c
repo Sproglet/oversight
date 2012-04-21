@@ -278,7 +278,7 @@ int create_dynamic_cat_expression(YAMJCat *cat,DbItem *item,Exp *e,char *selecte
  *
  * returns true if this item matches the current selected subcat
  */
-int add_dynamic_subcategories(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
+int add_dynamic_subcategories(DbItem *item,Array *categories,char *selected_subcat_name)
 {
     int keeprow = 0;
     int i;
@@ -294,7 +294,7 @@ int add_dynamic_subcategories(DbItem *item,Array *categories,YAMJSubCat *selecte
             
             if (evaluate(e,item) == 0) {
 
-                if (create_dynamic_cat_expression(cat,item,e,selected_subcat->name) == 1) {
+                if (create_dynamic_cat_expression(cat,item,e,selected_subcat_name) == 1) {
                     // match
                     keeprow = 1;
                 }
@@ -323,7 +323,7 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
      * a) determine whether to keep this item (for selected subcat).
      * b) Populate item->yamj_member_of populated for dynamic subcats only for the /movies/movie/index tags.
      */
-    keeprow = add_dynamic_subcategories(item,categories,selected_subcat);
+    keeprow = add_dynamic_subcategories(item,categories,selected_subcat?selected_subcat->name:NULL);
 
     /*
      * If no dynamic subcat matches (which have to be built anyway for the Category selections)
@@ -613,7 +613,7 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbItemSet **
     int i;
 
 
-    if (subcat->owner_cat == cat) {
+    if (subcat && subcat->owner_cat == cat) {
     HTML_LOG(0,"subcat %s_%s total = %d movies , %d series , %d episodes , %d other",
             cat->name,subcat->name,
             item_sets[0]->movie_total,

@@ -229,7 +229,6 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
         if (argc > 1 ) {
 
-            printf("ARG1[%s]\n",argv[1]);
             if ( argv[1] && *argv[1] && argv[2] == NULL && strncmp(argv[1],"yamj/",4) == 0) {
                 config_read_dimensions(0);
                 result = yamj_xml(argv[1]);

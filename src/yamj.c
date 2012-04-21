@@ -76,7 +76,7 @@ void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *
 void xml_headers()
 {
     printf("%s%s\n\n",CONTENT_TYPE,"application/xml");
-    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
 }
 
 void free_yamj_subcatetory(void *in)
@@ -953,6 +953,7 @@ int yamj_xml(char *request)
 {
 
     int ret = 1;
+    char *request_in = request;
 
 
     if (strstr(request,YAMJ_PREFIX) == request) {
@@ -967,7 +968,7 @@ int yamj_xml(char *request)
             // Detail files not used by eversion so we wont dwell on these.
             // write movie XML
             xml_headers();
-            HTML_LOG(0,"processing [%s]",request);
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request_in));
             load_configs();
             printf("<details>\n");
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
@@ -981,7 +982,7 @@ int yamj_xml(char *request)
         } else if (STRCMP(request,CATEGORY_INDEX) == 0 || util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
             xml_headers();
-            HTML_LOG(0,"processing [%s]",request);
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request_in));
             load_configs();
 
             Array *categories = array_new(free_yamj_catetory);
@@ -999,7 +1000,7 @@ int yamj_xml(char *request)
             yamj_categories_xml(request,selected_subcat,categories,itemSet);
 
         } else {
-            HTML_LOG(0,"error invalid request [%s] %d",request,STRCMP(request,CATEGORY_INDEX));
+            HTML_LOG(0,"error invalid request [%s] %d",xmlstr_static(request_in),STRCMP(request,CATEGORY_INDEX));
         }
     }
 

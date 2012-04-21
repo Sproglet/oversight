@@ -93,7 +93,8 @@ package_check() {
     else
         export OVS_DEPEND_${package}_STATUS=1
         if [ -n "$verbose" ] ; then
-            echo "Package $package failed. [$cmd] not on path."
+            "$cmd" "$option" 2>&1 || true
+            echo "Package $package failed. [$expect] not found in [$cmd $option] path=[$PATH] [$LD_LIBRARY_PATH]."
         fi
     fi
 }
@@ -206,9 +207,14 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
             fi
             for i in sort find ls tr dirname basename readlink wc sed dos2unix gzip tee ; do
                 if [ ! -e "$OVS_HOME/bin/$ARCH/$i" ] ; then
-                    ln -sf "$OVS_HOME/bin/$ARCH/busybox" "$OVS_HOME/bin/$ARCH/$i"
+                    ( cd "$OVS_HOME/bin/$ARCH" && ln -sf busybox "$i" )
                 fi
             done
+
+            if [ ! -e "$OVS_HOME/bin/$ARCH/libiconv.so.2" ] ; then
+                (cd "$OVS_HOME/bin/$ARCH" && ln -sf libiconv.so.2.5.0 libiconv.so.2.5 && ln -sf libiconv.so.2.5 libiconv.so.2 )
+            fi
+
             OVS_TMP="$OVS_HOME/tmp"
             if [ ! -d "$OVS_TMP" ] ; then
                 mkdir -p "$OVS_TMP" || true

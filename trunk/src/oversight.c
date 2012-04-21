@@ -240,6 +240,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 //
                 char *path = url_decode(argv[1]);
                 char *dot = strrchr(path,'.');
+                if (dot < path) dot = strchr(path,'\0');
                 int result = 0;
 
                 // should really use file command or magic number to determine file type

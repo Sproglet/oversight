@@ -262,7 +262,7 @@ FIND_REMOTE() {
 # $3=function eg "./bin/catalog.sh function"
 
 add_watch_cron() {
-    if [ "$1" != "off" ] ; then
+    if [ -n "$1" -a "$1" != "off" ] ; then
         d="*"
         h="*"
         m="*"
@@ -338,9 +338,6 @@ reboot_fix() {
 
     # Restore website link
     ln -sf "$OVS_HOME/" /opt/sybhttpd/default/.
-
-    # Create symlink to html
-    ln -sf /tmp/0 "$OVS_HOME/logs/gui.log"
 
     # Restore cronjobs
 

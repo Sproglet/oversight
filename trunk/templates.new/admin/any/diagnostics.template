@@ -20,7 +20,7 @@
         <p>Log file diagnostics. Only works from PC.
         <center>
             <p><a href="/oversight/oversight.cgi?/share/Apps/oversight/logs">{log dir}</a>
-            <p><a href="/oversight/logs/gui.log">{gui log}</a>
+            <p><a href="/oversight/oversight.cgi?/tmp/0">{log dir}</a>
         </center>
     </body>
 </html>

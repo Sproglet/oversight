@@ -1166,12 +1166,12 @@ allTitles,url,ret,total) {
     if (plugin == "thetvdb") {
 
         url=tvdb_get_series(title);
-        total = filter_search_results(url,title,"/Data/Series","SeriesName","seriesid",allTitles);
+        total = filter_search_results(url,title,"Series","SeriesName","seriesid",allTitles);
 
     } else if (plugin == "tvrage") {
 
         url=g_tvrage_api"/feeds/search.php?show="title;
-        total = filter_search_results(url,title,"/Results/show","name","showid",allTitles);
+        total = filter_search_results(url,title,"show","name","showid",allTitles);
 
     } else {
         plugin_error(plugin);
@@ -1216,27 +1216,23 @@ url,url2) {
 # Series are only considered if they have the tags listed in requiredTags
 # IN title - the title we are looking for.
 # OUT closeTitles - matching titles hashed by tvdbid. 
-function filter_search_results(url,title,seriesPath,nameTag,idTag,allTitles,\
-info,currentId,currentName,i,num,series,empty_filter) {
+function filter_search_results(url,title,series_tag,nameTag,idTag,allTitles,\
+info,currentId,currentName,i,num,response) {
 
     num = 0;
     id1("filter_search_results");
     delete allTitles;
-    if (fetchXML(url,"tvsearch",info,"")) {
 
-        num = find_elements(info,seriesPath,empty_filter,0,series);
-        if (num == 100 && seriesPath == "/Data/Series" ) {
-            # at present thetvdb truncates search results to 100 entries. This causes ,
-            # http://www.thetvdb.com/api/GetSeries.php?seriesname=Life to fail to find BBC Life.
-            # So we abort the search and hope tvrage plugin does the job.
-            if(LD)DETAIL("100 results returned - using internal tvdb data because thetvdb may have truncated results");
+    if (url_get(url,response,"",1)) {
+        num = xml_chop(response["body"],series_tag,info);
+        if (num == 101 && series_tag == "Series" ) { # tvdb limits to 100
+            if(LI)DETAIL("100 results returned - using internal tvdb data because thetvdb may have truncated results");
             num = get_tvdb_names_by_letter(substr(title,1,1),allTitles);
         } else {
-            for(i = 1 ; i <= num ; i++ ) {
+            for(i = 1 ; i < num ; i++ ) { # ignore last fragment
 
-                currentName = clean_title(info[series[i]"/"nameTag]);
-
-                currentId = info[series[i]"/"idTag];
+                currentName = clean_title(xml_extract(info[i],nameTag));
+                currentId = xml_extract(info[i],idTag);
 
                 allTitles[i,1] = currentId;
                 allTitles[i,2] = currentName;

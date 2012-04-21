@@ -210,6 +210,11 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 {
     if (*err) return *err;
 
+
+    if (e->op != OP_CONSTANT) {
+        clr_val(e);
+    }
+
     switch (e->op) {
         case OP_CONSTANT:
             break;
@@ -293,7 +298,6 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             }
             break;
         case OP_LEFT:
-            e->val.type = VAL_TYPE_STR;
             if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_NUM,err) == 0) {
 
                 int len = e->subexp[1]->val.num_val ;
@@ -439,7 +443,6 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
         case OP_SPLIT:
             if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_STR,err) == 0) {
 
-                clr_val(e);
                 e->val.type = VAL_TYPE_LIST;
                 e->val.list_val = splitstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
             }
@@ -479,15 +482,16 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 /*
                 char *p = item->title;
                 char *q = *(char **)offset;
-                HTML_LOG(0,"OP_DBFIELD fname [%s]",fname);
                 HTML_LOG(0,"OP_DBFIELD ftype [%c]",ftype);
                 HTML_LOG(0,"OP_DBFIELD item [%lu]",(unsigned long)item);
                 HTML_LOG(0,"OP_DBFIELD item->title [%lu]",(unsigned long)&(item->title));
-                HTML_LOG(0,"OP_DBFIELD offset [%lu]",(unsigned long)offset);
-                HTML_LOG(0,"OP_DBFIELD item->title [%s]",item->title);
-                HTML_LOG(0,"OP_DBFIELD offset [%s]",offset);
                 HTML_LOG(0,"OP_DBFIELD p [%lu] q[%lu]",p,q);
                 HTML_LOG(0,"OP_DBFIELD p [%s] q[%s]",p,q);
+                HTML_LOG(0,"OP_DBFIELD fname [%s]",fname);
+                HTML_LOG(0,"OP_DBFIELD offset [%lu]",(unsigned long)offset);
+                HTML_LOG(0,"OP_DBFIELD offset [%s]",offset);
+                HTML_LOG(0,"OP_DBFIELD item->title [%s]",item->title);
+                HTML_LOG(0,"OP_DBFIELD item->genre [%s]",item->genre);
                 */
                 switch(e->fld_type){
 

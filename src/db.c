@@ -657,7 +657,7 @@ char *translate_genre(char *genre_in,int expand,char *new_sep)
     // -----------------------------------
 
 
-    if (strcmp(genre_in,last_genre_seen) != 0) {
+    if (STRCMP(genre_in,last_genre_seen) != 0) {
 
         char *new = genre_out;
         *new = '\0';
@@ -719,7 +719,7 @@ char *translate_genre(char *genre_in,int expand,char *new_sep)
            *new = '\0';
            assert(new < genre_out + MAX_GENRE);
         }
-        strcpy(last_genre_seen,genre_in);
+        strcpy(last_genre_seen,NVL(genre_in));
         //HTML_LOG(0,"genre[%s] is [%s] last was [%s]",genre_in,genre_out,last_genre_seen);
     } else {
         //HTML_LOG(0,"cached genre[%s] is [%s] last was [%s]",genre_in,genre_out,last_genre_seen);

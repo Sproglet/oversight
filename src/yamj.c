@@ -505,7 +505,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
 
     printf("\t<posterFile>poster.%ld.jpg</posterFile>\n",item->id);
     
-    printf("\t<fanartFile>fanart.%ld.jpg</fanartosterFile>\n",item->id);
+    printf("\t<fanartFile>fanart.%ld.jpg</fanartFile>\n",item->id);
 
     video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
 
@@ -550,7 +550,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     }
 
     if (pos<total-1) {
-        printf("\t<next>%ld<next>\n",all_items[pos+1].id);
+        printf("\t<next>%ld</next>\n",all_items[pos+1].id);
     } else {
         printf("\t<next>UNKNOWN</next>\n");
     }
@@ -562,7 +562,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     printf("\t<genres count=\"%d\">\n",genres->size);
     for(i = 0 ; i < genres->size ; i++ ) {
         char *g = genres->array[i];
-        printf("\t\t<genre index=\"Genres_%s_1\">%s</Genre>\n",g,g);
+        printf("\t\t<genre index=\"Genres_%s_1\">%s</genre>\n",g,g);
     }
     printf("\t</genres>\n");
     array_free(genres);

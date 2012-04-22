@@ -321,7 +321,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                     s = COPY_STRING(p-s,s);
                     set_str(e,s,1);
                 } else {
-                    set_str(e,s,NULL);
+                    set_str(e,NULL,0);
                 }
             }
             break;

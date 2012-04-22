@@ -989,6 +989,10 @@ int yamj_xml(char *request)
 
     int ret = 1;
 
+
+        FILE *fp = fopen("/share/Apps/oversight/logs/request.log","a");
+        fprintf(fp,"[%s]\n",request);
+        fclose(fp);
         // request = Cat_SubCat_page.xml
         //
 
@@ -997,6 +1001,7 @@ int yamj_xml(char *request)
             // Detail files not used by eversion so we wont dwell on these.
             // write movie XML
             xml_headers();
+            config_read_dimensions(0);
             HTML_LOG(0,"processing [%s]",xmlstr_static(request));
             load_configs();
             printf("<details>\n");
@@ -1011,6 +1016,7 @@ int yamj_xml(char *request)
         } else if (STRCMP(request,CATEGORY_INDEX) == 0 || util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
             xml_headers();
+            config_read_dimensions(0);
             HTML_LOG(0,"processing [%s]",xmlstr_static(request));
             load_configs();
 

@@ -150,8 +150,12 @@ int abet_pos(char *unterminated_char,Abet *a)
 int abet_strcmp(char *s1,char *s2,Abet *a)
 {
     assert(a);
-    assert(s1);
-    assert(s2);
+
+    if (!s1) {
+        return (s2?-1:0);
+    } else if (!s2) {
+        return 1;
+    }
 
     int i,j,ret=0;
     char *p =  s1;

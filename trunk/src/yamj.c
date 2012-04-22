@@ -34,6 +34,9 @@
 
 #define CONFIG_PREFIX "ovs_yamj_cat"
 #define CATEGORY_INDEX "Categories.xml"
+#define YAMJ_THUMB_PREFIX "thumb_"
+#define YAMJ_POSTER_PREFIX "poster_"
+#define YAMJ_FANART_PREFIX "fanart_"
 
 // Prototypes
 void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
@@ -341,6 +344,9 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
             if (selected_subcat->filter_expr) {
                 Exp *e = selected_subcat->filter_expr;
                 keeprow = evaluate_num(e,item) != 0;
+
+                //HTML_LOG(0," title [%s] cat %c",item->title,item->category);
+                //exp_dump(e,10,1);
                 if (keeprow) {
                     add_index_to_item(item,selected_subcat);
                 }
@@ -504,9 +510,18 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
 
     printf("\t<watched>%s</watched>\n",(item->watched?"true":"false"));
 
-    printf("\t<posterFile>poster.%ld.jpg</posterFile>\n",item->id);
     
-    printf("\t<fanartFile>fanart.%ld.jpg</fanartFile>\n",item->id);
+    char *poster = internal_image_path_static(item,POSTER_IMAGE,1);
+    if (*poster ) {
+        printf("\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
+        printf("\t<detailPosterFile>%s%s</detailPosterFile>\n",YAMJ_POSTER_PREFIX,poster);
+        printf("\t<thumbnail>%s%s</thumbnail>\n",YAMJ_THUMB_PREFIX,poster);
+    }
+
+    char *fanart = internal_image_path_static(item,FANART_IMAGE,1);
+    if (*fanart ) {
+        printf("\t<fanartFile>%s%s</fanartFile>\n",YAMJ_FANART_PREFIX,fanart);
+    }
 
     video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
 
@@ -1008,10 +1023,32 @@ int yamj_xml(char *request)
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
             printf("</details>\n");
 
-        } else if ( util_strreg(request,"\\.jpg$",0)) {
+        } else if ( util_strreg(request,YAMJ_THUMB_PREFIX "[^.]*\\.jpg$",0)) {
 
+            char *file;
+            ovs_asprintf(&file,"%s/db/global/_J/ovs_%s.thumb",appDir(),request+strlen(YAMJ_THUMB_PREFIX));
+            //now swap in place .jpg.thumb with .thumb.jpg
+            char *p = strstr(file,".jpg.thumb");
+            if (p) strcpy(p,".thumb.jpg");
             // Send image
-            cat(CONTENT_TYPE"image/jpeg",request);
+            cat(CONTENT_TYPE"image/jpeg",file);
+            FREE(file);
+
+        } else if ( util_strreg(request,YAMJ_POSTER_PREFIX "[^.]*\\.jpg$",0)) {
+
+            char *file;
+            ovs_asprintf(&file,"%s/db/global/_J/ovs_%s",appDir(),request+strlen(YAMJ_POSTER_PREFIX));
+            // Send image
+            cat(CONTENT_TYPE"image/jpeg",file);
+            FREE(file);
+
+        } else if ( util_strreg(request,YAMJ_FANART_PREFIX "[^.]*\\.jpg$",0)) {
+
+            char *file;
+            ovs_asprintf(&file,"%s/db/global/_fa/ovs_%s",appDir(),request+strlen(YAMJ_FANART_PREFIX));
+            // Send image
+            cat(CONTENT_TYPE"image/jpeg",file);
+            FREE(file);
 
         } else if (STRCMP(request,CATEGORY_INDEX) == 0 || util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 

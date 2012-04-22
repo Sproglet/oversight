@@ -87,4 +87,5 @@ GridDirection str2grid_direction(char *name);
 char *config_path(char *conf_file) ;
 char *config_defaults_path(char *conf_file) ;
 char *config_help_path(char *conf_file,char *help_suffix) ;
+int ovs_config_dimension_default(char *keyword_prefix) ;
 #endif

@@ -32,7 +32,6 @@
 #include "mount.h"
 #include "abet.h"
 
-#define YAMJ_PREFIX "yamj/"
 #define CONFIG_PREFIX "ovs_yamj_cat"
 #define CATEGORY_INDEX "Categories.xml"
 
@@ -242,9 +241,9 @@ int create_dynamic_cat_expression(YAMJCat *cat,DbItem *item,Exp *e,char *selecte
             ;
         }
         *++p='\0';
-        add_index_to_item(item,new_subcat(cat,val,NULL,0,0));
+        add_index_to_item(item,new_subcat(cat,num,NULL,0,0));
         if (selected_subcat_name) {
-            keeprow = (STRCMP(selected_subcat_name,num) == 0);
+            keeprow = (strcmp(selected_subcat_name,num) == 0);
         }
 
     } else if (e->val.type == VAL_TYPE_LIST) {
@@ -315,6 +314,7 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
 {
     int keeprow = 0;
 
+    //HTML_LOG(0,"TRACE1 [%s] [%s]",item->title,item->genre);
     /*
      * Update all dynamic subcats for this item.
      * For YAMJ dynamic subcats must be populated because all XML files contain subcat menus. eg Title_B_1.xml
@@ -348,6 +348,7 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
         }
     }
 
+    //TRACE1;
     return keeprow;
 
     /* Now the item->yamj_member_of is partially populated with
@@ -622,6 +623,7 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbItemSet **
             item_sets[0]->other_media_total
             );
     }
+    HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name));
     printf("<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
     for(i = 0 ; i < cat->subcats->size ; i++ ) {
         YAMJSubCat *s = cat->subcats->array[i];
@@ -788,8 +790,40 @@ int yamj_build_categories(char *cat_name,Array *categories)
     }
 
 
+
     return ret;
 }
+
+void dump_cat(char *label,YAMJCat *cat) 
+{
+    int i;
+    if (cat->subcats) {
+        for(i = 0 ; i < cat->subcats->size ; i++ ) {
+            HTML_LOG(0,"catdump %s %s %s",label,cat->name,((YAMJSubCat *)(cat->subcats->array[i]))->name);
+        }
+    }
+}
+
+int cat_cmp(const void *a,const void *b)
+{
+    return STRCMP((*(YAMJCat **)(a))->name,(*(YAMJCat **)(b))->name);
+}
+int subcat_cmp(const void *a,const void *b)
+{
+    return STRCMP((*(YAMJSubCat **)(a))->name,(*(YAMJSubCat **)(b))->name);
+}
+void sort_categories(Array *categories)
+{
+    int i;
+    array_sort(categories,cat_cmp);
+
+    for(i = 0 ; i < categories->size ; i++ ) {
+        YAMJCat *cat = categories->array[i];
+        array_sort(cat->subcats,subcat_cmp);
+    }
+}
+
+
 
 int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categories,DbItemSet **itemSet)
 {
@@ -807,7 +841,8 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
     */
 
     for(i = 0 ; i < categories->size ; i++ ) {
-        yamj_category_xml(request,selected_subcat,(YAMJCat *)(categories->array[i]),itemSet);
+        YAMJCat *cat = categories->array[i];
+        yamj_category_xml(request,selected_subcat,cat,itemSet);
     }
 
 
@@ -953,12 +988,6 @@ int yamj_xml(char *request)
 {
 
     int ret = 1;
-    char *request_in = request;
-
-
-    if (strstr(request,YAMJ_PREFIX) == request) {
-
-        request += strlen(YAMJ_PREFIX);
 
         // request = Cat_SubCat_page.xml
         //
@@ -968,7 +997,7 @@ int yamj_xml(char *request)
             // Detail files not used by eversion so we wont dwell on these.
             // write movie XML
             xml_headers();
-            HTML_LOG(0,"processing [%s]",xmlstr_static(request_in));
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request));
             load_configs();
             printf("<details>\n");
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
@@ -982,7 +1011,7 @@ int yamj_xml(char *request)
         } else if (STRCMP(request,CATEGORY_INDEX) == 0 || util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
             xml_headers();
-            HTML_LOG(0,"processing [%s]",xmlstr_static(request_in));
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request));
             load_configs();
 
             Array *categories = array_new(free_yamj_catetory);
@@ -997,14 +1026,13 @@ int yamj_xml(char *request)
 
             DbItemSet **itemSet = db_crossview_scan_titles(0,NULL,categories,selected_subcat);
 
+            sort_categories(categories);
+
             yamj_categories_xml(request,selected_subcat,categories,itemSet);
 
         } else {
-            HTML_LOG(0,"error invalid request [%s] %d",xmlstr_static(request_in),STRCMP(request,CATEGORY_INDEX));
+            HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request),STRCMP(request,CATEGORY_INDEX));
         }
-    }
-
-
 
     return ret;
 }

@@ -208,6 +208,7 @@ static void start_page(char *callmode) {
     printf("<!-- %s:%s -->\n",callmode,OVS_VERSION);
 }
 
+#define YAMJ_PREFIX "yamj/"
 int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
 
@@ -229,9 +230,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
         if (argc > 1 ) {
 
-            if ( argv[1] && *argv[1] && argv[2] == NULL && strncmp(argv[1],"yamj/",4) == 0) {
+            if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
                 config_read_dimensions(0);
-                result = yamj_xml(argv[1]);
+                result = yamj_xml(argv[1]+strlen(YAMJ_PREFIX));
                 exit(result);
 
             } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
@@ -255,6 +256,10 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 } else if (dot &&  STRCMP(dot,".gif") == 0) {
 
                     result = cat(CONTENT_TYPE"image/gif",path);
+
+                } else if (dot &&  (STRCMP(dot,".swf") == 0 || STRCMP(dot,".phf" ) == 0) ) {
+
+                    result = cat(CONTENT_TYPE"application/x-shockwave-flash",path);
 
                 } else if (browsing_from_lan() ) {
 

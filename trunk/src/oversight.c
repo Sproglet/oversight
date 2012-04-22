@@ -231,7 +231,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         if (argc > 1 ) {
 
             if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
-                result = yamj_xml(argv[1]+strlen(YAMJ_PREFIX));
+                char *req = url_decode(argv[1]);
+                result = yamj_xml(req+strlen(YAMJ_PREFIX));
+                FREE(req);
                 exit(result);
 
             } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {

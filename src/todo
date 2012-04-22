@@ -1,5 +1,3 @@
-Get Manual Jukebox to load
-
 Fix totals and page counts
 
 Understand how to use sets
@@ -18,8 +16,12 @@ DONE - Split - Expand Genre
 
 DONE - Generate Detail XML by OVS ID
 
+DONE Get Manual Jukebox to load
+
 - yamj Auto Box Sets
 
 - yamj TV Shows
 
 - Age computation 
+
+- Remove lang prefix from plot

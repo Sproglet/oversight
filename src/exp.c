@@ -279,8 +279,22 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
         case OP_GE:
             if (evaluate_children(e,item,VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,err) == 0) {
                 e->val.type = VAL_TYPE_NUM;
+
                 if (e->subexp[0]->val.type != e->subexp[1]->val.type) {
-                    e->val.num_val = 0;
+
+                    // string vs char
+                    if (e->subexp[0]->val.type == VAL_TYPE_STR &&  e->subexp[1]->val.type == VAL_TYPE_CHAR) {
+                        char *s = e->subexp[0]->val.str_val;
+                        e->val.num_val = ( s && (*s == e->subexp[1]->val.num_val));
+
+                    // char vs string
+                    } else  if (e->subexp[1]->val.type == VAL_TYPE_STR &&  e->subexp[0]->val.type == VAL_TYPE_CHAR) {
+                        char *s = e->subexp[1]->val.str_val;
+                        e->val.num_val = ( s && (*s == e->subexp[0]->val.num_val));
+                    } else {
+                        e->val.num_val = 0;
+                    }
+
                 } else {
                     switch (e->subexp[0]->val.type ) {
                         case VAL_TYPE_STR:

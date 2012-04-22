@@ -231,7 +231,6 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
         if (argc > 1 ) {
 
             if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
-                config_read_dimensions(0);
                 result = yamj_xml(argv[1]+strlen(YAMJ_PREFIX));
                 exit(result);
 
@@ -636,6 +635,14 @@ int main(int argc,char **argv)
 #endif
 
     } else {
+
+#if 0
+        int i;
+        FILE *fp = fopen("/share/Apps/oversight/logs/request.log","a");
+        for(i = 0 ; i < argc ; i++ ) fprintf(fp,"[%s]",argv[i]);
+        fprintf(fp,"\n");
+        fclose(fp);
+#endif
         // start oversight normally (original cgi entry point)
         ret = oversight_main(argc,argv,1);
     }

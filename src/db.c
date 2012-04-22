@@ -657,7 +657,11 @@ char *translate_genre(char *genre_in,int expand,char *new_sep)
     // -----------------------------------
 
 
-    if (STRCMP(genre_in,last_genre_seen) != 0) {
+    if (genre_in == NULL) {
+
+        *genre_out = *last_genre_seen='\0';
+
+    } else if (strcmp(genre_in,last_genre_seen) != 0) {
 
         char *new = genre_out;
         *new = '\0';

@@ -308,11 +308,11 @@ int parse_key_val(char *line,
         //
         unsigned char *p = (unsigned char *)line;
         while (isspace(*p)) p++;
-        key = p;
+        key = (char *)p;
         while (isalnum(*p) || (*p && strchr("_.[]",*p))) {
             p++;
         }
-        char *key_end = p;
+        char *key_end = (char *)p;
 
 
         while(isspace(*p)) p++;
@@ -322,14 +322,14 @@ int parse_key_val(char *line,
 
             p++;
             while(isspace(*p)) p++;
-            val = p;
+            val = (char *)p;
             if (*val && strchr("\"'",*val) ) {
                 //parse quoted value
                 p++;
                 while (*p && *p != *val) p++;
                 if (*p == *val) {
                     val++;
-                    val_end=p;
+                    val_end=(char *)p;
                     p++;
                 }
             } else {
@@ -337,7 +337,7 @@ int parse_key_val(char *line,
                 while(*p && (!isspace(*p) || (include_unquoted_space && *p == ' ') )) {
                     p++;
                 }
-                val_end = p;
+                val_end = (char *)p;
             }
 
             if (!include_unquoted_space) {

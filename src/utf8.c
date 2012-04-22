@@ -60,8 +60,10 @@ char *utf8norm(char *s,int len)
         //HTML_LOG(0,"ascii[%s]",NVL(out));
     } else {
         // Use COMPOSE rather than DECOMPOSE to preserve composed characters
-        int uerr = utf8proc_map((uint8_t *)s,len,(uint8_t**)&out,UTF8PROC_COMPOSE|UTF8PROC_COMPAT|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
+        uint8_t *intptr;
+        int uerr = utf8proc_map((uint8_t *)s,len,&intptr,UTF8PROC_COMPOSE|UTF8PROC_COMPAT|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
         if (uerr < 0) {
+            out = (char *)intptr;
             if (out == NULL) {
                // copy ascii bytes
                 int i;

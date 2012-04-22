@@ -51,7 +51,7 @@ void set_str(Exp *e,char *s,int free_str) {
     clr_val(e);
     e->val.type = VAL_TYPE_STR;
     e->val.str_val = s;
-    e->val.free_str = free_str;
+    e->val.free_str = (s?free_str:0);
 }
 
 
@@ -307,18 +307,22 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 char *p,*s;
                        
                 p = s  = e->subexp[0]->val.str_val;
-                for(i = 0 ; i < len ; i++ ) {
-                    if (IS_UTF8STARTP(p)) {
-                        p++;
-                        while(IS_UTF8CONTP(p)) p++;
-                    } else if (*p) {
-                        p++;
-                    } else {
-                        break;
+                if (s) {
+                    for(i = 0 ; i < len ; i++ ) {
+                        if (IS_UTF8STARTP(p)) {
+                            p++;
+                            while(IS_UTF8CONTP(p)) p++;
+                        } else if (*p) {
+                            p++;
+                        } else {
+                            break;
+                        }
                     }
+                    s = COPY_STRING(p-s,s);
+                    set_str(e,s,1);
+                } else {
+                    set_str(e,s,NULL);
                 }
-                s = COPY_STRING(p-s,s);
-                set_str(e,s,1);
             }
             break;
         case OP_STARTS_WITH:

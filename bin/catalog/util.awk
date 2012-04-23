@@ -414,13 +414,21 @@ i,s,n) {
 }
 
 
-function sort_file(f,args,\
-tmpf,ret) {
-    tmpf=f"."PID;
-    if (is_file(f)) {
-        if (exec("sort "args" "qa(f)" > "qa(tmpf)" && mv "qa(tmpf)" "qa(f)) == 0) {
-            set_permissions(f);
+function sort_file(f_in,args,f_out,\
+tmpf,ret,cmd) {
+    if (is_file(f_in)) {
+        if (f_out == "" || f_out == f_in) {
+            f_out = f_in;
+            tmpf=f_in"."PID;
+            cmd = "sort "args" "qa(f_in)" > "qa(tmpf)" && mv "qa(tmpf)" "qa(f_in);
+        } else {
+            cmd = "sort "args" "qa(f_in)" > "qa(f_out);
+        }
+            
+        if (exec(cmd) == 0) {
+            set_permissions(f_out);
             ret = 1;
+
         }
     }
     return ret;

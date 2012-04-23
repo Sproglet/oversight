@@ -26,15 +26,17 @@ ret,code,f,body,line) {
                 }
 
                 if(LD)DETAIL("saving to cache "f);
-                printf "%s",response["body"] > f;
+                printf "%s\n",response["body"] > f;
                 close(f);
                 g_url_cache[url] = f;
             }
         } else {
-            if(LD)DETAIL("loading from cache "f);
+            if(LD)DETAIL("loading from cache "f" RS=["RS"]");
+            rs_push("\n");
             while((code=getline line < f) > 0) {
                 body = body line;
             }
+            rs_pop();
             if (code >= 0) {
                 close(f);
             }
@@ -50,7 +52,7 @@ ret,code,f,body,line) {
 
 function url_get_uncached(url,response,rec_sep,headers,\
 ret) {
-    if (g_settings["catalog_awk_browser"] && !index(url,"thetvdb") ) {
+    if (g_settings["catalog_awk_browser"] && !index(url,"thetvdb") && !index(url,".live.net") ) {
         ret = url_get_awk(url,response,rec_sep,headers);
     } else {
         delete response;
@@ -512,14 +514,25 @@ code,bytes,i,num,j,all_hdrs) {
 
     #if(LG)DEBUG("url_get_headers");
 
-    rs_push("\r\n\r\n");
-
     delete response;
+    if (index(con,"live.net")) {
+        # get a header at a time
+        rs_push("\r\n");
+        while ((code = ( con |& getline all_hdrs )) > 0) {
+            if (all_hdrs == "") break;
+            if(LD)DETAIL("hdr["all_hdrs"]");
+            bytes[++num] = all_hdrs;
+        };
+    }else {
+        # get all headers in one go
+        rs_push("\r\n\r\n");
+        code = ( con |& getline all_hdrs );
+        if (code > 0) {
+            num = split(all_hdrs,bytes,"\r\n");
+        }
+    }
 
-    code = ( con |& getline all_hdrs );
-
-    if (code > 0) {
-        num = split(all_hdrs,bytes,"\r\n");
+    if (num > 0) {
 
         for(i = 1 ; i<= num ; i++) {
 

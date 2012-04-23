@@ -215,6 +215,8 @@ END{
     #path for actor db etc.
     DBDIR = OVS_HOME"/db";
 
+    g_set_file=DBDIR"/set.db";
+
     print PROCINFO["pid"] > PIDFILE;
     close(PIDFILE);
 

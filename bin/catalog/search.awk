@@ -1167,3 +1167,40 @@ keep,new,newtotal,size,url,i,blocksz) {
     return newtotal;
 }
 
+function get_bing_json_serp(body,titles,\
+i,sections,total,num) {
+
+    delete titles;
+
+    num = split(body,sections,"\"Title\":\"");
+    for(i = 2 ; i <= num ; i++) {
+        titles[++total] = gensub(/",".*/,"",1,sections[i]);
+    }
+    dump(0,"bing json serps",titles);
+    return total;
+}
+function get_bing_mobile_serp(body,titles,\
+i,pos,sections,total,num) {
+
+    num = ovs_patsplit(body,sections,"href=\"/search[^<]+</a>");
+    for(i = 1 ; i <= num ; i++) {
+        if (index(sections[i],"redirurl") && index(sections[i],"rid=")) {
+            titles[++total] = sections[i];
+        }
+
+    }
+    for(i = 1 ; i <= total ; i++) {
+
+
+        titles[i] = de_emphasise(titles[i]);
+
+        sub(/<\/a>$/,"",titles[i]);
+
+        pos=index(titles[i],">");
+        if (pos > 0) {
+            titles[i] = substr(titles[i],pos+1);
+        }           
+    }
+    dump(2,"bing serps?",titles);
+    return total;
+}

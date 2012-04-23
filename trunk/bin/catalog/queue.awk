@@ -101,6 +101,7 @@ file1_sorted,file_merged,person_extid2ovsid,total) {
     rm(file1_sorted); 
     rm(qfile); 
     rm(file_merged);
+    set_save_names();
     id0("");
     return total;
 }

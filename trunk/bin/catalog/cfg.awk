@@ -60,40 +60,44 @@ ign_path,env) {
 function load_settings(prefix,file_name,verbose,\
 i,n,v,option,ret,err,cfg) {
 
-    id1("load_settings "file_name);
-    FS="\n";
-    while((err = (getline option < file_name )) > 0 ) {
+    if (is_file(file_name)) {
+        id1("load_settings "file_name);
+        FS="\n";
+        while((err = (getline option < file_name )) > 0 ) {
 
-        #remove comment - hash without a preceeding blackslash
-        if ((i=match(option,"[^\\\\]#")) > 0) {
-            option = substr(option,1,i);
-        }
+            #remove comment - hash without a preceeding blackslash
+            if ((i=match(option,"[^\\\\]#")) > 0) {
+                option = substr(option,1,i);
+            }
 
-        #remove spaces around =
-        sub(/ *= */,"=",option);
-        option=trim(option);
-        # remove outer quotes
-        sub("=[\"']","=",option);
-        sub("[\"']$","",option);
-        if (match(option,"^[[:alnum:]_]+=")) {
-            n=prefix substr(option,1,RLENGTH-1);
-            v=substr(option,RLENGTH+1);
-            #gsub(/ *[,] */,",",v);
+            #remove spaces around =
+            sub(/ *= */,"=",option);
+            option=trim(option);
+            # remove outer quotes
+            sub("=[\"']","=",option);
+            sub("[\"']$","",option);
+            if (match(option,"^[[:alnum:]_]+=")) {
+                n=prefix substr(option,1,RLENGTH-1);
+                v=substr(option,RLENGTH+1);
+                #gsub(/ *[,] */,",",v);
 
-            g_settings_orig[n]=v;
-            cfg[n] = g_settings[n] = v;
-            if (verbose) {
-                if(LD)DETAIL(n"=["g_settings[n]"]");
+                g_settings_orig[n]=v;
+                cfg[n] = g_settings[n] = v;
+                if (verbose) {
+                    if(LD)DETAIL(n"=["g_settings[n]"]");
+                }
             }
         }
-    }
-    if (err >= 0 ) {
-        close(file_name);
-        ret = 1;
+        if (err >= 0 ) {
+            close(file_name);
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+        dump(0,file_name,cfg);
     } else {
-        ret = 0;
+        ERR("cant open "file_name);
     }
-    dump(0,file_name,cfg);
     id0(ret);
     return ret;
 }

@@ -1,19 +1,21 @@
 # Map set id to a set name (set id is usually imdb id of the earliest produced movie in the set)
 BEGIN {
-    g_set_file=SET_DB;
-    g_set_prefix="SET:";
+    g_set_prefix="SET"SUBSEP;
     g_set_state=0; #0=not loaded #1=loaded #2+ = changed
 }
 
-function set_save_all(\
-i) {
+function set_save_names(\
+i,f) {
     if (g_set_state > 1) {
+        f = g_set_file"."PID;
         for(i in g_settings) {
             if (index(i,g_set_prefix) == 1) {
-                print substr(i,length(g_set_prefix))"=\"" g_settings[i] "\"" > g_set_file;
+                print substr(i,length(g_set_prefix)+1)"=\"" g_settings[i] "\"" >> f;
             }
         }
-        close(g_set_file);
+        close(f);
+        g_set_state=1;
+        sort_file(f,"-u",g_set_file);
     }
 }
 
@@ -22,13 +24,13 @@ i) {
 function set_name_from_titles(imdb_id,main_title,\
 titles,num,name,key) {
 
-#    # Load the set config file
-#    if (!g_set_state) {
-#        load_settings(g_set_prefix,g_set_file,1);
-#        g_set_state=1;
-#    }
+    # Load the set config file
+    if (!g_set_state) {
+        load_settings(g_set_prefix,g_set_file,1);
+        g_set_state=1;
+    }
     INF("set file disabled");
-    key = g_set_prefix imdb_id;
+    key = g_set_prefix "imdb:"imdb_id;
 
     # Check if user defined set name for ttid.
     if (key in g_settings) {
@@ -37,61 +39,55 @@ titles,num,name,key) {
     } else if ((num=set_all_titles(imdb_id,main_title,titles)) > 0) { # get all titles for set
 
         # search titles for common text
-        name = common_text(num,titles,1); 
-        ERR("set_name_from_titles=" name);
+        name = common_text(num,titles,1,2,3); 
+        if(LD)DETAIL("set_name_from_titles=" name);
         if (name == "") {
             # search web for common text
             name = set_name_from_web(titles);
-        } else {
-            ERR("vs web name "set_name_from_web(titles));
+            if (name == "") {
+                name = titles[1];
+            }
         }
         if (name) {
             g_settings[key] = name;
+            g_set_state++;
         }
     }
 
-    INF("box set for "imdb_id" = "name);
+    INF("box set for "imdb_id" = "key"=["name"]");
     return name;
 }
 
-function get_bing_serp(body,titles,\
-i,pos,sections,total,num) {
-
-    num = ovs_patsplit(body,sections,"href=\"/search[^<]+</a>");
-    for(i = 1 ; i <= num ; i++) {
-        if (index(sections[i],"redirurl") && index(sections[i],"rid=")) {
-            titles[++total] = sections[i];
-        }
-
-    }
-    for(i = 1 ; i <= total ; i++) {
-
-
-        titles[i] = de_emphasise(titles[i]);
-
-        sub(/<\/a>$/,"",titles[i]);
-
-        pos=index(titles[i],">");
-        if (pos > 0) {
-            titles[i] = substr(titles[i],pos+1);
-        }           
-    }
-    dump(2,"bing serps?",titles);
-    return total;
-}
 
 
 # IN imdb_id
 # IN titles
 function set_name_from_web(titles,\
-body,response,num,sections,ret) {
-    if (url_get(g_search_bing_mobile url_encode("\""titles[1]"\" \""titles[2]"\" box set"),response,"",1)) {
-        body = tolower(response["body"]);
+response,num,sections,ret,url,query,i) {
+    #if (url_get(g_search_bing_mobile url_encode("\""titles[1]"\" \""titles[2]"\" \""titles[3]"\" box set"),response,"",1)) 
+    #   2Y body = tolower(response["body"]);
+    #    num = get_bing_serp(body,sections);
 
-        num = get_bing_serp(body,sections);
-        ret = common_text(num,sections,0);
+
+    query = "+box +set \""titles[1]"\" \""titles[2]"\" \""titles[3]"\" -imdb";
+
+    url=g_search_bing_api"Appid="g_api_bing;
+    url = url "&sources=web";
+    url = url "&query="url_encode(query);
+
+    if (url_get(url,response,"",0)) {
+        num = get_bing_json_serp(response["body"],sections);
+        for(i in sections) {
+            gsub(/(DVD|dvd|[Bb]lu-?[Rr]ay|Wikipedia).*/,"",sections[i]);
+        }
+        ret = common_text(num,sections,0,4,num);
+        sub(/(box set|collection).*/,"",ret);
+        sub(/ (2|3|ii)$/,"",ret);
     }           
-    ERR("set_name_from_web=" ret);
+    if (index(tolower(ret),tolower(titles[1]))) {
+        ret = titles[1];
+    }
+    if(LD)DETAIL("set_name_from_web=" ret);
     return ret;
 }
 
@@ -105,9 +101,12 @@ response,body,sections,num,tnum,i,j,titles,total,url) {
     all_titles[++total] = main_title;
 
     url = imdb_trvia_url(imdb_id);
+
+    ERR("DELETE getting "url);
     if (url_get(url,response,"",1)) {
         body = response["body"];
 
+    ERR("DELETE got body ");
         #get named sections
         num=split(body,sections,"(<a name=\"|TOP_RHS)");
 
@@ -131,8 +130,16 @@ response,body,sections,num,tnum,i,j,titles,total,url) {
 }
 
 
-function common_text(num,t,start,\
+# Find common text
+# IN num - number of items
+# IN t - text items
+# IN start - if 1 then common text must start each item
+# IN threshold - text must appear at least this many times.
+# first_n - only use phrases from the first 'n' items. (could replace 'num')
+function common_text(num,t,start,threshold,first_n,\
 wrd,t2,best,phrase,phrases,i,j,skip,inc,cap) {
+
+    DETAIL("common_text start="start" threshold="threshold" first_n="first_n);
 
     for(i in t) {
         t2[i]=tolower(t[i])" ";
@@ -149,8 +156,9 @@ wrd,t2,best,phrase,phrases,i,j,skip,inc,cap) {
         sub(/: the .*/," ",t2[i]);
     }
     if (!best) {
+        dump(0,"common_text",t2);
         wrd="[^ ]+ ";
-        for(i = 1 ; i <= num ; i++ ) {
+        for(i = 1 ; i <= first_n ; i++ ) {
             #print "process "t2[i];
             inc=1;
             for( skip = 0 ; match(t2[i],"^("wrd"){"skip"}"wrd) ; skip ++ ) {
@@ -169,10 +177,12 @@ wrd,t2,best,phrase,phrases,i,j,skip,inc,cap) {
             }
         }
 
+        dump(0,"phrases",phrases);
+
         # pick longest title with more than 50% occurence
         best="";
         for (i in phrases) {
-            if (phrases[i] >= 2) {
+            if (phrases[i] >= threshold+0) {
                 if (length(i) > length(best)) best = i;
             }
         }

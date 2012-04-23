@@ -337,6 +337,14 @@ i,total) {
     }
     return total;
 }
+function hash_append(a1,a2,\
+i,total) {
+    total = hash_size(a1);
+    for(i in a2) {
+        a1[++total] += a2[i];
+    }
+    return total;
+}
 
 function hash_size(h,\
 s,i){
@@ -871,18 +879,24 @@ matches,ret) {
     return ret;
 }
 
-# This emulates gawk 4 patsplit()
+# This emulates gawk 4 patsplit() 
+# the text that matches the regex is put in array
+# the text that follows the regex is put in seps.
+# The initial text before the first match is put in seps[0]
 function ovs_patsplit(text,array,regex,seps,\
 i,n,expand,parts,ret) {
     #return patsplit(text,array,regex,seps);
 
-    # eg --XX--XX-- => --,XX,--,XX,--
+    # eg -1-SEP-2-SEP2-3- => -1-,SEP,-2-,SEP2,-3-
     expand = gensub(regex,SUBSEP"&"SUBSEP,"g",text);
+
+    # eg 1=-1- 2=SEP 3=-2- 4=SEP2 5=-3-
     n=split(expand,parts,SUBSEP);
 
     ret = 0;
     i=0;
 
+    #eg seps[0]=-1- -2- -4- array=[1..]=SEP SEP2
     for (i = 1 ; i < n ; i+= 2) {
         seps[ret] = parts[i];
         array[++ret] = parts[i+1];
@@ -1135,6 +1149,13 @@ t2,changed) {
 #        gsub(/@@/,"",t);
     }
     return t;
+}
+
+function left(str,n) {
+    if (length(str) > n ) {
+        str = substr(str,length(str)-n+1);
+    }
+    return str;
 }
 
 # This is used in tv comparison functions for qualified matches so it must not remove any country

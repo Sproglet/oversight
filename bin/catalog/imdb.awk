@@ -31,10 +31,12 @@ id,series,versions,ret) {
         id1("getMovieConnections:"id);
 
         if(id) {
-            imdb_movie_connections1(id,series,versions,3);
+            imdb_movie_connections1(id,series,versions,0);
             asort(series);
 
-            if (series[1] != "") {
+            #Only add sets if there are two or more movies (inclusive)
+            if (series[2] != "") {
+                set_name_from_titles(id,minfo[TITLE]);
                 ret = minfo[SET] = "imdb:"series[1];
             }
         }
@@ -60,67 +62,48 @@ i,j,cut) {
     return body;
 }
 
+function imdb_trvia_url(id) {
+    return "http://www.imdb.com/title/"id"/trivia?tab=mc";
+}
+
 function imdb_movie_connections1(id,series,versions,get_version_series,\
-sections,series_heading,version_heading,end,numsections,\
-found_section,relationship,i,count,html,txt,v,url,hdr,body,regex,response) {
+sections,sec,i,sec_count,v,url,response,ids) {
 
-    series_heading = 1;
-    version_heading = 2;
-    end=99;
-    sections["Follows"] = sections["Followed by"] = series_heading;
-
-
-    sections["Remake of"] = sections["Remade as"] = sections["Version of"] = end;
-    # uncomment this like to get remakes into boxsets.
-    #sections["Remake of"] = sections["Remade as"] = sections["Version of"] = version_heading;
-    sections["References"] = sections["Referenced in"] = end;
-    numsections = hash_size(sections);
-    regex = "(<h[1-5][^>]*>[^<&]+|\\<"g_imdb_regex")" ; # Grab headings or imdb ids
-    url = "http://www.imdb.com/title/"id"/trivia?tab=mc";
 
     if(id && !(id in series)){
 
-        id1("getMovieConnections1:"id);
+        # Make sure this id goes in its own collection
+        series[id] = id;
+
+        url = imdb_trvia_url(id);
+
+        id1("getMovieConnections1:"url);
 
         # Use the inline browser - this is not as robust as external command line but should be faster.
         # could have just sef g_fetch["force_awk"] and hand off to scan_page_for_match_order()
         # but beneficial to remove a lot of stuff from the page first.
 
-        if (url_get(url,response,"",0)) {
-            body = remove_unwanted_html(response["body"]);
-            count = get_matches(1,body,regex,0,0,html,0);
+        if (url_get(url,response,"",1)) {
+            
+            sec_count = split(response["body"],sections,"(<a name=\"|TOP_RHS)");
+            #dump(1,"connections page",sections);
         }
 
-        #dump(0,"movieconnections-"count,html);
-        for(i = 1 ; i <= count ; i++ ) {
-            txt = html[i];
-            if (substr(txt,1,2) == "tt" ) {
-                if (relationship in sections) {
-                    # Sequels may have lower ID eg Star Wars etc. Prequels made after first movie.
-                    if (sections[relationship] == series_heading) {
-                        series[txt] = txt;
-                    } else if (sections[relationship] == version_heading) {
-                        versions[txt] = txt;
-                    }
+        for(sec = 1 ; sec <= sec_count ; sec++ ) {
+            if (index(sections[sec],"follow") == 1) {
+                ovs_patsplit(sections[sec],ids,g_imdb_regex);
+                dump(1,substr(sections[sec],1,20),ids);
+                for(i in ids) {
+                    series[ids[i]] = ids[i];
                 }
-            } else {
-                
-                if (sections[relationship] ) {
-                    found_section ++;
-                    if (found_section == numsections) {
-                        break;
-                    }
+            } else if (index(sections[sec],"rema") == 1 || index(sections[sec],"version") == 1) {
+                ovs_patsplit(sections[sec],ids,g_imdb_regex);
+                dump(1,substr(sections[sec],1,20),ids);
+                for(i in ids) {
+                    versions[ids[i]] = ids[i];
                 }
-
-                # <h4,,,>Header
-                split(txt,hdr,">");
-                relationship=trim(hdr[2]);
-
-                if (sections[relationship] == end) break;
             }
         }
-        # Make sure this id goes in its own collection
-        series[id] = id;
 
         if (get_version_series > 0) {
             for(v in versions) {

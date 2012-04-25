@@ -468,6 +468,8 @@ void html_vacomment(char *format,va_list ap)
 
         remove_password(s1);
 
+        //s1=xmlstr_static(s1,1);
+
         if (html_out == NULL) html_set_output(stdout);
 
         fprintf(html_out,"%s %ld/%ld %s %s\n",

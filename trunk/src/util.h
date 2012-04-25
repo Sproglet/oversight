@@ -173,4 +173,5 @@ int util_system_htmlout(char *cmd);
 char *donated_file();
 int util_touch(char *path,time_t t);
 char *utf8pos(char *p,int n);
+char *xmlstr_static(char *text,int idx);
 #endif

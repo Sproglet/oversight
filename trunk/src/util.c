@@ -1440,5 +1440,31 @@ char *utf8pos(char *p,int n)
     return p;
 }
 
+/*
+ * contents are overwritten must not be freed
+ * Supports 3 different static strings.
+ *
+ */
+char *xmlstr_static(char *text,int idx)
+{
+    static char *out[3]={NULL,NULL,NULL};
+    static int free_last[3] = {0,0,0};
+    if (out[idx] && free_last[idx]) {
+        FREE(out[idx]);
+        free_last[idx]=0;
+    }
+    out[idx] = text;
+    if (strchr(out[idx],'<')) out[idx] = replace_str(text,"<","&lt;");
+
+    if (strchr(out[idx],'>')) {
+       char *tmp = replace_str(out[idx],">","&gt;");
+       if (out[idx] != text) FREE(out[idx]);
+       out[idx] = tmp;
+    }
+
+    free_last[idx] =  (out[idx] != text);
+
+    return out[idx];
+}
 
 // vi:sw=4:et:ts=4

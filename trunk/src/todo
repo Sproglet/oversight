@@ -1,4 +1,6 @@
-Fix totals and page counts
+Sort movies
+
+Title for Leon scraped but not displayed - LC_LANG?
 
 Understand how to use sets
 
@@ -6,6 +8,7 @@ and mixed set/movies
 
 Box sets - if Jaws 2 is added after Jaws 1 does Jaws become a set? Normal Oversight? YAMJ Oversight?
 
+Fix totals and page counts
 
 - Add sort field and order at category level - to sort both DbItems and SubCats.
 eg ~Y   Sort by year ASC DESC

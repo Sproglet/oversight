@@ -169,6 +169,7 @@ void add_index_to_item(DbItem *item,YAMJSubCat *subcat)
         item->yamj_member_of = array_new(NULL);
     }
     array_add(item->yamj_member_of,subcat);
+    subcat->item_total++;
 }
 
 #if 0
@@ -405,30 +406,6 @@ void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *
     }
 }
 
-/*
- * contents are overwritten must not be freed
- */
-char *xmlstr_static(char *text)
-{
-    static char *out=NULL;
-    static int free_last = 0;
-    if (out && free_last) {
-        FREE(out);
-        free_last=0;
-    }
-    out = text;
-    if (strchr(out,'<')) out = replace_str(text,"<","&lt;");
-
-    if (strchr(out,'>')) {
-       char *tmp = replace_str(out,">","&gt;");
-       if (out != text) FREE(out);
-       out = tmp;
-    }
-
-    free_last =  (out != text);
-
-    return out;
-}
 
 void video_field_long(char *tag,long value,char *attr,char *attrval)
 {
@@ -460,7 +437,7 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
             encoded = value;
             free_it = 0;
         }
-        printf("%s</%s>\n",xmlstr_static(encoded),tag);
+        printf("%s</%s>\n",xmlstr_static(encoded,0),tag);
         if (free_it) {
             FREE(encoded);
         }
@@ -468,7 +445,7 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
 }
 
 
-int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int pos,int total)
+int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int pos,int total)
 {
     int i;
     int ret = 1;
@@ -505,7 +482,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
 
 
     if (item->rating != 0.0) {
-        printf("\t<rating>%d</rating>\n",(int)(item->rating *100));
+        printf("\t<rating>%d</rating>\n",(int)(item->rating *10));
     }
 
     printf("\t<watched>%s</watched>\n",(item->watched?"true":"false"));
@@ -526,6 +503,19 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
 
     printf("\t<year>%d</year>\n",item->year);
+
+    if (item->runtime) {
+        int min = item->runtime;
+        printf("\t<runtime>");
+        if (min<=60) {
+            printf("%d min",min);
+        } else if (min%60) {
+            printf("%dh %d min",min/60,min%60);
+        } else {
+            printf("%dh",min/60);
+        }
+        printf("</runtime>\n");
+    }
 
     video_field("certification",item->certificate,0,NULL,NULL);
     printf("\t<season>%d</season>\n",(item->category == 'T' ? item->season : -1 ));
@@ -557,20 +547,20 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
 
     //---------------------------
     //
-    if (total) printf("\t<first>%ld</first>\n",all_items[0].id);
+    if (total) printf("\t<first>%ld</first>\n",all_items[0]->id);
 
     if (pos>0) {
-        printf("\t<previous>%ld</previous>\n",all_items[pos-1].id);
+        printf("\t<previous>%ld</previous>\n",all_items[pos-1]->id);
     } else {
         printf("\t<previous>UNKNOWN</previous>\n");
     }
 
     if (pos<total-1) {
-        printf("\t<next>%ld</next>\n",all_items[pos+1].id);
+        printf("\t<next>%ld</next>\n",all_items[pos+1]->id);
     } else {
         printf("\t<next>UNKNOWN</next>\n");
     }
-    if (total) printf("\t<last>%ld</last>\n",all_items[total-1].id);
+    if (total) printf("\t<last>%ld</last>\n",all_items[total-1]->id);
 
     //---------------------------
     
@@ -608,11 +598,11 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
     //----------------------------
 
     char *plot = get_plot(item,PLOT_MAIN);
-    printf("\t<plot>%s</plot>\n",xmlstr_static(plot));
+    printf("\t<plot>%s</plot>\n",xmlstr_static(plot,0));
     FREE(plot);
         
 
-    printf("\t<episode>%s</episode>\n",xmlstr_static(NVL(item->episode)));
+    printf("\t<episode>%s</episode>\n",xmlstr_static(NVL(item->episode),0));
 
     printf("</movie>\n");
     return ret;
@@ -623,29 +613,20 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem *all_items,int 
  * subcat = Sub category corresponding to input
  * cat = any category for output. If it contains the current subcat then extr page info is output.
  */
-int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbItemSet **item_sets)
+int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows *sorted_rows)
 {
     int ret = 1;
     int i;
 
 
-    if (subcat && subcat->owner_cat == cat) {
-    HTML_LOG(0,"subcat %s_%s total = %d movies , %d series , %d episodes , %d other",
-            cat->name,subcat->name,
-            item_sets[0]->movie_total,
-            item_sets[0]->series_total,
-            item_sets[0]->episode_total,
-            item_sets[0]->other_media_total
-            );
-    }
-    HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name));
+    HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name,0));
     printf("<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
     for(i = 0 ; i < cat->subcats->size ; i++ ) {
         YAMJSubCat *s = cat->subcats->array[i];
         printf("\t<index name=\"%s\"",s->name);
         if (s == subcat) {
 
-            int last = 1+(s->item_total/s->owner_cat->page_size);
+            int last = 1+(sorted_rows->num_rows/s->owner_cat->page_size);
             int first = 1;
             int next = s->page + 1;
             if (next > last) next = last;
@@ -840,7 +821,7 @@ void sort_categories(Array *categories)
 
 
 
-int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categories,DbItemSet **itemSet)
+int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categories,DbSortedRows *sorted_rows)
 {
     int ret = 1;
     int i;
@@ -857,16 +838,14 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
 
     for(i = 0 ; i < categories->size ; i++ ) {
         YAMJCat *cat = categories->array[i];
-        yamj_category_xml(request,selected_subcat,cat,itemSet);
+        yamj_category_xml(request,selected_subcat,cat,sorted_rows);
     }
 
 
 
-    if (selected_subcat && itemSet) {
+    if (selected_subcat && sorted_rows->num_rows) {
 
-        if (itemSet[1]) assert(0); //TODO crossview not coded
-        int num = itemSet[0]->size;
-        // itemSet = array of rowsets. One item for each database source. 
+        int num = sorted_rows->num_rows;
         printf("<movies count=\"%d\">\n",num);
 
 
@@ -881,12 +860,12 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
 
 
         for (i = start ; i < end ; i++ ) {
-            DbItem *item = itemSet[0]->rows+i;
+            DbItem *item = sorted_rows->rows[i];
 
             // Finish populating item->yamj_member_of with all categories this member belongs to
             add_static_indices_to_item(item,selected_subcat,categories);
 
-            yamj_video_xml(request,item,0,itemSet[0]->rows,i,num);
+            yamj_video_xml(request,item,0,sorted_rows->rows,i,num);
         }
         printf("</movies>\n");
     }
@@ -997,6 +976,18 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
     return subcat;
 }
 
+void log_request(char *request)
+{
+#define REQ_LOG "/share/Apps/oversight/logs/request.log"
+
+        if (file_size(REQ_LOG) > 1000000 ) {
+            rename(REQ_LOG,REQ_LOG".old");
+        }
+
+        FILE *fp = fopen(REQ_LOG,"a");
+        fprintf(fp,"[%s]\n",request);
+        fclose(fp);
+}
 
 
 int yamj_xml(char *request)
@@ -1005,9 +996,8 @@ int yamj_xml(char *request)
     int ret = 1;
 
 
-        FILE *fp = fopen("/share/Apps/oversight/logs/request.log","a");
-        fprintf(fp,"[%s]\n",request);
-        fclose(fp);
+        log_request(request);
+
         // request = Cat_SubCat_page.xml
         //
 
@@ -1017,7 +1007,7 @@ int yamj_xml(char *request)
             // write movie XML
             xml_headers();
             config_read_dimensions(0);
-            HTML_LOG(0,"processing [%s]",xmlstr_static(request));
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
             load_configs();
             printf("<details>\n");
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
@@ -1054,8 +1044,26 @@ int yamj_xml(char *request)
 
             xml_headers();
             config_read_dimensions(0);
-            HTML_LOG(0,"processing [%s]",xmlstr_static(request));
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
             load_configs();
+
+            // Determine view order from set name
+            ViewMode *view = VIEW_MENU;
+            if (util_starts_with(request,"Set_")) {
+                if (util_starts_with(request,"Set_tv-")) {
+                    if (util_starts_with(request,"Set_tv-b-")) {
+                        view = VIEW_TVBOXSET;
+                    } else {
+                        view = VIEW_TV;
+                    }
+                } else if (util_starts_with(request,"Set_mv-")) {
+                    if (util_starts_with(request,"Set_mv-b-")) {
+                        view = VIEW_MOVIEBOXSET;
+                    } else {
+                        view = VIEW_MOVIE;
+                    }
+                }
+            }
 
             Array *categories = array_new(free_yamj_catetory);
 
@@ -1066,15 +1074,19 @@ int yamj_xml(char *request)
             if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
                 selected_subcat = find_subcat(request,categories);
             }
+            int (*sort_fn)(DbItem **,DbItem**) = db_overview_cmp_by_title;
+            // Here we could have newest first but leave that to skins 
+            // sort_fn = db_overview_cmp_by_age_desc;
 
-            DbItemSet **itemSet = db_crossview_scan_titles(0,NULL,categories,selected_subcat);
+            DbSortedRows *sorted_rows = get_sorted_rows(view,sort_fn,0,NULL,categories,selected_subcat);
 
+            HTML_LOG(1,"Sort categories..");
             sort_categories(categories);
 
-            yamj_categories_xml(request,selected_subcat,categories,itemSet);
+            yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
 
         } else {
-            HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request),STRCMP(request,CATEGORY_INDEX));
+            HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
         }
 
     return ret;

@@ -2188,28 +2188,9 @@ TRACE;
     Exp *query_exp = build_filter(media_types);
     
     HTML_LOG(0,"Scan..");
-
-    // Get array of rowsets. One item for each database source. 
-    DbItemSet **rowsets = db_crossview_scan_titles( crossview, query_exp,NULL,NULL);
-
-    exp_free(query_exp,1);
-
-TRACE;
-
-    HTML_LOG(0,"Overview..");
-    // Merge the rowsets into a single view.
-    struct hashtable *overview = db_overview_hash_create(rowsets,view);
-TRACE;
-
-    DbItem **sorted_row_ids = NULL;
-    
     char *sort = DB_FLDID_TITLE;
 
     config_check_str(g_query,QUERY_PARAM_SORT,&sort);
-    int numrows = hashtable_count(overview);
-TRACE;
-
-    HTML_LOG(1,"Sort..");
 
     int (*sort_fn)(DbItem **,DbItem**) = view->default_sort;
 
@@ -2222,7 +2203,42 @@ TRACE;
         }
     }
 
+    DbSortedRows *sorted_rows = get_sorted_rows(view,sort_fn,crossview,query_exp,NULL,NULL);
+    exp_free(query_exp,1);
+    return sorted_rows;
+}
+
+DbSortedRows *get_sorted_rows(
+        ViewMode *view, // eg VIEW_MENU , VIEW_MOVIEBOXSET , VIEW_TVBOXSET , VIEW_TV , VIEW_MOVIE
+        int (*sort_fn)(DbItem **,DbItem**), // Override default Sort function - if null the View sort is used.
+        int crossview, // 1 if using crossview
+        Exp *query_exp, // Filter expresssion
+        Array *yamj_categories, // If emulating YAMJ then the subcategories are built dynamically from scanning all rows eg Title_T_1.xml
+        YAMJSubCat *yamj_selected_subcat // If emulating YAMJ then rows are filtered according to selected sub category - not query_exp
+        )
+{
+    // Get array of rowsets. One item for each database source. 
+    DbItemSet **rowsets = db_crossview_scan_titles( crossview, query_exp,yamj_categories,yamj_selected_subcat);
+
+
+TRACE;
+
+    HTML_LOG(0,"Overview..");
+    // Merge the rowsets into a single view.
+    struct hashtable *overview = db_overview_hash_create(rowsets,view);
+TRACE;
+
+    
+    int numrows = hashtable_count(overview);
+TRACE;
+
+
+    DbItem **sorted_row_ids = NULL;
+
+    if (sort_fn == NULL) sort_fn = view->default_sort;
+
     if (sort_fn) {
+        HTML_LOG(1,"Sort..");
         sorted_row_ids = sort_overview(overview,sort_fn);
     }
 
@@ -2234,7 +2250,7 @@ TRACE;
     sortedRows->rowsets = rowsets;
     sortedRows->rows = sorted_row_ids;
 
-    HTML_LOG(0,"end get_sorted_rows_from_params : %d rows",numrows);
+    HTML_LOG(0,"end get_sorted_rows : %d rows",numrows);
 
     return sortedRows;
 }

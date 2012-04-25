@@ -47,6 +47,7 @@ There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_
     * Does not depend on MyIHome service nor internal apache webserver.
     * SD support.
     * PAL support.  The NMT Browser squashes images on PAL displays. Oversight compensates for this.
+  * Multi-lingual support 
 
  
 =Oversight Weaknesses=
@@ -55,7 +56,7 @@ There are quite a few [http://www.networkedmediatank.com/wiki/index.php/Jukebox_
    
   * Page load speed - Because Oversight is dynamic It is no match for a jukebox built on static pages - but its still very usable giving you a real time view of your media.
   * No post scan tweaking of plots etc. - This will be implemented soon.
-  * Multi-lingual support (I plan to address this in later releases)
+
   * Detailed Scraping. Actor Bios, Names of Producers, Cleaners and all that kind of stuff is not supported. Via the PC, Oversight provides a link to IMDB.
   * Media attribute detection. Currently display of framerates etc is not supported.
   * TV Series in ISO Images not supported. (This is on the roadmap)

@@ -648,14 +648,27 @@ DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbIte
 
     HTML_LOG(1,"sorting %d items",total);
     overview_array_dump(3,"ovw flatten",ids);
-    qsort(ids,hashtable_count(overview),sizeof(DbItem *),(void *)cmp_fn);
+    qsort(ids,total,sizeof(DbItem *),(void *)cmp_fn);
     HTML_LOG(1,"sorted %d items",total);
     overview_array_dump(2,"ovw sorted",ids);
 
     return ids;
 }
 
-
+DbItem **sort_linked_items(DbItem *item,int (*cmp_fn)(DbItem **,DbItem **))
+{
+    DbItem** ptr;
+    int num=0;
+    ptr =  CALLOC(sizeof(DbItem *),item->link_count+1);
+    DbItem *file;
+    for(file = item ; file ; file = file->linked ) {
+        ptr[num++] = file;
+    }
+    HTML_LOG(0,"%d vs %d",num,item->link_count);
+    assert(num == item->link_count+1);
+    qsort(ptr,num,sizeof(DbItem *),(void *)cmp_fn);
+    return ptr;
+}
 
 void db_overview_hash_destroy(struct hashtable *ovw_hash) {
     hashtable_destroy(ovw_hash,0,0);

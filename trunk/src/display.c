@@ -68,7 +68,8 @@ char *get_play_tvid(char *text) {
 }
 
 // Return a full path 
-char *get_path(DbItem *item,char *path,int *freepath) {
+char *get_path(DbItem *item,char *path,int *freepath)
+{
 
 TRACE;
 
@@ -2769,4 +2770,46 @@ char *get_selected_item()
     return selected_item;
 }
 
+/*
+ * If format is NULL then defailt formats are used for recent or old dates.
+ */
+char *get_date_static(DbItem *item,char *format)
+{
+    static char *old_date_format=NULL;
+    static char *recent_date_format=NULL;
+    // Date format
+    if (recent_date_format == NULL && !config_check_str(g_oversight_config,"ovs_date_format",&recent_date_format)) {
+        recent_date_format="%d %b";
+    }
+    if (old_date_format == NULL && !config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
+        old_date_format="%d %b %y";
+    }
+
+#define DATE_BUF_SIZ 40
+    static char date_buf[DATE_BUF_SIZ];
+
+
+    OVS_TIME date=item->airdate;
+    if (date<=0) {
+        date=item->airdate_imdb;
+    }
+    *date_buf='\0';
+    if (date > 0) {
+
+        char *date_format=NULL;
+
+        if (format == NULL) {
+            if  (year(epoc2internal_time(time(NULL))) != year(date)) {  
+                date_format = old_date_format;
+            } else {
+                date_format = recent_date_format;
+            }
+        } else {
+            date_format = format;
+        }
+
+        strftime(date_buf,DATE_BUF_SIZ,date_format,internal_time2tm(date,NULL));
+    }
+    return date_buf;
+}
 // vi:sw=4:et:ts=4

@@ -458,7 +458,7 @@ DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)
 
     ViewMode *view=get_view_mode(1);
 
-    int tv_or_movie_view = (view->view_class == VIEW_CLASS_DETAIL);
+    int get_detail_fields = (view->view_class == VIEW_CLASS_DETAIL || yamj_cats != NULL);
 
 
     HTML_LOG(3,"Creating db scan pattern..");
@@ -500,7 +500,7 @@ DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)
 
         while (eof == 0) {
             db->db_size++;
-            dbread_and_parse_row(&rowid,db,fp,&eof,tv_or_movie_view);
+            dbread_and_parse_row(&rowid,db,fp,&eof,get_detail_fields);
 
             if (rowid.file) {
 

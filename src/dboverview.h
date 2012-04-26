@@ -22,6 +22,7 @@ int db_overview_cmp_by_year_asc(DbItem **item1,DbItem **item2);
 int db_overview_cmp_by_season_asc(DbItem **item1,DbItem **item2);
 int db_overview_name_eqf(DbItem *item1,DbItem *item2);
 DbItem **sort_overview(struct hashtable *overview, int (*cmp_fn)(DbItem **,DbItem **));
+DbItem **sort_linked_items(DbItem *item,int (*cmp_fn)(DbItem **,DbItem **));
 struct hashtable *db_overview_hash_create(DbItemSet **rowsets,ViewMode *view);
 void db_overview_hash_destroy(struct hashtable *ovw_hash);
 void evaluate_group(DbGroupIMDB *group);

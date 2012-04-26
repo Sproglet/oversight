@@ -61,40 +61,6 @@ char *best_eptitle(DbItem *item,int *free_title)
     return title;
 }
 
-char *get_date_static(DbItem *item)
-{
-    static char *old_date_format=NULL;
-    static char *recent_date_format=NULL;
-    // Date format
-    if (recent_date_format == NULL && !config_check_str(g_oversight_config,"ovs_date_format",&recent_date_format)) {
-        recent_date_format="%d %b";
-    }
-    if (old_date_format == NULL && !config_check_str(g_oversight_config,"ovs_old_date_format",&old_date_format)) {
-        old_date_format="%d %b %y";
-    }
-
-#define DATE_BUF_SIZ 40
-    static char date_buf[DATE_BUF_SIZ];
-
-
-    OVS_TIME date=item->airdate;
-    if (date<=0) {
-        date=item->airdate_imdb;
-    }
-    *date_buf='\0';
-    if (date > 0) {
-
-        char *date_format=NULL;
-        if  (year(epoc2internal_time(time(NULL))) != year(date)) {  
-            date_format = old_date_format;
-        } else {
-            date_format = recent_date_format;
-        }
-
-        strftime(date_buf,DATE_BUF_SIZ,date_format,internal_time2tm(date,NULL));
-    }
-    return date_buf;
-}
 
 /**
  * Create a number of javascript functions that each return the 
@@ -167,7 +133,7 @@ HTML_LOG(0,"num rows = %d",num_rows);
                 JS_ARG_STRING,"plot",NVL(plot),
                 JS_ARG_STRING,"info",item->file,
                 JS_ARG_STRING,"title",title,
-                JS_ARG_STRING,"date",get_date_static(item),
+                JS_ARG_STRING,"date",get_date_static(item,NULL),
                 JS_ARG_STRING,"share",share,
                 JS_ARG_INT,"watched",item->watched,
                 JS_ARG_INT,"locked",is_locked(item),
@@ -310,7 +276,7 @@ TRACE;
 
 
                 //Date
-                char *date_buf=get_date_static(item);
+                char *date_buf=get_date_static(item,NULL);
 
 
                 //network icon

@@ -73,7 +73,7 @@ char *movie_listing(DbItem *rowid)
         Array *js = array_new(free);
         Array *output = array_new(free);
 
-        Array *parts = split(rowid->parts,"/",0);
+        Array *parts = splitstr(rowid->parts,"/");
         HTML_LOG(1,"parts ptr = %ld",parts);
 
         char *label;

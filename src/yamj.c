@@ -40,6 +40,9 @@
 
 // Prototypes
 void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
+void yamj_files(DbItem *item);
+int yamj_file(DbItem *item,int part_no);
+void yamj_file_part(DbItem *item,int part_no,char *part_name);
 
 /*
  * The plan is as follows:
@@ -602,10 +605,90 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     FREE(plot);
         
 
-    printf("\t<episode>%s</episode>\n",xmlstr_static(NVL(item->episode),0));
+    yamj_files(item);
 
     printf("</movie>\n");
     return ret;
+}
+
+void yamj_files(DbItem *item)
+{
+    printf("\t<files>\n");
+
+
+    // For TV etc all the parts must be listed in order. So start with season -1 and repeat until all seasons done
+    if (item->linked == NULL) {
+        yamj_file(item,1);
+    } else {
+        // Sort all items in title/season/episode order
+        DbItem **ptr = sort_linked_items(item,db_overview_cmp_by_title);
+
+        int i;
+        int part_no=1;
+        for(i=0 ; i< item->link_count+1 ; i++ ) {
+            part_no = yamj_file(ptr[i],part_no);
+        }
+        FREE(ptr);
+    }
+    printf("\t</files>\n");
+}
+
+/*
+ * print file - returns next part no
+ */
+int yamj_file(DbItem *item,int part_no)
+{
+    HTML_LOG(0,"item %s %dx%s %s",NVL(item->title),item->season,NVL(item->episode),item->file);
+    yamj_file_part(item,part_no++,NULL);
+
+    if (item->parts) {
+
+        int i;
+        Array *parts = splitstr(item->parts,"/");
+
+        for(i = 0 ; i < parts->size ; i++ ) {
+            yamj_file_part(item,part_no++,parts->array[i]);
+        }
+        array_free(parts);
+    }
+    return part_no;
+}
+
+
+void yamj_file_part(DbItem *item,int part_no,char *part_name)
+{
+    printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"0\" subtitlesExchange=\"NO\" title=\"UNKNOWN\" vod=\"\" watched=\"%s\">\n",
+            part_no,part_no,item->season,(item->watched?"true":"false"));
+
+    int freeit;
+    char *path;
+
+    if (part_name == NULL) {
+        path = get_path(item,item->file,&freeit);
+    } else {
+        path = get_path(item,part_name,&freeit);
+    }
+
+    int free_enc;
+    char *encoded_path = url_encode_static(path,&free_enc);
+
+    printf("\t\t<fileLocation>%s</fileLocation>\n",xmlstr_static(path,0));
+    printf("\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
+
+    if (item->category == 'T' ) {
+        errno=0;
+        int epno=strtol(item->episode,NULL,10);
+        if (errno) epno = part_no;
+        printf("\t\t<fileTitle part=\"%d\">%s</fileTitle>\n",epno,xmlstr_static(item->eptitle,0));
+        printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",epno,epno);
+        printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",epno,get_date_static(item,"%Y-%m-%d"));
+    } else {
+        printf("\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
+    }
+    printf("\t</file>\n");
+
+    if (free_enc) FREE(encoded_path);
+    if (freeit) FREE(path);
 }
 
 /*

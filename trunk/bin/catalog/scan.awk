@@ -466,6 +466,7 @@ ext,extno,i,j,is_dvd,path,imgname,ipath,n1,n2) {
 function check_local_images(minfo,folder,file) {
     check_local_image(minfo,POSTER,folder,file,"poster","");
     check_local_image(minfo,FANART,folder,file,"fanart",".fanart");
+    check_local_image(minfo,BANNER,folder,file,"banner",".banner");
 }
 
 function storeMovie(minfo,file,folder,timeStamp,files_in_db,\
@@ -887,6 +888,9 @@ function get_images(minfo) {
 
     if (GET_FANART) {
         minfo[FANART] = download_image(FANART,minfo,FANART);
+    }
+    if (GET_BANNERS) {
+        minfo[BANNER] = download_image(BANNER,minfo,BANNER);
     }
     if(LG)DEBUG("Delete get_images done");
 }

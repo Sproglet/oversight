@@ -47,6 +47,7 @@ function set_db_fields() {
     EPPLOT=db_field("_ep","EpPlot","plot",g_dbtype_string,0);
 
     IDLIST=db_field("_U","IDs","idlist",g_dbtype_string,1);
+    BANNER=db_field("_b","Banner","banner",g_dbtype_string,0);
     POSTER=db_field("_J","Poster","thumb",g_dbtype_string,0);
     FANART=db_field("_fa","Fanart","fanart",g_dbtype_string,0);
 

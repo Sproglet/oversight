@@ -2812,4 +2812,50 @@ char *get_date_static(DbItem *item,char *format)
     }
     return date_buf;
 }
+ViewMode *get_drilldown_view(DbItem *item)
+{
+
+    if (item->drilldown_view == NULL) {
+        DbItem *item2;
+        ViewMode *m;
+
+        switch (item->category) {
+            case 'T':
+                m = VIEW_TV;
+                break;
+            case 'M': case 'F':
+                m = VIEW_MOVIE;
+                break;
+            default:
+                m = VIEW_OTHER;
+                break;
+        }
+
+        for( item2=item->linked ; item2 ; item2=item2->linked ) {
+
+            if (item2->category != item->category ) {
+                m = VIEW_MIXED;
+                break;
+            } else {
+                switch (item2->category) {
+                    case 'T':
+                        if (item->season != item2->season) {
+                            m = VIEW_TVBOXSET;
+                        }
+                        break;
+                    case 'M': case 'F':
+                        // As soon as there are two linked movies its a box set
+                        m = VIEW_MOVIEBOXSET;
+                        break;
+                    default:
+                        m = VIEW_MIXED;
+                        break;
+                }
+            }
+        }
+        item->drilldown_view = m;
+    }
+    return item->drilldown_view;
+}
+
 // vi:sw=4:et:ts=4

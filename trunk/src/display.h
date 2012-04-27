@@ -88,4 +88,5 @@ char *td_mouse_event_fn(char *function_name_prefix,long function_id);
 DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num);
 DbSortedRows *get_sorted_rows(ViewMode *view, int (*sort_fn)(DbItem **,DbItem**),int crossview,Exp *query_exp,Array *yamj_categories,YAMJSubCat *yamj_selected_subcat);
 char *get_date_static(DbItem *item,char *format);
+ViewMode *get_drilldown_view(DbItem *item);
 #endif

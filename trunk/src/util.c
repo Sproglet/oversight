@@ -1449,19 +1449,23 @@ char *xmlstr_static(char *text,int idx)
 {
     static char *out[3]={NULL,NULL,NULL};
     static int free_last[3] = {0,0,0};
+
+    static char *x[4]= { "&" ,     "<" ,    ">" ,   NULL};
+    static char *y[4]= { "&amp;" , "&lt;" , "&gt" , NULL};
+
     if (out[idx] && free_last[idx]) {
         FREE(out[idx]);
         free_last[idx]=0;
     }
     out[idx] = text;
-    if (strchr(out[idx],'<')) out[idx] = replace_str(text,"<","&lt;");
-
-    if (strchr(out[idx],'>')) {
-       char *tmp = replace_str(out[idx],">","&gt;");
-       if (out[idx] != text) FREE(out[idx]);
-       out[idx] = tmp;
+    int i;
+    for(i = 0 ; x[i] ; i++ ) {
+        if (strchr(out[idx],x[i][0])) {
+            char *tmp = replace_str(out[idx],x[i],y[i]);
+            if (out[idx] != text) FREE(out[idx]);
+            out[idx] = tmp;
+        }
     }
-
     free_last[idx] =  (out[idx] != text);
 
     return out[idx];

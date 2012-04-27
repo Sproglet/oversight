@@ -302,52 +302,6 @@ char *get_text_mode_item(DbItem *row_id,char **font_class,char **grid_class,View
     return title;
 }
 
-static inline ViewMode *get_drilldown_view(DbItem *item)
-{
-
-    if (item->drilldown_view == NULL) {
-        DbItem *item2;
-        ViewMode *m;
-
-        switch (item->category) {
-            case 'T':
-                m = VIEW_TV;
-                break;
-            case 'M': case 'F':
-                m = VIEW_MOVIE;
-                break;
-            default:
-                m = VIEW_OTHER;
-                break;
-        }
-
-        for( item2=item->linked ; item2 ; item2=item2->linked ) {
-
-            if (item2->category != item->category ) {
-                m = VIEW_MIXED;
-                break;
-            } else {
-                switch (item2->category) {
-                    case 'T':
-                        if (item->season != item2->season) {
-                            m = VIEW_TVBOXSET;
-                        }
-                        break;
-                    case 'M': case 'F':
-                        // As soon as there are two linked movies its a box set
-                        m = VIEW_MOVIEBOXSET;
-                        break;
-                    default:
-                        m = VIEW_MIXED;
-                        break;
-                }
-            }
-        }
-        item->drilldown_view = m;
-    }
-    return item->drilldown_view;
-}
-
 char *add_scroll_attributes(int left_scroll,int right_scroll,int selected_cell,char *attrin)
 {
     char *attr;

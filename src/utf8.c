@@ -77,6 +77,11 @@ char *utf8norm(char *s,int len)
             }
             HTML_LOG(0,"Error [%.*s] [%s] using [%s]",len,s,utf8proc_errmsg(uerr),out);
         } else {
+            if (len && (out == NULL || !*out)) {
+                // something went wrong?
+                HTML_LOG(0,"Unknown error  - empty string  normalising [%.*s] ",len,s);
+                out = COPY_STRING(len,s);
+            } 
             //HTML_LOG(0,"utf8[%s]",NVL(out));
         }
     }

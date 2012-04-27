@@ -217,7 +217,7 @@ DbItem *dbread_and_parse_row(
                 } while (*next == '_');
             }
         }
-        //HTML_LOG(0,"dbline ending %d[%.20s]",*next,next);
+        //HTML_LOG(0,"dbline ending %d[%.20s] ",*next,next);
 
         // Skip EOL characters,
         dbreader_advance_line(fp,next);
@@ -234,6 +234,8 @@ DbItem *dbread_and_parse_row(
 
     if (rowid) {
 #if 0
+            HTML_LOG(0,"TITLE [%s] ",rowid->title);
+            HTML_LOG(0,"FILE [%s] ",rowid->file);
         if (rowid->directors) {
             HTML_LOG(0,"[%s/%d] directors [%s]",rowid->title,rowid->external_id,
                     db_group_imdb_string_static(rowid->directors,"nm"));

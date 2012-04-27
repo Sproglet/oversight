@@ -498,25 +498,24 @@ DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)
         DbItem rowid;
         db_rowid_init(&rowid,db);
 
+
         while (eof == 0) {
+        int dbg =0;
             db->db_size++;
             dbread_and_parse_row(&rowid,db,fp,&eof,get_detail_fields);
 
             if (rowid.file) {
 
-                //HTML_LOG(0,"xx read1 [%d][%s][%s]",rowid.id,rowid.title,rowid.genre);
 
+                if(dbg)HTML_LOG(0,"xx read1 [%d][%s][%s]",rowid.id,rowid.title,rowid.genre,rowid.file);
                 int keeprow=1;
 
                 // If there were any  deletes queued for shared resources, revoke them
                 // as they are in use by this item.
                 if (g_delete_queue != NULL) {
 
-TRACE;
                     delete_queue_unqueue(&rowid,rowid.nfo);
-TRACE;
                     remove_internal_images_from_delete_queue(&rowid);
-TRACE;
                 }
 
                 // Check the device is mounted - if not skip it.
@@ -570,8 +569,6 @@ TRACE;
                         if (exp ) {
                            if ( evaluate_num(exp,&rowid) == 0) {
                                 keeprow = 0;
-                           } else {
-                               //exp_dump(exp,0,1);
                            }
                         }
                     }

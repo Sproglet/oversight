@@ -39,7 +39,7 @@ titles,num,name,key) {
     } else if ((num=set_all_titles(imdb_id,main_title,titles)) > 0) { # get all titles for set
 
         # search titles for common text
-        name = common_text(num,titles,1,2,3); 
+        name = common_text(num,titles,1,int(num/2)+1,3); 
         if(LD)DETAIL("set_name_from_titles=" name);
         if (name == "") {
             # search web for common text

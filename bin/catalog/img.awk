@@ -42,10 +42,14 @@ poster_ref,id,ret) {
                 ret ="fanart.jpg";
             } else if (field_id == POSTER ) {
                 ret ="poster.jpg";
+            } else if (field_id == BANNER ) {
+                ret ="banner.jpg";
             }
         } else {
             if (field_id == FANART ) {
                 ret = gensub("\\.[^.]+$","-fanart.jpg",1,minfo[NAME]);
+            } else if (field_id == BANNER ) {
+                ret = gensub("\\.[^.]+$","-banner.jpg",1,minfo[NAME]);
             } else if (field_id == POSTER ) {
                 ret = gensub("\\.[^.]+$",".jpg",1,minfo[NAME]);
             }
@@ -59,6 +63,9 @@ poster_ref,id,ret) {
 
 function getting_fanart(minfo,verbose) {
     return 0+ getting_image(minfo,FANART,GET_FANART,UPDATE_FANART,verbose);
+}
+function getting_banner(minfo,verbose) {
+    return 0+ getting_image(minfo,BANNER,GET_BANNER,UPDATE_BANNER,verbose);
 }
 
 function getting_poster(minfo,verbose) {
@@ -114,6 +121,8 @@ function download_image(field_id,minfo,mi_field,\
         if (field_id == POSTER) {
             get_it = getting_poster(minfo,0);
         } else if (field_id == FANART) {
+            get_it = getting_fanart(minfo,0);
+        } else if (field_id == BANNER) {
             get_it = getting_fanart(minfo,0);
         }
 

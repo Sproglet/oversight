@@ -29,6 +29,7 @@ num,tags,i,tmp,ret,id) {
             minfo2[RUNTIME] = xml["/movie/runtime"];
             minfo2[POSTER] = xml["/movie/thumb"];
             minfo2[FANART] = xml["/movie/fanart"];
+            minfo2[BANNER] = xml["/movie/banner"];
             minfo2[CATEGORY] = "M";
             num = find_elements(xml,"/movie/genre",empty_filter,0,tags);
             if (num) {
@@ -82,10 +83,10 @@ foundId,line) {
 function nfo_xml_define() {
     if (!(1 in g_tag_movie)) {
 
-        split(TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","SET","POSTER","FANART","CERT","WATCHED","IMDBID","FILE","GENRE,g_tag_movie,",");
+        split(TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","SET","POSTER","FANART","BANNER","CERT","WATCHED","IMDBID","FILE","GENRE,g_tag_movie,",");
         hash_invert(g_tag_movie,g_tag_movie);
 
-        split(TITLE","IDLIST","RATING","PLOT","GENRE","POSTER","FANART,g_tag_tvshow,",");
+        split(TITLE","IDLIST","RATING","PLOT","GENRE","POSTER","FANART","BANNER,g_tag_tvshow,",");
         hash_invert(g_tag_tvshow,g_tag_tvshow);
 
         split(EPTITLE","SEASON","EPISODE","AIRDATE","EPPLOT,g_tag_episodes,",");

@@ -158,9 +158,12 @@ BEGIN {
     GET_POSTERS=1;
     GET_FANART=1;
     GET_PORTRAITS=1;
+    GET_BANNERS=1;
+
     UPDATE_POSTERS=0;
     UPDATE_FANART=0;
     UPDATE_PORTRAITS=0;
+    UPDATE_BANNERS=0;
 
     g_db = 1; # true if db is updated - yes for oversight no for anything else.
 
@@ -209,6 +212,7 @@ END{
         # Running without oversight jukebox - switch off all poster fetching etc.
         GET_POSTERS = UPDATE_POSTERS = 0;
         GET_FANART = UPDATE_FANART = 0;
+        GET_BANNERS = UPDATE_BANNERS = 0;
         GET_PORTRAITS = UPDATE_PORTRAITS = 0;
     }
     if(LD)DETAIL("g_db = "g_db);
@@ -989,8 +993,14 @@ i,folderCount,moveDown) {
         } else if (ARGV[i] == "UPDATE_FANART" )  {
             GET_FANART = UPDATE_FANART = 1;
             moveDown++;
+        } else if (ARGV[i] == "NO_BANNERS" )  {
+            GET_BANNERS = UPDATE_BANNERS = 0;
+            moveDown++;
+        } else if (ARGV[i] == "UPDATE_BANNERS" )  {
+            GET_BANNERS = UPDATE_BANNERS = 1;
+            moveDown++;
 
-        } else if (ARGV[i] == "GET_FANART"  || ARGV[i] == "GET_POSTERS"  || ARGV[i] == "GET_PORTRAITS" )  {
+        } else if (ARGV[i] == "GET_FANART"  || ARGV[i] == "GET_POSTERS"  || ARGV[i] == "GET_PORTRAITS" || ARGV[i] == "GET_BANNERS" )  {
             #deperecate
             moveDown++;
 

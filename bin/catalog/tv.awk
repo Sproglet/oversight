@@ -2225,7 +2225,10 @@ seriesInfo,result,iid,thetvdbid,lang,plot,xmlstr,num) {
         minfo[GENRE]= xml_extract(seriesInfo[1],"Genre");
         minfo["mi_certrating"] = xml_extract(seriesInfo[1],"ContentRating");
         minfo[RATING] = xml_extract(seriesInfo[1],"Rating");
-        minfo[POSTER]=tvDbImageUrl(xml_extract(seriesInfo[1],"poster"));
+
+        #minfo[POSTER]=tvDbImageUrl(xml_extract(seriesInfo[1],"poster"));
+        #minfo[FANART]=tvDbImageUrl(xml_extract(seriesInfo[1],"fanart"));
+        #minfo[BANNER]=tvDbImageUrl(xml_extract(seriesInfo[1],"banner"));
 
         thetvdbid = xml_extract(seriesInfo[1],"id");
         minfo_set_id("thetvdb",thetvdbid,minfo);
@@ -2294,7 +2297,7 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(minfo,tvdbid,\
-xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url,size,banner_scores) {
+xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size) {
 
     lnum = get_langs(langs);
 
@@ -2303,8 +2306,9 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
     r="/Banners/Banner";
     get_poster = getting_poster(minfo,1) && !g_image_inspected[tvdbid,POSTER];
     get_fanart = getting_fanart(minfo,1) && !g_image_inspected[tvdbid,FANART];
+    get_banner = getting_banner(minfo,1) && !g_image_inspected[tvdbid,BANNER];
 
-    if (get_poster || get_fanart) {
+    if (get_poster || get_fanart || get_banner) {
 
         key="banners:"tvdbid ":" minfo[SEASON];
 
@@ -2320,47 +2324,40 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,i,banners,key,url
         if (firstIndex(xml) != "") {
 
             if (get_poster) {
-                delete banner_scores;
-                for(i in xml) {
-                    if (index(xml[i],"BannerType>season<") && index(xml[i],"BannerType2>season<") && index(xml[i],"Season>"minfo[SEASON]"<")) {
-
-                        url = xml_extract(xml[i],"BannerPath");
-                        banner_scores[tvDbImageUrl(url)] = banner_score(xml[i],lnum,langs);
-                    }
-                }
-                dump(0,"poster scores",banner_scores);
-                if (bestScores(banner_scores,banner_scores)) {
-                    banners[POSTER] = minfo[POSTER] = firstIndex(banner_scores);
-                    g_image_inspected[tvdbid,POSTER]=1;
-                    if(LG)DEBUG("Poster = "minfo[POSTER]);
-                }
+                best_best_banner_score(tvdbid,POSTER,xml,minfo,"season","season",minfo[SEASON],lnum,langs);
             }
-
+            if (get_banner) {
+                best_best_banner_score(tvdbid,BANNER,xml,minfo,"season","seasonwide",minfo[SEASON],lnum,langs);
+            }
             if (get_fanart) {
-
-                delete banner_scores;
-
                 if (g_settings["catalog_image_fanart_width"]  == 1920 ) {
                     size = "1920x1080";
                 } else {
                     size = "1280x720";
                 }
-
-                for(i in xml) {
-                    if (index(xml[i],">fanart<")) {
-
-                        url = xml_extract(xml[i],"BannerPath");
-                        banner_scores[tvDbImageUrl(url)] = banner_score(xml[i],lnum,langs,size);
-                    }
-                }
-                dump(0,"fanart scores",banner_scores);
-                if (bestScores(banner_scores,banner_scores)) {
-                    banners[FANART] = minfo[FANART] = firstIndex(banner_scores);
-                    g_image_inspected[tvdbid,FANART]=1;
-                    if(LG)DEBUG("Fanart = "minfo[FANART]);
-                }
+                best_best_banner_score(tvdbid,FANART,xml,minfo,"fanart","","",lnum,langs,size);
             }
         }
+    }
+}
+
+function best_best_banner_score(tvdbid,fld,xml,minfo,filter1,filter2,filter3,lnum,langs,size,\
+banner_scores,i,url,banners) {
+    for(i in xml) {
+        if (index(xml[i],"BannerType>"filter1"<")) {
+           if(filter2 =="" || index(xml[i],"BannerType2>"filter2"<")) {
+               if(filter3 =="" || index(xml[i],"Season>"filter3"<")) {
+                   url = xml_extract(xml[i],"BannerPath");
+                   banner_scores[tvDbImageUrl(url)] = banner_score(xml[i],lnum,langs,size);
+               }
+           }
+        }
+    }
+    dump(0,"image "fld,banner_scores);
+    if (bestScores(banner_scores,banner_scores)) {
+        banners[fld] = minfo[fld] = firstIndex(banner_scores);
+        g_image_inspected[tvdbid,fld]=1;
+        if(LG)DEBUG(fld" = "minfo[fld]);
     }
 }
 

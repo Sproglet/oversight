@@ -509,8 +509,9 @@ void html_log(int level,char *format,...) {
 void html_error(char *format,...) {
     va_list ap;
     va_start(ap,format);
-    fprintf(html_out,"<!-- ERROR -->");
+    fprintf(html_out,"<!-- ERROR: ");
     vfprintf(html_out,format,ap);
+    fprintf(html_out," -->");
     fflush(html_out);
     //html_vacomment(format,ap);
     va_end(ap);

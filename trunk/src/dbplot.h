@@ -4,5 +4,6 @@
 #define PLOT_POSITION_UNSET -1
 char *get_plot(DbItem *item,PlotType ptype);
 void get_plot_offsets_and_text(int num_rows,DbItem **rows,int copy_plot_text);
+void set_plot_keys(DbItem *item);
 
 #endif

@@ -37,6 +37,7 @@
 #define YAMJ_THUMB_PREFIX "thumb_"
 #define YAMJ_POSTER_PREFIX "poster_"
 #define YAMJ_FANART_PREFIX "fanart_"
+#define BOOL(x) ((x)?"true":"false")
 
 // Prototypes
 void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
@@ -448,14 +449,19 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
 }
 
 
+
+
 int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int pos,int total)
 {
     int i;
     int ret = 1;
+
+    ViewMode *view = get_drilldown_view(item);
+
     if (item == NULL) {
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
     }
-    printf("<movie>\n");
+    printf("<movie isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET));
     char *id;
     
     //printf("\t<id moviedb=\"ovs\">%ld</id>\n",item->id);
@@ -481,14 +487,13 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     printf("\t<baseFilenameBase>%ld</baseFilenameBase>\n",item->id);
     printf("\t<baseFilename>%ld</baseFilename>\n",item->id);
 
-    video_field("title",NVL(item->title),0,NULL,NULL);
-
+    printf("\t<title>%s</title>\n",xmlstr_static(item->title,0));
 
     if (item->rating != 0.0) {
         printf("\t<rating>%d</rating>\n",(int)(item->rating *10));
     }
 
-    printf("\t<watched>%s</watched>\n",(item->watched?"true":"false"));
+    printf("\t<watched>%s</watched>\n",BOOL(item->watched));
 
     
     char *poster = internal_image_path_static(item,POSTER_IMAGE,1);
@@ -658,7 +663,7 @@ int yamj_file(DbItem *item,int part_no)
 void yamj_file_part(DbItem *item,int part_no,char *part_name)
 {
     printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"0\" subtitlesExchange=\"NO\" title=\"UNKNOWN\" vod=\"\" watched=\"%s\">\n",
-            part_no,part_no,item->season,(item->watched?"true":"false"));
+            part_no,part_no,item->season,BOOL(item->watched));
 
     int freeit;
     char *path;

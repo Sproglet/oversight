@@ -20,10 +20,43 @@
 #include "vasprintf.h"
 #include "variables.h"
 
+#define ATOMIC_PRECEDENCE 6
+static OpDetails ops[] = {
+    { OP_CONSTANT   , ""    , 0 ,ATOMIC_PRECEDENCE , {VAL_TYPE_NONE,VAL_TYPE_NONE } },
+    { OP_ADD     , "~A~" , 2 , 3 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_SUBTRACT,"~S~"  , 2 , 3  , {VAL_TYPE_NUM,VAL_TYPE_NUM }},
+    { OP_MULTIPLY,"~M~"  , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_DIVIDE  ,"~D~"  , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_AND     ,"~a~"  , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_OR      ,"~o~"  , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_NOT      ,"~!~" , 1 , 5 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_NE      ,"~ne~" , 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LE      ,"~le~" , 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LT      ,"~lt~" , 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_GT      ,"~gt~" , 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_GE      ,"~ge~" , 2 , 2  ,{ VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LEFT    ,"~l~"  , 2 , 2 , {VAL_TYPE_STR , VAL_TYPE_NUM }},
+    { OP_SPLIT   ,"~sp~" , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR }},
+    { OP_THE      ,"~t~" , 1 , 4 , {VAL_TYPE_STR,VAL_TYPE_NONE} },
+
+    // Letters used for following operators are passed in URLs also
+    { OP_EQ         ,"~" QPARAM_FILTER_EQUALS "~"      , 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH "~" , 2 , 2 , {VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR, VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_CONTAINS,"~" QPARAM_FILTER_CONTAINS "~"  , 2 , 2 , {VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR, VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+
+    { OP_REGEX_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~" , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
+    { OP_REGEX_CONTAINS,   "~" QPARAM_FILTER_CONTAINS QPARAM_FILTER_REGEX "~"  , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
+    { OP_REGEX_MATCH,      "~" QPARAM_FILTER_EQUALS QPARAM_FILTER_REGEX "~"  , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
+
+    { OP_DBFIELD,"~f~"   , 1 , 5 , {VAL_TYPE_STR , VAL_TYPE_NONE } }
+};
+
+static int num_ops = sizeof(ops)/sizeof(ops[0]);
 //TODO Add macro or inline function to check access to val members is consistent with val.type
 
 static int evaluate_with_err(Exp *e,DbItem *item,int *err);
 int exp_regex_compile(Exp *e,Exp *source);
+OpDetails *get_op_details(Op op);
 
 void clr_val(Exp *e) {
     switch(e->val.type) {
@@ -58,7 +91,7 @@ void set_str(Exp *e,char *s,int free_str) {
 Exp *new_val_str(char *s,int free_str)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
-    e->op = OP_CONSTANT;
+    e->op_details = get_op_details(OP_CONSTANT);
 
     set_str(e,s,free_str);
     HTML_LOG(0,"str value [%s]",s);
@@ -68,16 +101,16 @@ Exp *new_val_str(char *s,int free_str)
 Exp *new_val_num(double d)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
-    e->op = OP_CONSTANT;
+    e->op_details = get_op_details(OP_CONSTANT);
     e->val.type = VAL_TYPE_NUM;
     e->val.num_val = d;
     HTML_LOG(0,"num value [%ld]",d);
     return e;
 }
-Exp *new_exp(Op op,Exp *left,Exp *right)
+Exp *new_exp(OpDetails *op,Exp *left,Exp *right)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
-    e->op = op;
+    e->op_details = op;
     e->subexp[0] = left;
     e->subexp[1] = right;
 
@@ -167,9 +200,10 @@ static int validate_type(Exp *e,int types,Exp *parent,int argno)
 /*
  * 0 = success
  */
-static int evaluate_child(Exp *e,DbItem *item,int child_no,int argtype,int *err) 
+static int evaluate_child(Exp *e,DbItem *item,int child_no,int *err) 
 {
     int ret = 0;
+    int argtype = e->op_details->argtypes[child_no];
     if (argtype) {
 
         //HTML_LOG(0,"begin eval child %d type=%d",child_no,argtype);
@@ -182,6 +216,9 @@ static int evaluate_child(Exp *e,DbItem *item,int child_no,int argtype,int *err)
             ret = validate_type(e->subexp[child_no],argtype,e,child_no);
         }
 
+    } else if ( e->subexp[child_no] ) {
+        html_error("too many arguments %c",e->op_details->url_text);
+        ret = -1;
     }
     //HTML_LOG(0,"eval child %d = %d",child_no,ret);
     return ret;
@@ -189,11 +226,11 @@ static int evaluate_child(Exp *e,DbItem *item,int child_no,int argtype,int *err)
 /*
  * 0 = success
  */
-static int evaluate_children(Exp *e,DbItem *item,int arg1type,int arg2type,int *err) 
+static int evaluate_children(Exp *e,DbItem *item,int *err) 
 {
     int ret = 0;
-    if ((ret = evaluate_child(e,item,0,arg1type,err)) == 0) {
-        ret = evaluate_child(e,item,1,arg2type,err);
+    if ((ret = evaluate_child(e,item,0,err)) == 0) {
+        ret = evaluate_child(e,item,1,err);
     }
     //HTML_LOG(0,"eval children = %d",ret);
     //exp_dump(e,1,1);
@@ -211,44 +248,45 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
     if (*err) return *err;
 
 
-    if (e->op != OP_CONSTANT) {
+    if (e->op_details->op != OP_CONSTANT) {
         clr_val(e);
     }
 
-    switch (e->op) {
+    
+    switch (e->op_details->op) {
         case OP_CONSTANT:
             break;
 
         case OP_ADD:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val + e->subexp[1]->val.num_val;
             }
             break;
         case OP_SUBTRACT:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val - e->subexp[1]->val.num_val;
             }
             break;
         case OP_MULTIPLY:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val * e->subexp[1]->val.num_val;
             }
             break;
         case OP_DIVIDE:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_children(e,item,VAL_TYPE_NUM,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val / e->subexp[1]->val.num_val;
             }
             break;
         case OP_AND:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_child(e,item,0,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_child(e,item,0,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val;
                 if (e->val.num_val) {
-                    if (evaluate_child(e,item,1,VAL_TYPE_NUM,err) == 0) {
+                    if (evaluate_child(e,item,1,err) == 0) {
                         e->val.num_val = e->subexp[1]->val.num_val;
                     }
                 }
@@ -256,10 +294,10 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
         case OP_OR:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_child(e,item,0,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_child(e,item,0,err) == 0) {
                 e->val.num_val = e->subexp[0]->val.num_val;
                 if (!e->val.num_val) {
-                    if (evaluate_child(e,item,1,VAL_TYPE_NUM,err) == 0) {
+                    if (evaluate_child(e,item,1,err) == 0) {
                         e->val.num_val = e->subexp[1]->val.num_val;
                     }
                 }
@@ -267,7 +305,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
         case OP_NOT:
             e->val.type = VAL_TYPE_NUM;
-            if (evaluate_child(e,item,0,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_child(e,item,0,err) == 0) {
                 e->val.num_val = !e->subexp[0]->val.num_val;
             }
             break;
@@ -277,7 +315,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
         case OP_LT:
         case OP_GT:
         case OP_GE:
-            if (evaluate_children(e,item,VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
                 e->val.type = VAL_TYPE_NUM;
 
                 if (e->subexp[0]->val.type != e->subexp[1]->val.type) {
@@ -298,12 +336,12 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 } else {
                     switch (e->subexp[0]->val.type ) {
                         case VAL_TYPE_STR:
-                            e->val.num_val = compare(e->op,index_STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
+                            e->val.num_val = compare(e->op_details->op,index_STRCMP(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val));
                             break;
                         case VAL_TYPE_CHAR:
                         case VAL_TYPE_NUM:
                             //HTML_LOG(0,"XXX %lf %c %lf",e->subexp[0]->val.num_val,e->op,e->subexp[1]->val.num_val);
-                            e->val.num_val = compare(e->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
+                            e->val.num_val = compare(e->op_details->op,(e->subexp[0]->val.num_val - e->subexp[1]->val.num_val));
                             break;
                         default:
                             assert(0);
@@ -312,7 +350,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             }
             break;
         case OP_LEFT:
-            if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_NUM,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
 
                 int len = e->subexp[1]->val.num_val ;
                 if (len < 0 ) len = 0;
@@ -339,12 +377,22 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 }
             }
             break;
+        case OP_THE:
+            if (evaluate_children(e,item,err) == 0) {
+
+                char *s = e->subexp[0]->val.str_val;
+
+                if (STARTS_WITH_THE(s)) {
+                    set_str(e,s+4,0);
+                } else {
+                    set_str(e,s,0);
+                }
+            }
+            break;
         case OP_STARTS_WITH:
         case OP_CONTAINS:
 
-            if (evaluate_children(e,item,
-                    VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR,
-                    VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
 
                 //exp_dump(e->subexp[1],0,1);
 
@@ -428,7 +476,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
                 } else if (char_on_right) {
                     // String contains character
-                    switch(e->op) {
+                    switch(e->op_details->op) {
                         case OP_STARTS_WITH:
                             if (STARTS_WITH_THE(left)) left+= 4;
                             e->val.num_val = (tolower(*(unsigned char *)left) == tolower((unsigned char)right_chr));
@@ -443,7 +491,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 } else {
 
                     // String contains string
-                    switch(e->op) {
+                    switch(e->op_details->op) {
                         case OP_STARTS_WITH:
                             if (STARTS_WITH_THE(left)) left+= 4;
                             e->val.num_val = util_starts_with_ignore_case(left,right);
@@ -459,7 +507,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
 
         case OP_SPLIT:
-            if (evaluate_children(e,item,VAL_TYPE_STR,VAL_TYPE_STR,err) == 0) {
+            if (evaluate_children(e,item,err) == 0) {
 
                 e->val.type = VAL_TYPE_LIST;
                 e->val.list_val = splitstr(e->subexp[0]->val.str_val,e->subexp[1]->val.str_val);
@@ -470,7 +518,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
 
             assert(item);
 
-            if (evaluate_child(e,item,0,VAL_TYPE_STR,err) == 0) {
+            if (evaluate_child(e,item,0,err) == 0) {
 
                 //HTML_LOG(0,"OP_DBFIELD item [%s]",item->title);
                 //exp_dump(e->subexp[0],0,1);
@@ -479,7 +527,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 void *offset;
                 char *fname =e->subexp[0]->val.str_val;
 
-                if (e->fld_type == FIELD_TYPE_NONE || e->subexp[0]->op != OP_CONSTANT ) {
+                if (e->fld_type == FIELD_TYPE_NONE || e->subexp[0]->op_details->op != OP_CONSTANT ) {
 
                     // Get the field attributes. Type, offset in DbItem, 
                     // whether it is an overview field (or only parsed during detail view - eg PLOT)
@@ -585,7 +633,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
             break;
 
         default:
-            html_error("unknown op [%d]",e->op);
+            html_error("unknown op [%d]",e->op_details->op);
             assert(0);
 
     }
@@ -599,7 +647,7 @@ int exp_regex_compile(Exp *e,Exp *source)
     assert(source->val.type == VAL_TYPE_STR);
 
     if ( e->regex_str == NULL || // first time
-        (source->op != OP_CONSTANT && STRCMP(e->regex_str,source->val.str_val) != 0) // not a constant and value has changed
+        (source->op_details->op != OP_CONSTANT && STRCMP(e->regex_str,source->val.str_val) != 0) // not a constant and value has changed
         
         )  {
         // Free the old pattern
@@ -617,9 +665,9 @@ int exp_regex_compile(Exp *e,Exp *source)
         // Add delimiters
         char *tmp;
         ovs_asprintf(&tmp,"%s%s%s",
-                (e->op == OP_REGEX_CONTAINS ? "" : "^" ),
+                (e->op_details->op == OP_REGEX_CONTAINS ? "" : "^" ),
                 e->regex_str,
-                (e->op == OP_REGEX_MATCH ? "$" : "" ));
+                (e->op_details->op == OP_REGEX_MATCH ? "$" : "" ));
 
         HTML_LOG(0,"regex[%s]",tmp);
 
@@ -636,12 +684,19 @@ int exp_regex_compile(Exp *e,Exp *source)
     return result;
 }
 
-typedef struct {
-    Op op;
-    char *url_text;
-    int num_args;
-    int precedence;
-} OpDetails;
+OpDetails *get_op_details(Op op)
+{
+
+    int i;
+    OpDetails *op_details = NULL;
+    for(i = 0 ; i < num_ops ; i++ ) {
+        if (ops[i].op == op) {
+            op_details = ops+i;
+            break;
+        }
+    }
+    return op_details;
+}
 
 /**
  * Convert string to an expression.
@@ -671,37 +726,6 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 
     //HTML_LOG(0,"parse exp%d %*s[%s]",precedence,precedence*4,"",*text_ptr);
 
-#define ATOMIC_PRECEDENCE 6
-    static OpDetails ops[] = {
-        { OP_CONSTANT   , ""    , 0 ,ATOMIC_PRECEDENCE },
-        { OP_ADD     , "~A~" , 2 , 3 },
-        { OP_SUBTRACT,"~S~"  , 2 , 3 },
-        { OP_MULTIPLY,"~M~"  , 2 , 4 },
-        { OP_DIVIDE  ,"~D~"  , 2 , 4 },
-        { OP_AND     ,"~a~"  , 2 , 0 },
-        { OP_OR      ,"~o~"  , 2 , 0 },
-        { OP_NOT      ,"~!~" , 1 , 5 },
-        { OP_NE      ,"~ne~" , 2 , 1 },
-        { OP_LE      ,"~le~" , 2 , 2 },
-        { OP_LT      ,"~lt~" , 2 , 2 },
-        { OP_GT      ,"~gt~" , 2 , 2 },
-        { OP_GE      ,"~ge~" , 2 , 2 },
-        { OP_LEFT    ,"~l~"  , 2 , 2 },
-        { OP_SPLIT   ,"~sp~" , 2 , 2 },
-
-        // Letters used for following operators are passed in URLs also
-        { OP_EQ      ,"~" QPARAM_FILTER_EQUALS "~" , 2 , 1 },
-        { OP_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH "~" , 2 , 2 },
-        { OP_CONTAINS,"~" QPARAM_FILTER_CONTAINS "~"  , 2 , 2 },
-
-        { OP_REGEX_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~" , 2 , 2 },
-        { OP_REGEX_CONTAINS,   "~" QPARAM_FILTER_CONTAINS QPARAM_FILTER_REGEX "~"  , 2 , 2 },
-        { OP_REGEX_MATCH,      "~" QPARAM_FILTER_EQUALS QPARAM_FILTER_REGEX "~"  , 2 , 2 },
-
-        { OP_DBFIELD,"~f~"   , 1 , 5 }
-    };
-
-    static int num_ops = sizeof(ops)/sizeof(ops[0]);
 
     if (precedence == ATOMIC_PRECEDENCE ) {
         // Parse final value or ( exp )
@@ -800,7 +824,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
                 exp2 = parse_url_expression(text_ptr,precedence+1);
             }
             HTML_LOG(0,"new op [%s]",op_details->url_text);
-            result = new_exp(op_details->op,result,exp2);
+            result = new_exp(op_details,result,exp2);
         }
     }
 
@@ -828,10 +852,10 @@ void exp_dump(Exp *e,int depth,int show_holding_values)
     if (e) {
         exp_dump(e->subexp[0],depth+1,show_holding_values);
 
-        if (e->op != OP_CONSTANT) {
-            HTML_LOG(0,"%*s op[%c]",depth*4," ",e->op);
+        if (e->op_details->op != OP_CONSTANT) {
+            HTML_LOG(0,"%*s op[%c]",depth*4," ",e->op_details->op);
         }
-        if (e->op == OP_CONSTANT || show_holding_values) {
+        if (e->op_details->op == OP_CONSTANT || show_holding_values) {
             switch(e->val.type) {
                 case VAL_TYPE_CHAR:
                     HTML_LOG(0,"%*s char[%c]",depth*4," ",e->val.num_val);
@@ -869,7 +893,7 @@ void exp_free(Exp *e,int recursive)
 {
     if (e) {
         if (recursive)  {
-            if (e->op != OP_CONSTANT) {
+            if (e->op_details->op != OP_CONSTANT) {
                 exp_free(e->subexp[0],recursive);
                 exp_free(e->subexp[1],recursive);
             }

@@ -3,7 +3,6 @@
 
 #include "types.h"
 
-
 void exp_dump(Exp *e,int depth,int show_holding_values);
 int evaluate_num(Exp *e,DbItem *item);
 Exp *parse_full_url_expression(char *text_ptr);

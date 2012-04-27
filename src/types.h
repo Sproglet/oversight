@@ -233,6 +233,7 @@ typedef enum Op_enum {
     OP_DBFIELD='_',
     OP_SPLIT='|',
     OP_LEFT='[',
+    OP_THE='T',
 
     OP_REGEX_CONTAINS='r',
     OP_REGEX_MATCH='R',
@@ -259,9 +260,17 @@ typedef struct Value_struct {
 
 } Value;
 
+typedef struct {
+    Op op;
+    char *url_text;
+    int num_args;
+    int precedence;
+    int argtypes[2]; // Based on or'ed ValType argtype[0] is for first child eg  = VAL_TYPE_STR|VAL_TYPE_CHAR
+} OpDetails;
+
 typedef struct Exp_struct {
 
-    Op op;
+    OpDetails *op_details;
     struct Exp_struct *subexp[2]; // Child expressions for operators
     Value val; // Used for atomic values and working values when calculating
 

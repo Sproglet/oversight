@@ -449,6 +449,30 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
 }
 
 
+char *base_name(DbItem *item,ViewMode *view)
+{
+    char *result=NULL;
+    if (view == VIEW_TV) {
+        // All shows are in the same season This will normall go to a TV detail page.
+        // Eversion doesnt go to TV Detail level.
+        set_plot_keys(item);
+        ovs_asprintf(&result,"%s",item->plotkey[PLOT_MAIN]);
+    } else if (view == VIEW_TVBOXSET) {
+        ovs_asprintf(&result,"Set_tv-b-%s_1",item->title);
+    } else if (view == VIEW_MOVIEBOXSET) {
+        // for now we use the first set id - this will need to change in future to support movies in multiple sets.
+        // at present sets are attributes of movies, and we make one pass of the database.
+        // In future as well as the item->title we must look at all of the item->sets and include the video under that letter too.
+        if (item->sets) {
+            int ln = strcspn(item->sets," ");
+            result = COPY_STRING(ln,item->sets);
+        }
+    } else {
+        // default name
+        ovs_asprintf(&result,"%ld",item->id);
+    }
+    return result;
+}
 
 
 int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int pos,int total)
@@ -461,7 +485,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     if (item == NULL) {
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
     }
-    printf("<movie isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET));
+    printf("<movie isExtra=\"false\" isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET));
     char *id;
     
     //printf("\t<id moviedb=\"ovs\">%ld</id>\n",item->id);
@@ -484,10 +508,22 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     printf("\t<mjbVersion>2.6-SNAPSHOT</mjbVersion>\n");
     printf("\t<mjbRevision>1234</mjbRevision>\n");
 
-    printf("\t<baseFilenameBase>%ld</baseFilenameBase>\n",item->id);
-    printf("\t<baseFilename>%ld</baseFilename>\n",item->id);
+    char *b =base_name(item,view);
+    if (b) {
+        printf("\t<baseFilenameBase>%s</baseFilenameBase>\n",b);
+        printf("\t<baseFilename>%s</baseFilename>\n",b);
+        FREE(b);
+    }
 
     printf("\t<title>%s</title>\n",xmlstr_static(item->title,0));
+
+    char *sort = item->title;
+    if (STARTS_WITH_THE(sort)) sort +=4;
+    printf("\t<titleSort>%s</titleSort>\n",xmlstr_static(sort,0));
+
+    video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
+
+    printf("\t<year>%d</year>\n",item->year);
 
     if (item->rating != 0.0) {
         printf("\t<rating>%d</rating>\n",(int)(item->rating *10));
@@ -495,7 +531,9 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 
     printf("\t<watched>%s</watched>\n",BOOL(item->watched));
 
+    printf("\t<details>NO.html</details>\n");
     
+    //printf("\t<posterURL>UNKNOWN</posterURL>\n");
     char *poster = internal_image_path_static(item,POSTER_IMAGE,1);
     if (*poster ) {
         printf("\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
@@ -503,14 +541,20 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         printf("\t<thumbnail>%s%s</thumbnail>\n",YAMJ_THUMB_PREFIX,poster);
     }
 
+    //printf("\t<fanartURL>UNKNOWN</fanartURL>\n");
     char *fanart = internal_image_path_static(item,FANART_IMAGE,1);
     if (*fanart ) {
         printf("\t<fanartFile>%s%s</fanartFile>\n",YAMJ_FANART_PREFIX,fanart);
     }
+    printf("\t<bannerURL>UNKNOWN</bannerURL>\n");
 
-    video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
-
-    printf("\t<year>%d</year>\n",item->year);
+    char *plot = get_plot(item,PLOT_MAIN);
+    char *p = xmlstr_static(plot,0);
+    if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
+        p += 3;
+    }
+    printf("\t<plot>%s</plot>\n",p);
+    FREE(plot);
 
     if (item->runtime) {
         int min = item->runtime;
@@ -528,7 +572,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     video_field("certification",item->certificate,0,NULL,NULL);
     printf("\t<season>%d</season>\n",(item->category == 'T' ? item->season : -1 ));
 
-    video_field("language","",0,NULL,NULL);
+    video_field("language","UNKNOWN",0,NULL,NULL);
     video_field("subtitles","",0,NULL,NULL);
     video_field("trailerExchange","",0,NULL,NULL);
     video_field("trailerLastScan","",0,NULL,NULL);
@@ -549,9 +593,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         strftime(date,DATE_BUF_SIZ,date_format,internal_time2tm(item->filetime,NULL));
         video_field("fileDate",date,0,NULL,NULL);
     }
-    if (item->sizemb) {
-        printf("\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
-    }
+    printf("\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
 
     //---------------------------
     //
@@ -605,9 +647,6 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 
     //----------------------------
 
-    char *plot = get_plot(item,PLOT_MAIN);
-    printf("\t<plot>%s</plot>\n",xmlstr_static(plot,0));
-    FREE(plot);
         
 
     yamj_files(item);
@@ -627,6 +666,8 @@ void yamj_files(DbItem *item)
     } else {
         // Sort all items in title/season/episode order
         DbItem **ptr = sort_linked_items(item,db_overview_cmp_by_title);
+
+        // Now display
 
         int i;
         int part_no=1;
@@ -662,8 +703,20 @@ int yamj_file(DbItem *item,int part_no)
 
 void yamj_file_part(DbItem *item,int part_no,char *part_name)
 {
-    printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"0\" subtitlesExchange=\"NO\" title=\"UNKNOWN\" vod=\"\" watched=\"%s\">\n",
-            part_no,part_no,item->season,BOOL(item->watched));
+    if (item->category == 'T' ) {
+        errno=0;
+        int epno=strtol(item->episode,NULL,10);
+        if (!errno) part_no = epno;
+    }
+
+    printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\" subtitlesExchange=\"NO\" title=\"%s\" vod=\"\" watched=\"%s\" videosource=\"%s\">\n",
+            part_no,
+            part_no,
+            item->season,
+            item->sizemb*1024*1024,
+            ((item->category=='T')?xmlstr_static(item->eptitle,0):"UNKNOWN"),
+            BOOL(item->watched),
+            NVL(item->videosource));
 
     int freeit;
     char *path;
@@ -681,12 +734,9 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name)
     printf("\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
 
     if (item->category == 'T' ) {
-        errno=0;
-        int epno=strtol(item->episode,NULL,10);
-        if (errno) epno = part_no;
-        printf("\t\t<fileTitle part=\"%d\">%s</fileTitle>\n",epno,xmlstr_static(item->eptitle,0));
-        printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",epno,epno);
-        printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",epno,get_date_static(item,"%Y-%m-%d"));
+        printf("\t\t<fileTitle part=\"%d\">%s</fileTitle>\n",part_no,xmlstr_static(item->eptitle,0));
+        printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
+        printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
         printf("\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
     }
@@ -1162,7 +1212,11 @@ int yamj_xml(char *request)
             if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
                 selected_subcat = find_subcat(request,categories);
             }
-            int (*sort_fn)(DbItem **,DbItem**) = db_overview_cmp_by_title;
+            int (*sort_fn)(DbItem **,DbItem**) = view->default_sort;
+            if (sort_fn == NULL) {
+                sort_fn = db_overview_cmp_by_title;
+            }
+
             // Here we could have newest first but leave that to skins 
             // sort_fn = db_overview_cmp_by_age_desc;
 

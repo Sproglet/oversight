@@ -56,7 +56,8 @@ FILE *plot_open(Db*db)
 #define LOG_LVL 1
 
 #define MAX_PLOT_KEY_IDLEN 20
-void set_plot_keys(DbItem *item) {
+void set_plot_keys(DbItem *item)
+{
 
     char *id = NULL;
 

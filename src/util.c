@@ -1457,6 +1457,7 @@ char *xmlstr_static(char *text,int idx)
         FREE(out[idx]);
         free_last[idx]=0;
     }
+    text = NVL(text);
     out[idx] = text;
     int i;
     for(i = 0 ; x[i] ; i++ ) {

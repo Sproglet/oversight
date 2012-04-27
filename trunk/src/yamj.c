@@ -521,8 +521,10 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     printf("\t<title>%s</title>\n",xmlstr_static(item->title,0));
 
     char *sort = item->title;
-    if (STARTS_WITH_THE(sort)) sort +=4;
-    printf("\t<titleSort>%s</titleSort>\n",xmlstr_static(sort,0));
+    if (STARTS_WITH_THE(sort)) {
+        sort +=4;
+    }
+    printf("\t<titleSort>%s</titleSort>\n",xmlstr_static(NVL(sort),0));
 
     video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
 

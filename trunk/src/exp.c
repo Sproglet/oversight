@@ -841,8 +841,8 @@ Exp *parse_full_url_expression(char *text_ptr)
             html_error("unparsed [%.*s]",20,p);
         }
     }
-    HTML_LOG(0,"Exp [%s]=",text_ptr);
-    exp_dump(result,0,0);
+    //HTML_LOG(0,"Exp [%s]=",text_ptr);
+    //exp_dump(result,0,0);
     return result;
 
 }

@@ -38,6 +38,8 @@
 #define YAMJ_BOXSET_PREFIX "boxset_"
 #define YAMJ_POSTER_PREFIX "poster_"
 #define YAMJ_FANART_PREFIX "fanart_"
+#define YAMJ_QUERY_NAME "query"
+#define YAMJ_QUERY_PREFIX YAMJ_QUERY_NAME "_"
 #define BOOL(x) ((x)?"true":"false")
 
 // Prototypes
@@ -110,6 +112,11 @@ void free_yamj_catetory(void *in)
 }
 
 
+/*
+ * Crate a new subcat eg the A of Title_A_1.xml - the category is 'Title' the subcat is Title_A
+ * In this cast the filter URL is _T~f~~l~~1~~e~'A'   ie Title Field Left$ 1 = 'A'
+ * require_filter means a filter_url must be provided. This is  to check integrity of config file.
+ */
 YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_filter,int alert_duplicate)
 {
 
@@ -117,7 +124,7 @@ YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_fi
     YAMJSubCat *ret = NULL;
 
     // check name
-    if (owner->subcats) {
+    if (owner && owner->subcats) {
         int i;
         for(i = 0 ; i < owner->subcats->size ; i++ ) {
             YAMJSubCat *sc = owner->subcats->array[i];
@@ -144,19 +151,19 @@ YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_fi
 
         if (require_filter) {
 
-            html_error("missing query value for subcat [%s_%s]",owner->name,name);
+            html_error("missing query value for subcat [%s_%s]",(owner?owner->name:"?"),name);
             free_yamj_subcatetory(ret);
             ret = NULL;
         }
 
     } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
 
-        html_error("unable to parse query value for [%s_%s]",owner->name,name);
+        html_error("unable to parse query value for [%s_%s]",(owner?owner->name:"?"),name);
         free_yamj_subcatetory(ret);
         ret = NULL;
     }
 
-    if (ret) {
+    if (ret && owner) {
 
         if (owner->subcats == NULL) {
             owner->subcats = array_new(free_yamj_subcatetory);
@@ -459,15 +466,16 @@ char *base_name(DbItem *item,ViewMode *view)
         set_plot_keys(item);
         ovs_asprintf(&result,"%s",item->plotkey[PLOT_MAIN]);
     } else if (view == VIEW_TVBOXSET) {
-        ovs_asprintf(&result,"Set_tv-b-%s_1",item->title);
+        // TODO quotes
+        ovs_asprintf(&result, YAMJ_QUERY_PREFIX "T~c~_C~f~~a~(_T~f~~e~'%s')_1",item->title);
+
     } else if (view == VIEW_MOVIEBOXSET) {
         // for now we use the first set id - this will need to change in future to support movies in multiple sets.
         // at present sets are attributes of movies, and we make one pass of the database.
         // In future as well as the item->title we must look at all of the item->sets and include the video under that letter too.
-        if (item->sets) {
-            int ln = strcspn(item->sets," ");
-            result = COPY_STRING(ln,item->sets);
-        }
+        // TODO need to compare against all sets - or supplut multple sets in some way
+        ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~(_a~f~~c~'%s')_1",item->sets);
+
     } else {
         // default name
         ovs_asprintf(&result,"%ld",item->id);
@@ -518,6 +526,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         FREE(b);
     }
 
+    //TODO get setname here
     printf("\t<title>%s</title>\n",xmlstr_static(item->title,0));
 
     char *sort = item->title;
@@ -637,14 +646,17 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
             int free_it;
             YAMJSubCat *sc = item->yamj_member_of->array[i];
 
-            char *name=sc->name;
-            char *ownername=sc->owner_cat->name;
-            char *encname=url_encode_static(name,&free_it);
+            if (sc->owner_cat) {
 
-            printf("\t\t<index encoded=\"%s\" originalName=\"%s\" type=\"%s\">%s</index>\n",
-                encname,ownername,ownername,encname);
+                char *name=sc->name;
+                char *ownername=sc->owner_cat->name;
+                char *encname=url_encode_static(name,&free_it);
 
-            if(free_it) FREE(encname);
+                printf("\t\t<index encoded=\"%s\" originalName=\"%s\" type=\"%s\">%s</index>\n",
+                    encname,ownername,ownername,encname);
+
+                if(free_it) FREE(encname);
+            }
 
         }
         printf("\t</indexes>\n");
@@ -854,6 +866,31 @@ YAMJSubCat *yamj_subcat_config(YAMJCat *owner,int num,int sub)
     return ret;
 }
 
+YAMJCat *yamj_cat_new(char *name,char *auto_subcat_expr_url)
+{
+    static int page_size = -1;
+
+    if (page_size == -1) {
+        char *p = oversight_val("ovs_yamj_page_size");
+        if (!EMPTY_STR(p)) {
+            page_size = atoi(p);
+        } else {
+            page_size = 10;
+        }
+        HTML_LOG(0,"page size = %d",page_size);
+    }
+
+    YAMJCat *ret = NULL;
+    if (!EMPTY_STR(name)) {
+
+        ret = CALLOC(1,sizeof(YAMJCat));
+
+        ret->name = STRDUP(name);
+        ret->auto_subcat_expr_url = STRDUP(auto_subcat_expr_url);
+        ret->page_size = page_size;
+    }
+    return ret;
+}
 /**
  * A ovs_yamj_cat has one of two following config definition:
  *
@@ -895,14 +932,11 @@ YAMJCat *yamj_cat_config(int num)
     name = oversight_val(key);
     if (!EMPTY_STR(name)) {
 
-        ret = CALLOC(1,sizeof(YAMJCat));
+        char *key2;
+        ovs_asprintf(&key2,CONFIG_PREFIX "%d_expr",num);
 
-        ret->name = STRDUP(name);
-        
-        FREE(key);
-        ovs_asprintf(&key,CONFIG_PREFIX "%d_expr",num);
-
-        ret->auto_subcat_expr_url = STRDUP(oversight_val(key));
+        ret = yamj_cat_new(name,oversight_val(key2));
+        FREE(key2);
 
         int j = 0;
         while((subcat = yamj_subcat_config(ret,num,++j)) != NULL) {
@@ -927,22 +961,16 @@ YAMJCat *yamj_cat_config(int num)
     return ret;
 }
 
+
 int yamj_build_categories(char *cat_name,Array *categories) 
 {
     int ret = 1;
     HTML_LOG(0,"TODO yamj_build_categories");
     int i = 0;
 
-    int page_size = 10;
-    char *p = oversight_val("ovs_yamj_page_size");
-    if (!EMPTY_STR(p)) {
-        page_size = atoi(p);
-    }
-    HTML_LOG(0,"page size = %d",page_size);
 
     YAMJCat *yc;
     while ((yc = yamj_cat_config(++i)) != NULL) {
-        yc->page_size = page_size;
         array_add(categories,yc);
     }
 
@@ -1032,7 +1060,6 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
     }
     printf("</library>\n");
 
-    array_free(categories);
     return ret;
 
 }
@@ -1108,19 +1135,27 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
             }
         }
 
-        // If No subcat exists then create one using a combination of the owner_cat auto_subcat_expr_url and the
-        // subcat name.
-        // Eg
-        //    cat->auto_subcat_expr_url = _T~f~~l~1 (1st character of title field)
-        //    subcat name = B
-        //    Create subcat with filter 'B'~e~_T~f~~l~1 ( 'B' = 1st character of title field )
-        //
         if (!cat) {
             html_error("request [%s] : Category %s not found in configuration",request,cat_name);
         } else if (!subcat) {
             if (EMPTY_STR(cat->auto_subcat_expr_url)) {
-                html_error("request [%s] : Subcategory %s not found in configuration",request,subcat_name);
+                if (STRCMP(cat->name,YAMJ_QUERY_NAME) == 0) {
+                    // The subcat is the temporary 'query' one created specially for Ad-Hoc query subcats.
+                    // In this case the subcat name IS also the query eg.
+                    // query__T~f~~e~'Lost'_1.xml = Title Field Equals Lost
+                    subcat = new_subcat(cat,subcat_name,subcat_name,1,1);
+
+                } else {
+                    html_error("request [%s] : Subcategory %s not found in configuration",request,subcat_name);
+                }
             } else {
+                // If No subcat exists then create one using a combination of the owner_cat auto_subcat_expr_url and the
+                // subcat name.
+                // Eg
+                //    cat->auto_subcat_expr_url = _T~f~~l~1 (1st character of title field)
+                //    subcat name = B
+                //    Create subcat with filter 'B'~e~_T~f~~l~1 ( 'B' = 1st character of title field )
+                //
                 char *query;
                 ovs_asprintf(&query,"'%s'~e~%s",subcat_name,cat->auto_subcat_expr_url);
                 HTML_LOG(0,"creating auto subcategory %s_%s using query %s",cat_name,subcat_name,query);
@@ -1162,6 +1197,8 @@ int yamj_xml(char *request)
 
         // request = Cat_SubCat_page.xml
         //
+        //
+        int do_query = util_starts_with(request,YAMJ_QUERY_PREFIX);
 
         if (0 && util_strreg(request,"^[0-9]+.xml$",0)) {
 
@@ -1213,7 +1250,7 @@ int yamj_xml(char *request)
             cat(CONTENT_TYPE"image/jpeg",file);
             FREE(file);
 
-        } else if (STRCMP(request,CATEGORY_INDEX) == 0 || util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
+        } else if (STRCMP(request,CATEGORY_INDEX) == 0 || do_query ||  util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
             xml_headers();
             config_read_dimensions(0);
@@ -1226,7 +1263,17 @@ int yamj_xml(char *request)
 
             YAMJSubCat *selected_subcat = NULL;
             
-            if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
+
+            // Either use an arbitrary expression derived from request fake xml name OR use the configured expression derived from 
+            // the subcategory name.
+            if (do_query) { 
+                
+                // Add a temporary query category to contain our query sub category
+                YAMJCat *temp_query_cat = yamj_cat_new(YAMJ_QUERY_NAME,NULL);
+                array_add(categories,temp_query_cat);
+                selected_subcat = find_subcat(request,categories);
+
+            } else if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
                 selected_subcat = find_subcat(request,categories);
             }
 
@@ -1239,6 +1286,7 @@ int yamj_xml(char *request)
             sort_categories(categories);
 
             yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
+            array_free(categories);
 
         } else {
             HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));

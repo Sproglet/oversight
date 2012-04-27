@@ -2827,7 +2827,6 @@ ViewMode *compute_view(DbItemSet **rowsets)
     ViewMode *m = NULL;
     DbItem *key_item=NULL;
 
-TRACE1;
     if (rowsets) {
 
         DbItemSet **rowset_ptr;
@@ -2838,6 +2837,7 @@ TRACE1;
 
                 DbItem *item = (*rowset_ptr)->rows + i;
                 ViewMode *m2 = NULL;
+
 
                 switch (item->category) {
                     case 'T':
@@ -2850,6 +2850,7 @@ TRACE1;
                         m2 = VIEW_MIXED;
                         break;
                 }
+
                 if (m == NULL) {
                     m = m2;
                     key_item = item;
@@ -2860,7 +2861,7 @@ TRACE1;
                 } else if (m2 == VIEW_MIXED) {
                     m = m2;
                     break;
-                } else if (m2 != m) {
+                } else if (key_item->category != item->category) {
                     // TV vs Movie
                     m = VIEW_MIXED;
                     break;

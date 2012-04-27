@@ -55,15 +55,15 @@ void array_free(Array *a) {
  * array[array->size++]=ptr
  * The array is NOT sparse. Use hastable for sparse arrays.
  */
-void array_add(Array *a,void *ptr) {
-    array_set(a,a->size,ptr);
+void *array_add(Array *a,void *ptr) {
+    return array_set(a,a->size,ptr);
 }
 
 /*
  * array[idx]=ptr
  * The array is NOT sparse. Use hastable for sparse arrays.
  */
-void array_set(Array *a,int idx,void *ptr) {
+void *array_set(Array *a,int idx,void *ptr) {
 
 #define ARRAY_EXPAND 10
     //extend memory
@@ -87,6 +87,7 @@ void array_set(Array *a,int idx,void *ptr) {
     if (idx < a->size) {
         a->array[idx] = ptr;
     }
+    return ptr;
 }
 
 // strcmp function for qsort.

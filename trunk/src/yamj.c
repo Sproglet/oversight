@@ -43,8 +43,8 @@
 // Prototypes
 void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
 void yamj_files(DbItem *item);
-int yamj_file(DbItem *item,int part_no);
-void yamj_file_part(DbItem *item,int part_no,char *part_name);
+int yamj_file(DbItem *item,int part_no,int show_source);
+void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source);
 
 /*
  * The plan is as follows:
@@ -654,7 +654,10 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 
         
 
-    yamj_files(item);
+    // Dont write individual file details for boxsets - these are read from the baseFilename.xml 
+    if (!is_boxset || *oversight_val("ovs_yamj_lean_xml") != '1') {
+        yamj_files(item);
+    }
 
     printf("</movie>\n");
     return ret;
@@ -667,7 +670,7 @@ void yamj_files(DbItem *item)
 
     // For TV etc all the parts must be listed in order. So start with season -1 and repeat until all seasons done
     if (item->linked == NULL) {
-        yamj_file(item,1);
+        yamj_file(item,1,0);
     } else {
         // Sort all items in title/season/episode order
         DbItem **ptr = sort_linked_items(item,db_overview_cmp_by_title);
@@ -677,7 +680,15 @@ void yamj_files(DbItem *item)
         int i;
         int part_no=1;
         for(i=0 ; i< item->link_count+1 ; i++ ) {
-            part_no = yamj_file(ptr[i],part_no);
+            int show_source = 0;
+            if ( item->category == 'T' ) {
+                if (i > 0 && db_overview_cmp_by_title(&ptr[i],&ptr[i-1]) == 0) {
+                    show_source = 1;
+                } else if (i < item->link_count && db_overview_cmp_by_title(&ptr[i],&ptr[i+1]) == 0) {
+                    show_source = 1;
+                }
+            }
+            part_no = yamj_file(ptr[i],part_no,show_source);
         }
         FREE(ptr);
     }
@@ -687,10 +698,10 @@ void yamj_files(DbItem *item)
 /*
  * print file - returns next part no
  */
-int yamj_file(DbItem *item,int part_no)
+int yamj_file(DbItem *item,int part_no,int show_source)
 {
     HTML_LOG(0,"item %s %dx%s %s",NVL(item->title),item->season,NVL(item->episode),item->file);
-    yamj_file_part(item,part_no++,NULL);
+    yamj_file_part(item,part_no++,NULL,show_source);
 
     if (item->parts) {
 
@@ -698,7 +709,7 @@ int yamj_file(DbItem *item,int part_no)
         Array *parts = splitstr(item->parts,"/");
 
         for(i = 0 ; i < parts->size ; i++ ) {
-            yamj_file_part(item,part_no++,parts->array[i]);
+            yamj_file_part(item,part_no++,parts->array[i],show_source);
         }
         array_free(parts);
     }
@@ -706,7 +717,7 @@ int yamj_file(DbItem *item,int part_no)
 }
 
 
-void yamj_file_part(DbItem *item,int part_no,char *part_name)
+void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
 {
     if (item->category == 'T' ) {
         errno=0;
@@ -739,7 +750,14 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name)
     printf("\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
 
     if (item->category == 'T' ) {
-        printf("\t\t<fileTitle part=\"%d\">%s</fileTitle>\n",part_no,xmlstr_static(NVL(item->eptitle),0));
+        printf("\t\t<fileTitle part=\"%d\">%s",part_no,xmlstr_static(NVL(item->eptitle),0));
+        if (show_source && item->videosource) {
+            char *p = util_tolower(item->videosource);
+
+            printf(" - %s",p);
+            FREE(p);
+        }
+        printf("</fileTitle>\n");
         printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
         printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
@@ -1019,6 +1037,7 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
 
 }
 
+
 /**
  * Some subcats are created on the fly eg Title_Letter_Page.xml
  * Letter is derived from database contents, as first UTF-8 character of item titles.
@@ -1201,24 +1220,6 @@ int yamj_xml(char *request)
             HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
             load_configs();
 
-            // Determine view order from set name
-            ViewMode *view = VIEW_MENU;
-            if (util_starts_with(request,"Set_")) {
-                if (util_starts_with(request,"Set_tv-")) {
-                    if (util_starts_with(request,"Set_tv-b-")) {
-                        view = VIEW_TVBOXSET;
-                    } else {
-                        view = VIEW_TV;
-                    }
-                } else if (util_starts_with(request,"Set_mv-")) {
-                    if (util_starts_with(request,"Set_mv-b-")) {
-                        view = VIEW_MOVIEBOXSET;
-                    } else {
-                        view = VIEW_MOVIE;
-                    }
-                }
-            }
-
             Array *categories = array_new(free_yamj_catetory);
 
             yamj_build_categories(request,categories);
@@ -1228,15 +1229,11 @@ int yamj_xml(char *request)
             if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
                 selected_subcat = find_subcat(request,categories);
             }
-            int (*sort_fn)(DbItem **,DbItem**) = view->default_sort;
-            if (sort_fn == NULL) {
-                sort_fn = db_overview_cmp_by_title;
-            }
 
             // Here we could have newest first but leave that to skins 
             // sort_fn = db_overview_cmp_by_age_desc;
 
-            DbSortedRows *sorted_rows = get_sorted_rows(view,sort_fn,0,NULL,categories,selected_subcat);
+            DbSortedRows *sorted_rows = get_sorted_rows(NULL,NULL,0,NULL,categories,selected_subcat);
 
             HTML_LOG(1,"Sort categories..");
             sort_categories(categories);

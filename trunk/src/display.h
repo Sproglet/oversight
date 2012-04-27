@@ -89,4 +89,5 @@ DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,i
 DbSortedRows *get_sorted_rows(ViewMode *view, int (*sort_fn)(DbItem **,DbItem**),int crossview,Exp *query_exp,Array *yamj_categories,YAMJSubCat *yamj_selected_subcat);
 char *get_date_static(DbItem *item,char *format);
 ViewMode *get_drilldown_view(DbItem *item);
+ViewMode *compute_view(DbItemSet **rowsets);
 #endif

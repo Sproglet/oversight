@@ -2210,7 +2210,7 @@ TRACE;
 }
 
 DbSortedRows *get_sorted_rows(
-        ViewMode *view, // eg VIEW_MENU , VIEW_MOVIEBOXSET , VIEW_TVBOXSET , VIEW_TV , VIEW_MOVIE
+        ViewMode *view, // eg VIEW_MENU , VIEW_MOVIEBOXSET , VIEW_TVBOXSET , VIEW_TV , VIEW_MOVIE if NULL then view is computed from selected rows.
         int (*sort_fn)(DbItem **,DbItem**), // Override default Sort function - if null the View sort is used.
         int crossview, // 1 if using crossview
         Exp *query_exp, // Filter expresssion
@@ -2223,6 +2223,9 @@ DbSortedRows *get_sorted_rows(
 
 
 TRACE;
+    if (view == NULL) {
+        view = compute_view(rowsets);
+    }
 
     HTML_LOG(0,"Overview..");
     // Merge the rowsets into a single view.
@@ -2237,6 +2240,9 @@ TRACE;
     DbItem **sorted_row_ids = NULL;
 
     if (sort_fn == NULL) sort_fn = view->default_sort;
+    if (sort_fn == NULL) {
+        sort_fn = db_overview_cmp_by_title;
+    }
 
     if (sort_fn) {
         HTML_LOG(1,"Sort..");
@@ -2812,6 +2818,72 @@ char *get_date_static(DbItem *item,char *format)
     }
     return date_buf;
 }
+/* compute current view based on selected rows. This is called before the rows are linked, as they can only be linked once
+ * we know what kind of view we have. eg VIEW_MENU (links all episdodes across all seasons) VIEW_BOXSET links episodes by season.
+ */
+ViewMode *compute_view(DbItemSet **rowsets) 
+{
+    int i;
+    ViewMode *m = NULL;
+    DbItem *key_item=NULL;
+
+TRACE1;
+    if (rowsets) {
+
+        DbItemSet **rowset_ptr;
+
+        for(rowset_ptr = rowsets ; *rowset_ptr ; rowset_ptr++ ) {
+
+            for(i = 0 ; i < (*rowset_ptr)->size ; i++ ) {
+
+                DbItem *item = (*rowset_ptr)->rows + i;
+                ViewMode *m2 = NULL;
+
+                switch (item->category) {
+                    case 'T':
+                        m2 = VIEW_TV;
+                        break;
+                    case 'M': case 'F':
+                        m2 = VIEW_MOVIE;
+                        break;
+                    default:
+                        m2 = VIEW_MIXED;
+                        break;
+                }
+                if (m == NULL) {
+                    m = m2;
+                    key_item = item;
+                    if (m == VIEW_MIXED) {
+                        break;
+                    }
+
+                } else if (m2 == VIEW_MIXED) {
+                    m = m2;
+                    break;
+                } else if (m2 != m) {
+                    // TV vs Movie
+                    m = VIEW_MIXED;
+                    break;
+                } else if (!VIEW_MENU->item_eq_fn(key_item,item)) {
+                    // not in same boxset
+                    m = VIEW_MIXED;
+                    break;
+
+                } else if (m == VIEW_TV && key_item->category == 'T' && !VIEW_TVBOXSET->item_eq_fn(key_item,item)) {
+                    // not in same season
+                    m = VIEW_TVBOXSET;
+
+                } else if (m == VIEW_MOVIE && key_item->category == 'F' && !VIEW_MOVIEBOXSET->item_eq_fn(key_item,item)) {
+                    m = VIEW_MOVIEBOXSET;
+                }
+            }
+        }
+    }
+    if (!m || m == VIEW_MIXED) m = VIEW_MENU;
+    HTML_LOG(0,"view computed [%s]",m->name);
+    return m;
+}
+
 ViewMode *get_drilldown_view(DbItem *item)
 {
 

@@ -261,16 +261,11 @@ unsigned int db_overview_tv_hashf(void *item) {
     return DBR(item)->tmp_hash;
 }
 
-int db_overview_tvboxset_eqf(void *item1,void *item2) {
-
+int db_overview_tvboxset_eqf(void *item1,void *item2)
+{
     int ret = 0;
-    if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
-        HTML_LOG(0,"Category differs [%s/%c] vs [%s/%c]",((DbItem*)item1)->title,((DbItem*)item1)->category,((DbItem*)item2)->title,((DbItem*)item2)->category);
-       assert(0);
-    } else if (((DbItem*)item1)->category == 'T' ) {
+    if (((DbItem*)item1)->category == 'T'  && ((DbItem*)item2)->category == 'T'  ) {
        ret = EQ_SEASON(item1,item2);
-    } else {
-       assert(0);
     }
     return ret;
 }
@@ -289,12 +284,8 @@ int db_overview_movie_eqf(void *item1,void *item2)
 {
 
     int ret = 0;
-    if (((DbItem*)item1)->category != ((DbItem*)item2)->category) {
-       assert(0);
-    } else if (((DbItem*)item1)->category == 'M' ) {
+    if (((DbItem*)item1)->category == 'M'  && ((DbItem*)item2)->category == 'M'  ) {
        ret = EQ_MOVIE(item1,item2);
-    } else {
-       assert(0);
     }
     return ret;
 }
@@ -897,52 +888,52 @@ ViewMode *new_view(
 
 void init_view()
 {
-    VIEW_ADMIN
-        = new_view( "admin"       ,VIEW_CLASS_ADMIN,ROW_BY_ID, 0 , NULL, DB_MEDIA_TYPE_ANY , NULL,
+    VIEW_ADMIN =
+       new_view( "admin"       ,VIEW_CLASS_ADMIN,ROW_BY_ID, 0 , NULL, DB_MEDIA_TYPE_ANY , NULL,
        db_overview_admin_eqf ,
        db_overview_admin_hashf );
 
-    VIEW_TV
-        = new_view( "tv"          ,VIEW_CLASS_DETAIL,ROW_BY_SEASON, 1 , NULL, DB_MEDIA_TYPE_TV ,
+    VIEW_TV =
+       new_view( "tv"          ,VIEW_CLASS_DETAIL,ROW_BY_SEASON, 1 , NULL, DB_MEDIA_TYPE_TV ,
             db_overview_cmp_by_title,
        db_overview_tv_eqf ,
        db_overview_tv_hashf );
 
-    VIEW_MOVIE
-        = new_view( "movie"       ,VIEW_CLASS_DETAIL,ROW_BY_ID, 1 , NULL, DB_MEDIA_TYPE_FILM , NULL,
+    VIEW_MOVIE =
+       new_view( "movie"       ,VIEW_CLASS_DETAIL,ROW_BY_ID, 1 , NULL, DB_MEDIA_TYPE_FILM , NULL,
        db_overview_movie_eqf ,
        db_overview_movie_hashf );
 
-    VIEW_OTHER
-        = new_view( "other"       ,VIEW_CLASS_DETAIL,ROW_BY_ID, 1 , NULL, DB_MEDIA_TYPE_OTHER , NULL,
+    VIEW_OTHER =
+       new_view( "other"       ,VIEW_CLASS_DETAIL,ROW_BY_ID, 1 , NULL, DB_MEDIA_TYPE_OTHER , NULL,
        db_overview_other_eqf ,
        db_overview_other_hashf );
 
-    VIEW_PERSON
-        = new_view( "person"      ,VIEW_CLASS_BOXSET,ROW_BY_ID, 0 , NULL, DB_MEDIA_TYPE_ANY ,
+    VIEW_PERSON =
+       new_view( "person"      ,VIEW_CLASS_BOXSET,ROW_BY_ID, 0 , NULL, DB_MEDIA_TYPE_ANY ,
             db_overview_cmp_by_year_asc,
        db_overview_mixed_eqf ,
        db_overview_mixed_hashf );
 
-    VIEW_TVBOXSET
-        = new_view( "tvboxset"    ,VIEW_CLASS_BOXSET,ROW_BY_TITLE, 0 ,"_tvboxset"  , DB_MEDIA_TYPE_TV ,
+    VIEW_TVBOXSET =
+       new_view( "tvboxset"    ,VIEW_CLASS_BOXSET,ROW_BY_TITLE, 0 ,"_tvboxset"  , DB_MEDIA_TYPE_TV ,
             db_overview_cmp_by_season_asc,
        db_overview_tvboxset_eqf ,
        db_overview_tvboxset_hashf );
 
-    VIEW_MOVIEBOXSET
-        = new_view( "movieboxset" ,VIEW_CLASS_BOXSET,ROW_BY_ID, 0 , "_movieboxset" , DB_MEDIA_TYPE_FILM ,
+    VIEW_MOVIEBOXSET =
+       new_view( "movieboxset" ,VIEW_CLASS_BOXSET,ROW_BY_ID, 0 , "_movieboxset" , DB_MEDIA_TYPE_FILM ,
        db_overview_cmp_by_year_asc,
        db_overview_movieboxset_eqf ,
        db_overview_movieboxset_hashf );
 
-    VIEW_MENU
-        = new_view( "menu"        ,VIEW_CLASS_MENU,ROW_BY_ID, 0 , NULL  , DB_MEDIA_TYPE_ANY , NULL,
+    VIEW_MENU =
+       new_view( "menu"        ,VIEW_CLASS_MENU,ROW_BY_ID, 0 , NULL  , DB_MEDIA_TYPE_ANY , NULL,
        db_overview_menu_eqf ,
        db_overview_menu_hashf );
 
-    VIEW_MIXED
-        = new_view( "mixed"       ,VIEW_CLASS_MENU,ROW_BY_ID, 0 , NULL  , DB_MEDIA_TYPE_ANY , NULL,
+    VIEW_MIXED =
+       new_view( "mixed"       ,VIEW_CLASS_MENU,ROW_BY_ID, 0 , NULL  , DB_MEDIA_TYPE_ANY , NULL,
        db_overview_mixed_eqf ,
        db_overview_mixed_hashf );
 }

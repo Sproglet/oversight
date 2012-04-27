@@ -2787,13 +2787,13 @@ char *get_date_static(DbItem *item,char *format)
 
 #define DATE_BUF_SIZ 40
     static char date_buf[DATE_BUF_SIZ];
+    *date_buf='\0';
 
 
     OVS_TIME date=item->airdate;
     if (date<=0) {
         date=item->airdate_imdb;
     }
-    *date_buf='\0';
     if (date > 0) {
 
         char *date_format=NULL;

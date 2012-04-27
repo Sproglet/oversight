@@ -35,6 +35,7 @@
 #define CONFIG_PREFIX "ovs_yamj_cat"
 #define CATEGORY_INDEX "Categories.xml"
 #define YAMJ_THUMB_PREFIX "thumb_"
+#define YAMJ_BOXSET_PREFIX "boxset_"
 #define YAMJ_POSTER_PREFIX "poster_"
 #define YAMJ_FANART_PREFIX "fanart_"
 #define BOOL(x) ((x)?"true":"false")
@@ -479,13 +480,15 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 {
     int i;
     int ret = 1;
+    int is_boxset=0;
 
     ViewMode *view = get_drilldown_view(item);
 
     if (item == NULL) {
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
     }
-    printf("<movie isExtra=\"false\" isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET));
+    is_boxset = (view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET);
+    printf("<movie isExtra=\"false\" isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(is_boxset));
     char *id;
     
     //printf("\t<id moviedb=\"ovs\">%ld</id>\n",item->id);
@@ -538,7 +541,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     if (*poster ) {
         printf("\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
         printf("\t<detailPosterFile>%s%s</detailPosterFile>\n",YAMJ_POSTER_PREFIX,poster);
-        printf("\t<thumbnail>%s%s</thumbnail>\n",YAMJ_THUMB_PREFIX,poster);
+        printf("\t<thumbnail>%s%s</thumbnail>\n",(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX),poster);
     }
 
     //printf("\t<fanartURL>UNKNOWN</fanartURL>\n");
@@ -705,7 +708,7 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name)
 {
     if (item->category == 'T' ) {
         errno=0;
-        int epno=strtol(item->episode,NULL,10);
+        int epno=strtol(NVL(item->episode),NULL,10);
         if (!errno) part_no = epno;
     }
 
@@ -714,7 +717,7 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name)
             part_no,
             item->season,
             item->sizemb*1024*1024,
-            ((item->category=='T')?xmlstr_static(item->eptitle,0):"UNKNOWN"),
+            ((item->category=='T')?xmlstr_static(NVL(item->eptitle),0):"UNKNOWN"),
             BOOL(item->watched),
             NVL(item->videosource));
 
@@ -734,7 +737,7 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name)
     printf("\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
 
     if (item->category == 'T' ) {
-        printf("\t\t<fileTitle part=\"%d\">%s</fileTitle>\n",part_no,xmlstr_static(item->eptitle,0));
+        printf("\t\t<fileTitle part=\"%d\">%s</fileTitle>\n",part_no,xmlstr_static(NVL(item->eptitle),0));
         printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
         printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
@@ -1151,7 +1154,7 @@ int yamj_xml(char *request)
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
             printf("</details>\n");
 
-        } else if ( util_strreg(request,YAMJ_THUMB_PREFIX "[^.]*\\.jpg$",0)) {
+        } else if (util_starts_with(request,YAMJ_THUMB_PREFIX) && util_strreg(request,YAMJ_THUMB_PREFIX "[^.]*\\.jpg$",0)) {
 
             char *file;
             ovs_asprintf(&file,"%s/db/global/_J/ovs_%s.thumb",appDir(),request+strlen(YAMJ_THUMB_PREFIX));
@@ -1162,7 +1165,18 @@ int yamj_xml(char *request)
             cat(CONTENT_TYPE"image/jpeg",file);
             FREE(file);
 
-        } else if ( util_strreg(request,YAMJ_POSTER_PREFIX "[^.]*\\.jpg$",0)) {
+        } else if (util_starts_with(request,YAMJ_BOXSET_PREFIX) && util_strreg(request,YAMJ_BOXSET_PREFIX "[^.]*\\.jpg$",0)) {
+
+            char *file;
+            ovs_asprintf(&file,"%s/db/global/_J/ovs_%s.thumb.boxset",appDir(),request+strlen(YAMJ_BOXSET_PREFIX));
+            //now swap in place .jpg.thumb with .thumb.jpg
+            char *p = strstr(file,".jpg.thumb.boxset");
+            if (p) strcpy(p,".thumb.boxset.jpg");
+            // Send image
+            cat(CONTENT_TYPE"image/jpeg",file);
+            FREE(file);
+
+        } else if (util_starts_with(request,YAMJ_POSTER_PREFIX) && util_strreg(request,YAMJ_POSTER_PREFIX "[^.]*\\.jpg$",0)) {
 
             char *file;
             ovs_asprintf(&file,"%s/db/global/_J/ovs_%s",appDir(),request+strlen(YAMJ_POSTER_PREFIX));
@@ -1170,7 +1184,7 @@ int yamj_xml(char *request)
             cat(CONTENT_TYPE"image/jpeg",file);
             FREE(file);
 
-        } else if ( util_strreg(request,YAMJ_FANART_PREFIX "[^.]*\\.jpg$",0)) {
+        } else if (util_starts_with(request,YAMJ_FANART_PREFIX) && util_strreg(request,YAMJ_FANART_PREFIX "[^.]*\\.jpg$",0)) {
 
             char *file;
             ovs_asprintf(&file,"%s/db/global/_fa/ovs_%s",appDir(),request+strlen(YAMJ_FANART_PREFIX));

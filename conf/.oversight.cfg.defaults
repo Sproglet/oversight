@@ -140,6 +140,7 @@ ovs_fade="1"
 # ~l~ Left n chars TODO
 # ~sp~ Split - used to split Genre , Actor lists.
 ovs_yamj_page_size=10
+ovs_yamj_lean_xml=1
 ovs_yamj_cat1_name="Year"
 ovs_yamj_cat1_sub1_name="1950-59"
 ovs_yamj_cat1_sub1_query="_Y~f~~ge~1950~a~_Y~f~~le~1959"
@@ -175,3 +176,4 @@ ovs_yamj_cat5_sub3_name="TV Shows"
 ovs_yamj_cat5_sub3_query="_C~f~~e~'T'"
 ovs_yamj_cat5_sub4_name="All"
 ovs_yamj_cat5_sub4_query="1"
+ovs_yamj_cat6_name="Set"

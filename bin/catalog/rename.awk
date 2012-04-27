@@ -208,7 +208,7 @@ function rename_related(oldName,newName,\
 
 function preparePath(f) {
     f = qa(f);
-    return system("if [ ! -e "f" ] ; then mkdir -p "f" && chown "OVERSIGHT_ID" "f"/.. &&  rmdir -- "f" ; fi");
+    return system("set +e ; if [ ! -e "f" ] ; then mkdir -p "f" && chown "OVERSIGHT_ID" "f"/.. ;  rmdir -- "f" ; fi");
 }
 
 #This is used to double check we are only manipulating files that meet certain criteria.

@@ -102,11 +102,10 @@ response,body,sections,num,tnum,i,j,titles,total,url) {
 
     url = imdb_trvia_url(imdb_id);
 
-    ERR("DELETE getting "url);
+    INF("getting "url);
     if (url_get(url,response,"",1)) {
         body = response["body"];
 
-    ERR("DELETE got body ");
         #get named sections
         num=split(body,sections,"(<a name=\"|TOP_RHS)");
 

@@ -314,18 +314,20 @@ char *url_encode(char *str) {
 /* if url_encoding string is unchanged, just return that. */
 char *url_encode_static(char *str,int *free_result)
 {
-    assert(str);
-  char *pstr = str;
-  while (*pstr && NO_URLENCODE(*(unsigned char *)pstr)) {
-      pstr++;
-  }
-  if (*pstr) {
-      *free_result = 1;
-      return url_encode(str);
-  } else {
-      *free_result = 0;
-      return str;
-  }
+    char *result = str;
+    *free_result = 0;
+
+    if (str) {
+        char *pstr = str;
+        while (*pstr && NO_URLENCODE(*(unsigned char *)pstr)) {
+            pstr++;
+       }
+       if (*pstr) {
+          *free_result = 1;
+          result = url_encode(str);
+       }
+    }
+    return result;
 }
 
 /*==========================================================================

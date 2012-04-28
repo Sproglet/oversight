@@ -81,8 +81,6 @@ response,num,sections,ret,url,query,i) {
             gsub(/(DVD|dvd|[Bb]lu-?[Rr]ay|Wikipedia).*/,"",sections[i]);
         }
         ret = common_text(num,sections,0,4,num);
-        sub(/(box set|collection).*/,"",ret);
-        sub(/ (2|3|ii)$/,"",ret);
     }           
     if (index(tolower(ret),tolower(titles[1]))) {
         ret = titles[1];
@@ -186,5 +184,8 @@ wrd,t2,best,phrase,phrases,i,j,skip,inc,cap) {
             }
         }
     }
+    sub(/([Bb]ox [Ss]et|[Cc]ollection).*/,"",best);
+    sub(/ (2|3|ii)$/,"",best);
+    sub(/ [Tt]he$/,"",best);
     return clean_title(gensub(/[: ]+$/,"",1,best));
 }

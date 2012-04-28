@@ -1,6 +1,6 @@
 BEGIN {
     if (g_catalog_log_level == "") {
-        g_catalog_log_level = 1;
+        g_catalog_log_level = 0;
     }
 }
 

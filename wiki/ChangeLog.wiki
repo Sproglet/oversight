@@ -1,6 +1,16 @@
 #sidebar TableOfContents
 = Oversight Change Log =
 
+v2.0testing-r2258
+
+  * Faster network resolving for IP addressed based mounts
+  * Fixed failure to install on 100 series due to recent script environment changes
+
+v2.0testing-r2185
+
+v2.0testing-r2006
+
+
 v2.0testing-rxxxx
 
   * gui: Grid Segment fixes

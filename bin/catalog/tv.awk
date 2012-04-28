@@ -2141,7 +2141,7 @@ result,minfo2,tvdbid) {
     if (result) {
         minfo_merge(minfo,minfo2,plugin);
 
-        # Once items are merged we hanve NAME and DIR fields in order to determine iamge destinations.
+        # Once items are merged we have NAME and DIR fields in order to determine iamge destinations.
         tvdbid = minfo_get_id(minfo,"thetvdb");
         if (tvdbid) {
             getTvDbSeasonBanner(minfo,tvdbid);
@@ -2297,16 +2297,18 @@ function tvDbImageUrl(path) {
 }
 
 function getTvDbSeasonBanner(minfo,tvdbid,\
-xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size) {
+xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size,season) {
 
     lnum = get_langs(langs);
+
+    season = minfo[SEASON];
 
     bannerApiUrl = g_thetvdb_web"/data/series/"tvdbid"/banners.xml";
 
     r="/Banners/Banner";
-    get_poster = getting_poster(minfo,1) && !g_image_inspected[tvdbid,POSTER];
-    get_fanart = getting_fanart(minfo,1) && !g_image_inspected[tvdbid,FANART];
-    get_banner = getting_banner(minfo,1) && !g_image_inspected[tvdbid,BANNER];
+    get_poster = getting_poster(minfo,1) && !g_image_inspected[tvdbid,POSTER,season];
+    get_fanart = getting_fanart(minfo,1) && !g_image_inspected[tvdbid,FANART,season];
+    get_banner = getting_banner(minfo,1) && !g_image_inspected[tvdbid,BANNER,season];
 
     if (get_poster || get_fanart || get_banner) {
 
@@ -2324,10 +2326,10 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size) {
         if (firstIndex(xml) != "") {
 
             if (get_poster) {
-                best_best_banner_score(tvdbid,POSTER,xml,minfo,"season","season",minfo[SEASON],lnum,langs);
+                best_best_banner_score(tvdbid,POSTER,xml,minfo,"season","season",season,lnum,langs);
             }
             if (get_banner) {
-                best_best_banner_score(tvdbid,BANNER,xml,minfo,"season","seasonwide",minfo[SEASON],lnum,langs);
+                best_best_banner_score(tvdbid,BANNER,xml,minfo,"season","seasonwide",season,lnum,langs);
             }
             if (get_fanart) {
                 if (g_settings["catalog_image_fanart_width"]  == 1920 ) {

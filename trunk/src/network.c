@@ -36,25 +36,40 @@ int connect_tcp_socket(struct sockaddr *addr,size_t addrlen,int port,long timeou
 
 /**
  * FIXME: resolve_timeout
+  getaddrinfo call can be slow. We only call it to compute ai->ai_addr and ai->ai_addrlen
  */
 struct addrinfo * get_remote_addr(char *host, char * service, int family, int socktype,
 	int protocol, int resolve_timeout)
 {
-	struct addrinfo hints, *info = NULL;
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = family;
-	hints.ai_socktype = socktype;
-	hints.ai_protocol = protocol;
-	hints.ai_flags = AI_CANONNAME;
+    struct addrinfo hints, *info = NULL;
 
-	int ret = getaddrinfo(host, service, &hints, &info);
-	if (ret != 0) {
-		if (info) {
-            HTML_LOG(0,"No address!!!!");
-			freeaddrinfo(info);
-			info = NULL;
-		}
-	}
+    if (util_strreg(host,"^\\d+\\.\\d+\\.\\d+\\.\\d+$",0)) {
+        // Its an IP Address - get ai_addr and au_addrlen directly
+        struct sockaddr_in *sock;
+        sock = CALLOC(sizeof(struct sockaddr_in),1);
+        sock->sin_family = AF_INET;
+        sock->sin_addr.s_addr = inet_addr(host);
+
+        info = CALLOC(sizeof(struct addrinfo),1);
+        info->ai_addrlen=1;
+        info->ai_addr=(struct sockaddr *)sock;
+        //
+    } else {
+        memset(&hints, 0, sizeof(struct addrinfo));
+        hints.ai_family = family;
+        hints.ai_socktype = socktype;
+        hints.ai_protocol = protocol;
+        hints.ai_flags = AI_CANONNAME;
+
+        int ret = getaddrinfo(host, service, &hints, &info);
+        if (ret != 0) {
+            if (info) {
+                HTML_LOG(0,"No address!!!!");
+                freeaddrinfo(info);
+                info = NULL;
+            }
+        }
+    }
 
 #if 0
     dump_addr(info);

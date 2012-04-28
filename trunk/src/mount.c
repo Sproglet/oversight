@@ -496,10 +496,9 @@ static int nmt_mount_share(char *path,char *current_mount_status)
     int result = 0;
 
     char *share_name = util_basename(path);
-TRACE ; HTML_LOG(0,"mount path=[%s] share_name [%s] current status [%s]",path,share_name,current_mount_status);
+    HTML_LOG(0,"mount path=[%s] share_name [%s] current status [%s]",path,share_name,current_mount_status);
     // eg "abc"
 
-TRACE ;
     char index = get_link_index(share_name);
 
     if (index) {
@@ -508,7 +507,6 @@ TRACE ;
 
         char *serv_link = setting_val(key);
         // Look for corresponding variable servlinkN
-TRACE ;
 		
 		HTML_LOG(1,"mount servlink [%s]",serv_link);
         FREE(key);
@@ -518,9 +516,7 @@ TRACE ;
         if (!link) {
 
             set_mount_status(path,MOUNT_STATUS_BAD);
-TRACE;
         } else if (STRCMP(current_mount_status,MOUNT_STATUS_NOT_IN_MTAB) == 0) {
-TRACE;
 
             char *user = get_link_user(serv_link);
             char *passwd = get_link_passwd(serv_link);
@@ -612,7 +608,6 @@ int ping_link(char *link)
     char *end=NULL;
     int result = 0;
     static long connect_millis=-1;
-TRACE;
 
     if (connect_millis == -1 ) {
         connect_millis = 58;

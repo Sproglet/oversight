@@ -3,7 +3,7 @@
 #include "utf8.h"
 #include "gaya_cgi.h"
 #include "utf8proc.h"
-// Simple utf functions. If oversight requres more complete utf8 support look at a proper utf8 library eg utf8proc
+// Simple utf functions. For more complex Normalisation utf8proc is used..
 
 int utf8len(char *str)
 {

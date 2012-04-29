@@ -67,7 +67,7 @@ CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 #-DNOLOG=$(NOLOG)
 
 # Most stable last to speed compile-fail cycle
-OBJS=initials.o utf8.o tree.o \
+OBJS=initials.o utf8.o tree.o  \
 	 abet.o filter.o exp.o dbnames.o types.o dbitem.o list.o gaya.o \
 	 macro.o template.o template_condition.o  variables.o \
 	grid.o grid_display.o tv_detail.o movie_detail.o display.o oversight.o util.o \
@@ -79,7 +79,7 @@ OBJS=initials.o utf8.o tree.o \
    	time.o network.o \
    	hashtable_loop.o vasprintf.o \
    	hashtable.o hashtable_itr.o hashtable_utility.o \
-	yamj.o
+	yamj.o utf8proc.o
 
 SRC=$(OBJS:.o=.c)
 
@@ -123,39 +123,14 @@ cygwin:
 	touch cygwin
 
 
-$(TARGET):  libutf8proc.a tags $(OBJS)
-	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS) libutf8proc.a
+$(TARGET):  tags $(OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
 	$(STRIP) $(TARGET)
 	cp $(TARGET) $(EXE)
 	sleep 1
 
 tags: $(SRC) $(HEADERS)
 	ctags *.[ch]
-
-# BEGIN Rules adapted from original utf8proc makefile ====================
-#
-
-utf8proc.o: utf8proc.c
-
-libutf8proc.a: utf8proc.o
-	rm -f libutf8proc.a
-	ar rs libutf8proc.a utf8proc.o
-
-
-#utf8proc.o: utf8proc.h utf8proc.c utf8proc_data.c
-#	echo DOIT
-	
-
-#	$(cc) -c -o utf8proc.o utf8proc.c
-
-
-#cc -O2 -std=c99 -pedantic -Wall -fpic  -c -o utf8proc.o utf8proc.c
-#utf8proc.c:1: warning: -fpic ignored for target (all code is position independent)
-#ar: creating libutf8proc.a
-#cc -O2 -std=c99 -pedantic -Wall -fpic  -shared -o libutf8proc.so utf8proc.o
-#chmod a-x libutf8proc.so
-
-# END Rules adapted from original utf8proc makefile ====================
 
 daemon.o: daemon.c
 

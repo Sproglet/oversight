@@ -61,7 +61,10 @@ char *utf8norm(char *s,int len)
     } else {
         // Use COMPOSE rather than DECOMPOSE to preserve composed characters
         uint8_t *intptr;
-        int uerr = utf8proc_map((uint8_t *)s,len,&intptr,UTF8PROC_COMPOSE|UTF8PROC_COMPAT|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
+
+        //int uerr = utf8proc_map((uint8_t *)s,len,&intptr,UTF8PROC_COMPOSE|UTF8PROC_COMPAT|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
+        int uerr = utf8proc_map((uint8_t *)s,len,&intptr,UTF8PROC_COMPOSE|UTF8PROC_STABLE|UTF8PROC_IGNORE|UTF8PROC_STRIPCC);
+TRACE1;
         if (uerr < 0) {
             out = (char *)intptr;
             if (out == NULL) {

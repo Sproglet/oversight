@@ -139,28 +139,11 @@ ovs_fade="1"
 # String
 # ~l~ Left n chars TODO
 # ~sp~ Split - used to split Genre , Actor lists.
+# ~p~ Period
 ovs_yamj_page_size=10
 ovs_yamj_lean_xml=1
 ovs_yamj_cat1_name="Year"
-ovs_yamj_cat1_sub1_name="1950-59"
-ovs_yamj_cat1_sub1_query="_Y~f~~ge~1950~a~_Y~f~~le~1959"
-ovs_yamj_cat1_sub2_name="1960-69"
-ovs_yamj_cat1_sub2_query="_Y~f~~ge~1960~a~_Y~f~~le~1969"
-ovs_yamj_cat1_sub3_name="1970-79"
-ovs_yamj_cat1_sub3_query="_Y~f~~ge~1970~a~_Y~f~~le~1979"
-ovs_yamj_cat1_sub4_name="1980-89"
-ovs_yamj_cat1_sub4_query="_Y~f~~ge~1980~a~_Y~f~~le~1989"
-ovs_yamj_cat1_sub5_name="1990-99"
-ovs_yamj_cat1_sub5_query="_Y~f~~ge~1990~a~_Y~f~~le~1999"
-ovs_yamj_cat1_sub6_name="2000-09"
-ovs_yamj_cat1_sub6_query="_Y~f~~ge~2000~a~_Y~f~~le~2009"
-# need to add a current_year constant
-ovs_yamj_cat1_sub7_name="2010"
-ovs_yamj_cat1_sub7_query="_Y~f~~e~2010"
-ovs_yamj_cat1_sub8_name="2011"
-ovs_yamj_cat1_sub8_query="_Y~f~~e~2011"
-ovs_yamj_cat1_sub9_name="2012"
-ovs_yamj_cat1_sub9_query="_Y~f~~e~2012"
+ovs_yamj_cat1_expr="_Y~f~~p~"
 ovs_yamj_cat2_name="Title"
 ovs_yamj_cat2_expr="_T~f~~t~~l~1"
 ovs_yamj_cat3_name="Certification"

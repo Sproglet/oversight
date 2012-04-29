@@ -234,6 +234,7 @@ typedef enum Op_enum {
     OP_SPLIT='|',
     OP_LEFT='[',
     OP_THE='T',
+    OP_PERIOD='p',
 
     OP_REGEX_CONTAINS='r',
     OP_REGEX_MATCH='R',

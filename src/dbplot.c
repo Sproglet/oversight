@@ -184,7 +184,7 @@ char *get_plot(DbItem *item,PlotType ptype)
     if (item->plottext[ptype] == NULL) {
         int free_short_plot;
         set_plot_keys(item);
-        char *plot = NVL(get_plot_by_key_static(item,PLOT_MAIN));
+        char *plot = NVL(get_plot_by_key_static(item,ptype));
         char *short_plot = truncate_plot(plot,&free_short_plot);
 
         if (free_short_plot) {

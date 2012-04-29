@@ -13,7 +13,7 @@ function pad_episode(e) {
 }
 
 function relocate_files(minfo,\
-newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
+newName,oldName,oldFolder,newFolder,fileType,epTitle) {
 
    if(LG)DEBUG("relocate_files");
 
@@ -92,6 +92,7 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
                minfo[FILE]="";
                minfo[DIR]=newName;
+               relocate_nfo(minfo,newName,0);
            } else {
 
                # Move media file
@@ -113,25 +114,8 @@ newName,oldName,nfoName,oldFolder,newFolder,fileType,epTitle) {
 
                # Move nfo file
                if(LG)DEBUG("Checking nfo file ["minfo[NFO]"]");
-               if(minfo[NFO] != "") {
+               relocate_nfo(minfo,newName,1);
 
-                   nfoName = newName;
-                   sub(/\.[^.]+$/,"",nfoName);
-                   nfoName = nfoName ".nfo";
-
-                   if (nfoName != newName ) {
-
-                       if (moveFileIfPresent(minfo[NFO],nfoName) != 0) {
-                           return;
-                       }
-
-                       g_file_date[nfoName]=g_file_date[minfo[NFO]];
-                       delete g_file_date[minfo[NFO]];
-
-                       minfo[NFO] = nfoName;
-                       if(LG)DEBUG("new nfo location ["minfo[NFO]"]");
-                   }
-               }
 
                #Rename any other associated files (sub,idx etc) etc.
                rename_related(oldName,newName);
@@ -204,6 +188,30 @@ function rename_related(oldName,newName,\
         moveFileIfPresent(oldBase extensions[ext],newBase extensions[ext]);
     }
 
+}
+function relocate_nfo(minfo,newName,moveit,\
+nfoName) {
+   if(minfo[NFO] != "") {
+
+       nfoName = newName;
+       sub(/\.[^.]+$/,"",nfoName);
+       nfoName = nfoName ".nfo";
+
+       if (nfoName != newName ) {
+
+           if (moveit) {
+               if (moveFileIfPresent(minfo[NFO],nfoName) != 0) {
+                   return;
+               }
+           }
+
+           g_file_date[nfoName]=g_file_date[minfo[NFO]];
+           delete g_file_date[minfo[NFO]];
+
+           minfo[NFO] = nfoName;
+           if(LG)DEBUG("new nfo location ["minfo[NFO]"]");
+       }
+   }
 }
 
 function preparePath(f) {
@@ -306,7 +314,7 @@ old,new,cmd,ret) {
             if(LD)DETAIL("move folder:"old"/* --> "new"/");
            # Seems to be a bug on dns323 where globbing fails of the path is too long. 
            # Havent fully isolated but resolved by replacing "mv /path/* " with "( cd /path ; mv * )"
-           cmd= " mkdir -p "new" ; ( cd "old" ; mv * .* "new" || true ) ; rmdir "old" 2>/dev/null";
+           cmd= " mkdir -p "new" ; ( cd "old" ; mv * .?* "new" || true ) ; rmdir "old" 2>/dev/null";
            ret = exec(cmd);
        }
        return ret;

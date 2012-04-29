@@ -22,22 +22,23 @@
 
 #define ATOMIC_PRECEDENCE 6
 static OpDetails ops[] = {
-    { OP_CONSTANT   , ""    , 0 ,ATOMIC_PRECEDENCE , {VAL_TYPE_NONE,VAL_TYPE_NONE } },
-    { OP_ADD     , "~A~" , 2 , 3 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_SUBTRACT,"~S~"  , 2 , 3  , {VAL_TYPE_NUM,VAL_TYPE_NUM }},
-    { OP_MULTIPLY,"~M~"  , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_DIVIDE  ,"~D~"  , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_AND     ,"~a~"  , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_OR      ,"~o~"  , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_NOT      ,"~!~" , 1 , 5 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_NE      ,"~ne~" , 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_LE      ,"~le~" , 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_LT      ,"~lt~" , 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
-    { OP_GT      ,"~gt~" , 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_GE      ,"~ge~" , 2 , 2  ,{ VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_LEFT    ,"~l~"  , 2 , 2 , {VAL_TYPE_STR , VAL_TYPE_NUM }},
-    { OP_SPLIT   ,"~sp~" , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR }},
-    { OP_THE      ,"~t~" , 1 , 4 , {VAL_TYPE_STR,VAL_TYPE_NONE} },
+    { OP_CONSTANT   , ""   , 0 ,ATOMIC_PRECEDENCE , {VAL_TYPE_NONE,VAL_TYPE_NONE } },
+    { OP_ADD     , "~A~", 2 , 3 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_SUBTRACT,"~S~" , 2 , 3  , {VAL_TYPE_NUM,VAL_TYPE_NUM }},
+    { OP_MULTIPLY,"~M~" , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_DIVIDE  ,"~D~" , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_AND     ,"~a~" , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_OR      ,"~o~" , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_NOT      ,"~!~", 1 , 5 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_NE      ,"~ne~", 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LE      ,"~le~", 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LT      ,"~lt~", 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_GT      ,"~gt~", 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_GE      ,"~ge~", 2 , 2  ,{ VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LEFT    ,"~l~" , 2 , 2 , {VAL_TYPE_STR , VAL_TYPE_NUM }},
+    { OP_SPLIT   ,"~sp~", 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR }},
+    { OP_THE     ,"~t~" , 1 , 4 , {VAL_TYPE_STR,VAL_TYPE_NONE} },
+    { OP_PERIOD  ,"~p~" , 1 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NONE} },
 
     // Letters used for following operators are passed in URLs also
     { OP_EQ         ,"~" QPARAM_FILTER_EQUALS "~"      , 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
@@ -387,6 +388,55 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 } else {
                     set_str(e,s,0);
                 }
+            }
+            break;
+        case OP_PERIOD:
+#define NUM_YEARS 5
+#define NUM_DECADES 13
+            if (evaluate_children(e,item,err) == 0) {
+                static int computed=0;
+                static char*decades[NUM_DECADES+1];
+                static char* years[NUM_YEARS+1];
+                int cy = current_year();
+
+                if (!computed) {
+                    computed=1;
+                    int y;
+                    int i;
+                    for(y = cy-NUM_YEARS+1 ; y <= cy; y++ ) {
+                        i = y-cy+NUM_YEARS-1;
+                        ovs_asprintf(&years[i],"%d",y);
+                        //HTML_LOG(0,"year[%d] = %s",i,years[i]);
+                    }
+                    for ( i = 0 ; i < NUM_DECADES ; i++ ) {
+                        int dec = ((cy/10)-i)*10;
+                        if (dec + 9 >= cy-NUM_YEARS+1) {
+                            ovs_asprintf(&decades[i],"%d-%02d",dec,(cy-NUM_YEARS)%100);
+                        } else {
+                            ovs_asprintf(&decades[i],"%ds",dec);
+                        }
+                        //HTML_LOG(0,"decade[%d] = %s",i,decades[i]);
+                    }
+                }
+
+
+                char *result;
+                int year = (int)(e->subexp[0]->val.num_val);
+
+                // HTML_LOG(0,"year in %d",year);
+
+
+                if (year > cy-NUM_DECADES*10 && year <= cy+1) {
+                    if ((cy-year) < NUM_YEARS) {
+                        result = years[year - cy + NUM_YEARS -1];
+                    } else {
+                        result = decades[(cy/10)-(year/10)];
+                    }
+                } else {
+                    result = "?";
+                }
+                set_str(e,result,0);
+                //HTML_LOG(0,"period %s",result);
             }
             break;
         case OP_STARTS_WITH:

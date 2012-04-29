@@ -559,23 +559,36 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     
     //printf("\t<posterURL>UNKNOWN</posterURL>\n");
     char *poster = internal_image_path_static(item,POSTER_IMAGE,1);
-    if (*poster ) {
+    if (!EMPTY_STR(poster)) {
         printf("\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
         printf("\t<detailPosterFile>%s%s</detailPosterFile>\n",YAMJ_POSTER_PREFIX,poster);
         printf("\t<thumbnail>%s%s</thumbnail>\n",(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX),poster);
     }
 
-    char *banner = internal_image_path_static(item,BANNER_IMAGE,1);
+    char *banner;
+   
+#if 1
+    banner = internal_image_path_static(item,BANNER_IMAGE,1);
     if (*banner ) {
         printf("\t<bannerFile>%s%s</bannerFile>\n",YAMJ_BANNER_PREFIX,banner);
     }
+    printf("\t<bannerURL>UNKNOWN</bannerURL>\n");
+#else
+    banner = get_existing_internal_image_path(item,BANNER_IMAGE,view);
+    //HTML_LOG(0,"TRACE1 banner[%s]",banner);
+    if (!EMPTY_STR(banner) ) {
+        int freeit;
+        char *enc=url_encode_static(banner,&freeit);
+        printf("\t<bannerFile>%s</bannerFile>\n",enc);
+        if (freeit) FREE(enc);
+    }
+#endif
 
     //printf("\t<fanartURL>UNKNOWN</fanartURL>\n");
     char *fanart = internal_image_path_static(item,FANART_IMAGE,1);
-    if (*fanart ) {
+    if (!EMPTY_STR(fanart) ) {
         printf("\t<fanartFile>%s%s</fanartFile>\n",YAMJ_FANART_PREFIX,fanart);
     }
-    printf("\t<bannerURL>UNKNOWN</bannerURL>\n");
 
     char *plot = get_plot(item,PLOT_MAIN);
     char *p = xmlstr_static(plot,0);
@@ -777,11 +790,26 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
 
     if (item->category == 'T' ) {
         printf("\t\t<fileTitle part=\"%d\">%s",part_no,xmlstr_static(NVL(item->eptitle),0));
-        if (show_source && item->videosource) {
-            char *p = util_tolower(item->videosource);
 
-            printf(" - %s",p);
+        if (show_source) {
+           char *sep = " - ";
+           if (item->videosource) {
+            char *p = util_tolower(item->videosource);
+            printf("%s%s",sep,p);
             FREE(p);
+            sep=",";
+           }
+           if (!EMPTY_STR(item->file)) {
+               if (util_strcasestr(item->file,"proper")) {
+                   printf("%sprp",sep);
+                   sep=",";
+               }
+               if (util_strcasestr(item->file,"repack")) {
+                   printf("%srpk",sep);
+                   sep=",";
+               }
+           }
+
         }
         printf("</fileTitle>\n");
 
@@ -1311,9 +1339,14 @@ int yamj_xml(char *request)
             }
 
             // Here we could have newest first but leave that to skins 
-            // sort_fn = db_overview_cmp_by_age_desc;
+            int (*sort_fn)(DbItem **,DbItem**) = NULL;
+            if (selected_subcat && STRCMP(selected_subcat->name,"By Age") == 0) {
+                if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
+                    sort_fn = db_overview_cmp_by_age_desc;
+                }
+            }
 
-            DbSortedRows *sorted_rows = get_sorted_rows(NULL,NULL,0,NULL,categories,selected_subcat);
+            DbSortedRows *sorted_rows = get_sorted_rows(NULL,sort_fn,0,NULL,categories,selected_subcat);
 
             HTML_LOG(1,"Sort categories..");
             sort_categories(categories);

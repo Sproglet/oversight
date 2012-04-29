@@ -90,4 +90,6 @@ DbSortedRows *get_sorted_rows(ViewMode *view, int (*sort_fn)(DbItem **,DbItem**)
 char *get_date_static(DbItem *item,char *format);
 ViewMode *get_drilldown_view(DbItem *item);
 ViewMode *compute_view(DbItemSet **rowsets);
+char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);
+char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview);
 #endif

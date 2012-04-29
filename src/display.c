@@ -1540,8 +1540,6 @@ char *internal_image_path_static(DbItem *item,ImageType image_type,int name_only
     return path;
 }
 
-char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);
-char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview);
 
 #ifdef FIND_LOCAL_POSTERS
 char *get_picture_path_with_movie(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview)

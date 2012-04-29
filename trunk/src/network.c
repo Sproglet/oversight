@@ -31,6 +31,25 @@
 #include "gaya_cgi.h"
 #include "network.h"
 
+/*
+ * Socket errors
+ *
+ * Connection closed appears to be 150 ?
+ *
+ * If host is IP address it is fast to build own struct sockaddr_in than to use getaddrinfo 
+ * however this seems to result in an error 22 when connecting to an open port. so
+ * we have following error codes:
+ *
+ *
+ * getaddrinfo - slow - port open - no error
+ * getaddrinfo - slow - port closed - error 150 on NMT
+ *
+ * manual struct - fast - port open - Error 22 on NMT100 EINPROGRESS
+ * manual struct  - fast - port closed - Error 22 on NMT100 EINPROGRESS!!
+ * When building own struct sockaddr_in from ip address a open port returns error 22.
+ * Closed port returns ?
+ */
+
 long ping_timeout();
 int connect_tcp_socket(struct sockaddr *addr,size_t addrlen,int port,long timeout_millis);
 
@@ -43,18 +62,25 @@ struct addrinfo * get_remote_addr(char *host, char * service, int family, int so
 {
     struct addrinfo hints, *info = NULL;
 
-    if (util_strreg(host,"^\\d+\\.\\d+\\.\\d+\\.\\d+$",0)) {
+    if (util_strreg(host,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$",0)) {
         // Its an IP Address - get ai_addr and au_addrlen directly
+        
         struct sockaddr_in *sock;
-        sock = CALLOC(sizeof(struct sockaddr_in),1);
+        sock = CALLOC(sizeof(struct sockaddr),1);
+        //sock->sin_port = AF_INET;
         sock->sin_family = AF_INET;
         sock->sin_addr.s_addr = inet_addr(host);
 
         info = CALLOC(sizeof(struct addrinfo),1);
-        info->ai_addrlen=1;
+        info->ai_family=family;
+        info->ai_socktype=socktype;
+        hints.ai_protocol = protocol;
+        //hints.ai_flags = AI_CANONNAME;
+        info->ai_addrlen=sizeof(struct sockaddr);
         info->ai_addr=(struct sockaddr *)sock;
         //
     } else {
+        HTML_LOG(0,"resolving [%s]",host);
         memset(&hints, 0, sizeof(struct addrinfo));
         hints.ai_family = family;
         hints.ai_socktype = socktype;
@@ -73,6 +99,14 @@ struct addrinfo * get_remote_addr(char *host, char * service, int family, int so
 
 #if 0
     dump_addr(info);
+    if (info) {
+        int i;
+        HTML_LOG(0,"info len = %d",info->ai_addrlen);
+
+        for(i = 0 ; i < sizeof(struct sockaddr) ; i++ ) {
+            HTML_LOG(0,"info %x",((char *)(info->ai_addr))[i]);
+        }
+    }
 #endif
 	return info;
 }

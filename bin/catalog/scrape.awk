@@ -695,7 +695,7 @@ f,source,ret) {
                 if ( !(f"_source" in current)) {
                     current[f"_source"] = default_source;
                 }
-                #if(LG)DEBUG("keep "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
+                if(LD)DETAIL("keep "current[f"_source"]":"db_fieldname(f)" = ["current[f]"]");
             }
         }
     }

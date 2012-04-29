@@ -14,11 +14,13 @@ function queue_plots(minfo,queue_file,\
 id,out) {
 
     id = plot_id(minfo);
+    if (index(minfo[PLOT],"\n")) gsub(/\n/,"\r",minfo[PLOT]); # \n messes up sort
 
     if (minfo[CATEGORY] == "T" ) {
         if (minfo[PLOT]) {
             out = out plot_to_season_id(id)"\t"minfo[PLOT] "\n" ;
         }
+        if (index(minfo[EPPLOT],"\n")) gsub(/\n/,"\r",minfo[EPPLOT]); # \n messes up sort
         if (minfo[EPPLOT]) {
             out = out id"\t"minfo[EPPLOT] "\n" ;
         }
@@ -30,7 +32,7 @@ id,out) {
     if (out) {
         printf "%s",out >> queue_file;
     }
-    close(queue_file);
+    #close(queue_file); - closed in calling loop
 }
 
 function get_plotline(f,parts,\
@@ -38,10 +40,11 @@ i,line) {
 
     delete parts;
 
-    if ( ( getline line < f ) > 0) {
-        if ((i = index(line,"\t")) != 0) {
+    while ( ( getline line < f ) > 0) {
+        if ((i = index(line,"\t")) > 1) { # make sure something before tab
             parts[1] = substr(line,1,i-1);
             parts[2] = substr(line,i+1);
+            break;
         }
     }
 }
@@ -61,11 +64,11 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
     do {
         if (and(action,1)) {
             get_plotline(plot_file,tabs1);
-            #if(LG)DEBUG("read plot id 1["tabs1[1]"]");
+            #if(LD)DETAIL("read plot id 1["tabs1[1]"]");
         }
         if (and(action,2)) {
             get_plotline(queue_file,tabs2);
-            if(LG)DEBUG("read plot id 2["tabs2[1]"]");
+            #if(LD)DETAIL("read plot id 2["tabs2[1]"]");
         }
 
         if (tabs1[1] == "") {
@@ -107,7 +110,7 @@ action,tabs1,tabs2,total_unchanged,total_removed,total_new,total_changed,file_ou
             if (tabs2[1] in plot_ids) { # should always be true
                 if (plot_ids[tabs2[1]]++ == 1) {
                     print tabs2[1]"\t"tabs2[2] >> file_out;
-                    #if(LG)DEBUG("add plot "tabs2[1]"\t"substr(tabs2[2],1,20)"....");
+                    #if(LD)DETAIL("add plot "tabs2[1]"\t"substr(tabs2[2],1,20)"....");
 
                     if (action == 2) {
                         total_new ++;

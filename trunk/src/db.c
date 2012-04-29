@@ -524,7 +524,7 @@ DbItemSet * db_scan_titles( Db *db, Exp *exp,int num_ids,int *ids,void (*action)
                     HTML_LOG(1,"Path not mounted [%s]",rowid.file);
                     keeprow=0;
 
-                } if (yamj_cats) {
+                } else if (yamj_cats) {
                     // YAMJ Emulation
                     keeprow = yamj_check_item(&rowid,yamj_cats,yamj_subcat);
                 } else {

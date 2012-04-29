@@ -368,7 +368,6 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
         }
     }
 
-    //TRACE1;
     return keeprow;
 
     /* Now the item->yamj_member_of is partially populated with
@@ -475,7 +474,17 @@ char *base_name(DbItem *item,ViewMode *view)
         // at present sets are attributes of movies, and we make one pass of the database.
         // In future as well as the item->title we must look at all of the item->sets and include the video under that letter too.
         // TODO need to compare against all sets - or supplut multple sets in some way
-        ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~(_a~f~~c~'%s')_1",item->sets);
+        char *imdb = get_item_id(item,"imdb",0);
+        if (imdb) {
+            if (item->sets) {
+                ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~((_U~f~~c~'%s')~o~(_a~f~~c~'%s'))_1",imdb,item->sets);
+            } else {
+                ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~(_U~f~~c~'%s')_1",imdb);
+            }
+        } if (item->sets) {
+            ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~(_a~f~~c~'%s')_1",item->sets);
+        }
+
 
     } else {
         // default name
@@ -743,14 +752,13 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
         if (!errno) part_no = epno;
     }
 
-    printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\" subtitlesExchange=\"NO\" title=\"%s\" vod=\"\" watched=\"%s\" videosource=\"%s\">\n",
+    printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\" subtitlesExchange=\"NO\" title=\"%s\" vod=\"\" watched=\"%s\" >\n",
             part_no,
             part_no,
             item->season,
             item->sizemb*1024*1024,
             ((item->category=='T')?xmlstr_static(NVL(item->eptitle),0):"UNKNOWN"),
-            BOOL(item->watched),
-            NVL(item->videosource));
+            BOOL(item->watched));
 
     int freeit;
     char *path;

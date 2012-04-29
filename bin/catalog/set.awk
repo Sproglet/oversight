@@ -174,7 +174,7 @@ wrd,t2,best,phrase,phrases,i,j,skip,inc,cap) {
             }
         }
 
-        dump(0,"phrases",phrases);
+        #dump(0,"phrases",phrases);
 
         # pick longest title with more than 50% occurence
         best="";

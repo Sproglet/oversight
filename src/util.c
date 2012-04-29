@@ -1472,4 +1472,14 @@ char *xmlstr_static(char *text,int idx)
     return out[idx];
 }
 
+int current_year()
+{
+    static int y=0;
+    if (y == 0) {
+        time_t t = time(NULL);
+        struct tm *now = localtime(&t);
+        y = now->tm_year+1900;
+    }
+    return y;
+}
 // vi:sw=4:et:ts=4

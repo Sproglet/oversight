@@ -35,6 +35,7 @@
 #define DB_FLDID_URL "_U"
 #define DB_FLDID_POSTER "_J"
 #define DB_FLDID_FANART "_fa"
+#define DB_FLDID_BANNER "_b"
 
 #define DB_FLDID_DOWNLOADTIME "_DT"
 #define DB_FLDID_INDEXTIME "_IT"
@@ -49,7 +50,6 @@
 #define DB_FLDID_AIRDATEIMDB "_adi"
 #define DB_FLDID_NFO "_nfo"
 #define DB_FLDID_COMES_AFTER "_a"
-#define DB_FLDID_COMES_BEFORE "_b"
 #define DB_FLDID_REMAKE "_k"
 #define DB_FLDID_ACTOR_LIST "_A"
 #define DB_FLDID_WRITER_LIST "_W"

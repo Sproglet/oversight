@@ -37,6 +37,7 @@
 #define YAMJ_THUMB_PREFIX "thumb_"
 #define YAMJ_BOXSET_PREFIX "boxset_"
 #define YAMJ_POSTER_PREFIX "poster_"
+#define YAMJ_BANNER_PREFIX "banner_"
 #define YAMJ_FANART_PREFIX "fanart_"
 #define YAMJ_QUERY_NAME "query"
 #define YAMJ_QUERY_PREFIX YAMJ_QUERY_NAME "_"
@@ -555,6 +556,11 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         printf("\t<thumbnail>%s%s</thumbnail>\n",(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX),poster);
     }
 
+    char *banner = internal_image_path_static(item,BANNER_IMAGE,1);
+    if (*banner ) {
+        printf("\t<bannerFile>%s%s</bannerFile>\n",YAMJ_BANNER_PREFIX,banner);
+    }
+
     //printf("\t<fanartURL>UNKNOWN</fanartURL>\n");
     char *fanart = internal_image_path_static(item,FANART_IMAGE,1);
     if (*fanart ) {
@@ -770,6 +776,17 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
             FREE(p);
         }
         printf("</fileTitle>\n");
+
+        char *plot = get_plot(item,PLOT_EPISODE);
+        if (!EMPTY_STR(plot)) {
+            char *p = xmlstr_static(plot,0);
+            if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
+                p += 3;
+            }
+            printf("\t<filePlot part=\"%d\">%s</filePlot>\n",part_no,p);
+        }
+        FREE(plot);
+
         printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
         printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
@@ -1238,6 +1255,14 @@ int yamj_xml(char *request)
 
             char *file;
             ovs_asprintf(&file,"%s/db/global/_J/ovs_%s",appDir(),request+strlen(YAMJ_POSTER_PREFIX));
+            // Send image
+            cat(CONTENT_TYPE"image/jpeg",file);
+            FREE(file);
+
+        } else if (util_starts_with(request,YAMJ_BANNER_PREFIX) && util_strreg(request,YAMJ_BANNER_PREFIX "[^.]*\\.jpg$",0)) {
+
+            char *file;
+            ovs_asprintf(&file,"%s/db/global/_b/ovs_%s",appDir(),request+strlen(YAMJ_BANNER_PREFIX));
             // Send image
             cat(CONTENT_TYPE"image/jpeg",file);
             FREE(file);

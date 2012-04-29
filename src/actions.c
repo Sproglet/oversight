@@ -218,6 +218,11 @@ TRACE;
         array_add(a,replace_all(fanart,"\\.jpg$",IMAGE_EXT_SD,0));
         array_add(a,replace_all(fanart,"\\.jpg$",IMAGE_EXT_PAL,0));
     }
+    char *banner = internal_image_path_static(item,BANNER_IMAGE,0);
+    //HTML_LOG(0,"banner[%s]",banner);
+    if (banner) {
+        array_add(a,STRDUP(banner));
+    }
 }
 
 void remove_internal_images_from_delete_queue(DbItem *item)

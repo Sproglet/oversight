@@ -70,7 +70,10 @@ jpg_resize() {
         fanart.jpg|*-fanart.jpg|*/_fa/*.hd.jpg)
             w=$catalog_image_fanart_width ; q=90 ; width_cmp_fn=ne ;; # h=720 this is a standard width at themoviedb - no need to convert those
 
-        poster.jpg|*-fanart.jpg|*/_J/*.jpg)
+        */_b/*.jpg)
+            w=758 ; q=90 ; width_cmp_fn=ne ;; # this is a standard width at themoviedb - no need to convert those
+
+        poster.jpg|*.jpg|*/_J/*.jpg)
             w=$catalog_image_poster_width ; q=90 ; width_cmp_fn=gt ;; # this is a standard width at themoviedb - no need to convert those
 
         *) ERROR "Unknown image name [$output]" ; return 1 ;;
@@ -167,7 +170,7 @@ sizekb() {
     ls -s "$1" | awk '{print $1}'
 }
 
-# $1 = fanart | poster
+# $1 = fanart | poster | portrait | banner
 # $2 = source file
 resize_img() {
 
@@ -194,10 +197,14 @@ resize_img() {
             fi
             ;;
         poster)
-            # assuming covers are high quality we can start with 50% reduction in djpeg stage
             jpg_resize "$2" "$2" "1/1"
             if [ $oversight = 1 ] ; then
                 jpg_resize "$2" "$base.thumb.jpg" "1/2"
+            fi
+            ;;
+        banner)
+            if [ $oversight = 1 ] ; then
+                jpg_resize "$2" "$2" "1/1"
             fi
             ;;
         portrait)
@@ -316,6 +323,7 @@ start_thread() {
     while \
         process_queue "$Q.poster" 1 || \
         process_queue "$Q.fanart" 0 || \
+        process_queue "$Q.banner" 0 || \
         process_queue "$Q.portrait" 0 ; do
         true
     done
@@ -379,10 +387,10 @@ if [ -z "$1" ] ; then
 	usage:
 
         Queue an item
-            $0 [portrait|poster|fanart] url file wget options
+            $0 [portrait|poster|fanart|banner] url file wget options
 
         Queue an item and start processing queues
-            $0 START [portrait|poster|fanart] url file wget options
+            $0 START [portrait|poster|fanart|banner] url file wget options
         
         Start processing queues
             $0 START

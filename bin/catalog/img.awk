@@ -65,7 +65,7 @@ function getting_fanart(minfo,verbose) {
     return 0+ getting_image(minfo,FANART,GET_FANART,UPDATE_FANART,verbose);
 }
 function getting_banner(minfo,verbose) {
-    return 0+ getting_image(minfo,BANNER,GET_BANNER,UPDATE_BANNER,verbose);
+    return 0+ getting_image(minfo,BANNER,GET_BANNERS,UPDATE_BANNERS,verbose);
 }
 
 function getting_poster(minfo,verbose) {
@@ -123,7 +123,7 @@ function download_image(field_id,minfo,mi_field,\
         } else if (field_id == FANART) {
             get_it = getting_fanart(minfo,0);
         } else if (field_id == BANNER) {
-            get_it = getting_fanart(minfo,0);
+            get_it = getting_banner(minfo,0);
         }
 
         if(LD)DETAIL("getting image = "get_it);
@@ -138,11 +138,7 @@ function download_image(field_id,minfo,mi_field,\
             referer=urls[2];
 
             # Script to fetch poster and create sd and hd versions
-            if (field_id == POSTER) {
-                script_arg="poster";
-            } else {
-                script_arg="fanart";
-            }
+            script_arg = tolower(g_db_field_name[field_id]); # poster | fanart | banner
 
             rm(internal_path,1);
 

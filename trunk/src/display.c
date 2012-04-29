@@ -1511,9 +1511,18 @@ char *internal_image_path_static(DbItem *item,ImageType image_type,int name_only
     char *p = path;
 
     if (!name_only) {
-        p += sprintf(p,"ovs:%s/%s",
-                (image_type == FANART_IMAGE?DB_FLDID_FANART:DB_FLDID_POSTER),
-                catalog_val("catalog_poster_prefix"));
+        switch(image_type) {
+            case FANART_IMAGE:
+                p += sprintf(p,"ovs:%s",DB_FLDID_FANART);
+                break;
+            case BANNER_IMAGE:
+                p += sprintf(p,"ovs:%s",DB_FLDID_BANNER);
+                break;
+            default:
+                p += sprintf(p,"ovs:%s",DB_FLDID_POSTER);
+                break;
+        }
+        p += sprintf(p,"/%s",catalog_val("catalog_poster_prefix"));
     }
 
     char *id = NULL;

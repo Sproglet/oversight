@@ -28,3 +28,5 @@ DONE Get Manual Jukebox to load
 - Age computation 
 
 - Remove lang prefix from plot
+
+- Add BANNER macro for standard OVersight templating

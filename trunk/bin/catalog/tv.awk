@@ -2329,7 +2329,7 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size,season) 
                 best_best_banner_score(tvdbid,POSTER,xml,minfo,"season","season",season,lnum,langs);
             }
             if (get_banner) {
-                best_best_banner_score(tvdbid,BANNER,xml,minfo,"season","seasonwide",season,lnum,langs);
+                best_best_banner_score(tvdbid,BANNER,xml,minfo,"series","graphical","",lnum,langs);
             }
             if (get_fanart) {
                 if (g_settings["catalog_image_fanart_width"]  == 1920 ) {
@@ -2358,7 +2358,7 @@ banner_scores,i,url,banners) {
     dump(0,"image "fld,banner_scores);
     if (bestScores(banner_scores,banner_scores)) {
         banners[fld] = minfo[fld] = firstIndex(banner_scores);
-        g_image_inspected[tvdbid,fld]=1;
+        g_image_inspected[tvdbid,fld,minfo[SEASON]]=1;
         if(LG)DEBUG(fld" = "minfo[fld]);
     }
 }

@@ -17,7 +17,7 @@
 #define IMAGE_EXT_THUMB_BOXSET ".thumb.boxset.jpg"
 
 
-typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE } ImageType;
+typedef enum { FANART_IMAGE , POSTER_IMAGE , THUMB_IMAGE , BANNER_IMAGE } ImageType;
 
 
 void display_menu();

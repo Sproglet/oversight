@@ -28,6 +28,11 @@ id,series,versions,ret) {
 
     if (minfo[CATEGORY] == "M") {
         id = imdb(minfo);
+
+        if (in_top250(id)) {
+            minfo[TOP250] = 1;
+        }
+
         id1("getMovieConnections:"id);
 
         if(id) {
@@ -177,3 +182,20 @@ function extract_imdb_title_category(minfo,title\
     if(LG)DEBUG("Imdb title = "minfo[CATEGORY]":["title"]");
     return title;
 }
+
+function in_top250(id) {
+    load_top250(g_top250);
+    return (id in g_top250);
+}
+
+function load_top250(top) {
+    if(!(1 in top)) {
+        DETAIL("scanning top250");
+        scan_page_for_match_order("http://www.imdb.com/chart/top","",g_imdb_regex,0,0,top);
+        hash_invert(top,top);
+        dump(0,"top250",top);
+        top[1]=1;
+        DETAIL("end scanning top250");
+    }
+}
+

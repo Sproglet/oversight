@@ -555,6 +555,8 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 
     printf("\t<watched>%s</watched>\n",BOOL(item->watched));
 
+    printf("\t<top250>%d</top250>\n",item->top250);
+
     printf("\t<details>NO.html</details>\n");
     
     //printf("\t<posterURL>UNKNOWN</posterURL>\n");
@@ -740,7 +742,7 @@ void yamj_files(DbItem *item)
  */
 int yamj_file(DbItem *item,int part_no,int show_source)
 {
-    HTML_LOG(0,"item %s %dx%s %s",NVL(item->title),item->season,NVL(item->episode),item->file);
+    //HTML_LOG(0,"item %s %dx%s %s",NVL(item->title),item->season,NVL(item->episode),item->file);
     yamj_file_part(item,part_no++,NULL,show_source);
 
     if (item->parts) {
@@ -786,7 +788,9 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
     char *encoded_path = url_encode_static(path,&free_enc);
 
     printf("\t\t<fileLocation>%s</fileLocation>\n",xmlstr_static(path,0));
+#if 0
     printf("\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
+#endif
 
     if (item->category == 'T' ) {
         printf("\t\t<fileTitle part=\"%d\">%s",part_no,xmlstr_static(NVL(item->eptitle),0));
@@ -823,7 +827,11 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
         }
         FREE(plot);
 
+#if 0
         printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
+#else
+        printf("\t\t<airsInfo part=\"%d\">%d</airsInfo>\n",part_no,part_no);
+#endif
         printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
         printf("\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
@@ -1243,7 +1251,7 @@ void log_request(char *request)
 int yamj_xml(char *request)
 {
 
-    int ret = 1;
+    int ret = 0;
 
 
         log_request(request);
@@ -1358,6 +1366,7 @@ int yamj_xml(char *request)
             HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
         }
 
+    fflush(stdout);
     return ret;
 }
 

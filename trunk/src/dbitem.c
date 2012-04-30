@@ -749,7 +749,11 @@ static inline int db_rowid_get_field_offset_type_inline(
                     }
                 break;
             case 't':
-                //do nothing - TVCOM
+                if (*p == '\0') {
+                    *offset=&(rowid->top250);
+                    *type = FIELD_TYPE_INT;
+                    *overview = 1;
+                }
                 break;
             case 'T':
                 if (*p == '\0') {

@@ -44,7 +44,7 @@
 #define DB_FLDID_SEARCH "_SRCH"
 #define DB_FLDID_PROD "_p"
 #define DB_FLDID_AIRDATE "_ad"
-#define DB_FLDID_TVCOM "_tc"
+#define DB_FLDID_TOP250 "_t"
 #define DB_FLDID_EPTITLE "_et"
 #define DB_FLDID_EPTITLEIMDB "_eti"
 #define DB_FLDID_AIRDATEIMDB "_adi"

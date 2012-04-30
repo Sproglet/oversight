@@ -67,6 +67,7 @@ typedef struct Dbrowid_struct {
     struct Db_struct *db;
     long offset;
     OVS_TIME date;
+    int top250;
     int watched;
     int locked;
     char *title;

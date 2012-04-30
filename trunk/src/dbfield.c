@@ -56,7 +56,7 @@ void dbf_ids_init()
 
     add_label(DB_FLDID_PROD,"PRODID");
     add_label(DB_FLDID_AIRDATE,"AIRDATE");
-    add_label(DB_FLDID_TVCOM,"TVCOM");
+    add_label(DB_FLDID_TOP250,"TOP250");
     add_label(DB_FLDID_EPTITLE,"EPITLE");
     add_label(DB_FLDID_EPTITLEIMDB,"IMDB_EPTITLE");
     add_label(DB_FLDID_AIRDATEIMDB,"IMDB_AIRDATE");

@@ -1,6 +1,6 @@
 Sort movies
 
-Title for Leon scraped but not displayed - LC_LANG?
+- Genre words getting split.
 
 Understand how to use sets
 
@@ -21,12 +21,16 @@ DONE - Generate Detail XML by OVS ID
 
 DONE Get Manual Jukebox to load
 
-- yamj Auto Box Sets
+DONE Title for Leon scraped but not displayed - LC_LANG?
 
-- yamj TV Shows
+DONE  yamj Auto Box Sets
+
+DONE  yamj TV Shows
 
 - Age computation 
 
-- Remove lang prefix from plot
+DONE  Remove lang prefix from plot
 
 - Add BANNER macro for standard OVersight templating
+
+- Use new yamj code to auto-compute the correct view in Oversight proper.

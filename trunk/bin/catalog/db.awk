@@ -69,6 +69,7 @@ function set_db_fields() {
     SUBTITLES=db_field("_L","SUBS","",g_dbtype_string,1);
     VIDEOSOURCE=db_field("_V","VIDEOSOURCE","",g_dbtype_string,1);
     SIZEMB=db_field("_m","SIZEMB","",g_dbtype_string,1);
+    TOP250=db_field("_t","top250","top250",g_dbtype_int,1);
 
     # Transitory fields - add to suppress unknown dbtype errors
     db_field("mi_do_scrape","","",g_dbtype_string,1);

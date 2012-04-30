@@ -83,7 +83,7 @@ foundId,line) {
 function nfo_xml_define() {
     if (!(1 in g_tag_movie)) {
 
-        split(TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","SET","POSTER","FANART","BANNER","CERT","WATCHED","IMDBID","FILE","GENRE,g_tag_movie,",");
+        split(TITLE","ORIG_TITLE","RATING","YEAR","DIRECTORS","PLOT","SET","POSTER","FANART","BANNER","CERT","WATCHED","IMDBID","FILE","GENRE","TOP250,g_tag_movie,",");
         hash_invert(g_tag_movie,g_tag_movie);
 
         split(TITLE","IDLIST","RATING","PLOT","GENRE","POSTER","FANART","BANNER,g_tag_tvshow,",");

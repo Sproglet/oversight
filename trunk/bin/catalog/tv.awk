@@ -2241,13 +2241,13 @@ seriesInfo,result,iid,thetvdbid,lang,plot,xmlstr,num) {
 
     if (result) {
 
+        # For twin episodes just use the first episode number for lookup by adding 0
         minfo[EPISODE]=episode;
 
-        # For twin episodes just use the first episode number for lookup by adding 0
 
         if (episode ~ "^[0-9,]+$" ) {
 
-            if(tvDbEpisode(minfo,seriesInfo[0,season,episode])) {
+            if(tvDbEpisode(minfo,seriesInfo[0,season,0+episode])) {
                 if (minfo[EPTITLE] != "" ) {
                    if ( minfo[EPTITLE] ~ /^Episode [0-9]+$/ && minfo[EPPLOT] == "" ) {
                        if(LD)DETAIL("Due to Episode title of ["minfo[EPTITLE]"] Demoting result to force another TV plugin search");

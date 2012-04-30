@@ -62,8 +62,8 @@ else #pc
 	STRIP=strip
 endif
 
-#CFLAGS=-O3 -Wall -Wunused-parameter -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
-CFLAGS=-O3 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
+#CFLAGS=-O2 -Wall -Wunused-parameter -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
+CFLAGS=-O2 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 #-DNOLOG=$(NOLOG)
 
 # Most stable last to speed compile-fail cycle
@@ -96,7 +96,7 @@ EXE=../$(TARGET_DIR)/$(TARGET)
 
 LIBS=-lm
 
-LDFLAGS=-g -Wall -O3 $(LIBS) $(LDFLAGS_ARCH)
+LDFLAGS=-g -Wall -O2 $(LIBS) $(LDFLAGS_ARCH)
 
 all: $(ARCH) $(TARGET) daemon
 

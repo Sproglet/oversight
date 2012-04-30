@@ -47,6 +47,7 @@ int is_readable(char *path);
 int is_executable(char *path);
 int is_file(char *path);
 long file_size(char *path);
+time_t file_time(char *path);
 int is_dir(char *path);
 
 char *appDir();

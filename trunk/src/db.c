@@ -1080,4 +1080,21 @@ char *get_crossview_local_copy(char *path,char *label)
     return local_path;
 }
 
+time_t db_time()
+{
+    static time_t t=1;
+    if (t==1) {
+        char *path;
+        ovs_asprintf(&path,"%s/index.db",appDir());
+        t = file_time(path);
+        FREE(path);
+    }
+    return t;
+}
+int stale_cache_file(char *path)
+{
+    time_t t = file_time(path);
+    return (t < db_time());
+}
+
 // vi:sw=4:et:ts=4

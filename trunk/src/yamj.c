@@ -48,11 +48,15 @@ void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *
 void yamj_files(DbItem *item);
 int yamj_file(DbItem *item,int part_no,int show_source);
 void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source);
+void load_dynamic_cat(YAMJCat *cat,time_t index_time);
+void save_dynamic_cat(YAMJCat *cat);
 
+FILE *xmlout=NULL;
 /*
  * The plan is as follows:
  *
  * All YAML Xml category files contain information on all other categories. This is so that skins have 
+ * b
  * visibility of all information to build menus, in a single file.
  *
  * So:
@@ -85,8 +89,8 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source);
 
 void xml_headers()
 {
-    printf("%s%s\n\n",CONTENT_TYPE,"application/xml");
-    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
+    fprintf(xmlout,"%s%s\n\n",CONTENT_TYPE,"application/xml");
+    fprintf(xmlout,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
 }
 
 void free_yamj_subcatetory(void *in)
@@ -219,6 +223,28 @@ int add_item_indexes(DbItem *item,Array *categories,YAMJSubCat *subcat)
 }
 #endif
 
+char *exp_as_string_static(Exp *e)
+{
+    char *val=NULL;
+    if (e->val.type == VAL_TYPE_STR) {
+
+        val = e->val.str_val;
+
+    } else if (e->val.type == VAL_TYPE_NUM) {
+
+        // TODO loss of precicsion here - may affect rating filters.
+        char num[20];
+        sprintf(num,"%f",e->val.num_val);
+        char *p = strrchr(num,'\0');
+        while (*(--p) == '0') {
+            ;
+        }
+        *++p='\0';
+        val = num;
+    }
+    return val;
+}
+
 /*
  * For dynamic subcats -
  * compare the evaluated expression against the expected target(selected_subcat) name
@@ -303,7 +329,7 @@ int add_dynamic_subcategories(DbItem *item,Array *categories,char *selected_subc
         YAMJCat *cat = categories->array[i];
 
         Exp *e = cat->auto_subcat_expr;
-        if (e) {
+        if (e && !(cat->evaluated)) {
 
             // If the current category is a dynamic category and it contains our current subcategory and 
             // we have not yet selected this row then check to see if row is eligible for selection.
@@ -365,6 +391,17 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
                     add_index_to_item(item,selected_subcat);
                 }
             }
+        } else if (selected_subcat->owner_cat->evaluated) {
+            // If the expression was a pre-loaded auto subcat then check if the expression value matches the subcat name
+            Exp *e = selected_subcat->owner_cat->auto_subcat_expr;
+            if (evaluate(e,item) == 0) {
+            //HTML_LOG(0,"check preloaded [%s][%s]",item->title,selected_subcat->name);
+                char *v = exp_as_string_static(e);
+                if (v && strcmp(v,selected_subcat->name) == 0) {
+                    keeprow = 1;
+                    add_index_to_item(item,selected_subcat);
+                }
+            }
         }
     }
 
@@ -394,7 +431,7 @@ void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *
     for(i = 0 ; i < categories->size ; i++ ) {
 
         YAMJCat *cat = categories->array[i];
-        if (STATIC_CAT(cat)) {
+        if (STATIC_CAT(cat) && cat->subcats) {
 
             int j;
             for(j = 0 ; j < cat->subcats->size ; j++ ) {
@@ -423,11 +460,11 @@ void video_field_long(char *tag,long value,char *attr,char *attrval)
 {
 
     if (value || attrval ) {
-        printf("\t<%s",tag);
+        fprintf(xmlout,"\t<%s",tag);
         if (attrval) {
-            printf(" %s=\"%s\"",attr,attrval);
+            fprintf(xmlout," %s=\"%s\"",attr,attrval);
         }
-        printf(">%ld</%s>\n",value,tag);
+        fprintf(xmlout,">%ld</%s>\n",value,tag);
     }
 }
 
@@ -438,18 +475,18 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
     int free_it=0;
 
     if (value || attrval ) {
-        printf("\t<%s",tag);
+        fprintf(xmlout,"\t<%s",tag);
         if (attrval) {
-            printf(" %s=\"%s\"",attr,attrval);
+            fprintf(xmlout," %s=\"%s\"",attr,attrval);
         }
-        printf(">");
+        fprintf(xmlout,">");
         if (url_encode) {
             encoded=url_encode_static(value,&free_it);
         } else {
             encoded = value;
             free_it = 0;
         }
-        printf("%s</%s>\n",xmlstr_static(encoded,0),tag);
+        fprintf(xmlout,"%s</%s>\n",xmlstr_static(encoded,0),tag);
         if (free_it) {
             FREE(encoded);
         }
@@ -506,65 +543,65 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
     }
     is_boxset = (view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET);
-    printf("<movie isExtra=\"false\" isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(is_boxset));
+    fprintf(xmlout,"<movie isExtra=\"false\" isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(is_boxset));
     char *id;
     
-    //printf("\t<id moviedb=\"ovs\">%ld</id>\n",item->id);
+    //fprintf(xmlout,"\t<id moviedb=\"ovs\">%ld</id>\n",item->id);
 
     id = get_id_from_idlist(item->url,"imdb",1);
     if (id) {
-        printf("\t<id moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1);
+        fprintf(xmlout,"\t<id moviedb=\"imdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
 
     if (0 && id) {
-        printf("\t<id moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1);
+        fprintf(xmlout,"\t<id moviedb=\"tmdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
 
     if (0 && id) {
-        printf("\t<id moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1);
+        fprintf(xmlout,"\t<id moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
-    printf("\t<mjbVersion>2.6-SNAPSHOT</mjbVersion>\n");
-    printf("\t<mjbRevision>1234</mjbRevision>\n");
+    fprintf(xmlout,"\t<mjbVersion>Oversight-2</mjbVersion>\n");
+    fprintf(xmlout,"\t<mjbRevision>%s</mjbRevision>\n",OVS_VERSION);
 
     char *b =base_name(item,view);
     if (b) {
-        printf("\t<baseFilenameBase>%s</baseFilenameBase>\n",b);
-        printf("\t<baseFilename>%s</baseFilename>\n",b);
+        fprintf(xmlout,"\t<baseFilenameBase>%s</baseFilenameBase>\n",b);
+        fprintf(xmlout,"\t<baseFilename>%s</baseFilename>\n",b);
         FREE(b);
     }
 
     //TODO get setname here
-    printf("\t<title>%s</title>\n",xmlstr_static(item->title,0));
+    fprintf(xmlout,"\t<title>%s</title>\n",xmlstr_static(item->title,0));
 
     char *sort = item->title;
     if (STARTS_WITH_THE(sort)) {
         sort +=4;
     }
-    printf("\t<titleSort>%s</titleSort>\n",xmlstr_static(NVL(sort),0));
+    fprintf(xmlout,"\t<titleSort>%s</titleSort>\n",xmlstr_static(NVL(sort),0));
 
     video_field("originalTitle",NVL(item->orig_title),0,NULL,NULL);
 
-    printf("\t<year>%d</year>\n",item->year);
+    fprintf(xmlout,"\t<year>%d</year>\n",item->year);
 
     if (item->rating != 0.0) {
-        printf("\t<rating>%d</rating>\n",(int)(item->rating *10));
+        fprintf(xmlout,"\t<rating>%d</rating>\n",(int)(item->rating *10));
     }
 
-    printf("\t<watched>%s</watched>\n",BOOL(item->watched));
+    fprintf(xmlout,"\t<watched>%s</watched>\n",BOOL(item->watched));
 
-    printf("\t<top250>%d</top250>\n",item->top250);
+    fprintf(xmlout,"\t<top250>%d</top250>\n",item->top250);
 
-    printf("\t<details>NO.html</details>\n");
+    fprintf(xmlout,"\t<details>NO.html</details>\n");
     
-    //printf("\t<posterURL>UNKNOWN</posterURL>\n");
+    //fprintf(xmlout,"\t<posterURL>UNKNOWN</posterURL>\n");
     char *poster = internal_image_path_static(item,POSTER_IMAGE,1);
     if (!EMPTY_STR(poster)) {
-        printf("\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
-        printf("\t<detailPosterFile>%s%s</detailPosterFile>\n",YAMJ_POSTER_PREFIX,poster);
-        printf("\t<thumbnail>%s%s</thumbnail>\n",(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX),poster);
+        fprintf(xmlout,"\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
+        fprintf(xmlout,"\t<detailPosterFile>%s%s</detailPosterFile>\n",YAMJ_POSTER_PREFIX,poster);
+        fprintf(xmlout,"\t<thumbnail>%s%s</thumbnail>\n",(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX),poster);
     }
 
     char *banner;
@@ -572,24 +609,24 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 #if 1
     banner = internal_image_path_static(item,BANNER_IMAGE,1);
     if (*banner ) {
-        printf("\t<bannerFile>%s%s</bannerFile>\n",YAMJ_BANNER_PREFIX,banner);
+        fprintf(xmlout,"\t<bannerFile>%s%s</bannerFile>\n",YAMJ_BANNER_PREFIX,banner);
     }
-    printf("\t<bannerURL>UNKNOWN</bannerURL>\n");
+    fprintf(xmlout,"\t<bannerURL>UNKNOWN</bannerURL>\n");
 #else
     banner = get_existing_internal_image_path(item,BANNER_IMAGE,view);
     //HTML_LOG(0,"TRACE1 banner[%s]",banner);
     if (!EMPTY_STR(banner) ) {
         int freeit;
         char *enc=url_encode_static(banner,&freeit);
-        printf("\t<bannerFile>%s</bannerFile>\n",enc);
+        fprintf(xmlout,"\t<bannerFile>%s</bannerFile>\n",enc);
         if (freeit) FREE(enc);
     }
 #endif
 
-    //printf("\t<fanartURL>UNKNOWN</fanartURL>\n");
+    //fprintf(xmlout,"\t<fanartURL>UNKNOWN</fanartURL>\n");
     char *fanart = internal_image_path_static(item,FANART_IMAGE,1);
     if (!EMPTY_STR(fanart) ) {
-        printf("\t<fanartFile>%s%s</fanartFile>\n",YAMJ_FANART_PREFIX,fanart);
+        fprintf(xmlout,"\t<fanartFile>%s%s</fanartFile>\n",YAMJ_FANART_PREFIX,fanart);
     }
 
     char *plot = get_plot(item,PLOT_MAIN);
@@ -597,24 +634,24 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
         p += 3;
     }
-    printf("\t<plot>%s</plot>\n",p);
+    fprintf(xmlout,"\t<plot>%s</plot>\n",p);
     FREE(plot);
 
     if (item->runtime) {
         int min = item->runtime;
-        printf("\t<runtime>");
+        fprintf(xmlout,"\t<runtime>");
         if (min<=60) {
-            printf("%d min",min);
+            fprintf(xmlout,"%d min",min);
         } else if (min%60) {
-            printf("%dh %d min",min/60,min%60);
+            fprintf(xmlout,"%dh %d min",min/60,min%60);
         } else {
-            printf("%dh",min/60);
+            fprintf(xmlout,"%dh",min/60);
         }
-        printf("</runtime>\n");
+        fprintf(xmlout,"</runtime>\n");
     }
 
     video_field("certification",item->certificate,0,NULL,NULL);
-    printf("\t<season>%d</season>\n",(item->category == 'T' ? item->season : -1 ));
+    fprintf(xmlout,"\t<season>%d</season>\n",(item->category == 'T' ? item->season : -1 ));
 
     video_field("language","UNKNOWN",0,NULL,NULL);
     video_field("subtitles","",0,NULL,NULL);
@@ -624,11 +661,23 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     video_field("videoCodec","UNKNOWN",0,NULL,NULL);
     video_field("audioCodec","UNKNOWN",0,NULL,NULL);
     video_field("audioChannels","",0,NULL,NULL);
-    video_field("resolution","UNKNOWN",0,NULL,NULL);
+
+    // Oversight just guesses the contaner and codecs - c0=h264,f0=24,h0=720,w0=1280
+    char *vh = regextract1(item->video,"h0=([^,]+)",1,0);
+    char *vw = regextract1(item->video,"w0=([^,]+)",1,0);
+    char *vf = regextract1(item->video,"f0=([^,]+)",1,0);
+    char *vc = regextract1(item->video,"c0=([^,]+)",1,0);
+
+    fprintf(xmlout,"\t<resolution>%sx%s</resolution>\n",NVL(vw),NVL(vh));
     video_field("videoSource",item->videosource,0,NULL,NULL);
-    video_field("videoOutput","UNKNOWN",0,NULL,NULL);
+    fprintf(xmlout,"\t<videoOutput>%sp %sHz</videoOutput>\n",NVL(vh),NVL(vf));
     video_field("aspect","UNKNOWN",0,NULL,NULL);
-    video_field("fps","60",0,NULL,NULL);
+    fprintf(xmlout,"\t<fps>%s</fps>\n",NVL(vf));
+
+    FREE(vh);
+    FREE(vw);
+    FREE(vf);
+    FREE(vc);
 
     char *date_format="%y-%m-%d";
 #define DATE_BUF_SIZ 40
@@ -637,41 +686,41 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         strftime(date,DATE_BUF_SIZ,date_format,internal_time2tm(item->filetime,NULL));
         video_field("fileDate",date,0,NULL,NULL);
     }
-    printf("\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
+    fprintf(xmlout,"\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
 
     //---------------------------
     //
-    if (total) printf("\t<first>%ld</first>\n",all_items[0]->id);
+    if (total) fprintf(xmlout,"\t<first>%ld</first>\n",all_items[0]->id);
 
     if (pos>0) {
-        printf("\t<previous>%ld</previous>\n",all_items[pos-1]->id);
+        fprintf(xmlout,"\t<previous>%ld</previous>\n",all_items[pos-1]->id);
     } else {
-        printf("\t<previous>UNKNOWN</previous>\n");
+        fprintf(xmlout,"\t<previous>UNKNOWN</previous>\n");
     }
 
     if (pos<total-1) {
-        printf("\t<next>%ld</next>\n",all_items[pos+1]->id);
+        fprintf(xmlout,"\t<next>%ld</next>\n",all_items[pos+1]->id);
     } else {
-        printf("\t<next>UNKNOWN</next>\n");
+        fprintf(xmlout,"\t<next>UNKNOWN</next>\n");
     }
-    if (total) printf("\t<last>%ld</last>\n",all_items[total-1]->id);
+    if (total) fprintf(xmlout,"\t<last>%ld</last>\n",all_items[total-1]->id);
 
     //---------------------------
     
     Array *genres = splitstr(item->expanded_genre,"|");
-    printf("\t<genres count=\"%d\">\n",genres->size);
+    fprintf(xmlout,"\t<genres count=\"%d\">\n",genres->size);
     for(i = 0 ; i < genres->size ; i++ ) {
         char *g = genres->array[i];
-        printf("\t\t<genre index=\"Genres_%s_1\">%s</genre>\n",g,g);
+        fprintf(xmlout,"\t\t<genre index=\"Genres_%s_1\">%s</genre>\n",g,g);
     }
-    printf("\t</genres>\n");
+    fprintf(xmlout,"\t</genres>\n");
     array_free(genres);
 
     //---------------------------
 
     if (item->yamj_member_of) {
         int i;
-        printf("\t<indexes>\n");
+        fprintf(xmlout,"\t<indexes>\n");
         for(i= 0 ; i<item->yamj_member_of->size ; i++ ) {
             int free_it;
             YAMJSubCat *sc = item->yamj_member_of->array[i];
@@ -682,14 +731,14 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
                 char *ownername=sc->owner_cat->name;
                 char *encname=url_encode_static(name,&free_it);
 
-                printf("\t\t<index encoded=\"%s\" originalName=\"%s\" type=\"%s\">%s</index>\n",
+                fprintf(xmlout,"\t\t<index encoded=\"%s\" originalName=\"%s\" type=\"%s\">%s</index>\n",
                     encname,ownername,ownername,encname);
 
                 if(free_it) FREE(encname);
             }
 
         }
-        printf("\t</indexes>\n");
+        fprintf(xmlout,"\t</indexes>\n");
     }
 
     //----------------------------
@@ -701,13 +750,13 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         yamj_files(item);
     }
 
-    printf("</movie>\n");
+    fprintf(xmlout,"</movie>\n");
     return ret;
 }
 
 void yamj_files(DbItem *item)
 {
-    printf("\t<files>\n");
+    fprintf(xmlout,"\t<files>\n");
 
 
     // For TV etc all the parts must be listed in order. So start with season -1 and repeat until all seasons done
@@ -734,7 +783,7 @@ void yamj_files(DbItem *item)
         }
         FREE(ptr);
     }
-    printf("\t</files>\n");
+    fprintf(xmlout,"\t</files>\n");
 }
 
 /*
@@ -767,7 +816,7 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
         if (!errno) part_no = epno;
     }
 
-    printf("\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\" subtitlesExchange=\"NO\" title=\"%s\" vod=\"\" watched=\"%s\" >\n",
+    fprintf(xmlout,"\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\" subtitlesExchange=\"NO\" title=\"%s\" vod=\"\" watched=\"%s\" >\n",
             part_no,
             part_no,
             item->season,
@@ -787,56 +836,57 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
     int free_enc;
     char *encoded_path = url_encode_static(path,&free_enc);
 
-    printf("\t\t<fileLocation>%s</fileLocation>\n",xmlstr_static(path,0));
 #if 0
-    printf("\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
+    fprintf(xmlout,"\t\t<fileLocation>%s</fileLocation>\n",xmlstr_static(path,0));
 #endif
+    fprintf(xmlout,"\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
 
     if (item->category == 'T' ) {
-        printf("\t\t<fileTitle part=\"%d\">%s",part_no,xmlstr_static(NVL(item->eptitle),0));
+        fprintf(xmlout,"\t\t<fileTitle part=\"%d\">%s",part_no,xmlstr_static(NVL(item->eptitle),0));
 
         if (show_source) {
            char *sep = " - ";
            if (item->videosource) {
             char *p = util_tolower(item->videosource);
-            printf("%s%s",sep,p);
+            fprintf(xmlout,"%s%s",sep,p);
             FREE(p);
             sep=",";
            }
            if (!EMPTY_STR(item->file)) {
                if (util_strcasestr(item->file,"proper")) {
-                   printf("%sprp",sep);
+                   fprintf(xmlout,"%sproper",sep);
                    sep=",";
                }
                if (util_strcasestr(item->file,"repack")) {
-                   printf("%srpk",sep);
+                   fprintf(xmlout,"%srepack",sep);
                    sep=",";
                }
            }
 
         }
-        printf("</fileTitle>\n");
+        fprintf(xmlout,"</fileTitle>\n");
 
         char *plot = get_plot(item,PLOT_EPISODE);
+
         if (!EMPTY_STR(plot)) {
             char *p = xmlstr_static(plot,0);
             if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
                 p += 3;
             }
-            printf("\t<filePlot part=\"%d\">%s</filePlot>\n",part_no,p);
+            fprintf(xmlout,"\t<filePlot part=\"%d\">%s</filePlot>\n",part_no,p);
         }
         FREE(plot);
 
 #if 0
-        printf("\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
+        fprintf(xmlout,"\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
 #else
-        printf("\t\t<airsInfo part=\"%d\">%d</airsInfo>\n",part_no,part_no);
+        fprintf(xmlout,"\t\t<airsInfo part=\"%d\">%d</airsInfo>\n",part_no,part_no);
 #endif
-        printf("\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
+        fprintf(xmlout,"\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
-        printf("\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
+        fprintf(xmlout,"\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
     }
-    printf("\t</file>\n");
+    fprintf(xmlout,"\t</file>\n");
 
     if (free_enc) FREE(encoded_path);
     if (freeit) FREE(path);
@@ -854,10 +904,10 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
 
 
     HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name,0));
-    printf("<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
+    fprintf(xmlout,"<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
     for(i = 0 ; i < cat->subcats->size ; i++ ) {
         YAMJSubCat *s = cat->subcats->array[i];
-        printf("\t<index name=\"%s\"",s->name);
+        fprintf(xmlout,"\t<index name=\"%s\"",s->name);
         if (s == subcat) {
 
             int last = 1+(sorted_rows->num_rows/s->owner_cat->page_size);
@@ -868,14 +918,14 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
             int prev = s->page - 1;
             if (prev < first ) prev = first;
 
-            printf("\n\t\tcurrent=\"true\"\n");
-            printf("\t\tcurrentIndex=\"%d\"\n",subcat->page);
+            fprintf(xmlout,"\n\t\tcurrent=\"true\"\n");
+            fprintf(xmlout,"\t\tcurrentIndex=\"%d\"\n",subcat->page);
 
-            printf("\t\tfirst=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,first);
-            printf("\t\tlast=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,last);
-            printf("\t\tnext=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,next);
-            printf("\t\tprevious=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,prev);
-            printf("\t\tlastIndex=\"%d\"",last);
+            fprintf(xmlout,"\t\tfirst=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,first);
+            fprintf(xmlout,"\t\tlast=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,last);
+            fprintf(xmlout,"\t\tnext=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,next);
+            fprintf(xmlout,"\t\tprevious=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,prev);
+            fprintf(xmlout,"\t\tlastIndex=\"%d\"",last);
         }
 
         // url encode the cat_subcat_1 
@@ -883,12 +933,12 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
         int free_it;
         ovs_asprintf(&name,"%s_%s_1",s->owner_cat->name,s->name);
         name_enc = url_encode_static(name,&free_it);
-        printf(">%s</index>\n",name_enc);
+        fprintf(xmlout,">%s</index>\n",name_enc);
         if (free_it) FREE(name_enc);
         FREE(name);
 
     }
-    printf("</category>\n");
+    fprintf(xmlout,"</category>\n");
     return ret;
 }
 
@@ -1029,15 +1079,83 @@ int yamj_build_categories(char *cat_name,Array *categories)
     HTML_LOG(0,"TODO yamj_build_categories");
     int i = 0;
 
-
     YAMJCat *yc;
     while ((yc = yamj_cat_config(++i)) != NULL) {
         array_add(categories,yc);
+
+        //load_dynamic_cat(yc,db_time());
     }
 
-
-
     return ret;
+}
+
+
+char *cache_file(char *request)
+{
+    char *path;
+    ovs_asprintf(&path,"%s/cache/%s.cache",appDir(),request);
+    return path;
+}
+
+
+char *dynamic_cat_file(YAMJCat *cat) {
+    char *path;
+    ovs_asprintf(&path,"%s/cache/%s.cat",appDir(),cat->name);
+    return path;
+}
+
+void load_dynamic_cat(YAMJCat *cat,time_t index_time)
+{
+#if 0
+    if (cat->auto_subcat_expr != NULL) {
+        // try to load it
+        char *path = dynamic_cat_file(cat);
+        time_t saved = file_time(path);
+        if (saved > index_time) {
+#define BUF_SIZE 999
+            char buf[BUF_SIZE];
+            FILE *fp = fopen(path,"r");
+            if (fp) {
+                while(fgets(buf,BUF_SIZE,fp) != NULL) {
+                    char *nl;
+                    if ((nl=strchr(buf,'\n')) != NULL) *nl = '\0';
+                    HTML_LOG(0,"loaded subcat [%s][%s]->%s",cat->name,buf,path);
+                    new_subcat(cat,buf,NULL,0,1);
+                }
+                fclose(fp);
+                cat->preloaded = 1;
+            } else {
+                html_error("error loading cat file [%s]",path);
+            }
+        }
+        FREE(path);
+    }
+#endif
+}
+void save_dynamic_cat(YAMJCat *cat)
+{
+#if 0
+    if (cat->auto_subcat_expr != NULL && cat->subcats) {
+        HTML_LOG(0,"FOUND [%s]",cat->auto_subcat_expr_url);
+        if (cat->preloaded == 0) {
+            char *path = dynamic_cat_file(cat);
+            int i;
+            FILE *fp = fopen(path,"w");
+            if (fp) {
+                for(i = 0 ; i<cat->subcats->size ; i++) {
+                    YAMJSubCat *sc = cat->subcats->array[i];
+                    HTML_LOG(0,"saving subcat [%s][%s]->%s",cat->name,sc->name,path);
+                    fprintf(fp,"%s\n",sc->name);
+                }
+                fclose(fp);
+            } else {
+                html_error("error saving cat file [%s]",path);
+            }
+            FREE(path);
+        }
+    }
+#endif
+
 }
 
 void dump_cat(char *label,YAMJCat *cat) 
@@ -1077,12 +1195,12 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
     int i;
 
 
-    printf("<library count=\"%d\">\n",categories->size);
+    fprintf(xmlout,"<library count=\"%d\">\n",categories->size);
 
 /*
  * if (!selected_subcat) {
         html_error("unknown request [%s]",request);
-        printf("<error>see html comments</error>\n");
+        fprintf(xmlout,"<error>see html comments</error>\n");
     }
     */
 
@@ -1096,7 +1214,7 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
     if (selected_subcat && sorted_rows->num_rows) {
 
         int num = sorted_rows->num_rows;
-        printf("<movies count=\"%d\">\n",num);
+        fprintf(xmlout,"<movies count=\"%d\">\n",num);
 
 
         int page_size = selected_subcat->owner_cat->page_size;
@@ -1113,13 +1231,13 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
             DbItem *item = sorted_rows->rows[i];
 
             // Finish populating item->yamj_member_of with all categories this member belongs to
-            add_static_indices_to_item(item,selected_subcat,categories);
+            // add_static_indices_to_item(item,selected_subcat,categories);
 
             yamj_video_xml(request,item,0,sorted_rows->rows,i,num);
         }
-        printf("</movies>\n");
+        fprintf(xmlout,"</movies>\n");
     }
-    printf("</library>\n");
+    fprintf(xmlout,"</library>\n");
 
     return ret;
 
@@ -1130,7 +1248,6 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
  * Some subcats are created on the fly eg Title_Letter_Page.xml
  * Letter is derived from database contents, as first UTF-8 character of item titles.
  * Whilst computing these the subcat items will get populated.
- */
 int evaluate_dynamic_subcat_names(YAMJCat *cat)
 {
     int ret = 1;
@@ -1145,6 +1262,7 @@ int evaluate_dynamic_subcat_names(YAMJCat *cat)
 
     return ret;
 }
+ */
 
 /*
  * check name = Category_SubCat_Page.xml
@@ -1269,9 +1387,9 @@ int yamj_xml(char *request)
             config_read_dimensions(0);
             HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
             load_configs();
-            printf("<details>\n");
+            fprintf(xmlout,"<details>\n");
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
-            printf("</details>\n");
+            fprintf(xmlout,"</details>\n");
 
         } else if (util_starts_with(request,YAMJ_THUMB_PREFIX) && util_strreg(request,YAMJ_THUMB_PREFIX "[^.]*\\.jpg$",0)) {
 
@@ -1321,46 +1439,82 @@ int yamj_xml(char *request)
 
         } else if (STRCMP(request,CATEGORY_INDEX) == 0 || do_query ||  util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
-            xml_headers();
-            config_read_dimensions(0);
-            HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
-            load_configs();
-
-            Array *categories = array_new(free_yamj_catetory);
-
-            yamj_build_categories(request,categories);
-
-            YAMJSubCat *selected_subcat = NULL;
+            int cache=1;
+            char *cache_path;
             
-
-            // Either use an arbitrary expression derived from request fake xml name OR use the configured expression derived from 
-            // the subcategory name.
-            if (do_query) { 
-                
-                // Add a temporary query category to contain our query sub category
-                YAMJCat *temp_query_cat = yamj_cat_new(YAMJ_QUERY_NAME,NULL);
-                array_add(categories,temp_query_cat);
-                selected_subcat = find_subcat(request,categories);
-
-            } else if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
-                selected_subcat = find_subcat(request,categories);
+            if (cache) {
+                cache_path = cache_file(request);
             }
+            if (!cache || stale_cache_file(cache_path)) {
 
-            // Here we could have newest first but leave that to skins 
-            int (*sort_fn)(DbItem **,DbItem**) = NULL;
-            if (selected_subcat && STRCMP(selected_subcat->name,"By Age") == 0) {
-                if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
-                    sort_fn = db_overview_cmp_by_age_desc;
+                if (cache) {
+                   xmlout = fopen(cache_path,"w");
+
+                   html_set_output(xmlout);
+                } else {
+                    xmlout = stdout;
+                }
+
+                xml_headers();
+                config_read_dimensions(0);
+                HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
+                load_configs();
+
+                Array *categories = array_new(free_yamj_catetory);
+
+                yamj_build_categories(request,categories);
+
+                YAMJSubCat *selected_subcat = NULL;
+                
+
+                // Either use an arbitrary expression derived from request fake xml name OR use the configured expression derived from 
+                // the subcategory name.
+                if (do_query) { 
+                    
+                    // Add a temporary query category to contain our query sub category
+                    YAMJCat *temp_query_cat = yamj_cat_new(YAMJ_QUERY_NAME,NULL);
+                    array_add(categories,temp_query_cat);
+                    selected_subcat = find_subcat(request,categories);
+
+                } else if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
+                    selected_subcat = find_subcat(request,categories);
+                }
+
+                // Here we could have newest first but leave that to skins 
+                int (*sort_fn)(DbItem **,DbItem**) = NULL;
+                if (selected_subcat && STRCMP(selected_subcat->name,"By Age") == 0) {
+                    if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
+                        sort_fn = db_overview_cmp_by_age_desc;
+                    }
+                }
+
+                DbSortedRows *sorted_rows = get_sorted_rows(NULL,sort_fn,0,NULL,categories,selected_subcat);
+
+                HTML_LOG(1,"Sort categories..");
+                sort_categories(categories);
+
+                yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
+
+                // Save the dynamic categories.
+                if (categories) {
+                    int i;
+                    for(i = 0 ; i<categories->size ; i++) {
+                        save_dynamic_cat(categories->array[i]);
+                    }
+                }
+                array_free(categories);
+                if (cache) {
+                    fclose(xmlout);
                 }
             }
-
-            DbSortedRows *sorted_rows = get_sorted_rows(NULL,sort_fn,0,NULL,categories,selected_subcat);
-
-            HTML_LOG(1,"Sort categories..");
-            sort_categories(categories);
-
-            yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
-            array_free(categories);
+            if (cache) {
+                if ((xmlout=fopen(cache_path,"r")) != NULL) {
+                    append_content(xmlout,stdout);
+                    fclose(xmlout);
+                } else {
+                    fprintf(xmlout,"cache error [%s]",cache_path);
+                }
+            }
 
         } else {
             HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));

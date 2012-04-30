@@ -1482,4 +1482,14 @@ int current_year()
     }
     return y;
 }
+
+time_t file_time(char *path)
+{
+    struct STAT64 s;
+    if (STAT64(path,&s) == 0) {
+        return s.st_mtime;
+    } else {
+        return 0;
+    }
+}
 // vi:sw=4:et:ts=4

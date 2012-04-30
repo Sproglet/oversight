@@ -17,6 +17,7 @@
 #include "vasprintf.h"
 #include "config.h"
 
+static int flush = 0;
 /*
  * Add the default query parameters from the oversight settings.
  * Only settings with value DisplayName=>&html_param are added.
@@ -447,6 +448,7 @@ static char *html_comment_end="-->";
 
 FILE *html_get_output()
 {
+    if (html_out == NULL) html_set_output(stdout);
     return html_out;
 }
 
@@ -479,7 +481,7 @@ void html_vacomment(char *format,va_list ap)
                 clock()*1000/CLOCKS_PER_SEC,time(NULL)-g_start_clock,s1,
                 html_comment_end);
         // approx *1000/CLOCKS_PER_SEC = >>10
-        fflush(html_out);
+        if (flush) fflush(html_out);
         //FREE(s2);
         FREE(s1);
     }
@@ -503,7 +505,7 @@ void html_log(int level,char *format,...) {
         va_start(ap,format);
         html_vacomment(format,ap);
         va_end(ap);
-        fflush(html_out);
+        if (flush) fflush(html_out);
     }
 }
 void html_error(char *format,...) {

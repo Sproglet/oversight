@@ -224,7 +224,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     if (q && (p = delimited_substring(q,"&",REMOTE_VOD_PREFIX2,"=",1,0)) != NULL) {
 
         gaya_auto_load(p+strlen(REMOTE_VOD_PREFIX2)+1);
-        exit(0);
+        _exit(0);
 
     } else if (q == NULL || strchr(q,'=') == NULL ) {
 
@@ -234,7 +234,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 char *req = url_decode(argv[1]);
                 result = yamj_xml(req+strlen(YAMJ_PREFIX));
                 FREE(req);
-                exit(result);
+                _exit(result);
 
             } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
                 // Single argument passed.
@@ -315,7 +315,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                     }
                 }
                 FREE(path);
-                exit(result);
+                _exit(result);
             }
         }
     }

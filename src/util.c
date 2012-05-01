@@ -74,9 +74,12 @@ int stringcmp(void *a,void *b) {
     return STRCMP(a,b) ==0;
 }
 
+struct hashtable *string_long_hashtable(char *name,int size)
+{
+    return create_hashtable(name,size,stringhash,stringcmp);
+}
 struct hashtable *string_string_hashtable(char *name,int size)
 {
-
     return create_hashtable(name,size,stringhash,stringcmp);
 }
 

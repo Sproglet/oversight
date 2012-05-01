@@ -617,6 +617,7 @@ void db_free(Db *db)
         FREE(db->source);
         FREE(db->path);
         FREE(db->plot_file);
+        hashtable_destroy(db->plot_idx,1,0);
         FREE(db->people_file);
         FREE(db->lockfile);
         FREE(db->backup);

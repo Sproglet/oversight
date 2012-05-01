@@ -14,6 +14,7 @@
 int is_empty_dir(char *dname);
 char *delimited_substring(char *buf,char *prefix,char *substr,char *suffix,int match_start,int match_end);
 struct hashtable *string_string_hashtable(char *name,int size);
+struct hashtable *string_long_hashtable(char *name,int size);
 void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy);
 void hashtable_dump(char *label,struct hashtable *h);
 void hashtable_dumpf(FILE *fp,char *label,struct hashtable *h);

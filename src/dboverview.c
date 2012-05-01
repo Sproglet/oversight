@@ -655,7 +655,7 @@ DbItem **sort_linked_items(DbItem *item,int (*cmp_fn)(DbItem **,DbItem **))
     for(file = item ; file ; file = file->linked ) {
         ptr[num++] = file;
     }
-    HTML_LOG(0,"%d vs %d",num,item->link_count);
+    //HTML_LOG(0,"%d vs %d",num,item->link_count);
     assert(num == item->link_count+1);
     qsort(ptr,num,sizeof(DbItem *),(void *)cmp_fn);
     return ptr;

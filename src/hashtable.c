@@ -246,44 +246,46 @@ hashtable_remove(struct hashtable *h, void *k,int free_key)
 void
 hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
 {
-    unsigned int i;
-    struct entry *e, *f;
-    struct entry **table = h->table;
+    if (h) {
+        unsigned int i;
+        struct entry *e, *f;
+        struct entry **table = h->table;
 
-    // stats
-    int used=0;
-    int hit2=0;
-    int hmax=0;
+        // stats
+        int used=0;
+        int hit2=0;
+        int hmax=0;
 
 
-    for (i = 0; i < h->tablelength; i++)
-    {
-        e = table[i];
-        if (e) used++;
+        for (i = 0; i < h->tablelength; i++)
+        {
+            e = table[i];
+            if (e) used++;
 
-        int hthis=0;
-        while (e) {
+            int hthis=0;
+            while (e) {
 
-            f = e;
+                f = e;
 
-            hthis++;
+                hthis++;
 
-            e = e->next;
-            if (free_keys) freekey(f->k);
-            if (free_values) FREE(f->v);
-            FREE(f);
+                e = e->next;
+                if (free_keys) freekey(f->k);
+                if (free_values) FREE(f->v);
+                FREE(f);
+            }
+            hit2 += hthis;
+            if (hthis > hmax) hmax = hthis;
         }
-        hit2 += hthis;
-        if (hthis > hmax) hmax = hthis;
-    }
-    HTML_LOG(1,"hashtable[%s]: size=%u,used =%d, max=%d searches=%d misses=%d",
-        h->name,
-        h->tablelength,used,hmax,
-        h->searches,h->misses);
+        HTML_LOG(1,"hashtable[%s]: size=%u,used =%d, max=%d searches=%d misses=%d",
+            h->name,
+            h->tablelength,used,hmax,
+            h->searches,h->misses);
 
-    FREE(h->table);
-    FREE(h->name);
-    FREE(h);
+        FREE(h->table);
+        FREE(h->name);
+        FREE(h);
+    }
 }
 
 /*

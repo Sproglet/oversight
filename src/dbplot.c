@@ -39,6 +39,7 @@ FILE *plot_open(Db*db)
         if (db->plot_fp == NULL) {
             html_error("Unable to open plotfile [%s]",path);
         }
+        db->plot_idx = string_long_hashtable("plot",50);
     }
     if (path != db->plot_file) FREE(path);
 
@@ -135,28 +136,51 @@ static char *get_plot_by_key_static(DbItem *item,PlotType ptype)
         if (!plot_buf) plot_buf = MALLOC(MAX_PLOT_LENGTH+1);
         PRE_CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
         if (!EMPTY_STR(key)) {
+
+            long fpos;
+
+            // First see if plot key is in index.
             if (item->plotoffset[ptype] == PLOT_POSITION_UNSET) {
 
-                rewind(fp);
-                fseek(fp,0L,SEEK_SET);
-                if (fseek(fp,0L,SEEK_SET) != 0) {
-                    html_error("Error %d resetting plot file",errno);
-                } else {
-                    long fpos=0;
-                    while(fgets(plot_buf,MAX_PLOT_LENGTH,fp) ) {
-                        CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
+                fpos = (long)hashtable_search(item->db->plot_idx,key);
+                if (fpos) {
+                    HTML_LOG(LOG_LVL,"found plot from hash at %ld",fpos);
+                    item->plotoffset[ptype] = fpos;
+                }
+            }
 
-                        count++;
+            // Now search for plot keys
+            if (item->plotoffset[ptype] == PLOT_POSITION_UNSET) {
+                fpos = ftell(fp);
+                while(fgets(plot_buf,MAX_PLOT_LENGTH,fp) ) {
+                    CHECK_FGETS(plot_buf,MAX_PLOT_LENGTH);
 
-                        chomp(plot_buf);
+                    count++;
 
-                        if (util_starts_with(plot_buf,key)) {
+                    chomp(plot_buf);
+
+                    // If key is not in hashtable add it
+                    char *tab = strchr(plot_buf,'\t');
+                    if (tab > plot_buf && tab < plot_buf+50) {
+                        char *key2 = COPY_STRING(tab-plot_buf+1,plot_buf); // include tab
+                        long offset = fpos+(tab-plot_buf)+1;
+
+                        if (hashtable_search(item->db->plot_idx,key2) == NULL) {
+                            HTML_LOG(LOG_LVL,"stored plot [%s] at %ld",key2,offset);
+                            hashtable_insert(item->db->plot_idx,key2,(void *)offset);
+                        } else {
+                            HTML_LOG(LOG_LVL,"already stored plot [%s] ",key2);
+                        }
+
+                        if (strcmp(key2,key) == 0) {
+
                             item->plotoffset[ptype] = fpos + keylen ;
                             result = plot_buf+keylen ;
+                            HTML_LOG(LOG_LVL,"found plot in file at %ld",result);
                             break;
                         }
-                        fpos = ftell(fp);
                     }
+                    fpos = ftell(fp);
                 }
             } else {
                 count++;

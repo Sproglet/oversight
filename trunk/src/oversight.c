@@ -33,6 +33,7 @@
 
 //void exec_old_cgi(int argc,char **argv);
 
+void daemonize();
 
 void clear_playlist() {
     truncate(NMT_PLAYLIST,0);
@@ -214,6 +215,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
     int done=0;
 
+    daemonize();
     g_start_clock = time(NULL);
     assert(sizeof(long long) >= 8);
 
@@ -580,6 +582,8 @@ int oversight_instead_of_wget(int argc, char **argv)
     char *args[2] ;
     args[0]="oversight";
     args[1]=NULL;
+
+
     ret = oversight_main(1,args,0);
 
 #ifdef OVS_ABORT_FILE
@@ -590,6 +594,64 @@ int oversight_instead_of_wget(int argc, char **argv)
 
 }
 
+#define SLEEP_USECS 1000
+ // from http://www.steve.org.uk/Reference/Unix/faq_2.html#SEC16
+void daemonize()
+{
+
+    int pid = fork();
+
+    //  these exits() changed to _exit() as we have already forked from sybhttpd
+    switch(pid) {
+
+        case 0:
+            break;
+        case -1:
+            fprintf(stderr,"Unable to fork - error %d",errno);
+            _exit(-1);
+            break;
+        default:
+            {
+                //int status;
+                //waitpid(pid,&status,0);
+                _exit(0);
+            }
+    }
+
+    // child 1 ---------------------------------------------
+    
+    // Give parent time to die.
+    usleep(SLEEP_USECS);
+
+    if (setpgrp() == -1) {
+        fprintf(stderr,"Unable to setpgrp - error %d",errno);
+    }
+    if (setsid() == -1) {
+        // fprintf(stderr,"Unable to setsid - error %d",errno);
+    }
+
+    pid = fork();
+    switch(pid) {
+
+        case 0:
+            break;
+        case -1:
+            fprintf(stderr,"Unable to fork child - error %d",errno);
+            _exit(-1);
+            break;
+        default:
+            _exit(0);
+    }
+
+    // child 2 ---------------------------------------------
+
+    // Give parent time to die.
+    usleep(SLEEP_USECS);
+
+
+    // chdir("/");
+    umask(0);
+}
 
 int run_wget(int argc,char **argv) {
 

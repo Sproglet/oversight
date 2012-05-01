@@ -1379,6 +1379,16 @@ int yamj_xml(char *request)
         //
         int do_query = util_starts_with(request,YAMJ_QUERY_PREFIX);
 
+        char *img[][3] = {
+            { YAMJ_THUMB_PREFIX , "_J" , ".thumb.jpg" },
+            { YAMJ_BOXSET_PREFIX , "_J" , ".thumb.boxset.jpg" },
+            { YAMJ_POSTER_PREFIX , "_J" , ".jpg" },
+            { YAMJ_BANNER_PREFIX , "_b" , ".jpg" },
+            { YAMJ_FANART_PREFIX , "_fa" , ".jpg" },
+            { NULL , NULL , NULL }};
+        char *ext;
+
+
         if (0 && util_strreg(request,"^[0-9]+.xml$",0)) {
 
             // Detail files not used by eversion so we wont dwell on these.
@@ -1391,51 +1401,26 @@ int yamj_xml(char *request)
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
             fprintf(xmlout,"</details>\n");
 
-        } else if (util_starts_with(request,YAMJ_THUMB_PREFIX) && util_strreg(request,YAMJ_THUMB_PREFIX "[^.]*\\.jpg$",0)) {
+        } else if ( (ext = util_strreg(request,"\\.jpg$",0)) != NULL) {
 
-            char *file;
-            ovs_asprintf(&file,"%s/db/global/_J/ovs_%s.thumb",appDir(),request+strlen(YAMJ_THUMB_PREFIX));
-            //now swap in place .jpg.thumb with .thumb.jpg
-            char *p = strstr(file,".jpg.thumb");
-            if (p) strcpy(p,".thumb.jpg");
-            // Send image
-            cat(CONTENT_TYPE"image/jpeg",file);
-            FREE(file);
+            int i;
+            for(i  = 0 ; img[i][0] ; i++ ) {
+                //fprintf(stderr,"[%s][%s][%s] ext[%s]\n",img[i][0],img[i][1],img[i][2],ext);
+                if (util_starts_with(request,img[i][0])) { 
 
-        } else if (util_starts_with(request,YAMJ_BOXSET_PREFIX) && util_strreg(request,YAMJ_BOXSET_PREFIX "[^.]*\\.jpg$",0)) {
-
-            char *file;
-            ovs_asprintf(&file,"%s/db/global/_J/ovs_%s.thumb.boxset",appDir(),request+strlen(YAMJ_BOXSET_PREFIX));
-            //now swap in place .jpg.thumb with .thumb.jpg
-            char *p = strstr(file,".jpg.thumb.boxset");
-            if (p) strcpy(p,".thumb.boxset.jpg");
-            // Send image
-            cat(CONTENT_TYPE"image/jpeg",file);
-            FREE(file);
-
-        } else if (util_starts_with(request,YAMJ_POSTER_PREFIX) && util_strreg(request,YAMJ_POSTER_PREFIX "[^.]*\\.jpg$",0)) {
-
-            char *file;
-            ovs_asprintf(&file,"%s/db/global/_J/ovs_%s",appDir(),request+strlen(YAMJ_POSTER_PREFIX));
-            // Send image
-            cat(CONTENT_TYPE"image/jpeg",file);
-            FREE(file);
-
-        } else if (util_starts_with(request,YAMJ_BANNER_PREFIX) && util_strreg(request,YAMJ_BANNER_PREFIX "[^.]*\\.jpg$",0)) {
-
-            char *file;
-            ovs_asprintf(&file,"%s/db/global/_b/ovs_%s",appDir(),request+strlen(YAMJ_BANNER_PREFIX));
-            // Send image
-            cat(CONTENT_TYPE"image/jpeg",file);
-            FREE(file);
-
-        } else if (util_starts_with(request,YAMJ_FANART_PREFIX) && util_strreg(request,YAMJ_FANART_PREFIX "[^.]*\\.jpg$",0)) {
-
-            char *file;
-            ovs_asprintf(&file,"%s/db/global/_fa/ovs_%s",appDir(),request+strlen(YAMJ_FANART_PREFIX));
-            // Send image
-            cat(CONTENT_TYPE"image/jpeg",file);
-            FREE(file);
+                    char *file;
+                    ovs_asprintf(&file,"%s/db/global/%s/ovs_%.*s%s",
+                            appDir(),
+                            img[i][1],
+                            ext-request-strlen(img[i][0]),
+                            request+strlen(img[i][0]),
+                            img[i][2]);
+                    //fprintf(stderr,"[%s]",file);
+                    cat(CONTENT_TYPE"image/jpeg",file);
+                    FREE(file);
+                    break;
+                }
+            }
 
         } else if (STRCMP(request,CATEGORY_INDEX) == 0 || do_query ||  util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 

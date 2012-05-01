@@ -211,6 +211,7 @@ static void start_page(char *callmode) {
 #define YAMJ_PREFIX "yamj/"
 int oversight_main(int argc,char **argv,int send_content_type_header) {
     int result=0;
+    int done=0;
 
     g_start_clock = time(NULL);
     assert(sizeof(long long) >= 8);
@@ -224,7 +225,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
     if (q && (p = delimited_substring(q,"&",REMOTE_VOD_PREFIX2,"=",1,0)) != NULL) {
 
         gaya_auto_load(p+strlen(REMOTE_VOD_PREFIX2)+1);
-        _exit(0);
+        done=1;
 
     } else if (q == NULL || strchr(q,'=') == NULL ) {
 
@@ -232,9 +233,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
             if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
                 char *req = url_decode(argv[1]);
-                result = yamj_xml(req+strlen(YAMJ_PREFIX));
+                yamj_xml(req+strlen(YAMJ_PREFIX));
                 FREE(req);
-                _exit(result);
+                done=1;
 
             } else if ( argv[1] && *argv[1] && argv[2] == NULL && strchr(argv[1],'=') == NULL) {
                 // Single argument passed.
@@ -243,6 +244,8 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                 char *dot = strrchr(path,'.');
                 if (dot < path) dot = strchr(path,'\0');
                 int result = 0;
+
+                fprintf(stderr,"path=[%s]",path);
 
                 // should really use file command or magic number to determine file type
 
@@ -269,7 +272,6 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                         // load_configs(); // load configs so we can use file_to_url() functions 
                         result = ls(path);
                     } else {
-                        
                         int exists = is_file(path);
 
                         char *all_headers = NULL;
@@ -315,202 +317,206 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
                     }
                 }
                 FREE(path);
-                _exit(result);
+                fflush(stdout);
+                done=1;
             }
         }
     }
 
 
 
-    if (send_content_type_header) {
-        printf("Content-Type: text/html; charset=utf-8\n\n");
+    if (!done) {
+        if (send_content_type_header) {
+            printf("Content-Type: text/html; charset=utf-8\n\n");
 
-        start_page("CGI");
-    } else {
-        start_page("WGET");
-    }
+            start_page("CGI");
+        } else {
+            start_page("WGET");
+        }
 
-    html_log_level_set(2);
+        html_log_level_set(2);
 
-    load_configs();
-    //html_hashtable_dump(0,"settings",g_nmt_settings);
+        load_configs();
+        //html_hashtable_dump(0,"settings",g_nmt_settings);
 
-    long log_level;
-    if (config_check_long(g_oversight_config,"ovs_log_level",&log_level)) {
-        html_log_level_set(log_level);
-    }
+        long log_level;
+        if (config_check_long(g_oversight_config,"ovs_log_level",&log_level)) {
+            html_log_level_set(log_level);
+        }
 
-    html_comment("Appdir= [%s]",appDir());
+        html_comment("Appdir= [%s]",appDir());
 
-    //array_unittest();
-    //util_unittest();
-    //config_unittest();
+        //array_unittest();
+        //util_unittest();
+        //config_unittest();
 
-    g_query = string_string_hashtable("g_query2",16);
+        g_query = string_string_hashtable("g_query2",16);
 
-    html_comment("default query ... ");
-    add_default_html_parameters(g_query);
-    html_hashtable_dump(0,"prequery",g_query);
+        html_comment("default query ... ");
+        add_default_html_parameters(g_query);
+        html_hashtable_dump(0,"prequery",g_query);
 
-    html_comment("read query ... ");
-    g_query=parse_query_string(getenv("QUERY_STRING"),g_query);
-    html_hashtable_dump(0,"query",g_query);
+        html_comment("read query ... ");
+        g_query=parse_query_string(getenv("QUERY_STRING"),g_query);
+        html_hashtable_dump(0,"query",g_query);
 
-    html_comment("read post ... ");
+        html_comment("read post ... ");
 
-    struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
-    html_hashtable_dump(0,"post",g_query);
-    
-    html_comment("merge query and post data");
-    merge_hashtables(g_query,post,1); // post is destroyed
+        struct hashtable *post=read_post_data(getenv("TEMP_FILE"));
+        html_hashtable_dump(0,"post",g_query);
+        
+        html_comment("merge query and post data");
+        merge_hashtables(g_query,post,1); // post is destroyed
 
-    html_hashtable_dump(0,"query final",g_query);
+        html_hashtable_dump(0,"query final",g_query);
 
 
 #if 0
-    html_comment("utf8len expect 2 = %d",utf8len("Àa"));
-    html_comment("utf8len expect 2 = %d",utf8len("àa"));
-    html_comment("utf8len expect 2 = %d",utf8len("üa"));
-    html_comment("utf8cmp_char 0 = %d",utf8cmp_char("üa","üb"));
-    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("üa","üa"));
-    html_comment("utf8cmp_char 0 = %d",utf8cmp_char("a","a"));
-    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("a","b"));
-    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("üa","Ã¼a"));
-    html_comment("utf8cmp_char !0 = %d",utf8cmp_char("a","üa"));
-    Abet *a = abet_create("abcdefghijklmnopqrstuvwxyz");
-    html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
-    html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
-    html_comment("inc z %d",abet_letter_inc_or_add(a,"z",1));
-    html_comment("inc 4 %d",abet_letter_inc_or_add(a,"4",1));
-    html_comment("inc 5 %d",abet_letter_inc_or_add(a,"5",1));
-    html_comment("inc 5 %d",abet_letter_inc_or_add(a,"5",1));
-    html_comment("inc 6* %d",abet_letter_inc_or_add(a,"6",0));
-    html_comment("inc 7* %d",abet_letter_inc_or_add(a,"7",0));
-    html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
-    abet_free(a);
+        html_comment("utf8len expect 2 = %d",utf8len("Àa"));
+        html_comment("utf8len expect 2 = %d",utf8len("àa"));
+        html_comment("utf8len expect 2 = %d",utf8len("üa"));
+        html_comment("utf8cmp_char 0 = %d",utf8cmp_char("üa","üb"));
+        html_comment("utf8cmp_char !0 = %d",utf8cmp_char("üa","üa"));
+        html_comment("utf8cmp_char 0 = %d",utf8cmp_char("a","a"));
+        html_comment("utf8cmp_char !0 = %d",utf8cmp_char("a","b"));
+        html_comment("utf8cmp_char !0 = %d",utf8cmp_char("üa","Ã¼a"));
+        html_comment("utf8cmp_char !0 = %d",utf8cmp_char("a","üa"));
+        Abet *a = abet_create("abcdefghijklmnopqrstuvwxyz");
+        html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
+        html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
+        html_comment("inc z %d",abet_letter_inc_or_add(a,"z",1));
+        html_comment("inc 4 %d",abet_letter_inc_or_add(a,"4",1));
+        html_comment("inc 5 %d",abet_letter_inc_or_add(a,"5",1));
+        html_comment("inc 5 %d",abet_letter_inc_or_add(a,"5",1));
+        html_comment("inc 6* %d",abet_letter_inc_or_add(a,"6",0));
+        html_comment("inc 7* %d",abet_letter_inc_or_add(a,"7",0));
+        html_comment("inc a %d",abet_letter_inc_or_add(a,"a",1));
+        abet_free(a);
 #endif
 
-
-    config_read_dimensions(1);
-
-    HTML_LOG(0,"Begin Actions");
-    do_actions();
-   
-    ViewMode *view;
-
-    DbSortedRows *sortedRows = NULL;
-
-
-    while(1) {
-        view=get_view_mode(1);  
-        HTML_LOG(0,"view mode = [%s]",view->name);
-
-        // If movie view but all ids have been removed , then move up
-        if (view == VIEW_MOVIE && !*query_val(QUERY_PARAM_IDLIST)) {
-            query_pop();
-            view=get_view_mode(1);  
-        }
-
-        sortedRows = get_sorted_rows_from_params();
-        dump_all_rows("sorted",sortedRows->num_rows,sortedRows->rows);
-
-        // Found some data - continue to render page.
-        if (sortedRows->num_rows) {
-            break;
-        }
-
-        // If it's not a tv/movie detail or boxset view then break
-        if (view == VIEW_MENU ||  view == VIEW_ADMIN ) {
-            break;
-        }
-
-        // No data found in this view - try to return to the previous view.
-        query_pop();
-        // Adjust config - 
-        // TODO Change the config structure to reload more efficiently.
-        //reload_configs();
 
         config_read_dimensions(1);
 
-        // Now refetch all data again with new parameters.
-        sorted_rows_free_all(sortedRows);
-        HTML_LOG(0,"reparsing database");
-    }
+        HTML_LOG(0,"Begin Actions");
+        do_actions();
+       
+        ViewMode *view;
 
-    // Remove and store the last navigation cell. eg if user clicked on cell 12 this is passed in 
-    // the URL as @i=12. The url that returns to this page then has i=12. If we have returned to this
-    // page we must remove i=12 from the query so that it is not passed to the new urls created for this 
-    // page.
-    set_selected_item();
+        DbSortedRows *sortedRows = NULL;
 
-    char *skin_name=oversight_val("ovs_skin_name");
 
-    if (strchr(skin_name,'/') || *skin_name == '.' || !*skin_name ) {
+        while(1) {
+            view=get_view_mode(1);  
+            HTML_LOG(0,"view mode = [%s]",view->name);
 
-        html_error("Invalid skin name[%s]",skin_name);
+            // If movie view but all ids have been removed , then move up
+            if (view == VIEW_MOVIE && !*query_val(QUERY_PARAM_IDLIST)) {
+                query_pop();
+                view=get_view_mode(1);  
+            }
 
-    } else {
+            sortedRows = get_sorted_rows_from_params();
+            dump_all_rows("sorted",sortedRows->num_rows,sortedRows->rows);
 
-        playlist_open();
-        //exp_test();
+            // Found some data - continue to render page.
+            if (sortedRows->num_rows) {
+                break;
+            }
 
-        if (view->view_class == VIEW_CLASS_ADMIN) {
+            // If it's not a tv/movie detail or boxset view then break
+            if (view == VIEW_MENU ||  view == VIEW_ADMIN ) {
+                break;
+            }
 
-            setPermissions();
-            display_admin(sortedRows);
+            // No data found in this view - try to return to the previous view.
+            query_pop();
+            // Adjust config - 
+            // TODO Change the config structure to reload more efficiently.
+            //reload_configs();
+
+            config_read_dimensions(1);
+
+            // Now refetch all data again with new parameters.
+            sorted_rows_free_all(sortedRows);
+            HTML_LOG(0,"reparsing database");
+        }
+
+        // Remove and store the last navigation cell. eg if user clicked on cell 12 this is passed in 
+        // the URL as @i=12. The url that returns to this page then has i=12. If we have returned to this
+        // page we must remove i=12 from the query so that it is not passed to the new urls created for this 
+        // page.
+        set_selected_item();
+
+        char *skin_name=oversight_val("ovs_skin_name");
+
+        if (strchr(skin_name,'/') || *skin_name == '.' || !*skin_name ) {
+
+            html_error("Invalid skin name[%s]",skin_name);
 
         } else {
 
-            display_main_template(skin_name,view->name,sortedRows);
-            if (view->has_playlist) {
-                build_playlist(sortedRows);
+            playlist_open();
+            //exp_test();
+
+            if (view->view_class == VIEW_CLASS_ADMIN) {
+
+                setPermissions();
+                display_admin(sortedRows);
+
+            } else {
+
+                display_main_template(skin_name,view->name,sortedRows);
+                if (view->has_playlist) {
+                    build_playlist(sortedRows);
+                } 
             } 
-        } 
-    }
+        }
 
 
-    // When troubleshooting we should clean up properly as this may reveal
-    // malloc errors. 
-    // But otherwise just let the OS reclaim everything.
-    HTML_LOG(0,"deleting...");
-    delete_queue_delete();
-    TRACE;
+        // When troubleshooting we should clean up properly as this may reveal
+        // malloc errors. 
+        // But otherwise just let the OS reclaim everything.
+        HTML_LOG(0,"deleting...");
+        delete_queue_delete();
+        TRACE;
 
 #if 0
-    // Cleanup properly
-        html_comment("cleanup");
+        // Cleanup properly
+            html_comment("cleanup");
 
-        sorted_rows_free_all(sortedRows);
-    TRACE;
+            sorted_rows_free_all(sortedRows);
+        TRACE;
 
-        /*
-        html_comment("dump shit");
-        html_hashtable_dump(3,"ovs cfg",oversight_config);
-        html_hashtable_dump(3,"catalog cfg",catalog_config);
-        html_hashtable_dump(3,"settings",nmt_settings);
-        */
-        hashtable_destroy(g_oversight_config,1,1);
-    TRACE;
+            /*
+            html_comment("dump shit");
+            html_hashtable_dump(3,"ovs cfg",oversight_config);
+            html_hashtable_dump(3,"catalog cfg",catalog_config);
+            html_hashtable_dump(3,"settings",nmt_settings);
+            */
+            hashtable_destroy(g_oversight_config,1,1);
+        TRACE;
 
-        hashtable_destroy(g_catalog_config,1,1);
-    TRACE;
+            hashtable_destroy(g_catalog_config,1,1);
+        TRACE;
 
-        hashtable_destroy(g_query,1,0);
-    TRACE;
-        hashtable_destroy(g_nmt_settings,1,1);
-    TRACE;
+            hashtable_destroy(g_query,1,0);
+        TRACE;
+            hashtable_destroy(g_nmt_settings,1,1);
+        TRACE;
 
 
-        /*
-        hashtable database_list= open_databases(g_query);
+            /*
+            hashtable database_list= open_databases(g_query);
 
-        display_page(g_query,database_list);
-        */
+            display_page(g_query,database_list);
+            */
 #endif
 
-    HTML_LOG1(0,"end=%d",result);
+        HTML_LOG1(0,"end=%d",result);
 
 
+        fflush(stdout);
+    }
     return result;
     
 }

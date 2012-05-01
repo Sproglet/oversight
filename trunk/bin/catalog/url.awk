@@ -142,23 +142,25 @@ zip_pipe,b,txt,ret,code) {
 
 # Make sure file is UTF8
 function url_encode_utf8(response,\
-iconv_pipe,b,txt,enc,ret,code) {
+iconv_pipe,b,txt,enc,ret,code,f) {
     enc = response["enc"] ;
     if (enc ) {
        if (enc == "utf-8" ) {
            ret = 0;
-       } else if (g_fetch["no_encode"]) {
+       } else if (1 || g_fetch["no_encode"]) {
            if(LD)DETAIL("leaving "enc" to utf-8 ...");
        } else {
            if(LD)DETAIL("converting "enc" to utf-8 ...");
-           iconv_pipe = "iconv -f "enc" -t utf-8";
 
-           printf "%s",response["body"] |& iconv_pipe
-           fflush(iconv_pipe);
-           close(iconv_pipe,"to");
+           f = new_capture_file("ic");
 
-           rs_push("eeeeeee"); #unlikely to be in the file - it should all get read at once.
-           while ( ( code = ( iconv_pipe |& getline txt )) > 0 ) {
+           printf "%s\n",response["body"]  > f;
+           close(f);
+
+           iconv_pipe = "iconv -f "enc" -t utf-8 "qa(f);
+
+           rs_push("\n"); #unlikely to be in the file - it should all get read at once.
+           while ( ( code = ( iconv_pipe | getline txt )) > 0 ) {
                 b = b txt RT;
            }
            rs_pop();

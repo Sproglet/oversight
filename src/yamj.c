@@ -88,6 +88,9 @@ FILE *xmlout=NULL;
  * Eg.
  */
 
+// If true remove a lot of XML that eversion doesnt need?
+static int lean_xml=0;
+
 void xml_headers()
 {
     fprintf(xmlout,"%s%s\n\n",CONTENT_TYPE,"application/xml");
@@ -612,7 +615,9 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     if (*banner ) {
         fprintf(xmlout,"\t<bannerFile>%s%s</bannerFile>\n",YAMJ_BANNER_PREFIX,banner);
     }
-    fprintf(xmlout,"\t<bannerURL>UNKNOWN</bannerURL>\n");
+    if (!lean_xml) {
+        fprintf(xmlout,"\t<bannerURL>UNKNOWN</bannerURL>\n");
+    }
 #else
     banner = get_existing_internal_image_path(item,BANNER_IMAGE,view);
     //HTML_LOG(0,"TRACE1 banner[%s]",banner);
@@ -753,7 +758,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         
 
     // Dont write individual file details for boxsets - these are read from the baseFilename.xml 
-    if (!is_boxset || *oversight_val("ovs_yamj_lean_xml") != '1') {
+    if (!is_boxset || !lean_xml ) {
         yamj_files(item);
     }
 
@@ -844,13 +849,24 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
         if (!errno) part_no = epno;
     }
 
-    fprintf(xmlout,"\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\" subtitlesExchange=\"NO\" title=\"%s\" vod=\"\" watched=\"%s\" >\n",
+    fprintf(xmlout,"\t<file firstPart=\"%d\" lastPart=\"%d\" season=\"%d\" size=\"%d\"",
             part_no,
             part_no,
             item->season,
-            item->sizemb*1024*1024,
-            ((item->category=='T')?xmlstr_static(NVL(item->eptitle),0):"UNKNOWN"),
-            BOOL(item->watched));
+            item->sizemb*1024*1024);
+
+    if (!lean_xml) {
+        fprintf(xmlout," subtitlesExchange=\"NO\"");
+    }
+    if (!lean_xml) {
+        fprintf(xmlout," title=\"%s\"",((item->category=='T')?xmlstr_static(NVL(item->eptitle),0):"UNKNOWN"));
+    }
+    fprintf(xmlout," vod=\"\"");
+
+    if (!lean_xml || item->watched) {
+        fprintf(xmlout," watched=\"%s\"",BOOL(item->watched));
+    }
+    fprintf(xmlout," >\n");
 
     int freeit;
     char *path;
@@ -864,9 +880,9 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
     int free_enc;
     char *encoded_path = url_encode_static(path,&free_enc);
 
-#if 0
-    fprintf(xmlout,"\t\t<fileLocation>%s</fileLocation>\n",xmlstr_static(path,0));
-#endif
+    if (!lean_xml) {
+        fprintf(xmlout,"\t\t<fileLocation>%s</fileLocation>\n",xmlstr_static(path,0));
+    }
     fprintf(xmlout,"\t\t<fileURL>file://%s</fileURL>\n",encoded_path);
 
     if (item->category == 'T' ) {
@@ -905,14 +921,20 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
         }
         FREE(plot);
 
-#if 0
-        fprintf(xmlout,"\t\t<airsInfo afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\" part=\"%d\">%d</airsInfo>\n",part_no,part_no);
-#else
-        fprintf(xmlout,"\t\t<airsInfo part=\"%d\">%d</airsInfo>\n",part_no,part_no);
-#endif
+        if (!lean_xml || item->season == 0) {
+            fprintf(xmlout,"\t\t<airsInfo part=\"%d\"",part_no);
+
+            // not scraped yet!
+            fprintf(xmlout," afterSeason=\"0\" beforeEpisode=\"0\" beforeSeason=\"0\"");
+            fprintf(xmlout," >%d</airsInfo>\n",part_no);
+        }
+
+
         fprintf(xmlout,"\t\t<firstAired part=\"%d\">%s</firstAired>\n",part_no,get_date_static(item,"%Y-%m-%d"));
     } else {
-        fprintf(xmlout,"\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
+        if (!lean_xml) {
+            fprintf(xmlout,"\t\t<fileTitle part=\"%d\">UNKNOWN</fileTitle>\n",part_no);
+        }
     }
     fprintf(xmlout,"\t</file>\n");
 
@@ -1425,6 +1447,7 @@ int yamj_xml(char *request)
             config_read_dimensions(0);
             HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
             load_configs();
+            lean_xml = (*oversight_val("ovs_yamj_lean_xml") == '1');
             fprintf(xmlout,"<details>\n");
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
             fprintf(xmlout,"</details>\n");
@@ -1436,16 +1459,23 @@ int yamj_xml(char *request)
                 //fprintf(stderr,"[%s][%s][%s] ext[%s]\n",img[i][0],img[i][1],img[i][2],ext);
                 if (util_starts_with(request,img[i][0])) { 
 
+                    int redirect=0;
                     char *file;
                     ovs_asprintf(&file,"%s/db/global/%s/ovs_%.*s%s",
-                            appDir(),
+                            (redirect?"/oversight":appDir()),
                             img[i][1],
                             ext-request-strlen(img[i][0]),
                             request+strlen(img[i][0]),
                             img[i][2]);
-                    //fprintf(stderr,"[%s]",file);
-                    cat(CONTENT_TYPE"image/jpeg",file);
+
+                    if (redirect) {
+                        printf("HTTP/1.1 301 Permanently Moved\r\n");
+                        printf("Location: %s\r\n\r\n",file);
+                    } else {
+                        cat(CONTENT_TYPE"image/jpeg",file);
+                    }
                     FREE(file);
+                    if (redirect) exit(301);
                     break;
                 }
             }
@@ -1480,6 +1510,7 @@ int yamj_xml(char *request)
                 config_read_dimensions(0);
                 HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
                 load_configs();
+                lean_xml = (*oversight_val("ovs_yamj_lean_xml") == '1');
 
                 Array *categories = array_new(free_yamj_catetory);
 

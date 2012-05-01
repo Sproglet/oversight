@@ -50,6 +50,7 @@ int yamj_file(DbItem *item,int part_no,int show_source);
 void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source);
 void load_dynamic_cat(YAMJCat *cat,time_t index_time);
 void save_dynamic_cat(YAMJCat *cat);
+void yamj_people(DbItem *item,char *tag,char *tag2,DbGroupIMDB *group);
 
 FILE *xmlout=NULL;
 /*
@@ -718,6 +719,12 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 
     //---------------------------
 
+    yamj_people(item,"directors","director",item->directors);
+    yamj_people(item,"writers","writer",item->writers);
+    yamj_people(item,"cast","actor",item->actors);
+
+    //---------------------------
+
     if (item->yamj_member_of) {
         int i;
         fprintf(xmlout,"\t<indexes>\n");
@@ -754,6 +761,27 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     return ret;
 }
 
+void yamj_people(DbItem *item,char *tag,char *tag2,DbGroupIMDB *group)
+{
+    if (group) {
+        EVALUATE_GROUP(group);
+        if (group->dbgi_size) {
+            fprintf(xmlout,"<%s count=\"%d\">\n",tag,group->dbgi_size);
+            int i;
+            for(i = 0 ; i< group->dbgi_size ; i++ ) {
+                char id[20];
+                sprintf(id,"%d",group->dbgi_ids[i]);
+                char *record = dbnames_fetch_static(id,item->db->people_file);
+                record = strchr(record,'\t');
+                if (record) {
+                    fprintf(xmlout,"<%s>%s</%s>\n",tag2,xmlstr_static(++record,0),tag2);
+                }
+            }
+            fprintf(xmlout,"</%s>\n",tag);
+
+        }
+    }
+}
 void yamj_files(DbItem *item)
 {
     fprintf(xmlout,"\t<files>\n");

@@ -153,6 +153,7 @@ int cat(char *headers,char *file)
     FILE *fp = fopen (file,"r");
     if (fp) {
         append_content(fp,stdout);
+        fflush(stdout);
         fclose(fp);
         return 0;
     } else {

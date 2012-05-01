@@ -2326,7 +2326,9 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size,season) 
         if (firstIndex(xml) != "") {
 
             if (get_poster) {
-                best_best_banner_score(tvdbid,POSTER,xml,minfo,"season","season",season,lnum,langs);
+                if (!best_best_banner_score(tvdbid,POSTER,xml,minfo,"season","season",season,lnum,langs)) {
+                    best_best_banner_score(tvdbid,POSTER,xml,minfo,"poster","","",lnum,langs);
+                }
             }
             if (get_banner) {
                 best_best_banner_score(tvdbid,BANNER,xml,minfo,"series","graphical","",lnum,langs);
@@ -2344,7 +2346,7 @@ xmlstr,xml,r,bannerApiUrl,num,get_poster,get_fanart,langs,lnum,key,size,season) 
 }
 
 function best_best_banner_score(tvdbid,fld,xml,minfo,filter1,filter2,filter3,lnum,langs,size,\
-banner_scores,i,url,banners) {
+banner_scores,i,url,banners,ret) {
     for(i in xml) {
         if (index(xml[i],"BannerType>"filter1"<")) {
            if(filter2 =="" || index(xml[i],"BannerType2>"filter2"<")) {
@@ -2358,9 +2360,10 @@ banner_scores,i,url,banners) {
     dump(0,"image "fld,banner_scores);
     if (bestScores(banner_scores,banner_scores)) {
         banners[fld] = minfo[fld] = firstIndex(banner_scores);
-        g_image_inspected[tvdbid,fld,minfo[SEASON]]=1;
+        ret = g_image_inspected[tvdbid,fld,minfo[SEASON]]=1;
         if(LG)DEBUG(fld" = "minfo[fld]);
     }
+    return ret;
 }
 
 function banner_score(xml,lnum,langs,size,\

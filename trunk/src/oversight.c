@@ -211,11 +211,11 @@ static void start_page(char *callmode) {
 }
 
 #define YAMJ_PREFIX "yamj/"
-int oversight_main(int argc,char **argv,int send_content_type_header) {
+int oversight_main(int argc,char **argv,int send_content_type_header)
+{
     int result=0;
     int done=0;
 
-    daemonize();
     g_start_clock = time(NULL);
     assert(sizeof(long long) >= 8);
 
@@ -236,6 +236,7 @@ int oversight_main(int argc,char **argv,int send_content_type_header) {
 
             if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
                 char *req = url_decode(argv[1]);
+                daemonize();
                 yamj_xml(req+strlen(YAMJ_PREFIX));
                 FREE(req);
                 done=1;
@@ -599,6 +600,7 @@ int oversight_instead_of_wget(int argc, char **argv)
 void daemonize()
 {
 
+#if 0
     int pid = fork();
 
     //  these exits() changed to _exit() as we have already forked from sybhttpd
@@ -651,6 +653,7 @@ void daemonize()
 
     // chdir("/");
     umask(0);
+#endif
 }
 
 int run_wget(int argc,char **argv) {

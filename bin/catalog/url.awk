@@ -69,7 +69,8 @@ cmd,body,ret,i,hdr,txt,enc,code) {
     url = url_norm(url);
     cmd = "wget -q --referer "get_referer(url);
     cmd = cmd " -U "qa(set_user_agent(url));
-    cmd = cmd " --header='Accept-Encoding: gzip' "qa(url)" -O -";
+    cmd = cmd " --header='Accept-Encoding: gzip'";
+    cmd = cmd " "qa(url)" -O -";
 
     if (headers) {
         split(headers,hdr,SUBSEP);
@@ -119,9 +120,10 @@ zip_pipe,b,txt,ret,code) {
         close(zip_pipe,"to");
         b="";
 
-        rs_push("eeeeeee"); #unlikely to be in a zip file - it should all get read at once.
+        rs_push("\n"); #unlikely to be in a zip file - it should all get read at once.
         while ( ( code = ( zip_pipe |& getline txt ) ) > 0) {
             b = b txt RT;
+            # Intermittent bug - not detecting EOF ?
         }
         rs_pop();
         if (code >= 0 ) {

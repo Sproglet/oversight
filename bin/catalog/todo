@@ -1,3 +1,5 @@
+# thetvdb is slow with episode title/plot updates - use other source if no title/plot
+#
 # portrail jpg_fetch_and_scale has START ? is that right
 # Change fetchXML - dont PArse - string process...
 # Grab all tvdb seasion xml

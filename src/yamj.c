@@ -185,11 +185,13 @@ YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_fi
 
 void add_index_to_item(DbItem *item,YAMJSubCat *subcat)
 {
+    if (!lean_xml) {
 
-    if (!item->yamj_member_of) {
-        item->yamj_member_of = array_new(NULL);
+        if (!item->yamj_member_of) {
+            item->yamj_member_of = array_new(NULL);
+        }
+        array_add(item->yamj_member_of,subcat);
     }
-    array_add(item->yamj_member_of,subcat);
     subcat->item_total++;
 }
 

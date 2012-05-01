@@ -1490,9 +1490,11 @@ int yamj_xml(char *request)
 
                 // Here we could have newest first but leave that to skins 
                 int (*sort_fn)(DbItem **,DbItem**) = NULL;
-                if (selected_subcat && STRCMP(selected_subcat->name,"By Age") == 0) {
-                    if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
-                        sort_fn = db_overview_cmp_by_age_desc;
+                if (selected_subcat)  {
+                    if ((STRCMP(selected_subcat->name,"By Age") == 0) || (STRCMP(selected_subcat->name,"New") == 0)) {
+                        if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
+                            sort_fn = db_overview_cmp_by_age_desc;
+                        }
                     }
                 }
 

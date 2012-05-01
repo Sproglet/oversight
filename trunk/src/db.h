@@ -31,6 +31,7 @@ typedef struct Db_struct {
     FILE *plot_fp;    // File pointer to plotfile
     int db_size;
     char *people_file; // ..../db/actors.db (auto computed from source)
+    struct hashtable *plot_idx;
 
 #if 0
     char *directors_file; // ..../db/directors.db (auto computed from source)

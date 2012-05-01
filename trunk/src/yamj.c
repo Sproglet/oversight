@@ -1443,6 +1443,14 @@ int yamj_xml(char *request)
             char *cache_path;
             
             if (cache) {
+                cache_path = cache_file(".no");
+                if (exists(cache_path)) {
+                    cache = 0;
+                }
+                FREE(cache_path);
+            }
+
+            if (cache) {
                 cache_path = cache_file(request);
             }
             if (!cache || stale_cache_file(cache_path)) {

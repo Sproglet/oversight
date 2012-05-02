@@ -1515,12 +1515,16 @@ int yamj_xml(char *request)
             if (!cache || stale_cache_file(cache_path)) {
 
 
+                xmlout = stdout;
                 if (cache) {
-                   xmlout = fopen(cache_path,"w");
-
-                   html_set_output(xmlout);
-                } else {
-                    xmlout = stdout;
+                   FILE *fp =fopen(cache_path,"w");
+                   if (fp) {
+                       xmlout = fp;
+                       html_set_output(xmlout);
+                   } else {
+                       html_error("failed to open %s for writing - error %d",cache_path,errno);
+                       cache = 0;
+                   }
                 }
 
                 config_read_dimensions(0);

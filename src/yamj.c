@@ -508,7 +508,7 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
     char *encoded=NULL;
     int free_it=0;
 
-    if (value || attrval ) {
+    if (!EMPTY_STR(value) || !EMPTY_STR(attrval) ) {
         fprintf(xmlout,"\t<%s",tag);
         if (attrval) {
             fprintf(xmlout," %s=\"%s\"",attr,attrval);
@@ -532,10 +532,10 @@ char *base_name(DbItem *item,ViewMode *view)
 {
     char *result=NULL;
     if (view == VIEW_TV) {
-        // All shows are in the same season This will normall go to a TV detail page.
-        // Eversion doesnt go to TV Detail level.
-        set_plot_keys(item);
-        ovs_asprintf(&result,"%s",item->plotkey[PLOT_MAIN]);
+        if (!lean_xml) { // Eversion doesnt use detail files
+            set_plot_keys(item);
+            ovs_asprintf(&result,"%s",item->plotkey[PLOT_MAIN]);
+        }
     } else if (view == VIEW_TVBOXSET) {
         // TODO quotes
         ovs_asprintf(&result, YAMJ_QUERY_PREFIX "T~c~_C~f~~a~(_T~f~~e~'%s')_1",item->title);
@@ -558,8 +558,10 @@ char *base_name(DbItem *item,ViewMode *view)
 
 
     } else {
-        // default name
-        ovs_asprintf(&result,"%ld",item->id);
+        if (!lean_xml) { // Eversion doesnt use detail files
+            // default name
+            ovs_asprintf(&result,"%ld",item->id);
+        }
     }
     return result;
 }
@@ -577,6 +579,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         HTML_LOG(0,"TODO html log get dbitem using request details [%s]",request);
     }
     is_boxset = (view==VIEW_TVBOXSET||view==VIEW_MOVIEBOXSET);
+    HTML_LOG(0,"movie");
     fprintf(xmlout,"<movie isExtra=\"false\" isTV=\"%s\" isSet=\"%s\">\n", BOOL(view==VIEW_TV || view==VIEW_TVBOXSET) , BOOL(is_boxset));
     char *id;
     
@@ -597,8 +600,11 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         fprintf(xmlout,"\t<id moviedb=\"thetvdb\">%s</id>\n",strchr(id,':')+1);
         FREE(id);
     }
-    fprintf(xmlout,"\t<mjbVersion>Oversight-2</mjbVersion>\n");
-    fprintf(xmlout,"\t<mjbRevision>%s</mjbRevision>\n",OVS_VERSION);
+
+    if (!lean_xml) {
+        fprintf(xmlout,"\t<mjbVersion>Oversight-2</mjbVersion>\n");
+        fprintf(xmlout,"\t<mjbRevision>%s</mjbRevision>\n",OVS_VERSION);
+    }
 
     char *b =base_name(item,view);
     if (b) {
@@ -624,7 +630,9 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         fprintf(xmlout,"\t<rating>%d</rating>\n",(int)(item->rating *10));
     }
 
-    fprintf(xmlout,"\t<watched>%s</watched>\n",BOOL(item->watched));
+    if (!lean_xml || item->watched) {
+        fprintf(xmlout,"\t<watched>%s</watched>\n",BOOL(item->watched));
+    }
 
     fprintf(xmlout,"\t<top250>%d</top250>\n",item->top250);
 
@@ -744,6 +752,12 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
 
     //---------------------------
     
+    if (item->expanded_genre == NULL) {
+        if(item->genre) {
+            item->expanded_genre = translate_genre(item->genre,1,"|");
+        }
+    }
+
     Array *genres = splitstr(item->expanded_genre,"|");
     fprintf(xmlout,"\t<genres count=\"%d\">\n",genres->size);
     for(i = 0 ; i < genres->size ; i++ ) {
@@ -1321,6 +1335,7 @@ int yamj_categories_xml(char *request,YAMJSubCat *selected_subcat,Array *categor
         fprintf(xmlout,"</movies>\n");
     }
     fprintf(xmlout,"</library>\n");
+    HTML_LOG(0,"end");
 
     return ret;
 

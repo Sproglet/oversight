@@ -235,7 +235,9 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
 
     } else if (util_starts_with(q,YAMJ_PREFIX2)) {
 
-        yamj_xml(q+strlen(YAMJ_PREFIX2));
+        char *req = url_decode(q+strlen(YAMJ_PREFIX2));
+        yamj_xml(req);
+        FREE(req);
         done=1;
 
     } else if (q == NULL || strchr(q,'=') == NULL ) {
@@ -243,8 +245,8 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
         if (argc > 1 ) {
 
             if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
-                char *req = url_decode(argv[1]);
-                yamj_xml(req+strlen(YAMJ_PREFIX));
+                char *req = url_decode(argv[1]+strlen(YAMJ_PREFIX));
+                yamj_xml(req);
                 FREE(req);
                 done=1;
 

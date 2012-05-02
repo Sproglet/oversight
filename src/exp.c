@@ -607,7 +607,7 @@ static int evaluate_with_err(Exp *e,DbItem *item,int *err)
                 HTML_LOG(0,"OP_DBFIELD offset [%lu]",(unsigned long)offset);
                 HTML_LOG(0,"OP_DBFIELD offset [%s]",offset);
                 HTML_LOG(0,"OP_DBFIELD item->title [%s]",item->title);
-                HTML_LOG(0,"OP_DBFIELD item->genre [%s]",item->genre);
+                HTML_LOG(0,"OP_DBFIELD item->genre [%s]",item->expanded_genre);
                 */
                 switch(e->fld_type){
 

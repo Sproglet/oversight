@@ -109,7 +109,7 @@ INSTALL() {
         #FIX_NZBGET_DAEMON
         TRANSMISSION_UNPAK_INSTALL || true
 
-        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] *cache ) || true # clear cache
+        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] *.xml ) || true # clear cache
 
         #not sure how people are still getting wget in busybox but rename it
         if [ -f /share/bin/wget ] ; then

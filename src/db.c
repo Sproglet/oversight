@@ -1092,10 +1092,12 @@ time_t db_time()
     }
     return t;
 }
+
+// stale if older than index.db or 24 hours
 int stale_cache_file(char *path)
 {
     time_t t = file_time(path);
-    return (t < db_time());
+    return (t < db_time() || t < time(NULL) - 24*60*60 );
 }
 
 // vi:sw=4:et:ts=4

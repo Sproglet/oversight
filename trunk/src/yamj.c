@@ -91,10 +91,11 @@ FILE *xmlout=NULL;
 // If true remove a lot of XML that eversion doesnt need?
 static int lean_xml=0;
 
-void xml_headers()
+void xml_headers(FILE *fp)
 {
-    fprintf(xmlout,"%s%s\n\n",CONTENT_TYPE,"application/xml");
-    fprintf(xmlout,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
+    fprintf(fp,"%s%s\n\n",CONTENT_TYPE,"application/xml");
+    fprintf(fp,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
+    fflush(fp);
 }
 
 void free_yamj_subcatetory(void *in)
@@ -1413,8 +1414,10 @@ void log_request(char *request)
         }
 
         FILE *fp = fopen(REQ_LOG,"a");
-        fprintf(fp,"[%s]\n",request);
-        fclose(fp);
+        if (fp) {
+            fprintf(fp,"[%s]\n",request);
+            fclose(fp);
+        }
 }
 
 
@@ -1424,7 +1427,6 @@ int yamj_xml(char *request)
     int ret = 0;
 
 
-        log_request(request);
 
         // request = Cat_SubCat_page.xml
         //
@@ -1441,11 +1443,12 @@ int yamj_xml(char *request)
         char *ext;
 
 
+#if 0
         if (0 && util_strreg(request,"^[0-9]+.xml$",0)) {
 
             // Detail files not used by eversion so we wont dwell on these.
             // write movie XML
-            xml_headers();
+            xml_headers(stdout);
             config_read_dimensions(0);
             HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
             load_configs();
@@ -1453,8 +1456,14 @@ int yamj_xml(char *request)
             fprintf(xmlout,"<details>\n");
             ret = yamj_video_xml(request,NULL,1,NULL,0,1);
             fprintf(xmlout,"</details>\n");
+            log_request(request);
 
-        } else if ( (ext = util_strreg(request,"\\.jpg$",0)) != NULL) {
+        } else
+#endif
+            
+        if ( (ext = util_endswith(request,".jpg")) != NULL) {
+
+            printf("Content-Type: image/jpeg\n\n");
 
             int i;
             for(i  = 0 ; img[i][0] ; i++ ) {
@@ -1474,19 +1483,24 @@ int yamj_xml(char *request)
                         printf("HTTP/1.1 301 Permanently Moved\r\n");
                         printf("Location: %s\r\n\r\n",file);
                     } else {
-                        cat(CONTENT_TYPE"image/jpeg",file);
+                        cat(NULL,file);
                     }
+                    log_request(request);
                     FREE(file);
                     if (redirect) exit(301);
                     break;
                 }
             }
 
-        } else if (STRCMP(request,CATEGORY_INDEX) == 0 || do_query ||  util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
+        } else if (STRCMP(request,CATEGORY_INDEX) == 0 || do_query ||  util_endswith(request,".xml")) {
+            
+            xml_headers(stdout);
+            // util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
 
             int cache=1;
             char *cache_path;
             
+            log_request(request);
             if (cache) {
                 cache_path = cache_file(".no");
                 if (exists(cache_path)) {
@@ -1500,6 +1514,7 @@ int yamj_xml(char *request)
             }
             if (!cache || stale_cache_file(cache_path)) {
 
+
                 if (cache) {
                    xmlout = fopen(cache_path,"w");
 
@@ -1508,7 +1523,6 @@ int yamj_xml(char *request)
                     xmlout = stdout;
                 }
 
-                xml_headers();
                 config_read_dimensions(0);
                 HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
                 load_configs();
@@ -1573,6 +1587,7 @@ int yamj_xml(char *request)
             }
 
         } else {
+            printf("Content-Type: text/plain\n\n");
             HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
         }
 

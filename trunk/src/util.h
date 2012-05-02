@@ -77,6 +77,7 @@ char *util_tolower(char *s);
 unsigned int stringhash(void *vptr);
 char *util_hostname();
 char *util_dirname(char *file);
+char *util_endswith(char *s,char *r);
 char *util_basename(char *file);
 char *util_basename_no_ext(char *file) ;
 int util_starts_with(char *a,char *b);
@@ -115,7 +116,7 @@ int util_rm(char *path);
 
 #define TRACE1 do {\
     if (1) {\
-        HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__);\
+        HTML_LOG(0,"@@TRACE@@ %s %s %d",__FUNCTION__,__FILE__,__LINE__); html_flush(); \
     }\
 }while(0);
 

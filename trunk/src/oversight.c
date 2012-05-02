@@ -150,7 +150,9 @@ int ls(char *path) {
 
 int cat(char *headers,char *file)
 {
-    printf("%s\n\n",headers);
+    if (headers) {
+        printf("%s\n\n",headers);
+    }
     FILE *fp = fopen (file,"r");
     if (fp) {
         append_content(fp,stdout);
@@ -211,6 +213,7 @@ static void start_page(char *callmode) {
 }
 
 #define YAMJ_PREFIX "yamj/"
+#define YAMJ_PREFIX2 "yamj="
 int oversight_main(int argc,char **argv,int send_content_type_header)
 {
     int result=0;
@@ -230,13 +233,17 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
         gaya_auto_load(p+strlen(REMOTE_VOD_PREFIX2)+1);
         done=1;
 
+    } else if (util_starts_with(q,YAMJ_PREFIX2)) {
+
+        yamj_xml(q+strlen(YAMJ_PREFIX2));
+        done=1;
+
     } else if (q == NULL || strchr(q,'=') == NULL ) {
 
         if (argc > 1 ) {
 
             if ( argv[1] && *argv[1] && argv[2] == NULL && util_starts_with(argv[1],YAMJ_PREFIX) ) {
                 char *req = url_decode(argv[1]);
-                daemonize();
                 yamj_xml(req+strlen(YAMJ_PREFIX));
                 FREE(req);
                 done=1;

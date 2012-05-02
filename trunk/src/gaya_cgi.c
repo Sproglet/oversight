@@ -487,6 +487,12 @@ void html_vacomment(char *format,va_list ap)
     }
 }
 
+void html_flush()
+{
+    if (html_out == NULL) html_set_output(stdout);
+    fflush(html_out);
+}
+
 
 void html_log_level_set(int level) {
     html_log_level = level;

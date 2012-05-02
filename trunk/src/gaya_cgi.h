@@ -29,5 +29,6 @@ void html_log(int level,char *format,...);
 void html_hashtable_dump(int level,char *label,struct hashtable *h);
 void html_set_output(FILE *fp);
 FILE *html_get_output();
+void html_flush();
 
 #endif

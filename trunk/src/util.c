@@ -795,6 +795,26 @@ char *util_dirname(char *file)
     return result;
 }
 
+char *util_endswith(char *s,char *r)
+{
+    char *ret = NULL;
+    if (s) {
+        int slen = strlen(s);
+        if (!r) {
+            ret = s+slen;
+        } else {
+            int rlen = strlen(r);
+            if (rlen < slen) {
+                char *p = s + slen - rlen;
+                if (strcmp(p,r) == 0) {
+                    ret = p;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 // return basename of media file. ptr must be freed.
 char *util_basename(char *file)
 {

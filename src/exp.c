@@ -20,6 +20,7 @@
 #include "vasprintf.h"
 #include "variables.h"
 
+static int LOG_LVL=1;
 #define ATOMIC_PRECEDENCE 6
 static OpDetails ops[] = {
     { OP_CONSTANT   , ""   , 0 ,ATOMIC_PRECEDENCE , {VAL_TYPE_NONE,VAL_TYPE_NONE } },
@@ -95,7 +96,7 @@ Exp *new_val_str(char *s,int free_str)
     e->op_details = get_op_details(OP_CONSTANT);
 
     set_str(e,s,free_str);
-    HTML_LOG(0,"str value [%s]",s);
+    HTML_LOG(LOG_LVL,"str value [%s]",s);
     return e;
 }
 
@@ -105,7 +106,7 @@ Exp *new_val_num(double d)
     e->op_details = get_op_details(OP_CONSTANT);
     e->val.type = VAL_TYPE_NUM;
     e->val.num_val = d;
-    HTML_LOG(0,"num value [%ld]",d);
+    HTML_LOG(LOG_LVL,"num value [%ld]",d);
     return e;
 }
 Exp *new_exp(OpDetails *op,Exp *left,Exp *right)
@@ -719,7 +720,7 @@ int exp_regex_compile(Exp *e,Exp *source)
                 e->regex_str,
                 (e->op_details->op == OP_REGEX_MATCH ? "$" : "" ));
 
-        HTML_LOG(0,"regex[%s]",tmp);
+        HTML_LOG(LOG_LVL,"regex[%s]",tmp);
 
         // compile it
         if ((result = regcomp(e->regex,tmp,REG_EXTENDED|REG_ICASE)) != 0) {
@@ -817,7 +818,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
               p++;
            }
 
-           HTML_LOG(0,"value [%.*s]",p-*text_ptr,*text_ptr);
+           HTML_LOG(LOG_LVL,"value [%.*s]",p-*text_ptr,*text_ptr);
            if (**text_ptr == '\'' && *p == '\'' ) {
                // quoted string
                char *str = COPY_STRING(p-*text_ptr-1,*text_ptr+1);
@@ -829,7 +830,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
                    }
                }
                         
-               HTML_LOG(0,"string[%s]",str);
+               HTML_LOG(LOG_LVL,"string[%s]",str);
                result = new_val_str(str,1);
                p++;
            } else {
@@ -873,7 +874,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
                 // Parse following expression 
                 exp2 = parse_url_expression(text_ptr,precedence+1);
             }
-            HTML_LOG(0,"new op [%s]",op_details->url_text);
+            HTML_LOG(LOG_LVL,"new op [%s]",op_details->url_text);
             result = new_exp(op_details,result,exp2);
         }
     }

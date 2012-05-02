@@ -1044,10 +1044,12 @@ int exists_in_dir(char *dir,char *name)
     return result;
 }
 
+// Append content is usually called when Oversight is not doing much itself, just handing off to another file.
+// So use a big buffer. 100K
 int append_content(FILE *from_fp,FILE *to_fp)
 {
     int ret = 0;
-#define CATBUFLEN 1000
+#define CATBUFLEN 1000000
     char catbuf[CATBUFLEN+1];
     size_t bytes;
     if (from_fp && to_fp) {

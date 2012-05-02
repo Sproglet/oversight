@@ -140,7 +140,7 @@ ovs_fade="1"
 # ~l~ Left n chars TODO
 # ~sp~ Split - used to split Genre , Actor lists.
 # ~p~ Period
-ovs_yamj_page_size=10
+ovs_yamj_page_size=16
 ovs_yamj_lean_xml=1
 ovs_yamj_cat1_name="Year"
 ovs_yamj_cat1_expr="_Y~f~~p~"

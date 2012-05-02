@@ -51,6 +51,7 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source);
 void load_dynamic_cat(YAMJCat *cat,time_t index_time);
 void save_dynamic_cat(YAMJCat *cat);
 void yamj_people(DbItem *item,char *tag,char *tag2,DbGroupIMDB *group);
+int add_dynamic_subcategories(DbItem *item,YAMJCat *cat,YAMJSubCat *selected_subcat);
 
 FILE *xmlout=NULL;
 /*
@@ -327,23 +328,39 @@ int create_dynamic_cat_expression(YAMJCat *cat,DbItem *item,Exp *e,char *selecte
  *
  * returns true if this item matches the current selected subcat
  */
-int add_dynamic_subcategories(DbItem *item,Array *categories,char *selected_subcat_name)
+int add_all_dynamic_subcategories(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
 {
     int keeprow = 0;
     int i;
     for(i = 0 ; i < categories->size ; i++ ) {
 
         YAMJCat *cat = categories->array[i];
+        if (add_dynamic_subcategories(item,cat,selected_subcat)) {
+            keeprow = 1;
+        }
+    }
+    return keeprow;
+}
 
-        Exp *e = cat->auto_subcat_expr;
-        if (e && !(cat->evaluated)) {
+int add_dynamic_subcategories(DbItem *item,YAMJCat *cat,YAMJSubCat *selected_subcat)
+{
+    int keeprow = 0;
 
-            // If the current category is a dynamic category and it contains our current subcategory and 
-            // we have not yet selected this row then check to see if row is eligible for selection.
-            
-            if (evaluate(e,item) == 0) {
+    Exp *e = cat->auto_subcat_expr;
+    if (e && !(cat->evaluated)) {
 
-                if (create_dynamic_cat_expression(cat,item,e,selected_subcat_name) == 1) {
+        // If the current category is a dynamic category and it contains our current subcategory and 
+        // we have not yet selected this row then check to see if row is eligible for selection.
+        
+        if (evaluate(e,item) == 0) {
+
+            if (selected_subcat == NULL || selected_subcat->owner_cat != cat) {
+                // evaluate dynamic subcats for main menu
+                create_dynamic_cat_expression(cat,item,e,NULL);
+            } else {
+                // Check this item against the selected subcat at the same time
+
+                if (create_dynamic_cat_expression(cat,item,e,selected_subcat->name) == 1) {
                     // match
                     keeprow = 1;
                 }
@@ -373,7 +390,14 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
      * a) determine whether to keep this item (for selected subcat).
      * b) Populate item->yamj_member_of populated for dynamic subcats only for the /movies/movie/index tags.
      */
-    keeprow = add_dynamic_subcategories(item,categories,selected_subcat?selected_subcat->name:NULL);
+    if (selected_subcat == NULL || !lean_xml ) {
+        // This is the main menu or we are in proper YAMJ mode - generate all menus to duplicate in all XMLs
+        keeprow = add_all_dynamic_subcategories(item,categories,selected_subcat);
+    } else {
+        // This is not the main men - so we really only want the details for the current subcat so
+        // Eversion knows where it is in the index.
+        keeprow = add_dynamic_subcategories(item,selected_subcat->owner_cat,selected_subcat);
+    }
 
     /*
      * If no dynamic subcat matches (which have to be built anyway for the Category selections)
@@ -400,6 +424,8 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
             }
         } else if (selected_subcat->owner_cat->evaluated) {
             // If the expression was a pre-loaded auto subcat then check if the expression value matches the subcat name
+            // THIS MIGHT BE OBSOLETED it is dependent on loading the subcats from a flat file but Eversion doesnt 
+            // really need them in every file.
             Exp *e = selected_subcat->owner_cat->auto_subcat_expr;
             if (evaluate(e,item) == 0) {
             //HTML_LOG(0,"check preloaded [%s][%s]",item->title,selected_subcat->name);
@@ -955,43 +981,45 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
     int ret = 1;
     int i;
 
+    if (subcat == NULL || !lean_xml || cat == subcat->owner_cat) {
 
-    HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name,0));
-    fprintf(xmlout,"<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
-    for(i = 0 ; i < cat->subcats->size ; i++ ) {
-        YAMJSubCat *s = cat->subcats->array[i];
-        fprintf(xmlout,"\t<index name=\"%s\"",s->name);
-        if (s == subcat) {
+        HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name,0));
+        fprintf(xmlout,"<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
+        for(i = 0 ; i < cat->subcats->size ; i++ ) {
+            YAMJSubCat *s = cat->subcats->array[i];
+            fprintf(xmlout,"\t<index name=\"%s\"",s->name);
+            if (s == subcat) {
 
-            int last = 1+(sorted_rows->num_rows/s->owner_cat->page_size);
-            int first = 1;
-            int next = s->page + 1;
-            if (next > last) next = last;
+                int last = 1+(sorted_rows->num_rows/s->owner_cat->page_size);
+                int first = 1;
+                int next = s->page + 1;
+                if (next > last) next = last;
 
-            int prev = s->page - 1;
-            if (prev < first ) prev = first;
+                int prev = s->page - 1;
+                if (prev < first ) prev = first;
 
-            fprintf(xmlout,"\n\t\tcurrent=\"true\"\n");
-            fprintf(xmlout,"\t\tcurrentIndex=\"%d\"\n",subcat->page);
+                fprintf(xmlout,"\n\t\tcurrent=\"true\"\n");
+                fprintf(xmlout,"\t\tcurrentIndex=\"%d\"\n",subcat->page);
 
-            fprintf(xmlout,"\t\tfirst=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,first);
-            fprintf(xmlout,"\t\tlast=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,last);
-            fprintf(xmlout,"\t\tnext=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,next);
-            fprintf(xmlout,"\t\tprevious=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,prev);
-            fprintf(xmlout,"\t\tlastIndex=\"%d\"",last);
+                fprintf(xmlout,"\t\tfirst=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,first);
+                fprintf(xmlout,"\t\tlast=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,last);
+                fprintf(xmlout,"\t\tnext=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,next);
+                fprintf(xmlout,"\t\tprevious=\"%s_%s_%d\"\n",s->owner_cat->name,s->name,prev);
+                fprintf(xmlout,"\t\tlastIndex=\"%d\"",last);
+            }
+
+            // url encode the cat_subcat_1 
+            char *name,*name_enc;
+            int free_it;
+            ovs_asprintf(&name,"%s_%s_1",s->owner_cat->name,s->name);
+            name_enc = url_encode_static(name,&free_it);
+            fprintf(xmlout,">%s</index>\n",name_enc);
+            if (free_it) FREE(name_enc);
+            FREE(name);
+
         }
-
-        // url encode the cat_subcat_1 
-        char *name,*name_enc;
-        int free_it;
-        ovs_asprintf(&name,"%s_%s_1",s->owner_cat->name,s->name);
-        name_enc = url_encode_static(name,&free_it);
-        fprintf(xmlout,">%s</index>\n",name_enc);
-        if (free_it) FREE(name_enc);
-        FREE(name);
-
+        fprintf(xmlout,"</category>\n");
     }
-    fprintf(xmlout,"</category>\n");
     return ret;
 }
 
@@ -1146,7 +1174,7 @@ int yamj_build_categories(char *cat_name,Array *categories)
 char *cache_file(char *request)
 {
     char *path;
-    ovs_asprintf(&path,"%s/cache/%s.cache",appDir(),request);
+    ovs_asprintf(&path,"%s/cache/%s",appDir(),request);
     return path;
 }
 
@@ -1432,6 +1460,7 @@ int yamj_xml(char *request)
         //
         //
         int do_query = util_starts_with(request,YAMJ_QUERY_PREFIX);
+        int cat_index = (STRCMP(request,CATEGORY_INDEX) == 0) ;
 
         char *img[][3] = {
             { YAMJ_THUMB_PREFIX , "_J" , ".thumb.jpg" },
@@ -1492,7 +1521,7 @@ int yamj_xml(char *request)
                 }
             }
 
-        } else if (STRCMP(request,CATEGORY_INDEX) == 0 || do_query ||  util_endswith(request,".xml")) {
+        } else if (cat_index|| do_query ||  util_endswith(request,".xml")) {
             
             xml_headers(stdout);
             // util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
@@ -1585,6 +1614,7 @@ int yamj_xml(char *request)
                 if ((xmlout=fopen(cache_path,"r")) != NULL) {
                     append_content(xmlout,stdout);
                     fclose(xmlout);
+                    html_set_output(stdout);
                 } else {
                     fprintf(xmlout,"cache error [%s]",cache_path);
                 }

@@ -109,7 +109,7 @@ INSTALL() {
         #FIX_NZBGET_DAEMON
         TRANSMISSION_UNPAK_INSTALL || true
 
-        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] ) # clear cache
+        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] *cache ) || true # clear cache
 
         #not sure how people are still getting wget in busybox but rename it
         if [ -f /share/bin/wget ] ; then
@@ -124,15 +124,17 @@ INSTALL() {
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
         eval "$start_command"
         "$NMT" NMT_INSTALL_WS "$wsname" "$httpd/$appname/$cgiName"
+        # "$NMT" NMT_INSTALL_WS "Eversion" "file:///share/Apps/Eversion/eversion.phf"
 
 
         UPGRADE_CONFIG conf/catalog.cfg catalog_config_version=1
         UPGRADE_CONFIG conf/oversight.cfg ovs_config_version=1
 
-        if [ ! -f "index.db.idx" ] ; then
-            touch "index.db"
-            touch "index.db.idx"
+        # Update timestamp on index.db 
+        if [ -f "index.db" ] ; then
+            touch "index.db" || true
         fi
+
         touch conf/catalog.cfg conf/oversight.cfg conf/unpak.cfg
 
         chmod a+r /dev/random /dev/urandom
@@ -276,6 +278,7 @@ echo $$ > $LOCK
 
 PERMS() {
     chmod -R 775 "$OVS_HOME" || true
+    chmod -R o+w "$OVS_HOME/logs" "$OVS_HOME/cache" || true # Added for apache integration
     chown -R nmt:nmt "$OVS_HOME" || true
     chown -R nmt:nmt /share/.nzbget/nzbget.conf* || true
 }

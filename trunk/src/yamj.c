@@ -43,6 +43,7 @@
 #define YAMJ_QUERY_PREFIX YAMJ_QUERY_NAME "_"
 #define BOOL(x) ((x)?"true":"false")
 
+static int LOG_LVL=1;
 // Prototypes
 void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
 void yamj_files(DbItem *item);
@@ -724,21 +725,22 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     fprintf(xmlout,"\t<fileSize>%d MBytes</fileSize>\n",item->sizemb);
 
     //---------------------------
-    //
-    if (total) fprintf(xmlout,"\t<first>%ld</first>\n",all_items[0]->id);
+    if (!lean_xml) {
+        if (total) fprintf(xmlout,"\t<first>%ld</first>\n",all_items[0]->id);
 
-    if (pos>0) {
-        fprintf(xmlout,"\t<previous>%ld</previous>\n",all_items[pos-1]->id);
-    } else {
-        fprintf(xmlout,"\t<previous>UNKNOWN</previous>\n");
-    }
+        if (pos>0) {
+            fprintf(xmlout,"\t<previous>%ld</previous>\n",all_items[pos-1]->id);
+        } else {
+            fprintf(xmlout,"\t<previous>UNKNOWN</previous>\n");
+        }
 
-    if (pos<total-1) {
-        fprintf(xmlout,"\t<next>%ld</next>\n",all_items[pos+1]->id);
-    } else {
-        fprintf(xmlout,"\t<next>UNKNOWN</next>\n");
+        if (pos<total-1) {
+            fprintf(xmlout,"\t<next>%ld</next>\n",all_items[pos+1]->id);
+        } else {
+            fprintf(xmlout,"\t<next>UNKNOWN</next>\n");
+        }
+        if (total) fprintf(xmlout,"\t<last>%ld</last>\n",all_items[total-1]->id);
     }
-    if (total) fprintf(xmlout,"\t<last>%ld</last>\n",all_items[total-1]->id);
 
     //---------------------------
     
@@ -800,7 +802,7 @@ void yamj_people(DbItem *item,char *tag,char *tag2,DbGroupIMDB *group)
     if (group) {
         EVALUATE_GROUP(group);
         if (group->dbgi_size) {
-            fprintf(xmlout,"<%s count=\"%d\">\n",tag,group->dbgi_size);
+            fprintf(xmlout,"\t<%s count=\"%d\">\n",tag,group->dbgi_size);
             int i;
             for(i = 0 ; i< group->dbgi_size ; i++ ) {
                 char id[20];
@@ -808,10 +810,10 @@ void yamj_people(DbItem *item,char *tag,char *tag2,DbGroupIMDB *group)
                 char *record = dbnames_fetch_static(id,item->db->people_file);
                 record = strchr(record,'\t');
                 if (record) {
-                    fprintf(xmlout,"<%s>%s</%s>\n",tag2,xmlstr_static(++record,0),tag2);
+                    fprintf(xmlout,"\t\t<%s>%s</%s>\n",tag2,xmlstr_static(++record,0),tag2);
                 }
             }
-            fprintf(xmlout,"</%s>\n",tag);
+            fprintf(xmlout,"\t</%s>\n",tag);
 
         }
     }
@@ -983,7 +985,7 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
 
     if (subcat == NULL || !lean_xml || cat == subcat->owner_cat) {
 
-        HTML_LOG(0,"cat [%s]",xmlstr_static(cat->name,0));
+        HTML_LOG(LOG_LVL,"cat [%s]",xmlstr_static(cat->name,0));
         fprintf(xmlout,"<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
         for(i = 0 ; i < cat->subcats->size ; i++ ) {
             YAMJSubCat *s = cat->subcats->array[i];
@@ -1046,14 +1048,14 @@ YAMJSubCat *yamj_subcat_config(YAMJCat *owner,int num,int sub)
 
         char *query = oversight_val(key);
 
-        HTML_LOG(0,"query = [%s]",query);
+        HTML_LOG(LOG_LVL,"query = [%s]",query);
 
         ret = new_subcat(owner,name,query,1,1);
     }
 
     FREE(key);
     if (ret) {
-        HTML_LOG(0,"read subcat[%d,%d] name=[%s] auto_subcat_expr_url=[%s]",num,sub,ret->name,ret->filter_expr_url);
+        HTML_LOG(LOG_LVL,"read subcat[%d,%d] name=[%s] auto_subcat_expr_url=[%s]",num,sub,ret->name,ret->filter_expr_url);
     }
     return ret;
 }
@@ -1622,7 +1624,7 @@ int yamj_xml(char *request)
 
         } else {
             printf("Content-Type: text/plain\n\n");
-            HTML_LOG(0,"error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
+            html_error("error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
         }
 
     fflush(stdout);

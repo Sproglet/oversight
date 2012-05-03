@@ -226,18 +226,35 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
     adjust_path();
 
     char *q=getenv("QUERY_STRING");
+    char *sp=getenv("SCRIPT_NAME");
 
     char *p;
+    char *req;
     if (q && (p = delimited_substring(q,"&",REMOTE_VOD_PREFIX2,"=",1,0)) != NULL) {
 
         gaya_auto_load(p+strlen(REMOTE_VOD_PREFIX2)+1);
         done=1;
 
-    } else if (util_starts_with(q,YAMJ_PREFIX2)) {
+    } else if (q && util_starts_with(q,YAMJ_PREFIX2)) {
 
-        char *req = url_decode(q+strlen(YAMJ_PREFIX2));
+        req = url_decode(q+strlen(YAMJ_PREFIX2));
         yamj_xml(req);
         FREE(req);
+        done=1;
+    } else if (sp && (req=strstr(sp,YAMJ_PREFIX)) != NULL) {
+        // If oversight script is launched as /oversight/yamj/xxxxx.xml
+        // then use xxxxxx.xml as a yamj xml request.
+        // This is to allow for Apache ModAlias to serve static images whilst calling oversight for CGI
+        // The rewrite rules should be 
+        //    ScriptAliasMatch ^/oversight/yamj/(.*).xml  /share/Apps/oversight/oversight.cgi
+        //    AliasMatch ^/oversight/yamj/banner_(.*jpg) /oversight/db/global/_b/ovs_$1
+        //    AliasMatch ^/oversight/yamj/fanart_(.*jpg) /oversight/db/global/_fa/ovs_$1
+        //    AliasMatch ^/oversight/yamj/poster_(.*jpg) /oversight/db/global/_J/ovs_$1
+        //    AliasMatch ^/oversight/yamj/thumb_(.*).jpg  /oversight/db/global/_J/ovs_$1.thumb.jpg
+        //    AliasMatch ^/oversight/yamj/boxset_(.*).jpg  /oversight/db/global/_J/ovs_$1.thumb.boxset.jpg`
+        //
+        req += strlen(YAMJ_PREFIX);
+        yamj_xml(req);
         done=1;
 
     } else if (q == NULL || strchr(q,'=') == NULL ) {

@@ -278,7 +278,7 @@ echo $$ > $LOCK
 
 PERMS() {
     chmod -R 775 "$OVS_HOME" || true
-    chmod -R o+w "$OVS_HOME/logs" "$OVS_HOME/cache" || true # Added for apache integration
+    chmod -R 777 "$OVS_HOME/logs" "$OVS_HOME/cache" || true # Added for apache integration
     chown -R nmt:nmt "$OVS_HOME" || true
     chown -R nmt:nmt /share/.nzbget/nzbget.conf* || true
 }

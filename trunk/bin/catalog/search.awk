@@ -1201,6 +1201,6 @@ i,pos,sections,total,num) {
             titles[i] = substr(titles[i],pos+1);
         }           
     }
-    dump(2,"bing serps?",titles);
+    dump(0,"bing serps?",titles);
     return total;
 }

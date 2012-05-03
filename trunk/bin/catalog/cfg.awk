@@ -14,6 +14,8 @@ ign_path,env) {
     for(env in ENVIRON) {
         if (env ~ "^(catalog|unpak)_") {
             g_settings[env] = ENVIRON[env];
+#        } else {
+#            INF("Env:"env"="ENVIRON[env]);
         }
     }
 

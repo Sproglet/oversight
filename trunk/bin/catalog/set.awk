@@ -109,8 +109,6 @@ response,body,sections,num,tnum,i,j,titles,total,url) {
 
         for(i = 1 ; i<= num ; i++ ) {
 
-            WARNING(substr(sections[i],1,30));
-
             #parse follows or followed_by
             if (index(sections[i],"follow") == 1) {
 

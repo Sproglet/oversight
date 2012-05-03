@@ -193,9 +193,9 @@ function load_top250(top) {
         DETAIL("scanning top250");
         scan_page_for_match_order("http://www.imdb.com/chart/top","",g_imdb_regex,0,0,top);
         hash_invert(top,top);
-        dump(0,"top250",top);
+        #dump(0,"top250",top);
+        DETAIL("end scanning top250 count = "hash_size(top));
         top[1]=1;
-        DETAIL("end scanning top250");
     }
 }
 

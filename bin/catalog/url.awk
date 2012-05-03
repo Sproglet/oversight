@@ -11,6 +11,7 @@
 function url_get(url,response,rec_sep,cache,headers,un_bold,\
 ret,code,f,body,line) {
 
+    delete response;
     url = url_norm(url);
     if (cache) {
         f = g_url_cache[url];
@@ -34,7 +35,7 @@ ret,code,f,body,line) {
             if(LD)DETAIL("loading from cache "f" RS=["RS"]");
             rs_push("\n");
             while((code=getline line < f) > 0) {
-                body = body line;
+                body = body line RT;
             }
             rs_pop();
             if (code >= 0) {
@@ -52,10 +53,10 @@ ret,code,f,body,line) {
 
 function url_get_uncached(url,response,rec_sep,headers,\
 ret) {
+    delete response;
     if (g_settings["catalog_awk_browser"] && !index(url,"thetvdb") && !index(url,".live.net") ) {
         ret = url_get_awk(url,response,rec_sep,headers);
     } else {
-        delete response;
         ret = url_get_wget(url,response,headers);
     }
     if(LI)INF("url_get [ "url" ] = "ret);
@@ -85,10 +86,10 @@ cmd,body,ret,i,hdr,txt,enc,code) {
     while ((code = ( cmd |& getline txt )) > 0) {
         body = body txt RT;
     }
+    if(LD)DETAIL("response body len = "length(body)" "code);
     if (code >= 0) {
         close(cmd);
         response["body"] = body;
-        if(LD)DETAIL("response body len = "length(body));
         url_gunzip(response); 
         if (!enc) {
             response["enc"] = extract_encoding(response["body"]);
@@ -102,80 +103,58 @@ cmd,body,ret,i,hdr,txt,enc,code) {
 
 # Unzip Body - return 1 if work done.
 function url_gunzip(response,\
-zip_pipe,b,txt,ret,code) {
+ret) {
     ret = 0;
 
-    b = response["body"];
-#    if (response["content-encoding"] && index(response["content-encoding"],"gzip") == 0 ) {
-#        # nothing to do
-#        ret = 0;
-#    } else
-    if (substr(b,1,1) == "") { # gzip magin number 0x8b1f starts with 1f > 0a < 20
+    if (substr(response["body"],1,1) == "") { # gzip magin number 0x8b1f starts with 1f > 0a < 20
 
-        zip_pipe = "gunzip 2>/dev/null ";
-
-        #awk strings can contain nul \0 so this will work!
-        printf "%s",b |& zip_pipe
-        fflush(zip_pipe);
-        close(zip_pipe,"to");
-        b="";
-
-        rs_push("\n"); #unlikely to be in a zip file - it should all get read at once.
-        while ( ( code = ( zip_pipe |& getline txt ) ) > 0) {
-            b = b txt RT;
-            # Intermittent bug - not detecting EOF ?
-        }
-        rs_pop();
-        if (code >= 0 ) {
-            if (length(b)) {
-                response["body"] = b;
-                ret = 1;
-            }
-            close(zip_pipe);
-        } else {
-            WARNING("url_gunzip pipe error");
+        if (url_filter(response,"\n","gunzip 2>/dev/null ")) {
+            ret = 1;
         }
     }
-    if(ret && LD)DETAIL("url_gunzip = "ret"  out body length = ["length(response["body"])"]");
     return ret;
+}
+
+function url_filter(response,rs,cmd,\
+f,code,b,txt,ret) {
+   f = new_capture_file("ic");
+   printf "%s\n",response["body"]  > f;
+   close(f);
+
+   if(LD)DETAIL("url_filter "cmd" of body:"length(response["body"]));
+
+   cmd = cmd " < "qa(f);
+   rs_push(rs); 
+   while ( ( code = ( cmd | getline txt )) > 0 ) {
+        b = b txt RT;
+   }
+   rs_pop(); 
+   if(LD)DETAIL("url_filter out body:"length(b)" "code);
+   if (code >= 0) {
+       response["body"] = b;
+       close(cmd);
+       ret = 1;
+   } else {
+      WARNING(" error reading "cmd);
+   }
+   return ret;
+
 }
 
 # Make sure file is UTF8
 function url_encode_utf8(response,\
-iconv_pipe,b,txt,enc,ret,code,f) {
+enc,ret) {
     enc = response["enc"] ;
     if (enc ) {
        if (enc == "utf-8" ) {
            ret = 0;
-       } else if (1 || g_fetch["no_encode"]) {
-           if(LD)DETAIL("leaving "enc" to utf-8 ...");
-       } else {
-           if(LD)DETAIL("converting "enc" to utf-8 ...");
-
-           f = new_capture_file("ic");
-
-           printf "%s\n",response["body"]  > f;
-           close(f);
-
-           iconv_pipe = "iconv -f "enc" -t utf-8 "qa(f);
-
-           rs_push("\n"); #unlikely to be in the file - it should all get read at once.
-           while ( ( code = ( iconv_pipe | getline txt )) > 0 ) {
-                b = b txt RT;
-           }
-           rs_pop();
-
-           if (code >= 0) {
-               response["body"] = b;
+       } else if (!g_fetch["no_encode"]) {
+           if (url_filter(response,"\n","iconv -f "enc" -t utf-8 ")) {
                response["enc"] = "utf-8";
-               close(iconv_pipe);
                ret = 1;
-            } else {
-                WARNING("url_encode_utf8 pipe error");
            }
        }
     }
-    if(ret && LD)DETAIL("url_encode_utf8 = "ret" in body length = ["length(response["body"])"]");
     return ret;
 }
 
@@ -833,7 +812,6 @@ body,bytes,bytes2,chunk_len,code) {
         while ( (code =  ( con |& getline bytes2 )) > 0) {
             bytes = bytes bytes2 RT;
 
-
             #log_bigstring("chunk",bytes2,10);
             #if(LG)DEBUG(length(bytes)" of "chunk_len);
 
@@ -860,7 +838,6 @@ content_length,body,bytes,is_xml,code) {
     }
     while ( (code =  ( con |& getline bytes )) > 0) {
         body = body bytes RT;
-        #if(LG)DEBUG("[" bytes "][" RT "]");
         
         if (content_length && length(body)+0 >= content_length) break;
 

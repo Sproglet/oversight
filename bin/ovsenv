@@ -223,7 +223,7 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
                     chown -R $uid:$gid "$OVS_TMP" || true
                 fi
             fi
-            chmod ugo+rw "$OVS_HOME/logs" "$OVS_HOME/cache" || true # for Oversight running as Apache/nobody
+            chmod 777 "$OVS_HOME/logs" "$OVS_HOME/cache" || true # for Oversight running as Apache/nobody
         ;;
         funplug)
             uid=nobody

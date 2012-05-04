@@ -630,8 +630,9 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
         fprintf(xmlout,"\t<rating>%d</rating>\n",(int)(item->rating *10));
     }
 
-    if (!lean_xml || item->watched) {
-        fprintf(xmlout,"\t<watched>%s</watched>\n",BOOL(item->watched));
+    int w = is_watched(item);
+    if (!lean_xml || w) {
+        fprintf(xmlout,"\t<watched>%s</watched>\n",BOOL(w));
     }
 
     fprintf(xmlout,"\t<top250>%d</top250>\n",item->top250);
@@ -962,7 +963,7 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
             if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
                 p += 3;
             }
-            fprintf(xmlout,"\t<filePlot part=\"%d\">%s</filePlot>\n",part_no,p);
+            fprintf(xmlout,"\t<filePlot part=\"%d\">%s%s</filePlot>\n",part_no,p,(item->watched?" (w)":""));
         }
         FREE(plot);
 

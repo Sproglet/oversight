@@ -299,6 +299,10 @@ APACHE_INSTALL() {
         AliasMatch ^/oversight/yamj/boxset_(.*).jpg '"$OVS_HOME"'/db/global/_J/ovs_$1.thumb.boxset.jpg' /share/Apps/AppInit/httpd.conf
 
         ln -sf $OVS_HOME /share/Apps/AppInit/websites
+
+        # The following is to stop apache logging errors when Eversion probes for an index file
+        mkdir -p "$OVS_HOME/yamj"
+        echo "This file exists to suppress errors in apache log" > "$OVS_HOME/yamj/index.html"
     fi
 }
 APACHE_UNINSTALL() {

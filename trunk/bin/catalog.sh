@@ -11,7 +11,6 @@
 # Requires wget (not busybox)
 
 set -u  #Abort with unset variables
-set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 
 # This script is horrendous. My comment!
 
@@ -206,7 +205,6 @@ main() {
     echo "[INFO] $os_version $nmt_version"
     catalog "$@" 
     x=$?
-    set -e
 
     rm -fr -- "$g_tmp_dir"
     chown -R $OVERSIGHT_ID $INDEX_DB* "$PLOT_DB" "$OVS_HOME/tmp" 2>/dev/null || true

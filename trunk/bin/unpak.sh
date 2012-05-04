@@ -10,7 +10,6 @@
 nzb_launch_dir="$OLDPWD"
 #--------------------------------------------------------------------------
 set -u  #Abort with unset variables
-set -e  #Abort with any error can be suppressed locally using EITHER cmd||true OR set -e;cmd;set +e
 
 
 #
@@ -445,7 +444,6 @@ par_repair() {
     err="$gTmpFile.p2_err"
     par2 repair "$parFile" > "$out" 2>"$err" &
     par_monitor "$out" "$parFile"
-    set -e
 
     par_state=1
     if egrep -q "(Repair complete|All files are correct)" "$out" ; then
@@ -1095,8 +1093,6 @@ unrar_one() {
                 ;;
             esac
 
-
-            set -e
             if [ $rarState -eq 0 ] ; then
                 INFO "Extract OK : $rarfile"
                 set_rar_state "$rarfile" "OK"
@@ -1615,7 +1611,7 @@ exec_file_list() {
     fi
     rm -f -- "$gTmpFile.exec"
 
-    ( echo 'set -e ' ; cat "$gTmpFile.sh" ) | sh $2
+    sh $2 "$gTmpFile.sh"
 
     rm -f -- "$gTmpFile.sh"
 }

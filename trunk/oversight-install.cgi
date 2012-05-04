@@ -34,7 +34,7 @@ UNPAK_CONF="$OVS_HOME/conf/unpak.cfg"
 CATALOG_CONF="$OVS_HOME/conf/catalog.cfg"
 
 NZBGET() {
-    "$unpak_nzbget_bin" -c "$unpak_nzbget_conf" "$@" || true
+    "$unpak_nzbget_bin" -c "$unpak_nzbget_conf" "$@"
 }
 
 echo "Content-Type: text/html"
@@ -71,7 +71,7 @@ SKIN_INSTALL() {
     if [ -d templates.new ] ; then
 
         rm -fr templates.old
-        mv templates templates.old || true
+        mv templates templates.old
         mv templates.new templates
 
         if [ -d templates.old ] ; then
@@ -86,7 +86,7 @@ SKIN_INSTALL() {
               done
             )
             # copy config files
-            ( cd templates.old ; tar cf - */conf/*.cfg ) | ( cd templates ; tar xf - ) || true
+            ( cd templates.old ; tar cf - */conf/*.cfg ) | ( cd templates ; tar xf - )
 
         fi
     fi
@@ -105,24 +105,22 @@ SKIN_INSTALL() {
 
 INSTALL() {
         "$shPath" UNINSTALL || true
-        NZBGET_UNPAK_INSTALL || true
+        NZBGET_UNPAK_INSTALL
         #FIX_NZBGET_DAEMON
-        TRANSMISSION_UNPAK_INSTALL || true
-
-        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] *.xml ) || true # clear cache
+        ( cd "$OVS_HOME/cache" && rm -f tt[0-9]*[0-9] *.xml ) # clear cache
 
         #not sure how people are still getting wget in busybox but rename it
         if [ -f /share/bin/wget ] ; then
-            mv /share/bin/wget /share/bin/wget2 || true
+            mv /share/bin/wget /share/bin/wget2
         fi
 
-        SKIN_INSTALL || true
+        SKIN_INSTALL
 
         PERMS
         "$NMT" NMT_UNINSTALL "$appname"
         "$NMT" NMT_INSTALL "$appname" "$start_command"
         "$NMT" NMT_CRON_DEL nmt "$appname" #old cron job
-        eval "$start_command"
+        eval "$start_command" || true
         "$NMT" NMT_INSTALL_WS "$wsname" "$httpd/$appname/$cgiName"
         # "$NMT" NMT_INSTALL_WS "Eversion" "file:///share/Apps/Eversion/eversion.phf"
 
@@ -132,36 +130,18 @@ INSTALL() {
 
         # Update timestamp on index.db 
         if [ -f "index.db" ] ; then
-            touch "index.db" || true
+            touch "index.db"
         fi
 
         touch conf/catalog.cfg conf/oversight.cfg conf/unpak.cfg
 
-        chmod a+r /dev/random /dev/urandom
+        chmod a+r /dev/random /dev/urandom || true
+        APACHE_INSTALL
+        APACHE_RESTART
         BOUNCE_NZBGET
         "$NMT" NMT_INSTALL_WS_BANNER "$wsname" "Installation Complete"
 }
 
-
-TRANSMISSION_UNRAR_FILE=/share/.transmission/unrar.sh
-
-TRANSMISSION_UNPAK_INSTALL() {
-    if [ -f "$TRANSMISSION_UNRAR_FILE" ] ; then
-        TRANSMISSION_UNPAK_UNINSTALL
-        sed -i '
-2 i\
-exec '"$OVS_HOME"'/bin/unpak.sh torrent_seeding "$@"
-' $TRANSMISSION_UNRAR_FILE
-    chown nmt:nmt "$TRANSMISSION_UNRAR_FILE"
-    fi
-}
-
-TRANSMISSION_UNPAK_UNINSTALL() {
-    if [ -f "$TRANSMISSION_UNRAR_FILE" ] ; then
-        sed -i '/unpak.sh torrent_seeding/ d' "$TRANSMISSION_UNRAR_FILE"
-        chown nmt:nmt "$TRANSMISSION_UNRAR_FILE"
-    fi
-}
 
 FIX_NZBGET_DAEMON() {
     # If nzbget is restarted via nzbget_web it is started as root rather than nmt user
@@ -277,10 +257,10 @@ fi
 echo $$ > $LOCK
 
 PERMS() {
-    chmod -R 775 "$OVS_HOME" || true
-    chmod -R 777 "$OVS_HOME/logs" "$OVS_HOME/cache" || true # Added for apache integration
-    chown -R nmt:nmt "$OVS_HOME" || true
-    chown -R nmt:nmt /share/.nzbget/nzbget.conf* || true
+    chmod -R 775 "$OVS_HOME"
+    chmod -R 777 "$OVS_HOME/logs" "$OVS_HOME/cache" # Added for apache integration
+    chown -R nmt:nmt "$OVS_HOME"
+    chown -R nmt:nmt /share/.nzbget/nzbget.conf*
 }
 
 BOUNCE_NZBGET() {
@@ -296,10 +276,41 @@ BOUNCE_NZBGET() {
 }
 
 # for nmt100
-LINK_GUNZIP() {
-    if [ -f "$OVS_HOME/bin/nmt100/gzip" ] ; then 
-        ln -sf "$OVS_HOME/bin/nmt100/gzip" "$OVS_HOME/bin/nmt100/gunzip"
+# Install Oversight under Apache port 9999 as well as Sybhttpd 8883
+# This provides:
+# 1. Faster image loading when using Eversion (Apache is condifured lo load images directly)
+# 2. Avoid zombie oversight.cgi left by sybhttpd.
+# 3. Allows apache security .htaccess
+# However apache runs as 'nobody' user - so Oversight functions (delete/delist) wont work.
+APACHE_INSTALL() {
+    APACHE_UNINSTALL
+
+    if [ -d /share/Apps/AppInit ] ; then
+        set -x
+        echo @@@@@@@@@@@@@@@@@@@@@@@@@@
+        echo Apache Install
+        sed -i '/VirtualHost.*9999/ a\
+        \
+        ScriptAliasMatch ^/oversight/yamj/(.*).xml  '"$OVS_HOME"'/oversight.cgi\
+        AliasMatch ^/oversight/yamj/banner_(.*jpg)  '"$OVS_HOME"'/db/global/_b/ovs_$1\
+        AliasMatch ^/oversight/yamj/fanart_(.*jpg)  '"$OVS_HOME"'/db/global/_fa/ovs_$1\
+        AliasMatch ^/oversight/yamj/poster_(.*jpg)  '"$OVS_HOME"'/db/global/_J/ovs_$1\
+        AliasMatch ^/oversight/yamj/thumb_(.*).jpg  '"$OVS_HOME"'/db/global/_J/ovs_$1.thumb.jpg\
+        AliasMatch ^/oversight/yamj/boxset_(.*).jpg '"$OVS_HOME"'/db/global/_J/ovs_$1.thumb.boxset.jpg' /share/Apps/AppInit/httpd.conf
+
+        ln -sf $OVS_HOME /share/Apps/AppInit/websites
     fi
+}
+APACHE_UNINSTALL() {
+    echo Apache Uninstall
+    if [ -d /share/Apps/AppInit ] ; then
+        sed -i '/oversight.yamj/ d' /share/Apps/AppInit/httpd.conf
+        rm -f /share/Apps/AppInit/websites/oversight
+    fi
+}
+APACHE_RESTART() {
+    echo Apache restart
+    kill -1 `cat /??t/*/server/php5server/httpd.pid`
 }
 
 
@@ -311,15 +322,15 @@ case "$1" in
         set +x
         PERMS
         BOUNCE_NZBGET
-        LINK_GUNZIP
         ;;
     uninstall)
-        NZBGET_UNPAK_UNINSTALL || true
-        TRANSMISSION_UNPAK_UNINSTALL || true
+        NZBGET_UNPAK_UNINSTALL
         "$shPath" UNINSTALL || true
         "$NMT" NMT_UNINSTALL "$appname"
         "$NMT" NMT_UNINSTALL_WS "$wsname" 
         "$NMT" NMT_INSTALL_WS_BANNER "$wsname" "Uninstalled"
+        APACHE_UNINSTALL
+        APACHE_RESTART
         PERMS
         ;;
     check)
@@ -329,6 +340,7 @@ case "$1" in
         "$NMT" NMT_INSTALL_WS_BANNER "$wsname" "Output saved in logs/check.log"
         PERMS
         ;;
+    *) echo "install|uninstall|check"
 esac
 
 rm -f $LOCK

@@ -4,7 +4,7 @@
 # INSTALL SCRIPTS FOR SYABAS NMT PLATFORM (eg PopcornHour)
 # (C) Alord 2008 GPL 2 License
 #--------------------------------------------------------------------------
-set -eu
+set -u
 VERSION=20090605-1BETA
 
 NMT_APP_DIR=
@@ -349,7 +349,6 @@ NMT_CHECK() {
     SCRIPT "$1" | DO > "$1/check.log" 2>&1
 }
 DO() {
-    set -e
     while IFS= read cmd ; do
         #echo "==============`date` ======================="
         echo "========= CMD:$cmd: =============="

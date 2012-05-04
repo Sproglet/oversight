@@ -124,11 +124,11 @@ SAY() {
     #Avoid blocking for pipe
     A="$(ARGLIST "$@")"
     echo "oversight: $A" >> "$PENDING_FILE"
-    chown $uid:$gid "$PENDING_FILE"
+    chown $uid:$gid "$PENDING_FILE" || true
 }
 
 PERMS() {
-    chown $uid:$gid "$1" "$1"/*
+    chown $uid:$gid "$1" "$1"/* || true
 }
 
 HTML() {

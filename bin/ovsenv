@@ -52,7 +52,6 @@ load_config() {
         dos2unix "$CONF_FILE" 2>/dev/null || true # fix for notepad users
         . "$CONF_FILE"
     fi
-    set -e
     set +a
 }
 

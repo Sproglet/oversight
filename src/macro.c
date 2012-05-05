@@ -163,6 +163,49 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
 
 
 /**
+  BANNER_URL
+  BANNER_URL(default image name)
+  Display a banner. If no banner then display default image from skin/720 or skin/sd folder.
+**/  
+char *macro_fn_banner_url(MacroCallInfo *call_info) {
+
+    char *result = NULL;
+    char *default_banner=NULL;
+
+    if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
+
+        call_info->free_result=0;
+        return "?";
+
+    } else if (call_info->args && call_info->args->size > 1 ) {
+
+        ovs_asprintf(&result,"%s([default banner])",call_info->call);
+
+    } else {
+
+        if (call_info->args && call_info->args->size == 1 ) {
+
+            default_banner = call_info->args->array[0];
+        }
+
+        char *banner = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,BANNER_IMAGE,NULL);
+
+
+        if (!banner || !exists(banner)) {
+
+            if (default_banner) {
+
+                banner = image_path_by_resolution(call_info->skin_name,default_banner);
+
+            }
+        }
+
+        result  = file_to_url(banner);
+        FREE(banner);
+    }
+    return result;
+}
+/**
   FANART_URL(image name)
   Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
   use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL
@@ -2865,6 +2908,7 @@ void macro_init() {
         hashtable_insert(macros,"BACKGROUND_URL",macro_fn_background_url); // referes to images in sd / 720 folders.
         hashtable_insert(macros,"BACKGROUND_IMAGE",macro_fn_background_url); // Old name - deprecated.
         hashtable_insert(macros,"BACK_BUTTON",macro_fn_back_button);
+        hashtable_insert(macros,"BANNER_URL",macro_fn_banner_url);
         hashtable_insert(macros,"BODY_HEIGHT",macro_fn_body_height);
         hashtable_insert(macros,"BODY_WIDTH",macro_fn_body_width);
         hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);

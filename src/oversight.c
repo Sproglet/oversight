@@ -495,7 +495,12 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
 
             } else {
 
-                display_main_template(skin_name,view->name,sortedRows);
+                char *template = query_val(QUERY_PARAM_TEMPLATE_NAME);
+                if (EMPTY_STR(template)) {
+                    template = view->name;
+                }
+
+                display_main_template(skin_name,template,sortedRows);
                 if (view->has_playlist) {
                     build_playlist(sortedRows);
                 } 

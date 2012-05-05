@@ -1606,6 +1606,7 @@ int yamj_xml(char *request)
             array_free(categories);
             if (cache) {
                 fclose(xmlout);
+                html_set_output(stdout);
             }
         }
         if (cache) {

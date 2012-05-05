@@ -43,6 +43,8 @@
 #define YAMJ_QUERY_PREFIX YAMJ_QUERY_NAME "_"
 #define BOOL(x) ((x)?"true":"false")
 
+#define CATEGORY_REGEX "([^_]+)_([^_].*)_([0-9]+).xml"
+
 static int LOG_LVL=1;
 // Prototypes
 void add_static_indices_to_item(DbItem *item,YAMJSubCat *selected_subcat,Array *categories);
@@ -197,40 +199,6 @@ void add_index_to_item(DbItem *item,YAMJSubCat *subcat)
     }
     subcat->item_total++;
 }
-
-#if 0
-/*
-* If this item is eligibe for addition to the current YAMJ file , then also find all other categories it
-* belongs to.  Required for YAMJ indexes. not needed with full dynamic jukebox.
-*/
-int add_item_indexes(DbItem *item,Array *categories,YAMJSubCat *subcat)
-{
-    int i;
-    for(i = 0 ; i < categories->size ; i++ ) {
-
-        int j;
-
-        YAMJCat *cat = categories->array[i];
-        Exp *e = cat->auto_subcat_expr;
-        if (e) {
-            
-            
-        } else {
-            // static subcategory - check all subcategories to build 
-
-            for(j = 0 ; j < cat->subcats->size ; j++ ) {
-                YAMJSubCat *sc = cat->subcats->array[j];
-                if (sc != subcat && sc->filter_expr) { 
-                    Exp *e = sc->filter_expr;
-                    if (evaluate_num(e,item)) {
-                        add_index_to_item(item,sc);
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
 
 char *exp_as_string_static(Exp *e)
 {
@@ -527,15 +495,28 @@ void video_field(char *tag,char *value,int url_encode,char *attr,char *attrval)
     }
 }
 
+Array *split_request(char *request)
+{
+    Array *request_parts = regextract(request,CATEGORY_REGEX,0);
+    if (!request_parts || request_parts->size != 4) {
+        html_error("invalid request [%s] expect pattern [%s]",request,CATEGORY_REGEX);
+        array_dump(0,"regex",request_parts);
+        if (request_parts) {
+            array_free(request_parts);
+            request_parts = NULL;
+        }
+    }
+    return request_parts;
+}
 
 char *base_name(DbItem *item,ViewMode *view)
 {
     char *result=NULL;
     if (view == VIEW_TV) {
-        if (!lean_xml) { // Eversion doesnt use detail files
+//        if (!lean_xml) { // Eversion doesnt use detail files
             set_plot_keys(item);
             ovs_asprintf(&result,"%s",item->plotkey[PLOT_MAIN]);
-        }
+//        }
     } else if (view == VIEW_TVBOXSET) {
         // TODO quotes
         ovs_asprintf(&result, YAMJ_QUERY_PREFIX "T~c~_C~f~~a~(_T~f~~e~'%s')_1",item->title);
@@ -548,11 +529,14 @@ char *base_name(DbItem *item,ViewMode *view)
         char *imdb = get_item_id(item,"imdb",0);
         if (imdb) {
             if (item->sets) {
+                // name is imdbid_setid
                 ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~((_U~f~~c~'%s')~o~(_a~f~~c~'%s'))_1",imdb,item->sets);
             } else {
+                // name is imdbid
                 ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~(_U~f~~c~'%s')_1",imdb);
             }
         } if (item->sets) {
+            // name is setid
             ovs_asprintf(&result, YAMJ_QUERY_PREFIX "M~c~_C~f~~a~(_a~f~~c~'%s')_1",item->sets);
         }
 
@@ -1370,18 +1354,14 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
 {
     int i,j;
     YAMJSubCat *subcat=NULL;
-    char *pattern = "([^_]+)_([^_].*)_([0-9]+).xml";
     int page;
 
     assert(request);
     assert(categories);
 
-    Array *request_parts = regextract(request,pattern,0);
+    Array *request_parts = split_request(request);
 
-    if (!request_parts || request_parts->size != 4) {
-        html_error("invalid request [%s] expect pattern [%s]",request,pattern);
-        array_dump(0,"regex",request_parts);
-    } else {
+    if (request_parts) {
 
         char *cat_name = request_parts->array[1];
         char *subcat_name = request_parts->array[2];
@@ -1445,9 +1425,9 @@ YAMJSubCat *find_subcat(char *request,Array *categories)
             subcat->page = page;
             HTML_LOG(0,"setting page %d",page);
         }
+        array_free(request_parts);
     }
 
-    array_free(request_parts);
     return subcat;
 }
 
@@ -1455,15 +1435,15 @@ void log_request(char *request)
 {
 #define REQ_LOG "/share/Apps/oversight/logs/request.log"
 
-        if (file_size(REQ_LOG) > 1000000 ) {
-            rename(REQ_LOG,REQ_LOG".old");
-        }
+    if (file_size(REQ_LOG) > 1000000 ) {
+        rename(REQ_LOG,REQ_LOG".old");
+    }
 
-        FILE *fp = fopen(REQ_LOG,"a");
-        if (fp) {
-            fprintf(fp,"[%s]\n",request);
-            fclose(fp);
-        }
+    FILE *fp = fopen(REQ_LOG,"a");
+    if (fp) {
+        fprintf(fp,"[%s]\n",request);
+        fclose(fp);
+    }
 }
 
 
@@ -1471,23 +1451,24 @@ int yamj_xml(char *request)
 {
 
     int ret = 0;
+    char *request_in = request;
 
 
 
-        // request = Cat_SubCat_page.xml
-        //
-        //
-        int do_query = util_starts_with(request,YAMJ_QUERY_PREFIX);
-        int cat_index = (STRCMP(request,CATEGORY_INDEX) == 0) ;
+    // request = Cat_SubCat_page.xml
+    //
+    //
+    int do_query = util_starts_with(request,YAMJ_QUERY_PREFIX);
+    int cat_index = (STRCMP(request,CATEGORY_INDEX) == 0) ;
 
-        char *img[][3] = {
-            { YAMJ_THUMB_PREFIX , "_J" , ".thumb.jpg" },
-            { YAMJ_BOXSET_PREFIX , "_J" , ".thumb.boxset.jpg" },
-            { YAMJ_POSTER_PREFIX , "_J" , ".jpg" },
-            { YAMJ_BANNER_PREFIX , "_b" , ".jpg" },
-            { YAMJ_FANART_PREFIX , "_fa" , ".jpg" },
-            { NULL , NULL , NULL }};
-        char *ext;
+    char *img[][3] = {
+        { YAMJ_THUMB_PREFIX , "_J" , ".thumb.jpg" },
+        { YAMJ_BOXSET_PREFIX , "_J" , ".thumb.boxset.jpg" },
+        { YAMJ_POSTER_PREFIX , "_J" , ".jpg" },
+        { YAMJ_BANNER_PREFIX , "_b" , ".jpg" },
+        { YAMJ_FANART_PREFIX , "_fa" , ".jpg" },
+        { NULL , NULL , NULL }};
+    char *ext;
 
 
 #if 0
@@ -1508,142 +1489,144 @@ int yamj_xml(char *request)
         } else
 #endif
             
-        if ( (ext = util_endswith(request,".jpg")) != NULL) {
+    if ( (ext = util_endswith(request,".jpg")) != NULL) {
 
-            printf("Content-Type: image/jpeg\n\n");
+        printf("Content-Type: image/jpeg\n\n");
 
-            int i;
-            for(i  = 0 ; img[i][0] ; i++ ) {
-                //fprintf(stderr,"[%s][%s][%s] ext[%s]\n",img[i][0],img[i][1],img[i][2],ext);
-                if (util_starts_with(request,img[i][0])) { 
+        int i;
+        for(i  = 0 ; img[i][0] ; i++ ) {
+            //fprintf(stderr,"[%s][%s][%s] ext[%s]\n",img[i][0],img[i][1],img[i][2],ext);
+            if (util_starts_with(request,img[i][0])) { 
 
-                    int redirect=0;
-                    char *file;
-                    ovs_asprintf(&file,"%s/db/global/%s/ovs_%.*s%s",
-                            (redirect?"/oversight":appDir()),
-                            img[i][1],
-                            ext-request-strlen(img[i][0]),
-                            request+strlen(img[i][0]),
-                            img[i][2]);
+                int redirect=0;
+                char *file;
+                ovs_asprintf(&file,"%s/db/global/%s/ovs_%.*s%s",
+                        (redirect?"/oversight":appDir()),
+                        img[i][1],
+                        ext-request-strlen(img[i][0]),
+                        request+strlen(img[i][0]),
+                        img[i][2]);
 
-                    if (redirect) {
-                        printf("HTTP/1.1 301 Permanently Moved\r\n");
-                        printf("Location: %s\r\n\r\n",file);
-                    } else {
-                        cat(NULL,file);
-                    }
-                    log_request(request);
-                    FREE(file);
-                    if (redirect) exit(301);
-                    break;
-                }
-            }
-
-        } else if (cat_index|| do_query ||  util_endswith(request,".xml")) {
-            
-            xml_headers(stdout);
-            // util_strreg(request,"[^_]+_[^_]+_[0-9]+.xml$",0)) {
-
-            int cache=1;
-            char *cache_path;
-            
-            log_request(request);
-            if (cache) {
-                cache_path = cache_file(".no");
-                if (exists(cache_path)) {
-                    cache = 0;
-                }
-                FREE(cache_path);
-            }
-
-            if (cache) {
-                cache_path = cache_file(request);
-            }
-            if (!cache || stale_cache_file(cache_path)) {
-
-
-                xmlout = stdout;
-                if (cache) {
-                   FILE *fp =fopen(cache_path,"w");
-                   if (fp) {
-                       xmlout = fp;
-                       html_set_output(xmlout);
-                   } else {
-                       html_error("failed to open %s for writing - error %d",cache_path,errno);
-                       cache = 0;
-                   }
-                }
-
-                config_read_dimensions(0);
-                HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
-                load_configs();
-                lean_xml = (*oversight_val("ovs_yamj_lean_xml") == '1');
-
-                Array *categories = array_new(free_yamj_catetory);
-
-                yamj_build_categories(request,categories);
-
-                YAMJSubCat *selected_subcat = NULL;
-                
-
-                // Either use an arbitrary expression derived from request fake xml name OR use the configured expression derived from 
-                // the subcategory name.
-                if (do_query) { 
-                    
-                    // Add a temporary query category to contain our query sub category
-                    YAMJCat *temp_query_cat = yamj_cat_new(YAMJ_QUERY_NAME,NULL);
-                    array_add(categories,temp_query_cat);
-                    selected_subcat = find_subcat(request,categories);
-
-                } else if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
-                    selected_subcat = find_subcat(request,categories);
-                }
-
-                // Here we could have newest first but leave that to skins 
-                int (*sort_fn)(DbItem **,DbItem**) = NULL;
-                if (selected_subcat)  {
-                    if ((STRCMP(selected_subcat->name,"By Age") == 0) || (STRCMP(selected_subcat->name,"New") == 0)) {
-                        if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
-                            sort_fn = db_overview_cmp_by_age_desc;
-                        }
-                    }
-                }
-
-                DbSortedRows *sorted_rows = get_sorted_rows(NULL,sort_fn,0,NULL,categories,selected_subcat);
-
-                HTML_LOG(1,"Sort categories..");
-                sort_categories(categories);
-
-                yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
-
-                // Save the dynamic categories.
-                if (categories) {
-                    int i;
-                    for(i = 0 ; i<categories->size ; i++) {
-                        save_dynamic_cat(categories->array[i]);
-                    }
-                }
-                array_free(categories);
-                if (cache) {
-                    fclose(xmlout);
-                }
-            }
-            if (cache) {
-                if ((xmlout=fopen(cache_path,"r")) != NULL) {
-                    append_content(xmlout,stdout);
-                    fclose(xmlout);
-                    html_set_output(stdout);
+                if (redirect) {
+                    printf("HTTP/1.1 301 Permanently Moved\r\n");
+                    printf("Location: %s\r\n\r\n",file);
                 } else {
-                    fprintf(xmlout,"cache error [%s]",cache_path);
+                    cat(NULL,file);
                 }
+                log_request(request);
+                FREE(file);
+                if (redirect) exit(301);
+                break;
             }
-
-        } else {
-            printf("Content-Type: text/plain\n\n");
-            html_error("error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
         }
 
+    } else if (cat_index|| do_query ||  util_endswith(request,".xml")) {
+        
+        xml_headers(stdout);
+
+        int cache=1;
+        char *cache_path;
+        
+        log_request(request);
+        if (cache) {
+            cache_path = cache_file(".no");
+            if (exists(cache_path)) {
+                cache = 0;
+            }
+            FREE(cache_path);
+        }
+
+        if (cache) {
+            cache_path = cache_file(request);
+        }
+        if (!cache || stale_cache_file(cache_path)) {
+
+
+            xmlout = stdout;
+            if (cache) {
+               FILE *fp =fopen(cache_path,"w");
+               if (fp) {
+                   xmlout = fp;
+                   html_set_output(xmlout);
+               } else {
+                   html_error("failed to open %s for writing - error %d",cache_path,errno);
+                   cache = 0;
+               }
+            }
+
+            config_read_dimensions(0);
+            HTML_LOG(0,"processing [%s]",xmlstr_static(request,0));
+            load_configs();
+            lean_xml = (*oversight_val("ovs_yamj_lean_xml") == '1');
+
+            Array *categories = array_new(free_yamj_catetory);
+
+            yamj_build_categories(request,categories);
+
+            YAMJSubCat *selected_subcat = NULL;
+            
+
+            // Either use an arbitrary expression derived from request fake xml name OR use the configured expression derived from 
+            // the subcategory name.
+            if (do_query) { 
+                
+                // Add a temporary query category to contain our query sub category
+                YAMJCat *temp_query_cat = yamj_cat_new(YAMJ_QUERY_NAME,NULL);
+                array_add(categories,temp_query_cat);
+                selected_subcat = find_subcat(request,categories);
+
+            } else if (STRCMP(request,CATEGORY_INDEX) != 0 ) {
+                selected_subcat = find_subcat(request,categories);
+            }
+
+            // Here we could have newest first but leave that to skins 
+            int (*sort_fn)(DbItem **,DbItem**) = NULL;
+            if (selected_subcat)  {
+                if ((STRCMP(selected_subcat->name,"By Age") == 0) || (STRCMP(selected_subcat->name,"New") == 0)) {
+                    if (STRCMP(selected_subcat->owner_cat->name,"Other") == 0) {
+                        sort_fn = db_overview_cmp_by_age_desc;
+                    }
+                }
+            }
+
+            DbSortedRows *sorted_rows = get_sorted_rows(NULL,sort_fn,0,NULL,categories,selected_subcat);
+
+            HTML_LOG(1,"Sort categories..");
+            sort_categories(categories);
+
+            yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
+
+            // Save the dynamic categories.
+            if (categories) {
+                int i;
+                for(i = 0 ; i<categories->size ; i++) {
+                    save_dynamic_cat(categories->array[i]);
+                }
+            }
+            array_free(categories);
+            if (cache) {
+                fclose(xmlout);
+            }
+        }
+        if (cache) {
+            if ((xmlout=fopen(cache_path,"r")) != NULL) {
+                append_content(xmlout,stdout);
+                fclose(xmlout);
+                html_set_output(stdout);
+            } else {
+                fprintf(xmlout,"cache error [%s]",cache_path);
+            }
+        }
+
+    } else {
+        printf("Content-Type: text/plain\n\n");
+        html_error("error invalid yamj request [%s] %d",xmlstr_static(request,0),STRCMP(request,CATEGORY_INDEX));
+    }
+
     fflush(stdout);
+    if (request != request_in) {
+        FREE(request);
+    }
     return ret;
 }
 

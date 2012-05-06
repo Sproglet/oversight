@@ -622,9 +622,9 @@ static inline int db_rowid_get_field_offset_type_inline(
                         *offset=&(rowid->eptitle_imdb);
                         *type = FIELD_TYPE_STR;
                     }
-    //            }else if (name[2] == 'p') { // _ep
-    //                *offset=&(rowid->episode_plot_key);
-    //                *type = FIELD_TYPE_STR;
+                }else if (name[2] == 'p') { // _ep
+                    *offset=&(rowid->plottext[PLOT_EPISODE]);
+                    *type = FIELD_TYPE_STR;
                 }
                 break;
             case 'f':
@@ -710,12 +710,12 @@ static inline int db_rowid_get_field_offset_type_inline(
                         *type = FIELD_TYPE_STR;
                     }
                 break;
-    //        case 'P':
-    //                if (name[2] == '\0') {
-    //                *offset=&(rowid->plot_key);
-    //                *type = FIELD_TYPE_STR;
-    //                }
-    //            break;
+            case 'P':
+                    if (name[2] == '\0') {
+                    *offset=&(rowid->plottext[PLOT_MAIN]);
+                    *type = FIELD_TYPE_STR;
+                    }
+                break;
             case 'r':
                 if (*p == '\0') {
                     *offset=&(rowid->rating);
@@ -833,6 +833,11 @@ char * db_rowid_get_field(DbItem *rowid,char *name)
     char type;
     int overview;
 
+    if (strcmp(name,DB_FLDID_PLOT) == 0) {
+        get_plot(rowid,PLOT_MAIN);
+    } else if (strcmp(name,DB_FLDID_EPPLOT) == 0) {
+        get_plot(rowid,PLOT_EPISODE);
+    }
     if (!db_rowid_get_field_offset_type_inline(rowid,name,&offset,&type,&overview,NULL)) {
         return NULL;
     }

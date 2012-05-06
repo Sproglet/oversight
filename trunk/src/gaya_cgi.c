@@ -316,7 +316,7 @@ char *url_encode(char *str) {
 char *url_encode_static(char *str,int *free_result)
 {
     char *result = str;
-    *free_result = 0;
+    if(free_result) *free_result = 0;
 
     if (str) {
         char *pstr = str;
@@ -324,7 +324,7 @@ char *url_encode_static(char *str,int *free_result)
             pstr++;
        }
        if (*pstr) {
-          *free_result = 1;
+          if(free_result) *free_result = 1;
           result = url_encode(str);
        }
     }

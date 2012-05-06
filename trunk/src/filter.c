@@ -116,7 +116,7 @@ Exp *build_filter(char *media_types)
     }
     
     if (val) {
-        result = parse_full_url_expression(val);
+        result = parse_full_url_expression(val,TOKEN_URL);
     }
     return result;
 

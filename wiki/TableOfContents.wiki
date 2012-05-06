@@ -29,6 +29,7 @@ Advanced
 Developers
   * ChangeLog
   * OversightSkins
+  * SkinMacroIndex
 
 Obsessed
 

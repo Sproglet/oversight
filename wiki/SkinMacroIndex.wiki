@@ -1,0 +1,381 @@
+#sidebar TableOfContents
+<wiki:toc max_depth="3" />
+
+[Auto-generated at Sun May  6 15:11:58 BST 2012 from comments in macro.c using macro_doc in trunk/src]
+
+Oversight skins are html with special macros that are replaced with html text on the fly.
+
+The macros are detailed below.
+If this page becomes out of date, refer to macro.c
+  ==BACKGROUND_IMAGE==
+  BACKGROUND_IMAGE(image name) - deprecated - use BACKGROUND_URL() 
+  Display image from skin/720 or skin/sd folder. Also see BACKGROUND_URL,FANART_URL
+  ==BACKGROUND_URL==
+  BACKGROUND_URL(image name)
+  Display image from skin/720 or skin/sd folder. Also see FANART_URL
+
+  ==CONFIG_LINK==
+    Description:
+    Generate text to link to a settings configuration form for a config file.
+  Syntax:
+{{{   [:CONFIG_LINK(conf=>,help=>,text=>link text,attr=>html_attributes,skin=1):] }}}
+  Example:
+==EDIT_CONFIG==
+
+Write a html input table for a configuration file.
+The config file is expected to have format 
+name=value
+
+The help file has format
+name:help text
+OR
+name:help text|val1|val2|...|valn
+
+At present it calls an external file "options.sh" to generate the HTML table. 
+This script was kept from the original awk version of oversight as performance is not an issue 
+It may get ported to native code one day.
+
+{{{ [:EDIT_CONFIG:] }}}
+{{{ [:EDIT_CONFIG(conf=>name of config file,help=>help file suffix):] }}}
+
+Default path for conf and help files is oversight/{conf,help}
+if file = skin.cfg folder is the oversight/templates/skin/{conf,help}
+
+==ELSE==
+{{{ see multiline [IF] }}}
+==ELSEIF==
+{{{ see multiline [IF] }}}
+==ENDIF==
+{{{ see multiline [IF] }}}
+==EVAL==
+Compute a value and insert into html output
+Example:
+{{{    td { width:[:EVAL($@poster_menu_img_width-2):]px; } }}}
+
+==EXTERNAL_URL==
+
+Display a link to movie or tv website (default website IMDB)
+
+{{{ [:EXTERNAL_URL:] }}}
+{{{ [:EXTERNAL_URL:(domain=>domain_name):]  }}}
+
+Example:
+{{{ [:EXTERNAL_URL:(domain=>imdb):]  }}}
+{{{ [:EXTERNAL_URL:(domain=>themoviedb):]  }}}
+
+  ==FAVICON==
+
+  Display favicon html link.
+{{{   [:FAVICON:] }}}
+==FILE_ENCODED(n)==
+Return url encoded name of n'th file part. See also FILEPARTS, FILE_PATH FILE_VOD_ATTRIBUTES
+=endwiki
+/
+char *macro_fn_file_enc(MacroCallInfo *call_info)
+{
+    return macro_fn_file_general(call_info,FILE_ENC);
+}
+/**
+==FILE_NUM_PARTS==
+Return number of parts  for a movie - OR number of Episodes for a TV series.
+
+This is static an only computed once. IT should only be called on a movie detail page
+=endwiki
+/
+char *macro_fn_file_num_parts(MacroCallInfo *call_info)
+{
+    static char *result=NULL;
+    call_info->free_result = 0;
+    if (result == NULL) {
+        if (call_info->args && call_info->args->size == 0) {
+{{{             DbItem *item = call_info->sorted_rows->rows[0]; }}}
+            if (item) {
+                int count = 0;
+                if (item->category=='T') {
+                    // TV Series - count episodes
+                    count = call_info->sorted_rows->num_rows;
+                } else {
+                    // Movie - count actual parts
+                    if (item->file) {
+                        count++;
+                        if (item->parts) {
+                            char *p;
+                            for(p = item->parts; *p ; p++) {
+                                if (*p == '/') count++;
+                            }
+                        }
+                    }
+                }
+                ovs_asprintf(&result,"%d",count);
+            }
+
+        } else {
+            ovs_asprintf(&result,"%s( no args expected",call_info->call);
+        }
+    }
+    return result;
+}
+
+char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
+{
+    char *result=NULL;
+    int part_no = 1;
+    int freeit = 0;
+    int freeit2 = 0;
+
+    if (call_info->args==NULL || call_info->args->size <= 1) {
+        if (call_info->args && call_info->args->size == 1) {
+{{{             part_no = atoi(call_info->args->array[0]); }}}
+        }
+{{{         DbItem *item = call_info->sorted_rows->rows[0]; }}}
+        if (item) {
+            char *path = get_path_no(item,part_no-1,&freeit);
+
+            if (path) {
+                switch(aspect) {
+                    case FILE_PATH:
+                        result = path;
+                        call_info->free_result = freeit;
+                        break;
+                    case FILE_ENC:
+
+                        result = url_encode_static(path,&freeit2);
+                        if (freeit2) {
+                            if (freeit) FREE(path);
+                            call_info->free_result = 1;
+                        } else if (freeit) {
+                            call_info->free_result = 1;
+                        } else {
+                            call_info->free_result = 0;
+                        }
+                        break;
+                    case FILE_VOD:
+                        result = vod_attr(path);
+                        if (freeit) FREE(path);
+                        call_info->free_result = 0;
+                        break;
+                }
+            }
+        }
+
+    } else {
+        ovs_asprintf(&result,"%s(partno)",call_info->call);
+    }
+    return  result;
+}
+
+/**
+==FILE_PATH(n)==
+Return name of n'th file part. See also FILEPARTS, FILE_ENCODED FILE_VOD_ATTRIBUTES
+=endwiki
+/
+char *macro_fn_file_path(MacroCallInfo *call_info)
+{
+    return macro_fn_file_general(call_info,FILE_PATH);
+}
+/**
+==FILE_VOD_ATTRIBUTES(n)==
+Return VOD attributes for n'th file part. See also FILEPARTS, FILE_ENCODED FILE_PATH
+=endwiki
+/
+char *macro_fn_file_vod(MacroCallInfo *call_info)
+{
+    return macro_fn_file_general(call_info,FILE_VOD);
+}
+/**
+==FLUSH==
+
+{{{ Flush macro output. For debugging. [:FLUSH:] }}}
+==FONT_SIZE==
+Compute font_size relative to user configured font size.
+Examples:
+     {{{
+    .eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
+    td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
+    }}}
+==GRID==
+Grid Macro has format
+{{{ [:GRID(rows=>r,cols=>c,img_height=>300,img_width=>200,offset=>0):] }}}
+
+All parameters are optional.
+rows,cols            = row and columns of thumb images in the grid (defaults to config file settings for that view)
+img_height,img_width = thumb image dimensions ( defaults to config file settings for that view)
+offset               = This setting is to allow multiple grids on the same page. eg. 
+for a layout where X represents a thumb you may have:
+
+{{{
+XXXX
+XX
+}}}
+
+This could be two grids
+{{{ [:GRID(rows=>1,cols=>4,offset=>0):] }}}
+{{{ [:GRID(rows=>2,cols=>2,offset=>4):] }}}
+
+In this secnario oversight also needs to know which is the last grid on the page, so it can add the page navigation to 
+the correct grid. As the elements may occur in
+any order in the template, this would either require two passes of the template, or the user to indicate the 
+last grid. I took the easy option , so the user must spacify the total thumbs on the page.
+
+{{{ [:GRID(rows=>1,cols=>4,offset=>0):] }}}
+{{{ [:GRID(rows=>2,cols=>2,offset=>4,last=>1):] }}}
+==GRID==
+
+Display poster for current item.
+
+{{{ [:GRID:] }}}
+{{{ [:GRID(rows,cols,img_height,img_width,offset,order):] }}}
+
+offset = number of first item in this grid segment. ITem numbering starts from 0.
+if no offset supplied then it is computed from the size of the previous GRID.
+This works as long as the grids appear in order within the HTML
+
+orientation=horizontal, vertical :  determines sort order within the grid.
+
+Example:
+
+{{{ [:SET(_grid_size,7):] }}}
+{{{ [:GRID(rows=>1,cols=>4,offset=>0,order=Horizontal):] }}}
+{{{ [:GRID(rows=>3,cols=>1,offset=>4,order=Vertical):] }}}
+
+  ==HELP_BUTTON==
+    Description:
+    Display a template image from current skins images folder - if not present look in defaults.
+  Syntax:
+{{{   [:HELP_BUTTON:] }}}
+  Example:
+{{{   [:HELP_BUTTON:] }}}
+==IF==
+Multi line form:
+
+{{{ [:IF(exp):] }}}
+{{{ [:ELSE:] }}}
+{{{ [:ENDIF:] }}}
+
+Single line form
+
+{{{ [:IF(exp,text):] }}}
+{{{ [:IF(exp,text,alternative_text):] }}}
+
+  ==IMAGE_URL==
+    Description:
+    Generate a url for a template image from current skins images folder - if not present look in defaults.
+    This is just the url - no html tag is included.
+  Syntax:
+{{{   [:IMAGE_URL(image name):] }}}
+  Example:
+{{{   [:IMAGE_URL(stop):] }}}
+  ==IMAGE_URL==
+    Description:
+    Generate html <img> tag to display an icon  - if not present look in defaults.
+  Syntax:
+{{{   [:ICON(name,[attribute]):] }}}
+  Example:
+{{{   [:ICON(stop,width=20):] }}}
+==JS_DETAILS==
+
+{{{ JS_DETAILS([max=>n,fields=>field1|field2|field3...fieldx]) }}}
+
+Output all details for current items in a javascript/json array
+if max not provided - all selected rows will be used.
+
+{{{ Example [:JS_DETAILS(max=>4,fields=>TITLE|FILE|EPISODE|PLOT):] }}}
+
+{{{ For list of fields see [http://code.google.com/p/oversight/source/browse/trunk/src/dbfield.c dbfield.c] }}}
+
+==LOCKED_SELECT==
+Display Locked/Unlocked selection.
+
+{{{ [:LOCKED_SELECT:] }}}
+==EPISODE_COUNT
+Number of episodes on this detail page
+==ORIG_TITLE==
+Can Also use $field_ORIG_TITLE
+==PAGE_MAX==
+Return the last page number by dividing number of items by the page size (aka grid size).
+This does not take delisting into account, which may reduce the number of items.
+
+the page size is determined from the following items:
+1 A page size argument can be supplied, if not
+{{{ 2. the _grid_size skin variable can be used (see [:SET(...}:] }}}
+3. If the variable is not set then it is computed from current rows*cols.
+
+Example:
+{{{ [:PAGE_MAX:] }}}
+==PERSON_ID==
+Return the imdb id of the current actor. This is just the person parameter.(QUERY_PARAM_PERSON)
+
+The domain should be passed as a parameter - eg "imdb" or "allocine"
+
+{{{ [:PERSON_ID(domain=>imdb):] }}}
+==PERSON_ROLE==
+
+Return the current role of the person Actor, Director or Writer.
+The roles are kept seperate to reduce possibility of namesake clashes.
+The imdb ids are not used because scraping should not be tied to any
+particular site. So the best identifier is name.
+
+
+==PERSON_URL==
+
+Display a link to required domain - default is IMDB
+
+{{{ [:PERSON_URL:] }}}
+==POSTER==
+
+Display poster for current item.
+
+{{{ [:POSTER:] }}}
+{{{ [:POSTER(attributes):] }}}
+
+==RATING_STARS==
+
+RATING_STARS(numstars)
+
+This will make a rating bar based on the number of stars supplied.
+You should have the following stars defined...
+
+eg  Consider a rating of 7.9/10 on a 5 star bar 
+
+7.9/10 =~ 3.9/5
+So 3 whole stars then a 0.9 star then an empty star.
+
+stat0.png this is an empty star.
+star1.png = 0.1 star etc.
+star10.png - this is a whole star.
+
+{{{ ==RATING([scale=>scale,precision=>0|1]) }}}
+Multiply rating by scale and round 
+Oversight Ratings are from 0 to 10
+
+Default scale = 1
+Default precision = 1
+
+  ==SKIN_NAME==
+
+  Replace with name of the currently selected skin.
+  ==STATUS==
+    Description:
+    Replace with current status passed from the scanner.
+  Syntax:
+{{{   [:STATUS:] }}}
+  Example:
+{{{   [:STATUS:] }}}
+==TEMPLATE_URL==
+TEMPLATE_URL(file path)
+Return URL to a file within the current skin/template. Fall back to default skin if not found in current skin.
+eg.
+{{{ [:TEMPLATE_URL(css/default.css):] }}}
+==TITLE==
+Can Also use $field_TITLE
+==URL_BASE==
+Return link to /oversight path that will work on browser or tv.
+Example:
+{{{
+img src="[:BASE_URL:]/templates/[:SKIN_NAME:]/images/detail/rating_[:RATING(precision=>0):]0.png"/>
+}}}
+
+==WATCHED_SELECT==
+Display Watched/Unwatched selection.
+
+{{{ [:WATCHED_SELECT:] }}}

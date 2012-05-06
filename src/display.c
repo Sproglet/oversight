@@ -67,6 +67,30 @@ char *get_play_tvid(char *text) {
     return result;
 }
 
+char *get_path_no(DbItem *item,int part_no,int *freeit)
+{
+    char *path=NULL;
+    *freeit = 0;
+    if (item) {
+        if (part_no == 0) {
+            path = get_path(item,item->file,freeit);
+        } else {
+            Array *parts = splitstr(item->parts,"/");
+            if (parts->size < part_no) {
+                html_error("No part [%d] for item [%s]",part_no,item->title);
+            } else {
+                part_no--;
+                path=get_path(item,item->file,freeit);
+            }
+            if (!freeit) {
+                path=STRDUP(path);
+                *freeit=1;
+            }
+            array_free(parts);
+        }
+    }
+    return path;
+}
 // Return a full path 
 char *get_path(DbItem *item,char *path,int *freepath)
 {

@@ -53,12 +53,11 @@ int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char 
             dummy_css = ".a {}\n";
         }
 
-#define HTML_BUF_SIZE 2999
+#define HTML_BUF_SIZE 5999
         ret = 0;
 
         char buffer[HTML_BUF_SIZE];
 
-//TRACE1;
 
         PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
         while(fgets(buffer,HTML_BUF_SIZE,in) != NULL) {
@@ -130,7 +129,8 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 {
     int ret = -1;
     int pass=0;
-    char *pass1_file = "/tmp/ovs1";
+    //char *pass1_file = "/tmp/ovs1";
+    char *pass1_file = "/share/Apps/oversight/tmp/ovs1";
     FILE *pass1_fp = fopen(pass1_file,"w");
     if (pass1_fp) {
         HTML_LOG(0,"output to %s",pass1_file);

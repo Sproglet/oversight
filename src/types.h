@@ -262,9 +262,11 @@ typedef struct Value_struct {
 
 } Value;
 
+#define TOKEN_URL 0
+#define TOKEN_PLAIN 1
 typedef struct {
     Op op;
-    char *url_text;
+    char* token[2];
     int num_args;
     int precedence;
     int argtypes[2]; // Based on or'ed ValType argtype[0] is for first child eg  = VAL_TYPE_STR|VAL_TYPE_CHAR
@@ -285,6 +287,7 @@ typedef struct Exp_struct {
     int fld_offset;
     int fld_overview;
     char *fld_imdb_prefix;
+    int original_token_type; // used for error messages - type of tokens used to create the expression
 } Exp;
 
 // YAMJ Compatibility types

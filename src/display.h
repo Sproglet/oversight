@@ -51,6 +51,7 @@ char *get_self_link(char *params,char *attr,char *title);
 char *get_self_link_with_font(char *params,char *attr,char *title,char *font_class);
 void display_confirm(char *name,char *val_ok,char *val_cancel);
 char *file_to_url(char *path);
+char *get_path_no(DbItem *item,int part_no,int *freeit);
 char *get_path(DbItem *item,char *path,int *freepath);
 char *vod_attr(char *file);
 char *get_picture_path(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);

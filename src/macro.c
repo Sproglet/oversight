@@ -35,12 +35,17 @@
 #include "variables.h"
 #include "mount.h"
 
+typedef enum { FILE_PATH , FILE_ENC , FILE_VOD } FileAspect;
+
+
 static struct hashtable *macros = NULL;
 char *image_path_by_resolution(char *skin_name,char *name);
 char *get_named_arg(struct hashtable *h,char *name);
 struct hashtable *args_to_hash(MacroCallInfo *call,char *required_list,char *optional_list);
 void free_named_args(struct hashtable *h);
 char *macro_fn_background_url(MacroCallInfo *call_info);
+char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect);
+Array *js_array(DbSortedRows *rows,int max,Array *fields);
 
 Db *firstdb(MacroCallInfo *call_info)
 {
@@ -717,6 +722,22 @@ char *macro_fn_episode_total(MacroCallInfo *call_info) {
     }
     return result;
 }
+/*
+ * =begin wiki
+ * ==EPISODE_COUNT
+ * Number of episodes on this detail page
+ * =end wiki
+ */
+char *macro_fn_episode_count(MacroCallInfo *call_info) {
+    static char result[10]="";
+    call_info->free_result=0;
+    if (!*result) {
+        if (call_info->sorted_rows) {
+            sprintf(result,"%d",call_info->sorted_rows->num_rows);
+        }
+    }
+    return result;
+}
 
 char *macro_fn_movie_total(MacroCallInfo *call_info)
 {
@@ -803,6 +824,18 @@ char *macro_fn_genre_select(MacroCallInfo *call_info)
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==FLUSH==
+ *
+ * Flush macro output. For debugging. [:FLUSH:]
+ * =end wiki
+ */
+char *macro_fn_flush(MacroCallInfo *call_info)
+{
+    html_flush();
+    return NULL;
+}
 char *macro_fn_genre(MacroCallInfo *call_info)
 {
 
@@ -1198,6 +1231,26 @@ char *get_rating_stars(DbItem *item,int num_stars)
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==RATING_STARS==
+ *
+ * RATING_STARS(numstars)
+ *
+ * This will make a rating bar based on the number of stars supplied.
+ * You should have the following stars defined...
+ *
+ * eg  Consider a rating of 7.9/10 on a 5 star bar 
+ *
+ * 7.9/10 =~ 3.9/5
+ * So 3 whole stars then a 0.9 star then an empty star.
+ *
+ * stat0.png this is an empty star.
+ * star1.png = 0.1 star etc.
+ * star10.png - this is a whole star.
+ *
+ * =end wiki
+ */
 char *macro_fn_rating_stars(MacroCallInfo *call_info) {
     char *result = NULL;
     int num_stars=0;
@@ -1240,18 +1293,51 @@ char *macro_fn_source(MacroCallInfo *call_info) {
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==RATING([scale=>scale,precision=>0|1])
+ * Multiply rating by scale and round 
+ * Oversight Ratings are from 0 to 10
+ *
+ * Default scale = 1
+ * Default precision = 1
+ *
+ * =end wiki
+ */
 char *macro_fn_rating(MacroCallInfo *call_info) {
     char *result = NULL;
+    int scale=1;
+    int precision=1;
+    char *tmp;
 
     if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
         call_info->free_result=0;
         return "?";
     }
     if (*oversight_val("ovs_display_rating") != '0' && call_info->sorted_rows->num_rows) {
+        struct hashtable *h = args_to_hash(call_info,NULL,"scale,precision");
+        if ((tmp = get_named_arg(h,"scale")) != NULL) {
+            scale = atoi(tmp);
+        }
+        if ((tmp = get_named_arg(h,"precision")) != NULL) {
+            precision = atoi(tmp);
+        }
+
 
         if (call_info->sorted_rows->rows[0]->rating > 0.01) {
-            ovs_asprintf(&result,"%.1lf",call_info->sorted_rows->rows[0]->rating);
+
+            double n = scale*call_info->sorted_rows->rows[0]->rating;
+
+#if 0
+            switch(precision) {
+                case 0: n+= 0.5; break;
+                case 1: n+= 0.05; break;
+            }
+#endif
+
+            ovs_asprintf(&result,"%.*lf",precision,n);
         }
+        free_named_args(h);
     }
 
     return result;
@@ -1680,6 +1766,127 @@ char *macro_fn_favicon(MacroCallInfo *call_info)
     call_info->free_result = 0;
     if (is_pc_browser()) {
         result = "<link rel=\"shortcut icon\" href=\"/oversight/templates/ovsicon.ico\" />";
+    }
+    return  result;
+}
+
+
+/**
+ * =begin wiki
+ * ==FILE_PATH(n)==
+ * Return name of n'th file part. See also FILEPARTS, FILE_ENCODED FILE_VOD_ATTRIBUTES
+ * =endwiki
+ */
+char *macro_fn_file_path(MacroCallInfo *call_info)
+{
+    return macro_fn_file_general(call_info,FILE_PATH);
+}
+/**
+ * =begin wiki
+ * ==FILE_PATH(n)==
+ * Return url encoded name of n'th file part. See also FILEPARTS, FILE_PATH FILE_VOD_ATTRIBUTES
+ * =endwiki
+ */
+char *macro_fn_file_enc(MacroCallInfo *call_info)
+{
+    return macro_fn_file_general(call_info,FILE_ENC);
+}
+/**
+ * =begin wiki
+ * ==FILE_VOD_ATTRIBUTES(n)==
+ * Return VOD attributes for n'th file part. See also FILEPARTS, FILE_ENCODED FILE_PATH
+ * =endwiki
+ */
+char *macro_fn_file_vod(MacroCallInfo *call_info)
+{
+    return macro_fn_file_general(call_info,FILE_VOD);
+}
+/**
+ * =begin wiki
+ * ==FILE_NUM_PARTS==
+ * Return number of parts  for a movie - OR number of Episodes for a TV series.
+ *
+ * This is static an only computed once. IT should only be called on a movie detail page
+ * =endwiki
+ */
+char *macro_fn_file_num_parts(MacroCallInfo *call_info)
+{
+    static char *result=NULL;
+    call_info->free_result = 0;
+    if (result == NULL) {
+        if (call_info->args && call_info->args->size == 0) {
+            DbItem *item = call_info->sorted_rows->rows[0];
+            if (item) {
+                int count = 0;
+                if (item->category=='T') {
+                    // TV Series - count episodes
+                    count = call_info->sorted_rows->num_rows;
+                } else {
+                    // Movie - count actual parts
+                    if (item->file) {
+                        count++;
+                        if (item->parts) {
+                            char *p;
+                            for(p = item->parts; *p ; p++) {
+                                if (*p == '/') count++;
+                            }
+                        }
+                    }
+                }
+                ovs_asprintf(&result,"%d",count);
+            }
+
+        } else {
+            ovs_asprintf(&result,"%s( no args expected",call_info->call);
+        }
+    }
+    return result;
+}
+
+char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
+{
+    char *result=NULL;
+    int part_no = 1;
+    int freeit = 0;
+    int freeit2 = 0;
+
+    if (call_info->args==NULL || call_info->args->size <= 1) {
+        if (call_info->args && call_info->args->size == 1) {
+            part_no = atoi(call_info->args->array[0]);
+        }
+        DbItem *item = call_info->sorted_rows->rows[0];
+        if (item) {
+            char *path = get_path_no(item,part_no-1,&freeit);
+
+            if (path) {
+                switch(aspect) {
+                    case FILE_PATH:
+                        result = path;
+                        call_info->free_result = freeit;
+                        break;
+                    case FILE_ENC:
+
+                        result = url_encode_static(path,&freeit2);
+                        if (freeit2) {
+                            if (freeit) FREE(path);
+                            call_info->free_result = 1;
+                        } else if (freeit) {
+                            call_info->free_result = 1;
+                        } else {
+                            call_info->free_result = 0;
+                        }
+                        break;
+                    case FILE_VOD:
+                        result = vod_attr(path);
+                        if (freeit) FREE(path);
+                        call_info->free_result = 0;
+                        break;
+                }
+            }
+        }
+
+    } else {
+        ovs_asprintf(&result,"%s(partno)",call_info->call);
     }
     return  result;
 }
@@ -2538,6 +2745,18 @@ char *macro_fn_body_width(MacroCallInfo *call_info) {
 
     return numeric_constant_arg_to_str(value,call_info->args);
 }
+
+/*
+ * ==begin wiki
+ * ==URL_BASE==
+ * Return link to /oversight path that will work on browser or tv.
+ * Example:
+ * {{{
+ * img src="[:BASE_URL:]/templates/[:SKIN_NAME:]/images/detail/rating_[:RATING(precision=>0):]0.png"/>
+ * }}}
+ *
+ * == end wiki
+ */
 char *macro_fn_url_base(MacroCallInfo *call_info)
 {
     static char *base = NULL;
@@ -2897,6 +3116,115 @@ char *macro_fn_videoquality(MacroCallInfo *call_info)
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==JS_DETAILS([max=>n,fields=>field1|field2|field3...fieldx])
+ *
+ * Output all details for current items in a javascript/json array
+ * if max not provided - all selected rows will be used.
+ *
+ * Example [:JS_DETAILS(max=>4,fields=>TITLE|FILE|EPISODE|PLOT):]
+ *
+ * =end wiki
+ */
+char *macro_fn_jsdetails(MacroCallInfo *call_info)
+{
+    char *result = NULL;
+    struct hashtable *h = args_to_hash(call_info,"fields","max");
+    if (h) {
+        char *tmp;
+        char *fieldlist=get_named_arg(h,"fields");
+        int max = 0;
+        if ((tmp = get_named_arg(h,"max")) != NULL) {
+            max = atoi(tmp);
+        }
+
+        Array*fields = splitstr(fieldlist,"|");
+        Array*js = js_array(call_info->sorted_rows,max,fields);
+
+        if (js) {
+            result=arraystr(js);
+        }
+        array_free(fields);
+
+        free_named_args(h);
+    }
+    return result;
+}
+
+Array *js_array(DbSortedRows *sorted_rows,int max,Array *fields) 
+{
+    int i=0,j=0;
+    Array *out = NULL;
+    if (sorted_rows == NULL || sorted_rows->num_rows == 0 || fields==NULL || fields->size == 0) return NULL;
+
+    if (max > sorted_rows->num_rows || max == 0 ) max = sorted_rows->num_rows;
+
+    // Convert field names to field ids.
+    Array *field_ids = array_new(NULL);
+    for(j = 0 ; j < fields->size ; j++ ) {
+
+        char *name =fields->array[j];
+        HTML_LOG(1,"name=[%s]",name);
+        char *id = dbf_macro_to_fieldid(name);
+        HTML_LOG(1,"id=[%s]",id);
+        if (id == NULL) {
+            html_error("unknown field id [%s]",name);
+            id="";
+        }
+        array_add(field_ids,id);
+    }
+    
+    if (sorted_rows && max) {
+        out = array_new(free);
+        for(i = 0 ; i < max ; i++ ) {
+            DbItem *item = sorted_rows->rows[i];
+
+            array_add(out,STRDUP((i==0?"[":",")));
+
+            int j = 0;
+            for(j = 0 ; j < field_ids->size ; j++ ) {
+                char *js;
+                char *field_id = field_ids->array[j];
+                char *name = fields->array[j];
+
+                if (EMPTY_STR(field_id)) {
+
+                    ovs_asprintf(&js,"%c%s:\"???\"\n", (j==0?'{':','),fields->array[j]);
+                    array_add(out,js);
+
+                } else {
+                    char *value = db_rowid_get_field(item,field_id);
+                    if (value) {
+
+                        // Write file paths as Url encoded
+                        if (strcmp(name,"FILE") == 0) {
+                            char *tmp = url_encode_static(value,NULL);
+                            if (tmp != value) {
+                                FREE(value);
+                                value = tmp;
+                            }
+                        }
+
+
+                        char *value2 = clean_js_string(value);
+                        if (value2) {
+                            ovs_asprintf(&js,"%c%s:\"%s\"\n", (j==0?'{':','),fields->array[j],value2);
+                            array_add(out,js);
+                            if (value2 != value) FREE(value2);
+                        }
+                        FREE(value);
+                    }
+                }
+            }
+            array_add(out,STRDUP("}\n"));
+
+        }
+        array_add(out,STRDUP("]"));
+    }
+    array_free(field_ids);
+    return out;
+}
 
 void macro_init() {
 
@@ -2921,14 +3249,20 @@ void macro_init() {
         hashtable_insert(macros,"ELSEIF",macro_fn_elseif);
         hashtable_insert(macros,"ENDIF",macro_fn_endif);
         hashtable_insert(macros,"EPISODE_TOTAL",macro_fn_episode_total);
+        hashtable_insert(macros,"EPISODE_COUNT",macro_fn_episode_count);
         hashtable_insert(macros,"EVAL",macro_fn_eval);
         hashtable_insert(macros,"EXIT_BUTTON",macro_fn_exit_button);
         hashtable_insert(macros,"EXTERNAL_URL",macro_fn_external_url);
         hashtable_insert(macros,"FANART_URL",macro_fn_fanart_url);
         hashtable_insert(macros,"FAVICON",macro_fn_favicon);
+        hashtable_insert(macros,"FILE_PATH",macro_fn_file_path);
+        hashtable_insert(macros,"FILE_ENCODED",macro_fn_file_enc);
+        hashtable_insert(macros,"FILE_VOD_ATTRIBUTES",macro_fn_file_vod);
+        hashtable_insert(macros,"FILE_NUM_PARTS",macro_fn_file_num_parts);
         hashtable_insert(macros,"FONT_SIZE",macro_fn_font_size);
         hashtable_insert(macros,"FORM_END",macro_fn_form_end);
         hashtable_insert(macros,"FORM_START",macro_fn_form_start);
+        hashtable_insert(macros,"FLUSH",macro_fn_flush);
         hashtable_insert(macros,"GENRE",macro_fn_genre);
         hashtable_insert(macros,"GENRE_SELECT",macro_fn_genre_select);
         hashtable_insert(macros,"GRID",macro_fn_grid);
@@ -2942,6 +3276,7 @@ void macro_init() {
         hashtable_insert(macros,"IMAGE_URL",macro_fn_image_url);
         hashtable_insert(macros,"INCLUDE_TEMPLATE",macro_fn_include);
         hashtable_insert(macros,"IS_GAYA",macro_fn_is_gaya);
+        hashtable_insert(macros,"JS_DETAILS",macro_fn_jsdetails);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"LINK",macro_fn_link);
         hashtable_insert(macros,"LOCK_BUTTON",macro_fn_lock_button);

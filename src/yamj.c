@@ -170,7 +170,7 @@ YAMJSubCat *new_subcat(YAMJCat *owner,char *name,char *filter_url,int require_fi
             ret = NULL;
         }
 
-    } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url)) == NULL) {
+    } else if ((ret->filter_expr = parse_full_url_expression(ret->filter_expr_url,TOKEN_URL)) == NULL) {
 
         html_error("unable to parse query value for [%s_%s]",(owner?owner->name:"?"),name);
         free_yamj_subcatetory(ret);
@@ -1142,7 +1142,7 @@ YAMJCat *yamj_cat_config(int num)
                 free_yamj_catetory(ret);
                 ret = NULL;
             }
-        } else if ((ret->auto_subcat_expr = parse_full_url_expression(ret->auto_subcat_expr_url)) == NULL) {
+        } else if ((ret->auto_subcat_expr = parse_full_url_expression(ret->auto_subcat_expr_url,TOKEN_URL)) == NULL) {
             html_error("missing query  or expr value for ovs_yamj_cat[%d]",num);
         }
     }

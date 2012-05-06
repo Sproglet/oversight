@@ -23,34 +23,34 @@
 static int LOG_LVL=1;
 #define ATOMIC_PRECEDENCE 6
 static OpDetails ops[] = {
-    { OP_CONSTANT   , ""   , 0 ,ATOMIC_PRECEDENCE , {VAL_TYPE_NONE,VAL_TYPE_NONE } },
-    { OP_ADD     , "~A~", 2 , 3 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_SUBTRACT,"~S~" , 2 , 3  , {VAL_TYPE_NUM,VAL_TYPE_NUM }},
-    { OP_MULTIPLY,"~M~" , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_DIVIDE  ,"~D~" , 2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_AND     ,"~a~" , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_OR      ,"~o~" , 2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_NOT      ,"~!~", 1 , 5 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
-    { OP_NE      ,"~ne~", 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_LE      ,"~le~", 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_LT      ,"~lt~", 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
-    { OP_GT      ,"~gt~", 2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_GE      ,"~ge~", 2 , 2  ,{ VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
-    { OP_LEFT    ,"~l~" , 2 , 2 , {VAL_TYPE_STR , VAL_TYPE_NUM }},
-    { OP_SPLIT   ,"~sp~", 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR }},
-    { OP_THE     ,"~t~" , 1 , 4 , {VAL_TYPE_STR,VAL_TYPE_NONE} },
-    { OP_PERIOD  ,"~p~" , 1 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NONE} },
+    { OP_CONSTANT, {"" , ""}   , 0 ,ATOMIC_PRECEDENCE , {VAL_TYPE_NONE,VAL_TYPE_NONE } },
+    { OP_ADD     , { "~A~" , "add"}     ,2 , 3 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_SUBTRACT, { "~S~" , "sub"}     ,2 , 3  , {VAL_TYPE_NUM,VAL_TYPE_NUM }},
+    { OP_MULTIPLY, { "~M~" , "mul"}     ,2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_DIVIDE  , { "~D~" , "div"}     ,2 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_AND     , { "~a~" , "and"}   ,2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_OR      , { "~o~" , "or"}    ,2 , 0 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_NOT     , { "~!~",  "not"}    , 1 , 5 , {VAL_TYPE_NUM,VAL_TYPE_NUM } },
+    { OP_NE      , { "~ne~", "ne"}    ,2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LE      , { "~le~", "le"}    ,2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LT      , { "~lt~", "lt"}    ,2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_GT      , { "~gt~", "gt"}    ,2 , 2  , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_GE      , { "~ge~", "ge"}    ,2 , 2  ,{ VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR }},
+    { OP_LEFT    , { "~l~" , "left"}  ,2 , 2 , {VAL_TYPE_STR , VAL_TYPE_NUM }},
+    { OP_SPLIT   , { "~sp~", "split"} ,2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR }},
+    { OP_THE     , { "~t~" , "the"}   ,1 , 4 , {VAL_TYPE_STR,VAL_TYPE_NONE} },
+    { OP_PERIOD  , { "~p~" , "decade"},1 , 4 , {VAL_TYPE_NUM,VAL_TYPE_NONE} },
 
     // Letters used for following operators are passed in URLs also
-    { OP_EQ         ,"~" QPARAM_FILTER_EQUALS "~"      , 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
-    { OP_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH "~" , 2 , 2 , {VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR, VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
-    { OP_CONTAINS,"~" QPARAM_FILTER_CONTAINS "~"  , 2 , 2 , {VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR, VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_EQ         ,{"~" QPARAM_FILTER_EQUALS "~","eq"}      , 2 , 1 , {VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR , VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_STARTS_WITH,{"~" QPARAM_FILTER_STARTS_WITH "~" , "beg"}, 2 , 2 , {VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR, VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
+    { OP_CONTAINS,{"~" QPARAM_FILTER_CONTAINS "~","has"}  , 2 , 2 , {VAL_TYPE_IMDB_LIST|VAL_TYPE_LIST|VAL_TYPE_STR, VAL_TYPE_NUM|VAL_TYPE_STR|VAL_TYPE_CHAR} },
 
-    { OP_REGEX_STARTS_WITH,"~" QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~" , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
-    { OP_REGEX_CONTAINS,   "~" QPARAM_FILTER_CONTAINS QPARAM_FILTER_REGEX "~"  , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
-    { OP_REGEX_MATCH,      "~" QPARAM_FILTER_EQUALS QPARAM_FILTER_REGEX "~"  , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
+    { OP_REGEX_STARTS_WITH,{"~" QPARAM_FILTER_STARTS_WITH QPARAM_FILTER_REGEX "~","regbeg"} , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} }, // redundant? ^---
+    { OP_REGEX_CONTAINS,   {"~" QPARAM_FILTER_CONTAINS QPARAM_FILTER_REGEX "~","reg"}  , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} },
+    { OP_REGEX_MATCH,      {"~" QPARAM_FILTER_EQUALS QPARAM_FILTER_REGEX "~","eqreg"}  , 2 , 2 , {VAL_TYPE_STR,VAL_TYPE_STR} }, // redundant? ^---$
 
-    { OP_DBFIELD,"~f~"   , 1 , 5 , {VAL_TYPE_STR , VAL_TYPE_NONE } }
+    { OP_DBFIELD,{"~f~","fld"}   , 1 , 5 , {VAL_TYPE_STR , VAL_TYPE_NONE } }
 };
 
 static int num_ops = sizeof(ops)/sizeof(ops[0]);
@@ -109,7 +109,7 @@ Exp *new_val_num(double d)
     HTML_LOG(LOG_LVL,"num value [%ld]",d);
     return e;
 }
-Exp *new_exp(OpDetails *op,Exp *left,Exp *right)
+Exp *new_exp(OpDetails *op,Exp *left,Exp *right,int token_type)
 {
     Exp *e = CALLOC(sizeof(Exp),1);
     e->op_details = op;
@@ -118,6 +118,7 @@ Exp *new_exp(OpDetails *op,Exp *left,Exp *right)
 
     // If op = OP_DBFIELD then the fld_* members will get set to save field type lookups.
     e->fld_type = FIELD_TYPE_NONE;
+    e->original_token_type = token_type;
     return e;
 }
 
@@ -219,7 +220,7 @@ static int evaluate_child(Exp *e,DbItem *item,int child_no,int *err)
         }
 
     } else if ( e->subexp[child_no] ) {
-        html_error("too many arguments %c",e->op_details->url_text);
+        html_error("too many arguments %c",e->op_details->token[e->original_token_type]);
         ret = -1;
     }
     //HTML_LOG(0,"eval child %d = %d",child_no,ret);
@@ -763,6 +764,7 @@ OpDetails *get_op_details(Op op)
  * ~f~_Y~eq~2003
  **/
 
+#define EAT_SPACE(p) while(*(p) && isspace(*(p))) (p)++;
 /**
  * Recursive descent parser
  *
@@ -771,11 +773,13 @@ OpDetails *get_op_details(Op op)
  * Rating Field > 5 AND Rating Field < 6
  * The Expression 'Rating Field' shoud be a single node.
  */
-Exp *parse_url_expression(char **text_ptr,int precedence)
+Exp *parse_url_expression(char **text_ptr,int precedence,int token_type)
 {
     Exp *result = NULL;
 
     //HTML_LOG(0,"parse exp%d %*s[%s]",precedence,precedence*4,"",*text_ptr);
+    //
+    EAT_SPACE(*text_ptr);
 
 
     if (precedence == ATOMIC_PRECEDENCE ) {
@@ -788,7 +792,7 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 
             // parse ( exp )
            *text_ptr += strlen(BROPEN);
-           result = parse_url_expression(text_ptr,0);
+           result = parse_url_expression(text_ptr,0,token_type);
            if (!util_starts_with(*text_ptr,BRCLOSE)) {
                html_error("bad expression [%s]",*text_ptr);
                assert(0);
@@ -799,24 +803,28 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
 
            // parse atomic value
            char *p = *text_ptr;
-           char *end_tok="~)";;
-           if (*p == '\'') {
-               p++;
-               end_tok = "\'";
-           } 
 
            int remove_escapes = 0;
-           while (*p) {
-              if (*p == '\\') {
-                 p++;
-                 remove_escapes = 1;
-                 if (!*p) break;
-
-              } else if (strchr(end_tok,*p)) {
-                 break;
-              }
-              p++;
+           if (*p == '_' ) { // Field ID
+               p++;
+               while(isalnum(*p)) p++;
+           } else if (*p == '-' || *p == '+'  || *p == '.' || isdigit(*p)) {
+               p++;
+               while(isdigit(*p) || *p == '.') p++;
+           } else if (*p == '\'' ) {
+               p++;
+               while(*p && *p != '\'') {
+                   if (*p == '\\') {
+                       p++;
+                       remove_escapes = 1;
+                   }
+                   if (*p) p++;
+               }
+           } else {
+               // simple alphanumeric char sequence eg Category=M
+               while (isalnum(*p)) p++;
            }
+
 
            HTML_LOG(LOG_LVL,"value [%.*s]",p-*text_ptr,*text_ptr);
            if (**text_ptr == '\'' && *p == '\'' ) {
@@ -844,21 +852,27 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
                    result = new_val_num(d);
                }
            }
+
            *text_ptr = p;
        }
     }  else {
 
         // Parse higher level expression
-        result = parse_url_expression(text_ptr,precedence+1);
+        result = parse_url_expression(text_ptr,precedence+1,token_type);
+
+        EAT_SPACE(*text_ptr);
 
         while(1) {
             // Look for operator at current precedence level
             int i;
             OpDetails *op_details = NULL;
+            HTML_LOG(0,"TRACE1 checking input [%s]",*text_ptr);
             for(i = 0 ; i < num_ops ; i++ ) {
                 if (ops[i].precedence == precedence) {
-                    if (util_starts_with(*text_ptr,ops[i].url_text)) {
+                    HTML_LOG(0,"TRACE1 against token [%d][%s]",token_type,ops[i].token[token_type]);
+                    if (util_starts_with(*text_ptr,ops[i].token[token_type])) {
                         op_details = ops + i ;
+                        HTML_LOG(0,"TRACE1 found token [%s]",ops[i].token[token_type]);
                         break;
                     }
                 }
@@ -868,26 +882,28 @@ Exp *parse_url_expression(char **text_ptr,int precedence)
            
             // Found operator.
             Exp *exp2 = NULL;
-            *text_ptr += strlen(op_details->url_text);
+            *text_ptr += strlen(op_details->token[token_type]);
 
             if (op_details->num_args >= 2) {
                 // Parse following expression 
-                exp2 = parse_url_expression(text_ptr,precedence+1);
+                exp2 = parse_url_expression(text_ptr,precedence+1,token_type);
             }
-            HTML_LOG(LOG_LVL,"new op [%s]",op_details->url_text);
-            result = new_exp(op_details,result,exp2);
+            HTML_LOG(LOG_LVL,"new op [%s]",op_details->token[token_type]);
+            result = new_exp(op_details,result,exp2,token_type);
         }
     }
+
+    EAT_SPACE(*text_ptr);
 
     return result;
 }
 
-Exp *parse_full_url_expression(char *text_ptr)
+Exp *parse_full_url_expression(char *text_ptr,int token_type)
 {
     Exp *result =  NULL;
     char *p = text_ptr;
     if (p && *p) {
-        result = parse_url_expression(&p,0);
+        result = parse_url_expression(&p,0,token_type);
         if (*p) {
             html_error("unparsed [%.*s]",20,p);
         }
@@ -967,7 +983,7 @@ void exp_free(Exp *e,int recursive)
 }
 
 void exp_test_num(char *exp,double expect) {
-    Exp *e = parse_full_url_expression(exp);
+    Exp *e = parse_full_url_expression(exp,TOKEN_URL);
     evaluate(e,NULL);
     exp_dump(e,0,1);
     if(e->val.num_val!= expect) {

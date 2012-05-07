@@ -71,7 +71,6 @@ int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char 
          * Read and process lines. if lines have formt [LOOP_START:]..[:LOOP_END:] then add to hashtable(skin_name,file_name,loop_name)
          * For later processing by [:LOOP_EXPAND(name,start,end,increment):]
          */
-TRACE1;
         Array *loop_body=NULL;
         PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
         while(fgets(buffer,HTML_BUF_SIZE,in) != NULL) {
@@ -118,7 +117,6 @@ TRACE1;
         }
         fflush(out);
     }
-TRACE1;
 
     HTML_LOG(1,"end template");
     return ret;
@@ -505,11 +503,24 @@ char *scanlines_to_text(long scanlines)
     }
 }
 
-char *get_skin_name()
-{
-    static char *template_name=NULL;
-    if (!template_name) template_name=oversight_val("ovs_skin_name");
-    return template_name;
+char *get_skin_name() {
+#if 1
+    char *skin_name=query_val(QUERY_PARAM_SKIN_NAME);
+
+    if (EMPTY_STR(skin_name)) {
+#if 0
+        if (g_dimension && !g_dimension->local_browser) {
+            skin_name=oversight_val("ovs_remote_skin_name");
+        }
+#endif
+        if (EMPTY_STR(skin_name)) {
+            skin_name=oversight_val("ovs_skin_name");
+        }
+    }
+#else
+    char *skin_name=oversight_val("ovs_skin_name");
+#endif
+    return skin_name;
 }
 
 char *skin_path()

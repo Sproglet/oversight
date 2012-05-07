@@ -27,6 +27,14 @@
 */
 
 // vi:sw=4:et:ts=4
+//
+// TODO:
+// Rewrite code to use TemplateFramgents
+// Pass0: template file is loaded into memory - each line is a fragment in a doubly linked list.
+// Pass1: Call macros. Each non-NULL macro result inserts a new fragment
+// Pass2: Repeat  (now PAGE_MAX macro will work)
+// Output: Output all fragments in sequence.
+//
 
 char *scanlines_to_text(long scanlines);
 char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out);
@@ -59,26 +67,58 @@ int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char 
         char buffer[HTML_BUF_SIZE];
 
 
+        /*
+         * Read and process lines. if lines have formt [LOOP_START:]..[:LOOP_END:] then add to hashtable(skin_name,file_name,loop_name)
+         * For later processing by [:LOOP_EXPAND(name,start,end,increment):]
+         */
+TRACE1;
+        Array *loop_body=NULL;
         PRE_CHECK_FGETS(buffer,HTML_BUF_SIZE);
         while(fgets(buffer,HTML_BUF_SIZE,in) != NULL) {
             CHECK_FGETS(buffer,HTML_BUF_SIZE);
 
-            int count = 0; 
-            char *p=buffer;
-//            while(*p == ' ') {
-//                p++;
-//            }
-            if ((count=template_line_replace(pass,skin_name,orig_skin,p,sorted_rows,out)) != 0 ) {
-                HTML_LOG(4,"macro count %d",count);
-            }
+            if (loop_body) {
+                if (util_starts_with(buffer,"[:LOOP_END:]")) {
+                    loop_body = NULL;
+                } else {
+                    // Add to loop body
+                    //HTML_LOG(0,"loop[%s]",buffer);
+                    array_add(loop_body,STRDUP(buffer));
+                }
+            } else {
 
-            if (fix_css_bug && strstr(p,"*/") ) {
-                printf(dummy_css);
+                if (util_starts_with(buffer,"[:LOOP_START")) {
+                    char *loop_name=regextract1(buffer,":LOOP_START\\(name=>([^)]+)\\):",1,0);
+                    if (loop_name) {
+                        HTML_LOG(0,"loop[%s]",loop_name);
+                        loop_body = loop_register(loop_name);
+                        FREE(loop_name);
+                    } else {
+                        html_error("failed to parse loop line [%s]",buffer);
+                    }
+                } else {
+
+                    // A normal line outside of a loop
+
+                    int count = 0; 
+                    char *p=buffer;
+        //            while(*p == ' ') {
+        //                p++;
+        //            }
+                    if ((count=template_line_replace(pass,skin_name,orig_skin,p,sorted_rows,out)) != 0 ) {
+                        HTML_LOG(4,"macro count %d",count);
+                    }
+
+                    if (fix_css_bug && strstr(p,"*/") ) {
+                        printf(dummy_css);
+                    }
+                }
             }
 
         }
         fflush(out);
     }
+TRACE1;
 
     HTML_LOG(1,"end template");
     return ret;
@@ -129,13 +169,21 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 {
     int ret = -1;
     int pass=0;
+    
+    //
+    //This is done in two passes so we know how many items will eventually be displayed at any point on the page.
+    //This is required for  [:PAGE_MAX:]  and [:RIGHT:] macros for example.
+
     //char *pass1_file = "/tmp/ovs1";
-    char *pass1_file = "/share/Apps/oversight/tmp/ovs1";
-    FILE *pass1_fp = fopen(pass1_file,"w");
+    char *pass1_file = "/share/ovs1";
+    FILE *pass1_fp = NULL;
+   
+    pass1_fp = fopen(pass1_file,"w");
+
     if (pass1_fp) {
         HTML_LOG(0,"output to %s",pass1_file);
         html_set_output(pass1_fp);
-        HTML_LOG(0,"begin pass1");
+        HTML_LOG(0,"begin pass1 [%s]",pass1_file);
         ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
         HTML_LOG(0,"end pass1");
         fclose(pass1_fp);
@@ -164,6 +212,7 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
         }
         unlink(pass1_file);
     }
+    loop_deregister_all();
 
     return ret;
 
@@ -215,6 +264,7 @@ TRACE;
 
     int has_macro = 0;
 
+
     // first replace simple variables in the buffer.
     char *newline=template_line_replace_only(pass,skin_name,orig_skin,input,sorted_rows,&has_macro,out);
 
@@ -236,7 +286,9 @@ int replace_macro(char *macro_name) {
     } else if (util_starts_with(macro_name,"IF")
             || util_starts_with(macro_name,"ELSEIF")
             || util_starts_with(macro_name,"ELSE")
-            || util_starts_with(macro_name,"ENDIF")) {
+            || util_starts_with(macro_name,"ENDIF")
+            || util_starts_with(macro_name,"LOOP_")
+            ) {
         result = 1;
     }
     return result;
@@ -249,7 +301,6 @@ char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *
 TRACE;
     char *newline = input;
     char *macro_start = NULL;
-
 
     macro_start = strstr(input,MACRO_STR_START);
     while (macro_start ) {

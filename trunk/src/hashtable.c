@@ -244,7 +244,7 @@ hashtable_remove(struct hashtable *h, void *k,int free_key)
 /*****************************************************************************/
 /* destroy */
 void
-hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
+hashtable_destroy(struct hashtable *h, int free_keys , void (*free_fn)(void *))
 {
     if (h) {
         unsigned int i;
@@ -270,8 +270,8 @@ hashtable_destroy(struct hashtable *h, int free_keys , int free_values)
                 hthis++;
 
                 e = e->next;
-                if (free_keys) freekey(f->k);
-                if (free_values) FREE(f->v);
+                if (free_keys && f->k) freekey(f->k);
+                if (free_fn && f->v) free_fn(f->v);
                 FREE(f);
             }
             hit2 += hthis;

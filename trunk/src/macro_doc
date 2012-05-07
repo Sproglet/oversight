@@ -19,6 +19,8 @@ awk '
         $0 = "{{{ "$0" }}}";
     }
 
+    sub("hashtable_insert\\(macros,","",$0);
+
     if (!match($0,"=(begin|end) wiki")) {
         printf "%s %05x:%s\n",section,NR,$0;
     }

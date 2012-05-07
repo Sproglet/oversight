@@ -18,6 +18,7 @@
 
 /**
  * convert TITLE:n to the title of the N'th row of the sorted results.
+ * index from 1 -  0=last.
  */
 
 char *get_indexed_field(char *field_reference,DbSortedRows *sorted_rows)
@@ -25,14 +26,16 @@ char *get_indexed_field(char *field_reference,DbSortedRows *sorted_rows)
     int row_num;
     char *result = NULL;
 
-#define INDEX_SEP ':'
+#define INDEX_SEP '#'
     char *sep_pos;
     char *fieldid = NULL;
 
     if ( (sep_pos = strchr(field_reference,INDEX_SEP)) != NULL) {
         char *name = COPY_STRING(sep_pos-field_reference,field_reference);
         fieldid = dbf_macro_to_fieldid(name);
-        row_num = atoi(sep_pos+1);
+        row_num = atoi(sep_pos+1)-1;
+        if (row_num<0) row_num += sorted_rows->num_rows;
+        HTML_LOG(0,"index=%d",row_num);
         FREE(name);
     } else {
         fieldid = dbf_macro_to_fieldid(field_reference);

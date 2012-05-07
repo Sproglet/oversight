@@ -528,13 +528,13 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
             html_hashtable_dump(3,"catalog cfg",catalog_config);
             html_hashtable_dump(3,"settings",nmt_settings);
             */
-            hashtable_destroy(g_oversight_config,1,1);
+            hashtable_destroy(g_oversight_config,1,free);
         TRACE;
 
-            hashtable_destroy(g_catalog_config,1,1);
+            hashtable_destroy(g_catalog_config,1,free);
         TRACE;
 
-            hashtable_destroy(g_query,1,0);
+            hashtable_destroy(g_query,1,NULL);
         TRACE;
             hashtable_destroy(g_nmt_settings,1,1);
         TRACE;

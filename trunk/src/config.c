@@ -124,8 +124,8 @@ void reload_configs()
 {
     HTML_LOG(0,"reload configs");
     // small leak here in not freeing the hashtable values.
-    hashtable_destroy(g_oversight_config,0,0);
-    hashtable_destroy(g_catalog_config,0,0); 
+    hashtable_destroy(g_oversight_config,0,NULL);
+    hashtable_destroy(g_catalog_config,0,NULL); 
 
     load_ovs_configs();
     config_read_dimensions();

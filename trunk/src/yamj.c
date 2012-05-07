@@ -944,12 +944,12 @@ void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source)
 
         if (!EMPTY_STR(plot)) {
             char *p = xmlstr_static(plot,0);
-            if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
+            if (p && p[2] == ':' && isalpha(p[0]) && isalpha(p[1])) {
                 p += 3;
             }
             fprintf(xmlout,"\t<filePlot part=\"%d\">%s%s</filePlot>\n",part_no,p,(item->watched?" (w)":""));
+            FREE(plot);
         }
-        FREE(plot);
 
         if (!lean_xml || item->season == 0) {
             fprintf(xmlout,"\t\t<airsInfo part=\"%d\"",part_no);

@@ -213,7 +213,7 @@ char *get_plot(DbItem *item,PlotType ptype)
 
         if (free_short_plot) {
             item->plottext[ptype] =  short_plot;
-        } else {
+        } else if (short_plot) {
             item->plottext[ptype] =  STRDUP(short_plot);
         }
     }
@@ -225,25 +225,28 @@ char *truncate_plot(char *plot,int *free_result)
 {
     char *short_plot = plot;
     *free_result = 0;
-    int max;
 
-    max = utf8pos(plot,g_dimension->max_plot_length)-plot;
+    if (plot) {
+        int max;
 
-    //HTML_LOG(0,"binary length=%d max cfg=%d = binary:%d [%.*s]",strlen(plot),g_dimension->max_plot_length,max,max,plot);
+        max = utf8pos(plot,g_dimension->max_plot_length)-plot;
 
-    if (!EMPTY_STR(plot) && max) {
+        //HTML_LOG(0,"binary length=%d max cfg=%d = binary:%d [%.*s]",strlen(plot),g_dimension->max_plot_length,max,max,plot);
 
-        char *p = plot + max;
-        // search back to a full stop.
-        while (p > plot && strchr(".!?",*p) == NULL ) {
-            p--;
-        }
-        *free_result = 1;
-        if (p == plot ) {
-            // oops gone too far. Just truncate with ellipse
-            ovs_asprintf(&short_plot,"%.*s...",max-3,plot);
-        } else {
-            ovs_asprintf(&short_plot,"%.*s",p-plot+1 ,plot);
+        if (!EMPTY_STR(plot) && max) {
+
+            char *p = plot + max;
+            // search back to a full stop.
+            while (p > plot && strchr(".!?",*p) == NULL ) {
+                p--;
+            }
+            *free_result = 1;
+            if (p == plot ) {
+                // oops gone too far. Just truncate with ellipse
+                ovs_asprintf(&short_plot,"%.*s...",max-3,plot);
+            } else {
+                ovs_asprintf(&short_plot,"%.*s",p-plot+1 ,plot);
+            }
         }
     }
     return short_plot;

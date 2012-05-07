@@ -1691,7 +1691,6 @@ char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMod
 {
     char *path = internal_image_path_static(item,image_type,0);
 
-TRACE;
     if (path) {
         // Modify the path extension/suffix depending on image type.
         int freepath=0;
@@ -1717,7 +1716,7 @@ TRACE;
             char *ext_list[] = { IMAGE_EXT_THUMB_BOXSET, IMAGE_EXT_THUMB , NULL };
             int start_index = 1;
 
-            if (newview->view_class == VIEW_CLASS_BOXSET) {
+            if (newview && newview->view_class == VIEW_CLASS_BOXSET) {
                 start_index=0;
             }
 

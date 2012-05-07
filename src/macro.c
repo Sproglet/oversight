@@ -47,6 +47,8 @@ char *macro_fn_background_url(MacroCallInfo *call_info);
 char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect);
 Array *js_array(DbSortedRows *rows,int max,Array *fields);
 void loop_expand(char *loop_name,Array *loop_body,char *loop_value,Array *out,int max);
+char *image_url(MacroCallInfo *call_info,ImageType type);
+
 
 Db *firstdb(MacroCallInfo *call_info)
 {
@@ -167,16 +169,73 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
     return result;
 }
 
+/**
+ * =begin wiki
+ * ==FANART_URL==
+ *
+ * FANART_URL(default_image)
+ * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL BANNER_URL POSTER_URL THUMB_URL
+ *
+ * =end wiki
+**/  
+char *macro_fn_fanart_url(MacroCallInfo *call_info)
+{
+    if (*oversight_val("ovs_display_fanart") == '0' ) {
+
+        return macro_fn_background_url(call_info);
+    } else {
+        return image_url(call_info,FANART_IMAGE);
+    }
+}
 
 /**
-  BANNER_URL
-  BANNER_URL(default image name)
-  Display a banner. If no banner then display default image from skin/720 or skin/sd folder.
+ * =begin wiki
+ * ==POSTER_URL==
+ *
+ * POSTER_URL(default_image)
+ * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL BANNER_URL THUMB_URL
+ *
+ * =end wiki
 **/  
-char *macro_fn_banner_url(MacroCallInfo *call_info) {
+char *macro_fn_poster_url(MacroCallInfo *call_info)
+{
+    return image_url(call_info,POSTER_IMAGE);
+}
+/**
+ * =begin wiki
+ * ==THUMB_URL==
+ *
+ * THUMB_URL(default_image)
+ * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL POSTER_URL BANNER_URL
+ *
+ * =end wiki
+**/  
+char *macro_fn_thumb_url(MacroCallInfo *call_info)
+{
+    return image_url(call_info,THUMB_IMAGE);
+}
+/**
+ * =begin wiki
+ * ==BANNER_URL==
+ *
+ * BANNER_URL(default_image)
+ * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL POSTER_URL THUMB_URL
+ *
+ * =end wiki
+**/  
+char *macro_fn_banner_url(MacroCallInfo *call_info)
+{
+    return image_url(call_info,BANNER_IMAGE);
+}
+char *image_url(MacroCallInfo *call_info,ImageType type)
+{
 
     char *result = NULL;
-    char *default_banner=NULL;
+    char *default_image=NULL;
 
     if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
 
@@ -185,76 +244,29 @@ char *macro_fn_banner_url(MacroCallInfo *call_info) {
 
     } else if (call_info->args && call_info->args->size > 1 ) {
 
-        ovs_asprintf(&result,"%s([default banner])",call_info->call);
+        ovs_asprintf(&result,"%s([default image])",call_info->call);
 
     } else {
 
         if (call_info->args && call_info->args->size == 1 ) {
 
-            default_banner = call_info->args->array[0];
+            default_image = call_info->args->array[0];
         }
 
-        char *banner = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,BANNER_IMAGE,NULL);
+        char *path = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,type,NULL);
 
 
-        if (!banner || !exists(banner)) {
+        if (!path || !exists(path)) {
 
-            if (default_banner) {
+            if (default_image) {
 
-                banner = image_path_by_resolution(call_info->skin_name,default_banner);
+                path = image_path_by_resolution(call_info->skin_name,default_image);
 
             }
         }
 
-        result  = file_to_url(banner);
-        FREE(banner);
-    }
-    return result;
-}
-/**
-  FANART_URL(image name)
-  Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
-  use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL
-**/  
-char *macro_fn_fanart_url(MacroCallInfo *call_info) {
-
-    char *result = NULL;
-    char *default_wallpaper=NULL;
-
-    if (*oversight_val("ovs_display_fanart") == '0' ) {
-
-        return macro_fn_background_url(call_info);
-
-    } else if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
-
-        call_info->free_result=0;
-        return "?";
-
-    } else if (call_info->args && call_info->args->size > 1 ) {
-
-        ovs_asprintf(&result,"%s([default wallpaper])",call_info->call);
-
-    } else {
-
-        if (call_info->args && call_info->args->size == 1 ) {
-
-            default_wallpaper = call_info->args->array[0];
-        }
-
-        char *fanart = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,FANART_IMAGE,NULL);
-
-
-        if (!fanart || !exists(fanart)) {
-
-            if (default_wallpaper) {
-
-                fanart = image_path_by_resolution(call_info->skin_name,default_wallpaper);
-
-            }
-        }
-
-        result  = file_to_url(fanart);
-        FREE(fanart);
+        result  = file_to_url(path);
+        FREE(path);
     }
     return result;
 }
@@ -980,7 +992,6 @@ char *macro_fn_year(MacroCallInfo *call_info) {
 
         if (item->category == 'T' ) {
 
-            HTML_LOG(0,"airdate[%s]=[%x]",item->file,item->airdate);
             struct tm *t = internal_time2tm(item->airdate,NULL);
             year_num = t->tm_year+1900;
 
@@ -2319,7 +2330,6 @@ char *macro_fn_delete_button(MacroCallInfo *call_info) {
  */
 char *macro_fn_loop_expand(MacroCallInfo *call_info)
 {
-TRACE1;
     char *result = NULL;
     struct hashtable *h = args_to_hash(call_info,"name","start,inc,num,end,values");
     int start=1;
@@ -2358,19 +2368,16 @@ TRACE1;
             Array *out = array_new(free);
 
             if (values) {
-TRACE1;
                 for(i = 0 ; i < values->size ; i++ ) {
                     loop_expand(name,loop,values->array[i],out,values->size);
                 }
             } else {
-TRACE1;
                 char num[10];
                 for(i = start ; i<= end ; i+=inc) {
                     sprintf(num,"%d",i);
                     loop_expand(name,loop,num,out,end);
                 }
             }
-TRACE1;
 
             result = arraystr(out);
             array_free(out);
@@ -2379,7 +2386,6 @@ TRACE1;
         free_named_args(h);
 
     }
-TRACE1;
     return result;
 }
 
@@ -3471,6 +3477,7 @@ void macro_init() {
         hashtable_insert(macros,"PERSON_URL",macro_fn_person_url);
         hashtable_insert(macros,"PLOT",macro_fn_plot);
         hashtable_insert(macros,"POSTER",macro_fn_poster);
+        hashtable_insert(macros,"POSTER_URL",macro_fn_poster_url);
         hashtable_insert(macros,"RATING_SELECT",macro_fn_rating_select);
         hashtable_insert(macros,"RATING",macro_fn_rating);
         hashtable_insert(macros,"RATING_STARS",macro_fn_rating_stars);
@@ -3502,6 +3509,7 @@ void macro_init() {
         hashtable_insert(macros,"TITLE",macro_fn_title);
         hashtable_insert(macros,"TITLE_SELECT",macro_fn_title_select);
         hashtable_insert(macros,"TITLE_SIZE",macro_fn_title_size);
+        hashtable_insert(macros,"THUMB_URL",macro_fn_thumb_url);
         hashtable_insert(macros,"TVIDS",macro_fn_tvids);
         hashtable_insert(macros,"TV_LISTING",macro_fn_tv_listing);
         hashtable_insert(macros,"TV_MODE",macro_fn_tv_mode);

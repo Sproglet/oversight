@@ -477,7 +477,8 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
         // page.
         set_selected_item();
 
-        char *skin_name=oversight_val("ovs_skin_name");
+        char *skin_name=get_skin_name();
+
 
         if (strchr(skin_name,'/') || *skin_name == '.' || !*skin_name ) {
 

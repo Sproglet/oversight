@@ -40,7 +40,6 @@ OVS_EXTERN(AbetIndex *g_abet_orig_title,NULL);
 OVS_EXTERN(Dimensions *g_dimension,NULL);
 #define IN_POSTER_MODE (g_dimension->poster_mode != 0) 
 #define IN_TEXT_MODE (g_dimension->poster_mode == 0) 
-OVS_EXTERN(int g_local_browser,0);
 OVS_EXTERN(Array *g_genre,NULL);
 OVS_EXTERN(int html_log_level,0);
 OVS_EXTERN(int g_playlist_count,0);
@@ -74,6 +73,7 @@ OVS_EXTERN1(unsigned char g_title_letter_count[NUM_TITLE_LETTERS]);
 #define QUERY_PARAM_PAGE "p"
 #define QUERY_PARAM_IDLIST "idlist"
 #define QUERY_PARAM_TEMPLATE_NAME "tn"
+#define QUERY_PARAM_SKIN_NAME "sk"
 
 #define QUERY_PARAM_EPISODE_TITLES "_et"
 #define QUERY_PARAM_EPISODE_DATES "_ed"

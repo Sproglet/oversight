@@ -38,7 +38,7 @@ AbetIndex *abet_index_create(char *list)
 void abet_index_free(AbetIndex *ai)
 {
     if (ai) {
-        hashtable_destroy(ai->index,1,1);
+        hashtable_destroy(ai->index,1,free);
         abet_free(ai->abet);
         FREE(ai);
     }

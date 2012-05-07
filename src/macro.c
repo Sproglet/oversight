@@ -46,6 +46,7 @@ void free_named_args(struct hashtable *h);
 char *macro_fn_background_url(MacroCallInfo *call_info);
 char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect);
 Array *js_array(DbSortedRows *rows,int max,Array *fields);
+void loop_expand(char *loop_name,Array *loop_body,char *loop_value,Array *out,int max);
 
 Db *firstdb(MacroCallInfo *call_info)
 {
@@ -570,7 +571,7 @@ char *macro_fn_sort_select(MacroCallInfo *call_info) {
         hashtable_insert(sort,DB_FLDID_INDEXTIME,"Age");
         hashtable_insert(sort,DB_FLDID_YEAR,"Year");
         result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,DB_FLDID_INDEXTIME,sort);
-        hashtable_destroy(sort,0,0);
+        hashtable_destroy(sort,0,NULL);
     }
     call_info->free_result = 0;
     return result;
@@ -610,7 +611,7 @@ char *macro_fn_rating_select(MacroCallInfo *call_info)
             }
         }
         result =  auto_option_list(QUERY_PARAM_RATING,first,rating);
-        hashtable_destroy(rating,0,1);
+        hashtable_destroy(rating,0,free);
     }
     call_info->free_result = 0;
     return result;
@@ -636,7 +637,7 @@ char *macro_fn_media_select(MacroCallInfo *call_info)
 		hashtable_insert(category,QUERY_PARAM_MEDIA_TYPE_VALUE_OTHER,"Other");
 
         result =  auto_option_list(QUERY_PARAM_TYPE_FILTER,both,category);
-        hashtable_destroy(category,0,0);
+        hashtable_destroy(category,0,NULL);
     }
     call_info->free_result = 0;
     return result;
@@ -658,7 +659,7 @@ char *macro_fn_watched_select(MacroCallInfo *call_info) {
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_YES,"Watched");
         hashtable_insert(watched,QUERY_PARAM_WATCHED_VALUE_NO,"Unwatched");
         result =  auto_option_list(QUERY_PARAM_WATCHED_FILTER,QUERY_PARAM_WATCHED_VALUE_ANY,watched);
-        hashtable_destroy(watched,0,0);
+        hashtable_destroy(watched,0,NULL);
     }
     call_info->free_result = 0;
     return result;
@@ -680,7 +681,7 @@ char *macro_fn_locked_select(MacroCallInfo *call_info) {
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_YES,"Locked");
         hashtable_insert(locked,QUERY_PARAM_LOCKED_VALUE_NO,"Unlocked");
         result =  auto_option_list(QUERY_PARAM_LOCKED_FILTER,QUERY_PARAM_LOCKED_VALUE_ANY,locked);
-        hashtable_destroy(locked,0,0);
+        hashtable_destroy(locked,0,NULL);
     }
     call_info->free_result = 0;
     return result;
@@ -780,7 +781,7 @@ char *title_index(AbetIndex *ai,char *query_param_name)
         }
 
         result = auto_option_list(query_param_name,"",title);
-        hashtable_destroy(title,0,0);
+        hashtable_destroy(title,0,NULL);
     }
     return result;
 }
@@ -819,7 +820,7 @@ char *macro_fn_genre_select(MacroCallInfo *call_info)
         }
         result = auto_option_list(DB_FLDID_GENRE,"",expanded_genres);
         call_info->free_result = 0; // TODO : this should be freed but we'll leave until next release.
-        hashtable_destroy(expanded_genres,1,1);
+        hashtable_destroy(expanded_genres,1,free);
     }
     return result;
 }
@@ -1315,7 +1316,7 @@ char *macro_fn_rating(MacroCallInfo *call_info) {
         return "?";
     }
     if (*oversight_val("ovs_display_rating") != '0' && call_info->sorted_rows->num_rows) {
-        struct hashtable *h = args_to_hash(call_info,NULL,"scale,precision");
+        struct hashtable *h = args_to_hash(call_info,NULL,"%scale,%precision");
         if ((tmp = get_named_arg(h,"scale")) != NULL) {
             scale = atoi(tmp);
         }
@@ -1343,6 +1344,29 @@ char *macro_fn_rating(MacroCallInfo *call_info) {
     return result;
 }
 
+struct hashtable *args_to_set(Array *args,struct hashtable **numbers)
+{
+    int i;
+    struct hashtable *h = NULL;
+    if (args) {
+        for(i= 0 ; i < args->size ; i++ ) {
+            if (h == NULL) {
+                h = string_string_hashtable("set",16);
+            }
+            char *name = args->array[i];
+            if (*name == '%') { // integer prefix
+                if (*numbers == NULL) {
+                    *numbers = string_string_hashtable("numbers",16);
+
+                }
+                name++;
+                hashtable_insert(*numbers,STRDUP(name),"1");
+            }
+            hashtable_insert(h,STRDUP(name),"1");
+        }
+    }
+    return h;
+}
 
 // If a macro has arguments like, 1,cols=>3,rows=>4,5  then create a hashtable cols=>3,rows=>4
 #define HASH_ASSIGN "=>"
@@ -1355,18 +1379,19 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
 
     struct hashtable *required_set = NULL;
     struct hashtable *optional_set = NULL;
+    struct hashtable *int_type = NULL; // all names prefixed % will be integer type
 
     // Get list of required variables.
     if (required_list != NULL) {
         Array *a = split1ch(required_list,",");
-        required_set = array_to_set(a);
+        required_set = args_to_set(a,&int_type);
         array_free(a);
     }
 
     // Get list of optional variables.
     if (optional_list != NULL) {
         Array *a = split1ch(optional_list,",");
-        optional_set = array_to_set(a);
+        optional_set = args_to_set(a,&int_type);
         array_free(a);
     }
 
@@ -1388,6 +1413,13 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
                     if (hashtable_search(h,name)) {
                         html_error("ignore duplicate arg[%s]",name);
                     } else {
+                        if (int_type && hashtable_search(int_type,name)) {
+                            int tmp;
+                            if (!util_parse_int(val,&tmp,0)) {
+                                html_error("bad number [%s] for argument [%s]",val,name);
+                                ok=0;
+                            }
+                        }
                         hashtable_insert(h,name,val);
                     }
                 } else {
@@ -1409,10 +1441,11 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
     }
 
 
+    set_free(int_type);
     set_free(required_set);
     set_free(optional_set);
     if (!ok) {
-        html_error("usage %s(%s%s[%s])",
+        html_error("usage %s(%s %s[%s])",
                 call_info->call,
                 NVL(required_list),
                 (EMPTY_STR(required_list)?"":","),
@@ -1467,7 +1500,7 @@ char *get_named_arg(struct hashtable *h,char *name)
 void free_named_args(struct hashtable *h)
 {
     if (h) {
-        hashtable_destroy(h,1,1);
+        hashtable_destroy(h,1,free);
     }
 }
 
@@ -1496,7 +1529,7 @@ void free_named_args(struct hashtable *h)
  */
 char *macro_fn_grid(MacroCallInfo *call_info) {
 
-    struct hashtable *h = args_to_hash(call_info,NULL,"rows,cols,img_height,img_width,offset,order");
+    struct hashtable *h = args_to_hash(call_info,NULL,"%rows,%cols,%img_height,%img_width,%offset,%order");
     
     GridSegment *gs ;
     char *result = NULL;
@@ -1783,7 +1816,7 @@ char *macro_fn_file_path(MacroCallInfo *call_info)
 }
 /**
  * =begin wiki
- * ==FILE_PATH(n)==
+ * ==FILE_ENCODED(n)==
  * Return url encoded name of n'th file part. See also FILEPARTS, FILE_PATH FILE_VOD_ATTRIBUTES
  * =endwiki
  */
@@ -1807,14 +1840,14 @@ char *macro_fn_file_vod(MacroCallInfo *call_info)
  * Return number of parts  for a movie - OR number of Episodes for a TV series.
  *
  * This is static an only computed once. IT should only be called on a movie detail page
- * =endwiki
+ * =end wiki
  */
 char *macro_fn_file_num_parts(MacroCallInfo *call_info)
 {
     static char *result=NULL;
     call_info->free_result = 0;
     if (result == NULL) {
-        if (call_info->args && call_info->args->size == 0) {
+        if (call_info->args==NULL || call_info->args->size == 0) {
             DbItem *item = call_info->sorted_rows->rows[0];
             if (item) {
                 int count = 0;
@@ -1837,7 +1870,7 @@ char *macro_fn_file_num_parts(MacroCallInfo *call_info)
             }
 
         } else {
-            ovs_asprintf(&result,"%s( no args expected",call_info->call);
+            ovs_asprintf(&result,"%s( no args expected)",call_info->call);
         }
     }
     return result;
@@ -1852,9 +1885,17 @@ char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
 
     if (call_info->args==NULL || call_info->args->size <= 1) {
         if (call_info->args && call_info->args->size == 1) {
-            part_no = atoi(call_info->args->array[0]);
+            if (!util_parse_int(call_info->args->array[0],&part_no,1)) {
+                return NULL;
+            }
         }
         DbItem *item = call_info->sorted_rows->rows[0];
+
+        if (item->category == 'T') {
+            item = call_info->sorted_rows->rows[part_no-1];
+            part_no=1;
+        }
+
         if (item) {
             char *path = get_path_no(item,part_no-1,&freeit);
 
@@ -1930,17 +1971,17 @@ char *macro_fn_template_url(MacroCallInfo *call_info)
 }
 
 /**
-  =begin wiki
-  ==IMAGE_URL==
-    Description:
-    Generate a url for a template image from current skins images folder - if not present look in defaults.
-    This is just the url - no html tag is included.
-  Syntax:
-  [:IMAGE_URL(image name):]
-  Example:
-  [:IMAGE_URL(stop):]
-  =end wiki
-**/  
+ * =begin wiki
+ * ==IMAGE_URL==
+ *   Description:
+ *   Generate a url for a template image from current skins images folder - if not present look in defaults.
+ *   This is just the url - no html tag is included.
+ * Syntax:
+ * [:IMAGE_URL(image name):]
+ * Example:
+ * [:IMAGE_URL(stop):]
+ * =end wiki
+ */  
 char *macro_fn_image_url(MacroCallInfo *call_info)
 {
     char *result=NULL;
@@ -1958,16 +1999,16 @@ char *macro_fn_image_url(MacroCallInfo *call_info)
     return result;
 }
 /**
-  =begin wiki
-  ==IMAGE_URL==
-    Description:
-    Generate html <img> tag to display an icon  - if not present look in defaults.
-  Syntax:
-  [:ICON(name,[attribute]):]
-  Example:
-  [:ICON(stop,width=20):]
-  =end wiki
-**/  
+ * =begin wiki
+ * ==IMAGE_URL==
+ *   Description:
+ *   Generate html <img> tag to display an icon  - if not present look in defaults.
+ * Syntax:
+ * [:ICON(name,[attribute]):]
+ * Example:
+ * [:ICON(stop,width=20):]
+ * =end wiki
+ */  
 char *macro_fn_icon(MacroCallInfo *call_info) {
     char *result=NULL;
     if (call_info->args && call_info->args->size == 1) {
@@ -2257,7 +2298,129 @@ char *macro_fn_delete_button(MacroCallInfo *call_info) {
     return result;
 }
 
-char *macro_fn_lock_button(MacroCallInfo *call_info) {
+/*
+ * =begin wiki
+ * ==LOOP_START==
+ *
+ * [:LOOP_START(name):] - following lines are stored as the named loop body up to the [:LOOP_END:]
+ *
+ * ==LOOP_END==
+ * [:LOOP_END:] - End of names loop body
+ *
+ * ==LOOP_EXPAND==
+ *
+ * [:LOOP_EXPAND(name=>name,num=>n):]
+ * [:LOOP_EXPAND(name=>name,end=>n[,start=>n,inc=>n]):]
+ * [:LOOP_EXPAND(name=>name,values=>val1|val2|...|val3):]
+ *
+ * Expand the named loop body replace aoccurences of $loop_name with the numeric value
+ *
+ * =end wiki
+ */
+char *macro_fn_loop_expand(MacroCallInfo *call_info)
+{
+TRACE1;
+    char *result = NULL;
+    struct hashtable *h = args_to_hash(call_info,"name","start,inc,num,end,values");
+    int start=1;
+    int inc=1;
+    int end=1;
+    Array *values = NULL;
+    char *name;
+    int i;
+
+    if (call_info->sorted_rows ) {
+        end = call_info->sorted_rows->num_rows;
+    }
+
+    if (h) {
+        char *tmp;
+        name = get_named_arg(h,"name");
+        Array *loop = loop_lookup(name);
+        if (loop) {
+
+            if ((tmp = get_named_arg(h,"num")) != NULL) {
+                end = atoi(tmp);
+            }
+            if ((tmp = get_named_arg(h,"end")) != NULL) {
+                end = atoi(tmp);
+            }
+            if ((tmp = get_named_arg(h,"inc")) != NULL) {
+                inc = atoi(tmp);
+            }
+            if ((tmp = get_named_arg(h,"start")) != NULL) {
+                start = atoi(tmp);
+            }
+            if ((tmp = get_named_arg(h,"values")) != NULL) {
+                values = splitstr(tmp,"|");
+            }
+
+            Array *out = array_new(free);
+
+            if (values) {
+TRACE1;
+                for(i = 0 ; i < values->size ; i++ ) {
+                    loop_expand(name,loop,values->array[i],out,values->size);
+                }
+            } else {
+TRACE1;
+                char num[10];
+                for(i = start ; i<= end ; i+=inc) {
+                    sprintf(num,"%d",i);
+                    loop_expand(name,loop,num,out,end);
+                }
+            }
+TRACE1;
+
+            result = arraystr(out);
+            array_free(out);
+        }
+
+        free_named_args(h);
+
+    }
+TRACE1;
+    return result;
+}
+
+void loop_expand(char *loop_name,Array *loop_body,char *loop_value,Array *out,int max)
+{
+    int i;
+    if (loop_name && loop_body && loop_body->size) {
+        if (!loop_value) loop_value="";
+
+        char *replace;
+        ovs_asprintf(&replace,"\\$%s\\>",loop_name);
+
+        for(i = 0 ; i<loop_body->size ; i++ ) {
+            char *in = loop_body->array[i];
+            if (in) {
+                char *new;
+                char *new2;
+                if (strstr(in,loop_name)) {
+                    new = replace_all(in,replace,loop_value,0);
+                } else {
+                    new = STRDUP(in);
+                }
+                if (strstr(new,"_max")) {
+                    char *replace_max;
+                    ovs_asprintf(&replace_max,"\\$%s_max\\>",loop_name);
+                    char max_value[10];
+                    sprintf(max_value,"%d",max);
+                    new2 = replace_all(new,replace_max,max_value,0);
+                    FREE(new);
+                    new = new2;
+                }
+                array_add(out,new);
+            }
+        }
+        FREE(replace);
+    }
+}
+
+
+char *macro_fn_lock_button(MacroCallInfo *call_info)
+{
     char *result=NULL;
     if (!*query_select_val() && allow_locking() ) {
         if (g_dimension->local_browser) {
@@ -2420,7 +2583,7 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
         }
     }
 
-    hashtable_destroy(domain_hash,1,1);
+    hashtable_destroy(domain_hash,1,free);
     free_named_args(h);
     return result;
 }
@@ -2612,7 +2775,7 @@ char *numeric_constant_arg_to_str(long val,Array *args) {
  * [:IF(exp,text):]
  * [:IF(exp,text,alternative_text):]
  *
- * ==end wiki
+ * =end wiki
  *
  */
 char *macro_fn_if(MacroCallInfo *call_info)
@@ -2642,7 +2805,7 @@ char *macro_fn_if(MacroCallInfo *call_info)
  * =begin wiki
  * ==ELSEIF==
  * see multiline [IF]
- * ==end wiki
+ * =end wiki
  */
 char *macro_fn_elseif(MacroCallInfo *call_info)
 {
@@ -2662,7 +2825,7 @@ char *macro_fn_elseif(MacroCallInfo *call_info)
  * =begin wiki
  * ==ELSE==
  * see multiline [IF]
- * ==end wiki
+ * =end wiki
  */
 char *macro_fn_else(MacroCallInfo *call_info) {
 
@@ -2680,7 +2843,7 @@ char *macro_fn_else(MacroCallInfo *call_info) {
  * =begin wiki
  * ==ENDIF==
  * see multiline [IF]
- * ==end wiki
+ * =end wiki
  */
 char *macro_fn_endif(MacroCallInfo *call_info) {
     char *result = NULL;
@@ -2699,7 +2862,7 @@ char *macro_fn_endif(MacroCallInfo *call_info) {
  * Compute a value and insert into html output
  * Example:
    td { width:[:EVAL($@poster_menu_img_width-2):]px; }
- * ==end wiki
+ * =end wiki
  */
 char *macro_fn_eval(MacroCallInfo *call_info)
 {
@@ -2717,7 +2880,7 @@ char *macro_fn_eval(MacroCallInfo *call_info)
     .eptitle { font-size:100% ; font-weight:normal; font-size:[:FONT_SIZE(-2):]; }
     td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:white; }
     }}}
- * ==end wiki
+ * =end wiki
  */
 
 char *macro_fn_font_size(MacroCallInfo *call_info)
@@ -2747,7 +2910,7 @@ char *macro_fn_body_width(MacroCallInfo *call_info) {
 }
 
 /*
- * ==begin wiki
+ * =begin wiki
  * ==URL_BASE==
  * Return link to /oversight path that will work on browser or tv.
  * Example:
@@ -2755,7 +2918,7 @@ char *macro_fn_body_width(MacroCallInfo *call_info) {
  * img src="[:BASE_URL:]/templates/[:SKIN_NAME:]/images/detail/rating_[:RATING(precision=>0):]0.png"/>
  * }}}
  *
- * == end wiki
+ * =end wiki
  */
 char *macro_fn_url_base(MacroCallInfo *call_info)
 {
@@ -3118,12 +3281,16 @@ char *macro_fn_videoquality(MacroCallInfo *call_info)
 
 /*
  * =begin wiki
- * ==JS_DETAILS([max=>n,fields=>field1|field2|field3...fieldx])
+ * ==JS_DETAILS==
+ *
+ * JS_DETAILS([max=>n,fields=>field1|field2|field3...fieldx])
  *
  * Output all details for current items in a javascript/json array
  * if max not provided - all selected rows will be used.
  *
  * Example [:JS_DETAILS(max=>4,fields=>TITLE|FILE|EPISODE|PLOT):]
+ *
+ * For list of fields see [http://code.google.com/p/oversight/source/browse/trunk/src/dbfield.c dbfield.c]
  *
  * =end wiki
  */
@@ -3279,6 +3446,7 @@ void macro_init() {
         hashtable_insert(macros,"JS_DETAILS",macro_fn_jsdetails);
         hashtable_insert(macros,"LEFT_BUTTON",macro_fn_left_button);
         hashtable_insert(macros,"LINK",macro_fn_link);
+        hashtable_insert(macros,"LOOP_EXPAND",macro_fn_loop_expand);
         hashtable_insert(macros,"LOCK_BUTTON",macro_fn_lock_button);
         hashtable_insert(macros,"LOCKED_SELECT",macro_fn_locked_select);
         hashtable_insert(macros,"MARK_BUTTON",macro_fn_mark_button);
@@ -3345,7 +3513,6 @@ void macro_init() {
         hashtable_insert(macros,"WEB_STATUS",macro_fn_web_status);
         hashtable_insert(macros,"WRITERS",macro_fn_writers);
         hashtable_insert(macros,"YEAR",macro_fn_year);
-
         //HTML_LOG(1,"end macro init");
     }
 }
@@ -3424,5 +3591,39 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
     return result;
 }
 
+// Store any loop bodies
+static struct hashtable *loops=NULL;
+Array *loop_register(char *loop_name)
+{
+    if (loops == NULL) {
+        loops=string_string_hashtable("loops",10);
+    }
+    Array *lines = array_new(free);
+    hashtable_insert(loops,STRDUP(loop_name),lines);
+    HTML_LOG(0,"registered loop body [%s]",loop_name);
+    return lines;
+}
+Array *loop_lookup(char *loop_name)
+{
+    Array *result = NULL;
+    if (loops) {
+        result = hashtable_search(loops,loop_name);
+        if (!result) {
+            html_error("cannot find loop [%s] ",loop_name);
+        } else {
+            HTML_LOG(0,"found loop [%s] ",loop_name);
+        }
+    }
+    return result;
+}
+
+void loop_deregister_all() 
+{
+    if (loops) {
+        HTML_LOG(0,"removing all loop bodies");
+        hashtable_destroy(loops,1,(void *)array_free);
+        loops = NULL;
+    }
+}
 
 // vi:sw=4:et:ts=4

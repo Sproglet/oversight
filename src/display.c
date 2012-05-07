@@ -1902,7 +1902,7 @@ char *build_id_list(DbItem *row_id)
                     idlist = add_one_source_to_idlist(ri,idlist,&mixed_sources);
                 }
             }
-            hashtable_destroy(sources,0,0);
+            hashtable_destroy(sources,0,NULL);
         }
         row_id->idlist = idlist;
     }

@@ -211,6 +211,7 @@ void db_rowset_add(DbItemSet *dbrs,DbItem *id) {
     }
 }
 
+// idx from 0
 char *db_get_field(DbSortedRows *sorted_rows,int idx,char *fieldid)
 {
     char *result = NULL;
@@ -617,7 +618,7 @@ void db_free(Db *db)
         FREE(db->source);
         FREE(db->path);
         FREE(db->plot_file);
-        hashtable_destroy(db->plot_idx,1,0);
+        hashtable_destroy(db->plot_idx,1,NULL);
         FREE(db->people_file);
         FREE(db->lockfile);
         FREE(db->backup);

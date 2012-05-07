@@ -662,7 +662,7 @@ DbItem **sort_linked_items(DbItem *item,int (*cmp_fn)(DbItem **,DbItem **))
 }
 
 void db_overview_hash_destroy(struct hashtable *ovw_hash) {
-    hashtable_destroy(ovw_hash,0,0);
+    hashtable_destroy(ovw_hash,0,NULL);
 }
 
 void db_group_imdb_add(DbGroupIMDB *g,int id) {

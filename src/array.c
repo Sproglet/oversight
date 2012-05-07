@@ -330,6 +330,7 @@ char *join(Array *a,char *sep) {
                 }
             }
             if ((q = a->array[i]) != NULL ) {
+                //TODO use strcpy
                 while ((*p++ = *q++ ) != '\0' ) {
                         ; //do nothing
                 }

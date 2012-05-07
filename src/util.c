@@ -262,16 +262,7 @@ char *replace_all(char *s_in,char *pattern,char *replace,int reg_opts)
 
     regfree(&re);
 
-    char *s_out = MALLOC(outlen+1);
-    s = s_out;
-
-    int i;
-
-    for(i = 0 ; i < a->size  ; i++ ) {
-        strcpy(s,a->array[i]);
-        s+=strlen(a->array[i]);
-    }
-
+    char *s_out = arraystr(a);
     array_free(a);
     return s_out;
 }
@@ -430,7 +421,7 @@ void merge_hashtables(struct hashtable *h1,struct hashtable *h2,int copy) {
 
     // As h1 has h2 values we destroy h2 to avoid double memory frees.
     if (!copy) {
-        hashtable_destroy(h2,0,0);
+        hashtable_destroy(h2,0,NULL);
     }
 }
 
@@ -490,7 +481,7 @@ void util_unittest() {
     FREE(x);
 
     printf("destroy\n");
-    hashtable_destroy(h,1,0);
+    hashtable_destroy(h,1,NULL);
     //this may cause error after a destroy?
     // FREE(hello);
 }
@@ -1344,7 +1335,7 @@ char *util_change_extension(char *file,char *new_ext)
 void set_free(struct hashtable *h)
 {
     if (h) {
-        hashtable_destroy(h,1,0);
+        hashtable_destroy(h,1,NULL);
     }
 }
 
@@ -1518,4 +1509,20 @@ time_t file_time(char *path)
         return 0;
     }
 }
+int util_parse_int(char *in,int *out,int report)
+{
+    int ret = 0;
+    if (in && *in) {
+        char *end;
+        int num = strtol(in,&end,10);
+        if (!*end) {
+            *out = num;
+            ret = 1;
+        } else if (report) {
+            html_error("bad number [%s] ",in);
+        }
+    }
+    return ret;
+}
+
 // vi:sw=4:et:ts=4

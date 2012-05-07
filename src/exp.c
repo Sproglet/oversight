@@ -866,13 +866,13 @@ Exp *parse_url_expression(char **text_ptr,int precedence,int token_type)
             // Look for operator at current precedence level
             int i;
             OpDetails *op_details = NULL;
-            HTML_LOG(0,"TRACE1 checking input [%s]",*text_ptr);
+            HTML_LOG(LOG_LVL,"exp checking input [%s]",*text_ptr);
             for(i = 0 ; i < num_ops ; i++ ) {
                 if (ops[i].precedence == precedence) {
-                    HTML_LOG(0,"TRACE1 against token [%d][%s]",token_type,ops[i].token[token_type]);
+                    HTML_LOG(LOG_LVL,"exp against token [%d][%s]",token_type,ops[i].token[token_type]);
                     if (util_starts_with(*text_ptr,ops[i].token[token_type])) {
                         op_details = ops + i ;
-                        HTML_LOG(0,"TRACE1 found token [%s]",ops[i].token[token_type]);
+                        HTML_LOG(LOG_LVL,"exp found token [%s]",ops[i].token[token_type]);
                         break;
                     }
                 }

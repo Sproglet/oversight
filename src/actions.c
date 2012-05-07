@@ -351,7 +351,7 @@ void delete_queue_delete() {
         array_free(empty_folders);
         array_free(nonempty_folders);
 
-        hashtable_destroy(g_delete_queue,1,0);
+        hashtable_destroy(g_delete_queue,1,NULL);
         g_delete_queue=NULL;
     }
 }
@@ -617,7 +617,7 @@ void do_actions() {
             }
             query_remove(QUERY_PARAM_ACTION);
             query_remove("actionids");
-            hashtable_destroy(changed_source_id_hash,1,1);
+            hashtable_destroy(changed_source_id_hash,1,free);
 
         } else if (allow_mark() && STRCMP(action,FORM_PARAM_SELECT_VALUE_MARK) == 0) {
 
@@ -628,11 +628,11 @@ void do_actions() {
                 
                 changed_source_id_hash = get_newly_selected_ids_by_source(&total_changed);
                 db_set_fields(DB_FLDID_WATCHED,"1",changed_source_id_hash,DELETE_MODE_NONE);
-                hashtable_destroy(changed_source_id_hash,1,1);
+                hashtable_destroy(changed_source_id_hash,1,free);
 
                 changed_source_id_hash = get_newly_deselected_ids_by_source(&total_changed);
                 db_set_fields(DB_FLDID_WATCHED,"0",changed_source_id_hash,DELETE_MODE_NONE);
-                hashtable_destroy(changed_source_id_hash,1,1);
+                hashtable_destroy(changed_source_id_hash,1,free);
                 query_remove(QUERY_PARAM_ACTION);
 
 
@@ -646,7 +646,7 @@ TRACE;
                 if (total_deleted > 0) {
                     update_idlist(changed_source_id_hash);
                 }
-                hashtable_destroy(changed_source_id_hash,1,1);
+                hashtable_destroy(changed_source_id_hash,1,free);
                 query_remove(QUERY_PARAM_ACTION);
 
         } else if (allow_delist() && STRCMP(action,"Remove_From_List") == 0) {
@@ -659,7 +659,7 @@ TRACE;
                 if (total_deleted > 0) {
                     update_idlist(changed_source_id_hash);
                 }
-                hashtable_destroy(changed_source_id_hash,1,1);
+                hashtable_destroy(changed_source_id_hash,1,free);
                 query_remove(QUERY_PARAM_ACTION);
 
         } else if (allow_locking() && STRCMP(action,FORM_PARAM_SELECT_VALUE_LOCK) == 0) {
@@ -669,12 +669,12 @@ TRACE;
                 changed_source_id_hash = get_newly_selected_ids_by_source(&total_deleted);
                 do_action_by_id(changed_source_id_hash,lock_item_cb,NULL);
                 db_set_fields(DB_FLDID_LOCKED,"1",changed_source_id_hash,DELETE_MODE_NONE);
-                hashtable_destroy(changed_source_id_hash,1,1);
+                hashtable_destroy(changed_source_id_hash,1,free);
 
                 changed_source_id_hash = get_newly_deselected_ids_by_source(&total_deleted);
                 do_action_by_id(changed_source_id_hash,unlock_item_cb,NULL);
                 db_set_fields(DB_FLDID_LOCKED,"0",changed_source_id_hash,DELETE_MODE_NONE);
-                hashtable_destroy(changed_source_id_hash,1,1);
+                hashtable_destroy(changed_source_id_hash,1,free);
 
                 query_remove(QUERY_PARAM_ACTION);
 
@@ -820,7 +820,7 @@ void update_idlist(struct hashtable *source_id_hash_removed)
         }
         //Update the html parameter
         query_update(STRDUP(QUERY_PARAM_IDLIST),idhash_to_idlist(source_id_hash_current));
-        hashtable_destroy(source_id_hash_current,1,1);
+        hashtable_destroy(source_id_hash_current,1,free);
 
     }
 

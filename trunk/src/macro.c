@@ -48,6 +48,8 @@ char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect);
 Array *js_array(DbSortedRows *rows,int max,Array *fields);
 void loop_expand(char *loop_name,Array *loop_body,char *loop_value,Array *out,int max);
 char *image_url(MacroCallInfo *call_info,ImageType type);
+int get_page_max(int *maxptr,MacroCallInfo *call_info);
+int get_page_size(int *size,MacroCallInfo *call_info);
 
 
 Db *firstdb(MacroCallInfo *call_info)
@@ -492,6 +494,7 @@ char *macro_fn_page(MacroCallInfo *call_info)
     return result;
 }
 
+#define PAGE_SIZE_VAR "_page_size"
 /**
  * =begin wiki
  * ==PAGE_MAX==
@@ -499,9 +502,8 @@ char *macro_fn_page(MacroCallInfo *call_info)
  * This does not take delisting into account, which may reduce the number of items.
  *
  * the page size is determined from the following items:
- * 1 A page size argument can be supplied, if not
- * 2. the _grid_size skin variable can be used (see [:SET(...}:]
- * 3. If the variable is not set then it is computed from current rows*cols.
+ * - the _page_size skin variable can be used (see [:SET_PAGE(size=>):] also [:SET(...}:]
+ * - If the variable is not set then it is computed from current rows*cols. (this will force another parse of the template)
  *
  * Example:
  * [:PAGE_MAX:]
@@ -510,35 +512,49 @@ char *macro_fn_page(MacroCallInfo *call_info)
 char *macro_fn_page_max(MacroCallInfo *call_info)
 {
     char *result = NULL;
+    int max;
 
-    switch(call_info->pass) {
-
-        case 1:
-            // do nothing
-            result = CALL_UNCHANGED;
-            break;
-
-        case 2:
-            {
-                if ( get_grid_info()->page_size  > 0 ) {
-
-                    int p = 1 + (call_info->sorted_rows->num_rows -1) / get_grid_info()->page_size  ;
-
-                    ovs_asprintf(&result,"%d",p);
-                } else {
-                    HTML_LOG(0,"zero page size");
-                }
-
-            }
-            break;
-
-        default:
-            assert(0);
+    if (get_page_max(&max,call_info)) {
+        ovs_asprintf(&result,"%d",max);
+    } else {
+        result = CALL_UNCHANGED;
     }
 
     return result;
 }
 
+/**
+ * =begin wiki
+ * ==SET_PAGE==
+ *
+ * [:SET_PAGE(size=>n):]
+ *
+ * This will tell the template the number of elements in a page. 
+ * If not present then other macros (eg PAGE_MAX)  may force a reparse of the template if the page size is not know during the current parse..
+ * This will set a variable - page_size
+ *
+ * =end wiki
+ */
+char *macro_fn_set_page(MacroCallInfo *call_info)
+{
+
+    static int set=0;
+    char *result = NULL;
+    if (set) {
+        html_error("page size already set - ignoring");
+    } else {
+        struct hashtable *h = args_to_hash(call_info,"%size",NULL);
+        set_tmp_skin_variable(PAGE_SIZE_VAR,get_named_arg(h,"scale"));
+        free_named_args(h);
+        set = 1;
+    }
+    return result;
+}
+
+// Clean up static allocated data - we dont really have to do this as process is ending.
+void macro_cleanup()
+{
+}
 
 char *macro_fn_plot(MacroCallInfo *call_info)
 {
@@ -1536,12 +1552,14 @@ void free_named_args(struct hashtable *h)
  * [:GRID(rows=>1,cols=>4,offset=>0,order=Horizontal):]
  * [:GRID(rows=>3,cols=>1,offset=>4,order=Vertical):]
  *
+ * At present GRID cannot be inside a loop as they must be parsed during first pass.
  * =end wiki
  */
 char *macro_fn_grid(MacroCallInfo *call_info) {
 
     struct hashtable *h = args_to_hash(call_info,NULL,"%rows,%cols,%img_height,%img_width,%offset,%order");
     
+TRACE1;
     GridSegment *gs ;
     char *result = NULL;
    
@@ -1576,19 +1594,25 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
 
         // leave text for next pass
         result = CALL_UNCHANGED;
+        call_info->request_reparse=1;
 
     } else if (call_info->pass == 2 ) {
 
         static int grid_no = 0;
 
+TRACE1;
         gs = get_grid_info()->segments->array[grid_no++];
+TRACE1;
         result = get_grid(get_current_page(),gs,call_info->sorted_rows);
+TRACE1;
 
     } else {
         assert(0);
     }
 
+TRACE1;
     free_named_args(h);
+TRACE1;
 
     return result;
 }
@@ -1661,7 +1685,8 @@ char *macro_fn_include(MacroCallInfo *call_info) {
                 call_info->orig_skin_name,
                 call_info->args->array[0],
                 call_info->sorted_rows,
-                call_info->outfp);
+                call_info->outfp,
+                &(call_info->request_reparse));
 
     } else if (!call_info->args) {
         html_error("missing  args for include");
@@ -2147,11 +2172,10 @@ char *macro_fn_setup_button(MacroCallInfo *call_info) {
     return get_theme_image_link(QUERY_PARAM_VIEW"=admin&action=ask","TVID=SETUP","configure","");
 }
 
-char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) {
+char *get_page_control(int next_page,char *tvid_name,char *image_base_name) {
 
     char *select = query_select_val();
     char *view = query_view_val();
-    int page = get_current_page();
     char *result = NULL;
 
     assert(view);
@@ -2163,43 +2187,109 @@ char *get_page_control(int on,int offset,char *tvid_name,char *image_base_name) 
 
     if (! *select) {
         //only show page controls when NOT selecting
-        if (on)  {
-            char *params=NULL;
-            char *attrs=NULL;
-            ovs_asprintf(&params,"p=%d",page+offset);
-            ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
+        char *params=NULL;
+        char *attrs=NULL;
+        ovs_asprintf(&params,"p=%d",next_page);
+        ovs_asprintf(&attrs,"tvid=%s name=%s1 onfocusload",tvid_name,tvid_name);
 
-            if (g_dimension->local_browser) {
-                // draw invisible page controls
-                char *url=self_url(params);
-                ovs_asprintf(&result,"<a href=\"%s\" %s></a>",url,attrs);
-            } else {
-                // visible page controls in browser
-                result = get_theme_image_link(params,attrs,image_base_name,button_attr);
-            }
-            FREE(params);
-            FREE(attrs);
-        } else if (! *view ) {
-            if (!g_dimension->local_browser) {
-                //show disabled page controls in browser
-                char *image_off=NULL;
-                ovs_asprintf(&image_off,"%s-off",image_base_name);
-                result = get_theme_image_tag(image_off,button_attr);
-                FREE(image_off);
-            }
+        if (g_dimension->local_browser) {
+            // draw invisible page controls
+            char *url=self_url(params);
+            ovs_asprintf(&result,"<a href=\"%s\" %s></a>",url,attrs);
+        } else {
+            // visible page controls in browser
+            result = get_theme_image_link(params,attrs,image_base_name,button_attr);
         }
+        FREE(params);
+        FREE(attrs);
     }
     return result;
 }
 
 char *macro_fn_left_button(MacroCallInfo *call_info) {
 
-    HTML_LOG(0,"current page=%d",get_current_page());
-    int on = get_current_page() > 0;
+    char *result=NULL;
 
-    return get_page_control(on,-1,"pgup","left");
+    int page_max=0;
+
+    if (get_page_max(&page_max,call_info)) {
+
+        HTML_LOG(0,"LEFT page_max %d ",page_max);
+        int page = get_current_page();
+        HTML_LOG(0,"LEFT page %d ",page);
+
+        // 0->9 1->0
+        int next_page = (page+page_max-1)%page_max;
+
+        HTML_LOG(0,"LEFT next %d",next_page);
+        result = get_page_control(next_page,"pgup","left");
+
+    } else {
+
+        result = CALL_UNCHANGED;
+
+    }
+
+    return result;
 }
 
+/*
+ * Get highest page number.
+ * This is computed from page size and number of items (see SET_PAGE )
+ */
+int get_page_max(int *maxptr,MacroCallInfo *call_info)
+{
+    int ret=0;
+    if(maxptr) {
+        int page_size;
+        if (get_page_size(&page_size,call_info)) {
+            if (page_size) {
+                *maxptr = 1 + (call_info->sorted_rows->num_rows -1) / page_size  ;
+                ret=1;
+            } else {
+                html_error("zero page size");
+            }
+        }
+    }
+    return ret;
+}
+
+// returns 1-ok 0-failed
+int get_page_size(int *size,MacroCallInfo *call_info)
+{
+    int ret = 0;
+    if (size) {
+        int page_size;
+        char *tmp;
+
+        if ((tmp=get_tmp_skin_variable(PAGE_SIZE_VAR))!= NULL) {
+
+            // page size set by SET_PAGE
+            util_parse_int(tmp,size,1);
+            ret = 1;
+
+        } else if ( call_info->pass > 1 ) {
+           
+            page_size = get_grid_info()->page_size;
+            
+            HTML_LOG(0,"page size from grid=%d",page_size);
+            
+            if (page_size) {
+
+                *size = page_size;
+                ret = 1;
+
+            } else {
+                html_error("unable to compute page size on pass %d",call_info->pass);
+                call_info->request_reparse = 1;
+            }
+        } else {
+            // Always request reparse if pass1 as grid may not be finished.
+            call_info->request_reparse = 1;
+        }
+    }
+    return ret;
+}
 
 
 
@@ -2207,22 +2297,21 @@ char *macro_fn_right_button(MacroCallInfo *call_info) {
 
     char *result=NULL;
 
-    switch(call_info->pass) {
+    int page_max;
 
-        case 1:
-            result = CALL_UNCHANGED;
-            break;
+    if (get_page_max(&page_max,call_info)) {
 
-        case 2:
-            {
-                int page_size = get_grid_info()->page_size;
-                int on = ((get_current_page()+1)*page_size < call_info->sorted_rows->num_rows);
-                result = get_page_control(on,1,"pgdn","right");
-            }
-            break;
+        int page = get_current_page();
 
-        default:
-            assert(0);
+        int next_page = (page+1)%page_max; // 0->1 9->0
+
+        HTML_LOG(0,"RIGHT page %d page_max %d next %d",page,page_max,next_page);
+        result = get_page_control(next_page,"pgdn","right");
+
+    } else {
+
+        result = CALL_UNCHANGED;
+
     }
 
     return result;
@@ -2380,6 +2469,15 @@ char *macro_fn_loop_expand(MacroCallInfo *call_info)
             }
 
             result = arraystr(out);
+
+            // Do another pass if it looks like a macro is present
+            if (result) {
+               char *p = strchr(result,'[');
+               if (p && strchr(p,':')) {
+                    call_info->request_reparse=1;
+               }
+            }
+
             array_free(out);
         }
 
@@ -3470,6 +3568,7 @@ void macro_init() {
         hashtable_insert(macros,"PLAY_TVID",macro_fn_play_tvid);
         hashtable_insert(macros,"PAGE",macro_fn_page);
         hashtable_insert(macros,"PAGE_MAX",macro_fn_page_max);
+        hashtable_insert(macros,"SET_PAGE",macro_fn_set_page);
         hashtable_insert(macros,"PERSON_ID",macro_fn_person_id);
         hashtable_insert(macros,"PERSON_IMAGE",macro_fn_person_image);
         hashtable_insert(macros,"PERSON_NAME",macro_fn_person_name);
@@ -3526,7 +3625,7 @@ void macro_init() {
 }
 
 
-char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted_rows,int *free_result,FILE *out)
+char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRows *sorted_rows,int *free_result,FILE *out,int *request_reparse)
 {
     if (macros == NULL) macro_init();
 
@@ -3575,6 +3674,8 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
                 
 
         MacroCallInfo call_info;
+        memset(&call_info,0,sizeof(MacroCallInfo));
+
         call_info.skin_name = skin_name;
         call_info.orig_skin_name = orig_skin;
         call_info.call = call;
@@ -3589,6 +3690,7 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
             //HTML_LOG(1,"begin macro [%s]",call);
             result =  (*fn)(&call_info);
             *free_result=call_info.free_result;
+            *request_reparse += call_info.request_reparse;
 
             //HTML_LOG(1,"end macro [%s]",call);
         } else {

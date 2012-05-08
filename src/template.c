@@ -37,11 +37,11 @@
 //
 
 char *scanlines_to_text(long scanlines);
-char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out);
-int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out);
-int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out);
+char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out,int *request_reparse);
+int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out,int *request_reparse);
+int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out,int *request_reparse);
 
-int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows,FILE *out)
+int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows,FILE *out,int *request_reparse)
 {
 
     int ret = 1;
@@ -104,7 +104,7 @@ int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char 
         //            while(*p == ' ') {
         //                p++;
         //            }
-                    if ((count=template_line_replace(pass,skin_name,orig_skin,p,sorted_rows,out)) != 0 ) {
+                    if ((count=template_line_replace(pass,skin_name,orig_skin,p,sorted_rows,out,request_reparse)) != 0 ) {
                         HTML_LOG(4,"macro count %d",count);
                     }
 
@@ -159,57 +159,81 @@ char *get_template_path(char *skin_name,char *file_name)
 char *end_pass1() 
 {
     char *error_text = NULL;
-    error_text = grid_calculate_offsets(get_grid_info());
     return error_text;
 }
 
 int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_rows)
 {
     int ret = -1;
+#define MAX_PASS 3
     int pass=0;
     
     //
     //This is done in two passes so we know how many items will eventually be displayed at any point on the page.
     //This is required for  [:PAGE_MAX:]  and [:RIGHT:] macros for example.
 
-    //char *pass1_file = "/tmp/ovs1";
-    char *pass1_file = "/share/ovs1";
-    FILE *pass1_fp = NULL;
+    char *path[2] = { "/share/ovs1","/share/ovs2"};
+    //char *path[2] = { "/tmp/ovs1","/tmp/ovs2"};
+    FILE *fp[2]= {NULL,NULL};
+    int request_reparse;
+    int out=0;
+    int in=0;
    
-    pass1_fp = fopen(pass1_file,"w");
 
-    if (pass1_fp) {
-        HTML_LOG(0,"output to %s",pass1_file);
-        html_set_output(pass1_fp);
-        HTML_LOG(0,"begin pass1 [%s]",pass1_file);
-        ret = display_template(++pass,NULL,skin_name,file_name,sorted_rows,pass1_fp);
-        HTML_LOG(0,"end pass1");
-        fclose(pass1_fp);
-        html_set_output(stdout);
-
-        if (ret == 0) {
-
-            char *error_text = end_pass1();
-            if (error_text) {
-                HTML_LOG(0,"pass1 error [ %s ]",error_text);
-                ret = -1 ;
-            }
+    do {
+        pass++;
+        request_reparse=0;
+        // Close from previous literation - this is done as late as possible to capture all logging
+        if (fp[out]) {
+            fclose(fp[out]);
+            fp[out]=NULL;
+            html_set_output(stdout);
         }
 
-        if (ret == 0) {
-            pass1_fp = fopen(pass1_file,"r");
-            FILE *pass2_fp = stdout;
-            if (pass1_fp) {
-                HTML_LOG(0,"output to stdout");
-                html_set_output(pass2_fp);
-                HTML_LOG(0,"begin pass2");
-                ret = display_template(++pass,pass1_fp,skin_name,file_name,sorted_rows,pass2_fp);
-                HTML_LOG(0,"end pass2");
-                fclose(pass1_fp);
+        // Swap buffers
+        in=out;
+        out=1-in;
+        fp[out] =  fopen(path[out],"w");
+        if (fp[out]) {
+            html_set_output(fp[out]);
+            HTML_LOG(0,"begin pass%d [%s]",pass,path[out]);
+
+
+            if (pass>1) {
+                // first pass read from templates - after that use intermediate file
+                fp[in] =  fopen(path[in],"r");
+                if (!fp[in]) {
+                    html_error("failed to open [%s] error %d",path[in],errno);
+                    break;
+                }
             }
+            ret = display_template(pass,fp[in],skin_name,file_name,sorted_rows,fp[out],&request_reparse);
+            HTML_LOG(0,"end pass%d=%s(%d) request_reparse=%d",pass,(ret?"err":"ok"),ret,request_reparse);
+
+            if (fp[in]) {
+                fclose(fp[in]);
+                fp[in] = NULL;
+            }
+
+            if (ret) {
+                html_error("error occured - parsing stopped - review [%s]",path[out]);
+                break ; // error;
+            } else if (pass > MAX_PASS) {
+                html_error("maximum %d passes exceeded - review [%s]",MAX_PASS,path[out]);
+                break;
+            }
+            if (request_reparse) {
+                char *error_text = grid_calculate_offsets(get_grid_info());
+                if (error_text) html_error(error_text);
+            }
+
         }
-        unlink(pass1_file);
-    }
+    } while(request_reparse && pass<=MAX_PASS);
+
+    fclose(fp[out]);
+    html_set_output(stdout);
+    cat(NULL,path[out]);
+
     loop_deregister_all();
 
     return ret;
@@ -217,13 +241,12 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 }
 
 // 0 = success
-int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRows *sorted_rows,FILE *out)
+int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRows *sorted_rows,FILE *out,int *request_reparse)
 {
     int ret = -1;
 
     char *path = NULL;
 
-    html_set_output(out);
     char *resolution = scanlines_to_text(g_dimension->scanlines);
 
     html_set_comment("<!-- ","-->");
@@ -238,7 +261,7 @@ int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRo
 
     }
     if (in) {
-        ret = display_template_file(pass,in,skin_name,skin_name,resolution,file_name,sorted_rows,out);
+        ret = display_template_file(pass,in,skin_name,skin_name,resolution,file_name,sorted_rows,out,request_reparse);
         if (path) {
             fclose(in);
         }
@@ -255,7 +278,7 @@ int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRo
 #define MACRO_STR_END "]"
 #define MACRO_STR_START_INNER ":"
 #define MACRO_STR_END_INNER ":"
-int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out)
+int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out,int *request_reparse)
 {
 
 TRACE;
@@ -264,14 +287,14 @@ TRACE;
 
 
     // first replace simple variables in the buffer.
-    char *newline=template_line_replace_only(pass,skin_name,orig_skin,input,sorted_rows,&has_macro,out);
+    char *newline=template_line_replace_only(pass,skin_name,orig_skin,input,sorted_rows,&has_macro,out,request_reparse);
 
     if (newline != input) {
         HTML_LOG(2,"old line [%s]",input);
         HTML_LOG(2,"new line [%s]",newline);
     }
     // if replace complex variables and push to stdout. this is for more complex multi-line macros
-    int count = template_line_replace_and_emit(pass,skin_name,orig_skin,newline,sorted_rows,&has_macro,out);
+    int count = template_line_replace_and_emit(pass,skin_name,orig_skin,newline,sorted_rows,&has_macro,out,request_reparse);
     if (newline !=input) FREE(newline);
     return count;
 }
@@ -293,7 +316,7 @@ int replace_macro(char *macro_name) {
 }
 
 
-char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out)
+char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out,int *request_reparse)
 {
 
 TRACE;
@@ -334,7 +357,7 @@ TRACE;
             int free_result=0;
             *macro_name_end = '\0';
 
-            char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out);
+            char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out,request_reparse);
             *macro_name_end = *MACRO_STR_START_INNER;
 
             if (macro_output == CALL_UNCHANGED ) {
@@ -381,7 +404,7 @@ TRACE;
     return newline;
 }
 
-int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out)
+int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out,int *request_reparse)
 {
 
 TRACE;
@@ -438,7 +461,7 @@ TRACE;
 
                 int free_result=0;
                 *macro_name_end = '\0';
-                char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out);
+                char *macro_output = macro_call(pass,skin_name,orig_skin,macro_name_start,sorted_rows,&free_result,out,request_reparse);
 
                 //emit stuff before macro - this is done as late as possible so HTML_LOG in macro doesnt interrupt tag flow
                 if (macro_start > p ) {

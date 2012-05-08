@@ -235,6 +235,7 @@ int set_tmp_skin_variable(char *name,char *value)
     if (vars == NULL) {
         vars = string_string_hashtable("tmp_vars",16);
     }
+    check_prefix(name,VAR_PREFIX_TMP_SKIN);
     ret = hashtable_insert(vars,STRDUP(name),STRDUP(value));
     HTML_LOG(0,"[%s=%s]",name,value);
     return ret;
@@ -257,4 +258,9 @@ char *get_tmp_skin_variable(char *name)
     } else {
         return hashtable_search(vars,name);
     }
+}
+
+void variables_cleanup()
+{
+    hashtable_destroy(vars,1,free);
 }

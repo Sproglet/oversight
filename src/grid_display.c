@@ -812,7 +812,9 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
 
     int total=0;
     // Create space for pruned rows
+TRACE1;
     DbItem **prunedRows = filter_page_items(start,numids,row_ids,gs->parent->page_size,&total);
+TRACE1;
 
     
     DbItem **segmentRows = prunedRows + gs->offset;
@@ -833,7 +835,9 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
     int page_after = gs->offset + segment_total >= total;
 
 
+TRACE1;
     char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after);
+TRACE1;
     FREE(prunedRows);
     return ret;
 }

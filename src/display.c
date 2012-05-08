@@ -2628,7 +2628,6 @@ void util_free_char_array(int size,char **a)
 // Return all rows after delisting
 DbItem **filter_page_items(int start,int num_rows,DbItem **row_ids,int max_new,int *new_num)
 {
-
     int i;
     int total = 0;
 

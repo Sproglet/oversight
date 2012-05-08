@@ -546,6 +546,10 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
 
             display_page(g_query,database_list);
             */
+
+        variables_cleanup();
+        macro_cleanup();
+
 #endif
 
         HTML_LOG1(0,"end=%d",result);

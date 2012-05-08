@@ -21,5 +21,6 @@ char *get_variable(char *vname,int *free_result,DbSortedRows *sorted_rows);
 int set_tmp_skin_variable(char *name,char *value);
 char *get_tmp_skin_variable(char *name);
 void check_prefix(char *name,char *prefix);
+void variables_cleanup();
 
 #endif

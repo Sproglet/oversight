@@ -259,6 +259,10 @@ char *get_tmp_skin_variable(char *name)
         return hashtable_search(vars,name);
     }
 }
+struct hashtable *tmp_var_hash()
+{
+    return vars;
+}
 
 void variables_cleanup()
 {

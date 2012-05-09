@@ -50,6 +50,7 @@ void loop_expand(char *loop_name,Array *loop_body,char *loop_value,Array *out,in
 char *image_url(MacroCallInfo *call_info,ImageType type);
 int get_page_max(int *maxptr,MacroCallInfo *call_info);
 int get_page_size(int *size,MacroCallInfo *call_info);
+long numeric_constant_eval_str(long val,char *expression);
 
 
 Db *firstdb(MacroCallInfo *call_info)
@@ -544,7 +545,7 @@ char *macro_fn_set_page(MacroCallInfo *call_info)
         html_error("page size already set - ignoring");
     } else {
         struct hashtable *h = args_to_hash(call_info,"%size",NULL);
-        set_tmp_skin_variable(PAGE_SIZE_VAR,get_named_arg(h,"scale"));
+        set_tmp_skin_variable(PAGE_SIZE_VAR,get_named_arg(h,"size"));
         free_named_args(h);
         set = 1;
     }
@@ -1443,8 +1444,17 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
                         if (int_type && hashtable_search(int_type,name)) {
                             int tmp;
                             if (!util_parse_int(val,&tmp,0)) {
+                                // Try to evalute it
                                 html_error("bad number [%s] for argument [%s]",val,name);
-                                ok=0;
+                                long num2 = numeric_constant_eval_str(0,val);
+                                char *tmp;
+                                ovs_asprintf(&tmp,"%ld",num2);
+                                FREE(val);
+                                val=tmp;
+                                html_error("final number=[%s] ",val);
+                                //ok=0;
+                            } else {
+                                HTML_LOG(0,"parsed [%s:%s] as [%d]",name,val,tmp);
                             }
                         }
                         hashtable_insert(h,name,val);
@@ -2697,7 +2707,8 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
 // This would require the url operators (~a~ for AND etc) to be replaced
 // with more standard characters. 
 // Or simple enhance the OpDetails to have standard_text and url_text fields.
-long numeric_constant_eval_str(long val,char *expression) {
+long numeric_constant_eval_str(long val,char *expression)
+{
 
     char *p=expression;
     HTML_LOG(1,"start parsing [%s]",p);
@@ -3326,6 +3337,26 @@ char *macro_fn_directors(MacroCallInfo *call_info)
     }
     return result;
 }
+/*
+ * =begin wiki
+ * ==DUMP_VARS==
+ *
+ * Dump all variables with the given prefix
+ * =end wiki
+ */
+
+char *macro_fn_dump_vars(MacroCallInfo *call_info)
+{
+    char *result = NULL;
+    hashtable_dump("tmp",tmp_var_hash());
+    hashtable_dump("ovs",g_oversight_config);
+    hashtable_dump("catalog",g_catalog_config);
+    hashtable_dump("skin",g_skin_config);
+    hashtable_dump("locale",g_locale_config);
+    hashtable_dump("setting",g_nmt_settings);
+
+    return result;
+}
 
 char *macro_fn_writers(MacroCallInfo *call_info) {
     char *result = NULL;
@@ -3513,6 +3544,7 @@ void macro_init() {
         hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         hashtable_insert(macros,"DIRECTORS",macro_fn_directors);
+        hashtable_insert(macros,"DUMP_VARS",macro_fn_dump_vars);
         hashtable_insert(macros,"CONFIG_LINK",macro_fn_admin_config_link);
         hashtable_insert(macros,"DELETE_BUTTON",macro_fn_delete_button);
         hashtable_insert(macros,"EDIT_CONFIG",macro_fn_edit_config);
@@ -3690,7 +3722,10 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
             //HTML_LOG(1,"begin macro [%s]",call);
             result =  (*fn)(&call_info);
             *free_result=call_info.free_result;
-            *request_reparse += call_info.request_reparse;
+            if (call_info.request_reparse) {
+                (*request_reparse) ++;
+                HTML_LOG(0,"reparse requested by [%s]",call);
+            }
 
             //HTML_LOG(1,"end macro [%s]",call);
         } else {

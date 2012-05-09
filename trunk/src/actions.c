@@ -101,10 +101,8 @@ static void clear_selection() {
 static void gaya_send_link(char *arg) {
     //send this link to gaya with a single argment.
 HTML_LOG(0,"dbg remove this arg=[%s]",arg);
-    FILE *pip = fopen("/tmp/gaya_bc","w");
-    if (!pip) {
-        html_error("cant send [%s] to gaya");
-    } else {
+    FILE *pip = util_open("/tmp/gaya_bc","w");
+    if (pip) {
         char *link;
         char *file=url_encode(arg);
 HTML_LOG(0,"dbg remove this and this 1 file=[%s]",file);

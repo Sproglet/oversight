@@ -35,10 +35,7 @@ FILE *plot_open(Db*db)
     }
 
     if (db->plot_fp == NULL) {
-        db->plot_fp = fopen(path,"r");
-        if (db->plot_fp == NULL) {
-            html_error("Unable to open plotfile [%s]",path);
-        }
+        db->plot_fp = util_open(path,"r");
         db->plot_idx = string_long_hashtable("plot",50);
     }
     if (path != db->plot_file) FREE(path);

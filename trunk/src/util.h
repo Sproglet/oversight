@@ -179,4 +179,5 @@ char *utf8pos(char *p,int n);
 char *xmlstr_static(char *text,int idx);
 int current_year();
 int util_parse_int(char *in,int *out,int report);
+FILE *util_open(char *path,char *mode);
 #endif

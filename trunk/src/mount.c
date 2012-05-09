@@ -75,7 +75,7 @@ void get_mount_points() {
         HTML_LOG(0,"getting mount points...");
         mount_points = string_string_hashtable("mount points",16); //let the OS clean this up at the end
 
-        FILE *fp = fopen("/etc/mtab","r");
+        FILE *fp = util_open("/etc/mtab","r");
         if (fp) {
 #define BUFSIZE 999
             char buf[BUFSIZE];
@@ -293,7 +293,7 @@ char *wins_resolve(char *link) {
     *hostend = '\0';
 
 
-    FILE *fp = fopen(nbtscan_outfile,"r");
+    FILE *fp = util_open(nbtscan_outfile,"r");
     if (fp) {
 #define WINS_BUFSIZE 200
         char buf[WINS_BUFSIZE];

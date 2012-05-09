@@ -30,8 +30,8 @@ unsigned long long analizefileOSHahs(char *fileName){
 
   long unsigned int items;
 
-  file = fopen(fileName, "rb");
-  if (file != NULL) {
+  file = util_open(fileName, "rb");
+  if (file) {
 
 
       printf("begin\n");

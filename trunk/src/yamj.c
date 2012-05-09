@@ -1439,7 +1439,7 @@ void log_request(char *request)
         rename(REQ_LOG,REQ_LOG".old");
     }
 
-    FILE *fp = fopen(REQ_LOG,"a");
+    FILE *fp = util_open(REQ_LOG,"a");
     if (fp) {
         fprintf(fp,"[%s]\n",request);
         fclose(fp);
@@ -1544,12 +1544,11 @@ int yamj_xml(char *request)
 
             xmlout = stdout;
             if (cache) {
-               FILE *fp =fopen(cache_path,"w");
+               FILE *fp =util_open(cache_path,"w");
                if (fp) {
                    xmlout = fp;
                    html_set_output(xmlout);
                } else {
-                   html_error("failed to open %s for writing - error %d",cache_path,errno);
                    cache = 0;
                }
             }

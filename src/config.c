@@ -467,20 +467,12 @@ int set_option(char *file,char *name,char *new_value)
     ovs_asprintf(&old_file,"%s.old",file);
 
     FILE *tmp_fp = NULL;
-    FILE *fp = fopen(file,"r");
+    FILE *fp = util_open(file,"r");
 
-    if (fp == NULL) {
+    if (fp) {
 
-        html_error("Failed to open(r)[%s]",file);
-
-    } else {
-
-        tmp_fp = fopen(tmp_file,"w");
-        if (tmp_fp == NULL) {
-
-            html_error("Failed to open(w) [%s]",tmp_file);
-
-        } else {
+        tmp_fp = util_open(tmp_file,"w");
+        if (tmp_fp ) {
 
             char line[CFG_BUFSIZ+1];
             PRE_CHECK_FGETS(line,CFG_BUFSIZ);

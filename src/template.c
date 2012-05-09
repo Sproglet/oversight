@@ -181,10 +181,12 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
     char *p = oversight_val("ovs_temp");
     if (EMPTY_STR(p)) {
         p="/tmp";
+        p="/share";
     }
 
     ovs_asprintf(&(path[0]),"%s/ovs0.html",p);
     ovs_asprintf(&(path[1]),"%s/ovs1.html",p);
+    HTML_LOG(0,"template files [%s,%s]",path[0],path[1]);
    
 
     do {
@@ -200,7 +202,7 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
         // Swap buffers
         in=out;
         out=1-in;
-        fp[out] =  fopen(path[out],"w");
+        fp[out] = util_open(path[out],"w");
         if (fp[out]) {
             html_set_output(fp[out]);
             HTML_LOG(0,"begin pass%d [%s]",pass,path[out]);
@@ -208,9 +210,8 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 
             if (pass>1) {
                 // first pass read from templates - after that use intermediate file
-                fp[in] =  fopen(path[in],"r");
+                fp[in] =  util_open(path[in],"r");
                 if (!fp[in]) {
-                    html_error("failed to open [%s] error %d",path[in],errno);
                     break;
                 }
             }
@@ -262,12 +263,8 @@ int display_template(int pass,FILE *in,char*skin_name,char *file_name,DbSortedRo
     if (in == NULL) {
         path = get_template_path(skin_name,file_name);
         if (path != NULL) {
-            in = fopen(path,"r");
+            in = util_open(path,"r");
         }
-        if (in == NULL) {
-            html_error("failed to load template %s",file_name);
-        }
-
     }
     if (in) {
         ret = display_template_file(pass,in,skin_name,skin_name,resolution,file_name,sorted_rows,out,request_reparse);

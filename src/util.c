@@ -1078,7 +1078,7 @@ int util_system_htmlout(char *cmd)
         char *cmd2;
         ovs_asprintf(&cmd2,"%s > '%s'",cmd,n);
         ret = util_system(cmd2);
-        FILE *in_fp = fopen(n,"r");
+        FILE *in_fp = util_open(n,"r");
         if (in_fp) {
             append_content(in_fp,html_get_output());
             fclose(in_fp);
@@ -1524,5 +1524,15 @@ int util_parse_int(char *in,int *out,int report)
     }
     return ret;
 }
+
+FILE *util_open(char *path,char *mode)
+{
+    FILE *f = fopen(path,mode);
+    if (f == NULL) {
+        html_error("failed to open [%s] mode [%s] : error %d",path,mode,errno);
+    }
+    return f;
+}
+
 
 // vi:sw=4:et:ts=4

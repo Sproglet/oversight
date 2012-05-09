@@ -861,7 +861,7 @@ FILE *playlist_open() {
         } else {
             HTML_LOG(1,"deleted ["NMT_PLAYLIST"]");
         }
-        j = fp = fopen(NMT_PLAYLIST,"w");
+        j = fp = util_open(NMT_PLAYLIST,"w");
     }
     assert(fp == j); //DONT ASK! ok catch corruption of static area - maybe...
     return fp;
@@ -2668,7 +2668,7 @@ char *get_status_static()
         msg[0] = '\0';
         PRE_CHECK_FGETS(msg,MSG_SIZE);
 
-        FILE *fp = fopen(filename,"r");
+        FILE *fp = util_open(filename,"r");
         if (fp) {
             fgets(msg,MSG_SIZE,fp);
             CHECK_FGETS(msg,MSG_SIZE);

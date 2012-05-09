@@ -138,10 +138,9 @@ struct hashtable *read_post_data(char *post_filename) {
 
     HTML_LOG(3,"opening post file [%s]",post_filename);
 
-    FILE *pfp = fopen(post_filename,"r");
+    FILE *pfp = util_open(post_filename,"r");
 
     if (pfp == NULL) {
-        html_error("Unable to open post data [%s]\n",post_filename);
         exit(1);
     }
 
@@ -222,7 +221,7 @@ struct hashtable *read_post_data(char *post_filename) {
                         FREE(filepath);
                         FREE(filename);
 
-                        fileptr = fopen(tmp,"w");
+                        fileptr = util_open(tmp,"w");
                         FREE(tmp);
                     }
                 }

@@ -74,10 +74,12 @@ int db_lock_pid(Db *db)
 
     if (is_file(db->lockfile)) {
 
-        FILE *fp = fopen(db->lockfile,"r");
+        FILE *fp = util_open(db->lockfile,"r");
 
-        fscanf(fp,"%d\n",&lockpid);
-        fclose(fp);
+        if (fp) {
+            fscanf(fp,"%d\n",&lockpid);
+            fclose(fp);
+        }
     }
     return lockpid;
 }
@@ -122,10 +124,12 @@ int db_lock(Db *db)
         }
     }
     if (db->locked_by_this_code) {
-        FILE *fp = fopen(db->lockfile,"w");
-        fprintf(fp,"%d\n",getpid());
-        fclose(fp);
-        HTML_LOG(1,"Aquired lock [%s]\n",db->lockfile);
+        FILE *fp = util_open(db->lockfile,"w");
+        if (fp) {
+            fprintf(fp,"%d\n",getpid());
+            fclose(fp);
+            HTML_LOG(1,"Aquired lock [%s]\n",db->lockfile);
+        }
     } else {
         html_error("Failed to get lock [%s]\n",db->lockfile);
     }
@@ -818,14 +822,14 @@ HTML_LOG(1," begin open db");
         int free_inpath;
         char *inpath = get_mounted_path(db->source,db->path,&free_inpath);
 
-        FILE *db_in = fopen(inpath,"r");
+        FILE *db_in = util_open(inpath,"r");
 
         if (db_in) {
             char *tmpdb;
             ovs_asprintf(&tmpdb,"%s.tmp.%d",inpath,getpid());
             int rename=0;
 
-            FILE *db_out = fopen(tmpdb,"w");
+            FILE *db_out = util_open(tmpdb,"w");
 
             if (db_out) {
                 while(1) {
@@ -1032,8 +1036,8 @@ int copy_file(char *from, char *to)
     int result = -1;
     FILE *fromfp,*tofp;
 
-    if ((fromfp = fopen(from,"r") ) != NULL) {
-        if ((tofp = fopen(to,"w") ) != NULL) {
+    if ((fromfp = util_open(from,"r") ) != NULL) {
+        if ((tofp = util_open(to,"w") ) != NULL) {
             while (fgets(buf,COPY_BUF_SIZE,fromfp) ) {
 
                 fputs(buf,tofp);

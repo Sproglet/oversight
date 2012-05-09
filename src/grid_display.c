@@ -797,6 +797,8 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
 {
     int numids = sorted_rows->num_rows;
     DbItem **row_ids = sorted_rows->rows;
+    //
+    int segment_size = gs->dimensions.rows * gs->dimensions.cols;
     // first loop through the selected rowids that we expect to draw.
     // If there are any that need pruning - remove them from the database and get another one.
     // This will possibly cause a temporary inconsistency in page numbering but
@@ -805,40 +807,24 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
     // Note the db load routing should already filter out items that cant be mounted,
     // otherwise this can cause timeouts.
     if (gs->parent->page_size == DEFAULT_PAGE_SIZE) {
-        gs->parent->page_size = gs->dimensions.rows * gs->dimensions.cols;
+        gs->parent->page_size = segment_size;
     }
 
-    int start = page * gs->parent->page_size; 
+    int page_start = page * gs->parent->page_size ;
+    int page_end = page_start +gs->parent->page_size;
+    if (page_end > numids) page_end = numids;
 
-    int total=0;
-    // Create space for pruned rows
-TRACE1;
-    DbItem **prunedRows = filter_page_items(start,numids,row_ids,gs->parent->page_size,&total);
-TRACE1;
-
-    
-    DbItem **segmentRows = prunedRows + gs->offset;
-
-    int segment_total = total - gs->offset;
-
-    if (segment_total < 0 ) {
-
-        segment_total = 0;
-
-    } else if (segment_total > gs->dimensions.rows * gs->dimensions.cols ) {
-
-        segment_total = gs->dimensions.rows * gs->dimensions.cols ;
-    }
-
+    int seg_start = page_start + gs->offset; 
+    int seg_end = seg_start + segment_size;
+    if (seg_end > numids ) seg_end = numids;
 
     int page_before = (gs->offset == 0) && (page > 0);
-    int page_after = gs->offset + segment_total >= total;
+    int page_after = seg_end >= page_end;
 
 
 TRACE1;
-    char  *ret =  render_grid(page,gs,segment_total,segmentRows,page_before,page_after);
+    char  *ret =  render_grid(page,gs,seg_end-seg_start,row_ids+seg_start,page_before,page_after);
 TRACE1;
-    FREE(prunedRows);
     return ret;
 }
 

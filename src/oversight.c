@@ -448,15 +448,21 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
             sortedRows = get_sorted_rows_from_params();
             dump_all_rows("sorted",sortedRows->num_rows,sortedRows->rows);
 
-            // Found some data - continue to render page.
-            if (sortedRows->num_rows) {
-                break;
-            }
-
             // If it's not a tv/movie detail or boxset view then break
             if (view == VIEW_MENU ||  view == VIEW_ADMIN ) {
                 break;
             }
+
+            // Found some data - as we are on a smaller view - filter it
+            if (sortedRows->num_rows && sortedRows->num_rows < 50 ) {
+                int new_num = sortedRows->num_rows;
+                int max_new = sortedRows->num_rows;
+                DbItem **new_list = filter_page_items(0,sortedRows->num_rows,sortedRows->rows,max_new,&new_num);
+                FREE(sortedRows->rows);
+                sortedRows->rows = new_list;
+                sortedRows->num_rows=new_num;
+            }
+            if (sortedRows->num_rows) break;
 
             // No data found in this view - try to return to the previous view.
             query_pop();

@@ -172,12 +172,19 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
     //This is done in two passes so we know how many items will eventually be displayed at any point on the page.
     //This is required for  [:PAGE_MAX:]  and [:RIGHT:] macros for example.
 
-    char *path[2] = { "/share/ovs1","/share/ovs2"};
-    //char *path[2] = { "/tmp/ovs1","/tmp/ovs2"};
+    char *path[2] = {NULL,NULL};
     FILE *fp[2]= {NULL,NULL};
     int request_reparse;
     int out=0;
     int in=0;
+
+    char *p = oversight_val("ovs_temp");
+    if (EMPTY_STR(p)) {
+        p="/tmp";
+    }
+
+    ovs_asprintf(&(path[0]),"%s/ovs0.html",p);
+    ovs_asprintf(&(path[1]),"%s/ovs1.html",p);
    
 
     do {
@@ -235,6 +242,8 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
     cat(NULL,path[out]);
 
     loop_deregister_all();
+    FREE(path[0]);
+    FREE(path[1]);
 
     return ret;
 

@@ -550,6 +550,22 @@ char *base_name(DbItem *item,ViewMode *view)
     return result;
 }
 
+char *yamj_image_path(DbItem *item,ImageType type,char *shrt_prefix)
+{
+    char *path = NULL;
+    if (*oversight_val("ovs_yamj_full_image_path") == '1') {
+        char *tmp = get_picture_path(1,&item,type,NULL);
+        if(tmp) {
+            path = file_to_url(tmp);
+            FREE(tmp);
+        }
+    } else {
+        // use shorter - name only image paths - for Eversion compatability
+        path = internal_image_path_static(item,type,1);
+        ovs_asprintf(&path,"%s%s",shrt_prefix,path);
+    }
+    return path;
+}
 
 int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int pos,int total)
 {
@@ -624,38 +640,28 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     fprintf(xmlout,"\t<details>NO.html</details>\n");
     
     //fprintf(xmlout,"\t<posterURL>UNKNOWN</posterURL>\n");
-    char *poster = internal_image_path_static(item,POSTER_IMAGE,1);
-    if (!EMPTY_STR(poster)) {
-        fprintf(xmlout,"\t<posterFile>%s%s</posterFile>\n",YAMJ_POSTER_PREFIX,poster);
-        fprintf(xmlout,"\t<detailPosterFile>%s%s</detailPosterFile>\n",YAMJ_POSTER_PREFIX,poster);
-        fprintf(xmlout,"\t<thumbnail>%s%s</thumbnail>\n",(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX),poster);
-    }
 
-    char *banner;
-   
-#if 1
-    banner = internal_image_path_static(item,BANNER_IMAGE,1);
-    if (*banner ) {
-        fprintf(xmlout,"\t<bannerFile>%s%s</bannerFile>\n",YAMJ_BANNER_PREFIX,banner);
-    }
+    char *poster = yamj_image_path(item,POSTER_IMAGE,YAMJ_POSTER_PREFIX);
+    if(!EMPTY_STR(poster)) fprintf(xmlout,"\t<posterFile>%s</posterFile>\n",poster);
+    if(!EMPTY_STR(poster)) fprintf(xmlout,"\t<detailPosterFile>%s</detailPosterFile>\n",poster);
+    if (poster) FREE(poster);
+
+    char *thumb = yamj_image_path(item,POSTER_IMAGE,(is_boxset?YAMJ_BOXSET_PREFIX:YAMJ_THUMB_PREFIX));
+    if(!EMPTY_STR(thumb)) fprintf(xmlout,"\t<thumbnail>%s</thumbnail>\n",thumb);
+    if (thumb) FREE(thumb);
+
+    char *banner = yamj_image_path(item,POSTER_IMAGE,YAMJ_BANNER_PREFIX);
+    if(!EMPTY_STR(banner)) fprintf(xmlout,"\t<bannerFile>%s</bannerFile>\n",banner);
+    if (banner) FREE(banner);
+
+    char *fanart = yamj_image_path(item,FANART_IMAGE,YAMJ_FANART_PREFIX);
+    if(!EMPTY_STR(fanart)) fprintf(xmlout,"\t<fanartFile>%s</fanartFile>\n",fanart);
+    if (fanart) FREE(fanart);
+
+
     if (!lean_xml) {
         fprintf(xmlout,"\t<bannerURL>UNKNOWN</bannerURL>\n");
-    }
-#else
-    banner = get_existing_internal_image_path(item,BANNER_IMAGE,view);
-    //HTML_LOG(0,"TRACE1 banner[%s]",banner);
-    if (!EMPTY_STR(banner) ) {
-        int freeit;
-        char *enc=url_encode_static(banner,&freeit);
-        fprintf(xmlout,"\t<bannerFile>%s</bannerFile>\n",enc);
-        if (freeit) FREE(enc);
-    }
-#endif
-
-    //fprintf(xmlout,"\t<fanartURL>UNKNOWN</fanartURL>\n");
-    char *fanart = internal_image_path_static(item,FANART_IMAGE,1);
-    if (!EMPTY_STR(fanart) ) {
-        fprintf(xmlout,"\t<fanartFile>%s%s</fanartFile>\n",YAMJ_FANART_PREFIX,fanart);
+        fprintf(xmlout,"\t<fanartURL>UNKNOWN</fanartURL>\n");
     }
 
     char *plot = get_plot(item,PLOT_MAIN);
@@ -1528,6 +1534,11 @@ int yamj_xml(char *request)
         char *cache_path;
         
         log_request(request);
+        if (cache) {
+            if (*query_val("cache") == '0') {
+                cache = 0;
+            }
+        }
         if (cache) {
             cache_path = cache_file(".no");
             if (exists(cache_path)) {

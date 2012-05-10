@@ -1060,3 +1060,15 @@ int dbrow_total_size(DbItem *rowid)
     return sz;
 }
 
+int num_parts(DbItem *item)
+{
+    int count=0;
+    if (item->parts) {
+        char *p;
+        for(p = item->parts; *p ; p++) {
+            if (*p == '/') count++;
+        }
+    }
+    return count;
+}
+

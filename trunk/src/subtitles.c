@@ -30,7 +30,7 @@ unsigned long long analizefileOSHahs(char *fileName){
 
   long unsigned int items;
 
-  file = util_open(fileName, "rb");
+  file = fopen(fileName, "rb");
   if (file) {
 
 

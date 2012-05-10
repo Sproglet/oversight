@@ -822,9 +822,7 @@ char *get_grid(long page,GridSegment *gs,DbSortedRows *sorted_rows)
     int page_after = seg_end >= page_end;
 
 
-TRACE1;
     char  *ret =  render_grid(page,gs,seg_end-seg_start,row_ids+seg_start,page_before,page_after);
-TRACE1;
     return ret;
 }
 

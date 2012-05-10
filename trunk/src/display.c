@@ -74,9 +74,10 @@ char *get_path_no(DbItem *item,int part_no,int *freeit)
     if (item) {
         if (part_no == 0) {
             path = get_path(item,item->file,freeit);
+        } else if (part_no == 1) {
+            path=get_path(item,item->file,freeit);
         } else {
-            Array *parts = splitstr(item->parts,"/");
-            if (parts->size < part_no) {
+            if (num_parts(item)+1 < part_no) {
                 html_error("No part [%d] for item [%s]",part_no,item->title);
             } else {
                 part_no--;
@@ -86,7 +87,6 @@ char *get_path_no(DbItem *item,int part_no,int *freeit)
                 path=STRDUP(path);
                 *freeit=1;
             }
-            array_free(parts);
         }
     }
     return path;

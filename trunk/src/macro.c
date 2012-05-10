@@ -58,6 +58,10 @@ int check_index(MacroCallInfo *call_info,int index);
 char *drilldown_url_by_item(DbItem *item,int position);
 char *menu_page_url(MacroCallInfo *call_info,int offset_in);
 
+// This value is added to indexed lookups for FILE_VOD BANNER_URL etc.
+// By default it refers to first selected data item.
+// IT can be changed using PAGE(align_data) macro.
+static int aligned_data_offset = 0;
 
 int has_rows(MacroCallInfo *call_info,int report)
 {
@@ -218,6 +222,7 @@ char *macro_fn_details(MacroCallInfo *call_info)
             util_parse_int(get_named_arg(h,"index"),&index,0);
             util_parse_int(get_named_arg(h,"position"),&pos,0);
 
+            index += aligned_data_offset;
             if(check_index(call_info,index)) {
                 result = drilldown_url_by_item(call_info->sorted_rows->rows[index-1],pos);
             }
@@ -327,6 +332,7 @@ char *image_url(MacroCallInfo *call_info,ImageType type)
             ovs_asprintf(&result,"%s([default image]) OR (default=>image,index=>nn)",call_info->call);
         }
     }
+    index += aligned_data_offset;
 
     if (index > call_info->sorted_rows->num_rows) {
         html_error("index [%d] too big",index);
@@ -604,11 +610,14 @@ char *macro_fn_page_max(MacroCallInfo *call_info)
  * =begin wiki
  * ==SET_PAGE==
  *
- * [:SET_PAGE(size=>n):]
+ * [:SET_PAGE(size=>n,[align_data=>1]):]
  *
  * This will tell the template the number of elements in a page. 
  * If not present then other macros (eg PAGE_MAX)  may force a reparse of the template if the page size is not know during the current parse..
- * This will set a variable - page_size
+ * This will set temprary variable - _page_size that will be used to calculate PAGE_MAX and wrap around behaviour of MENU_PAGE_NEXT/PREV_URL
+ *
+ * If align_data is set then the correct offset will be added to the fields
+ * FILE_VOD FILE_ENC FILE_PATH FANART_IMAGE BANNER_IMAGE THUMB_IMAGE etc.
  *
  * =end wiki
  */
@@ -620,13 +629,30 @@ char *macro_fn_set_page(MacroCallInfo *call_info)
     if (set) {
         html_error("page size already set - ignoring");
     } else {
-        struct hashtable *h = args_to_hash(call_info,"%size",NULL);
-        set_tmp_skin_variable(PAGE_SIZE_VAR,get_named_arg(h,"size"));
+        struct hashtable *h = args_to_hash(call_info,"%size","%align_data");
+
+        char *size_str = get_named_arg(h,"size");
+        int size;
+        set_tmp_skin_variable(PAGE_SIZE_VAR,size_str);
+
+        char *align=get_named_arg(h,"align_data");
+        if (!EMPTY_STR(align) && *align == '1') {
+
+            int page=0;
+            char *page_str = query_val("p");
+            if (!EMPTY_STR(page_str)) util_parse_int(page_str,&page,1);
+
+            if (util_parse_int(size_str,&size,1)) {
+                aligned_data_offset = size * page;
+                HTML_LOG(0,"Setting data offset %d page=%d page_size=%d ",aligned_data_offset,page,size);
+            }
+        }
         free_named_args(h);
         set = 1;
     }
     return result;
 }
+
 
 // Clean up static allocated data - we dont really have to do this as process is ending.
 void macro_cleanup()
@@ -1532,7 +1558,7 @@ struct hashtable *args_to_hash(MacroCallInfo *call_info,char *required_list,char
                                 html_error("final number=[%s] ",val);
                                 //ok=0;
                             } else {
-                                HTML_LOG(0,"parsed [%s:%s] as [%d]",name,val,tmp);
+                                //HTML_LOG(0,"parsed [%s:%s] as [%d]",name,val,tmp);
                             }
                         }
                         hashtable_insert(h,name,val);
@@ -2035,6 +2061,7 @@ char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
             path = get_path_no(item,part_no-1,&freeit);
         } else {
             // Anything else the index refers to the n'th item
+            part_no += aligned_data_offset;
             if (!check_index(call_info,part_no)) {
                 return NULL;
             }

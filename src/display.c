@@ -366,7 +366,7 @@ Array *get_drilldown_root_names() {
     return drilldown_root_names;
 }
 /*
- * 'new_params = query string selgment - ie p=1&q=2"
+ * 'new_params = query string segment - ie p=1&q=2"
  * @param_list = list of parameters whose old values are kept in the url.
  *
  * eg given

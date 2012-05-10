@@ -35,6 +35,9 @@
 #include "variables.h"
 #include "mount.h"
 
+#define NO_ARGS(x) (!(x)->args || (x)->args->size == 0)
+#define HAS_ARGS(x,n) ((x)->args && (x)->args->size == (n) )
+
 typedef enum { FILE_PATH , FILE_ENC , FILE_VOD } FileAspect;
 
 
@@ -51,6 +54,9 @@ char *image_url(MacroCallInfo *call_info,ImageType type);
 int get_page_max(int *maxptr,MacroCallInfo *call_info);
 int get_page_size(int *size,MacroCallInfo *call_info);
 long numeric_constant_eval_str(long val,char *expression);
+int check_index(MacroCallInfo *call_info,int index);
+char *drilldown_url_by_item(DbItem *item,int position);
+char *menu_page_url(MacroCallInfo *call_info,int offset_in);
 
 
 int has_rows(MacroCallInfo *call_info,int report)
@@ -180,6 +186,48 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
     return result;
 }
 
+/*
+ * =begin wiki
+ * ==DETAILS_URL==
+ *
+ * Generate a URL to drill down to this item.
+ * [:DETAILS_URL(index=>item_no):]
+ *
+ * If position is supplied this is preserved as query value i=
+ * This allows a back button to return the the selected item on the grid.
+ * [:DETAILS_URL(index=>item_no,position=>pos):]
+ *
+ * =end wiki
+ */
+char *macro_fn_details(MacroCallInfo *call_info)
+{
+    int index=0;
+    int pos=0;
+    char *result=NULL;
+    if (!has_rows(call_info,1)) {
+
+        call_info->free_result=0;
+        return "?";
+
+    } else {
+
+        struct hashtable *h = args_to_hash(call_info,"%index","%position");
+
+        if (h) {
+
+            util_parse_int(get_named_arg(h,"index"),&index,0);
+            util_parse_int(get_named_arg(h,"position"),&pos,0);
+
+            if(check_index(call_info,index)) {
+                result = drilldown_url_by_item(call_info->sorted_rows->rows[index-1],pos);
+            }
+            free_named_args(h);
+        }
+    }
+
+    return result;
+}
+
 /**
  * =begin wiki
  * ==FANART_URL==
@@ -269,17 +317,14 @@ char *image_url(MacroCallInfo *call_info,ImageType type)
 
             util_parse_int(get_named_arg(h,"index"),&index,0);
 
-
-        } else if (!call_info->args || (call_info->args && call_info->args->size > 1) ) {
-
-            ovs_asprintf(&result,"%s([default image]) OR (default=>image,index=>nn)",call_info->call);
-
-        } else {
+        } else  if (HAS_ARGS(call_info,1)) {
 
             if (call_info->args && call_info->args->size == 1 ) {
 
                 default_image = call_info->args->array[0];
             }
+        } else {
+            ovs_asprintf(&result,"%s([default image]) OR (default=>image,index=>nn)",call_info->call);
         }
     }
 
@@ -2335,7 +2380,7 @@ int get_page_size(int *size,MacroCallInfo *call_info)
             
             HTML_LOG(0,"page size from grid=%d",page_size);
             
-            if (page_size) {
+            if (page_size > 0) {
 
                 *size = page_size;
                 ret = 1;
@@ -2353,7 +2398,91 @@ int get_page_size(int *size,MacroCallInfo *call_info)
 }
 
 
+char *menu_page(int page_num,MacroCallInfo *call_info)
+{
+    char *result = NULL;
+    int page_max;
 
+    if (get_page_max(&page_max,call_info)) {
+
+        int next_page = (page_num+2*page_max)%page_max;  // avoid -ve modulo
+
+        char *params;
+        ovs_asprintf(&params,"p=%d",next_page);
+        result = self_url(params);
+        FREE(params);
+    } else {
+        result = CALL_UNCHANGED;
+    }
+    return result;
+}
+
+/*
+ * =begin wiki
+ * ==MENU_PAGE_PREV_URL==
+ *
+ * Link to previous page URL
+ * Shorthand for MENU_PAGE_URL(offset=>-1):]
+ * =end wiki
+ */
+char *macro_fn_menu_page_prev_url(MacroCallInfo *call_info)
+{
+    return menu_page_url(call_info,-1);
+}
+/*
+ * =begin wiki
+ * ==MENU_PAGE_NEXT_URL==
+ *
+ * Link to previous page URL
+ * Shorthand for MENU_PAGE_URL(offset=>-1):]
+ * =end wiki
+ */
+char *macro_fn_menu_page_next_url(MacroCallInfo *call_info)
+{
+    return menu_page_url(call_info,1);
+}
+/*
+ * =begin wiki
+ * ==MENU_PAGE_URL==
+ *
+ * Generate url to jump to the given menu page. Offset is relative from current page.
+ * [:MENU_PAGE_URL(offset=>1):]
+ * This should be called from another menu page. To get to menu from details page use the BACK urls.
+ * =end wiki
+ */
+char *macro_fn_menu_page_url(MacroCallInfo *call_info,int offset_in)
+{
+    return menu_page_url(call_info,0);
+}
+
+char *menu_page_url(MacroCallInfo *call_info,int offset_in)
+{
+
+    char *result=NULL;
+
+    int offset;
+
+    if(offset_in) {
+        // Simple case for MENU_PAGE_PREV_URL / MENU_PAGE_NEXT_URL
+        if (NO_ARGS(call_info)) {
+            result = menu_page(get_current_page() + offset_in,call_info); 
+        } else {
+            html_error("no arguments expected [%s]",call_info->call);
+        }
+    } else {
+        // MENU_PAGE_URL(offset=>n)
+        struct hashtable *h=args_to_hash(call_info,"offset",NULL);
+        if (h) {
+            if (util_parse_int(get_named_arg(h,"offset"),&offset,1)) {
+
+                result = menu_page(get_current_page() + offset,call_info); 
+            }
+        }
+        free_named_args(h);
+    }
+
+    return result;
+}
 char *macro_fn_right_button(MacroCallInfo *call_info) {
 
     char *result=NULL;
@@ -3579,6 +3708,47 @@ Array *js_array(DbSortedRows *sorted_rows,int max,Array *fields)
     return out;
 }
 
+/**
+ * position = cell number on current page. This will be preserved to aid user navigation when returning to page.
+ */
+char *drilldown_url_by_item(DbItem *item,int position) 
+{
+    char *params=NULL;
+    int free_name2=0;
+    char *name2=NULL;
+    ViewMode *view = get_drilldown_view(item);
+
+    // The current cell number is pushed into the parent page query values
+    char *cell_no_param = get_drilldown_name_static(QUERY_PARAM_SELECTED,1);
+
+    if (view == VIEW_TVBOXSET) {
+
+        name2 = url_encode_static(item->title,&free_name2);
+        ovs_asprintf(&params,"%s=%d&"QUERY_PARAM_VIEW"=%s&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "%s",
+                cell_no_param,position,
+                view->name,name2);
+
+    } else if (view == VIEW_TV) {
+        name2 = url_encode_static(item->title,&free_name2);
+        ovs_asprintf(&params,"%s=%d&"QUERY_PARAM_VIEW"=%s&p=&"QUERY_PARAM_TITLE_FILTER"="QPARAM_FILTER_EQUALS QPARAM_FILTER_STRING "%s&"QUERY_PARAM_SEASON"=%d",
+                cell_no_param,position,
+                view->name,name2,item->season);
+
+    } else {
+        ovs_asprintf(&params,"%s=%d&"QUERY_PARAM_VIEW"=%s&p=&idlist=%s",
+                cell_no_param,position,
+                view->name,build_id_list(item));
+    }
+    if (free_name2) FREE(name2);
+
+    char *url = drill_down_url(params);
+    FREE(params);
+
+    return url;
+}
+
+
+
 void macro_init() {
 
     if (macros == NULL) {
@@ -3595,6 +3765,7 @@ void macro_init() {
         hashtable_insert(macros,"CERTIFICATE_IMAGE",macro_fn_cert_img);
         hashtable_insert(macros,"CHECKBOX",macro_fn_checkbox);
         hashtable_insert(macros,"DIRECTORS",macro_fn_directors);
+        hashtable_insert(macros,"DETAIL_URL",macro_fn_details);
         hashtable_insert(macros,"DUMP_VARS",macro_fn_dump_vars);
         hashtable_insert(macros,"CONFIG_LINK",macro_fn_admin_config_link);
         hashtable_insert(macros,"DELETE_BUTTON",macro_fn_delete_button);
@@ -3641,6 +3812,9 @@ void macro_init() {
         hashtable_insert(macros,"MEDIA_TOGGLE",macro_fn_media_toggle);
         hashtable_insert(macros,"MEDIA_TYPE",macro_fn_media_type);
         hashtable_insert(macros,"MENU_TVID",macro_fn_menu_tvid);
+        hashtable_insert(macros,"MENU_PAGE_URL",macro_fn_menu_page_url);
+        hashtable_insert(macros,"MENU_PAGE_NEXT_URL",macro_fn_menu_page_next_url);
+        hashtable_insert(macros,"MENU_PAGE_PREV_URL",macro_fn_menu_page_prev_url);
         hashtable_insert(macros,"MOUNT_STATUS",macro_fn_mount_status);
         hashtable_insert(macros,"MOVIE_LISTING",macro_fn_movie_listing);
         hashtable_insert(macros,"MOVIE_TOTAL",macro_fn_movie_total);
@@ -3775,7 +3949,7 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
             *free_result=call_info.free_result;
             if (call_info.request_reparse) {
                 (*request_reparse) ++;
-                HTML_LOG(0,"reparse requested by [%s]",call);
+                //HTML_LOG(0,"reparse requested by [%s]",call);
             }
 
             //HTML_LOG(1,"end macro [%s]",call);

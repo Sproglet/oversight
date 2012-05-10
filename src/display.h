@@ -93,4 +93,5 @@ ViewMode *get_drilldown_view(DbItem *item);
 ViewMode *compute_view(DbItemSet **rowsets);
 char *get_internal_image_path_any_season(int num_rows,DbItem **sorted_rows,ImageType image_type,ViewMode *newview);
 char *get_existing_internal_image_path(DbItem *item,ImageType image_type,ViewMode *newview);
+char *drill_down_url(char *new_params);
 #endif

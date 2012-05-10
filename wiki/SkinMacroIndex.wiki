@@ -1,7 +1,7 @@
 #sidebar TableOfContents
 <wiki:toc max_depth="3" />
 
-[Auto-generated at Sun May  6 15:11:58 BST 2012 from comments in macro.c using macro_doc in trunk/src]
+[Auto-generated at Thu May 10 19:56:18 BST 2012 from comments in macro.c using macro_doc in trunk/src]
 
 Oversight skins are html with special macros that are replaced with html text on the fly.
 
@@ -14,12 +14,31 @@ If this page becomes out of date, refer to macro.c
   BACKGROUND_URL(image name)
   Display image from skin/720 or skin/sd folder. Also see FANART_URL
 
+==BANNER_URL==
+
+THUMB_URL(default_image)
+THUMB_URL(default=>image,index=>nn)
+Display  banner image for db item. If not present then look in the Oversight db, otherwise
+use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL POSTER_URL THUMB_URL
+
   ==CONFIG_LINK==
     Description:
     Generate text to link to a settings configuration form for a config file.
   Syntax:
 {{{   [:CONFIG_LINK(conf=>,help=>,text=>link text,attr=>html_attributes,skin=1):] }}}
   Example:
+==DETAILS_URL==
+
+Generate a URL to drill down to this item.
+{{{ [:DETAILS_URL(index=>item_no):] }}}
+
+If position is supplied this is preserved as query value i=
+This allows a back button to return the the selected item on the grid.
+{{{ [:DETAILS_URL(index=>item_no,position=>pos):] }}}
+
+==DUMP_VARS==
+
+Dump all variables with the given prefix
 ==EDIT_CONFIG==
 
 Write a html input table for a configuration file.
@@ -63,6 +82,13 @@ Example:
 {{{ [:EXTERNAL_URL:(domain=>imdb):]  }}}
 {{{ [:EXTERNAL_URL:(domain=>themoviedb):]  }}}
 
+==FANART_URL==
+
+FANART_URL(default_image)
+FANART_URL(default=>image,index=>nn)
+Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL BANNER_URL POSTER_URL THUMB_URL
+
   ==FAVICON==
 
   Display favicon html link.
@@ -77,94 +103,9 @@ char *macro_fn_file_enc(MacroCallInfo *call_info)
 }
 /**
 ==FILE_NUM_PARTS==
-Return number of parts  for a movie - OR number of Episodes for a TV series.
+Return number of parts  for a movie 
 
-This is static an only computed once. IT should only be called on a movie detail page
-=endwiki
-/
-char *macro_fn_file_num_parts(MacroCallInfo *call_info)
-{
-    static char *result=NULL;
-    call_info->free_result = 0;
-    if (result == NULL) {
-        if (call_info->args && call_info->args->size == 0) {
-{{{             DbItem *item = call_info->sorted_rows->rows[0]; }}}
-            if (item) {
-                int count = 0;
-                if (item->category=='T') {
-                    // TV Series - count episodes
-                    count = call_info->sorted_rows->num_rows;
-                } else {
-                    // Movie - count actual parts
-                    if (item->file) {
-                        count++;
-                        if (item->parts) {
-                            char *p;
-                            for(p = item->parts; *p ; p++) {
-                                if (*p == '/') count++;
-                            }
-                        }
-                    }
-                }
-                ovs_asprintf(&result,"%d",count);
-            }
-
-        } else {
-            ovs_asprintf(&result,"%s( no args expected",call_info->call);
-        }
-    }
-    return result;
-}
-
-char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
-{
-    char *result=NULL;
-    int part_no = 1;
-    int freeit = 0;
-    int freeit2 = 0;
-
-    if (call_info->args==NULL || call_info->args->size <= 1) {
-        if (call_info->args && call_info->args->size == 1) {
-{{{             part_no = atoi(call_info->args->array[0]); }}}
-        }
-{{{         DbItem *item = call_info->sorted_rows->rows[0]; }}}
-        if (item) {
-            char *path = get_path_no(item,part_no-1,&freeit);
-
-            if (path) {
-                switch(aspect) {
-                    case FILE_PATH:
-                        result = path;
-                        call_info->free_result = freeit;
-                        break;
-                    case FILE_ENC:
-
-                        result = url_encode_static(path,&freeit2);
-                        if (freeit2) {
-                            if (freeit) FREE(path);
-                            call_info->free_result = 1;
-                        } else if (freeit) {
-                            call_info->free_result = 1;
-                        } else {
-                            call_info->free_result = 0;
-                        }
-                        break;
-                    case FILE_VOD:
-                        result = vod_attr(path);
-                        if (freeit) FREE(path);
-                        call_info->free_result = 0;
-                        break;
-                }
-            }
-        }
-
-    } else {
-        ovs_asprintf(&result,"%s(partno)",call_info->call);
-    }
-    return  result;
-}
-
-/**
+IT should only be called on a movie detail page
 ==FILE_PATH(n)==
 Return name of n'th file part. See also FILEPARTS, FILE_ENCODED FILE_VOD_ATTRIBUTES
 =endwiki
@@ -238,6 +179,7 @@ Example:
 {{{ [:GRID(rows=>1,cols=>4,offset=>0,order=Horizontal):] }}}
 {{{ [:GRID(rows=>3,cols=>1,offset=>4,order=Vertical):] }}}
 
+At present GRID cannot be inside a loop as they must be parsed during first pass.
   ==HELP_BUTTON==
     Description:
     Display a template image from current skins images folder - if not present look in defaults.
@@ -257,21 +199,21 @@ Single line form
 {{{ [:IF(exp,text):] }}}
 {{{ [:IF(exp,text,alternative_text):] }}}
 
-  ==IMAGE_URL==
-    Description:
-    Generate a url for a template image from current skins images folder - if not present look in defaults.
-    This is just the url - no html tag is included.
-  Syntax:
-{{{   [:IMAGE_URL(image name):] }}}
-  Example:
-{{{   [:IMAGE_URL(stop):] }}}
-  ==IMAGE_URL==
-    Description:
-    Generate html <img> tag to display an icon  - if not present look in defaults.
-  Syntax:
-{{{   [:ICON(name,[attribute]):] }}}
-  Example:
-{{{   [:ICON(stop,width=20):] }}}
+==IMAGE_URL==
+  Description:
+  Generate a url for a template image from current skins images folder - if not present look in defaults.
+  This is just the url - no html tag is included.
+Syntax:
+{{{ [:IMAGE_URL(image name):] }}}
+Example:
+{{{ [:IMAGE_URL(stop):] }}}
+==IMAGE_URL==
+  Description:
+  Generate html <img> tag to display an icon  - if not present look in defaults.
+Syntax:
+{{{ [:ICON(name,[attribute]):] }}}
+Example:
+{{{ [:ICON(stop,width=20):] }}}
 ==JS_DETAILS==
 
 {{{ JS_DETAILS([max=>n,fields=>field1|field2|field3...fieldx]) }}}
@@ -289,6 +231,34 @@ Display Locked/Unlocked selection.
 {{{ [:LOCKED_SELECT:] }}}
 ==EPISODE_COUNT
 Number of episodes on this detail page
+==LOOP_END==
+{{{ [:LOOP_END:] - End of names loop body }}}
+
+==LOOP_EXPAND==
+
+{{{ [:LOOP_EXPAND(name=>name,num=>n):] }}}
+{{{ [:LOOP_EXPAND(name=>name,end=>n[,start=>n,inc=>n]):] }}}
+{{{ [:LOOP_EXPAND(name=>name,values=>val1|val2|...|val3):] }}}
+
+Expand the named loop body replace aoccurences of $loop_name with the numeric value
+
+==LOOP_START==
+
+{{{ [:LOOP_START(name):] - following lines are stored as the named loop body up to the [:LOOP_END:] }}}
+
+==MENU_PAGE_NEXT_URL==
+
+Link to previous page URL
+{{{ Shorthand for MENU_PAGE_URL(offset=>-1):] }}}
+==MENU_PAGE_PREV_URL==
+
+Link to previous page URL
+{{{ Shorthand for MENU_PAGE_URL(offset=>-1):] }}}
+==MENU_PAGE_URL==
+
+Generate url to jump to the given menu page. Offset is relative from current page.
+{{{ [:MENU_PAGE_URL(offset=>1):] }}}
+This should be called from another menu page. To get to menu from details page use the BACK urls.
 ==ORIG_TITLE==
 Can Also use $field_ORIG_TITLE
 ==PAGE_MAX==
@@ -296,9 +266,8 @@ Return the last page number by dividing number of items by the page size (aka gr
 This does not take delisting into account, which may reduce the number of items.
 
 the page size is determined from the following items:
-1 A page size argument can be supplied, if not
-{{{ 2. the _grid_size skin variable can be used (see [:SET(...}:] }}}
-3. If the variable is not set then it is computed from current rows*cols.
+{{{ - the _page_size skin variable can be used (see [:SET_PAGE(size=>):] also [:SET(...}:] }}}
+- If the variable is not set then it is computed from current rows*cols. (this will force another parse of the template)
 
 Example:
 {{{ [:PAGE_MAX:] }}}
@@ -328,6 +297,13 @@ Display poster for current item.
 {{{ [:POSTER:] }}}
 {{{ [:POSTER(attributes):] }}}
 
+==POSTER_URL==
+
+POSTER_URL(default_image)
+POSTER_URL(default=>image,index=>nn)
+Display image  by looking for fanart for the first db item. If not present then look in the Oversight db, otherwise
+use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL BANNER_URL THUMB_URL
+
 ==RATING_STARS==
 
 RATING_STARS(numstars)
@@ -351,6 +327,14 @@ Oversight Ratings are from 0 to 10
 Default scale = 1
 Default precision = 1
 
+==SET_PAGE==
+
+{{{ [:SET_PAGE(size=>n):] }}}
+
+This will tell the template the number of elements in a page. 
+If not present then other macros (eg PAGE_MAX)  may force a reparse of the template if the page size is not know during the current parse..
+This will set a variable - page_size
+
   ==SKIN_NAME==
 
   Replace with name of the currently selected skin.
@@ -366,6 +350,13 @@ TEMPLATE_URL(file path)
 Return URL to a file within the current skin/template. Fall back to default skin if not found in current skin.
 eg.
 {{{ [:TEMPLATE_URL(css/default.css):] }}}
+==THUMB_URL==
+
+THUMB_URL(default_image)
+THUMB_URL(default=>image,index=>nn)
+Display small poster image  of db item. If not present then look in the Oversight db, otherwise
+use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL POSTER_URL BANNER_URL
+
 ==TITLE==
 Can Also use $field_TITLE
 ==URL_BASE==

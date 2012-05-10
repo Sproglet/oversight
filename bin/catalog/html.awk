@@ -221,6 +221,7 @@ function scan_page_for_match_order(url,fixed_text,regex,max,cache,matches,verbos
 # IN count_or_order = 0=count 1=order
 # OUT matches = array of matches index by the match text value = number of occurences.
 # return number of matches
+# TODO remove fixed_text
 function scan_page_for_matches(url,fixed_text,regex,max,cache,count_or_order,matches,verbose,\
 line,count) {
 
@@ -264,6 +265,10 @@ line,count) {
 # return number of matches
 function get_matches(count_or_order,text,regex,max,count_so_far,matches,verbose,\
 linecount,i,matches2) {
+
+    verbose += index(text,"csfd");
+
+    if (verbose) log_bigstring("scanning ",text,30);
 
     if (count_or_order) {
         # Get all ordered matches. 1=>test1, 2=>text2 , etc.

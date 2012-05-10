@@ -235,9 +235,11 @@ int oversight_main(int argc,char **argv,int send_content_type_header)
         gaya_auto_load(p+strlen(REMOTE_VOD_PREFIX2)+1);
         done=1;
 
-    } else if (q && util_starts_with(q,YAMJ_PREFIX2)) {
+    } else if (q && strstr(q,YAMJ_PREFIX2)) {
 
-        req = url_decode(q+strlen(YAMJ_PREFIX2));
+        g_query=parse_query_string(q,g_query);
+        //req = url_decode(q+strlen(YAMJ_PREFIX2));
+        req = url_decode(query_val("yamj"));
         yamj_xml(req);
         FREE(req);
         done=1;

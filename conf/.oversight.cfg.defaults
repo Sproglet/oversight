@@ -142,6 +142,7 @@ ovs_fade="1"
 # ~p~ Period
 ovs_yamj_page_size=16
 ovs_yamj_lean_xml=1
+ovs_yamj_full_image_path=0
 ovs_yamj_cat1_name="Year"
 ovs_yamj_cat1_expr="_Y~f~~p~"
 ovs_yamj_cat2_name="Title"

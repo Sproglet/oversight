@@ -32,7 +32,7 @@ void add_default_html_parameters(struct hashtable *query_hash)
     for(itr = hashtable_loop_init(g_oversight_config); hashtable_loop_more(itr,&k,&v) ; ) {
        if (!EMPTY_STR(v)) {
             
-           // secect values of the form Label=>htmlname=value
+           // select values of the form Label=>htmlname=value
            char *p = strstr(v,CONFIG_LABEL_TEXT);
            if (p) {
                p += strlen(CONFIG_LABEL_TEXT);
@@ -48,6 +48,8 @@ void add_default_html_parameters(struct hashtable *query_hash)
 /*
 * Parse the query string into a hashtable
 * if hashtable is NULL a new one is created.
+*
+* This may be done before HTTP Headers are written so no output unless something really wrong.
 */
 struct hashtable *parse_query_string(char *q,struct hashtable *hashtable_in)
 {

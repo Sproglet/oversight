@@ -41,6 +41,10 @@ char *template_line_replace_only(int pass,char *skin_name,char *orig_skin,char *
 int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,int *has_macro_ptr,FILE *out,int *request_reparse);
 int template_line_replace(int pass,char *skin_name,char *orig_skin,char *input,DbSortedRows *sorted_rows,FILE *out,int *request_reparse);
 
+// If 1 then all template output is flushed for every line. This is mainly for debugging.
+// It is set if ovs_temp does NOT start with /tmp (ie writing intermediate template files to somewhere else for viewing)
+static int flush_template_output=0;
+
 int display_template_file(int pass,FILE *in,char*skin_name,char *orig_skin,char *resolution,char *file_name,DbSortedRows *sorted_rows,FILE *out,int *request_reparse)
 {
 
@@ -166,27 +170,38 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 {
     int ret = -1;
 #define MAX_PASS 3
+#define PASS_FILES 3
     int pass=0;
     
     //
     //This is done in two passes so we know how many items will eventually be displayed at any point on the page.
     //This is required for  [:PAGE_MAX:]  and [:RIGHT:] macros for example.
 
-    char *path[2] = {NULL,NULL};
-    FILE *fp[2]= {NULL,NULL};
+    char *path[PASS_FILES];
+    FILE *fp[PASS_FILES];
     int request_reparse;
-    int out=0;
-    int in=0;
+    int out=PASS_FILES-1;
+    int in;
+    int dev_mode = (*oversight_val("ovs_skin_dev_mode") == '1');
 
-    char *p = oversight_val("ovs_temp");
-    if (EMPTY_STR(p)) {
-        p="/tmp";
-        p="/share";
+    memset(path,0,PASS_FILES*sizeof(char *));
+    memset(fp,0,PASS_FILES*sizeof(FILE *));
+
+
+    char *p = "/tmp" ;
+    if (dev_mode) {
+        // Flush template output as we go so logs are correct if oversight crashes
+        flush_template_output=1;
     }
 
-    ovs_asprintf(&(path[0]),"%s/ovs0.html",p);
-    ovs_asprintf(&(path[1]),"%s/ovs1.html",p);
-    HTML_LOG(0,"template files [%s,%s]",path[0],path[1]);
+    char *ip=getenv("REMOTE_ADDR"); // Different temp files for different hosts
+    char *port=getenv("SERVER_PORT"); // As Apache runs under different permissions keep temp files sep.
+    int i;
+    for(i = 0 ; i< PASS_FILES ; i++ ) {
+        //if dev mode - temp files are written to OVS_HOME/tmp rather than /tmp (/tmp is faster but less accessible remotely)
+        ovs_asprintf(&(path[i]),"%s%s/ovs-%s-%s-%d.html",(dev_mode?appDir():""),p,NVL(port),NVL(ip),i);
+        HTML_LOG(0,"template file [%s]",path[i]);
+    }
    
 
     do {
@@ -201,7 +216,9 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
 
         // Swap buffers
         in=out;
-        out=1-in;
+        out++;
+        out %= PASS_FILES;
+
         fp[out] = util_open(path[out],"w");
         if (fp[out]) {
             html_set_output(fp[out]);
@@ -243,8 +260,9 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
     cat(NULL,path[out]);
 
     loop_deregister_all();
-    FREE(path[0]);
-    FREE(path[1]);
+    for(i = 0 ; i< PASS_FILES ; i++ ) {
+        FREE(path[i]);
+    }
 
     return ret;
 
@@ -416,7 +434,6 @@ int template_line_replace_and_emit(int pass,char *skin_name,char *orig_skin,char
 TRACE;
     char *macro_start = NULL;
     int count = 0;
-    int flush = 0;
 
     char *p = input;
 
@@ -497,7 +514,7 @@ TRACE;
                             FPRINTSPAN(out,macro_name_end+1,macro_end);
                         }
 
-                         flush++;
+                         if (flush_template_output) { fflush(out); }
 
                      }
                      if (free_result && (macro_output != CALL_UNCHANGED)) FREE(macro_output);
@@ -514,10 +531,7 @@ TRACE;
     if (output_state() ) {
         // Print the last bit
         fputs(p,out);
-        flush++;
-    }
-    if (flush) {
-        fflush(out);
+        if (flush_template_output) { fflush(out); }
     }
 TRACE;
     return count;

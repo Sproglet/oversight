@@ -7,7 +7,7 @@ ovs_grid_direction:Order of items in a grid|horizontal|vertical
 ovs_default_view:Default Media View (select Home Icon after changing)|All|Movies=>_tf=M|Tv=>_tf=T|Unwatched=>_wf=0
 ovs_crossview:Merge oversight view from another NMT player in the network share list.|0|1
 ovs_tv_play_via_pc:Start tv playback from browser|1|0
-ovs_skin_name:Name of skin |@CMD:ls -d templates/*/any | sed -n "/templates/ { s@templates/@@;s@/any@@;p }" | grep -Ev "^(admin)$"
+ovs_skin_name:TV Skin|@CMD:ls -d templates/*/any | sed -n "/templates/ { s@templates/@@;s@/any@@;p }" | grep -Ev "^(admin)$"
 ovs_log_level:Amount of logging within html comments|0|1|2|3|4|5
 ovs_use_folders_as_titles:Display the containing folder name in place of the video title|0|1
 ovs_nas_timeout:Max time to detect NAS service in millis|50

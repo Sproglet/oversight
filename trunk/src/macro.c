@@ -53,12 +53,22 @@ int get_page_size(int *size,MacroCallInfo *call_info);
 long numeric_constant_eval_str(long val,char *expression);
 
 
+int has_rows(MacroCallInfo *call_info,int report)
+{
+    int ret = 1;
+    if (!call_info->sorted_rows || !call_info->sorted_rows->num_rows) {
+        if (report) html_error("no rows");
+        ret = 0;
+    }
+    return ret;
+}
+
 Db *firstdb(MacroCallInfo *call_info)
 {
     Db *result = NULL;
     DbSortedRows *sorted_rows = call_info->sorted_rows;
 
-    if (sorted_rows && sorted_rows->num_rows) {
+    if (has_rows(call_info,1)) {
         DbItem *item = sorted_rows->rows[0];
         result = item->db;
     }
@@ -99,10 +109,8 @@ char *person_reverse_lookup(char *file,char *field2)
 {
     int field2len;
     char *result = NULL;
-    FILE *fp = fopen(file,"r");
-    if (fp == NULL) {
-        html_error("Failed to open [%s]",file);
-    } else {
+    FILE *fp = util_open(file,"r");
+    if (fp) {
         field2len = strlen(field2);
 #define PERSON_BUFSIZE 99
         char buf[PERSON_BUFSIZE+1] = "";
@@ -177,6 +185,7 @@ int get_rows_cols(char *call,Array *args,int *rowsp,int *colsp) {
  * ==FANART_URL==
  *
  * FANART_URL(default_image)
+ * FANART_URL(default=>image,index=>nn)
  * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
  * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL BANNER_URL POSTER_URL THUMB_URL
  *
@@ -197,7 +206,8 @@ char *macro_fn_fanart_url(MacroCallInfo *call_info)
  * ==POSTER_URL==
  *
  * POSTER_URL(default_image)
- * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * POSTER_URL(default=>image,index=>nn)
+ * Display image  by looking for fanart for the first db item. If not present then look in the Oversight db, otherwise
  * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL BANNER_URL THUMB_URL
  *
  * =end wiki
@@ -211,7 +221,8 @@ char *macro_fn_poster_url(MacroCallInfo *call_info)
  * ==THUMB_URL==
  *
  * THUMB_URL(default_image)
- * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * THUMB_URL(default=>image,index=>nn)
+ * Display small poster image  of db item. If not present then look in the Oversight db, otherwise
  * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL POSTER_URL BANNER_URL
  *
  * =end wiki
@@ -224,8 +235,9 @@ char *macro_fn_thumb_url(MacroCallInfo *call_info)
  * =begin wiki
  * ==BANNER_URL==
  *
- * BANNER_URL(default_image)
- * Display image  by looking for fanart for the first db item. If not present then look in the fanart db, otherwise
+ * THUMB_URL(default_image)
+ * THUMB_URL(default=>image,index=>nn)
+ * Display  banner image for db item. If not present then look in the Oversight db, otherwise
  * use the named image from skin/720 or skin/sd folder. Also see BACKGROUND_URL FANART_URL POSTER_URL THUMB_URL
  *
  * =end wiki
@@ -239,38 +251,57 @@ char *image_url(MacroCallInfo *call_info,ImageType type)
 
     char *result = NULL;
     char *default_image=NULL;
+    int index=1;
+    struct hashtable *h=NULL;
 
-    if (call_info->sorted_rows == NULL || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1)) {
 
         call_info->free_result=0;
         return "?";
 
-    } else if (call_info->args && call_info->args->size > 1 ) {
-
-        ovs_asprintf(&result,"%s([default image])",call_info->call);
-
     } else {
 
-        if (call_info->args && call_info->args->size == 1 ) {
+        h = args_to_hash(call_info,NULL,"default,%index");
 
-            default_image = call_info->args->array[0];
-        }
+        if (h) {
 
-        char *path = get_picture_path(call_info->sorted_rows->num_rows,call_info->sorted_rows->rows,type,NULL);
+            default_image = get_named_arg(h,"default");
+
+            util_parse_int(get_named_arg(h,"index"),&index,0);
 
 
-        if (!path || !exists(path)) {
+        } else if (!call_info->args || (call_info->args && call_info->args->size > 1) ) {
 
-            if (default_image) {
+            ovs_asprintf(&result,"%s([default image]) OR (default=>image,index=>nn)",call_info->call);
 
-                path = image_path_by_resolution(call_info->skin_name,default_image);
+        } else {
 
+            if (call_info->args && call_info->args->size == 1 ) {
+
+                default_image = call_info->args->array[0];
             }
         }
-
-        result  = file_to_url(path);
-        FREE(path);
     }
+
+    if (index > call_info->sorted_rows->num_rows) {
+        html_error("index [%d] too big",index);
+        index = 1;
+    }
+    index--;
+    char *path = get_picture_path(1,call_info->sorted_rows->rows+index,type,NULL);
+
+    if (!path || !exists(path)) {
+
+        if (default_image) {
+
+            path = image_path_by_resolution(call_info->skin_name,default_image);
+
+        }
+    }
+
+    result  = file_to_url(path);
+    FREE(path);
+    free_named_args(h);
     return result;
 }
 
@@ -389,7 +420,7 @@ char *macro_fn_person_image(MacroCallInfo *call_info)
 
         // We need one DbItem to get Db information if we need to mount crossview etc.
         DbItem *item = NULL;
-        if (call_info->sorted_rows->num_rows) {
+        if (has_rows(call_info,1)) {
             item = call_info->sorted_rows->rows[0];
 
             //Get class info from parameter
@@ -427,7 +458,7 @@ char *macro_fn_poster(MacroCallInfo *call_info)
 {
     char *result = NULL;
 
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1)) {
         call_info->free_result=0;
         return "?";
     }
@@ -562,7 +593,7 @@ char *macro_fn_plot(MacroCallInfo *call_info)
     call_info->free_result=1;
     char *result = NULL;
 
-    if (call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1)) {
         call_info->free_result=0;
         return "?";
     }
@@ -872,7 +903,7 @@ char *macro_fn_genre(MacroCallInfo *call_info)
     char *genre = "";
     call_info->free_result=0;
 
-    if (call_info->sorted_rows && call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->genre ) {
+    if (has_rows(call_info,1) && call_info->sorted_rows->rows[0]->genre ) {
         call_info->free_result=1;
         genre =expand_genre(call_info->sorted_rows->rows[0]->genre);
     }
@@ -891,7 +922,7 @@ char *macro_fn_orig_title(MacroCallInfo *call_info) {
     char *result = "?";
     call_info->free_result=0;
 
-    if (call_info->sorted_rows &&  call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->orig_title ) {
+    if (has_rows(call_info,1) && call_info->sorted_rows->rows[0]->orig_title ) {
         result = call_info->sorted_rows->rows[0]->orig_title;
     } 
     return result;
@@ -908,7 +939,7 @@ char *macro_fn_title(MacroCallInfo *call_info) {
     char *result = "?";
     call_info->free_result=0;
 
-    if (call_info->sorted_rows &&  call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->title ) {
+    if (has_rows(call_info,1) && call_info->sorted_rows->rows[0]->title ) {
         result = call_info->sorted_rows->rows[0]->title;
     } 
     return result;
@@ -929,7 +960,7 @@ char *macro_fn_season(MacroCallInfo *call_info) {
     char *season="?";
     call_info->free_result=0;
 
-    if (call_info->sorted_rows && call_info->sorted_rows->num_rows && call_info->sorted_rows->rows[0]->season >=0) {
+    if (has_rows(call_info,1) && call_info->sorted_rows->rows[0]->season >=0) {
         ovs_asprintf(&season,"%d",call_info->sorted_rows->rows[0]->season);
         call_info->free_result=1;
     }
@@ -947,11 +978,13 @@ char *macro_fn_runtime(MacroCallInfo *call_info) {
 
     int runtime = 0;
     int i;
-    for(i = 0 ; i < call_info->sorted_rows->num_rows ; i++ ) {
-        DbItem *item = call_info->sorted_rows->rows[i];
-        if (item->runtime > 0 ) {
-            runtime = item->runtime;
-            break;
+    if (has_rows(call_info,1)) {
+        for(i = 0 ; i < call_info->sorted_rows->num_rows ; i++ ) {
+            DbItem *item = call_info->sorted_rows->rows[i];
+            if (item->runtime > 0 ) {
+                runtime = item->runtime;
+                break;
+            }
         }
     }
 
@@ -996,7 +1029,7 @@ char *macro_fn_runtime(MacroCallInfo *call_info) {
 char *macro_fn_year(MacroCallInfo *call_info) {
 
     int i;
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -1031,7 +1064,7 @@ char *macro_fn_cert_img(MacroCallInfo *call_info) {
     char *cert,*tmp;
     cert = tmp = NULL;
 
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -1139,7 +1172,7 @@ char *macro_fn_sys_load_avg(MacroCallInfo *call_info) {
         ovs_asprintf(&result,"1m:%.2lf/%.2lf/%.2lf",av[0],av[1],av[2]);
     }
 #else
-    FILE *fp = fopen("/proc/loadavg","r");
+    FILE *fp = util_open("/proc/loadavg","r");
     if (fp) {
 #define BLEN 99
         char buf[BLEN];
@@ -1161,7 +1194,7 @@ char *macro_fn_sys_uptime(MacroCallInfo *call_info) {
 
     call_info->free_result = 0;
     if (!*result) {
-        FILE *fp = fopen("/proc/uptime","r");
+        FILE *fp = util_open("/proc/uptime","r");
         if (fp != NULL) {
 #define BUFSIZE 50
             char buf[BUFSIZE+1] = "";
@@ -1285,7 +1318,7 @@ char *macro_fn_rating_stars(MacroCallInfo *call_info) {
     int num_stars=0;
     char *star_path=NULL;
 
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -1308,7 +1341,7 @@ char *macro_fn_rating_stars(MacroCallInfo *call_info) {
 
 char *macro_fn_source(MacroCallInfo *call_info) {
     char *result = NULL;
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -1339,7 +1372,7 @@ char *macro_fn_rating(MacroCallInfo *call_info) {
     int precision=1;
     char *tmp;
 
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -1569,7 +1602,6 @@ char *macro_fn_grid(MacroCallInfo *call_info) {
 
     struct hashtable *h = args_to_hash(call_info,NULL,"%rows,%cols,%img_height,%img_width,%offset,%order");
     
-TRACE1;
     GridSegment *gs ;
     char *result = NULL;
    
@@ -1610,19 +1642,14 @@ TRACE1;
 
         static int grid_no = 0;
 
-TRACE1;
         gs = get_grid_info()->segments->array[grid_no++];
-TRACE1;
         result = get_grid(get_current_page(),gs,call_info->sorted_rows);
-TRACE1;
 
     } else {
         assert(0);
     }
 
-TRACE1;
     free_named_args(h);
-TRACE1;
 
     return result;
 }
@@ -1883,43 +1910,62 @@ char *macro_fn_file_vod(MacroCallInfo *call_info)
 /**
  * =begin wiki
  * ==FILE_NUM_PARTS==
- * Return number of parts  for a movie - OR number of Episodes for a TV series.
+ * Return number of parts  for a movie 
  *
- * This is static an only computed once. IT should only be called on a movie detail page
+ * IT should only be called on a movie detail page
  * =end wiki
  */
 char *macro_fn_file_num_parts(MacroCallInfo *call_info)
 {
-    static char *result=NULL;
-    call_info->free_result = 0;
-    if (result == NULL) {
-        if (call_info->args==NULL || call_info->args->size == 0) {
+    char *result=NULL;
+    if (call_info->args==NULL || call_info->args->size == 0) {
+        if (has_rows(call_info,1)) {
             DbItem *item = call_info->sorted_rows->rows[0];
             if (item) {
                 int count = 0;
-                if (item->category=='T') {
-                    // TV Series - count episodes
-                    count = call_info->sorted_rows->num_rows;
-                } else {
-                    // Movie - count actual parts
-                    if (item->file) {
-                        count++;
-                        if (item->parts) {
-                            char *p;
-                            for(p = item->parts; *p ; p++) {
-                                if (*p == '/') count++;
-                            }
-                        }
-                    }
+                if (item->file) {
+                    count = 1 + num_parts(item);
                 }
                 ovs_asprintf(&result,"%d",count);
             }
-
-        } else {
-            ovs_asprintf(&result,"%s( no args expected)",call_info->call);
         }
+
+    } else {
+        ovs_asprintf(&result,"%s( no args expected)",call_info->call);
     }
     return result;
+}
+
+// Check a user specified index - starting from 1. 
+int check_index(MacroCallInfo *call_info,int index) 
+{
+    int ret = 0;
+    DbItem *item = call_info->sorted_rows->rows[0];
+    if (index < 1 ) {
+        html_error("invalid index %d",index);
+    } else if (!call_info->sorted_rows ) {
+       html_error("no rows for index %d",index);
+    } else if (item->category == 'M' && call_info->sorted_rows->num_rows == 1)  {
+        // A movie on its own - the index refers to the PARTS
+        if (index == 1) {
+            if (!(item->file)) {
+                html_error("item has no file?");
+            } else {
+                ret = 1;
+            }
+        } else {
+            if (index-1 > num_parts(item)) {
+                html_error("item has %d parts",num_parts(item)+1);
+            } else {
+                ret=1;
+            }
+        }
+    } else if (index > call_info->sorted_rows->num_rows ) {
+       html_error("index %d out of range [%d]",index,call_info->sorted_rows->num_rows);
+    } else {
+        ret = 1;
+    }
+    return ret;
 }
 
 char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
@@ -1929,46 +1975,51 @@ char *macro_fn_file_general(MacroCallInfo *call_info,FileAspect aspect)
     int freeit = 0;
     int freeit2 = 0;
 
-    if (call_info->args==NULL || call_info->args->size <= 1) {
+    if ((call_info->args==NULL || call_info->args->size <= 1) && has_rows(call_info,1)){
+
         if (call_info->args && call_info->args->size == 1) {
             if (!util_parse_int(call_info->args->array[0],&part_no,1)) {
                 return NULL;
             }
         }
         DbItem *item = call_info->sorted_rows->rows[0];
+        char *path;
 
-        if (item->category == 'T') {
+        if (item->category == 'M' && call_info->sorted_rows->num_rows == 1)  {
+            // A movie on its own - the index refers to the PARTS
+            path = get_path_no(item,part_no-1,&freeit);
+        } else {
+            // Anything else the index refers to the n'th item
+            if (!check_index(call_info,part_no)) {
+                return NULL;
+            }
             item = call_info->sorted_rows->rows[part_no-1];
-            part_no=1;
+            path = get_path_no(item,1,&freeit);
         }
 
-        if (item) {
-            char *path = get_path_no(item,part_no-1,&freeit);
+        if (path) {
+            switch(aspect) {
+                case FILE_PATH:
+                    result = path;
+                    call_info->free_result = freeit;
+                    break;
+                case FILE_ENC:
 
-            if (path) {
-                switch(aspect) {
-                    case FILE_PATH:
-                        result = path;
-                        call_info->free_result = freeit;
-                        break;
-                    case FILE_ENC:
-
-                        result = url_encode_static(path,&freeit2);
-                        if (freeit2) {
-                            if (freeit) FREE(path);
-                            call_info->free_result = 1;
-                        } else if (freeit) {
-                            call_info->free_result = 1;
-                        } else {
-                            call_info->free_result = 0;
-                        }
-                        break;
-                    case FILE_VOD:
-                        result = vod_attr(path);
+                    result = url_encode_static(path,&freeit2);
+                    if (freeit2) {
                         if (freeit) FREE(path);
+                        call_info->free_result = 1;
+                    } else if (freeit) {
+                        call_info->free_result = 1;
+                    } else {
                         call_info->free_result = 0;
-                        break;
-                }
+                    }
+                    break;
+                case FILE_VOD:
+                    result = vod_attr(path);
+                    if (freeit) FREE(path);
+                    call_info->free_result = 0;
+                    break;
             }
         }
 
@@ -2610,7 +2661,7 @@ char *macro_fn_select_unlock_submit(MacroCallInfo *call_info)
  */
 char *macro_fn_person_url(MacroCallInfo *call_info) {
     char *result=NULL;
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -2652,7 +2703,7 @@ char *macro_fn_external_url(MacroCallInfo *call_info) {
 
     char *result=NULL;
 
-    if ( call_info->sorted_rows == NULL  || call_info->sorted_rows->num_rows == 0 ) {
+    if (!has_rows(call_info,1) ) {
         call_info->free_result=0;
         return "?";
     }
@@ -3300,7 +3351,7 @@ char *people_table(MacroCallInfo *call_info,char *people_file,char *fieldid,char
 {
 
     char *result = NULL;
-    if (call_info->sorted_rows && call_info->sorted_rows->num_rows ) {
+    if (has_rows(call_info,1)) {
         char *tmp;
         int rows=default_rows;
         int cols=default_cols;
@@ -3321,7 +3372,7 @@ char *people_table(MacroCallInfo *call_info,char *people_file,char *fieldid,char
 char *macro_fn_actors(MacroCallInfo *call_info)
 {
     char *result = NULL;
-    if (call_info->sorted_rows->num_rows) {
+    if (has_rows(call_info,1)) {
         DbItem *item = call_info->sorted_rows->rows[0];
         result = people_table(call_info,item->db->people_file,DB_FLDID_ACTOR_LIST,"actors",item->actors,2,6);
     }
@@ -3331,7 +3382,7 @@ char *macro_fn_actors(MacroCallInfo *call_info)
 char *macro_fn_directors(MacroCallInfo *call_info)
 {
     char *result = NULL;
-    if (call_info->sorted_rows->num_rows) {
+    if (has_rows(call_info,1)) {
         DbItem *item = call_info->sorted_rows->rows[0];
         result = people_table(call_info,item->db->people_file,DB_FLDID_DIRECTOR_LIST,"directors",item->directors,1,2);
     }
@@ -3360,7 +3411,7 @@ char *macro_fn_dump_vars(MacroCallInfo *call_info)
 
 char *macro_fn_writers(MacroCallInfo *call_info) {
     char *result = NULL;
-    if (call_info->sorted_rows->num_rows) {
+    if (has_rows(call_info,1)) {
         DbItem *item = call_info->sorted_rows->rows[0];
         result = people_table(call_info,item->db->people_file,DB_FLDID_WRITER_LIST,"writers",item->writers,1,2);
     }
@@ -3729,7 +3780,7 @@ char *macro_call(int pass,char *skin_name,char *orig_skin,char *call,DbSortedRow
 
             //HTML_LOG(1,"end macro [%s]",call);
         } else {
-            printf("?%s??",call);
+            html_error("unknown macro [%s]",call);
         }
         array_free(args);
     }

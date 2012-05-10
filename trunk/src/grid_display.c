@@ -34,6 +34,7 @@
 char *get_tv_drilldown_link(ViewMode *view,char *name,int season,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_tvboxset_drilldown_link(ViewMode *view,char *name,char *attr,char *title,char *font_class,char *cell_no_txt);
 char *get_movie_drilldown_link(ViewMode *view,char *idlist,char *attr,char *title,char *font_class,char *cell_no_txt);
+char *drilldown_url_by_item(DbItem *item,int position);
 
 void get_watched_counts(DbItem *item,int *watchedp,int *unwatchedp) 
 {
@@ -344,8 +345,7 @@ char *get_item(int cell_no,DbItem *row_id,int grid_toggle,char *width_attr,char 
     char *first_space=NULL;
     int link_first_word_only = g_dimension->local_browser && g_dimension->title_bar;
 
-    get_drilldown_view(row_id);
-    ViewMode *newview = row_id->drilldown_view;
+    ViewMode *newview = get_drilldown_view(row_id);
 
     if (IN_POSTER_MODE) {
 

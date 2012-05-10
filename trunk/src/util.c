@@ -506,23 +506,26 @@ int chomp(char *str) {
 char *delimited_substring(char *buf,char *prefix,char *substr,char *suffix,int match_start,int match_end)
 {
 
-    assert(buf);
-    char *p;
-    int len = strlen(substr);
+    if (!buf) {
+        html_error("empty string");
+    } else {
+        char *p;
+        int len = strlen(substr);
 
-    p=buf;
+        p=buf;
 
-    while ((p=strstr(p,substr))!= NULL ) {
+        while ((p=strstr(p,substr))!= NULL ) {
 
-        if (( p > buf && strchr(prefix,p[-1]) ) || (p == buf && match_start ) ) {
+            if (( p > buf && strchr(prefix,p[-1]) ) || (p == buf && match_start ) ) {
 
-            if ( ( p[len] && strchr(suffix,p[len]) ) || (p[len] == '\0' && match_end ) ) {
+                if ( ( p[len] && strchr(suffix,p[len]) ) || (p[len] == '\0' && match_end ) ) {
 
-                return p;
+                    return p;
 
+                }
             }
+            p++;
         }
-        p++;
     }
     return NULL;
 }

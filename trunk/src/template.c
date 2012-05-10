@@ -244,7 +244,7 @@ int display_main_template(char *skin_name,char *file_name,DbSortedRows *sorted_r
                 html_error("error occured - parsing stopped - review [%s]",path[out]);
                 break ; // error;
             } else if (pass > MAX_PASS) {
-                html_error("maximum %d passes exceeded - review [%s]",MAX_PASS,path[out]);
+                html_error("maximum %d passes exceeded - review code esp page_size or loop related [%s]",MAX_PASS,path[out]);
                 break;
             }
             if (request_reparse) {

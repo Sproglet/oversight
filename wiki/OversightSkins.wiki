@@ -83,6 +83,7 @@ will display the title of the current video inside of `<h3>` tags. The exact def
 
 The optional bits are only displayed if the results of 'macro name' are defined.
 
+
 ==Simple Macros==
 
 Simple Macros are replaced with a single piece of text which may be a html query parameter, a value in the oversight dayabase, or a configuration file value. Simple Macros have a 'dollar' character immediately after the first colon..
@@ -127,6 +128,10 @@ For Fields from Configuration files the $ is followed by ovs_, catalog_ or unpak
 Compound macros are specialist macros that do a specific task. eg. display a list of TV episodes in a certain format `[:TV_LISTING:]`
 
 Compound macros do NOT have a dollar character.
+
+==Macro Index==
+
+For a full list see SkinMacroIndex
 
 I may overhaul these macros to be more flexible, at present the bes documentation is to look at the [http://code.google.com/p/oversight/source/browse/#svn/trunk/templates/default/any existing templates] and the [http://code.google.com/p/oversight/source/browse/trunk/src/macro.c macro_init function] in the source code. 
 

@@ -1,7 +1,7 @@
 #sidebar TableOfContents
 <wiki:toc max_depth="3" />
 
-[Auto-generated at Thu May 10 19:56:18 BST 2012 from comments in macro.c using macro_doc in trunk/src]
+[Auto-generated at Fri May 11 00:59:45 BST 2012 from comments in macro.c using macro_doc in trunk/src]
 
 Oversight skins are html with special macros that are replaced with html text on the fly.
 
@@ -329,11 +329,14 @@ Default precision = 1
 
 ==SET_PAGE==
 
-{{{ [:SET_PAGE(size=>n):] }}}
+{{{ [:SET_PAGE(size=>n,[align_data=>1]):] }}}
 
 This will tell the template the number of elements in a page. 
 If not present then other macros (eg PAGE_MAX)  may force a reparse of the template if the page size is not know during the current parse..
-This will set a variable - page_size
+This will set temprary variable - _page_size that will be used to calculate PAGE_MAX and wrap around behaviour of MENU_PAGE_NEXT/PREV_URL
+
+If align_data is set then the correct offset will be added to the fields
+FILE_VOD FILE_ENC FILE_PATH FANART_IMAGE BANNER_IMAGE THUMB_IMAGE etc.
 
   ==SKIN_NAME==
 

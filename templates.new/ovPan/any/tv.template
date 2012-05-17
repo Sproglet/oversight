@@ -1,0 +1,162 @@
+<!-- Default Tv Template  $Id:$ -->
+<html>
+    <head>
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:][ Season :SEASON:]</title>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
+		[:INCLUDE_TEMPLATE(clock):]	
+        <style type="text/css">
+            [:INCLUDE_TEMPLATE(tv_css):]
+		</style>
+		
+	</head>
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="startpos";  onload="initClock();initpage()">
+<table class=main width=100%>
+
+	<tr valign=bottom>
+
+		<td align="center" border=0 height=[:BODY_HEIGHT:]>
+
+
+		[:FORM_START:]
+			<table width=1096px>	
+				<tr><td>
+
+				</td></tr>
+			</table>
+			[:IF($skin_panel_style):]
+			<table width=1096px background=[:IMAGE_URL(zap_bg_tvdetail.png):]>
+			[:ELSEIF($ovs_fade):]
+			<table width=1096px background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]">
+			[:ELSE:]
+    		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
+			[:ENDIF:]
+		        <tr valign="top" class=main>
+		            <td class=main width=250px align=right >
+		            	<table width=250px>
+							<tr>
+								<td  height=20px align=left valign=top>
+								
+								</td>
+							<tr>
+
+								<td align=center>
+									[:POSTER:]
+								</td>
+							</tr>
+		
+		            	</table>
+		            </td>
+		            <td  class=main>
+		                <table valign=top>
+							<tr><td height=20px></td></tr>
+							
+		                    <tr><td  height=100px><IMG align=left height=100px width=566px  SRC="[:BANNER_URL:]"></td></tr>	
+
+		                    <tr>
+		                    <td  align=left><font id=genre size=4>[:GENRE:]</font>&nbsp;&nbsp;&nbsp;&nbsp;<br><br></td>
+		                    </tr>
+							
+[:IF($@gaya):]
+							
+		                    <tr><td height=120px width=566px valign=top><font id=episode>Show Summary - <span id=epDate>&nbsp;</span></font><br><span class="plot" id="tvplot">[:PLOT:]&nbsp;<!--keep nbsp for js--></span></td></tr>		
+[:ELSE:]
+		                    <tr><td height=120px width=566px valign=top><font id=episode>Show Summary - <span id=epDate>&nbsp;</span></font><br><span class="plot" id="tvplot" >[:PLOT:]&nbsp;<!--keep nbsp for js--></span></td></tr>		
+    			
+[:ENDIF:]		                    			
+		                    <tr><td  height=1% valign=bottom>&nbsp;</td></tr>		
+	
+		                </table>
+		            </td>
+				    <td width=220px class=main>
+						<table width=220px>
+										<tr>
+										<td colspan=2 width=100% height=20px align=center></td>
+										</tr>
+										<tr>
+										<td width=10% align=center><IMG height=40px SRC="[:IMAGE_URL(icons/icon_tv-serie.png):]"></td>
+										<td height=40px valign=middle align=left class=Xtitle><font size=4>[Season :SEASON:]</font></td>
+										</tr
+										<tr>
+										<td width=10% align=center><font id=genre><IMG height=40px width=40px  SRC="[:IMAGE_URL(icons/icon_clock.png):]"></td>                    
+										<td align=left><font size=4><b>[:RUNTIME:]</b></font></td>
+										</tr>
+										<tr>
+										<td width=10% align=center><IMG height=40px width=40px  SRC="[:IMAGE_URL(icons/icon_year.png):]"></td>
+										<td align=left ><font size=4><b>[:YEAR:]</b></font></td>
+										</tr>
+										<tr>
+										<td width=10% height=40px  align=center valign=middle><IMG height=25px  SRC="[:IMAGE_URL(icons/icon_imdb.png):]"></td>
+										<td align=left valign=middle>[:RATING_STARS(5):]&nbsp;[:RATING:]</td>
+										</tr>
+										<tr>
+										<td width=10% height=40px  align=center valign=top id=plot><IMG height=45px  SRC="[:IMAGE_URL(icons/icon_cast.png):]"></td>
+		                    				<td valign=top >
+												[:ACTORS(rows=>4,cols=>1, align=center):]
+				                                
+												<br>
+
+											</td>
+										</tr>
+										<tr>
+										<td  colspan=2 height=40px align=right valign=top>
+										[:IF($@gaya):]
+										[:BACK_BUTTON:]&nbsp;
+										[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;
+										[:ELSE:]
+										[:BACK_BUTTON:]
+										[:HOME_BUTTON:]
+										[:MARK_BUTTON:]
+										[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;
+										[:ENDIF:]
+										</td>
+										</tr>
+								</td>
+									</tr>
+
+						
+						</table>
+					</td>
+		        </tr>	
+
+		                
+			</table>
+			[:IF($skin_panel_style):]
+			<table width=1096px background=[:IMAGE_URL(zap_bg_footer.png):]>
+			[:ELSE:]
+    		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
+			[:ENDIF:]
+		        <tr valign="bottom" >
+		            <td colspan=2 >
+
+		                <table width=100% >
+
+		                    <tr><td colspan=3 height=10px></td></tr>
+		                    <tr>
+		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?" name="startpos"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
+		                        <td class=filelist align=center>
+			                        [:TV_LISTING:]
+			                        [:INCLUDE_TEMPLATE(submit_btn):]
+		                        </td>
+		                    	<td width=5px>&nbsp;&nbsp;</td>
+		                    </tr>
+		                    <tr><td colspan=3 height=6px></td></tr>
+		                </table>
+		            </td>
+		        </tr>
+		    </table>
+		[:FORM_END:]
+		[:MENU_TVID:]
+		[:PLAY_TVID:]
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/strings.js):]"></script>
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/tv.js):]"></script>
+		[:INCLUDE_TEMPLATE(common):]
+	</td>
+	</tr>
+	</table>
+
+	</body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

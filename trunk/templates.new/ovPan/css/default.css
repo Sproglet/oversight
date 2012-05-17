@@ -1,0 +1,115 @@
+/* $Id:$ Note gaya has css bug. Item after comments is ignored. Hence */a{}
+
+a { color:white ; text-decoration:none; }
+
+html { margin:0; padding:0; border:none; height:100%; }
+body { margin:0; padding:0; border:none; height:100%; }
+
+table.main {
+ margin:0;
+ padding:0;
+ border:none;
+ height:100%;
+ border-collapse:collapse;
+}
+
+table.listing {
+ margin:0;
+ border-spacing:0;
+ padding:0;
+ border-width:0;
+}
+
+#main {
+ height:99%;
+ width:100%;
+}
+
+img {
+ border: 0px solid black;
+}
+
+img.codec {
+ width:25px;
+}
+
+td.gc_small { font-size:10pt; }
+td.gc_fresh_small { font-size:10pt; }
+td.gc_watched_small { font-size:10pt; }
+
+.padded {
+ margin:15px; border-spacing:15px; padding:15px ; border-width:15px ;
+}
+
+.fanartImage {
+	width: 500px;
+}
+
+font.Delete {color:#FF9966; font-weight:normal; }
+font.Ignore {color:#777;}
+font.Mark {color:#AAA;}
+font.Unmark {color:#DDF;}
+font.Remove_From_List {color:orange;}
+
+.error { color:red ; font-style:italic; font-weight:bold; }
+.delete { ; }
+.delist { ; }
+.cancel { ; }
+.mark { ; }
+
+table.header,table.footer {
+ margin:0;
+ border-spacing:1px;
+ padding:0;
+ border-width:0;
+border-spacing: 0px;
+border-collapse:collapse;
+ }
+ 
+.yellowbutton {
+ color:#FFFF55;
+ background-color:black;
+ font-weight:normal;
+  text-decoration:none;
+ }
+/* a.yellowbutton { color:black ; } */
+
+/* TV or movie view */ a{}
+table.detail   { margin:0; border-spacing:3px; padding:3px ; }
+
+/* Admin page */ a{}
+
+.match {color:#FF7777; font-weight:bold; }
+
+/* Movie Page */ a{}
+
+.right { text-align:right; }
+
+body { font-family:"arial"; color:white;  }
+
+.label { color:red }
+
+body.menu_background {
+    color:white;
+    background-color:black;
+}
+
+td.grid_background {
+    text-align:center;
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+
+
+table.actors    { width:180px; }
+table.directors { width:200px; }
+table.writers   { width:200px; }
+table.actors    td { font-size:100%; text-align:left; }
+table.directors td { font-size:100%; text-align:left; }
+table.writers   td { font-size:100%; text-align:left; }
+
+/*
+vi:ts=4:sw=4:et:syntax=css
+*/a{}
+

@@ -1,0 +1,148 @@
+<!-- Default Movie Template  $Id:$ -->
+<html>
+    <head>
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
+		[:INCLUDE_TEMPLATE(clock):]	
+        <style type="text/css">
+
+		</style>
+	</head>
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" onload="initClock();initpage()">
+<table class=main width=100%>
+
+	<tr valign=bottom>
+
+		<td align="center" border=0 height=[:BODY_HEIGHT:]>
+
+
+		[:FORM_START:]
+			<table width=1096px>	
+				<tr><td>
+
+				</td></tr>
+			</table>
+			[:IF($skin_panel_style):]
+			<table width=1096px background=[:IMAGE_URL(zap_bg_tvdetail.png):]>
+			[:ELSEIF($ovs_fade):]
+			<table width=1096px background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]">
+			[:ELSE:]
+    		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
+			[:ENDIF:]
+		        <tr valign="top" class=main>
+		            <td class=main width=250px align=right >
+		            	<table width=250px>
+							<tr>
+								<td  height=20px align=center valign=top>
+
+								</td>
+							<tr>
+
+								<td align=center>
+									[:POSTER:]<br><br>
+								</td>
+							</tr>
+		
+		            	</table>
+		            </td>
+		            <td width=566px class=main>
+		                <table width=566px valign=top>
+							<tr><td colspan=4 height=20px></td></tr>
+							
+		                    <tr><td colspan=4 class=title>[:TITLE:]</td></tr>	
+
+		                    <tr>
+		                    <td colspan=4 align=left><font id=genre>[:GENRE:]</font><br><br></td>
+		                    </tr>
+[:IF($@gaya):]
+							
+		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot">[:PLOT:]&nbsp;<br> <class=filelist align=left>
+									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+[:ELSE:]
+		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot" font size=3>[:PLOT:]&nbsp;<br> <class=filelist align=left>
+									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+    			
+[:ENDIF:]		                    			
+		                    <tr><td height=1% valign=bottom><font id=genre><br>&nbsp;Director:</font><br>
+				                                [:IF($@hd):]
+				                                    [:DIRECTORS(rows=>2,cols=>1):]
+				                                [:ELSE:]
+				                                    [:DIRECTORS(rows=>2,cols=>1):]
+				                                [:ENDIF:]
+								</td>
+								<td align=left><IMG height=50px  SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/resolution/[:VIDEOQUALITY:].png"><font id=genre></font></td>
+								<td align=center><IMG height=50px  SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/source/[:$%VIDEOSOURCE:]d.png"><font id=genre></font></td>
+								<td align=right>[:CERTIFICATE_IMAGE:]</td>
+								</tr>		
+	
+		                </table>
+		            </td>
+<td width=220px class=main>
+						<table width=100%>
+
+										<tr>
+										<td colspan=2 height=60px width=100% align=right><IMG height=60px SRC="[:IMAGE_URL(icons/icon_movies.png):]"></td>
+										</tr
+										<tr>
+										<td width=10% align=center><font id=genre><IMG height=40px width=40px  SRC="[:IMAGE_URL(icons/icon_clock.png):]"></td>                    
+										<td align=left><font size=4><b>[:RUNTIME:]</b></font></td>
+										</tr>
+										<tr>
+										<td width=10% align=center><IMG height=40px width=40px  SRC="[:IMAGE_URL(icons/icon_year.png):]"></td>
+										<td align=left ><font face=bold size=4><b>[:YEAR:]</b></font></td>
+										</tr>
+										<tr>
+										<td width=10% height=40px  align=center valign=middle><IMG height=25px  SRC="[:IMAGE_URL(icons/icon_imdb.png):]"></td>
+										<td align=left valign=middle>[:RATING_STARS(5):]</td>
+										</tr>
+										<tr>
+											<td width=10% height=40px  align=center valign=top><IMG height=45px  SRC="[:IMAGE_URL(icons/icon_cast.png):]"></td>
+		                    				<td valign=top>
+				                                [:IF($@hd):]
+				                                    [:ACTORS(rows=>4,cols=>1, align=center):]
+				                                [:ELSE:]
+				                                    [:ACTORS(rows=>4,cols=>1, align=center):]
+				                                [:ENDIF:]
+												<br>
+
+											</td>
+										</tr>
+										<tr>
+										<td  colspan=2 height=40px align=center valign=top>
+										[:IF($@gaya):]
+										[:BACK_BUTTON:]&nbsp;
+										[:HOME_BUTTON:]
+										[:ELSE:]
+										[:BACK_BUTTON:]
+										[:HOME_BUTTON:]
+										[:MARK_BUTTON:]
+										[:DELETE_BUTTON:]
+										[:ENDIF:]
+										</td>
+										</tr>
+								</td>
+									</tr>
+
+						
+						</table>
+					</td>
+		        </tr>	
+
+		                
+			</table>
+            [:INCLUDE_TEMPLATE(submit_btn):]
+		[:FORM_END:]
+		[:MENU_TVID:]
+		[:PLAY_TVID:]
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/strings.js):]"></script>
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/util.js):]"></script>
+		<script type="text/javascript" src="[:TEMPLATE_URL(js/movie.js):]"></script>
+		[:INCLUDE_TEMPLATE(common):]
+	</td>
+	</tr>
+	</table>
+	</body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

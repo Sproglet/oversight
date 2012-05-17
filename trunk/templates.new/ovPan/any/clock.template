@@ -1,0 +1,32 @@
+<style>
+		#time { 
+		font-family: Arial, Helvetica, sans-serif;
+
+		font-size:2
+		color: [:$skin_item_title_color;];
+}
+</style>
+
+<script>
+    function initClock() 
+    {
+        updateClock(); 
+        setInterval('updateClock();', 30000); 
+    }
+    function updateClock() 
+    {
+      var localTime = new Date();
+      var TimezoneOffset = [:$skin_time_offset:];
+      var ms = localTime.getTime()+(TimezoneOffset*3600)+1800;
+      var time =  new Date(ms);
+      var hour = time.getHours();
+      var minute = time.getMinutes();
+
+      var curTime = "" + ((hour > 24) ? hour - 24 : hour);
+      if(hour==0) curTime = "00";
+      curTime += ((minute < 10) ? ":0" : ":") + minute;
+
+      document.getElementById('time').firstChild.nodeValue = curTime;
+
+    }	
+</script>

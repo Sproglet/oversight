@@ -1,0 +1,26 @@
+skin_background_image:The background image for the menu screens.. If you want to use your own then select 'custom.jpg' and upload the image to /Apps/oversight/templates/blu/720/custom.jpg.|custom.jpg|admin.jpg|alt.jpg|aftermath.jpg|baloon.jpg|black.jpg|blue.jpg|canal.jpg|circuits.jpg|clouds.jpg|corona.jpg|curtains.jpg|earth.jpg|earthrise.jpg|electron.jpg|europa.jpg|fathomless.jpg|galaxy.jpg|gnarled.jpg|grass.jpg|japanese.jpg|lighthouse.jpg|lightwave.jpg|neutron.jpg|raindrops.jpg|reflection.jpg|scarlet.jpg|splash.jpg|sunbeam.jpg|tree.jpg
+skin_show_nmt_name:Indicates whether to show the NMT name on the main menu|0|1
+skin_show_titles_on_menu:Indicates whether to show the movie titles on the menu screens|0|1
+skin_show_page_number:Indicates whether to show the page number|0|1
+skin_show_item_count:Indicates whether to show the total items next to the page number|0|1
+skin_show_title_filter:Indicates whether to show the title filter|0|1
+skin_show_genre_filter:Indicates whether to show the genre filter|0|1
+skin_show_type_filter:Indicates whether to show the TV/Movie filter|0|1
+skin_show_locked_filter:Indicates whether to show the locked filter|0|1
+skin_show_watched_filter:Indicates whether to show the watched filter|0|1
+skin_show_ratings_filter:Indicates whether to show the ratings filter|0|1
+skin_show_sort_filter:Indicates whether to show the sort filter|0|1
+skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
+skin_show_menu_footer_as_bar:Show the footer as a coloured bar|0|1
+skin_panel_style:Choose evZap like style in detail view|0|1
+skin_time_offset:Choose Timeoffset|+11|+10|+9|+8|+7|+6|+5|+4|+3|+2|+1|0|-1|-2|-3|-4|-5|-6|-7|-8|-9|-10|-11
+skin_menu_header_color:The color of the menu headers|clear|aqua|black|blue|gold|gray|green|lime|mint|navy|orange|pink|purple|red|white|yellow
+skin_menu_header_text_color:The color of text to use on the menu headers. Default value is '<font color=white>white</font>'
+skin_plot_text_color:The color of text to use on the menu pages. Default value is '<font color=white>white</font>'
+skin_filter_text_color:The color of the item title text. Default value is '<font color=FFFFFF>FFFFFF</font>'
+skin_filter_background_color:The color of the item title text. Default value is '<font color=black>black</font>'
+skin_watched_color:The color of items that have been watched. Default value is '<font color=gray>gray</font>'
+skin_unwatched_color:The color of items that have not been watched. Default value is '<font color=FFFFFF>FFFFFF</font>'
+skin_item_title_color:The color of the item title text. Default value is '<font color=white>white</font>'
+skin_item_genre_color:The color of the item details, such as genre and cast. Default value is '<font color=FFFFFF>FFFFFF</font>'
+skin_item_general_info_color:The color of general item details such as year, source and date. Default value is '<font color=white>white</font>'

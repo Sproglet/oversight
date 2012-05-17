@@ -1,0 +1,242 @@
+
+/* td.fresh,a.fresh,font.fresh */ a{}
+
+.fresh {
+ color:[:$skin_item_title_color:];
+ font-weight:bold;
+}
+
+img.fresh { 
+ border-width: 4px;
+ color:[:$skin_item_title_color:];
+ border-color:[:$skin_item_title_color:];
+}
+
+font.watched {
+ color:[:$skin_watched_color:];
+}
+
+font.unwatched {
+ color:[:$skin_unwatched_color:];
+}
+
+td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:[:$skin_item_general_info_color:]; }
+
+[:IF($@poster_mode):]
+img.poster_fresh {
+ border-color:[:$skin_item_title_color:];
+ border-width:2px;
+ padding:0px;
+ margin:0px;
+ width:[:EVAL($@poster_menu_img_width-2):]px;
+ height:[:EVAL($@poster_menu_img_height-2):]px;
+ }
+
+img.poster {
+ border-color:#000000;
+ border-width:0px;
+ padding:0px;
+ margin:0px;
+ width:[:$@poster_menu_img_width:]px;
+ height:[:$@poster_menu_img_height:]px;
+ }
+ 
+img.poster_watched {
+ border:none;
+ padding:0px;
+ margin:0px;
+ width:[:$@poster_menu_img_width:]px;
+ height:[:$@poster_menu_img_height:]px;
+    }
+
+    a.poster { color:white; font-weight:bold; font-style:italic; }
+    a.poster_fresh { color:[:$skin_item_title_color:]; font-weight:bold; font-style:italic; }
+    a.poster_watched { color:[:$skin_watched_color:]; font-weight:bold; font-style:italic; }
+
+    td.poster_unknown { }
+    td.poster_fresh_unknown { }
+    td.poster_watched_unknown { }
+[:ELSE:]
+
+    .grid0 { 
+		height:40px;
+		text-align:left;
+		background-image:'[:IMAGE_URL(trans50.png):]';
+		border-spacing:10px;
+		padding:10px;
+	}
+    .grid1 { 
+		height:40px;
+		text-align:left;
+		background-image:'[:IMAGE_URL(trans50.png):]'; 
+		border-spacing:10px;
+		padding:10px;
+	}
+	
+	#gridWrapper {
+		width:90%;
+	}
+
+[:ENDIF:]
+
+#episode {
+    color:[:$skin_item_title_color:];
+    font-weight:bold;
+}
+
+#genre {
+    color:[:$skin_item_genre_color:];
+    font-weight:bold;
+	font-size:90%;
+}
+
+#menutitle {
+	color:[:$skin_item_title_color:];
+}
+
+#unwatchedtotal { 
+ color:[:$skin_unwatched_color:];
+}
+#watchedtotal { 
+ color:[:$skin_watched_color:];
+}
+
+.status {
+    color:[:$skin_item_genre_color:];
+}
+
+select {
+ background-color:[:$skin_filter_background_color:];
+ color:[:$skin_filter_text_color:];
+ font-weight:bold;
+ border:[:$skin_filter_text_color:] 3px solid;
+ font-size:small;
+}
+
+input {
+ background-color:[:$skin_filter_background_color:];
+ color:[:$skin_filter_text_color:];
+ font-weight:bold;
+ border:[:$skin_filter_text_color:] 3px solid;
+ font-size:small;
+}
+
+.plot {
+    color:[:$skin_plot_text_color:];
+    font-size:[:$ovs_font_size_plot:]% ;
+    font-weight:normal;
+}
+
+.menubarTitle {
+ font-size:120%;
+ color:[:$skin_menu_header_text_color:];	
+}
+
+.title {
+ text-align:left;
+ font-size:[:TITLE_SIZE:];
+ font-weight:bold;
+ color:[:$skin_item_title_color:];
+}
+
+.boxtitle {
+ font-size:[:TITLE_SIZE(-8):];
+ font-family:"arial";
+ font-weight:bold;
+[:IF($skin_show_titles_on_menu):]
+[:ELSE:]
+ display:none;
+[:ENDIF:]
+}
+
+.menutitle {
+ font-size:[:TITLE_SIZE(-8):];
+ font-family:"arial";
+ font-weight:bold;
+[:IF($skin_show_titles_on_menu):]
+[:ELSE:]
+ display:none;
+[:ENDIF:]
+}
+
+.Xtitle {
+ font-size:[:TITLE_SIZE(-4):];
+ font-weight:bold;
+ color:[:$skin_item_title_color:];
+}
+
+.Xyear {
+ text-align:right;
+ font-size:[:TITLE_SIZE(-4):];
+}
+
+.Xgenre {
+ color:[:$skin_item_genre_color:];
+ font-weight:bold;
+}
+[:IF($@poster_mode):]
+    .overview_poster {
+        text-align:center;
+    }
+[:ENDIF:]
+
+table.overview_poster {
+    margin:0; border-spacing:[:EVAL($@poster_menu_img_height/20):]px; padding:0 ; border-width:0 ;
+}
+
+.overview_poster {
+    text-align:center;
+[:IF($@poster_mode):]
+    [:IF($@gaya):]
+        width:100%;
+    [:ELSE:]
+        width:1%;
+    [:ENDIF:]
+[:ELSE:]
+    width:90%;
+[:ENDIF:]
+}
+
+.titleLayer {
+	position: absolute;
+	z-index:2;
+	top: 330px;
+	left: 10px;
+}
+
+/* Sort toggle */{a}
+.bluebutton {
+ 	color:[:$skin_menu_header_text_color:];
+ 	font-weight:normal;
+ 	font-size:[:FONT_SIZE(-2):];
+}
+a.bluebutton {
+ 	color:[:$skin_filter_background_color:];
+}
+.sortLabel {
+ 	font-weight:normal;
+ 	font-size:[:FONT_SIZE(-2):];
+}
+
+.infoTable {
+	text-align:left;
+		padding-left: 40pt;
+		padding-right: 40pt;
+}
+
+.infoTable tr td {
+	[:IF($@sd):]
+		font-size:10pt;
+	[:ELSE:]
+		font-size:13pt;
+	[:ENDIF:]
+}
+
+table.actors	font {color: [:$skin_item_genre_color:]; text-align:right;}
+table.directors	font {color: [:$skin_item_genre_color:];}
+table.writers	font {color: [:$skin_item_genre_color:];}
+
+/*
+vi:ts=4:sw=4:et:syntax=css
+*/a{}
+

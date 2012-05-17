@@ -1,0 +1,106 @@
+<html>
+    <head>
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
+    </head>
+    <body [onloadset=:START_CELL:] focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] class=menu_background background="[:FANART_URL($skin_background_image):]">
+[:FORM_START:]
+<table class=main width=100%>
+
+	<tr valign=bottom>
+
+		<td align="center" border=0 height=[:BODY_HEIGHT:]>
+            <table class=header>
+                <tr>
+
+                    <td width=100% align=center valign=top>
+                       	<div id=gridWrapper>
+[:IF($@sd):]
+						[:GRID:]<br><br>
+[:ELSE:]
+						[:GRID(rows=>1):]<br><br>
+[:ENDIF:]
+						</div>
+                    </td>
+					
+                </tr>
+            </table>
+
+[:IF($@sd):]
+        [:INCLUDE_TEMPLATE(box_footer):]
+		<div class=titleLayer>
+			[:INCLUDE_TEMPLATE(box_titles):]
+		</div>
+[:ELSE:]
+<center>
+			[:IF($skin_panel_style):]
+			<table width=1096px background=[:IMAGE_URL(zap_bg_box.png):]>
+			[:ELSE:]
+    		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
+			[:ENDIF:]
+			<tr>
+				<td width=100% colspan=4 height=5px>&nbsp;</td>
+			</tr>		
+			<tr>
+				<td width=600px valign=top>
+
+					<table>
+						<tr height=40px>
+							<td width=20px></td>							
+							<td width=560px align=left>
+								<span id="menutitle">&nbsp;</span>
+								<span class=boxtitle id="unwatchedtotal">&nbsp;</span>
+								<span class=boxtitle id="watchedtotal">&nbsp;</span>	
+							<td width=20px></td>
+						</tr>
+							
+						</tr>
+						<tr height=4px>
+							<td width=20px>&nbsp;</td>
+							<td width=560px>
+								[:PLOT:]						
+							</td>
+							<td width=20px></td>
+						</tr>
+					</table>
+				</td>
+				<td width=1% >&nbsp;</td>
+
+				<td valign=top align=right><img width=400px heigth=75px src="[:BANNER_URL:]"/</td>
+				<td width=20px valign=bottom align=right></td>
+
+			</tr>
+			<tr>
+				<td colspan=4 width=100% valign=bottom>
+
+					<table class=footer width="100%">
+
+						<tr>
+							<td width=650px align=right>
+								
+							</td>
+							<td align=right>
+							    [:INCLUDE_TEMPLATE(buttons):]
+								[:LEFT_BUTTON:]&nbsp;
+								[:RIGHT_BUTTON:]&nbsp;
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		</td>
+	</tr>
+	<tr>
+		<td height=20px></td>
+	</tr>
+</table>
+		[:FORM_END:]
+[:ENDIF:]
+		[:INCLUDE_TEMPLATE(box_closing_scripts):]
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->
+

@@ -15,8 +15,8 @@
         </td>
 	[:ENDIF:]
 [:ENDIF:]
-        <td height=40px width="99%" align=center >
-            [:INCLUDE_TEMPLATE(menu_titles):]
+        <td height=40px width="99%" align=center ><font class="fresh">
+            [:INCLUDE_TEMPLATE(menu_titles):]</font>
         </td>
 		[<td align=center>:BACK_BUTTON:</td>]
 		[:IF($@gaya):]

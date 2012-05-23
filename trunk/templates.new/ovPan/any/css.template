@@ -2,7 +2,7 @@
 /* td.fresh,a.fresh,font.fresh */ a{}
 
 .fresh {
- color:[:$skin_item_new_color:];
+ color:[:$skin_new_color:];
  font-weight:bold;
 }
 

@@ -71,8 +71,13 @@
 				                                    [:DIRECTORS(rows=>2,cols=>1):]
 				                                [:ENDIF:]
 								</td>
+								[:IF($skin_alt_picto):]
+								<td align=left><IMG height=50px  SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/resolution/[:VIDEOQUALITY:]b.png"><font id=genre></font></td>
+								<td align=center><IMG height=50px  SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/source/[:$%VIDEOSOURCE:]db.png"><font id=genre></font></td>
+								[:ELSE:]
 								<td align=left><IMG height=50px  SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/resolution/[:VIDEOQUALITY:].png"><font id=genre></font></td>
 								<td align=center><IMG height=50px  SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/source/[:$%VIDEOSOURCE:]d.png"><font id=genre></font></td>
+								[:ENDIF:]
 								<td align=right>[:CERTIFICATE_IMAGE:]</td>
 								</tr>		
 	
@@ -114,7 +119,7 @@
 										[:BACK_BUTTON:]&nbsp;
 										[:HOME_BUTTON:]&nbsp;
 											[:IF($skin_show_link):]
-											[:EXTERNAL_URL:]
+											[:EXTERNAL_URL:]&nbsp;&nbsp;&nbsp;&nbsp;
 											[:ELSE:]
 											[:ENDIF:]
 										[:ELSE:]

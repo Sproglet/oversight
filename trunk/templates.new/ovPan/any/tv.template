@@ -105,7 +105,7 @@
 										[:BACK_BUTTON:]&nbsp;
 										[:HOME_BUTTON:]&nbsp;
 											[:IF($skin_show_link):]
-											[:EXTERNAL_URL:]
+											[:EXTERNAL_URL:]&nbsp;&nbsp;&nbsp;&nbsp;
 											[:ELSE:]
 											[:ENDIF:]
 										[:ELSE:]

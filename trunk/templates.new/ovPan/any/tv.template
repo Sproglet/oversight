@@ -24,7 +24,7 @@
 				</td></tr>
 			</table>
 			[:IF($skin_panel_style):]
-			<table width=1096px background=[:IMAGE_URL(zap_bg_tvdetail.png):]>
+			<table width=1096px background="[:IMAGE_URL(panel,$ovs_transparency,.png):]">
 			[:ELSEIF($ovs_fade):]
 			<table width=1096px background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]">
 			[:ELSE:]
@@ -99,14 +99,25 @@
 										</tr>
 										<tr>
 										<td  colspan=2 height=40px align=right valign=top>
+										
+
 										[:IF($@gaya):]
 										[:BACK_BUTTON:]&nbsp;
-										[:HOME_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;
+										[:HOME_BUTTON:]&nbsp;
+											[:IF($skin_show_link):]
+											[:EXTERNAL_URL:]
+											[:ELSE:]
+											[:ENDIF:]
 										[:ELSE:]
 										[:BACK_BUTTON:]
 										[:HOME_BUTTON:]
+											[:IF($skin_show_link):]
+											[:EXTERNAL_URL:]
+											[:ELSE:]
+											[:ENDIF:]
 										[:MARK_BUTTON:]
-										[:DELETE_BUTTON:]&nbsp;&nbsp;&nbsp;&nbsp;
+										[:DELETE_BUTTON:]
+
 										[:ENDIF:]
 										</td>
 										</tr>
@@ -121,7 +132,7 @@
 		                
 			</table>
 			[:IF($skin_panel_style):]
-			<table width=1096px background=[:IMAGE_URL(zap_bg_footer.png):]>
+			<table width=1096px background="[:IMAGE_URL(panelfooter,$ovs_transparency,.png):]">
 			[:ELSE:]
     		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
 			[:ENDIF:]

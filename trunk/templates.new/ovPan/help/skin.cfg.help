@@ -10,6 +10,7 @@ skin_show_locked_filter:Indicates whether to show the locked filter|0|1
 skin_show_watched_filter:Indicates whether to show the watched filter|0|1
 skin_show_ratings_filter:Indicates whether to show the ratings filter|0|1
 skin_show_sort_filter:Indicates whether to show the sort filter|0|1
+skin_show_link:Show IMDB link as icon on detailview|0|1
 skin_menu_page_text_transparency:Set to on to add a semi-transparent background to menu page text|0|1
 skin_show_menu_footer_as_bar:Show the footer as a coloured bar|0|1
 skin_panel_style:Choose evZap like style in detail view|0|1

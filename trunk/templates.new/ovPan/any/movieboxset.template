@@ -38,7 +38,7 @@
 [:ELSE:]
 <center>
 			[:IF($skin_panel_style):]
-			<table width=1096px background=[:IMAGE_URL(zap_bg_box.png):]>
+			<table width=1096px background="[:IMAGE_URL(panelbox,$ovs_transparency,.png):]">
 			[:ELSE:]
     		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
 			[:ENDIF:]

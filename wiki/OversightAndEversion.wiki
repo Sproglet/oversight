@@ -28,4 +28,12 @@ Slow option. Uses NMT built in web server that leaves dead processes around.
 }}}
 
 You can then launch Eversion from /share/Apps/eversion/eversion.pcf 
-Or install the YAMJ app from the market, to lanuch from WebServices.
+Or install the YAMJ app from the market, to launch from Web Services.
+
+==eSkins==
+
+For additional eSkins see [http://www.networkedmediatank.com/forumdisplay.php?fid=112 YAMJ Skin Forum] and search for eSkin and/or Eversion.
+There are some differences in the way YAMJ and Oversight work to be aware of:
+  # YAMJ gathers full media meta-data using MediaInfo - Oversight does not do this yet - for performance reasons mainly.
+  # Oversight is dynamic and has Delete/Delist features that are not supported in YAMJ skins.
+  # Oversight treats episodes as distinct media, whereas at present, YAMJ treats episodes as part of the same media. The VIDEOSOURCE information in YAMJ is currently stored at the media level and not the episode level. If you have duplicate episodes in a TV Detail page , Oversight will append the VIDEOSURCE to the title, so you can differentiate between HDTV and WEB, PROPER, REPACK. etc.

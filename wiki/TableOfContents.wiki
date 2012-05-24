@@ -4,6 +4,7 @@ Everyone
   * ScreenShots
   * InstallingOversight
   * RunningOversight
+  * MoreSkins
   * OversightAndEversion
   * SiteChecker
   * CrossView

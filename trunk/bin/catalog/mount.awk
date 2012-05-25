@@ -30,8 +30,16 @@ line,f,n,v,n2,v2) {
             # find the corresponding servlink2 using the share name.
             if (n ~ /^servname/ ) {
 
-                n2="servname_"v;
+                n2="SHARE_"v;
                 v2="servlink"substr(n,length(n));
+
+                settings[n2] = v2;
+                if(LG)DEBUG("setting *** ["n2"]=["v2"]");
+
+            } else if (n ~ /^netfs_name/ ) {
+
+                n2="SHARE_"v;
+                v2="netfs_url"substr(n,length(n));
 
                 settings[n2] = v2;
                 if(LG)DEBUG("setting *** ["n2"]=["v2"]");
@@ -47,18 +55,36 @@ line,f,n,v,n2,v2) {
     settings["@ovs_fetched"] = 1;
 }
 
+# Extract user , password from link
 function parse_link(link,details,\
-parts,i,x) {
-    #link is nfs:/..../&smb.user=fred&smb.passwd=pwd
+parts,i,x,bits) {
+
     if (link == "") return 0;
 
-    split("link="link,parts,"&");
-    # now have link=nfs:/..../ , smb.user=fred ,  smb.passwd=pwd
+    if (index(link,"://[")) {
+        # New style
+        #link is smb://[user=pwd64enc]host/path
+        #link is nfs://[user=pwd64enc]host/path
+        if (match(link,"\\[([^=]*)=([^]]*)\\]",bits)) {
+            details["link"]=substr(link,1,RSTART-1) substr(link,RSTART+RLENGTH);
+            details["smb.user"]=bits[1];
+            bits[2] = decode64(bits[2]);
+            details["smb.passwd"]=bits[2];
+        }
+    } else {
+        # Old style
+        #link is smb:/host/path&smb.user=fred&smb.passwd=pwd
+        #link is nfs:/host:/path/&smb.user=fred&smb.passwd=pwd
 
-    if (!(3 in parts)) return 0;
-    for(i in parts) {
-        split(parts[i],x,"=");
-        details[x[1]]=x[2];
+        split("link="link,parts,"&");
+        # now have link=nfs:/..../ , smb.user=fred ,  smb.passwd=pwd
+
+
+        if (!(3 in parts)) return 0;
+        for(i in parts) {
+            split(parts[i],x,"=");
+            details[x[1]]=x[2];
+        }
     }
     return 1;
 }
@@ -80,7 +106,7 @@ f,result,line) {
 
 # We could use smbclient.cgi but this would unmount other drives.
 function nmt_mount_share(s,settings,\
-path,link_details,p,newlink,usr,pwd,lnk) {
+path,link_details,p,usr,pwd,lnk) {
 
     path = g_mount_root s;
 
@@ -92,8 +118,8 @@ path,link_details,p,newlink,usr,pwd,lnk) {
 
     get_settings(settings);
 
-    if(LG)DEBUG("servname_"s" = "settings[settings["servname_"s]]);
-    if (parse_link(settings[settings["servname_"s]],link_details) == 0) {
+    if(LG)DEBUG("share "s" = "settings[settings["SHARE_"s]]);
+    if (parse_link(settings[settings["SHARE_"s]],link_details) == 0) {
         if(LG)DEBUG("Could not find "s" in shares");
         return "";
     }
@@ -104,21 +130,19 @@ path,link_details,p,newlink,usr,pwd,lnk) {
 
     if(LG)DEBUG("Link for "s" is "lnk);
 
+    # Always try to resolve windows names first - to avoid OpenDNS ipaddress issues.
+    if ( is_smb_host_link(lnk)) {
+       if(LD)DETAIL("Trying to resolve windows name before mounting");
+       lnk = wins_resolve(lnk);
+    }
+
     p = mount_link(path,lnk,usr,pwd) ;
 
-    #if we failed and it is a samba link but not an ip then try to resolve netbios name - microsoft grrr
-    if ( p == "" ) {
-       if ( index(lnk,"smb:") ) {
-          if ( match(lnk,"[0-9]\\.[0-9]") == 0) {
-            if(LD)DETAIL("Trying to resolve windows name");
-            newlink = wins_resolve(lnk);
-            if (newlink != "" && newlink != lnk ) {
-                p = mount_link(path,newlink,usr,pwd) ;
-            }
-          }
-        }
-    }
     return p;
+}
+
+function is_smb_host_link(lnk) {
+   return ( index(lnk,"smb:") && match(lnk,"[0-9]\\.[0-9]") == 0);
 }
 
 function mount_link(path,link,user,password,\
@@ -129,6 +153,9 @@ remote,cmd,result,t) {
     sub(/^(nfs:\/\/|smb:)/,"",remote);
 
     if (link ~ "nfs:") {
+
+        # re-insert colon after hostname - needed for new-style links
+        sub(/:?\//,":/",remote);
 
         cmd = "mkdir -p "qa(path)" && mount -o soft,nolock,timeo=10 "qa(remote)" "qa(path);
 
@@ -167,7 +194,7 @@ line,host,ip,newlink,hostend,cmd) {
     exec(cmd);;
     if(match(link,"smb://[^/]+")) {
         hostend=RSTART+RLENGTH;
-        host=substr(link,7,RLENGTH-6);
+        host=toupper(substr(link,7,RLENGTH-6));
         
         while (newlink == "" && (getline line < g_winsfile ) > 0 ) {
             if (index(line," "g_tmp_settings["workgroup"]"\\"host" ")) {

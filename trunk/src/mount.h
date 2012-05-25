@@ -14,4 +14,5 @@
 int nmt_mount (char *file);
 int nmt_mount_quick (char *file);
 struct hashtable *mount_points_hash();
+int is_share_setting(char *setting);
 #endif

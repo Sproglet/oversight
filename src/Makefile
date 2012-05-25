@@ -67,7 +67,7 @@ CFLAGS=-O2 -Wall -DOUT=$(OUT) -DOVS_VERSION='"$(REV)"' $(CFLAGS_ARCH)
 #-DNOLOG=$(NOLOG)
 
 # Most stable last to speed compile-fail cycle
-OBJS=initials.o utf8.o tree.o  \
+OBJS=b64.o initials.o utf8.o tree.o  \
 	 abet.o filter.o exp.o dbnames.o types.o dbitem.o list.o gaya.o \
 	 macro.o template.o template_condition.o  variables.o \
 	grid.o grid_display.o tv_detail.o movie_detail.o display.o oversight.o util.o \

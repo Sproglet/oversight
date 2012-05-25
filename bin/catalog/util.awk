@@ -182,9 +182,9 @@ new_str,gap) {
             sub("app.i[[:alnum:]/?=&]+","movieapi",x);
         }
         if (index(x,"d=") ) {
-            sub("password.?=([^,]+)","password=***",x);
-            sub("pwd=([^,]+)","pwd=xxx",x);
-            sub("passwd=([^,]+)","passwd=***",x);
+            sub("password.?=([^, ]+)","password=***",x);
+            sub("pwd=([^, ]+)","pwd=xxx",x);
+            sub("passwd=([^, ]+)","passwd=***",x);
         }
 
         if (systime() != g_last_ts) {
@@ -1209,3 +1209,23 @@ l) {
     if(LG)DEBUG( label " "length(body)" bytes ["substr(body,1,sz)"..."(l>1 ? substr(body,l)"]" : "" ) );
 }
 
+
+# base64 from dannychouinard
+function decode64(input,\
+i,c,b,o,obc,b64,result) {
+    b64="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    for(i=1;i<=length(input);i++) {
+      c=index(b64,substr(input,i,1));
+      if(c--) {
+        for(b=0;b<6;b++) {
+          o=o*2+int(c/32); c=(c*2)%64;
+          if(++obc==8) {
+            result = result sprintf("%c",o);
+            obc=0;
+            o=0;
+          }
+        }
+      }
+    }
+    return result;
+}

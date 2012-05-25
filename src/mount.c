@@ -15,6 +15,7 @@
 #include "config.h"
 #include "network.h"
 #include "mount.h"
+#include "b64.h"
 
 
 int ping_link(char *link);
@@ -340,11 +341,18 @@ char *wins_resolve(char *link) {
     return iplink;
 }
 
+int is_share_setting(char *setting) 
+{
+    return util_starts_with(setting,"servname") || util_starts_with(setting,"netfs_name");
+}
+
 // given share name find the name of the pflash setting that holds it
 // eg servname3, servname6 and return the last character '3' or '6'
-static char get_link_index(char *share_name) {
+// prefix = servname or netfs_name
+static char get_link_index(char *prefix,char *share_name) {
 
-    char *key=STRDUP("servname?");
+    char *key;
+    ovs_asprintf(&key,"%s?",prefix);
     char *last=key+strlen(key)-1;
     char index = 0;
     char c;
@@ -381,43 +389,99 @@ TRACE ;
     return result;
 }
 
-// extract user from eg servlink2=smb://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
-char *get_link_user(char *servlink) {
-    return get_link_option(servlink,"smb.user");
+// OLD servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+// NEW  netfs_link2=nfs://[user=pwdbase64]192.168.88.13:/space
+int is_new_style_link(char *link)
+{
+    return (strncmp(link+3,"://[",4) == 0) ;
 }
-
-// extract password from eg servlink2=smb://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
-char *get_link_passwd(char *servlink) {
-    return get_link_option(servlink,"smb.passwd");
-}
-
 // given servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
-// extract 
-char *get_pingable_link(char *servlink) {
+// or  netfs_link2=nfs://[user=pwdbase64]192.168.88.13:/space
+char *remove_credentials(char *servlink)
+{
+    char *result=NULL;
+    if (is_new_style_link(servlink)) {
+        char *left = strchr(servlink,'[');
+        char *right = strchr(servlink,']');
+        ovs_asprintf(&result,"%.*s%s",left-servlink,servlink,right+1);
+    } else {
+        char *amp = strchr(servlink,'&');
+        if (amp) {
+            ovs_asprintf(&result,"%.*s",amp-servlink,servlink);
+        } else {
+            result = STRDUP(servlink);
+        }
+    }
+    return result;
 
-    char *amp;
+}
+// OLD servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+// NEW netfs_link2=nfs://[user=pwdbase64]192.168.88.13:/space
+char *get_link_user(char *servlink)
+{
+    char *result=NULL;
+    if (is_new_style_link(servlink)) {
+        if (strstr(servlink,"[=") ==NULL) {
+            result = regextract1(servlink,"://\\[([^=]+)",1,0);
+        }
+    } else {
+        char *amp = strchr(servlink,'&');
+        if (amp) {
+            //result = regextract(servlink,"smb.user=([^&]+)",1,0);
+            result = get_link_option(servlink,"smb.user");
+        }
+    }
+    return result;
+
+}
+// OLD servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+// NEW netfs_link2=nfs://[user=pwdbase64]192.168.88.13:/space
+char *get_link_passwd(char *servlink)
+{
+    char *result=NULL;
+    if (is_new_style_link(servlink)) {
+        if (strstr(servlink,"[=") ==NULL) {
+            result = regextract1(servlink,"=([^]]+)",1,0);
+            if (result) {
+                char *tmp = decode_buf(result);
+                FREE(result);
+                result=tmp;
+            }
+        }
+    } else {
+        char *amp = strchr(servlink,'&');
+        if (amp) {
+            //result = regextract(servlink,"smb.passwd=([^&]+)",1,0);
+            result = get_link_option(servlink,"smb.passwd");
+        }
+    }
+    return result;
+
+}
+// given servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
+// or  netfs_link2=nfs://[user=pwdbase64]192.168.88.13:/space
+// extract nfs://192.168.88.13:/space
+//
+char *get_pingable_link(char *servlink) {
 
     char *result=NULL;
     char *link=NULL;
 
     HTML_LOG(1,"get pingable link for [%s]",servlink);
 
-    amp = strchr(servlink,'&');
-    if (amp) {
+    link=remove_credentials(servlink);
+    HTML_LOG(0,"remove creds [%s] = [%s]",servlink,link);
 
-        ovs_asprintf(&link,"%.*s",amp-servlink,servlink);
+    if (ping_link(link) ) {
+        result = link;
+    } else if (util_starts_with(link,"smb:") && util_strreg(link,"//[0-9]+\\.",0) == NULL) {
+        char  *iplink = wins_resolve(link);
+        FREE(link);
+        link = iplink;
 
-        if (ping_link(link) ) {
-            result = link;
-        } else if (util_starts_with(link,"smb:") && strchr(link,'.') == NULL) {
-            char  *iplink = wins_resolve(link);
-            FREE(link);
-            link = iplink;
-
-            if (link != NULL) {
-                if (ping_link(link) ) {
-                    result = link;
-                }
+        if (link != NULL) {
+            if (ping_link(link) ) {
+                result = link;
             }
         }
     }
@@ -495,20 +559,29 @@ static int nmt_mount_share(char *path,char *current_mount_status)
 {
     int result = 0;
 
+    char *link_prefix=NULL;
     char *share_name = util_basename(path);
     HTML_LOG(0,"mount path=[%s] share_name [%s] current status [%s]",path,share_name,current_mount_status);
     // eg "abc"
 
-    char index = get_link_index(share_name);
+    char index = get_link_index("servname",share_name);
+    if (index) {
+        link_prefix="servlink";
+    } else {
+        index = get_link_index("netfs_name",share_name);
+        if (index) {
+            link_prefix="netfs_url";
+        }
+    }
 
     if (index) {
         char *key;
-        ovs_asprintf(&key,"servlink%c",index);
+        ovs_asprintf(&key,"%s%c",link_prefix,index);
 
         char *serv_link = setting_val(key);
         // Look for corresponding variable servlinkN
 		
-		HTML_LOG(1,"mount servlink [%s]",serv_link);
+		HTML_LOG(0,"DEMOTE mount %s [%s]",link_prefix,serv_link);
         FREE(key);
 
         char *link = get_pingable_link(serv_link);
@@ -621,7 +694,7 @@ int ping_link(char *link)
         link = strstr(link,"://");
         if (link) {
             link += 3;
-            end = strchr(link,':');
+            end =strpbrk(link,":/");
             //
             // assume nfs host has portmapper
             ovs_asprintf(&host,"%.*s",end-link,link);

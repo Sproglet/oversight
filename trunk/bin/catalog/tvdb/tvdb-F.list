@@ -4,9 +4,9 @@
 101881:The Four
 102671:Fuera de control
 103001:Four Weddings
-103291:Fight Ippatsu! Jūden-chan!!
-103291:Fight Ippatsu! Juuden-chan!!
 103291:Fight Ippatsu! Juuden-Chan!!
+103291:Fight Ippatsu! Juuden-chan!!
+103291:Fight Ippatsu! Jūden-chan!!
 103701:Five Children and It
 104401:Film Riot
 104431:The Fortunes and Misfortunes of Moll Flanders
@@ -44,6 +44,7 @@
 116581:Fablernas värld
 117191:The Fight
 117231:The Free Sheep
+117801:From Me To You
 118461:Fortier
 118551:Fantômas
 118591:Find Me The Funny
@@ -189,21 +190,20 @@
 162111:Finally Back To Work
 162251:Femmes de loi
 162301:Friday: The Animated Series
-163571:Friends whit benefits
 163571:Friends With Benefits
+163571:Friends whit benefits
 163721:Fairy Muketeer Akazukin
 163851:Uma Família Invulgar 
 164041:Franklin & Bash
-164041:Franklin and Bash
 164041:Franklin Y Bash
+164041:Franklin and Bash
 164241:Future Food
 164321:Flint Street Ntivity
 164511:Familjen Bernadotte (2010)
 164511:Family Bernadotte (2010)
 165001:The Footy Show (NRL)
-165291:Flippers neue Abenteuer
-165391:Festival de la Canción de Eurovisión
 165391:Festival Eurovisão da Canção
+165391:Festival de la Canción de Eurovisión
 165671:The Fire Angel
 165921:Foreign Correspondent
 166131:Fraud Squad TV
@@ -244,8 +244,8 @@
 178161:Food Heavens
 178421:Funny Business
 179041:Fish Warrior
-179431:Flådens historie
 179431:Flådens Historie
+179431:Flådens historie
 179741:The Final Report
 179781:The Flying Rabbit
 180041:The Future - The World In 50 Years
@@ -310,11 +310,13 @@
 200191:Ferda Mravenec
 200191:Ferdy the Ant
 200791:Fresh Pretty Cure!
-200871:Felix stör en ingenjör
 200871:Felix Stör en Ingenjör
+200871:Felix stör en ingenjör
 200931:First Life
+200931:First Life - L'origine della vita
 200931:First Life with David Attenborough
 201121:Frontline Battle Machines with Mike Brewer
+201991:Freeter, Ie wo Kau
 201991:Freeter, ie wo kau
 202491:Feuten
 202791:Fox Volant
@@ -338,8 +340,8 @@
 207701:Four in a Bed
 207711:The Foods That Made Billions
 207711:The Foods that Make Billions
-207831:Flip the frog
 207831:Flip the Frog
+207831:Flip the frog
 207881:F. X. Brunnmayr
 207901:Franz Xaver Brunnmayr
 208021:Fly Tales
@@ -458,6 +460,7 @@
 248394:Forfulgt af en løgn
 248423:Funny Faces in High School
 248486:From The Edge
+248588:Fallout
 248588:Fallout: Nuka Break
 248620:The Field Of Blood
 248631:Fred Dibnah's World of Steam, Steel & Stone
@@ -518,6 +521,7 @@
 250337:Fältväbel Körmy och marskalkens stäv
 250540:Food as Medicine
 250606:Flint Hammerhead
+250606:Flint the Time Detective
 250630:Fait pas ci fait pas ça
 250692:Una Familia de 10
 250701:Firehouse Tales
@@ -549,14 +553,13 @@
 251700:Feynman Messenger Lectures
 251778:Foundations of Apologetics
 251796:Forces Obscures
-251804:Frys Planet Word
 251804:Fry's Planet Word
+251804:Frys Planet Word
 251839:Frontier Force
 251883:Filary Ziemi
 251886:Faux Raccord
 251889:Fresh Meat
 251914:The Final Story
-251933:Fallout
 251940:Familien fra Bryggen
 251957:Fantomas - Ogon Batto
 251976:Färjan 3
@@ -629,6 +632,7 @@
 254875:Frööbelin palikat
 254916:Fake Kyoto Bijutsu Jiken Emaki
 254926:Family Outing
+254926:Family Outing 2
 254964:Frauenarzt Dr. Martin Merthin
 254991:The Fabulous Baker Brothers
 255033:Fokus Deutsch
@@ -692,8 +696,8 @@
 256994:Food Lovers Guide to the Planet
 257025:FANTÔMETTE
 257065:Flipping Boston
-257167:Faccia d'angelo
 257167:Faccia d'Angelo
+257167:Faccia d'angelo
 257201:Fake It Til You Make It
 257249:FTW
 257261:Flint the Time Detective
@@ -703,6 +707,7 @@
 257465:Fresh Hell
 257471:Frances
 257509:Family Outing
+257571:Fidanzata Misteriosa X
 257587:Finding Your Roots with Henry Louis Gates Jr.
 257613:Foreign Exchange
 257614:Full Fräs
@@ -716,6 +721,62 @@
 257950:Falklands Hero: Bravo November 
 257983:Full Stretch
 258006:Frosty the Snowman
+258081:Fashion King
+258107:The Fall
+258124:F-Zero Falcon Densetsu
+258129:Frankreich - Wild und Schön
+258150:For You in Full Blossom 
+258156:Fatima
+258158:Force Five: Danguard Ace
+258164:Force Five: Gaiking
+258168:Force Five: Starvengers
+258236:The Fallen
+258327:Fate Zero
+258357:France Five
+258371:Follow Me...
+258398:Fox Volant of the Snowy Mountain
+258401:First Life
+258492:Fixa rummet
+258544:Facile Cucina
+258581:Fiore e Tinelli
+258624:Fathers and Sons (1986)
+258642:French and Saunders
+258661:Freewheelers
+258731:The Frost Programme (1966)
+258744:The Following
+258774:The Frontier (2012)
+258820:Fred Dibnah's Magnificent Monuments
+258826:Får Vi Följa Med
+258826:Får Vi Följa Med?
+258870:FOX Anniversary Specials
+258882:FOX Gronland
+258882:FOX Grønland
+258905:Family Fortunes
+258925:Frances Tuesday
+258940:Flight into Hell
+258940:Flug in die Hölle
+258968:Famosos al volante
+258969:Fungus the bogeyman
+259023:Fora de Controle
+259058:Family Tools
+259068:Fiska med Anders
+259094:Friend Me
+259100:Flics
+259106:First Cut (2012)
+259111:Felicity Kendals Indian Shakespeare Quest
+259114:Funny Roots
+259149:Fortier
+259153:I Fratelli Benvenuti
+259227:Fat Man in a White Hat
+259244:The Family Tools
+259249:Fish Tank Kings
+259288:Final Witness
+259294:Filho da Pub
+259302:Fairy From Wonderland
+259315:Funtik's Adventures
+259330:Fangerne på Fortet
+259331:Finn & Jacob Vender Tilbage
+259348:Fox and Friends
 70331:Flash Gordon (1954)
 70411:Fairly Secret Army
 70412:Fünf Freunde
@@ -752,16 +813,16 @@
 71214:Familjen Macahan
 71310:For Love or Money
 71315:Fraud Squad
-71350:Fort boyard
 71350:Fort Boyard
+71350:Fort boyard
 71375:Ein Fall für Scooby-Doo
 71415:Forensic Files
 71444:Fushigi Yugi
 71444:Fushigi Yuugi
 71452:Fantastic Voyage
 71500:The Footy Show
-71521:Freddy, le cauchemar de vos nuits
 71521:Freddy's Nightmares
+71521:Freddy, le cauchemar de vos nuits
 71619:Faking It
 71674:Family Feud
 71683:Future Fantastic
@@ -791,8 +852,9 @@
 72688:Freaky Stories
 72732:Ferris Bueller
 72802:Forever Green
-72820:Félix le chat
 72820:Felix The Cat
+72820:Felix-kissa
+72820:Félix le chat
 72833:Flatbush
 72847:Fama
 72847:Fame
@@ -879,8 +941,8 @@
 75484:A Family for Joe
 75577:Faraday and Company
 75579:Full Metal Alchemist
-75579:Fullmetal Alchemist
 75579:FullMetal Alchemist
+75579:Fullmetal Alchemist
 75612:Figure It Out
 75829:Flight 29 Down
 75834:The Ferguson Theory
@@ -979,6 +1041,7 @@
 77831:From the Earth to the Moon
 77832:Fast Times
 77877:Frank Stubbs Promotes
+77885:Fantasmi
 77913:Fionas Website
 77954:Flash Forward
 77963:FBI : Portés disparus
@@ -1018,15 +1081,15 @@
 78757:The Frost Report
 78807:Fastlane
 78819:Family Business
-78837:Foylen sota
 78837:Foyle's War
+78837:Foylen sota
 78874:Firefly
 78878:FLCL
+78878:FULI CULI (FLCL)
 78878:Fooly Cooly
 78878:Fooly Cooly (FLCL)
-78878:FULI CULI (FLCL)
-78900:Fruits basket
 78900:Fruits Basket
+78900:Fruits basket
 78902:Familienstreit de luxe
 78905:Femme$ de footballeurs
 78905:Footballers' Wives
@@ -1045,13 +1108,14 @@
 79136:Fantastic Children
 79151:Fate Stay Night
 79151:Fate Zero
-79151:Fate/stay night
 79151:Fate/Stay Night
-79151:Fate／stay night
 79151:Fate/Zero
-79153:Fifi and the Flowertots
-79153:Fifi et les Floramis
+79151:Fate/stay night
+79151:Fate／stay night
 79153:Fifi Niezapominajka
+79153:Fifi and the Flowertots
+79153:Fifi en haar bloemenvriendjes
+79153:Fifi et les Floramis
 79153:Fifi og blomsterbørnene
 79153:Fifi virágoskertje
 79156:Fist of the North Star
@@ -1070,23 +1134,23 @@
 79366:Une Fille en Alaska
 79393:Feasting on Asphalt
 79405:Footballers' Wives - Extra Time
-79474:Flag
 79474:FLAG
-79498:Fantastic Four - Die größten Helden aller Zeiten
+79474:Flag
 79498:Fantastic Four (2006)
+79498:Fantastic Four - Die größten Helden aller Zeiten
 79498:Fantastic Four: World's Greatest Heroes
 79546:Five Days To Midnight
 79551:Frank Herbert's Duin
 79551:Frank Herbert's Dune
 79552:Filhos de Duna
-79552:Frank Herbert: A Dűne gyermekei
 79552:Frank Herbert's : Les enfants de Dune
 79552:Frank Herbert's Children of Dune
 79552:Frank Herbert's Kinderen van Duin
+79552:Frank Herbert: A Dűne gyermekei
 79558:Frontier House
 79583:Fighting Spirit
-79597:Free for all
 79597:Free for All
+79597:Free for all
 79609:The F Word
 79650:Faceless
 79677:The Fred Dibnah Story
@@ -1104,6 +1168,7 @@
 79983:Freak Show
 80025:Fat Cow Motel
 80037:Future Weapons
+80078:Flat Broke Sisters
 80083:Final Approach
 80118:Fóstbræður
 80132:Food Safari
@@ -1197,8 +1262,8 @@
 81994:FarmKids
 82049:Familie Dr. Kleist
 82058:Forensic Investigators
-82066:Fringe
 82066:FRINGE
+82066:Fringe
 82066:Fringe - Grenzfälle des FBI
 82066:Fringe - na rubu
 82066:Fringe - rajamailla
@@ -1206,6 +1271,7 @@
 82067:FC Nerds
 82120:Fear Itself
 82120:Fear Itself - Les maîtres de la peur
+82166:Food Network Star
 82183:Fingersmith
 82207:Flapjack
 82215:Fun at the Funeral Parlour
@@ -1293,6 +1359,7 @@
 84781:Flying Heavy Metal With Bruce Dickinson
 84807:First Kiss
 84843:The First Eden
+84928:Full House (2004)
 84928:Full House (Korean)
 85055:Free Agents
 85055:Free Agents - Zweisam einsam
@@ -1325,6 +1392,7 @@
 88521:Flikken
 89681:Face Of Britain
 89781:Fancy Lala
+89901:Ein Fall für Zwei
 89901:Ein Fall für zwei
 90351:Final 24
 90351:Final 24 - Die letzten Stunden von...

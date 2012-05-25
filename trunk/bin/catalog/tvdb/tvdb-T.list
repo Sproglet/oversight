@@ -41,6 +41,7 @@
 103131:The Secret World of Magic
 103171:Tatort Batic & Leitmayr
 103181:Tatort Stoever & Brockmöller
+103191:Tajemství nových dinosaurů
 103231:The Slim Shady Show
 103321:Tokyo Magnitude 8.0
 103351:Thick as Thieves
@@ -49,8 +50,8 @@
 103481:The Glittering Prizes
 103531:Treats from the Edwardian Country House
 103541:The Naked Office
-103571:Tenshi ni Narumon
 103571:Tenshi Ni Narumon
+103571:Tenshi ni Narumon
 103571:Tenshi ni Narumon!
 103781:Todesspiel
 103921:The Secret Caribbean
@@ -148,8 +149,8 @@
 112441:The Frankincense Trail
 112521:Tegami Bachi
 112581:Throwdown with Bobby Flay
-112621:The adventures of the Mole
 112621:The Mole
+112621:The adventures of the Mole
 112741:Ten Dollar Dinners
 112981:Tantei Gakuen Q (2007)
 113221:The Best In Australia
@@ -303,7 +304,6 @@
 126211:The Ultimates
 126251:The Mill on the Floss
 126301:Terra X
-126301:Terra X - Eisige Welten
 126531:The Twisted Whiskers Show
 126741:Talking Landscapes
 126831:The Queen
@@ -337,9 +337,9 @@
 129731:The Film Crew
 129741:The Story of Perrine
 129771:The Great Philosophers
-129811:To
 129811:TO
 129811:TO -トゥ-
+129811:To
 129981:Tierärztin Dr. Mertens
 130001:The Last Semester
 130101:The Germans in America
@@ -445,8 +445,8 @@
 140041:The Bedroom Diaries
 140101:The Good Guys
 140101:The Good Guys (2010)
-140151:The bridge
 140151:The Bridge
+140151:The bridge
 140541:The Great Rift: Africa's Wild Heart
 140591:Trains with Pete Waterman
 140681:The Increasingly Poor Decisions of Todd Margaret
@@ -516,6 +516,7 @@
 146161:TV total
 146181:The Secret Millionaire AU
 146221:The D-Generation
+146331:The Invisible Visor
 146351:The Life & Significance of George Ivanovitch Gurdjieff
 146561:The Special Task Force (South Africa)
 146571:Toffs & Crims
@@ -552,6 +553,7 @@
 149711:The Politician's Wife
 149721:The Fucking Fulfords
 149791:Toute La Vérité
+149791:Toute la vérité
 150031:The Guitar Show
 150101:The Windsors A Royal Family
 150231:This is Jinsy
@@ -596,7 +598,6 @@
 153861:The Queen in 3D
 153921:Temptation of Eve
 153951:The One Game
-154111:Tales of Agriculture
 154411:The Lomo Camera: Shoot From The Hip
 154461:The Brain Fitness Program
 154501:The Door
@@ -649,7 +650,6 @@
 159311:Tourists
 159371:The Germanic Tribes
 159431:The Pillars of the Earth
-159431:The Pillars of the Earth 
 159511:The Adventures of Tom Sawyer
 159511:Tom Story
 159561:The long way around
@@ -676,9 +676,9 @@
 160721:Tucker's Luck
 161101:The Way We Live Now
 161401:Timothy Spall: Somewhere at Sea
-161501:The big C
 161501:The Big C
 161501:The Big C ... und jetzt ich!
+161501:The big C
 161641:Theo's Adventure Capitalists
 161661:The Dudesons in America
 161801:The Custom
@@ -737,7 +737,6 @@
 164991:The Wonderful World of Animals
 165001:The Footy Show (NRL)
 165281:The Mysteries of Love
-165291:The New Adventures of Flipper
 165311:The Greatest Heroes In History
 165351:Total Genial
 165381:The Whole Truth
@@ -809,6 +808,7 @@
 169111:The Rat Pack (A&E)
 169131:The Kenny Everett Video Show
 169211:A Tale of Two Cities
+169351:The Pickwick Papers
 169351:The Pickwick Papers (1985)
 169401:The crimes of the cook
 169791:The Story of the Guitar
@@ -992,11 +992,11 @@
 187331:Take On The Takeaway
 187341:The Island of Thirty Coffins
 187351:This Is England
-187351:This is England '86
-187351:This Is England 86
 187351:This Is England '86
-187351:This is England '88
+187351:This Is England 86
 187351:This Is England 88
+187351:This is England '86
+187351:This is England '88
 187411:The Adventures of Mouse
 187501:The Eagle Shooting Heroes (83 Genuine Mirror)
 187511:The Nude
@@ -1082,12 +1082,13 @@
 193831:Togainu no Chi
 193831:Togainu no Chi -Bloody Curs-
 194041:Todd & The Book Of Pure Evil
-194041:Todd and The Book Of Pure Evil
 194041:Todd And The Book Of Pure Evil
+194041:Todd and The Book Of Pure Evil
 194071:Tokyo Ghost Trip
 194081:The Situation Room with Wolf Blitzer
 194101:The Owl
 194111:The Shaolin Warriors
+194271:Trucker in gefährlicher Mission
 194501:The Prison
 194521:Tom's Top 5
 194621:The Mill on the Floss (1978)
@@ -1100,8 +1101,8 @@
 195451:Thintervention with Jackie Warner
 195481:The A-List: New York
 195571:Tamayura
-195571:Tamayura - Hitotose
 195571:Tamayura (TV)
+195571:Tamayura - Hitotose
 195571:Tamayura ~hitotose~
 195711:The World God Only Knows
 195711:The World God Only Knows II
@@ -1168,9 +1169,9 @@
 201731:Three of a Kind
 201801:The Stephen K Amos Show
 201911:The Three Musketeers (1966)
-202331:The Legion of Extraordinary Dancers
 202331:The LXD
 202331:The LXD: The Legion of Extraordinary Dancers
+202331:The Legion of Extraordinary Dancers
 202371:Two In The Top End
 202571:The Trip
 202711:The Little House
@@ -1285,8 +1286,8 @@
 214471:The Thwarting of Baron Bolligrew
 214541:The Cazalets
 214601:The Outdoor Room (2010)
-214651:Two Thousand Acres of Sky
 214651:Two Thousand Acres Of Sky
+214651:Two Thousand Acres of Sky
 214941:A Tale of Two Cities (1989)
 215011:The Best Defense: Survival
 215031:The Best Defense
@@ -1331,7 +1332,6 @@
 219651:The Dain Curse
 219981:The Scale of Providence
 220311:The Savage Eye
-220511:Tre Kronor (DVD)
 221031:The Singing Kettle
 221041:The Rainbow
 221141:Teen Mom 2
@@ -1412,6 +1412,7 @@
 230631:Turetskiy gambit
 230751:The Savage Tales of Summer Vale
 230771:The Chinese Are Coming
+230841:The Samurai (1962)
 231001:The Gateau Affairs
 231071:Trek: Spy on the Wildebeest
 231101:The Phoenix and the Carpet
@@ -1429,6 +1430,7 @@
 232881:The Armstrongs
 232911:The Kennedys
 232971:TOTP2
+232971:Top of the Pops 2
 233041:Thatcher: The Downing Street Years
 233231:The Choir: Boys Don't Sing
 233591:Tohuwabohu
@@ -1522,8 +1524,8 @@
 244431:The Woman in Black
 244631:The Person I Love
 244661:The Legend Of Brown Sugar Chivalries
-244671:Troubleman
 244671:TROUBLEMAN
+244671:Troubleman
 244771:The Ultimate Dance Battle
 245021:Theatre Night
 245071:The Talk
@@ -1550,15 +1552,15 @@
 246161:The Problem Solverz
 246181:The Atom (1967)
 246311:The Magician's Hat
-246381:Tiger & Bunny
 246381:TIGER & BUNNY
+246381:Tiger & Bunny
 246381:Tiger and Bunny
 246421:The Complete Churchill
 246441:The Minotaur's Island
 246571:Taistelulaiva
 246621:The Wiggles: The Series
-246771:The Crimson Petal and the White
 246771:The Crimson Petal and The White
+246771:The Crimson Petal and the White
 246861:The Strauss Family
 246941:Top Chef Canada
 247221:Tina Lund - Helt tæt på
@@ -1569,8 +1571,8 @@
 247774:The Nine Lives of Chloe King
 247776:The Hot Zone
 247806:The Cinema Show
-247809:Terapia de Choque
 247809:Terapia d'urto
+247809:Terapia de Choque
 247815:The Long Recess
 247824:The Voice (US)
 247838:The Reckoning
@@ -1619,12 +1621,12 @@
 248196:Tommy Walsh's Eco House 
 248210:The Mick Molloy Show
 248211:The Eric Bana Show Live
-248227:The Return of Frank Cannon
 248269:Teresa
 248282:The Robinsons: Lost in Space
 248284:The Suspicions of Mr Whicher
 248292:The Morecambe and Wise Show (1968)
 248298:True Justice
+248298:True justice
 248311:The Bible's Buried Secrets
 248347:Temps Dur
 248368:The Looney Tunes Show
@@ -1661,6 +1663,7 @@
 248618:The Amazing Race Australia
 248620:The Field Of Blood
 248624:Tatort – Steier & Mey
+248645:Try Lying to Me
 248651:The Finder
 248665:The Shadow of Your Smile
 248669:The Country House Revealed
@@ -1674,8 +1677,8 @@
 248765:The Blame Game
 248767:The Real Story
 248769:The Phoenix and the Carpet (1976)
-248770:The top 100 NFLPlayers of 2011
 248770:The Top 100 Players of 2011
+248770:The top 100 NFLPlayers of 2011
 248773:Titanic: Answers from the Abyss
 248775:Treasure Hunters Documentary
 248777:The Green Archer
@@ -1775,7 +1778,6 @@
 249708:The Car Show
 249717:Toughest Military Jobs
 249721:The Legend of Dick and Dom
-249725:Terra X - Jäger verlorener Schätze
 249734:The Far Pavilions
 249741:The Daytime Emmy Awards
 249762:Turno de oficio
@@ -1787,8 +1789,8 @@
 249813:The Jeff Lewis 5 Minute Comedy Hour
 249827:The Future Diary
 249841:The Dr. Laura Berman Show
-249865:The iDOLM@STER
 249865:The Idolmaster
+249865:The iDOLM@STER
 249868:The Mystic Archives of Dantalian
 249900:The Motorbike Show
 249920:The Faries
@@ -1889,6 +1891,7 @@
 250849:The Black Leather Notebook
 250850:Traumpfade
 250862:Tomica Hero: Rescue Fire
+250862:Tomica Hero: Rescue Force
 250875:Tři králové
 250887:The Russell Brand Show
 250892:The Camera That Changed the World
@@ -1903,6 +1906,7 @@
 251046:TechSNAP
 251081:The Antics Roadshow
 251085:The Last Airbender The Legend of Korra
+251085:The Legend of Korra
 251092:The Sideshow
 251095:The Kings of Marielys
 251108:The Beautiful Universe: Chandra
@@ -1974,6 +1978,7 @@
 252020:The Hothouse 
 252031:Taxaquizzen
 252056:Taoist Studies Series
+252065:The Bridge (2011)
 252066:To Nisi
 252068:The Joy of Sets
 252084:The Nate Berkus Show
@@ -2037,8 +2042,8 @@
 252792:The Doombolt Chase
 252821:Tree with Deep Roots
 252826:Theres No Taste Like Home
-252833:Those in Power
 252833:Those In Power
+252833:Those in Power
 252836:The A List : Dallas ***Duplicate 252679****
 252847:The One: The Search for Australia’s Most Gifted Psychic
 252852:The Hunt for the Unicorn Killer
@@ -2068,6 +2073,7 @@
 253144:The Great Gildersleeve
 253164:Toilet no Kamisama
 253203:The Fabric of the Cosmos
+253230:Talven ihmemaa
 253252:The Jury (2011)
 253279:The Exes
 253283:The Homicide Squad
@@ -2246,6 +2252,7 @@
 255375:The Eagle Shooting Hero (2008)
 255379:Table Dancing Diaries
 255382:Thermae Romae
+255382:Thermæ Romæ
 255413:The Last Resort (2012)
 255426:The Ministry of Curious Stuff
 255442:A TV Dante
@@ -2264,8 +2271,8 @@
 255546:Tierische Ausreißer
 255547:The Great British Woodshop
 255564:Troye iz Prostokvashino
-255573:The Moon that Embraces the Sun
 255573:The Moon That Embraces The Sun
+255573:The Moon that Embraces the Sun
 255574:Take Care of us Captain
 255591:Tricky Business
 255592:Tricky Business
@@ -2301,7 +2308,6 @@
 255966:Terra MaX
 255968:Top Chef France
 255980:Tallafornia
-256011:The David Chapelle Show
 256016:Tools of the Trade
 256019:The Curse of Oil
 256027:Teen Spirit
@@ -2323,7 +2329,7 @@
 256195:Tagkammerater
 256198:The Ring Leader
 256209:The Black Dawn
-256227:The Newsroom (US)
+256227:The Newsroom (2012)
 256239:The Winner Is
 256240:The World Without Commas
 256255:The New Zealand Wars
@@ -2343,7 +2349,6 @@
 256455:Teknikens värld
 256458:The Sparticle Mystery
 256466:Tattoo Salonen
-256499:The Selection
 256513:The Real Housewives of Vancouver
 256514:The Project
 256520:The Aquabats Super Show
@@ -2444,23 +2449,20 @@
 257616:Totally Bonkers Guinness World Records 
 257631:The Story Of The Novel
 257633:The Lost Room (Episodi Separati)
-257645:The Ultimate Spiderman
 257645:The Ultimate Spider-man
+257645:The Ultimate Spiderman
 257660:The Real West: Cowboys & Outlaws
 257665:The Secret Policeman's Ball
 257690:The Girl's Guide to Depravity
 257697:The Sheriffs Are Coming
-257706:Il Trono di Spade (Game of Thrones)
 257711:The People's Court
 257717:The Pitch
 257730:Titanic with Len Goodman
 257737:Tomes & Talismans
 257739:Tomtesteron
 257747:Tsvet Cheryomukhi
-257759:The Man Who Discovered Egypt
 257763:Tsuritama
 257766:A Town Where You Live
-257767:Titanic 2012
 257783:The Yogi Bear Show (1961)
 257784:The Biggest Loser
 257784:The Biggest Loser (DE)
@@ -2480,18 +2482,170 @@
 257930:The Million Pound Property Experiment
 257942:TableTop
 257945:The Patriotic Knights
-257946:The secret cycle
 257947:The Fairies of Liaozhai
 257962:The Great American Manhunt
+257963:Tom Petty and the Heartbreakers - Runnin Down A Dream
 257964:The Voice : la plus belle voix
 257975:The Tearful Sword
 257994:The Rhinemann Exchange
 257995:The Secret Servant
 258008:The Great British Taste Tour
 258010:Tales of Gekijou
-258023:The Legend of Korra
 258031:The Summer of...
 258038:The Greatest Ever
+258040:The Scouts
+258042:The Mighty Mississippi with Sir Trevor Mcdonald
+258047:The Matt Lucas Awards
+258056:Taaber paa eventyr
+258056:Tåber på eventyr
+258070:The Epic Of ZektBach
+258090:Tanuhi
+258091:Take Me Out The Gossip
+258093:The Charles Dickens Show
+258094:Tash Ma Tash
+258107:The Fall
+258118:The Incredible Dr. Pol
+258119:The Minecraft Files
+258134:The Game Show
+258137:The Ronnie Wood Show
+258145:Telling Tales
+258154:Total Blackout (US)
+258188:The Tyrant King
+258192:Talk at the BBC
+258204:The Voice (AU)
+258211:The Diamond Hunters 
+258223:The Comedians' Comedian
+258231:The Angelos Epithemiou Show
+258236:The Fallen
+258249:This Week (2003)
+258254:The '70s
+258254:The 70s
+258256:A Tort ou à Raison
+258259:The Amazing Race Norway
+258288:Tatort Trimmel
+258296:The World Tomorrow
+258299:The Victory Garden
+258324:Taira no Kiyomori
+258336:The World Tomorrow with Julian Assange
+258392:The Tracy Beaker Survival Files - Tales from the Dumping Ground
+258393:Tracy Beaker Survival Files
+258404:Transolar Galactica
+258426:Titanic: Blood and Steel
+258429:The Conversation With Amanda De Cadenet
+258431:The Big Girls
+258433:Tillbaka till Vintergatan
+258437:The Birth of Europe
+258440:The Gadget Show World Tour
+258441:The Geena Davis Show
+258454:The Case-Book of Sherlock Holmes
+258475:The Nile
+258480:Tron Uprising
+258480:Tron: Uprising
+258498:The Goonies Show
+258499:The Daily Show
+258501:The Catalina
+258504:The Great Courses - Development of European Civilization
+258533:Tiger Mask II
+258537:Thalassa
+258548:Tightrope_1972
+258549:The Devils Ride
+258561:TCM Original Documentaries
+258569:The Bridge
+258580:Tasty Life
+258597:The Tommy Wi-Show
+258600:T'Kuma
+258603:The Great Escape
+258625:The Insensitive Princess
+258644:Il Testimone
+258657:The Top 100 Players of 2012
+258658:The Yagyu Conspiracy
+258670:The GC
+258680:The American Soldier: The Complete History of U.S. Wars
+258684:Twin Cities Public Television (tpt) Original Documentaries
+258708:The Office
+258711:The Lingo Show
+258716:Tuned
+258724:The Stephen Nolan Show
+258731:The Frost Programme (1966)
+258736:Tech Toys 360
+258738:Twin Of Brothers 2004
+258744:The Following
+258751:The Price is Right (Australia)
+258774:The Frontier (2012)
+258778:The Adjustment Bureau
+258795:The Glass House (ABC)
+258797:The Week The Women Went
+258804:The Comedy Awards
+258805:Two On The Great Divide
+258814:Trust Us With Your Life
+258815:Toshidensetsu no Onna
+258836:The King & the Playwright: A Jacobean History
+258842:The Seven Wonders Of The World
+258851:The Costco Craze
+258852:The Snow Ball War
+258856:TV Party
+258860:Touche Turtle & Dum Dum 
+258863:The Invincible Duo
+258877:The Great War WWI
+258885:The weight of The Nation
+258886:The Choice
+258888:The Last Breakthrough
+258897:TerraNova
+258898:The adventures of Danny and the Dingo
+258899:The Whole Banana
+258915:Tehdas
+258926:The Voice (BE)
+258946:The Return of Sherlock Holmes (1987)
+258947:The Gifted One
+258952:Tela Class
+258967:Tchaou et Grodo
+258979:The New Normal
+258988:The Duke Of Mount Deer (2000)
+258992:The Justice of Life
+258999:Tico - Ein toller Freund
+259007:The Mindy Project
+259011:The Mob Doctor
+259012:The Goodwin Games
+259026:The Man In The High Castle
+259031:Tokumei Sentai Go-Busters
+259035:The Naked Vicar Show
+259042:The Two-Thousand-Year-Old Computer
+259046:Tony Robinson's Superstitions
+259056:The Story of Light Entertainment
+259057:The Neighbors
+259073:The Half Hour
+259079:The Composers' Specials
+259104:Turtle's Progress
+259118:Tom-Tom et Nana
+259123:Tea and Minecraft -- Let's Play
+259141:Triumph in the Skies
+259143:The Exclusives
+259145:The Hoarder Next Door
+259148:The Spitfire: Britain's Flying Past
+259160:Teddy`s Show
+259184:The Eric Andre Show
+259205:The Princess's Man
+259214:The Link
+259215:Time Slip Dr JIN
+259216:The Culinary Institute of America
+259220:Tightrope Woman
+259231:T'es pas la seule
+259232:Teenage Werewolf
+259233:Tintin
+259239:The Cloning Of Joanna May
+259244:The Family Tools
+259247:The Sweeny
+259253:The Power and the Glory
+259274:Teste da test
+259280:True Love
+259285:Tom Grattan's War
+259303:Tatort Murot
+259313:The Ri¢hie Ri¢h/Scooby-Doo Show
+259332:Timm & Gordon
+259344:The Gambler
+259355:The London Markets
+259357:The Awakening Story
+259368:The Online Gamer
 70328:The Young and the Restless
 70328:Tunteita ja tuoksuja
 70329:Tutto In Famiglia
@@ -2552,8 +2706,8 @@
 70548:Tama and Friends
 70549:Tandarra
 70550:Tarzan (1966)
-70552:Tarzan - Die Rückkehr
 70552:Tarzan (1991)
+70552:Tarzan - Die Rückkehr
 70553:Tarzan Lord of the Jungle
 70554:Tarzan The Epic Adventures
 70555:Telly Addicts
@@ -2737,6 +2891,7 @@
 71343:Tracey McBean
 71346:Tales of Uplift and Moral Improvement
 71352:The Paradise Club
+71353:The Jewel In The Crown
 71353:The Jewel in the Crown
 71354:Top Ten
 71355:The Drew Carey Show
@@ -2914,8 +3069,8 @@
 72216:The Fantastic Four (1967)
 72217:Thunderbirds 2086
 72218:Tajemnice Smallville
-72224:The Outer Limits - Au-delà du Réel, l'Aventure continue
 72224:The Outer Limits (1995)
+72224:The Outer Limits - Au-delà du Réel, l'Aventure continue
 72227:Two and a Half Men
 72227:Two and a Half Men 
 72232:The Outsiders (1976)
@@ -3058,10 +3213,10 @@
 72851:The Tweenies
 72860:Tom & Jerry
 72860:Tom and Jerry
-72860:Tom és Jerry  
 72860:Tom i Jerry
 72860:Tom und Jerry
 72860:Tom y Jerry
+72860:Tom és Jerry  
 72871:Tomato Twins
 72882:The Blue Racer
 72883:Tijuana Toads
@@ -3115,8 +3270,8 @@
 73107:Third Watch
 73107:Third Watch - Einsatz am Limit
 73107:Third Watch - Squarda Emergenza
-73107:Třetí hlídka
 73107:Turno de guardia
+73107:Třetí hlídka
 73109:The Norman Conquests
 73115:The Life of Riley (1953)
 73128:The George Gobel Show
@@ -3221,8 +3376,8 @@
 73581:The Comedy Network
 73583:The Gregory Hines Show
 73587:The Twilight Zone
-73587:The Twilight Zone - Unwahrscheinliche Geschichten
 73587:The Twilight Zone (La Dimension Desconocida)
+73587:The Twilight Zone - Unwahrscheinliche Geschichten
 73587:The Twilight Zone / La quatrieme Dimension
 73588:The Great Space Coaster
 73596:This Week in Pro Football
@@ -3263,8 +3418,8 @@
 73768:Il Tocco Di Un Angelo
 73768:Touched by an Angel
 73769:The Paper Chase
-73787:That 70s Show
 73787:That '70s Show
+73787:That 70s Show
 73789:Too Something
 73795:The Mountain
 73799:The Tavis Smiley Show
@@ -3393,8 +3548,8 @@
 74486:The Sylvanian Families
 74488:The Alfred Hitchcock Hour
 74492:The Benny Hill Show (1955)
-74493:Texhnolyze
 74493:TEXHNOLYZE
+74493:Texhnolyze
 74514:Total Release
 74515:The 1900 House
 74516:The 1940s House
@@ -3409,10 +3564,10 @@
 74565:That's Your Funeral
 74568:The Army Game
 74576:Temperatures Rising
+74582:TMNT
 74582:Teenage Mutant Hero Turtles
 74582:Teenage Mutant Hero Turtles (1987)
 74582:Teenage Mutant Ninja Turtles (1987)
-74582:TMNT
 74582:Tortues Ninja
 74583:The Super Mario Bros. Super Show!
 74585:The Befrienders
@@ -3464,8 +3619,7 @@
 74834:Time of Your Life
 74845:Trava
 74849:The Line
-74852:The Last Airbender: Legend of Korra
-74852:The Legend of Korra 
+74852:The Last Airbender
 74856:The Red Hand Gang
 74857:The L-Bow Room
 74860:The Player
@@ -3488,8 +3642,8 @@
 74949:The New Road
 74962:The Sonny & Cher Comedy Hour
 74963:A Thing Called Love
-74968:The Insiders Guide to Happiness
 74968:The Insider's Guide to Happiness
+74968:The Insiders Guide to Happiness
 74974:Tilt
 74976:The Power of Algebra
 74977:The Acme School of Stuff
@@ -3505,6 +3659,9 @@
 75017:The Dark Island
 75029:T-Bag and the Pearls of Wisdom
 75030:T-Bag and the Rings of Olympus
+75041:Tales from River Cottage
+75041:The River Cottage Treatment
+75041:The View from River Cottage
 75054:The Life and Times of Grizzly Adams
 75060:Totally Obsessed
 75062:The Planets
@@ -3517,6 +3674,7 @@
 75102:The Comedy Company
 75103:T. Bag And The Revenge Of The T. Set
 75104:The Tripods
+75113:Those Obnoxious Aliens
 75114:The Panel (Ireland)
 75120:Turn On To T-Bag
 75121:T-Bag Strikes Again
@@ -3587,6 +3745,7 @@
 75476:TailSpin
 75476:TaleSpin
 75477:Tic et Tac, les rangers du risque
+75481:The New Adventures of Flipper
 75482:The Louie Show
 75497:The Secret World of Alex Mack
 75499:Tall Poppies
@@ -3660,8 +3819,8 @@
 75887:The Hollow Men
 75903:The Unique Dave Allen
 75908:Team Sanchez
-75914:Todo el mundo odia a Chris
 75914:Todo Mundo Odeia o Chris
+75914:Todo el mundo odia a Chris
 75914:Tout Le Monde Deteste Chris
 75914:Tutti Odiano Chris
 75923:The Crust
@@ -3854,8 +4013,8 @@
 76844:The Big Breakfast
 76849:The Cavanaughs
 76850:TEK WAR
-76850:Tekwar
 76850:TekWar
+76850:Tekwar
 76852:The Tracey Ullman Show
 76859:The Ripping Friends
 76863:The Red Green Show
@@ -3983,8 +4142,8 @@
 77391:To Rome with Love
 77395:The Dean Martin Show
 77398:The X FIles
-77398:The X-files
 77398:The X-Files
+77398:The X-files
 77400:The Girl from Tomorrow
 77404:The Cisco Kid
 77412:The Californians
@@ -4101,8 +4260,8 @@
 77844:The Tony Danza Show (1997)
 77851:Tom, Dick And Mary
 77854:That's My Mama
-77858:Tales of Tomorrow
 77858:Tales Of Tomorrow
+77858:Tales of Tomorrow
 77859:The Highwayman
 77893:This is David Harper
 77898:The Ghost Busters
@@ -4155,8 +4314,8 @@
 78137:The New Archies
 78138:The Raccoons
 78142:The Hitch Hikers Guide To The Galaxy
-78142:The Hitchhikers Guide to the Galaxy
 78142:The Hitchhiker's Guide to the Galaxy
+78142:The Hitchhikers Guide to the Galaxy
 78144:Tequila and Bonetti
 78144:Tequila und Bonetti
 78147:Tom
@@ -4206,6 +4365,7 @@
 78316:The Conspiracy Zone
 78322:The Man in Room 17
 78324:The Pathfinders
+78332:TOTP
 78332:Top of the Pops (UK)
 78340:Truth Quest: California
 78354:The Famous Jett Jackson
@@ -4276,8 +4436,8 @@
 78601:The Building
 78604:The Last Train
 78606:The Games (Australia)
-78611:The Twilight Zone - La 13ème Dimension
 78611:The Twilight Zone (2002)
+78611:The Twilight Zone - La 13ème Dimension
 78623:The Good Life (1994)
 78626:The Good Guys
 78627:The Bold Ones: The Lawyers
@@ -4340,14 +4500,14 @@
 78944:The Ascent of Man
 78945:The Human Body
 78949:Thomas & Friends
-78949:Thomas & seine Freunde
 78949:Thomas & Vännerna
+78949:Thomas & seine Freunde
+78949:Thomas The Tank Engine & Friends
 78949:Thomas a gőzmozdony
 78949:Thomas de Stoomlocomotief
 78949:Thomas le petit train
-78949:Thomas og vennene hans
 78949:Thomas og Vennerne
-78949:Thomas The Tank Engine & Friends
+78949:Thomas og vennene hans
 78949:Tomek i przyjaciele
 78949:Tuomas Veturi
 78950:The Grid
@@ -4536,6 +4696,7 @@
 79927:The Genius of Beethoven
 79928:This American Life
 79932:Tomtar på loftet
+79942:The Hour of Fairytales
 79947:The Trials of Life
 79979:Thieves Like Us
 79988:Terry Pratchett's Hogfather
@@ -4568,12 +4729,12 @@
 80195:The Adventures of Big Jeff
 80196:A Town Called Panic
 80198:Tajemný vesmír
-80198:The universe
 80198:The Universe
+80198:The universe
 80207:The Starter Wife
 80209:The Janice Dickinson Modeling Agency
-80211:The Soultaker
 80211:The SoulTaker
+80211:The Soultaker
 80229:Touch Me, I'm Karen Taylor
 80241:Terra e...
 80241:Terra e... (2007)
@@ -4596,14 +4757,14 @@
 80334:Temptation Island (Australia)
 80343:The Farm
 80344:Terminator - Les Chroniques de Sarah Connor
-80344:Terminátor - Sarah Connor krónikái
 80344:Terminator, las crónicas de Sarah Connor
 80344:Terminator: Kroniki Sary Connor
-80344:Terminátor: Příběh Sáry Connorové
 80344:Terminator: S.C.C.
 80344:Terminator: Sarah Connor Chronicles
 80344:Terminator: Sarah Connorin aikakirjat
 80344:Terminator: The Sarah Connor Chronicles
+80344:Terminátor - Sarah Connor krónikái
+80344:Terminátor: Příběh Sáry Connorové
 80354:The Paul Daniels Magic Show
 80358:The New Inventors
 80360:The Two Coreys
@@ -4631,8 +4792,8 @@
 80447:The Trap
 80458:The Pick-up Artist
 80459:The Premiership Years
-80462:Tell me you love me
 80462:Tell Me You Love Me
+80462:Tell me you love me
 80468:The Animatrix
 80482:The Aleutians: Cradle of the Storms
 80489:The Crusades
@@ -4655,8 +4816,8 @@
 80615:The Whistleblowers
 80616:Tatort  Ballauf & Schenk
 80616:Tatort Ballauf&Schenk
-80620:The War - Die Gesichter des Krieges
 80620:The War (Ken Burns)
+80620:The War - Die Gesichter des Krieges
 80621:Tajný deník call girl
 80624:The Edwardians In Colour
 80628:Three Sheets
@@ -4683,6 +4844,7 @@
 80781:Time Team Digs - A History Of Britain
 80786:Tetsuwan Birdy
 80806:TRAMITZ and friends
+80808:Tales of Agriculture
 80816:The Fairies
 80822:The Land Before Time
 80823:Tactical Roar
@@ -4726,8 +4888,8 @@
 81068:The Big Fat Quiz Of The Year
 81085:The Normans
 81089:Tiger Team
-81114:The border
 81114:The Border
+81114:The border
 81125:The States
 81133:The Blue and the Gray
 81144:True Tears
@@ -4735,8 +4897,8 @@
 81158:The Desert Speaks
 81170:The Mayfair Set
 81175:Travels to the Edge with Art Wolfe
-81182:Time Machine - Voyage dans le Temps
 81182:Time Machine (2004)
+81182:Time Machine - Voyage dans le Temps
 81189:Totál szívás
 81197:Tekzilla Daily
 81205:The Borrowers
@@ -4762,7 +4924,6 @@
 81301:The Real Heroes of Telemark
 81313:The Man who Lost his Head
 81315:The History Of The World Backwards
-81335:The River Cottage Treatment
 81338:Trust Me, I'm an Economist
 81344:The Thieving Headmistress
 81345:The Secret Life Of The Brain
@@ -4844,9 +5005,13 @@
 81814:The Complainers
 81818:The Food Lovers Guide To Australia
 81824:Two Twisted
-81831:To Love-Ru
-81831:To Love-Ru ~Trouble~
 81831:To LOVEる -とらぶる-
+81831:To Love-Ru
+81831:To Love-Ru Darkness
+81831:To Love-Ru ~Trouble~
+81831:To Love-Ru: Trouble
+81831:To Love-Ru: Trouble - Darkness
+81831:Trouble
 81843:The Andromeda Strain
 81843:The Andromeda Strain (2008)
 81850:Twentyfourseven
@@ -4869,7 +5034,6 @@
 81955:The Dudesons
 81961:To the North ~Diamond Dust Drops~
 81962:The Medieval Season
-81975:The View from River Cottage
 81979:Tomtesterom
 81985:The Coconuts
 81993:The Saddle Club
@@ -4877,7 +5041,6 @@
 82011:The Alice
 82021:The World's Toughest Tribes
 82022:The Tube (London Underground)
-82030:Triangle Heart ~Sweet Songs Forever~
 82032:The Hoobs
 82035:The 1st Shop of Coffee Prince
 82037:Teresina S.A.
@@ -4887,6 +5050,7 @@
 82084:The Daughter of Twenty Faces
 82096:The Seven Ages of Rock	
 82099:The Garden of Sinners
+82120:Terror en Estado Puro
 82134:Tankki Täyteen
 82135:The Gruen Transfer
 82144:A Taste of My Life
@@ -4913,7 +5077,7 @@
 82285:Tage, die die Welt bewegten
 82286:The Big Knights
 82288:Take Home Handyman
-82298:The Adventures of Aladár Mézga
+82298:The Adventures of Aladar Mezga
 82311:Today in Class 5-2 
 82317:The Tenant of Wildfell Hall
 82335:The Alan Clark Diaries
@@ -4973,9 +5137,9 @@
 82718:Three Men Go To Ireland
 82718:Three Men Go To New England
 82718:Three Men Go To Scotland
-82718:Three men in a boat
 82718:Three Men In Another Boat
 82718:Three Men in More Than One Boat
+82718:Three men in a boat
 82722:Tyler's Ultimate
 82733:The Booze Cruise
 82756:The Adam And Joe Show
@@ -5071,8 +5235,8 @@
 83339:Testees
 83341:Tårtan
 83345:The Atheism Tapes
-83364:Tytania
 83364:TYTANIA-タイタニア-
+83364:Tytania
 83365:The Conquerors
 83375:The Thorn Birds
 83375:Tövismadarak
@@ -5087,7 +5251,6 @@
 83463:Tara Alteregói
 83463:Taras Welten
 83464:The Gargoyle of the Yoshinagas
-83499:Tales from River Cottage
 83505:The Adventures Of Portland Bill
 83511:The Jaquie Brown Diaries
 83527:The Cup
@@ -5252,8 +5415,8 @@
 84843:The First Eden
 84855:Tokio
 84879:The Detonators
-84881:Tres estrelles
 84881:Tres Estrelles
+84881:Tres estrelles
 84929:The Cottagers
 84931:The Shot
 84932:The World Reflected in the Eyes of a Girl Looking Up at the Heavens
@@ -5298,8 +5461,8 @@
 85231:The Adventures Of Bottle Top Bill
 85232:The Girls of Hedsor Hall
 85242:The Prisoner
-85242:The Prisoner - Der Gefangene
 85242:The Prisoner (2009)
+85242:The Prisoner - Der Gefangene
 85254:Tutti Pazzi Per Amore
 85262:The Smith & Jones Sketchbook
 85262:The Smith and Jones Sketchbook
@@ -5399,14 +5562,15 @@
 88762:The Little Mermaid: Sebastian and Flounder's Pre-School Daze
 88771:The Apprentice: You're Fired!
 88871:The Incredible Super Piglet
-88891:Tayutama ~Kiss on my Deity~
 88891:Tayutama -Kiss on my Deity-
+88891:Tayutama ~Kiss on my Deity~
 88891:Tayutama: Kiss on my Deity
 88901:The mountains of Scotland
 89091:The Super Dimension Cavalry Southern Cross 
 89221:Tűzvonalban
 89591:Trawlers, Rigs & Rescue: North Sea
 89701:The Day The World Took Off
+89741:The Tale of Genji
 89821:The Hospital
 89831:The Real Housewives of New Jersey
 90091:Tahdon asia
@@ -5462,11 +5626,12 @@
 93551:Too much too young
 93561:Thoroughly Modern 
 93601:Toini ja Heikki Haaman Show
-93611:The Rookies A&E
+93611:The Rookies (2008)
+93611:The Rookies (A&E)
 93661:The Perfect Village
 93671:The Thai Way
-93771:The Legend of Bruce Lee
 93771:The Legend Of Bruce Lee
+93771:The Legend of Bruce Lee
 93871:The Woodwright's Shop
 93951:The Incredible Human Journey
 93961:The Joy of Science
@@ -5480,16 +5645,17 @@
 94981:The Forgotten - Die Wahrheit stirbt nie
 94981:The forgotten - os esquecidos
 95011:Taková moderní rodinka
-95021:The middle
 95021:The Middle
+95021:The middle
 95031:The Deep End
 95451:The Good Wife
 95461:Three Rivers
+95461:Three Rivers Medical Center
 95491:The Vampire Diaries
 95501:The Beautiful Life: TBL
 95621:The Oblivious Minds
-95701:Team Spirit: De serie
 95701:Team Spirit: De Serie
+95701:Team Spirit: De serie
 95711:The Goode Family
 95841:The Secret
 95921:The Cook and the Chef
@@ -5500,13 +5666,13 @@
 96291:Tube Tales: TV's Real Stories
 96321:The Operation: Surgery Live
 96411:The Rock 'n' Roll Years
-96471:Taiyo to umi no kyoshitsu
 96471:Taiyo to Umi no Kyoshitsu
+96471:Taiyo to umi no kyoshitsu
 96521:The Flame Trees of Thika
 96561:The Super Dimension Fortress Macross
 96661:The Face Of Tutankhamun
-96701:Torsdag kveld fra Nydalen
 96701:Torsdag Kveld Fra Nydalen
+96701:Torsdag kveld fra Nydalen
 96711:Tattoo Highway
 96721:The Threshold Of A Persona
 96741:Total Normal

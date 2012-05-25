@@ -215,13 +215,6 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
             fi
 
             OVS_TMP="$OVS_HOME/tmp"
-            if [ ! -d "$OVS_TMP" ] ; then
-                mkdir -p "$OVS_TMP" || true
-                chmod -R 777 "$OVS_TMP" || true
-                if [ "`id -u -n`" = root ] ; then
-                    chown -R $uid:$gid "$OVS_TMP" || true
-                fi
-            fi
             chmod 777 "$OVS_HOME/logs" "$OVS_HOME/cache" || true # for Oversight running as Apache/nobody
         ;;
         funplug)
@@ -232,17 +225,30 @@ if [ -z "${OVS_ENV_SET:-}" -o "${0/unpak.sh/}" != "$0" ] ; then
             #but always works from command line.
             #see if SHELL fixes.
             export SHELL=/ffp/bin/bash
+            OVS_TMP="$OVS_HOME/tmp"
         ;;
         *)
             #optware
             if [ -d /opt/etc/init.d -a -d /opt/bin ] ; then
                 case "$PATH" in
                     */opt/bin*) ;;
-                    *) PATH="/opt/bin:$PATH" ;;
+                    *)
+                        PATH="/opt/bin:$PATH" 
+                        OVS_TMP="$OVS_HOME/tmp"
+                    ;;
                 esac
             fi
             ;;
     esac
+
+    #embedded platforms may have small /tmp partitions 
+    if [ ! -d "$OVS_TMP" ] ; then
+        mkdir -p "$OVS_TMP" || true
+        chmod -R 777 "$OVS_TMP" || true
+        if [ "`id -u -n`" = root ] ; then
+            chown -R $uid:$gid "$OVS_TMP" || true
+        fi
+    fi
 
     export nmt_version os_version uid gid FAMILY ARCH OVS_HOME PATH LD_LIBRARY_PATH OVS_TMP
     export OVERSIGHT_ID="$uid:$gid"

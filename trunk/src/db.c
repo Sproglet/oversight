@@ -340,7 +340,7 @@ TRACE;
         struct hashtable_itr *itr;
         for (itr=hashtable_loop_init(g_nmt_settings) ; hashtable_loop_more(itr,&settingname,&name) ; ) {
 
-            if (util_starts_with(settingname,"servname") && name && *name ) {
+            if (is_share_setting(settingname) && name && *name ) {
 
                 char *path=NULL;
                 HTML_LOG(0,"crossview looking at %s=[%s]",settingname,name);

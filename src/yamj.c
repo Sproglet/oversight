@@ -52,6 +52,7 @@ void yamj_files(DbItem *item);
 int yamj_file(DbItem *item,int part_no,int show_source);
 void yamj_file_part(DbItem *item,int part_no,char *part_name,int show_source);
 void load_dynamic_cat(YAMJCat *cat,time_t index_time);
+void save_dynamic_categories(Array *categories);
 void save_dynamic_cat(YAMJCat *cat);
 void yamj_people(DbItem *item,char *tag,char *tag2,DbGroupIMDB *group);
 int add_dynamic_subcategories(DbItem *item,YAMJCat *cat,YAMJSubCat *selected_subcat);
@@ -363,7 +364,7 @@ int yamj_check_item(DbItem *item,Array *categories,YAMJSubCat *selected_subcat)
         // This is the main menu or we are in proper YAMJ mode - generate all menus to duplicate in all XMLs
         keeprow = add_all_dynamic_subcategories(item,categories,selected_subcat);
     } else {
-        // This is not the main men - so we really only want the details for the current subcat so
+        // This is not the main menu - so we really only want the details for the current subcat so
         // Eversion knows where it is in the index.
         keeprow = add_dynamic_subcategories(item,selected_subcat->owner_cat,selected_subcat);
     }
@@ -1171,7 +1172,7 @@ int yamj_build_categories(char *cat_name,Array *categories)
     while ((yc = yamj_cat_config(++i)) != NULL) {
         array_add(categories,yc);
 
-        //load_dynamic_cat(yc,db_time());
+        load_dynamic_cat(yc,db_time());
     }
 
     return ret;
@@ -1194,7 +1195,6 @@ char *dynamic_cat_file(YAMJCat *cat) {
 
 void load_dynamic_cat(YAMJCat *cat,time_t index_time)
 {
-#if 0
     if (cat->auto_subcat_expr != NULL) {
         // try to load it
         char *path = dynamic_cat_file(cat);
@@ -1202,33 +1202,40 @@ void load_dynamic_cat(YAMJCat *cat,time_t index_time)
         if (saved > index_time) {
 #define BUF_SIZE 999
             char buf[BUF_SIZE];
-            FILE *fp = fopen(path,"r");
+            FILE *fp = util_open(path,"r");
             if (fp) {
                 while(fgets(buf,BUF_SIZE,fp) != NULL) {
-                    char *nl;
-                    if ((nl=strchr(buf,'\n')) != NULL) *nl = '\0';
+                    chomp(buf);
                     HTML_LOG(0,"loaded subcat [%s][%s]->%s",cat->name,buf,path);
                     new_subcat(cat,buf,NULL,0,1);
                 }
                 fclose(fp);
-                cat->preloaded = 1;
+                cat->evaluated = 1;
             } else {
                 html_error("error loading cat file [%s]",path);
             }
         }
         FREE(path);
     }
-#endif
+}
+void save_dynamic_categories(Array *categories)
+{
+    // Save the dynamic categories.
+    if (categories) {
+        int i;
+        for(i = 0 ; i<categories->size ; i++) {
+            save_dynamic_cat(categories->array[i]);
+        }
+    }
 }
 void save_dynamic_cat(YAMJCat *cat)
 {
-#if 0
     if (cat->auto_subcat_expr != NULL && cat->subcats) {
         HTML_LOG(0,"FOUND [%s]",cat->auto_subcat_expr_url);
-        if (cat->preloaded == 0) {
+        if (cat->evaluated == 0) {
             char *path = dynamic_cat_file(cat);
             int i;
-            FILE *fp = fopen(path,"w");
+            FILE *fp = util_open(path,"w");
             if (fp) {
                 for(i = 0 ; i<cat->subcats->size ; i++) {
                     YAMJSubCat *sc = cat->subcats->array[i];
@@ -1236,14 +1243,10 @@ void save_dynamic_cat(YAMJCat *cat)
                     fprintf(fp,"%s\n",sc->name);
                 }
                 fclose(fp);
-            } else {
-                html_error("error saving cat file [%s]",path);
             }
             FREE(path);
         }
     }
-#endif
-
 }
 
 void dump_cat(char *label,YAMJCat *cat) 
@@ -1606,13 +1609,7 @@ int yamj_xml(char *request)
 
             yamj_categories_xml(request,selected_subcat,categories,sorted_rows);
 
-            // Save the dynamic categories.
-            if (categories) {
-                int i;
-                for(i = 0 ; i<categories->size ; i++) {
-                    save_dynamic_cat(categories->array[i]);
-                }
-            }
+            save_dynamic_categories(categories);
             array_free(categories);
             if (cache) {
                 fclose(xmlout);

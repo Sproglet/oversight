@@ -1,3 +1,5 @@
+# if plot > 1000 and no Recap: label then get plot from elsewhere.
+#
 # thetvdb is slow with episode title/plot updates - use other source if no title/plot
 #
 # portrail jpg_fetch_and_scale has START ? is that right

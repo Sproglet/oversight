@@ -85,7 +85,7 @@ BEGIN {
     g_articles["fr"]="\\<([Ll](|a|e?)|[Uu]ne?|[Dd]es|[Dd]u|[De] la?)\\>";
     g_articles["it"]="\\<([Ii]l?|[Ll][oae]?|[Gg]li|[Uu]n[oa]?|[Dd]el(|l[oae]?)|[Dd]ei|[Dd]egli)\\>";
     g_multpart_tags = "cd|disk|disc|part";
-    g_max_plot_len=3000;
+    g_max_plot_len=800;
     g_min_plot_len=90; # this is th eminimum length when scraping - not via api
     g_max_db_len=4000;
     g_path_depth=3;

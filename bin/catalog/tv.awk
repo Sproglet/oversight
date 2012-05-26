@@ -2181,10 +2181,16 @@ function remove_tv_year(t) {
     return t;
 }
 
-function clean_plot(txt) {
+function clean_plot(txt,\
+i) {
     # We need to check to utf8 and html characters here.
     txt = html_to_utf8(txt);
     txt = substr(txt,1,g_max_plot_len);
+    i = index(txt,"Recap:");
+    if (i > 100) {
+        # remove Recaps
+        txt = substr(txt,1,i-1);
+    }
     # This should be obsoleted now using tvrage api
     if (index(txt,"Remove Ad")) {
         sub(/\[[Xx]\] Remove Ad/,"",txt);

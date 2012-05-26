@@ -243,11 +243,13 @@ END { exit c }'
 }
 
 update_remote_oversight() {
-    ip="$1"
-    path="$2"
+    local ip="$1"
+    local path="$2"
     if [ -n "$ip" ] ; then
+        #expand a;b to rescan_dir_a=on&rescan_dir_b=on
+        path="rescan_dir_${path//;/=on&rescan_dir_}=on"
         set -x
-        wget -q "http://$ip:8883/oversight/oversight.cgi?view=admin&action=rescan_request&rescan_opt_@group1=NEWSCAN&rescan_dir_$path=on" -O /dev/null
+        wget -q "http://$ip:8883/oversight/oversight.cgi?view=admin&action=rescan_request&rescan_opt_@group1=NEWSCAN&$path" -O /dev/null
         set +x
     fi
 }

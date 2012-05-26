@@ -1726,14 +1726,27 @@ auto_category_from_newsgroups_inside_nzb() {
 
 relocate() {
 
-    b=`basename "$arg_download_dir" ""`
+    local b=`basename "$arg_download_dir" ""`
+    local move_it=0
 
 
     if [ -n "$arg_category" ] ; then
-        unpak_completed_dir=`prepare_target_folder "$arg_category"`
-        INFO Using user category $arg_category == $unpak_completed_dir
-        mvlog "$arg_download_dir" "$unpak_completed_dir"
-        cd "$unpak_completed_dir/$b"
+        if [ -n "$unpak_catalog_category_include" ] && echo "$arg_category" | egrep -iq "($unpak_catalog_category_include)" ; then
+            if [ -n "$unpak_catalog_category_exclude" ] && echo "$arg_category" | egrep -iq "($unpak_catalog_category_exclude)" ; then
+                INFO "category $arg_category excluding from indexing"
+            else
+                INFO "Indexing category $arg_category"
+                move_it=1
+            fi
+        else
+            INFO "Not indexing category $arg_category"
+        fi
+        if [ $move_it = 0 ] ; then
+            unpak_completed_dir=`prepare_target_folder "$arg_category"`
+            INFO Using user category $arg_category == $unpak_completed_dir
+            mvlog "$arg_download_dir" "$unpak_completed_dir"
+            cd "$unpak_completed_dir/$b"
+        fi
     else
         dest=`auto_category_from_newsgroups_inside_nzb`
         if [ -n "$dest" ] ; then 
@@ -1749,13 +1762,16 @@ relocate() {
             mvlog "$arg_download_dir" "$dest"
             cd "$dest"
         else
-            #Everything else 
-            dest=`prepare_target_folder`/"$b"
-            mvlog "$arg_download_dir" "$dest"
-            cd "$dest"
-            #run_catalog "$unpak_completed_dir/$b" RENAME STDOUT
-            run_catalog "$dest" RENAME WRITE_NFO
+            move_it=1
         fi
+    fi
+    if [ $move_it = 1 ] ; then
+        #Everything else 
+        dest=`prepare_target_folder`/"$b"
+        mvlog "$arg_download_dir" "$dest"
+        cd "$dest"
+        #run_catalog "$unpak_completed_dir/$b" RENAME STDOUT
+        run_catalog "$dest" RENAME WRITE_NFO
     fi
 }
 
@@ -2125,8 +2141,11 @@ cd "$arg_download_dir"
 
 
 main "$@" 2>&1 | tee_logfiles "$log_file"
+exit_code=$?
 
 archive "$log_file"
+
+exit $exit_code
 #
 # vi:shiftwidth=4:tabstop=4:expandtab
 #

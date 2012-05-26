@@ -181,6 +181,11 @@ unpak_nmt_pin="2468"
 # PS Yes it has a typo :)
 unpak_nmt_pin_folder_scramble_windows_share=1
 
+# Run catalog.sh for categories that match this regular expression. If no category it is always run
+unpak_catalog_category_include=".*"
+# Do not run catalog.sh for categories that match this regular expression.
+unpak_catalog_category_exclude=""
+
 #Uncomment to move content to different folders based on newsgroups
 #PIN:FOLDER will be automatically replaced with the Pin Folder location
 #defined by $unpak_nmt_pin_root and $unpak_nmt_pin

@@ -61,15 +61,18 @@ parts,i,x,bits) {
 
     if (link == "") return 0;
 
+    details["proto"] = gensub(/:.*/,"",1,link);
     if (index(link,"://[")) {
         # New style
         #link is smb://[user=pwd64enc]host/path
         #link is nfs://[user=pwd64enc]host/path
-        if (match(link,"\\[([^=]*)=([^]]*)\\]",bits)) {
+        if (match(link,"\\[([^*=]*)([*=])([^]]*)\\]",bits)) {
             details["link"]=substr(link,1,RSTART-1) substr(link,RSTART+RLENGTH);
             details["smb.user"]=bits[1];
-            bits[2] = decode64(bits[2]);
-            details["smb.passwd"]=bits[2];
+            if (bits[2] == "*") {
+                details["proto"] = "nfs-tcp";
+            }
+            details["smb.passwd"]=decode64(bits[3]);
         }
     } else {
         # Old style
@@ -136,7 +139,7 @@ path,link_details,p,usr,pwd,lnk) {
        lnk = wins_resolve(lnk);
     }
 
-    p = mount_link(path,lnk,usr,pwd) ;
+    p = mount_link(link_details["proto"],path,lnk,usr,pwd) ;
 
     return p;
 }
@@ -145,23 +148,28 @@ function is_smb_host_link(lnk) {
    return ( index(lnk,"smb:") && match(lnk,"[0-9]\\.[0-9]") == 0);
 }
 
-function mount_link(path,link,user,password,\
-remote,cmd,result,t) {
+function mount_link(proto,path,link,user,password,\
+remote,cmd,result,t,opt) {
 
     remote=link;
 
-    sub(/^(nfs:\/\/|smb:)/,"",remote);
+    sub(/^(nfs(-tcp|):\/\/|smb:)/,"",remote);
 
-    if (link ~ "nfs:") {
+    if (link ~ "^nfs") {
 
         # re-insert colon after hostname - needed for new-style links
         sub(/:?\//,":/",remote);
 
-        cmd = "mkdir -p "qa(path)" && mount -o soft,nolock,timeo=10 "qa(remote)" "qa(path);
+        opt="soft,nolock,timeo=10";
+        if (proto == "nfs-tcp" ) {
+            opt = opt",proto=tcp";
+        }
+        cmd = "mkdir -p "qa(path)" && mount -o "opt" "qa(remote)" "qa(path);
 
-    } else if (link ~ "smb:") {
+    } else if (link ~ "^smb:") {
 
-        cmd = "mkdir -p "qa(path)" && mount -t cifs -o username="user",password="password" "qa(remote)" "qa(path);
+        opt ="username="user",password="password;
+        cmd = "mkdir -p "qa(path)" && mount -t cifs -o "opt" "qa(remote)" "qa(path);
         #cifs mount on nmt doesnt like blank passwords
         sub(/ username=,/," username=x,",cmd);
 

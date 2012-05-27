@@ -57,7 +57,7 @@ delete /share/Apps/oversight/cache
 
 You can ether :
 1. Completely delete a movie from Oversight and from your Hard Drive/Storage. OR
-2. Just remove a file from the Oversight database, but keep it on your hard drive. (eg Home Video or Adult Content etc). In Oversight, this is called 'delisting'.
+2. Just remove a file from the Oversight database, but keep it on your hard drive. (eg Home Video or Adult Content etc.). In Oversight, this is called 'delisting'.
 
 Some people prefer the *DELETE* button on the remote, to just Delist or hide items , others want it to really Delete  the item.
 
@@ -85,13 +85,13 @@ A. No one really ask this much, but it might cross their mind when using the sit
 
 ===Can I use Oversight to manage my home movies or Movies not in IMDB==
 
-At present, Oversight is not really ready to manage movies that do not have IMDB ids. Oversight needs the ability to edit the database, and read XMBC nfo informantion. Both of which are on the todo list.
+At present, Oversight is not really ready to manage movies that do not have IMDB ids. Oversight needs the ability to edit the database, and read XMBC nfo information. Both of which are on the todo list.
 
 In the mean time, If you have a 200 series NMT a new firmware will be out soon that has some jukebox function that may suit your needs.
 
 ===Can I improve the fanart quality===
 
-All html pages are 720 on NMT then upscaled as necessary , but you can improve the quality by editing  (with a Unix friendly editor)
+All html pages are 720 on NMT then up-scaled as necessary , but you can improve the quality by editing  (with a Unix friendly editor)
 /share/Apps/oversight/bin/jpg_fetch_and_scale line 54
 [code]
       */_fa/*.hd.jpg) o="-width=1280 -height=720" ; q=85 ;;
@@ -108,7 +108,7 @@ The NMT will play video and pictures at 1080p but the file browser pages are alw
 ===Why does site checker always fail===
 
 First check other internet applications. If nzbget or torrent work but Media Portal stuff fails this is probably a DNS timeout bug. 
-For some combinations of router DNS lookup can take 30 seconds before suceeding.
+For some combinations of router DNS lookup can take 30 seconds before succeeding.
 In this case I would change router DNS settings so the router does not act as a DNS server.
 
 Some servers NMT doesnt like 64.59.184.13/14
@@ -120,7 +120,7 @@ DNS Advantage  156.154.70.1/156.154.71.1
 norton DNS 198.153.192.1/198.153.194.1
 Google dns 8.8.8.8/8.8.4.4
 
-If you know what you are doing you can quicky test each in turn by using the shell, using the following steps:
+If you know what you are doing you can quickly test each in turn by using the shell, using the following steps:
    # edit /etc/resolv.conf directly, 
    # rm /tmp/dns_cache
    # wget http://google.com, 
@@ -136,7 +136,7 @@ TV Shows will only show localised plots if they are present at http://thetvdb.co
  t you must first delist an item before rescanning it.
 
 ===How do I copy the Oversight, Feedtime and NZBget configuration to a new drive===
-if your drive is going to be an exact replacement and all medai paths will remain the same:
+if your drive is going to be an exact replacement and all media paths will remain the same:
 
 - backup oversight conf: /share/Apps/oversight/conf/*.cfg files. (unpak.cfg, catalog.cfg oversight.cfg)
 - [optional]backup oversight db : Db files are index.db plot.db and entire db/global folder.
@@ -171,8 +171,8 @@ In the standard NMT file browser,
 
 === Why not perl instead of awk ===
 
-This project was started on then NMT mediaplayer platform. Perl had not been compiled. It did have php, but I wanted something that was available on most embedded platforms. 
-With hindsight I should have made the effort to use a loanguage that has a good set of libraries (xml,json,http etc) , instead I had to write buggy versions of everything or launch help processes (wget,iconv) etc. 
+This project was started on the NMT mediaplayer platform. Perl had not been compiled. It did have php, but I wanted something that was available on most embedded platforms. 
+With hindsight I should have made the effort to use a language that has a good set of libraries (xml,json,http etc) , instead I had to write buggy versions of everything or launch help processes (wget,iconv) etc. 
 So it was a mistake, that I'm not in a hurry to fix.
 
 === Why a text database / why not sqllite ===
@@ -181,7 +181,7 @@ Because I used awk. - Yes, on reflection awk was a bad choice!
 
 === Why so many space optimisations that dont seem very effective ===
 
-Oversight is a dynamic Jukebox running originally on a very low powered media player running embedded linux. 100 series(ie slow) building HTML pages from a database in real time, as the user loads each page.
+Oversight is a dynamic Jukebox running originally on a very low powered media player running embedded linux. 100 series(i.e. slow) building HTML pages from a database in real time, as the user loads each page.
 
 This had to take around 200ms in total on a A100, (excluding time for NMT to render HTML to the screen which is about 0.5 secs), before usability tanked.
 
@@ -201,10 +201,10 @@ and also
 
 c) allow optional and variable length fields and easy addition of new fields (hence field markers in each line)
 
-Every character counted, hence some of the optimisations which may seen like badly re-inventing wheels, if you dont run Oversight (esp on 100 series) or are used to static jukeboxes.
+Every character counted, hence some of the optimisations which may seen like badly re-inventing wheels, if you don't run Oversight (esp on 100 series) or are used to static jukeboxes.
 
 I think I got the index.db load down to around 10-20ms for my small collection, and the main bottle neck for page loading was the NMT rendering the HTML page. For which there is no solution apart from Flash or doing my own rendering etc.
 
 Going forward, now that Oversight GUI might be obsoleted in the near future/and as the rendering platforms become faster, it would make sense to relax or remove some of less optimal optimisations, in favour of clearer format.
 
-These days most devices have plenty of RAM and CPU , and application developers dont really need to pay much attention to performance.
+These days most devices have plenty of RAM and CPU , and application developers don't really need to pay much attention to performance.

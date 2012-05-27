@@ -458,6 +458,28 @@ char *get_link_passwd(char *servlink)
     return result;
 
 }
+
+typedef enum { PROTO_UNKNOWN, PROTO_SMB , PROTO_NFS , PROTO_NFS_TCP } NETFSProtocol;
+NETFSProtocol get_link_protocol(char *servlink)
+{
+    NETFSProtocol result = PROTO_UNKNOWN;
+    if (util_starts_with(servlink,"smb:")) {
+        result = PROTO_SMB;
+    }else if (util_starts_with(servlink,"nfs-tcp:")) {
+        result = PROTO_NFS_TCP;
+    }else if (util_starts_with(servlink,"nfs:")) {
+        result = PROTO_NFS;
+        if (is_new_style_link(servlink)) {
+            char *p = strpbrk(servlink,"*=");
+            if (p && *p == '*') {
+                result = PROTO_NFS_TCP; 
+            }
+        }
+    }
+    return result;
+}
+
+
 // given servlink2=nfs://192.168.88.13:/space&smb.user=nmt&smb.passwd=;1234;
 // or  netfs_link2=nfs://[user=pwdbase64]192.168.88.13:/space
 // extract nfs://192.168.88.13:/space
@@ -492,7 +514,7 @@ char *get_pingable_link(char *servlink) {
     return result;
 }
 
-char *get_mount_command(char *link,char *path,char *user,char *passwd) {
+char *get_mount_command(NETFSProtocol proto,char *link,char *path,char *user,char *passwd) {
 
    char *cmd = NULL;
    char *log;
@@ -503,23 +525,22 @@ char *get_mount_command(char *link,char *path,char *user,char *passwd) {
 
        host +=3;
 
-       if (util_starts_with(link,"nfs://")) {
+       if (proto == PROTO_NFS_TCP || proto == PROTO_NFS ) {
+
+            char *host_end = strpbrk(host,":/");
+            char *remote_path_start = strchr(host,'/');
+            char *opt="";
+            if (proto == PROTO_NFS_TCP) {
+                opt=",proto=tcp";
+            }
 
             // iplink = nfs://host:/share
             // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
             ovs_asprintf(&cmd,
-                "mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10 \"%s\" \"%s\" 2> \"%s\"",
-                path,log,host,path,log);
+                "mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10%s \"%.*s:%s\" \"%s\" 2>> \"%s\"",
+                path,log,opt,host_end-host,host,remote_path_start,path,log);
 
-        } else if (util_starts_with(link,"nfs-tcp://")) {
-
-            // iplink = nfs://host:/share
-            // mount -t -o soft,nolock,timeo=10 host:/share /path/to/network
-            ovs_asprintf(&cmd,
-                "mkdir -p \"%s\" 2> \"%s\" && mount -o soft,nolock,timeo=10,proto=tcp \"%s\" \"%s\" 2> \"%s\"",
-                path,log,host,path,log);
-
-        } else if (util_starts_with(link,"smb://")) {
+        } else if (proto == PROTO_SMB) {
 
             // link = smb://host/share
             // mount -t cifs -o username=,password= //host/share /path/to/network
@@ -593,8 +614,9 @@ static int nmt_mount_share(char *path,char *current_mount_status)
 
             char *user = get_link_user(serv_link);
             char *passwd = get_link_passwd(serv_link);
+            NETFSProtocol proto = get_link_protocol(serv_link);
 
-            char *cmd = get_mount_command(link,path,user,passwd);
+            char *cmd = get_mount_command(proto,link,path,user,passwd);
 
             FREE(user);
             FREE(passwd);

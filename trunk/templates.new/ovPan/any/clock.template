@@ -1,22 +1,23 @@
 <style>
-		#time { 
-		font-family: Arial, Helvetica, sans-serif;
+                #time {
+                font-family: Arial, Helvetica, sans-serif;
 
-		font-size:2
-		color: [:$skin_item_title_color;];
+                font-size:2
+                color: [:$skin_item_title_color:];
 }
 </style>
 
 <script>
-    function initClock() 
+    function initClock()
     {
-        updateClock(); 
-        setInterval('updateClock();', 30000); 
+        updateClock();
+        setInterval('updateClock();', 30000);
     }
-    function updateClock() 
+    function updateClock()
     {
       var localTime = new Date();
       var TimezoneOffset = [:$skin_time_offset:];
+      var ClockHrMode = [:$skin_time_24hr:];
       var ms = localTime.getTime()+(TimezoneOffset*3600)+1800;
       var time =  new Date(ms);
       var hour = time.getHours();
@@ -24,9 +25,22 @@
 
       var curTime = "" + ((hour > 24) ? hour - 24 : hour);
       if(hour==0) curTime = "00";
+
+          if (!ClockHrMode) {
+           var suffix = " AM";
+                if (curTime >= 12) {
+                suffix = " PM";
+                curTime = curTime - 12;
+                }
+                if (curTime == 0) {
+                curTime = 12;
+                }
+      curTime += ((minute < 10) ? ":0" : ":") + minute + suffix;
+          }else{
       curTime += ((minute < 10) ? ":0" : ":") + minute;
+          }
 
       document.getElementById('time').firstChild.nodeValue = curTime;
 
-    }	
+    }
 </script>

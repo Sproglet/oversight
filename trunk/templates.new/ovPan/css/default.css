@@ -35,7 +35,7 @@ img.codec {
 }
 
 td.gc_small { font-size:10pt; }
-td.gc_fresh_small { font-size:10pt; }
+td.gc_fresh_small { font-size:4pt; }
 td.gc_watched_small { font-size:10pt; }
 
 .padded {
@@ -51,6 +51,7 @@ font.Ignore {color:#777;}
 font.Mark {color:#AAA;}
 font.Unmark {color:#DDF;}
 font.Remove_From_List {color:orange;}
+
 
 .error { color:red ; font-style:italic; font-weight:bold; }
 .delete { ; }

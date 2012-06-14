@@ -8,8 +8,8 @@
 
 img.fresh { 
  border-width: 4px;
- color:[:$skin_item_title_color:];
- border-color:[:$skin_item_title_color:];
+ color:[:$skin_new_color:];
+ border-color:[:$skin_new_color:];
 }
 
 font.watched {
@@ -20,11 +20,16 @@ font.unwatched {
  color:[:$skin_unwatched_color:];
 }
 
+font.fresh {
+ color:[:$skin_new_color:];
+ font-weight:bold;
+}
+
 td { font-size:[:FONT_SIZE:]; font-family:"arial"; color:[:$skin_item_general_info_color:]; }
 
 [:IF($@poster_mode):]
 img.poster_fresh {
- border-color:[:$skin_item_title_color:];
+ border-color:[:$skin_new_color:];
  border-width:2px;
  padding:0px;
  margin:0px;
@@ -50,7 +55,7 @@ img.poster_watched {
     }
 
     a.poster { color:white; font-weight:bold; font-style:italic; }
-    a.poster_fresh { color:[:$skin_item_title_color:]; font-weight:bold; font-style:italic; }
+    a.poster_fresh { color:[:$skin_new_color:]; font-weight:bold; font-style:italic; }
     a.poster_watched { color:[:$skin_watched_color:]; font-weight:bold; font-style:italic; }
 
     td.poster_unknown { }
@@ -174,6 +179,7 @@ input {
  color:[:$skin_item_genre_color:];
  font-weight:bold;
 }
+
 
 
 [:IF($@poster_mode):]

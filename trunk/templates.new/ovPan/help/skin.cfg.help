@@ -6,7 +6,7 @@ skin_panel_style:Choose evZap like style in detail view|0|1
 skin_time_offset:Choose Timeoffset|+11|+10|+9|+8|+7|+6|+5|+4|+3|+2|+1|0|-1|-2|-3|-4|-5|-6|-7|-8|-9|-10|-11
 skin_watched_color:The color of items that have been watched. Default value is '<font color=gray>gray</font>'
 skin_unwatched_color:The color of items that have not been watched. Default value is '<font color=FFFFFF>FFFFFF</font>'
-skin_new_color:The color of items that are new. Default value is '<font color=yellow>yellow</font>'
+skin_new_color:The color of items that are new. Default value is <font color=yellow>yellow</font>'
 skin_alt_picto:Use alternative pictos for resolution and Source.|0|1
 skin_menu_header_color:The color of the menu headers|clear|aqua|black|blue|gold|gray|green|lime|mint|navy|orange|pink|purple|red|white|yellow
 skin_menu_header_text_color:The color of text to use on the menu headers. Default value is '<font color=white>white</font>'

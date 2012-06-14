@@ -9,7 +9,7 @@
 		</style>
 		
 	</head>
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="startpos";  onload="initClock();initpage()">
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]";  onload="initClock()">
 <table class=main width=100%>
 
 	<tr valign=bottom>
@@ -143,7 +143,7 @@
 
 		                    <tr><td colspan=3 height=10px></td></tr>
 		                    <tr>
-		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?" name="startpos"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
+		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?" name="[:START_CELL:]"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
 		                        <td class=filelist align=center>
 			                        [:TV_LISTING:]
 			                        [:INCLUDE_TEMPLATE(submit_btn):]

@@ -8,7 +8,7 @@
 
 		</style>
 	</head>
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" onload="initClock();initpage()">
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" onload="initClock()">
 <table class=main width=100%>
 
 	<tr valign=bottom>
@@ -57,11 +57,11 @@
 		                    </tr>
 [:IF($@gaya):]
 							
-		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot">[:PLOT:]&nbsp;<br> <class=filelist align=left>
-									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot">[:PLOT:]&nbsp;<br> <class=filelist align=left name=[:START_CELL:]>
+[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
 [:ELSE:]
-		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot" font size=3>[:PLOT:]&nbsp;<br> <class=filelist align=left>
-									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot" font size=3>[:PLOT:]&nbsp;<br> <class=filelist align=left name=[:START_CELL:]>
+[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
     			
 [:ENDIF:]		                    			
 		                    <tr><td height=1% valign=bottom><font id=genre><br>&nbsp;Director:</font><br>

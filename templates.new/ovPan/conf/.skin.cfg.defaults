@@ -23,7 +23,3 @@ skin_show_ratings_filter=0
 skin_show_sort_filter=1
 skin_panel_type="1"
 skin_time_offset="-6"
-skin_panel_style="0"
-skin_show_link="1"
-skin_new_color="yellow"
-skin_alt_picto="1"

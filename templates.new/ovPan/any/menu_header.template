@@ -4,7 +4,7 @@
 [:IF($?resizeon):]
         <td width="6%">[:RESIZE_CONTROLS:]</td>
 [:ELSE:]
-        <td width="15%">&nbsp;<IMG height=25px width=25px  SRC="[:IMAGE_URL(icons/icon_clock.png):]"><span id='time'>&nbsp;</span></td>
+        <td width="20%"><IMG height=25px width=25px  SRC="[:IMAGE_URL(icons/icon_clock.png):]"><span id='time'>&nbsp;</span></td>
 
 [:ENDIF:]
 [:IF($skin_show_watched_filter):]

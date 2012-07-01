@@ -235,7 +235,8 @@ TRACE;
 
                     char *href_name = ep;
                     if (item->watched == 0 && first_unwatched == UNWATCHED_UNSET) {
-                        href_name="[:START_CELL:]";
+//                      href_name="[:START_CELL:]"; //This just outputs as is it doesn't convert to a name.
+						href_name="selectedCell"; // at the moment selectedCell appears to be the defaulting name everywhere so hardcoded.
                         first_unwatched=i;
                     }
 

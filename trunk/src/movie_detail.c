@@ -92,7 +92,8 @@ char *movie_listing(DbItem *rowid)
         char *href_attr;
         ovs_asprintf(&href_attr,"onkeyleftset=up %s",NVL(mouse));
         add_movie_info_text(js,0,rowid->file);
-        char *vod = vod_link(rowid,label,"",rowid->db->source,rowid->file,"[:START_CELL:]",href_attr,style);
+//      char *vod = vod_link(rowid,label,"",rowid->db->source,rowid->file,"[:START_CELL:]",href_attr,style); // As with tv_detail this is not exporting out properly ab because guya does not like to
+        char *vod = vod_link(rowid,label,"",rowid->db->source,rowid->file,"",href_attr,style); //  select a link that goes over two links the selected name is now on the play button.
         add_movie_part_row(output,0,vod);
 
         FREE(label);
@@ -137,9 +138,9 @@ HTML_LOG(0,"mouse[%s]",mouse);
         char *play_tvid;
         if (is_dvd(rowid->file)) {
             // DVDs are not added to the play list. So the play button just plays the dvd directly
-            play_tvid = vod_link(rowid,play_button,"",rowid->db->source,rowid->file,"1","",style);
+            play_tvid = vod_link(rowid,play_button,"",rowid->db->source,rowid->file,"selectedCell","",style); // selectedCell for onloadSet
         } else {
-            play_tvid = get_play_tvid(play_button);
+            play_tvid = get_play_tvid(play_button); // selectedCell has been hard coded into this function.
         }
 
         char *vod_list;

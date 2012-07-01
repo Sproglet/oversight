@@ -63,7 +63,7 @@ int is_drilldown_of(char *param_name,char *root_name) ;
 char *get_play_tvid(char *text) {
     char *result;
     ovs_asprintf(&result,
-        "<a href=\"file://" NMT_PLAYLIST "?start_url=\" vod=playlist tvid=\"_PLAY\" >%s</a>",text);
+        "<a href=\"file://" NMT_PLAYLIST "?start_url=\" vod=playlist name=\"selectedCell\" tvid=\"_PLAY\" >%s</a>",text);
     return result;
 }
 

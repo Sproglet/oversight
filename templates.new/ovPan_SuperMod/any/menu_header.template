@@ -1,0 +1,61 @@
+<table class=header width=100% background="[:IMAGE_URL($skin_menu_header_color.menu.png):]" >
+    <tr>
+
+[:IF($?resizeon):]
+        <td width="6%">[:RESIZE_CONTROLS:]</td>
+[:ELSE:]
+        <td width="20%">&nbsp;<IMG height=25px width=25px  SRC="[:IMAGE_URL(icons/icon_clock.png):]"><span id='time'>&nbsp;</span></td>
+
+[:ENDIF:]
+[:IF($skin_show_watched_filter):]
+        <td width=1% align=center>[:WATCHED_SELECT:]</td>
+[:ENDIF:]
+[:IF($skin_show_type_filter):]
+        <td width=1% align=center>[:MEDIA_SELECT:]</td>
+[:ENDIF:]
+[:IF($skin_show_title_filter):]
+        <td width=1% align=center>[:TITLE_SELECT:]</td>
+[:ENDIF:]
+[:IF($skin_show_genre_filter):]
+        <td width=1% align=center>[:GENRE_SELECT:]</td>
+[:ENDIF:]
+[:IF($skin_show_ratings_filter):]
+        <td width=1% align=center>[:RATING_SELECT(Any Rating/,0-4/0-4.9,5+/5-10,7+/7-10,9+/9-10):]</td>
+[:ENDIF:]
+[:IF($skin_show_locked_filter):]
+    <td width=1% align=center>[:LOCKED_SELECT:]</td>
+[:ENDIF:]
+[:IF($@sd):]
+[:ELSE:]
+        <td align=right width="45%">
+            <span class=menubarTitle>
+            [:IF($skin_show_nmt_name):]
+				<b>OVERSIGHT</b>&nbsp;-&nbsp;[:HOSTNAME:]   
+			[:ENDIF:]                     	
+                [:IF($ovs_wan_admin+$ovs_wan_delete+$ovs_wan_delist,Wan Access):]
+					[&nbsp;(:STATUS:)]
+				[:ENDIF:]
+		[:IF($skin_show_page_number):]
+			&nbsp;&nbsp;[:PAGE:]/[:PAGE_MAX:]
+		[:ENDIF:]
+		[:IF($skin_show_item_count):]
+			([:EVAL($@selection_count):])
+		[:ENDIF:]
+			</span>
+			
+        </td>
+[:ENDIF:]
+[:IF($skin_show_menu_footer_as_bar):]
+[:ELSE:]
+	[:IF($skin_show_sort_filter):]
+        <td align=right valign=middle class=sortLabel>
+            &nbsp;Sort:&nbsp;
+        </td>
+        <td align=left>
+            [:SORT_TYPE_TOGGLE:]
+        </td>
+	[:ENDIF:]
+[:ENDIF:]
+        <td align=right width="8%">[:SETUP_BUTTON:]&nbsp;</td>
+    </tr>
+</table>

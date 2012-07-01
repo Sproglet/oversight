@@ -3,12 +3,11 @@
     <head>
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
-		[:INCLUDE_TEMPLATE(clock):]	
         <style type="text/css">
 
 		</style>
 	</head>
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" onload="initClock()">
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]">
 <table class=main width=100%>
 
 	<tr valign=bottom>
@@ -58,10 +57,10 @@
 [:IF($@gaya):]
 							
 		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot">[:PLOT:]&nbsp;<br> <class=filelist align=left>
-[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
 [:ELSE:]
 		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot" font size=3>[:PLOT:]&nbsp;<br> <class=filelist align=left>
-[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
     			
 [:ENDIF:]		                    			
 		                    <tr><td height=1% valign=bottom><font id=genre><br>&nbsp;Director:</font><br>

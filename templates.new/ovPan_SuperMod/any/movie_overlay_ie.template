@@ -5,10 +5,12 @@
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
 		[:INCLUDE_TEMPLATE(clock):]	
         <style type="text/css">
-
+            [:INCLUDE_TEMPLATE(tv_css):]
+		    [:INCLUDE_TEMPLATE(overlay_ie):]
 		</style>
+		
 	</head>
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" onload="initClock()">
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset=[:START_CELL:];  onload="initClock()">
 <table class=main width=100%>
 
 	<tr valign=bottom>
@@ -22,7 +24,6 @@
 
 				</td></tr>
 			</table>
-
 			[:IF($skin_panel_style):]
 			<table width=1096px background="[:IMAGE_URL(panel,$ovs_transparency,.png):]">
 			[:ELSEIF($ovs_fade):]
@@ -34,20 +35,25 @@
 		            <td class=main width=250px align=right >
 		            	<table width=250px>
 							<tr>
-								<td  height=20px align=center valign=top>
-
+								<td  height=20px align=left valign=top>
+								
 								</td>
 							<tr>
 
 								<td align=center>
-									[:POSTER:]<br><br>
+								<div class="imageWrapper">
+									[:POSTER:]
+									<img width="220" class="overlayBox" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/boxes/Box[:$%VIDEOSOURCE:].png"/>
+									<img width="98" class="overlayStatus" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/status/watched[:$%WATCHED:].png"/>
+									<img width="73" class="overlayTop250" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/status/TOP250[:$%TOP250:].png"/>
+								</div>
 								</td>
 							</tr>
 		
 		            	</table>
 		            </td>
-		            <td width=566px class=main>
-		                <table width=566px valign=top>
+		            <td class=main>
+		                <table valign=top>
 							<tr><td colspan=4 height=20px></td></tr>
 							
 		                    <tr><td colspan=4 class=title>[:TITLE:]</td></tr>	
@@ -58,10 +64,10 @@
 [:IF($@gaya):]
 							
 		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot">[:PLOT:]&nbsp;<br> <class=filelist align=left>
-[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
 [:ELSE:]
 		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot" font size=3>[:PLOT:]&nbsp;<br> <class=filelist align=left>
-[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+									[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
     			
 [:ENDIF:]		                    			
 		                    <tr><td height=1% valign=bottom><font id=genre><br>&nbsp;Director:</font><br>

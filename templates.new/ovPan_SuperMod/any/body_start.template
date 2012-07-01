@@ -1,0 +1,11 @@
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]" onload="initClock()">
+<table class=main width=100%>
+<tr><td align=left>[:INCLUDE_TEMPLATE(buttons):]</td></tr>
+
+[:IF($ovs_display_fanart):]
+<tr valign=bottom>
+[:ELSE:]
+<table class=main width=100%>
+<tr valign=middle>
+[:ENDIF:]
+<td align="center" border=0 height=[:BODY_HEIGHT:]>

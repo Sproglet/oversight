@@ -1,0 +1,30 @@
+<style type="text/css">
+.imageWrapper {
+	position: relative;
+}
+
+.overlayTVBox {
+	position: absolute;
+	top: -10;
+	left: +10;
+}
+
+.overlayBox {
+	position: absolute;
+	top: -10;
+	left: +10;
+}
+
+.overlayStatus {
+	position: absolute;
+	top: +19;
+	left: +23;
+}
+
+.overlayTop250 {
+	position: absolute;
+	top: +228;
+	left: +153;
+}
+</style>
+

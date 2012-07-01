@@ -1,0 +1,10 @@
+<!-- Default Movie Template  $Id:$ -->
+[:IF($skin_movie_overlay):]
+	[:IF($@gaya):]
+		[:INCLUDE_TEMPLATE(movie_gaya):]
+	[:ELSE:]
+		[:INCLUDE_TEMPLATE(movie_ie):]
+	[:ENDIF:]
+[:ELSE:]
+	[:INCLUDE_TEMPLATE(movie_classic):]
+[:ENDIF:]

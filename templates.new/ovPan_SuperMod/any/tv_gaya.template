@@ -6,10 +6,12 @@
 		[:INCLUDE_TEMPLATE(clock):]	
         <style type="text/css">
             [:INCLUDE_TEMPLATE(tv_css):]
+            [:INCLUDE_TEMPLATE(overlay_gaya):]			
 		</style>
 		
 	</head>
 <body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]";  onload="initClock()">
+
 <table class=main width=100%>
 
 	<tr valign=bottom>
@@ -23,13 +25,8 @@
 
 				</td></tr>
 			</table>
-			[:IF($skin_panel_style):]
-			<table width=1096px background="[:IMAGE_URL(panel,$ovs_transparency,.png):]">
-			[:ELSEIF($ovs_fade):]
-			<table width=1096px background="[:IMAGE_URL(transfade,$ovs_transparency,.png):]">
-			[:ELSE:]
-    		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
-			[:ENDIF:]
+
+			<table width=1096px>
 		        <tr valign="top" class=main>
 		            <td class=main width=250px align=right >
 		            	<table width=250px>
@@ -40,7 +37,19 @@
 							<tr>
 
 								<td align=center>
+								<div class="imageWrapper">
+									[:IF($skin_panel_style):]
+									<img width="1096" class="overlayPanel" height="326" src="[:IMAGE_URL(panel,$ovs_transparency,.png):]">
+									[:ELSEIF($ovs_fade):]
+									<img width="1096" height="326" class="overlayPanel"   src="[:IMAGE_URL(transfade,$ovs_transparency,.png):]">
+									[:ELSE:]
+									<img width="1096" height="326" class="overlayPanel"  src="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
+									[:ENDIF:]
+									<div class="overlayCover">
 									[:POSTER:]
+									</div>
+									<img width="220" class="overlayBox" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/boxes/[:VIDEOQUALITY:].png"/>
+								</div>
 								</td>
 							</tr>
 		
@@ -142,8 +151,8 @@
 		                <table width=100% >
 
 		                    <tr><td colspan=3 height=10px></td></tr>
-		                    <tr>
-		                    	<td width=5px valign=top>&nbsp;</td>
+		                    <tr height=42px>
+		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
 		                        <td class=filelist align=center>
 			                        [:TV_LISTING:]
 			                        [:INCLUDE_TEMPLATE(submit_btn):]

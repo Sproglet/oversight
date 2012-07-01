@@ -1,0 +1,6 @@
+<table class=footer width=100%>
+    <tr valign=top>
+        <td width=10%>[:LEFT_BUTTON:]</td>
+        <td width=10% align=right>[:RIGHT_BUTTON:]</td>
+    </tr>
+</table>

@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <title>Oversight [:VERSION:] ([:HOSTNAME:])</title>
+		[:INCLUDE_TEMPLATE(info):]
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
+		[:INCLUDE_TEMPLATE(clock):]
+    </head>
+    <body [onloadset=:START_CELL:]" onload="initClock()" focuscolor=#FFCF2F focustext=black class=main_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
+        [:FORM_START:]
+		[:IF($skin_activate_slickmod):]
+		[:INCLUDE_TEMPLATE(menu_header_slick):]
+		[:ELSE:]
+		[:INCLUDE_TEMPLATE(menu_header):]
+		[:ENDIF:]
+            <center>
+                 <div>
+                      [:GRID:]
+                 <div>
+             </center>
+		[:IF($skin_activate_slickmod):]
+		[:INCLUDE_TEMPLATE(menu_footer_slick):]
+		[:ELSE:]
+		[:INCLUDE_TEMPLATE(menu_footer):]
+		[:ENDIF:]
+		[:FORM_END:]
+		[:INCLUDE_TEMPLATE(menu_closing_scripts):]
+		
+
+</body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->

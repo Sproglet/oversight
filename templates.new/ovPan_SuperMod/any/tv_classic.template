@@ -3,13 +3,12 @@
     <head>
         <title>Oversight ([:HOSTNAME:]) - [:TITLE:][ Season :SEASON:]</title>
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
-		[:INCLUDE_TEMPLATE(clock):]	
         <style type="text/css">
             [:INCLUDE_TEMPLATE(tv_css):]
 		</style>
 		
 	</head>
-<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]";  onload="initClock()">
+<body focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] background="[:FANART_URL($skin_background_image):]" onloadset="[:START_CELL:]";>
 <table class=main width=100%>
 
 	<tr valign=bottom>
@@ -143,7 +142,7 @@
 
 		                    <tr><td colspan=3 height=10px></td></tr>
 		                    <tr>
-		                    	<td width=5px valign=top>&nbsp;</td>
+		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
 		                        <td class=filelist align=center>
 			                        [:TV_LISTING:]
 			                        [:INCLUDE_TEMPLATE(submit_btn):]

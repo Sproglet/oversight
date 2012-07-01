@@ -1,0 +1,10 @@
+<!-- Default Tv Template  $Id:$ -->
+[:IF($skin_tv_overlay):]
+	[:IF($@gaya):]
+		[:INCLUDE_TEMPLATE(tv_gaya):]
+	[:ELSE:]
+		[:INCLUDE_TEMPLATE(tv_ie):]
+	[:ENDIF:]
+[:ELSE:]
+	[:INCLUDE_TEMPLATE(tv_classic):]
+[:ENDIF:]

@@ -1,0 +1,35 @@
+			[:IF(1-$skin_show_menu_footer_as_bar):]
+			<table class=footer width="100%">			
+			[:ELSE:]
+			<table class=footer width="100%" background="[:IMAGE_URL(trans,$ovs_transparency,.png):]">
+			[:ENDIF:]
+	<tr>
+        <td align=left>&nbsp;[:LEFT_BUTTON:]&nbsp;</td>
+[:IF($skin_show_menu_footer_as_bar):]
+	[:IF($skin_show_sort_filter):]
+        <td align=left valign=middle class=sortLabel>
+            &nbsp;Sort:&nbsp;
+        </td>
+        <td align=left>
+            [:SORT_TYPE_TOGGLE:]
+        </td>
+	[:ENDIF:]
+[:ENDIF:]
+        <td height=40px width="99%" align=center ><font class="fresh">
+            [:INCLUDE_TEMPLATE(menu_titles):]</font>
+        </td>
+		[<td align=center>:BACK_BUTTON:</td>]
+		[:IF($@gaya):]
+		[:ELSE:]
+		    [<td align=center>&nbsp;:MARK_BUTTON:&nbsp;</td>]
+		    [<td align=center>&nbsp;:LOCK_BUTTON:&nbsp;</td>]
+		    [<td align=center>&nbsp;:DELETE_BUTTON:&nbsp;</td>]
+		[:ENDIF:]
+		[<td align=center class=cancel width=30%>:SELECT_CANCEL_SUBMIT:</td>]
+		[<td align=center width=30%>:SELECT_MARK_SUBMIT:</td>]
+		[<td align=center class=delist width=30%>:SELECT_DELIST_SUBMIT:</td>]
+		[<td align=center class=delist width=30%>:SELECT_LOCK_SUBMIT:</td>]
+		[<td align=center class=delete width=30%>:SELECT_DELETE_SUBMIT:</td>]
+        <td align=right>&nbsp;[:RIGHT_BUTTON:]&nbsp;</td>
+    </tr>
+</table>

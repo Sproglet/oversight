@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <title>Oversight ([:HOSTNAME:]) - [:PERSON_NAME:][ (:PERSON_ROLE:)]</title>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
+    </head>
+    <body [onloadset=:START_CELL:] focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] class=menu_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
+[:FORM_START:]
+            <table class=header width=100% background="[:IMAGE_URL($skin_menu_header_color.menu.png):]" >
+                <tr>
+                    [:INCLUDE_TEMPLATE(tvboxset_buttons):]
+                    <td width=80% align=right>
+                    	<span class=menubarTitle><b>PROFILE -  [:ACTOR_NAME:][ (:PERSON_ROLE:)]</b>&nbsp;&nbsp;
+					[:IF($skin_show_page_number):]
+						[:PAGE:]/[:PAGE_MAX:]
+					[:ENDIF:]
+					[:IF($skin_show_item_count):]
+						([:EVAL($@selection_count):])
+					[:ENDIF:]
+						</span>
+                    </td>
+					[:INCLUDE_TEMPLATE(right_button):]
+				</tr>
+            </table>
+            <center>
+            	<br/>
+            	<div id=gridWrapper>
+[:IF($@sd):]
+					[:GRID:]
+[:ELSE:]
+            		[:GRID(rows=>1):]
+[:ENDIF:]
+            	</div>
+            </center>
+[:IF($@sd):]
+		[:INCLUDE_TEMPLATE(box_footer):]
+		<div class=titleLayer>
+			[:INCLUDE_TEMPLATE(box_titles):]
+		</div>
+[:ELSE:]
+		<table class=infoTable width=100%>
+			<tr>
+				<td width=100% colspan=3 height=15px>&nbsp;</td>
+			</tr>		
+			<tr>
+				<td width=100% valign=top><span class=menuPageText></span></td>
+				<td width=1% rowspan=2>&nbsp;</td>
+				<td rowspan=2 align=right>[:PERSON_IMAGE(height=280px):]</td>
+			</tr>
+			<tr>
+				<td width=100% valign=bottom>
+[:IF($skin_show_menu_footer_as_bar):]
+					<table class=footer width="100%" background="[:IMAGE_URL($skin_menu_header_color.menu.png):]">
+[:ELSE:]
+					<table class=footer width="100%">
+[:ENDIF:]
+						<tr>
+							<td height=40px>
+								<span class=boxtitle id="menutitle">&nbsp;</span>
+								<span class=boxtitle id="unwatchedtotal">&nbsp;</span>
+								<span class=boxtitle id="watchedtotal">&nbsp;</span>
+							</td>
+							<td align=right>
+								[:LEFT_BUTTON:]&nbsp;
+								[:RIGHT_BUTTON:]&nbsp;
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		[:FORM_END:]
+[:ENDIF:]
+		[:INCLUDE_TEMPLATE(box_closing_scripts):]
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->
+

@@ -1,0 +1,28 @@
+<center>
+[:IF(1-$skin_show_menu_footer_as_bar):]
+<table class=header width="100%">			
+	[:ELSE:]	
+	<table class=header align=bottom width=1096px valign=left background="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/toolbar.png">
+			[:ENDIF:]
+
+
+	 <tr>   
+		<td align=center width=1%>		
+<td width=0% align=center><a href="oversight.cgi?_tf=MT" tvid="SETUP"><IMG SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/homeall.png"></td> 	
+<td width=1% align=center><a href="oversight.cgi?_tf=M" tvid="SETUP"><IMG SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/homemov.png"></td>	
+<td width=0% align=center><span class=menubarTitle><a href="oversight.cgi?_tf=T" tvid="SETUP"><IMG SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/hometv.png"></td>
+<td width=0% align=center><a href="oversight.cgi?_wf=0" tvid="SETUP"><IMG SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/homeunwatched.png"></td>
+<td width=1% align=center><a href="oversight.cgi?_wf=1" tvid="SETUP"><IMG SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/homewatched.png"></td>
+<td width=0% align=center><a href="oversight.cgi?p=T&amp;view=admin&amp;action=ask" tvid="SETUP"><IMG SRC="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/homebar/[:$skin_homebar_style:]/homesetup.png"></a>  
+		 		
+	</tr>		
+    </tr>
+[:IF($@sd):]
+        <td colspan=1 align=center >
+[:ELSE:]
+        <td colspan=5 align=center >
+[:ENDIF:]
+        </td>
+        </td>
+    </tr>
+</table>

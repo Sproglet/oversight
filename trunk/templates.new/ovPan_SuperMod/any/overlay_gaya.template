@@ -1,0 +1,34 @@
+<style type="text/css">
+.imageWrapper {
+	position: absolute;
+}
+.overlayCover {
+	position: absolute;
+	top: 280;
+	left: 30;
+}
+
+.overlayPanel {
+	position: absolute;
+	top: 260;
+	left: +10;
+}
+.overlayBox {
+	position: relative;
+	top: 270;
+	left: 20;
+}
+
+.overlayStatus {
+	position: relative;
+	top: 299;
+	left: 30;
+}
+
+.overlayTop250 {
+	position: relative;
+	top: 508;
+	left: 160;
+}
+</style>
+

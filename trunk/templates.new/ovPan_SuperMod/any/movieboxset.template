@@ -1,0 +1,114 @@
+<html>
+    <head>
+        <title>Oversight ([:HOSTNAME:]) - [:TITLE:]</title>
+		[:INCLUDE_TEMPLATE(styles_and_meta):]
+    </head>
+    <body [onloadset=:START_CELL:] focuscolor=[:$skin_filter_text_color:] focustext=[:$skin_filter_background_color:] class=menu_background background="[:FANART_URL($skin_background_image):]">
+[:FORM_START:]
+<table class=main width=100%>
+
+	<tr valign=bottom>
+
+		<td align="center" border=0 height=[:BODY_HEIGHT:]>
+            <table class=header>
+                <tr>
+
+                    <td width=100% align=center valign=top>
+                       	<div id=gridWrapper>
+[:IF($@sd):]
+						[:GRID:]<br><br>
+[:ELSE:]
+						[:GRID(rows=>1):]<br><br>
+[:ENDIF:]
+						</div>
+                    </td>
+					
+                </tr>
+            </table>
+            
+				
+
+
+
+[:IF($@sd):]
+        [:INCLUDE_TEMPLATE(box_footer):]
+		<div class=titleLayer>
+			[:INCLUDE_TEMPLATE(box_titles):]
+		</div>
+[:ELSE:]
+<center>
+			[:IF($skin_panel_style):]
+			<table width=1096px background="[:IMAGE_URL(panelbox,$ovs_transparency,.png):]">
+			[:ELSE:]
+    		<table width=1096px background="[:IMAGE_URL(trans,$ovs_transparency,.png):]" >
+			[:ENDIF:]
+			<tr>
+				<td width=80% height=5px>&nbsp;</td>
+				<td width=20% rowspan=2 valign=top align=center><font id=genre><br>[:CERTIFICATE_IMAGE:]</font><br><br><IMG height=25px  SRC="[:IMAGE_URL(icons/icon_imdb.png):]"><font id=genre>[:RATING_STARS(5):]<br><br>
+	
+				
+				</td>
+			</tr>		
+			<tr>
+				<td width=80% valign=top>
+
+					<table>
+						<tr height=40px>
+							<td width=20px></td>							
+							<td width=760px align=left>
+								<span id="menutitle">&nbsp;</span>
+								<span class=boxtitle id="unwatchedtotal">&nbsp;</span>
+								<span class=boxtitle id="watchedtotal">&nbsp;</span>	
+							<td width=20px></td>
+						</tr>
+							
+						</tr>
+						<tr height=4px>
+							<td width=20px></td>
+							<td width=760px>
+								[:PLOT:]						
+							</td>
+							<td width=20px></td>
+						</tr>
+					</table>
+				</td>
+
+
+			</tr>
+			<tr>
+				<td colspan=2 width=100% valign=bottom>
+
+					<table class=footer width="100%">
+
+						<tr>
+							<td height=40px>
+								<span class=boxtitle id="menutitle">&nbsp;</span>
+								<span class=boxtitle id="unwatchedtotal">&nbsp;</span>
+								<span class=boxtitle id="watchedtotal">&nbsp;</span>
+							</td>
+							<td align=right>
+							    [:INCLUDE_TEMPLATE(buttons):]
+								[:LEFT_BUTTON:]&nbsp;
+								[:RIGHT_BUTTON:]&nbsp;
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+
+	</td>
+	</tr>
+	<tr>
+		<td height=20px></td>
+	</tr>
+</table>
+		[:FORM_END:]
+[:ENDIF:]
+		[:INCLUDE_TEMPLATE(box_closing_scripts):]
+    </body>
+</html>
+<!--
+vi:ts=4:sw=4:et:syntax=html
+-->
+

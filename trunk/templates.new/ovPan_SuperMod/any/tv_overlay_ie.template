@@ -6,6 +6,7 @@
 		[:INCLUDE_TEMPLATE(clock):]	
         <style type="text/css">
             [:INCLUDE_TEMPLATE(tv_css):]
+		    [:INCLUDE_TEMPLATE(overlay_ie):]
 		</style>
 		
 	</head>
@@ -40,7 +41,10 @@
 							<tr>
 
 								<td align=center>
+								<div class="imageWrapper">
 									[:POSTER:]
+									<img width="220" class="overlayBox" src="[:URL_BASE:]/templates/[:$ovs_skin_name:]/images/boxes/[:VIDEOQUALITY:].png"/>
+								</div>
 								</td>
 							</tr>
 		
@@ -143,7 +147,7 @@
 
 		                    <tr><td colspan=3 height=10px></td></tr>
 		                    <tr>
-		                    	<td width=5px valign=top>&nbsp;</td>
+		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
 		                        <td class=filelist align=center>
 			                        [:TV_LISTING:]
 			                        [:INCLUDE_TEMPLATE(submit_btn):]

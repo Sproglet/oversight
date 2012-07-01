@@ -1,0 +1,1 @@
+If you're going to change any of normal sized boxes (not the thumbnails), you might have to change the the "top" and "left" values of the Box_Overlay__LowList_NMT_and_PC__TV_PC and Box_Overlay__TV_NMT classes in the html/exportdetails_item_popcorn.css file.

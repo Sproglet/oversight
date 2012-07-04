@@ -142,7 +142,7 @@
 
 		                    <tr><td colspan=3 height=10px></td></tr>
 		                    <tr>
-		                    	<td width=5px valign=top><a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a></td>
+		                    	<td width=5px valign=top><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></td>
 		                        <td class=filelist align=center>
 			                        [:TV_LISTING:]
 			                        [:INCLUDE_TEMPLATE(submit_btn):]

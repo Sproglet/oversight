@@ -68,7 +68,7 @@
 							
 		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot">[:PLOT:]&nbsp;<br> <class=filelist align=left>
 
-<a href="http://[:$skin_ip:]:8883/oversight/oversight.cgi?"><IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]"></a>[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
+<IMG height=1px width=1px  SRC="[:IMAGE_URL(empty.png):]">[:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		
 [:ELSE:]
 		                    <tr><td colspan=4 height=120px valign=top><span class="plot" id="plot" font size=3>[:PLOT:]&nbsp;<br> <class=filelist align=left>
 [:MOVIE_LISTING:]<!--keep nbsp for js--></span></td></tr>		

@@ -5,7 +5,7 @@
 		[:INCLUDE_TEMPLATE(styles_and_meta):]
 		[:INCLUDE_TEMPLATE(clock):]
     </head>
-    <body [onloadset=:START_CELL:]" onload="initClock()" focuscolor=#FFCF2F focustext=black class=main_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
+    <body onloadset="[:START_CELL:]" onload="initClock()" focuscolor=#FFCF2F focustext=black class=main_background background="[:BACKGROUND_IMAGE($skin_background_image):]">
         [:FORM_START:]
 		[:IF($skin_activate_slickmod):]
 		[:INCLUDE_TEMPLATE(menu_header_slick):]

@@ -670,7 +670,7 @@ int yamj_video_xml(char *request,DbItem *item,int details,DbItem **all_items,int
     if (p && p[2] == ':' && util_strreg(p,"^[a-z][a-z]:",0)) {
         p += 3;
     }
-    fprintf(xmlout,"\t<plot>%s</plot>\n",p);
+    fprintf(xmlout,"\t<plot>%s </plot>\n",p);
     FREE(plot);
 
     if (item->runtime) {

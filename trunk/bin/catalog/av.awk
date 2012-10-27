@@ -13,6 +13,25 @@ f,i,tag,src) {
     if (hash_size(g_sources)  == 0 ) {
         g_source_num = split(g_settings["catalog_source_keywords"],g_sources,",");
     }
+	
+	# place in a guess value incase of no matching.
+	if (f ~ /mkv$/) {
+            # guess based on file size. Assume over 3GB = BlueRay and under = Web 
+            dim = 2;
+            if (minfo[SIZEMB]  > 3000 ) {
+                src = "BluRay";
+            } else  {
+                src = "Web";
+            } 
+        } else if (f ~ /iso$/) {
+            # this could be bd iso or sd iso. Guess sd iso - assume > 4.3GB is bd?
+            if (minfo[SIZEMB]  > 4300 ) {
+                src = "BluRay";
+            }  else {
+                src = "DVDRip";
+            }
+		}
+	
     for(i = 1 ; i<= g_source_num ; i++ ) { 
         tag ="\\<"tolower(g_sources[i])"\\>";
         if (f ~ tag ) {

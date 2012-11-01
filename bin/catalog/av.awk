@@ -21,16 +21,26 @@ f,i,tag,src) {
             # guess based on file size. Assume over 3GB = BlueRay and under = Web 
             if (minfo[SIZEMB]  > 3000 ) {
                 src = "BluRay";
-	} else  {
+			} else  {
                 src = "Web";
             } 
 	} else if (f ~ /iso$/) {
-            # this could be bd iso or sd iso. Guess sd iso - assume > 4.3GB is bd?
-            if (minfo[SIZEMB]  > 4300 ) {
+            # this could be bd iso or sd iso. Assume > 9GB is bd?
+            if (minfo[SIZEMB]  > 9000 ) {
                 src = "BluRay";
             }  else {
                 src = "DVDRip";
             }
+	} else if (f ~ /mp4$/) {
+			# As MKV
+            # guess based on file size. Assume over 3GB = BlueRay and under = Web 
+            if (minfo[SIZEMB]  > 3000 ) {
+                src = "BluRay";
+	} else  {
+                src = "Web";
+            } 
+	} else if (f ~ /m2ts$/) {
+			src = "BluRay";
 	}
 	
     for(i = 1 ; i<= g_source_num ; i++ ) { 

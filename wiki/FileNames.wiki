@@ -59,8 +59,8 @@ After creating the nfo file 'De-list' the item and then rescan.
 
 =Images=
 
-The scanning process downloads its own posters and fanrt to an internal folder, however you can use you own posters if you put them in the same folder as the media.
-You do not need to rescan in this case. Oversight finds the new posters as it is drawing each page.
+The scanning process downloads its own posters and fanrt to an internal folder, however you can use you own posters if you put them in the same folder as the media, and then re-scan.
+
 
 ==Posters==
 

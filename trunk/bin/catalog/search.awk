@@ -1,6 +1,5 @@
 # Functions for searching and scraping
 
-
 # Google is MILES ahead of yahoo and bing for the kind of searching oversight is doing.
 # its a shame that it will blacklist repeat searches very quickly, so we use the 
 # other engines in round-robin. If they disagree then google cast the deciding vote.
@@ -147,7 +146,7 @@ t,t2,y,quoted) {
 #
 # normedt = normalized titles. eg The Movie (2009) = the.movie.2009 etc.
 function web_search_first(qualifier,freqOrFirst,mode,helptxt,regex,\
-u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num,bing_desktop_order,bing_mobile_order) {
+u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,target,num) {
 
     g_fetch["force_awk"] = 1;
     if (mode == "imdbid") {
@@ -187,11 +186,8 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
         u[++num] = g_search_google qualifier; target[num]=2;
     } else {
         # Bing seems a bit better still -
-        u[++num] = g_search_bing_mobile qualifier; target[num]=1;
-        bing_mobile_order = num;
+        u[++num] = g_search_bing_desktop qualifier; target[num]=1;
         u[++num] = g_search_google qualifier; target[num]=2;
-        u[++num] = g_search_bing_desktop qualifier; target[num]=2;
-        bing_desktop_order = num;
 
         #u[++num] = g_search_bing_desktop qualifier; target[num]=2;
         #yahoo gives too many false positives even with Bing technology. eg. http://search.yahoo.com/search?ei=UTF-8&eo=UTF-8&p=Family+Guy+0914+imdb - give sopranos
@@ -220,11 +216,6 @@ u,ret,i,matches,freq,freq1,best1,freq_target,bestmatches,match_src,round_robin,t
 
             scrapeMatches(u[i],freqOrFirst,helptxt,regex,matches,match_src);
             dump(0,"websearch-matches",matches);
-
-            #if bing mobile gave results then do not use bing desktop
-            if (i == bing_mobile_order && hash_size(matches)) {
-               delete u[bing_desktop_order];
-            }
 
             if (bestScores(matches,bestmatches,0) >= target[i] ) {
                dump(0,"websearch-best",bestmatches);

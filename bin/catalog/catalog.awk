@@ -333,10 +333,9 @@ END{
     # with scoring each keyword.
     g_search_yahoo = "http://search.yahoo.com/search?ei=UTF-8;eo=UTF-8;p=";
 
-    g_search_bing_mobile = "http://m.bing.com/search/search.aspx?A=webresults;D=Web;q=";
     g_search_bing_desktop = "http://www.bing.com/search?q=";
     g_search_bing_api = "http://api.search.live.net/json.aspx?";
-    g_search_bing = g_search_bing_mobile;
+    g_search_bing = g_search_bing_desktop;
 
     g_search_bing2 = "http://www.bing.com/search?q=subtitles+";
     # Google must have &q= not ;q=
@@ -351,9 +350,8 @@ END{
     g_themoviedb_api_url = "http://api.themoviedb.org/3";
 
     # Following search engines are used in round robi,=n
-    g_search_engine[0]=g_search_bing_mobile;
+    g_search_engine[0]=g_search_bing_desktop;
     g_search_engine[1]=g_search_yahoo;
-    g_search_engine[2]=g_search_bing_desktop;
 
     #g_search_engine[2]=g_search_ask; results too similar to google giving false +ves.
     g_search_engine_count=hash_size(g_search_engine);

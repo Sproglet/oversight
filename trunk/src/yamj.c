@@ -29,6 +29,7 @@
 #include "oversight.h"
 #include "hashtable_loop.h"
 #include "network.h"
+#include "regexreplace.h"
 #include "mount.h"
 #include "abet.h"
 
@@ -520,7 +521,9 @@ char *base_name(DbItem *item,ViewMode *view)
 //        }
     } else if (view == VIEW_TVBOXSET) {
         // TODO quotes
-        ovs_asprintf(&result, YAMJ_QUERY_PREFIX "T~c~_C~f~~a~(_T~f~~e~'%s')_1",item->title);
+		char *regstring=NULL;
+		regexreplace("'","\\'", item->title, &regstring, 256);
+        ovs_asprintf(&result, YAMJ_QUERY_PREFIX "T~c~_C~f~~a~(_T~f~~e~'%s')_1",regstring);
 
     } else if (view == VIEW_MOVIEBOXSET) {
         // for now we use the first set id - this will need to change in future to support movies in multiple sets.

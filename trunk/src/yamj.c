@@ -523,6 +523,9 @@ char *base_name(DbItem *item,ViewMode *view)
         // TODO quotes
 		char *regstring=NULL;
 		regexreplace("'","\\'", item->title, &regstring, 256);
+		if (regstring == NULL) {
+			regstring = item->title;
+		}
         ovs_asprintf(&result, YAMJ_QUERY_PREFIX "T~c~_C~f~~a~(_T~f~~e~'%s')_1",regstring);
 
     } else if (view == VIEW_MOVIEBOXSET) {

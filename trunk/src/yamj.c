@@ -1004,8 +1004,13 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
             // fprintf(xmlout,"\t<index name=\"%s\"",s->name); DHB
 			char* str = s->name;
 			char* str2 = strstr(str,"'");
-			str2++;
-			str2[strlen(str2)-2]=0;
+			if (str2 != NULL){
+				str2++;
+				str2[strlen(str2)-2]=0;
+			} else {
+				str2 = str;
+			}
+			
 			fprintf(xmlout,"\t<index name=\"%s\"",str2);
             if (s == subcat) {
 

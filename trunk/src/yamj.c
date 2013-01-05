@@ -1001,7 +1001,12 @@ int yamj_category_xml(char *request,YAMJSubCat *subcat,YAMJCat *cat,DbSortedRows
         fprintf(xmlout,"<category count=\"%d\" name=\"%s\">\n",cat->subcats->size,cat->name);
         for(i = 0 ; i < cat->subcats->size ; i++ ) {
             YAMJSubCat *s = cat->subcats->array[i];
-            fprintf(xmlout,"\t<index name=\"%s\"",s->name);
+            // fprintf(xmlout,"\t<index name=\"%s\"",s->name); DHB
+			char* str = s->name;
+			char* str2 = strstr(str,"'");
+			str2++;
+			str2[strlen(str2)-2]=0;
+			fprintf(xmlout,"\t<index name=\"%s\"",str2);
             if (s == subcat) {
 
                 int last = 1+(sorted_rows->num_rows/s->owner_cat->page_size);

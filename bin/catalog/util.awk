@@ -1183,6 +1183,9 @@ punc,last) {
     }
 
     t = collapse_dotted_abbr(t);
+	
+	# This may break some shows so we leave a space and let the later double space code fix it.
+	# gsub(":"," ",t);
 
     punc = g_punc[deep+0];
     if (index(t," ") ) {

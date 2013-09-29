@@ -408,9 +408,9 @@ tmpTitle,ret,ep,season,title,inf,matches) {
 
             if(LG)DEBUG("Reject season > 50");
 
-        } else if (ep - 52 > 0  && index(ep,"e") == 0 ) {
+        } else if (ep - 80 > 0  && index(ep,"e") == 0 ) {
 
-            if(LG)DEBUG("Reject episode "ep" > 52 : expect date format ");
+            if(LG)DEBUG("Reject episode "ep" > 80 : expect date format ");
 
         } else {
 

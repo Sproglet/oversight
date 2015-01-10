@@ -1428,8 +1428,9 @@ tvdbid,tvDbSeriesUrl,imdb_id,closeTitles,total,alt) {
 }
 
 function tvdb_series_url(id,lang) {
-
-    return g_thetvdb_web"/data/series/"id"/all/"lang".xml";
+# API key is now required old way does not work
+#
+    return g_thetvdb_web"/api/"g_api_tvdb"/series/"id"/all/"lang".xml";
 }
 
 # IN plugin tvrage|thetvdb
